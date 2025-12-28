@@ -1,3 +1,71 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>FrameCad Custom Maker</title>
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="header">FrameCad Custom Maker</div>
+
+    <div class="card main-card">
+        <div class="visualizer-area">
+            <div id="framePreview" class="frame-viz"></div>
+        </div>
+
+        <div class="input-row">
+            <div class="input-unit">
+                <label class="static-label">가로 (Width)</label>
+                <div class="input-wrapper">
+                    <input type="number" id="inputWidth" class="input-field" placeholder="0" inputmode="numeric">
+                    <span class="unit-text">mm</span>
+                </div>
+            </div>
+            <div class="input-unit">
+                <label class="static-label">세로 (Height)</label>
+                <div class="input-wrapper">
+                    <input type="number" id="inputHeight" class="input-field" placeholder="0" inputmode="numeric">
+                    <span class="unit-text">mm</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="option-line">
+            <div class="option-group">
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" id="toggleNG" checked>
+                    <label for="toggleNG">NG</label>
+                </div>
+                <div id="ngCountWrapper" class="inline-input">
+                    <input type="number" id="ngCount" value="1" min="1" inputmode="numeric">
+                    <span class="inline-unit">개</span>
+                </div>
+            </div>
+            <div class="divider"></div>
+            <div class="option-group">
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" id="toggleAutoGap" checked>
+                    <label for="toggleAutoGap">ST 자동</label>
+                </div>
+                <div id="manualGapWrapper" class="inline-input disabled">
+                    <input type="number" id="inputGap" value="400" inputmode="numeric" readonly>
+                    <span class="inline-unit">mm</span>
+                </div>
+            </div>
+        </div>
+
+        <button class="create-btn" onclick="openModal()">데이터 생성하기</button>
+    </div>
+
+    <div id="modalOverlay" class="modal-overlay" onclick="closeModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-handle"></div>
+            <div class="part-selector">
+                <button class="part-btn active" onclick="selectPart('ST1')">ST1</button>
+                <button class="part-btn" onclick="selectPart('ST2')">ST2</button>
                 <button class="part-btn" onclick="selectPart('TP1')">TP1</button>
                 <button class="part-btn" onclick="selectPart('NG1')">NG1</button>
             </div>
