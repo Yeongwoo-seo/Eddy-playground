@@ -1,3 +1,24 @@
+:root {
+    --toss-blue: #3182F6;
+    --toss-bg: #E5E8EB;
+    --toss-white: #FFFFFF;
+    --toss-grey-100: #F2F4F6;
+    --toss-grey-300: #D1D6DB;
+    --toss-grey-600: #8B95A1;
+    --toss-black: #191F28;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body { background-color: var(--toss-bg); color: var(--toss-black); margin: 0; padding: 20px 16px; font-family: 'Pretendard', sans-serif; }
+input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+.header { font-size: 24px; font-weight: 700; margin-bottom: 20px; padding-left: 4px; }
+.card { background: var(--toss-white); border-radius: 24px; padding: 24px 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); }
+
+/* 시각화 */
+.visualizer-area { height: 150px; display: flex; justify-content: center; align-items: center; margin-bottom: 24px; position: relative; }
+.frame-viz { border: 2.5px solid var(--toss-black); position: relative; background: white; transition: all 0.3s ease; }
+.st2-line { position: absolute; top: 0; bottom: 0; width: 0; border-left: 1.5px dashed var(--toss-grey-300); }
 .ng-line { position: absolute; left: 0; right: 0; height: 1.5px; background-color: var(--toss-blue); }
 
 /* 입력창 및 옵션 */
