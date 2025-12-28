@@ -12,8 +12,8 @@
     <div class="header">FrameCad Custom Maker</div>
 
     <div class="card main-card">
-        <div class="visualizer-area">
-            <div id="framePreview" class="frame-viz"></div>
+        <div class="visualizer-area" id="visualizerArea">
+            <div id="svgContainer"></div>
         </div>
 
         <div class="input-row">
@@ -63,17 +63,21 @@
     <div id="modalOverlay" class="modal-overlay" onclick="closeModal()">
         <div class="modal-content" onclick="event.stopPropagation()">
             <div class="modal-handle"></div>
+            
             <div class="part-selector">
                 <button class="part-btn active" onclick="selectPart('ST1')">ST1</button>
-                <button class="part-btn" onclick="selectPart('ST2')">ST2</button>
-                <button class="part-btn" onclick="selectPart('TP1')">TP1</button>
                 <button class="part-btn" onclick="selectPart('NG1')">NG1</button>
+                <button class="part-btn" onclick="selectPart('TP1')">TP1</button>
+                <button class="part-btn" onclick="selectPart('ST2')">ST2</button>
             </div>
+
             <div class="result-area">
-                <div class="result-header">
-                    <span class="result-title" id="displayPartName">ST1 데이터</span>
-                    <span class="result-desc" id="displayPartDesc">--</span>
+                <div class="result-header-custom">
+                    <div id="displayPartName" class="stick-name">ST1</div>
+                    <div class="stick-info">Stick Length: <span id="displayStickLen">0</span></div>
+                    <div class="stick-info"># to Make: <span id="displayMakeCount">0</span></div>
                 </div>
+                
                 <div class="table-scroll">
                     <table class="data-table">
                         <tbody id="resultTableBody"></tbody>
