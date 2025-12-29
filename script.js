@@ -1,183 +1,97 @@
-const state = {
-    width: 0, height: 0, hasNG: true, ngCount: 1,
-    autoGap: true, manualGap: 400,
-    currentPart: 'ST1', calculatedGap: 0, st2Count: 0
-};
-
-const el = {
-    width: document.getElementById('inputWidth'),
-    height: document.getElementById('inputHeight'),
-    ng: document.getElementById('toggleNG'),
-    ngCount: document.getElementById('ngCount'),
-    autoGap: document.getElementById('toggleAutoGap'),
-    manualGap: document.getElementById('inputGap'),
-    preview: document.getElementById('svgContainer'),
-    modal: document.getElementById('modalOverlay'),
-    partName: document.getElementById('displayPartName'),
-    tableBody: document.getElementById('resultTableBody'),
-    btns: document.querySelectorAll('.part-btn')
-};
-
-// --- 입력 처리 ---
-const updateAll = () => { updatePreview(); };
-el.width.addEventListener('input', (e) => { state.width = Number(e.target.value); updateAll(); });
-el.height.addEventListener('input', (e) => { state.height = Number(e.target.value); updateAll(); });
-el.ng.addEventListener('change', (e) => { 
-    state.hasNG = e.target.checked; 
-    document.getElementById('ngCountWrapper').classList.toggle('disabled', !state.hasNG);
-    updateAll(); 
-});
-el.ngCount.addEventListener('input', (e) => { state.ngCount = Number(e.target.value); updateAll(); });
-el.autoGap.addEventListener('change', (e) => { 
-    state.autoGap = e.target.checked; 
-    document.getElementById('manualGapWrapper').classList.toggle('disabled', state.autoGap);
-    document.getElementById('inputGap').readOnly = state.autoGap;
-    updateAll(); 
-});
-el.manualGap.addEventListener('input', (e) => { state.manualGap = Number(e.target.value); updateAll(); });
-
-function calculateGap(L) {
-    if (L <= 0) return 400;
-    let x = 1;
-    while (L / x > 450) x++;
-    return L / x;
+:root {
+    --toss-blue: #3182F6;
+    --toss-bg: #E5E8EB;
+    --toss-white: #FFFFFF;
+    --toss-grey-100: #F2F4F6;
+    --toss-grey-300: #D1D6DB;
+    --toss-grey-600: #8B95A1;
+    --toss-black: #191F28;
 }
 
-// --- 시각화 (직사각형 와이드) ---
-function updatePreview() {
-    const wVal = state.width || 0;
-    const hVal = state.height || 0;
-    el.preview.innerHTML = '';
-    if (wVal <= 0 || hVal <= 0) return;
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body { background-color: var(--toss-bg); color: var(--toss-black); margin: 0; padding: 20px 16px; font-family: 'Pretendard', sans-serif; overflow-x: hidden; }
+input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
-    const containerW = document.getElementById('visualizerArea').clientWidth - 40;
-    const maxH = 160;
-    const scale = Math.min(containerW / wVal, maxH / hVal, 1);
-    
-    const dW = wVal * scale;
-    const dH = hVal * scale;
-    const gap = state.autoGap ? calculateGap(wVal) : (state.manualGap || 400);
-    const padding = 40;
+.header { font-size: 24px; font-weight: 700; margin-bottom: 20px; padding-left: 4px; }
+.card { background: var(--toss-white); border-radius: 24px; padding: 24px 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); }
 
-    const svgNS = "http://www.w3.org/2000/svg";
-    const svg = document.createElementNS(svgNS, "svg");
-    svg.setAttribute("width", dW + padding);
-    svg.setAttribute("height", dH + padding);
-    
-    const g = document.createElementNS(svgNS, "g");
-    g.setAttribute("transform", `translate(${padding}, ${padding/2})`);
-    svg.appendChild(g);
+/* 시각화 영역 (고정 높이, SVG 애니메이션) */
+.visualizer-area { width: 100%; height: 280px; background: #F9FAFB; border-radius: 20px; display: flex; justify-content: center; align-items: center; margin-bottom: 24px; padding: 0; overflow: hidden; }
+#svgContainer { width: 100%; height: 100%; }
 
-    // 프레임
-    const rect = document.createElementNS(svgNS, "rect");
-    rect.setAttribute("width", dW); rect.setAttribute("height", dH);
-    rect.setAttribute("fill", "white"); rect.setAttribute("stroke", "#191F28"); rect.setAttribute("stroke-width", "2");
-    g.appendChild(rect);
+/* 애니메이션 트랜지션 설정 */
+#svgContainer rect, #svgContainer line, #svgContainer text {
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+.dim-text { font-size: 13px; font-weight: 700; fill: var(--toss-grey-600); }
 
-    // 치수선
-    const tT = document.createElementNS(svgNS, "text");
-    tT.setAttribute("x", dW/2); tT.setAttribute("y", -10); tT.setAttribute("text-anchor", "middle");
-    tT.setAttribute("class", "dim-text"); tT.textContent = `${wVal} mm`;
-    g.appendChild(tT);
+/* 입력창 */
+.input-row { display: flex; gap: 20px; margin-bottom: 28px; }
+.input-unit { flex: 1; }
+.static-label { font-size: 13px; font-weight: 500; color: var(--toss-grey-600); margin-bottom: 4px; display: block; }
+.input-wrapper { display: flex; align-items: baseline; border-bottom: 2px solid var(--toss-grey-300); padding-bottom: 6px; }
+.input-wrapper:focus-within { border-color: var(--toss-blue); }
+.input-field { width: 100%; border: none; background: transparent; font-size: 22px; font-weight: 700; outline: none; }
+.unit-text { font-size: 14px; color: var(--toss-grey-600); margin-left: 4px; }
 
-    const lT = document.createElementNS(svgNS, "text");
-    lT.setAttribute("x", -padding + 5); lT.setAttribute("y", dH/2);
-    lT.setAttribute("class", "dim-text"); lT.setAttribute("style", "writing-mode: vertical-lr; transform: rotate(180deg); transform-origin: center;");
-    lT.textContent = `${hVal} mm`;
-    g.appendChild(lT);
+/* 옵션 */
+.option-line { display: flex; justify-content: center; align-items: center; background: var(--toss-grey-100); border-radius: 16px; padding: 12px; margin-bottom: 24px; }
+.option-group { display: flex; align-items: center; gap: 6px; }
+.checkbox-wrapper { display: flex; align-items: center; cursor: pointer; font-size: 14px; font-weight: 600; color: var(--toss-grey-600); }
+.checkbox-wrapper input { width: 18px; height: 18px; margin-right: 4px; accent-color: var(--toss-blue); }
+.divider { width: 1px; height: 16px; background: var(--toss-grey-300); margin: 0 16px; }
+.inline-input { background: white; padding: 2px 8px; border-radius: 8px; display: flex; align-items: center; height: 28px; }
+.inline-input input { width: 35px; border: none; text-align: center; font-weight: 700; outline: none; }
+.inline-input.disabled { background: var(--toss-grey-300); opacity: 0.6; }
 
-    // ST2
-    const st2Cnt = Math.floor(wVal / gap);
-    for (let i = 1; i < st2Cnt; i++) {
-        const xPos = (gap * i / wVal) * dW;
-        const line = document.createElementNS(svgNS, "line");
-        line.setAttribute("x1", xPos); line.setAttribute("y1", 0); line.setAttribute("x2", xPos); line.setAttribute("y2", dH);
-        line.setAttribute("stroke", "#D1D6DB"); line.setAttribute("stroke-dasharray", "4,3"); g.appendChild(line);
-    }
+.create-btn { width: 100%; padding: 18px; background: var(--toss-blue); color: white; border: none; border-radius: 16px; font-size: 17px; font-weight: 700; cursor: pointer; }
 
-    // NG
-    if (state.hasNG) {
-        for (let i = 1; i <= state.ngCount; i++) {
-            const yPos = (i / (state.ngCount + 1)) * dH;
-            const line = document.createElementNS(svgNS, "line");
-            line.setAttribute("x1", 0); line.setAttribute("y1", yPos); line.setAttribute("x2", dW); line.setAttribute("y2", yPos);
-            line.setAttribute("stroke", "#3182F6"); line.setAttribute("stroke-width", "1.5"); g.appendChild(line);
-        }
-    }
-    el.preview.appendChild(svg);
+/* 모달 (80% 높이) */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: flex-end; justify-content: center; opacity: 0; pointer-events: none; transition: 0.3s; z-index: 1000; }
+.modal-overlay.active { opacity: 1; pointer-events: auto; }
+.modal-content { background: white; width: 100%; max-width: 500px; height: 80vh; border-radius: 28px 28px 0 0; padding: 24px; transform: translateY(100%); transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); display: flex; flex-direction: column; }
+.modal-overlay.active .modal-content { transform: translateY(0); }
+.modal-handle { width: 40px; height: 4px; background: var(--toss-grey-300); border-radius: 2px; margin: 0 auto 20px; flex-shrink: 0; }
+
+.part-selector { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 24px; flex-shrink: 0; }
+.part-btn { padding: 12px 0; border: none; border-radius: 12px; background: var(--toss-grey-100); font-weight: 600; cursor: pointer; color: var(--toss-grey-600); }
+.part-btn.active { background: var(--toss-blue); color: white; }
+
+/* 팝업 헤더 */
+.result-header-custom { margin-bottom: 20px; flex-shrink: 0; }
+.stick-name { font-size: 24px; font-weight: 800; color: var(--toss-black); margin-bottom: 4px; }
+.stick-info { font-size: 16px; font-weight: 600; color: var(--toss-grey-600); line-height: 1.4; }
+
+/* 테이블 */
+.table-scroll { flex-grow: 1; overflow-y: auto; }
+.data-table { width: 100%; border-collapse: collapse; }
+/* 데이터 숫자 스타일 통일 */
+.data-table td {
+    padding: 12px 8px;
+    border-bottom: 1px solid var(--toss-grey-100);
+    font-size: 14px;
+    font-weight: 500; /* Medium 두께로 통일 */
+    color: var(--toss-black); /* 모든 숫자 검은색 */
 }
 
-// --- 모달 로직 ---
-function openModal() {
-    if (!state.width || !state.height) return alert("가로, 세로를 입력해주세요.");
-    state.calculatedGap = state.autoGap ? calculateGap(state.width) : (state.manualGap || 400);
-    state.st2Count = Math.max(0, Math.floor(state.width / state.calculatedGap) - 1);
-    renderTable();
-    el.modal.classList.add('active');
-    document.body.style.overflow = 'hidden';
-}
-function closeModal() { el.modal.classList.remove('active'); document.body.style.overflow = ''; }
-
-function selectPart(part) {
-    state.currentPart = part;
-    el.btns.forEach(btn => btn.classList.toggle('active', btn.innerText === part));
-    renderTable();
+/* 왼쪽 항목명(Label) 스타일 */
+.data-key {
+    font-weight: 600;
+    width: 35%;
+    color: var(--toss-grey-700); /* 항목명은 약간 차분한 색상으로 */
 }
 
-function renderTable() {
-    const type = state.currentPart;
-    const len = (type.includes('ST')) ? state.height : state.width;
-    const gap = state.calculatedGap;
-    
-    // 헤더 정보 업데이트
-    document.getElementById('displayPartName').innerText = type;
-    document.getElementById('displayStickLen').innerText = `${(len - 4).toLocaleString()} mm`;
-    
-    let makeCount = 2;
-    if (type === 'ST2') makeCount = state.st2Count;
-    if (type === 'NG1') makeCount = state.hasNG ? state.ngCount : 0;
-    document.getElementById('displayMakeCount').innerText = `${makeCount} 개`;
-
-    let html = '';
-    const addRow = (label, v1, v2 = null) => {
-        if (v2 !== null) html += `<tr><td class="data-key">${label}</td><td class="data-value">${v1}</td><td class="data-value">${v2}</td></tr>`;
-        else html += `<tr><td class="data-key">${label}</td><td colspan="2" class="data-value-center">${v1}</td></tr>`;
-    };
-
-    if (type === 'ST1' || type === 'ST2') {
-        addRow('Swage', '0', '41'); addRow('Dimple', '18.5');
-        if (state.hasNG) {
-            for (let i = 1; i <= state.ngCount; i++) {
-                let pos = (len / (state.ngCount + 1)) * i;
-                addRow('Lip Cut', (pos - 20.5).toFixed(1), (pos + 20.5).toFixed(1));
-                addRow('Dimple', pos.toFixed(1));
-            }
-        }
-        addRow('Swage', (len - 41).toFixed(1), (len - 4).toFixed(1)); addRow('Dimple', (len - 18.5).toFixed(1));
-    } else if (type === 'TP1') {
-        addRow('Lip Cut', '0', '41'); addRow('Dimple', '18.5');
-        let k = 1;
-        while (gap * k < len - 25) {
-            let pos = gap * k;
-            addRow('Lip Cut', (pos - 20.5).toFixed(1), (pos + 20.5).toFixed(1));
-            addRow('Dimple', pos.toFixed(1));
-            k++;
-        }
-        addRow('Lip Cut', (len - 41).toFixed(1), (len - 4).toFixed(1)); addRow('Dimple', (len - 18.5).toFixed(1));
-    } else if (type === 'NG1') {
-        if (!state.hasNG) html = '<tr><td colspan="3" style="text-align:center; padding:40px;">NG 미사용</td></tr>';
-        else {
-            addRow('Swage', '0', '41'); addRow('Dimple', '18.5');
-            let k = 1;
-            while (gap * k < len - 25) {
-                let pos = gap * k;
-                addRow('WebNotch', (pos - 20.5).toFixed(1), (pos + 20.5).toFixed(1));
-                addRow('Lip Cut', (pos - 20.5).toFixed(1), (pos + 20.5).toFixed(1));
-                addRow('Dimple', pos.toFixed(1));
-                k++;
-            }
-            addRow('Swage', (len - 41).toFixed(1), (len - 4).toFixed(1)); addRow('Dimple', (len - 18.5).toFixed(1));
-        }
-    }
-    el.tableBody.innerHTML = html;
+/* 일반 숫자 (2개 있는 셀) */
+.data-value {
+    text-align: center;
+    width: 32.5%;
 }
+
+/* 병합된 셀 (Dimple 등) 스타일 */
+.data-value-merged {
+    text-align: center; /* 오른쪽 정렬 */
+    padding-right: 100%; /* 3열 구조에서 오른쪽 열의 중앙에 위치하도록 패딩 조정 */
+    font-weight: 500;
+    color: var(--toss-black);
+}
+.data-value-center { text-align: center; font-weight: 700; color: var(--toss-blue); }
