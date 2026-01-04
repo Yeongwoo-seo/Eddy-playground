@@ -49,7 +49,7 @@ input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-app
 /* 모달 (80% 높이) */
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: flex-end; justify-content: center; opacity: 0; pointer-events: none; transition: 0.3s; z-index: 1000; }
 .modal-overlay.active { opacity: 1; pointer-events: auto; }
-.modal-content { background: white; width: 100%; max-width: 500px; height: 80vh; border-radius: 28px 28px 0 0; padding: 24px; transform: translateY(100%); transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); display: flex; flex-direction: column; }
+.modal-content { background: white; width: 100%; max-width: 500px; height: 80vh; border-radius: 28px 28px 0 0; padding: 24px; padding-bottom: env(safe-area-inset-bottom); transform: translateY(100%); transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); display: flex; flex-direction: column; }
 .modal-overlay.active .modal-content { transform: translateY(0); }
 .modal-handle { width: 40px; height: 4px; background: var(--toss-grey-300); border-radius: 2px; margin: 0 auto 20px; flex-shrink: 0; }
 
@@ -63,8 +63,11 @@ input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-app
 .stick-info { font-size: 16px; font-weight: 600; color: var(--toss-grey-600); line-height: 1.4; }
 
 /* 테이블 */
-.table-scroll { flex-grow: 1; overflow-y: auto; }
-.data-table { width: 100%; border-collapse: collapse; }
+.table-scroll { flex-grow: 1; overflow-y: auto;min-height: 0;    
+    -webkit-overflow-scrolling: touch; 
+    margin-top: 10px;
+    border-top: 1px solid var(--toss-grey-100); }
+.data-table { width: 100%; border-collapse: collapse;table-layout: fixed; }
 /* 데이터 숫자 스타일 통일 */
 .data-table td {
     padding: 12px 8px;
