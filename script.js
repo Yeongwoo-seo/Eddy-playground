@@ -218,33 +218,35 @@ function selectPart(part) {
 
 function renderTable() {
     const type = state.currentPart;
-    const len = (type.includes('ST')) ? state.height : state.width;
+    const len = type.includes('ST') ? state.height : state.width;
     const gap = state.calculatedGap;
     
-    document.getElementById('displayPartName').innerText = type;
+    // UI 업데이트
+    el.partName.innerText = type;
     document.getElementById('displayStickLen').innerText = `${(len - 4).toLocaleString()} mm`;
     
+    // 개수 계산
     let makeCount = 2;
     if (type === 'ST2') makeCount = state.st2Count;
     if (type === 'NG1') makeCount = state.hasNG ? state.ngCount : 0;
     document.getElementById('displayMakeCount').innerText = `${makeCount} 개`;
 
     let html = '';
-    
-    // 헬퍼 함수 수정
     const addRow = (label, v1, v2 = null) => {
         if (v2 !== null) {
             html += `<tr><td class="data-key">${label}</td><td class="data-value">${v1}</td><td class="data-value">${v2}</td></tr>`;
         } else {
-            // 병합된 셀 클래스 변경: data-value-merged
             html += `<tr><td class="data-key">${label}</td><td colspan="2" class="data-value-merged">${v1}</td></tr>`;
         }
     };
 
-    // --- 이하 부품별 데이터 로직은 동일 ---
-    if (type === 'ST1' || type === 'ST2') {
+    // --- 부품별 데이터 생성 ---
+    
+    // ST (Stud) 계열
+    if (type.includes('ST')) {
         addRow('Swage', '0', '41'); 
         addRow('Dimple', '18.5');
+        
         if (state.hasNG) {
             for (let i = 1; i <= state.ngCount; i++) {
                 let pos = (len / (state.ngCount + 1)) * i;
@@ -254,9 +256,13 @@ function renderTable() {
         }
         addRow('Swage', (len - 41).toFixed(1), (len - 4).toFixed(1)); 
         addRow('Dimple', (len - 18.5).toFixed(1));
-    } else if (type === 'TP1') {
+    } 
+    
+    // TP (Track) 계열
+    else if (type === 'TP1') {
         addRow('Lip Cut', '0', '41'); 
         addRow('Dimple', '18.5');
+        
         let k = 1;
         while (gap * k < len - 25) {
             let pos = gap * k;
@@ -266,11 +272,16 @@ function renderTable() {
         }
         addRow('Lip Cut', (len - 41).toFixed(1), (len - 4).toFixed(1)); 
         addRow('Dimple', (len - 18.5).toFixed(1));
-    } else if (type === 'NG1') {
-        if (!state.hasNG) html = '<tr><td colspan="3" style="text-align:center; padding:40px;">NG 미사용</td></tr>';
-        else {
+    } 
+    
+    // NG (Nogging) 계열
+    else if (type === 'NG1') {
+        if (!state.hasNG) {
+            html = '<tr><td colspan="3" style="text-align:center; padding:40px;">NG 미사용</td></tr>';
+        } else {
             addRow('Swage', '0', '41'); 
             addRow('Dimple', '18.5');
+            
             let k = 1;
             while (gap * k < len - 25) {
                 let pos = gap * k;
@@ -283,5 +294,6 @@ function renderTable() {
             addRow('Dimple', (len - 18.5).toFixed(1));
         }
     }
+    
     el.tableBody.innerHTML = html;
 }
