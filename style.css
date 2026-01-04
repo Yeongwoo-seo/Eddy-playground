@@ -67,6 +67,7 @@ input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-app
     padding-bottom: 20px;
                -webkit-overflow-scrolling: touch; 
     margin-top: 10px;
+               min-height: 0px;
     border-top: 1px solid var(--toss-grey-100); }
 .data-table { width: 100%; border-collapse: collapse;table-layout: fixed; }
 /* 데이터 숫자 스타일 통일 */
