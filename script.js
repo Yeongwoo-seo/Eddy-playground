@@ -191,7 +191,22 @@ function openModal() {
     state.st2Count = Math.max(0, Math.floor(state.width / state.calculatedGap) - 1);
     renderTable();
     el.modal.classList.add('active');
-    document.body.style.overflow = 'hidden';
+    // 배경 스크롤 방지 (데스크탑/모바일 공통)
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+    document.body.style.top = `-${window.scrollY}px`;
+}
+
+function closeModal() {
+    const scrollY = document.body.style.top;
+    el.modal.classList.remove('active');
+    
+    // 배경 스크롤 복구
+    document.body.style.position = '';
+    document.body.style.width = '';
+    document.body.style.top = '';
+    window.scrollTo(0, parseInt(scrollY || '0') * -1);
+    
 }
 function closeModal() { el.modal.classList.remove('active'); document.body.style.overflow = ''; }
 
