@@ -206,9 +206,7 @@ function closeModal() {
     document.body.style.width = '';
     document.body.style.top = '';
     window.scrollTo(0, parseInt(scrollY || '0') * -1);
-    
 }
-function closeModal() { el.modal.classList.remove('active'); document.body.style.overflow = ''; }
 
 function selectPart(part) {
     state.currentPart = part;
@@ -223,13 +221,13 @@ function renderTable() {
     
     // UI 업데이트
     el.partName.innerText = type;
-    document.getElementById('displayStickLen').innerText = `${(len - 4).toLocaleString()} mm`;
+    document.getElementById('displayStickLen').innerText = `${(len - 4).toLocaleString()}`;
     
     // 개수 계산
     let makeCount = 2;
     if (type === 'ST2') makeCount = state.st2Count;
     if (type === 'NG1') makeCount = state.hasNG ? state.ngCount : 0;
-    document.getElementById('displayMakeCount').innerText = `${makeCount} 개`;
+    document.getElementById('displayMakeCount').innerText = `${makeCount}`;
 
     let html = '';
     const addRow = (label, v1, v2 = null) => {
@@ -242,9 +240,9 @@ function renderTable() {
 
     // --- 부품별 데이터 생성 ---
     
-    // ST (Stud) 계열
-    if (type.includes('ST')) {
-        addRow('Swage', '0', '41'); 
+    // ST1 (Stud) 계열
+    if (type === 'ST1') {
+        addRow('Lip Cut', '0', '41'); 
         addRow('Dimple', '18.5');
         
         if (state.hasNG) {
@@ -254,7 +252,25 @@ function renderTable() {
                 addRow('Dimple', pos.toFixed(1));
             }
         }
-        addRow('Swage', (len - 41).toFixed(1), (len - 4).toFixed(1)); 
+        addRow('Lip Cut', (len - 41).toFixed(1), (len - 4).toFixed(1)); 
+        addRow('Dimple', (len - 18.5).toFixed(1));
+    }
+    
+    // ST2 (Stud) 계열 - 처음 두 개 뒤에 Lip Cut 사용
+    else if (type === 'ST2') {
+        addRow('Lip Cut', '0', '41'); 
+        addRow('Dimple', '18.5');
+        
+        // gap을 사용해서 중간에 여러 개 생성 (Lip Cut 사용)
+        let k = 1;
+        while (gap * k < len - 25) {
+            let pos = gap * k;
+            addRow('Lip Cut', (pos - 20.5).toFixed(1), (pos + 20.5).toFixed(1));
+            addRow('Dimple', pos.toFixed(1));
+            k++;
+        }
+        
+        addRow('Lip Cut', (len - 41).toFixed(1), (len - 4).toFixed(1)); 
         addRow('Dimple', (len - 18.5).toFixed(1));
     } 
     
