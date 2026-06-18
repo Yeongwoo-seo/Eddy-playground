@@ -256,21 +256,19 @@ function renderTable() {
         addRow('Dimple', (len - 18.5).toFixed(1));
     }
     
-    // ST2 (Stud) 계열 - 처음 두 개 뒤에 Lip Cut 사용
+    // ST2 (Stud) 계열
     else if (type === 'ST2') {
-        addRow('Lip Cut', '0', '41'); 
+        addRow('Lip Cut', '0', '41');
         addRow('Dimple', '18.5');
-        
-        // gap을 사용해서 중간에 여러 개 생성 (Lip Cut 사용)
-        let k = 1;
-        while (gap * k < len - 25) {
-            let pos = gap * k;
-            addRow('Lip Cut', (pos - 20.5).toFixed(1), (pos + 20.5).toFixed(1));
-            addRow('Dimple', pos.toFixed(1));
-            k++;
+
+        if (state.hasNG) {
+            for (let i = 1; i <= state.ngCount; i++) {
+                let pos = (len / (state.ngCount + 1)) * i;
+                addRow('Lip Cut', (pos - 20.5).toFixed(1), (pos + 20.5).toFixed(1));
+                addRow('Dimple', pos.toFixed(1));
+            }
         }
-        
-        addRow('Lip Cut', (len - 41).toFixed(1), (len - 4).toFixed(1)); 
+        addRow('Lip Cut', (len - 41).toFixed(1), (len - 4).toFixed(1));
         addRow('Dimple', (len - 18.5).toFixed(1));
     } 
     
