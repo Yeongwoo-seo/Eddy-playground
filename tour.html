@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>시드니 여행 유형 분석</title>
+<title>시드니 여행 유형 테스트</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
 <script type="module" src="https://unpkg.com/@splinetool/viewer@1.9.82/build/spline-viewer.js"></script>
 <style>
@@ -16,7 +16,7 @@
 }
 html,body{height:100%}
 body{background:var(--bg);color:var(--text);font-family:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;overflow-x:hidden;display:flex;justify-content:center}
-.app{width:100%;max-width:500px;min-height:100vh;position:relative}
+.app{width:100%;max-width:500px;min-height:100vh;position:relative;overflow-x:hidden}
 .hl{color:var(--accent);font-weight:800}
 
 .screen{display:none;min-height:100vh;flex-direction:column}
@@ -25,9 +25,13 @@ body{background:var(--bg);color:var(--text);font-family:'Pretendard',-apple-syst
 @keyframes fl{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
 @keyframes sp{to{transform:rotate(360deg)}}
 @keyframes pls{0%,100%{opacity:.4}50%{opacity:1}}
+@keyframes slideOutL{from{transform:translateX(0);opacity:1}to{transform:translateX(-60px);opacity:0}}
+@keyframes slideInR{from{transform:translateX(60px);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes slideOutR{from{transform:translateX(0);opacity:1}to{transform:translateX(60px);opacity:0}}
+@keyframes slideInL{from{transform:translateX(-60px);opacity:0}to{transform:translateX(0);opacity:1}}
 
 /* ── INTRO ── */
-.intro{align-items:center;justify-content:center;padding:60px 24px;text-align:center;min-height:100vh}
+.intro{align-items:center;justify-content:center;padding:60px 24px 120px;text-align:center;min-height:100vh}
 .orb{width:180px;height:180px;border-radius:50%;margin:0 auto 44px;overflow:hidden;position:relative;box-shadow:0 0 60px rgba(232,116,30,0.15),0 0 120px rgba(232,116,30,0.06)}
 .orb spline-viewer{width:100%;height:100%;display:block;border-radius:50%;--spline-viewer-background:transparent}
 .orb::after{content:'';position:absolute;inset:0;border-radius:50%;box-shadow:inset 0 0 30px rgba(15,25,35,0.6);pointer-events:none;z-index:1}
@@ -39,7 +43,7 @@ body{background:var(--bg);color:var(--text);font-family:'Pretendard',-apple-syst
 .intro-tap{font-size:12px;color:var(--text3);letter-spacing:4px;margin-top:14px;cursor:pointer;padding:14px;animation:pls 2.5s ease-in-out infinite}
 .intro-chips{display:flex;gap:8px;justify-content:center;margin-top:32px;flex-wrap:wrap}
 .intro-chip{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:12px;font-weight:500;color:var(--text2)}
-.intro-bottom{position:fixed;bottom:36px;left:50%;transform:translateX(-50%)}
+.intro-bottom{margin-top:40px}
 .intro-cta{font-size:14px;color:var(--text2);font-weight:600;cursor:pointer;padding:14px 32px;border:1px solid var(--border);border-radius:28px;background:transparent;font-family:inherit;transition:all .2s;white-space:nowrap}
 .intro-cta:active{background:var(--surface);transform:scale(.97)}
 
@@ -50,14 +54,14 @@ body{background:var(--bg);color:var(--text);font-family:'Pretendard',-apple-syst
 .cnt{color:var(--text3);font-size:13px;font-weight:500}
 .pg-w{height:3px;background:var(--surface);margin:14px 20px 0;border-radius:3px;overflow:hidden}
 .pg-b{height:100%;background:var(--accent);border-radius:3px;transition:width .4s}
-.q-bd{flex:1;display:flex;flex-direction:column;justify-content:center;padding:24px 20px 36px}
-.q-n{font-size:11px;color:var(--accent);font-weight:700;letter-spacing:2px;margin-bottom:12px}
-.q-sc{font-size:13px;color:var(--text2);line-height:1.7;padding:14px 16px;background:var(--surface);border:1px solid var(--border);border-radius:14px;margin-bottom:16px}
-.q-t{font-size:19px;font-weight:700;line-height:1.45;margin-bottom:26px}
-.a-ls{display:flex;flex-direction:column;gap:9px}
-.a-btn{background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:15px 16px;color:var(--text);font-size:14px;font-weight:500;text-align:left;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:12px;transition:all .15s}
-.a-btn:active{background:var(--accent-a);border-color:var(--accent);transform:scale(.98)}
-.a-em{font-size:20px;flex-shrink:0}
+.q-bd{flex:1;display:flex;flex-direction:column;padding:32px 20px 36px;overflow:hidden}
+.q-inner{display:flex;flex-direction:column;flex:1}
+.q-n{font-size:12px;color:var(--accent);font-weight:700;letter-spacing:2px;margin-bottom:16px}
+.q-t{font-size:22px;font-weight:800;line-height:1.45;margin-bottom:32px;letter-spacing:-.3px}
+.a-ls{display:flex;flex-direction:column;gap:10px;margin-top:auto}
+.a-btn{background:#ffffff;border:1.5px solid rgba(255,255,255,0.15);border-radius:14px;padding:16px 18px;color:#191F28;font-size:15px;font-weight:600;text-align:left;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:12px;transition:all .15s}
+.a-btn:active{background:#FFF3EB;border-color:var(--accent);transform:scale(.98)}
+.a-em{font-size:22px;flex-shrink:0}
 
 /* ── LOADING ── */
 .ld{align-items:center;justify-content:center;padding:40px 24px;text-align:center}
@@ -159,7 +163,8 @@ body{background:var(--bg);color:var(--text);font-family:'Pretendard',-apple-syst
 .tl:not(:last-child)::before{content:'';position:absolute;left:20px;top:44px;bottom:0;width:1px;background:var(--border)}
 .tl-tc{width:40px;flex-shrink:0;padding-top:12px}
 .tl-tm{font-size:11px;font-weight:700;color:var(--accent)}
-.tl-cd{flex:1;background:var(--surface);border-radius:12px;padding:12px;border:1px solid var(--border)}
+.tl-cd{flex:1;background:var(--surface);border-radius:12px;padding:12px;border:1px solid var(--border);overflow:hidden}
+.tl-img{width:100%;height:80px;border-radius:8px;object-fit:cover;margin-bottom:8px;display:block}
 .tl-ic{font-size:18px;margin-bottom:3px}
 .tl-pl{font-size:13px;font-weight:700;margin-bottom:2px}
 .tl-ds{font-size:11px;color:var(--text2);line-height:1.6}
@@ -179,7 +184,7 @@ body{background:var(--bg);color:var(--text);font-family:'Pretendard',-apple-syst
 <div class="screen intro active" id="si">
   <div class="orb"><spline-viewer url="https://prod.spline.design/Tpu1EcgeOF2iqGYJ/scene.splinecode" loading-anim-type="none" hint="false" events-target="none"></spline-viewer></div>
   <div class="intro-ln s"></div>
-  <h1>시드니 여행 유형<br>심층 분석 보고서</h1>
+  <h1>시드니 여행 유형<br>테스트</h1>
   <div class="intro-ln l"></div>
   <div class="intro-nm">지수</div>
   <div class="intro-tap" onclick="startTest()">TAP TO START</div>
@@ -189,7 +194,7 @@ body{background:var(--bg);color:var(--text);font-family:'Pretendard',-apple-syst
     <span class="intro-chip">16유형</span>
   </div>
   <div class="intro-bottom">
-    <button class="intro-cta" onclick="startTest()">나도 분석받기</button>
+    <button class="intro-cta" onclick="startTest()">테스트 시작하기</button>
   </div>
 </div>
 
@@ -201,10 +206,11 @@ body{background:var(--bg);color:var(--text);font-family:'Pretendard',-apple-syst
   </div>
   <div class="pg-w"><div class="pg-b" id="pg" style="width:10%"></div></div>
   <div class="q-bd">
-    <div class="q-n" id="qn">Q.01</div>
-    <div class="q-sc" id="qsc"></div>
-    <div class="q-t" id="qt"></div>
-    <div class="a-ls" id="als"></div>
+    <div class="q-inner" id="qin">
+      <div class="q-n" id="qn">Q.01</div>
+      <div class="q-t" id="qt"></div>
+      <div class="a-ls" id="als"></div>
+    </div>
   </div>
 </div>
 
@@ -263,84 +269,112 @@ const PH={
   bridge:'https://images.pexels.com/photos/6262898/pexels-photo-6262898.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&fit=crop',
   bluemtn:'https://images.pexels.com/photos/26825285/pexels-photo-26825285.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&fit=crop',
   koala:'https://images.pexels.com/photos/2590768/pexels-photo-2590768.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&fit=crop',
-  bondi:'https://images.pexels.com/photos/2607832/pexels-photo-2607832.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&fit=crop'
+  bondi:'https://images.pexels.com/photos/2607832/pexels-photo-2607832.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&fit=crop',
+  darling:'https://images.pexels.com/photos/995764/pexels-photo-995764.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  garden:'https://images.pexels.com/photos/2253275/pexels-photo-2253275.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  manly:'https://images.pexels.com/photos/1032650/pexels-photo-1032650.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  cafe:'https://images.pexels.com/photos/312418/pexels-photo-312418.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  sunset:'https://images.pexels.com/photos/2531237/pexels-photo-2531237.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  rocks:'https://images.pexels.com/photos/2416600/pexels-photo-2416600.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  zoo:'https://images.pexels.com/photos/1661535/pexels-photo-1661535.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  train:'https://images.pexels.com/photos/2790396/pexels-photo-2790396.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  surf:'https://images.pexels.com/photos/1654489/pexels-photo-1654489.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  food:'https://images.pexels.com/photos/67468/pexels-photo-67468.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  shop:'https://images.pexels.com/photos/135620/pexels-photo-135620.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  art:'https://images.pexels.com/photos/3004909/pexels-photo-3004909.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  ferry:'https://images.pexels.com/photos/2549018/pexels-photo-2549018.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop'
 };
 
+function plImg(name,desc){
+  const s=(name+' '+desc).toLowerCase();
+  if(s.includes('오페라')) return PH.opera;
+  if(s.includes('하버브릿지')||s.includes('bridgeclimb')||s.includes('bridge')) return PH.bridge;
+  if(s.includes('블루마운틴')||s.includes('scenic')||s.includes('echo')||s.includes('katoomba')||s.includes('leura')||s.includes('three sisters')) return PH.bluemtn;
+  if(s.includes('코알라')||s.includes('페더데일')||s.includes('캥거루')||s.includes('동물원')&&!s.includes('타롱가')) return PH.koala;
+  if(s.includes('본다이')||s.includes('bondi')||s.includes('브론테')||s.includes('쿠지')||s.includes('아이스버그')) return PH.bondi;
+  if(s.includes('타롱가')||s.includes('taronga')) return PH.zoo;
+  if(s.includes('달링')||s.includes('야경')&&s.includes('저녁')) return PH.darling;
+  if(s.includes('보타닉')||s.includes('정원')||s.includes('mrs mac')) return PH.garden;
+  if(s.includes('맨리')||s.includes('manly')||s.includes('셸리')) return PH.manly;
+  if(s.includes('록스')||s.includes('rocks')) return PH.rocks;
+  if(s.includes('서핑')||s.includes('surf')||s.includes('카약')) return PH.surf;
+  if(s.includes('페리')||s.includes('ferry')||s.includes('하버 크로싱')) return PH.ferry;
+  if(s.includes('기차')||s.includes('central역')||s.includes('귀환')) return PH.train;
+  if(s.includes('카페')||s.includes('브런치')||s.includes('bills')||s.includes('호핑')) return PH.cafe;
+  if(s.includes('점심')||s.includes('저녁')||s.includes('디너')||s.includes('레스토랑')||s.includes('맛집')||s.includes('피쉬')) return PH.food;
+  if(s.includes('쇼핑')||s.includes('기념품')||s.includes('qvb')||s.includes('pitt')||s.includes('면세')||s.includes('paddington markets')) return PH.shop;
+  if(s.includes('미술')||s.includes('갤러리')||s.includes('mca')||s.includes('nsw')||s.includes('벽화')||s.includes('newtown')) return PH.art;
+  if(s.includes('일몰')||s.includes('일출')||s.includes('sunset')||s.includes('선셋')||s.includes('마지막')) return PH.sunset;
+  if(s.includes('watson')||s.includes('절벽')||s.includes('등대')||s.includes('cronulla')||s.includes('palm beach')) return PH.bondi;
+  if(s.includes('paddington')||s.includes('surry')) return PH.art;
+  return PH.opera;
+}
+
 const Qs=[
-{scene:"첫 주말 토요일 아침! 영우와 시드니에서의 첫 주말이 시작됐어요.",
- text:"영우랑 뭐부터 할래?",
+{text:"영우랑 뭐부터 할래?",
  opts:[
   {e:"🏃",t:"관광 명소 체크리스트 돌격!",s:[3,0,2,2]},
   {e:"🌊",t:"가까운 해변에서 둘이 산책부터",s:[1,3,0,1]},
   {e:"📋",t:"카페에서 같이 주말 동선 짜기",s:[0,0,3,0]},
   {e:"😴",t:"늦잠 자고 숙소 근처 브런치",s:[0,1,0,0]}
 ]},
-{scene:"주말 하루 종일 자유! 영우가 '오늘 뭐 할까?' 하고 물어봐요.",
- text:"지수의 대답은?",
+{text:"영우가 '오늘 뭐 할까?'\n지수의 대답은?",
  opts:[
   {e:"⛰️",t:"블루마운틴 가자! 당일치기!",s:[2,3,2,2]},
   {e:"🏄",t:"본다이 해변 걸으러 가자!",s:[2,3,0,2]},
   {e:"🏙️",t:"시내 카페·갤러리 돌아보자!",s:[1,0,1,0]},
   {e:"☕",t:"동네 카페 호핑하면서 여유롭게~",s:[0,0,0,0]}
 ]},
-{scene:"영우와 주말 계획을 짜는 중이에요.",
- text:"지수의 계획 스타일은?",
+{text:"지수의 계획 스타일은?",
  opts:[
   {e:"📋",t:"시간표 짜서 영우한테 공유!",s:[2,0,3,1]},
   {e:"📝",t:"핵심만 정하고 나머지는 현장에서",s:[1,1,1,1]},
   {e:"🌀",t:"토요일 아침에 기분 보고 결정~",s:[0,1,0,1]},
   {e:"💕",t:"영우가 정하는 대로 따라갈게",s:[0,0,0,0]}
 ]},
-{scene:"영우와 하버브릿지 앞에 섰어요! 웅장한 다리가 눈앞에!",
- text:"영우한테 뭐라고 할래?",
+{text:"하버브릿지 앞!\n영우한테 뭐라고 할래?",
  opts:[
   {e:"🧗",t:"우리 BridgeClimb 하자! 꼭대기 올라가자!",s:[3,0,1,3]},
   {e:"🚶",t:"다리 위로 같이 걸어서 건너보자!",s:[2,0,0,2]},
   {e:"📸",t:"여기서 커플 사진 찍자! 최고 각도 찾아보자",s:[1,0,1,0]},
-  {e:"🍷",t:"저기 분위기 좋은 바에서 야경 보면서 한 잔 하자",s:[0,0,1,0]}
+  {e:"🍷",t:"분위기 좋은 바에서 야경 보면서 한 잔 하자",s:[0,0,1,0]}
 ]},
-{scene:"주말인데 비가 와요. 원래 야외 데이트 계획이었는데...",
- text:"영우한테 뭐라고 할래?",
+{text:"주말인데 비가 와요.\n영우한테 뭐라고 할래?",
  opts:[
   {e:"🌧️",t:"비 맞으면서 걷는 것도 로맨틱하지 않아?",s:[2,3,0,3]},
   {e:"🏛️",t:"미술관 가자! 비 오는 날 딱이야",s:[1,0,2,0]},
   {e:"🛍️",t:"QVB 가서 쇼핑하자!",s:[1,0,1,0]},
   {e:"☕",t:"카페에서 비 구경하면서 수다 떨자~",s:[0,1,0,0]}
 ]},
-{scene:"시드니에서 영우와 커플 사진을 찍으려고 해요!",
- text:"가장 찍고 싶은 장면은?",
+{text:"영우와 커플 사진!\n가장 찍고 싶은 장면은?",
  opts:[
   {e:"🌅",t:"절벽 위에서 일몰 배경으로!",s:[2,3,1,2]},
   {e:"🐨",t:"코알라 옆에서 둘이 같이!",s:[1,3,0,0]},
   {e:"🏙️",t:"오페라하우스 야경 배경으로!",s:[1,0,1,0]},
   {e:"☕",t:"감성 카페에서 자연스럽게",s:[0,0,0,0]}
 ]},
-{scene:"토요일 저녁! 영우와 저녁 데이트 장소를 골라야 해요.",
- text:"지수의 선택은?",
+{text:"토요일 저녁 데이트!\n지수의 선택은?",
  opts:[
   {e:"🦞",t:"맛집 찾아서 좀 멀어도 걸어가자!",s:[2,1,0,2]},
   {e:"📱",t:"미리 예약해둔 레스토랑이 있어~",s:[1,0,3,0]},
   {e:"🍜",t:"걷다가 분위기 좋은 곳 발견하면 들어가자",s:[1,0,0,1]},
   {e:"🥐",t:"숙소 근처에서 편하게 먹자~",s:[0,0,1,0]}
 ]},
-{scene:"영우와 페더데일 동물원 도착! 코알라와 캥거루가 기다리고 있어요.",
- text:"영우와 어떻게 돌아볼래?",
+{text:"페더데일 동물원 도착!\n영우와 어떻게 돌아볼래?",
  opts:[
   {e:"🐨",t:"오픈부터! 모든 동물 코스 완주하자!",s:[3,2,2,2]},
   {e:"📸",t:"코알라 포토 세션이 핵심이야!",s:[1,2,1,0]},
   {e:"🦘",t:"캥거루한테 같이 먹이 주면서 여유롭게~",s:[0,2,0,0]},
   {e:"🗺️",t:"블루마운틴 가는 길에 잠깐 들르자",s:[2,1,3,1]}
 ]},
-{scene:"영우와 걷다가 예상 못한 로컬 마켓을 발견했어요!",
- text:"지수는 어떻게 할래?",
+{text:"예상 못한 로컬 마켓 발견!\n지수는 어떻게 할래?",
  opts:[
   {e:"🎉",t:"일정 바꿔서라도 구경하자!",s:[2,0,0,3]},
   {e:"🤔",t:"시간 되면 잠깐 들러볼까?",s:[1,0,1,1]},
   {e:"📸",t:"사진만 찍고 원래 일정으로 가자",s:[1,0,3,0]},
   {e:"💕",t:"영우가 가고 싶으면 가자~",s:[0,0,1,0]}
 ]},
-{scene:"마지막 주말(8/15-16)! 시드니에서의 마지막 주말이에요.",
- text:"영우와 어떻게 보내고 싶어?",
+{text:"마지막 주말!\n영우와 어떻게 보내고 싶어?",
  opts:[
   {e:"🧳",t:"못 가본 곳 마지막으로 다 가자!",s:[3,1,0,3]},
   {e:"🌅",t:"오페라하우스에서 둘이 마지막 사진 찍자",s:[1,0,1,0]},
@@ -539,7 +573,7 @@ function bellSVG(v,mx,col){
 <line x1="${x}" y1="10" x2="${x}" y2="72" stroke="${col}" stroke-width="2.5" stroke-linecap="round"/>
 <circle cx="${x}" cy="72" r="4.5" fill="${col}"/>
 <text x="20" y="84" fill="#4D5F73" font-size="10" font-family="Pretendard,sans-serif">0</text>
-<text x="268" y="84" fill="#4D5F73" font-size="10" font-family="Pretendard,sans-serif">${mx}</text>
+<text x="264" y="84" fill="#4D5F73" font-size="10" font-family="Pretendard,sans-serif">100</text>
 </svg>`;
 }
 
@@ -585,7 +619,7 @@ function renderCal(){
 }
 
 // ─── STATE ──────────────────────────────────────────────────────
-let cur=0,ans=[],rCode='',rS={E:0,N:0,J:0,A:0};
+let cur=0,ans=[],rCode='',rS={E:0,N:0,J:0,A:0},sliding=false;
 
 function show(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
@@ -600,8 +634,7 @@ function renderQ(){
   const q=Qs[cur],n=cur+1;
   document.getElementById('cnt').textContent=`${n} / 10`;
   document.getElementById('qn').textContent=`Q.${String(n).padStart(2,'0')}`;
-  document.getElementById('qsc').innerHTML=q.scene.replace(/지수/g,'<span class="hl">지수</span>');
-  document.getElementById('qt').innerHTML=q.text.replace(/지수/g,'<span class="hl">지수</span>');
+  document.getElementById('qt').innerHTML=q.text.replace(/지수/g,'<span class="hl">지수</span>').replace(/\n/g,'<br>');
   document.getElementById('pg').style.width=`${n*10}%`;
   document.getElementById('als').innerHTML=q.opts.map((o,i)=>
     `<button class="a-btn" onclick="answer(${i})"><span class="a-em">${o.e}</span><span>${o.t}</span></button>`
@@ -609,12 +642,34 @@ function renderQ(){
 }
 
 function answer(i){
+  if(sliding) return;
   const s=Qs[cur].opts[i].s;
   ans.push({E:s[0],N:s[1],J:s[2],A:s[3]});
-  if(cur<9){cur++;renderQ();}else finish();
+  if(cur<9){
+    sliding=true;
+    const inner=document.getElementById('qin');
+    inner.style.animation='slideOutL .2s ease forwards';
+    setTimeout(()=>{
+      cur++;renderQ();
+      inner.style.animation='slideInR .25s ease forwards';
+      setTimeout(()=>{sliding=false;},250);
+    },200);
+  }else finish();
 }
 
-function prevQ(){if(!cur){show('si');return;}ans.pop();cur--;renderQ();}
+function prevQ(){
+  if(sliding) return;
+  if(!cur){show('si');return;}
+  ans.pop();
+  sliding=true;
+  const inner=document.getElementById('qin');
+  inner.style.animation='slideOutR .2s ease forwards';
+  setTimeout(()=>{
+    cur--;renderQ();
+    inner.style.animation='slideInL .25s ease forwards';
+    setTimeout(()=>{sliding=false;},250);
+  },200);
+}
 
 function finish(){
   show('sl');
@@ -639,18 +694,17 @@ function buildR(s){
   }).join('');
 
   const axes=[
-    {lb:'활동 점수',v:s.E,m:mE,c:'#E8741E',L:'활동',R:'감성'},
-    {lb:'자연 점수',v:s.N,m:mN,c:'#4ADE80',L:'자연',R:'도시'},
-    {lb:'계획 점수',v:s.J,m:mJ,c:'#60A5FA',L:'계획',R:'즉흥'},
-    {lb:'모험 점수',v:s.A,m:mA,c:'#A78BFA',L:'모험',R:'안정'}
+    {lb:'활동 점수',v:Math.round(s.E/mE*100),m:100,c:'#E8741E',L:'활동',R:'감성'},
+    {lb:'자연 점수',v:Math.round(s.N/mN*100),m:100,c:'#4ADE80',L:'자연',R:'도시'},
+    {lb:'계획 점수',v:Math.round(s.J/mJ*100),m:100,c:'#60A5FA',L:'계획',R:'즉흥'},
+    {lb:'모험 점수',v:Math.round(s.A/mA*100),m:100,c:'#A78BFA',L:'모험',R:'안정'}
   ];
   const ss=document.getElementById('ss');
-  ss.innerHTML='<div class="sc-tt">당신의 여행 점수 위치</div><div class="sc-ln"></div>'+axes.map(a=>{
-    const pct=Math.round(a.v/a.m*100);
-    const hi=pct>=45;
+  ss.innerHTML='<div class="sc-tt">당신의 여행 점수</div><div class="sc-ln"></div>'+axes.map(a=>{
+    const hi=a.v>=45;
     return `<div class="sc-item">
 <div class="sc-lb">${a.lb}</div>
-<div class="sc-num" style="color:${a.c}">${a.v}<span style="font-size:16px;color:var(--text3)">/${a.m}</span></div>
+<div class="sc-num" style="color:${a.c}">${a.v}<span style="font-size:16px;color:var(--text3)"> / 100</span></div>
 <div class="sc-pct">${a.L} ${hi?'↑':'↓'} · ${a.R} ${hi?'↓':'↑'}</div>
 <div class="bell-w">${bellSVG(a.v,a.m,a.c)}</div>
 </div>`;
@@ -701,9 +755,12 @@ function swWk(i){curW=i;document.querySelectorAll('.w-tb').forEach((t,j)=>t.clas
 function renderWk(i){
   const w=itiData[i];
   const wPh=[PH.opera,PH.bluemtn,PH.bondi,PH.opera];
-  const mk=items=>items.map(it=>`
+  const mk=items=>items.map(it=>{
+    const img=plImg(it.p,it.d);
+    return `
 <div class="tl"><div class="tl-tc"><div class="tl-tm">${it.t}</div></div>
-<div class="tl-cd"><div class="tl-ic">${it.i}</div><div class="tl-pl">${it.p}</div><div class="tl-ds">${it.d}</div>${it.m?'<span class="tl-ms">필수 코스</span>':''}</div></div>`).join('');
+<div class="tl-cd"><img class="tl-img" src="${img}" alt="${it.p}" loading="lazy" onerror="this.style.display='none'"><div class="tl-ic">${it.i}</div><div class="tl-pl">${it.p}</div><div class="tl-ds">${it.d}</div>${it.m?'<span class="tl-ms">필수 코스</span>':''}</div></div>`;
+  }).join('');
 
   document.getElementById('ibd').innerHTML=`
 <div style="animation:su .4s cubic-bezier(.2,.8,.2,1)">
