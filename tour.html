@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>시드니 여행 유형 분석</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<script type="module" src="https://unpkg.com/@splinetool/viewer@1.9.82/build/spline-viewer.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
@@ -27,7 +28,9 @@ body{background:var(--bg);color:var(--text);font-family:'Pretendard',-apple-syst
 
 /* ── INTRO ── */
 .intro{align-items:center;justify-content:center;padding:60px 24px;text-align:center;min-height:100vh}
-.orb{width:150px;height:150px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#d8dce6,#adb6c6 40%,#7d899e 70%,#505c70);box-shadow:0 0 60px rgba(200,210,230,0.06),inset 0 -4px 12px rgba(0,0,0,0.35);margin:0 auto 44px;animation:fl 4s ease-in-out infinite}
+.orb{width:180px;height:180px;border-radius:50%;margin:0 auto 44px;overflow:hidden;position:relative;box-shadow:0 0 60px rgba(232,116,30,0.15),0 0 120px rgba(232,116,30,0.06)}
+.orb spline-viewer{width:100%;height:100%;display:block;border-radius:50%;--spline-viewer-background:transparent}
+.orb::after{content:'';position:absolute;inset:0;border-radius:50%;box-shadow:inset 0 0 30px rgba(15,25,35,0.6);pointer-events:none;z-index:1}
 .intro-ln{height:2px;background:var(--text3);margin:0 auto;border-radius:2px}
 .intro-ln.s{width:56px;margin-bottom:24px}
 .intro-ln.l{width:110px;margin-top:24px;margin-bottom:36px}
@@ -174,7 +177,7 @@ body{background:var(--bg);color:var(--text);font-family:'Pretendard',-apple-syst
 
 <!-- INTRO -->
 <div class="screen intro active" id="si">
-  <div class="orb"></div>
+  <div class="orb"><spline-viewer url="https://prod.spline.design/Tpu1EcgeOF2iqGYJ/scene.splinecode" loading-anim-type="none" hint="false" events-target="none"></spline-viewer></div>
   <div class="intro-ln s"></div>
   <h1>시드니 여행 유형<br>심층 분석 보고서</h1>
   <div class="intro-ln l"></div>
