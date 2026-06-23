@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>나의 시드니 여행 유형 테스트</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --navy:#0D1B2A;--navy2:#162136;--navy3:#1E2E45;
+  --white:#fff;--gray:rgba(255,255,255,.5);--gray2:rgba(255,255,255,.15);
+  --blue:#5B8DEF;--gold:#F0A500;--green:#4ECDC4;
+}
+body{background:var(--navy);color:var(--white);font-family:'Pretendard',-apple-system,sans-serif;min-height:100vh;overflow-x:hidden}
+.screen{display:none;min-height:100vh;flex-direction:column}
+.screen.active{display:flex}
+
+/* INTRO */
+.intro{align-items:center;justify-content:center;padding:48px 24px;text-align:center;gap:0}
+.orb{width:120px;height:120px;background:radial-gradient(circle at 35% 35%,rgba(255,255,255,.95),rgba(180,210,255,.5));border-radius:50%;margin:0 auto 36px;box-shadow:0 20px 60px rgba(91,141,239,.4)}
+.intro h1{font-size:26px;font-weight:800;line-height:1.35;margin-bottom:10px}
+.intro p{font-size:14px;color:var(--gray);line-height:1.65;margin-bottom:40px}
+.tap-label{font-size:11px;color:var(--gray);letter-spacing:2.5px;text-transform:uppercase;margin-bottom:60px;animation:fadePulse 2s infinite}
+@keyframes fadePulse{0%,100%{opacity:.4}50%{opacity:1}}
+.start-btn{background:var(--white);color:var(--navy);border:none;border-radius:100px;padding:18px 52px;font-size:17px;font-weight:700;cursor:pointer;font-family:'Pretendard',sans-serif;flex-shrink:0}
+.intro-sub{font-size:12px;color:var(--gray);margin-top:24px}
+
+/* QUESTION */
+.q-header{display:flex;justify-content:space-between;align-items:center;padding:20px 24px 0}
+.back-btn{background:none;border:none;color:var(--gray);font-size:14px;cursor:pointer;font-family:'Pretendard',sans-serif;padding:8px 0}
+.counter{color:var(--gray);font-size:13px}
+.prog-wrap{height:2px;background:var(--gray2);margin:16px 24px 0;border-radius:2px}
+.prog-bar{height:100%;background:var(--white);border-radius:2px;transition:width .4s ease}
+.q-body{flex:1;display:flex;flex-direction:column;justify-content:center;padding:32px 24px 40px}
+.q-num{font-size:11px;color:var(--blue);font-weight:700;letter-spacing:1.5px;margin-bottom:14px}
+.q-scene{font-size:12px;color:var(--gray);line-height:1.6;padding:10px 14px;background:var(--gray2);border-radius:12px;margin-bottom:16px}
+.q-text{font-size:21px;font-weight:700;line-height:1.45;margin-bottom:36px}
+.ans-list{display:flex;flex-direction:column;gap:10px}
+.ans-btn{background:var(--navy2);border:1px solid var(--gray2);border-radius:16px;padding:16px 18px;color:var(--white);font-size:15px;font-weight:500;text-align:left;cursor:pointer;font-family:'Pretendard',sans-serif;display:flex;align-items:center;gap:12px;transition:transform .1s,background .15s,border-color .15s}
+.ans-btn:active{background:var(--white);color:var(--navy);border-color:var(--white);transform:scale(.98)}
+.ans-em{font-size:20px;flex-shrink:0}
+
+/* LOADING */
+.loading{align-items:center;justify-content:center;padding:40px 24px;text-align:center}
+.spin{width:72px;height:72px;border:3px solid var(--gray2);border-top-color:var(--white);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 36px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading h2{font-size:22px;font-weight:700;margin-bottom:10px}
+.loading p{font-size:14px;color:var(--gray);line-height:1.6}
+
+/* RESULT */
+#result-screen{display:none;position:relative}
+#result-screen.active{display:block}
+
+.share-fab{position:fixed;top:20px;right:16px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);backdrop-filter:blur(12px);border-radius:100px;color:var(--white);padding:10px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Pretendard',sans-serif;z-index:100;display:flex;align-items:center;gap:6px}
+
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 24px 60px;text-align:center;position:relative;overflow:hidden}
+.hero-bg{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 30%,rgba(91,141,239,.2) 0%,transparent 70%);pointer-events:none}
+.type-badge{font-size:11px;color:var(--blue);letter-spacing:2.5px;font-weight:700;margin-bottom:16px}
+.type-emoji{font-size:80px;margin-bottom:20px;animation:emojiFloat 3s ease-in-out infinite}
+@keyframes emojiFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.type-name{font-size:34px;font-weight:900;line-height:1.2;margin-bottom:14px}
+.type-tagline{font-size:15px;color:var(--gray);line-height:1.7;max-width:290px;margin:0 auto 36px}
+.score-track{width:240px;height:6px;background:var(--gray2);border-radius:6px;overflow:hidden}
+.score-fill{height:100%;background:linear-gradient(90deg,var(--blue),#a8d8ff);border-radius:6px;transition:width 1.2s ease .3s}
+.score-labels{width:240px;display:flex;justify-content:space-between;margin-top:8px;font-size:11px;color:var(--gray)}
+.scroll-hint{position:absolute;bottom:28px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--gray);text-align:center}
+.bounce{display:block;font-size:18px;margin-top:4px;animation:bounce 1.5s infinite}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+
+.rpt-sec{padding:56px 24px;border-top:1px solid var(--gray2)}
+.sec-label{font-size:10px;color:var(--blue);font-weight:700;letter-spacing:2px;margin-bottom:8px}
+.sec-title{font-size:23px;font-weight:800;line-height:1.3;margin-bottom:24px}
+.trait-card{background:var(--navy2);border-radius:20px;padding:20px;margin-bottom:12px}
+.trait-em{font-size:26px;margin-bottom:8px}
+.trait-t{font-size:16px;font-weight:700;margin-bottom:6px}
+.trait-d{font-size:14px;color:var(--gray);line-height:1.65}
+.warn-card{background:linear-gradient(135deg,rgba(240,165,0,.12),rgba(240,165,0,.05));border:1px solid rgba(240,165,0,.2);border-radius:20px;padding:20px;margin-bottom:12px}
+.tip-card{background:linear-gradient(135deg,rgba(78,205,196,.12),rgba(78,205,196,.05));border:1px solid rgba(78,205,196,.2);border-radius:20px;padding:20px;margin-bottom:12px}
+
+/* SPOTS */
+.spot-card{background:var(--navy2);border-radius:24px;overflow:hidden;margin-bottom:20px}
+.spot-img-wrap{width:100%;height:200px;position:relative;overflow:hidden}
+.spot-img{width:100%;height:100%;object-fit:cover;display:block}
+.spot-img-fallback{width:100%;height:100%;display:none;align-items:center;justify-content:center;font-size:64px;background:var(--navy3)}
+.spot-map-wrap{width:100%;height:160px;overflow:hidden;position:relative}
+.spot-map-wrap iframe{width:100%;height:100%;border:none;display:block}
+.spot-body{padding:20px}
+.spot-n{font-size:10px;color:var(--blue);font-weight:700;letter-spacing:1.5px;margin-bottom:4px}
+.spot-name{font-size:20px;font-weight:800;margin-bottom:4px}
+.spot-cat{font-size:12px;color:var(--gray);margin-bottom:12px}
+.spot-why{font-size:14px;color:rgba(255,255,255,.82);line-height:1.68;margin-bottom:14px}
+.spot-meta{display:flex;flex-direction:column;gap:5px;margin-bottom:16px}
+.spot-row{display:flex;gap:8px;font-size:13px}
+.spot-lbl{color:var(--gray);min-width:52px}
+.map-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(91,141,239,.18);color:var(--blue);border:1px solid rgba(91,141,239,.35);border-radius:100px;padding:10px 18px;font-size:13px;font-weight:600;text-decoration:none;cursor:pointer;font-family:'Pretendard',sans-serif}
+
+/* ITINERARY */
+.iti-sec{padding:56px 24px 80px;border-top:1px solid var(--gray2)}
+.day-blk{margin-bottom:40px}
+.day-hd{font-size:18px;font-weight:800;color:var(--gold);margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.tl-item{display:flex;gap:14px;margin-bottom:20px;position:relative}
+.tl-item:not(:last-child)::before{content:'';position:absolute;left:19px;top:40px;bottom:-12px;width:1px;background:var(--gray2)}
+.tl-dot{width:40px;height:40px;background:var(--navy2);border:2px solid var(--gray2);border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:17px}
+.tl-body{flex:1;padding-top:8px}
+.tl-time{font-size:11px;color:var(--gray);font-weight:600;letter-spacing:.5px;margin-bottom:2px}
+.tl-place{font-size:15px;font-weight:700;margin-bottom:3px}
+.tl-desc{font-size:13px;color:var(--gray);line-height:1.55}
+
+/* TOAST */
+.toast{position:fixed;bottom:32px;left:50%;transform:translateX(-50%) translateY(16px);background:rgba(255,255,255,.95);color:var(--navy);padding:13px 24px;border-radius:100px;font-size:14px;font-weight:600;white-space:nowrap;opacity:0;transition:all .3s;pointer-events:none;z-index:999}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast">링크가 복사되었어요 ✓</div>
+
+<!-- ① INTRO -->
+<div class="screen intro active" id="screen-intro">
+  <div class="orb"></div>
+  <h1>서영우님의<br>시드니 여행 유형<br>심층 분석 보고서</h1>
+  <p>10가지 시드니 상황 속<br>나라면 어떻게 할까요?</p>
+  <div class="tap-label">TAP TO START</div>
+  <button class="start-btn" onclick="startTest()">테스트 시작하기</button>
+  <span class="intro-sub">소요 시간 약 2분</span>
+</div>
+
+<!-- ② QUESTION -->
+<div class="screen" id="screen-question">
+  <div class="q-header">
+    <button class="back-btn" onclick="prevQ()">← 뒤로</button>
+    <span class="counter" id="counter">1 / 10</span>
+  </div>
+  <div class="prog-wrap"><div class="prog-bar" id="prog" style="width:10%"></div></div>
+  <div class="q-body">
+    <div class="q-num" id="q-num">Q.01</div>
+    <div class="q-scene" id="q-scene"></div>
+    <div class="q-text" id="q-text"></div>
+    <div class="ans-list" id="ans-list"></div>
+  </div>
+</div>
+
+<!-- ③ LOADING -->
+<div class="screen loading" id="screen-loading">
+  <div class="spin"></div>
+  <h2>분석 중...</h2>
+  <p>나만의 시드니 여행 유형을<br>찾고 있어요</p>
+</div>
+
+<!-- ④ RESULT -->
+<div id="result-screen">
+  <button class="share-fab" onclick="shareResult()">↑ 공유하기</button>
+  <div class="hero">
+    <div class="hero-bg"></div>
+    <div class="type-badge" id="r-badge">MY TYPE</div>
+    <div class="type-emoji" id="r-emoji"></div>
+    <div class="type-name" id="r-name"></div>
+    <div class="type-tagline" id="r-tagline"></div>
+    <div class="score-track"><div class="score-fill" id="r-score" style="width:0%"></div></div>
+    <div class="score-labels"><span>감성 힐링</span><span>액티브 탐험</span></div>
+    <div class="scroll-hint">더 알아보기<span class="bounce">↓</span></div>
+  </div>
+  <div class="rpt-sec"><div class="sec-label">REPORT 01</div><div class="sec-title" id="r1t"></div><div id="r1c"></div></div>
+  <div class="rpt-sec"><div class="sec-label">REPORT 02</div><div class="sec-title" id="r2t"></div><div id="r2c"></div></div>
+  <div class="rpt-sec"><div class="sec-label">REPORT 03</div><div class="sec-title" id="r3t"></div><div id="r3c"></div></div>
+  <div class="rpt-sec"><div class="sec-label">REPORT 04</div><div class="sec-title" id="r4t"></div><div id="r4c"></div></div>
+  <div class="rpt-sec"><div class="sec-label">PLACES FOR YOU</div><div class="sec-title">추천 여행지 6</div><div id="spots"></div></div>
+  <div class="iti-sec"><div class="sec-label">WEEKEND PLAN</div><div class="sec-title">나를 위한 주말 일정표</div><div id="iti"></div></div>
+</div>
+
+<script>
+// ─── DATA ───────────────────────────────────────────────────────
+const Qs = [
+  {
+    scene:"첫 날 아침, 비행기에서 막 내렸습니다. 피로가 남아있지만 시드니가 눈앞에 있습니다.",
+    text:"피곤해도 짐 던져놓고 바로 유명한 곳들 다 돌아봐야 직성이 풀린다.",
+    opts:[
+      {e:"🔥",t:"완전 내 얘기!",s:3},
+      {e:"😄",t:"대체로 그런 편",s:2},
+      {e:"😅",t:"좀 쉬고 나서 나가는 편",s:1},
+      {e:"😴",t:"첫날은 그냥 쉬어야 해",s:0}
+    ]
+  },
+  {
+    scene:"날씨 맑은 주말, 본다이~쿠지 코스털 워크(6km, 약 2시간 반)를 제안받았습니다.",
+    text:"혼자서도 6km 코스털 워크, 사진 찍으면서 끝까지 완주할 수 있다.",
+    opts:[
+      {e:"🚶",t:"당연하지, 가즈아!",s:3},
+      {e:"😊",t:"할 수 있을 것 같아",s:2},
+      {e:"🤔",t:"중간쯤 가서 쉬고 싶어질 것 같아",s:1},
+      {e:"🛋️",t:"솔직히 좀 힘들 것 같아",s:0}
+    ]
+  },
+  {
+    scene:"시드니 겨울은 오후 5시 일몰. 일몰 명소 Mrs Macquarie's Chair까지는 15~20분 걸어가야 합니다.",
+    text:"일몰 포토스팟까지 걸어가는 게 전혀 귀찮지 않다.",
+    opts:[
+      {e:"📸",t:"무조건 걸어가야지!",s:3},
+      {e:"🙂",t:"기분 따라 다르지만 대체로 가",s:2},
+      {e:"😐",t:"발품 파는 건 좀...",s:1},
+      {e:"☕",t:"뷰 좋은 카페에서 보면 되지",s:0}
+    ]
+  },
+  {
+    scene:"블루마운틴 당일치기(왕복 5시간), 페더데일 동물원, 본다이 코스털 워크. 같은 주말에 다 하고 싶습니다.",
+    text:"이 세 곳을 같은 주말에 다 소화하는 일정에 도전하고 싶다.",
+    opts:[
+      {e:"💪",t:"하고 싶어 죽겠어!",s:3},
+      {e:"😤",t:"좀 빡세도 도전해볼 것 같아",s:2},
+      {e:"😓",t:"하나는 다음 주말로 미룰 것 같아",s:1},
+      {e:"🌿",t:"하나씩 천천히 여유롭게가 나야",s:0}
+    ]
+  },
+  {
+    scene:"겨울 시드니, 새벽 6시 48분 일출이 있습니다. 본다이 비치의 일출이 유명합니다.",
+    text:"일출을 보기 위해 새벽 5시 반에 일어나는 것도 가능하다.",
+    opts:[
+      {e:"⏰",t:"알람 맞춰놓지 뭐!",s:3},
+      {e:"🌅",t:"분위기 따라 해볼 수 있어",s:2},
+      {e:"😪",t:"아마 못 일어날 것 같아",s:1},
+      {e:"🛌",t:"여행에서 새벽 기상은 패스",s:0}
+    ]
+  },
+  {
+    scene:"오전에 타롱가 동물원(페리 12분), 오후에 맨리 비치(페리 환승). 하루에 두 곳을 연결하는 일정입니다.",
+    text:"타롱가 동물원과 맨리를 같은 날 페리로 연결해서 다 가고 싶다.",
+    opts:[
+      {e:"🚢",t:"당연하지!",s:3},
+      {e:"😊",t:"시간 되면 그럴 것 같아",s:2},
+      {e:"🦘",t:"한 곳에 더 집중하고 싶어",s:1},
+      {e:"🧘",t:"두 곳을 하루에? 좀 빡빡할 것 같아",s:0}
+    ]
+  },
+  {
+    scene:"여행 막바지, 돌아보니 하루를 온전히 카페에서 보낸 날이 있었습니다.",
+    text:"'많이 돌아다녔다'는 성취감이 '충분히 쉬었다'는 여유로움보다 중요하다.",
+    opts:[
+      {e:"🏃",t:"당연히 성취감이지!",s:3},
+      {e:"😄",t:"조금 더 성취감에 가까워",s:2},
+      {e:"😌",t:"여유로움도 여행이지",s:1},
+      {e:"🌸",t:"푹 쉬는 게 진짜 여행",s:0}
+    ]
+  },
+  {
+    scene:"주말 아침, 시드니에 비가 왔습니다. 오늘 계획은 본다이 코스털 워크였습니다.",
+    text:"비가 와도 방수 자켓 입고 코스털 워크를 강행한다.",
+    opts:[
+      {e:"🌧️",t:"비 맞으면 더 감성적이야!",s:3},
+      {e:"🧥",t:"작은 비면 가는 편",s:2},
+      {e:"🤷",t:"좀 세게 오면 실내로 전환",s:1},
+      {e:"☕",t:"비 오면 카페 탐방이 최고",s:0}
+    ]
+  },
+  {
+    scene:"하버브릿지 정상 등반 BridgeClimb. 소요 3.5시간, 비용 약 26만원입니다.",
+    text:"BridgeClimb은 꼭 해보고 싶다.",
+    opts:[
+      {e:"🧗",t:"이미 마음속에 예약함",s:3},
+      {e:"🙌",t:"기회 되면 해볼 것 같아",s:2},
+      {e:"💸",t:"돈이 좀 아깝긴 한데...",s:1},
+      {e:"🔭",t:"아래에서 올려다봐도 충분해",s:0}
+    ]
+  },
+  {
+    scene:"여행 마지막 날, 비행기 전까지 반나절이 남았습니다.",
+    text:"공항 가기 전까지 캐리어 끌고라도 최대한 많은 곳을 다니고 싶다.",
+    opts:[
+      {e:"🧳",t:"캐리어 끌고도 명소 다 다녀!",s:3},
+      {e:"😄",t:"여유 있으면 한 군데 더 가는 편",s:2},
+      {e:"🛍️",t:"마지막 날은 여유롭게 쇼핑 정도만",s:1},
+      {e:"🛫",t:"일찍 공항 가서 라운지에서 쉬고 싶어",s:0}
+    ]
+  }
+];
+
+// ─── 4 TYPES ────────────────────────────────────────────────────
+const TYPES = [
+  // 0: 감성 힐링러 (0-9)
+  {
+    badge:"SENSORY HEALER",
+    emoji:"🌸",
+    name:"감성 힐링러",
+    tagline:"커피 한 잔, 뷰 하나면 충분한\n감성 여행자",
+    scorePct:15,
+    r1t:"나의 여행 성격은 이래요",
+    r1:[
+      {e:"☕",t:"카페가 곧 관광지",d:"관광지보다 감성 넘치는 로컬 카페 한 군데를 찾는 게 더 설레는 타입이에요. 시드니의 골목골목 숨은 카페를 발견하는 재미가 남다릅니다."},
+      {e:"📸",t:"빛과 각도에 진심",d:"사진이 예쁘게 나오면 그날은 대성공! 타이밍과 조명을 기다릴 줄 알고, 그 인내심이 최고의 한 장을 만들어냅니다."},
+      {e:"🌿",t:"여유가 곧 에너지",d:"빡빡한 일정보다 한 곳을 느리고 깊게 즐기는 걸 선호해요. 이 여유로움이 당신의 시드니 여행을 특별하게 만들어줍니다."}
+    ],
+    r2t:"이런 점이 당신의 강점이에요",
+    r2:[
+      {e:"✨",t:"지치지 않는 여행",d:"무리한 일정이 없으니 여행 내내 컨디션이 좋아요. 마지막 날까지 여유 있는 표정으로 돌아다닐 수 있는 사람이에요."},
+      {e:"🔍",t:"남들이 모르는 것을 발견",d:"유명 관광지보다 골목, 창문 너머 빛, 우연히 마주친 벽화 같은 것을 기억해요. 당신의 시드니 여행은 '아는 사람만 아는' 장면들로 가득합니다."}
+    ],
+    r3t:"이런 점은 주의해요",
+    r3:[
+      {e:"⏰",t:"카페에서 시간이 쏜살같이",d:"감성 카페에서 오래 머물다 보면 정작 가고 싶었던 명소를 못 가는 날이 생길 수 있어요. 카페 다음 목적지를 미리 정해두면 완벽!"},
+      {e:"🌅",t:"겨울 일몰은 오후 5시",d:"시드니 7~8월은 오후 5시면 해가 집니다. 일몰 스팟은 늦어도 4시 반에 출발해야 해요. 카페에서 늦게 나오면 놓칠 수 있어요."}
+    ],
+    r4t:"이번 겨울, 이것만큼은 꼭!",
+    r4:[
+      {e:"🌸",t:"The Grounds 주말 브런치",d:"더 그라운즈 오브 알렉산드리아(Green Square역 도보 10분)는 세계에서 가장 인스타그램된 카페 중 하나. 주말 아침 일찍 가면 덜 붐벼요."},
+      {e:"🎭",t:"Badu Gili 무료 야외 투영",d:"오페라하우스 외벽에 매일 저녁 Aboriginal 아트를 투영하는 Badu Gili 공연(7분)이 무료로 열려요. 겨울엔 어둠이 일찍 와 더 선명하게 볼 수 있어요."}
+    ],
+    spots:[
+      {
+        n:"The Grounds of Alexandria",
+        cat:"감성 카페 / 포토스팟",
+        why:"세계에서 가장 인스타그램된 카페라 불리는 곳. 꽃 아치, 정원, 분수, 귀여운 농장 동물(돼지 Kevin Bacon)까지. 주말 브런치 + 포토 세션으로 완벽한 감성 힐링러 성지예요.",
+        fee:"입장 무료, 음식 주문",
+        hours:"토·일 7:00~16:00",
+        transport:"센트럴→Green Square T8 1정거장, 도보 10분",
+        img:"https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/The_Grounds_of_Alexandria.jpg/640px-The_Grounds_of_Alexandria.jpg",
+        imgFallback:"🌺",
+        imgBg:"linear-gradient(135deg,#2d4a2d,#1a3a1a)",
+        mapQ:"The+Grounds+of+Alexandria+Sydney"
+      },
+      {
+        n:"Mrs Macquarie's Chair",
+        cat:"일몰 포토스팟 / 무료",
+        why:"오페라하우스와 하버브릿지를 한 프레임에 담을 수 있는 시드니 최고의 일몰 명소. 무료이고 Royal Botanic Garden 산책로와 연결되어 여유롭게 걸어갈 수 있어요.",
+        fee:"무료",
+        hours:"24시간 (일몰 약 17:00)",
+        transport:"St James역 도보 20분 또는 Circular Quay 도보 25분",
+        img:"",
+        imgFallback:"🌅",
+        imgBg:"linear-gradient(135deg,#1a2a4a,#2a1a3a)",
+        mapQ:"Mrs+Macquaries+Chair+Sydney"
+      },
+      {
+        n:"Paddington Markets",
+        cat:"감성 마켓 / 토요일",
+        why:"1973년부터 이어온 시드니 대표 마켓. 신진 디자이너 주얼리, 빈티지 의류, 핸드메이드 아이템이 가득. 빅토리아풍 테라스 거리를 걷는 것 자체가 사진 명소예요.",
+        fee:"무료 입장",
+        hours:"토요일 10:00~16:00",
+        transport:"타운홀역→380번 버스로 Oxford St",
+        img:"",
+        imgFallback:"🛍️",
+        imgBg:"linear-gradient(135deg,#3a2a1a,#2a1a0a)",
+        mapQ:"Paddington+Markets+Sydney"
+      },
+      {
+        n:"QVB (Queen Victoria Building)",
+        cat:"쇼핑 / 건축 명소",
+        why:"1898년 빅토리아 양식 건물에 들어선 럭셔리 쇼핑몰. 스테인드글라스 천장과 웅장한 아케이드가 시드니 최고의 건축 인스타 명소예요. 입장 무료라 부담 없어요.",
+        fee:"무료 입장",
+        hours:"월~수·금·토 9:00~18:00, 목 9:00~21:00, 일 11:00~17:00",
+        transport:"Town Hall역 직결",
+        img:"https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/QVB_Sydney_Interior.jpg/640px-QVB_Sydney_Interior.jpg",
+        imgFallback:"🏛️",
+        imgBg:"linear-gradient(135deg,#2a2000,#1a1500)",
+        mapQ:"Queen+Victoria+Building+Sydney"
+      },
+      {
+        n:"Newtown + Black Star Pastry",
+        cat:"힙한 동네 / 디저트",
+        why:"King St 벽화 골목, 빈티지샵, 인디 카페가 밀집한 시드니 가장 힙한 동네. 뉴욕타임스가 '호주에서 가장 인스타그램된 디저트'로 선정한 딸기수박케이크(Black Star Pastry)가 여기 있어요.",
+        fee:"케이크 약 $12~15",
+        hours:"Black Star Pastry: 수~일 10:00~17:00",
+        transport:"센트럴→T2 기차로 Newtown역",
+        img:"",
+        imgFallback:"🍰",
+        imgBg:"linear-gradient(135deg,#3a1a2a,#2a0a1a)",
+        mapQ:"Black+Star+Pastry+Newtown+Sydney"
+      },
+      {
+        n:"Circular Quay & Badu Gili",
+        cat:"야경 / 무료 공연",
+        why:"오페라하우스 외벽에 매일 저녁 상영되는 무료 Badu Gili 투영 쇼(7분). 겨울에는 어둠이 일찍 찾아와 더 선명하고 극적인 야경을 감상할 수 있어요.",
+        fee:"무료",
+        hours:"일몰 후 매일 저녁 상영",
+        transport:"Circular Quay역 도보 5분",
+        img:"https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/Sydney_Australia._%2821339175489%29.jpg/640px-Sydney_Australia._%2821339175489%29.jpg",
+        imgFallback:"🌃",
+        imgBg:"linear-gradient(135deg,#0a1828,#1a0a2a)",
+        mapQ:"Sydney+Opera+House+Circular+Quay"
+      }
+    ],
+    iti:[
+      {
+        day:"주말 1일차 — 감성 충전의 날",
+        icon:"🌸",
+        items:[
+          {time:"08:30",icon:"🌺",place:"The Grounds of Alexandria",desc:"주말 브런치. 정원 포토 세션. 일찍 가면 덜 붐벼요."},
+          {time:"11:00",icon:"🚇",place:"Green Square → Town Hall 이동",desc:"T8 기차로 센트럴 경유, 약 15분"},
+          {time:"11:30",icon:"🏛️",place:"QVB & Pitt St Mall",desc:"빅토리아 아케이드 건축 감상 + 윈도우 쇼핑. 점심은 주변 카페에서."},
+          {time:"14:30",icon:"🌿",place:"Royal Botanic Garden 산책",desc:"St James역 출발. 무료 정원 산책로로 Mrs Macquarie's Chair까지 걸어가요."},
+          {time:"16:30",icon:"🌅",place:"Mrs Macquarie's Chair",desc:"오페라하우스+하버브릿지 일몰 사진 타임. 17시 전 도착 필수!"},
+          {time:"18:00",icon:"🌃",place:"Circular Quay & Badu Gili",desc:"오페라하우스 외벽 무료 투영 쇼 관람. Opera Bar에서 칵테일 한 잔."}
+        ]
+      },
+      {
+        day:"주말 2일차 — 동네 탐방의 날",
+        icon:"🛍️",
+        items:[
+          {time:"10:00",icon:"☕",place:"Surry Hills 브런치",desc:"bills의 리코타 핫케이크, Paramount Coffee Project 라떼. Central역 인근."},
+          {time:"11:30",icon:"🛍️",place:"Paddington Markets",desc:"토요일 한정 감성 마켓. 신진 디자이너 아이템 쇼핑. 10~16시."},
+          {time:"13:30",icon:"🎨",place:"Paddington 골목 탐방",desc:"Five Ways 교차로, 빅토리아풍 테라스하우스 골목 사진."},
+          {time:"15:00",icon:"🚇",place:"T2 기차로 Newtown 이동",desc:"약 15분"},
+          {time:"15:30",icon:"🍰",place:"Black Star Pastry + King St",desc:"딸기수박케이크 + King St 벽화 & 빈티지샵 탐방."},
+          {time:"18:00",icon:"🍜",place:"Newtown 저녁 식사",desc:"King St 인근 다양한 레스토랑. 여유롭게 마무리."}
+        ]
+      }
+    ]
+  },
+
+  // 1: 도시 문화 산책러 (10-16)
+  {
+    badge:"CITY CULTURE WALKER",
+    emoji:"🏙️",
+    name:"도시 문화 산책러",
+    tagline:"골목마다 이야기가 있는\n시드니 탐방가",
+    scorePct:43,
+    r1t:"나의 여행 성격은 이래요",
+    r1:[
+      {e:"🗺️",t:"걸어야 느껴지는 여행자",d:"지도보다 발이 먼저. 걷다가 생긴 예상 밖의 발견이 여행의 하이라이트예요. 시드니의 역사 거리, 마켓, 해안길이 당신을 기다리고 있어요."},
+      {e:"🎭",t:"문화·역사에 관심 있어",d:"유명 관광지의 '겉모습'보다 그 안에 담긴 이야기에 더 관심 있는 타입. 오페라하우스 가이드 투어, 더 록스의 역사 골목이 딱 맞아요."},
+      {e:"🍽️",t:"맛집 탐방도 여행이지",d:"여행지의 분위기를 음식으로 기억하는 타입. 로컬 마켓 음식부터 시그니처 레스토랑까지 고루 즐겨요."}
+    ],
+    r2t:"이런 점이 당신의 강점이에요",
+    r2:[
+      {e:"⚖️",t:"균형 잡힌 여행 속도",d:"무리하지도 너무 느리지도 않은 적절한 페이스. 하루에 2~3개 명소를 여유 있게 즐기는 황금 비율의 여행자예요."},
+      {e:"🎯",t:"핵심을 정확히 짚는다",d:"가야 할 곳과 안 가도 되는 곳을 구분하는 감각이 있어요. 시드니의 진짜 매력을 빠짐없이 경험하게 될 거예요."}
+    ],
+    r3t:"이런 점은 주의해요",
+    r3:[
+      {e:"📋",t:"마켓·투어 요일·시간 체크 필수",d:"The Rocks 마켓(토·일), Paddington(토), 오페라하우스 투어(매일이지만 사전 예매 권장). 요일 미스매치로 못 가는 경우가 흔해요."},
+      {e:"🚢",t:"페리 시간표 꼭 확인",d:"타롱가 동물원, 맨리 페리는 20~30분 간격이에요. 특히 2026년 7~8월 Circular Quay 6번 와프가 일부 기간 폐쇄되니 사전 확인 필수."}
+    ],
+    r4t:"이번 겨울, 이것만큼은 꼭!",
+    r4:[
+      {e:"🎭",t:"오페라하우스 가이드 투어",d:"외관만 보고 지나치는 사람이 많지만, 내부 투어(약 $48, 1시간)는 완전히 다른 경험이에요. 한국어 투어도 있어 편리합니다."},
+      {e:"🦭",t:"SEA LIFE + WILD LIFE 콤보",d:"겨울 비 오는 날의 완벽한 실내 대안. Big Ticket 콤보로 최대 60% 할인. 달링하버에 나란히 있어 이동이 편해요."}
+    ],
+    spots:[
+      {
+        n:"The Rocks & 더 록스 마켓",
+        cat:"역사 / 마켓 / 무료",
+        why:"시드니에서 가장 역사 깊은 구역. 자갈길, 19세기 건물, 주말 마켓이 함께 있어요. 오페라하우스와 하버브릿지를 동시에 볼 수 있는 최고의 위치이기도 해요.",
+        fee:"마켓 무료 입장",
+        hours:"마켓: 토·일 10:00~17:00",
+        transport:"Circular Quay역 도보 5분",
+        img:"",
+        imgFallback:"🏚️",
+        imgBg:"linear-gradient(135deg,#2a1a00,#3a2a00)",
+        mapQ:"The+Rocks+Sydney"
+      },
+      {
+        n:"시드니 오페라하우스 투어",
+        cat:"랜드마크 / 가이드 투어",
+        why:"외관만 찍고 가기엔 아까운 곳. 내부 투어를 하면 콘서트홀의 파이프 오르간, 공연장 뒷이야기까지 경험할 수 있어요. 매일 저녁 무료 Badu Gili 투영 쇼도 놓치지 마세요.",
+        fee:"투어 성인 $48 / 외관 무료",
+        hours:"투어 9:00~17:00 수시",
+        transport:"Circular Quay역 도보 5분",
+        img:"https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/Sydney_Australia._%2821339175489%29.jpg/640px-Sydney_Australia._%2821339175489%29.jpg",
+        imgFallback:"🎭",
+        imgBg:"linear-gradient(135deg,#0a1828,#1a2838)",
+        mapQ:"Sydney+Opera+House"
+      },
+      {
+        n:"Surry Hills & Newtown",
+        cat:"트렌디 동네 / 카페 / 벽화",
+        why:"시드니에서 가장 트렌디한 두 동네. 서리힐스는 스페셜티 카페·레스토랑, 뉴타운은 King St 벽화·빈티지샵이 가득. Black Star Pastry 딸기수박케이크는 필수예요.",
+        fee:"무료 탐방",
+        hours:"상시",
+        transport:"Central역 도보 또는 T2 기차 Newtown역",
+        img:"",
+        imgFallback:"🎨",
+        imgBg:"linear-gradient(135deg,#1a0a2a,#2a1a3a)",
+        mapQ:"Surry+Hills+Sydney"
+      },
+      {
+        n:"Darling Harbour",
+        cat:"야경 / 수족관 / 야외",
+        why:"시드니 중심의 워터프런트 엔터테인먼트 지구. 낮에는 SEA LIFE 아쿠아리움, 저녁에는 야경과 레스토랑. 비 오는 날 실내 대안으로도 완벽해요.",
+        fee:"야경·산책 무료 / SEA LIFE 성인 $39~",
+        hours:"상시 (SEA LIFE 9:30~17:00)",
+        transport:"Town Hall역 도보 10분",
+        img:"",
+        imgFallback:"🌉",
+        imgBg:"linear-gradient(135deg,#0a1a2a,#1a2a3a)",
+        mapQ:"Darling+Harbour+Sydney"
+      },
+      {
+        n:"Taronga Zoo",
+        cat:"동물원 / 페리 여행",
+        why:"페리 타고 12분이면 도착하는 환상적인 하버뷰 동물원. 코알라·기린·캥거루와 함께 뒤로 시드니 하버가 펼쳐지는 사진은 이곳에서만 찍을 수 있어요.",
+        fee:"성인 약 $51 (Zoo Express 콤보 ~$82)",
+        hours:"9:30~16:30 (5~8월)",
+        transport:"Circular Quay 4번 와프에서 페리 12분",
+        img:"",
+        imgFallback:"🦁",
+        imgBg:"linear-gradient(135deg,#1a2a0a,#0a1a0a)",
+        mapQ:"Taronga+Zoo+Sydney"
+      },
+      {
+        n:"Manly Beach & Ferry",
+        cat:"해변 / 페리 관광",
+        why:"서큘러키에서 페리 30분, 항구를 가로지르는 여정 자체가 볼거리. 맨리 비치 산책, 셸리비치까지 코스털 워크, 주말 마켓, 젤라또 카페까지. 페리 타는 경험이 시드니 여행의 하이라이트가 될 거예요.",
+        fee:"페리 Opal 적용 약 $10.20 편도",
+        hours:"페리 20~30분 간격 운항",
+        transport:"Circular Quay F1 페리",
+        img:"",
+        imgFallback:"🏄",
+        imgBg:"linear-gradient(135deg,#0a2a3a,#1a3a4a)",
+        mapQ:"Manly+Beach+Sydney"
+      }
+    ],
+    iti:[
+      {
+        day:"주말 1일차 — 하버 & 역사의 날",
+        icon:"🏙️",
+        items:[
+          {time:"09:00",icon:"🚢",place:"Circular Quay 도착",desc:"Opal 카드로 기차 이동. 하버 산책 시작."},
+          {time:"09:30",icon:"🏚️",place:"The Rocks 마켓 & 골목",desc:"토요일 마켓(10시 오픈) 기다리며 자갈길 역사 골목 먼저 탐방."},
+          {time:"11:00",icon:"🎭",place:"오페라하우스 가이드 투어",desc:"사전 예매 권장. 1시간 코스로 내부 콘서트홀까지. 한국어 투어 가능."},
+          {time:"13:00",icon:"🍽️",place:"Circular Quay 점심",desc:"Opera Bar 또는 주변 레스토랑에서 하버뷰 식사."},
+          {time:"14:30",icon:"🌿",place:"Royal Botanic Garden",desc:"오페라하우스에서 이어지는 무료 정원. 일몰 전 Mrs Macquarie's Chair로."},
+          {time:"17:00",icon:"🌃",place:"Badu Gili & 야경",desc:"오페라하우스 무료 투영 쇼. Darling Harbour로 이동해 야경 저녁."}
+        ]
+      },
+      {
+        day:"주말 2일차 — 페리 + 트렌디 동네",
+        icon:"🚢",
+        items:[
+          {time:"09:30",icon:"🦁",place:"Taronga Zoo (페리)",desc:"Circular Quay 4번 와프에서 페리 12분. 오전 동물원 관람."},
+          {time:"12:30",icon:"🚢",place:"Taronga→Manly 페리 환승",desc:"페리로 맨리 이동. 하버 크로싱으로 경치 감상."},
+          {time:"13:30",icon:"🏄",place:"Manly Beach & 셸리비치",desc:"맨리 비치 산책, 젤라또, 주말 마켓."},
+          {time:"16:00",icon:"🚇",place:"시내 복귀",desc:"패스트페리(20분)로 Circular Quay 복귀."},
+          {time:"17:00",icon:"🎨",place:"Surry Hills 저녁",desc:"트렌디 카페·바 밀집 지역. 저녁 식사 및 동네 탐방."}
+        ]
+      }
+    ]
+  },
+
+  // 2: 코스털 탐험가 (17-22)
+  {
+    badge:"COASTAL EXPLORER",
+    emoji:"🌊",
+    name:"코스털 탐험가",
+    tagline:"파도 소리와 고래 지느러미를 쫓는\n자연 여행자",
+    scorePct:65,
+    r1t:"나의 여행 성격은 이래요",
+    r1:[
+      {e:"🚶",t:"걷는 걸 좋아해요",d:"이동이 곧 여행. 코스털 워크, 등산로, 산책로가 있으면 가슴이 먼저 뜁니다. 시드니의 6km 코스털 워크는 당신을 위한 코스예요."},
+      {e:"🐋",t:"자연 현상에 감동받아",d:"고래가 물 위로 솟구치는 장면, 파도 소리, 코알라의 눈빛... 이런 자연 순간에 여행의 의미를 느끼는 타입이에요."},
+      {e:"📷",t:"풍경 사진 장인",d:"도시 감성보다 자연 뷰가 베스트. 절벽에서 바다를 바라보는 사진, 코스털 워크의 파노라마 샷이 당신의 앨범을 채울 거예요."}
+    ],
+    r2t:"이런 점이 당신의 강점이에요",
+    r2:[
+      {e:"🗺️",t:"끝까지 완주하는 의지",d:"힘들어도 코스의 끝에 무엇이 있을지 궁금해서 계속 걷는 타입이에요. 완주 후의 성취감과 코지에서 먹는 커피 한 잔의 맛을 알아요."},
+      {e:"🌿",t:"자연 속에서 가장 빛나",d:"인위적인 관광지보다 자연 속에서 에너지를 얻어요. 블루마운틴의 안개, 코스털 워크의 파도가 당신의 배터리를 충전시켜줍니다."}
+    ],
+    r3t:"이런 점은 주의해요",
+    r3:[
+      {e:"☁️",t:"날씨에 민감한 코스",d:"코스털 워크와 블루마운틴은 날씨가 핵심. 비나 안개 예보 시 일정 변경이 필요해요. 항상 플랜B(실내 명소)를 준비해두세요."},
+      {e:"🌅",t:"일몰 5시 전 완주 계획",d:"코스털 워크는 오전에 시작해야 일몰 전에 쿠지까지 완주할 수 있어요. 오후 2시 이후 시작은 중간에 어두워질 수 있어요."}
+    ],
+    r4t:"이번 겨울, 이것만큼은 꼭!",
+    r4:[
+      {e:"🐋",t:"무료 고래 관찰",d:"6~7월이 시드니 앞바다 혹등고래 북상 정점 시즌! MacKenzies Point(코스털 워크 중간)에서 무료로 관찰 가능. 새벽이나 이른 오전이 목격 확률 높아요."},
+      {e:"🚂",t:"세계에서 가장 가파른 철도",d:"블루마운틴 Scenic Railway는 기네스 기록 52도 경사의 세계 최급경사 여객철도. Jamison Valley로 310m 하강하는 짜릿함은 겨울 안개와 함께 신비로운 경험이 돼요."}
+    ],
+    spots:[
+      {
+        n:"본다이~쿠지 코스털 워크",
+        cat:"해안 트레킹 / 고래관찰 / 무료",
+        why:"6km, 편도 약 2~3시간. 본다이 아이스버그 수영장부터 쿠지까지 이어지는 시드니 최고 코스. 6~7월에는 MacKenzies Point에서 혹등고래를 육안으로 볼 수 있는 최고의 무료 액티비티예요.",
+        fee:"무료",
+        hours:"상시 (오전 시작 권장)",
+        transport:"Town Hall→333버스로 Bondi Beach",
+        img:"https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Bondi_Beach_Australia.jpg/640px-Bondi_Beach_Australia.jpg",
+        imgFallback:"🌊",
+        imgBg:"linear-gradient(135deg,#0a2a3a,#1a3a4a)",
+        mapQ:"Bondi+to+Coogee+Coastal+Walk+Sydney"
+      },
+      {
+        n:"Blue Mountains — Scenic World",
+        cat:"당일치기 / 세계 최급경사 철도",
+        why:"센트럴에서 기차 2시간. Three Sisters 절경, 세계 최급경사 Scenic Railway(52도), 유리바닥 스카이웨이. 겨울엔 운해와 안개로 더욱 신비롭고, 금~일 Opal 상한 $9.65로 왕복 기차도 저렴해요.",
+        fee:"Scenic World Discovery Pass 성인 $55",
+        hours:"Scenic World 9:00~17:00",
+        transport:"Central→Katoomba 기차 약 2시간",
+        img:"https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/Three_Sisters_Katoomba_Australia.jpg/640px-Three_Sisters_Katoomba_Australia.jpg",
+        imgFallback:"⛰️",
+        imgBg:"linear-gradient(135deg,#1a2a0a,#0a1a0a)",
+        mapQ:"Blue+Mountains+Scenic+World+Katoomba"
+      },
+      {
+        n:"Watson's Bay",
+        cat:"절벽 / 등대 / 하버뷰",
+        why:"페리 타고 가는 시드니 동쪽 끝 마을. The Gap 절벽 전망, 빨간 줄무늬 Hornby 등대 포토스팟, Doyles 피쉬앤칩스. 일몰 시 시티 스카이라인 뷰가 완벽해요.",
+        fee:"무료",
+        hours:"상시",
+        transport:"Circular Quay에서 페리",
+        img:"",
+        imgFallback:"🔴",
+        imgBg:"linear-gradient(135deg,#2a1a0a,#1a0a0a)",
+        mapQ:"Watsons+Bay+Sydney"
+      },
+      {
+        n:"Manly Beach & Coastal Walk",
+        cat:"해변 / 페리 여행",
+        why:"페리 30분 만에 도착하는 완전히 다른 세계. 맨리 비치부터 셸리비치까지 이어지는 작은 코스털 워크도 있고, 서핑 문화와 로컬 감성이 가득해요.",
+        fee:"페리 약 $10.20 편도",
+        hours:"페리 20~30분 간격",
+        transport:"Circular Quay F1 페리",
+        img:"",
+        imgFallback:"🏄",
+        imgBg:"linear-gradient(135deg,#0a1a2a,#1a2a3a)",
+        mapQ:"Manly+Beach+Sydney"
+      },
+      {
+        n:"Featherdale Wildlife Park",
+        cat:"토종 동물 / 체험",
+        why:"캥거루에게 직접 먹이 주기, 코알라 포토 세션(NSW법상 안기는 불가), 로리킷 새장 체험. 블루마운틴 가는 길목에 있어 당일치기로 묶기 완벽해요.",
+        fee:"성인 $49 (온라인 10% 할인)",
+        hours:"매일 8:00~17:00",
+        transport:"Westmead역→버스 또는 Blacktown역→729번 버스",
+        img:"",
+        imgFallback:"🐨",
+        imgBg:"linear-gradient(135deg,#1a2a10,#0a1a0a)",
+        mapQ:"Featherdale+Wildlife+Park+Sydney"
+      },
+      {
+        n:"Taronga Zoo",
+        cat:"동물원 / 페리 / 하버뷰",
+        why:"페리 12분만에 도착하는 하버뷰 동물원. 코알라·기린·캥거루 위로 시드니 하버가 펼쳐지는 사진은 여기서만 찍을 수 있어요. 페리 자체도 하버 관광이에요.",
+        fee:"성인 약 $51",
+        hours:"9:30~16:30",
+        transport:"Circular Quay 4번 와프 페리 12분",
+        img:"",
+        imgFallback:"🦁",
+        imgBg:"linear-gradient(135deg,#0a2a0a,#1a3a1a)",
+        mapQ:"Taronga+Zoo+Sydney"
+      }
+    ],
+    iti:[
+      {
+        day:"주말 1일차 — 코스털 워크 + 고래",
+        icon:"🌊",
+        items:[
+          {time:"08:00",icon:"🚇",place:"본다이 비치 출발",desc:"Town Hall→333버스로 본다이. 오전 일찍 시작해야 완주 가능."},
+          {time:"08:30",icon:"📸",place:"본다이 아이스버그",desc:"오션풀 배경 포토 세션. 시드니 최고 인스타 명소."},
+          {time:"09:30",icon:"🐋",place:"MacKenzies Point (고래관찰)",desc:"타마라마 근처. 6~7월 혹등고래 목격 포인트. 운 좋으면 점프도 볼 수 있어요."},
+          {time:"11:30",icon:"🏊",place:"Bronte & Clovelly",desc:"브론테 바스, 클로벨리 바다수영장 포토."},
+          {time:"13:00",icon:"🦞",place:"Coogee 도착 & 점심",desc:"코지 파빌리온 루프탑, 해변 레스토랑에서 완주 기념 점심."},
+          {time:"15:00",icon:"🚌",place:"372버스로 시내 복귀",desc:"오후는 Surry Hills 카페에서 여유롭게."}
+        ]
+      },
+      {
+        day:"주말 2일차 — 블루마운틴 당일치기",
+        icon:"⛰️",
+        items:[
+          {time:"07:30",icon:"🚂",place:"Central역 출발",desc:"블루마운틴 라인 기차. Opal 금~일 상한 $9.65로 왕복도 저렴."},
+          {time:"09:30",icon:"⛰️",place:"Katoomba 도착 & Scenic World",desc:"케이블웨이→세계 최급경사 Scenic Railway로 계곡 하강. 3~4시간."},
+          {time:"12:30",icon:"👀",place:"Echo Point — Three Sisters",desc:"686번 버스로 이동. 무료 전망대에서 Three Sisters 절경."},
+          {time:"14:00",icon:"☕",place:"Leura 마을 카페",desc:"블루마운틴 감성 마을. 아기자기한 카페와 빈티지샵."},
+          {time:"16:00",icon:"🚂",place:"Katoomba→Central 귀환",desc:"약 2시간. 기차 안에서 블루마운틴 선셋 감상."}
+        ]
+      }
+    ]
+  },
+
+  // 3: 액티브 어드벤처러 (23-30)
+  {
+    badge:"ACTIVE ADVENTURER",
+    emoji:"⚡",
+    name:"액티브 어드벤처러",
+    tagline:"하루에 시드니를 전부 담고 싶은\n탐험가",
+    scorePct:88,
+    r1t:"나의 여행 성격은 이래요",
+    r1:[
+      {e:"⚡",t:"일정이 많을수록 신나",d:"'오늘 뭐 할 거야?'라는 질문에 눈빛이 빛나는 타입. 타이트한 일정도 즐겁게 소화하고, 하루가 꽉 차야 잠이 잘 와요."},
+      {e:"🏆",t:"성취감이 최고의 연료",d:"관광지 체크리스트 완수, 코스 완주, 정상 정복. 이 성취감이 다음 여행지로 이동하는 에너지가 되는 타입이에요."},
+      {e:"🌅",t:"새벽 기상도 거뜬",d:"일출 보려고 새벽 5시 반에 일어나는 것도 마다하지 않아요. 남들이 자는 시간에 특별한 장면을 목격하는 게 여행의 묘미죠."}
+    ],
+    r2t:"이런 점이 당신의 강점이에요",
+    r2:[
+      {e:"🗺️",t:"누구보다 많이 본다",d:"같은 기간에 다른 여행자보다 훨씬 많은 곳을 경험해요. 시드니의 페더데일에서 블루마운틴까지, 하루에 묶어내는 동선 실력이 탁월해요."},
+      {e:"💪",t:"어떤 상황도 돌파",d:"비가 와도 방수 자켓 입고, 다리 아파도 완주. 이 뚝심이 가장 드라마틱한 여행 장면을 만들어냅니다."}
+    ],
+    r3t:"이런 점은 주의해요",
+    r3:[
+      {e:"😴",t:"번아웃 주의",d:"너무 빡빡한 일정은 여행 후반부에 지칠 수 있어요. 4주 일정이니 중간중간 반나절 여유 시간을 확보해두면 전체 컨디션이 올라가요."},
+      {e:"🎟️",t:"인기 체험은 필수 예약",d:"BridgeClimb은 특정 시간대 매진이 흔해요. Scenic World도 성수기엔 대기 줄이 길어요. 핵심 체험은 2~3주 전 사전 예약이 필수예요."}
+    ],
+    r4t:"이번 겨울, 이것만큼은 꼭!",
+    r4:[
+      {e:"🧗",t:"BridgeClimb 새벽 세션",desc:"하버브릿지 정상 등반(3.5시간). 새벽이나 황혼 세션은 조명이 극적이에요. 약 $264~348이지만 평생 기억에 남는 경험이에요."},
+      {e:"🐋",t:"Port Stephens 고래 + 샌드보딩",desc:"시드니 북쪽 2.5시간. 6~10월 고래·돌고래 크루즈 + Stockton 사구 샌드보딩을 하루에! 투어버스로 이동하면 편해요."}
+    ],
+    spots:[
+      {
+        n:"BridgeClimb — 하버브릿지 정상",
+        cat:"액티비티 / 전망 / 버킷리스트",
+        why:"시드니에서 가장 짜릿한 버킷리스트. 하버브릿지 정상(134m)까지 3.5시간 등반. 꼭대기에서 보이는 오페라하우스+하버+시티 전경은 어떤 사진으로도 대체 불가한 경험이에요.",
+        fee:"성인 약 $264~348 (시간대·요일별 변동)",
+        hours:"새벽~야간 다양한 세션",
+        transport:"The Rocks에서 도보 접근",
+        img:"https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Sydney_harbour_bridge_Syl.jpg/640px-Sydney_harbour_bridge_Syl.jpg",
+        imgFallback:"🌉",
+        imgBg:"linear-gradient(135deg,#1a1a2a,#0a0a1a)",
+        mapQ:"Sydney+Harbour+Bridge+BridgeClimb"
+      },
+      {
+        n:"Blue Mountains — Scenic Railway",
+        cat:"세계 최급경사 철도 / 당일치기",
+        why:"기네스 기록 52도 경사의 세계에서 가장 가파른 여객 철도. 겨울 안개와 함께 Jamison Valley로 310m 하강하는 경험은 다른 곳에서 느낄 수 없어요. 스카이웨이·케이블웨이까지 풀패키지로.",
+        fee:"Scenic World Discovery Pass 성인 $55",
+        hours:"9:00~17:00",
+        transport:"Central→Katoomba 기차 2시간",
+        img:"https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/Three_Sisters_Katoomba_Australia.jpg/640px-Three_Sisters_Katoomba_Australia.jpg",
+        imgFallback:"🚃",
+        imgBg:"linear-gradient(135deg,#0a1a0a,#1a2a0a)",
+        mapQ:"Scenic+World+Blue+Mountains+Katoomba"
+      },
+      {
+        n:"본다이~쿠지 코스털 워크",
+        cat:"트레킹 / 고래관찰 / 무료",
+        why:"6km 완주 도전. 겨울에는 MacKenzies Point에서 혹등고래까지 볼 수 있어요. 이른 아침 출발하면 코지 도착 후 오후에 다른 일정도 가능해요.",
+        fee:"무료",
+        hours:"상시",
+        transport:"Town Hall→333버스 Bondi",
+        img:"https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Bondi_Beach_Australia.jpg/640px-Bondi_Beach_Australia.jpg",
+        imgFallback:"🌊",
+        imgBg:"linear-gradient(135deg,#0a2030,#1a3040)",
+        mapQ:"Bondi+to+Coogee+Coastal+Walk"
+      },
+      {
+        n:"Port Stephens — 고래 + 샌드보딩",
+        cat:"근교 당일치기 / 고래 / 어드벤처",
+        why:"시드니 북쪽 2.5시간의 아드레날린 충전 명소. 6~10월 혹등고래·돌고래 크루즈와 Stockton Bight 사구(남반구 최대 해안 사구) 샌드보딩을 하루에! 겨울 시즌 하이라이트예요.",
+        fee:"투어 포함 약 $180~230 (교통·크루즈·샌드보딩 포함)",
+        hours:"투어 출발 시드니 약 7시",
+        transport:"시드니 출발 투어버스 이용",
+        img:"",
+        imgFallback:"🐋",
+        imgBg:"linear-gradient(135deg,#0a1a2a,#1a2a3a)",
+        mapQ:"Port+Stephens+Whale+Watching+NSW"
+      },
+      {
+        n:"Featherdale Wildlife Park",
+        cat:"토종 동물 / 블루마운틴 콤보",
+        why:"아침 8시 오픈. 블루마운틴 가는 길목이라 당일치기로 묶기 완벽해요. 캥거루 먹이주기, 코알라 포토 세션, 워블벙 등 호주 토종 동물 총집합. 페더데일→블루마운틴 하루 완주가 가능해요.",
+        fee:"성인 $49 (온라인 10% 할인)",
+        hours:"8:00~17:00",
+        transport:"Blacktown역→729번 버스 10분",
+        img:"",
+        imgFallback:"🐨",
+        imgBg:"linear-gradient(135deg,#1a2a0a,#0a1a0a)",
+        mapQ:"Featherdale+Wildlife+Park+Blacktown"
+      },
+      {
+        n:"Taronga Zoo",
+        cat:"동물원 / 하버뷰 / 페리",
+        why:"페리 12분이면 도착. 하버뷰가 펼쳐지는 동물원에서 코알라·기린 사진. 오전에 타롱가 완주 후 오후에 맨리 페리로 이동하는 하버 크로싱 일정으로 완전한 하루를 만들 수 있어요.",
+        fee:"성인 약 $51",
+        hours:"9:30~16:30",
+        transport:"Circular Quay 4번 와프 페리 12분",
+        img:"",
+        imgFallback:"🦁",
+        imgBg:"linear-gradient(135deg,#0a2a0a,#1a3a1a)",
+        mapQ:"Taronga+Zoo+Sydney"
+      }
+    ],
+    iti:[
+      {
+        day:"주말 1일차 — 페더데일 + 블루마운틴 풀코스",
+        icon:"⚡",
+        items:[
+          {time:"07:00",icon:"🚂",place:"West Ryde → Blacktown 출발",desc:"T9 기차 이동. Blacktown에서 729번 버스 환승."},
+          {time:"08:00",icon:"🐨",place:"Featherdale Wildlife Park",desc:"캥거루 먹이주기, 코알라 포토. 약 2시간 관람."},
+          {time:"10:30",icon:"🚂",place:"블루마운틴으로 이동",desc:"Blacktown→Katoomba 기차 약 1시간. 이동 중 간식."},
+          {time:"12:00",icon:"🚃",place:"Scenic World — 세계 최급경사 철도",desc:"Scenic Railway 탑승! 계곡 하강 후 보드워크 산책."},
+          {time:"13:30",icon:"⛰️",place:"Echo Point — Three Sisters",desc:"686번 버스로 이동. 전망대에서 파노라마 사진."},
+          {time:"15:00",icon:"☕",place:"Leura 카페 & 귀환",desc:"Katoomba→Central 기차로 귀환. 저녁은 이스트우드 한식."}
+        ]
+      },
+      {
+        day:"주말 2일차 — BridgeClimb + 하버 완전정복",
+        icon:"🧗",
+        items:[
+          {time:"08:00",icon:"🧗",place:"BridgeClimb",desc:"사전 예약 필수. 새벽~오전 세션 추천. 3.5시간 정상 등반."},
+          {time:"12:00",icon:"🍔",place:"The Rocks 점심",desc:"BridgeClimb 완주 기념 The Rocks 레스토랑."},
+          {time:"13:30",icon:"🎭",place:"오페라하우스 외관 & 콘코스",desc:"BridgeMuseum(파일런 전망) 또는 오페라하우스 외관."},
+          {time:"15:00",icon:"🚢",place:"Circular Quay → Manly 페리",desc:"F1 페리로 맨리 이동. 하버 크로싱."},
+          {time:"16:00",icon:"🏄",place:"Manly Beach 달리기 or 산책",desc:"셸리비치까지 코스털 산책로."},
+          {time:"18:30",icon:"🌃",place:"Darling Harbour 야경 & 저녁",desc:"복귀 후 달링하버 야경 마무리."}
+        ]
+      }
+    ]
+  }
+];
+
+// ─── STATE ───────────────────────────────────────────────────────
+let current = 0;
+let scores = [];
+let resultType = -1;
+
+// ─── SCREEN NAV ──────────────────────────────────────────────────
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById(id);
+  if (el) el.classList.add('active');
+  document.getElementById('result-screen').classList.remove('active');
+  window.scrollTo(0,0);
+}
+
+function showResult() {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('result-screen').classList.add('active');
+  window.scrollTo(0,0);
+}
+
+// ─── TEST FLOW ────────────────────────────────────────────────────
+function startTest() {
+  current = 0;
+  scores = [];
+  show('screen-question');
+  renderQ();
+}
+
+function renderQ() {
+  const q = Qs[current];
+  const num = current + 1;
+  document.getElementById('counter').textContent = `${num} / 10`;
+  document.getElementById('q-num').textContent = `Q.${String(num).padStart(2,'0')}`;
+  document.getElementById('q-scene').textContent = q.scene;
+  document.getElementById('q-text').textContent = q.text;
+  document.getElementById('prog').style.width = `${num * 10}%`;
+
+  const list = document.getElementById('ans-list');
+  list.innerHTML = q.opts.map((o,i) =>
+    `<button class="ans-btn" onclick="answer(${o.s})">
+      <span class="ans-em">${o.e}</span>
+      <span>${o.t}</span>
+    </button>`
+  ).join('');
+}
+
+function answer(score) {
+  scores.push(score);
+  if (current < 9) {
+    current++;
+    renderQ();
+  } else {
+    finishTest();
+  }
+}
+
+function prevQ() {
+  if (current === 0) { show('screen-intro'); return; }
+  scores.pop();
+  current--;
+  renderQ();
+}
+
+function finishTest() {
+  show('screen-loading');
+  const total = scores.reduce((a,b) => a+b, 0);
+  setTimeout(() => buildResult(total), 2200);
+}
+
+function buildResult(total) {
+  let type;
+  if (total <= 9) type = 0;
+  else if (total <= 16) type = 1;
+  else if (total <= 22) type = 2;
+  else type = 3;
+
+  resultType = type;
+  const t = TYPES[type];
+  const pct = Math.round((total / 30) * 100);
+
+  // Hero
+  document.getElementById('r-badge').textContent = t.badge;
+  document.getElementById('r-emoji').textContent = t.emoji;
+  document.getElementById('r-name').textContent = t.name;
+  document.getElementById('r-tagline').textContent = t.tagline.replace('\\n','\n');
+  document.getElementById('r-tagline').style.whiteSpace = 'pre-line';
+
+  // Report sections
+  document.getElementById('r1t').textContent = t.r1t;
+  document.getElementById('r1c').innerHTML = t.r1.map(c =>
+    `<div class="trait-card"><div class="trait-em">${c.e}</div><div class="trait-t">${c.t}</div><div class="trait-d">${c.d}</div></div>`
+  ).join('');
+
+  document.getElementById('r2t').textContent = t.r2t;
+  document.getElementById('r2c').innerHTML = t.r2.map(c =>
+    `<div class="trait-card"><div class="trait-em">${c.e}</div><div class="trait-t">${c.t}</div><div class="trait-d">${c.d}</div></div>`
+  ).join('');
+
+  document.getElementById('r3t').textContent = t.r3t;
+  document.getElementById('r3c').innerHTML = t.r3.map(c =>
+    `<div class="warn-card"><div class="trait-em">${c.e}</div><div class="trait-t">${c.t}</div><div class="trait-d">${c.d}</div></div>`
+  ).join('');
+
+  document.getElementById('r4t').textContent = t.r4t;
+  document.getElementById('r4c').innerHTML = t.r4.map(c =>
+    `<div class="tip-card"><div class="trait-em">${c.e}</div><div class="trait-t">${c.t}</div><div class="trait-d">${c.d || c.desc}</div></div>`
+  ).join('');
+
+  // Spots
+  document.getElementById('spots').innerHTML = t.spots.map((s,i) => {
+    const mapUrl = `https://maps.google.com/maps?q=${s.mapQ}&output=embed`;
+    const gmLink = `https://www.google.com/maps/search/${s.mapQ}`;
+    return `
+    <div class="spot-card">
+      <div class="spot-img-wrap">
+        ${s.img
+          ? `<img class="spot-img" src="${s.img}" alt="${s.n}"
+              onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
+              loading="lazy">
+             <div class="spot-img-fallback" style="background:${s.imgBg}">
+               <span style="font-size:72px">${s.imgFallback}</span>
+             </div>`
+          : `<div class="spot-img-fallback" style="display:flex;background:${s.imgBg}">
+               <span style="font-size:72px">${s.imgFallback}</span>
+             </div>`
+        }
+      </div>
+      <div class="spot-map-wrap">
+        <iframe src="${mapUrl}" allowfullscreen="" loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade"
+          title="${s.n} 위치"></iframe>
+      </div>
+      <div class="spot-body">
+        <div class="spot-n">SPOT ${String(i+1).padStart(2,'0')}</div>
+        <div class="spot-name">${s.n}</div>
+        <div class="spot-cat">${s.cat}</div>
+        <div class="spot-why">${s.why}</div>
+        <div class="spot-meta">
+          <div class="spot-row"><span class="spot-lbl">요금</span><span>${s.fee}</span></div>
+          <div class="spot-row"><span class="spot-lbl">운영</span><span>${s.hours}</span></div>
+          <div class="spot-row"><span class="spot-lbl">교통</span><span>${s.transport}</span></div>
+        </div>
+        <a class="map-btn" href="${gmLink}" target="_blank" rel="noopener">
+          📍 Google Maps에서 보기
+        </a>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Itinerary
+  document.getElementById('iti').innerHTML = t.iti.map(day => `
+    <div class="day-blk">
+      <div class="day-hd">${day.icon} ${day.day}</div>
+      ${day.items.map(item => `
+        <div class="tl-item">
+          <div class="tl-dot">${item.icon}</div>
+          <div class="tl-body">
+            <div class="tl-time">${item.time}</div>
+            <div class="tl-place">${item.place}</div>
+            <div class="tl-desc">${item.desc}</div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+
+  showResult();
+
+  // Animate score bar after render
+  setTimeout(() => {
+    document.getElementById('r-score').style.width = pct + '%';
+  }, 300);
+
+  // Update URL hash for sharing
+  history.replaceState(null, '', `#r=${type}&s=${total}`);
+}
+
+// ─── SHARE ───────────────────────────────────────────────────────
+function shareResult() {
+  const url = window.location.href;
+  if (navigator.share) {
+    navigator.share({ title: '나의 시드니 여행 유형', url });
+  } else {
+    navigator.clipboard.writeText(url).then(() => showToast());
+  }
+}
+
+function showToast() {
+  const t = document.getElementById('toast');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ─── DEEP LINK (share URL) ────────────────────────────────────────
+(function() {
+  const hash = window.location.hash;
+  const m = hash.match(/r=(\d)/);
+  if (m) {
+    const type = parseInt(m[0].replace('r=',''));
+    const sm = hash.match(/s=(\d+)/);
+    const total = sm ? parseInt(sm[1]) : [5,13,19,27][type];
+    if (type >= 0 && type <= 3) {
+      buildResult(total);
+    }
+  }
+})();
+</script>
+</body>
+</html>
