@@ -23,10 +23,11 @@ body.sheet-open{overflow:hidden}
 @supports (height: 100dvh){ .app{min-height:100dvh} }
 .hl{color:var(--primary)}
 
-/* top tabs — floating pill bar (일정 / 숙소) */
+/* top tabs — floating pill bar (일정 / 숙소) with a sliding active thumb */
 .top-tabs{position:fixed;top:calc(12px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:300px;background:var(--white);border-radius:18px;box-shadow:0 4px 20px rgba(0,0,0,0.1);display:flex;padding:4px;z-index:25}
-.top-tab{flex:1;border:none;background:none;padding:8px 0;border-radius:14px;font-size:13px;font-weight:700;color:var(--grey500);cursor:pointer;font-family:inherit;transition:.2s}
-.top-tab.on{background:var(--primary);color:#fff}
+.tt-thumb{position:absolute;top:4px;left:4px;width:calc((100% - 8px) / 2);height:calc(100% - 8px);background:var(--primary);border-radius:14px;box-shadow:0 3px 10px rgba(232,116,30,0.35);transition:transform .3s cubic-bezier(.2,.8,.2,1);z-index:0}
+.top-tab{position:relative;z-index:1;flex:1;border:none;background:none;padding:8px 0;border-radius:14px;font-size:13px;font-weight:700;color:var(--grey500);cursor:pointer;font-family:inherit;transition:color .2s}
+.top-tab.on{color:#fff}
 
 .i-bd{padding:calc(70px + env(safe-area-inset-top)) 20px 20px}
 
@@ -60,6 +61,7 @@ body.sheet-open{overflow:hidden}
 .ph-cd::after{content:'';position:absolute;inset:0;background:rgba(0,0,0,.28);pointer-events:none}
 .ph-ov{position:absolute;bottom:0;left:0;right:0;padding:12px 14px;background:linear-gradient(transparent,rgba(0,0,0,.65));z-index:1}
 .ph-nm{font-size:14px;font-weight:700;color:#fff}
+.ph-note{font-size:11px;color:rgba(255,255,255,.85);margin-top:2px}
 .ph-del{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;border:none;background:rgba(0,0,0,.35);color:#fff;font-size:13px;cursor:pointer;backdrop-filter:blur(4px);z-index:1}
 
 /* preset picker — dimmed backdrop + bottom sheet */
@@ -73,6 +75,12 @@ body.sheet-open{overflow:hidden}
 .picker-sheet{width:100%;max-width:500px;max-height:75vh;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--white);border-radius:28px 28px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom));animation:sheetSlideUp .3s cubic-bezier(.2,.8,.2,1);scrollbar-width:none;-ms-overflow-style:none}
 .picker-sheet::-webkit-scrollbar{display:none;width:0;height:0}
 .picker-sheet-title{font-size:16px;font-weight:700;margin-bottom:14px}
+.picker-time-row{display:flex;align-items:center;gap:10px;background:var(--grey100);border-radius:14px;padding:10px 14px;margin-bottom:14px}
+.picker-time-lb{font-size:13px;font-weight:700;color:var(--grey700)}
+.picker-time-input{border:none;background:transparent;font-size:14px;font-weight:700;color:var(--primary);font-family:inherit}
+.picker-time-input:focus{outline:none}
+.picker-note-input{width:100%;border:1.5px solid var(--grey200);background:var(--white);border-radius:14px;padding:11px 14px;font-size:14px;font-family:inherit;color:var(--black);margin-bottom:14px}
+.picker-note-input:focus{outline:none;border-color:var(--primary)}
 .preset-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .preset-chip{position:relative;height:92px;border-radius:14px;overflow:hidden;border:none;cursor:pointer;padding:0;background:var(--grey100) center/cover no-repeat;font-family:inherit}
 .preset-chip:active{transform:scale(.95)}
@@ -80,12 +88,12 @@ body.sheet-open{overflow:hidden}
 .preset-chip .ov{position:absolute;inset:0;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;padding:8px 4px;background:linear-gradient(transparent 35%, rgba(0,0,0,.65));color:#fff;font-size:11px;font-weight:700;text-align:center}
 .preset-emoji{font-size:18px}
 
-/* bottom nav — floating pill bar */
+/* bottom nav — floating pill bar with a sliding active thumb */
 .bottom-nav{position:fixed;bottom:calc(16px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:468px;background:var(--white);border-radius:24px;box-shadow:0 4px 20px rgba(0,0,0,0.1);display:flex;padding:8px;z-index:20}
-.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:none;cursor:pointer;padding:8px 4px;border-radius:16px;font-family:inherit;color:var(--grey500);min-height:44px;transition:background .2s}
+.bn-thumb{position:absolute;top:8px;left:8px;height:calc(100% - 16px);background:var(--primary-light);border-radius:16px;box-shadow:0 2px 8px rgba(0,0,0,0.06);transition:transform .3s cubic-bezier(.2,.8,.2,1);z-index:0}
+.nav-item{position:relative;z-index:1;flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:none;cursor:pointer;padding:8px 4px;border-radius:16px;font-family:inherit;color:var(--grey500);min-height:44px}
 .nav-item .n-ic{width:24px;height:24px;border-radius:50%;background:var(--grey100);color:var(--grey500);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;transition:.2s}
 .nav-item .n-lb{font-size:10px;font-weight:600}
-.nav-item.on{background:var(--primary-light)}
 .nav-item.on .n-ic{background:var(--primary);color:#fff}
 .nav-item.on .n-lb{color:var(--primary)}
 
@@ -323,14 +331,23 @@ let sheetPlaceIdx = null;
 
 function renderTopTabs(){
   document.getElementById('topTabs').innerHTML = `
-    <button class="top-tab ${topTab==='schedule'?'on':''}" onclick="goTopTab('schedule')">일정</button>
-    <button class="top-tab ${topTab==='acc'?'on':''}" onclick="goTopTab('acc')">숙소</button>
+    <div class="tt-thumb" id="ttThumb"></div>
+    <button class="top-tab" onclick="goTopTab('schedule')">일정</button>
+    <button class="top-tab" onclick="goTopTab('acc')">숙소</button>
   `;
+  updateTopTabsActive();
+}
+
+function updateTopTabsActive(){
+  const buttons=document.querySelectorAll('#topTabs .top-tab');
+  buttons[0].classList.toggle('on', topTab==='schedule');
+  buttons[1].classList.toggle('on', topTab==='acc');
+  document.getElementById('ttThumb').style.transform = `translateX(${topTab==='schedule'?0:100}%)`;
 }
 
 function goTopTab(tab){
   topTab=tab;
-  renderTopTabs();
+  updateTopTabsActive();
   document.getElementById('scheduleTab').style.display = tab==='schedule' ? '' : 'none';
   document.getElementById('accTab').style.display = tab==='acc' ? '' : 'none';
   document.querySelector('.fab-wrap').style.display = tab==='schedule' ? '' : 'none';
@@ -348,19 +365,26 @@ function normalizeImg(u){ if(!u) return ''; return u.startsWith('//') ? 'https:'
 
 function renderBottomNav(){
   const el=document.getElementById('bottomNav');
-  el.innerHTML=WEEKS.map((w,i)=>`
-    <button class="nav-item ${i===curWeek?'on':''}" onclick="goWeek(${i})">
+  el.innerHTML = `<div class="bn-thumb" id="bnThumb" style="width:calc((100% - 16px) / ${WEEKS.length})"></div>` +
+    WEEKS.map((w,i)=>`
+    <button class="nav-item" onclick="goWeek(${i})">
       <div class="n-ic">${i+1}</div>
       <div class="n-lb">${weekLabel(w)}</div>
     </button>
   `).join('');
+  updateBottomNavActive();
+}
+
+function updateBottomNavActive(){
+  document.querySelectorAll('#bottomNav .nav-item').forEach((el,i)=>el.classList.toggle('on', i===curWeek));
+  document.getElementById('bnThumb').style.transform = `translateX(${curWeek*100}%)`;
 }
 
 function goWeek(i){
   curWeek=i;
   curSub='weekday';
   if(pickerOpen) closePicker();
-  renderBottomNav();
+  updateBottomNavActive();
   renderAccTab();
   renderTabs();
   renderPlacesWrap(true);
@@ -480,6 +504,7 @@ function placeSheetHtml(idx){
       </div>
       <div class="acc-sheet-body">
         <div class="acc-sheet-title">${name}</div>
+        ${place.note?`<div class="acc-sheet-loc">${place.note}</div>`:''}
         <div class="place-info-rows">
           <div class="place-info-row"><span class="pi-ic">🕐</span><div><div class="pi-lb">운영 시간</div><div class="pi-val">${info.hours||'정보 없음'}</div></div></div>
           <div class="place-info-row"><span class="pi-ic">💰</span><div><div class="pi-lb">가격</div><div class="pi-val">${info.price||'정보 없음'}</div></div></div>
@@ -636,7 +661,7 @@ function renderPlaces(){
       <div class="ph-cd" onclick="openPlaceView(${i})">
         <img src="${plImg(p.name)}">
         <button class="ph-del" onclick="event.stopPropagation();removePlace(${i})">✕</button>
-        <div class="ph-ov"><div class="ph-nm">${p.name}</div></div>
+        <div class="ph-ov"><div class="ph-nm">${p.name}</div>${p.note?`<div class="ph-note">${p.note}</div>`:''}</div>
       </div>
     </div>`).join('')}</div>`;
 }
@@ -673,6 +698,11 @@ function openPicker(){
   document.getElementById('pickerSheetRoot').innerHTML=`<div class="picker-backdrop" onclick="if(event.target===this) closePicker()">
     <div class="picker-sheet">
       <div class="picker-sheet-title">어디로 갈까요?</div>
+      <div class="picker-time-row">
+        <span class="picker-time-lb">시간</span>
+        <input type="time" id="pickerTime" class="picker-time-input">
+      </div>
+      <input type="text" id="pickerNote" class="picker-note-input" placeholder="메모 (선택, 예: 예약 확인, 같이 갈 사람)">
       ${gridHtml}
     </div>
   </div>`;
@@ -694,8 +724,10 @@ function closePicker(){
 
 function selectPreset(name){
   const key=planKey();
+  const timeInput=document.getElementById('pickerTime');
+  const noteInput=document.getElementById('pickerNote');
   if(!data.plans[key]) data.plans[key]=[];
-  data.plans[key].push({name, time:''});
+  data.plans[key].push({name, time:timeInput?timeInput.value:'', note:noteInput?noteInput.value.trim():''});
   saveData();
   renderPlacesWrap();
   closePicker();
