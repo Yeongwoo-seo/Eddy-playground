@@ -15,6 +15,7 @@
 }
 html,body{height:100%}
 body{background:var(--bg);color:var(--black);font-family:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;overflow-x:hidden;display:flex;justify-content:center}
+body.sheet-open{overflow:hidden}
 .app{width:100%;max-width:500px;min-height:100vh;position:relative;padding-bottom:112px}
 .hl{color:var(--primary)}
 
@@ -27,28 +28,15 @@ body{background:var(--bg);color:var(--black);font-family:'Pretendard',-apple-sys
 @keyframes slideUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
 .content-anim{animation:slideUp .45s cubic-bezier(.2,.8,.2,1)}
 
-/* accommodation card (fixed above weekday/weekend tabs) */
-.acc-card{background:var(--white);border-radius:20px;box-shadow:0 2px 12px rgba(0,0,0,0.06);padding:18px;margin-bottom:16px}
-.acc-lb{font-size:13px;font-weight:700;color:var(--grey700);margin-bottom:12px}
-.acc-input-row{display:flex;gap:8px}
-.acc-input{flex:1;border:none;background:var(--grey100);border-radius:14px;padding:12px 14px;font-size:14px;font-family:inherit;color:var(--black)}
-.acc-input:focus{outline:2px solid var(--primary)}
-.acc-btn{background:var(--primary);color:#fff;border:none;border-radius:14px;padding:0 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:.2s}
-.acc-btn:active{background:var(--primary-hover);transform:scale(.96)}
-.acc-preview{display:flex;gap:12px;align-items:center;text-decoration:none;color:inherit}
-.acc-thumb{width:60px;height:60px;border-radius:14px;background:var(--primary-light);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:24px;overflow:hidden}
-.acc-thumb img{width:100%;height:100%;object-fit:cover}
-.acc-txt{flex:1;min-width:0}
-.acc-name{font-size:14px;font-weight:700;color:var(--black);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.acc-loc{font-size:12px;color:var(--grey500);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.acc-remove{background:none;border:none;color:var(--grey300);font-size:16px;cursor:pointer;flex-shrink:0;padding:6px}
-.acc-edit{background:none;border:none;color:var(--grey300);font-size:14px;cursor:pointer;flex-shrink:0;padding:6px}
-.acc-actions{display:flex;flex-direction:column;flex-shrink:0}
-.acc-empty{font-size:12px;color:var(--grey500);margin-top:8px}
-.acc-hint{font-size:11px;color:var(--grey300);margin-top:8px;line-height:1.5}
-.acc-edit-form{display:flex;flex-direction:column;gap:8px}
-.acc-edit-row{display:flex;gap:8px}
-.acc-edit-row .acc-input{font-size:13px;padding:10px 12px}
+/* accommodation label + register CTA */
+.acc-lb{font-size:13px;font-weight:700;color:var(--grey700);margin-bottom:10px}
+.acc-register-btn{width:100%;height:150px;border-radius:18px;border:1.5px dashed var(--grey300);background:var(--grey50);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--grey500);font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;margin-bottom:16px}
+.acc-register-btn .ic{font-size:26px}
+.acc-register-btn:active{transform:scale(.98)}
+
+/* accommodation photo card (same visual language as place cards) */
+.acc-photo-card{cursor:pointer;margin-bottom:16px}
+.ph-fallback-ic{position:absolute;inset:0;display:none;align-items:center;justify-content:center;font-size:36px;background:var(--primary-light);color:var(--primary)}
 
 /* weekday / weekend sub tabs */
 .sub-tabs{display:flex;gap:6px;background:var(--grey100);border-radius:14px;padding:4px;margin-bottom:16px}
@@ -56,7 +44,7 @@ body{background:var(--bg);color:var(--black);font-family:'Pretendard',-apple-sys
 .sub-tab.on{background:var(--white);color:var(--primary);box-shadow:0 2px 8px rgba(0,0,0,0.06)}
 .sub-empty{font-size:13px;color:var(--grey500);text-align:center;padding:28px 0}
 
-/* place photo cards */
+/* place / accommodation photo cards */
 .ph-gr{display:flex;flex-direction:column;gap:10px}
 .ph-cd{border-radius:18px;overflow:hidden;position:relative;height:150px;box-shadow:0 2px 12px rgba(0,0,0,0.06)}
 .ph-cd img{width:100%;height:100%;object-fit:cover;display:block;background:var(--grey100)}
@@ -84,6 +72,44 @@ body{background:var(--bg);color:var(--black);font-family:'Pretendard',-apple-sys
 .fab:active{transform:scale(.94)}
 .fab.open{transform:rotate(45deg)}
 .fab.open:active{transform:rotate(45deg) scale(.94)}
+
+/* accommodation expand sheet — Airbnb-style detail / register page */
+@keyframes sheetIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
+@keyframes sheetOut{from{opacity:1;transform:scale(1)}to{opacity:0;transform:scale(.94)}}
+.acc-sheet-backdrop{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;justify-content:center;animation:sheetIn .32s cubic-bezier(.2,.8,.2,1)}
+.acc-sheet-backdrop.closing{animation:sheetOut .2s cubic-bezier(.4,0,1,1) forwards}
+.acc-sheet{width:100%;max-width:500px;height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--white)}
+
+.acc-sheet-hero{position:relative;height:300px;background:var(--grey100) center/cover no-repeat;display:flex}
+.acc-sheet-hero-fallback{flex:1;display:flex;align-items:center;justify-content:center;font-size:56px;background:var(--primary-light);color:var(--primary)}
+.acc-sheet-back{position:absolute;top:16px;left:16px;width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,.4);color:#fff;border:none;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(4px);z-index:2}
+.acc-sheet-body{background:var(--white);border-radius:28px 28px 0 0;margin-top:-20px;position:relative;padding:24px 20px 40px;min-height:120px}
+.acc-sheet-title{font-size:20px;font-weight:800;line-height:1.4}
+.acc-sheet-loc{font-size:14px;color:var(--grey500);margin-top:8px}
+.acc-sheet-details{font-size:14px;color:var(--grey700);line-height:1.7;margin-top:16px;white-space:pre-wrap}
+.acc-sheet-link{display:block;text-align:center;margin-top:24px;background:var(--primary);color:#fff;border-radius:16px;padding:16px;font-weight:700;text-decoration:none}
+.acc-sheet-link:active{background:var(--primary-hover)}
+.acc-sheet-actions{display:flex;gap:8px;margin-top:12px}
+.acc-sheet-actions button{flex:1;padding:14px;border-radius:14px;border:none;font-weight:700;font-family:inherit;cursor:pointer;font-size:14px}
+.acc-sheet-edit-btn{background:var(--grey100);color:var(--grey700)}
+.acc-sheet-del-btn{background:var(--grey100);color:var(--grey500)}
+
+/* accommodation register / edit form (inside the same sheet) */
+.acc-form-hdr{display:flex;align-items:center;gap:14px;padding:20px;border-bottom:1px solid var(--grey100)}
+.acc-form-hdr button{background:none;border:none;font-size:18px;color:var(--grey700);cursor:pointer;padding:4px}
+.acc-form-hdr .t{font-size:16px;font-weight:700}
+.acc-form-body{padding:20px;display:flex;flex-direction:column;gap:10px}
+.acc-form-body input,.acc-form-body textarea{border:1.5px solid var(--grey200);background:var(--white);border-radius:14px;padding:12px 14px;font-size:14px;font-family:inherit;color:var(--black);width:100%}
+.acc-form-body input:focus,.acc-form-body textarea:focus{outline:none;border-color:var(--primary)}
+.acc-form-body textarea{min-height:90px;resize:vertical}
+.acc-form-fetch-row{display:flex;gap:8px}
+.acc-form-fetch-row input{flex:1}
+.acc-form-fetch-btn{background:var(--grey100);color:var(--grey700);border:none;border-radius:14px;padding:0 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap}
+.acc-form-fetch-btn:active{transform:scale(.96)}
+.acc-form-preview{width:100%;height:160px;border-radius:14px;object-fit:cover;background:var(--grey100)}
+.acc-form-save{background:var(--primary);color:#fff;border:none;border-radius:14px;padding:15px;font-weight:700;font-size:15px;cursor:pointer;margin-top:4px;font-family:inherit}
+.acc-form-save:active{background:var(--primary-hover)}
+.acc-form-label{font-size:12px;color:var(--grey500);font-weight:600;margin:2px 2px -2px}
 </style>
 </head>
 <body>
@@ -92,16 +118,21 @@ body{background:var(--bg);color:var(--black);font-family:'Pretendard',-apple-sys
     <div class="pg-title">시드니 여행 <span class="hl">스케줄</span></div>
   </div>
 
-  <div class="i-bd" id="content"></div>
+  <div class="i-bd">
+    <div id="accWrap"></div>
+    <div id="tabsWrap"></div>
+    <div id="placesWrap"></div>
+  </div>
 </div>
 
 <div class="fab-wrap"><button class="fab" id="fabBtn" onclick="togglePicker()">+</button></div>
 <div class="bottom-nav" id="bottomNav"></div>
+<div id="accSheetRoot"></div>
 
 <script>
 const START='2026-07-22';
 const END='2026-08-17';
-const STORE_KEY='sydneyScheduleV2';
+const STORE_KEY='sydneyScheduleV3';
 
 function toDate(s){const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d);}
 function fmt(d){const y=d.getFullYear(),m=d.getMonth()+1,day=d.getDate();return `${y}-${String(m).padStart(2,'0')}-${String(day).padStart(2,'0')}`;}
@@ -215,7 +246,8 @@ let data = loadData();
 let curWeek = 0;
 let curSub = 'weekday';
 let pickerOpen = false;
-let editingAcc = null;
+let sheetMode = null; // null | 'view' | 'edit'
+let sheetWeek = null;
 
 function decodeEntities(str){
   if(!str) return str;
@@ -223,6 +255,8 @@ function decodeEntities(str){
   ta.innerHTML=str;
   return ta.value;
 }
+function esc(s){ return (s||'').replace(/"/g,'&quot;'); }
+function normalizeImg(u){ if(!u) return ''; return u.startsWith('//') ? 'https:'+u : u; }
 
 function renderBottomNav(){
   const el=document.getElementById('bottomNav');
@@ -238,19 +272,21 @@ function goWeek(i){
   curWeek=i;
   curSub='weekday';
   pickerOpen=false;
-  editingAcc=null;
   renderBottomNav();
-  renderContent(true);
+  renderAcc();
+  renderTabs();
+  renderPlacesWrap(true);
 }
 
 function goSub(type){
   curSub=type;
   pickerOpen=false;
-  renderContent(true);
+  renderTabs();
+  renderPlacesWrap(true);
 }
 
-function renderSubTabs(){
-  return `<div class="sub-tabs">
+function renderTabs(){
+  document.getElementById('tabsWrap').innerHTML = `<div class="sub-tabs">
     <button class="sub-tab ${curSub==='weekday'?'on':''}" onclick="goSub('weekday')">평일여행</button>
     <button class="sub-tab ${curSub==='weekend'?'on':''}" onclick="goSub('weekend')">주말여행</button>
   </div>`;
@@ -276,84 +312,155 @@ async function fetchPreview(url){
   }
 }
 
-function accThumbImg(image){
-  if(!image) return '🏠';
-  const src = image.startsWith('//') ? 'https:'+image : image;
-  return `<img src="${src}" referrerpolicy="no-referrer" loading="lazy" onerror="this.replaceWith('🏠')">`;
-}
-
-function renderAccCard(weekIdx){
-  const acc=data.accommodations[weekIdx];
-  let html=`<div class="acc-card"><div class="acc-lb">🏠 이번 주 숙소 (Airbnb)</div>`;
-  if(acc && acc.url && editingAcc===weekIdx){
-    html+=`<div class="acc-edit-form">
-      <input class="acc-input" id="accTitleEdit${weekIdx}" placeholder="숙소 이름" value="${(acc.title||'').replace(/"/g,'&quot;')}">
-      <input class="acc-input" id="accLocEdit${weekIdx}" placeholder="위치" value="${(acc.location||'').replace(/"/g,'&quot;')}">
-      <div class="acc-edit-row">
-        <button class="acc-btn" style="flex:1" onclick="saveEditAcc(${weekIdx})">저장</button>
-        <button class="acc-btn" style="flex:1;background:var(--grey100);color:var(--grey700)" onclick="cancelEditAcc()">취소</button>
-      </div>
-    </div>`;
-  }else if(acc && acc.url){
-    html+=`<a class="acc-preview" href="${acc.url}" target="_blank" rel="noopener">
-      <div class="acc-thumb">${accThumbImg(acc.image)}</div>
-      <div class="acc-txt">
-        <div class="acc-name">${acc.title||'Airbnb 숙소'}</div>
-        <div class="acc-loc">${acc.location||acc.url}</div>
-      </div>
-      <div class="acc-actions">
-        <button class="acc-edit" onclick="event.preventDefault();startEditAcc(${weekIdx})">✏️</button>
-        <button class="acc-remove" onclick="event.preventDefault();removeAcc(${weekIdx})">✕</button>
-      </div>
-    </a>`;
+// ─── accommodation collapsed view (photo card, same language as place cards) ───
+function renderAcc(){
+  const el=document.getElementById('accWrap');
+  const acc=data.accommodations[curWeek];
+  const label=`<div class="acc-lb">🏠 이번 주 숙소</div>`;
+  if(acc && acc.image){
+    el.innerHTML = label + `
+      <div class="ph-cd acc-photo-card" onclick="openAccView(${curWeek})">
+        <img src="${normalizeImg(acc.image)}" referrerpolicy="no-referrer" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+        <div class="ph-fallback-ic">🏠</div>
+        <div class="ph-ov"><div class="ph-nm">${acc.title||'숙소'}</div></div>
+      </div>`;
   }else{
-    html+=`<div class="acc-input-row">
-      <input class="acc-input" id="accInput${weekIdx}" placeholder="Airbnb 링크 붙여넣기">
-      <button class="acc-btn" onclick="addAcc(${weekIdx})">추가</button>
-    </div>
-    <div class="acc-empty">등록된 숙소가 없어요</div>
-    <div class="acc-hint">링크에서 이름·사진을 자동으로 가져와요. 정확하지 않으면 추가 후 ✏️로 직접 수정할 수 있어요.</div>`;
+    el.innerHTML = label + `
+      <button class="acc-register-btn" onclick="openAccRegister(${curWeek})">
+        <span class="ic">🏠</span>숙소 등록
+      </button>`;
   }
-  html+=`</div>`;
-  return html;
 }
 
-async function addAcc(weekIdx){
-  const input=document.getElementById('accInput'+weekIdx);
-  const url=input.value.trim();
+function openAccView(weekIdx){
+  sheetWeek=weekIdx;
+  sheetMode='view';
+  renderSheet();
+  document.body.classList.add('sheet-open');
+}
+
+function openAccRegister(weekIdx){
+  sheetWeek=weekIdx;
+  sheetMode='edit';
+  renderSheet();
+  document.body.classList.add('sheet-open');
+}
+
+function closeAccSheet(){
+  const root=document.getElementById('accSheetRoot');
+  const backdrop=root.querySelector('.acc-sheet-backdrop');
+  sheetMode=null;
+  document.body.classList.remove('sheet-open');
+  if(backdrop){
+    backdrop.classList.add('closing');
+    setTimeout(()=>{ root.innerHTML=''; }, 200);
+  }else{
+    root.innerHTML='';
+  }
+}
+
+function renderSheet(){
+  const root=document.getElementById('accSheetRoot');
+  if(sheetMode==='view') root.innerHTML=sheetViewHtml(sheetWeek);
+  else if(sheetMode==='edit') root.innerHTML=sheetEditHtml(sheetWeek);
+  else root.innerHTML='';
+}
+
+function sheetViewHtml(weekIdx){
+  const acc=data.accommodations[weekIdx]||{};
+  const img=normalizeImg(acc.image);
+  return `<div class="acc-sheet-backdrop">
+    <div class="acc-sheet">
+      <div class="acc-sheet-hero" style="${img?`background-image:url('${img}')`:''}">
+        <button class="acc-sheet-back" onclick="closeAccSheet()">←</button>
+        ${img?'':'<div class="acc-sheet-hero-fallback">🏠</div>'}
+      </div>
+      <div class="acc-sheet-body">
+        <div class="acc-sheet-title">${acc.title||'숙소'}</div>
+        ${acc.location?`<div class="acc-sheet-loc">${acc.location}</div>`:''}
+        ${acc.details?`<div class="acc-sheet-details">${acc.details}</div>`:''}
+        ${acc.url?`<a class="acc-sheet-link" href="${acc.url}" target="_blank" rel="noopener">Airbnb에서 보기 →</a>`:''}
+        <div class="acc-sheet-actions">
+          <button class="acc-sheet-edit-btn" onclick="openAccRegister(${weekIdx})">정보 수정</button>
+          <button class="acc-sheet-del-btn" onclick="deleteAccFromSheet(${weekIdx})">삭제</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function sheetEditHtml(weekIdx){
+  const acc=data.accommodations[weekIdx]||{};
+  const img=normalizeImg(acc.image);
+  return `<div class="acc-sheet-backdrop">
+    <div class="acc-sheet">
+      <div class="acc-form-hdr">
+        <button onclick="closeAccSheet()">✕</button>
+        <div class="t">숙소 등록</div>
+      </div>
+      <div class="acc-form-body">
+        <div class="acc-form-label">Airbnb 링크</div>
+        <div class="acc-form-fetch-row">
+          <input id="fLink" placeholder="https://www.airbnb.co.kr/rooms/...">
+          <button class="acc-form-fetch-btn" id="fFetchBtn" onclick="fetchIntoForm(${weekIdx})">가져오기</button>
+        </div>
+        <img class="acc-form-preview" id="fPreview" src="${img}" style="${img?'':'display:none'}" onerror="this.style.display='none'">
+        <div class="acc-form-label">숙소 이름</div>
+        <input id="fName" placeholder="숙소 이름" value="${esc(acc.title)}">
+        <div class="acc-form-label">사진 URL</div>
+        <input id="fImg" placeholder="사진 URL" value="${esc(acc.image)}" oninput="updateFormPreview()">
+        <div class="acc-form-label">위치</div>
+        <input id="fLoc" placeholder="위치" value="${esc(acc.location)}">
+        <div class="acc-form-label">세부사항</div>
+        <textarea id="fDetail" placeholder="체크인 시간, 메모 등">${acc.details||''}</textarea>
+        <button class="acc-form-save" onclick="saveAccForm(${weekIdx})">저장</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function updateFormPreview(){
+  const v=document.getElementById('fImg').value.trim();
+  const img=document.getElementById('fPreview');
+  if(v){ img.src=normalizeImg(v); img.style.display='block'; }
+  else{ img.style.display='none'; }
+}
+
+async function fetchIntoForm(weekIdx){
+  const url=document.getElementById('fLink').value.trim();
   if(!url) return;
-  data.accommodations[weekIdx]={url, title:'불러오는 중...', image:null, location:null};
-  saveData();
-  renderContent();
+  const btn=document.getElementById('fFetchBtn');
+  btn.textContent='불러오는 중...';
   const preview=await fetchPreview(url);
-  data.accommodations[weekIdx]={url, title:preview.title||'Airbnb 숙소', image:preview.image, location:preview.location};
-  saveData();
-  if(curWeek===weekIdx) renderContent();
+  btn.textContent='가져오기';
+  if(preview.title) document.getElementById('fName').value=preview.title;
+  if(preview.location) document.getElementById('fLoc').value=preview.location;
+  if(preview.image){
+    document.getElementById('fImg').value=preview.image;
+    updateFormPreview();
+  }
 }
 
-function removeAcc(weekIdx){
+function saveAccForm(weekIdx){
+  const acc={
+    url:document.getElementById('fLink').value.trim(),
+    title:document.getElementById('fName').value.trim(),
+    image:document.getElementById('fImg').value.trim(),
+    location:document.getElementById('fLoc').value.trim(),
+    details:document.getElementById('fDetail').value.trim()
+  };
+  data.accommodations[weekIdx]=acc;
+  saveData();
+  closeAccSheet();
+  if(weekIdx===curWeek) renderAcc();
+}
+
+function deleteAccFromSheet(weekIdx){
+  if(!confirm('숙소 정보를 삭제할까요?')) return;
   delete data.accommodations[weekIdx];
   saveData();
-  renderContent();
-}
-
-function startEditAcc(weekIdx){
-  editingAcc=weekIdx;
-  renderContent();
-}
-
-function cancelEditAcc(){
-  editingAcc=null;
-  renderContent();
-}
-
-function saveEditAcc(weekIdx){
-  const acc=data.accommodations[weekIdx];
-  acc.title=document.getElementById('accTitleEdit'+weekIdx).value.trim()||acc.title;
-  acc.location=document.getElementById('accLocEdit'+weekIdx).value.trim();
-  editingAcc=null;
-  saveData();
-  renderContent();
+  closeAccSheet();
+  if(weekIdx===curWeek) renderAcc();
 }
 
 function planKey(){ return `${curWeek}-${curSub}`; }
@@ -372,7 +479,7 @@ function renderPlaces(){
 
 function togglePicker(){
   pickerOpen=!pickerOpen;
-  renderContent();
+  renderPlacesWrap();
 }
 
 function selectPreset(name){
@@ -381,13 +488,13 @@ function selectPreset(name){
   data.plans[key].push(name);
   pickerOpen=false;
   saveData();
-  renderContent();
+  renderPlacesWrap();
 }
 
 function removePlace(idx){
   data.plans[planKey()].splice(idx,1);
   saveData();
-  renderContent();
+  renderPlacesWrap();
 }
 
 function renderPicker(){
@@ -398,12 +505,9 @@ function renderPicker(){
     </button>`).join('')}</div>`;
 }
 
-function renderContent(animate){
-  const el=document.getElementById('content');
-  el.innerHTML = renderAccCard(curWeek)
-    + renderSubTabs()
-    + renderPlaces()
-    + renderPicker();
+function renderPlacesWrap(animate){
+  const el=document.getElementById('placesWrap');
+  el.innerHTML = renderPlaces() + renderPicker();
   document.getElementById('fabBtn').classList.toggle('open', pickerOpen);
   if(animate){
     el.classList.remove('content-anim');
@@ -413,7 +517,9 @@ function renderContent(animate){
 }
 
 renderBottomNav();
-renderContent();
+renderAcc();
+renderTabs();
+renderPlacesWrap();
 </script>
 </body>
 </html>
