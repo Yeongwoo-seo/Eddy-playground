@@ -40,7 +40,7 @@ body.sheet-open{overflow:hidden}
 
 /* accommodation photo card (same visual language as place cards) */
 .acc-photo-card{cursor:pointer;margin-bottom:16px}
-.ph-fallback-ic{position:absolute;inset:0;display:none;align-items:center;justify-content:center;font-size:36px;background:var(--primary-light);color:var(--primary)}
+.ph-fallback-ic{position:absolute;inset:0;display:none;align-items:center;justify-content:center;font-size:36px;background:var(--primary-light);color:var(--primary);z-index:1}
 
 /* weekday / weekend sub tabs */
 .sub-tabs{display:flex;gap:6px;background:var(--grey100);border-radius:14px;padding:4px;margin-bottom:16px}
@@ -52,9 +52,10 @@ body.sheet-open{overflow:hidden}
 .ph-gr{display:flex;flex-direction:column;gap:10px}
 .ph-cd{border-radius:18px;overflow:hidden;position:relative;height:150px;box-shadow:0 2px 12px rgba(0,0,0,0.06)}
 .ph-cd img{width:100%;height:100%;object-fit:cover;display:block;background:var(--grey100)}
-.ph-ov{position:absolute;bottom:0;left:0;right:0;padding:12px 14px;background:linear-gradient(transparent,rgba(0,0,0,.65))}
+.ph-cd::after{content:'';position:absolute;inset:0;background:rgba(0,0,0,.28);pointer-events:none}
+.ph-ov{position:absolute;bottom:0;left:0;right:0;padding:12px 14px;background:linear-gradient(transparent,rgba(0,0,0,.65));z-index:1}
 .ph-nm{font-size:14px;font-weight:700;color:#fff}
-.ph-del{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;border:none;background:rgba(0,0,0,.35);color:#fff;font-size:13px;cursor:pointer;backdrop-filter:blur(4px)}
+.ph-del{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;border:none;background:rgba(0,0,0,.35);color:#fff;font-size:13px;cursor:pointer;backdrop-filter:blur(4px);z-index:1}
 
 /* preset picker — dimmed backdrop + bottom sheet */
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
@@ -70,7 +71,8 @@ body.sheet-open{overflow:hidden}
 .preset-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .preset-chip{position:relative;height:92px;border-radius:14px;overflow:hidden;border:none;cursor:pointer;padding:0;background:var(--grey100) center/cover no-repeat;font-family:inherit}
 .preset-chip:active{transform:scale(.95)}
-.preset-chip .ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;padding:8px 4px;background:linear-gradient(transparent 35%, rgba(0,0,0,.65));color:#fff;font-size:11px;font-weight:700;text-align:center}
+.preset-chip::after{content:'';position:absolute;inset:0;background:rgba(0,0,0,.28);pointer-events:none}
+.preset-chip .ov{position:absolute;inset:0;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;padding:8px 4px;background:linear-gradient(transparent 35%, rgba(0,0,0,.65));color:#fff;font-size:11px;font-weight:700;text-align:center}
 .preset-emoji{font-size:18px}
 
 /* bottom nav — floating pill bar */
@@ -98,7 +100,8 @@ body.sheet-open{overflow:hidden}
 .acc-sheet::-webkit-scrollbar{display:none;width:0;height:0}
 
 .acc-sheet-hero{position:relative;height:300px;background:var(--grey100) center/cover no-repeat;display:flex}
-.acc-sheet-hero-fallback{flex:1;display:flex;align-items:center;justify-content:center;font-size:56px;background:var(--primary-light);color:var(--primary)}
+.acc-sheet-hero::after{content:'';position:absolute;inset:0;background:rgba(0,0,0,.25);pointer-events:none}
+.acc-sheet-hero-fallback{flex:1;display:flex;align-items:center;justify-content:center;font-size:56px;background:var(--primary-light);color:var(--primary);z-index:1}
 .acc-sheet-back{position:absolute;top:calc(16px + env(safe-area-inset-top));left:16px;width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,.4);color:#fff;border:none;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(4px);z-index:2}
 .acc-sheet-body{background:var(--white);border-radius:28px 28px 0 0;margin-top:-20px;position:relative;padding:24px 20px 40px;min-height:120px}
 .acc-sheet-title{font-size:20px;font-weight:800;line-height:1.4}
@@ -427,7 +430,7 @@ function sheetEditHtml(weekIdx){
         <div class="acc-form-label">사진</div>
         <div class="acc-form-fetch-row">
           <input id="fImg" placeholder="사진 URL 붙여넣기" value="${esc(acc.image)}" oninput="updateFormPreview()">
-          <button class="acc-form-fetch-btn" onclick="document.getElementById('fImgFile').click()">업로드</button>
+          <button class="acc-form-fetch-btn" id="fUploadBtn" onclick="document.getElementById('fImgFile').click()">업로드</button>
         </div>
         <input type="file" id="fImgFile" accept="image/*" style="display:none" onchange="handleImgUpload(event)">
         <img class="acc-form-preview" id="fPreview" src="${img}" style="${img?'':'display:none'}" onerror="this.style.display='none'">
@@ -448,22 +451,41 @@ function updateFormPreview(){
   else{ img.style.display='none'; }
 }
 
+function scaledDims(w, h, maxDim){
+  if(w<=maxDim && h<=maxDim) return {w, h};
+  return w>h ? {w:maxDim, h:Math.round(h*maxDim/w)} : {w:Math.round(w*maxDim/h), h:maxDim};
+}
+
+function drawToJpeg(source, w, h, quality){
+  const canvas=document.createElement('canvas');
+  canvas.width=w; canvas.height=h;
+  canvas.getContext('2d').drawImage(source,0,0,w,h);
+  return canvas.toDataURL('image/jpeg', quality);
+}
+
+// card art only ever renders at a few hundred px, so a small target
+// keeps both the native decode and the base64 encode fast on mobile
 function resizeImageFile(file, maxDim, quality){
-  maxDim=maxDim||1000; quality=quality||0.75;
+  maxDim=maxDim||640; quality=quality||0.7;
+  if('createImageBitmap' in window){
+    return createImageBitmap(file).then(bitmap=>{
+      const {w,h}=scaledDims(bitmap.width, bitmap.height, maxDim);
+      const out=drawToJpeg(bitmap, w, h, quality);
+      bitmap.close && bitmap.close();
+      return out;
+    }).catch(()=>resizeImageFileLegacy(file, maxDim, quality));
+  }
+  return resizeImageFileLegacy(file, maxDim, quality);
+}
+
+function resizeImageFileLegacy(file, maxDim, quality){
   return new Promise((resolve,reject)=>{
     const reader=new FileReader();
     reader.onload=e=>{
       const img=new Image();
       img.onload=()=>{
-        let w=img.width, h=img.height;
-        if(w>maxDim||h>maxDim){
-          if(w>h){ h=Math.round(h*maxDim/w); w=maxDim; }
-          else{ w=Math.round(w*maxDim/h); h=maxDim; }
-        }
-        const canvas=document.createElement('canvas');
-        canvas.width=w; canvas.height=h;
-        canvas.getContext('2d').drawImage(img,0,0,w,h);
-        resolve(canvas.toDataURL('image/jpeg', quality));
+        const {w,h}=scaledDims(img.width, img.height, maxDim);
+        resolve(drawToJpeg(img, w, h, quality));
       };
       img.onerror=()=>reject(new Error('invalid image'));
       img.src=e.target.result;
@@ -476,12 +498,19 @@ function resizeImageFile(file, maxDim, quality){
 async function handleImgUpload(event){
   const file=event.target.files[0];
   if(!file) return;
+  const btn=document.getElementById('fUploadBtn');
+  const prevLabel=btn.textContent;
+  btn.textContent='처리 중...';
+  btn.disabled=true;
   try{
     const dataUrl=await resizeImageFile(file);
     document.getElementById('fImg').value=dataUrl;
     updateFormPreview();
   }catch(e){
     alert('이미지를 불러오지 못했어요');
+  }finally{
+    btn.textContent=prevLabel;
+    btn.disabled=false;
   }
 }
 
