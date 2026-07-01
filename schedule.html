@@ -23,13 +23,16 @@ body.sheet-open{overflow:hidden}
 @supports (height: 100dvh){ .app{min-height:100dvh} }
 .hl{color:var(--primary)}
 
-/* top tabs — floating pill bar (일정 / 숙소) with a sliding active thumb */
-.top-tabs{position:fixed;top:calc(12px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);width:auto;background:var(--white);border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,0.1);display:flex;padding:3px;z-index:25}
+/* fixed top bar: day sub-tabs (left) + 일정/숙소 switcher (right), one line */
+.top-bar{position:fixed;top:calc(12px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:468px;display:flex;align-items:center;z-index:25}
+
+/* 일정 / 숙소 switcher — compact floating pill with a sliding active thumb */
+.top-tabs{position:relative;margin-left:auto;flex-shrink:0;background:var(--white);border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,0.1);display:flex;padding:3px}
 .tt-thumb{position:absolute;top:3px;left:3px;width:calc((100% - 6px) / 2);height:calc(100% - 6px);background:var(--primary);border-radius:12px;box-shadow:0 3px 10px rgba(232,116,30,0.35);transition:transform .3s cubic-bezier(.2,.8,.2,1);z-index:0}
 .top-tab{position:relative;z-index:1;border:none;background:none;padding:7px 14px;border-radius:12px;font-size:12px;font-weight:700;color:var(--grey500);cursor:pointer;font-family:inherit;transition:color .2s;white-space:nowrap}
 .top-tab.on{color:#fff}
 
-.i-bd{padding:calc(70px + env(safe-area-inset-top)) 20px 20px}
+.i-bd{padding:calc(64px + env(safe-area-inset-top)) 20px 20px}
 
 @keyframes slideUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
 .content-anim{animation:slideUp .45s cubic-bezier(.2,.8,.2,1)}
@@ -42,10 +45,10 @@ body.sheet-open{overflow:hidden}
 .acc-card-label{position:absolute;top:14px;left:16px;z-index:1;font-size:16px;font-weight:800;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.45)}
 .acc-card-label-empty{color:var(--grey700);text-shadow:none}
 
-/* weekday / weekend sub tabs */
-.sub-tabs{display:flex;gap:6px;background:var(--grey100);border-radius:14px;padding:4px;margin-bottom:16px}
-.sub-tab{flex:1;border:none;background:none;padding:11px 0;border-radius:11px;font-size:14px;font-weight:700;color:var(--grey500);cursor:pointer;font-family:inherit;transition:.2s}
-.sub-tab.on{background:var(--white);color:var(--primary);box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+/* day sub tabs — left-aligned, sized to their own text (평일 / 토요일 / 일요일) */
+.sub-tabs{display:flex;gap:8px}
+.sub-tab{border:none;background:var(--white);color:var(--grey500);padding:9px 16px;border-radius:14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:.2s;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+.sub-tab.on{background:var(--primary);color:#fff;box-shadow:0 3px 10px rgba(232,116,30,0.35)}
 .sub-empty{font-size:13px;color:var(--grey500);text-align:center;padding:28px 0}
 
 /* place / accommodation photo cards */
@@ -159,11 +162,13 @@ body.sheet-open{overflow:hidden}
 </head>
 <body>
 <div class="app">
-  <div class="top-tabs" id="topTabs"></div>
+  <div class="top-bar" id="topBar">
+    <div id="tabsWrap"></div>
+    <div class="top-tabs" id="topTabs"></div>
+  </div>
 
   <div class="i-bd">
     <div id="scheduleTab">
-      <div id="tabsWrap"></div>
       <div id="placesWrap"></div>
     </div>
     <div id="accTab" style="display:none"></div>
@@ -200,11 +205,6 @@ function weekLabel(week){
     ? `${s.getMonth()+1}.${s.getDate()}-${e.getDate()}`
     : `${s.getMonth()+1}.${s.getDate()}-${e.getMonth()+1}.${e.getDate()}`;
 }
-function isWeekend(dateStr){
-  const dow=toDate(dateStr).getDay();
-  return dow===0 || dow===6;
-}
-
 // ─── place images (auto-matched by keyword, same spots as tour.html) ───
 const PH={
   opera:'https://images.pexels.com/photos/4062614/pexels-photo-4062614.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&fit=crop',
@@ -317,6 +317,14 @@ function loadData(){
   Object.keys(d.plans||{}).forEach(k=>{
     d.plans[k]=(d.plans[k]||[]).map(item=>typeof item==='string' ? {name:item, time:''} : item);
   });
+  // migrate the old combined "weekend" tab into "sat" now that it's split into 토요일/일요일
+  Object.keys(d.plans||{}).forEach(k=>{
+    const m=k.match(/^(\d+)-weekend$/);
+    if(!m) return;
+    const satKey=`${m[1]}-sat`;
+    d.plans[satKey]=(d.plans[satKey]||[]).concat(d.plans[k]);
+    delete d.plans[k];
+  });
   return d;
 }
 function saveData(){ localStorage.setItem(STORE_KEY, JSON.stringify(data)); }
@@ -351,6 +359,7 @@ function goTopTab(tab){
   updateTopTabsActive();
   document.getElementById('scheduleTab').style.display = tab==='schedule' ? '' : 'none';
   document.getElementById('accTab').style.display = tab==='acc' ? '' : 'none';
+  document.getElementById('tabsWrap').style.display = tab==='schedule' ? '' : 'none';
   document.querySelector('.fab-wrap').style.display = tab==='schedule' ? '' : 'none';
   if(tab==='acc') renderAccTab();
 }
@@ -422,7 +431,8 @@ function goSub(type){
 function renderTabs(){
   document.getElementById('tabsWrap').innerHTML = `<div class="sub-tabs">
     <button class="sub-tab ${curSub==='weekday'?'on':''}" onclick="goSub('weekday')">평일</button>
-    <button class="sub-tab ${curSub==='weekend'?'on':''}" onclick="goSub('weekend')">주말</button>
+    <button class="sub-tab ${curSub==='sat'?'on':''}" onclick="goSub('sat')">토요일</button>
+    <button class="sub-tab ${curSub==='sun'?'on':''}" onclick="goSub('sun')">일요일</button>
   </div>`;
 }
 
@@ -676,7 +686,8 @@ function planKey(){ return `${curWeek}-${curSub}`; }
 function renderPlaces(){
   const key=planKey();
   const places=data.plans[key]||[];
-  if(!places.length) return `<div class="sub-empty">${curSub==='weekend'?'주말':'평일'}에 갈 곳을 추가해보세요</div>`;
+  const subLabel=curSub==='sat'?'토요일':curSub==='sun'?'일요일':'평일';
+  if(!places.length) return `<div class="sub-empty">${subLabel}에 갈 곳을 추가해보세요</div>`;
   return `<div class="ph-gr">${places.map((p,i)=>`
     <div class="pl-row">
       <div class="pl-time-col">${timeSelectHtml('plTime'+i, p.time, `updatePlaceTimeFromSelect(${i})`)}</div>
