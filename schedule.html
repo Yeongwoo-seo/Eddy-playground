@@ -42,7 +42,13 @@ body{background:var(--bg);color:var(--black);font-family:'Pretendard',-apple-sys
 .acc-name{font-size:14px;font-weight:700;color:var(--black);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .acc-loc{font-size:12px;color:var(--grey500);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .acc-remove{background:none;border:none;color:var(--grey300);font-size:16px;cursor:pointer;flex-shrink:0;padding:6px}
+.acc-edit{background:none;border:none;color:var(--grey300);font-size:14px;cursor:pointer;flex-shrink:0;padding:6px}
+.acc-actions{display:flex;flex-direction:column;flex-shrink:0}
 .acc-empty{font-size:12px;color:var(--grey500);margin-top:8px}
+.acc-hint{font-size:11px;color:var(--grey300);margin-top:8px;line-height:1.5}
+.acc-edit-form{display:flex;flex-direction:column;gap:8px}
+.acc-edit-row{display:flex;gap:8px}
+.acc-edit-row .acc-input{font-size:13px;padding:10px 12px}
 
 /* weekday / weekend sub tabs */
 .sub-tabs{display:flex;gap:6px;background:var(--grey100);border-radius:14px;padding:4px;margin-bottom:16px}
@@ -58,9 +64,7 @@ body{background:var(--bg);color:var(--black);font-family:'Pretendard',-apple-sys
 .ph-nm{font-size:14px;font-weight:700;color:#fff}
 .ph-del{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;border:none;background:rgba(0,0,0,.35);color:#fff;font-size:13px;cursor:pointer;backdrop-filter:blur(4px)}
 
-.add-toggle-btn{width:100%;margin-top:14px;background:var(--grey100);color:var(--grey700);border:none;border-radius:14px;padding:13px 0;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
-.add-toggle-btn:active{transform:scale(.98)}
-.preset-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.preset-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}
 .preset-chip{display:flex;flex-direction:column;align-items:center;gap:5px;background:var(--white);box-shadow:0 2px 8px rgba(0,0,0,0.05);border:none;border-radius:14px;padding:14px 6px;font-family:inherit;cursor:pointer;font-size:11px;font-weight:600;color:var(--grey700);text-align:center}
 .preset-chip:active{transform:scale(.95);background:var(--primary-light);color:var(--primary)}
 .preset-emoji{font-size:22px}
@@ -73,6 +77,13 @@ body{background:var(--bg);color:var(--black);font-family:'Pretendard',-apple-sys
 .nav-item.on{background:var(--primary-light)}
 .nav-item.on .n-ic{background:var(--primary);color:#fff}
 .nav-item.on .n-lb{color:var(--primary)}
+
+/* floating add-place button */
+.fab-wrap{position:fixed;bottom:104px;left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:468px;height:0;pointer-events:none;z-index:19}
+.fab{position:absolute;right:0;bottom:0;width:56px;height:56px;border-radius:50%;background:var(--primary);color:#fff;border:none;font-size:26px;font-weight:400;line-height:1;box-shadow:0 4px 20px rgba(232,116,30,0.35);cursor:pointer;pointer-events:auto;display:flex;align-items:center;justify-content:center;transition:transform .25s cubic-bezier(.2,.8,.2,1)}
+.fab:active{transform:scale(.94)}
+.fab.open{transform:rotate(45deg)}
+.fab.open:active{transform:rotate(45deg) scale(.94)}
 </style>
 </head>
 <body>
@@ -84,6 +95,7 @@ body{background:var(--bg);color:var(--black);font-family:'Pretendard',-apple-sys
   <div class="i-bd" id="content"></div>
 </div>
 
+<div class="fab-wrap"><button class="fab" id="fabBtn" onclick="togglePicker()">+</button></div>
 <div class="bottom-nav" id="bottomNav"></div>
 
 <script>
@@ -203,6 +215,14 @@ let data = loadData();
 let curWeek = 0;
 let curSub = 'weekday';
 let pickerOpen = false;
+let editingAcc = null;
+
+function decodeEntities(str){
+  if(!str) return str;
+  const ta=document.createElement('textarea');
+  ta.innerHTML=str;
+  return ta.value;
+}
 
 function renderBottomNav(){
   const el=document.getElementById('bottomNav');
@@ -217,14 +237,16 @@ function renderBottomNav(){
 function goWeek(i){
   curWeek=i;
   curSub='weekday';
+  pickerOpen=false;
+  editingAcc=null;
   renderBottomNav();
-  renderContent();
+  renderContent(true);
 }
 
 function goSub(type){
   curSub=type;
   pickerOpen=false;
-  renderContent();
+  renderContent(true);
 }
 
 function renderSubTabs(){
@@ -238,37 +260,59 @@ async function fetchPreview(url){
   try{
     const res=await fetch('https://api.allorigins.win/raw?url='+encodeURIComponent(url));
     const html=await res.text();
-    const titleM=html.match(/<meta property="og:title" content="([^"]*)"/i);
-    const imgM=html.match(/<meta property="og:image" content="([^"]*)"/i);
-    const descM=html.match(/<meta property="og:description" content="([^"]*)"/i);
+    const titleM=html.match(/<meta[^>]*property="og:title"[^>]*content="([^"]*)"/i)
+      || html.match(/<meta[^>]*content="([^"]*)"[^>]*property="og:title"/i);
+    const imgM=html.match(/<meta[^>]*property="og:image"[^>]*content="([^"]*)"/i)
+      || html.match(/<meta[^>]*content="([^"]*)"[^>]*property="og:image"/i);
+    const descM=html.match(/<meta[^>]*property="og:description"[^>]*content="([^"]*)"/i)
+      || html.match(/<meta[^>]*content="([^"]*)"[^>]*property="og:description"/i);
     return {
-      title:titleM?titleM[1]:null,
-      image:imgM?imgM[1]:null,
-      location:descM?descM[1]:null
+      title:titleM?decodeEntities(titleM[1]):null,
+      image:imgM?decodeEntities(imgM[1]):null,
+      location:descM?decodeEntities(descM[1]):null
     };
   }catch(e){
     return {title:null, image:null, location:null};
   }
 }
 
+function accThumbImg(image){
+  if(!image) return '🏠';
+  const src = image.startsWith('//') ? 'https:'+image : image;
+  return `<img src="${src}" referrerpolicy="no-referrer" loading="lazy" onerror="this.replaceWith('🏠')">`;
+}
+
 function renderAccCard(weekIdx){
   const acc=data.accommodations[weekIdx];
   let html=`<div class="acc-card"><div class="acc-lb">🏠 이번 주 숙소 (Airbnb)</div>`;
-  if(acc && acc.url){
+  if(acc && acc.url && editingAcc===weekIdx){
+    html+=`<div class="acc-edit-form">
+      <input class="acc-input" id="accTitleEdit${weekIdx}" placeholder="숙소 이름" value="${(acc.title||'').replace(/"/g,'&quot;')}">
+      <input class="acc-input" id="accLocEdit${weekIdx}" placeholder="위치" value="${(acc.location||'').replace(/"/g,'&quot;')}">
+      <div class="acc-edit-row">
+        <button class="acc-btn" style="flex:1" onclick="saveEditAcc(${weekIdx})">저장</button>
+        <button class="acc-btn" style="flex:1;background:var(--grey100);color:var(--grey700)" onclick="cancelEditAcc()">취소</button>
+      </div>
+    </div>`;
+  }else if(acc && acc.url){
     html+=`<a class="acc-preview" href="${acc.url}" target="_blank" rel="noopener">
-      <div class="acc-thumb">${acc.image?`<img src="${acc.image}">`:'🏠'}</div>
+      <div class="acc-thumb">${accThumbImg(acc.image)}</div>
       <div class="acc-txt">
         <div class="acc-name">${acc.title||'Airbnb 숙소'}</div>
         <div class="acc-loc">${acc.location||acc.url}</div>
       </div>
-      <button class="acc-remove" onclick="event.preventDefault();removeAcc(${weekIdx})">✕</button>
+      <div class="acc-actions">
+        <button class="acc-edit" onclick="event.preventDefault();startEditAcc(${weekIdx})">✏️</button>
+        <button class="acc-remove" onclick="event.preventDefault();removeAcc(${weekIdx})">✕</button>
+      </div>
     </a>`;
   }else{
     html+=`<div class="acc-input-row">
       <input class="acc-input" id="accInput${weekIdx}" placeholder="Airbnb 링크 붙여넣기">
       <button class="acc-btn" onclick="addAcc(${weekIdx})">추가</button>
     </div>
-    <div class="acc-empty">등록된 숙소가 없어요</div>`;
+    <div class="acc-empty">등록된 숙소가 없어요</div>
+    <div class="acc-hint">링크에서 이름·사진을 자동으로 가져와요. 정확하지 않으면 추가 후 ✏️로 직접 수정할 수 있어요.</div>`;
   }
   html+=`</div>`;
   return html;
@@ -289,6 +333,25 @@ async function addAcc(weekIdx){
 
 function removeAcc(weekIdx){
   delete data.accommodations[weekIdx];
+  saveData();
+  renderContent();
+}
+
+function startEditAcc(weekIdx){
+  editingAcc=weekIdx;
+  renderContent();
+}
+
+function cancelEditAcc(){
+  editingAcc=null;
+  renderContent();
+}
+
+function saveEditAcc(weekIdx){
+  const acc=data.accommodations[weekIdx];
+  acc.title=document.getElementById('accTitleEdit'+weekIdx).value.trim()||acc.title;
+  acc.location=document.getElementById('accLocEdit'+weekIdx).value.trim();
+  editingAcc=null;
   saveData();
   renderContent();
 }
@@ -335,16 +398,18 @@ function renderPicker(){
     </button>`).join('')}</div>`;
 }
 
-function renderContent(){
+function renderContent(animate){
   const el=document.getElementById('content');
   el.innerHTML = renderAccCard(curWeek)
     + renderSubTabs()
     + renderPlaces()
-    + `<button class="add-toggle-btn" onclick="togglePicker()">${pickerOpen?'닫기':'+ 장소 추가'}</button>`
     + renderPicker();
-  el.classList.remove('content-anim');
-  void el.offsetWidth;
-  el.classList.add('content-anim');
+  document.getElementById('fabBtn').classList.toggle('open', pickerOpen);
+  if(animate){
+    el.classList.remove('content-anim');
+    void el.offsetWidth;
+    el.classList.add('content-anim');
+  }
 }
 
 renderBottomNav();
