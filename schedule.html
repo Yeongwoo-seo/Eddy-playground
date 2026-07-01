@@ -340,7 +340,7 @@ function saveData(){ localStorage.setItem(STORE_KEY, JSON.stringify(data)); }
 
 let data = loadData();
 let curWeek = 0;
-let curSub = 'weekday';
+let curSub = 'sat';
 let topTab = 'schedule'; // 'schedule' | 'acc'
 let pickerOpen = false;
 let sheetMode = null; // null | 'edit' | 'place'
@@ -432,7 +432,7 @@ function updateBottomNavActive(){
 
 function goWeek(i){
   curWeek=i;
-  curSub='weekday';
+  curSub='sat';
   if(pickerOpen) closePicker();
   updateBottomNavActive();
   renderAccTab();
