@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Eddy Playground</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --primary:#E8741E;--primary-hover:#D4681A;--primary-light:#FFF3EB;
+  --bg:#F5F5F5;--white:#FFFFFF;
+  --grey100:#F2F4F6;--grey300:#D1D6DB;--grey500:#8B95A1;--grey700:#4E5968;--black:#191F28;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--black);font-family:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;display:flex;justify-content:center}
+.app{width:100%;max-width:500px;min-height:100vh;padding:16px}
+.hl{color:var(--primary)}
+
+.pg-hdr{padding:28px 4px 24px}
+.pg-title{font-size:28px;font-weight:800;letter-spacing:-.3px}
+.pg-sub{font-size:14px;color:var(--grey500);font-weight:500;margin-top:8px;line-height:1.6}
+
+.card-list{display:flex;flex-direction:column;gap:14px}
+.f-card{display:flex;align-items:center;gap:16px;background:var(--white);border-radius:24px;box-shadow:0 2px 12px rgba(0,0,0,0.06);padding:20px;text-decoration:none;color:inherit;transition:transform .15s}
+.f-card:active{transform:scale(.98)}
+.f-icon{width:56px;height:56px;border-radius:16px;background:var(--primary-light);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0}
+.f-txt{flex:1;min-width:0}
+.f-name{font-size:16px;font-weight:700}
+.f-desc{font-size:13px;color:var(--grey500);font-weight:500;margin-top:3px;line-height:1.5}
+.f-tag{display:inline-block;background:var(--primary-light);color:var(--primary);font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;margin-top:8px}
+.f-arrow{color:var(--grey300);font-size:18px;flex-shrink:0}
+
+.pg-ftr{text-align:center;font-size:12px;color:var(--grey500);padding:28px 0 12px}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="pg-hdr">
+    <div class="pg-title">Eddy <span class="hl">Playground</span></div>
+    <div class="pg-sub">사용할 기능을 선택하세요</div>
+  </div>
+
+  <div class="card-list">
+    <a class="f-card" href="index.html">
+      <div class="f-icon">📐</div>
+      <div class="f-txt">
+        <div class="f-name">FrameCad Custom Maker</div>
+        <div class="f-desc">치수를 입력하고 절단 데이터를 생성해요</div>
+        <span class="f-tag">도구</span>
+      </div>
+      <div class="f-arrow">›</div>
+    </a>
+
+    <a class="f-card" href="tour.html">
+      <div class="f-icon">🧭</div>
+      <div class="f-txt">
+        <div class="f-name">시드니 여행 유형 테스트</div>
+        <div class="f-desc">10문항으로 알아보는 우리의 여행 스타일</div>
+        <span class="f-tag">테스트</span>
+      </div>
+      <div class="f-arrow">›</div>
+    </a>
+
+    <a class="f-card" href="schedule.html">
+      <div class="f-icon">🗓️</div>
+      <div class="f-txt">
+        <div class="f-name">시드니 여행 스케줄</div>
+        <div class="f-desc">7/22 ~ 8/17, 주차별로 갈 곳을 계획해요</div>
+        <span class="f-tag">플래너</span>
+      </div>
+      <div class="f-arrow">›</div>
+    </a>
+  </div>
+
+  <div class="pg-ftr">Eddy Playground</div>
+</div>
+</body>
+</html>
