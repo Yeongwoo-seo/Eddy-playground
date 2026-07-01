@@ -32,14 +32,15 @@ body.sheet-open{overflow:hidden}
 @keyframes slideUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
 .content-anim{animation:slideUp .45s cubic-bezier(.2,.8,.2,1)}
 
-/* accommodation label + register CTA */
-.acc-lb{font-size:13px;font-weight:700;color:var(--grey700);margin-bottom:10px}
-.acc-register-btn{width:100%;height:150px;border-radius:18px;border:1.5px dashed var(--grey300);background:var(--grey50);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--grey500);font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;margin-bottom:16px}
+/* accommodation register CTA */
+.acc-register-btn{position:relative;width:100%;height:150px;border-radius:18px;border:1.5px dashed var(--grey300);background:var(--grey50);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--grey500);font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;margin-bottom:16px}
 .acc-register-btn .ic{font-size:26px}
 .acc-register-btn:active{transform:scale(.98)}
 
 /* accommodation photo card (same visual language as place cards) */
 .acc-photo-card{cursor:pointer;margin-bottom:16px}
+.acc-card-label{position:absolute;top:14px;left:16px;z-index:1;font-size:16px;font-weight:800;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.45)}
+.acc-card-label-empty{color:var(--grey700);text-shadow:none}
 .ph-fallback-ic{position:absolute;inset:0;display:none;align-items:center;justify-content:center;font-size:36px;background:var(--primary-light);color:var(--primary);z-index:1}
 
 /* weekday / weekend sub tabs */
@@ -50,6 +51,12 @@ body.sheet-open{overflow:hidden}
 
 /* place / accommodation photo cards */
 .ph-gr{display:flex;flex-direction:column;gap:10px}
+.pl-row{display:flex;gap:10px;align-items:stretch}
+.pl-time-col{width:58px;flex-shrink:0;padding-top:14px}
+.pl-time{border:none;background:transparent;font-size:13px;font-weight:700;color:var(--primary);font-family:inherit;padding:0;width:100%}
+.pl-time:focus{outline:none}
+.pl-time::-webkit-calendar-picker-indicator{display:none;margin:0}
+.pl-row .ph-cd{flex:1;cursor:pointer}
 .ph-cd{border-radius:18px;overflow:hidden;position:relative;height:150px;box-shadow:0 2px 12px rgba(0,0,0,0.06)}
 .ph-cd img{width:100%;height:100%;object-fit:cover;display:block;background:var(--grey100)}
 .ph-cd::after{content:'';position:absolute;inset:0;background:rgba(0,0,0,.28);pointer-events:none}
@@ -113,6 +120,13 @@ body.sheet-open{overflow:hidden}
 .acc-sheet-actions button{flex:1;padding:14px;border-radius:14px;border:none;font-weight:700;font-family:inherit;cursor:pointer;font-size:14px}
 .acc-sheet-edit-btn{background:var(--grey100);color:var(--grey700)}
 .acc-sheet-del-btn{background:var(--grey100);color:var(--grey500)}
+
+/* place detail sheet info rows (same sheet shell as accommodation) */
+.place-info-rows{display:flex;flex-direction:column;gap:16px;margin-top:18px}
+.place-info-row{display:flex;gap:12px;align-items:flex-start}
+.pi-ic{font-size:18px;flex-shrink:0;margin-top:1px}
+.pi-lb{font-size:12px;color:var(--grey500);font-weight:600;margin-bottom:2px}
+.pi-val{font-size:14px;color:var(--black);line-height:1.6;font-weight:500}
 
 /* accommodation register / edit form (inside the same sheet) */
 .acc-form-hdr{display:flex;align-items:center;gap:14px;padding:20px;border-bottom:1px solid var(--grey100)}
@@ -248,18 +262,51 @@ const PRESETS=[
   {name:'일몰 명소', emoji:'🌅'}
 ];
 
+// ─── reference info shown on each place's detail sheet ───
+// approximate/typical values for planning purposes — always worth
+// double-checking hours & prices closer to the trip date
+const PLACE_INFO={
+  '오페라하우스':{hours:'가이드 투어 09:00-17:00 (매일)', price:'가이드 투어 A$48~', highlights:'조개껍질 모양 지붕, 하버브릿지와 함께 시드니 대표 야경'},
+  '하버브릿지':{hours:'BridgeClimb 07:00-19:00 (예약제)', price:'BridgeClimb A$250~ / 도보 횡단 무료', highlights:'134m 정상에서 보는 시드니 파노라마, 일몰 시간대 추천'},
+  '블루마운틴':{hours:'Scenic World 09:00-17:00', price:'Discovery Pass A$49~', highlights:'Three Sisters 전망, 세계 최급경사 52도 Scenic Railway'},
+  '페더데일 동물원':{hours:'09:00-17:30', price:'입장료 A$46~', highlights:'코알라 안고 사진 촬영, 캥거루 직접 먹이주기'},
+  '타롱가 동물원':{hours:'09:30-17:00', price:'입장료 A$51~', highlights:'시드니 하버 뷰와 함께 보는 동물원, 페리로 12분'},
+  '본다이 비치':{hours:'24시간 개방', price:'무료', highlights:'아이스버그 수영장, 본다이-쿠지 코스털 워크 시작점'},
+  '맨리 비치':{hours:'24시간 개방', price:'페리 왕복 A$9~', highlights:'서큘러키에서 페리 30분, 여유로운 해변 산책'},
+  '더 록스':{hours:'상점 10:00-18:00, 주말 마켓 10:00-17:00', price:'무료 (마켓 상품 별도)', highlights:'시드니 초기 정착지 골목길, 주말 핸드메이드 마켓'},
+  '달링하버':{hours:'24시간 개방', price:'무료', highlights:'워터프런트 야경, 정기 불꽃놀이 이벤트 확인'},
+  '로얄 보타닉 가든':{hours:'07:00-일몰', price:'무료', highlights:'하버브릿지·오페라하우스 뷰포인트, Mrs Macquarie\'s Chair'},
+  '카페 브런치':{hours:'07:00-15:00 (매장별 상이)', price:'1인 A$20~35', highlights:'스매시드 아보카도, 플랫화이트 커피'},
+  '맛집 탐방':{hours:'매장별 상이', price:'1인 A$30~60', highlights:'피쉬앤칩스부터 파인다이닝까지 다양한 선택'},
+  '로컬 마켓 쇼핑':{hours:'주말 10:00-16:00 (마켓별 상이)', price:'무료 입장', highlights:'패딩턴 마켓 핸드메이드 굿즈, 빈티지 아이템'},
+  '미술관·갤러리':{hours:'10:00-17:00 (월요일 휴관 多)', price:'상설전 무료 / 특별전 별도', highlights:'NSW 아트갤러리, MCA 현대미술관'},
+  '서핑 체험':{hours:'레슨 09:00, 11:00, 14:00 (예약제)', price:'그룹 레슨 A$70~', highlights:'본다이·맨리 비치 초보자 강습 인기'},
+  '하버 페리 크루즈':{hours:'06:00-23:00 (노선별 상이)', price:'Opal 카드 기준 A$7.14~', highlights:'서큘러키↔맨리 노선에서 오페라하우스·하버브릿지 조망'},
+  '블루마운틴 기차':{hours:'Central역 첫차 05:00~', price:'Opal 카드 기준 A$8.83~', highlights:'카툼바까지 약 2시간, 창밖 산악 풍경'},
+  '일몰 명소':{hours:'일몰 시각 확인 (계절별 상이)', price:'무료', highlights:'Watsons Bay, Mrs Macquarie\'s Chair 추천'}
+};
+function mapsUrl(name){ return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name+' Sydney')}`; }
+
 function loadData(){
+  let d=null;
   try{
     const raw=localStorage.getItem(STORE_KEY);
-    if(raw) return JSON.parse(raw);
+    if(raw) d=JSON.parse(raw);
   }catch(e){}
-  return {
-    accommodations:{},
-    plans:{
-      '0-weekday':['✈️ 시드니 공항 도착 (7/22 09:00)'],
-      '3-weekday':['✈️ 시드니 공항 출발 (8/17 20:30)']
-    }
-  };
+  if(!d){
+    d={
+      accommodations:{},
+      plans:{
+        '0-weekday':[{name:'✈️ 시드니 공항 도착', time:'09:00'}],
+        '3-weekday':[{name:'✈️ 시드니 공항 출발', time:'20:30'}]
+      }
+    };
+  }
+  // migrate plan entries saved as plain strings (pre-time-field versions) to {name,time}
+  Object.keys(d.plans||{}).forEach(k=>{
+    d.plans[k]=(d.plans[k]||[]).map(item=>typeof item==='string' ? {name:item, time:''} : item);
+  });
+  return d;
 }
 function saveData(){ localStorage.setItem(STORE_KEY, JSON.stringify(data)); }
 
@@ -267,8 +314,9 @@ let data = loadData();
 let curWeek = 0;
 let curSub = 'weekday';
 let pickerOpen = false;
-let sheetMode = null; // null | 'view' | 'edit'
+let sheetMode = null; // null | 'view' | 'edit' | 'place'
 let sheetWeek = null;
+let sheetPlaceIdx = null;
 
 function decodeEntities(str){
   if(!str) return str;
@@ -337,17 +385,18 @@ async function fetchPreview(url){
 function renderAcc(){
   const el=document.getElementById('accWrap');
   const acc=data.accommodations[curWeek];
-  const label=`<div class="acc-lb">🏠 이번 주 숙소</div>`;
   if(acc && acc.image){
-    el.innerHTML = label + `
+    el.innerHTML = `
       <div class="ph-cd acc-photo-card" onclick="openAccView(${curWeek})">
         <img src="${normalizeImg(acc.image)}" referrerpolicy="no-referrer" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
         <div class="ph-fallback-ic">🏠</div>
+        <div class="acc-card-label">이번 주 숙소</div>
         <div class="ph-ov"><div class="ph-nm">${acc.title||'숙소'}</div></div>
       </div>`;
   }else{
-    el.innerHTML = label + `
+    el.innerHTML = `
       <button class="acc-register-btn" onclick="openAccRegister(${curWeek})">
+        <div class="acc-card-label acc-card-label-empty">이번 주 숙소</div>
         <span class="ic">🏠</span>숙소 등록
       </button>`;
   }
@@ -356,6 +405,13 @@ function renderAcc(){
 function openAccView(weekIdx){
   sheetWeek=weekIdx;
   sheetMode='view';
+  renderSheet();
+  document.body.classList.add('sheet-open');
+}
+
+function openPlaceView(idx){
+  sheetPlaceIdx=idx;
+  sheetMode='place';
   renderSheet();
   document.body.classList.add('sheet-open');
 }
@@ -384,7 +440,31 @@ function renderSheet(){
   const root=document.getElementById('accSheetRoot');
   if(sheetMode==='view') root.innerHTML=sheetViewHtml(sheetWeek);
   else if(sheetMode==='edit') root.innerHTML=sheetEditHtml(sheetWeek);
+  else if(sheetMode==='place') root.innerHTML=placeSheetHtml(sheetPlaceIdx);
   else root.innerHTML='';
+}
+
+function placeSheetHtml(idx){
+  const place=(data.plans[planKey()]||[])[idx];
+  if(!place) return '';
+  const name=place.name;
+  const info=PLACE_INFO[name]||{};
+  return `<div class="acc-sheet-backdrop">
+    <div class="acc-sheet">
+      <div class="acc-sheet-hero" style="background-image:url('${plImg(name)}')">
+        <button class="acc-sheet-back" onclick="closeAccSheet()">←</button>
+      </div>
+      <div class="acc-sheet-body">
+        <div class="acc-sheet-title">${name}</div>
+        <div class="place-info-rows">
+          <div class="place-info-row"><span class="pi-ic">🕐</span><div><div class="pi-lb">운영 시간</div><div class="pi-val">${info.hours||'정보 없음'}</div></div></div>
+          <div class="place-info-row"><span class="pi-ic">💰</span><div><div class="pi-lb">가격</div><div class="pi-val">${info.price||'정보 없음'}</div></div></div>
+          <div class="place-info-row"><span class="pi-ic">✨</span><div><div class="pi-lb">관람 포인트</div><div class="pi-val">${info.highlights||'정보 없음'}</div></div></div>
+        </div>
+        <a class="acc-sheet-link" href="${mapsUrl(name)}" target="_blank" rel="noopener">📍 구글맵에서 보기 →</a>
+      </div>
+    </div>
+  </div>`;
 }
 
 function sheetViewHtml(weekIdx){
@@ -558,11 +638,22 @@ function renderPlaces(){
   const places=data.plans[key]||[];
   if(!places.length) return `<div class="sub-empty">${curSub==='weekend'?'주말':'평일'}에 갈 곳을 추가해보세요</div>`;
   return `<div class="ph-gr">${places.map((p,i)=>`
-    <div class="ph-cd">
-      <img src="${plImg(p)}">
-      <button class="ph-del" onclick="removePlace(${i})">✕</button>
-      <div class="ph-ov"><div class="ph-nm">${p}</div></div>
+    <div class="pl-row">
+      <div class="pl-time-col"><input type="time" class="pl-time" value="${p.time||''}" onchange="setPlaceTime(${i},this.value)"></div>
+      <div class="ph-cd" onclick="openPlaceView(${i})">
+        <img src="${plImg(p.name)}">
+        <button class="ph-del" onclick="event.stopPropagation();removePlace(${i})">✕</button>
+        <div class="ph-ov"><div class="ph-nm">${p.name}</div></div>
+      </div>
     </div>`).join('')}</div>`;
+}
+
+function setPlaceTime(idx, value){
+  const key=planKey();
+  if(data.plans[key] && data.plans[key][idx]){
+    data.plans[key][idx].time=value;
+    saveData();
+  }
 }
 
 function syncFab(){
@@ -578,13 +669,18 @@ function openPicker(){
   pickerOpen=true;
   syncFab();
   document.body.classList.add('sheet-open');
+  const existingNames=(data.plans[planKey()]||[]).map(p=>p.name);
+  const available=PRESETS.filter(p=>!existingNames.includes(p.name));
+  const gridHtml=available.length
+    ? `<div class="preset-grid">${available.map(p=>`
+        <button class="preset-chip" style="background-image:url('${plImg(p.name)}')" onclick="selectPreset('${p.name}')">
+          <span class="ov"><span class="preset-emoji">${p.emoji}</span>${p.name}</span>
+        </button>`).join('')}</div>`
+    : `<div class="sub-empty">이미 모든 장소를 추가했어요</div>`;
   document.getElementById('pickerSheetRoot').innerHTML=`<div class="picker-backdrop" onclick="if(event.target===this) closePicker()">
     <div class="picker-sheet">
       <div class="picker-sheet-title">어디로 갈까요?</div>
-      <div class="preset-grid">${PRESETS.map(p=>`
-        <button class="preset-chip" style="background-image:url('${plImg(p.name)}')" onclick="selectPreset('${p.name}')">
-          <span class="ov"><span class="preset-emoji">${p.emoji}</span>${p.name}</span>
-        </button>`).join('')}</div>
+      ${gridHtml}
     </div>
   </div>`;
 }
@@ -606,16 +702,35 @@ function closePicker(){
 function selectPreset(name){
   const key=planKey();
   if(!data.plans[key]) data.plans[key]=[];
-  data.plans[key].push(name);
+  data.plans[key].push({name, time:''});
   saveData();
   renderPlacesWrap();
   closePicker();
 }
 
 function removePlace(idx){
-  data.plans[planKey()].splice(idx,1);
-  saveData();
-  renderPlacesWrap();
+  const rows=document.querySelectorAll('#placesWrap .pl-row');
+  const row=rows[idx];
+  if(!row){
+    data.plans[planKey()].splice(idx,1);
+    saveData();
+    renderPlacesWrap();
+    return;
+  }
+  const h=row.offsetHeight;
+  row.style.overflow='hidden';
+  row.style.maxHeight=h+'px';
+  row.style.transition='opacity .25s ease, max-height .28s ease .02s';
+  void row.offsetHeight;
+  requestAnimationFrame(()=>{
+    row.style.opacity='0';
+    row.style.maxHeight='0px';
+  });
+  setTimeout(()=>{
+    data.plans[planKey()].splice(idx,1);
+    saveData();
+    renderPlacesWrap();
+  }, 280);
 }
 
 function renderPlacesWrap(animate){
