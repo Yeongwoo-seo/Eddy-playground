@@ -19,15 +19,16 @@ html::-webkit-scrollbar{display:none;width:0;height:0}
 @supports (height: 100dvh){ html,body{height:100dvh} }
 body{background:var(--bg);color:var(--black);font-family:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;overflow-x:hidden;display:flex;justify-content:center}
 body.sheet-open{overflow:hidden}
-.app{width:100%;max-width:500px;min-height:100vh;position:relative;padding-bottom:calc(112px + env(safe-area-inset-bottom))}
+.app{width:100%;max-width:500px;min-height:100vh;position:relative;padding-bottom:calc(90px + env(safe-area-inset-bottom))}
 @supports (height: 100dvh){ .app{min-height:100dvh} }
 .hl{color:var(--primary)}
 
-/* header */
-.pg-hdr{padding:max(24px, env(safe-area-inset-top)) 20px 16px}
-.pg-title{font-size:22px;font-weight:700;letter-spacing:-.3px}
+/* top tabs — floating pill bar (일정 / 숙소) */
+.top-tabs{position:fixed;top:calc(16px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:468px;background:var(--white);border-radius:24px;box-shadow:0 4px 20px rgba(0,0,0,0.1);display:flex;padding:6px;z-index:25}
+.top-tab{flex:1;border:none;background:none;padding:13px 0;border-radius:18px;font-size:15px;font-weight:700;color:var(--grey500);cursor:pointer;font-family:inherit;transition:.2s}
+.top-tab.on{background:var(--primary);color:#fff}
 
-.i-bd{padding:4px 20px 20px}
+.i-bd{padding:calc(88px + env(safe-area-inset-top)) 20px 20px}
 
 @keyframes slideUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
 .content-anim{animation:slideUp .45s cubic-bezier(.2,.8,.2,1)}
@@ -37,11 +38,8 @@ body.sheet-open{overflow:hidden}
 .acc-register-btn .ic{font-size:26px}
 .acc-register-btn:active{transform:scale(.98)}
 
-/* accommodation photo card (same visual language as place cards) */
-.acc-photo-card{cursor:pointer;margin-bottom:16px}
 .acc-card-label{position:absolute;top:14px;left:16px;z-index:1;font-size:16px;font-weight:800;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.45)}
 .acc-card-label-empty{color:var(--grey700);text-shadow:none}
-.ph-fallback-ic{position:absolute;inset:0;display:none;align-items:center;justify-content:center;font-size:36px;background:var(--primary-light);color:var(--primary);z-index:1}
 
 /* weekday / weekend sub tabs */
 .sub-tabs{display:flex;gap:6px;background:var(--grey100);border-radius:14px;padding:4px;margin-bottom:16px}
@@ -82,8 +80,8 @@ body.sheet-open{overflow:hidden}
 .preset-chip .ov{position:absolute;inset:0;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;padding:8px 4px;background:linear-gradient(transparent 35%, rgba(0,0,0,.65));color:#fff;font-size:11px;font-weight:700;text-align:center}
 .preset-emoji{font-size:18px}
 
-/* bottom nav — floating pill bar */
-.bottom-nav{position:fixed;bottom:calc(16px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:468px;background:var(--white);border-radius:24px;box-shadow:0 4px 20px rgba(0,0,0,0.1);display:flex;padding:8px;z-index:20}
+/* bottom nav — docked bar (not floating) */
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:500px;background:var(--white);border-top:1px solid var(--grey200);display:flex;padding:8px 4px calc(8px + env(safe-area-inset-bottom));z-index:20}
 .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:none;cursor:pointer;padding:8px 4px;border-radius:16px;font-family:inherit;color:var(--grey500);min-height:44px;transition:background .2s}
 .nav-item .n-ic{width:24px;height:24px;border-radius:50%;background:var(--grey100);color:var(--grey500);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;transition:.2s}
 .nav-item .n-lb{font-size:10px;font-weight:600}
@@ -92,7 +90,7 @@ body.sheet-open{overflow:hidden}
 .nav-item.on .n-lb{color:var(--primary)}
 
 /* floating add-place button */
-.fab-wrap{position:fixed;bottom:calc(104px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:468px;height:0;pointer-events:none;z-index:19}
+.fab-wrap{position:fixed;bottom:calc(70px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:468px;height:0;pointer-events:none;z-index:19}
 .fab{position:absolute;right:0;bottom:0;width:56px;height:56px;border-radius:50%;background:var(--primary);color:#fff;border:none;font-size:26px;font-weight:400;line-height:1;box-shadow:0 4px 20px rgba(232,116,30,0.35);cursor:pointer;pointer-events:auto;display:flex;align-items:center;justify-content:center;transition:transform .25s cubic-bezier(.2,.8,.2,1)}
 .fab:active{transform:scale(.94)}
 .fab.open{transform:rotate(45deg)}
@@ -121,6 +119,10 @@ body.sheet-open{overflow:hidden}
 .acc-sheet-edit-btn{background:var(--grey100);color:var(--grey700)}
 .acc-sheet-del-btn{background:var(--grey100);color:var(--grey500)}
 
+/* accommodation shown inline under the 숙소 tab (same look, not a full-screen sheet) */
+.acc-inline-hero{border-radius:24px 24px 0 0}
+.acc-inline-body{border-radius:0 0 24px 24px;box-shadow:0 2px 12px rgba(0,0,0,0.06)}
+
 /* place detail sheet info rows (same sheet shell as accommodation) */
 .place-info-rows{display:flex;flex-direction:column;gap:16px;margin-top:18px}
 .place-info-row{display:flex;gap:12px;align-items:flex-start}
@@ -148,14 +150,14 @@ body.sheet-open{overflow:hidden}
 </head>
 <body>
 <div class="app">
-  <div class="pg-hdr">
-    <div class="pg-title">시드니 여행 <span class="hl">스케줄</span></div>
-  </div>
+  <div class="top-tabs" id="topTabs"></div>
 
   <div class="i-bd">
-    <div id="accWrap"></div>
-    <div id="tabsWrap"></div>
-    <div id="placesWrap"></div>
+    <div id="scheduleTab">
+      <div id="tabsWrap"></div>
+      <div id="placesWrap"></div>
+    </div>
+    <div id="accTab" style="display:none"></div>
   </div>
 </div>
 
@@ -313,10 +315,27 @@ function saveData(){ localStorage.setItem(STORE_KEY, JSON.stringify(data)); }
 let data = loadData();
 let curWeek = 0;
 let curSub = 'weekday';
+let topTab = 'schedule'; // 'schedule' | 'acc'
 let pickerOpen = false;
-let sheetMode = null; // null | 'view' | 'edit' | 'place'
+let sheetMode = null; // null | 'edit' | 'place'
 let sheetWeek = null;
 let sheetPlaceIdx = null;
+
+function renderTopTabs(){
+  document.getElementById('topTabs').innerHTML = `
+    <button class="top-tab ${topTab==='schedule'?'on':''}" onclick="goTopTab('schedule')">일정</button>
+    <button class="top-tab ${topTab==='acc'?'on':''}" onclick="goTopTab('acc')">숙소</button>
+  `;
+}
+
+function goTopTab(tab){
+  topTab=tab;
+  renderTopTabs();
+  document.getElementById('scheduleTab').style.display = tab==='schedule' ? '' : 'none';
+  document.getElementById('accTab').style.display = tab==='acc' ? '' : 'none';
+  document.querySelector('.fab-wrap').style.display = tab==='schedule' ? '' : 'none';
+  if(tab==='acc') renderAccTab();
+}
 
 function decodeEntities(str){
   if(!str) return str;
@@ -342,7 +361,7 @@ function goWeek(i){
   curSub='weekday';
   if(pickerOpen) closePicker();
   renderBottomNav();
-  renderAcc();
+  renderAccTab();
   renderTabs();
   renderPlacesWrap(true);
 }
@@ -381,17 +400,23 @@ async function fetchPreview(url){
   }
 }
 
-// ─── accommodation collapsed view (photo card, same language as place cards) ───
-function renderAcc(){
-  const el=document.getElementById('accWrap');
+// ─── accommodation tab (shown inline, same Airbnb-style page as before, no tap-to-expand) ───
+function renderAccTab(){
+  const el=document.getElementById('accTab');
   const acc=data.accommodations[curWeek];
   if(acc && acc.image){
+    const img=normalizeImg(acc.image);
     el.innerHTML = `
-      <div class="ph-cd acc-photo-card" onclick="openAccView(${curWeek})">
-        <img src="${normalizeImg(acc.image)}" referrerpolicy="no-referrer" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-        <div class="ph-fallback-ic">🏠</div>
-        <div class="acc-card-label">이번 주 숙소</div>
-        <div class="ph-ov"><div class="ph-nm">${acc.title||'숙소'}</div></div>
+      <div class="acc-sheet-hero acc-inline-hero" style="background-image:url('${img}')"></div>
+      <div class="acc-sheet-body acc-inline-body">
+        <div class="acc-sheet-title">${acc.title||'숙소'}</div>
+        ${acc.location?`<div class="acc-sheet-loc">${acc.location}</div>`:''}
+        ${acc.details?`<div class="acc-sheet-details">${acc.details}</div>`:''}
+        ${acc.url?`<a class="acc-sheet-link" href="${acc.url}" target="_blank" rel="noopener">Airbnb에서 보기 →</a>`:''}
+        <div class="acc-sheet-actions">
+          <button class="acc-sheet-edit-btn" onclick="openAccRegister(${curWeek})">정보 수정</button>
+          <button class="acc-sheet-del-btn" onclick="deleteAcc(${curWeek})">삭제</button>
+        </div>
       </div>`;
   }else{
     el.innerHTML = `
@@ -402,11 +427,11 @@ function renderAcc(){
   }
 }
 
-function openAccView(weekIdx){
-  sheetWeek=weekIdx;
-  sheetMode='view';
-  renderSheet();
-  document.body.classList.add('sheet-open');
+function deleteAcc(weekIdx){
+  if(!confirm('숙소 정보를 삭제할까요?')) return;
+  delete data.accommodations[weekIdx];
+  saveData();
+  if(weekIdx===curWeek) renderAccTab();
 }
 
 function openPlaceView(idx){
@@ -438,8 +463,7 @@ function closeAccSheet(){
 
 function renderSheet(){
   const root=document.getElementById('accSheetRoot');
-  if(sheetMode==='view') root.innerHTML=sheetViewHtml(sheetWeek);
-  else if(sheetMode==='edit') root.innerHTML=sheetEditHtml(sheetWeek);
+  if(sheetMode==='edit') root.innerHTML=sheetEditHtml(sheetWeek);
   else if(sheetMode==='place') root.innerHTML=placeSheetHtml(sheetPlaceIdx);
   else root.innerHTML='';
 }
@@ -462,29 +486,6 @@ function placeSheetHtml(idx){
           <div class="place-info-row"><span class="pi-ic">✨</span><div><div class="pi-lb">관람 포인트</div><div class="pi-val">${info.highlights||'정보 없음'}</div></div></div>
         </div>
         <a class="acc-sheet-link" href="${mapsUrl(name)}" target="_blank" rel="noopener">📍 구글맵에서 보기 →</a>
-      </div>
-    </div>
-  </div>`;
-}
-
-function sheetViewHtml(weekIdx){
-  const acc=data.accommodations[weekIdx]||{};
-  const img=normalizeImg(acc.image);
-  return `<div class="acc-sheet-backdrop">
-    <div class="acc-sheet">
-      <div class="acc-sheet-hero" style="${img?`background-image:url('${img}')`:''}">
-        <button class="acc-sheet-back" onclick="closeAccSheet()">←</button>
-        ${img?'':'<div class="acc-sheet-hero-fallback">🏠</div>'}
-      </div>
-      <div class="acc-sheet-body">
-        <div class="acc-sheet-title">${acc.title||'숙소'}</div>
-        ${acc.location?`<div class="acc-sheet-loc">${acc.location}</div>`:''}
-        ${acc.details?`<div class="acc-sheet-details">${acc.details}</div>`:''}
-        ${acc.url?`<a class="acc-sheet-link" href="${acc.url}" target="_blank" rel="noopener">Airbnb에서 보기 →</a>`:''}
-        <div class="acc-sheet-actions">
-          <button class="acc-sheet-edit-btn" onclick="openAccRegister(${weekIdx})">정보 수정</button>
-          <button class="acc-sheet-del-btn" onclick="deleteAccFromSheet(${weekIdx})">삭제</button>
-        </div>
       </div>
     </div>
   </div>`;
@@ -620,15 +621,7 @@ function saveAccForm(weekIdx){
   data.accommodations[weekIdx]=acc;
   saveData();
   closeAccSheet();
-  if(weekIdx===curWeek) renderAcc();
-}
-
-function deleteAccFromSheet(weekIdx){
-  if(!confirm('숙소 정보를 삭제할까요?')) return;
-  delete data.accommodations[weekIdx];
-  saveData();
-  closeAccSheet();
-  if(weekIdx===curWeek) renderAcc();
+  if(weekIdx===curWeek) renderAccTab();
 }
 
 function planKey(){ return `${curWeek}-${curSub}`; }
@@ -744,9 +737,10 @@ function renderPlacesWrap(animate){
 }
 
 renderBottomNav();
-renderAcc();
 renderTabs();
 renderPlacesWrap();
+renderTopTabs();
+goTopTab('schedule');
 </script>
 </body>
 </html>
