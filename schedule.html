@@ -276,6 +276,12 @@ async function fetchPreview(url){
   }
 }
 
+function accThumbImg(image){
+  if(!image) return '🏠';
+  const src = image.startsWith('//') ? 'https:'+image : image;
+  return `<img src="${src}" referrerpolicy="no-referrer" loading="lazy" onerror="this.replaceWith('🏠')">`;
+}
+
 function renderAccCard(weekIdx){
   const acc=data.accommodations[weekIdx];
   let html=`<div class="acc-card"><div class="acc-lb">🏠 이번 주 숙소 (Airbnb)</div>`;
@@ -290,7 +296,7 @@ function renderAccCard(weekIdx){
     </div>`;
   }else if(acc && acc.url){
     html+=`<a class="acc-preview" href="${acc.url}" target="_blank" rel="noopener">
-      <div class="acc-thumb">${acc.image?`<img src="${acc.image}">`:'🏠'}</div>
+      <div class="acc-thumb">${accThumbImg(acc.image)}</div>
       <div class="acc-txt">
         <div class="acc-name">${acc.title||'Airbnb 숙소'}</div>
         <div class="acc-loc">${acc.location||acc.url}</div>
