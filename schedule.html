@@ -8,82 +8,78 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
-  --bg:#0F1923;--surface:#172030;--card:#1C2A3D;
-  --border:#263348;--text:#E4E9F1;--text2:#8694A8;--text3:#4D5F73;
-  --accent:#E8741E;--accent-a:rgba(232,116,30,0.12);
+  --primary:#E8741E;--primary-hover:#D4681A;--primary-light:#FFF3EB;
+  --bg:#F5F5F5;--white:#FFFFFF;
+  --grey50:#FAFAFA;--grey100:#F2F4F6;--grey200:#E5E8EB;--grey300:#D1D6DB;
+  --grey500:#8B95A1;--grey700:#4E5968;--black:#191F28;
 }
 html,body{height:100%}
-body{background:var(--bg);color:var(--text);font-family:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;overflow-x:hidden;display:flex;justify-content:center}
-.app{width:100%;max-width:500px;min-height:100vh;position:relative;padding-bottom:96px}
-.hl{color:var(--accent);font-weight:800}
+body{background:var(--bg);color:var(--black);font-family:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;overflow-x:hidden;display:flex;justify-content:center}
+.app{width:100%;max-width:500px;min-height:100vh;position:relative;padding-bottom:112px}
+.hl{color:var(--primary)}
 
 /* header */
-.pg-hdr{padding:20px 20px 14px;position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--border)}
-.pg-title{font-size:19px;font-weight:800}
-.pg-sub{font-size:12px;color:var(--text2);margin-top:6px;line-height:1.6}
+.pg-hdr{padding:24px 20px 16px}
+.pg-title{font-size:22px;font-weight:700;letter-spacing:-.3px}
 
-/* week tabs */
-.wt{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:14px 20px 0}
-.wt::-webkit-scrollbar{display:none}
-.w-tb{padding:8px 14px;border:1px solid var(--border);border-radius:10px;background:var(--surface);font-size:12px;font-weight:600;color:var(--text3);cursor:pointer;font-family:inherit;white-space:nowrap;transition:all .2s;flex-shrink:0}
-.w-tb.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.i-bd{padding:4px 20px 20px}
 
-.i-bd{padding:20px 20px}
+@keyframes slideUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+.content-anim{animation:slideUp .45s cubic-bezier(.2,.8,.2,1)}
 
 /* accommodation card (fixed above weekday/weekend tabs) */
-.acc-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:16px}
-.acc-lb{font-size:12px;font-weight:700;color:var(--accent);margin-bottom:10px}
+.acc-card{background:var(--white);border-radius:20px;box-shadow:0 2px 12px rgba(0,0,0,0.06);padding:18px;margin-bottom:16px}
+.acc-lb{font-size:13px;font-weight:700;color:var(--grey700);margin-bottom:12px}
 .acc-input-row{display:flex;gap:8px}
-.acc-input{flex:1;border:1px solid var(--border);background:var(--card);border-radius:10px;padding:11px 12px;font-size:13px;font-family:inherit;color:var(--text)}
-.acc-input:focus{outline:none;border-color:var(--accent)}
-.acc-btn{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:0 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:.2s}
-.acc-btn:active{transform:scale(.96)}
+.acc-input{flex:1;border:none;background:var(--grey100);border-radius:14px;padding:12px 14px;font-size:14px;font-family:inherit;color:var(--black)}
+.acc-input:focus{outline:2px solid var(--primary)}
+.acc-btn{background:var(--primary);color:#fff;border:none;border-radius:14px;padding:0 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:.2s}
+.acc-btn:active{background:var(--primary-hover);transform:scale(.96)}
 .acc-preview{display:flex;gap:12px;align-items:center;text-decoration:none;color:inherit}
-.acc-thumb{width:56px;height:56px;border-radius:10px;background:var(--accent-a);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:22px;overflow:hidden}
+.acc-thumb{width:60px;height:60px;border-radius:14px;background:var(--primary-light);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:24px;overflow:hidden}
 .acc-thumb img{width:100%;height:100%;object-fit:cover}
 .acc-txt{flex:1;min-width:0}
-.acc-name{font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.acc-link{font-size:11px;color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.acc-remove{background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;flex-shrink:0;padding:6px}
-.acc-empty{font-size:11px;color:var(--text3);margin-top:8px}
+.acc-name{font-size:14px;font-weight:700;color:var(--black);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.acc-loc{font-size:12px;color:var(--grey500);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.acc-remove{background:none;border:none;color:var(--grey300);font-size:16px;cursor:pointer;flex-shrink:0;padding:6px}
+.acc-empty{font-size:12px;color:var(--grey500);margin-top:8px}
 
 /* weekday / weekend sub tabs */
-.sub-tabs{display:flex;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:4px;margin-bottom:16px}
-.sub-tab{flex:1;border:none;background:none;padding:10px 0;border-radius:9px;font-size:13px;font-weight:700;color:var(--text3);cursor:pointer;font-family:inherit;transition:.2s}
-.sub-tab.on{background:var(--accent);color:#fff}
-.sub-empty{font-size:12px;color:var(--text3);text-align:center;padding:24px 0}
+.sub-tabs{display:flex;gap:6px;background:var(--grey100);border-radius:14px;padding:4px;margin-bottom:16px}
+.sub-tab{flex:1;border:none;background:none;padding:11px 0;border-radius:11px;font-size:14px;font-weight:700;color:var(--grey500);cursor:pointer;font-family:inherit;transition:.2s}
+.sub-tab.on{background:var(--white);color:var(--primary);box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+.sub-empty{font-size:13px;color:var(--grey500);text-align:center;padding:28px 0}
 
-/* place photo cards (tour.html style) */
+/* place photo cards */
 .ph-gr{display:flex;flex-direction:column;gap:10px}
-.ph-cd{border-radius:14px;overflow:hidden;position:relative;height:150px;border:1px solid var(--border);background:var(--surface)}
-.ph-cd img{width:100%;height:100%;object-fit:cover;display:block}
-.ph-ov{position:absolute;bottom:0;left:0;right:0;padding:12px 14px;background:linear-gradient(transparent,rgba(0,0,0,.7))}
+.ph-cd{border-radius:18px;overflow:hidden;position:relative;height:150px;box-shadow:0 2px 12px rgba(0,0,0,0.06)}
+.ph-cd img{width:100%;height:100%;object-fit:cover;display:block;background:var(--grey100)}
+.ph-ov{position:absolute;bottom:0;left:0;right:0;padding:12px 14px;background:linear-gradient(transparent,rgba(0,0,0,.65))}
 .ph-nm{font-size:14px;font-weight:700;color:#fff}
-.ph-del{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;border:none;background:rgba(15,25,35,.6);color:#fff;font-size:13px;cursor:pointer;backdrop-filter:blur(4px)}
+.ph-del{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;border:none;background:rgba(0,0,0,.35);color:#fff;font-size:13px;cursor:pointer;backdrop-filter:blur(4px)}
 
-.add-row{display:flex;gap:8px;margin-top:14px}
-.add-input{flex:1;border:1px solid var(--border);background:var(--surface);border-radius:12px;padding:12px 14px;font-size:14px;font-family:inherit;color:var(--text)}
-.add-input:focus{outline:none;border-color:var(--accent)}
-.add-btn{background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:12px;padding:0 16px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
-.add-btn:active{transform:scale(.96)}
+.add-toggle-btn{width:100%;margin-top:14px;background:var(--grey100);color:var(--grey700);border:none;border-radius:14px;padding:13px 0;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+.add-toggle-btn:active{transform:scale(.98)}
+.preset-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.preset-chip{display:flex;flex-direction:column;align-items:center;gap:5px;background:var(--white);box-shadow:0 2px 8px rgba(0,0,0,0.05);border:none;border-radius:14px;padding:14px 6px;font-family:inherit;cursor:pointer;font-size:11px;font-weight:600;color:var(--grey700);text-align:center}
+.preset-chip:active{transform:scale(.95);background:var(--primary-light);color:var(--primary)}
+.preset-emoji{font-size:22px}
 
-/* bottom nav */
-.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:500px;background:var(--surface);border-top:1px solid var(--border);display:flex;padding:8px 4px calc(8px + env(safe-area-inset-bottom));z-index:20}
-.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;padding:8px 2px;font-family:inherit;color:var(--text3);min-height:44px}
-.nav-item .n-ic{width:22px;height:22px;border-radius:50%;background:var(--card);color:var(--text3);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;transition:.2s}
+/* bottom nav — floating pill bar */
+.bottom-nav{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:468px;background:var(--white);border-radius:24px;box-shadow:0 4px 20px rgba(0,0,0,0.1);display:flex;padding:8px;z-index:20}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:none;cursor:pointer;padding:8px 4px;border-radius:16px;font-family:inherit;color:var(--grey500);min-height:44px;transition:background .2s}
+.nav-item .n-ic{width:24px;height:24px;border-radius:50%;background:var(--grey100);color:var(--grey500);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;transition:.2s}
 .nav-item .n-lb{font-size:10px;font-weight:600}
-.nav-item.on .n-ic{background:var(--accent);color:#fff}
-.nav-item.on .n-lb{color:var(--accent)}
+.nav-item.on{background:var(--primary-light)}
+.nav-item.on .n-ic{background:var(--primary);color:#fff}
+.nav-item.on .n-lb{color:var(--primary)}
 </style>
 </head>
 <body>
 <div class="app">
   <div class="pg-hdr">
     <div class="pg-title">시드니 여행 <span class="hl">스케줄</span></div>
-    <div class="pg-sub">7월 22일 09:00 시드니 공항 도착 → 8월 17일 20:30 시드니 공항 출발</div>
   </div>
-
-  <div class="wt" id="weekStrip"></div>
 
   <div class="i-bd" id="content"></div>
 </div>
@@ -166,6 +162,28 @@ function plImg(name){
   return PH.opera;
 }
 
+// ─── preset places (same spots tour.html already built itineraries around) ───
+const PRESETS=[
+  {name:'오페라하우스', emoji:'🎭'},
+  {name:'하버브릿지', emoji:'🌉'},
+  {name:'블루마운틴', emoji:'⛰️'},
+  {name:'페더데일 동물원', emoji:'🐨'},
+  {name:'타롱가 동물원', emoji:'🦁'},
+  {name:'본다이 비치', emoji:'🏖️'},
+  {name:'맨리 비치', emoji:'🌊'},
+  {name:'더 록스', emoji:'🏛️'},
+  {name:'달링하버', emoji:'🌃'},
+  {name:'로얄 보타닉 가든', emoji:'🌿'},
+  {name:'카페 브런치', emoji:'☕'},
+  {name:'맛집 탐방', emoji:'🍽️'},
+  {name:'로컬 마켓 쇼핑', emoji:'🛍️'},
+  {name:'미술관·갤러리', emoji:'🎨'},
+  {name:'서핑 체험', emoji:'🏄'},
+  {name:'하버 페리 크루즈', emoji:'⛴️'},
+  {name:'블루마운틴 기차', emoji:'🚂'},
+  {name:'일몰 명소', emoji:'🌅'}
+];
+
 function loadData(){
   try{
     const raw=localStorage.getItem(STORE_KEY);
@@ -184,11 +202,7 @@ function saveData(){ localStorage.setItem(STORE_KEY, JSON.stringify(data)); }
 let data = loadData();
 let curWeek = 0;
 let curSub = 'weekday';
-
-function renderWeekStrip(){
-  const el=document.getElementById('weekStrip');
-  el.innerHTML=WEEKS.map((w,i)=>`<button class="w-tb ${i===curWeek?'on':''}" onclick="goWeek(${i})">${i+1}주차 ${weekLabel(w)}</button>`).join('');
-}
+let pickerOpen = false;
 
 function renderBottomNav(){
   const el=document.getElementById('bottomNav');
@@ -203,22 +217,20 @@ function renderBottomNav(){
 function goWeek(i){
   curWeek=i;
   curSub='weekday';
-  renderWeekStrip();
   renderBottomNav();
   renderContent();
 }
 
 function goSub(type){
   curSub=type;
+  pickerOpen=false;
   renderContent();
 }
 
-function renderSubTabs(week){
-  const weekdayCount=week.filter(d=>!isWeekend(d)).length;
-  const weekendCount=week.filter(isWeekend).length;
+function renderSubTabs(){
   return `<div class="sub-tabs">
-    <button class="sub-tab ${curSub==='weekday'?'on':''}" onclick="goSub('weekday')">평일여행 (${weekdayCount})</button>
-    <button class="sub-tab ${curSub==='weekend'?'on':''}" onclick="goSub('weekend')">주말여행 (${weekendCount})</button>
+    <button class="sub-tab ${curSub==='weekday'?'on':''}" onclick="goSub('weekday')">평일여행</button>
+    <button class="sub-tab ${curSub==='weekend'?'on':''}" onclick="goSub('weekend')">주말여행</button>
   </div>`;
 }
 
@@ -228,9 +240,14 @@ async function fetchPreview(url){
     const html=await res.text();
     const titleM=html.match(/<meta property="og:title" content="([^"]*)"/i);
     const imgM=html.match(/<meta property="og:image" content="([^"]*)"/i);
-    return {title:titleM?titleM[1]:null, image:imgM?imgM[1]:null};
+    const descM=html.match(/<meta property="og:description" content="([^"]*)"/i);
+    return {
+      title:titleM?titleM[1]:null,
+      image:imgM?imgM[1]:null,
+      location:descM?descM[1]:null
+    };
   }catch(e){
-    return {title:null, image:null};
+    return {title:null, image:null, location:null};
   }
 }
 
@@ -242,7 +259,7 @@ function renderAccCard(weekIdx){
       <div class="acc-thumb">${acc.image?`<img src="${acc.image}">`:'🏠'}</div>
       <div class="acc-txt">
         <div class="acc-name">${acc.title||'Airbnb 숙소'}</div>
-        <div class="acc-link">${acc.url}</div>
+        <div class="acc-loc">${acc.location||acc.url}</div>
       </div>
       <button class="acc-remove" onclick="event.preventDefault();removeAcc(${weekIdx})">✕</button>
     </a>`;
@@ -261,11 +278,11 @@ async function addAcc(weekIdx){
   const input=document.getElementById('accInput'+weekIdx);
   const url=input.value.trim();
   if(!url) return;
-  data.accommodations[weekIdx]={url, title:'불러오는 중...', image:null};
+  data.accommodations[weekIdx]={url, title:'불러오는 중...', image:null, location:null};
   saveData();
   renderContent();
   const preview=await fetchPreview(url);
-  data.accommodations[weekIdx]={url, title:preview.title||'Airbnb 숙소', image:preview.image};
+  data.accommodations[weekIdx]={url, title:preview.title||'Airbnb 숙소', image:preview.image, location:preview.location};
   saveData();
   if(curWeek===weekIdx) renderContent();
 }
@@ -290,35 +307,46 @@ function renderPlaces(){
     </div>`).join('')}</div>`;
 }
 
-function addPlace(){
+function togglePicker(){
+  pickerOpen=!pickerOpen;
+  renderContent();
+}
+
+function selectPreset(name){
   const key=planKey();
-  const input=document.getElementById('placeInput');
-  const val=input.value.trim();
-  if(!val) return;
   if(!data.plans[key]) data.plans[key]=[];
-  data.plans[key].push(val);
+  data.plans[key].push(name);
+  pickerOpen=false;
   saveData();
   renderContent();
 }
+
 function removePlace(idx){
   data.plans[planKey()].splice(idx,1);
   saveData();
   renderContent();
 }
 
-function renderContent(){
-  const week=WEEKS[curWeek];
-  const el=document.getElementById('content');
-  el.innerHTML = renderAccCard(curWeek)
-    + renderSubTabs(week)
-    + renderPlaces()
-    + `<div class="add-row">
-        <input class="add-input" id="placeInput" placeholder="어디 갈지 적어보세요" onkeydown="if(event.key==='Enter')addPlace()">
-        <button class="add-btn" onclick="addPlace()">추가</button>
-      </div>`;
+function renderPicker(){
+  if(!pickerOpen) return '';
+  return `<div class="preset-grid">${PRESETS.map(p=>`
+    <button class="preset-chip" onclick="selectPreset('${p.name}')">
+      <span class="preset-emoji">${p.emoji}</span>${p.name}
+    </button>`).join('')}</div>`;
 }
 
-renderWeekStrip();
+function renderContent(){
+  const el=document.getElementById('content');
+  el.innerHTML = renderAccCard(curWeek)
+    + renderSubTabs()
+    + renderPlaces()
+    + `<button class="add-toggle-btn" onclick="togglePicker()">${pickerOpen?'닫기':'+ 장소 추가'}</button>`
+    + renderPicker();
+  el.classList.remove('content-anim');
+  void el.offsetWidth;
+  el.classList.add('content-anim');
+}
+
 renderBottomNav();
 renderContent();
 </script>
