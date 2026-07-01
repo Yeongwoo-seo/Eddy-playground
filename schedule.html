@@ -23,8 +23,13 @@ body.sheet-open{overflow:hidden}
 @supports (height: 100dvh){ .app{min-height:100dvh} }
 .hl{color:var(--primary)}
 
-/* fixed top bar: day sub-tabs (left) + 일정/숙소 switcher (right), one line */
-.top-bar{position:fixed;top:calc(12px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:468px;display:flex;align-items:center;z-index:25}
+/* fixed top bar: week theme header, then day sub-tabs (left) + 일정/숙소 switcher (right) */
+.top-bar{position:fixed;top:calc(12px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:468px;display:flex;flex-direction:column;gap:8px;z-index:25}
+.top-bar-row{display:flex;align-items:center}
+
+.week-theme-input{width:100%;border:none;background:transparent;font-size:15px;font-weight:800;color:var(--black);font-family:inherit;padding:2px 4px;text-shadow:0 1px 3px rgba(255,255,255,.8)}
+.week-theme-input::placeholder{color:var(--grey500);font-weight:700}
+.week-theme-input:focus{outline:none}
 
 /* 일정 / 숙소 switcher — compact floating pill with a sliding active thumb */
 .top-tabs{position:relative;margin-left:auto;flex-shrink:0;background:var(--white);border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,0.1);display:flex;padding:3px}
@@ -32,7 +37,7 @@ body.sheet-open{overflow:hidden}
 .top-tab{position:relative;z-index:1;border:none;background:none;padding:7px 14px;border-radius:12px;font-size:12px;font-weight:700;color:var(--grey500);cursor:pointer;font-family:inherit;transition:color .2s;white-space:nowrap}
 .top-tab.on{color:#fff}
 
-.i-bd{padding:calc(64px + env(safe-area-inset-top)) 20px 20px}
+.i-bd{padding:calc(92px + env(safe-area-inset-top)) 20px 20px}
 
 @keyframes slideUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
 .content-anim{animation:slideUp .45s cubic-bezier(.2,.8,.2,1)}
@@ -163,8 +168,11 @@ body.sheet-open{overflow:hidden}
 <body>
 <div class="app">
   <div class="top-bar" id="topBar">
-    <div id="tabsWrap"></div>
-    <div class="top-tabs" id="topTabs"></div>
+    <input type="text" id="weekThemeInput" class="week-theme-input" placeholder="이번주 테마를 적어보세요" oninput="saveWeekTheme()">
+    <div class="top-bar-row">
+      <div id="tabsWrap"></div>
+      <div class="top-tabs" id="topTabs"></div>
+    </div>
   </div>
 
   <div class="i-bd">
@@ -325,6 +333,7 @@ function loadData(){
     d.plans[satKey]=(d.plans[satKey]||[]).concat(d.plans[k]);
     delete d.plans[k];
   });
+  d.themes=d.themes||{};
   return d;
 }
 function saveData(){ localStorage.setItem(STORE_KEY, JSON.stringify(data)); }
@@ -360,8 +369,18 @@ function goTopTab(tab){
   document.getElementById('scheduleTab').style.display = tab==='schedule' ? '' : 'none';
   document.getElementById('accTab').style.display = tab==='acc' ? '' : 'none';
   document.getElementById('tabsWrap').style.display = tab==='schedule' ? '' : 'none';
+  document.getElementById('weekThemeInput').style.display = tab==='schedule' ? '' : 'none';
   document.querySelector('.fab-wrap').style.display = tab==='schedule' ? '' : 'none';
   if(tab==='acc') renderAccTab();
+}
+
+function renderWeekTheme(){
+  document.getElementById('weekThemeInput').value = data.themes[curWeek] || '';
+}
+
+function saveWeekTheme(){
+  data.themes[curWeek] = document.getElementById('weekThemeInput').value;
+  saveData();
 }
 
 function decodeEntities(str){
@@ -418,6 +437,7 @@ function goWeek(i){
   updateBottomNavActive();
   renderAccTab();
   renderTabs();
+  renderWeekTheme();
   renderPlacesWrap(true);
 }
 
@@ -840,6 +860,7 @@ function renderPlacesWrap(animate){
 
 renderBottomNav();
 renderTabs();
+renderWeekTheme();
 renderPlacesWrap();
 renderTopTabs();
 goTopTab('schedule');
