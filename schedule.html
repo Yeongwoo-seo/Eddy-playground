@@ -51,11 +51,12 @@ body.sheet-open{overflow:hidden}
 /* place / accommodation photo cards */
 .ph-gr{display:flex;flex-direction:column;gap:10px}
 .pl-row{display:flex;gap:10px;align-items:stretch}
-.pl-time-col{width:58px;flex-shrink:0;padding-top:14px}
-.pl-time{border:none;background:transparent;font-size:13px;font-weight:700;color:var(--primary);font-family:inherit;padding:0;width:100%}
-.pl-time:focus{outline:none}
-.pl-time::-webkit-calendar-picker-indicator{display:none;margin:0}
+.pl-time-col{width:74px;flex-shrink:0;padding-top:14px}
 .pl-row .ph-cd{flex:1;cursor:pointer}
+.time-select-row{display:flex;align-items:center;gap:2px}
+.time-select{border:none;background:transparent;font-size:13px;font-weight:700;color:var(--primary);font-family:inherit;padding:0;-webkit-appearance:none;appearance:none}
+.time-select:focus{outline:none}
+.time-sep{font-size:13px;font-weight:700;color:var(--primary)}
 .ph-cd{border-radius:18px;overflow:hidden;position:relative;height:150px;box-shadow:0 2px 12px rgba(0,0,0,0.06)}
 .ph-cd img{width:100%;height:100%;object-fit:cover;display:block;background:var(--grey100)}
 .ph-cd::after{content:'';position:absolute;inset:0;background:rgba(0,0,0,.28);pointer-events:none}
@@ -79,8 +80,6 @@ body.sheet-open{overflow:hidden}
 .picker-back-btn{background:var(--grey100);color:var(--grey700);border:none;width:32px;height:32px;border-radius:50%;font-size:15px;cursor:pointer;flex-shrink:0}
 .picker-time-row{display:flex;align-items:center;gap:10px;background:var(--grey100);border-radius:14px;padding:10px 14px;margin-bottom:14px}
 .picker-time-lb{font-size:13px;font-weight:700;color:var(--grey700)}
-.picker-time-input{border:none;background:transparent;font-size:14px;font-weight:700;color:var(--primary);font-family:inherit}
-.picker-time-input:focus{outline:none}
 .picker-note-input{width:100%;border:1.5px solid var(--grey200);background:var(--white);border-radius:14px;padding:11px 14px;font-size:14px;font-family:inherit;color:var(--black);margin-bottom:14px}
 .picker-note-input:focus{outline:none;border-color:var(--primary)}
 .preset-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
@@ -365,6 +364,27 @@ function decodeEntities(str){
 function esc(s){ return (s||'').replace(/"/g,'&quot;'); }
 function normalizeImg(u){ if(!u) return ''; return u.startsWith('//') ? 'https:'+u : u; }
 
+// plain <select> hour/minute pair instead of <input type="time"> — some
+// mobile browsers render the native time picker unreliably, selects
+// always work the same everywhere
+const TIME_HOURS=Array.from({length:24},(_,h)=>String(h).padStart(2,'0'));
+const TIME_MINUTES=Array.from({length:12},(_,m)=>String(m*5).padStart(2,'0'));
+function timeSelectHtml(id, value, onchangeAttr){
+  const [hh,mm]=(value||'').split(':');
+  const onch=onchangeAttr?` onchange="${onchangeAttr}"`:'';
+  const opt=(v,sel)=>`<option value="${v}" ${v===sel?'selected':''}>${v}</option>`;
+  return `<div class="time-select-row">
+    <select class="time-select" id="${id}Hour"${onch}><option value="">--</option>${TIME_HOURS.map(h=>opt(h,hh)).join('')}</select>
+    <span class="time-sep">:</span>
+    <select class="time-select" id="${id}Min"${onch}><option value="">--</option>${TIME_MINUTES.map(m=>opt(m,mm)).join('')}</select>
+  </div>`;
+}
+function readTimeSelect(id){
+  const h=document.getElementById(id+'Hour').value;
+  const m=document.getElementById(id+'Min').value;
+  return (h && m) ? `${h}:${m}` : '';
+}
+
 function renderBottomNav(){
   const el=document.getElementById('bottomNav');
   el.innerHTML = `<div class="bn-thumb" id="bnThumb" style="width:calc((100% - 16px) / ${WEEKS.length})"></div>` +
@@ -401,8 +421,8 @@ function goSub(type){
 
 function renderTabs(){
   document.getElementById('tabsWrap').innerHTML = `<div class="sub-tabs">
-    <button class="sub-tab ${curSub==='weekday'?'on':''}" onclick="goSub('weekday')">평일여행</button>
-    <button class="sub-tab ${curSub==='weekend'?'on':''}" onclick="goSub('weekend')">주말여행</button>
+    <button class="sub-tab ${curSub==='weekday'?'on':''}" onclick="goSub('weekday')">평일</button>
+    <button class="sub-tab ${curSub==='weekend'?'on':''}" onclick="goSub('weekend')">주말</button>
   </div>`;
 }
 
@@ -659,7 +679,7 @@ function renderPlaces(){
   if(!places.length) return `<div class="sub-empty">${curSub==='weekend'?'주말':'평일'}에 갈 곳을 추가해보세요</div>`;
   return `<div class="ph-gr">${places.map((p,i)=>`
     <div class="pl-row">
-      <div class="pl-time-col"><input type="time" class="pl-time" value="${p.time||''}" onchange="setPlaceTime(${i},this.value)"></div>
+      <div class="pl-time-col">${timeSelectHtml('plTime'+i, p.time, `updatePlaceTimeFromSelect(${i})`)}</div>
       <div class="ph-cd" onclick="openPlaceView(${i})">
         <img src="${plImg(p.name)}">
         <button class="ph-del" onclick="event.stopPropagation();removePlace(${i})">✕</button>
@@ -674,6 +694,10 @@ function setPlaceTime(idx, value){
     data.plans[key][idx].time=value;
     saveData();
   }
+}
+
+function updatePlaceTimeFromSelect(idx){
+  setPlaceTime(idx, readTimeSelect('plTime'+idx));
 }
 
 function syncFab(){
@@ -730,7 +754,7 @@ function renderPickerDetailStep(){
       </div>
       <div class="picker-time-row">
         <span class="picker-time-lb">시간</span>
-        <input type="time" id="pickerTime" class="picker-time-input">
+        ${timeSelectHtml('picker', '')}
       </div>
       <input type="text" id="pickerNote" class="picker-note-input" placeholder="메모 (선택, 예: 예약 확인, 같이 갈 사람)">
       <button class="acc-form-save" onclick="confirmAddPlace()">추가하기</button>
@@ -745,10 +769,9 @@ function backToPickerGrid(){
 
 function confirmAddPlace(){
   const key=planKey();
-  const timeInput=document.getElementById('pickerTime');
   const noteInput=document.getElementById('pickerNote');
   if(!data.plans[key]) data.plans[key]=[];
-  data.plans[key].push({name:pickerSelected, time:timeInput?timeInput.value:'', note:noteInput?noteInput.value.trim():''});
+  data.plans[key].push({name:pickerSelected, time:readTimeSelect('picker'), note:noteInput?noteInput.value.trim():''});
   saveData();
   renderPlacesWrap();
   closePicker();
