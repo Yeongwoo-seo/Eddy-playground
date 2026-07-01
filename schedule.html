@@ -58,11 +58,12 @@ body{background:var(--bg);color:var(--black);font-family:'Pretendard',-apple-sys
 .ph-nm{font-size:14px;font-weight:700;color:#fff}
 .ph-del{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;border:none;background:rgba(0,0,0,.35);color:#fff;font-size:13px;cursor:pointer;backdrop-filter:blur(4px)}
 
-.add-row{display:flex;gap:8px;margin-top:14px}
-.add-input{flex:1;border:1.5px solid var(--grey200);background:var(--white);border-radius:14px;padding:12px 14px;font-size:14px;font-family:inherit;color:var(--black)}
-.add-input:focus{outline:none;border-color:var(--primary)}
-.add-btn{background:var(--grey100);color:var(--grey700);border:none;border-radius:14px;padding:0 16px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
-.add-btn:active{transform:scale(.96)}
+.add-toggle-btn{width:100%;margin-top:14px;background:var(--grey100);color:var(--grey700);border:none;border-radius:14px;padding:13px 0;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+.add-toggle-btn:active{transform:scale(.98)}
+.preset-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.preset-chip{display:flex;flex-direction:column;align-items:center;gap:5px;background:var(--white);box-shadow:0 2px 8px rgba(0,0,0,0.05);border:none;border-radius:14px;padding:14px 6px;font-family:inherit;cursor:pointer;font-size:11px;font-weight:600;color:var(--grey700);text-align:center}
+.preset-chip:active{transform:scale(.95);background:var(--primary-light);color:var(--primary)}
+.preset-emoji{font-size:22px}
 
 /* bottom nav — floating pill bar */
 .bottom-nav{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:468px;background:var(--white);border-radius:24px;box-shadow:0 4px 20px rgba(0,0,0,0.1);display:flex;padding:8px;z-index:20}
@@ -161,6 +162,28 @@ function plImg(name){
   return PH.opera;
 }
 
+// ─── preset places (same spots tour.html already built itineraries around) ───
+const PRESETS=[
+  {name:'오페라하우스', emoji:'🎭'},
+  {name:'하버브릿지', emoji:'🌉'},
+  {name:'블루마운틴', emoji:'⛰️'},
+  {name:'페더데일 동물원', emoji:'🐨'},
+  {name:'타롱가 동물원', emoji:'🦁'},
+  {name:'본다이 비치', emoji:'🏖️'},
+  {name:'맨리 비치', emoji:'🌊'},
+  {name:'더 록스', emoji:'🏛️'},
+  {name:'달링하버', emoji:'🌃'},
+  {name:'로얄 보타닉 가든', emoji:'🌿'},
+  {name:'카페 브런치', emoji:'☕'},
+  {name:'맛집 탐방', emoji:'🍽️'},
+  {name:'로컬 마켓 쇼핑', emoji:'🛍️'},
+  {name:'미술관·갤러리', emoji:'🎨'},
+  {name:'서핑 체험', emoji:'🏄'},
+  {name:'하버 페리 크루즈', emoji:'⛴️'},
+  {name:'블루마운틴 기차', emoji:'🚂'},
+  {name:'일몰 명소', emoji:'🌅'}
+];
+
 function loadData(){
   try{
     const raw=localStorage.getItem(STORE_KEY);
@@ -179,6 +202,7 @@ function saveData(){ localStorage.setItem(STORE_KEY, JSON.stringify(data)); }
 let data = loadData();
 let curWeek = 0;
 let curSub = 'weekday';
+let pickerOpen = false;
 
 function renderBottomNav(){
   const el=document.getElementById('bottomNav');
@@ -199,6 +223,7 @@ function goWeek(i){
 
 function goSub(type){
   curSub=type;
+  pickerOpen=false;
   renderContent();
 }
 
@@ -282,20 +307,32 @@ function renderPlaces(){
     </div>`).join('')}</div>`;
 }
 
-function addPlace(){
+function togglePicker(){
+  pickerOpen=!pickerOpen;
+  renderContent();
+}
+
+function selectPreset(name){
   const key=planKey();
-  const input=document.getElementById('placeInput');
-  const val=input.value.trim();
-  if(!val) return;
   if(!data.plans[key]) data.plans[key]=[];
-  data.plans[key].push(val);
+  data.plans[key].push(name);
+  pickerOpen=false;
   saveData();
   renderContent();
 }
+
 function removePlace(idx){
   data.plans[planKey()].splice(idx,1);
   saveData();
   renderContent();
+}
+
+function renderPicker(){
+  if(!pickerOpen) return '';
+  return `<div class="preset-grid">${PRESETS.map(p=>`
+    <button class="preset-chip" onclick="selectPreset('${p.name}')">
+      <span class="preset-emoji">${p.emoji}</span>${p.name}
+    </button>`).join('')}</div>`;
 }
 
 function renderContent(){
@@ -303,10 +340,8 @@ function renderContent(){
   el.innerHTML = renderAccCard(curWeek)
     + renderSubTabs()
     + renderPlaces()
-    + `<div class="add-row">
-        <input class="add-input" id="placeInput" placeholder="어디 갈지 적어보세요" onkeydown="if(event.key==='Enter')addPlace()">
-        <button class="add-btn" onclick="addPlace()">추가</button>
-      </div>`;
+    + `<button class="add-toggle-btn" onclick="togglePicker()">${pickerOpen?'닫기':'+ 장소 추가'}</button>`
+    + renderPicker();
   el.classList.remove('content-anim');
   void el.offsetWidth;
   el.classList.add('content-anim');
