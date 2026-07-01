@@ -450,9 +450,9 @@ function goSub(type){
 
 function renderTabs(){
   document.getElementById('tabsWrap').innerHTML = `<div class="sub-tabs">
-    <button class="sub-tab ${curSub==='weekday'?'on':''}" onclick="goSub('weekday')">평일</button>
     <button class="sub-tab ${curSub==='sat'?'on':''}" onclick="goSub('sat')">토요일</button>
     <button class="sub-tab ${curSub==='sun'?'on':''}" onclick="goSub('sun')">일요일</button>
+    <button class="sub-tab ${curSub==='weekday'?'on':''}" onclick="goSub('weekday')">평일</button>
   </div>`;
 }
 
