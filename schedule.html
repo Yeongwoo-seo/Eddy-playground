@@ -50,6 +50,12 @@ body{background:var(--bg);color:var(--black);font-family:'Pretendard',-apple-sys
 .acc-remove{background:none;border:none;color:var(--grey300);font-size:16px;cursor:pointer;flex-shrink:0;padding:6px}
 .acc-empty{font-size:12px;color:var(--grey500);margin-top:4px}
 
+/* sub tabs (weekday / weekend) */
+.sub-tabs{display:flex;gap:6px;background:var(--grey100);border-radius:16px;padding:4px;margin-bottom:16px}
+.sub-tab{flex:1;border:none;background:none;padding:10px 0;border-radius:12px;font-size:14px;font-weight:700;color:var(--grey500);cursor:pointer;font-family:inherit;transition:.2s}
+.sub-tab.on{background:var(--white);color:var(--primary);box-shadow:0 2px 12px rgba(0,0,0,0.06)}
+.sub-empty{font-size:13px;color:var(--grey500);text-align:center;padding:24px 0}
+
 /* day cards */
 .day-card{background:var(--white);border-radius:24px;box-shadow:0 2px 12px rgba(0,0,0,0.06);padding:20px;margin-bottom:14px}
 .day-hdr{display:flex;align-items:baseline;gap:8px;margin-bottom:12px}
@@ -131,6 +137,7 @@ function saveData(){ localStorage.setItem(STORE_KEY, JSON.stringify(data)); }
 
 let data = loadData();
 let curWeek = 0;
+let curSub = 'weekday';
 
 function renderWeekStrip(){
   const el=document.getElementById('weekStrip');
@@ -149,9 +156,29 @@ function renderBottomNav(){
 
 function goWeek(i){
   curWeek=i;
+  curSub='weekday';
   renderWeekStrip();
   renderBottomNav();
   renderContent();
+}
+
+function goSub(type){
+  curSub=type;
+  renderContent();
+}
+
+function isWeekend(dateStr){
+  const dow=toDate(dateStr).getDay();
+  return dow===0 || dow===6;
+}
+
+function renderSubTabs(week){
+  const weekdayCount=week.filter(d=>!isWeekend(d)).length;
+  const weekendCount=week.filter(isWeekend).length;
+  return `<div class="sub-tabs">
+    <button class="sub-tab ${curSub==='weekday'?'on':''}" onclick="goSub('weekday')">평일여행 (${weekdayCount})</button>
+    <button class="sub-tab ${curSub==='weekend'?'on':''}" onclick="goSub('weekend')">주말여행 (${weekendCount})</button>
+  </div>`;
 }
 
 async function fetchPreview(url){
@@ -251,7 +278,10 @@ function removePlan(dateStr, idx){
 function renderContent(){
   const week=WEEKS[curWeek];
   const el=document.getElementById('content');
-  el.innerHTML = renderAccCard(curWeek) + week.map(renderDayCard).join('');
+  const filtered=week.filter(d=>curSub==='weekend'?isWeekend(d):!isWeekend(d));
+  el.innerHTML = renderAccCard(curWeek)
+    + renderSubTabs(week)
+    + (filtered.length ? filtered.map(renderDayCard).join('') : `<div class="sub-empty">${curSub==='weekend'?'주말':'평일'}에 해당하는 날짜가 없어요</div>`);
 }
 
 renderWeekStrip();
