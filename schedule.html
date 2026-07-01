@@ -75,6 +75,8 @@ body.sheet-open{overflow:hidden}
 .picker-sheet{width:100%;max-width:500px;max-height:75vh;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--white);border-radius:28px 28px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom));animation:sheetSlideUp .3s cubic-bezier(.2,.8,.2,1);scrollbar-width:none;-ms-overflow-style:none}
 .picker-sheet::-webkit-scrollbar{display:none;width:0;height:0}
 .picker-sheet-title{font-size:16px;font-weight:700;margin-bottom:14px}
+.picker-detail-hdr{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.picker-back-btn{background:var(--grey100);color:var(--grey700);border:none;width:32px;height:32px;border-radius:50%;font-size:15px;cursor:pointer;flex-shrink:0}
 .picker-time-row{display:flex;align-items:center;gap:10px;background:var(--grey100);border-radius:14px;padding:10px 14px;margin-bottom:14px}
 .picker-time-lb{font-size:13px;font-weight:700;color:var(--grey700)}
 .picker-time-input{border:none;background:transparent;font-size:14px;font-weight:700;color:var(--primary);font-family:inherit}
@@ -683,10 +685,17 @@ function togglePicker(){
   else openPicker();
 }
 
+let pickerSelected=null;
+
 function openPicker(){
   pickerOpen=true;
+  pickerSelected=null;
   syncFab();
   document.body.classList.add('sheet-open');
+  renderPickerGridStep();
+}
+
+function renderPickerGridStep(){
   const existingNames=(data.plans[planKey()]||[]).map(p=>p.name);
   const available=PRESETS.filter(p=>!existingNames.includes(p.name));
   const gridHtml=available.length
@@ -698,18 +707,56 @@ function openPicker(){
   document.getElementById('pickerSheetRoot').innerHTML=`<div class="picker-backdrop" onclick="if(event.target===this) closePicker()">
     <div class="picker-sheet">
       <div class="picker-sheet-title">어디로 갈까요?</div>
-      <div class="picker-time-row">
-        <span class="picker-time-lb">시간</span>
-        <input type="time" id="pickerTime" class="picker-time-input">
-      </div>
-      <input type="text" id="pickerNote" class="picker-note-input" placeholder="메모 (선택, 예: 예약 확인, 같이 갈 사람)">
       ${gridHtml}
     </div>
   </div>`;
 }
 
+function selectPreset(name){
+  pickerSelected=name;
+  renderPickerDetailStep();
+}
+
+function renderPickerDetailStep(){
+  const name=pickerSelected;
+  document.getElementById('pickerSheetRoot').innerHTML=`<div class="picker-backdrop" onclick="if(event.target===this) closePicker()">
+    <div class="picker-sheet">
+      <div class="picker-detail-hdr">
+        <button class="picker-back-btn" onclick="backToPickerGrid()">←</button>
+        <div class="picker-sheet-title" style="margin:0">${name}</div>
+      </div>
+      <div class="preset-chip picker-detail-photo" style="background-image:url('${plImg(name)}');height:120px;margin-bottom:16px">
+        <span class="ov"><span class="preset-emoji">📍</span>${name}</span>
+      </div>
+      <div class="picker-time-row">
+        <span class="picker-time-lb">시간</span>
+        <input type="time" id="pickerTime" class="picker-time-input">
+      </div>
+      <input type="text" id="pickerNote" class="picker-note-input" placeholder="메모 (선택, 예: 예약 확인, 같이 갈 사람)">
+      <button class="acc-form-save" onclick="confirmAddPlace()">추가하기</button>
+    </div>
+  </div>`;
+}
+
+function backToPickerGrid(){
+  pickerSelected=null;
+  renderPickerGridStep();
+}
+
+function confirmAddPlace(){
+  const key=planKey();
+  const timeInput=document.getElementById('pickerTime');
+  const noteInput=document.getElementById('pickerNote');
+  if(!data.plans[key]) data.plans[key]=[];
+  data.plans[key].push({name:pickerSelected, time:timeInput?timeInput.value:'', note:noteInput?noteInput.value.trim():''});
+  saveData();
+  renderPlacesWrap();
+  closePicker();
+}
+
 function closePicker(){
   pickerOpen=false;
+  pickerSelected=null;
   syncFab();
   document.body.classList.remove('sheet-open');
   const root=document.getElementById('pickerSheetRoot');
@@ -720,17 +767,6 @@ function closePicker(){
   }else{
     root.innerHTML='';
   }
-}
-
-function selectPreset(name){
-  const key=planKey();
-  const timeInput=document.getElementById('pickerTime');
-  const noteInput=document.getElementById('pickerNote');
-  if(!data.plans[key]) data.plans[key]=[];
-  data.plans[key].push({name, time:timeInput?timeInput.value:'', note:noteInput?noteInput.value.trim():''});
-  saveData();
-  renderPlacesWrap();
-  closePicker();
 }
 
 function removePlace(idx){
