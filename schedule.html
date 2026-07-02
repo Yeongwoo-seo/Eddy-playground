@@ -92,7 +92,6 @@ body.sheet-open{overflow:hidden}
 .weekday-cat-card:active{transform:scale(.96)}
 .weekday-cat-emoji{font-size:24px}
 .weekday-more-link{margin-top:16px}
-.weekday-places-title{font-size:13px;font-weight:700;color:var(--grey700);margin:24px 0 12px}
 .route-btn{display:block;width:100%;margin-top:16px;background:var(--white);color:var(--primary);border:1.5px solid var(--primary-light);border-radius:16px;padding:14px;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;box-shadow:0 2px 12px rgba(0,0,0,0.06)}
 .route-btn:active{background:var(--primary-light)}
 
@@ -762,18 +761,15 @@ function updateTopTabsActive(){
 }
 
 function goTopTab(tab){
-  if(tab==='weekday') curSub='weekday';
-  else if(tab==='schedule' && curSub==='weekday') curSub='sat';
   topTab=tab;
   updateTopTabsActive();
   document.getElementById('scheduleTab').style.display = tab==='schedule' ? '' : 'none';
   document.getElementById('accTab').style.display = tab==='acc' ? '' : 'none';
   document.getElementById('weekdayTab').style.display = tab==='weekday' ? '' : 'none';
   document.getElementById('tabsWrap').style.display = tab==='schedule' ? '' : 'none';
-  document.querySelector('.fab-wrap').style.display = (tab==='schedule'||tab==='weekday') ? '' : 'none';
+  document.querySelector('.fab-wrap').style.display = tab==='schedule' ? '' : 'none';
   if(tab==='acc') renderAccTab();
   if(tab==='weekday') renderWeekdayTab();
-  if(tab==='schedule'){ renderTabs(); renderPlacesWrap(); }
 }
 
 function renderWeekTheme(){
@@ -815,7 +811,7 @@ function updateBottomNavActive(){
 
 function goWeek(i){
   curWeek=i;
-  curSub = topTab==='weekday' ? 'weekday' : 'sat';
+  curSub='sat';
   if(pickerOpen) closePicker();
   updateBottomNavActive();
   renderAccTab();
@@ -949,8 +945,6 @@ function renderWeekdayTab(){
       <input type="text" class="weekday-area-input" id="weekdayAreaInput" value="${esc(area)}" placeholder="예: Eastwood" onchange="updateWeekdayAreaFromInput()">
     </div>
     ${catsHtml}
-    <div class="weekday-places-title">직접 추가한 할 일</div>
-    <div id="weekdayPlacesWrap">${renderPlaces()}</div>
   `;
 }
 
@@ -1384,8 +1378,7 @@ function closePicker(){
 }
 
 function removePlace(idx){
-  const wrap=currentPlacesWrapEl();
-  const rows=wrap ? wrap.querySelectorAll('.pl-row') : [];
+  const rows=document.querySelectorAll('#placesWrap .pl-row');
   const row=rows[idx];
   if(!row){
     data.plans[planKey()].splice(idx,1);
@@ -1409,15 +1402,8 @@ function removePlace(idx){
   }, 280);
 }
 
-// the place list renders into #placesWrap on the 여행 tab, or
-// #weekdayPlacesWrap on the 평일 tab — both driven by the same
-// planKey()/curSub state, just displayed in different containers
-function currentPlacesWrapEl(){
-  return document.getElementById(topTab==='weekday' ? 'weekdayPlacesWrap' : 'placesWrap');
-}
-
 function renderPlacesWrap(animate){
-  const el=currentPlacesWrapEl();
+  const el=document.getElementById('placesWrap');
   if(!el) return;
   el.innerHTML = renderPlaces();
   if(animate){
