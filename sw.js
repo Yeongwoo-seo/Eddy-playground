@@ -1,12 +1,11 @@
-const CACHE_NAME = 'eddy-playground-v2';
+// PWA scope is schedule.html only — this SW is registered from
+// schedule.html with an explicit { scope: 'schedule.html' }, so it
+// never controls index/home/tour
+const CACHE_NAME = 'gangnangkong-tour-v1';
 const APP_SHELL = [
-  'index.html',
-  'home.html',
-  'tour.html',
   'schedule.html',
-  'style.css',
-  'script.js',
   'manifest.json',
+  'main.png.PNG',
   'icons/icon-192.png',
   'icons/icon-512.png',
   'icons/icon-maskable-512.png'
