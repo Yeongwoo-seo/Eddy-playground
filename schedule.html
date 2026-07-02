@@ -286,7 +286,8 @@ const PH={
   shop:'https://images.pexels.com/photos/135620/pexels-photo-135620.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
   art:'https://images.pexels.com/photos/3004909/pexels-photo-3004909.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
   ferry:'https://images.pexels.com/photos/2549018/pexels-photo-2549018.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
-  plane:'https://images.pexels.com/photos/358319/pexels-photo-358319.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop'
+  plane:'https://images.pexels.com/photos/358319/pexels-photo-358319.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  whale:'https://images.pexels.com/photos/3309869/pexels-photo-3309869.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop'
 };
 function plImg(name){
   const s=name.toLowerCase();
@@ -309,6 +310,7 @@ function plImg(name){
   if(s.includes('쇼핑')||s.includes('기념품')||s.includes('마켓')) return PH.shop;
   if(s.includes('미술')||s.includes('갤러리')) return PH.art;
   if(s.includes('일몰')||s.includes('일출')||s.includes('sunset')) return PH.sunset;
+  if(s.includes('고래')||s.includes('whale')) return PH.whale;
   return PH.opera;
 }
 
@@ -331,7 +333,8 @@ const PRESETS=[
   {name:'서핑 체험', emoji:'🏄'},
   {name:'하버 페리 크루즈', emoji:'⛴️'},
   {name:'블루마운틴 기차', emoji:'🚂'},
-  {name:'일몰 명소', emoji:'🌅'}
+  {name:'일몰 명소', emoji:'🌅'},
+  {name:'혹등고래 투어', emoji:'🐋'}
 ];
 
 // ─── reference info shown on each place's detail sheet ───
@@ -355,7 +358,8 @@ const PLACE_INFO={
   '서핑 체험':{hours:'레슨 09:00, 11:00, 14:00 (예약제)', price:'그룹 레슨 A$70~', highlights:'본다이·맨리 비치 초보자 강습 인기'},
   '하버 페리 크루즈':{hours:'06:00-23:00 (노선별 상이)', price:'Opal 카드 기준 A$7.14~', highlights:'서큘러키↔맨리 노선에서 오페라하우스·하버브릿지 조망'},
   '블루마운틴 기차':{hours:'Central역 첫차 05:00~', price:'Opal 카드 기준 A$8.83~', highlights:'카툼바까지 약 2시간, 창밖 산악 풍경'},
-  '일몰 명소':{hours:'일몰 시각 확인 (계절별 상이)', price:'무료', highlights:'Watsons Bay, Mrs Macquarie\'s Chair 추천'}
+  '일몰 명소':{hours:'일몰 시각 확인 (계절별 상이)', price:'무료', highlights:'Watsons Bay, Mrs Macquarie\'s Chair 추천'},
+  '혹등고래 투어':{hours:'오전 8:30 / 오후 1:00 출항 (5월~11월 시즌)', price:'성인 A$70~99 (2.5~3시간 크루즈)', highlights:'혹등고래 북상·남하 이동철과 겹치는 7-8월 최적기, 서큘러키·맨리에서 출항'}
 };
 function mapsUrl(name){ return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name+' Sydney')}`; }
 
