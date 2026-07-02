@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>시드니 여행 스케줄</title>
+<title>강낭콩 투어</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#E8741E">
+<meta name="theme-color" content="#FB6A08">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="강낭콩">
+<meta name="apple-mobile-web-app-title" content="강낭콩 투어">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
@@ -24,6 +24,9 @@ html{scrollbar-width:none;-ms-overflow-style:none}
 html::-webkit-scrollbar{display:none;width:0;height:0}
 @supports (height: 100dvh){ html,body{height:100dvh} }
 body{background:var(--bg);color:var(--black);font-family:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;overflow-x:hidden;display:flex;justify-content:center}
+
+#splashScreen{position:fixed;inset:0;z-index:9999;background:#FB6A08 url('main.png.PNG') center/contain no-repeat;transition:opacity .4s ease}
+#splashScreen.hide{opacity:0;pointer-events:none}
 body.sheet-open{overflow:hidden}
 .app{width:100%;max-width:500px;min-height:100vh;position:relative;padding-bottom:calc(112px + env(safe-area-inset-bottom))}
 @supports (height: 100dvh){ .app{min-height:100dvh} }
@@ -176,6 +179,7 @@ body.sheet-open{overflow:hidden}
 </style>
 </head>
 <body>
+<div id="splashScreen"></div>
 <div class="app">
   <div class="top-bar" id="topBar">
     <div class="top-bar-row">
@@ -996,7 +1000,20 @@ goTopTab('schedule');
 syncFromRemote();
 setInterval(syncFromRemote, 20000);
 document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) syncFromRemote(); });
+
+// keep the splash on screen briefly so it reads as a real launch screen,
+// then fade it out
+setTimeout(()=>{
+  const splash=document.getElementById('splashScreen');
+  if(splash){ splash.classList.add('hide'); setTimeout(()=>splash.remove(), 450); }
+}, 500);
 </script>
-<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js');}</script>
+<script>
+// scope kept to schedule.html only — this is the only page that should
+// be installable / opened as a standalone PWA
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js', { scope: 'schedule.html' });
+}
+</script>
 </body>
 </html>
