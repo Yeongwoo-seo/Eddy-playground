@@ -1,4 +1,4 @@
-const CACHE_NAME = 'eddy-playground-v1';
+const CACHE_NAME = 'eddy-playground-v2';
 const APP_SHELL = [
   'index.html',
   'home.html',
@@ -28,18 +28,19 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
+// network-first: always prefer the latest deployed code when online,
+// only falling back to the cached app shell when offline. A stale
+// cached page could reference an old localStorage key or logic, which
+// looks exactly like "my data disappeared" to the user.
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   event.respondWith(
-    caches.match(event.request).then(cached => {
-      const fetchPromise = fetch(event.request).then(response => {
-        if (response.ok) {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
-        }
-        return response;
-      }).catch(() => cached);
-      return cached || fetchPromise;
-    })
+    fetch(event.request).then(response => {
+      if (response.ok) {
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+      }
+      return response;
+    }).catch(() => caches.match(event.request))
   );
 });
