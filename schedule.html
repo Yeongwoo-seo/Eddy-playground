@@ -127,6 +127,19 @@ body.sheet-open{overflow:hidden}
 .fab.open{transform:rotate(45deg)}
 .fab.open:active{transform:rotate(45deg) scale(.94)}
 
+/* "install as app" banner — hidden off-screen until slid up, only shown
+   when not already running as an installed standalone PWA */
+.install-banner{position:fixed;bottom:calc(104px + env(safe-area-inset-bottom));left:50%;width:calc(100% - 32px);max-width:468px;transform:translateX(-50%) translateY(140%);transition:transform .4s cubic-bezier(.2,.8,.2,1);z-index:18;pointer-events:none}
+.install-banner.show{transform:translateX(-50%) translateY(0)}
+.install-banner-btn{pointer-events:auto;background:var(--primary);color:#fff;border:none;border-radius:16px;padding:13px 20px;font-size:14px;font-weight:700;box-shadow:0 4px 20px rgba(232,116,30,0.35);cursor:pointer;font-family:inherit}
+.install-banner-btn:active{background:var(--primary-hover);transform:scale(.97)}
+
+.install-sheet-hero{width:100%;height:200px;overflow:hidden;background:#FB6A08}
+.install-sheet-hero img{width:100%;height:100%;object-fit:cover;object-position:center 30%}
+.install-steps{display:flex;flex-direction:column;gap:14px;margin-top:16px}
+.install-step{display:flex;align-items:center;gap:12px;font-size:14px;color:var(--black);line-height:1.5;word-break:keep-all}
+.install-step-ic{flex-shrink:0;width:26px;height:26px;border-radius:50%;background:var(--primary-light);color:var(--primary);font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center}
+
 /* accommodation expand sheet — Airbnb-style detail / register page */
 @keyframes sheetIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
 @keyframes sheetOut{from{opacity:1;transform:scale(1)}to{opacity:0;transform:scale(.94)}}
@@ -204,6 +217,11 @@ body.sheet-open{overflow:hidden}
 <div id="accSheetRoot"></div>
 <div id="pickerSheetRoot"></div>
 <div id="backupSheetRoot"></div>
+
+<div class="install-banner" id="installBanner">
+  <button class="install-banner-btn" onclick="openInstallSheet()">📲 앱 다운로드</button>
+</div>
+<div id="installSheetRoot"></div>
 
 <script>
 const START='2026-07-22';
@@ -357,6 +375,7 @@ function loadData(){
   return d;
 }
 function saveData(){
+  data.lastModified=Date.now();
   localStorage.setItem(STORE_KEY, JSON.stringify(data));
   pushToRemote();
 }
@@ -367,7 +386,12 @@ function pushToRemote(){
 
 // pulls the shared copy on load (and periodically) so everyone sees
 // the same data; falls back to local-only silently if offline or the
-// sync service is unreachable
+// sync service is unreachable.
+//
+// only apply the remote copy if it's actually newer than what we have
+// locally — otherwise a save can get raced and reverted: register
+// something, then a periodic/visibility sync pulls a remote copy from
+// just before that PUT finished propagating and wipes it right back out
 async function syncFromRemote(){
   try{
     const res=await fetch(SYNC_URL, { cache:'no-store' });
@@ -376,6 +400,7 @@ async function syncFromRemote(){
     if(!text) return;
     const remote=JSON.parse(text);
     if(JSON.stringify(remote)===JSON.stringify(data)) return;
+    if((remote.lastModified||0) <= (data.lastModified||0)) return;
     data=Object.assign({accommodations:{}, plans:{}, themes:{}}, remote);
     localStorage.setItem(STORE_KEY, JSON.stringify(data));
     refreshAll();
@@ -413,6 +438,46 @@ function openBackupSheet(){
 function closeBackupSheet(){
   document.body.classList.remove('sheet-open');
   document.getElementById('backupSheetRoot').innerHTML='';
+}
+
+function isStandalonePwa(){
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true;
+}
+
+function installStepsHtml(){
+  const ua=navigator.userAgent;
+  const isIOS=/iPad|iPhone|iPod/.test(ua) || (ua.includes('Macintosh') && 'ontouchend' in document);
+  if(isIOS){
+    return `
+      <div class="install-step"><span class="install-step-ic">1</span>Safari 하단(또는 상단)의 공유 버튼 <b>⬆️</b>을 탭하세요</div>
+      <div class="install-step"><span class="install-step-ic">2</span>메뉴에서 <b>"홈 화면에 추가"</b>를 선택하세요</div>
+      <div class="install-step"><span class="install-step-ic">3</span>오른쪽 위 <b>추가</b>를 누르면 완료!</div>
+    `;
+  }
+  return `
+    <div class="install-step"><span class="install-step-ic">1</span>브라우저 메뉴(⋮)를 여세요</div>
+    <div class="install-step"><span class="install-step-ic">2</span><b>"홈 화면에 추가"</b> 또는 <b>"앱 설치"</b>를 선택하세요</div>
+    <div class="install-step"><span class="install-step-ic">3</span>안내에 따라 추가하면 완료!</div>
+  `;
+}
+
+function openInstallSheet(){
+  document.body.classList.add('sheet-open');
+  document.getElementById('installSheetRoot').innerHTML=`<div class="acc-sheet-backdrop" onclick="if(event.target===this) closeInstallSheet()">
+    <div class="acc-sheet">
+      <div class="install-sheet-hero"><img src="icons/splash-bg.jpg" alt=""></div>
+      <div class="acc-sheet-body">
+        <div class="acc-sheet-title">홈 화면에 추가하기</div>
+        <div class="install-steps">${installStepsHtml()}</div>
+        <button class="acc-form-save" onclick="closeInstallSheet()">확인</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function closeInstallSheet(){
+  document.body.classList.remove('sheet-open');
+  document.getElementById('installSheetRoot').innerHTML='';
 }
 
 async function copyBackup(){
@@ -1003,6 +1068,9 @@ document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) syncFro
     if((imgReady && elapsed>=MIN_MS) || elapsed>=MAX_MS){
       const splash=document.getElementById('splashScreen');
       if(splash){ splash.classList.add('hide'); setTimeout(()=>splash.remove(), 450); }
+      if(!isStandalonePwa()){
+        setTimeout(()=>{ document.getElementById('installBanner').classList.add('show'); }, 250);
+      }
     }else{
       requestAnimationFrame(check);
     }
