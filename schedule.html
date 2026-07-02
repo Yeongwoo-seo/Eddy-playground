@@ -112,8 +112,8 @@ body.sheet-open{overflow:hidden}
 /* preset picker — dimmed backdrop + bottom sheet */
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes fadeOut{from{opacity:1}to{opacity:0}}
-@keyframes sheetSlideUp{from{transform:translateY(30px);opacity:.6}to{transform:translateY(0);opacity:1}}
-@keyframes sheetSlideDown{from{transform:translateY(0)}to{transform:translateY(30px)}}
+@keyframes sheetSlideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes sheetSlideDown{from{transform:translateY(0)}to{transform:translateY(100%)}}
 .picker-backdrop{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;animation:fadeIn .25s ease}
 .picker-backdrop.closing{animation:fadeOut .18s ease forwards}
 .picker-backdrop.closing .picker-sheet{animation:sheetSlideDown .18s cubic-bezier(.4,0,1,1) forwards}
@@ -960,7 +960,7 @@ function renderPlaces(){
     <div class="pl-row">
       <div class="pl-time-col">
         ${timeSelectHtml('plTime'+i, p.time, `updatePlaceTimeFromSelect(${i})`)}
-        <div class="pl-end-row"><span class="pl-end-lb">출발</span>${timeSelectHtml('plEnd'+i, p.endTime, `updatePlaceEndTimeFromSelect(${i})`)}</div>
+        ${p.endTime?`<div class="pl-end-row"><span class="pl-end-lb">출발</span>${timeSelectHtml('plEnd'+i, p.endTime, `updatePlaceEndTimeFromSelect(${i})`)}</div>`:''}
       </div>
       <div class="ph-cd" onclick="openPlaceView(${i})">
         <img src="${plImg(p.name)}">
