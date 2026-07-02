@@ -29,11 +29,11 @@ body.sheet-open{overflow:hidden}
 @supports (height: 100dvh){ .app{min-height:100dvh} }
 .hl{color:var(--primary)}
 
-/* fixed top bar: week theme header, then day sub-tabs (left) + 일정/숙소 switcher (right) */
+/* fixed top bar: week theme header + 일정/숙소 switcher on one line, day sub-tabs below */
 .top-bar{position:fixed;top:calc(12px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:468px;display:flex;flex-direction:column;gap:8px;z-index:25}
-.top-bar-row{display:flex;align-items:center}
+.top-bar-row{display:flex;align-items:center;gap:10px}
 
-.week-theme-input{width:100%;border:none;background:transparent;font-size:22px;font-weight:800;color:var(--black);font-family:inherit;padding:2px 4px;text-shadow:0 1px 3px rgba(255,255,255,.8)}
+.week-theme-input{flex:1;min-width:0;border:none;background:transparent;font-size:22px;font-weight:800;color:var(--black);font-family:inherit;padding:2px 4px;text-shadow:0 1px 3px rgba(255,255,255,.8)}
 .week-theme-input::placeholder{color:var(--grey500);font-weight:700}
 .week-theme-input:focus{outline:none}
 
@@ -174,11 +174,11 @@ body.sheet-open{overflow:hidden}
 <body>
 <div class="app">
   <div class="top-bar" id="topBar">
-    <input type="text" id="weekThemeInput" class="week-theme-input" placeholder="이번주 테마를 적어보세요" oninput="saveWeekTheme()">
     <div class="top-bar-row">
-      <div id="tabsWrap"></div>
+      <input type="text" id="weekThemeInput" class="week-theme-input" placeholder="이번주 테마를 적어보세요" oninput="saveWeekTheme()">
       <div class="top-tabs" id="topTabs"></div>
     </div>
+    <div id="tabsWrap"></div>
   </div>
 
   <div class="i-bd">
