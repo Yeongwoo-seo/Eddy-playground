@@ -1263,18 +1263,32 @@ function setGeocodeCache(cache){
   try{ localStorage.setItem('geocodeCacheV1', JSON.stringify(cache)); }catch(e){}
 }
 
+const sleep=ms=>new Promise(r=>setTimeout(r, ms));
+
+// Nominatim's usage policy caps client-side use at ~1 request/sec —
+// firing them closer together than that gets most requests silently
+// rate-limited (empty/failed results), which looked like "only the
+// last place resolves". One retry after backing off further covers
+// the rest.
 async function geocodePlace(name){
   const cache=getGeocodeCache();
   if(cache[name]) return cache[name];
-  try{
-    const res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(name+' Sydney Australia')}`);
-    const results=await res.json();
-    if(!results || !results.length) return null;
-    const coord=[parseFloat(results[0].lat), parseFloat(results[0].lon)];
-    cache[name]=coord;
-    setGeocodeCache(cache);
-    return coord;
-  }catch(e){ return null; }
+  for(let attempt=0; attempt<2; attempt++){
+    try{
+      const res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(name+' Sydney Australia')}`);
+      if(res.ok){
+        const results=await res.json();
+        if(results && results.length){
+          const coord=[parseFloat(results[0].lat), parseFloat(results[0].lon)];
+          cache[name]=coord;
+          setGeocodeCache(cache);
+          return coord;
+        }
+      }
+    }catch(e){}
+    await sleep(1500);
+  }
+  return null;
 }
 
 async function openRoute(){
@@ -1286,14 +1300,16 @@ async function openRoute(){
       <button onclick="closeRouteSheet()">←</button>
       <div class="t">오늘의 동선</div>
     </div>
-    <div id="routeMapEl"><div class="route-loading" id="routeLoading">장소를 찾는 중...</div></div>
+    <div id="routeMapEl"><div class="route-loading" id="routeLoading">장소를 찾는 중... (1/${places.length})</div></div>
   </div>`;
 
   const coords=[];
   for(let i=0;i<places.length;i++){
+    const loadingEl=document.getElementById('routeLoading');
+    if(loadingEl) loadingEl.textContent=`장소를 찾는 중... (${i+1}/${places.length})`;
     const c=await geocodePlace(places[i].name);
     if(c) coords.push({idx:i+1, name:places[i].name, latlng:c});
-    await new Promise(r=>setTimeout(r, 250));
+    if(i<places.length-1) await sleep(1100);
   }
   if(!document.getElementById('routeMapEl')) return; // sheet closed while geocoding
   const loadingEl=document.getElementById('routeLoading');
