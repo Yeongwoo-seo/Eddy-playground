@@ -964,7 +964,7 @@ function renderPlaces(){
       </div>
       <div class="ph-cd" onclick="openPlaceView(${i})">
         <img src="${plImg(p.name)}">
-        <button class="ph-del" onclick="event.stopPropagation();removePlace(${i})">🗑️</button>
+        <button class="ph-del" onclick="event.stopPropagation();removePlace(${i})">✕</button>
         <div class="ph-ov"><div class="ph-nm">${p.name}</div>${p.note?`<div class="ph-note">${p.note}</div>`:''}</div>
       </div>
     </div>`).join('')}</div>`;
