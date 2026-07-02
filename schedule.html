@@ -91,6 +91,7 @@ body.sheet-open{overflow:hidden}
 .picker-backdrop.closing{animation:fadeOut .18s ease forwards}
 .picker-backdrop.closing .picker-sheet{animation:sheetSlideDown .18s cubic-bezier(.4,0,1,1) forwards}
 .picker-sheet{width:100%;max-width:500px;max-height:75vh;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--white);border-radius:28px 28px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom));animation:sheetSlideUp .3s cubic-bezier(.2,.8,.2,1);scrollbar-width:none;-ms-overflow-style:none}
+.sheet-handle{width:40px;height:5px;background:var(--grey300);border-radius:3px;margin:0 auto 14px;cursor:grab;touch-action:none}
 .picker-sheet::-webkit-scrollbar{display:none;width:0;height:0}
 .picker-sheet-title{font-size:16px;font-weight:700;margin-bottom:14px}
 .picker-detail-hdr{display:flex;align-items:center;gap:12px;margin-bottom:16px}
@@ -828,10 +829,12 @@ function renderPickerGridStep(){
     : `<div class="sub-empty">이미 모든 장소를 추가했어요</div>`;
   document.getElementById('pickerSheetRoot').innerHTML=`<div class="picker-backdrop" onclick="if(event.target===this) closePicker()">
     <div class="picker-sheet">
+      <div class="sheet-handle"></div>
       <div class="picker-sheet-title">어디로 갈까요?</div>
       ${gridHtml}
     </div>
   </div>`;
+  initSheetDrag();
 }
 
 function selectPreset(name){
@@ -843,6 +846,7 @@ function renderPickerDetailStep(){
   const name=pickerSelected;
   document.getElementById('pickerSheetRoot').innerHTML=`<div class="picker-backdrop" onclick="if(event.target===this) closePicker()">
     <div class="picker-sheet">
+      <div class="sheet-handle"></div>
       <div class="picker-detail-hdr">
         <button class="picker-back-btn" onclick="backToPickerGrid()">←</button>
         <div class="picker-sheet-title" style="margin:0">${name}</div>
@@ -858,6 +862,7 @@ function renderPickerDetailStep(){
       <button class="acc-form-save" onclick="confirmAddPlace()">추가하기</button>
     </div>
   </div>`;
+  initSheetDrag();
 }
 
 function backToPickerGrid(){
@@ -873,6 +878,32 @@ function confirmAddPlace(){
   saveData();
   renderPlacesWrap();
   closePicker();
+}
+
+// lets the picker sheet be dragged taller/shorter by its handle,
+// up to nearly full screen
+function initSheetDrag(){
+  const sheet=document.querySelector('#pickerSheetRoot .picker-sheet');
+  const handle=document.querySelector('#pickerSheetRoot .sheet-handle');
+  if(!sheet || !handle) return;
+  let startY=null, startHeight=null;
+  const minH=window.innerHeight*0.35, maxH=window.innerHeight*0.95;
+  handle.addEventListener('pointerdown', e=>{
+    startY=e.clientY;
+    startHeight=sheet.getBoundingClientRect().height;
+    sheet.style.transition='none';
+    handle.setPointerCapture(e.pointerId);
+  });
+  handle.addEventListener('pointermove', e=>{
+    if(startY===null) return;
+    const delta=startY-e.clientY;
+    const newHeight=Math.max(minH, Math.min(maxH, startHeight+delta));
+    sheet.style.height=newHeight+'px';
+    sheet.style.maxHeight=newHeight+'px';
+  });
+  const endDrag=()=>{ startY=null; sheet.style.transition=''; };
+  handle.addEventListener('pointerup', endDrag);
+  handle.addEventListener('pointercancel', endDrag);
 }
 
 function closePicker(){
