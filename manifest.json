@@ -1,6 +1,6 @@
 {
-  "name": "Eddy Playground",
-  "short_name": "Eddy",
+  "name": "강낭콩",
+  "short_name": "강낭콩",
   "description": "FrameCad Custom Maker, 시드니 여행 유형 테스트, 여행 스케줄",
   "start_url": "index.html",
   "scope": ".",
