@@ -118,6 +118,7 @@ body.sheet-open{overflow:hidden}
 .ph-nm{font-size:14px;font-weight:700;color:#fff}
 .ph-note{font-size:11px;color:rgba(255,255,255,.85);margin-top:2px}
 .ph-del{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;border:none;background:rgba(0,0,0,.35);color:#fff;font-size:13px;cursor:pointer;backdrop-filter:blur(4px);z-index:1}
+.ph-edit{position:absolute;top:8px;right:42px;width:26px;height:26px;border-radius:50%;border:none;background:rgba(0,0,0,.35);color:#fff;font-size:12px;cursor:pointer;backdrop-filter:blur(4px);z-index:1;display:flex;align-items:center;justify-content:center}
 
 /* preset picker — dimmed backdrop + bottom sheet */
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
@@ -939,6 +940,24 @@ function openPlaceView(idx){
   document.body.classList.add('sheet-open');
 }
 
+function openPlaceEdit(idx){
+  sheetPlaceIdx=idx;
+  sheetMode='placeEdit';
+  renderSheet();
+  document.body.classList.add('sheet-open');
+}
+
+function savePlaceNote(idx){
+  const key=planKey();
+  const note=document.getElementById('placeEditNote').value.trim();
+  if(data.plans[key] && data.plans[key][idx]){
+    data.plans[key][idx].note=note;
+    saveData();
+    renderPlacesWrap();
+  }
+  closeAccSheet();
+}
+
 function openAccRegister(weekIdx){
   sheetWeek=weekIdx;
   sheetMode='edit';
@@ -963,7 +982,26 @@ function renderSheet(){
   const root=document.getElementById('accSheetRoot');
   if(sheetMode==='edit') root.innerHTML=sheetEditHtml(sheetWeek);
   else if(sheetMode==='place') root.innerHTML=placeSheetHtml(sheetPlaceIdx);
+  else if(sheetMode==='placeEdit') root.innerHTML=placeEditHtml(sheetPlaceIdx);
   else root.innerHTML='';
+}
+
+function placeEditHtml(idx){
+  const place=(data.plans[planKey()]||[])[idx];
+  if(!place) return '';
+  return `<div class="acc-sheet-backdrop">
+    <div class="acc-sheet">
+      <div class="acc-form-hdr">
+        <button onclick="closeAccSheet()">✕</button>
+        <div class="t">${place.name} 메모 수정</div>
+      </div>
+      <div class="acc-form-body">
+        <div class="acc-form-label">메모</div>
+        <textarea id="placeEditNote" placeholder="예: 예약 확인, 같이 갈 사람">${esc(place.note)}</textarea>
+        <button class="acc-form-save" onclick="savePlaceNote(${idx})">저장하기</button>
+      </div>
+    </div>
+  </div>`;
 }
 
 function placeSheetHtml(idx){
@@ -1137,6 +1175,7 @@ function renderPlaces(){
       </div>
       <div class="ph-cd" onclick="openPlaceView(${i})">
         <img src="${plImg(p.name)}">
+        <button class="ph-edit" onclick="event.stopPropagation();openPlaceEdit(${i})">✏️</button>
         <button class="ph-del" onclick="event.stopPropagation();removePlace(${i})">✕</button>
         <div class="ph-ov"><div class="ph-nm">${p.name}</div>${p.note?`<div class="ph-note">${p.note}</div>`:''}</div>
       </div>
