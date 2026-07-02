@@ -127,6 +127,8 @@ body.sheet-open{overflow:hidden}
 .picker-time-lb{font-size:13px;font-weight:700;color:var(--grey700)}
 .picker-note-input{width:100%;border:1.5px solid var(--grey200);background:var(--white);border-radius:14px;padding:11px 14px;font-size:14px;font-family:inherit;color:var(--black);margin-bottom:14px}
 .picker-note-input:focus{outline:none;border-color:var(--primary)}
+.preset-section-title{font-size:13px;font-weight:700;color:var(--grey700);margin:16px 0 8px}
+.preset-section-title:first-child{margin-top:0}
 .preset-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .preset-chip{position:relative;height:92px;border-radius:14px;overflow:hidden;border:none;cursor:pointer;padding:0;background:var(--grey100) center/cover no-repeat;font-family:inherit}
 .preset-chip:active{transform:scale(.95)}
@@ -287,7 +289,12 @@ const PH={
   art:'https://images.pexels.com/photos/3004909/pexels-photo-3004909.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
   ferry:'https://images.pexels.com/photos/2549018/pexels-photo-2549018.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
   plane:'https://images.pexels.com/photos/358319/pexels-photo-358319.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
-  whale:'https://images.pexels.com/photos/3309869/pexels-photo-3309869.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop'
+  whale:'https://images.pexels.com/photos/3309869/pexels-photo-3309869.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  university:'https://images.pexels.com/photos/34894773/pexels-photo-34894773.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  qvb:'https://images.pexels.com/photos/31282737/pexels-photo-31282737.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  dunes:'https://images.pexels.com/photos/19692696/pexels-photo-19692696.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  lunapark:'https://images.pexels.com/photos/11639893/pexels-photo-11639893.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  aquarium:'https://images.pexels.com/photos/33969651/pexels-photo-33969651.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop'
 };
 function plImg(name){
   const s=name.toLowerCase();
@@ -311,30 +318,71 @@ function plImg(name){
   if(s.includes('미술')||s.includes('갤러리')) return PH.art;
   if(s.includes('일몰')||s.includes('일출')||s.includes('sunset')) return PH.sunset;
   if(s.includes('고래')||s.includes('whale')) return PH.whale;
+  if(s.includes('대학')||s.includes('university')) return PH.university;
+  if(s.includes('도서관')||s.includes('library')) return PH.university;
+  if(s.includes('옵저버토리')) return PH.bridge;
+  if(s.includes('qvb')) return PH.qvb;
+  if(s.includes('루나')||s.includes('luna park')) return PH.lunapark;
+  if(s.includes('아쿠아리움')||s.includes('씨 라이프')||s.includes('sea life')) return PH.aquarium;
+  if(s.includes('포트 스테판')||s.includes('포트스테판')) return PH.dunes;
+  if(s.includes('뉴타운')||s.includes('newtown')) return PH.art;
+  if(s.includes('바랑가루')||s.includes('barangaroo')) return PH.darling;
+  if(s.includes('하이드파크')||s.includes('하이드 파크')||s.includes('hyde park')) return PH.garden;
+  if(s.includes('캄포스')||s.includes('빌즈')||s.includes('싱글오')||s.includes('파라마운트')||s.includes('검션')||s.includes('베이커리')) return PH.cafe;
+  if(s.includes('라벤드라')||s.includes('tottis')||s.includes('아슬란')||s.includes('마라탕')) return PH.food;
   return PH.opera;
 }
 
 // ─── preset places (same spots tour.html already built itineraries around) ───
+// category: 'landmark' | 'food' — used to split the + picker into two sections
 const PRESETS=[
-  {name:'오페라하우스', emoji:'🎭'},
-  {name:'하버브릿지', emoji:'🌉'},
-  {name:'블루마운틴', emoji:'⛰️'},
-  {name:'페더데일 동물원', emoji:'🐨'},
-  {name:'타롱가 동물원', emoji:'🦁'},
-  {name:'본다이 비치', emoji:'🏖️'},
-  {name:'맨리 비치', emoji:'🌊'},
-  {name:'더 록스', emoji:'🏛️'},
-  {name:'달링하버', emoji:'🌃'},
-  {name:'로얄 보타닉 가든', emoji:'🌿'},
-  {name:'카페 브런치', emoji:'☕'},
-  {name:'맛집 탐방', emoji:'🍽️'},
-  {name:'로컬 마켓 쇼핑', emoji:'🛍️'},
-  {name:'미술관·갤러리', emoji:'🎨'},
-  {name:'서핑 체험', emoji:'🏄'},
-  {name:'하버 페리 크루즈', emoji:'⛴️'},
-  {name:'블루마운틴 기차', emoji:'🚂'},
-  {name:'일몰 명소', emoji:'🌅'},
-  {name:'혹등고래 투어', emoji:'🐋'}
+  {name:'오페라하우스', emoji:'🎭', category:'landmark'},
+  {name:'하버브릿지', emoji:'🌉', category:'landmark'},
+  {name:'블루마운틴', emoji:'⛰️', category:'landmark'},
+  {name:'페더데일 동물원', emoji:'🐨', category:'landmark'},
+  {name:'타롱가 동물원', emoji:'🦁', category:'landmark'},
+  {name:'본다이 비치', emoji:'🏖️', category:'landmark'},
+  {name:'맨리 비치', emoji:'🌊', category:'landmark'},
+  {name:'더 록스', emoji:'🏛️', category:'landmark'},
+  {name:'달링하버', emoji:'🌃', category:'landmark'},
+  {name:'로얄 보타닉 가든', emoji:'🌿', category:'landmark'},
+  {name:'카페 브런치', emoji:'☕', category:'food'},
+  {name:'맛집 탐방', emoji:'🍽️', category:'food'},
+  {name:'로컬 마켓 쇼핑', emoji:'🛍️', category:'landmark'},
+  {name:'미술관·갤러리', emoji:'🎨', category:'landmark'},
+  {name:'서핑 체험', emoji:'🏄', category:'landmark'},
+  {name:'하버 페리 크루즈', emoji:'⛴️', category:'landmark'},
+  {name:'블루마운틴 기차', emoji:'🚂', category:'landmark'},
+  {name:'일몰 명소', emoji:'🌅', category:'landmark'},
+  {name:'혹등고래 투어', emoji:'🐋', category:'landmark'},
+  {name:'시드니 대학교', emoji:'🎓', category:'landmark'},
+  {name:'옵저버토리 힐 공원', emoji:'🔭', category:'landmark'},
+  {name:'본다이 아이스버그', emoji:'🏊', category:'landmark'},
+  {name:'QVB', emoji:'🏬', category:'landmark'},
+  {name:'록스 마켓', emoji:'🧺', category:'landmark'},
+  {name:'포트 스테판 투어', emoji:'🏜️', category:'landmark'},
+  {name:'루나 파크', emoji:'🎡', category:'landmark'},
+  {name:'패디스 마켓', emoji:'🛒', category:'landmark'},
+  {name:'씨 라이프 시드니 아쿠아리움', emoji:'🐠', category:'landmark'},
+  {name:'캐리지웍스 파머스 마켓', emoji:'🥬', category:'landmark'},
+  {name:'글리브 마켓', emoji:'👜', category:'landmark'},
+  {name:'시드니 피쉬마켓', emoji:'🐟', category:'landmark'},
+  {name:'하이드파크', emoji:'🌳', category:'landmark'},
+  {name:'뉴사우스웨일스 도서관', emoji:'📚', category:'landmark'},
+  {name:'뉴타운', emoji:'🏘️', category:'landmark'},
+  {name:'바랑가루', emoji:'🌆', category:'landmark'},
+  {name:'라벤드라 인디안', emoji:'🍛', category:'food'},
+  {name:'Bar Tottis', emoji:'🍷', category:'food'},
+  {name:'싱글오', emoji:'☕', category:'food'},
+  {name:'파라마운트 커피', emoji:'☕', category:'food'},
+  {name:'아슬란', emoji:'🍽️', category:'food'},
+  {name:'A.P베이커리', emoji:'🥐', category:'food'},
+  {name:'투 굿 에그스 카페', emoji:'🍳', category:'food'},
+  {name:'검션 커피', emoji:'☕', category:'food'},
+  {name:'오페라 바', emoji:'🍸', category:'food'},
+  {name:'넘버원 마라탕', emoji:'🌶️', category:'food'},
+  {name:'캄포스 커피 본점', emoji:'☕', category:'food'},
+  {name:'빌즈', emoji:'🍳', category:'food'}
 ];
 
 // ─── reference info shown on each place's detail sheet ───
@@ -359,7 +407,35 @@ const PLACE_INFO={
   '하버 페리 크루즈':{hours:'06:00-23:00 (노선별 상이)', price:'Opal 카드 기준 A$7.14~', highlights:'서큘러키↔맨리 노선에서 오페라하우스·하버브릿지 조망'},
   '블루마운틴 기차':{hours:'Central역 첫차 05:00~', price:'Opal 카드 기준 A$8.83~', highlights:'카툼바까지 약 2시간, 창밖 산악 풍경'},
   '일몰 명소':{hours:'일몰 시각 확인 (계절별 상이)', price:'무료', highlights:'Watsons Bay, Mrs Macquarie\'s Chair 추천'},
-  '혹등고래 투어':{hours:'오전 8:30 / 오후 1:00 출항 (5월~11월 시즌)', price:'성인 A$70~99 (2.5~3시간 크루즈)', highlights:'혹등고래 북상·남하 이동철과 겹치는 7-8월 최적기, 서큘러키·맨리에서 출항'}
+  '혹등고래 투어':{hours:'오전 8:30 / 오후 1:00 출항 (5월~11월 시즌)', price:'성인 A$70~99 (2.5~3시간 크루즈)', highlights:'혹등고래 북상·남하 이동철과 겹치는 7-8월 최적기, 서큘러키·맨리에서 출항'},
+  '시드니 대학교':{hours:'캠퍼스 상시 개방 (건물별 상이)', price:'무료', highlights:'해리포터 감성의 고딕 사암 건축, 쿼드랭글 포토존'},
+  '옵저버토리 힐 공원':{hours:'24시간 개방', price:'무료', highlights:'하버브릿지 뷰포인트, 시드니 천문대(Sydney Observatory) 위치'},
+  '본다이 아이스버그':{hours:'수영장 06:00-19:00 (요일별 상이)', price:'입장료 A$8~', highlights:'파도가 넘치는 바다 수영장, 본다이 비치 뷰'},
+  'QVB':{hours:'09:00-18:00 (목요일 21:00까지)', price:'무료 입장 (쇼핑 별도)', highlights:'빅토리아 양식 유리돔 건축, 명물 시계탑'},
+  '록스 마켓':{hours:'주말 10:00-17:00', price:'무료 입장', highlights:'핸드메이드 공예품·기념품, 더 록스 골목 분위기'},
+  '포트 스테판 투어':{hours:'데이투어 08:00 출발 (업체별 상이)', price:'A$120~180 (샌드보딩·돌고래 크루즈 포함)', highlights:'남반구 최대 사구 샌드보딩, 돌고래 관찰 크루즈'},
+  '루나 파크':{hours:'11:00-18:00 (요일별 상이)', price:'자유이용권 A$59.99~', highlights:'하버뷰 롤러코스터, 1935년 개장 클래식 놀이공원'},
+  '패디스 마켓':{hours:'목~일 10:00-18:00', price:'무료 입장', highlights:'기념품·과일·잡화 실내 마켓, 차이나타운 인근'},
+  '씨 라이프 시드니 아쿠아리움':{hours:'10:00-18:00', price:'성인 A$47~ (온라인 할인)', highlights:'듀공 전시, 그레이트 배리어 리프 터널'},
+  '캐리지웍스 파머스 마켓':{hours:'토요일 08:00-13:00', price:'무료 입장', highlights:'로컬 농산물·베이커리·커피, 브런치하기 좋은 마켓'},
+  '글리브 마켓':{hours:'토요일 10:00-16:00', price:'무료 입장', highlights:'빈티지·플리마켓, 세계음식 푸드트럭'},
+  '시드니 피쉬마켓':{hours:'07:00-16:00', price:'1인 A$15~30', highlights:'피쉬 타코·해산물 직화구이, 남반구 최대 수산시장'},
+  '하이드파크':{hours:'24시간 개방', price:'무료', highlights:'아치볼드 분수, 도심 속 산책로'},
+  '뉴사우스웨일스 도서관':{hours:'09:00-20:00 (주말 단축)', price:'무료', highlights:'모자이크 타일 바닥의 미첼 열람실, 고풍스러운 내부'},
+  '뉴타운':{hours:'상점별 상이', price:'무료 (쇼핑·식비 별도)', highlights:'킹 스트리트 스트리트 아트·벽화, 개성있는 카페·빈티지숍'},
+  '바랑가루':{hours:'24시간 개방', price:'무료', highlights:'워터프런트 산책로, 하버 스카이라인 뷰'},
+  '라벤드라 인디안':{hours:'11:30-15:00, 17:30-22:00', price:'1인 A$25~40', highlights:'정통 인도 커리, 현지인 추천 맛집'},
+  'Bar Tottis':{hours:'12:00-22:00 (요일별 상이)', price:'1인 A$30~50', highlights:'이탈리안 스몰플레이트, 내추럴 와인'},
+  '싱글오':{hours:'07:00-15:00', price:'커피 A$5~', highlights:'시드니 스페셜티 커피 원조, 서리힐즈 로스터리'},
+  '파라마운트 커피':{hours:'07:00-15:00', price:'커피 A$5~', highlights:'파라마운트 하우스 내 감성 카페'},
+  '아슬란':{hours:'매장별 상이', price:'1인 A$25~40', highlights:'현지인 추천 맛집'},
+  'A.P베이커리':{hours:'07:00-15:00 (매진 시 조기마감)', price:'페이스트리 A$6~', highlights:'크루아상 맛집으로 유명, 오픈런 추천'},
+  '투 굿 에그스 카페':{hours:'07:00-15:00', price:'브런치 A$20~30', highlights:'에그 베네딕트 인기, 아늑한 브런치 카페'},
+  '검션 커피':{hours:'07:00-15:00', price:'커피 A$5~', highlights:'로컬 스페셜티 커피'},
+  '오페라 바':{hours:'11:30-24:00', price:'음료 A$15~ / 스낵 A$20~', highlights:'오페라하우스·하버브릿지 뷰 야외 바'},
+  '넘버원 마라탕':{hours:'11:00-21:00', price:'1인 A$20~30', highlights:'한국인 입맛 저격 마라탕, 매콤한 국물 요리'},
+  '캄포스 커피 본점':{hours:'07:00-15:00', price:'커피 A$5~', highlights:'호주 대표 스페셜티 커피 브랜드 1호점'},
+  '빌즈':{hours:'07:30-15:00', price:'브런치 A$25~35', highlights:'리코타 팬케이크로 유명한 시드니 브런치 원조'}
 };
 function mapsUrl(name){ return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name+' Sydney')}`; }
 
@@ -941,20 +1017,27 @@ function openPicker(){
 // 추가했어도 목록에서 계속 선택할 수 있어야 한다
 const REPEATABLE_PRESETS=['맛집 탐방', '카페 브런치'];
 
+function presetGridHtml(list){
+  return `<div class="preset-grid">${list.map(p=>`
+    <button class="preset-chip" style="background-image:url('${plImg(p.name)}')" onclick="selectPreset('${p.name}')">
+      <span class="ov"><span class="preset-emoji">${p.emoji}</span>${p.name}</span>
+    </button>`).join('')}</div>`;
+}
+
 function renderPickerGridStep(){
   const existingNames=(data.plans[planKey()]||[]).map(p=>p.name);
   const available=PRESETS.filter(p=>REPEATABLE_PRESETS.includes(p.name) || !existingNames.includes(p.name));
-  const gridHtml=available.length
-    ? `<div class="preset-grid">${available.map(p=>`
-        <button class="preset-chip" style="background-image:url('${plImg(p.name)}')" onclick="selectPreset('${p.name}')">
-          <span class="ov"><span class="preset-emoji">${p.emoji}</span>${p.name}</span>
-        </button>`).join('')}</div>`
+  const landmarks=available.filter(p=>p.category!=='food');
+  const food=available.filter(p=>p.category==='food');
+  const sectionsHtml=available.length
+    ? `${landmarks.length?`<div class="preset-section-title">📍 명소</div>${presetGridHtml(landmarks)}`:''}
+       ${food.length?`<div class="preset-section-title">🍽️ 맛집</div>${presetGridHtml(food)}`:''}`
     : `<div class="sub-empty">이미 모든 장소를 추가했어요</div>`;
   document.getElementById('pickerSheetRoot').innerHTML=`<div class="picker-backdrop" onclick="if(event.target===this) closePicker()">
     <div class="picker-sheet">
       <div class="sheet-handle"></div>
       <div class="picker-sheet-title">어디로 갈까요?</div>
-      ${gridHtml}
+      <div class="picker-scroll">${sectionsHtml}</div>
     </div>
   </div>`;
   initSheetDrag();
