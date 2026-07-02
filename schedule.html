@@ -204,6 +204,9 @@ body.sheet-open{overflow:hidden}
 const START='2026-07-22';
 const END='2026-08-17';
 const STORE_KEY='sydneyScheduleV3';
+// shared cloud key so everyone who opens this page sees the same data
+// (kvdb.io needs no signup — first write creates the bucket)
+const SYNC_URL='https://kvdb.io/eddy-sydney-trip-259b958fefc4/schedule-data';
 
 function toDate(s){const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d);}
 function fmt(d){const y=d.getFullYear(),m=d.getMonth()+1,day=d.getDate();return `${y}-${String(m).padStart(2,'0')}-${String(day).padStart(2,'0')}`;}
@@ -348,7 +351,38 @@ function loadData(){
   d.themes=d.themes||{};
   return d;
 }
-function saveData(){ localStorage.setItem(STORE_KEY, JSON.stringify(data)); }
+function saveData(){
+  localStorage.setItem(STORE_KEY, JSON.stringify(data));
+  pushToRemote();
+}
+
+function pushToRemote(){
+  fetch(SYNC_URL, { method:'PUT', body: JSON.stringify(data) }).catch(()=>{});
+}
+
+// pulls the shared copy on load (and periodically) so everyone sees
+// the same data; falls back to local-only silently if offline or the
+// sync service is unreachable
+async function syncFromRemote(){
+  try{
+    const res=await fetch(SYNC_URL, { cache:'no-store' });
+    if(!res.ok) return;
+    const text=await res.text();
+    if(!text) return;
+    const remote=JSON.parse(text);
+    if(JSON.stringify(remote)===JSON.stringify(data)) return;
+    data=Object.assign({accommodations:{}, plans:{}, themes:{}}, remote);
+    localStorage.setItem(STORE_KEY, JSON.stringify(data));
+    refreshAll();
+  }catch(e){}
+}
+
+function refreshAll(){
+  renderTabs();
+  renderWeekTheme();
+  renderAccTab();
+  renderPlacesWrap();
+}
 
 // backup/restore — a safety net since PWA storage isn't always reliable
 // across contexts (e.g. iOS Safari can partition storage differently
@@ -399,11 +433,7 @@ function importBackup(){
   data=Object.assign({accommodations:{}, plans:{}, themes:{}}, parsed);
   saveData();
   closeBackupSheet();
-  renderBottomNav();
-  renderTabs();
-  renderWeekTheme();
-  renderAccTab();
-  renderPlacesWrap();
+  refreshAll();
 }
 
 let data = loadData();
@@ -962,6 +992,10 @@ renderWeekTheme();
 renderPlacesWrap();
 renderTopTabs();
 goTopTab('schedule');
+
+syncFromRemote();
+setInterval(syncFromRemote, 20000);
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) syncFromRemote(); });
 </script>
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js');}</script>
 </body>
