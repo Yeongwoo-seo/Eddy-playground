@@ -970,11 +970,29 @@ function renderPlaces(){
     </div>`).join('')}</div>`;
 }
 
+// places without a time sort to the end instead of the top
+function sortPlacesByTime(key){
+  const arr=data.plans[key];
+  if(!arr) return;
+  arr.sort((a,b)=>{
+    if(!a.time && !b.time) return 0;
+    if(!a.time) return 1;
+    if(!b.time) return -1;
+    return a.time.localeCompare(b.time);
+  });
+}
+
 function setPlaceTime(idx, value){
   const key=planKey();
   if(data.plans[key] && data.plans[key][idx]){
     data.plans[key][idx].time=value;
-    saveData();
+    if(value){
+      sortPlacesByTime(key);
+      saveData();
+      renderPlacesWrap();
+    }else{
+      saveData();
+    }
   }
 }
 
@@ -1085,6 +1103,7 @@ function confirmAddPlace(){
   const noteInput=document.getElementById('pickerNote');
   if(!data.plans[key]) data.plans[key]=[];
   data.plans[key].push({name:pickerSelected, time:readTimeSelect('picker'), endTime:readTimeSelect('pickerEnd'), note:noteInput?noteInput.value.trim():''});
+  sortPlacesByTime(key);
   saveData();
   renderPlacesWrap();
   closePicker();
