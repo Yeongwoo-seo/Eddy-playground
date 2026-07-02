@@ -92,7 +92,8 @@ body.sheet-open{overflow:hidden}
 .weekday-cat-card:active{transform:scale(.96)}
 .weekday-cat-emoji{font-size:24px}
 .weekday-more-link{margin-top:16px}
-.weekday-places-title{font-size:13px;font-weight:700;color:var(--grey700);margin:24px 0 12px}
+.route-btn{display:block;width:100%;margin-top:16px;background:var(--white);color:var(--primary);border:1.5px solid var(--primary-light);border-radius:16px;padding:14px;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;box-shadow:0 2px 12px rgba(0,0,0,0.06)}
+.route-btn:active{background:var(--primary-light)}
 
 /* day sub tabs — left-aligned, sized to their own text (토요일 / 일요일) */
 .sub-tabs{display:flex;gap:8px;margin-bottom:20px}
@@ -104,10 +105,10 @@ body.sheet-open{overflow:hidden}
 .ph-gr{display:flex;flex-direction:column;gap:10px}
 .pl-row{display:flex;gap:10px;align-items:stretch}
 .pl-time-col{width:74px;flex-shrink:0;padding-top:14px;position:relative}
-.pl-time-col::before{content:'';position:absolute;left:8px;top:20px;width:8px;height:8px;border-radius:50%;background:var(--primary);z-index:1}
-.pl-row:not(:last-child) .pl-time-col::after{content:'';position:absolute;left:11px;top:28px;height:152px;width:2px;background:var(--grey300)}
+.pl-num{position:absolute;left:2px;top:14px;width:24px;height:24px;border-radius:50%;background:var(--primary);color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;z-index:1;box-shadow:0 2px 6px rgba(232,116,30,0.35)}
+.pl-row:not(:last-child) .pl-time-col::after{content:'';position:absolute;left:13px;top:38px;height:136px;width:2px;background:var(--grey300)}
 .pl-row .ph-cd{flex:1;cursor:pointer}
-.pl-time-input{width:100%;border:none;background:transparent;font-size:13px;font-weight:700;color:var(--primary);font-family:inherit;padding:0 0 0 20px}
+.pl-time-input{width:100%;border:none;background:transparent;font-size:13px;font-weight:700;color:var(--primary);font-family:inherit;padding:0 0 0 32px}
 .pl-time-input::placeholder{color:var(--grey500);font-weight:600}
 .pl-time-input:focus{outline:none}
 .picker-time-input{flex:1;min-width:0;border:none;background:transparent;font-size:14px;font-weight:600;color:var(--black);font-family:inherit}
@@ -760,18 +761,15 @@ function updateTopTabsActive(){
 }
 
 function goTopTab(tab){
-  if(tab==='weekday') curSub='weekday';
-  else if(tab==='schedule' && curSub==='weekday') curSub='sat';
   topTab=tab;
   updateTopTabsActive();
   document.getElementById('scheduleTab').style.display = tab==='schedule' ? '' : 'none';
   document.getElementById('accTab').style.display = tab==='acc' ? '' : 'none';
   document.getElementById('weekdayTab').style.display = tab==='weekday' ? '' : 'none';
   document.getElementById('tabsWrap').style.display = tab==='schedule' ? '' : 'none';
-  document.querySelector('.fab-wrap').style.display = (tab==='schedule'||tab==='weekday') ? '' : 'none';
+  document.querySelector('.fab-wrap').style.display = tab==='schedule' ? '' : 'none';
   if(tab==='acc') renderAccTab();
   if(tab==='weekday') renderWeekdayTab();
-  if(tab==='schedule'){ renderTabs(); renderPlacesWrap(); }
 }
 
 function renderWeekTheme(){
@@ -813,7 +811,7 @@ function updateBottomNavActive(){
 
 function goWeek(i){
   curWeek=i;
-  curSub = topTab==='weekday' ? 'weekday' : 'sat';
+  curSub='sat';
   if(pickerOpen) closePicker();
   updateBottomNavActive();
   renderAccTab();
@@ -947,8 +945,6 @@ function renderWeekdayTab(){
       <input type="text" class="weekday-area-input" id="weekdayAreaInput" value="${esc(area)}" placeholder="예: Eastwood" onchange="updateWeekdayAreaFromInput()">
     </div>
     ${catsHtml}
-    <div class="weekday-places-title">직접 추가한 할 일</div>
-    <div id="weekdayPlacesWrap">${renderPlaces()}</div>
   `;
 }
 
@@ -1187,9 +1183,13 @@ function renderPlaces(){
   const places=data.plans[key]||[];
   const subLabel=curSub==='sat'?'토요일':curSub==='sun'?'일요일':'평일';
   if(!places.length) return `<div class="sub-empty">${subLabel}에 갈 곳을 추가해보세요</div>`;
+  const routeBtn = places.length>1
+    ? `<button class="route-btn" onclick="openRoute()">🧭 동선보기</button>`
+    : '';
   return `<div class="ph-gr">${places.map((p,i)=>`
     <div class="pl-row">
       <div class="pl-time-col">
+        <span class="pl-num">${i+1}</span>
         <input type="text" class="pl-time-input" value="${esc(p.time)}" placeholder="시간" onchange="setPlaceTime(${i}, this.value)">
       </div>
       <div class="ph-cd" onclick="openPlaceView(${i})">
@@ -1198,7 +1198,21 @@ function renderPlaces(){
         <button class="ph-del" onclick="event.stopPropagation();removePlace(${i})">✕</button>
         <div class="ph-ov"><div class="ph-nm">${p.name}</div>${p.note?`<div class="ph-note">${p.note}</div>`:''}</div>
       </div>
-    </div>`).join('')}</div>`;
+    </div>`).join('')}</div>${routeBtn}`;
+}
+
+// Google Maps "dir" deep link needs no API key: origin/destination/
+// waypoints in visiting order renders numbered pins along the route
+function openRoute(){
+  const places=data.plans[planKey()]||[];
+  if(places.length<2) return;
+  const q=p=>encodeURIComponent(p.name+' Sydney');
+  const origin=q(places[0]);
+  const destination=q(places[places.length-1]);
+  const waypoints=places.slice(1,-1).map(q).join('|');
+  let url=`https://www.google.com/maps/dir/?api=1&travelmode=transit&origin=${origin}&destination=${destination}`;
+  if(waypoints) url+=`&waypoints=${waypoints}`;
+  window.open(url, '_blank', 'noopener');
 }
 
 // places without a time sort to the end instead of the top
@@ -1364,8 +1378,7 @@ function closePicker(){
 }
 
 function removePlace(idx){
-  const wrap=currentPlacesWrapEl();
-  const rows=wrap ? wrap.querySelectorAll('.pl-row') : [];
+  const rows=document.querySelectorAll('#placesWrap .pl-row');
   const row=rows[idx];
   if(!row){
     data.plans[planKey()].splice(idx,1);
@@ -1389,15 +1402,8 @@ function removePlace(idx){
   }, 280);
 }
 
-// the place list renders into #placesWrap on the 여행 tab, or
-// #weekdayPlacesWrap on the 평일 tab — both driven by the same
-// planKey()/curSub state, just displayed in different containers
-function currentPlacesWrapEl(){
-  return document.getElementById(topTab==='weekday' ? 'weekdayPlacesWrap' : 'placesWrap');
-}
-
 function renderPlacesWrap(animate){
-  const el=currentPlacesWrapEl();
+  const el=document.getElementById('placesWrap');
   if(!el) return;
   el.innerHTML = renderPlaces();
   if(animate){
