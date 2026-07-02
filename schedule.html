@@ -84,7 +84,9 @@ body.sheet-open{overflow:hidden}
 /* weekday tab — local things-to-do near that week's accommodation */
 .weekday-area-hdr{background:var(--white);border-radius:20px;padding:16px 20px;box-shadow:0 2px 12px rgba(0,0,0,0.06);margin-bottom:16px}
 .weekday-area-lb{font-size:12px;font-weight:600;color:var(--grey500)}
-.weekday-area-name{font-size:20px;font-weight:800;color:var(--black);margin-top:2px}
+.weekday-area-input{width:100%;border:none;background:transparent;font-size:20px;font-weight:800;color:var(--black);font-family:inherit;padding:2px 0 0;margin-top:2px}
+.weekday-area-input::placeholder{color:var(--grey500);font-weight:700}
+.weekday-area-input:focus{outline:none}
 .weekday-cat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .weekday-cat-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:var(--white);border-radius:18px;padding:16px 4px;box-shadow:0 2px 12px rgba(0,0,0,0.06);text-decoration:none;color:var(--grey700);font-size:12px;font-weight:700}
 .weekday-cat-card:active{transform:scale(.96)}
@@ -517,6 +519,7 @@ function loadData(){
     delete d.plans[k];
   });
   d.themes=d.themes||{};
+  d.weekdayArea=d.weekdayArea||{};
   return d;
 }
 function saveData(){
@@ -820,36 +823,49 @@ function areaSearchUrl(area, query){
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(area+' '+query)}`;
 }
 
-function weekdayAreaName(){
+// defaults from that week's registered accommodation the first time,
+// but once the user edits it directly here it's stored on its own so
+// it doesn't have to match the accommodation's raw location text
+function weekdayAreaDefault(){
   const acc=data.accommodations[curWeek];
   if(!acc) return '';
   return (acc.location||acc.title||'').split('\n')[0].trim();
 }
 
+function weekdayAreaName(){
+  const saved=data.weekdayArea[curWeek];
+  return saved!==undefined ? saved : weekdayAreaDefault();
+}
+
+function setWeekdayArea(value){
+  data.weekdayArea[curWeek]=value;
+  saveData();
+}
+
+function updateWeekdayAreaFromInput(){
+  setWeekdayArea(document.getElementById('weekdayAreaInput').value.trim());
+  renderWeekdayTab();
+}
+
 function renderWeekdayTab(){
   const el=document.getElementById('weekdayTab');
   const area=weekdayAreaName();
-  if(!area){
-    el.innerHTML = `
-      <button class="acc-register-btn" onclick="goTopTab('acc')">
-        <div class="acc-card-label acc-card-label-empty">평일 놀거리</div>
-        <span class="ic">🏠</span>먼저 숙소를 등록해주세요
-      </button>`;
-    return;
-  }
+  const catsHtml = area
+    ? `<div class="weekday-cat-grid">
+        ${WEEKDAY_CATEGORIES.map(c=>`
+          <a class="weekday-cat-card" href="${areaSearchUrl(area, c.query)}" target="_blank" rel="noopener">
+            <span class="weekday-cat-emoji">${c.emoji}</span>
+            <span class="weekday-cat-lb">${c.label}</span>
+          </a>`).join('')}
+      </div>
+      <a class="acc-sheet-link weekday-more-link" href="${areaSearchUrl(area, '가볼만한 곳')}" target="_blank" rel="noopener">📍 ${area} 근처 더 둘러보기 →</a>`
+    : `<div class="sub-empty">지역을 입력하면 근처 놀거리를 찾아드려요</div>`;
   el.innerHTML = `
     <div class="weekday-area-hdr">
       <div class="weekday-area-lb">이번 주 숙소 지역</div>
-      <div class="weekday-area-name">${area}</div>
+      <input type="text" class="weekday-area-input" id="weekdayAreaInput" value="${esc(area)}" placeholder="예: Eastwood" onchange="updateWeekdayAreaFromInput()">
     </div>
-    <div class="weekday-cat-grid">
-      ${WEEKDAY_CATEGORIES.map(c=>`
-        <a class="weekday-cat-card" href="${areaSearchUrl(area, c.query)}" target="_blank" rel="noopener">
-          <span class="weekday-cat-emoji">${c.emoji}</span>
-          <span class="weekday-cat-lb">${c.label}</span>
-        </a>`).join('')}
-    </div>
-    <a class="acc-sheet-link weekday-more-link" href="${areaSearchUrl(area, '가볼만한 곳')}" target="_blank" rel="noopener">📍 ${area} 근처 더 둘러보기 →</a>
+    ${catsHtml}
   `;
 }
 
