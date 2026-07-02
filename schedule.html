@@ -996,9 +996,46 @@ function closeAccSheet(){
 function renderSheet(){
   const root=document.getElementById('accSheetRoot');
   if(sheetMode==='edit') root.innerHTML=sheetEditHtml(sheetWeek);
-  else if(sheetMode==='place') root.innerHTML=placeSheetHtml(sheetPlaceIdx);
+  else if(sheetMode==='place'){ root.innerHTML=placeSheetHtml(sheetPlaceIdx); initSheetSwipeClose(); }
   else if(sheetMode==='placeEdit') root.innerHTML=placeEditHtml(sheetPlaceIdx);
   else root.innerHTML='';
+}
+
+// lets the full-screen place detail sheet be dismissed with a
+// downward swipe, like a native modal — only kicks in when the sheet
+// is scrolled to the top so it doesn't fight normal content scrolling
+function initSheetSwipeClose(){
+  const sheet=document.querySelector('#accSheetRoot .acc-sheet');
+  if(!sheet) return;
+  let startY=null, dragging=false;
+  sheet.addEventListener('pointerdown', e=>{
+    if(sheet.scrollTop>0) return;
+    startY=e.clientY;
+    dragging=false;
+  });
+  sheet.addEventListener('pointermove', e=>{
+    if(startY===null) return;
+    const delta=e.clientY-startY;
+    if(delta>4){
+      dragging=true;
+      sheet.style.transition='none';
+      sheet.style.transform=`translateY(${delta}px)`;
+    }
+  });
+  const end=e=>{
+    if(startY===null) return;
+    const delta=(e.clientY||0)-startY;
+    sheet.style.transition='transform .25s cubic-bezier(.2,.8,.2,1)';
+    if(dragging && delta>100){
+      sheet.style.transform='translateY(100%)';
+      setTimeout(closeAccSheet, 200);
+    }else{
+      sheet.style.transform='';
+    }
+    startY=null; dragging=false;
+  };
+  sheet.addEventListener('pointerup', end);
+  sheet.addEventListener('pointercancel', end);
 }
 
 function placeEditHtml(idx){
