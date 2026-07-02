@@ -104,16 +104,11 @@ body.sheet-open{overflow:hidden}
 .pl-time-col::before{content:'';position:absolute;left:8px;top:20px;width:8px;height:8px;border-radius:50%;background:var(--primary);z-index:1}
 .pl-row:not(:last-child) .pl-time-col::after{content:'';position:absolute;left:11px;top:28px;height:152px;width:2px;background:var(--grey300)}
 .pl-row .ph-cd{flex:1;cursor:pointer}
-.time-select-row{display:flex;align-items:center;gap:2px}
-.time-select{border:none;background:transparent;font-size:13px;font-weight:700;color:var(--primary);font-family:inherit;padding:0;-webkit-appearance:none;appearance:none}
-.time-select:focus{outline:none}
-.time-sep{font-size:13px;font-weight:700;color:var(--primary)}
-.pl-time-col .time-select-row{padding-left:20px}
-.pl-end-row{margin-top:2px;display:flex;align-items:center;gap:4px;padding-left:20px}
-.pl-end-row .time-select-row{padding-left:0}
-.pl-end-row .time-select{font-size:11px;font-weight:600;color:var(--grey500)}
-.pl-end-row .time-sep{font-size:11px;font-weight:600;color:var(--grey500)}
-.pl-end-lb{font-size:11px;color:var(--grey500);font-weight:600;flex-shrink:0}
+.pl-time-input{width:100%;border:none;background:transparent;font-size:13px;font-weight:700;color:var(--primary);font-family:inherit;padding:0 0 0 20px}
+.pl-time-input::placeholder{color:var(--grey500);font-weight:600}
+.pl-time-input:focus{outline:none}
+.picker-time-input{flex:1;min-width:0;border:none;background:transparent;font-size:14px;font-weight:600;color:var(--black);font-family:inherit}
+.picker-time-input:focus{outline:none}
 .ph-cd{border-radius:18px;overflow:hidden;position:relative;height:150px;box-shadow:0 2px 12px rgba(0,0,0,0.06)}
 .ph-cd img{width:100%;height:100%;object-fit:cover;display:block;background:var(--grey100)}
 .ph-cd::after{content:'';position:absolute;inset:0;background:rgba(0,0,0,.28);pointer-events:none}
@@ -694,27 +689,6 @@ function decodeEntities(str){
 function esc(s){ return (s||'').replace(/"/g,'&quot;'); }
 function normalizeImg(u){ if(!u) return ''; return u.startsWith('//') ? 'https:'+u : u; }
 
-// plain <select> hour/minute pair instead of <input type="time"> — some
-// mobile browsers render the native time picker unreliably, selects
-// always work the same everywhere
-const TIME_HOURS=Array.from({length:24},(_,h)=>String(h).padStart(2,'0'));
-const TIME_MINUTES=Array.from({length:12},(_,m)=>String(m*5).padStart(2,'0'));
-function timeSelectHtml(id, value, onchangeAttr){
-  const [hh,mm]=(value||'').split(':');
-  const onch=onchangeAttr?` onchange="${onchangeAttr}"`:'';
-  const opt=(v,sel)=>`<option value="${v}" ${v===sel?'selected':''}>${v}</option>`;
-  return `<div class="time-select-row">
-    <select class="time-select" id="${id}Hour"${onch}><option value="">--</option>${TIME_HOURS.map(h=>opt(h,hh)).join('')}</select>
-    <span class="time-sep">:</span>
-    <select class="time-select" id="${id}Min"${onch}><option value="">--</option>${TIME_MINUTES.map(m=>opt(m,mm)).join('')}</select>
-  </div>`;
-}
-function readTimeSelect(id){
-  const h=document.getElementById(id+'Hour').value;
-  const m=document.getElementById(id+'Min').value;
-  return (h && m) ? `${h}:${m}` : '';
-}
-
 function renderBottomNav(){
   const el=document.getElementById('bottomNav');
   el.innerHTML = `<div class="bn-thumb" id="bnThumb" style="width:calc((100% - 16px) / ${WEEKS.length})"></div>` +
@@ -1059,8 +1033,7 @@ function renderPlaces(){
   return `<div class="ph-gr">${places.map((p,i)=>`
     <div class="pl-row">
       <div class="pl-time-col">
-        ${timeSelectHtml('plTime'+i, p.time, `updatePlaceTimeFromSelect(${i})`)}
-        ${p.endTime?`<div class="pl-end-row"><span class="pl-end-lb">출발</span>${timeSelectHtml('plEnd'+i, p.endTime, `updatePlaceEndTimeFromSelect(${i})`)}</div>`:''}
+        <input type="text" class="pl-time-input" value="${esc(p.time)}" placeholder="시간" onchange="setPlaceTime(${i}, this.value)">
       </div>
       <div class="ph-cd" onclick="openPlaceView(${i})">
         <img src="${plImg(p.name)}">
@@ -1096,21 +1069,6 @@ function setPlaceTime(idx, value){
   }
 }
 
-function updatePlaceTimeFromSelect(idx){
-  setPlaceTime(idx, readTimeSelect('plTime'+idx));
-}
-
-function setPlaceEndTime(idx, value){
-  const key=planKey();
-  if(data.plans[key] && data.plans[key][idx]){
-    data.plans[key][idx].endTime=value;
-    saveData();
-  }
-}
-
-function updatePlaceEndTimeFromSelect(idx){
-  setPlaceEndTime(idx, readTimeSelect('plEnd'+idx));
-}
 
 function syncFab(){
   document.getElementById('fabBtn').classList.toggle('open', pickerOpen);
@@ -1180,11 +1138,7 @@ function renderPickerDetailStep(){
       </div>
       <div class="picker-time-row">
         <span class="picker-time-lb">시간</span>
-        ${timeSelectHtml('picker', '')}
-      </div>
-      <div class="picker-time-row">
-        <span class="picker-time-lb">출발</span>
-        ${timeSelectHtml('pickerEnd', '')}
+        <input type="text" id="pickerTime" class="picker-time-input" placeholder="예: 15:00, 오후 3시">
       </div>
       <input type="text" id="pickerNote" class="picker-note-input" placeholder="메모 (선택, 예: 예약 확인, 같이 갈 사람)">
       <button class="acc-form-save" onclick="confirmAddPlace()">추가하기</button>
@@ -1202,7 +1156,8 @@ function confirmAddPlace(){
   const key=planKey();
   const noteInput=document.getElementById('pickerNote');
   if(!data.plans[key]) data.plans[key]=[];
-  data.plans[key].push({name:pickerSelected, time:readTimeSelect('picker'), endTime:readTimeSelect('pickerEnd'), note:noteInput?noteInput.value.trim():''});
+  const timeInput=document.getElementById('pickerTime');
+  data.plans[key].push({name:pickerSelected, time:timeInput?timeInput.value.trim():'', note:noteInput?noteInput.value.trim():''});
   sortPlacesByTime(key);
   saveData();
   renderPlacesWrap();
