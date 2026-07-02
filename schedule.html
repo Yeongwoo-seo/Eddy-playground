@@ -37,7 +37,7 @@ html,body{height:100%}
 html{scrollbar-width:none;-ms-overflow-style:none}
 html::-webkit-scrollbar{display:none;width:0;height:0}
 @supports (height: 100dvh){ html,body{height:100dvh} }
-body{background:var(--bg);color:var(--black);font-family:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;overflow-x:hidden;display:flex;justify-content:center}
+body{background:var(--bg);color:var(--black);font-family:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;overflow-x:hidden;display:flex;justify-content:center;align-items:flex-start}
 
 #splashScreen{position:fixed;inset:0;z-index:9999;background:#FB6A08;transition:opacity .4s ease}
 #splashScreen img{width:100%;height:100%;object-fit:contain}
@@ -50,22 +50,25 @@ body.sheet-open{overflow:hidden}
 @supports (height: 100dvh){ .app{min-height:100dvh} }
 .hl{color:var(--primary)}
 
-/* fixed top bar: week theme header + 일정/숙소 switcher on one line, day sub-tabs below */
-.top-bar{position:fixed;top:calc(12px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:468px;display:flex;flex-direction:column;gap:8px;z-index:25}
+/* 일정/숙소 switcher stays floating fixed at the top; the week theme
+   header and day sub-tabs now live inside the scrollable content so
+   they scroll away with it instead of sitting in a fixed bar */
+.top-tabs-float{position:fixed;top:calc(12px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:468px;display:flex;justify-content:flex-end;z-index:25;pointer-events:none}
 .top-bar-row{display:flex;align-items:center;gap:10px}
 
-.week-theme-input{flex:1;min-width:0;border:none;background:transparent;font-size:22px;font-weight:800;color:var(--black);font-family:inherit;padding:2px 4px;text-shadow:0 1px 3px rgba(255,255,255,.8)}
+.week-theme-input{flex:1;min-width:0;border:none;background:transparent;font-size:22px;font-weight:800;color:var(--black);font-family:inherit;padding:2px 4px}
 .week-theme-input::placeholder{color:var(--grey500);font-weight:700}
 .week-theme-input:focus{outline:none}
 
 
 /* 일정 / 숙소 switcher — compact floating pill with a sliding active thumb */
-.top-tabs{position:relative;margin-left:auto;flex-shrink:0;background:var(--white);border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,0.1);display:flex;padding:3px}
+.top-tabs{position:relative;pointer-events:auto;flex-shrink:0;background:var(--white);border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,0.1);display:flex;padding:3px}
 .tt-thumb{position:absolute;top:3px;left:3px;width:calc((100% - 6px) / 2);height:calc(100% - 6px);background:var(--primary);border-radius:12px;box-shadow:0 3px 10px rgba(232,116,30,0.35);transition:transform .3s cubic-bezier(.2,.8,.2,1);z-index:0}
 .top-tab{position:relative;z-index:1;border:none;background:none;padding:7px 14px;border-radius:12px;font-size:12px;font-weight:700;color:var(--grey500);cursor:pointer;font-family:inherit;transition:color .2s;white-space:nowrap}
 .top-tab.on{color:#fff}
 
-.i-bd{padding:calc(112px + env(safe-area-inset-top)) 20px 20px}
+.i-bd{padding:calc(56px + env(safe-area-inset-top)) 20px 20px;min-height:calc(100vh - 112px - env(safe-area-inset-bottom));box-sizing:border-box}
+@supports (height: 100dvh){ .i-bd{min-height:calc(100dvh - 112px - env(safe-area-inset-bottom))} }
 
 @keyframes slideUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
 .content-anim{animation:slideUp .45s cubic-bezier(.2,.8,.2,1)}
@@ -216,15 +219,15 @@ body.sheet-open{overflow:hidden}
 <body>
 <div id="splashScreen"><img id="splashImg" src="icons/splash-bg.jpg" alt=""><button class="splash-install-btn" id="splashInstallBtn" onclick="openInstallSheet()">앱 설치</button></div>
 <div class="app">
-  <div class="top-bar" id="topBar">
-    <div class="top-bar-row">
-      <input type="text" id="weekThemeInput" class="week-theme-input" placeholder="이번주 테마를 적어보세요" oninput="saveWeekTheme()">
-      <div class="top-tabs" id="topTabs"></div>
-    </div>
-    <div id="tabsWrap"></div>
+  <div class="top-tabs-float">
+    <div class="top-tabs" id="topTabs"></div>
   </div>
 
   <div class="i-bd">
+    <div class="top-bar-row">
+      <input type="text" id="weekThemeInput" class="week-theme-input" placeholder="이번주 테마를 적어보세요" oninput="saveWeekTheme()">
+    </div>
+    <div id="tabsWrap"></div>
     <div id="scheduleTab">
       <div id="placesWrap"></div>
     </div>
@@ -663,19 +666,25 @@ function readTimeSelect(id){
 
 function renderBottomNav(){
   const el=document.getElementById('bottomNav');
-  el.innerHTML = `<div class="bn-thumb" id="bnThumb" style="width:calc((100% - 16px) / ${WEEKS.length})"></div>` +
+  const total=WEEKS.length+1;
+  el.innerHTML = `<div class="bn-thumb" id="bnThumb" style="width:calc((100% - 16px) / ${total})"></div>` +
     WEEKS.map((w,i)=>`
     <button class="nav-item" onclick="goWeek(${i})">
       <div class="n-ic">${i+1}</div>
       <div class="n-lb">${weekLabel(w)}</div>
     </button>
-  `).join('');
+  `).join('') +
+    `<button class="nav-item" onclick="goWeekdayNav()">
+      <div class="n-ic">평</div>
+      <div class="n-lb">평일</div>
+    </button>`;
   updateBottomNavActive();
 }
 
 function updateBottomNavActive(){
-  document.querySelectorAll('#bottomNav .nav-item').forEach((el,i)=>el.classList.toggle('on', i===curWeek));
-  document.getElementById('bnThumb').style.transform = `translateX(${curWeek*100}%)`;
+  const activeIdx = curSub==='weekday' ? WEEKS.length : curWeek;
+  document.querySelectorAll('#bottomNav .nav-item').forEach((el,i)=>el.classList.toggle('on', i===activeIdx));
+  document.getElementById('bnThumb').style.transform = `translateX(${activeIdx*100}%)`;
 }
 
 function goWeek(i){
@@ -689,9 +698,18 @@ function goWeek(i){
   renderPlacesWrap(true);
 }
 
+function goWeekdayNav(){
+  curSub='weekday';
+  if(pickerOpen) closePicker();
+  updateBottomNavActive();
+  renderTabs();
+  renderPlacesWrap(true);
+}
+
 function goSub(type){
   curSub=type;
   if(pickerOpen) closePicker();
+  updateBottomNavActive();
   renderTabs();
   renderPlacesWrap(true);
 }
@@ -700,7 +718,6 @@ function renderTabs(){
   document.getElementById('tabsWrap').innerHTML = `<div class="sub-tabs">
     <button class="sub-tab ${curSub==='sat'?'on':''}" onclick="goSub('sat')">토요일</button>
     <button class="sub-tab ${curSub==='sun'?'on':''}" onclick="goSub('sun')">일요일</button>
-    <button class="sub-tab ${curSub==='weekday'?'on':''}" onclick="goSub('weekday')">평일</button>
   </div>`;
 }
 
