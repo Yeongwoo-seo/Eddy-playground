@@ -87,12 +87,20 @@ body.sheet-open{overflow:hidden}
 /* place / accommodation photo cards */
 .ph-gr{display:flex;flex-direction:column;gap:10px}
 .pl-row{display:flex;gap:10px;align-items:stretch}
-.pl-time-col{width:74px;flex-shrink:0;padding-top:14px}
+.pl-time-col{width:74px;flex-shrink:0;padding-top:14px;position:relative}
+.pl-time-col::before{content:'';position:absolute;left:8px;top:20px;width:8px;height:8px;border-radius:50%;background:var(--primary);z-index:1}
+.pl-row:not(:last-child) .pl-time-col::after{content:'';position:absolute;left:11px;top:28px;height:152px;width:2px;background:var(--grey300)}
 .pl-row .ph-cd{flex:1;cursor:pointer}
 .time-select-row{display:flex;align-items:center;gap:2px}
 .time-select{border:none;background:transparent;font-size:13px;font-weight:700;color:var(--primary);font-family:inherit;padding:0;-webkit-appearance:none;appearance:none}
 .time-select:focus{outline:none}
 .time-sep{font-size:13px;font-weight:700;color:var(--primary)}
+.pl-time-col .time-select-row{padding-left:20px}
+.pl-end-row{margin-top:2px;display:flex;align-items:center;gap:4px;padding-left:20px}
+.pl-end-row .time-select-row{padding-left:0}
+.pl-end-row .time-select{font-size:11px;font-weight:600;color:var(--grey500)}
+.pl-end-row .time-sep{font-size:11px;font-weight:600;color:var(--grey500)}
+.pl-end-lb{font-size:11px;color:var(--grey500);font-weight:600;flex-shrink:0}
 .ph-cd{border-radius:18px;overflow:hidden;position:relative;height:150px;box-shadow:0 2px 12px rgba(0,0,0,0.06)}
 .ph-cd img{width:100%;height:100%;object-fit:cover;display:block;background:var(--grey100)}
 .ph-cd::after{content:'';position:absolute;inset:0;background:rgba(0,0,0,.28);pointer-events:none}
@@ -870,7 +878,10 @@ function renderPlaces(){
   if(!places.length) return `<div class="sub-empty">${subLabel}에 갈 곳을 추가해보세요</div>`;
   return `<div class="ph-gr">${places.map((p,i)=>`
     <div class="pl-row">
-      <div class="pl-time-col">${timeSelectHtml('plTime'+i, p.time, `updatePlaceTimeFromSelect(${i})`)}</div>
+      <div class="pl-time-col">
+        ${timeSelectHtml('plTime'+i, p.time, `updatePlaceTimeFromSelect(${i})`)}
+        <div class="pl-end-row"><span class="pl-end-lb">출발</span>${timeSelectHtml('plEnd'+i, p.endTime, `updatePlaceEndTimeFromSelect(${i})`)}</div>
+      </div>
       <div class="ph-cd" onclick="openPlaceView(${i})">
         <img src="${plImg(p.name)}">
         <button class="ph-del" onclick="event.stopPropagation();removePlace(${i})">✕</button>
@@ -889,6 +900,18 @@ function setPlaceTime(idx, value){
 
 function updatePlaceTimeFromSelect(idx){
   setPlaceTime(idx, readTimeSelect('plTime'+idx));
+}
+
+function setPlaceEndTime(idx, value){
+  const key=planKey();
+  if(data.plans[key] && data.plans[key][idx]){
+    data.plans[key][idx].endTime=value;
+    saveData();
+  }
+}
+
+function updatePlaceEndTimeFromSelect(idx){
+  setPlaceEndTime(idx, readTimeSelect('plEnd'+idx));
 }
 
 function syncFab(){
@@ -910,9 +933,13 @@ function openPicker(){
   renderPickerGridStep();
 }
 
+// 맛집 탐방/카페 브런치는 하루에 여러 번 갈 수 있는 카테고리라 이미
+// 추가했어도 목록에서 계속 선택할 수 있어야 한다
+const REPEATABLE_PRESETS=['맛집 탐방', '카페 브런치'];
+
 function renderPickerGridStep(){
   const existingNames=(data.plans[planKey()]||[]).map(p=>p.name);
-  const available=PRESETS.filter(p=>!existingNames.includes(p.name));
+  const available=PRESETS.filter(p=>REPEATABLE_PRESETS.includes(p.name) || !existingNames.includes(p.name));
   const gridHtml=available.length
     ? `<div class="preset-grid">${available.map(p=>`
         <button class="preset-chip" style="background-image:url('${plImg(p.name)}')" onclick="selectPreset('${p.name}')">
@@ -950,6 +977,10 @@ function renderPickerDetailStep(){
         <span class="picker-time-lb">시간</span>
         ${timeSelectHtml('picker', '')}
       </div>
+      <div class="picker-time-row">
+        <span class="picker-time-lb">출발</span>
+        ${timeSelectHtml('pickerEnd', '')}
+      </div>
       <input type="text" id="pickerNote" class="picker-note-input" placeholder="메모 (선택, 예: 예약 확인, 같이 갈 사람)">
       <button class="acc-form-save" onclick="confirmAddPlace()">추가하기</button>
     </div>
@@ -966,7 +997,7 @@ function confirmAddPlace(){
   const key=planKey();
   const noteInput=document.getElementById('pickerNote');
   if(!data.plans[key]) data.plans[key]=[];
-  data.plans[key].push({name:pickerSelected, time:readTimeSelect('picker'), note:noteInput?noteInput.value.trim():''});
+  data.plans[key].push({name:pickerSelected, time:readTimeSelect('picker'), endTime:readTimeSelect('pickerEnd'), note:noteInput?noteInput.value.trim():''});
   saveData();
   renderPlacesWrap();
   closePicker();
