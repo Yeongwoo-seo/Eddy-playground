@@ -253,9 +253,13 @@ body.sheet-open{overflow:hidden}
 const START='2026-07-22';
 const END='2026-08-17';
 const STORE_KEY='sydneyScheduleV3';
-// shared cloud key so everyone who opens this page sees the same data
-// (kvdb.io needs no signup — first write creates the bucket)
-const SYNC_URL='https://kvdb.io/eddy-sydney-trip-259b958fefc4/schedule-data';
+// shared cloud store so everyone who opens this page sees the same data.
+// Supabase anon key is meant to be public/client-side (that's the whole
+// point of the "anon" role) — it's safe to ship in this static page.
+const SUPABASE_URL='https://dhtstqnksjoyyshnhksv.supabase.co';
+const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRodHN0cW5rc2pveXlzaG5oa3N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5NjIyNzQsImV4cCI6MjA5ODUzODI3NH0.FMZdCXntYJKxQeYNwfrsy1liJcHIkD2inJ4NzbwLzd4';
+const SUPABASE_TABLE='schedule_data';
+const SUPABASE_ROW_ID='trip';
 
 function toDate(s){const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d);}
 function fmt(d){const y=d.getFullYear(),m=d.getMonth()+1,day=d.getDate();return `${y}-${String(m).padStart(2,'0')}-${String(day).padStart(2,'0')}`;}
@@ -519,8 +523,20 @@ function saveData(){
   pushToRemote();
 }
 
+function supabaseHeaders(){
+  return {
+    'apikey': SUPABASE_ANON_KEY,
+    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+    'Content-Type': 'application/json'
+  };
+}
+
 function pushToRemote(){
-  fetch(SYNC_URL, { method:'PUT', body: JSON.stringify(data) }).catch(()=>{});
+  fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?on_conflict=id`, {
+    method:'POST',
+    headers: Object.assign(supabaseHeaders(), { 'Prefer':'resolution=merge-duplicates,return=minimal' }),
+    body: JSON.stringify({ id: SUPABASE_ROW_ID, data, updated_at: new Date().toISOString() })
+  }).catch(()=>{});
 }
 
 // pulls the shared copy on load (and periodically) so everyone sees
@@ -533,11 +549,14 @@ function pushToRemote(){
 // just before that PUT finished propagating and wipes it right back out
 async function syncFromRemote(){
   try{
-    const res=await fetch(SYNC_URL, { cache:'no-store' });
+    const res=await fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?id=eq.${SUPABASE_ROW_ID}&select=data`, {
+      headers: supabaseHeaders(),
+      cache:'no-store'
+    });
     if(!res.ok) return;
-    const text=await res.text();
-    if(!text) return;
-    const remote=JSON.parse(text);
+    const rows=await res.json();
+    if(!rows || !rows.length || !rows[0].data) return;
+    const remote=rows[0].data;
     if(JSON.stringify(remote)===JSON.stringify(data)) return;
     if((remote.lastModified||0) <= (data.lastModified||0)) return;
     data=Object.assign({accommodations:{}, plans:{}, themes:{}}, remote);
