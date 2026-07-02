@@ -63,7 +63,7 @@ body.sheet-open{overflow:hidden}
 
 /* 일정 / 숙소 switcher — compact floating pill with a sliding active thumb */
 .top-tabs{position:relative;pointer-events:auto;flex-shrink:0;background:var(--white);border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,0.1);display:flex;padding:3px}
-.tt-thumb{position:absolute;top:3px;left:3px;width:calc((100% - 6px) / 2);height:calc(100% - 6px);background:var(--primary);border-radius:12px;box-shadow:0 3px 10px rgba(232,116,30,0.35);transition:transform .3s cubic-bezier(.2,.8,.2,1);z-index:0}
+.tt-thumb{position:absolute;top:3px;left:3px;width:calc((100% - 6px) / 3);height:calc(100% - 6px);background:var(--primary);border-radius:12px;box-shadow:0 3px 10px rgba(232,116,30,0.35);transition:transform .3s cubic-bezier(.2,.8,.2,1);z-index:0}
 .top-tab{position:relative;z-index:1;border:none;background:none;padding:7px 14px;border-radius:12px;font-size:12px;font-weight:700;color:var(--grey500);cursor:pointer;font-family:inherit;transition:color .2s;white-space:nowrap}
 .top-tab.on{color:#fff}
 
@@ -81,7 +81,17 @@ body.sheet-open{overflow:hidden}
 .acc-card-label{position:absolute;top:14px;left:16px;z-index:1;font-size:16px;font-weight:800;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.45)}
 .acc-card-label-empty{color:var(--grey700);text-shadow:none}
 
-/* day sub tabs — left-aligned, sized to their own text (평일 / 토요일 / 일요일) */
+/* weekday tab — local things-to-do near that week's accommodation */
+.weekday-area-hdr{background:var(--white);border-radius:20px;padding:16px 20px;box-shadow:0 2px 12px rgba(0,0,0,0.06);margin-bottom:16px}
+.weekday-area-lb{font-size:12px;font-weight:600;color:var(--grey500)}
+.weekday-area-name{font-size:20px;font-weight:800;color:var(--black);margin-top:2px}
+.weekday-cat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.weekday-cat-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:var(--white);border-radius:18px;padding:16px 4px;box-shadow:0 2px 12px rgba(0,0,0,0.06);text-decoration:none;color:var(--grey700);font-size:12px;font-weight:700}
+.weekday-cat-card:active{transform:scale(.96)}
+.weekday-cat-emoji{font-size:24px}
+.weekday-more-link{margin-top:16px}
+
+/* day sub tabs — left-aligned, sized to their own text (토요일 / 일요일) */
 .sub-tabs{display:flex;gap:8px}
 .sub-tab{border:none;background:var(--white);color:var(--grey500);padding:9px 16px;border-radius:14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:.2s;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
 .sub-tab.on{background:var(--primary);color:#fff;box-shadow:0 3px 10px rgba(232,116,30,0.35)}
@@ -232,6 +242,7 @@ body.sheet-open{overflow:hidden}
       <div id="placesWrap"></div>
     </div>
     <div id="accTab" style="display:none"></div>
+    <div id="weekdayTab" style="display:none"></div>
   </div>
 </div>
 
@@ -489,10 +500,7 @@ function loadData(){
   if(!d){
     d={
       accommodations:{},
-      plans:{
-        '0-weekday':[{name:'✈️ 시드니 공항 도착', time:'09:00'}],
-        '3-weekday':[{name:'✈️ 시드니 공항 출발', time:'20:30'}]
-      }
+      plans:{}
     };
   }
   // migrate plan entries saved as plain strings (pre-time-field versions) to {name,time}
@@ -636,20 +644,23 @@ let sheetMode = null; // null | 'edit' | 'place'
 let sheetWeek = null;
 let sheetPlaceIdx = null;
 
+const TOP_TABS=['schedule','acc','weekday'];
+
 function renderTopTabs(){
   document.getElementById('topTabs').innerHTML = `
     <div class="tt-thumb" id="ttThumb"></div>
-    <button class="top-tab" onclick="goTopTab('schedule')">일정</button>
+    <button class="top-tab" onclick="goTopTab('schedule')">여행</button>
     <button class="top-tab" onclick="goTopTab('acc')">숙소</button>
+    <button class="top-tab" onclick="goTopTab('weekday')">평일</button>
   `;
   updateTopTabsActive();
 }
 
 function updateTopTabsActive(){
   const buttons=document.querySelectorAll('#topTabs .top-tab');
-  buttons[0].classList.toggle('on', topTab==='schedule');
-  buttons[1].classList.toggle('on', topTab==='acc');
-  document.getElementById('ttThumb').style.transform = `translateX(${topTab==='schedule'?0:100}%)`;
+  const idx=TOP_TABS.indexOf(topTab);
+  buttons.forEach((b,i)=>b.classList.toggle('on', i===idx));
+  document.getElementById('ttThumb').style.transform = `translateX(${idx*100}%)`;
 }
 
 function goTopTab(tab){
@@ -657,10 +668,12 @@ function goTopTab(tab){
   updateTopTabsActive();
   document.getElementById('scheduleTab').style.display = tab==='schedule' ? '' : 'none';
   document.getElementById('accTab').style.display = tab==='acc' ? '' : 'none';
+  document.getElementById('weekdayTab').style.display = tab==='weekday' ? '' : 'none';
   document.getElementById('tabsWrap').style.display = tab==='schedule' ? '' : 'none';
   document.getElementById('weekThemeInput').style.display = tab==='schedule' ? '' : 'none';
   document.querySelector('.fab-wrap').style.display = tab==='schedule' ? '' : 'none';
   if(tab==='acc') renderAccTab();
+  if(tab==='weekday') renderWeekdayTab();
 }
 
 function renderWeekTheme(){
@@ -704,25 +717,19 @@ function readTimeSelect(id){
 
 function renderBottomNav(){
   const el=document.getElementById('bottomNav');
-  const total=WEEKS.length+1;
-  el.innerHTML = `<div class="bn-thumb" id="bnThumb" style="width:calc((100% - 16px) / ${total})"></div>` +
+  el.innerHTML = `<div class="bn-thumb" id="bnThumb" style="width:calc((100% - 16px) / ${WEEKS.length})"></div>` +
     WEEKS.map((w,i)=>`
     <button class="nav-item" onclick="goWeek(${i})">
       <div class="n-ic">${i+1}</div>
       <div class="n-lb">${weekLabel(w)}</div>
     </button>
-  `).join('') +
-    `<button class="nav-item" onclick="goWeekdayNav()">
-      <div class="n-ic">평</div>
-      <div class="n-lb">평일</div>
-    </button>`;
+  `).join('');
   updateBottomNavActive();
 }
 
 function updateBottomNavActive(){
-  const activeIdx = curSub==='weekday' ? WEEKS.length : curWeek;
-  document.querySelectorAll('#bottomNav .nav-item').forEach((el,i)=>el.classList.toggle('on', i===activeIdx));
-  document.getElementById('bnThumb').style.transform = `translateX(${activeIdx*100}%)`;
+  document.querySelectorAll('#bottomNav .nav-item').forEach((el,i)=>el.classList.toggle('on', i===curWeek));
+  document.getElementById('bnThumb').style.transform = `translateX(${curWeek*100}%)`;
 }
 
 function goWeek(i){
@@ -734,20 +741,12 @@ function goWeek(i){
   renderTabs();
   renderWeekTheme();
   renderPlacesWrap(true);
-}
-
-function goWeekdayNav(){
-  curSub='weekday';
-  if(pickerOpen) closePicker();
-  updateBottomNavActive();
-  renderTabs();
-  renderPlacesWrap(true);
+  if(topTab==='weekday') renderWeekdayTab();
 }
 
 function goSub(type){
   curSub=type;
   if(pickerOpen) closePicker();
-  updateBottomNavActive();
   renderTabs();
   renderPlacesWrap(true);
 }
@@ -811,6 +810,52 @@ function deleteAcc(weekIdx){
   delete data.accommodations[weekIdx];
   saveData();
   if(weekIdx===curWeek) renderAccTab();
+}
+
+// ─── weekday tab: local things-to-do near that week's registered
+// accommodation, since weekdays are less pre-planned than the weekend ───
+const WEEKDAY_CATEGORIES=[
+  {label:'맛집', emoji:'🍽️', query:'맛집'},
+  {label:'카페', emoji:'☕', query:'카페'},
+  {label:'마트', emoji:'🛒', query:'마트'},
+  {label:'공원', emoji:'🌳', query:'공원'}
+];
+
+function areaSearchUrl(area, query){
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(area+' '+query)}`;
+}
+
+function weekdayAreaName(){
+  const acc=data.accommodations[curWeek];
+  if(!acc) return '';
+  return (acc.location||acc.title||'').split('\n')[0].trim();
+}
+
+function renderWeekdayTab(){
+  const el=document.getElementById('weekdayTab');
+  const area=weekdayAreaName();
+  if(!area){
+    el.innerHTML = `
+      <button class="acc-register-btn" onclick="goTopTab('acc')">
+        <div class="acc-card-label acc-card-label-empty">평일 놀거리</div>
+        <span class="ic">🏠</span>먼저 숙소를 등록해주세요
+      </button>`;
+    return;
+  }
+  el.innerHTML = `
+    <div class="weekday-area-hdr">
+      <div class="weekday-area-lb">이번 주 숙소 지역</div>
+      <div class="weekday-area-name">${area}</div>
+    </div>
+    <div class="weekday-cat-grid">
+      ${WEEKDAY_CATEGORIES.map(c=>`
+        <a class="weekday-cat-card" href="${areaSearchUrl(area, c.query)}" target="_blank" rel="noopener">
+          <span class="weekday-cat-emoji">${c.emoji}</span>
+          <span class="weekday-cat-lb">${c.label}</span>
+        </a>`).join('')}
+    </div>
+    <a class="acc-sheet-link weekday-more-link" href="${areaSearchUrl(area, '가볼만한 곳')}" target="_blank" rel="noopener">📍 ${area} 근처 더 둘러보기 →</a>
+  `;
 }
 
 function openPlaceView(idx){
