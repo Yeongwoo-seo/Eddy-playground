@@ -152,9 +152,11 @@ body.sheet-open{overflow:hidden}
 .bottom-nav{position:fixed;bottom:calc(16px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:468px;background:var(--white);border-radius:24px;box-shadow:0 4px 20px rgba(0,0,0,0.1);display:flex;padding:8px;z-index:20}
 .bn-thumb{position:absolute;top:8px;left:8px;height:calc(100% - 16px);background:var(--primary-light);border-radius:16px;box-shadow:0 2px 8px rgba(0,0,0,0.06);transition:transform .3s cubic-bezier(.2,.8,.2,1);z-index:0}
 .nav-item{position:relative;z-index:1;flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:none;cursor:pointer;padding:8px 4px;border-radius:16px;font-family:inherit;color:var(--grey500);min-height:44px}
-.nav-item .n-ic{width:24px;height:24px;border-radius:50%;background:var(--grey100);color:var(--grey500);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;transition:.2s}
-.nav-item .n-lb{font-size:10px;font-weight:600}
-.nav-item.on .n-ic{background:var(--primary);color:#fff}
+.nav-item .n-ic{font-size:22px;line-height:1;transition:.2s}
+.nav-item .n-lb-row{display:flex;align-items:center;gap:4px}
+.nav-item .n-num{width:14px;height:14px;border-radius:50%;background:var(--grey100);color:var(--grey500);font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;transition:.2s}
+.nav-item .n-lb{font-size:10px;font-weight:600;color:var(--grey500);transition:.2s}
+.nav-item.on .n-num{background:var(--primary);color:#fff}
 .nav-item.on .n-lb{color:var(--primary)}
 
 /* floating add-place button */
@@ -798,7 +800,7 @@ function renderBottomNav(){
     WEEKS.map((w,i)=>`
     <button class="nav-item" onclick="goWeek(${i})">
       <div class="n-ic">${weekIcon(i)}</div>
-      <div class="n-lb">${weekLabel(w)}</div>
+      <div class="n-lb-row"><span class="n-num">${i+1}</span><span class="n-lb">${weekLabel(w)}</span></div>
     </button>
   `).join('');
   updateBottomNavActive();
@@ -1192,7 +1194,7 @@ function renderPlaces(){
       </div>
       <div class="ph-cd" onclick="openPlaceView(${i})">
         <img src="${plImg(p.name)}">
-        <button class="ph-edit" onclick="event.stopPropagation();openPlaceEdit(${i})">✏️</button>
+        <button class="ph-edit" onclick="event.stopPropagation();openPlaceEdit(${i})"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
         <button class="ph-del" onclick="event.stopPropagation();removePlace(${i})">✕</button>
         <div class="ph-ov"><div class="ph-nm">${p.name}</div>${p.note?`<div class="ph-note">${p.note}</div>`:''}</div>
       </div>
