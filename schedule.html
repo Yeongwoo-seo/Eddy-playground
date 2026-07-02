@@ -306,7 +306,7 @@ function plImg(name){
   if(s.includes('하버브릿지')||s.includes('bridgeclimb')||s.includes('bridge')) return PH.bridge;
   if(s.includes('블루마운틴')||s.includes('scenic')||s.includes('echo')||s.includes('katoomba')||s.includes('leura')) return PH.bluemtn;
   if(s.includes('코알라')||s.includes('페더데일')||s.includes('캥거루')) return PH.koala;
-  if(s.includes('본다이')||s.includes('bondi')||s.includes('브론테')||s.includes('쿠지')) return PH.bondi;
+  if(s.includes('본다이')||s.includes('bondi')||s.includes('브론테')||s.includes('쿠지')||s.includes('매켄지')||s.includes('타마라마')) return PH.bondi;
   if(s.includes('타롱가')||s.includes('taronga')) return PH.zoo;
   if(s.includes('달링')) return PH.darling;
   if(s.includes('보타닉')||s.includes('정원')) return PH.garden;
@@ -331,8 +331,14 @@ function plImg(name){
   if(s.includes('뉴타운')||s.includes('newtown')) return PH.art;
   if(s.includes('바랑가루')||s.includes('barangaroo')) return PH.darling;
   if(s.includes('하이드파크')||s.includes('하이드 파크')||s.includes('hyde park')) return PH.garden;
-  if(s.includes('캄포스')||s.includes('빌즈')||s.includes('싱글오')||s.includes('파라마운트')||s.includes('검션')||s.includes('베이커리')) return PH.cafe;
-  if(s.includes('라벤드라')||s.includes('tottis')||s.includes('아슬란')||s.includes('마라탕')) return PH.food;
+  if(s.includes('캄포스')||s.includes('빌즈')||s.includes('싱글오')||s.includes('파라마운트')||s.includes('검션')||s.includes('베이커리')||s.includes('theeca')) return PH.cafe;
+  if(s.includes('라벤드라')||s.includes('tottis')||s.includes('아슬란')||s.includes('마라탕')||s.includes('마막')||s.includes('doyles')||s.includes('휴버트')) return PH.food;
+  if(s.includes('천문대')||s.includes('밀슨스')) return PH.bridge;
+  if(s.includes('보우럴')) return PH.bluemtn;
+  if(s.includes('와이너리')) return PH.food;
+  if(s.includes('타랄가')) return PH.koala;
+  if(s.includes('박물관')||s.includes('museum')) return PH.art;
+  if(s.includes('왓슨스')||s.includes('갭파크')||s.includes('갭 파크')||s.includes('the gap')) return PH.sunset;
   return PH.opera;
 }
 
@@ -385,7 +391,23 @@ const PRESETS=[
   {name:'오페라 바', emoji:'🍸', category:'food'},
   {name:'넘버원 마라탕', emoji:'🌶️', category:'food'},
   {name:'캄포스 커피 본점', emoji:'☕', category:'food'},
-  {name:'빌즈', emoji:'🍳', category:'food'}
+  {name:'빌즈', emoji:'🍳', category:'food'},
+  {name:'시드니 천문대', emoji:'🔭', category:'landmark'},
+  {name:'밀슨스 포인트', emoji:'🌉', category:'landmark'},
+  {name:'매켄지 포인트', emoji:'🏖️', category:'landmark'},
+  {name:'타마라마 포인트', emoji:'🏖️', category:'landmark'},
+  {name:'브론테 비치', emoji:'🏖️', category:'landmark'},
+  {name:'쿠지 비치', emoji:'🏖️', category:'landmark'},
+  {name:'보우럴 마을', emoji:'🌾', category:'landmark'},
+  {name:'와이너리 테이스팅', emoji:'🍷', category:'landmark'},
+  {name:'타랄가 동물원', emoji:'🐾', category:'landmark'},
+  {name:'오스트레일리안 박물관', emoji:'🦴', category:'landmark'},
+  {name:'왓슨스 베이', emoji:'⛵', category:'landmark'},
+  {name:'갭 파크', emoji:'🌊', category:'landmark'},
+  {name:'Theeca', emoji:'🥞', category:'food'},
+  {name:'마막', emoji:'🍛', category:'food'},
+  {name:'Doyles', emoji:'🐟', category:'food'},
+  {name:'휴버트 바', emoji:'🎷', category:'food'}
 ];
 
 // ─── reference info shown on each place's detail sheet ───
@@ -438,7 +460,23 @@ const PLACE_INFO={
   '오페라 바':{hours:'11:30-24:00', price:'음료 A$15~ / 스낵 A$20~', highlights:'오페라하우스·하버브릿지 뷰 야외 바'},
   '넘버원 마라탕':{hours:'11:00-21:00', price:'1인 A$20~30', highlights:'한국인 입맛 저격 마라탕, 매콤한 국물 요리'},
   '캄포스 커피 본점':{hours:'07:00-15:00', price:'커피 A$5~', highlights:'호주 대표 스페셜티 커피 브랜드 1호점'},
-  '빌즈':{hours:'07:30-15:00', price:'브런치 A$25~35', highlights:'리코타 팬케이크로 유명한 시드니 브런치 원조'}
+  '빌즈':{hours:'07:30-15:00', price:'브런치 A$25~35', highlights:'리코타 팬케이크로 유명한 시드니 브런치 원조'},
+  '시드니 천문대':{hours:'10:00-17:00 (야간 투어 별도 예약)', price:'무료 입장 / 야간 투어 A$18~', highlights:'옵저버토리 힐 언덕 위 천문대, 하버브릿지 뷰'},
+  '밀슨스 포인트':{hours:'24시간 개방', price:'무료', highlights:'하버브릿지·오페라하우스가 한 프레임에 담기는 포토스팟'},
+  '매켄지 포인트':{hours:'24시간 개방', price:'무료', highlights:'본다이-쿠지 코스털 워크 중간 지점, 절벽 전망'},
+  '타마라마 포인트':{hours:'24시간 개방', price:'무료', highlights:'일명 글래머라마 비치, 작지만 아름다운 만'},
+  '브론테 비치':{hours:'24시간 개방', price:'무료', highlights:'현지인들이 사랑하는 조용한 비치, 피크닉 명소'},
+  '쿠지 비치':{hours:'24시간 개방', price:'무료', highlights:'본다이보다 한적한 분위기, 코스털 워크 종점'},
+  '보우럴 마을':{hours:'상점별 상이 (주로 09:00-17:00)', price:'무료 (식사·쇼핑 별도)', highlights:'서던하이랜즈 대표 마을, 한적한 컨트리 감성'},
+  '와이너리 테이스팅':{hours:'11:00-17:00 (예약 권장)', price:'테이스팅 A$20~40 (구매시 차감)', highlights:'서던하이랜즈·헌터밸리 와이너리, 로컬 와인 시음'},
+  '타랄가 동물원':{hours:'09:00-17:00', price:'입장료 A$40~', highlights:'웜뱃 인카운터 체험, 서던하이랜즈 근교 동물원'},
+  '오스트레일리안 박물관':{hours:'10:00-17:00', price:'상설전 무료 / 특별전 별도', highlights:'호주 원주민 문화·자연사 전시, 공룡 화석'},
+  '왓슨스 베이':{hours:'24시간 개방', price:'페리 편도 A$7.14~', highlights:'더 갭 절벽 전망, 도일스 피시앤칩스'},
+  '갭 파크':{hours:'24시간 개방', price:'무료', highlights:'시드니 대표 일몰·절벽 뷰포인트'},
+  'Theeca':{hours:'07:00-15:00', price:'브런치 A$20~30', highlights:'현지인 추천 브런치 카페'},
+  '마막':{hours:'11:00-22:00 (요일별 상이)', price:'1인 A$20~30', highlights:'로티 & 말레이시아 커리, 헤이마켓 인기 맛집'},
+  'Doyles':{hours:'12:00-21:00 (요일별 상이)', price:'1인 A$40~60', highlights:'왓슨스 베이 대표 피시앤칩스 & 시푸드'},
+  '휴버트 바':{hours:'17:00-24:00 (목~토 연장)', price:'음료 A$18~ / 요리 A$25~', highlights:'프렌치 다이닝 & 라이브 재즈 분위기'}
 };
 function mapsUrl(name){ return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name+' Sydney')}`; }
 
