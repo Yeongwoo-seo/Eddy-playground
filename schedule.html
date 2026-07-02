@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>강낭콩 투어</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#FB6A08">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -94,6 +96,13 @@ body.sheet-open{overflow:hidden}
 .weekday-more-link{margin-top:16px}
 .route-btn{display:block;width:100%;margin-top:16px;background:var(--white);color:var(--primary);border:1.5px solid var(--primary-light);border-radius:16px;padding:14px;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;box-shadow:0 2px 12px rgba(0,0,0,0.06)}
 .route-btn:active{background:var(--primary-light)}
+.route-sheet-backdrop{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;flex-direction:column;animation:sheetIn .32s cubic-bezier(.2,.8,.2,1)}
+.route-sheet-hdr{display:flex;align-items:center;gap:12px;padding:16px 20px;background:var(--white);box-shadow:0 2px 12px rgba(0,0,0,0.06);z-index:2}
+.route-sheet-hdr button{background:var(--grey100);color:var(--grey700);border:none;width:32px;height:32px;border-radius:50%;font-size:15px;cursor:pointer;flex-shrink:0;font-family:inherit}
+.route-sheet-hdr .t{font-size:16px;font-weight:700}
+#routeMapEl{flex:1;width:100%;position:relative;background:var(--grey100)}
+.route-loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--grey500);background:var(--grey100)}
+.route-num-marker{background:var(--primary);color:#fff;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;box-shadow:0 2px 6px rgba(0,0,0,.3);border:2px solid #fff}
 
 /* day sub tabs — left-aligned, sized to their own text (토요일 / 일요일) */
 .sub-tabs{display:flex;gap:8px;margin-bottom:20px}
@@ -253,6 +262,7 @@ body.sheet-open{overflow:hidden}
 <div id="accSheetRoot"></div>
 <div id="pickerSheetRoot"></div>
 <div id="backupSheetRoot"></div>
+<div id="routeSheetRoot"></div>
 
 <div id="installSheetRoot"></div>
 
@@ -1240,16 +1250,84 @@ function renderPlaces(){
 
 // Google Maps "dir" deep link needs no API key: origin/destination/
 // waypoints in visiting order renders numbered pins along the route
-function openRoute(){
+// in-app route map (Leaflet + OpenStreetMap tiles, no API key needed)
+// with numbered pins in visiting order, geocoded via Nominatim (OSM's
+// free geocoding endpoint) and cached locally so repeat views don't
+// re-hit it and stay well under its ~1req/sec usage policy
+let routeMap=null;
+
+function getGeocodeCache(){
+  try{ return JSON.parse(localStorage.getItem('geocodeCacheV1')||'{}'); }catch(e){ return {}; }
+}
+function setGeocodeCache(cache){
+  try{ localStorage.setItem('geocodeCacheV1', JSON.stringify(cache)); }catch(e){}
+}
+
+async function geocodePlace(name){
+  const cache=getGeocodeCache();
+  if(cache[name]) return cache[name];
+  try{
+    const res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(name+' Sydney Australia')}`);
+    const results=await res.json();
+    if(!results || !results.length) return null;
+    const coord=[parseFloat(results[0].lat), parseFloat(results[0].lon)];
+    cache[name]=coord;
+    setGeocodeCache(cache);
+    return coord;
+  }catch(e){ return null; }
+}
+
+async function openRoute(){
   const places=data.plans[planKey()]||[];
   if(places.length<2) return;
-  const q=p=>encodeURIComponent(p.name+' Sydney');
-  const origin=q(places[0]);
-  const destination=q(places[places.length-1]);
-  const waypoints=places.slice(1,-1).map(q).join('|');
-  let url=`https://www.google.com/maps/dir/?api=1&travelmode=transit&origin=${origin}&destination=${destination}`;
-  if(waypoints) url+=`&waypoints=${waypoints}`;
-  window.open(url, '_blank', 'noopener');
+  document.body.classList.add('sheet-open');
+  document.getElementById('routeSheetRoot').innerHTML=`<div class="route-sheet-backdrop">
+    <div class="route-sheet-hdr">
+      <button onclick="closeRouteSheet()">←</button>
+      <div class="t">오늘의 동선</div>
+    </div>
+    <div id="routeMapEl"><div class="route-loading" id="routeLoading">장소를 찾는 중...</div></div>
+  </div>`;
+
+  const coords=[];
+  for(let i=0;i<places.length;i++){
+    const c=await geocodePlace(places[i].name);
+    if(c) coords.push({idx:i+1, name:places[i].name, latlng:c});
+    await new Promise(r=>setTimeout(r, 250));
+  }
+  if(!document.getElementById('routeMapEl')) return; // sheet closed while geocoding
+  const loadingEl=document.getElementById('routeLoading');
+  if(loadingEl) loadingEl.remove();
+
+  if(!coords.length){
+    document.getElementById('routeMapEl').innerHTML='<div class="route-loading">위치를 찾을 수 없어요</div>';
+    return;
+  }
+
+  if(routeMap){ routeMap.remove(); routeMap=null; }
+  routeMap=L.map('routeMapEl');
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(routeMap);
+
+  const latlngs=coords.map(c=>c.latlng);
+  coords.forEach(c=>{
+    const icon=L.divIcon({ className:'', html:`<div class="route-num-marker">${c.idx}</div>`, iconSize:[26,26], iconAnchor:[13,13] });
+    L.marker(c.latlng, {icon}).addTo(routeMap).bindPopup(c.name);
+  });
+  if(latlngs.length>1){
+    L.polyline(latlngs, {color:'#E8741E', weight:3, opacity:0.7, dashArray:'6,6'}).addTo(routeMap);
+    routeMap.fitBounds(latlngs, {padding:[40,40]});
+  }else{
+    routeMap.setView(latlngs[0], 15);
+  }
+}
+
+function closeRouteSheet(){
+  document.body.classList.remove('sheet-open');
+  if(routeMap){ routeMap.remove(); routeMap=null; }
+  document.getElementById('routeSheetRoot').innerHTML='';
 }
 
 // places without a time sort to the end instead of the top
