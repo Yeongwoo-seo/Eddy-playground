@@ -92,6 +92,7 @@ body.sheet-open{overflow:hidden}
 .weekday-cat-card:active{transform:scale(.96)}
 .weekday-cat-emoji{font-size:24px}
 .weekday-more-link{margin-top:16px}
+.weekday-places-title{font-size:13px;font-weight:700;color:var(--grey700);margin:24px 0 12px}
 
 /* day sub tabs — left-aligned, sized to their own text (토요일 / 일요일) */
 .sub-tabs{display:flex;gap:8px;margin-bottom:20px}
@@ -279,10 +280,16 @@ const WEEKS=buildWeeks();
 
 function weekLabel(week){
   const s=toDate(week[0]),e=toDate(week[week.length-1]);
-  const sameMonth=s.getMonth()===e.getMonth();
-  return sameMonth
-    ? `${s.getMonth()+1}.${s.getDate()}-${e.getDate()}`
-    : `${s.getMonth()+1}.${s.getDate()}-${e.getMonth()+1}.${e.getDate()}`;
+  return `${s.getDate()}-${e.getDate()}`;
+}
+
+// first character of that week's theme (meant to be an emoji the user
+// types at the front, e.g. "🎭 오페라 주간") — falls back to a generic
+// pin when no theme is set yet
+function weekIcon(weekIdx){
+  const theme=(data.themes[weekIdx]||'').trim();
+  if(!theme) return '📍';
+  return [...theme][0];
 }
 // ─── place images (auto-matched by keyword, same spots as tour.html) ───
 const PH={
@@ -322,7 +329,7 @@ const PH={
   cove:'https://images.pexels.com/photos/31934689/pexels-photo-31934689.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
   rockybeach:'https://images.pexels.com/photos/33421123/pexels-photo-33421123.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
   seashore:'https://images.pexels.com/photos/4321802/pexels-photo-4321802.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
-  marketstalls:'https://images.pexels.com/photos/16414304/pexels-photo-16414304.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  marketstalls:'https://images.pexels.com/photos/33199780/pexels-photo-33199780.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
   barangaroo:'https://images.pexels.com/photos/34789111/pexels-photo-34789111.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
   hydepark:'https://images.pexels.com/photos/33792543/pexels-photo-33792543.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
   newtownart:'https://images.pexels.com/photos/1028885/pexels-photo-1028885.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
@@ -349,7 +356,8 @@ const PH={
   aslan:'https://images.pexels.com/photos/15793853/pexels-photo-15793853.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
   paddysmarket:'https://images.pexels.com/photos/2601274/pexels-photo-2601274.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
   observatoryhill:'https://images.pexels.com/photos/6195016/pexels-photo-6195016.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
-  milsonspoint:'https://images.pexels.com/photos/15229717/pexels-photo-15229717.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop'
+  milsonspoint:'https://images.pexels.com/photos/15229717/pexels-photo-15229717.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  mca:'https://images.pexels.com/photos/16842473/pexels-photo-16842473.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop'
 };
 function plImg(name){
   const s=name.toLowerCase();
@@ -405,6 +413,7 @@ function plImg(name){
   if(s.includes('쇼핑')||s.includes('기념품')||s.includes('마켓')) return PH.shop;
   if(s.includes('뉴타운')||s.includes('newtown')) return PH.newtownart;
   if(s.includes('박물관')||s.includes('museum')) return PH.ausmuseum;
+  if(s.includes('현대미술관')||s.includes('현대 미술관')||s.includes('mca')) return PH.mca;
   if(s.includes('미술')||s.includes('갤러리')) return PH.art;
   if(s.includes('왓슨스')) return PH.watsonsbay;
   if(s.includes('갭파크')||s.includes('갭 파크')||s.includes('the gap')) return PH.thegap;
@@ -456,6 +465,7 @@ const PRESETS=[
   {name:'시드니 피쉬마켓', emoji:'🐟', category:'landmark'},
   {name:'하이드파크', emoji:'🌳', category:'landmark'},
   {name:'뉴사우스웨일스 도서관', emoji:'📚', category:'landmark'},
+  {name:'시드니 현대 미술관', emoji:'🖼️', category:'landmark'},
   {name:'뉴타운', emoji:'🏘️', category:'landmark'},
   {name:'바랑가루', emoji:'🌆', category:'landmark'},
   {name:'라벤드라 인디안', emoji:'🍛', category:'food'},
@@ -525,6 +535,7 @@ const PLACE_INFO={
   '시드니 피쉬마켓':{hours:'07:00-16:00', price:'1인 A$15~30', highlights:'피쉬 타코·해산물 직화구이, 남반구 최대 수산시장'},
   '하이드파크':{hours:'24시간 개방', price:'무료', highlights:'아치볼드 분수, 도심 속 산책로'},
   '뉴사우스웨일스 도서관':{hours:'09:00-20:00 (주말 단축)', price:'무료', highlights:'모자이크 타일 바닥의 미첼 열람실, 고풍스러운 내부'},
+  '시드니 현대 미술관':{hours:'10:00-17:00 (월요일 휴관)', price:'상설전 무료 / 특별전 별도', highlights:'서큘러키 바로 옆, 호주·아시아 태평양 현대미술 컬렉션'},
   '뉴타운':{hours:'상점별 상이', price:'무료 (쇼핑·식비 별도)', highlights:'킹 스트리트 스트리트 아트·벽화, 개성있는 카페·빈티지숍'},
   '바랑가루':{hours:'24시간 개방', price:'무료', highlights:'워터프런트 산책로, 하버 스카이라인 뷰'},
   '라벤드라 인디안':{hours:'11:30-15:00, 17:30-22:00', price:'1인 A$25~40', highlights:'정통 인도 커리, 현지인 추천 맛집'},
@@ -747,16 +758,18 @@ function updateTopTabsActive(){
 }
 
 function goTopTab(tab){
+  if(tab==='weekday') curSub='weekday';
+  else if(tab==='schedule' && curSub==='weekday') curSub='sat';
   topTab=tab;
   updateTopTabsActive();
   document.getElementById('scheduleTab').style.display = tab==='schedule' ? '' : 'none';
   document.getElementById('accTab').style.display = tab==='acc' ? '' : 'none';
   document.getElementById('weekdayTab').style.display = tab==='weekday' ? '' : 'none';
   document.getElementById('tabsWrap').style.display = tab==='schedule' ? '' : 'none';
-  document.getElementById('weekThemeInput').style.display = tab==='schedule' ? '' : 'none';
-  document.querySelector('.fab-wrap').style.display = tab==='schedule' ? '' : 'none';
+  document.querySelector('.fab-wrap').style.display = (tab==='schedule'||tab==='weekday') ? '' : 'none';
   if(tab==='acc') renderAccTab();
   if(tab==='weekday') renderWeekdayTab();
+  if(tab==='schedule'){ renderTabs(); renderPlacesWrap(); }
 }
 
 function renderWeekTheme(){
@@ -766,6 +779,8 @@ function renderWeekTheme(){
 function saveWeekTheme(){
   data.themes[curWeek] = document.getElementById('weekThemeInput').value;
   saveData();
+  const iconEl=document.querySelectorAll('#bottomNav .n-ic')[curWeek];
+  if(iconEl) iconEl.textContent=weekIcon(curWeek);
 }
 
 function decodeEntities(str){
@@ -782,7 +797,7 @@ function renderBottomNav(){
   el.innerHTML = `<div class="bn-thumb" id="bnThumb" style="width:calc((100% - 16px) / ${WEEKS.length})"></div>` +
     WEEKS.map((w,i)=>`
     <button class="nav-item" onclick="goWeek(${i})">
-      <div class="n-ic">${i+1}</div>
+      <div class="n-ic">${weekIcon(i)}</div>
       <div class="n-lb">${weekLabel(w)}</div>
     </button>
   `).join('');
@@ -796,7 +811,7 @@ function updateBottomNavActive(){
 
 function goWeek(i){
   curWeek=i;
-  curSub='sat';
+  curSub = topTab==='weekday' ? 'weekday' : 'sat';
   if(pickerOpen) closePicker();
   updateBottomNavActive();
   renderAccTab();
@@ -930,6 +945,8 @@ function renderWeekdayTab(){
       <input type="text" class="weekday-area-input" id="weekdayAreaInput" value="${esc(area)}" placeholder="예: Eastwood" onchange="updateWeekdayAreaFromInput()">
     </div>
     ${catsHtml}
+    <div class="weekday-places-title">직접 추가한 할 일</div>
+    <div id="weekdayPlacesWrap">${renderPlaces()}</div>
   `;
 }
 
@@ -1345,7 +1362,8 @@ function closePicker(){
 }
 
 function removePlace(idx){
-  const rows=document.querySelectorAll('#placesWrap .pl-row');
+  const wrap=currentPlacesWrapEl();
+  const rows=wrap ? wrap.querySelectorAll('.pl-row') : [];
   const row=rows[idx];
   if(!row){
     data.plans[planKey()].splice(idx,1);
@@ -1369,8 +1387,16 @@ function removePlace(idx){
   }, 280);
 }
 
+// the place list renders into #placesWrap on the 여행 tab, or
+// #weekdayPlacesWrap on the 평일 tab — both driven by the same
+// planKey()/curSub state, just displayed in different containers
+function currentPlacesWrapEl(){
+  return document.getElementById(topTab==='weekday' ? 'weekdayPlacesWrap' : 'placesWrap');
+}
+
 function renderPlacesWrap(animate){
-  const el=document.getElementById('placesWrap');
+  const el=currentPlacesWrapEl();
+  if(!el) return;
   el.innerHTML = renderPlaces();
   if(animate){
     el.classList.remove('content-anim');
