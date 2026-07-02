@@ -25,7 +25,8 @@ html::-webkit-scrollbar{display:none;width:0;height:0}
 @supports (height: 100dvh){ html,body{height:100dvh} }
 body{background:var(--bg);color:var(--black);font-family:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;overflow-x:hidden;display:flex;justify-content:center}
 
-#splashScreen{position:fixed;inset:0;z-index:9999;background:#FB6A08 url('main.png.PNG') center/contain no-repeat;transition:opacity .4s ease}
+#splashScreen{position:fixed;inset:0;z-index:9999;background:#FB6A08;transition:opacity .4s ease}
+#splashScreen img{width:100%;height:100%;object-fit:contain}
 #splashScreen.hide{opacity:0;pointer-events:none}
 body.sheet-open{overflow:hidden}
 .app{width:100%;max-width:500px;min-height:100vh;position:relative;padding-bottom:calc(112px + env(safe-area-inset-bottom))}
@@ -179,7 +180,7 @@ body.sheet-open{overflow:hidden}
 </style>
 </head>
 <body>
-<div id="splashScreen"></div>
+<div id="splashScreen"><img id="splashImg" src="icons/splash-bg.jpg" alt=""></div>
 <div class="app">
   <div class="top-bar" id="topBar">
     <div class="top-bar-row">
@@ -404,9 +405,6 @@ function openBackupSheet(){
         <div class="acc-form-label">현재 데이터 (복사해서 안전한 곳에 보관하세요)</div>
         <textarea id="backupExport" readonly style="min-height:140px;font-size:11px;font-family:monospace">${json}</textarea>
         <button class="acc-form-fetch-btn" style="align-self:flex-start" onclick="copyBackup()">복사하기</button>
-        <div class="acc-form-label" style="margin-top:16px">데이터 가져오기 (백업 붙여넣기)</div>
-        <textarea id="backupImport" placeholder="여기에 백업 JSON을 붙여넣으세요" style="min-height:100px;font-size:12px"></textarea>
-        <button class="acc-form-save" onclick="importBackup()">가져오기</button>
       </div>
     </div>
   </div>`;
@@ -426,18 +424,6 @@ async function copyBackup(){
   }catch(e){
     document.execCommand('copy');
   }
-}
-
-function importBackup(){
-  const raw=document.getElementById('backupImport').value.trim();
-  if(!raw) return;
-  let parsed;
-  try{ parsed=JSON.parse(raw); }catch(e){ alert('올바른 JSON이 아니에요'); return; }
-  if(!confirm('현재 데이터를 덮어쓸까요? 되돌릴 수 없어요.')) return;
-  data=Object.assign({accommodations:{}, plans:{}, themes:{}}, parsed);
-  saveData();
-  closeBackupSheet();
-  refreshAll();
 }
 
 let data = loadData();
@@ -1001,12 +987,27 @@ syncFromRemote();
 setInterval(syncFromRemote, 20000);
 document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) syncFromRemote(); });
 
-// keep the splash on screen briefly so it reads as a real launch screen,
-// then fade it out
-setTimeout(()=>{
-  const splash=document.getElementById('splashScreen');
-  if(splash){ splash.classList.add('hide'); setTimeout(()=>splash.remove(), 450); }
-}, 500);
+// keep the splash on screen for a deliberate ~3s launch beat, and make
+// sure the splash photo itself has actually finished loading (a slow
+// first load otherwise fades the splash out before the image ever
+// painted) — capped so a failed/offline image load can't hang it
+(function(){
+  const MIN_MS=3000, MAX_MS=5000;
+  const start=Date.now();
+  const splashImg=document.getElementById('splashImg');
+  let imgReady=splashImg.complete;
+  splashImg.addEventListener('load', ()=>{ imgReady=true; });
+  splashImg.addEventListener('error', ()=>{ imgReady=true; });
+  (function check(){
+    const elapsed=Date.now()-start;
+    if((imgReady && elapsed>=MIN_MS) || elapsed>=MAX_MS){
+      const splash=document.getElementById('splashScreen');
+      if(splash){ splash.classList.add('hide'); setTimeout(()=>splash.remove(), 450); }
+    }else{
+      requestAnimationFrame(check);
+    }
+  })();
+})();
 </script>
 <script>
 // scope kept to schedule.html only — this is the only page that should
