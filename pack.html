@@ -41,10 +41,28 @@ body{background:var(--bg);color:var(--black);font-family:'Pretendard',-apple-sys
 .cat-card{background:var(--white);border-radius:20px;box-shadow:0 2px 12px rgba(0,0,0,0.06);overflow:hidden}
 .item{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--grey100);cursor:pointer}
 .item:last-child{border-bottom:none}
-.chk{width:22px;height:22px;border-radius:7px;border:2px solid var(--grey300);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;transition:all .15s}
+.chk{width:22px;height:22px;border-radius:7px;border:2px solid var(--grey300);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;transition:all .15s;position:relative}
 .item.done .chk{background:var(--primary);border-color:var(--primary)}
-.item-name{font-size:14px;font-weight:500;color:var(--black);transition:color .15s}
+.chk.pop{animation:chkPop .35s cubic-bezier(.34,1.56,.64,1)}
+@keyframes chkPop{0%{transform:scale(.65)}55%{transform:scale(1.3)}100%{transform:scale(1)}}
+.item-name{font-size:14px;font-weight:500;color:var(--black);transition:color .15s;flex:1}
 .item.done .item-name{color:var(--grey500);text-decoration:line-through}
+
+.item-actions{display:flex;gap:6px;flex-shrink:0}
+.item-act-btn{width:28px;height:28px;border-radius:50%;background:var(--grey100);color:var(--grey500);border:none;display:flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer;flex-shrink:0;font-family:inherit;padding:0}
+.item-act-btn:active{background:var(--grey300)}
+.item-act-btn.confirm{background:var(--primary);color:#fff}
+
+.edit-input,.add-input{flex:1;border:1.5px solid var(--primary);border-radius:10px;padding:8px 10px;font-size:14px;font-family:inherit;color:var(--black);outline:none;min-width:0}
+
+.add-row{cursor:pointer;color:var(--primary)}
+.add-ic{width:22px;height:22px;border-radius:7px;border:2px dashed var(--grey300);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--grey500)}
+
+.pop-particle{position:fixed;width:6px;height:6px;border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);animation:popOut .5s ease-out forwards}
+@keyframes popOut{
+  0%{transform:translate(-50%,-50%) scale(1);opacity:1}
+  100%{transform:translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0);opacity:0}
+}
 </style>
 </head>
 <body>
@@ -68,7 +86,7 @@ body{background:var(--bg);color:var(--black);font-family:'Pretendard',-apple-sys
   <div id="listRoot"></div>
 </div>
 <script>
-const CATEGORIES=[
+const DEFAULT_CATEGORIES=[
   {title:'📄 필수 서류', items:['여권 (유효기간 6개월 이상 확인)', 'ETA 전자여행허가 승인 확인/캡처', '항공권 e티켓', '여행자보험 가입증서', '숙소 예약 확인서']},
   {title:'🧥 겨울 옷 (호주는 겨울!)', items:['겨울 코트/패딩', '히트텍·기모 이너', '니트·맨투맨', '목도리·장갑·비니', '수면양말/실내용 옷', '편한 운동화', '우산 또는 우비']},
   {title:'🔌 전자기기', items:['휴대폰 충전기', '보조배터리', '멀티 어댑터 (호주는 타입 I)', '이어폰/헤드폰', '카메라']},
@@ -76,37 +94,177 @@ const CATEGORIES=[
   {title:'💰 기타', items:['현금 (호주 달러)', '해외결제 가능한 카드', '보조 가방/에코백', '비상연락처 메모']}
 ];
 
-function getChecked(){
-  try{ return JSON.parse(localStorage.getItem('packListV1')||'{}'); }catch(e){ return {}; }
+function esc(s){
+  return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
-function setChecked(map){
-  try{ localStorage.setItem('packListV1', JSON.stringify(map)); }catch(e){}
+function uid(){ return 'i'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+
+function loadState(){
+  try{
+    const raw=localStorage.getItem('packListV2');
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  // first run: seed from the defaults, migrating any old checked-map
+  // (packListV1, keyed "categoryIndex-itemIndex") so existing checks aren't lost
+  let oldChecked={};
+  try{ oldChecked=JSON.parse(localStorage.getItem('packListV1')||'{}'); }catch(e){}
+  const seeded=DEFAULT_CATEGORIES.map((cat,ci)=>({
+    title:cat.title,
+    items:cat.items.map((name,ii)=>({id:uid(), name, done:!!oldChecked[`${ci}-${ii}`]}))
+  }));
+  saveState(seeded);
+  return seeded;
+}
+function saveState(s){
+  try{ localStorage.setItem('packListV2', JSON.stringify(s)); }catch(e){}
 }
 
-function toggleItem(key){
-  const checked=getChecked();
-  checked[key]=!checked[key];
-  setChecked(checked);
+let state=loadState();
+let editingId=null;
+let addingCat=null;
+
+function findItem(id){
+  for(const cat of state){
+    const item=cat.items.find(it=>it.id===id);
+    if(item) return item;
+  }
+  return null;
+}
+
+function popEffect(anchorEl){
+  anchorEl.classList.remove('pop');
+  void anchorEl.offsetWidth;
+  anchorEl.classList.add('pop');
+  const rect=anchorEl.getBoundingClientRect();
+  const cx=rect.left+rect.width/2, cy=rect.top+rect.height/2;
+  const colors=['#E8741E','#F5943A','#1DB847','#3182F6'];
+  const count=8;
+  for(let i=0;i<count;i++){
+    const p=document.createElement('div');
+    p.className='pop-particle';
+    const angle=(Math.PI*2/count)*i + (Math.random()*0.5-0.25);
+    const dist=22+Math.random()*14;
+    p.style.setProperty('--dx', Math.cos(angle)*dist+'px');
+    p.style.setProperty('--dy', Math.sin(angle)*dist+'px');
+    p.style.background=colors[i%colors.length];
+    p.style.left=cx+'px';
+    p.style.top=cy+'px';
+    document.body.appendChild(p);
+    p.addEventListener('animationend', ()=>p.remove());
+  }
+}
+
+function toggleItem(id){
+  const item=findItem(id);
+  if(!item) return;
+  item.done=!item.done;
+  saveState(state);
+  render();
+  if(item.done){
+    if(navigator.vibrate) navigator.vibrate(15);
+    const chk=document.querySelector(`.item[data-id="${id}"] .chk`);
+    if(chk) popEffect(chk);
+  }
+}
+
+function startEdit(id, event){
+  event.stopPropagation();
+  editingId=id;
+  render();
+  requestAnimationFrame(()=>{
+    const input=document.getElementById('editInputField');
+    if(input){ input.focus(); input.select(); }
+  });
+}
+
+function saveEdit(id){
+  const input=document.getElementById('editInputField');
+  const trimmed=input ? input.value.trim() : '';
+  const item=findItem(id);
+  if(item && trimmed) item.name=trimmed;
+  editingId=null;
+  saveState(state);
+  render();
+}
+
+function cancelEdit(){
+  editingId=null;
+  render();
+}
+
+function deleteItem(id, event){
+  event.stopPropagation();
+  for(const cat of state){
+    const idx=cat.items.findIndex(it=>it.id===id);
+    if(idx!==-1){ cat.items.splice(idx,1); break; }
+  }
+  saveState(state);
+  render();
+}
+
+function showAddInput(ci, event){
+  event.stopPropagation();
+  addingCat=ci;
+  render();
+  requestAnimationFrame(()=>{
+    const input=document.getElementById('addInputField');
+    if(input) input.focus();
+  });
+}
+
+function confirmAdd(ci){
+  const input=document.getElementById('addInputField');
+  const trimmed=input ? input.value.trim() : '';
+  if(trimmed) state[ci].items.push({id:uid(), name:trimmed, done:false});
+  addingCat=null;
+  saveState(state);
+  render();
+}
+
+function cancelAdd(){
+  addingCat=null;
   render();
 }
 
 function render(){
-  const checked=getChecked();
   let total=0, done=0;
-  const html=CATEGORIES.map((cat,ci)=>{
-    const itemsHtml=cat.items.map((name,ii)=>{
-      const key=`${ci}-${ii}`;
+  const html=state.map((cat,ci)=>{
+    const itemsHtml=cat.items.map(item=>{
       total++;
-      const isDone=!!checked[key];
-      if(isDone) done++;
-      return `<div class="item${isDone?' done':''}" onclick="toggleItem('${key}')">
-        <div class="chk">${isDone?'✓':''}</div>
-        <div class="item-name">${name}</div>
+      if(item.done) done++;
+      if(editingId===item.id){
+        return `<div class="item editing" data-id="${item.id}">
+          <input class="edit-input" id="editInputField" value="${esc(item.name)}" onkeydown="if(event.key==='Enter'){event.preventDefault();saveEdit('${item.id}')}">
+          <div class="item-actions">
+            <button class="item-act-btn confirm" onclick="saveEdit('${item.id}')">✓</button>
+            <button class="item-act-btn" onclick="cancelEdit()">✕</button>
+          </div>
+        </div>`;
+      }
+      return `<div class="item${item.done?' done':''}" data-id="${item.id}" onclick="toggleItem('${item.id}')">
+        <div class="chk">${item.done?'✓':''}</div>
+        <div class="item-name">${esc(item.name)}</div>
+        <div class="item-actions">
+          <button class="item-act-btn" onclick="startEdit('${item.id}', event)">✏️</button>
+          <button class="item-act-btn" onclick="deleteItem('${item.id}', event)">✕</button>
+        </div>
       </div>`;
     }).join('');
+    const addRowHtml = addingCat===ci
+      ? `<div class="item">
+          <input class="add-input" id="addInputField" placeholder="항목 이름" onkeydown="if(event.key==='Enter'){event.preventDefault();confirmAdd(${ci})}">
+          <div class="item-actions">
+            <button class="item-act-btn confirm" onclick="confirmAdd(${ci})">✓</button>
+            <button class="item-act-btn" onclick="cancelAdd()">✕</button>
+          </div>
+        </div>`
+      : `<div class="item add-row" onclick="showAddInput(${ci}, event)">
+          <div class="add-ic">+</div>
+          <div class="item-name" style="color:var(--primary);font-weight:600">항목 추가</div>
+        </div>`;
     return `<div class="cat">
-      <div class="cat-title">${cat.title}</div>
-      <div class="cat-card">${itemsHtml}</div>
+      <div class="cat-title">${esc(cat.title)}</div>
+      <div class="cat-card">${itemsHtml}${addRowHtml}</div>
     </div>`;
   }).join('');
   document.getElementById('listRoot').innerHTML=html;
