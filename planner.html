@@ -11,20 +11,6 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="강낭콩 투어">
-<!-- iOS shows a plain white launch screen unless matched against one of
-     these exact device-resolution media queries, so we generate one per
-     common iPhone size instead of relying on a single generic image -->
-<link rel="apple-touch-startup-image" href="icons/splash-750x1334.jpg" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)">
-<link rel="apple-touch-startup-image" href="icons/splash-1242x2208.jpg" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3)">
-<link rel="apple-touch-startup-image" href="icons/splash-1125x2436.jpg" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)">
-<link rel="apple-touch-startup-image" href="icons/splash-828x1792.jpg" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2)">
-<link rel="apple-touch-startup-image" href="icons/splash-1242x2688.jpg" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3)">
-<link rel="apple-touch-startup-image" href="icons/splash-1170x2532.jpg" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)">
-<link rel="apple-touch-startup-image" href="icons/splash-1284x2778.jpg" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3)">
-<link rel="apple-touch-startup-image" href="icons/splash-1179x2556.jpg" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3)">
-<link rel="apple-touch-startup-image" href="icons/splash-1290x2796.jpg" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3)">
-<link rel="apple-touch-startup-image" href="icons/splash-1206x2622.jpg" media="(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3)">
-<link rel="apple-touch-startup-image" href="icons/splash-1320x2868.jpg" media="(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3)">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
@@ -39,12 +25,6 @@ html::-webkit-scrollbar{display:none;width:0;height:0}
 @supports (height: 100dvh){ html,body{height:100dvh} }
 body{background:var(--bg);color:var(--black);font-family:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;overflow-x:hidden;display:flex;justify-content:center;align-items:flex-start}
 
-#splashScreen{position:fixed;inset:0;z-index:9999;background:#FB6A08;transition:opacity .4s ease}
-#splashScreen img{width:100%;height:100%;object-fit:contain}
-#splashScreen.hide{opacity:0;pointer-events:none}
-.splash-install-btn{position:absolute;top:63%;left:50%;transform:translate(-50%, 14px);background:#fff;color:#FB6A08;border:none;border-radius:16px;padding:15px 32px;font-size:15px;font-weight:700;font-family:inherit;box-shadow:0 4px 20px rgba(0,0,0,0.2);cursor:pointer;opacity:0;pointer-events:none;transition:opacity .4s ease, transform .4s cubic-bezier(.2,.8,.2,1)}
-.splash-install-btn.show{opacity:1;transform:translate(-50%, 0);pointer-events:auto}
-.splash-install-btn:active{transform:translate(-50%, 0) scale(.97)}
 body.sheet-open{overflow:hidden}
 .app{width:100%;max-width:500px;min-height:100vh;position:relative;padding-bottom:calc(112px + env(safe-area-inset-bottom))}
 @supports (height: 100dvh){ .app{min-height:100dvh} }
@@ -176,19 +156,10 @@ body.sheet-open{overflow:hidden}
 .fab.open{transform:rotate(45deg)}
 .fab.open:active{transform:rotate(45deg) scale(.94)}
 
-.install-sheet-hero{width:100%;height:200px;overflow:hidden;background:#FB6A08}
-.install-sheet-hero img{width:100%;height:100%;object-fit:cover;object-position:center 30%}
-.install-steps{display:flex;flex-direction:column;gap:14px;margin-top:16px}
-.install-step{display:flex;align-items:center;gap:12px;font-size:14px;color:var(--black);line-height:1.5;word-break:keep-all}
-.install-step-ic{flex-shrink:0;width:26px;height:26px;border-radius:50%;background:var(--primary-light);color:var(--primary);font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center}
-
 /* accommodation expand sheet — Airbnb-style detail / register page */
 @keyframes sheetIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
 @keyframes sheetOut{from{opacity:1;transform:scale(1)}to{opacity:0;transform:scale(.94)}}
 .acc-sheet-backdrop{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;justify-content:center;animation:sheetIn .32s cubic-bezier(.2,.8,.2,1)}
-/* the install sheet can open while the splash (z-index 9999) is still
-   showing on a non-installed web visit, so it needs to sit above it */
-#installSheetRoot .acc-sheet-backdrop{z-index:10000}
 .acc-sheet-backdrop.closing{animation:sheetOut .2s cubic-bezier(.4,0,1,1) forwards}
 .acc-sheet{width:100%;max-width:500px;height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--white);scrollbar-width:none;-ms-overflow-style:none}
 .acc-sheet::-webkit-scrollbar{display:none;width:0;height:0}
@@ -238,7 +209,6 @@ body.sheet-open{overflow:hidden}
 </style>
 </head>
 <body>
-<div id="splashScreen"><img id="splashImg" src="icons/splash-bg.jpg" alt=""><button class="splash-install-btn" id="splashInstallBtn" onclick="openInstallSheet()">앱 설치</button></div>
 <div class="app">
   <div class="top-tabs-float">
     <div class="top-tabs" id="topTabs"></div>
@@ -263,8 +233,6 @@ body.sheet-open{overflow:hidden}
 <div id="pickerSheetRoot"></div>
 <div id="backupSheetRoot"></div>
 <div id="routeSheetRoot"></div>
-
-<div id="installSheetRoot"></div>
 
 <script>
 const START='2026-07-22';
@@ -701,46 +669,6 @@ function openBackupSheet(){
 function closeBackupSheet(){
   document.body.classList.remove('sheet-open');
   document.getElementById('backupSheetRoot').innerHTML='';
-}
-
-function isStandalonePwa(){
-  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true;
-}
-
-function installStepsHtml(){
-  const ua=navigator.userAgent;
-  const isIOS=/iPad|iPhone|iPod/.test(ua) || (ua.includes('Macintosh') && 'ontouchend' in document);
-  if(isIOS){
-    return `
-      <div class="install-step"><span class="install-step-ic">1</span>Safari 하단(또는 상단)의 공유 버튼 <b>⬆️</b>을 탭하세요</div>
-      <div class="install-step"><span class="install-step-ic">2</span>메뉴에서 <b>"홈 화면에 추가"</b>를 선택하세요</div>
-      <div class="install-step"><span class="install-step-ic">3</span>오른쪽 위 <b>추가</b>를 누르면 완료!</div>
-    `;
-  }
-  return `
-    <div class="install-step"><span class="install-step-ic">1</span>브라우저 메뉴(⋮)를 여세요</div>
-    <div class="install-step"><span class="install-step-ic">2</span><b>"홈 화면에 추가"</b> 또는 <b>"앱 설치"</b>를 선택하세요</div>
-    <div class="install-step"><span class="install-step-ic">3</span>안내에 따라 추가하면 완료!</div>
-  `;
-}
-
-function openInstallSheet(){
-  document.body.classList.add('sheet-open');
-  document.getElementById('installSheetRoot').innerHTML=`<div class="acc-sheet-backdrop" onclick="if(event.target===this) closeInstallSheet()">
-    <div class="acc-sheet">
-      <div class="install-sheet-hero"><img src="icons/splash-bg.jpg" alt=""></div>
-      <div class="acc-sheet-body">
-        <div class="acc-sheet-title">홈 화면에 추가하기</div>
-        <div class="install-steps">${installStepsHtml()}</div>
-        <button class="acc-form-save" onclick="closeInstallSheet()">확인</button>
-      </div>
-    </div>
-  </div>`;
-}
-
-function closeInstallSheet(){
-  document.body.classList.remove('sheet-open');
-  document.getElementById('installSheetRoot').innerHTML='';
 }
 
 async function copyBackup(){
@@ -1601,37 +1529,6 @@ goTopTab('schedule');
 syncFromRemote();
 setInterval(syncFromRemote, 20000);
 document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) syncFromRemote(); });
-
-// keep the splash on screen for a deliberate ~3s launch beat, and make
-// sure the splash photo itself has actually finished loading (a slow
-// first load otherwise fades the splash out before the image ever
-// painted) — capped so a failed/offline image load can't hang it.
-//
-// when opened as a regular web page (not the installed PWA), the splash
-// stays up permanently with an "앱 설치" button revealed under the logo,
-// instead of fading into the app — the app only becomes reachable once
-// installed to the home screen.
-(function(){
-  const MIN_MS=3000, MAX_MS=5000;
-  const start=Date.now();
-  const splashImg=document.getElementById('splashImg');
-  let imgReady=splashImg.complete;
-  splashImg.addEventListener('load', ()=>{ imgReady=true; });
-  splashImg.addEventListener('error', ()=>{ imgReady=true; });
-  (function check(){
-    const elapsed=Date.now()-start;
-    if((imgReady && elapsed>=MIN_MS) || elapsed>=MAX_MS){
-      if(isStandalonePwa()){
-        const splash=document.getElementById('splashScreen');
-        if(splash){ splash.classList.add('hide'); setTimeout(()=>splash.remove(), 450); }
-      }else{
-        document.getElementById('splashInstallBtn').classList.add('show');
-      }
-    }else{
-      requestAnimationFrame(check);
-    }
-  })();
-})();
 </script>
 <script>
 // scope covers the whole site so navigating between schedule.html (home),
