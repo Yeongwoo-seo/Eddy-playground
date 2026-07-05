@@ -34,13 +34,47 @@
 }
 html,body{height:100%}
 body{background:var(--bg);color:var(--black);font-family:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;display:flex;justify-content:center}
+body.sheet-open{overflow:hidden}
 .app{width:100%;max-width:500px;min-height:100vh;padding:16px}
 .hl{color:var(--primary)}
 
 .pg-hdr{padding:28px 4px 20px}
+.pg-hdr-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.pg-hdr-main{flex:1;min-width:0}
 .pg-title{font-size:28px;font-weight:800;letter-spacing:-.3px}
 .pg-sub{font-size:14px;color:var(--grey500);font-weight:500;margin-top:8px;line-height:1.6}
 .dday{display:inline-flex;align-items:center;gap:6px;background:var(--primary-light);color:var(--primary);font-size:13px;font-weight:700;padding:6px 14px;border-radius:20px;margin-top:14px}
+
+.weather-widget{flex-shrink:0;background:var(--white);border:none;border-radius:18px;box-shadow:0 2px 12px rgba(0,0,0,0.06);padding:10px 14px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;font-family:inherit;margin-top:2px}
+.weather-widget:active{transform:scale(.96)}
+.weather-ic{font-size:22px;line-height:1}
+.weather-temp{font-size:16px;font-weight:800;color:var(--black)}
+.weather-range{font-size:11px;color:var(--grey500);font-weight:600;white-space:nowrap}
+
+/* full-screen weather calendar sheet */
+@keyframes wSheetIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+.weather-sheet-backdrop{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;flex-direction:column;animation:wSheetIn .28s cubic-bezier(.2,.8,.2,1)}
+.weather-sheet-hdr{display:flex;align-items:center;gap:12px;padding:calc(16px + env(safe-area-inset-top)) 20px 16px}
+.weather-sheet-hdr button{background:var(--white);color:var(--grey700);border:none;width:32px;height:32px;border-radius:50%;font-size:15px;cursor:pointer;flex-shrink:0;font-family:inherit;box-shadow:0 2px 12px rgba(0,0,0,0.06)}
+.weather-sheet-hdr .t{font-size:16px;font-weight:700}
+.weather-sheet-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 16px 32px}
+
+.wk-legend{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;font-size:11.5px;color:var(--grey500);font-weight:600;margin-bottom:18px}
+.wk-legend span{display:inline-flex;align-items:center;gap:5px}
+.wk-legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.wk-month-title{font-size:16px;font-weight:800;margin:20px 4px 10px}
+.wk-month-title:first-child{margin-top:0}
+.wk-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.wk-dow{text-align:center;font-size:11px;color:var(--grey500);font-weight:600;padding-bottom:4px}
+.wk-cell{position:relative;aspect-ratio:1;border-radius:12px;background:var(--white);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;box-shadow:0 1px 6px rgba(0,0,0,.04)}
+.wk-cell.empty{background:transparent;box-shadow:none}
+.wk-cell.trip{background:var(--primary-light)}
+.wk-forecast-dot{position:absolute;top:4px;right:4px;width:5px;height:5px;border-radius:50%;background:#3182F6}
+.wk-date{font-size:11px;font-weight:700;color:var(--grey700)}
+.wk-cell.trip .wk-date{color:var(--primary)}
+.wk-ic{font-size:14px;line-height:1}
+.wk-temp{font-size:9.5px;color:var(--grey500);font-weight:600}
+.wk-temp b{color:var(--black);font-weight:700}
 
 .nav-list{display:flex;flex-direction:column;gap:14px}
 .nav-card{position:relative;display:block;height:150px;border-radius:24px;overflow:hidden;background:var(--grey100) center/cover no-repeat;text-decoration:none;box-shadow:0 2px 12px rgba(0,0,0,0.06);transition:transform .15s}
@@ -57,9 +91,18 @@ body{background:var(--bg);color:var(--black);font-family:'Pretendard',-apple-sys
 <body>
 <div class="app">
   <div class="pg-hdr">
-    <div class="pg-title">우리의 <span class="hl">시드니</span> 여행</div>
-    <div class="pg-sub">2026.7.22 - 8.17, 출발 전 준비부터 일정까지</div>
-    <div class="dday" id="ddayBadge">D-day 계산 중...</div>
+    <div class="pg-hdr-row">
+      <div class="pg-hdr-main">
+        <div class="pg-title">우리의 <span class="hl">시드니</span> 여행</div>
+        <div class="pg-sub">2026.7.22 - 8.17, 출발 전 준비부터 일정까지</div>
+        <div class="dday" id="ddayBadge">D-day 계산 중...</div>
+      </div>
+      <button class="weather-widget" onclick="openWeatherSheet()">
+        <div class="weather-ic" id="weatherIcon">⛅</div>
+        <div class="weather-temp" id="weatherTemp">--°</div>
+        <div class="weather-range" id="weatherRange">--° / --°</div>
+      </button>
+    </div>
   </div>
 
   <div class="nav-list">
@@ -98,6 +141,7 @@ body{background:var(--bg);color:var(--black);font-family:'Pretendard',-apple-sys
 
   <div class="pg-ftr">우리의 시드니 여행</div>
 </div>
+<div id="weatherSheetRoot"></div>
 <script>
 const TRIP_START=new Date(2026,6,22);
 function updateDday(){
@@ -110,6 +154,131 @@ function updateDday(){
   else el.textContent=`✈️ 여행 시작 ${Math.abs(diff)}일째`;
 }
 updateDday();
+</script>
+<script>
+// weather: Open-Meteo needs no API key, so it's safe to call directly
+// from this static page. Forecast covers ~16 days out; days beyond that
+// (most of the 7/22-8/17 trip, until it gets closer) fall back to
+// Sydney's BOM climate-normal mean high/low for that month.
+const SYD_LAT=-33.8688, SYD_LON=151.2093;
+const CLIMATE_NORMAL={6:{hi:17,lo:8}, 7:{hi:18,lo:9}}; // JS month index: 6=Jul, 7=Aug
+const TRIP_START_STR='2026-07-22', TRIP_END_STR='2026-08-17';
+
+function wmoIcon(code){
+  if(code===0) return '☀️';
+  if(code===1) return '🌤️';
+  if(code===2) return '⛅';
+  if(code===3) return '☁️';
+  if(code===45||code===48) return '🌫️';
+  if([51,53,55,56,57].includes(code)) return '🌦️';
+  if([61,63,65,66,67,80,81,82].includes(code)) return '🌧️';
+  if([71,73,75,77,85,86].includes(code)) return '🌨️';
+  if([95,96,99].includes(code)) return '⛈️';
+  return '⛅';
+}
+
+function getWeatherCache(){
+  try{ return JSON.parse(localStorage.getItem('weatherCacheV1')||'null'); }catch(e){ return null; }
+}
+function setWeatherCache(data){
+  try{ localStorage.setItem('weatherCacheV1', JSON.stringify(data)); }catch(e){}
+}
+
+let weatherData=getWeatherCache();
+
+function renderWidget(){
+  if(!weatherData) return;
+  const tempEl=document.getElementById('weatherTemp');
+  if(!tempEl) return;
+  document.getElementById('weatherIcon').textContent=wmoIcon(weatherData.current.code);
+  tempEl.textContent=Math.round(weatherData.current.temp)+'°';
+  const today=weatherData.daily[0];
+  if(today) document.getElementById('weatherRange').textContent=`${Math.round(today.tmax)}° / ${Math.round(today.tmin)}°`;
+}
+
+async function fetchWeather(){
+  try{
+    const res=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${SYD_LAT}&longitude=${SYD_LON}&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=Australia%2FSydney&forecast_days=16`);
+    if(!res.ok) return;
+    const json=await res.json();
+    const daily=json.daily.time.map((date,i)=>({
+      date, code:json.daily.weather_code[i],
+      tmax:json.daily.temperature_2m_max[i], tmin:json.daily.temperature_2m_min[i]
+    }));
+    weatherData={
+      current:{temp:json.current.temperature_2m, code:json.current.weather_code},
+      daily
+    };
+    setWeatherCache(weatherData);
+    renderWidget();
+    if(document.getElementById('weatherSheetRoot').innerHTML) renderWeatherSheet();
+  }catch(e){}
+}
+
+function dateStr(y,m,d){ return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
+function findForecast(ds){
+  return weatherData ? (weatherData.daily.find(d=>d.date===ds) || null) : null;
+}
+
+function monthGridHtml(year, month){
+  const startDow=new Date(year,month,1).getDay();
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  const cells=[];
+  for(let i=0;i<startDow;i++) cells.push('<div class="wk-cell empty"></div>');
+  for(let d=1; d<=daysInMonth; d++){
+    const ds=dateStr(year,month,d);
+    const isTrip=ds>=TRIP_START_STR && ds<=TRIP_END_STR;
+    const fc=findForecast(ds);
+    let icon='', temp='';
+    if(fc){
+      icon=wmoIcon(fc.code);
+      temp=`<b>${Math.round(fc.tmax)}°</b>/${Math.round(fc.tmin)}°`;
+    }else if(CLIMATE_NORMAL[month]){
+      icon='🌤️';
+      temp=`<b>${CLIMATE_NORMAL[month].hi}°</b>/${CLIMATE_NORMAL[month].lo}°`;
+    }
+    cells.push(`<div class="wk-cell${isTrip?' trip':''}">
+      ${fc?'<span class="wk-forecast-dot"></span>':''}
+      <div class="wk-date">${d}</div>
+      <div class="wk-ic">${icon}</div>
+      <div class="wk-temp">${temp}</div>
+    </div>`);
+  }
+  const dow=['일','월','화','수','목','금','토'].map(d=>`<div class="wk-dow">${d}</div>`).join('');
+  return `<div class="wk-grid">${dow}${cells.join('')}</div>`;
+}
+
+function renderWeatherSheet(){
+  document.getElementById('weatherSheetRoot').innerHTML=`<div class="weather-sheet-backdrop">
+    <div class="weather-sheet-hdr">
+      <button onclick="closeWeatherSheet()">←</button>
+      <div class="t">시드니 날씨</div>
+    </div>
+    <div class="weather-sheet-body">
+      <div class="wk-legend">
+        <span><span class="wk-legend-dot" style="background:#3182F6"></span>실시간 예보</span>
+        <span><span class="wk-legend-dot" style="background:var(--grey300)"></span>평년 기온</span>
+        <span><span class="wk-legend-dot" style="background:var(--primary)"></span>여행 기간</span>
+      </div>
+      <div class="wk-month-title">7월</div>
+      ${monthGridHtml(2026,6)}
+      <div class="wk-month-title">8월</div>
+      ${monthGridHtml(2026,7)}
+    </div>
+  </div>`;
+}
+
+function openWeatherSheet(){
+  document.body.classList.add('sheet-open');
+  renderWeatherSheet();
+}
+function closeWeatherSheet(){
+  document.body.classList.remove('sheet-open');
+  document.getElementById('weatherSheetRoot').innerHTML='';
+}
+
+renderWidget();
+fetchWeather();
 </script>
 <script>
 // scope covers the whole site so navigating between schedule.html (home),
