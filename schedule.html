@@ -69,9 +69,12 @@ body.sheet-open{overflow:hidden}
 .wk-cell{position:relative;aspect-ratio:1;border-radius:12px;background:var(--white);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;box-shadow:0 1px 6px rgba(0,0,0,.04)}
 .wk-cell.empty{background:transparent;box-shadow:none}
 .wk-cell.trip{background:var(--primary-light)}
+.wk-cell.today{box-shadow:0 0 0 2px var(--black) inset}
 .wk-forecast-dot{position:absolute;top:4px;right:4px;width:5px;height:5px;border-radius:50%;background:#3182F6}
 .wk-date{font-size:11px;font-weight:700;color:var(--grey700)}
 .wk-cell.trip .wk-date{color:var(--primary)}
+.wk-cell.today .wk-date{color:var(--black)}
+.today-dot{background:var(--white);box-shadow:0 0 0 2px var(--black) inset}
 .wk-ic{font-size:14px;line-height:1}
 .wk-temp{font-size:9.5px;color:var(--grey500);font-weight:600}
 .wk-temp b{color:var(--black);font-weight:700}
@@ -84,6 +87,9 @@ body.sheet-open{overflow:hidden}
 .nav-emoji{font-size:22px;margin-bottom:4px;display:block}
 .nav-name{font-size:18px;font-weight:800}
 .nav-desc{font-size:12.5px;color:rgba(255,255,255,.85);font-weight:500;margin-top:4px;line-height:1.5}
+.dday-inline{color:var(--primary);font-weight:800}
+.nav-card.locked{cursor:not-allowed;filter:grayscale(.35) brightness(.85)}
+.nav-card.locked:active{transform:none}
 
 .pg-ftr{text-align:center;font-size:12px;color:var(--grey500);padding:28px 0 12px}
 </style>
@@ -130,11 +136,11 @@ body.sheet-open{overflow:hidden}
       </div>
     </a>
 
-    <a class="nav-card" href="secret.html" style="background-image:url('https://images.pexels.com/photos/15225161/pexels-photo-15225161.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop')">
+    <a class="nav-card" id="secretCard" href="secret.html" onclick="return handleSecretClick(event)" style="background-image:url('https://images.pexels.com/photos/15225161/pexels-photo-15225161.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop')">
       <div class="nav-body">
         <span class="nav-emoji">🔒</span>
         <div class="nav-name">???</div>
-        <div class="nav-desc">궁금하지? 비밀이야</div>
+        <div class="nav-desc" id="secretDesc">궁금하지? 비밀이야</div>
       </div>
     </a>
   </div>
@@ -152,16 +158,38 @@ function updateDday(){
   if(diff>0) el.textContent=`✈️ 출발까지 D-${diff}`;
   else if(diff===0) el.textContent='✈️ 오늘 출발!';
   else el.textContent=`✈️ 여행 시작 ${Math.abs(diff)}일째`;
+
+  const secretCard=document.getElementById('secretCard');
+  const secretDesc=document.getElementById('secretDesc');
+  if(diff>0){
+    secretCard.classList.add('locked');
+    secretDesc.innerHTML=`공개까지 <span class="dday-inline">D-${diff}</span>`;
+  }else{
+    secretCard.classList.remove('locked');
+    secretDesc.textContent='궁금하지? 비밀이야';
+  }
 }
 updateDday();
+
+// ??? stays locked (not enterable) until the reveal date — checked here
+// too, not just via the .locked visual, so it can't be opened by tapping
+// mid-transition before updateDday's class gets applied
+function handleSecretClick(e){
+  const today=new Date();
+  today.setHours(0,0,0,0);
+  if(today<TRIP_START){
+    e.preventDefault();
+    return false;
+  }
+  return true;
+}
 </script>
 <script>
 // weather: Open-Meteo needs no API key, so it's safe to call directly
-// from this static page. Forecast covers ~16 days out; days beyond that
-// (most of the 7/22-8/17 trip, until it gets closer) fall back to
-// Sydney's BOM climate-normal mean high/low for that month.
+// from this static page. Forecast only covers ~16 days out, so most of
+// the 7/22-8/17 trip has no real data yet this early — those days just
+// show '-' rather than a guessed number, until it gets closer.
 const SYD_LAT=-33.8688, SYD_LON=151.2093;
-const CLIMATE_NORMAL={6:{hi:17,lo:8}, 7:{hi:18,lo:9}}; // JS month index: 6=Jul, 7=Aug
 const TRIP_START_STR='2026-07-22', TRIP_END_STR='2026-08-17';
 
 function wmoIcon(code){
@@ -223,21 +251,17 @@ function findForecast(ds){
 function monthGridHtml(year, month){
   const startDow=new Date(year,month,1).getDay();
   const daysInMonth=new Date(year,month+1,0).getDate();
+  const todayStr=dateStr(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
   const cells=[];
   for(let i=0;i<startDow;i++) cells.push('<div class="wk-cell empty"></div>');
   for(let d=1; d<=daysInMonth; d++){
     const ds=dateStr(year,month,d);
     const isTrip=ds>=TRIP_START_STR && ds<=TRIP_END_STR;
+    const isToday=ds===todayStr;
     const fc=findForecast(ds);
-    let icon='', temp='';
-    if(fc){
-      icon=wmoIcon(fc.code);
-      temp=`<b>${Math.round(fc.tmax)}°</b>/${Math.round(fc.tmin)}°`;
-    }else if(CLIMATE_NORMAL[month]){
-      icon='🌤️';
-      temp=`<b>${CLIMATE_NORMAL[month].hi}°</b>/${CLIMATE_NORMAL[month].lo}°`;
-    }
-    cells.push(`<div class="wk-cell${isTrip?' trip':''}">
+    const icon=fc ? wmoIcon(fc.code) : '';
+    const temp=fc ? `<b>${Math.round(fc.tmax)}°</b>/${Math.round(fc.tmin)}°` : '-';
+    cells.push(`<div class="wk-cell${isTrip?' trip':''}${isToday?' today':''}">
       ${fc?'<span class="wk-forecast-dot"></span>':''}
       <div class="wk-date">${d}</div>
       <div class="wk-ic">${icon}</div>
@@ -257,8 +281,8 @@ function renderWeatherSheet(){
     <div class="weather-sheet-body">
       <div class="wk-legend">
         <span><span class="wk-legend-dot" style="background:#3182F6"></span>실시간 예보</span>
-        <span><span class="wk-legend-dot" style="background:var(--grey300)"></span>평년 기온</span>
         <span><span class="wk-legend-dot" style="background:var(--primary)"></span>여행 기간</span>
+        <span><span class="wk-legend-dot today-dot"></span>오늘</span>
       </div>
       <div class="wk-month-title">7월</div>
       ${monthGridHtml(2026,6)}
