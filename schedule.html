@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>강낭콩 투어</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#FB6A08">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -102,7 +100,6 @@ body.sheet-open{overflow:hidden}
 .route-sheet-hdr .t{font-size:16px;font-weight:700}
 #routeMapEl{flex:1;width:100%;position:relative;background:var(--grey100)}
 .route-loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--grey500);background:var(--grey100)}
-.route-num-marker{background:var(--primary);color:#fff;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;box-shadow:0 2px 6px rgba(0,0,0,.3);border:2px solid #fff}
 
 /* day sub tabs — left-aligned, sized to their own text (토요일 / 일요일) */
 .sub-tabs{display:flex;gap:8px;margin-bottom:20px}
@@ -128,6 +125,8 @@ body.sheet-open{overflow:hidden}
 .ph-ov{position:absolute;bottom:0;left:0;right:0;padding:12px 14px;background:linear-gradient(transparent,rgba(0,0,0,.65));z-index:1}
 .ph-nm{font-size:14px;font-weight:700;color:#fff}
 .ph-note{font-size:11px;color:rgba(255,255,255,.85);margin-top:2px}
+.must-badge{position:absolute;top:10px;left:10px;z-index:2;background:var(--primary);color:#fff;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+.must-badge-flat{display:inline-block;background:var(--primary-light);color:var(--primary);font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px;margin-left:8px;vertical-align:middle}
 .ph-del{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;border:none;background:rgba(0,0,0,.35);color:#fff;font-size:13px;cursor:pointer;backdrop-filter:blur(4px);z-index:1}
 .ph-edit{position:absolute;top:8px;right:42px;width:26px;height:26px;border-radius:50%;border:none;background:rgba(0,0,0,.35);color:#fff;font-size:12px;cursor:pointer;backdrop-filter:blur(4px);z-index:1;display:flex;align-items:center;justify-content:center}
 
@@ -157,6 +156,7 @@ body.sheet-open{overflow:hidden}
 .preset-chip::after{content:'';position:absolute;inset:0;background:rgba(0,0,0,.28);pointer-events:none}
 .preset-chip .ov{position:absolute;inset:0;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;padding:8px 4px;background:linear-gradient(transparent 35%, rgba(0,0,0,.65));color:#fff;font-size:11px;font-weight:700;text-align:center}
 .preset-emoji{font-size:18px}
+.preset-chip .must-badge{top:6px;left:6px;font-size:10px;padding:2px 7px}
 
 /* bottom nav — floating pill bar with a sliding active thumb */
 .bottom-nav{position:fixed;bottom:calc(16px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:468px;background:var(--white);border-radius:24px;box-shadow:0 4px 20px rgba(0,0,0,0.1);display:flex;padding:8px;z-index:20}
@@ -370,7 +370,9 @@ const PH={
   paddysmarket:'https://images.pexels.com/photos/2601274/pexels-photo-2601274.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
   observatoryhill:'https://images.pexels.com/photos/6195016/pexels-photo-6195016.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
   milsonspoint:'https://images.pexels.com/photos/15229717/pexels-photo-15229717.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
-  mca:'https://images.pexels.com/photos/16842473/pexels-photo-16842473.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop'
+  mca:'https://images.pexels.com/photos/16842473/pexels-photo-16842473.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  cookies:'https://images.pexels.com/photos/1626668/pexels-photo-1626668.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  gelato:'https://images.pexels.com/photos/5061192/pexels-photo-5061192.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop'
 };
 function plImg(name){
   const s=name.toLowerCase();
@@ -411,6 +413,8 @@ function plImg(name){
   if(s.includes('캄포스')) return PH.campos;
   if(s.includes('빌즈')) return PH.bills;
   if(s.includes('theeca')) return PH.theeca;
+  if(s.includes('버터보이')||s.includes('butterboy')) return PH.cookies;
+  if(s.includes('아니타')||s.includes('anita')) return PH.gelato;
   if(s.includes('카페')||s.includes('브런치')) return PH.cafe;
   if(s.includes('라벤드라')) return PH.lavendraimg;
   if(s.includes('tottis')) return PH.bartottisimg;
@@ -508,8 +512,14 @@ const PRESETS=[
   {name:'Theeca', emoji:'🥞', category:'food'},
   {name:'마막', emoji:'🍛', category:'food'},
   {name:'Doyles', emoji:'🐟', category:'food'},
-  {name:'Restaurant Hubert', emoji:'🎷', category:'food'}
+  {name:'Restaurant Hubert', emoji:'🎷', category:'food'},
+  {name:'버터보이', emoji:'🍪', category:'food', must:true},
+  {name:'아니타 젤라또', emoji:'🍨', category:'food', must:true}
 ];
+
+// PRESETS entries marked must:true get a "필수" badge in the picker
+// grid and place detail sheet
+const MUST_PRESETS=new Set(PRESETS.filter(p=>p.must).map(p=>p.name));
 
 // ─── reference info shown on each place's detail sheet ───
 // approximate/typical values for planning purposes — always worth
@@ -578,7 +588,9 @@ const PLACE_INFO={
   'Theeca':{hours:'07:00-15:00', price:'브런치 A$20~30', highlights:'현지인 추천 브런치 카페'},
   '마막':{hours:'11:00-22:00 (요일별 상이)', price:'1인 A$20~30', highlights:'로티 & 말레이시아 커리, 헤이마켓 인기 맛집'},
   'Doyles':{hours:'12:00-21:00 (요일별 상이)', price:'1인 A$40~60', highlights:'왓슨스 베이 대표 피시앤칩스 & 시푸드'},
-  'Restaurant Hubert':{hours:'17:00-24:00 (목~토 연장, 주방 01:00까지)', price:'요리 A$25~ / 음료 A$18~', highlights:'15 Bligh St, 촛불 조명·재즈 라이브의 파리지앵 감성 프렌치 다이닝'}
+  'Restaurant Hubert':{hours:'17:00-24:00 (목~토 연장, 주방 01:00까지)', price:'요리 A$25~ / 음료 A$18~', highlights:'15 Bligh St, 촛불 조명·재즈 라이브의 파리지앵 감성 프렌치 다이닝'},
+  '버터보이':{hours:'매장별 상이 (Manly·Broadway·Brookvale·Chatswood)', price:'쿠키 1개 A$8.50~9', highlights:'시드니 대표 쿠키 맛집, 솔티드 카라멜 쿠키 필수(전체적으로 단 편)'},
+  '아니타 젤라또':{hours:'10:00-22:00 (지점·요일별 상이)', price:'1스쿱 A$6~', highlights:'헤이즐넛 초코 크런치 강력 추천, Barangaroo·Manly·Bondi 등 다수 지점'}
 };
 function mapsUrl(name){ return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name+' Sydney')}`; }
 
@@ -1077,7 +1089,7 @@ function placeSheetHtml(idx){
         <button class="acc-sheet-back" onclick="closeAccSheet()">←</button>
       </div>
       <div class="acc-sheet-body">
-        <div class="acc-sheet-title">${name}</div>
+        <div class="acc-sheet-title">${name}${MUST_PRESETS.has(name)?'<span class="must-badge-flat">필수</span>':''}</div>
         ${place.note?`<div class="acc-sheet-loc">${place.note}</div>`:''}
         <div class="place-info-rows">
           <div class="place-info-row"><span class="pi-ic">🕐</span><div><div class="pi-lb">운영 시간</div><div class="pi-val">${info.hours||'정보 없음'}</div></div></div>
@@ -1241,6 +1253,7 @@ function renderPlaces(){
       </div>
       <div class="ph-cd" onclick="openPlaceView(${i})">
         <img src="${plImg(p.name)}">
+        ${MUST_PRESETS.has(p.name)?'<span class="must-badge">필수</span>':''}
         <button class="ph-edit" onclick="event.stopPropagation();openPlaceEdit(${i})"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
         <button class="ph-del" onclick="event.stopPropagation();removePlace(${i})">✕</button>
         <div class="ph-ov"><div class="ph-nm">${p.name}</div>${p.note?`<div class="ph-note">${p.note}</div>`:''}</div>
@@ -1248,13 +1261,32 @@ function renderPlaces(){
     </div>`).join('')}</div>${routeBtn}`;
 }
 
-// Google Maps "dir" deep link needs no API key: origin/destination/
-// waypoints in visiting order renders numbered pins along the route
-// in-app route map (Leaflet + OpenStreetMap tiles, no API key needed)
-// with numbered pins in visiting order, geocoded via Nominatim (OSM's
-// free geocoding endpoint) and cached locally so repeat views don't
-// re-hit it and stay well under its ~1req/sec usage policy
+// in-app route map (Google Maps JavaScript API), numbered pins in
+// visiting order, geocoded via google.maps.Geocoder and cached locally
+// so repeat views don't re-hit it.
+//
+// Get a key at https://console.cloud.google.com/google/maps-apis with
+// "Maps JavaScript API" + "Geocoding API" enabled, then paste it below.
+// Restrict the key by HTTP referrer to this site's domain before shipping.
+const GOOGLE_MAPS_API_KEY='';
+
 let routeMap=null;
+let routeMarkers=[];
+let routePolyline=null;
+let googleMapsLoadPromise=null;
+
+function loadGoogleMaps(){
+  if(googleMapsLoadPromise) return googleMapsLoadPromise;
+  googleMapsLoadPromise=new Promise((resolve,reject)=>{
+    if(window.google && window.google.maps){ resolve(window.google.maps); return; }
+    window.__onGoogleMapsLoaded=()=>resolve(window.google.maps);
+    const script=document.createElement('script');
+    script.src=`https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(GOOGLE_MAPS_API_KEY)}&callback=__onGoogleMapsLoaded`;
+    script.onerror=()=>reject(new Error('Google Maps failed to load'));
+    document.head.appendChild(script);
+  });
+  return googleMapsLoadPromise;
+}
 
 function getGeocodeCache(){
   try{ return JSON.parse(localStorage.getItem('geocodeCacheV1')||'{}'); }catch(e){ return {}; }
@@ -1263,31 +1295,22 @@ function setGeocodeCache(cache){
   try{ localStorage.setItem('geocodeCacheV1', JSON.stringify(cache)); }catch(e){}
 }
 
-const sleep=ms=>new Promise(r=>setTimeout(r, ms));
-
-// Nominatim's usage policy caps client-side use at ~1 request/sec —
-// firing them closer together than that gets most requests silently
-// rate-limited (empty/failed results), which looked like "only the
-// last place resolves". One retry after backing off further covers
-// the rest.
+let geocoder=null;
 async function geocodePlace(name){
   const cache=getGeocodeCache();
   if(cache[name]) return cache[name];
-  for(let attempt=0; attempt<2; attempt++){
-    try{
-      const res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(name+' Sydney Australia')}`);
-      if(res.ok){
-        const results=await res.json();
-        if(results && results.length){
-          const coord=[parseFloat(results[0].lat), parseFloat(results[0].lon)];
-          cache[name]=coord;
-          setGeocodeCache(cache);
-          return coord;
-        }
-      }
-    }catch(e){}
-    await sleep(1500);
-  }
+  try{
+    const maps=await loadGoogleMaps();
+    if(!geocoder) geocoder=new maps.Geocoder();
+    const res=await geocoder.geocode({address:`${name} Sydney Australia`, region:'au'});
+    const loc=res.results[0] && res.results[0].geometry.location;
+    if(loc){
+      const coord=[loc.lat(), loc.lng()];
+      cache[name]=coord;
+      setGeocodeCache(cache);
+      return coord;
+    }
+  }catch(e){}
   return null;
 }
 
@@ -1300,49 +1323,72 @@ async function openRoute(){
       <button onclick="closeRouteSheet()">←</button>
       <div class="t">오늘의 동선</div>
     </div>
-    <div id="routeMapEl"><div class="route-loading" id="routeLoading">장소를 찾는 중... (1/${places.length})</div></div>
+    <div id="routeMapEl"><div class="route-loading" id="routeLoading">장소를 찾는 중... (0/${places.length})</div></div>
   </div>`;
 
-  const coords=[];
-  for(let i=0;i<places.length;i++){
-    const loadingEl=document.getElementById('routeLoading');
-    if(loadingEl) loadingEl.textContent=`장소를 찾는 중... (${i+1}/${places.length})`;
-    const c=await geocodePlace(places[i].name);
-    if(c) coords.push({idx:i+1, name:places[i].name, latlng:c});
-    if(i<places.length-1) await sleep(1100);
+  if(!GOOGLE_MAPS_API_KEY){
+    document.getElementById('routeMapEl').innerHTML='<div class="route-loading">Google Maps API 키가 설정되지 않았어요</div>';
+    return;
   }
+
+  let done=0;
+  const coords=(await Promise.all(places.map(async (place,i)=>{
+    const c=await geocodePlace(place.name);
+    done++;
+    const loadingEl=document.getElementById('routeLoading');
+    if(loadingEl) loadingEl.textContent=`장소를 찾는 중... (${done}/${places.length})`;
+    return c ? {idx:i+1, name:place.name, latlng:c} : null;
+  }))).filter(Boolean);
+
   if(!document.getElementById('routeMapEl')) return; // sheet closed while geocoding
-  const loadingEl=document.getElementById('routeLoading');
-  if(loadingEl) loadingEl.remove();
 
   if(!coords.length){
     document.getElementById('routeMapEl').innerHTML='<div class="route-loading">위치를 찾을 수 없어요</div>';
     return;
   }
 
-  if(routeMap){ routeMap.remove(); routeMap=null; }
-  routeMap=L.map('routeMapEl');
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '&copy; OpenStreetMap contributors'
-  }).addTo(routeMap);
+  const maps=await loadGoogleMaps();
+  const toLatLng=c=>({lat:c[0], lng:c[1]});
 
-  const latlngs=coords.map(c=>c.latlng);
-  coords.forEach(c=>{
-    const icon=L.divIcon({ className:'', html:`<div class="route-num-marker">${c.idx}</div>`, iconSize:[26,26], iconAnchor:[13,13] });
-    L.marker(c.latlng, {icon}).addTo(routeMap).bindPopup(c.name);
+  routeMap=new maps.Map(document.getElementById('routeMapEl'), {
+    center:toLatLng(coords[0].latlng), zoom:14
   });
-  if(latlngs.length>1){
-    L.polyline(latlngs, {color:'#E8741E', weight:3, opacity:0.7, dashArray:'6,6'}).addTo(routeMap);
-    routeMap.fitBounds(latlngs, {padding:[40,40]});
+
+  const bounds=new maps.LatLngBounds();
+  routeMarkers=coords.map(c=>{
+    const pos=toLatLng(c.latlng);
+    bounds.extend(pos);
+    const marker=new maps.Marker({
+      position:pos,
+      map:routeMap,
+      label:{text:String(c.idx), color:'#fff', fontWeight:'800', fontSize:'12px'},
+      icon:{path:maps.SymbolPath.CIRCLE, scale:14, fillColor:'#E8741E', fillOpacity:1, strokeColor:'#fff', strokeWeight:2},
+      title:c.name
+    });
+    const info=new maps.InfoWindow({content:`<div style="font-weight:700">${c.name}</div>`});
+    marker.addListener('click', ()=>info.open(routeMap, marker));
+    return marker;
+  });
+
+  if(coords.length>1){
+    routePolyline=new maps.Polyline({
+      path:coords.map(c=>toLatLng(c.latlng)),
+      strokeColor:'#E8741E', strokeOpacity:0, strokeWeight:3,
+      icons:[{icon:{path:'M 0,-1 0,1', strokeOpacity:1, scale:3}, offset:'0', repeat:'10px'}]
+    });
+    routePolyline.setMap(routeMap);
+    routeMap.fitBounds(bounds, 40);
   }else{
-    routeMap.setView(latlngs[0], 15);
+    routeMap.setZoom(15);
   }
 }
 
 function closeRouteSheet(){
   document.body.classList.remove('sheet-open');
-  if(routeMap){ routeMap.remove(); routeMap=null; }
+  routeMarkers.forEach(m=>m.setMap(null));
+  routeMarkers=[];
+  if(routePolyline){ routePolyline.setMap(null); routePolyline=null; }
+  routeMap=null;
   document.getElementById('routeSheetRoot').innerHTML='';
 }
 
@@ -1399,6 +1445,7 @@ const REPEATABLE_PRESETS=['맛집 탐방', '카페 브런치'];
 function presetGridHtml(list){
   return `<div class="preset-grid">${list.map(p=>`
     <button class="preset-chip" style="background-image:url('${plImg(p.name)}')" onclick="selectPreset('${p.name}')">
+      ${p.must?'<span class="must-badge">필수</span>':''}
       <span class="ov"><span class="preset-emoji">${p.emoji}</span>${p.name}</span>
     </button>`).join('')}</div>`;
 }
