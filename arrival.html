@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>입국준비</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#E8741E">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="입국준비">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --primary:#E8741E;--primary-hover:#D4681A;--primary-light:#FFF3EB;
+  --bg:#F5F5F5;--white:#FFFFFF;
+  --grey100:#F2F4F6;--grey300:#D1D6DB;--grey500:#8B95A1;--grey700:#4E5968;--black:#191F28;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--black);font-family:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;display:flex;justify-content:center}
+.app{width:100%;max-width:500px;min-height:100vh;padding:16px 16px 40px}
+.hl{color:var(--primary)}
+
+.top-bar{display:flex;align-items:center;gap:12px;padding:8px 0 20px}
+.back-btn{width:36px;height:36px;border-radius:50%;background:var(--white);box-shadow:0 2px 12px rgba(0,0,0,0.06);border:none;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--grey700);flex-shrink:0}
+.top-title{font-size:20px;font-weight:800}
+
+.step-card{background:var(--white);border-radius:24px;box-shadow:0 2px 12px rgba(0,0,0,0.06);padding:20px 20px 22px;margin-bottom:14px}
+.step-hdr{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.step-num{width:26px;height:26px;border-radius:50%;background:var(--primary);color:#fff;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.step-title{font-size:16px;font-weight:700}
+.step-body{font-size:13.5px;color:var(--grey700);line-height:1.7}
+.step-body ul{padding-left:18px;margin-top:6px}
+.step-body li{margin-bottom:4px}
+.step-body b{color:var(--black)}
+.tag-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+.tag{background:var(--primary-light);color:var(--primary);font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:20px}
+
+.disclaimer{font-size:11.5px;color:var(--grey500);text-align:center;line-height:1.6;margin-top:8px;padding:0 8px}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top-bar">
+    <button class="back-btn" onclick="location.href='schedule.html'">←</button>
+    <div class="top-title">🛬 <span class="hl">입국준비</span></div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-hdr"><div class="step-num">1</div><div class="step-title">출국 전: ETA 비자 신청</div></div>
+    <div class="step-body">
+      한국 여권 소지자는 <b>전자여행허가(ETA, subclass 601)</b>가 필요해요. "Australian ETA" 공식 앱에서 여권을 스캔해 신청하면 대부분 <b>몇 분 안에 즉시 승인</b>돼요.
+      <ul>
+        <li>비용: 약 <b>AUD $20</b></li>
+        <li>승인 후 <b>1년간 유효</b>, 1회 최대 <b>3개월 체류</b> 가능 (여러 번 입출국 가능)</li>
+        <li>여행/방문/단기 비즈니스 목적만 가능, 취업·유학 불가</li>
+        <li>출국 최소 며칠 전에 미리 신청해두기</li>
+      </ul>
+      <div class="tag-row"><span class="tag">앱 이름: Australian ETA</span><span class="tag">여권 유효기간 6개월+</span></div>
+    </div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-hdr"><div class="step-num">2</div><div class="step-title">비행기 안: 입국신고서 작성</div></div>
+    <div class="step-body">
+      착륙 전 승무원이 나눠주는 <b>Incoming Passenger Card(IPC)</b>를 영문으로 작성해요. (일부 콴타스 항공 노선은 앱으로 디지털 신고가 가능하지만, 대부분은 아직 종이 카드예요)
+      <ul>
+        <li>다음 중 하나라도 해당되면 <b>반드시 신고</b>: 음식·식물·씨앗·동물성 제품 소지, 최근 농장/시골 지역 방문, 현금 AUD $10,000 상당 이상 소지</li>
+        <li>작성용 <b>펜을 미리 챙기면</b> 편해요</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-hdr"><div class="step-num">3</div><div class="step-title">도착 후: 입국심사 → 수하물 → 세관</div></div>
+    <div class="step-body">
+      <ul>
+        <li><b>입국심사</b>: 전자여권이면 SmartGate에서 여권 스캔으로 셀프 통과 가능</li>
+        <li><b>수하물 수취</b>: 전광판에서 항공편명으로 벨트 확인</li>
+        <li><b>세관/검역</b>: 신고할 물품이 있으면 빨간 라인, 없으면 초록 라인. 호주는 <b>생물보안(biosecurity) 검사가 매우 엄격</b>해서 미신고 적발 시 벌금이 나올 수 있어요 — 애매하면 무조건 신고하는 게 안전</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-hdr"><div class="step-num">4</div><div class="step-title">미리 챙겨둘 것</div></div>
+    <div class="step-body">
+      <ul>
+        <li>여권 + ETA 승인 확인 캡처본</li>
+        <li>숙소 주소 (영문으로 메모)</li>
+        <li>입국신고서 작성용 볼펜</li>
+        <li>신고할 음식물이 있다면 미리 정리해두기</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="disclaimer">비자·세관 규정은 수시로 바뀔 수 있으니, 출발 직전에 <b>Australian ETA 앱</b>과 <b>호주 국경관리청(ABF)</b> 공식 안내를 한 번 더 확인하세요.</div>
+</div>
+</body>
+</html>

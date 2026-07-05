@@ -1,0 +1,1645 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>강낭콩 투어</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#FB6A08">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="강낭콩 투어">
+<!-- iOS shows a plain white launch screen unless matched against one of
+     these exact device-resolution media queries, so we generate one per
+     common iPhone size instead of relying on a single generic image -->
+<link rel="apple-touch-startup-image" href="icons/splash-750x1334.jpg" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)">
+<link rel="apple-touch-startup-image" href="icons/splash-1242x2208.jpg" media="(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3)">
+<link rel="apple-touch-startup-image" href="icons/splash-1125x2436.jpg" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)">
+<link rel="apple-touch-startup-image" href="icons/splash-828x1792.jpg" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2)">
+<link rel="apple-touch-startup-image" href="icons/splash-1242x2688.jpg" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3)">
+<link rel="apple-touch-startup-image" href="icons/splash-1170x2532.jpg" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)">
+<link rel="apple-touch-startup-image" href="icons/splash-1284x2778.jpg" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3)">
+<link rel="apple-touch-startup-image" href="icons/splash-1179x2556.jpg" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3)">
+<link rel="apple-touch-startup-image" href="icons/splash-1290x2796.jpg" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3)">
+<link rel="apple-touch-startup-image" href="icons/splash-1206x2622.jpg" media="(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3)">
+<link rel="apple-touch-startup-image" href="icons/splash-1320x2868.jpg" media="(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3)">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --primary:#E8741E;--primary-hover:#D4681A;--primary-light:#FFF3EB;
+  --bg:#F5F5F5;--white:#FFFFFF;
+  --grey50:#FAFAFA;--grey100:#F2F4F6;--grey200:#E5E8EB;--grey300:#D1D6DB;
+  --grey500:#8B95A1;--grey700:#4E5968;--black:#191F28;
+}
+html,body{height:100%}
+html{scrollbar-width:none;-ms-overflow-style:none}
+html::-webkit-scrollbar{display:none;width:0;height:0}
+@supports (height: 100dvh){ html,body{height:100dvh} }
+body{background:var(--bg);color:var(--black);font-family:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;overflow-x:hidden;display:flex;justify-content:center;align-items:flex-start}
+
+#splashScreen{position:fixed;inset:0;z-index:9999;background:#FB6A08;transition:opacity .4s ease}
+#splashScreen img{width:100%;height:100%;object-fit:contain}
+#splashScreen.hide{opacity:0;pointer-events:none}
+.splash-install-btn{position:absolute;top:63%;left:50%;transform:translate(-50%, 14px);background:#fff;color:#FB6A08;border:none;border-radius:16px;padding:15px 32px;font-size:15px;font-weight:700;font-family:inherit;box-shadow:0 4px 20px rgba(0,0,0,0.2);cursor:pointer;opacity:0;pointer-events:none;transition:opacity .4s ease, transform .4s cubic-bezier(.2,.8,.2,1)}
+.splash-install-btn.show{opacity:1;transform:translate(-50%, 0);pointer-events:auto}
+.splash-install-btn:active{transform:translate(-50%, 0) scale(.97)}
+body.sheet-open{overflow:hidden}
+.app{width:100%;max-width:500px;min-height:100vh;position:relative;padding-bottom:calc(112px + env(safe-area-inset-bottom))}
+@supports (height: 100dvh){ .app{min-height:100dvh} }
+.hl{color:var(--primary)}
+
+/* 일정/숙소 switcher stays floating fixed at the top; the week theme
+   header and day sub-tabs now live inside the scrollable content so
+   they scroll away with it instead of sitting in a fixed bar */
+.top-tabs-float{position:fixed;top:calc(12px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:468px;display:flex;justify-content:flex-end;z-index:25;pointer-events:none}
+.top-bar-row{display:flex;align-items:center;gap:10px;min-height:34px;padding-right:180px;margin-bottom:16px}
+
+.week-theme-input{flex:1;min-width:0;border:none;background:transparent;font-size:22px;font-weight:800;color:var(--black);font-family:inherit;padding:2px 4px}
+.week-theme-input::placeholder{color:var(--grey500);font-weight:700}
+.week-theme-input:focus{outline:none}
+
+
+/* 일정 / 숙소 switcher — compact floating pill with a sliding active thumb */
+.top-tabs{position:relative;pointer-events:auto;flex-shrink:0;background:var(--white);border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,0.1);display:flex;padding:3px}
+.tt-thumb{position:absolute;top:3px;left:3px;width:calc((100% - 6px) / 3);height:calc(100% - 6px);background:var(--primary);border-radius:12px;box-shadow:0 3px 10px rgba(232,116,30,0.35);transition:transform .3s cubic-bezier(.2,.8,.2,1);z-index:0}
+.top-tab{position:relative;z-index:1;border:none;background:none;padding:7px 14px;border-radius:12px;font-size:12px;font-weight:700;color:var(--grey500);cursor:pointer;font-family:inherit;transition:color .2s;white-space:nowrap}
+.top-tab.on{color:#fff}
+
+.i-bd{padding:calc(12px + env(safe-area-inset-top)) 20px 20px;min-height:calc(100vh - 112px - env(safe-area-inset-bottom));box-sizing:border-box}
+@supports (height: 100dvh){ .i-bd{min-height:calc(100dvh - 112px - env(safe-area-inset-bottom))} }
+
+@keyframes slideUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+.content-anim{animation:slideUp .45s cubic-bezier(.2,.8,.2,1)}
+
+/* accommodation register CTA */
+.acc-register-btn{position:relative;width:100%;height:150px;border-radius:18px;border:1.5px dashed var(--grey300);background:var(--grey50);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--grey500);font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;margin-bottom:16px}
+.acc-register-btn .ic{font-size:26px}
+.acc-register-btn:active{transform:scale(.98)}
+
+.acc-card-label{position:absolute;top:14px;left:16px;z-index:1;font-size:16px;font-weight:800;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.45)}
+.acc-card-label-empty{color:var(--grey700);text-shadow:none}
+
+/* weekday tab — local things-to-do near that week's accommodation */
+.weekday-area-hdr{background:var(--white);border-radius:20px;padding:16px 20px;box-shadow:0 2px 12px rgba(0,0,0,0.06);margin-bottom:16px}
+.weekday-area-lb{font-size:12px;font-weight:600;color:var(--grey500)}
+.weekday-area-input{width:100%;border:none;background:transparent;font-size:20px;font-weight:800;color:var(--black);font-family:inherit;padding:2px 0 0;margin-top:2px}
+.weekday-area-input::placeholder{color:var(--grey500);font-weight:700}
+.weekday-area-input:focus{outline:none}
+.weekday-cat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.weekday-cat-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:var(--white);border-radius:18px;padding:16px 4px;box-shadow:0 2px 12px rgba(0,0,0,0.06);text-decoration:none;color:var(--grey700);font-size:12px;font-weight:700}
+.weekday-cat-card:active{transform:scale(.96)}
+.weekday-cat-emoji{font-size:24px}
+.weekday-more-link{margin-top:16px}
+.route-btn{display:block;width:100%;margin-top:16px;background:var(--white);color:var(--primary);border:1.5px solid var(--primary-light);border-radius:16px;padding:14px;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;box-shadow:0 2px 12px rgba(0,0,0,0.06)}
+.route-btn:active{background:var(--primary-light)}
+.route-sheet-backdrop{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;flex-direction:column;animation:sheetIn .32s cubic-bezier(.2,.8,.2,1)}
+.route-sheet-hdr{display:flex;align-items:center;gap:12px;padding:16px 20px;background:var(--white);box-shadow:0 2px 12px rgba(0,0,0,0.06);z-index:2}
+.route-sheet-hdr button{background:var(--grey100);color:var(--grey700);border:none;width:32px;height:32px;border-radius:50%;font-size:15px;cursor:pointer;flex-shrink:0;font-family:inherit}
+.route-sheet-hdr .t{font-size:16px;font-weight:700}
+#routeMapEl{flex:1;width:100%;position:relative;background:var(--grey100)}
+.route-loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--grey500);background:var(--grey100)}
+
+/* day sub tabs — left-aligned, sized to their own text (토요일 / 일요일) */
+.sub-tabs{display:flex;gap:8px;margin-bottom:20px}
+.sub-tab{border:none;background:var(--white);color:var(--grey500);padding:9px 16px;border-radius:14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;transition:.2s;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+.sub-tab.on{background:var(--primary);color:#fff;box-shadow:0 3px 10px rgba(232,116,30,0.35)}
+.sub-empty{font-size:13px;color:var(--grey500);text-align:center;padding:28px 0}
+
+/* place / accommodation photo cards */
+.ph-gr{display:flex;flex-direction:column;gap:10px}
+.pl-row{display:flex;gap:10px;align-items:stretch}
+.pl-time-col{width:74px;flex-shrink:0;padding-top:14px;position:relative}
+.pl-num{position:absolute;left:2px;top:14px;width:24px;height:24px;border-radius:50%;background:var(--primary);color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;z-index:1;box-shadow:0 2px 6px rgba(232,116,30,0.35)}
+.pl-row:not(:last-child) .pl-time-col::after{content:'';position:absolute;left:13px;top:38px;height:136px;width:2px;background:var(--grey300)}
+.pl-row .ph-cd{flex:1;cursor:pointer}
+.pl-time-input{width:100%;border:none;background:transparent;font-size:13px;font-weight:700;color:var(--primary);font-family:inherit;padding:0 0 0 32px}
+.pl-time-input::placeholder{color:var(--grey500);font-weight:600}
+.pl-time-input:focus{outline:none}
+.picker-time-input{flex:1;min-width:0;border:none;background:transparent;font-size:14px;font-weight:600;color:var(--black);font-family:inherit}
+.picker-time-input:focus{outline:none}
+.ph-cd{border-radius:18px;overflow:hidden;position:relative;height:150px;box-shadow:0 2px 12px rgba(0,0,0,0.06)}
+.ph-cd img{width:100%;height:100%;object-fit:cover;display:block;background:var(--grey100)}
+.ph-cd::after{content:'';position:absolute;inset:0;background:rgba(0,0,0,.28);pointer-events:none}
+.ph-ov{position:absolute;bottom:0;left:0;right:0;padding:12px 14px;background:linear-gradient(transparent,rgba(0,0,0,.65));z-index:1}
+.ph-nm{font-size:14px;font-weight:700;color:#fff}
+.ph-note{font-size:11px;color:rgba(255,255,255,.85);margin-top:2px}
+.must-badge{position:absolute;top:10px;left:10px;z-index:2;background:var(--primary);color:#fff;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+.must-badge-flat{display:inline-block;background:var(--primary-light);color:var(--primary);font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px;margin-left:8px;vertical-align:middle}
+.ph-del{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;border:none;background:rgba(0,0,0,.35);color:#fff;font-size:13px;cursor:pointer;backdrop-filter:blur(4px);z-index:1}
+.ph-edit{position:absolute;top:8px;right:42px;width:26px;height:26px;border-radius:50%;border:none;background:rgba(0,0,0,.35);color:#fff;font-size:12px;cursor:pointer;backdrop-filter:blur(4px);z-index:1;display:flex;align-items:center;justify-content:center}
+
+/* preset picker — dimmed backdrop + bottom sheet */
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes fadeOut{from{opacity:1}to{opacity:0}}
+@keyframes sheetSlideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes sheetSlideDown{from{transform:translateY(0)}to{transform:translateY(100%)}}
+.picker-backdrop{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;animation:fadeIn .25s ease}
+.picker-backdrop.closing{animation:fadeOut .18s ease forwards}
+.picker-backdrop.closing .picker-sheet{animation:sheetSlideDown .18s cubic-bezier(.4,0,1,1) forwards}
+.picker-sheet{width:100%;max-width:500px;max-height:75vh;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--white);border-radius:28px 28px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom));animation:sheetSlideUp .3s cubic-bezier(.2,.8,.2,1);scrollbar-width:none;-ms-overflow-style:none}
+.sheet-handle{width:40px;height:5px;background:var(--grey300);border-radius:3px;margin:0 auto 14px;cursor:grab;touch-action:none}
+.picker-sheet::-webkit-scrollbar{display:none;width:0;height:0}
+.picker-sheet-title{font-size:16px;font-weight:700;margin-bottom:14px}
+.picker-detail-hdr{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.picker-back-btn{background:var(--grey100);color:var(--grey700);border:none;width:32px;height:32px;border-radius:50%;font-size:15px;cursor:pointer;flex-shrink:0}
+.picker-time-row{display:flex;align-items:center;gap:10px;background:var(--grey100);border-radius:14px;padding:10px 14px;margin-bottom:14px}
+.picker-time-lb{font-size:13px;font-weight:700;color:var(--grey700)}
+.picker-note-input{width:100%;border:1.5px solid var(--grey200);background:var(--white);border-radius:14px;padding:11px 14px;font-size:14px;font-family:inherit;color:var(--black);margin-bottom:14px}
+.picker-note-input:focus{outline:none;border-color:var(--primary)}
+.preset-section-title{font-size:13px;font-weight:700;color:var(--grey700);margin:16px 0 8px}
+.preset-section-title:first-child{margin-top:0}
+.preset-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.preset-chip{position:relative;height:92px;border-radius:14px;overflow:hidden;border:none;cursor:pointer;padding:0;background:var(--grey100) center/cover no-repeat;font-family:inherit}
+.preset-chip:active{transform:scale(.95)}
+.preset-chip::after{content:'';position:absolute;inset:0;background:rgba(0,0,0,.28);pointer-events:none}
+.preset-chip .ov{position:absolute;inset:0;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;padding:8px 4px;background:linear-gradient(transparent 35%, rgba(0,0,0,.65));color:#fff;font-size:11px;font-weight:700;text-align:center}
+.preset-emoji{font-size:18px}
+.preset-chip .must-badge{top:6px;left:6px;font-size:10px;padding:2px 7px}
+
+/* bottom nav — floating pill bar with a sliding active thumb */
+.bottom-nav{position:fixed;bottom:calc(16px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:468px;background:var(--white);border-radius:24px;box-shadow:0 4px 20px rgba(0,0,0,0.1);display:flex;padding:8px;z-index:20}
+.bn-thumb{position:absolute;top:8px;left:8px;height:calc(100% - 16px);background:var(--primary-light);border-radius:16px;box-shadow:0 2px 8px rgba(0,0,0,0.06);transition:transform .3s cubic-bezier(.2,.8,.2,1);z-index:0}
+.nav-item{position:relative;z-index:1;flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:none;cursor:pointer;padding:8px 4px;border-radius:16px;font-family:inherit;color:var(--grey500);min-height:44px}
+.nav-item .n-ic{font-size:22px;line-height:1;transition:.2s}
+.nav-item .n-lb-row{display:flex;align-items:center;gap:4px}
+.nav-item .n-num{width:14px;height:14px;border-radius:50%;background:var(--grey100);color:var(--grey500);font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;transition:.2s}
+.nav-item .n-lb{font-size:10px;font-weight:600;color:var(--grey500);transition:.2s}
+.nav-item.on .n-num{background:var(--primary);color:#fff}
+.nav-item.on .n-lb{color:var(--primary)}
+
+/* floating add-place button */
+.fab-wrap{position:fixed;bottom:calc(104px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:468px;height:0;pointer-events:none;z-index:19}
+.fab{position:absolute;right:0;bottom:0;width:56px;height:56px;border-radius:50%;background:var(--primary);color:#fff;border:none;font-size:26px;font-weight:400;line-height:1;box-shadow:0 4px 20px rgba(232,116,30,0.35);cursor:pointer;pointer-events:auto;display:flex;align-items:center;justify-content:center;transition:transform .25s cubic-bezier(.2,.8,.2,1)}
+.fab:active{transform:scale(.94)}
+.fab.open{transform:rotate(45deg)}
+.fab.open:active{transform:rotate(45deg) scale(.94)}
+
+.install-sheet-hero{width:100%;height:200px;overflow:hidden;background:#FB6A08}
+.install-sheet-hero img{width:100%;height:100%;object-fit:cover;object-position:center 30%}
+.install-steps{display:flex;flex-direction:column;gap:14px;margin-top:16px}
+.install-step{display:flex;align-items:center;gap:12px;font-size:14px;color:var(--black);line-height:1.5;word-break:keep-all}
+.install-step-ic{flex-shrink:0;width:26px;height:26px;border-radius:50%;background:var(--primary-light);color:var(--primary);font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center}
+
+/* accommodation expand sheet — Airbnb-style detail / register page */
+@keyframes sheetIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
+@keyframes sheetOut{from{opacity:1;transform:scale(1)}to{opacity:0;transform:scale(.94)}}
+.acc-sheet-backdrop{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;justify-content:center;animation:sheetIn .32s cubic-bezier(.2,.8,.2,1)}
+/* the install sheet can open while the splash (z-index 9999) is still
+   showing on a non-installed web visit, so it needs to sit above it */
+#installSheetRoot .acc-sheet-backdrop{z-index:10000}
+.acc-sheet-backdrop.closing{animation:sheetOut .2s cubic-bezier(.4,0,1,1) forwards}
+.acc-sheet{width:100%;max-width:500px;height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--white);scrollbar-width:none;-ms-overflow-style:none}
+.acc-sheet::-webkit-scrollbar{display:none;width:0;height:0}
+
+.acc-sheet-hero{position:relative;height:300px;background:var(--grey100) center/cover no-repeat;display:flex;overflow:hidden}
+.acc-sheet-hero::after{content:'';position:absolute;inset:0;background:rgba(0,0,0,.25);pointer-events:none}
+.acc-sheet-hero-fallback{flex:1;display:flex;align-items:center;justify-content:center;font-size:56px;background:var(--primary-light);color:var(--primary);z-index:1}
+.acc-sheet-back{position:absolute;top:calc(16px + env(safe-area-inset-top));left:16px;width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,.4);color:#fff;border:none;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(4px);z-index:2}
+.acc-sheet-body{background:var(--white);border-radius:28px 28px 0 0;margin-top:-20px;position:relative;padding:24px 20px 40px;min-height:120px}
+.acc-sheet-title{font-size:20px;font-weight:800;line-height:1.4}
+.acc-sheet-loc{font-size:14px;color:var(--grey500);margin-top:8px;white-space:pre-wrap;line-height:1.6}
+.acc-sheet-details{font-size:14px;color:var(--grey700);line-height:1.7;margin-top:16px;white-space:pre-wrap}
+.acc-sheet-link{display:block;text-align:center;margin-top:24px;background:var(--primary);color:#fff;border-radius:16px;padding:16px;font-weight:700;text-decoration:none}
+.acc-sheet-link:active{background:var(--primary-hover)}
+.acc-sheet-actions{display:flex;gap:8px;margin-top:12px}
+.acc-sheet-actions button{flex:1;padding:14px;border-radius:14px;border:none;font-weight:700;font-family:inherit;cursor:pointer;font-size:14px}
+.acc-sheet-edit-btn{background:var(--grey100);color:var(--grey700)}
+.acc-sheet-del-btn{background:var(--grey100);color:var(--grey500)}
+
+/* accommodation shown inline under the 숙소 tab (same look, not a full-screen sheet) */
+.acc-inline-hero{border-radius:24px 24px 0 0}
+.acc-inline-body{border-radius:0 0 24px 24px;box-shadow:0 2px 12px rgba(0,0,0,0.06)}
+
+/* place detail sheet info rows (same sheet shell as accommodation) */
+.place-info-rows{display:flex;flex-direction:column;gap:16px;margin-top:18px}
+.place-info-row{display:flex;gap:12px;align-items:flex-start}
+.pi-ic{font-size:18px;flex-shrink:0;margin-top:1px}
+.pi-lb{font-size:12px;color:var(--grey500);font-weight:600;margin-bottom:2px}
+.pi-val{font-size:14px;color:var(--black);line-height:1.6;font-weight:500}
+
+/* accommodation register / edit form (inside the same sheet) */
+.acc-form-hdr{display:flex;align-items:center;gap:14px;padding:20px;border-bottom:1px solid var(--grey100)}
+.acc-form-hdr button{background:none;border:none;font-size:18px;color:var(--grey700);cursor:pointer;padding:4px}
+.acc-form-hdr .t{font-size:16px;font-weight:700}
+.acc-form-body{padding:20px;display:flex;flex-direction:column;gap:10px}
+.acc-form-body input,.acc-form-body textarea{border:1.5px solid var(--grey200);background:var(--white);border-radius:14px;padding:12px 14px;font-size:14px;font-family:inherit;color:var(--black);width:100%}
+.acc-form-body input:focus,.acc-form-body textarea:focus{outline:none;border-color:var(--primary)}
+.acc-form-body textarea{min-height:90px;resize:vertical}
+.acc-form-fetch-row{display:flex;gap:8px}
+.acc-form-fetch-row input{flex:1}
+.acc-form-fetch-btn{background:var(--grey100);color:var(--grey700);border:none;border-radius:14px;padding:0 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap}
+.acc-form-fetch-btn:active{transform:scale(.96)}
+.acc-form-preview{width:100%;height:160px;border-radius:14px;object-fit:cover;background:var(--grey100)}
+.acc-form-save{background:var(--primary);color:#fff;border:none;border-radius:14px;padding:15px;font-weight:700;font-size:15px;cursor:pointer;margin-top:4px;font-family:inherit}
+.acc-form-save:active{background:var(--primary-hover)}
+.acc-form-label{font-size:12px;color:var(--grey500);font-weight:600;margin:2px 2px -2px}
+</style>
+</head>
+<body>
+<div id="splashScreen"><img id="splashImg" src="icons/splash-bg.jpg" alt=""><button class="splash-install-btn" id="splashInstallBtn" onclick="openInstallSheet()">앱 설치</button></div>
+<div class="app">
+  <div class="top-tabs-float">
+    <div class="top-tabs" id="topTabs"></div>
+  </div>
+
+  <div class="i-bd">
+    <div class="top-bar-row">
+      <input type="text" id="weekThemeInput" class="week-theme-input" placeholder="이번주 테마를 적어보세요" oninput="saveWeekTheme()">
+    </div>
+    <div id="tabsWrap"></div>
+    <div id="scheduleTab">
+      <div id="placesWrap"></div>
+    </div>
+    <div id="accTab" style="display:none"></div>
+    <div id="weekdayTab" style="display:none"></div>
+  </div>
+</div>
+
+<div class="fab-wrap"><button class="fab" id="fabBtn" onclick="togglePicker()">+</button></div>
+<div class="bottom-nav" id="bottomNav"></div>
+<div id="accSheetRoot"></div>
+<div id="pickerSheetRoot"></div>
+<div id="backupSheetRoot"></div>
+<div id="routeSheetRoot"></div>
+
+<div id="installSheetRoot"></div>
+
+<script>
+const START='2026-07-22';
+const END='2026-08-17';
+const STORE_KEY='sydneyScheduleV3';
+// shared cloud store so everyone who opens this page sees the same data.
+// Supabase anon key is meant to be public/client-side (that's the whole
+// point of the "anon" role) — it's safe to ship in this static page.
+const SUPABASE_URL='https://dhtstqnksjoyyshnhksv.supabase.co';
+const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRodHN0cW5rc2pveXlzaG5oa3N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5NjIyNzQsImV4cCI6MjA5ODUzODI3NH0.FMZdCXntYJKxQeYNwfrsy1liJcHIkD2inJ4NzbwLzd4';
+const SUPABASE_TABLE='schedule_data';
+const SUPABASE_ROW_ID='trip';
+
+function toDate(s){const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d);}
+function fmt(d){const y=d.getFullYear(),m=d.getMonth()+1,day=d.getDate();return `${y}-${String(m).padStart(2,'0')}-${String(day).padStart(2,'0')}`;}
+
+function buildWeeks(){
+  const start=toDate(START),end=toDate(END);
+  const days=[];
+  for(let d=new Date(start);d<=end;d.setDate(d.getDate()+1)) days.push(fmt(new Date(d)));
+  const weeks=[];
+  for(let i=0;i<days.length;i+=7) weeks.push(days.slice(i,i+7));
+  return weeks;
+}
+const WEEKS=buildWeeks();
+
+function weekLabel(week){
+  const s=toDate(week[0]),e=toDate(week[week.length-1]);
+  return `${s.getDate()}-${e.getDate()}`;
+}
+
+// first character of that week's theme (meant to be an emoji the user
+// types at the front, e.g. "🎭 오페라 주간") — falls back to a generic
+// pin when no theme is set yet
+function weekIcon(weekIdx){
+  const theme=(data.themes[weekIdx]||'').trim();
+  if(!theme) return '📍';
+  return [...theme][0];
+}
+// ─── place images (auto-matched by keyword, same spots as tour.html) ───
+const PH={
+  opera:'https://images.pexels.com/photos/4062614/pexels-photo-4062614.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&fit=crop',
+  bridge:'https://images.pexels.com/photos/6262898/pexels-photo-6262898.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&fit=crop',
+  bluemtn:'https://images.pexels.com/photos/26825285/pexels-photo-26825285.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&fit=crop',
+  koala:'https://images.pexels.com/photos/2590768/pexels-photo-2590768.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&fit=crop',
+  bondi:'https://images.pexels.com/photos/2607832/pexels-photo-2607832.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&fit=crop',
+  darling:'https://images.pexels.com/photos/995764/pexels-photo-995764.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  garden:'https://images.pexels.com/photos/2253275/pexels-photo-2253275.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  manly:'https://images.pexels.com/photos/1032650/pexels-photo-1032650.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  cafe:'https://images.pexels.com/photos/312418/pexels-photo-312418.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  sunset:'https://images.pexels.com/photos/2531237/pexels-photo-2531237.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  rocks:'https://images.pexels.com/photos/2416600/pexels-photo-2416600.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  zoo:'https://images.pexels.com/photos/1661535/pexels-photo-1661535.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  train:'https://images.pexels.com/photos/2790396/pexels-photo-2790396.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  surf:'https://images.pexels.com/photos/1654489/pexels-photo-1654489.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  food:'https://images.pexels.com/photos/67468/pexels-photo-67468.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  shop:'https://images.pexels.com/photos/135620/pexels-photo-135620.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  art:'https://images.pexels.com/photos/3004909/pexels-photo-3004909.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  ferry:'https://images.pexels.com/photos/2549018/pexels-photo-2549018.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  plane:'https://images.pexels.com/photos/358319/pexels-photo-358319.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  whale:'https://images.pexels.com/photos/3309869/pexels-photo-3309869.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  university:'https://images.pexels.com/photos/34894773/pexels-photo-34894773.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  qvb:'https://images.pexels.com/photos/31282737/pexels-photo-31282737.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  dunes:'https://images.pexels.com/photos/19692696/pexels-photo-19692696.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  lunapark:'https://images.pexels.com/photos/11639893/pexels-photo-11639893.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  aquarium:'https://images.pexels.com/photos/33969651/pexels-photo-33969651.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  hubert:'https://images.pexels.com/photos/5863513/pexels-photo-5863513.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  operabar:'https://images.pexels.com/photos/20636564/pexels-photo-20636564.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  observatory:'https://images.pexels.com/photos/11825646/pexels-photo-11825646.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  bluemtntrain:'https://images.pexels.com/photos/16769950/pexels-photo-16769950.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  bowral:'https://images.pexels.com/photos/4641265/pexels-photo-4641265.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  wombat:'https://images.pexels.com/photos/33720045/pexels-photo-33720045.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  icebergs:'https://images.pexels.com/photos/31099966/pexels-photo-31099966.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  coastalcliff:'https://images.pexels.com/photos/36722392/pexels-photo-36722392.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  cove:'https://images.pexels.com/photos/31934689/pexels-photo-31934689.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  rockybeach:'https://images.pexels.com/photos/33421123/pexels-photo-33421123.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  seashore:'https://images.pexels.com/photos/4321802/pexels-photo-4321802.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  marketstalls:'https://images.pexels.com/photos/33199780/pexels-photo-33199780.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  barangaroo:'https://images.pexels.com/photos/34789111/pexels-photo-34789111.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  hydepark:'https://images.pexels.com/photos/33792543/pexels-photo-33792543.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  newtownart:'https://images.pexels.com/photos/1028885/pexels-photo-1028885.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  ausmuseum:'https://images.pexels.com/photos/16922993/pexels-photo-16922993.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  watsonsbay:'https://images.pexels.com/photos/38083123/pexels-photo-38083123.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  thegap:'https://images.pexels.com/photos/31511694/pexels-photo-31511694.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  statelibrary:'https://images.pexels.com/photos/31376442/pexels-photo-31376442.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  lavendraimg:'https://images.pexels.com/photos/20408440/pexels-photo-20408440.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  bartottisimg:'https://images.pexels.com/photos/19763210/pexels-photo-19763210.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  winery:'https://images.pexels.com/photos/2547218/pexels-photo-2547218.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  mamak:'https://images.pexels.com/photos/33863999/pexels-photo-33863999.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  doylesimg:'https://images.pexels.com/photos/6839650/pexels-photo-6839650.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  carriageworks:'https://images.pexels.com/photos/37321079/pexels-photo-37321079.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  glebemarket:'https://images.pexels.com/photos/3812433/pexels-photo-3812433.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  fishmarket:'https://images.pexels.com/photos/30055277/pexels-photo-30055277.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  singleo:'https://images.pexels.com/photos/30119453/pexels-photo-30119453.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  paramount:'https://images.pexels.com/photos/6867/pexels-photo-6867.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  apbakery:'https://images.pexels.com/photos/3341067/pexels-photo-3341067.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  twogoodeggs:'https://images.pexels.com/photos/4109507/pexels-photo-4109507.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  gumption:'https://images.pexels.com/photos/10882802/pexels-photo-10882802.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  campos:'https://images.pexels.com/photos/29269653/pexels-photo-29269653.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  bills:'https://images.pexels.com/photos/14335957/pexels-photo-14335957.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  theeca:'https://images.pexels.com/photos/12096080/pexels-photo-12096080.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  aslan:'https://images.pexels.com/photos/15793853/pexels-photo-15793853.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  paddysmarket:'https://images.pexels.com/photos/2601274/pexels-photo-2601274.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  observatoryhill:'https://images.pexels.com/photos/6195016/pexels-photo-6195016.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  milsonspoint:'https://images.pexels.com/photos/15229717/pexels-photo-15229717.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  mca:'https://images.pexels.com/photos/16842473/pexels-photo-16842473.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  cookies:'https://images.pexels.com/photos/1626668/pexels-photo-1626668.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop',
+  gelato:'https://images.pexels.com/photos/5061192/pexels-photo-5061192.jpeg?auto=compress&cs=tinysrgb&w=400&h=300&fit=crop'
+};
+function plImg(name){
+  const s=name.toLowerCase();
+  if(s.includes('공항')||s.includes('airport')||s.includes('✈')) return PH.plane;
+  if(s.includes('휴버트')||s.includes('hubert')) return PH.hubert;
+  if(s.includes('오페라 바')||s.includes('오페라바')) return PH.operabar;
+  if(s.includes('오페라')) return PH.opera;
+  if(s.includes('하버브릿지')||s.includes('bridgeclimb')||s.includes('bridge')) return PH.bridge;
+  if(s.includes('천문대')) return PH.observatory;
+  if(s.includes('밀슨스')) return PH.milsonspoint;
+  if(s.includes('블루마운틴 기차')) return PH.bluemtntrain;
+  if(s.includes('보우럴')) return PH.bowral;
+  if(s.includes('블루마운틴')||s.includes('scenic')||s.includes('echo')||s.includes('katoomba')||s.includes('leura')) return PH.bluemtn;
+  if(s.includes('타랄가')) return PH.wombat;
+  if(s.includes('코알라')||s.includes('페더데일')||s.includes('캥거루')) return PH.koala;
+  if(s.includes('본다이 아이스버그')) return PH.icebergs;
+  if(s.includes('매켄지')) return PH.coastalcliff;
+  if(s.includes('타마라마')) return PH.cove;
+  if(s.includes('브론테')) return PH.rockybeach;
+  if(s.includes('쿠지')) return PH.seashore;
+  if(s.includes('본다이')||s.includes('bondi')) return PH.bondi;
+  if(s.includes('타롱가')||s.includes('taronga')) return PH.zoo;
+  if(s.includes('바랑가루')||s.includes('barangaroo')) return PH.barangaroo;
+  if(s.includes('달링')) return PH.darling;
+  if(s.includes('보타닉')||s.includes('정원')) return PH.garden;
+  if(s.includes('하이드파크')||s.includes('하이드 파크')||s.includes('hyde park')) return PH.hydepark;
+  if(s.includes('맨리')||s.includes('manly')||s.includes('셸리')) return PH.manly;
+  if(s.includes('록스 마켓')) return PH.marketstalls;
+  if(s.includes('록스')||s.includes('rocks')) return PH.rocks;
+  if(s.includes('서핑')||s.includes('surf')||s.includes('카약')) return PH.surf;
+  if(s.includes('페리')||s.includes('ferry')) return PH.ferry;
+  if(s.includes('기차')||s.includes('central역')) return PH.train;
+  if(s.includes('싱글오')) return PH.singleo;
+  if(s.includes('파라마운트')) return PH.paramount;
+  if(s.includes('베이커리')) return PH.apbakery;
+  if(s.includes('투 굿 에그스')) return PH.twogoodeggs;
+  if(s.includes('검션')) return PH.gumption;
+  if(s.includes('캄포스')) return PH.campos;
+  if(s.includes('빌즈')) return PH.bills;
+  if(s.includes('theeca')) return PH.theeca;
+  if(s.includes('버터보이')||s.includes('butterboy')) return PH.cookies;
+  if(s.includes('아니타')||s.includes('anita')) return PH.gelato;
+  if(s.includes('카페')||s.includes('브런치')) return PH.cafe;
+  if(s.includes('라벤드라')) return PH.lavendraimg;
+  if(s.includes('tottis')) return PH.bartottisimg;
+  if(s.includes('아슬란')) return PH.aslan;
+  if(s.includes('와이너리')) return PH.winery;
+  if(s.includes('마막')) return PH.mamak;
+  if(s.includes('doyles')) return PH.doylesimg;
+  if(s.includes('점심')||s.includes('저녁')||s.includes('디너')||s.includes('레스토랑')||s.includes('맛집')||s.includes('마라탕')) return PH.food;
+  if(s.includes('캐리지웍스')) return PH.carriageworks;
+  if(s.includes('글리브')) return PH.glebemarket;
+  if(s.includes('피쉬마켓')) return PH.fishmarket;
+  if(s.includes('패디스')) return PH.paddysmarket;
+  if(s.includes('쇼핑')||s.includes('기념품')||s.includes('마켓')) return PH.shop;
+  if(s.includes('뉴타운')||s.includes('newtown')) return PH.newtownart;
+  if(s.includes('박물관')||s.includes('museum')) return PH.ausmuseum;
+  if(s.includes('현대미술관')||s.includes('현대 미술관')||s.includes('mca')) return PH.mca;
+  if(s.includes('미술')||s.includes('갤러리')) return PH.art;
+  if(s.includes('왓슨스')) return PH.watsonsbay;
+  if(s.includes('갭파크')||s.includes('갭 파크')||s.includes('the gap')) return PH.thegap;
+  if(s.includes('일몰')||s.includes('일출')||s.includes('sunset')) return PH.sunset;
+  if(s.includes('고래')||s.includes('whale')) return PH.whale;
+  if(s.includes('도서관')||s.includes('library')) return PH.statelibrary;
+  if(s.includes('대학')||s.includes('university')) return PH.university;
+  if(s.includes('옵저버토리')) return PH.observatoryhill;
+  if(s.includes('qvb')) return PH.qvb;
+  if(s.includes('루나')||s.includes('luna park')) return PH.lunapark;
+  if(s.includes('아쿠아리움')||s.includes('씨 라이프')||s.includes('sea life')) return PH.aquarium;
+  if(s.includes('포트 스테판')||s.includes('포트스테판')) return PH.dunes;
+  return PH.opera;
+}
+
+// ─── preset places (same spots tour.html already built itineraries around) ───
+// category: 'landmark' | 'food' — used to split the + picker into two sections
+const PRESETS=[
+  {name:'오페라하우스', emoji:'🎭', category:'landmark'},
+  {name:'하버브릿지', emoji:'🌉', category:'landmark'},
+  {name:'블루마운틴', emoji:'⛰️', category:'landmark'},
+  {name:'페더데일 동물원', emoji:'🐨', category:'landmark'},
+  {name:'타롱가 동물원', emoji:'🦁', category:'landmark'},
+  {name:'본다이 비치', emoji:'🏖️', category:'landmark'},
+  {name:'맨리 비치', emoji:'🌊', category:'landmark'},
+  {name:'더 록스', emoji:'🏛️', category:'landmark'},
+  {name:'달링하버', emoji:'🌃', category:'landmark'},
+  {name:'로얄 보타닉 가든', emoji:'🌿', category:'landmark'},
+  {name:'카페 브런치', emoji:'☕', category:'food'},
+  {name:'맛집 탐방', emoji:'🍽️', category:'food'},
+  {name:'로컬 마켓 쇼핑', emoji:'🛍️', category:'landmark'},
+  {name:'미술관·갤러리', emoji:'🎨', category:'landmark'},
+  {name:'서핑 체험', emoji:'🏄', category:'landmark'},
+  {name:'하버 페리 크루즈', emoji:'⛴️', category:'landmark'},
+  {name:'블루마운틴 기차', emoji:'🚂', category:'landmark'},
+  {name:'일몰 명소', emoji:'🌅', category:'landmark'},
+  {name:'혹등고래 투어', emoji:'🐋', category:'landmark'},
+  {name:'시드니 대학교', emoji:'🎓', category:'landmark'},
+  {name:'옵저버토리 힐 공원', emoji:'🔭', category:'landmark'},
+  {name:'본다이 아이스버그', emoji:'🏊', category:'landmark'},
+  {name:'QVB', emoji:'🏬', category:'landmark'},
+  {name:'록스 마켓', emoji:'🧺', category:'landmark'},
+  {name:'포트 스테판 투어', emoji:'🏜️', category:'landmark'},
+  {name:'루나 파크', emoji:'🎡', category:'landmark'},
+  {name:'패디스 마켓', emoji:'🛒', category:'landmark'},
+  {name:'씨 라이프 시드니 아쿠아리움', emoji:'🐠', category:'landmark'},
+  {name:'캐리지웍스 파머스 마켓', emoji:'🥬', category:'landmark'},
+  {name:'글리브 마켓', emoji:'👜', category:'landmark'},
+  {name:'시드니 피쉬마켓', emoji:'🐟', category:'landmark'},
+  {name:'하이드파크', emoji:'🌳', category:'landmark'},
+  {name:'뉴사우스웨일스 도서관', emoji:'📚', category:'landmark'},
+  {name:'시드니 현대 미술관', emoji:'🖼️', category:'landmark'},
+  {name:'뉴타운', emoji:'🏘️', category:'landmark'},
+  {name:'바랑가루', emoji:'🌆', category:'landmark'},
+  {name:'라벤드라 인디안', emoji:'🍛', category:'food'},
+  {name:'Bar Tottis', emoji:'🍷', category:'food'},
+  {name:'싱글오', emoji:'☕', category:'food'},
+  {name:'파라마운트 커피', emoji:'☕', category:'food'},
+  {name:'아슬란', emoji:'🍽️', category:'food'},
+  {name:'A.P베이커리', emoji:'🥐', category:'food'},
+  {name:'투 굿 에그스 카페', emoji:'🍳', category:'food'},
+  {name:'검션 커피', emoji:'☕', category:'food'},
+  {name:'오페라 바', emoji:'🍸', category:'food'},
+  {name:'넘버원 마라탕', emoji:'🌶️', category:'food'},
+  {name:'캄포스 커피 본점', emoji:'☕', category:'food'},
+  {name:'빌즈', emoji:'🍳', category:'food'},
+  {name:'시드니 천문대', emoji:'🔭', category:'landmark'},
+  {name:'밀슨스 포인트', emoji:'🌉', category:'landmark'},
+  {name:'매켄지 포인트', emoji:'🏖️', category:'landmark'},
+  {name:'타마라마 포인트', emoji:'🏖️', category:'landmark'},
+  {name:'브론테 비치', emoji:'🏖️', category:'landmark'},
+  {name:'쿠지 비치', emoji:'🏖️', category:'landmark'},
+  {name:'보우럴 마을', emoji:'🌾', category:'landmark'},
+  {name:'와이너리 테이스팅', emoji:'🍷', category:'landmark'},
+  {name:'타랄가 동물원', emoji:'🐾', category:'landmark'},
+  {name:'오스트레일리안 박물관', emoji:'🦴', category:'landmark'},
+  {name:'왓슨스 베이', emoji:'⛵', category:'landmark'},
+  {name:'갭 파크', emoji:'🌊', category:'landmark'},
+  {name:'Theeca', emoji:'🥞', category:'food'},
+  {name:'마막', emoji:'🍛', category:'food'},
+  {name:'Doyles', emoji:'🐟', category:'food'},
+  {name:'Restaurant Hubert', emoji:'🎷', category:'food'},
+  {name:'버터보이', emoji:'🍪', category:'food', must:true},
+  {name:'아니타 젤라또', emoji:'🍨', category:'food', must:true}
+];
+
+// PRESETS entries marked must:true get a "필수" badge in the picker
+// grid and place detail sheet
+const MUST_PRESETS=new Set(PRESETS.filter(p=>p.must).map(p=>p.name));
+
+// ─── reference info shown on each place's detail sheet ───
+// approximate/typical values for planning purposes — always worth
+// double-checking hours & prices closer to the trip date
+const PLACE_INFO={
+  '오페라하우스':{hours:'가이드 투어 09:00-17:00 (매일)', price:'가이드 투어 A$48~', highlights:'조개껍질 모양 지붕, 하버브릿지와 함께 시드니 대표 야경'},
+  '하버브릿지':{hours:'BridgeClimb 07:00-19:00 (예약제)', price:'BridgeClimb A$250~ / 도보 횡단 무료', highlights:'134m 정상에서 보는 시드니 파노라마, 일몰 시간대 추천'},
+  '블루마운틴':{hours:'Scenic World 09:00-17:00', price:'Discovery Pass A$49~', highlights:'Three Sisters 전망, 세계 최급경사 52도 Scenic Railway'},
+  '페더데일 동물원':{hours:'09:00-17:30', price:'입장료 A$46~', highlights:'코알라 안고 사진 촬영, 캥거루 직접 먹이주기'},
+  '타롱가 동물원':{hours:'09:30-17:00', price:'입장료 A$51~', highlights:'시드니 하버 뷰와 함께 보는 동물원, 페리로 12분'},
+  '본다이 비치':{hours:'24시간 개방', price:'무료', highlights:'아이스버그 수영장, 본다이-쿠지 코스털 워크 시작점'},
+  '맨리 비치':{hours:'24시간 개방', price:'페리 왕복 A$9~', highlights:'서큘러키에서 페리 30분, 여유로운 해변 산책'},
+  '더 록스':{hours:'상점 10:00-18:00, 주말 마켓 10:00-17:00', price:'무료 (마켓 상품 별도)', highlights:'시드니 초기 정착지 골목길, 주말 핸드메이드 마켓'},
+  '달링하버':{hours:'24시간 개방', price:'무료', highlights:'워터프런트 야경, 정기 불꽃놀이 이벤트 확인'},
+  '로얄 보타닉 가든':{hours:'07:00-일몰', price:'무료', highlights:'하버브릿지·오페라하우스 뷰포인트, Mrs Macquarie\'s Chair'},
+  '카페 브런치':{hours:'07:00-15:00 (매장별 상이)', price:'1인 A$20~35', highlights:'스매시드 아보카도, 플랫화이트 커피'},
+  '맛집 탐방':{hours:'매장별 상이', price:'1인 A$30~60', highlights:'피쉬앤칩스부터 파인다이닝까지 다양한 선택'},
+  '로컬 마켓 쇼핑':{hours:'주말 10:00-16:00 (마켓별 상이)', price:'무료 입장', highlights:'패딩턴 마켓 핸드메이드 굿즈, 빈티지 아이템'},
+  '미술관·갤러리':{hours:'10:00-17:00 (월요일 휴관 多)', price:'상설전 무료 / 특별전 별도', highlights:'NSW 아트갤러리, MCA 현대미술관'},
+  '서핑 체험':{hours:'레슨 09:00, 11:00, 14:00 (예약제)', price:'그룹 레슨 A$70~', highlights:'본다이·맨리 비치 초보자 강습 인기'},
+  '하버 페리 크루즈':{hours:'06:00-23:00 (노선별 상이)', price:'Opal 카드 기준 A$7.14~', highlights:'서큘러키↔맨리 노선에서 오페라하우스·하버브릿지 조망'},
+  '블루마운틴 기차':{hours:'Central역 첫차 05:00~', price:'Opal 카드 기준 A$8.83~', highlights:'카툼바까지 약 2시간, 창밖 산악 풍경'},
+  '일몰 명소':{hours:'일몰 시각 확인 (계절별 상이)', price:'무료', highlights:'Watsons Bay, Mrs Macquarie\'s Chair 추천'},
+  '혹등고래 투어':{hours:'오전 8:30 / 오후 1:00 출항 (5월~11월 시즌)', price:'성인 A$70~99 (2.5~3시간 크루즈)', highlights:'혹등고래 북상·남하 이동철과 겹치는 7-8월 최적기, 서큘러키·맨리에서 출항'},
+  '시드니 대학교':{hours:'캠퍼스 상시 개방 (건물별 상이)', price:'무료', highlights:'해리포터 감성의 고딕 사암 건축, 쿼드랭글 포토존'},
+  '옵저버토리 힐 공원':{hours:'24시간 개방', price:'무료', highlights:'하버브릿지 뷰포인트, 시드니 천문대(Sydney Observatory) 위치'},
+  '본다이 아이스버그':{hours:'수영장 06:00-19:00 (요일별 상이)', price:'입장료 A$8~', highlights:'파도가 넘치는 바다 수영장, 본다이 비치 뷰'},
+  'QVB':{hours:'09:00-18:00 (목요일 21:00까지)', price:'무료 입장 (쇼핑 별도)', highlights:'빅토리아 양식 유리돔 건축, 명물 시계탑'},
+  '록스 마켓':{hours:'주말 10:00-17:00', price:'무료 입장', highlights:'핸드메이드 공예품·기념품, 더 록스 골목 분위기'},
+  '포트 스테판 투어':{hours:'데이투어 08:00 출발 (업체별 상이)', price:'A$120~180 (샌드보딩·돌고래 크루즈 포함)', highlights:'남반구 최대 사구 샌드보딩, 돌고래 관찰 크루즈'},
+  '루나 파크':{hours:'11:00-18:00 (요일별 상이)', price:'자유이용권 A$59.99~', highlights:'하버뷰 롤러코스터, 1935년 개장 클래식 놀이공원'},
+  '패디스 마켓':{hours:'목~일 10:00-18:00', price:'무료 입장', highlights:'기념품·과일·잡화 실내 마켓, 차이나타운 인근'},
+  '씨 라이프 시드니 아쿠아리움':{hours:'10:00-18:00', price:'성인 A$47~ (온라인 할인)', highlights:'듀공 전시, 그레이트 배리어 리프 터널'},
+  '캐리지웍스 파머스 마켓':{hours:'토요일 08:00-13:00', price:'무료 입장', highlights:'로컬 농산물·베이커리·커피, 브런치하기 좋은 마켓'},
+  '글리브 마켓':{hours:'토요일 10:00-16:00', price:'무료 입장', highlights:'빈티지·플리마켓, 세계음식 푸드트럭'},
+  '시드니 피쉬마켓':{hours:'07:00-16:00', price:'1인 A$15~30', highlights:'피쉬 타코·해산물 직화구이, 남반구 최대 수산시장'},
+  '하이드파크':{hours:'24시간 개방', price:'무료', highlights:'아치볼드 분수, 도심 속 산책로'},
+  '뉴사우스웨일스 도서관':{hours:'09:00-20:00 (주말 단축)', price:'무료', highlights:'모자이크 타일 바닥의 미첼 열람실, 고풍스러운 내부'},
+  '시드니 현대 미술관':{hours:'10:00-17:00 (월요일 휴관)', price:'상설전 무료 / 특별전 별도', highlights:'서큘러키 바로 옆, 호주·아시아 태평양 현대미술 컬렉션'},
+  '뉴타운':{hours:'상점별 상이', price:'무료 (쇼핑·식비 별도)', highlights:'킹 스트리트 스트리트 아트·벽화, 개성있는 카페·빈티지숍'},
+  '바랑가루':{hours:'24시간 개방', price:'무료', highlights:'워터프런트 산책로, 하버 스카이라인 뷰'},
+  '라벤드라 인디안':{hours:'11:30-15:00, 17:30-22:00', price:'1인 A$25~40', highlights:'정통 인도 커리, 현지인 추천 맛집'},
+  'Bar Tottis':{hours:'12:00-22:00 (요일별 상이)', price:'1인 A$30~50', highlights:'이탈리안 스몰플레이트, 내추럴 와인'},
+  '싱글오':{hours:'07:00-15:00', price:'커피 A$5~', highlights:'시드니 스페셜티 커피 원조, 서리힐즈 로스터리'},
+  '파라마운트 커피':{hours:'07:00-15:00', price:'커피 A$5~', highlights:'파라마운트 하우스 내 감성 카페'},
+  '아슬란':{hours:'매장별 상이', price:'1인 A$25~40', highlights:'현지인 추천 맛집'},
+  'A.P베이커리':{hours:'07:00-15:00 (매진 시 조기마감)', price:'페이스트리 A$6~', highlights:'크루아상 맛집으로 유명, 오픈런 추천'},
+  '투 굿 에그스 카페':{hours:'07:00-15:00', price:'브런치 A$20~30', highlights:'에그 베네딕트 인기, 아늑한 브런치 카페'},
+  '검션 커피':{hours:'07:00-15:00', price:'커피 A$5~', highlights:'로컬 스페셜티 커피'},
+  '오페라 바':{hours:'11:30-24:00', price:'음료 A$15~ / 스낵 A$20~', highlights:'오페라하우스·하버브릿지 뷰 야외 바'},
+  '넘버원 마라탕':{hours:'11:00-21:00', price:'1인 A$20~30', highlights:'한국인 입맛 저격 마라탕, 매콤한 국물 요리'},
+  '캄포스 커피 본점':{hours:'07:00-15:00', price:'커피 A$5~', highlights:'호주 대표 스페셜티 커피 브랜드 1호점'},
+  '빌즈':{hours:'07:30-15:00', price:'브런치 A$25~35', highlights:'리코타 팬케이크로 유명한 시드니 브런치 원조'},
+  '시드니 천문대':{hours:'10:00-17:00 (야간 투어 별도 예약)', price:'무료 입장 / 야간 투어 A$18~', highlights:'옵저버토리 힐 언덕 위 천문대, 하버브릿지 뷰'},
+  '밀슨스 포인트':{hours:'24시간 개방', price:'무료', highlights:'하버브릿지·오페라하우스가 한 프레임에 담기는 포토스팟'},
+  '매켄지 포인트':{hours:'24시간 개방', price:'무료', highlights:'본다이-쿠지 코스털 워크 중간 지점, 절벽 전망'},
+  '타마라마 포인트':{hours:'24시간 개방', price:'무료', highlights:'일명 글래머라마 비치, 작지만 아름다운 만'},
+  '브론테 비치':{hours:'24시간 개방', price:'무료', highlights:'현지인들이 사랑하는 조용한 비치, 피크닉 명소'},
+  '쿠지 비치':{hours:'24시간 개방', price:'무료', highlights:'본다이보다 한적한 분위기, 코스털 워크 종점'},
+  '보우럴 마을':{hours:'상점별 상이 (주로 09:00-17:00)', price:'무료 (식사·쇼핑 별도)', highlights:'서던하이랜즈 대표 마을, 한적한 컨트리 감성'},
+  '와이너리 테이스팅':{hours:'11:00-17:00 (예약 권장)', price:'테이스팅 A$20~40 (구매시 차감)', highlights:'서던하이랜즈·헌터밸리 와이너리, 로컬 와인 시음'},
+  '타랄가 동물원':{hours:'09:00-17:00', price:'입장료 A$40~', highlights:'웜뱃 인카운터 체험, 서던하이랜즈 근교 동물원'},
+  '오스트레일리안 박물관':{hours:'10:00-17:00', price:'상설전 무료 / 특별전 별도', highlights:'호주 원주민 문화·자연사 전시, 공룡 화석'},
+  '왓슨스 베이':{hours:'24시간 개방', price:'페리 편도 A$7.14~', highlights:'더 갭 절벽 전망, 도일스 피시앤칩스'},
+  '갭 파크':{hours:'24시간 개방', price:'무료', highlights:'시드니 대표 일몰·절벽 뷰포인트'},
+  'Theeca':{hours:'07:00-15:00', price:'브런치 A$20~30', highlights:'현지인 추천 브런치 카페'},
+  '마막':{hours:'11:00-22:00 (요일별 상이)', price:'1인 A$20~30', highlights:'로티 & 말레이시아 커리, 헤이마켓 인기 맛집'},
+  'Doyles':{hours:'12:00-21:00 (요일별 상이)', price:'1인 A$40~60', highlights:'왓슨스 베이 대표 피시앤칩스 & 시푸드'},
+  'Restaurant Hubert':{hours:'17:00-24:00 (목~토 연장, 주방 01:00까지)', price:'요리 A$25~ / 음료 A$18~', highlights:'15 Bligh St, 촛불 조명·재즈 라이브의 파리지앵 감성 프렌치 다이닝'},
+  '버터보이':{hours:'매장별 상이 (Manly·Broadway·Brookvale·Chatswood)', price:'쿠키 1개 A$8.50~9', highlights:'시드니 대표 쿠키 맛집, 솔티드 카라멜 쿠키 필수(전체적으로 단 편)'},
+  '아니타 젤라또':{hours:'10:00-22:00 (지점·요일별 상이)', price:'1스쿱 A$6~', highlights:'헤이즐넛 초코 크런치 강력 추천, Barangaroo·Manly·Bondi 등 다수 지점'}
+};
+function mapsUrl(name){ return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name+' Sydney')}`; }
+
+function loadData(){
+  let d=null;
+  try{
+    const raw=localStorage.getItem(STORE_KEY);
+    if(raw) d=JSON.parse(raw);
+  }catch(e){}
+  if(!d){
+    d={
+      accommodations:{},
+      plans:{}
+    };
+  }
+  // migrate plan entries saved as plain strings (pre-time-field versions) to {name,time}
+  Object.keys(d.plans||{}).forEach(k=>{
+    d.plans[k]=(d.plans[k]||[]).map(item=>typeof item==='string' ? {name:item, time:''} : item);
+  });
+  // migrate the old combined "weekend" tab into "sat" now that it's split into 토요일/일요일
+  Object.keys(d.plans||{}).forEach(k=>{
+    const m=k.match(/^(\d+)-weekend$/);
+    if(!m) return;
+    const satKey=`${m[1]}-sat`;
+    d.plans[satKey]=(d.plans[satKey]||[]).concat(d.plans[k]);
+    delete d.plans[k];
+  });
+  d.themes=d.themes||{};
+  d.weekdayArea=d.weekdayArea||{};
+  return d;
+}
+function saveData(){
+  data.lastModified=Date.now();
+  localStorage.setItem(STORE_KEY, JSON.stringify(data));
+  pushToRemote();
+}
+
+function supabaseHeaders(){
+  return {
+    'apikey': SUPABASE_ANON_KEY,
+    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+    'Content-Type': 'application/json'
+  };
+}
+
+function pushToRemote(){
+  fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?on_conflict=id`, {
+    method:'POST',
+    headers: Object.assign(supabaseHeaders(), { 'Prefer':'resolution=merge-duplicates,return=minimal' }),
+    body: JSON.stringify({ id: SUPABASE_ROW_ID, data, updated_at: new Date().toISOString() })
+  }).catch(()=>{});
+}
+
+// pulls the shared copy on load (and periodically) so everyone sees
+// the same data; falls back to local-only silently if offline or the
+// sync service is unreachable.
+//
+// only apply the remote copy if it's actually newer than what we have
+// locally — otherwise a save can get raced and reverted: register
+// something, then a periodic/visibility sync pulls a remote copy from
+// just before that PUT finished propagating and wipes it right back out
+async function syncFromRemote(){
+  try{
+    const res=await fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?id=eq.${SUPABASE_ROW_ID}&select=data`, {
+      headers: supabaseHeaders(),
+      cache:'no-store'
+    });
+    if(!res.ok) return;
+    const rows=await res.json();
+    if(!rows || !rows.length || !rows[0].data) return;
+    const remote=rows[0].data;
+    if(JSON.stringify(remote)===JSON.stringify(data)) return;
+    if((remote.lastModified||0) <= (data.lastModified||0)) return;
+    data=Object.assign({accommodations:{}, plans:{}, themes:{}}, remote);
+    localStorage.setItem(STORE_KEY, JSON.stringify(data));
+    refreshAll();
+  }catch(e){}
+}
+
+function refreshAll(){
+  renderTabs();
+  renderWeekTheme();
+  renderAccTab();
+  renderPlacesWrap();
+}
+
+// backup/restore — a safety net since PWA storage isn't always reliable
+// across contexts (e.g. iOS Safari can partition storage differently
+// between a regular tab and a home-screen-installed app)
+function openBackupSheet(){
+  document.body.classList.add('sheet-open');
+  const json=JSON.stringify(data, null, 2);
+  document.getElementById('backupSheetRoot').innerHTML=`<div class="acc-sheet-backdrop" onclick="if(event.target===this) closeBackupSheet()">
+    <div class="acc-sheet">
+      <div class="acc-form-hdr">
+        <button onclick="closeBackupSheet()">✕</button>
+        <div class="t">데이터 백업</div>
+      </div>
+      <div class="acc-form-body">
+        <div class="acc-form-label">현재 데이터 (복사해서 안전한 곳에 보관하세요)</div>
+        <textarea id="backupExport" readonly style="min-height:140px;font-size:11px;font-family:monospace">${json}</textarea>
+        <button class="acc-form-fetch-btn" style="align-self:flex-start" onclick="copyBackup()">복사하기</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function closeBackupSheet(){
+  document.body.classList.remove('sheet-open');
+  document.getElementById('backupSheetRoot').innerHTML='';
+}
+
+function isStandalonePwa(){
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true;
+}
+
+function installStepsHtml(){
+  const ua=navigator.userAgent;
+  const isIOS=/iPad|iPhone|iPod/.test(ua) || (ua.includes('Macintosh') && 'ontouchend' in document);
+  if(isIOS){
+    return `
+      <div class="install-step"><span class="install-step-ic">1</span>Safari 하단(또는 상단)의 공유 버튼 <b>⬆️</b>을 탭하세요</div>
+      <div class="install-step"><span class="install-step-ic">2</span>메뉴에서 <b>"홈 화면에 추가"</b>를 선택하세요</div>
+      <div class="install-step"><span class="install-step-ic">3</span>오른쪽 위 <b>추가</b>를 누르면 완료!</div>
+    `;
+  }
+  return `
+    <div class="install-step"><span class="install-step-ic">1</span>브라우저 메뉴(⋮)를 여세요</div>
+    <div class="install-step"><span class="install-step-ic">2</span><b>"홈 화면에 추가"</b> 또는 <b>"앱 설치"</b>를 선택하세요</div>
+    <div class="install-step"><span class="install-step-ic">3</span>안내에 따라 추가하면 완료!</div>
+  `;
+}
+
+function openInstallSheet(){
+  document.body.classList.add('sheet-open');
+  document.getElementById('installSheetRoot').innerHTML=`<div class="acc-sheet-backdrop" onclick="if(event.target===this) closeInstallSheet()">
+    <div class="acc-sheet">
+      <div class="install-sheet-hero"><img src="icons/splash-bg.jpg" alt=""></div>
+      <div class="acc-sheet-body">
+        <div class="acc-sheet-title">홈 화면에 추가하기</div>
+        <div class="install-steps">${installStepsHtml()}</div>
+        <button class="acc-form-save" onclick="closeInstallSheet()">확인</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function closeInstallSheet(){
+  document.body.classList.remove('sheet-open');
+  document.getElementById('installSheetRoot').innerHTML='';
+}
+
+async function copyBackup(){
+  const el=document.getElementById('backupExport');
+  el.select();
+  try{
+    await navigator.clipboard.writeText(el.value);
+    alert('복사되었어요');
+  }catch(e){
+    document.execCommand('copy');
+  }
+}
+
+let data = loadData();
+let curWeek = 0;
+let curSub = 'sat';
+let topTab = 'schedule'; // 'schedule' | 'acc'
+let pickerOpen = false;
+let sheetMode = null; // null | 'edit' | 'place'
+let sheetWeek = null;
+let sheetPlaceIdx = null;
+
+const TOP_TABS=['schedule','acc','weekday'];
+
+function renderTopTabs(){
+  document.getElementById('topTabs').innerHTML = `
+    <div class="tt-thumb" id="ttThumb"></div>
+    <button class="top-tab" onclick="goTopTab('schedule')">여행</button>
+    <button class="top-tab" onclick="goTopTab('acc')">숙소</button>
+    <button class="top-tab" onclick="goTopTab('weekday')">평일</button>
+  `;
+  updateTopTabsActive();
+}
+
+function updateTopTabsActive(){
+  const buttons=document.querySelectorAll('#topTabs .top-tab');
+  const idx=TOP_TABS.indexOf(topTab);
+  buttons.forEach((b,i)=>b.classList.toggle('on', i===idx));
+  document.getElementById('ttThumb').style.transform = `translateX(${idx*100}%)`;
+}
+
+function goTopTab(tab){
+  topTab=tab;
+  updateTopTabsActive();
+  document.getElementById('scheduleTab').style.display = tab==='schedule' ? '' : 'none';
+  document.getElementById('accTab').style.display = tab==='acc' ? '' : 'none';
+  document.getElementById('weekdayTab').style.display = tab==='weekday' ? '' : 'none';
+  document.getElementById('tabsWrap').style.display = tab==='schedule' ? '' : 'none';
+  document.querySelector('.fab-wrap').style.display = tab==='schedule' ? '' : 'none';
+  if(tab==='acc') renderAccTab();
+  if(tab==='weekday') renderWeekdayTab();
+}
+
+function renderWeekTheme(){
+  document.getElementById('weekThemeInput').value = data.themes[curWeek] || '';
+}
+
+function saveWeekTheme(){
+  data.themes[curWeek] = document.getElementById('weekThemeInput').value;
+  saveData();
+  const iconEl=document.querySelectorAll('#bottomNav .n-ic')[curWeek];
+  if(iconEl) iconEl.textContent=weekIcon(curWeek);
+}
+
+function decodeEntities(str){
+  if(!str) return str;
+  const ta=document.createElement('textarea');
+  ta.innerHTML=str;
+  return ta.value;
+}
+function esc(s){ return (s||'').replace(/"/g,'&quot;'); }
+function normalizeImg(u){ if(!u) return ''; return u.startsWith('//') ? 'https:'+u : u; }
+
+function renderBottomNav(){
+  const el=document.getElementById('bottomNav');
+  el.innerHTML = `<div class="bn-thumb" id="bnThumb" style="width:calc((100% - 16px) / ${WEEKS.length})"></div>` +
+    WEEKS.map((w,i)=>`
+    <button class="nav-item" onclick="goWeek(${i})">
+      <div class="n-ic">${weekIcon(i)}</div>
+      <div class="n-lb-row"><span class="n-num">${i+1}</span><span class="n-lb">${weekLabel(w)}</span></div>
+    </button>
+  `).join('');
+  updateBottomNavActive();
+}
+
+function updateBottomNavActive(){
+  document.querySelectorAll('#bottomNav .nav-item').forEach((el,i)=>el.classList.toggle('on', i===curWeek));
+  document.getElementById('bnThumb').style.transform = `translateX(${curWeek*100}%)`;
+}
+
+function goWeek(i){
+  curWeek=i;
+  curSub='sat';
+  if(pickerOpen) closePicker();
+  updateBottomNavActive();
+  renderAccTab();
+  renderTabs();
+  renderWeekTheme();
+  renderPlacesWrap(true);
+  if(topTab==='weekday') renderWeekdayTab();
+}
+
+function goSub(type){
+  curSub=type;
+  if(pickerOpen) closePicker();
+  renderTabs();
+  renderPlacesWrap(true);
+}
+
+function renderTabs(){
+  document.getElementById('tabsWrap').innerHTML = `<div class="sub-tabs">
+    <button class="sub-tab ${curSub==='sat'?'on':''}" onclick="goSub('sat')">토요일</button>
+    <button class="sub-tab ${curSub==='sun'?'on':''}" onclick="goSub('sun')">일요일</button>
+  </div>`;
+}
+
+async function fetchPreview(url){
+  try{
+    const res=await fetch('https://api.allorigins.win/raw?url='+encodeURIComponent(url));
+    const html=await res.text();
+    const titleM=html.match(/<meta[^>]*property="og:title"[^>]*content="([^"]*)"/i)
+      || html.match(/<meta[^>]*content="([^"]*)"[^>]*property="og:title"/i);
+    const imgM=html.match(/<meta[^>]*property="og:image"[^>]*content="([^"]*)"/i)
+      || html.match(/<meta[^>]*content="([^"]*)"[^>]*property="og:image"/i);
+    const descM=html.match(/<meta[^>]*property="og:description"[^>]*content="([^"]*)"/i)
+      || html.match(/<meta[^>]*content="([^"]*)"[^>]*property="og:description"/i);
+    return {
+      title:titleM?decodeEntities(titleM[1]):null,
+      image:imgM?decodeEntities(imgM[1]):null,
+      location:descM?decodeEntities(descM[1]):null
+    };
+  }catch(e){
+    return {title:null, image:null, location:null};
+  }
+}
+
+// ─── accommodation tab (shown inline, same Airbnb-style page as before, no tap-to-expand) ───
+function renderAccTab(){
+  const el=document.getElementById('accTab');
+  const acc=data.accommodations[curWeek];
+  if(acc && acc.image){
+    const img=normalizeImg(acc.image);
+    el.innerHTML = `
+      <div class="acc-sheet-hero acc-inline-hero" style="background-image:url('${img}')"></div>
+      <div class="acc-sheet-body acc-inline-body">
+        <div class="acc-sheet-title">${acc.title||'숙소'}</div>
+        ${acc.location?`<div class="acc-sheet-loc">${acc.location}</div>`:''}
+        ${acc.details?`<div class="acc-sheet-details">${acc.details}</div>`:''}
+        ${acc.url?`<a class="acc-sheet-link" href="${acc.url}" target="_blank" rel="noopener">Airbnb에서 보기 →</a>`:''}
+        <div class="acc-sheet-actions">
+          <button class="acc-sheet-edit-btn" onclick="openAccRegister(${curWeek})">정보 수정</button>
+          <button class="acc-sheet-del-btn" onclick="deleteAcc(${curWeek})">삭제</button>
+        </div>
+      </div>`;
+  }else{
+    el.innerHTML = `
+      <button class="acc-register-btn" onclick="openAccRegister(${curWeek})">
+        <div class="acc-card-label acc-card-label-empty">이번 주 숙소</div>
+        <span class="ic">🏠</span>숙소 등록
+      </button>`;
+  }
+}
+
+function deleteAcc(weekIdx){
+  if(!confirm('숙소 정보를 삭제할까요?')) return;
+  delete data.accommodations[weekIdx];
+  saveData();
+  if(weekIdx===curWeek) renderAccTab();
+}
+
+// ─── weekday tab: local things-to-do near that week's registered
+// accommodation, since weekdays are less pre-planned than the weekend ───
+const WEEKDAY_CATEGORIES=[
+  {label:'맛집', emoji:'🍽️', query:'맛집'},
+  {label:'카페', emoji:'☕', query:'카페'},
+  {label:'마트', emoji:'🛒', query:'마트'},
+  {label:'공원', emoji:'🌳', query:'공원'}
+];
+
+function areaSearchUrl(area, query){
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(area+' '+query)}`;
+}
+
+// defaults from that week's registered accommodation the first time,
+// but once the user edits it directly here it's stored on its own so
+// it doesn't have to match the accommodation's raw location text
+function weekdayAreaDefault(){
+  const acc=data.accommodations[curWeek];
+  if(!acc) return '';
+  return (acc.location||acc.title||'').split('\n')[0].trim();
+}
+
+function weekdayAreaName(){
+  const saved=data.weekdayArea[curWeek];
+  return saved!==undefined ? saved : weekdayAreaDefault();
+}
+
+function setWeekdayArea(value){
+  data.weekdayArea[curWeek]=value;
+  saveData();
+}
+
+function updateWeekdayAreaFromInput(){
+  setWeekdayArea(document.getElementById('weekdayAreaInput').value.trim());
+  renderWeekdayTab();
+}
+
+function renderWeekdayTab(){
+  const el=document.getElementById('weekdayTab');
+  const area=weekdayAreaName();
+  const catsHtml = area
+    ? `<div class="weekday-cat-grid">
+        ${WEEKDAY_CATEGORIES.map(c=>`
+          <a class="weekday-cat-card" href="${areaSearchUrl(area, c.query)}" target="_blank" rel="noopener">
+            <span class="weekday-cat-emoji">${c.emoji}</span>
+            <span class="weekday-cat-lb">${c.label}</span>
+          </a>`).join('')}
+      </div>
+      <a class="acc-sheet-link weekday-more-link" href="${areaSearchUrl(area, '가볼만한 곳')}" target="_blank" rel="noopener">📍 ${area} 근처 더 둘러보기 →</a>`
+    : `<div class="sub-empty">지역을 입력하면 근처 놀거리를 찾아드려요</div>`;
+  el.innerHTML = `
+    <div class="weekday-area-hdr">
+      <div class="weekday-area-lb">이번 주 숙소 지역</div>
+      <input type="text" class="weekday-area-input" id="weekdayAreaInput" value="${esc(area)}" placeholder="예: Eastwood" onchange="updateWeekdayAreaFromInput()">
+    </div>
+    ${catsHtml}
+  `;
+}
+
+function openPlaceView(idx){
+  sheetPlaceIdx=idx;
+  sheetMode='place';
+  renderSheet();
+  document.body.classList.add('sheet-open');
+}
+
+function openPlaceEdit(idx){
+  sheetPlaceIdx=idx;
+  sheetMode='placeEdit';
+  renderSheet();
+  document.body.classList.add('sheet-open');
+}
+
+function savePlaceNote(idx){
+  const key=planKey();
+  const note=document.getElementById('placeEditNote').value.trim();
+  if(data.plans[key] && data.plans[key][idx]){
+    data.plans[key][idx].note=note;
+    saveData();
+    renderPlacesWrap();
+  }
+  closeAccSheet();
+}
+
+function openAccRegister(weekIdx){
+  sheetWeek=weekIdx;
+  sheetMode='edit';
+  renderSheet();
+  document.body.classList.add('sheet-open');
+}
+
+function closeAccSheet(){
+  const root=document.getElementById('accSheetRoot');
+  const backdrop=root.querySelector('.acc-sheet-backdrop');
+  sheetMode=null;
+  document.body.classList.remove('sheet-open');
+  if(backdrop){
+    backdrop.classList.add('closing');
+    setTimeout(()=>{ root.innerHTML=''; }, 200);
+  }else{
+    root.innerHTML='';
+  }
+}
+
+function renderSheet(){
+  const root=document.getElementById('accSheetRoot');
+  if(sheetMode==='edit') root.innerHTML=sheetEditHtml(sheetWeek);
+  else if(sheetMode==='place'){ root.innerHTML=placeSheetHtml(sheetPlaceIdx); initSheetSwipeClose(); }
+  else if(sheetMode==='placeEdit') root.innerHTML=placeEditHtml(sheetPlaceIdx);
+  else root.innerHTML='';
+}
+
+// lets the full-screen place detail sheet be dismissed with a
+// downward swipe, like a native modal — only kicks in when the sheet
+// is scrolled to the top so it doesn't fight normal content scrolling
+function initSheetSwipeClose(){
+  const sheet=document.querySelector('#accSheetRoot .acc-sheet');
+  if(!sheet) return;
+  let startY=null, dragging=false;
+  sheet.addEventListener('pointerdown', e=>{
+    if(sheet.scrollTop>0) return;
+    startY=e.clientY;
+    dragging=false;
+  });
+  sheet.addEventListener('pointermove', e=>{
+    if(startY===null) return;
+    const delta=e.clientY-startY;
+    if(delta>4){
+      dragging=true;
+      sheet.style.transition='none';
+      sheet.style.transform=`translateY(${delta}px)`;
+    }
+  });
+  const end=e=>{
+    if(startY===null) return;
+    const delta=(e.clientY||0)-startY;
+    sheet.style.transition='transform .25s cubic-bezier(.2,.8,.2,1)';
+    if(dragging && delta>100){
+      sheet.style.transform='translateY(100%)';
+      setTimeout(closeAccSheet, 200);
+    }else{
+      sheet.style.transform='';
+    }
+    startY=null; dragging=false;
+  };
+  sheet.addEventListener('pointerup', end);
+  sheet.addEventListener('pointercancel', end);
+}
+
+function placeEditHtml(idx){
+  const place=(data.plans[planKey()]||[])[idx];
+  if(!place) return '';
+  return `<div class="acc-sheet-backdrop">
+    <div class="acc-sheet">
+      <div class="acc-form-hdr">
+        <button onclick="closeAccSheet()">✕</button>
+        <div class="t">${place.name} 메모 수정</div>
+      </div>
+      <div class="acc-form-body">
+        <div class="acc-form-label">메모</div>
+        <textarea id="placeEditNote" placeholder="예: 예약 확인, 같이 갈 사람">${esc(place.note)}</textarea>
+        <button class="acc-form-save" onclick="savePlaceNote(${idx})">저장하기</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function placeSheetHtml(idx){
+  const place=(data.plans[planKey()]||[])[idx];
+  if(!place) return '';
+  const name=place.name;
+  const info=PLACE_INFO[name]||{};
+  return `<div class="acc-sheet-backdrop">
+    <div class="acc-sheet">
+      <div class="acc-sheet-hero" style="background-image:url('${plImg(name)}')">
+        <button class="acc-sheet-back" onclick="closeAccSheet()">←</button>
+      </div>
+      <div class="acc-sheet-body">
+        <div class="acc-sheet-title">${name}${MUST_PRESETS.has(name)?'<span class="must-badge-flat">필수</span>':''}</div>
+        ${place.note?`<div class="acc-sheet-loc">${place.note}</div>`:''}
+        <div class="place-info-rows">
+          <div class="place-info-row"><span class="pi-ic">🕐</span><div><div class="pi-lb">운영 시간</div><div class="pi-val">${info.hours||'정보 없음'}</div></div></div>
+          <div class="place-info-row"><span class="pi-ic">💰</span><div><div class="pi-lb">가격</div><div class="pi-val">${info.price||'정보 없음'}</div></div></div>
+          <div class="place-info-row"><span class="pi-ic">✨</span><div><div class="pi-lb">관람 포인트</div><div class="pi-val">${info.highlights||'정보 없음'}</div></div></div>
+        </div>
+        <a class="acc-sheet-link" href="${mapsUrl(name)}" target="_blank" rel="noopener">📍 구글맵에서 보기 →</a>
+      </div>
+    </div>
+  </div>`;
+}
+
+function sheetEditHtml(weekIdx){
+  const acc=data.accommodations[weekIdx]||{};
+  const img=normalizeImg(acc.image);
+  return `<div class="acc-sheet-backdrop">
+    <div class="acc-sheet">
+      <div class="acc-form-hdr">
+        <button onclick="closeAccSheet()">✕</button>
+        <div class="t">숙소 등록</div>
+      </div>
+      <div class="acc-form-body">
+        <div class="acc-form-label">Airbnb 링크</div>
+        <div class="acc-form-fetch-row">
+          <input id="fLink" placeholder="https://www.airbnb.co.kr/rooms/...">
+          <button class="acc-form-fetch-btn" id="fFetchBtn" onclick="fetchIntoForm(${weekIdx})">가져오기</button>
+        </div>
+        <div class="acc-form-label">숙소 이름</div>
+        <input id="fName" placeholder="숙소 이름" value="${esc(acc.title)}">
+        <div class="acc-form-label">사진</div>
+        <div class="acc-form-fetch-row">
+          <input id="fImg" placeholder="사진 URL 붙여넣기" value="${esc(acc.image)}" oninput="updateFormPreview()">
+          <button class="acc-form-fetch-btn" id="fUploadBtn" onclick="document.getElementById('fImgFile').click()">업로드</button>
+        </div>
+        <input type="file" id="fImgFile" accept="image/*" style="display:none" onchange="handleImgUpload(event)">
+        <img class="acc-form-preview" id="fPreview" src="${img}" style="${img?'':'display:none'}" onerror="this.style.display='none'">
+        <div class="acc-form-label">위치</div>
+        <textarea id="fLoc" placeholder="사진 아래 보여줄 내용을 그대로 입력하세요 (위치, 숙소 소개 등)">${acc.location||''}</textarea>
+        <div class="acc-form-label">세부사항</div>
+        <textarea id="fDetail" placeholder="체크인 시간, 메모 등">${acc.details||''}</textarea>
+        <button class="acc-form-save" onclick="saveAccForm(${weekIdx})">저장</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function updateFormPreview(){
+  const v=document.getElementById('fImg').value.trim();
+  const img=document.getElementById('fPreview');
+  if(v){ img.src=normalizeImg(v); img.style.display='block'; }
+  else{ img.style.display='none'; }
+}
+
+function scaledDims(w, h, maxDim){
+  if(w<=maxDim && h<=maxDim) return {w, h};
+  return w>h ? {w:maxDim, h:Math.round(h*maxDim/w)} : {w:Math.round(w*maxDim/h), h:maxDim};
+}
+
+function drawToJpeg(source, w, h, quality){
+  const canvas=document.createElement('canvas');
+  canvas.width=w; canvas.height=h;
+  canvas.getContext('2d').drawImage(source,0,0,w,h);
+  return canvas.toDataURL('image/jpeg', quality);
+}
+
+// card art only ever renders at a few hundred px, so a small target
+// keeps both the native decode and the base64 encode fast on mobile
+function resizeImageFile(file, maxDim, quality){
+  maxDim=maxDim||640; quality=quality||0.7;
+  if('createImageBitmap' in window){
+    return createImageBitmap(file).then(bitmap=>{
+      const {w,h}=scaledDims(bitmap.width, bitmap.height, maxDim);
+      const out=drawToJpeg(bitmap, w, h, quality);
+      bitmap.close && bitmap.close();
+      return out;
+    }).catch(()=>resizeImageFileLegacy(file, maxDim, quality));
+  }
+  return resizeImageFileLegacy(file, maxDim, quality);
+}
+
+function resizeImageFileLegacy(file, maxDim, quality){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const img=new Image();
+      img.onload=()=>{
+        const {w,h}=scaledDims(img.width, img.height, maxDim);
+        resolve(drawToJpeg(img, w, h, quality));
+      };
+      img.onerror=()=>reject(new Error('invalid image'));
+      img.src=e.target.result;
+    };
+    reader.onerror=()=>reject(new Error('file read failed'));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handleImgUpload(event){
+  const file=event.target.files[0];
+  if(!file) return;
+  const btn=document.getElementById('fUploadBtn');
+  const prevLabel=btn.textContent;
+  btn.textContent='처리 중...';
+  btn.disabled=true;
+  try{
+    const dataUrl=await resizeImageFile(file);
+    document.getElementById('fImg').value=dataUrl;
+    updateFormPreview();
+  }catch(e){
+    alert('이미지를 불러오지 못했어요');
+  }finally{
+    btn.textContent=prevLabel;
+    btn.disabled=false;
+  }
+}
+
+async function fetchIntoForm(weekIdx){
+  const url=document.getElementById('fLink').value.trim();
+  if(!url) return;
+  const btn=document.getElementById('fFetchBtn');
+  btn.textContent='불러오는 중...';
+  const preview=await fetchPreview(url);
+  btn.textContent='가져오기';
+  if(preview.title) document.getElementById('fName').value=preview.title;
+  if(preview.location) document.getElementById('fLoc').value=preview.location;
+  if(preview.image){
+    document.getElementById('fImg').value=preview.image;
+    updateFormPreview();
+  }
+}
+
+function saveAccForm(weekIdx){
+  const acc={
+    url:document.getElementById('fLink').value.trim(),
+    title:document.getElementById('fName').value.trim(),
+    image:document.getElementById('fImg').value.trim(),
+    location:document.getElementById('fLoc').value.trim(),
+    details:document.getElementById('fDetail').value.trim()
+  };
+  data.accommodations[weekIdx]=acc;
+  saveData();
+  closeAccSheet();
+  if(weekIdx===curWeek) renderAccTab();
+}
+
+function planKey(){ return `${curWeek}-${curSub}`; }
+
+function renderPlaces(){
+  const key=planKey();
+  const places=data.plans[key]||[];
+  const subLabel=curSub==='sat'?'토요일':curSub==='sun'?'일요일':'평일';
+  if(!places.length) return `<div class="sub-empty">${subLabel}에 갈 곳을 추가해보세요</div>`;
+  const routeBtn = places.length>1
+    ? `<button class="route-btn" onclick="openRoute()">🧭 동선보기</button>`
+    : '';
+  return `<div class="ph-gr">${places.map((p,i)=>`
+    <div class="pl-row">
+      <div class="pl-time-col">
+        <span class="pl-num">${i+1}</span>
+        <input type="text" class="pl-time-input" value="${esc(p.time)}" placeholder="시간" onchange="setPlaceTime(${i}, this.value)">
+      </div>
+      <div class="ph-cd" onclick="openPlaceView(${i})">
+        <img src="${plImg(p.name)}">
+        ${MUST_PRESETS.has(p.name)?'<span class="must-badge">필수</span>':''}
+        <button class="ph-edit" onclick="event.stopPropagation();openPlaceEdit(${i})"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
+        <button class="ph-del" onclick="event.stopPropagation();removePlace(${i})">✕</button>
+        <div class="ph-ov"><div class="ph-nm">${p.name}</div>${p.note?`<div class="ph-note">${p.note}</div>`:''}</div>
+      </div>
+    </div>`).join('')}</div>${routeBtn}`;
+}
+
+// in-app route map (Google Maps JavaScript API), numbered pins in
+// visiting order, geocoded via google.maps.Geocoder and cached locally
+// so repeat views don't re-hit it.
+//
+// Get a key at https://console.cloud.google.com/google/maps-apis with
+// "Maps JavaScript API" + "Geocoding API" enabled, then paste it below.
+// Restrict the key by HTTP referrer to this site's domain before shipping.
+const GOOGLE_MAPS_API_KEY='';
+
+let routeMap=null;
+let routeMarkers=[];
+let routePolyline=null;
+let googleMapsLoadPromise=null;
+
+function loadGoogleMaps(){
+  if(googleMapsLoadPromise) return googleMapsLoadPromise;
+  googleMapsLoadPromise=new Promise((resolve,reject)=>{
+    if(window.google && window.google.maps){ resolve(window.google.maps); return; }
+    window.__onGoogleMapsLoaded=()=>resolve(window.google.maps);
+    const script=document.createElement('script');
+    script.src=`https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(GOOGLE_MAPS_API_KEY)}&callback=__onGoogleMapsLoaded`;
+    script.onerror=()=>reject(new Error('Google Maps failed to load'));
+    document.head.appendChild(script);
+  });
+  return googleMapsLoadPromise;
+}
+
+function getGeocodeCache(){
+  try{ return JSON.parse(localStorage.getItem('geocodeCacheV1')||'{}'); }catch(e){ return {}; }
+}
+function setGeocodeCache(cache){
+  try{ localStorage.setItem('geocodeCacheV1', JSON.stringify(cache)); }catch(e){}
+}
+
+let geocoder=null;
+async function geocodePlace(name){
+  const cache=getGeocodeCache();
+  if(cache[name]) return cache[name];
+  try{
+    const maps=await loadGoogleMaps();
+    if(!geocoder) geocoder=new maps.Geocoder();
+    const res=await geocoder.geocode({address:`${name} Sydney Australia`, region:'au'});
+    const loc=res.results[0] && res.results[0].geometry.location;
+    if(loc){
+      const coord=[loc.lat(), loc.lng()];
+      cache[name]=coord;
+      setGeocodeCache(cache);
+      return coord;
+    }
+  }catch(e){}
+  return null;
+}
+
+async function openRoute(){
+  const places=data.plans[planKey()]||[];
+  if(places.length<2) return;
+  document.body.classList.add('sheet-open');
+  document.getElementById('routeSheetRoot').innerHTML=`<div class="route-sheet-backdrop">
+    <div class="route-sheet-hdr">
+      <button onclick="closeRouteSheet()">←</button>
+      <div class="t">오늘의 동선</div>
+    </div>
+    <div id="routeMapEl"><div class="route-loading" id="routeLoading">장소를 찾는 중... (0/${places.length})</div></div>
+  </div>`;
+
+  if(!GOOGLE_MAPS_API_KEY){
+    document.getElementById('routeMapEl').innerHTML='<div class="route-loading">Google Maps API 키가 설정되지 않았어요</div>';
+    return;
+  }
+
+  let done=0;
+  const coords=(await Promise.all(places.map(async (place,i)=>{
+    const c=await geocodePlace(place.name);
+    done++;
+    const loadingEl=document.getElementById('routeLoading');
+    if(loadingEl) loadingEl.textContent=`장소를 찾는 중... (${done}/${places.length})`;
+    return c ? {idx:i+1, name:place.name, latlng:c} : null;
+  }))).filter(Boolean);
+
+  if(!document.getElementById('routeMapEl')) return; // sheet closed while geocoding
+
+  if(!coords.length){
+    document.getElementById('routeMapEl').innerHTML='<div class="route-loading">위치를 찾을 수 없어요</div>';
+    return;
+  }
+
+  const maps=await loadGoogleMaps();
+  const toLatLng=c=>({lat:c[0], lng:c[1]});
+
+  routeMap=new maps.Map(document.getElementById('routeMapEl'), {
+    center:toLatLng(coords[0].latlng), zoom:14
+  });
+
+  const bounds=new maps.LatLngBounds();
+  routeMarkers=coords.map(c=>{
+    const pos=toLatLng(c.latlng);
+    bounds.extend(pos);
+    const marker=new maps.Marker({
+      position:pos,
+      map:routeMap,
+      label:{text:String(c.idx), color:'#fff', fontWeight:'800', fontSize:'12px'},
+      icon:{path:maps.SymbolPath.CIRCLE, scale:14, fillColor:'#E8741E', fillOpacity:1, strokeColor:'#fff', strokeWeight:2},
+      title:c.name
+    });
+    const info=new maps.InfoWindow({content:`<div style="font-weight:700">${c.name}</div>`});
+    marker.addListener('click', ()=>info.open(routeMap, marker));
+    return marker;
+  });
+
+  if(coords.length>1){
+    routePolyline=new maps.Polyline({
+      path:coords.map(c=>toLatLng(c.latlng)),
+      strokeColor:'#E8741E', strokeOpacity:0, strokeWeight:3,
+      icons:[{icon:{path:'M 0,-1 0,1', strokeOpacity:1, scale:3}, offset:'0', repeat:'10px'}]
+    });
+    routePolyline.setMap(routeMap);
+    routeMap.fitBounds(bounds, 40);
+  }else{
+    routeMap.setZoom(15);
+  }
+}
+
+function closeRouteSheet(){
+  document.body.classList.remove('sheet-open');
+  routeMarkers.forEach(m=>m.setMap(null));
+  routeMarkers=[];
+  if(routePolyline){ routePolyline.setMap(null); routePolyline=null; }
+  routeMap=null;
+  document.getElementById('routeSheetRoot').innerHTML='';
+}
+
+// places without a time sort to the end instead of the top
+function sortPlacesByTime(key){
+  const arr=data.plans[key];
+  if(!arr) return;
+  arr.sort((a,b)=>{
+    if(!a.time && !b.time) return 0;
+    if(!a.time) return 1;
+    if(!b.time) return -1;
+    return a.time.localeCompare(b.time);
+  });
+}
+
+function setPlaceTime(idx, value){
+  const key=planKey();
+  if(data.plans[key] && data.plans[key][idx]){
+    data.plans[key][idx].time=value;
+    if(value){
+      sortPlacesByTime(key);
+      saveData();
+      renderPlacesWrap();
+    }else{
+      saveData();
+    }
+  }
+}
+
+
+function syncFab(){
+  document.getElementById('fabBtn').classList.toggle('open', pickerOpen);
+}
+
+function togglePicker(){
+  if(pickerOpen) closePicker();
+  else openPicker();
+}
+
+let pickerSelected=null;
+
+function openPicker(){
+  pickerOpen=true;
+  pickerSelected=null;
+  syncFab();
+  document.body.classList.add('sheet-open');
+  renderPickerGridStep();
+}
+
+// 맛집 탐방/카페 브런치는 하루에 여러 번 갈 수 있는 카테고리라 이미
+// 추가했어도 목록에서 계속 선택할 수 있어야 한다
+const REPEATABLE_PRESETS=['맛집 탐방', '카페 브런치'];
+
+function presetGridHtml(list){
+  return `<div class="preset-grid">${list.map(p=>`
+    <button class="preset-chip" style="background-image:url('${plImg(p.name)}')" onclick="selectPreset('${p.name}')">
+      ${p.must?'<span class="must-badge">필수</span>':''}
+      <span class="ov"><span class="preset-emoji">${p.emoji}</span>${p.name}</span>
+    </button>`).join('')}</div>`;
+}
+
+function renderPickerGridStep(){
+  const existingNames=(data.plans[planKey()]||[]).map(p=>p.name);
+  const available=PRESETS.filter(p=>REPEATABLE_PRESETS.includes(p.name) || !existingNames.includes(p.name));
+  const landmarks=available.filter(p=>p.category!=='food');
+  const food=available.filter(p=>p.category==='food');
+  const sectionsHtml=available.length
+    ? `${landmarks.length?`<div class="preset-section-title">📍 명소</div>${presetGridHtml(landmarks)}`:''}
+       ${food.length?`<div class="preset-section-title">🍽️ 맛집</div>${presetGridHtml(food)}`:''}`
+    : `<div class="sub-empty">이미 모든 장소를 추가했어요</div>`;
+  document.getElementById('pickerSheetRoot').innerHTML=`<div class="picker-backdrop" onclick="if(event.target===this) closePicker()">
+    <div class="picker-sheet">
+      <div class="sheet-handle"></div>
+      <div class="picker-sheet-title">어디로 갈까요?</div>
+      <div class="picker-scroll">${sectionsHtml}</div>
+    </div>
+  </div>`;
+  initSheetDrag();
+}
+
+function selectPreset(name){
+  pickerSelected=name;
+  renderPickerDetailStep();
+}
+
+function renderPickerDetailStep(){
+  const name=pickerSelected;
+  document.getElementById('pickerSheetRoot').innerHTML=`<div class="picker-backdrop" onclick="if(event.target===this) closePicker()">
+    <div class="picker-sheet">
+      <div class="sheet-handle"></div>
+      <div class="picker-detail-hdr">
+        <button class="picker-back-btn" onclick="backToPickerGrid()">←</button>
+        <div class="picker-sheet-title" style="margin:0">${name}</div>
+      </div>
+      <div class="preset-chip picker-detail-photo" style="background-image:url('${plImg(name)}');height:120px;margin-bottom:16px">
+        <span class="ov"><span class="preset-emoji">📍</span>${name}</span>
+      </div>
+      <div class="picker-time-row">
+        <span class="picker-time-lb">시간</span>
+        <input type="text" id="pickerTime" class="picker-time-input" placeholder="예: 15:00, 오후 3시">
+      </div>
+      <input type="text" id="pickerNote" class="picker-note-input" placeholder="메모 (선택, 예: 예약 확인, 같이 갈 사람)">
+      <button class="acc-form-save" onclick="confirmAddPlace()">추가하기</button>
+    </div>
+  </div>`;
+  initSheetDrag();
+}
+
+function backToPickerGrid(){
+  pickerSelected=null;
+  renderPickerGridStep();
+}
+
+function confirmAddPlace(){
+  const key=planKey();
+  const noteInput=document.getElementById('pickerNote');
+  if(!data.plans[key]) data.plans[key]=[];
+  const timeInput=document.getElementById('pickerTime');
+  data.plans[key].push({name:pickerSelected, time:timeInput?timeInput.value.trim():'', note:noteInput?noteInput.value.trim():''});
+  sortPlacesByTime(key);
+  saveData();
+  renderPlacesWrap();
+  closePicker();
+}
+
+// lets the picker sheet be dragged taller/shorter by its handle,
+// up to nearly full screen
+function initSheetDrag(){
+  const sheet=document.querySelector('#pickerSheetRoot .picker-sheet');
+  const handle=document.querySelector('#pickerSheetRoot .sheet-handle');
+  if(!sheet || !handle) return;
+  let startY=null, startHeight=null;
+  const minH=window.innerHeight*0.35, maxH=window.innerHeight*0.95;
+  handle.addEventListener('pointerdown', e=>{
+    startY=e.clientY;
+    startHeight=sheet.getBoundingClientRect().height;
+    sheet.style.transition='none';
+    handle.setPointerCapture(e.pointerId);
+  });
+  handle.addEventListener('pointermove', e=>{
+    if(startY===null) return;
+    const delta=startY-e.clientY;
+    const newHeight=Math.max(minH, Math.min(maxH, startHeight+delta));
+    sheet.style.height=newHeight+'px';
+    sheet.style.maxHeight=newHeight+'px';
+  });
+  const endDrag=()=>{ startY=null; sheet.style.transition=''; };
+  handle.addEventListener('pointerup', endDrag);
+  handle.addEventListener('pointercancel', endDrag);
+}
+
+function closePicker(){
+  pickerOpen=false;
+  pickerSelected=null;
+  syncFab();
+  document.body.classList.remove('sheet-open');
+  const root=document.getElementById('pickerSheetRoot');
+  const backdrop=root.querySelector('.picker-backdrop');
+  if(backdrop){
+    backdrop.classList.add('closing');
+    setTimeout(()=>{ root.innerHTML=''; }, 200);
+  }else{
+    root.innerHTML='';
+  }
+}
+
+function removePlace(idx){
+  const rows=document.querySelectorAll('#placesWrap .pl-row');
+  const row=rows[idx];
+  if(!row){
+    data.plans[planKey()].splice(idx,1);
+    saveData();
+    renderPlacesWrap();
+    return;
+  }
+  const h=row.offsetHeight;
+  row.style.overflow='hidden';
+  row.style.maxHeight=h+'px';
+  row.style.transition='opacity .25s ease, max-height .28s ease .02s';
+  void row.offsetHeight;
+  requestAnimationFrame(()=>{
+    row.style.opacity='0';
+    row.style.maxHeight='0px';
+  });
+  setTimeout(()=>{
+    data.plans[planKey()].splice(idx,1);
+    saveData();
+    renderPlacesWrap();
+  }, 280);
+}
+
+function renderPlacesWrap(animate){
+  const el=document.getElementById('placesWrap');
+  if(!el) return;
+  el.innerHTML = renderPlaces();
+  if(animate){
+    el.classList.remove('content-anim');
+    void el.offsetWidth;
+    el.classList.add('content-anim');
+  }
+}
+
+renderBottomNav();
+renderTabs();
+renderWeekTheme();
+renderPlacesWrap();
+renderTopTabs();
+goTopTab('schedule');
+
+syncFromRemote();
+setInterval(syncFromRemote, 20000);
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) syncFromRemote(); });
+
+// keep the splash on screen for a deliberate ~3s launch beat, and make
+// sure the splash photo itself has actually finished loading (a slow
+// first load otherwise fades the splash out before the image ever
+// painted) — capped so a failed/offline image load can't hang it.
+//
+// when opened as a regular web page (not the installed PWA), the splash
+// stays up permanently with an "앱 설치" button revealed under the logo,
+// instead of fading into the app — the app only becomes reachable once
+// installed to the home screen.
+(function(){
+  const MIN_MS=3000, MAX_MS=5000;
+  const start=Date.now();
+  const splashImg=document.getElementById('splashImg');
+  let imgReady=splashImg.complete;
+  splashImg.addEventListener('load', ()=>{ imgReady=true; });
+  splashImg.addEventListener('error', ()=>{ imgReady=true; });
+  (function check(){
+    const elapsed=Date.now()-start;
+    if((imgReady && elapsed>=MIN_MS) || elapsed>=MAX_MS){
+      if(isStandalonePwa()){
+        const splash=document.getElementById('splashScreen');
+        if(splash){ splash.classList.add('hide'); setTimeout(()=>splash.remove(), 450); }
+      }else{
+        document.getElementById('splashInstallBtn').classList.add('show');
+      }
+    }else{
+      requestAnimationFrame(check);
+    }
+  })();
+})();
+</script>
+<script>
+// scope covers the whole site so navigating between schedule.html (home),
+// planner.html, pack.html, arrival.html, secret.html stays inside the
+// installed standalone app instead of kicking out to the browser
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js', { scope: '.' });
+}
+</script>
+</body>
+</html>

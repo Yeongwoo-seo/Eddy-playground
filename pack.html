@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>짐싸기 체크리스트</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#E8741E">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="짐싸기">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --primary:#E8741E;--primary-hover:#D4681A;--primary-light:#FFF3EB;
+  --bg:#F5F5F5;--white:#FFFFFF;
+  --grey100:#F2F4F6;--grey300:#D1D6DB;--grey500:#8B95A1;--grey700:#4E5968;--black:#191F28;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--black);font-family:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;display:flex;justify-content:center}
+.app{width:100%;max-width:500px;min-height:100vh;padding:16px 16px 40px}
+.hl{color:var(--primary)}
+
+.top-bar{display:flex;align-items:center;gap:12px;padding:8px 0 20px}
+.back-btn{width:36px;height:36px;border-radius:50%;background:var(--white);box-shadow:0 2px 12px rgba(0,0,0,0.06);border:none;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--grey700);flex-shrink:0}
+.top-title{font-size:20px;font-weight:800}
+
+.progress-card{background:var(--white);border-radius:24px;box-shadow:0 2px 12px rgba(0,0,0,0.06);padding:20px;margin-bottom:16px}
+.progress-lb{font-size:13px;color:var(--grey500);font-weight:600}
+.progress-num{font-size:22px;font-weight:800;margin-top:4px}
+.progress-bar{height:8px;border-radius:20px;background:var(--grey100);margin-top:12px;overflow:hidden}
+.progress-fill{height:100%;background:var(--primary);border-radius:20px;transition:width .3s cubic-bezier(.2,.8,.2,1);width:0%}
+
+.notice{display:flex;gap:10px;background:var(--primary-light);border-radius:18px;padding:14px 16px;margin-bottom:20px;font-size:13px;color:var(--black);font-weight:500;line-height:1.6}
+.notice .ic{font-size:18px;flex-shrink:0}
+
+.cat{margin-bottom:20px}
+.cat-title{font-size:15px;font-weight:700;color:var(--grey700);margin-bottom:8px;padding-left:2px}
+.cat-card{background:var(--white);border-radius:20px;box-shadow:0 2px 12px rgba(0,0,0,0.06);overflow:hidden}
+.item{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--grey100);cursor:pointer}
+.item:last-child{border-bottom:none}
+.chk{width:22px;height:22px;border-radius:7px;border:2px solid var(--grey300);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;transition:all .15s}
+.item.done .chk{background:var(--primary);border-color:var(--primary)}
+.item-name{font-size:14px;font-weight:500;color:var(--black);transition:color .15s}
+.item.done .item-name{color:var(--grey500);text-decoration:line-through}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top-bar">
+    <button class="back-btn" onclick="location.href='schedule.html'">←</button>
+    <div class="top-title">🧳 짐싸기 <span class="hl">체크리스트</span></div>
+  </div>
+
+  <div class="progress-card">
+    <div class="progress-lb">챙긴 짐</div>
+    <div class="progress-num"><span id="doneCount">0</span> / <span id="totalCount">0</span></div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  </div>
+
+  <div class="notice">
+    <span class="ic">❄️</span>
+    <div>7~8월 시드니는 <b>겨울</b>이에요 (최저 8°C · 최고 17°C). 여름 옷 말고 <b>겨울 옷</b> 위주로 챙기세요!</div>
+  </div>
+
+  <div id="listRoot"></div>
+</div>
+<script>
+const CATEGORIES=[
+  {title:'📄 필수 서류', items:['여권 (유효기간 6개월 이상 확인)', 'ETA 전자여행허가 승인 확인/캡처', '항공권 e티켓', '여행자보험 가입증서', '숙소 예약 확인서']},
+  {title:'🧥 겨울 옷 (호주는 겨울!)', items:['겨울 코트/패딩', '히트텍·기모 이너', '니트·맨투맨', '목도리·장갑·비니', '수면양말/실내용 옷', '편한 운동화', '우산 또는 우비']},
+  {title:'🔌 전자기기', items:['휴대폰 충전기', '보조배터리', '멀티 어댑터 (호주는 타입 I)', '이어폰/헤드폰', '카메라']},
+  {title:'🧴 세면·상비약', items:['여행용 세면도구', '상비약 (감기약·진통제·소화제)', '선크림 (겨울에도 자외선 강함)', '렌즈/안경', '생리용품']},
+  {title:'💰 기타', items:['현금 (호주 달러)', '해외결제 가능한 카드', '보조 가방/에코백', '비상연락처 메모']}
+];
+
+function getChecked(){
+  try{ return JSON.parse(localStorage.getItem('packListV1')||'{}'); }catch(e){ return {}; }
+}
+function setChecked(map){
+  try{ localStorage.setItem('packListV1', JSON.stringify(map)); }catch(e){}
+}
+
+function toggleItem(key){
+  const checked=getChecked();
+  checked[key]=!checked[key];
+  setChecked(checked);
+  render();
+}
+
+function render(){
+  const checked=getChecked();
+  let total=0, done=0;
+  const html=CATEGORIES.map((cat,ci)=>{
+    const itemsHtml=cat.items.map((name,ii)=>{
+      const key=`${ci}-${ii}`;
+      total++;
+      const isDone=!!checked[key];
+      if(isDone) done++;
+      return `<div class="item${isDone?' done':''}" onclick="toggleItem('${key}')">
+        <div class="chk">${isDone?'✓':''}</div>
+        <div class="item-name">${name}</div>
+      </div>`;
+    }).join('');
+    return `<div class="cat">
+      <div class="cat-title">${cat.title}</div>
+      <div class="cat-card">${itemsHtml}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('listRoot').innerHTML=html;
+  document.getElementById('totalCount').textContent=total;
+  document.getElementById('doneCount').textContent=done;
+  document.getElementById('progressFill').style.width=(total?done/total*100:0)+'%';
+}
+render();
+</script>
+</body>
+</html>
