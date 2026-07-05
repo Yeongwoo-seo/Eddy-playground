@@ -1,9 +1,14 @@
-// PWA scope is schedule.html only — this SW is registered from
-// schedule.html with an explicit { scope: 'schedule.html' }, so it
-// never controls index/home/tour
-const CACHE_NAME = 'gangnangkong-tour-v3';
+// PWA scope covers the whole site — registered from schedule.html
+// (the installed start_url) with { scope: '.' }, so navigating to
+// planner.html/pack.html/arrival.html/secret.html stays inside the
+// standalone app instead of kicking out to the browser
+const CACHE_NAME = 'gangnangkong-tour-v4';
 const APP_SHELL = [
   'schedule.html',
+  'planner.html',
+  'pack.html',
+  'arrival.html',
+  'secret.html',
   'manifest.json',
   'icons/splash-bg.jpg',
   'icons/icon-192.png',

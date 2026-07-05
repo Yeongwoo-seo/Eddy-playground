@@ -1,9 +1,9 @@
 {
   "name": "강낭콩 투어",
   "short_name": "강낭콩 투어",
-  "description": "시드니 여행 스케줄",
+  "description": "시드니 여행 준비 앱",
   "start_url": "schedule.html",
-  "scope": "schedule.html",
+  "scope": ".",
   "id": "gangnangkong-tour",
   "display": "standalone",
   "orientation": "portrait",
