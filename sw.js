@@ -2,7 +2,7 @@
 // (the installed start_url) with { scope: '.' }, so navigating to
 // planner.html/pack.html/arrival.html/secret.html stays inside the
 // standalone app instead of kicking out to the browser
-const CACHE_NAME = 'gangnangkong-tour-v4';
+const CACHE_NAME = 'gangnangkong-tour-v5';
 const APP_SHELL = [
   'schedule.html',
   'planner.html',
@@ -10,7 +10,6 @@ const APP_SHELL = [
   'arrival.html',
   'secret.html',
   'manifest.json',
-  'icons/splash-bg.jpg',
   'icons/icon-192.png',
   'icons/icon-512.png',
   'icons/icon-maskable-512.png',
