@@ -36,10 +36,12 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .menu-desc{font-size:12.5px;color:var(--text-secondary);margin-top:3px;line-height:1.5}
 .menu-arrow{color:var(--text-muted);font-size:18px;flex-shrink:0}
 .foot{margin-top:auto;padding-top:32px;font-family:var(--mono);font-size:10.5px;color:var(--text-muted);letter-spacing:.06em;text-align:center}
+.build-badge{position:absolute;top:calc(14px + env(safe-area-inset-top,0));right:16px;font-family:var(--mono);font-size:9.5px;color:var(--text-muted);background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:6px 10px;letter-spacing:.02em;max-width:180px;text-align:right;line-height:1.5;white-space:pre-line}
 </style>
 </head>
 <body>
-<div class="frame">
+<div class="frame" style="position:relative">
+  <div class="build-badge" id="buildBadge">빌드 정보 확인 중…</div>
   <div class="tag">Operation MK</div>
   <div class="title">DEV</div>
   <div class="sub">비주얼노벨 대화 UX와 배경·캐릭터 업로드 흐름만 검증하는 개발용 페이지입니다.</div>
@@ -85,6 +87,32 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
 }
+</script>
+<script>
+// Shows which merge is actually live, since Vercel deploy lag has repeatedly
+// made it unclear whether a reported fix had really shipped yet. Reads the
+// latest commit on main directly from GitHub rather than a value baked in at
+// commit time, since multiple sessions push to this repo independently.
+async function loadBuildInfo() {
+  const badge = document.getElementById('buildBadge');
+  try {
+    const res = await fetch('https://api.github.com/repos/Yeongwoo-seo/Eddy-playground/commits/main');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    const message = (data.commit && data.commit.message) || '';
+    const prMatch = message.match(/Merge pull request #(\d+)/);
+    const label = prMatch ? `PR #${prMatch[1]}` : `커밋 ${(data.sha || '').slice(0, 7)}`;
+    const dateStr = data.commit && data.commit.committer && data.commit.committer.date;
+    const formatted = dateStr ? new Intl.DateTimeFormat('ko-KR', {
+      timeZone: 'Australia/Sydney',
+      month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false,
+    }).format(new Date(dateStr)) : '';
+    badge.textContent = `${label}\n${formatted} AEST`;
+  } catch (e) {
+    badge.textContent = '빌드 정보 로드 실패';
+  }
+}
+loadBuildInfo();
 </script>
 </body>
 </html>
