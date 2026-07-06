@@ -6,8 +6,11 @@ const APP_SHELL = [
   '/dev/',
   '/dev/game/',
   '/dev/upload/',
+  '/dev/dialogue/',
   '/dev/assetDb.js',
   '/dev/dialogueData.js',
+  '/dev/dialogueDb.js',
+  '/dev/vnPlayer.js',
   '/dev/manifest.json',
 ];
 
