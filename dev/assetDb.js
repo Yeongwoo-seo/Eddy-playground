@@ -142,7 +142,23 @@ const AssetDB = (() => {
     cache.delete(id);
   }
 
-  return { addAsset, getAssetsByType, getAsset, deleteAsset };
+  // Caching the metadata/URL above isn't enough on its own — setting an
+  // <img>/background-image src still has to download and decode the actual
+  // bytes the first time. Warming the browser's own image cache ahead of
+  // time (before the line that needs it is shown) makes that swap instant.
+  const warmedImages = new Set();
+  function preloadImage(url) {
+    if (!url || warmedImages.has(url)) return Promise.resolve();
+    warmedImages.add(url);
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve();
+      img.onerror = () => resolve(); // a broken image shouldn't block the scene
+      img.src = url;
+    });
+  }
+
+  return { addAsset, getAssetsByType, getAsset, deleteAsset, preloadImage };
 })();
 
 const DevGameState = {
