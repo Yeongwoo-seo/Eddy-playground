@@ -155,15 +155,26 @@ const DevGameState = {
     try { return JSON.parse(localStorage.getItem(this._keys.transforms)) || {}; }
     catch (e) { return {}; }
   },
-  // CharacterTransform = { x, y, scale }, one per named character.
+  // The protagonist gets their own dedicated transform; every other
+  // character shares one common default (tune it on any of them, it applies
+  // to all) — see the `role` field on dialogueCharacters in dialogueData.js.
+  _transformKeyFor(characterKey) {
+    if (!characterKey) return null;
+    const def = (typeof dialogueCharacters !== 'undefined') ? dialogueCharacters.find(c => c.id === characterKey) : null;
+    return (def && def.role === 'protagonist') ? characterKey : '__other__';
+  },
+  // CharacterTransform = { x, y, scale }.
   getCharacterTransform(characterKey) {
     const defaults = { x: 0, y: 0, scale: 1 };
-    if (!characterKey) return defaults;
-    return this._loadTransformMap()[characterKey] || defaults;
+    const key = this._transformKeyFor(characterKey);
+    if (!key) return defaults;
+    return this._loadTransformMap()[key] || defaults;
   },
   setCharacterTransform(characterKey, transform) {
+    const key = this._transformKeyFor(characterKey);
+    if (!key) return;
     const map = this._loadTransformMap();
-    map[characterKey] = transform;
+    map[key] = transform;
     localStorage.setItem(this._keys.transforms, JSON.stringify(map));
   },
 };
