@@ -7,6 +7,11 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <meta name="theme-color" content="#080A0C">
+<link rel="manifest" href="/dev/manifest.json">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="OPERATION MK DEV">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
 :root{
@@ -96,6 +101,11 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
   </div>
 </div>
 
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
+}
+</script>
 <script src="/dev/assetDb.js"></script>
 <script src="/dev/dialogueData.js"></script>
 <script>
@@ -104,8 +114,6 @@ const TYPE_SPEED_MS = 28;
 let currentIndex = 0;
 let typingTimer = null;
 let isTyping = false;
-let currentBgObjectUrl = null;
-let currentCharObjectUrl = null;
 
 const el = {
   frame: document.getElementById('frame'),
@@ -125,27 +133,21 @@ const el = {
 };
 
 function setBackground(asset) {
-  if (currentBgObjectUrl) URL.revokeObjectURL(currentBgObjectUrl);
-  if (asset && asset.blob) {
-    currentBgObjectUrl = URL.createObjectURL(asset.blob);
-    el.bgLayer.style.backgroundImage = `url(${currentBgObjectUrl})`;
+  if (asset && asset.dataUrl) {
+    el.bgLayer.style.backgroundImage = `url(${asset.dataUrl})`;
     el.bgLayer.classList.remove('bg-placeholder');
   } else {
-    currentBgObjectUrl = null;
     el.bgLayer.style.backgroundImage = 'none';
     el.bgLayer.classList.add('bg-placeholder');
   }
 }
 
 function setCharacterAsset(asset) {
-  if (currentCharObjectUrl) URL.revokeObjectURL(currentCharObjectUrl);
-  if (asset && asset.blob) {
-    currentCharObjectUrl = URL.createObjectURL(asset.blob);
-    el.charImg.src = currentCharObjectUrl;
+  if (asset && asset.dataUrl) {
+    el.charImg.src = asset.dataUrl;
     el.charImg.style.display = '';
     el.charPlaceholder.style.display = 'none';
   } else {
-    currentCharObjectUrl = null;
     el.charImg.removeAttribute('src');
     el.charImg.style.display = 'none';
     el.charPlaceholder.style.display = '';

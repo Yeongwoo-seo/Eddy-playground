@@ -7,6 +7,11 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <meta name="theme-color" content="#080A0C">
+<link rel="manifest" href="/dev/manifest.json">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="OPERATION MK DEV">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
@@ -103,12 +108,16 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
   <img id="lightboxImg" alt="preview">
 </div>
 
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
+}
+</script>
 <script src="/dev/assetDb.js"></script>
 <script src="/dev/dialogueData.js"></script>
 <script>
 let currentType = 'background';
 let pendingFile = null;
-const trackedUrls = { backgroundList: [], characterList: [] };
 
 const el = {
   tabBackground: document.getElementById('tabBackground'),
@@ -213,15 +222,12 @@ async function refreshLists() {
 
 function renderList(listKey, assets) {
   const listEl = el[listKey];
-  trackedUrls[listKey].forEach(u => URL.revokeObjectURL(u));
-  trackedUrls[listKey] = [];
   if (!assets.length) {
     listEl.innerHTML = '<div class="empty-note">아직 업로드한 이미지가 없습니다.</div>';
     return;
   }
   listEl.innerHTML = assets.map(a => {
-    const url = URL.createObjectURL(a.blob);
-    trackedUrls[listKey].push(url);
+    const url = a.dataUrl;
     const actionButtons = a.type === 'background'
       ? `<button class="use" onclick="useAsBackground('${a.id}')">USE IN TEST</button>`
       : dialogueCharacters.map(c => `<button class="use" onclick="useAsCharacter('${c.id}','${a.id}')">${escapeHtml(c.name)}로 사용</button>`).join('');
