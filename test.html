@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>테스트</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#E8741E">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="테스트">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --primary:#E8741E;--primary-hover:#D4681A;--primary-light:#FFF3EB;
+  --bg:#F5F5F5;--white:#FFFFFF;
+  --grey100:#F2F4F6;--grey300:#D1D6DB;--grey500:#8B95A1;--grey700:#4E5968;--black:#191F28;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--black);font-family:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;display:flex;justify-content:center}
+.app{width:100%;max-width:500px;min-height:100vh;padding:16px 16px 40px}
+.hl{color:var(--primary)}
+
+.top-bar{display:flex;align-items:center;gap:12px;padding:8px 0 20px}
+.back-btn{width:36px;height:36px;border-radius:50%;background:var(--white);box-shadow:0 2px 12px rgba(0,0,0,0.06);border:none;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--grey700);flex-shrink:0}
+.top-title{font-size:20px;font-weight:800}
+.top-sub{font-size:13px;color:var(--grey500);font-weight:500;margin:-12px 0 20px 48px}
+
+.lab-card{position:relative;display:block;height:150px;border-radius:24px;overflow:hidden;background:#2B2B33 center/cover no-repeat;text-decoration:none;box-shadow:0 2px 12px rgba(0,0,0,0.06);transition:transform .15s}
+.lab-card:active{transform:scale(.98)}
+.lab-card::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg, rgba(0,0,0,.1) 0%, rgba(0,0,0,.2) 40%, rgba(0,0,0,.8) 100%)}
+.lab-body{position:absolute;left:20px;right:20px;bottom:18px;z-index:1;color:#fff}
+.lab-emoji{font-size:22px;margin-bottom:4px;display:block}
+.lab-name{font-size:18px;font-weight:800}
+.lab-desc{font-size:12.5px;color:rgba(255,255,255,.85);font-weight:500;margin-top:4px;line-height:1.5}
+.lab-badge{position:absolute;top:14px;right:14px;z-index:1;background:rgba(255,255,255,.15);backdrop-filter:blur(6px);color:#fff;font-size:10.5px;font-weight:700;padding:4px 10px;border-radius:20px}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top-bar">
+    <button class="back-btn" onclick="location.href='schedule.html'">←</button>
+    <div class="top-title">🧪 <span class="hl">테스트</span></div>
+  </div>
+  <div class="top-sub">아직 실험 중인 기능들</div>
+
+  <a class="lab-card" href="mystery.html" style="background-image:url('https://images.pexels.com/photos/10481269/pexels-photo-10481269.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop')">
+    <span class="lab-badge">BETA</span>
+    <div class="lab-body">
+      <span class="lab-emoji">🕵️</span>
+      <div class="lab-name">추리게임</div>
+      <div class="lab-desc">시드니 곳곳에서 벌어진 4개의 사건을 추리해보세요</div>
+    </div>
+  </a>
+</div>
+</body>
+</html>

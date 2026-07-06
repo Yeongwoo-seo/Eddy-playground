@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>추리게임</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&display=swap">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#3B2F1E">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="추리게임">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --paper:#F3E9D2;--paper2:#EADFC0;--paper3:#E4D6AE;
+  --ink:#3B2F1E;--ink-light:#7A6A4D;--line:#D8C693;
+  --accent:#B5442E;--accent-hover:#9A3A26;--accent-light:#F1DCCF;
+  --good:#3D6B3D;
+}
+html,body{height:100%}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
+  display:flex;justify-content:center;
+  background-image:radial-gradient(circle at 20% 10%, rgba(0,0,0,.035) 0%, transparent 45%), radial-gradient(circle at 85% 90%, rgba(0,0,0,.035) 0%, transparent 45%);
+}
+.pen{font-family:'Nanum Pen Script',cursive}
+.app{width:100%;max-width:500px;min-height:100vh;padding:16px 16px 40px;position:relative}
+
+.top-bar{display:flex;align-items:center;gap:12px;padding:8px 0 16px}
+.back-btn{width:36px;height:36px;border-radius:50%;background:var(--paper2);box-shadow:0 2px 8px rgba(59,47,30,.15);border:none;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink);flex-shrink:0}
+.top-title{font-size:18px;font-weight:800}
+
+@keyframes screenIn{from{opacity:0;transform:translateY(8px) scale(.99)}to{opacity:1;transform:translateY(0) scale(1)}}
+.screen{animation:screenIn .35s cubic-bezier(.2,.8,.2,1)}
+
+/* ── cover ── */
+.cover{min-height:80vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px}
+.cover-badge{font-size:56px;margin-bottom:18px;filter:drop-shadow(0 4px 10px rgba(59,47,30,.25))}
+.cover-title{font-family:'Nanum Pen Script',cursive;font-size:52px;line-height:1.1;color:var(--ink)}
+.cover-sub{font-size:14px;color:var(--ink-light);font-weight:500;margin-top:14px;line-height:1.7;max-width:320px}
+.cover-btn{margin-top:32px;background:var(--accent);color:#fff;border:none;border-radius:14px;padding:16px 36px;font-weight:700;font-size:15px;cursor:pointer;font-family:inherit;box-shadow:0 4px 16px rgba(181,68,46,.3)}
+.cover-btn:active{background:var(--accent-hover)}
+.cover-reset{margin-top:18px;font-size:12px;color:var(--ink-light);text-decoration:underline;background:none;border:none;cursor:pointer;font-family:inherit}
+
+/* ── case list ── */
+.case-card{position:relative;display:flex;align-items:center;gap:14px;background:var(--paper2);border-radius:18px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(59,47,30,.1);border:1px solid var(--line);cursor:pointer}
+.case-card.locked{opacity:.55;cursor:not-allowed}
+.case-card.locked:active{transform:none}
+.case-card:not(.locked):active{transform:scale(.98)}
+.case-num{width:38px;height:38px;border-radius:50%;background:var(--accent);color:#fff;font-weight:800;font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.case-card.locked .case-num{background:var(--ink-light)}
+.case-body{flex:1;min-width:0}
+.case-title{font-size:15px;font-weight:700;color:var(--ink)}
+.case-loc{font-size:12px;color:var(--ink-light);margin-top:2px}
+.case-status{font-size:18px;flex-shrink:0}
+.case-card.finale{background:var(--ink);border-color:var(--ink)}
+.case-card.finale .case-title{color:var(--paper)}
+.case-card.finale .case-loc{color:var(--paper3)}
+.case-card.finale .case-num{background:var(--accent)}
+
+/* ── case file / suspects ── */
+.brief-card{background:var(--paper2);border-radius:18px;padding:18px 20px;margin-bottom:20px;border-left:4px solid var(--accent)}
+.brief-loc{font-size:12px;color:var(--accent);font-weight:700;text-transform:uppercase;letter-spacing:.02em}
+.brief-title{font-family:'Nanum Pen Script',cursive;font-size:28px;margin-top:4px;color:var(--ink)}
+.brief-text{font-size:13.5px;color:var(--ink-light);line-height:1.75;margin-top:12px}
+
+.section-lb{font-size:13px;font-weight:700;color:var(--ink-light);margin:20px 4px 10px}
+.suspect-card{display:flex;align-items:center;gap:14px;background:var(--paper2);border-radius:16px;padding:14px 16px;margin-bottom:10px;cursor:pointer;box-shadow:0 2px 8px rgba(59,47,30,.08)}
+.suspect-card:active{transform:scale(.98)}
+.suspect-emoji{font-size:28px;width:44px;height:44px;border-radius:50%;background:var(--paper3);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.suspect-name{font-size:15px;font-weight:700}
+.suspect-role{font-size:12px;color:var(--ink-light);margin-top:2px}
+.suspect-arrow{margin-left:auto;color:var(--ink-light);font-size:16px}
+
+.puzzle-btn-row{margin-top:24px}
+.go-puzzle-btn{width:100%;background:var(--accent);color:#fff;border:none;border-radius:14px;padding:16px;font-weight:700;font-size:15px;cursor:pointer;font-family:inherit}
+.go-puzzle-btn:active{background:var(--accent-hover)}
+
+/* ── suspect detail ── */
+.suspect-hero{text-align:center;padding:20px 0}
+.suspect-hero-emoji{font-size:64px}
+.suspect-hero-name{font-size:20px;font-weight:800;margin-top:10px}
+.suspect-hero-role{font-size:13px;color:var(--ink-light);margin-top:2px}
+.alibi-card{background:var(--paper2);border-radius:16px;padding:18px;margin-top:20px;position:relative}
+.alibi-lb{font-size:11.5px;color:var(--accent);font-weight:700;letter-spacing:.02em}
+.alibi-text{font-size:14.5px;color:var(--ink);line-height:1.8;margin-top:8px;font-style:italic}
+.hint-btn{width:100%;margin-top:16px;background:none;border:1.5px dashed var(--ink-light);color:var(--ink-light);border-radius:14px;padding:13px;font-weight:600;font-size:13px;cursor:pointer;font-family:inherit}
+.hint-text{font-size:13px;color:var(--ink-light);text-align:center;margin-top:12px;line-height:1.6}
+
+/* ── puzzle input ── */
+.puzzle-card{background:var(--paper2);border-radius:18px;padding:20px;margin-top:8px}
+.puzzle-q{font-size:14.5px;color:var(--ink);line-height:1.8}
+.puzzle-input{width:100%;margin-top:16px;border:1.5px solid var(--line);background:var(--paper);border-radius:12px;padding:14px 16px;font-size:15px;font-family:inherit;color:var(--ink);text-align:center;font-weight:700}
+.puzzle-input:focus{outline:none;border-color:var(--accent)}
+.submit-btn{width:100%;margin-top:14px;background:var(--accent);color:#fff;border:none;border-radius:14px;padding:15px;font-weight:700;font-size:15px;cursor:pointer;font-family:inherit}
+.submit-btn:active{background:var(--accent-hover)}
+.wrong-msg{text-align:center;font-size:13px;color:var(--accent);font-weight:600;margin-top:14px}
+
+/* ── result ── */
+.result-wrap{text-align:center;padding:20px 4px}
+.result-stamp{font-size:44px}
+.result-title{font-family:'Nanum Pen Script',cursive;font-size:32px;margin-top:8px;color:var(--good)}
+.result-text{font-size:14px;color:var(--ink);line-height:1.85;margin-top:18px;text-align:left;background:var(--paper2);border-radius:16px;padding:18px}
+.evidence-tag{display:inline-block;margin-top:16px;background:var(--ink);color:var(--paper);font-size:13px;font-weight:700;padding:8px 18px;border-radius:20px}
+.next-btn{width:100%;margin-top:24px;background:var(--accent);color:#fff;border:none;border-radius:14px;padding:16px;font-weight:700;font-size:15px;cursor:pointer;font-family:inherit}
+.next-btn:active{background:var(--accent-hover)}
+
+/* ── finale recap ── */
+.recap-frag{background:var(--paper2);border-radius:14px;padding:14px 16px;margin-bottom:8px;font-size:14px;color:var(--ink-light);display:flex;align-items:center;gap:10px}
+.recap-frag b{color:var(--ink)}
+.recap-num{width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.recap-full{font-family:'Nanum Pen Script',cursive;font-size:24px;text-align:center;margin:20px 0;color:var(--ink);line-height:1.5}
+
+/* ── ending ── */
+.ending-wrap{min-height:75vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px}
+.ending-emoji{font-size:56px}
+.ending-title{font-family:'Nanum Pen Script',cursive;font-size:36px;margin-top:14px;color:var(--ink)}
+.ending-text{font-size:14.5px;color:var(--ink-light);line-height:1.9;margin-top:18px;max-width:320px}
+.ending-reset{margin-top:32px;font-size:12px;color:var(--ink-light);text-decoration:underline;background:none;border:none;cursor:pointer;font-family:inherit}
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<script>
+const CASES=[
+  {id:'w1', num:1, title:'오페라하우스의 사라진 스케치', location:'서큘러키 · 오페라하우스', emoji:'🎭',
+    briefing:'개관 50주년 기념 전시를 앞둔 밤, 하버뷰 카페에 걸려 있던 오페라하우스 원본 디자인 스케치가 사라졌다. 카페는 그날 오후 8시에 문을 닫았고, 하버브릿지 조명은 정전으로 밤 9시부터 10시까지 꺼져 있었다는 게 밝혀졌다.',
+    suspects:[
+      {id:'thomas', name:'토마스', role:'카페 웨이터', emoji:'🧑‍🍳',
+        alibi:'"저는 마감하고 나서 하버브릿지 야경 보면서 산책했어요. 9시 반쯤 다리 조명이 정말 예뻤죠."',
+        hint:'그날 밤 하버브릿지 조명, 정말 볼 수 있었을까?'},
+      {id:'mia', name:'미아', role:'단골 손님', emoji:'👩',
+        alibi:'"저는 8시에 나가서 바로 집에 갔어요. 스케치는 그때까지 벽에 잘 걸려 있었어요."',
+        hint:'특별히 의심할 만한 부분은 없어 보인다.'},
+      {id:'jay', name:'제이', role:'카페 사장', emoji:'🧔',
+        alibi:'"저는 마감 정산하느라 8시 반까지 카페에 있었어요. 그때도 스케치는 그대로였습니다."',
+        hint:'정산 시간까지 카페에 있었다는 진술, 앞뒤가 맞는다.'}
+    ],
+    answer:'토마스',
+    solvedText:'토마스는 결국 시인했다. "죄송해요... 경매에 넘기면 큰돈이 될 것 같아서..." 그가 말한 "9시 반의 다리 조명"은 애초에 존재하지 않았다 — 그 시각 하버브릿지는 정전으로 캄캄했으니까.',
+    evidence:'그녀를 위해,'},
+  {id:'w2', num:2, title:'본다이 비치, 사라진 서핑보드', location:'본다이 비치', emoji:'🏄',
+    briefing:'지역 대회 우승자의 서명이 담긴 서핑보드가 라이프가드 초소에서 사라졌다. 그날 아침엔 파도가 전혀 없어서, 단 한 명의 서퍼도 바다에 들어가지 않았다는 것이 여러 목격자를 통해 확인됐다.',
+    suspects:[
+      {id:'kyle', name:'카일', role:'라이프가드', emoji:'🏊',
+        alibi:'"전 오전 내내 파도 타는 사람들 지켜보느라 정신없었어요."',
+        hint:'그날 아침, 정말 파도가 있었을까?'},
+      {id:'noah', name:'노아', role:'비치 카페 사장', emoji:'☕',
+        alibi:'"전 아침 내내 카페에서 커피 내렸어요. 손님들이 증언해 줄 거예요."',
+        hint:'여러 손님이 그를 봤다고 확인해 주었다.'},
+      {id:'bella', name:'벨라', role:'여행객', emoji:'🎨',
+        alibi:'"전 그냥 백사장에 앉아서 그림만 그리고 있었어요."',
+        hint:'그림 도구를 챙긴 흔적이 실제로 남아 있었다.'}
+    ],
+    answer:'카일',
+    solvedText:'카일은 한숨을 쉬며 인정했다. "몰래 팔아서 부모님 병원비에 보태려고 했어요..." 하지만 그날 아침 바다엔 파도가 없어 서퍼가 단 한 명도 없었다 — "파도 타는 사람들"을 지켜봤다는 그의 말부터가 거짓이었다.',
+    evidence:'가장 특별한'},
+  {id:'w3', num:3, title:'더 록스 마켓, 사라진 오팔 목걸이', location:'더 록스', emoji:'💍',
+    briefing:'주말 마켓에서 한정 판매되던 수제 오팔 목걸이가 노점상 진열대에서 사라졌다. 그날은 갑자기 소나기가 쏟아져 마켓 전체가 오후 2시에 조기 철수했다는 게 상인회 기록에 남아 있다.',
+    suspects:[
+      {id:'emily', name:'에밀리', role:'노점 상인', emoji:'💼',
+        alibi:'"전 비 오는 것도 모르고 4시까지 계속 손님을 받았어요."',
+        hint:'마켓이 몇 시에 철수했는지 다시 확인해보자.'},
+      {id:'sarah', name:'사라', role:'골동품 감정사', emoji:'🔎',
+        alibi:'"전 비가 오자마자 텐트를 정리하고 2시쯤 집에 갔어요."',
+        hint:'철수 시간과 정확히 맞아떨어진다.'},
+      {id:'daniel', name:'다니엘', role:'관광 가이드', emoji:'🧭',
+        alibi:'"저희 팀은 비 예보를 보고 1시 반에 일찌감치 철수했어요."',
+        hint:'예정보다도 이른 철수, 특별히 수상한 점은 없다.'}
+    ],
+    answer:'에밀리',
+    solvedText:'에밀리는 결국 눈물을 보였다. "이번 달 월세가 너무 급해서..." 하지만 그날 마켓은 소나기로 오후 2시에 이미 철수한 뒤였다 — "4시까지 손님을 받았다"는 그녀의 말은 애초에 성립할 수 없었다.',
+    evidence:'순간을 준비하다'}
+];
+
+const FINALE={
+  title:'최종장: 세 조각의 메시지', emoji:'📖',
+  briefing:'세 사건 모두 해결됐다. 그런데 이상한 점이 있다 — 토마스, 카일, 에밀리가 훔친 물건들엔 전부 작은 손글씨 메모가 함께 들어 있었다. 세 메모를 순서대로 이어붙이면, 완성되는 한 문장이 있다.',
+  puzzleQuestion:'위 문장이 가리키는 "계획이 시작되는 날"은 언제일까? (MMDD 4자리로 입력)',
+  answer:'0722',
+  endingText:'사건철의 마지막 장을 덮는다. 이 모든 건 하나의 신호였다 — 시드니에서, 우리의 진짜 이야기가 시작될 준비가 되었다는. 7월 22일, 그곳에서 만나.'
+};
+
+function esc(s){
+  return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function normalize(s){
+  return String(s).trim().toLowerCase().replace(/[^\p{L}\p{N}]/gu,'');
+}
+
+function loadProgress(){
+  try{ return JSON.parse(localStorage.getItem('mysteryProgressV1')) || {solved:[], evidence:{}}; }
+  catch(e){ return {solved:[], evidence:{}}; }
+}
+function saveProgress(){
+  try{ localStorage.setItem('mysteryProgressV1', JSON.stringify(progress)); }catch(e){}
+}
+let progress=loadProgress();
+
+let state={screen:'cover'};
+function go(screen, extra){ state=Object.assign({screen:screen}, extra||{}); render(); }
+
+function findCase(id){ return CASES.find(c=>c.id===id); }
+function findSuspect(caseId, suspectId){
+  const c=findCase(caseId);
+  return c ? c.suspects.find(s=>s.id===suspectId) : null;
+}
+function caseIndex(id){ return CASES.findIndex(c=>c.id===id); }
+function isUnlocked(index){ return index===0 || progress.solved.includes(CASES[index-1].id); }
+function allCasesSolved(){ return CASES.every(c=>progress.solved.includes(c.id)); }
+
+function coverHtml(){
+  return `<div class="screen cover">
+    <div class="cover-badge">🕵️</div>
+    <div class="cover-title">사건철</div>
+    <div class="cover-sub">시드니 곳곳에서 벌어진 이상한 사건들. 남겨진 알리바이 속에서 거짓말을 하나씩 찾아내 보세요.</div>
+    <button class="cover-btn" onclick="go('caseList')">사건철 열기</button>
+    ${(progress.solved.length>0)?'<button class="cover-reset" onclick="resetProgress()">진행 상황 초기화</button>':''}
+  </div>`;
+}
+
+function caseListHtml(){
+  const rows=CASES.map((c,i)=>{
+    const unlocked=isUnlocked(i);
+    const solved=progress.solved.includes(c.id);
+    const status=solved?'✅':(unlocked?'🔓':'🔒');
+    return `<div class="case-card${unlocked?'':' locked'}" onclick="${unlocked?`go('caseFile',{caseId:'${c.id}'})`:''}">
+      <div class="case-num">${c.num}</div>
+      <div class="case-body">
+        <div class="case-title">${c.emoji} ${esc(c.title)}</div>
+        <div class="case-loc">${esc(c.location)}</div>
+      </div>
+      <div class="case-status">${status}</div>
+    </div>`;
+  }).join('');
+  const finaleUnlocked=allCasesSolved();
+  const finaleSolved=progress.solved.includes('finale');
+  const finaleRow=`<div class="case-card finale${finaleUnlocked?'':' locked'}" onclick="${finaleUnlocked?`go('finaleRecap')`:''}">
+      <div class="case-num">${FINALE.emoji}</div>
+      <div class="case-body">
+        <div class="case-title">${esc(FINALE.title)}</div>
+        <div class="case-loc">세 사건을 모두 해결해야 열려요</div>
+      </div>
+      <div class="case-status">${finaleSolved?'✅':(finaleUnlocked?'🔓':'🔒')}</div>
+    </div>`;
+  return `<div class="screen">
+    <div class="top-bar">
+      <button class="back-btn" onclick="go('cover')">←</button>
+      <div class="top-title">사건 목록</div>
+    </div>
+    ${rows}
+    ${finaleRow}
+  </div>`;
+}
+
+function caseFileHtml(caseId){
+  const c=findCase(caseId);
+  const suspectsHtml=c.suspects.map(s=>`
+    <div class="suspect-card" onclick="go('suspect',{caseId:'${c.id}', suspectId:'${s.id}'})">
+      <div class="suspect-emoji">${s.emoji}</div>
+      <div>
+        <div class="suspect-name">${esc(s.name)}</div>
+        <div class="suspect-role">${esc(s.role)}</div>
+      </div>
+      <div class="suspect-arrow">›</div>
+    </div>`).join('');
+  return `<div class="screen">
+    <div class="top-bar">
+      <button class="back-btn" onclick="go('caseList')">←</button>
+      <div class="top-title">사건 ${c.num}</div>
+    </div>
+    <div class="brief-card">
+      <div class="brief-loc">${esc(c.location)}</div>
+      <div class="brief-title">${c.emoji} ${esc(c.title)}</div>
+      <div class="brief-text">${esc(c.briefing)}</div>
+    </div>
+    <div class="section-lb">용의자 3인</div>
+    ${suspectsHtml}
+    <div class="puzzle-btn-row">
+      <button class="go-puzzle-btn" onclick="go('puzzle',{caseId:'${c.id}'})">범인 지목하기</button>
+    </div>
+  </div>`;
+}
+
+function suspectHtml(caseId, suspectId){
+  const s=findSuspect(caseId, suspectId);
+  return `<div class="screen">
+    <div class="top-bar">
+      <button class="back-btn" onclick="go('caseFile',{caseId:'${caseId}'})">←</button>
+      <div class="top-title">진술 확인</div>
+    </div>
+    <div class="suspect-hero">
+      <div class="suspect-hero-emoji">${s.emoji}</div>
+      <div class="suspect-hero-name">${esc(s.name)}</div>
+      <div class="suspect-hero-role">${esc(s.role)}</div>
+    </div>
+    <div class="alibi-card">
+      <div class="alibi-lb">진술</div>
+      <div class="alibi-text">${esc(s.alibi)}</div>
+    </div>
+    <button class="hint-btn" onclick="toggleHint(this, '${caseId}', '${suspectId}')">🔍 힌트 보기</button>
+    <div class="hint-text" id="hintText" style="display:none"></div>
+  </div>`;
+}
+function toggleHint(btn, caseId, suspectId){
+  const s=findSuspect(caseId, suspectId);
+  const el=document.getElementById('hintText');
+  el.textContent=s.hint;
+  el.style.display='block';
+  btn.style.display='none';
+}
+
+function puzzleHtml(caseId){
+  const c=findCase(caseId);
+  return `<div class="screen">
+    <div class="top-bar">
+      <button class="back-btn" onclick="go('caseFile',{caseId:'${c.id}'})">←</button>
+      <div class="top-title">범인 지목</div>
+    </div>
+    <div class="puzzle-card">
+      <div class="puzzle-q">용의자 세 명의 진술을 다시 떠올려보세요. 앞뒤가 맞지 않는 사람은 누구인가요?</div>
+      <input type="text" class="puzzle-input" id="puzzleInput" placeholder="이름을 입력하세요" onkeydown="if(event.key==='Enter') submitAnswer('${c.id}')">
+      <button class="submit-btn" onclick="submitAnswer('${c.id}')">제출하기</button>
+      <div class="wrong-msg" id="wrongMsg" style="display:none">다시 생각해봐요 🔍 진술 속 사실관계를 다시 확인해보세요.</div>
+    </div>
+  </div>`;
+}
+function submitAnswer(caseId){
+  const c=findCase(caseId);
+  const input=document.getElementById('puzzleInput');
+  const val=input?input.value:'';
+  if(normalize(val)===normalize(c.answer)){
+    progress.solved.push(c.id);
+    progress.evidence[c.id]=c.evidence;
+    saveProgress();
+    go('result',{caseId:c.id});
+  }else{
+    document.getElementById('wrongMsg').style.display='block';
+  }
+}
+
+function resultHtml(caseId){
+  const c=findCase(caseId);
+  const idx=caseIndex(c.id);
+  const hasNext=idx<CASES.length-1;
+  return `<div class="screen">
+    <div class="result-wrap">
+      <div class="result-stamp">🔍</div>
+      <div class="result-title">사건 해결!</div>
+      <div class="result-text">${esc(c.solvedText)}</div>
+      <div class="evidence-tag">📜 "${esc(c.evidence)}"</div>
+      <button class="next-btn" onclick="go('caseList')">${hasNext?'다음 사건으로':'사건 목록으로'}</button>
+    </div>
+  </div>`;
+}
+
+function finaleRecapHtml(){
+  const frags=CASES.map((c,i)=>`<div class="recap-frag"><div class="recap-num">${i+1}</div><b>${esc(progress.evidence[c.id]||c.evidence)}</b></div>`).join('');
+  const full=CASES.map(c=>progress.evidence[c.id]||c.evidence).join(' ');
+  return `<div class="screen">
+    <div class="top-bar">
+      <button class="back-btn" onclick="go('caseList')">←</button>
+      <div class="top-title">${FINALE.emoji} 최종장</div>
+    </div>
+    <div class="brief-card">
+      <div class="brief-text" style="margin-top:0">${esc(FINALE.briefing)}</div>
+    </div>
+    <div class="section-lb">수집한 메모</div>
+    ${frags}
+    <div class="recap-full">"${esc(full)}"</div>
+    <div class="puzzle-card">
+      <div class="puzzle-q">${esc(FINALE.puzzleQuestion)}</div>
+      <input type="text" class="puzzle-input" id="finaleInput" placeholder="0000" inputmode="numeric" maxlength="4" onkeydown="if(event.key==='Enter') submitFinale()">
+      <button class="submit-btn" onclick="submitFinale()">제출하기</button>
+      <div class="wrong-msg" id="finaleWrongMsg" style="display:none">아직이에요. 문장을 다시 읽어보세요.</div>
+    </div>
+  </div>`;
+}
+function submitFinale(){
+  const input=document.getElementById('finaleInput');
+  const val=input?input.value:'';
+  if(normalize(val)===normalize(FINALE.answer)){
+    progress.solved.push('finale');
+    saveProgress();
+    go('ending');
+  }else{
+    document.getElementById('finaleWrongMsg').style.display='block';
+  }
+}
+
+function endingHtml(){
+  return `<div class="screen ending-wrap">
+    <div class="ending-emoji">📮</div>
+    <div class="ending-title">사건 종결</div>
+    <div class="ending-text">${esc(FINALE.endingText)}</div>
+    <button class="ending-reset" onclick="resetProgress()">처음부터 다시 풀어보기</button>
+  </div>`;
+}
+
+function resetProgress(){
+  progress={solved:[], evidence:{}};
+  saveProgress();
+  go('cover');
+}
+
+function render(){
+  const root=document.getElementById('app');
+  switch(state.screen){
+    case 'cover': root.innerHTML=coverHtml(); break;
+    case 'caseList': root.innerHTML=caseListHtml(); break;
+    case 'caseFile': root.innerHTML=caseFileHtml(state.caseId); break;
+    case 'suspect': root.innerHTML=suspectHtml(state.caseId, state.suspectId); break;
+    case 'puzzle': root.innerHTML=puzzleHtml(state.caseId); break;
+    case 'result': root.innerHTML=resultHtml(state.caseId); break;
+    case 'finaleRecap': root.innerHTML=finaleRecapHtml(); break;
+    case 'ending': root.innerHTML=endingHtml(); break;
+  }
+  window.scrollTo(0,0);
+}
+render();
+</script>
+</body>
+</html>
