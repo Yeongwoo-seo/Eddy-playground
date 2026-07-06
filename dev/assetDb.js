@@ -30,6 +30,17 @@ const DevDiag = (() => {
   if (!window.indexedDB) {
     show('이 브라우저에서는 IndexedDB를 사용할 수 없습니다 (프라이빗 모드일 수 있음). 이미지 저장이 동작하지 않습니다.');
   }
+  // Without this, browsers may treat our storage as "best effort" and quietly
+  // evict it under storage pressure — the likely cause of uploads disappearing
+  // after the app is closed and reopened, since eviction is silent otherwise.
+  if (navigator.storage && navigator.storage.persist) {
+    navigator.storage.persisted().then(already => {
+      if (already) return;
+      navigator.storage.persist().then(granted => {
+        if (!granted) show('브라우저가 영구 저장을 허용하지 않았습니다. 저장 공간이 부족하면 업로드한 이미지가 다음에 열 때 사라질 수 있습니다.');
+      });
+    });
+  }
   return { show };
 })();
 
