@@ -25,7 +25,10 @@ html,body{height:100%;overflow:hidden}
 body{background:#000;color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center}
 
 /* ===== Layer 0: frame (mobile viewport, 414x896-ish, safe-area aware) ===== */
-.vn-frame{position:relative;width:100%;max-width:430px;height:100dvh;height:100vh;overflow:hidden;background:#0d1114}
+/* --vh100 (set via JS from window.innerHeight) overrides dvh/vh when present —
+   iOS Safari has a history of miscalculating 100dvh after certain navigation/
+   scroll sequences, leaving a stale gap below the frame. */
+.vn-frame{position:relative;width:100%;max-width:430px;height:100dvh;height:100vh;height:var(--vh100, 100vh);overflow:hidden;background:#0d1114}
 
 /* ===== Layer 1: Background ===== */
 .bg-layer{position:absolute;inset:0;background-size:cover;background-position:center;background-color:#0d1114;transition:background-image .2s ease}
@@ -82,6 +85,19 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .transform-output{background:var(--surface-2);border:1px solid var(--divider);border-radius:8px;padding:8px 10px;font-family:var(--mono);font-size:10px;color:var(--cyan);margin-top:10px;white-space:pre-wrap;word-break:break-all}
 .transform-output.hidden{display:none}
 </style>
+<script>
+// iOS Safari's 100dvh has a history of getting stuck at a stale (too-small)
+// value after certain navigation/scroll sequences, leaving a dead gap below
+// the frame. window.innerHeight doesn't have that bug, so measure it
+// ourselves and let --vh100 win over dvh/vh in the CSS below.
+function setVh100() {
+  document.documentElement.style.setProperty('--vh100', window.innerHeight + 'px');
+}
+setVh100();
+window.addEventListener('resize', setVh100);
+window.addEventListener('orientationchange', setVh100);
+if (window.visualViewport) window.visualViewport.addEventListener('resize', setVh100);
+</script>
 </head>
 <body>
 <div class="vn-frame" id="frame">

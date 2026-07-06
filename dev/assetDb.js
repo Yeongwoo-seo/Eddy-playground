@@ -49,6 +49,13 @@ const DevDiag = (() => {
 })();
 
 const AssetDB = (() => {
+  // /dev/game re-requests the active character/background asset on every
+  // single dialogue line change, even when it's the same asset as before —
+  // without a cache that's a Supabase round-trip per tap, which is exactly
+  // why lines were visibly slow to appear. Cached per page session (a fresh
+  // page load starts empty, so edits made elsewhere are always picked up).
+  const cache = new Map();
+
   function restHeaders(extra) {
     return Object.assign({
       apikey: SUPABASE_ANON_KEY,
@@ -87,7 +94,9 @@ const AssetDB = (() => {
       body: JSON.stringify(row),
     });
     if (!insertRes.ok) throw new Error(`이미지 정보 저장 실패 (${insertRes.status}): ${await insertRes.text()}`);
-    return toAsset(row);
+    const asset = toAsset(row);
+    cache.set(asset.id, asset);
+    return asset;
   }
 
   async function getAssetsByType(type) {
@@ -96,17 +105,22 @@ const AssetDB = (() => {
     });
     if (!res.ok) throw new Error(`이미지 목록을 불러오지 못했습니다 (${res.status})`);
     const rows = await res.json();
-    return rows.map(toAsset);
+    const assets = rows.map(toAsset);
+    assets.forEach(a => cache.set(a.id, a));
+    return assets;
   }
 
   async function getAsset(id) {
     if (!id) return null;
+    if (cache.has(id)) return cache.get(id);
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${DEV_ASSETS_TABLE}?id=eq.${encodeURIComponent(id)}&select=*`, {
       headers: restHeaders(),
     });
     if (!res.ok) throw new Error(`이미지를 불러오지 못했습니다 (${res.status})`);
     const rows = await res.json();
-    return rows.length ? toAsset(rows[0]) : null;
+    const asset = rows.length ? toAsset(rows[0]) : null;
+    if (asset) cache.set(id, asset);
+    return asset;
   }
 
   async function deleteAsset(id) {
@@ -125,6 +139,7 @@ const AssetDB = (() => {
       method: 'DELETE',
       headers: restHeaders(),
     });
+    cache.delete(id);
   }
 
   return { addAsset, getAssetsByType, getAsset, deleteAsset };
