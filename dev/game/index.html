@@ -265,7 +265,22 @@ function setCharacterAsset(asset) {
 
 async function applyBackground() {
   const bgAsset = await AssetDB.getAsset(DevGameState.getBackgroundId());
+  if (bgAsset) await AssetDB.preloadImage(bgAsset.dataUrl);
   setBackground(bgAsset);
+}
+
+// Warms both the metadata cache and the browser's own image cache for every
+// character a line might show, before the first line is shown — a mid-
+// dialogue character swap (e.g. 지수 ↔ 영우) then never waits on the network,
+// which is what made the character portrait visibly lag behind the text.
+async function preloadCharacterAssetsForLines(lines) {
+  const characterIds = [...new Set(lines.map(l => l.characterId).filter(Boolean))];
+  await Promise.all(characterIds.map(async (characterId) => {
+    const assetId = DevGameState.getCharacterAssetId(characterId);
+    if (!assetId) return;
+    const asset = await AssetDB.getAsset(assetId).catch(() => null);
+    if (asset) await AssetDB.preloadImage(asset.dataUrl);
+  }));
 }
 
 function applyTransformToImage(transform) {
@@ -327,6 +342,7 @@ async function initSceneMode(scene) {
   if (scene.backgroundId) {
     let bgAsset = null;
     try { bgAsset = await AssetDB.getAsset(scene.backgroundId); } catch (e) { /* surfaced via DevDiag */ }
+    if (bgAsset) await AssetDB.preloadImage(bgAsset.dataUrl);
     setBackground(bgAsset);
     if (!bgAsset) messages.push('MISSING BACKGROUND ASSET');
   } else {
@@ -338,6 +354,7 @@ async function initSceneMode(scene) {
     let charAsset = null;
     try { charAsset = await AssetDB.getAsset(scene.character.assetId); } catch (e) { /* surfaced via DevDiag */ }
     if (charAsset) {
+      await AssetDB.preloadImage(charAsset.dataUrl);
       activeSceneCharacterAsset = charAsset;
       setCharacterAsset(charAsset);
       applySceneCharacterTransform(scene.character);
@@ -515,6 +532,7 @@ el.exitSceneBtn.addEventListener('click', (e) => {
   }
   await resolveDialogueSource();
   await applyBackground();
+  await preloadCharacterAssetsForLines(activeLines);
   player.load(activeLines);
 })();
 </script>
