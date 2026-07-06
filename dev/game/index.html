@@ -143,12 +143,37 @@ if ('serviceWorker' in navigator) {
 </script>
 <script src="/dev/assetDb.js"></script>
 <script src="/dev/dialogueData.js"></script>
+<script src="/dev/dialogueDb.js"></script>
+<script src="/dev/vnPlayer.js"></script>
 <script>
-const TYPE_SPEED_MS = 28;
+// Custom Dialogue Sets (from /dev/dialogue) have no per-speaker character
+// identity, just a characterVisible flag — so all visible lines in a custom
+// set share this one asset/transform slot instead of the named
+// jisoo/youngwoo slots the hardcoded test dialogue uses.
+const CUSTOM_CHARACTER_KEY = '__custom__';
 
-let currentIndex = 0;
-let typingTimer = null;
-let isTyping = false;
+let activeLines = dialogueTest.map(l => ({ speaker: l.speaker, text: l.text, characterId: l.characterId }));
+let dialogueMode = 'default';
+
+async function resolveDialogueSource() {
+  const selectedId = DevDialogueState.getSelectedDialogueSetId();
+  if (!selectedId) return;
+  const set = await DialogueDB.getDialogueSet(selectedId);
+  if (set && Array.isArray(set.lines) && set.lines.length) {
+    dialogueMode = 'custom';
+    activeLines = set.lines.map(l => ({
+      speaker: l.speaker,
+      text: l.text,
+      characterId: l.characterVisible ? CUSTOM_CHARACTER_KEY : null,
+      typingSpeedMs: l.typingSpeedMs,
+    }));
+    return;
+  }
+  // selectedDialogueSetId points at a set that no longer exists (deleted
+  // after being selected) — fall back to the default test dialogue instead
+  // of crashing, per the Dialogue Editor's "missing data" test scenario.
+  DevDiag.show('DIALOGUE SET NOT FOUND — 기본 테스트 대사로 전환합니다.');
+}
 
 const el = {
   frame: document.getElementById('frame'),
@@ -227,43 +252,28 @@ function updateArrow(show) {
   el.tapArrow.classList.toggle('show', !!show);
 }
 
-function typeText(text) {
-  clearInterval(typingTimer);
-  el.dialogueText.textContent = '';
-  el.dialogueText.dataset.full = text;
-  isTyping = true;
-  updateArrow(false);
-  let i = 0;
-  typingTimer = setInterval(() => {
-    i++;
-    el.dialogueText.textContent = text.slice(0, i);
-    if (i >= text.length) {
-      clearInterval(typingTimer);
-      isTyping = false;
-      updateArrow(true);
-    }
-  }, TYPE_SPEED_MS);
-}
-
-function showLine(index) {
-  const line = dialogueTest[index];
-  el.speakerName.textContent = line.speaker || '';
-  applyCharacterForLine(line.characterId);
-  typeText(line.text);
-  // Keep the transform popup in sync if it's left open while tapping through lines.
-  if (!el.transformPopup.classList.contains('hidden')) loadTransformIntoSliders();
-}
+const player = createVNPlayer({
+  onLineChange: (line) => {
+    el.speakerName.textContent = line.speaker || '';
+    applyCharacterForLine(line.characterId);
+    // Keep the transform popup in sync if it's left open while tapping through lines.
+    if (!el.transformPopup.classList.contains('hidden')) loadTransformIntoSliders();
+  },
+  onTextUpdate: (text) => { el.dialogueText.textContent = text; },
+  onArrow: updateArrow,
+  onComplete: () => player.restart(),
+});
 
 function onTap() {
-  if (isTyping) {
-    clearInterval(typingTimer);
-    el.dialogueText.textContent = el.dialogueText.dataset.full;
-    isTyping = false;
-    updateArrow(true);
-    return;
-  }
-  currentIndex = currentIndex < dialogueTest.length - 1 ? currentIndex + 1 : 0;
-  showLine(currentIndex);
+  player.tap();
+}
+
+function selectableCharacters() {
+  // Custom Dialogue Sets share one asset slot (CUSTOM_CHARACTER_KEY);
+  // the hardcoded test dialogue keeps its per-name slots (지수/영우).
+  return dialogueMode === 'custom'
+    ? [{ id: CUSTOM_CHARACTER_KEY, name: '대화 세트 캐릭터' }]
+    : dialogueCharacters;
 }
 
 async function renderAssetSelectors() {
@@ -273,7 +283,8 @@ async function renderAssetSelectors() {
   ]);
   fillSelect(el.bgSelect, bgs, DevGameState.getBackgroundId());
 
-  el.characterFields.innerHTML = dialogueCharacters.map(c => `
+  const characters = selectableCharacters();
+  el.characterFields.innerHTML = characters.map(c => `
     <div class="sheet-field">
       <label>${escapeHtml(c.name)}</label>
       <select data-character-key="${c.id}"></select>
@@ -284,7 +295,8 @@ async function renderAssetSelectors() {
     fillSelect(selectEl, chars, DevGameState.getCharacterAssetId(key));
     selectEl.addEventListener('change', async (e) => {
       DevGameState.setCharacterAssetId(key, e.target.value || null);
-      await applyCharacterForLine(dialogueTest[currentIndex].characterId);
+      const activeLine = activeLines[player.getState().index];
+      await applyCharacterForLine(activeLine.characterId);
     });
   });
 }
@@ -311,7 +323,7 @@ function updateSliderLabels(transform) {
 
 // Sliders always edit the character currently on screen (the active line's characterId).
 function loadTransformIntoSliders() {
-  const characterId = dialogueTest[currentIndex].characterId;
+  const characterId = activeLines[player.getState().index].characterId;
   const transform = DevGameState.getCharacterTransform(characterId);
   el.xRange.value = transform.x;
   el.yRange.value = transform.y;
@@ -329,7 +341,7 @@ function loadTransformIntoSliders() {
 }));
 
 el.confirmTransformBtn.addEventListener('click', () => {
-  const characterId = dialogueTest[currentIndex].characterId;
+  const characterId = activeLines[player.getState().index].characterId;
   if (!characterId) return;
   const transform = readSliderTransform();
   DevGameState.setCharacterTransform(characterId, transform);
@@ -364,8 +376,9 @@ el.transformBtn.addEventListener('click', (e) => {
 el.transformPopup.addEventListener('click', (e) => e.stopPropagation());
 
 (async function init() {
+  await resolveDialogueSource();
   await applyBackground();
-  showLine(currentIndex);
+  player.load(activeLines);
 })();
 </script>
 </body>
