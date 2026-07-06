@@ -1,11 +1,18 @@
 /* OPERATION MK DEV — isolated MVP sandbox, not part of the main game.
-   IndexedDB asset store (background/character images) +
-   localStorage-backed selection state for /dev/game.
+   Background/character images live in Supabase Storage (bucket:
+   dev-assets) with metadata in the dev_assets table, so an upload
+   survives closing the app, reinstalling it, or switching devices —
+   unlike browser-local IndexedDB/localStorage, which several rounds of
+   on-device testing showed getting silently evicted. Selection state
+   (which asset is assigned to which character) stays in localStorage,
+   backed by navigator.storage.persist() below; it's cheap to redo if lost. */
 
-   Images are stored as base64 data URLs rather than raw Blobs — iOS
-   Safari has a long history of silently failing or corrupting Blobs
-   stored directly in IndexedDB, while data URL strings round-trip
-   reliably everywhere and need no URL.createObjectURL/revoke cleanup. */
+// Supabase anon key is meant to be public/client-side (that's the whole
+// point of the "anon" role) — same project already used by planner.html.
+const SUPABASE_URL = 'https://dhtstqnksjoyyshnhksv.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRodHN0cW5rc2pveXlzaG5oa3N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5NjIyNzQsImV4cCI6MjA5ODUzODI3NH0.FMZdCXntYJKxQeYNwfrsy1liJcHIkD2inJ4NzbwLzd4';
+const DEV_ASSETS_BUCKET = 'dev-assets';
+const DEV_ASSETS_TABLE = 'dev_assets';
 
 // On-screen error banner so real failures (storage quota, private-browsing
 // restrictions, etc.) are visible on the phone itself instead of failing
@@ -27,17 +34,14 @@ const DevDiag = (() => {
     const reason = e.reason;
     show(reason && reason.message ? reason.message : String(reason));
   });
-  if (!window.indexedDB) {
-    show('이 브라우저에서는 IndexedDB를 사용할 수 없습니다 (프라이빗 모드일 수 있음). 이미지 저장이 동작하지 않습니다.');
-  }
-  // Without this, browsers may treat our storage as "best effort" and quietly
-  // evict it under storage pressure — the likely cause of uploads disappearing
-  // after the app is closed and reopened, since eviction is silent otherwise.
+  // Selection state (which asset each character uses) still lives in
+  // localStorage — request persistence so it isn't evicted under storage
+  // pressure either, even though the images themselves no longer depend on it.
   if (navigator.storage && navigator.storage.persist) {
     navigator.storage.persisted().then(already => {
       if (already) return;
       navigator.storage.persist().then(granted => {
-        if (!granted) show('브라우저가 영구 저장을 허용하지 않았습니다. 저장 공간이 부족하면 업로드한 이미지가 다음에 열 때 사라질 수 있습니다.');
+        if (!granted) show('브라우저가 영구 저장을 허용하지 않았습니다. 캐릭터/배경 선택 상태가 저장 공간 부족 시 초기화될 수 있습니다.');
       });
     });
   }
@@ -45,73 +49,81 @@ const DevDiag = (() => {
 })();
 
 const AssetDB = (() => {
-  const DB_NAME = 'operation-mk-dev';
-  const DB_VERSION = 1;
-  const STORE = 'assets';
-  let dbPromise = null;
-
-  function openDb() {
-    if (dbPromise) return dbPromise;
-    dbPromise = new Promise((resolve, reject) => {
-      const req = indexedDB.open(DB_NAME, DB_VERSION);
-      req.onupgradeneeded = () => {
-        const store = req.result.createObjectStore(STORE, { keyPath: 'id' });
-        store.createIndex('type', 'type', { unique: false });
-      };
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => reject(req.error);
-    });
-    return dbPromise;
+  function restHeaders(extra) {
+    return Object.assign({
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      'Content-Type': 'application/json',
+    }, extra || {});
   }
 
-  function blobToDataUrl(blob) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = () => reject(reader.error);
-      reader.readAsDataURL(blob);
-    });
+  function toAsset(row) {
+    // `dataUrl` kept as the field name consumers read (game/upload pages) —
+    // it's just a public Storage URL now instead of a base64 string.
+    return { id: row.id, type: row.type, name: row.name, width: row.width, height: row.height, dataUrl: row.url };
   }
 
   async function addAsset({ type, name, blob, width, height }) {
-    const dataUrl = await blobToDataUrl(blob);
-    const db = await openDb();
     const id = `${type}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-    const record = { id, type, name, dataUrl, width, height, createdAt: Date.now() };
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE, 'readwrite');
-      tx.objectStore(STORE).put(record);
-      tx.oncomplete = () => resolve(record);
-      tx.onerror = () => reject(tx.error);
+    const ext = (name.split('.').pop() || 'png').toLowerCase().replace(/[^a-z0-9]/g, '') || 'png';
+    const path = `${type}/${id}.${ext}`;
+
+    const uploadRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${DEV_ASSETS_BUCKET}/${path}`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': blob.type || 'application/octet-stream',
+      },
+      body: blob,
     });
+    if (!uploadRes.ok) throw new Error(`이미지 업로드 실패 (${uploadRes.status}): ${await uploadRes.text()}`);
+
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${path}`;
+    const row = { id, type, name, path, url, width, height };
+    const insertRes = await fetch(`${SUPABASE_URL}/rest/v1/${DEV_ASSETS_TABLE}`, {
+      method: 'POST',
+      headers: restHeaders({ Prefer: 'return=minimal' }),
+      body: JSON.stringify(row),
+    });
+    if (!insertRes.ok) throw new Error(`이미지 정보 저장 실패 (${insertRes.status}): ${await insertRes.text()}`);
+    return toAsset(row);
   }
 
   async function getAssetsByType(type) {
-    const db = await openDb();
-    return new Promise((resolve, reject) => {
-      const req = db.transaction(STORE, 'readonly').objectStore(STORE).index('type').getAll(type);
-      req.onsuccess = () => resolve(req.result.sort((a, b) => b.createdAt - a.createdAt));
-      req.onerror = () => reject(req.error);
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${DEV_ASSETS_TABLE}?type=eq.${encodeURIComponent(type)}&order=created_at.desc`, {
+      headers: restHeaders(),
     });
+    if (!res.ok) throw new Error(`이미지 목록을 불러오지 못했습니다 (${res.status})`);
+    const rows = await res.json();
+    return rows.map(toAsset);
   }
 
   async function getAsset(id) {
     if (!id) return null;
-    const db = await openDb();
-    return new Promise((resolve, reject) => {
-      const req = db.transaction(STORE, 'readonly').objectStore(STORE).get(id);
-      req.onsuccess = () => resolve(req.result || null);
-      req.onerror = () => reject(req.error);
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${DEV_ASSETS_TABLE}?id=eq.${encodeURIComponent(id)}&select=*`, {
+      headers: restHeaders(),
     });
+    if (!res.ok) throw new Error(`이미지를 불러오지 못했습니다 (${res.status})`);
+    const rows = await res.json();
+    return rows.length ? toAsset(rows[0]) : null;
   }
 
   async function deleteAsset(id) {
-    const db = await openDb();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE, 'readwrite');
-      tx.objectStore(STORE).delete(id);
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${DEV_ASSETS_TABLE}?id=eq.${encodeURIComponent(id)}&select=path`, {
+      headers: restHeaders(),
+    });
+    const rows = res.ok ? await res.json() : [];
+    const path = rows[0] && rows[0].path;
+    if (path) {
+      await fetch(`${SUPABASE_URL}/storage/v1/object/${DEV_ASSETS_BUCKET}/${path}`, {
+        method: 'DELETE',
+        headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+      });
+    }
+    await fetch(`${SUPABASE_URL}/rest/v1/${DEV_ASSETS_TABLE}?id=eq.${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+      headers: restHeaders(),
     });
   }
 
