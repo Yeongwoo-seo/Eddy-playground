@@ -82,7 +82,7 @@ const AssetDB = (() => {
 })();
 
 const DevGameState = {
-  _keys: { background: 'mkDevSelectedBackground', characters: 'mkDevSelectedCharacters' },
+  _keys: { background: 'mkDevSelectedBackground', characters: 'mkDevSelectedCharacters', transforms: 'mkDevCharacterTransforms' },
   getBackgroundId() { return localStorage.getItem(this._keys.background) || null; },
   setBackgroundId(id) { id ? localStorage.setItem(this._keys.background, id) : localStorage.removeItem(this._keys.background); },
 
@@ -100,5 +100,21 @@ const DevGameState = {
     const map = this._loadCharacterMap();
     if (assetId) map[characterKey] = assetId; else delete map[characterKey];
     localStorage.setItem(this._keys.characters, JSON.stringify(map));
+  },
+
+  _loadTransformMap() {
+    try { return JSON.parse(localStorage.getItem(this._keys.transforms)) || {}; }
+    catch (e) { return {}; }
+  },
+  // CharacterTransform = { x, y, scale }, one per named character.
+  getCharacterTransform(characterKey) {
+    const defaults = { x: 0, y: 0, scale: 1 };
+    if (!characterKey) return defaults;
+    return this._loadTransformMap()[characterKey] || defaults;
+  },
+  setCharacterTransform(characterKey, transform) {
+    const map = this._loadTransformMap();
+    map[characterKey] = transform;
+    localStorage.setItem(this._keys.transforms, JSON.stringify(map));
   },
 };
