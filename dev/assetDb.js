@@ -7,6 +7,32 @@
    stored directly in IndexedDB, while data URL strings round-trip
    reliably everywhere and need no URL.createObjectURL/revoke cleanup. */
 
+// On-screen error banner so real failures (storage quota, private-browsing
+// restrictions, etc.) are visible on the phone itself instead of failing
+// silently — Safari's remote inspector isn't always within reach mid-test.
+const DevDiag = (() => {
+  let bannerEl = null;
+  function show(message) {
+    if (!bannerEl) {
+      bannerEl = document.createElement('div');
+      bannerEl.id = 'devDiagBanner';
+      bannerEl.style.cssText = 'position:fixed;left:12px;right:12px;bottom:12px;z-index:9999;background:#3a0d0d;color:#ffb4b4;border:1px solid #d94141;border-radius:10px;padding:12px 14px;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11.5px;line-height:1.5;white-space:pre-wrap;word-break:break-all;box-shadow:0 8px 24px rgba(0,0,0,.4)';
+      bannerEl.addEventListener('click', () => bannerEl.remove());
+      document.body.appendChild(bannerEl);
+    }
+    bannerEl.textContent = 'DEV ERROR (탭하면 닫힘): ' + message;
+  }
+  window.addEventListener('error', (e) => show(e.message || String(e.error)));
+  window.addEventListener('unhandledrejection', (e) => {
+    const reason = e.reason;
+    show(reason && reason.message ? reason.message : String(reason));
+  });
+  if (!window.indexedDB) {
+    show('이 브라우저에서는 IndexedDB를 사용할 수 없습니다 (프라이빗 모드일 수 있음). 이미지 저장이 동작하지 않습니다.');
+  }
+  return { show };
+})();
+
 const AssetDB = (() => {
   const DB_NAME = 'operation-mk-dev';
   const DB_VERSION = 1;
