@@ -33,6 +33,13 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .tab-btn{flex:1;padding:12px;border-radius:10px;background:var(--surface-1);border:1px solid var(--divider);color:var(--text-secondary);font-size:13px;font-weight:600;font-family:var(--mono);letter-spacing:.05em;cursor:pointer}
 .tab-btn.active{background:var(--surface-3);color:var(--cyan);border-color:rgba(89,184,200,.4)}
 
+.char-picker{margin-bottom:18px}
+.char-picker.hidden{display:none}
+.char-picker-label{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px}
+.char-picker-pills{display:flex;gap:8px;flex-wrap:wrap}
+.char-pill{padding:9px 16px;border-radius:20px;background:var(--surface-1);border:1px solid var(--divider);color:var(--text-secondary);font-size:13px;font-weight:600;cursor:pointer}
+.char-pill.active{background:rgba(89,184,200,.12);color:var(--cyan);border-color:rgba(89,184,200,.4)}
+
 .dropzone{border:1.5px dashed var(--divider);border-radius:14px;padding:36px 16px;text-align:center;margin-bottom:8px;transition:border-color .15s,background .15s}
 .dropzone.drag{border-color:var(--cyan);background:rgba(89,184,200,.06)}
 .dropzone-icon{font-size:26px;margin-bottom:10px}
@@ -56,6 +63,7 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .asset-card{display:flex;align-items:center;gap:12px;background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:12px;margin-bottom:10px}
 .asset-thumb{width:56px;height:56px;border-radius:8px;object-fit:cover;background:var(--surface-3);flex-shrink:0;cursor:pointer}
 .asset-info{flex:1;min-width:0}
+.asset-tag{display:inline-block;font-family:var(--mono);font-size:9.5px;letter-spacing:.05em;color:var(--cyan);background:rgba(89,184,200,.12);border-radius:10px;padding:2px 8px;margin-bottom:4px}
 .asset-name{font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .asset-meta{font-size:11.5px;color:var(--text-muted);margin-top:2px;font-family:var(--mono)}
 .asset-actions{display:flex;flex-direction:column;gap:6px;flex-shrink:0}
@@ -78,6 +86,11 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
   <div class="tabs">
     <button class="tab-btn active" id="tabBackground">BACKGROUND</button>
     <button class="tab-btn" id="tabCharacter">CHARACTER</button>
+  </div>
+
+  <div class="char-picker hidden" id="charPicker">
+    <div class="char-picker-label">어떤 등장인물의 사진인가요?</div>
+    <div class="char-picker-pills" id="charPickerPills"></div>
   </div>
 
   <div class="dropzone" id="dropzone">
@@ -117,11 +130,14 @@ if ('serviceWorker' in navigator) {
 <script src="/dev/dialogueData.js"></script>
 <script>
 let currentType = 'background';
+let currentCharacterKey = dialogueCharacters[0].id;
 let pendingFile = null;
 
 const el = {
   tabBackground: document.getElementById('tabBackground'),
   tabCharacter: document.getElementById('tabCharacter'),
+  charPicker: document.getElementById('charPicker'),
+  charPickerPills: document.getElementById('charPickerPills'),
   dropzone: document.getElementById('dropzone'),
   selectBtn: document.getElementById('selectBtn'),
   fileInput: document.getElementById('fileInput'),
@@ -144,10 +160,34 @@ function selectType(type) {
   currentType = type;
   el.tabBackground.classList.toggle('active', type === 'background');
   el.tabCharacter.classList.toggle('active', type === 'character');
+  el.charPicker.classList.toggle('hidden', type !== 'character');
   el.fileInput.accept = type === 'background' ? 'image/jpeg,image/png,image/webp' : 'image/png,image/webp';
   el.typeHint.textContent = type === 'background' ? '.jpg · .jpeg · .png · .webp' : '.png · .webp (투명 배경 권장)';
-  el.saveBtn.textContent = type === 'background' ? 'SAVE BACKGROUND' : 'SAVE CHARACTER';
+  if (type === 'character') renderCharPicker();
+  updateSaveBtnLabel();
   clearPending();
+}
+
+function renderCharPicker() {
+  el.charPickerPills.innerHTML = dialogueCharacters.map(c =>
+    `<button class="char-pill${c.id === currentCharacterKey ? ' active' : ''}" data-key="${c.id}">${escapeHtml(c.name)}</button>`
+  ).join('');
+  el.charPickerPills.querySelectorAll('.char-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentCharacterKey = btn.dataset.key;
+      renderCharPicker();
+      updateSaveBtnLabel();
+    });
+  });
+}
+
+function updateSaveBtnLabel() {
+  if (currentType === 'background') {
+    el.saveBtn.textContent = 'SAVE BACKGROUND';
+  } else {
+    const name = dialogueCharacters.find(c => c.id === currentCharacterKey).name;
+    el.saveBtn.textContent = `${name} 사진으로 저장`;
+  }
 }
 
 function clearPending() {
@@ -203,7 +243,10 @@ function renderPreview(url) {
 async function saveAsset() {
   if (!pendingFile) return;
   try {
-    await AssetDB.addAsset({ type: currentType, name: pendingFile.name, blob: pendingFile.blob, width: pendingFile.width, height: pendingFile.height });
+    const record = await AssetDB.addAsset({ type: currentType, name: pendingFile.name, blob: pendingFile.blob, width: pendingFile.width, height: pendingFile.height });
+    // Character uploads are already tied to a picked cast member — assign
+    // immediately instead of making the user hit a separate "사용" button.
+    if (currentType === 'character') DevGameState.setCharacterAssetId(currentCharacterKey, record.id);
     clearPending();
     await refreshLists();
   } catch (err) {
@@ -235,9 +278,14 @@ function renderList(listKey, assets) {
     const actionButtons = a.type === 'background'
       ? `<button class="use" onclick="useAsBackground('${a.id}')">USE IN TEST</button>`
       : dialogueCharacters.map(c => `<button class="use" onclick="useAsCharacter('${c.id}','${a.id}')">${escapeHtml(c.name)}로 사용</button>`).join('');
+    const assignedTo = a.type === 'character'
+      ? dialogueCharacters.filter(c => DevGameState.getCharacterAssetId(c.id) === a.id).map(c => c.name)
+      : [];
+    const tag = assignedTo.length ? `<span class="asset-tag">${escapeHtml(assignedTo.join(' · '))} 사용 중</span><br>` : '';
     return `<div class="asset-card">
       <img class="asset-thumb" src="${url}" data-url="${url}" onclick="previewAsset(this.dataset.url)">
       <div class="asset-info">
+        ${tag}
         <div class="asset-name">${escapeHtml(a.name)}</div>
         <div class="asset-meta">${a.width} × ${a.height}</div>
       </div>
