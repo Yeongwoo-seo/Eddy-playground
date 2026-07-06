@@ -183,12 +183,18 @@ if ('serviceWorker' in navigator) {
 <script type="module">
 // Client-side AI background removal (WASM) — no server involved. Downloads
 // a model on first use, so it needs network the first time it's clicked.
-// Unpinned (no @version) so jsDelivr always resolves the latest published
-// build — this environment couldn't reach the CDN to verify an exact version.
+// jsDelivr's "+esm" endpoint auto-bundles the package into a working ES
+// module regardless of its internal dist layout — a guessed dist/*.mjs path
+// failed on a real device, so don't guess the internal file structure again.
 // Dynamic import (not a static `import` statement) so a load failure is
 // catchable here instead of failing the whole module silently.
-window.__removeBackgroundReady = import('https://cdn.jsdelivr.net/npm/@imgly/background-removal/dist/browser.mjs')
-  .then(mod => { window.__removeBackground = mod.removeBackground; })
+window.__removeBackgroundReady = import('https://cdn.jsdelivr.net/npm/@imgly/background-removal/+esm')
+  .then(mod => {
+    if (typeof mod.removeBackground !== 'function') {
+      throw new Error('모듈은 로드됐지만 removeBackground 함수를 찾지 못함 (exports: ' + Object.keys(mod).join(', ') + ')');
+    }
+    window.__removeBackground = mod.removeBackground;
+  })
   .catch(err => {
     window.__removeBackgroundLoadError = err;
   });
