@@ -1,6 +1,11 @@
 /* OPERATION MK DEV — isolated MVP sandbox, not part of the main game.
-   IndexedDB asset store (background/character image blobs) +
-   localStorage-backed selection state for /dev/game. */
+   IndexedDB asset store (background/character images) +
+   localStorage-backed selection state for /dev/game.
+
+   Images are stored as base64 data URLs rather than raw Blobs — iOS
+   Safari has a long history of silently failing or corrupting Blobs
+   stored directly in IndexedDB, while data URL strings round-trip
+   reliably everywhere and need no URL.createObjectURL/revoke cleanup. */
 
 const AssetDB = (() => {
   const DB_NAME = 'operation-mk-dev';
@@ -22,10 +27,20 @@ const AssetDB = (() => {
     return dbPromise;
   }
 
+  function blobToDataUrl(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(blob);
+    });
+  }
+
   async function addAsset({ type, name, blob, width, height }) {
+    const dataUrl = await blobToDataUrl(blob);
     const db = await openDb();
     const id = `${type}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-    const record = { id, type, name, blob, width, height, createdAt: Date.now() };
+    const record = { id, type, name, dataUrl, width, height, createdAt: Date.now() };
     return new Promise((resolve, reject) => {
       const tx = db.transaction(STORE, 'readwrite');
       tx.objectStore(STORE).put(record);
