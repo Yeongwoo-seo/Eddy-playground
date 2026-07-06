@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>OPERATION MK · DEV</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<meta name="theme-color" content="#080A0C">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#080A0C;--surface-1:#101419;--surface-2:#171C22;
+  --text-primary:#EDF1F4;--text-secondary:#929BA5;--text-muted:#5F6872;
+  --cyan:#59B8C8;--amber:#D6A84B;--divider:rgba(255,255,255,0.08);
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sans:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
+}
+html,body{height:100%}
+body{background:#050607;color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center;min-height:100dvh}
+.frame{width:100%;max-width:430px;min-height:100dvh;min-height:100vh;padding:calc(48px + env(safe-area-inset-top,0)) 20px calc(32px + env(safe-area-inset-bottom,0));display:flex;flex-direction:column}
+.tag{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px}
+.title{font-size:26px;font-weight:700;letter-spacing:-.2px;margin-bottom:10px}
+.sub{font-size:14px;color:var(--text-secondary);margin-bottom:40px;line-height:1.6}
+.menu{display:flex;flex-direction:column;gap:14px}
+.menu-btn{display:flex;align-items:center;gap:14px;background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:20px;text-decoration:none;color:inherit;transition:transform .15s,background .15s}
+.menu-btn:active{transform:scale(.98);background:var(--surface-2)}
+.menu-icon{width:40px;height:40px;border-radius:10px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.menu-txt{flex:1;min-width:0}
+.menu-name{font-size:16px;font-weight:700}
+.menu-desc{font-size:12.5px;color:var(--text-secondary);margin-top:3px;line-height:1.5}
+.menu-arrow{color:var(--text-muted);font-size:18px;flex-shrink:0}
+.foot{margin-top:auto;padding-top:32px;font-family:var(--mono);font-size:10.5px;color:var(--text-muted);letter-spacing:.06em;text-align:center}
+</style>
+</head>
+<body>
+<div class="frame">
+  <div class="tag">Operation MK</div>
+  <div class="title">DEV</div>
+  <div class="sub">비주얼노벨 대화 UX와 배경·캐릭터 업로드 흐름만 검증하는 개발용 페이지입니다.</div>
+
+  <div class="menu">
+    <a class="menu-btn" href="game/">
+      <div class="menu-icon">🎬</div>
+      <div class="menu-txt">
+        <div class="menu-name">게임 화면 테스트</div>
+        <div class="menu-desc">배경·캐릭터·대사 UI를 실제 대화 흐름으로 확인합니다</div>
+      </div>
+      <div class="menu-arrow">›</div>
+    </a>
+    <a class="menu-btn" href="upload/">
+      <div class="menu-icon">🖼️</div>
+      <div class="menu-txt">
+        <div class="menu-name">사진 업로드</div>
+        <div class="menu-desc">배경/캐릭터 이미지를 업로드하고 테스트 화면에 바로 반영합니다</div>
+      </div>
+      <div class="menu-arrow">›</div>
+    </a>
+  </div>
+
+  <div class="foot">MVP v0.1 · NOT PART OF FINAL GAME</div>
+</div>
+</body>
+</html>
