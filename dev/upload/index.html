@@ -185,8 +185,13 @@ if ('serviceWorker' in navigator) {
 // a model on first use, so it needs network the first time it's clicked.
 // Unpinned (no @version) so jsDelivr always resolves the latest published
 // build — this environment couldn't reach the CDN to verify an exact version.
-import { removeBackground } from 'https://cdn.jsdelivr.net/npm/@imgly/background-removal/dist/browser.mjs';
-window.__removeBackground = removeBackground;
+// Dynamic import (not a static `import` statement) so a load failure is
+// catchable here instead of failing the whole module silently.
+window.__removeBackgroundReady = import('https://cdn.jsdelivr.net/npm/@imgly/background-removal/dist/browser.mjs')
+  .then(mod => { window.__removeBackground = mod.removeBackground; })
+  .catch(err => {
+    window.__removeBackgroundLoadError = err;
+  });
 </script>
 <script src="/dev/assetDb.js"></script>
 <script src="/dev/dialogueData.js"></script>
@@ -330,11 +335,19 @@ function openCharEditor(file, url, img) {
 }
 
 el.bgRemoveBtn.addEventListener('click', async () => {
+  // Always give immediate visual feedback that the click registered, before
+  // any async work — otherwise a load/network failure can look like the
+  // button did nothing at all.
+  el.bgRemoveBtn.disabled = true;
+  el.bgRemoveBtn.textContent = '모듈 확인 중...';
+  await window.__removeBackgroundReady;
   if (!window.__removeBackground) {
-    DevDiag.show('배경 제거 모듈을 아직 불러오지 못했습니다. 네트워크 상태를 확인하고 다시 시도하세요.');
+    const reason = window.__removeBackgroundLoadError;
+    DevDiag.show('배경 제거 모듈 로드 실패: ' + (reason && reason.message ? reason.message : '네트워크 또는 CDN 문제로 모듈을 불러오지 못했습니다.'));
+    el.bgRemoveBtn.textContent = '배경 제거 (누끼)';
+    el.bgRemoveBtn.disabled = false;
     return;
   }
-  el.bgRemoveBtn.disabled = true;
   el.bgRemoveBtn.textContent = '처리 중... (몇 초 걸릴 수 있어요)';
   try {
     const resultBlob = await window.__removeBackground(workingBlob);
