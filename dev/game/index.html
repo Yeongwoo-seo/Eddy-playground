@@ -61,8 +61,14 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .sheet-field{margin-bottom:14px}
 .sheet-field label{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--text-secondary);margin-bottom:6px;text-transform:uppercase}
 .sheet-field select{width:100%;background:var(--surface-2);color:var(--text-primary);border:1px solid var(--divider);border-radius:10px;padding:12px 14px;font-size:14px;font-family:inherit}
+.sheet-field .range-row{display:flex;justify-content:space-between;align-items:baseline}
+.sheet-field .range-val{color:var(--cyan);font-weight:600}
+.sheet-field input[type=range]{width:100%;accent-color:var(--cyan);margin-top:4px}
 .sheet-close{width:100%;margin-top:6px;background:var(--surface-2);color:var(--text-primary);border:1px solid var(--divider);border-radius:10px;padding:13px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--mono);letter-spacing:.06em}
+.sheet-close.confirm{background:var(--cyan);color:#06181c;border-color:transparent}
 .sheet-link{display:block;text-align:center;margin-top:14px;font-family:var(--mono);font-size:11px;color:var(--text-muted)}
+.transform-output{background:var(--surface-2);border:1px solid var(--divider);border-radius:8px;padding:10px 12px;font-family:var(--mono);font-size:11px;color:var(--cyan);margin-top:10px;white-space:pre-wrap;word-break:break-all}
+.transform-output.hidden{display:none}
 </style>
 </head>
 <body>
@@ -96,6 +102,23 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
       <select id="bgSelect"></select>
     </div>
     <div id="characterFields"></div>
+
+    <div class="sheet-title" style="margin-top:6px">Character Transform</div>
+    <div class="sheet-field">
+      <div class="range-row"><label>X</label><span class="range-val" id="xVal">0</span></div>
+      <input type="range" id="xRange" min="-150" max="150" value="0">
+    </div>
+    <div class="sheet-field">
+      <div class="range-row"><label>Y</label><span class="range-val" id="yVal">0</span></div>
+      <input type="range" id="yRange" min="-150" max="150" value="0">
+    </div>
+    <div class="sheet-field">
+      <div class="range-row"><label>Scale</label><span class="range-val" id="scaleVal">1.00</span></div>
+      <input type="range" id="scaleRange" min="50" max="150" value="100">
+    </div>
+    <button class="sheet-close confirm" id="confirmTransformBtn">위치 확정</button>
+    <pre class="transform-output hidden" id="transformOutput"></pre>
+
     <button class="sheet-close" id="sheetCloseBtn">CLOSE</button>
     <a class="sheet-link" href="/dev/upload/">+ 새 이미지 업로드</a>
   </div>
@@ -130,6 +153,14 @@ const el = {
   sheetCloseBtn: document.getElementById('sheetCloseBtn'),
   bgSelect: document.getElementById('bgSelect'),
   characterFields: document.getElementById('characterFields'),
+  xRange: document.getElementById('xRange'),
+  yRange: document.getElementById('yRange'),
+  scaleRange: document.getElementById('scaleRange'),
+  xVal: document.getElementById('xVal'),
+  yVal: document.getElementById('yVal'),
+  scaleVal: document.getElementById('scaleVal'),
+  confirmTransformBtn: document.getElementById('confirmTransformBtn'),
+  transformOutput: document.getElementById('transformOutput'),
 };
 
 function setBackground(asset) {
@@ -159,8 +190,13 @@ async function applyBackground() {
   setBackground(bgAsset);
 }
 
-// Each named character (from dialogueCharacters) has its own assigned asset,
-// looked up per dialogue line's characterId — unlike the single shared background slot.
+function applyTransformToImage(transform) {
+  el.charImg.style.transform = `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`;
+}
+
+// Each named character (from dialogueCharacters) has its own assigned asset
+// and its own CharacterTransform (x/y/scale), looked up per dialogue line's
+// characterId — unlike the single shared background slot.
 async function applyCharacterForLine(characterId) {
   if (!characterId) {
     el.charWrap.style.opacity = '0';
@@ -170,6 +206,7 @@ async function applyCharacterForLine(characterId) {
   const assetId = DevGameState.getCharacterAssetId(characterId);
   const asset = await AssetDB.getAsset(assetId);
   setCharacterAsset(asset);
+  applyTransformToImage(DevGameState.getCharacterTransform(characterId));
 }
 
 function updateArrow(show) {
@@ -246,11 +283,50 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
+function readSliderTransform() {
+  return { x: Number(el.xRange.value), y: Number(el.yRange.value), scale: Number(el.scaleRange.value) / 100 };
+}
+
+function updateSliderLabels(transform) {
+  el.xVal.textContent = transform.x;
+  el.yVal.textContent = transform.y;
+  el.scaleVal.textContent = transform.scale.toFixed(2);
+}
+
+// Sliders always edit the character currently on screen (the active line's characterId).
+function loadTransformIntoSliders() {
+  const characterId = dialogueTest[currentIndex].characterId;
+  const transform = DevGameState.getCharacterTransform(characterId);
+  el.xRange.value = transform.x;
+  el.yRange.value = transform.y;
+  el.scaleRange.value = Math.round(transform.scale * 100);
+  updateSliderLabels(transform);
+  el.transformOutput.classList.add('hidden');
+  const disabled = !characterId;
+  [el.xRange, el.yRange, el.scaleRange, el.confirmTransformBtn].forEach(input => { input.disabled = disabled; });
+}
+
+[el.xRange, el.yRange, el.scaleRange].forEach(rangeEl => rangeEl.addEventListener('input', () => {
+  const transform = readSliderTransform();
+  updateSliderLabels(transform);
+  applyTransformToImage(transform);
+}));
+
+el.confirmTransformBtn.addEventListener('click', () => {
+  const characterId = dialogueTest[currentIndex].characterId;
+  if (!characterId) return;
+  const transform = readSliderTransform();
+  DevGameState.setCharacterTransform(characterId, transform);
+  el.transformOutput.textContent = JSON.stringify({ characterId, ...transform }, null, 2);
+  el.transformOutput.classList.remove('hidden');
+});
+
 el.frame.addEventListener('click', onTap);
 
 el.devBtn.addEventListener('click', async (e) => {
   e.stopPropagation();
   await renderAssetSelectors();
+  loadTransformIntoSliders();
   el.sheetOverlay.classList.remove('hidden');
 });
 el.sheetCloseBtn.addEventListener('click', () => el.sheetOverlay.classList.add('hidden'));
