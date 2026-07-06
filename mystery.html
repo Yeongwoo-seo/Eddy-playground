@@ -364,6 +364,8 @@ const ASSET_DEFS=[
   {key:'char_mina', label:'윤민아 (인물)', type:'character', placeholderIcon:'bust'},
   {key:'char_leo', label:'레오 박 (인물)', type:'character', placeholderIcon:'bust'},
   {key:'char_adrian', label:'에이드리언 콜 (인물)', type:'character', placeholderIcon:'bust'},
+  {key:'char_detective', label:'탐정 (플레이어 캐릭터)', type:'character', placeholderIcon:'bust'},
+  {key:'char_assistant', label:'조수', type:'character', placeholderIcon:'bust'},
 ];
 function loadAssets(){ try{ return JSON.parse(localStorage.getItem('mkAssetsV1'))||{}; }catch(e){ return {}; } }
 function saveAssets(){ try{ localStorage.setItem('mkAssetsV1', JSON.stringify(assets)); }catch(e){ alert('저장 공간이 부족합니다. 이미지 크기를 줄여서 다시 시도하세요.'); } }
