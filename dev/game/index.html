@@ -53,6 +53,11 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .dlg-arrow.show{visibility:visible;animation:arrowBob 1.1s ease-in-out infinite}
 .dlg-end{font-family:var(--mono);font-size:10.5px;color:var(--text-muted);letter-spacing:.08em;text-align:center;padding-top:8px}
 
+/* ===== Scene playback (driven by /dev/scene) ===== */
+.scene-msg{position:absolute;top:calc(58px + env(safe-area-inset-top,0));left:16px;right:16px;z-index:4;background:rgba(8,10,12,.82);color:var(--amber);font-family:var(--mono);font-size:11px;letter-spacing:.04em;text-align:center;padding:10px 12px;border-radius:10px;line-height:1.6;white-space:pre-line}
+.scene-msg.hidden{display:none}
+.scene-badge{color:var(--cyan);border-color:rgba(89,184,200,.4)}
+
 /* ===== Bottom sheet: dev asset selector ===== */
 .sheet-overlay{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center}
 .sheet-overlay.hidden{display:none}
@@ -91,11 +96,17 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 
   <div class="vn-topbar">
     <a class="vn-btn" href="/dev/">← DEV</a>
-    <div style="display:flex;gap:8px">
+    <div style="display:flex;gap:8px" id="legacyDevButtons">
       <button class="vn-btn dev" id="transformBtn">POS</button>
       <button class="vn-btn dev" id="devBtn">DEV</button>
     </div>
+    <div style="display:none;gap:8px" id="sceneDevButtons">
+      <span class="vn-btn dev scene-badge" id="sceneBadge">SCENE</span>
+      <button class="vn-btn dev" id="exitSceneBtn">EXIT</button>
+    </div>
   </div>
+
+  <div class="scene-msg hidden" id="sceneMsg"></div>
 
   <div class="transform-popup hidden" id="transformPopup">
     <div class="tp-title">Character Transform</div>
@@ -142,6 +153,7 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 <script src="/dev/assetDb.js"></script>
+<script src="/dev/sceneDb.js"></script>
 <script src="/dev/dialogueData.js"></script>
 <script src="/dev/dialogueDb.js"></script>
 <script src="/dev/vnPlayer.js"></script>
@@ -175,6 +187,13 @@ async function resolveDialogueSource() {
   DevDiag.show('DIALOGUE SET NOT FOUND — 기본 테스트 대사로 전환합니다.');
 }
 
+// Scene playback state — set only when /dev/game is launched via
+// "USE IN GAME TEST" from /dev/scene. When false, everything below runs
+// the original default/custom-dialogue-set flow above, untouched.
+let sceneMode = false;
+let activeScene = null;
+let activeSceneCharacterAsset = null;
+
 const el = {
   frame: document.getElementById('frame'),
   bgLayer: document.getElementById('bgLayer'),
@@ -200,6 +219,10 @@ const el = {
   scaleVal: document.getElementById('scaleVal'),
   confirmTransformBtn: document.getElementById('confirmTransformBtn'),
   transformOutput: document.getElementById('transformOutput'),
+  legacyDevButtons: document.getElementById('legacyDevButtons'),
+  sceneDevButtons: document.getElementById('sceneDevButtons'),
+  exitSceneBtn: document.getElementById('exitSceneBtn'),
+  sceneMsg: document.getElementById('sceneMsg'),
 };
 
 function setBackground(asset) {
@@ -248,6 +271,85 @@ async function applyCharacterForLine(characterId) {
   applyTransformToImage(DevGameState.getCharacterTransform(characterId));
 }
 
+// ---- Scene mode: single fixed character per scene, normalized x/y/scale/flip,
+// positioned identically to /dev/scene's preview (same left/top % + translate
+// (-50%,-50%) scale/scaleX rule) so editor and game agree on placement. ----
+function applySceneCharacterTransform(character) {
+  Object.assign(el.charImg.style, {
+    position: 'absolute',
+    left: `${character.x * 100}%`,
+    top: `${character.y * 100}%`,
+    height: '56%',
+    width: 'auto',
+    maxWidth: 'none',
+    maxHeight: 'none',
+    objectFit: 'contain',
+    objectPosition: 'center',
+    transformOrigin: 'center center',
+    transform: `translate(-50%, -50%) scale(${character.scale}) scaleX(${character.flipX ? -1 : 1})`,
+  });
+}
+
+function applySceneCharacterVisibility(line) {
+  if (!activeScene.character) { el.charWrap.style.opacity = '0'; return; }
+  if (!activeSceneCharacterAsset) { el.charWrap.style.opacity = '1'; return; } // missing-asset fallback stays visible as an error indicator
+  const visible = activeScene.character.visible !== false && line.characterVisible !== false;
+  el.charWrap.style.opacity = visible ? '1' : '0';
+}
+
+// A Scene's dialogue lines are read straight from DialogueDB — its
+// DialogueLine shape ({speaker,text,characterVisible,typingSpeedMs}) already
+// matches what a Scene needs, so there's no separate Scene dialogue format.
+async function initSceneMode(scene) {
+  sceneMode = true;
+  activeScene = scene;
+  el.legacyDevButtons.style.display = 'none';
+  el.sceneDevButtons.style.display = 'flex';
+
+  const messages = [];
+
+  if (scene.backgroundId) {
+    let bgAsset = null;
+    try { bgAsset = await AssetDB.getAsset(scene.backgroundId); } catch (e) { /* surfaced via DevDiag */ }
+    setBackground(bgAsset);
+    if (!bgAsset) messages.push('MISSING BACKGROUND ASSET');
+  } else {
+    setBackground(null);
+  }
+
+  activeSceneCharacterAsset = null;
+  if (scene.character && scene.character.assetId) {
+    let charAsset = null;
+    try { charAsset = await AssetDB.getAsset(scene.character.assetId); } catch (e) { /* surfaced via DevDiag */ }
+    if (charAsset) {
+      activeSceneCharacterAsset = charAsset;
+      setCharacterAsset(charAsset);
+      applySceneCharacterTransform(scene.character);
+    } else {
+      setCharacterAsset(null);
+      messages.push('MISSING CHARACTER ASSET');
+    }
+  } else {
+    setCharacterAsset(null);
+  }
+
+  let lines = null;
+  if (scene.dialogueSetId) {
+    let set = null;
+    try { set = await DialogueDB.getDialogueSet(scene.dialogueSetId); } catch (e) { /* surfaced via DevDiag */ }
+    if (set && Array.isArray(set.lines) && set.lines.length) lines = set.lines;
+  }
+  if (!lines) {
+    lines = [{ speaker: '', text: '연결된 DIALOGUE SET을 찾을 수 없습니다.', characterVisible: false }];
+    messages.push('DIALOGUE SET NOT FOUND');
+  }
+
+  el.sceneMsg.textContent = messages.join('\n');
+  el.sceneMsg.classList.toggle('hidden', messages.length === 0);
+
+  player.load(lines);
+}
+
 function updateArrow(show) {
   el.tapArrow.classList.toggle('show', !!show);
 }
@@ -255,9 +357,13 @@ function updateArrow(show) {
 const player = createVNPlayer({
   onLineChange: (line) => {
     el.speakerName.textContent = line.speaker || '';
-    applyCharacterForLine(line.characterId);
-    // Keep the transform popup in sync if it's left open while tapping through lines.
-    if (!el.transformPopup.classList.contains('hidden')) loadTransformIntoSliders();
+    if (sceneMode) {
+      applySceneCharacterVisibility(line);
+    } else {
+      applyCharacterForLine(line.characterId);
+      // Keep the transform popup in sync if it's left open while tapping through lines.
+      if (!el.transformPopup.classList.contains('hidden')) loadTransformIntoSliders();
+    }
   },
   onTextUpdate: (text) => { el.dialogueText.textContent = text; },
   onArrow: updateArrow,
@@ -375,7 +481,22 @@ el.transformBtn.addEventListener('click', (e) => {
 // so dragging a slider or hitting 확정 doesn't also advance the dialogue.
 el.transformPopup.addEventListener('click', (e) => e.stopPropagation());
 
+el.exitSceneBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  SceneGameState.setSelectedSceneId(null);
+  location.reload();
+});
+
 (async function init() {
+  const sceneId = SceneGameState.getSelectedSceneId();
+  if (sceneId) {
+    let scene = null;
+    try { scene = await SceneDB.getScene(sceneId); } catch (e) { /* surfaced via DevDiag */ }
+    if (scene) {
+      await initSceneMode(scene);
+      return;
+    }
+  }
   await resolveDialogueSource();
   await applyBackground();
   player.load(activeLines);
