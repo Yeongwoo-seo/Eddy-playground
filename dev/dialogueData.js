@@ -1,9 +1,12 @@
 /* OPERATION MK DEV — hardcoded test dialogue for /dev/game.
    Not real game content; used only to validate the VN dialogue UX. */
 
+// role 'protagonist' gets its own dedicated CharacterTransform; every other
+// role shares one common default transform (see DevGameState in assetDb.js) —
+// tune it once on any non-protagonist character and it applies to all of them.
 const dialogueCharacters = [
-  { id: 'jisoo', name: '지수' },
-  { id: 'youngwoo', name: '영우' }
+  { id: 'jisoo', name: '지수', role: 'protagonist' },
+  { id: 'youngwoo', name: '영우', role: 'other' }
 ];
 
 const dialogueTest = [
