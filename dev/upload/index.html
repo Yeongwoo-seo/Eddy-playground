@@ -66,7 +66,7 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 <body>
 <div class="frame">
   <div class="topbar">
-    <a class="back-btn" href="../">←</a>
+    <a class="back-btn" href="/dev/">←</a>
     <div class="page-title">PHOTO UPLOAD</div>
   </div>
 
@@ -103,7 +103,7 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
   <img id="lightboxImg" alt="preview">
 </div>
 
-<script src="../assetDb.js"></script>
+<script src="/dev/assetDb.js"></script>
 <script>
 let currentType = 'background';
 let pendingFile = null;
@@ -243,7 +243,7 @@ function previewAsset(url) {
 function useInTest(type, id) {
   if (type === 'background') DevGameState.setBackgroundId(id);
   else DevGameState.setCharacterId(id);
-  location.href = '../game/';
+  location.href = '/dev/game/';
 }
 
 async function removeAsset(type, id) {
