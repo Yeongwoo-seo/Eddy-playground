@@ -90,10 +90,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
       <label>Background</label>
       <select id="bgSelect"></select>
     </div>
-    <div class="sheet-field">
-      <label>Character</label>
-      <select id="charSelect"></select>
-    </div>
+    <div id="characterFields"></div>
     <button class="sheet-close" id="sheetCloseBtn">CLOSE</button>
     <a class="sheet-link" href="/dev/upload/">+ 새 이미지 업로드</a>
   </div>
@@ -124,7 +121,7 @@ const el = {
   sheetOverlay: document.getElementById('sheetOverlay'),
   sheetCloseBtn: document.getElementById('sheetCloseBtn'),
   bgSelect: document.getElementById('bgSelect'),
-  charSelect: document.getElementById('charSelect'),
+  characterFields: document.getElementById('characterFields'),
 };
 
 function setBackground(asset) {
@@ -155,17 +152,22 @@ function setCharacterAsset(asset) {
   }
 }
 
-async function applySelection() {
-  const [bgAsset, charAsset] = await Promise.all([
-    AssetDB.getAsset(DevGameState.getBackgroundId()),
-    AssetDB.getAsset(DevGameState.getCharacterId()),
-  ]);
+async function applyBackground() {
+  const bgAsset = await AssetDB.getAsset(DevGameState.getBackgroundId());
   setBackground(bgAsset);
-  setCharacterAsset(charAsset);
 }
 
-function updateCharacterVisibility(hasCharacter) {
-  el.charWrap.style.opacity = hasCharacter ? '1' : '0';
+// Each named character (from dialogueCharacters) has its own assigned asset,
+// looked up per dialogue line's characterId — unlike the single shared background slot.
+async function applyCharacterForLine(characterId) {
+  if (!characterId) {
+    el.charWrap.style.opacity = '0';
+    return;
+  }
+  el.charWrap.style.opacity = '1';
+  const assetId = DevGameState.getCharacterAssetId(characterId);
+  const asset = await AssetDB.getAsset(assetId);
+  setCharacterAsset(asset);
 }
 
 function updateArrow(show) {
@@ -193,7 +195,7 @@ function typeText(text) {
 function showLine(index) {
   const line = dialogueTest[index];
   el.speakerName.textContent = line.speaker || '';
-  updateCharacterVisibility(!!line.characterId);
+  applyCharacterForLine(line.characterId);
   typeText(line.text);
 }
 
@@ -215,7 +217,21 @@ async function renderAssetSelectors() {
     AssetDB.getAssetsByType('character'),
   ]);
   fillSelect(el.bgSelect, bgs, DevGameState.getBackgroundId());
-  fillSelect(el.charSelect, chars, DevGameState.getCharacterId());
+
+  el.characterFields.innerHTML = dialogueCharacters.map(c => `
+    <div class="sheet-field">
+      <label>${escapeHtml(c.name)}</label>
+      <select data-character-key="${c.id}"></select>
+    </div>
+  `).join('');
+  el.characterFields.querySelectorAll('select').forEach(selectEl => {
+    const key = selectEl.dataset.characterKey;
+    fillSelect(selectEl, chars, DevGameState.getCharacterAssetId(key));
+    selectEl.addEventListener('change', async (e) => {
+      DevGameState.setCharacterAssetId(key, e.target.value || null);
+      await applyCharacterForLine(dialogueTest[currentIndex].characterId);
+    });
+  });
 }
 
 function fillSelect(selectEl, assets, selectedId) {
@@ -241,15 +257,11 @@ el.sheetOverlay.addEventListener('click', (e) => {
 });
 el.bgSelect.addEventListener('change', async (e) => {
   DevGameState.setBackgroundId(e.target.value || null);
-  await applySelection();
-});
-el.charSelect.addEventListener('change', async (e) => {
-  DevGameState.setCharacterId(e.target.value || null);
-  await applySelection();
+  await applyBackground();
 });
 
 (async function init() {
-  await applySelection();
+  await applyBackground();
   showLine(currentIndex);
 })();
 </script>

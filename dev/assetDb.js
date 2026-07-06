@@ -67,9 +67,23 @@ const AssetDB = (() => {
 })();
 
 const DevGameState = {
-  _keys: { background: 'mkDevSelectedBackground', character: 'mkDevSelectedCharacter' },
+  _keys: { background: 'mkDevSelectedBackground', characters: 'mkDevSelectedCharacters' },
   getBackgroundId() { return localStorage.getItem(this._keys.background) || null; },
   setBackgroundId(id) { id ? localStorage.setItem(this._keys.background, id) : localStorage.removeItem(this._keys.background); },
-  getCharacterId() { return localStorage.getItem(this._keys.character) || null; },
-  setCharacterId(id) { id ? localStorage.setItem(this._keys.character, id) : localStorage.removeItem(this._keys.character); },
+
+  _loadCharacterMap() {
+    try { return JSON.parse(localStorage.getItem(this._keys.characters)) || {}; }
+    catch (e) { return {}; }
+  },
+  // characterKey is a dialogue character id, e.g. 'jisoo' / 'youngwoo' — each
+  // one gets its own uploaded asset, unlike the single shared background slot.
+  getCharacterAssetId(characterKey) {
+    if (!characterKey) return null;
+    return this._loadCharacterMap()[characterKey] || null;
+  },
+  setCharacterAssetId(characterKey, assetId) {
+    const map = this._loadCharacterMap();
+    if (assetId) map[characterKey] = assetId; else delete map[characterKey];
+    localStorage.setItem(this._keys.characters, JSON.stringify(map));
+  },
 };

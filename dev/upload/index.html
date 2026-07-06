@@ -104,6 +104,7 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 </div>
 
 <script src="/dev/assetDb.js"></script>
+<script src="/dev/dialogueData.js"></script>
 <script>
 let currentType = 'background';
 let pendingFile = null;
@@ -221,6 +222,9 @@ function renderList(listKey, assets) {
   listEl.innerHTML = assets.map(a => {
     const url = URL.createObjectURL(a.blob);
     trackedUrls[listKey].push(url);
+    const actionButtons = a.type === 'background'
+      ? `<button class="use" onclick="useAsBackground('${a.id}')">USE IN TEST</button>`
+      : dialogueCharacters.map(c => `<button class="use" onclick="useAsCharacter('${c.id}','${a.id}')">${escapeHtml(c.name)}로 사용</button>`).join('');
     return `<div class="asset-card">
       <img class="asset-thumb" src="${url}" data-url="${url}" onclick="previewAsset(this.dataset.url)">
       <div class="asset-info">
@@ -228,7 +232,7 @@ function renderList(listKey, assets) {
         <div class="asset-meta">${a.width} × ${a.height}</div>
       </div>
       <div class="asset-actions">
-        <button class="use" onclick="useInTest('${a.type}','${a.id}')">USE IN TEST</button>
+        ${actionButtons}
         <button class="danger" onclick="removeAsset('${a.type}','${a.id}')">DELETE</button>
       </div>
     </div>`;
@@ -240,9 +244,13 @@ function previewAsset(url) {
   el.lightbox.classList.remove('hidden');
 }
 
-function useInTest(type, id) {
-  if (type === 'background') DevGameState.setBackgroundId(id);
-  else DevGameState.setCharacterId(id);
+function useAsBackground(id) {
+  DevGameState.setBackgroundId(id);
+  location.href = '/dev/game/';
+}
+
+function useAsCharacter(characterKey, id) {
+  DevGameState.setCharacterAssetId(characterKey, id);
   location.href = '/dev/game/';
 }
 
@@ -250,7 +258,11 @@ async function removeAsset(type, id) {
   if (!confirm('이 이미지를 삭제할까요?')) return;
   await AssetDB.deleteAsset(id);
   if (type === 'background' && DevGameState.getBackgroundId() === id) DevGameState.setBackgroundId(null);
-  if (type === 'character' && DevGameState.getCharacterId() === id) DevGameState.setCharacterId(null);
+  if (type === 'character') {
+    dialogueCharacters.forEach(c => {
+      if (DevGameState.getCharacterAssetId(c.id) === id) DevGameState.setCharacterAssetId(c.id, null);
+    });
+  }
   await refreshLists();
 }
 
