@@ -58,6 +58,33 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .save-btn{width:100%;margin-top:16px;background:var(--cyan);color:#06181c;border:none;border-radius:10px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--mono);letter-spacing:.04em}
 .save-btn:active{opacity:.85}
 
+.editor-panel{background:var(--surface-1);border:1px solid var(--divider);border-radius:14px;padding:16px;margin-bottom:24px}
+.editor-panel.hidden{display:none}
+.editor-preview{width:100%;max-height:280px;border-radius:10px;overflow:hidden;background:var(--surface-3);display:flex;align-items:center;justify-content:center;margin-bottom:12px}
+.editor-preview img{max-width:100%;max-height:280px;object-fit:contain;-webkit-user-drag:none;user-select:none}
+.bg-remove-row{margin-bottom:14px}
+.bg-remove-btn{width:100%;background:var(--surface-2);border:1px solid var(--divider);color:var(--text-primary);padding:12px;border-radius:10px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:var(--mono);letter-spacing:.03em}
+.bg-remove-btn:disabled{opacity:.5;cursor:default}
+.bg-remove-btn.done{color:var(--cyan);border-color:rgba(89,184,200,.4)}
+
+.frame-hint{font-size:11px;color:var(--text-muted);margin-bottom:8px}
+.frame-row{display:flex;gap:8px}
+.frame-btn{flex:1;background:var(--surface-2);border:1px solid var(--divider);color:var(--text-secondary);padding:12px 6px;border-radius:10px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:var(--mono);letter-spacing:.02em}
+.frame-btn.done{color:var(--cyan);border-color:rgba(89,184,200,.4)}
+
+.crop-editor{margin-top:14px}
+.crop-editor.hidden{display:none}
+.crop-stage{position:relative;width:100%;height:320px;background:#000;border-radius:10px;overflow:hidden;touch-action:none}
+.crop-stage img{position:absolute;-webkit-user-drag:none;user-select:none}
+.crop-box{position:absolute;border:2px solid var(--cyan);box-shadow:0 0 0 9999px rgba(0,0,0,.55);cursor:move;touch-action:none}
+.crop-zoom-row{margin-top:12px}
+.crop-zoom-row label{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--text-secondary);text-transform:uppercase;margin-bottom:6px}
+.crop-zoom-row input[type=range]{width:100%;accent-color:var(--cyan)}
+.crop-actions{display:flex;gap:8px;margin-top:12px}
+.crop-actions button{flex:1;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--mono);letter-spacing:.04em;border:none}
+.crop-save-btn{background:var(--cyan);color:#06181c}
+.crop-cancel-btn{background:var(--surface-2) !important;color:var(--text-secondary) !important;border:1px solid var(--divider) !important}
+
 .section-title{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase;margin:24px 0 12px}
 .empty-note{font-size:13px;color:var(--text-muted);padding:14px 0}
 .asset-card{display:flex;align-items:center;gap:12px;background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:12px;margin-bottom:10px}
@@ -106,8 +133,35 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
     <div class="preview-row"><span class="preview-label">Type</span><span class="preview-value" id="previewType"></span></div>
     <div class="preview-row"><span class="preview-label">File</span><span class="preview-value" id="previewFile"></span></div>
     <div class="preview-row"><span class="preview-label">Size</span><span class="preview-value" id="previewSize"></span></div>
-    <div class="preview-row" id="previewAlphaRow" style="display:none"><span class="preview-label">Alpha</span><span class="preview-value" id="previewAlpha"></span></div>
     <button class="save-btn" id="saveBtn">SAVE BACKGROUND</button>
+  </div>
+
+  <div class="editor-panel hidden" id="charEditorPanel">
+    <div class="editor-preview"><img id="editorImg" alt=""></div>
+    <div class="bg-remove-row">
+      <button class="bg-remove-btn" id="bgRemoveBtn">배경 제거 (누끼)</button>
+    </div>
+    <div class="frame-hint">이 사진에서 프레임을 골라 저장하세요 (여러 개 만들 수 있어요)</div>
+    <div class="frame-row">
+      <button class="frame-btn" id="frameBtnFull" data-preset="full">전신</button>
+      <button class="frame-btn" id="frameBtnDialogue" data-preset="dialogue">대화신</button>
+      <button class="frame-btn" id="frameBtnFace" data-preset="face">얼굴</button>
+    </div>
+
+    <div class="crop-editor hidden" id="cropEditor">
+      <div class="crop-stage" id="cropStage">
+        <img id="cropImg" alt="">
+        <div class="crop-box" id="cropBox"></div>
+      </div>
+      <div class="crop-zoom-row">
+        <label>확대/축소</label>
+        <input type="range" id="cropZoom" min="15" max="100" value="70">
+      </div>
+      <div class="crop-actions">
+        <button class="crop-cancel-btn" id="cropCancelBtn">취소</button>
+        <button class="crop-save-btn" id="cropSaveBtn">이 프레임 저장</button>
+      </div>
+    </div>
   </div>
 
   <div class="section-title">Uploaded Backgrounds</div>
@@ -125,6 +179,14 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
 }
+</script>
+<script type="module">
+// Client-side AI background removal (WASM) — no server involved. Downloads
+// a model on first use, so it needs network the first time it's clicked.
+// Unpinned (no @version) so jsDelivr always resolves the latest published
+// build — this environment couldn't reach the CDN to verify an exact version.
+import { removeBackground } from 'https://cdn.jsdelivr.net/npm/@imgly/background-removal/dist/browser.mjs';
+window.__removeBackground = removeBackground;
 </script>
 <script src="/dev/assetDb.js"></script>
 <script src="/dev/dialogueData.js"></script>
@@ -147,9 +209,20 @@ const el = {
   previewType: document.getElementById('previewType'),
   previewFile: document.getElementById('previewFile'),
   previewSize: document.getElementById('previewSize'),
-  previewAlphaRow: document.getElementById('previewAlphaRow'),
-  previewAlpha: document.getElementById('previewAlpha'),
   saveBtn: document.getElementById('saveBtn'),
+  charEditorPanel: document.getElementById('charEditorPanel'),
+  editorImg: document.getElementById('editorImg'),
+  bgRemoveBtn: document.getElementById('bgRemoveBtn'),
+  frameBtnFull: document.getElementById('frameBtnFull'),
+  frameBtnDialogue: document.getElementById('frameBtnDialogue'),
+  frameBtnFace: document.getElementById('frameBtnFace'),
+  cropEditor: document.getElementById('cropEditor'),
+  cropStage: document.getElementById('cropStage'),
+  cropImg: document.getElementById('cropImg'),
+  cropBox: document.getElementById('cropBox'),
+  cropZoom: document.getElementById('cropZoom'),
+  cropCancelBtn: document.getElementById('cropCancelBtn'),
+  cropSaveBtn: document.getElementById('cropSaveBtn'),
   backgroundList: document.getElementById('backgroundList'),
   characterList: document.getElementById('characterList'),
   lightbox: document.getElementById('lightbox'),
@@ -164,7 +237,6 @@ function selectType(type) {
   el.fileInput.accept = type === 'background' ? 'image/jpeg,image/png,image/webp' : 'image/png,image/webp';
   el.typeHint.textContent = type === 'background' ? '.jpg · .jpeg · .png · .webp' : '.png · .webp (투명 배경 권장)';
   if (type === 'character') renderCharPicker();
-  updateSaveBtnLabel();
   clearPending();
 }
 
@@ -176,41 +248,16 @@ function renderCharPicker() {
     btn.addEventListener('click', () => {
       currentCharacterKey = btn.dataset.key;
       renderCharPicker();
-      updateSaveBtnLabel();
     });
   });
-}
-
-function updateSaveBtnLabel() {
-  if (currentType === 'background') {
-    el.saveBtn.textContent = 'SAVE BACKGROUND';
-  } else {
-    const name = dialogueCharacters.find(c => c.id === currentCharacterKey).name;
-    el.saveBtn.textContent = `${name} 사진으로 저장`;
-  }
 }
 
 function clearPending() {
   pendingFile = null;
   el.previewPanel.classList.add('hidden');
+  el.charEditorPanel.classList.add('hidden');
+  el.cropEditor.classList.add('hidden');
   el.fileInput.value = '';
-}
-
-function detectAlpha(img) {
-  return new Promise(resolve => {
-    try {
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.min(img.naturalWidth, 64) || 1;
-      canvas.height = Math.min(img.naturalHeight, 64) || 1;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-      for (let i = 3; i < data.length; i += 4) {
-        if (data[i] < 250) { resolve(true); return; }
-      }
-      resolve(false);
-    } catch (e) { resolve(null); }
-  });
 }
 
 function onFilesSelected(files) {
@@ -218,10 +265,13 @@ function onFilesSelected(files) {
   if (!file || !file.type.startsWith('image/')) return;
   const url = URL.createObjectURL(file);
   const img = new Image();
-  img.onload = async () => {
-    const hasAlpha = currentType === 'character' ? await detectAlpha(img) : null;
-    pendingFile = { blob: file, name: file.name, width: img.naturalWidth, height: img.naturalHeight, hasAlpha };
-    renderPreview(url);
+  img.onload = () => {
+    if (currentType === 'background') {
+      pendingFile = { blob: file, name: file.name, width: img.naturalWidth, height: img.naturalHeight };
+      renderPreview(url);
+    } else {
+      openCharEditor(file, url, img);
+    }
   };
   img.src = url;
 }
@@ -232,27 +282,196 @@ function renderPreview(url) {
   el.previewType.textContent = currentType.toUpperCase();
   el.previewFile.textContent = pendingFile.name;
   el.previewSize.textContent = `${pendingFile.width} × ${pendingFile.height}`;
-  if (currentType === 'character' && pendingFile.hasAlpha !== null) {
-    el.previewAlphaRow.style.display = '';
-    el.previewAlpha.textContent = pendingFile.hasAlpha ? '투명 배경 감지됨' : '불투명(단색) 배경으로 보임';
-  } else {
-    el.previewAlphaRow.style.display = 'none';
-  }
 }
 
+// Only reachable for backgrounds now — character uploads go through the
+// crop editor below, which saves each framing itself.
 async function saveAsset() {
   if (!pendingFile) return;
   try {
-    const record = await AssetDB.addAsset({ type: currentType, name: pendingFile.name, blob: pendingFile.blob, width: pendingFile.width, height: pendingFile.height });
-    // Character uploads are already tied to a picked cast member — assign
-    // immediately instead of making the user hit a separate "사용" button.
-    if (currentType === 'character') DevGameState.setCharacterAssetId(currentCharacterKey, record.id);
+    await AssetDB.addAsset({ type: 'background', name: pendingFile.name, blob: pendingFile.blob, width: pendingFile.width, height: pendingFile.height });
     clearPending();
     await refreshLists();
   } catch (err) {
     DevDiag.show('이미지 저장 실패: ' + (err && err.message ? err.message : err));
   }
 }
+
+/* ===== Character photo editor: optional background removal + 3 crop presets ===== */
+const CROP_PRESETS = {
+  full: { aspect: 9 / 16, zoomDefault: 92, vAnchor: 'center', label: '전신' },
+  dialogue: { aspect: 3 / 4, zoomDefault: 62, vAnchor: 0.08, label: '대화신' },
+  face: { aspect: 1, zoomDefault: 26, vAnchor: 0.05, label: '얼굴' },
+};
+
+let workingBlob = null;
+let workingImgNatural = { width: 0, height: 0 };
+let sourceFileBaseName = '';
+let activePreset = null;
+let cropState = null;
+let cropDrag = null;
+
+function clamp(v, min, max) { return Math.min(Math.max(v, min), max); }
+
+function openCharEditor(file, url, img) {
+  workingBlob = file;
+  workingImgNatural = { width: img.naturalWidth, height: img.naturalHeight };
+  sourceFileBaseName = file.name.replace(/\.[^.]+$/, '');
+  el.editorImg.src = url;
+  el.bgRemoveBtn.disabled = false;
+  el.bgRemoveBtn.textContent = '배경 제거 (누끼)';
+  el.bgRemoveBtn.classList.remove('done');
+  [el.frameBtnFull, el.frameBtnDialogue, el.frameBtnFace].forEach(btn => {
+    btn.classList.remove('done');
+    btn.textContent = CROP_PRESETS[btn.dataset.preset].label;
+  });
+  el.cropEditor.classList.add('hidden');
+  el.charEditorPanel.classList.remove('hidden');
+}
+
+el.bgRemoveBtn.addEventListener('click', async () => {
+  if (!window.__removeBackground) {
+    DevDiag.show('배경 제거 모듈을 아직 불러오지 못했습니다. 네트워크 상태를 확인하고 다시 시도하세요.');
+    return;
+  }
+  el.bgRemoveBtn.disabled = true;
+  el.bgRemoveBtn.textContent = '처리 중... (몇 초 걸릴 수 있어요)';
+  try {
+    const resultBlob = await window.__removeBackground(workingBlob);
+    workingBlob = resultBlob;
+    el.editorImg.src = URL.createObjectURL(resultBlob);
+    el.bgRemoveBtn.textContent = '배경 제거 완료 ✓';
+    el.bgRemoveBtn.classList.add('done');
+  } catch (err) {
+    DevDiag.show('배경 제거 실패: ' + (err && err.message ? err.message : err));
+    el.bgRemoveBtn.textContent = '배경 제거 (누끼)';
+  } finally {
+    el.bgRemoveBtn.disabled = false;
+  }
+});
+
+function enterCropMode(preset) {
+  activePreset = preset;
+  const cfg = CROP_PRESETS[preset];
+  el.cropImg.src = URL.createObjectURL(workingBlob);
+  el.cropEditor.classList.remove('hidden');
+
+  const stageRect = el.cropStage.getBoundingClientRect();
+  const nw = workingImgNatural.width, nh = workingImgNatural.height;
+  const imgScale = Math.min(stageRect.width / nw, stageRect.height / nh);
+  const dispW = nw * imgScale, dispH = nh * imgScale;
+  const imgLeft = (stageRect.width - dispW) / 2, imgTop = (stageRect.height - dispH) / 2;
+  el.cropImg.style.width = dispW + 'px';
+  el.cropImg.style.height = dispH + 'px';
+  el.cropImg.style.left = imgLeft + 'px';
+  el.cropImg.style.top = imgTop + 'px';
+
+  let maxBoxW, maxBoxH;
+  if (dispW / dispH > cfg.aspect) { maxBoxH = dispH; maxBoxW = dispH * cfg.aspect; }
+  else { maxBoxW = dispW; maxBoxH = dispW / cfg.aspect; }
+
+  cropState = { imgLeft, imgTop, dispW, dispH, imgScale, maxBoxW, maxBoxH };
+  el.cropZoom.value = cfg.zoomDefault;
+  updateCropBoxFromZoom(true);
+}
+
+function updateCropBoxFromZoom(recenter) {
+  const s = cropState;
+  const cfg = CROP_PRESETS[activePreset];
+  const zoomFrac = Number(el.cropZoom.value) / 100;
+  const boxW = s.maxBoxW * zoomFrac;
+  const boxH = s.maxBoxH * zoomFrac;
+  const boxX = recenter ? s.imgLeft + (s.dispW - boxW) / 2 : clamp(s.boxX, s.imgLeft, s.imgLeft + s.dispW - boxW);
+  let boxY;
+  if (recenter) {
+    boxY = cfg.vAnchor === 'center' ? s.imgTop + (s.dispH - boxH) / 2 : s.imgTop + s.dispH * cfg.vAnchor;
+  } else {
+    boxY = clamp(s.boxY, s.imgTop, s.imgTop + s.dispH - boxH);
+  }
+  s.boxW = boxW;
+  s.boxH = boxH;
+  s.boxX = clamp(boxX, s.imgLeft, s.imgLeft + s.dispW - boxW);
+  s.boxY = clamp(boxY, s.imgTop, s.imgTop + s.dispH - boxH);
+  renderCropBox();
+}
+
+function renderCropBox() {
+  const s = cropState;
+  el.cropBox.style.left = s.boxX + 'px';
+  el.cropBox.style.top = s.boxY + 'px';
+  el.cropBox.style.width = s.boxW + 'px';
+  el.cropBox.style.height = s.boxH + 'px';
+}
+
+el.cropBox.addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  el.cropBox.setPointerCapture(e.pointerId);
+  cropDrag = { x: e.clientX, y: e.clientY, boxX: cropState.boxX, boxY: cropState.boxY };
+});
+el.cropBox.addEventListener('pointermove', (e) => {
+  if (!cropDrag) return;
+  const s = cropState;
+  const dx = e.clientX - cropDrag.x, dy = e.clientY - cropDrag.y;
+  s.boxX = clamp(cropDrag.boxX + dx, s.imgLeft, s.imgLeft + s.dispW - s.boxW);
+  s.boxY = clamp(cropDrag.boxY + dy, s.imgTop, s.imgTop + s.dispH - s.boxH);
+  renderCropBox();
+});
+['pointerup', 'pointercancel'].forEach(evt => el.cropBox.addEventListener(evt, () => { cropDrag = null; }));
+el.cropZoom.addEventListener('input', () => updateCropBoxFromZoom(false));
+
+function cropImageElementToBlob(imgEl, x, y, w, h) {
+  return new Promise((resolve) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(w));
+    canvas.height = Math.max(1, Math.round(h));
+    canvas.getContext('2d').drawImage(imgEl, x, y, w, h, 0, 0, canvas.width, canvas.height);
+    canvas.toBlob(resolve, 'image/png');
+  });
+}
+
+function loadImageFromBlob(blob) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = URL.createObjectURL(blob);
+  });
+}
+
+function markFrameDone(preset) {
+  const btn = { full: el.frameBtnFull, dialogue: el.frameBtnDialogue, face: el.frameBtnFace }[preset];
+  btn.classList.add('done');
+  btn.textContent = `${CROP_PRESETS[preset].label} ✓`;
+}
+
+el.cropCancelBtn.addEventListener('click', () => el.cropEditor.classList.add('hidden'));
+
+el.cropSaveBtn.addEventListener('click', async () => {
+  const s = cropState;
+  const natX = (s.boxX - s.imgLeft) / s.imgScale;
+  const natY = (s.boxY - s.imgTop) / s.imgScale;
+  const natW = s.boxW / s.imgScale;
+  const natH = s.boxH / s.imgScale;
+  try {
+    const cropBlob = await cropImageElementToBlob(el.cropImg, natX, natY, natW, natH);
+    const croppedImg = await loadImageFromBlob(cropBlob);
+    const presetLabel = CROP_PRESETS[activePreset].label;
+    const name = `${sourceFileBaseName} (${presetLabel}).png`;
+    const record = await AssetDB.addAsset({ type: 'character', name, blob: cropBlob, width: croppedImg.naturalWidth, height: croppedImg.naturalHeight });
+    // The dialogue-scene framing is what /dev/game actually renders, so make
+    // it the active photo for this character; 전신/얼굴 just join the library.
+    if (activePreset === 'dialogue') DevGameState.setCharacterAssetId(currentCharacterKey, record.id);
+    markFrameDone(activePreset);
+    el.cropEditor.classList.add('hidden');
+    await refreshLists();
+  } catch (err) {
+    DevDiag.show('프레임 저장 실패: ' + (err && err.message ? err.message : err));
+  }
+});
+
+[el.frameBtnFull, el.frameBtnDialogue, el.frameBtnFace].forEach(btn => {
+  btn.addEventListener('click', () => enterCropMode(btn.dataset.preset));
+});
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
