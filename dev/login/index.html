@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>OPERATION MK · LOGIN TEST</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<meta name="theme-color" content="#080A0C">
+<link rel="manifest" href="/dev/manifest.json">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="OPERATION MK DEV">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#080A0C;--surface-1:#101419;--surface-2:#171C22;--surface-3:#20262D;
+  --text-primary:#EDF1F4;--text-secondary:#929BA5;--text-muted:#5F6872;
+  --cyan:#59B8C8;--amber:#D6A84B;--signal-red:#D94141;--divider:rgba(255,255,255,0.08);
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sans:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
+}
+html,body{height:100%}
+body{background:#050607;color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center}
+.frame{width:100%;max-width:430px;min-height:100dvh;min-height:100vh;padding:calc(20px + env(safe-area-inset-top,0)) 20px calc(40px + env(safe-area-inset-bottom,0))}
+
+.topbar{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+.back-btn{width:36px;height:36px;border-radius:50%;background:var(--surface-1);border:1px solid var(--divider);color:var(--text-primary);display:flex;align-items:center;justify-content:center;text-decoration:none;flex-shrink:0}
+.page-title{font-size:19px;font-weight:700}
+.sub{font-size:13px;color:var(--text-secondary);margin:-8px 0 28px;line-height:1.6}
+
+.avatar-picker{display:flex;flex-direction:column;align-items:center;margin-bottom:28px}
+.avatar-circle{width:96px;height:96px;border-radius:50%;background:var(--surface-1);border:1.5px dashed var(--divider);display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer;font-size:32px;color:var(--text-muted);transition:border-color .15s,background .15s}
+.avatar-circle.has-image{border-style:solid;border-color:var(--cyan)}
+.avatar-circle img{width:100%;height:100%;object-fit:cover}
+.avatar-hint{margin-top:10px;font-size:12px;color:var(--text-muted);font-family:var(--mono);letter-spacing:.03em}
+
+.field{margin-bottom:16px}
+.field-label{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px}
+.field-input{width:100%;background:var(--surface-1);border:1px solid var(--divider);border-radius:10px;padding:13px 14px;color:var(--text-primary);font-size:14px;font-family:var(--sans)}
+.field-input:focus{outline:none;border-color:var(--cyan)}
+.field-input::placeholder{color:var(--text-muted)}
+
+.login-btn{width:100%;margin-top:8px;background:var(--cyan);color:#06181c;border:none;border-radius:10px;padding:15px;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--mono);letter-spacing:.04em}
+.login-btn:active{opacity:.85}
+.login-btn:disabled{opacity:.4;cursor:default}
+.form-hint{font-size:11.5px;color:var(--text-muted);text-align:center;margin-top:14px;line-height:1.6}
+
+.session-panel{background:var(--surface-1);border:1px solid var(--divider);border-radius:14px;padding:20px;text-align:center}
+.session-panel.hidden{display:none}
+.session-avatar{width:80px;height:80px;border-radius:50%;object-fit:cover;background:var(--surface-3);margin:0 auto 14px;display:block}
+.session-badge{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--cyan);background:rgba(89,184,200,.12);border-radius:12px;padding:4px 10px;margin-bottom:10px}
+.session-name{font-size:17px;font-weight:700;margin-bottom:4px}
+.session-email{font-size:12.5px;color:var(--text-secondary);margin-bottom:20px}
+.logout-btn{width:100%;background:var(--surface-2);border:1px solid var(--divider);color:var(--text-primary);padding:13px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--mono);letter-spacing:.04em}
+
+.login-form.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="frame">
+  <div class="topbar">
+    <a class="back-btn" href="/dev/">←</a>
+    <div class="page-title">LOGIN TEST</div>
+  </div>
+  <div class="sub">로그인 화면 UX와 프로필 이미지 업로드 흐름만 확인하는 테스트 페이지입니다. 실제 서버로 전송되지 않고 이 기기에만 저장됩니다.</div>
+
+  <form class="login-form" id="loginForm">
+    <div class="avatar-picker">
+      <div class="avatar-circle" id="avatarCircle">
+        <span id="avatarPlaceholder">👤</span>
+        <img id="avatarPreview" alt="" style="display:none">
+      </div>
+      <div class="avatar-hint">탭해서 프로필 이미지 업로드</div>
+      <input type="file" id="avatarInput" accept="image/jpeg,image/png,image/webp" style="display:none">
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="nicknameInput">닉네임</label>
+      <input class="field-input" id="nicknameInput" type="text" placeholder="닉네임을 입력하세요" autocomplete="nickname" required>
+    </div>
+    <div class="field">
+      <label class="field-label" for="emailInput">이메일 (선택)</label>
+      <input class="field-input" id="emailInput" type="email" placeholder="test@example.com" autocomplete="email">
+    </div>
+    <div class="field">
+      <label class="field-label" for="passwordInput">비밀번호 (선택)</label>
+      <input class="field-input" id="passwordInput" type="password" placeholder="테스트용이므로 아무 값이나 입력 가능" autocomplete="current-password">
+    </div>
+
+    <button class="login-btn" id="loginBtn" type="submit" disabled>로그인</button>
+    <div class="form-hint">닉네임만 입력하면 로그인 버튼이 활성화됩니다.</div>
+  </form>
+
+  <div class="session-panel hidden" id="sessionPanel">
+    <div class="session-badge">로그인 완료 (테스트)</div>
+    <img class="session-avatar" id="sessionAvatar" alt="">
+    <div class="session-name" id="sessionName"></div>
+    <div class="session-email" id="sessionEmail"></div>
+    <button class="logout-btn" id="logoutBtn">로그아웃 / 초기화</button>
+  </div>
+</div>
+
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
+}
+</script>
+<script>
+const STORAGE_KEY = 'mkDevLoginTestSession';
+
+const el = {
+  loginForm: document.getElementById('loginForm'),
+  avatarCircle: document.getElementById('avatarCircle'),
+  avatarPlaceholder: document.getElementById('avatarPlaceholder'),
+  avatarPreview: document.getElementById('avatarPreview'),
+  avatarInput: document.getElementById('avatarInput'),
+  nicknameInput: document.getElementById('nicknameInput'),
+  emailInput: document.getElementById('emailInput'),
+  passwordInput: document.getElementById('passwordInput'),
+  loginBtn: document.getElementById('loginBtn'),
+  sessionPanel: document.getElementById('sessionPanel'),
+  sessionAvatar: document.getElementById('sessionAvatar'),
+  sessionName: document.getElementById('sessionName'),
+  sessionEmail: document.getElementById('sessionEmail'),
+  logoutBtn: document.getElementById('logoutBtn'),
+};
+
+let pendingAvatarDataUrl = '';
+
+function loadSession() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)); }
+  catch (e) { return null; }
+}
+function saveSession(session) { localStorage.setItem(STORAGE_KEY, JSON.stringify(session)); }
+function clearSession() { localStorage.removeItem(STORAGE_KEY); }
+
+function showSession(session) {
+  el.loginForm.classList.add('hidden');
+  el.sessionPanel.classList.remove('hidden');
+  el.sessionAvatar.src = session.avatarDataUrl || '';
+  el.sessionAvatar.style.visibility = session.avatarDataUrl ? 'visible' : 'hidden';
+  el.sessionName.textContent = session.nickname;
+  el.sessionEmail.textContent = session.email || '';
+}
+
+function showForm() {
+  el.loginForm.classList.remove('hidden');
+  el.sessionPanel.classList.add('hidden');
+  el.loginForm.reset();
+  pendingAvatarDataUrl = '';
+  el.avatarPreview.style.display = 'none';
+  el.avatarPlaceholder.style.display = '';
+  el.avatarCircle.classList.remove('has-image');
+  updateLoginBtnState();
+}
+
+function updateLoginBtnState() {
+  el.loginBtn.disabled = el.nicknameInput.value.trim().length === 0;
+}
+
+el.avatarCircle.addEventListener('click', () => el.avatarInput.click());
+el.avatarInput.addEventListener('change', () => {
+  const file = el.avatarInput.files && el.avatarInput.files[0];
+  if (!file || !file.type.startsWith('image/')) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    pendingAvatarDataUrl = reader.result;
+    el.avatarPreview.src = pendingAvatarDataUrl;
+    el.avatarPreview.style.display = 'block';
+    el.avatarPlaceholder.style.display = 'none';
+    el.avatarCircle.classList.add('has-image');
+  };
+  reader.readAsDataURL(file);
+});
+
+el.nicknameInput.addEventListener('input', updateLoginBtnState);
+
+el.loginForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const nickname = el.nicknameInput.value.trim();
+  if (!nickname) return;
+  const session = {
+    nickname,
+    email: el.emailInput.value.trim(),
+    avatarDataUrl: pendingAvatarDataUrl,
+    loggedInAt: new Date().toISOString(),
+  };
+  saveSession(session);
+  showSession(session);
+});
+
+el.logoutBtn.addEventListener('click', () => {
+  clearSession();
+  showForm();
+});
+
+const existing = loadSession();
+if (existing) showSession(existing); else showForm();
+</script>
+</body>
+</html>
