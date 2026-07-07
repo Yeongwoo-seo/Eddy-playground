@@ -136,6 +136,7 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 <script src="/dev/assetDb.js"></script>
+<script src="/dev/loadingOverlay.js"></script>
 <script src="/dev/dialogueData.js"></script>
 <script src="/dev/vnPlayer.js"></script>
 <script>
@@ -239,10 +240,12 @@ async function initMap() {
   el.missionLabelEl.textContent = '불러오는 중';
   el.missionTarget.textContent = '지도 준비 중…';
   el.missionSub.textContent = '';
+  LoadingOverlay.show('지도 불러오는 중');
   const assetId = DevGameState.getBackgroundId(MINIGAME_ID);
   const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
   const savedHotspots = STAGES.map((_, i) => hotspotToPoints(DevGameState.getMinigameHotspot(MINIGAME_ID, i)));
   if (!asset || !asset.dataUrl || !savedHotspots.every(Boolean)) {
+    LoadingOverlay.hide();
     showMissingMapNotice();
     return false;
   }
@@ -253,6 +256,7 @@ async function initMap() {
   buildImageMap(asset.dataUrl);
   fitToStage();
   updateMissionCard();
+  LoadingOverlay.hide();
   return true;
 }
 
