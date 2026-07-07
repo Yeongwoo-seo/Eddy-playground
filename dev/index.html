@@ -41,6 +41,8 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .plan-link{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--amber);background:rgba(214,168,75,.12);border:1px solid rgba(214,168,75,.4);border-radius:12px;padding:6px 10px;letter-spacing:.02em;text-decoration:none;white-space:nowrap}
 .plan-link:active{opacity:.8}
 .build-badge{font-family:var(--mono);font-size:9.5px;color:var(--text-muted);background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:6px 10px;letter-spacing:.02em;max-width:180px;text-align:right;line-height:1.5;white-space:pre-line}
+.build-summary{font-family:var(--sans);font-size:11px;color:var(--text-secondary);max-width:180px;text-align:right;line-height:1.4}
+.build-summary:empty{display:none}
 
 /* Floating CTA — jumps straight to the real play environment (/play/test/),
    which renders whatever was configured in /dev/start/ with no dev chrome. */
@@ -53,6 +55,7 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
   <div class="corner-stack">
     <a class="plan-link" href="/dev/plan/">📋 개발계획</a>
     <div class="build-badge" id="buildBadge">빌드 정보 확인 중…</div>
+    <div class="build-summary" id="buildSummary"></div>
   </div>
   <div class="tag">Operation MK · DEV</div>
   <div class="title">The <span class="accent">M</span>issing <span class="accent">K</span>ey</div>
@@ -102,6 +105,7 @@ if ('serviceWorker' in navigator) {
 // commit time, since multiple sessions push to this repo independently.
 async function loadBuildInfo() {
   const badge = document.getElementById('buildBadge');
+  const summaryEl = document.getElementById('buildSummary');
   try {
     const res = await fetch('https://api.github.com/repos/Yeongwoo-seo/Eddy-playground/commits/main');
     if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -115,6 +119,12 @@ async function loadBuildInfo() {
       month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false,
     }).format(new Date(dateStr)) : '';
     badge.textContent = `${label}\n${formatted} AEST`;
+    // GitHub's own merge-commit body is just the PR title (everything after
+    // the "Merge pull request #N from ..." title line) — reusing it here
+    // means every future merge's one-line summary shows up automatically,
+    // with nothing to remember to update by hand.
+    const bodyLines = message.split('\n').slice(1).map(l => l.trim()).filter(Boolean);
+    summaryEl.textContent = bodyLines[0] || '';
   } catch (e) {
     badge.textContent = '빌드 정보 로드 실패';
   }
