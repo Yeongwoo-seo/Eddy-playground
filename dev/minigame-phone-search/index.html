@@ -69,20 +69,20 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .result-strip{background:rgba(255,255,255,.03);border:1px dashed var(--divider);border-radius:12px;padding:10px 12px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:var(--cyan);white-space:pre-wrap;word-break:keep-all;min-height:1.4em;max-height:18vh;overflow-y:auto}
 .debug-hotspot-box{position:absolute;border:1px dashed var(--cyan);background:rgba(89,184,200,.12);color:var(--cyan);font-family:var(--mono);font-size:9px;line-height:1.3;padding:1px 3px;pointer-events:none;overflow:hidden;white-space:nowrap}
 
-/* ===== Floating action buttons — replace the old always-visible area tabs
-   + inventory list, freeing the room view to fill the screen. ===== */
-.fab-row{position:absolute;left:0;right:0;bottom:0;z-index:6;display:flex;justify-content:space-between;padding:0 16px calc(16px + env(safe-area-inset-bottom,0));pointer-events:none;transition:opacity .3s ease}
-.fab-row.hidden{display:none}
-.fab-btn{pointer-events:auto;width:64px;height:64px;border-radius:20px;background:var(--surface-1);border:1px solid var(--divider);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.45)}
-.fab-btn:active{transform:scale(.95);background:var(--surface-2)}
-.fab-btn .fab-icon{font-size:22px;line-height:1}
-.fab-btn .fab-label{font-family:var(--mono);font-size:9.5px;color:var(--text-secondary);letter-spacing:.02em}
+/* ===== Top action row — item/move buttons, text-only (no emoji), sitting
+   just below the topbar instead of floating over the bottom of the room
+   photo. Replaces the old always-visible area tabs + inventory list. ===== */
+.top-actions{position:absolute;top:calc(60px + env(safe-area-inset-top,0));left:16px;right:16px;z-index:6;display:flex;gap:8px;transition:opacity .3s ease}
+.top-actions.hidden{display:none}
+.top-action-btn{flex:1;background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:11px 0;color:var(--text-primary);font-family:var(--sans);font-size:13.5px;font-weight:700;cursor:pointer;text-align:center;box-shadow:0 6px 20px rgba(0,0,0,.35)}
+.top-action-btn:active{transform:scale(.97);background:var(--surface-2)}
 
 /* ===== Item popup — icon-only grid, tap to select/combine (no text list,
-   no separate 조사/조합 confirm buttons — tapping IS the action). ===== */
+   no separate 조사/조합 confirm buttons — tapping IS the action). Anchored
+   dynamically (in JS) just below whichever top-action button opened it. ===== */
 .popup-scrim{position:absolute;inset:0;z-index:5;background:rgba(0,0,0,.4);display:none}
 .popup-scrim.show{display:block}
-.item-popup{position:absolute;left:16px;bottom:calc(96px + env(safe-area-inset-bottom,0));z-index:5;background:var(--surface-1);border:1px solid var(--divider);border-radius:18px;padding:14px;display:none;box-shadow:0 12px 32px rgba(0,0,0,.5);max-width:calc(100% - 32px)}
+.item-popup{position:absolute;z-index:5;background:var(--surface-1);border:1px solid var(--divider);border-radius:18px;padding:14px;display:none;box-shadow:0 12px 32px rgba(0,0,0,.5);max-width:calc(100% - 32px)}
 .item-popup.show{display:block}
 .item-popup-title{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase;margin-bottom:10px}
 .item-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:264px;max-height:38vh;overflow-y:auto}
@@ -97,7 +97,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .item-tooltip-desc{font-size:11.5px;color:var(--text-secondary);line-height:1.5}
 
 /* ===== Move popup — replaces the always-visible area tab bar. ===== */
-.move-popup{position:absolute;right:16px;bottom:calc(96px + env(safe-area-inset-bottom,0));z-index:5;background:var(--surface-1);border:1px solid var(--divider);border-radius:18px;padding:10px;display:none;box-shadow:0 12px 32px rgba(0,0,0,.5);min-width:160px}
+.move-popup{position:absolute;z-index:5;background:var(--surface-1);border:1px solid var(--divider);border-radius:18px;padding:10px;display:none;box-shadow:0 12px 32px rgba(0,0,0,.5);min-width:160px}
 .move-popup.show{display:block}
 .move-popup-title{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase;padding:4px 8px 8px}
 .move-item-btn{display:block;width:100%;text-align:left;background:none;border:none;color:var(--text-primary);font-family:var(--sans);font-size:14px;font-weight:600;padding:11px 10px;border-radius:10px;cursor:pointer}
@@ -151,6 +151,11 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
     <button class="vn-btn" id="devBtn">DEV</button>
   </div>
 
+  <div class="top-actions" id="topActions">
+    <button class="top-action-btn" id="itemTopBtn">아이템</button>
+    <button class="top-action-btn" id="moveTopBtn">이동</button>
+  </div>
+
   <div class="room-view" id="roomView">
     <div class="photo-stage hidden" id="photoStage">
       <div class="photo-canvas" id="photoCanvas"></div>
@@ -180,11 +185,6 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
   <div class="move-popup" id="movePopup">
     <div class="move-popup-title">이동</div>
     <div id="moveList"></div>
-  </div>
-
-  <div class="fab-row" id="fabRow">
-    <button class="fab-btn" id="itemFabBtn"><span class="fab-icon">🎒</span><span class="fab-label">아이템</span></button>
-    <button class="fab-btn" id="moveFabBtn"><span class="fab-icon">🚪</span><span class="fab-label">이동</span></button>
   </div>
 
   <div class="acquire-toast" id="acquireToast">
@@ -527,9 +527,9 @@ const el = {
   itemTooltipDesc: document.getElementById('itemTooltipDesc'),
   movePopup: document.getElementById('movePopup'),
   moveList: document.getElementById('moveList'),
-  fabRow: document.getElementById('fabRow'),
-  itemFabBtn: document.getElementById('itemFabBtn'),
-  moveFabBtn: document.getElementById('moveFabBtn'),
+  topActions: document.getElementById('topActions'),
+  itemTopBtn: document.getElementById('itemTopBtn'),
+  moveTopBtn: document.getElementById('moveTopBtn'),
   acquireToast: document.getElementById('acquireToast'),
   acquireToastIcon: document.getElementById('acquireToastIcon'),
   acquireToastText: document.getElementById('acquireToastText'),
@@ -1132,8 +1132,13 @@ function onItemIconTap(itemId, btnEl) {
 
   state.selectedItemId = itemId;
   saveState();
-  renderItemGrid();
+  // Anchor the tooltip on btnEl *before* renderItemGrid() rebuilds the grid
+  // — renderItemGrid() replaces every button with a fresh element, so
+  // reading btnEl's position after that call would measure a detached
+  // node (getBoundingClientRect() on it returns all zeros), which is why
+  // the tooltip used to jump to the top-left corner for selectable items.
   showItemTooltip(itemId, btnEl);
+  renderItemGrid();
 }
 
 function renderItemGrid() {
@@ -1177,11 +1182,27 @@ function hideItemTooltip() {
   el.itemTooltip.classList.remove('show');
 }
 
-/* ===== Popups (item / move) + FABs — replace the old always-visible
-   inventory list + area tab bar. ===== */
+/* ===== Popups (item / move) + top action buttons — replace the old
+   always-visible inventory list + area tab bar. Popups anchor dynamically
+   below whichever top-action button opened them, mirroring the same
+   rect-based positioning showItemTooltip uses. ===== */
+function anchorPopupBelow(popupEl, btnEl, align) {
+  const frameRect = el.frame.getBoundingClientRect();
+  const btnRect = btnEl.getBoundingClientRect();
+  popupEl.style.top = (btnRect.bottom - frameRect.top + 8) + 'px';
+  if (align === 'left') {
+    popupEl.style.left = (btnRect.left - frameRect.left) + 'px';
+    popupEl.style.right = 'auto';
+  } else {
+    popupEl.style.right = (frameRect.right - btnRect.right) + 'px';
+    popupEl.style.left = 'auto';
+  }
+}
+
 function openItemPopup() {
   closeMovePopup();
   renderItemGrid();
+  anchorPopupBelow(el.itemPopup, el.itemTopBtn, 'left');
   el.itemPopup.classList.add('show');
   el.popupScrim.classList.add('show');
 }
@@ -1215,6 +1236,7 @@ function renderMoveList() {
 function openMovePopup() {
   closeItemPopup();
   renderMoveList();
+  anchorPopupBelow(el.movePopup, el.moveTopBtn, 'right');
   el.movePopup.classList.add('show');
   el.popupScrim.classList.add('show');
 }
@@ -1227,14 +1249,14 @@ function toggleMovePopup() {
   else openMovePopup();
 }
 
-el.itemFabBtn.addEventListener('click', () => { if (!state.completed) toggleItemPopup(); });
-el.moveFabBtn.addEventListener('click', () => { if (!state.completed) toggleMovePopup(); });
+el.itemTopBtn.addEventListener('click', () => { if (!state.completed) toggleItemPopup(); });
+el.moveTopBtn.addEventListener('click', () => { if (!state.completed) toggleMovePopup(); });
 el.popupScrim.addEventListener('click', () => { closeItemPopup(); closeMovePopup(); });
 
 function updateLockState() {
   el.roomView.classList.toggle('locked', state.completed);
   el.statusCard.classList.toggle('locked', state.completed);
-  el.fabRow.classList.toggle('hidden', state.completed);
+  el.topActions.classList.toggle('hidden', state.completed);
   if (state.completed) { closeItemPopup(); closeMovePopup(); }
 }
 
