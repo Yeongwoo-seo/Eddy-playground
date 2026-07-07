@@ -195,7 +195,7 @@ if ('serviceWorker' in navigator) {
    - "grid" mode (fallback) — a card grid of the area's hotspots by name, so
      the puzzle is fully playable before any photos exist yet. */
 const STATE_KEY = 'mkPhoneSearchState_v1';
-const HOTSPOT_MIN_FR = 0.045; // floor on tap-target width/height, same rationale as Eastwood's
+const HOTSPOT_MIN_FR = 0.045; // floor radius (around a shape's centroid) for a carelessly tiny/thin drawn shape, same rationale as Eastwood's
 
 const ITEM_DEFS = {
   flashlight: { icon: '🔦', name: '손전등', selectable: true },
@@ -500,7 +500,7 @@ function handlePhoneFound() {
    multiple named hotspots instead of one map with one named station). ===== */
 let scale = 1, baseScale = 1, tx = 0, ty = 0;
 let CANVAS_W = 1, CANVAS_H = 1;
-let currentHotspots = {}; // hotspotId -> {x1,y1,x2,y2}, only populated in photo mode
+let currentHotspots = {}; // hotspotId -> [{x,y}, ...] normalized polygon points, only populated in photo mode
 const pointers = new Map();
 let panStart = null;
 let pinchStartDist = 0, pinchStartScale = 1;
@@ -547,17 +547,33 @@ function flashTapRing(point) {
   setTimeout(() => ring.remove(), 450);
 }
 
+// Accepts either the current free-form { points } shape or an older saved
+// { x1, y1, x2, y2 } rectangle, always returning a normalized points array.
+function hotspotToPoints(h) {
+  if (!h) return null;
+  if (h.points && h.points.length >= 3) return h.points;
+  if (h.x1 !== undefined) return [{ x: h.x1, y: h.y1 }, { x: h.x2, y: h.y1 }, { x: h.x2, y: h.y2 }, { x: h.x1, y: h.y2 }];
+  return null;
+}
+
+function isPointInPolygon(px, py, points) {
+  let inside = false;
+  for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+    const xi = points[i].x, yi = points[i].y, xj = points[j].x, yj = points[j].y;
+    if (((yi > py) !== (yj > py)) && (px < (xj - xi) * (py - yi) / (yj - yi) + xi)) inside = !inside;
+  }
+  return inside;
+}
+
 function hotspotIdAtPoint(point) {
   for (const id in currentHotspots) {
-    const h = currentHotspots[id];
-    // A carelessly small hand-drawn rectangle still needs to stay tappable —
-    // expand it symmetrically up to a minimum width/height (same floor
-    // fraction Eastwood's circular hotspots use) rather than shrinking the miss margin.
-    const cx = (h.x1 + h.x2) / 2, cy = (h.y1 + h.y2) / 2;
-    const halfW = Math.max((h.x2 - h.x1) / 2, HOTSPOT_MIN_FR) * CANVAS_W;
-    const halfH = Math.max((h.y2 - h.y1) / 2, HOTSPOT_MIN_FR) * CANVAS_H;
-    const x = cx * CANVAS_W, y = cy * CANVAS_H;
-    if (point.x >= x - halfW && point.x <= x + halfW && point.y >= y - halfH && point.y <= y + halfH) return id;
+    const pts = currentHotspots[id].map(p => ({ x: p.x * CANVAS_W, y: p.y * CANVAS_H }));
+    if (isPointInPolygon(point.x, point.y, pts)) return id;
+    // A carelessly small/thin hand-drawn shape still needs to stay tappable —
+    // fall back to a minimum-radius circle around its centroid.
+    const cx = pts.reduce((s, p) => s + p.x, 0) / pts.length, cy = pts.reduce((s, p) => s + p.y, 0) / pts.length;
+    const minR = HOTSPOT_MIN_FR * CANVAS_W;
+    if (Math.hypot(point.x - cx, point.y - cy) <= minR) return id;
   }
   return null;
 }
@@ -639,7 +655,11 @@ async function loadArea(area) {
   const hotspots = DevGameState.getRoomHotspots(sceneId);
   if (asset && asset.dataUrl && Object.keys(hotspots).length) {
     currentMode = 'photo';
-    currentHotspots = hotspots;
+    currentHotspots = {};
+    Object.keys(hotspots).forEach(id => {
+      const pts = hotspotToPoints(hotspots[id]);
+      if (pts) currentHotspots[id] = pts;
+    });
     CANVAS_W = asset.width;
     CANVAS_H = asset.height;
     await AssetDB.preloadImage(asset.dataUrl);
