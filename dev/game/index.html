@@ -31,7 +31,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .vn-frame{position:relative;width:100%;max-width:430px;height:100dvh;height:100vh;height:var(--vh100, 100vh);overflow:hidden;background:#0d1114}
 
 /* ===== Layer 1: Background ===== */
-.bg-layer{position:absolute;inset:0;background-size:cover;background-position:center;background-color:#0d1114;transition:background-image .2s ease}
+.bg-layer{position:absolute;inset:0;background-size:cover;background-position:center;background-color:#0d1114;transition:background-image .2s ease, opacity 1.2s ease}
 .bg-layer.bg-placeholder{background-image:linear-gradient(160deg,#171c22 0%,#0d1114 60%,#080a0c 100%)}
 
 /* ===== Top bar (dev only, removable in real game) ===== */
@@ -79,6 +79,16 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .tp-confirm:disabled{opacity:.4;cursor:default}
 .transform-output{background:var(--surface-2);border:1px solid var(--divider);border-radius:8px;padding:8px 10px;font-family:var(--mono);font-size:10px;color:var(--cyan);margin-top:10px;white-space:pre-wrap;word-break:break-all}
 .transform-output.hidden{display:none}
+
+/* ===== Opening cinematic: blackout -> "SYDNEY / 09:30" -> reveal ===== */
+.intro-overlay{position:absolute;inset:0;z-index:9;background:#000;display:flex;align-items:center;justify-content:center;transition:opacity .5s ease}
+.intro-overlay.hidden{opacity:0;pointer-events:none}
+.intro-card{font-family:var(--mono);color:#fff;font-size:20px;letter-spacing:.18em;text-align:center;line-height:1.9}
+
+/* ===== Closing beat: fade to black + a small unexplained flash ===== */
+.ending-fade .bg-layer{opacity:0}
+.unknown-signal{position:absolute;bottom:calc(26vh + 14px);right:16px;z-index:6;font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:rgba(255,255,255,.4);opacity:0;transition:opacity .3s ease}
+.unknown-signal.show{opacity:1}
 </style>
 <script>
 // iOS Safari's 100dvh has a history of getting stuck at a stale (too-small)
@@ -136,6 +146,12 @@ if (window.visualViewport) window.visualViewport.addEventListener('resize', setV
     <div class="dlg-body" id="dialogueText"></div>
     <div class="dlg-foot"><span class="dlg-arrow" id="tapArrow">▼</span></div>
   </div>
+
+  <span class="unknown-signal" id="unknownSignal">UNKNOWN SIGNAL</span>
+
+  <div class="intro-overlay" id="introOverlay">
+    <div class="intro-card">SYDNEY<br>09:30</div>
+  </div>
 </div>
 
 <div class="sheet-overlay hidden" id="sheetOverlay">
@@ -161,7 +177,7 @@ if ('serviceWorker' in navigator) {
 <script src="/dev/dialogueData.js"></script>
 <script src="/dev/vnPlayer.js"></script>
 <script>
-const activeLines = dialogueTest.map(l => ({ speaker: l.speaker, text: l.text, characterId: l.characterId }));
+const activeLines = dialogueTest.map(l => ({ speaker: l.speaker, text: l.text, characterId: l.characterId, pauseBeforeMs: l.pauseBeforeMs }));
 
 const el = {
   frame: document.getElementById('frame'),
@@ -188,6 +204,8 @@ const el = {
   scaleVal: document.getElementById('scaleVal'),
   confirmTransformBtn: document.getElementById('confirmTransformBtn'),
   transformOutput: document.getElementById('transformOutput'),
+  introOverlay: document.getElementById('introOverlay'),
+  unknownSignal: document.getElementById('unknownSignal'),
 };
 
 function setBackground(asset) {
@@ -255,10 +273,39 @@ function updateArrow(show) {
   el.tapArrow.classList.toggle('show', !!show);
 }
 
+// 화면 암전 → "SYDNEY / 09:30" → 0.8초 후 배경 등장.
+function playIntro() {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      el.introOverlay.classList.add('hidden');
+      resolve();
+    }, 800);
+  });
+}
+
+// 마지막 대사 직전: 배경이 서서히 어두워지고, 짧은 진동과 함께 화면 우측 아래에
+// "UNKNOWN SIGNAL"이 아주 잠깐 떴다 사라진다. 지수·영우는 알아채지 못한다 —
+// 공포 연출이나 과도한 글리치 없이, 플레이어만 위화감을 느끼는 정도로.
+function playEndingSequence() {
+  el.frame.classList.add('ending-fade');
+  if (navigator.vibrate) navigator.vibrate(150);
+  setTimeout(() => {
+    el.unknownSignal.classList.add('show');
+    setTimeout(() => el.unknownSignal.classList.remove('show'), 700);
+  }, 900);
+}
+
 const player = createVNPlayer({
-  onLineChange: (line) => {
+  onLineChange: (line, index, total) => {
     el.speakerName.textContent = line.speaker || '';
     applyCharacterForLine(line.characterId);
+    if (index === total - 1) {
+      playEndingSequence();
+    } else {
+      // restart() loops back to line 0 — undo the ending fade/signal from last time.
+      el.frame.classList.remove('ending-fade');
+      el.unknownSignal.classList.remove('show');
+    }
     // Keep the transform popup in sync if it's left open while tapping through lines.
     if (!el.transformPopup.classList.contains('hidden')) loadTransformIntoSliders();
   },
@@ -372,6 +419,7 @@ el.transformPopup.addEventListener('click', (e) => e.stopPropagation());
 (async function init() {
   await applyBackground();
   await preloadCharacterAssetsForLines(activeLines);
+  await playIntro();
   player.load(activeLines);
 })();
 </script>

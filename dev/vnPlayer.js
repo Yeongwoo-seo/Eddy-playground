@@ -10,6 +10,7 @@ function createVNPlayer({ onLineChange, onTextUpdate, onArrow, onComplete }) {
   let currentIndex = 0;
   let typingTimer = null;
   let isTyping = false;
+  let isPausing = false;
 
   function typeText(text, speedMs) {
     clearInterval(typingTimer);
@@ -39,14 +40,17 @@ function createVNPlayer({ onLineChange, onTextUpdate, onArrow, onComplete }) {
     clearInterval(typingTimer);
     lines = newLines || [];
     isTyping = false;
+    isPausing = false;
     if (!lines.length) return;
     showLine(Math.min(startIndex || 0, lines.length - 1));
   }
 
   // Tap while typing -> finish the line instantly.
-  // Tap after finished -> advance, or call onComplete() past the last line.
+  // Tap after finished -> advance (respecting the next line's pauseBeforeMs,
+  // a beat of held silence before it appears), or call onComplete() past the
+  // last line.
   function tap() {
-    if (!lines.length) return;
+    if (!lines.length || isPausing) return;
     if (isTyping) {
       clearInterval(typingTimer);
       onTextUpdate(lines[currentIndex].text);
@@ -55,7 +59,15 @@ function createVNPlayer({ onLineChange, onTextUpdate, onArrow, onComplete }) {
       return;
     }
     if (currentIndex < lines.length - 1) {
-      showLine(currentIndex + 1);
+      const nextIndex = currentIndex + 1;
+      const delay = lines[nextIndex].pauseBeforeMs || 0;
+      if (delay > 0) {
+        isPausing = true;
+        onArrow(false);
+        setTimeout(() => { isPausing = false; showLine(nextIndex); }, delay);
+      } else {
+        showLine(nextIndex);
+      }
     } else if (onComplete) {
       onComplete();
     }
