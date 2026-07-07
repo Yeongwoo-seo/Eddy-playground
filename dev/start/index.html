@@ -44,14 +44,18 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 /* Freely-positioned buttons: dragged to place, tapped to trigger. Position
    and width are stored as a fraction of the frame so they stay put across
    reloads and viewport sizes. */
-.float-btn{position:absolute;transform:translate(-50%,-50%);z-index:3;display:flex;align-items:center;justify-content:center;padding:16px 10px;border-radius:14px;font-family:var(--mono);font-weight:700;font-size:14px;letter-spacing:.05em;cursor:grab;user-select:none;touch-action:none;filter:brightness(1);transition:filter .1s}
+.float-btn{position:absolute;transform:translate(-50%,-50%);z-index:3;display:flex;align-items:center;justify-content:center;padding:16px 10px;border-radius:14px;font-family:var(--mono);font-weight:700;font-size:14px;letter-spacing:.05em;cursor:grab;user-select:none;touch-action:none;filter:brightness(1);transition:filter .1s,background-color .1s}
 .float-btn.pressed{filter:brightness(.6)}
 .float-btn.start{background:var(--cyan);color:#06181c;border:none}
 .btn-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;pointer-events:none}
 
-/* Small grab handle on each floating button's right edge — drag it
-   horizontally to resize the button symmetrically around its own center. */
-.resize-handle{position:absolute;right:-10px;top:50%;transform:translateY(-50%);width:22px;height:22px;border-radius:50%;background:#fff;color:#111;display:flex;align-items:center;justify-content:center;font-size:11px;line-height:1;cursor:ew-resize;touch-action:none;box-shadow:0 1px 4px rgba(0,0,0,.45)}
+/* Small grab handle at each floating button's bottom-right corner — drag it
+   diagonally to resize width and height independently around its own center. */
+.resize-handle{position:absolute;right:-10px;bottom:-10px;width:22px;height:22px;border-radius:50%;background:#fff;color:#111;display:flex;align-items:center;justify-content:center;font-size:11px;line-height:1;cursor:nwse-resize;touch-action:none;box-shadow:0 1px 4px rgba(0,0,0,.45)}
+
+/* 실제 모드: the button itself is invisible (see below), so a press needs its
+   own feedback — darken exactly the hit zone's current bounds on press. */
+.frame.real-mode .float-btn.pressed{background:rgba(0,0,0,.35)}
 
 /* "실제 모드" toggle — the floating 시작하기 box is only a
    placeholder so testers can grab and place it; in the final game it's a
@@ -83,7 +87,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 
   <button class="float-btn start" id="startBtn">
     <span class="btn-label">시작하기</span>
-    <span class="resize-handle edit-only" id="startResizeHandle">↔</span>
+    <span class="resize-handle edit-only" id="startResizeHandle">↘</span>
   </button>
 
   <button class="reset-bg-link hidden edit-only" id="resetBgBtn">기본 배경으로 초기화</button>
@@ -196,7 +200,7 @@ function clamp(v, min, max) { return Math.min(Math.max(v, min), max); }
 
 /* ===== Freely-positioned 시작하기 button ===== */
 function loadBtnPos() {
-  const defaults = { start: { x: 50, y: 80, w: 46 } };
+  const defaults = { start: { x: 50, y: 80, w: 46, h: 7 } };
   try {
     const saved = JSON.parse(localStorage.getItem(BTN_POS_KEY));
     return { start: Object.assign({}, defaults.start, saved && saved.start) };
@@ -210,6 +214,7 @@ function renderBtnPos() {
   el.startBtn.style.left = btnPos.start.x + '%';
   el.startBtn.style.top = btnPos.start.y + '%';
   el.startBtn.style.width = btnPos.start.w + '%';
+  el.startBtn.style.height = btnPos.start.h + '%';
 }
 
 function saveBtnPos() {
@@ -251,23 +256,24 @@ function makeDraggable(buttonEl, posKey, onTap) {
 
 makeDraggable(el.startBtn, 'start', goToRealStart);
 
-// Resize handle grows/shrinks the button symmetrically around its own
-// center (left/right edges move equally), since position is anchored via
-// translate(-50%,-50%) — dragging the handle by dx moves that edge by dx,
-// so width changes by 2*dx.
+// Corner handle grows/shrinks the button symmetrically around its own
+// center (opposite edges move equally), since position is anchored via
+// translate(-50%,-50%) — dragging the handle by dx/dy moves that corner by
+// dx/dy, so width/height each change by 2*dx / 2*dy, independently.
 function makeResizable(handleEl, posKey) {
   let resize = null;
   handleEl.addEventListener('pointerdown', (e) => {
     e.stopPropagation();
     handleEl.setPointerCapture(e.pointerId);
     const rect = el.frame.getBoundingClientRect();
-    resize = { x: e.clientX, startW: btnPos[posKey].w, rect };
+    resize = { x: e.clientX, y: e.clientY, startW: btnPos[posKey].w, startH: btnPos[posKey].h, rect };
   });
   handleEl.addEventListener('pointermove', (e) => {
     if (!resize) return;
     e.stopPropagation();
-    const dx = e.clientX - resize.x;
+    const dx = e.clientX - resize.x, dy = e.clientY - resize.y;
     btnPos[posKey].w = clamp(resize.startW + (dx * 2 / resize.rect.width) * 100, 20, 92);
+    btnPos[posKey].h = clamp(resize.startH + (dy * 2 / resize.rect.height) * 100, 6, 50);
     renderBtnPos();
   });
   ['pointerup', 'pointercancel'].forEach(evt => handleEl.addEventListener(evt, (e) => {
