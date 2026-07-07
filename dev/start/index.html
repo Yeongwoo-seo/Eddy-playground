@@ -327,6 +327,10 @@ makeResizable(el.startResizeHandle, 'start');
 renderBgPos();
 renderBtnPos();
 applyBackground(localStorage.getItem(BG_IMG_KEY));
+
+// /dev's "게임 테스트 시작" links here with ?real=1 so testers land straight
+// on the same view 실제 모드 미리보기 shows, instead of the edit-mode chrome.
+if (new URLSearchParams(location.search).get('real') === '1') setRealMode(true);
 </script>
 </body>
 </html>
