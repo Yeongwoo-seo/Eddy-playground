@@ -328,6 +328,24 @@ const week1Scene002_1Lines = [
   { id: 'line-106', speaker: '', text: 'MINIGAME START', characterId: null },
 ];
 
+/* OPERATION MK — WEEK 1 · SCENE 1-2 「지하철 역 찾기」
+   Dialogue Set: dialogue-week1-scene001-2
+   Scene: week1-scene-001-2 (Sydney Airport Station concourse, 09:45)
+   Setup beat before the "find Eastwood station" route-map minigame —
+   nextSceneId hands off to that minigame page directly (not another VN scene). */
+const week1Scene001_2Lines = [
+  { id: 'line-001', speaker: '영우', text: '자, 이제 숙소 가자.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-002', speaker: '지수', text: '응. 어디로 가야 돼?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-003', speaker: '영우', text: 'Eastwood역.', characterId: 'youngwoo', expression: 'neutral' },
+  { id: 'line-004', speaker: '지수', text: '이스트우드?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-005', speaker: '영우', text: '응. 노선도 보고 한번 찾아봐.', characterId: 'youngwoo', expression: 'smirk' },
+  { id: 'line-006', speaker: '지수', text: '내가?', characterId: 'jisoo', expression: 'shocked' },
+  { id: 'line-007', speaker: '영우', text: '응 ㅋㅋㅋㅋ', characterId: 'youngwoo', expression: 'happy' },
+  { id: 'line-008', speaker: '지수', text: '아 나 영어 못하는데;', characterId: 'jisoo', expression: 'annoyed' },
+  { id: 'line-009', speaker: '영우', text: '역 이름만 찾으면 되잖아 ㅋㅋㅋㅋ', characterId: 'youngwoo', expression: 'happy' },
+  { id: 'line-010', speaker: '지수', text: '하… 알았어. 어디 보자.', characterId: 'jisoo', expression: 'blank' },
+];
+
 // Registry of testable Week 1 scenes — /dev/week1 lists these, each linking
 // to /dev/game/?scene=<id>. Add future scenes here as they're written.
 const week1Scenes = [
@@ -341,8 +359,20 @@ const week1Scenes = [
     lines: week1Scene001Lines,
   },
   {
-    id: 'week1-scene-002-1',
+    id: 'week1-scene-001-2',
     order: 2,
+    name: '지하철 역 찾기',
+    location: 'Sydney Airport Station',
+    introLabel: 'SYDNEY',
+    time: '09:45',
+    lines: week1Scene001_2Lines,
+    // Hands off straight into the route-map minigame (not another VN scene) —
+    // see MINIGAME_ROUTES in game/index.html.
+    nextSceneId: 'week1-scene-001-2-minigame',
+  },
+  {
+    id: 'week1-scene-002-1',
+    order: 3,
     name: '진짜 같이 있네',
     location: 'Sydney Accommodation',
     introLabel: 'ACCOMMODATION',

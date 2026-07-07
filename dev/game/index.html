@@ -316,7 +316,21 @@ function playEndingSequence() {
 // its "UNKNOWN SIGNAL" foreshadowing beat plays on every loop. A scene with
 // nextSceneId hands off elsewhere instead (e.g. into a minigame) and skips
 // that beat — it's tonally specific to scene 001's ending, not a generic one.
+//
+// Each built minigame gets its own standalone page (not routed through
+// /dev/game, since gameplay differs too much from tap-to-advance dialogue).
+// A nextSceneId with no route here isn't built yet, so it just shows a
+// placeholder overlay instead of navigating to a dead page.
+const MINIGAME_ROUTES = {
+  'week1-scene-001-2-minigame': '/dev/minigame-eastwood/',
+};
+
 function playMinigameTransition(nextSceneId) {
+  const route = MINIGAME_ROUTES[nextSceneId];
+  if (route) {
+    location.href = route;
+    return;
+  }
   el.introCard.textContent = 'MINIGAME START';
   el.introOverlay.classList.remove('hidden');
   console.log('[OPERATION MK] scene complete -> nextSceneId:', nextSceneId, '(not yet built)');
