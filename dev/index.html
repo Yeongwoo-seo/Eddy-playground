@@ -23,7 +23,7 @@
 }
 html,body{height:100%}
 body{background:#050607;color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center;min-height:100dvh}
-.frame{width:100%;max-width:430px;min-height:100dvh;min-height:100vh;padding:calc(48px + env(safe-area-inset-top,0)) 20px calc(32px + env(safe-area-inset-bottom,0));display:flex;flex-direction:column}
+.frame{width:100%;max-width:430px;min-height:100dvh;min-height:100vh;padding:calc(48px + env(safe-area-inset-top,0)) 20px calc(100px + env(safe-area-inset-bottom,0));display:flex;flex-direction:column}
 .tag{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px}
 .title{font-size:26px;font-weight:700;letter-spacing:-.2px;margin-bottom:10px}
 .title .accent{color:#E8741E}
@@ -38,6 +38,11 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .menu-arrow{color:var(--text-muted);font-size:18px;flex-shrink:0}
 .foot{margin-top:auto;padding-top:32px;font-family:var(--mono);font-size:10.5px;color:var(--text-muted);letter-spacing:.06em;text-align:center}
 .build-badge{position:absolute;top:calc(14px + env(safe-area-inset-top,0));right:16px;font-family:var(--mono);font-size:9.5px;color:var(--text-muted);background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:6px 10px;letter-spacing:.02em;max-width:180px;text-align:right;line-height:1.5;white-space:pre-line}
+
+/* Floating CTA — jumps straight to the app start screen set up in
+   /dev/start/, so testers don't need the removed menu list item for it. */
+.float-test-btn{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0));transform:translateX(-50%);z-index:20;display:flex;align-items:center;gap:8px;background:var(--amber);color:#1a1206;font-family:var(--mono);font-weight:700;font-size:13.5px;letter-spacing:.03em;padding:14px 24px;border-radius:999px;text-decoration:none;box-shadow:0 6px 24px rgba(0,0,0,.4);white-space:nowrap;transition:transform .12s}
+.float-test-btn:active{transform:translateX(-50%) scale(.96)}
 </style>
 </head>
 <body>
@@ -48,14 +53,6 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
   <div class="sub">비주얼노벨 대화 UX와 배경·캐릭터 업로드 흐름만 검증하는 개발용 페이지입니다.</div>
 
   <div class="menu">
-    <a class="menu-btn" href="/dev/start/">
-      <div class="menu-icon">🚀</div>
-      <div class="menu-txt">
-        <div class="menu-name">앱 시작 화면</div>
-        <div class="menu-desc">앱을 열었을 때 나오는 타이틀 화면을 배경 이미지와 함께 확인합니다</div>
-      </div>
-      <div class="menu-arrow">›</div>
-    </a>
     <a class="menu-btn" href="/dev/week1/">
       <div class="menu-icon">🎬</div>
       <div class="menu-txt">
@@ -84,6 +81,9 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 
   <div class="foot">MVP v0.2 · NOT PART OF FINAL GAME</div>
 </div>
+
+<a class="float-test-btn" href="/dev/start/">🎮 게임 테스트 시작</a>
+
 <script>
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
