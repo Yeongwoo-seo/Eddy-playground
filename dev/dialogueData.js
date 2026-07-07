@@ -385,6 +385,46 @@ const week1Scene001_2Lines = [
   { id: 'line-010', speaker: '지수', text: '아아 알게써 ㅠㅋㅋㅋㅋ\n어디보자아...\n공항...', characterId: 'jisoo', expression: 'blank', pauseBeforeMs: 200 },
 ];
 
+// OPERATION MK — Week 1 Scene 2-2 room-search minigame's area/hotspot
+// registry. Single source of truth shared by minigame-phone-search/ (which
+// hotspots exist and what they're called) and /dev/upload (which lets a dev
+// upload a real room photo per area and mark each hotspot's tap position on
+// it). Each area's own background+hotspots are stored under the sceneId
+// `${ROOM_SEARCH_MINIGAME_ID}-${area.id}` — see roomSearchAreaSceneId below.
+const ROOM_SEARCH_MINIGAME_ID = 'week1-scene-002-2';
+const roomSearchAreas = [
+  { id: 'bed', label: '침대', hotspots: [
+    { id: 'bed', label: '침대' },
+    { id: 'pillow', label: '베개' },
+    { id: 'blanket', label: '이불' },
+    { id: 'under-bed', label: '침대 밑' },
+    { id: 'behind-bed', label: '침대 뒤' },
+    { id: 'bedside-table', label: '협탁' },
+  ] },
+  { id: 'living', label: '거실', hotspots: [
+    { id: 'sofa', label: '소파' },
+    { id: 'sofa-cushion', label: '소파 쿠션' },
+    { id: 'under-sofa', label: '소파 밑' },
+    { id: 'behind-sofa', label: '소파 뒤' },
+    { id: 'coffee-table', label: '테이블' },
+  ] },
+  { id: 'desk', label: '책상', hotspots: [
+    { id: 'desk', label: '책상' },
+    { id: 'desk-drawer', label: '책상 서랍' },
+    { id: 'tv-stand', label: 'TV장' },
+    { id: 'charger-area', label: '충전기 옆' },
+    { id: 'bag', label: '가방' },
+  ] },
+  { id: 'entrance', label: '현관', hotspots: [
+    { id: 'shoe-cabinet', label: '신발장' },
+    { id: 'closet', label: '옷장' },
+    { id: 'upper-shelf', label: '선반 위' },
+    { id: 'luggage', label: '캐리어' },
+    { id: 'utility-cabinet', label: '수납장' },
+  ] },
+];
+function roomSearchAreaSceneId(areaId) { return `${ROOM_SEARCH_MINIGAME_ID}-${areaId}`; }
+
 // Registry of testable Week 1 scenes — /dev/week1 lists these, each linking
 // to /dev/game/?scene=<id>. Add future scenes here as they're written.
 const week1Scenes = [
@@ -455,6 +495,16 @@ const week1Scenes = [
 
 // Groups scene registries by week — 배경 DB (/dev/upload) lists scenes under
 // their week here instead of hardcoding a single week's worth of scenes.
+//
+// /dev/upload's picker gets one extra pseudo-scene per room-search area
+// (`roomHotspots` marks it as such) so a dev can upload that area's photo
+// and mark its hotspots — /dev/week1's list reads week1Scenes directly, not
+// weeks, so these stay invisible there and don't clutter the scene list.
+const week1UploadScenes = week1Scenes.concat(roomSearchAreas.map(area => ({
+  id: roomSearchAreaSceneId(area.id),
+  name: `핸드폰찾기 · ${area.label}`,
+  roomHotspots: area.hotspots,
+})));
 const weeks = [
-  { id: 'week1', label: '1주차', scenes: week1Scenes },
+  { id: 'week1', label: '1주차', scenes: week1UploadScenes },
 ];

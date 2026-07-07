@@ -184,6 +184,7 @@ const DevGameState = {
   _keys: {
     background: 'mkDevSelectedBackgrounds', characters: 'mkDevSelectedCharacters',
     transforms: 'mkDevCharacterTransforms', minigameHotspots: 'mkDevMinigameHotspots',
+    roomHotspots: 'mkDevRoomHotspots',
   },
 
   // Each scene (or minigame — a minigame's own background is just another
@@ -233,6 +234,27 @@ const DevGameState = {
     const key = this._hotspotKey(sceneId, stageIndex);
     if (hotspot) map[key] = hotspot; else delete map[key];
     localStorage.setItem(this._keys.minigameHotspots, JSON.stringify(map));
+  },
+
+  _loadRoomHotspotMap() {
+    try { return JSON.parse(localStorage.getItem(this._keys.roomHotspots)) || {}; }
+    catch (e) { return {}; }
+  },
+  // Room-search minigame variant of the hotspot above — a single background
+  // image (one per area, e.g. 'week1-scene-002-2-bed') can hold several
+  // independently-marked, named tap targets instead of just one, since a
+  // room photo has multiple things to investigate. { [sceneId]: { [hotspotId]: {fx,fy,fr} } }.
+  getRoomHotspots(sceneId) {
+    if (!sceneId) return {};
+    return this._loadRoomHotspotMap()[sceneId] || {};
+  },
+  setRoomHotspot(sceneId, hotspotId, hotspot) {
+    if (!sceneId || !hotspotId) return;
+    const map = this._loadRoomHotspotMap();
+    const forScene = Object.assign({}, map[sceneId]);
+    if (hotspot) forScene[hotspotId] = hotspot; else delete forScene[hotspotId];
+    map[sceneId] = forScene;
+    localStorage.setItem(this._keys.roomHotspots, JSON.stringify(map));
   },
 
   _loadCharacterMap() {
