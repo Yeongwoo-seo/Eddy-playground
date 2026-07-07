@@ -32,17 +32,11 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .bg-layer{position:absolute;inset:0;background-size:cover;background-color:#0d1114;transition:background-image .2s ease;cursor:grab}
 .bg-layer.placeholder{background-image:linear-gradient(160deg,#171c22 0%,#0d1114 60%,#080a0c 100%)}
 .bg-layer.dragging{cursor:grabbing}
-.bg-scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(5,7,10,.35) 0%,rgba(5,7,10,.15) 40%,rgba(5,7,10,.9) 100%);pointer-events:none}
 
 .topbar{position:absolute;top:0;left:0;right:0;z-index:5;padding:calc(14px + env(safe-area-inset-top,0)) 16px 0;display:flex;justify-content:space-between;align-items:center}
 .back-btn{width:36px;height:36px;border-radius:50%;background:rgba(8,10,12,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.14);color:#fff;display:flex;align-items:center;justify-content:center;text-decoration:none;flex-shrink:0}
 .bg-upload-btn{font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;color:#fff;background:rgba(8,10,12,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:9px 13px;cursor:pointer}
 .drag-hint{position:absolute;top:calc(58px + env(safe-area-inset-top,0));left:0;right:0;z-index:4;text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:.05em;color:rgba(255,255,255,.55);pointer-events:none}
-
-.logo-wrap{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);z-index:2;width:calc(100% - 56px);text-align:center;pointer-events:none}
-.game-tag{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--text-secondary);text-transform:uppercase;margin-bottom:10px}
-.game-title{font-size:34px;font-weight:800;letter-spacing:-.3px}
-.game-title .accent{color:var(--amber)}
 
 .reset-bg-link{position:absolute;left:50%;bottom:calc(10px + env(safe-area-inset-bottom,0));transform:translateX(-50%);z-index:3;font-family:var(--mono);font-size:11px;color:var(--text-muted);background:rgba(8,10,12,.5);border:none;border-radius:12px;padding:5px 10px;cursor:pointer;text-decoration:underline}
 .reset-bg-link.hidden{display:none}
@@ -53,16 +47,15 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .float-btn{position:absolute;transform:translate(-50%,-50%);z-index:3;display:flex;align-items:center;justify-content:center;padding:16px 10px;border-radius:14px;font-family:var(--mono);font-weight:700;font-size:14px;letter-spacing:.05em;cursor:grab;user-select:none;touch-action:none;filter:brightness(1);transition:filter .1s}
 .float-btn.pressed{filter:brightness(.6)}
 .float-btn.start{background:var(--cyan);color:#06181c;border:none}
-.float-btn.load{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.24);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .btn-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;pointer-events:none}
 
 /* Small grab handle on each floating button's right edge — drag it
    horizontally to resize the button symmetrically around its own center. */
 .resize-handle{position:absolute;right:-10px;top:50%;transform:translateY(-50%);width:22px;height:22px;border-radius:50%;background:#fff;color:#111;display:flex;align-items:center;justify-content:center;font-size:11px;line-height:1;cursor:ew-resize;touch-action:none;box-shadow:0 1px 4px rgba(0,0,0,.45)}
 
-/* "실제 모드" toggle — the floating 시작하기/불러오기 boxes are only a
-   placeholder so testers can grab and place them; in the final game they're
-   fully transparent hit zones over real title art. This button previews that:
+/* "실제 모드" toggle — the floating 시작하기 box is only a
+   placeholder so testers can grab and place it; in the final game it's a
+   fully transparent hit zone over real title art. This button previews that:
    it hides the box styling/handles/edit hints and leaves the zones exactly
    where they're currently positioned/sized, so tapping proves the hit area
    itself is right — not just that the visible test button works. */
@@ -75,14 +68,11 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .frame.real-mode .btn-label{opacity:0}
 .frame.real-mode .bg-layer{cursor:default}
 
-.toast{position:absolute;left:50%;top:calc(112px + env(safe-area-inset-top,0));transform:translateX(-50%);z-index:8;background:rgba(8,10,12,.9);color:#fff;font-size:12.5px;padding:11px 16px;border-radius:12px;border:1px solid rgba(255,255,255,.14);opacity:0;pointer-events:none;transition:opacity .25s;max-width:calc(100% - 56px);text-align:center}
-.toast.show{opacity:1}
 </style>
 </head>
 <body>
 <div class="frame" id="frame">
   <div class="bg-layer placeholder" id="bgLayer"></div>
-  <div class="bg-scrim"></div>
 
   <div class="topbar">
     <a class="back-btn" href="/dev/">←</a>
@@ -91,23 +81,13 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
   </div>
   <div class="drag-hint edit-only">배경을 드래그하면 위치가 조정돼요</div>
 
-  <div class="logo-wrap">
-    <div class="game-tag">Operation MK</div>
-    <div class="game-title">The <span class="accent">M</span>issing <span class="accent">K</span>ey</div>
-  </div>
-
   <button class="float-btn start" id="startBtn">
     <span class="btn-label">시작하기</span>
     <span class="resize-handle edit-only" id="startResizeHandle">↔</span>
   </button>
-  <button class="float-btn load" id="loadBtn">
-    <span class="btn-label">불러오기</span>
-    <span class="resize-handle edit-only" id="loadResizeHandle">↔</span>
-  </button>
 
   <button class="reset-bg-link hidden edit-only" id="resetBgBtn">기본 배경으로 초기화</button>
   <button class="dev-start-btn" id="devStartBtn">실제 모드 미리보기</button>
-  <div class="toast" id="toast"></div>
 </div>
 
 <script>
@@ -131,11 +111,8 @@ const el = {
   bgInput: document.getElementById('bgInput'),
   resetBgBtn: document.getElementById('resetBgBtn'),
   startBtn: document.getElementById('startBtn'),
-  loadBtn: document.getElementById('loadBtn'),
   startResizeHandle: document.getElementById('startResizeHandle'),
-  loadResizeHandle: document.getElementById('loadResizeHandle'),
   devStartBtn: document.getElementById('devStartBtn'),
-  toast: document.getElementById('toast'),
 };
 
 function goToRealStart() { location.href = '/dev/week1/'; }
@@ -217,12 +194,12 @@ el.bgLayer.addEventListener('pointermove', (e) => {
 
 function clamp(v, min, max) { return Math.min(Math.max(v, min), max); }
 
-/* ===== Freely-positioned 시작하기 / 불러오기 buttons ===== */
+/* ===== Freely-positioned 시작하기 button ===== */
 function loadBtnPos() {
-  const defaults = { start: { x: 50, y: 80, w: 46 }, load: { x: 50, y: 90, w: 46 } };
+  const defaults = { start: { x: 50, y: 80, w: 46 } };
   try {
     const saved = JSON.parse(localStorage.getItem(BTN_POS_KEY));
-    return { start: Object.assign({}, defaults.start, saved && saved.start), load: Object.assign({}, defaults.load, saved && saved.load) };
+    return { start: Object.assign({}, defaults.start, saved && saved.start) };
   } catch (e) {
     return defaults;
   }
@@ -233,20 +210,10 @@ function renderBtnPos() {
   el.startBtn.style.left = btnPos.start.x + '%';
   el.startBtn.style.top = btnPos.start.y + '%';
   el.startBtn.style.width = btnPos.start.w + '%';
-  el.loadBtn.style.left = btnPos.load.x + '%';
-  el.loadBtn.style.top = btnPos.load.y + '%';
-  el.loadBtn.style.width = btnPos.load.w + '%';
 }
 
 function saveBtnPos() {
   localStorage.setItem(BTN_POS_KEY, JSON.stringify(btnPos));
-}
-
-function showToast(message) {
-  el.toast.textContent = message;
-  el.toast.classList.add('show');
-  clearTimeout(showToast._t);
-  showToast._t = setTimeout(() => el.toast.classList.remove('show'), 1800);
 }
 
 function makeDraggable(buttonEl, posKey, onTap) {
@@ -283,7 +250,6 @@ function makeDraggable(buttonEl, posKey, onTap) {
 }
 
 makeDraggable(el.startBtn, 'start', goToRealStart);
-makeDraggable(el.loadBtn, 'load', () => showToast('불러오기 기능은 아직 준비 중입니다 (테스트 버튼)'));
 
 // Resize handle grows/shrinks the button symmetrically around its own
 // center (left/right edges move equally), since position is anchored via
@@ -313,7 +279,6 @@ function makeResizable(handleEl, posKey) {
 }
 
 makeResizable(el.startResizeHandle, 'start');
-makeResizable(el.loadResizeHandle, 'load');
 
 renderBgPos();
 renderBtnPos();
