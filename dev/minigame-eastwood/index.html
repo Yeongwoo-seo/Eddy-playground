@@ -155,8 +155,25 @@ const STAGES = [
 ];
 let stageIndex = 0;
 let CANVAS_W = 0, CANVAS_H = 0;
-let hotspots = null; // [{ x1, y1, x2, y2 } x3]
+let hotspots = null; // [[{x,y}, ...] x3] — one free-form polygon per stop
 let mapImageGlowEls = [], mapImagePulseEls = [];
+
+// Accepts either the current free-form { points } shape or an older saved
+// { x1, y1, x2, y2 } rectangle, always returning a normalized points array.
+function hotspotToPoints(h) {
+  if (!h) return null;
+  if (h.points && h.points.length >= 3) return h.points;
+  if (h.x1 !== undefined) return [{ x: h.x1, y: h.y1 }, { x: h.x2, y: h.y1 }, { x: h.x2, y: h.y2 }, { x: h.x1, y: h.y2 }];
+  return null;
+}
+function isPointInPolygon(px, py, points) {
+  let inside = false;
+  for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+    const xi = points[i].x, yi = points[i].y, xj = points[j].x, yj = points[j].y;
+    if (((yi > py) !== (yj > py)) && (px < (xj - xi) * (py - yi) / (yj - yi) + xi)) inside = !inside;
+  }
+  return inside;
+}
 
 const el = {
   frame: document.getElementById('frame'),
@@ -194,11 +211,12 @@ function buildImageMap(url) {
 
   mapImageGlowEls = [];
   mapImagePulseEls = [];
-  hotspots.forEach(hs => {
+  hotspots.forEach(pts => {
     // The hint glow/pulse stay circular for the visual effect even though the
-    // tap target itself is a rectangle — derive a radius from its half-extent.
-    const cx = ((hs.x1 + hs.x2) / 2) * CANVAS_W, cy = ((hs.y1 + hs.y2) / 2) * CANVAS_H;
-    const r = Math.max((hs.x2 - hs.x1) / 2 * CANVAS_W, (hs.y2 - hs.y1) / 2 * CANVAS_H, HOTSPOT_MIN_FR * CANVAS_W);
+    // tap target is a free-form shape — derive a center + radius from it.
+    const cx = (pts.reduce((s, p) => s + p.x, 0) / pts.length) * CANVAS_W;
+    const cy = (pts.reduce((s, p) => s + p.y, 0) / pts.length) * CANVAS_H;
+    const r = Math.max(...pts.map(p => Math.hypot(p.x * CANVAS_W - cx, p.y * CANVAS_H - cy)), HOTSPOT_MIN_FR * CANVAS_W);
 
     const glow = document.createElement('div');
     glow.className = 'image-area-glow';
@@ -223,7 +241,7 @@ async function initMap() {
   el.missionSub.textContent = '';
   const assetId = DevGameState.getBackgroundId(MINIGAME_ID);
   const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
-  const savedHotspots = STAGES.map((_, i) => DevGameState.getMinigameHotspot(MINIGAME_ID, i));
+  const savedHotspots = STAGES.map((_, i) => hotspotToPoints(DevGameState.getMinigameHotspot(MINIGAME_ID, i)));
   if (!asset || !asset.dataUrl || !savedHotspots.every(Boolean)) {
     showMissingMapNotice();
     return false;
@@ -411,15 +429,13 @@ function reactWrong() {
 
 function onImageTap(point) {
   if (isCompleted || isStageTransition) return;
-  const hs = hotspots[stageIndex];
-  // A carelessly small hand-drawn rectangle still needs to stay tappable —
-  // expand it symmetrically up to a minimum width/height rather than
-  // shrinking the miss margin.
-  const cx = (hs.x1 + hs.x2) / 2, cy = (hs.y1 + hs.y2) / 2;
-  const halfW = Math.max((hs.x2 - hs.x1) / 2, HOTSPOT_MIN_FR) * CANVAS_W;
-  const halfH = Math.max((hs.y2 - hs.y1) / 2, HOTSPOT_MIN_FR) * CANVAS_H;
-  const x = cx * CANVAS_W, y = cy * CANVAS_H;
-  if (point.x >= x - halfW && point.x <= x + halfW && point.y >= y - halfH && point.y <= y + halfH) {
+  const pts = hotspots[stageIndex].map(p => ({ x: p.x * CANVAS_W, y: p.y * CANVAS_H }));
+  const inShape = isPointInPolygon(point.x, point.y, pts);
+  // A carelessly small/thin hand-drawn shape still needs to stay tappable —
+  // fall back to a minimum-radius circle around its centroid.
+  const cx = pts.reduce((s, p) => s + p.x, 0) / pts.length, cy = pts.reduce((s, p) => s + p.y, 0) / pts.length;
+  const nearCentroid = Math.hypot(point.x - cx, point.y - cy) <= HOTSPOT_MIN_FR * CANVAS_W;
+  if (inShape || nearCentroid) {
     handleStageFound();
     return;
   }
