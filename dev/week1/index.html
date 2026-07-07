@@ -55,7 +55,7 @@ if (!week1Scenes.length) {
   list.innerHTML = '<div class="empty">등록된 씬이 없습니다.</div>';
 } else {
   list.innerHTML = week1Scenes.map(s => `
-    <a class="scene-btn" href="/dev/game/?scene=${encodeURIComponent(s.id)}">
+    <a class="scene-btn" href="${s.route || ('/dev/game/?scene=' + encodeURIComponent(s.id))}">
       <div class="scene-num">#${String(s.order).padStart(2, '0')}</div>
       <div class="scene-txt">
         <div class="scene-name">${s.name}</div>
