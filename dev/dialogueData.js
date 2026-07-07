@@ -14,7 +14,7 @@ const dialogueCharacters = [
 // Pure stage-direction beats (no speaker) use characterId to say who, if
 // anyone, stays on screen for that beat — keeps the portrait from flickering
 // out and back in across a beat with no line of its own.
-const dialogueTest = [
+const week1Scene001Lines = [
   { id: 'line-001', speaker: '', text: '시드니 공항.\n오전 9시 30분.', characterId: null },
   { id: 'line-002', speaker: '', text: '긴 비행 끝에 도착한 지수는\n도착 게이트 앞에서 같은 곳을 네 번째로 둘러보고 있었다.', characterId: null },
   { id: 'line-003', speaker: '지수', text: '아니 근데 진짜 어디 있는 거야.', characterId: 'jisoo' },
@@ -196,4 +196,18 @@ const dialogueTest = [
   { id: 'line-179', speaker: '지수', text: '그럼 잘해요.\n들키지 말고.', characterId: 'jisoo' },
   { id: 'line-180', speaker: '영우', text: 'ㅎㅎㅎㅎㅎ\n알겠습니다', characterId: 'youngwoo' },
   { id: 'line-181', speaker: '', text: '지수의 첫날은,\n아직 평범한 여행에 가까웠다.', characterId: null }
+];
+
+// Registry of testable Week 1 scenes — /dev/week1 lists these, each linking
+// to /dev/game/?scene=<id>. Add future scenes here as they're written.
+const week1Scenes = [
+  {
+    id: 'week1-scene-001',
+    order: 1,
+    name: '진짜 왔네',
+    location: 'Sydney Airport Arrival Area',
+    introLabel: 'SYDNEY',
+    time: '09:30',
+    lines: week1Scene001Lines,
+  },
 ];

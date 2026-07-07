@@ -4,6 +4,7 @@
 const CACHE_NAME = 'operation-mk-dev-v4';
 const APP_SHELL = [
   '/dev/',
+  '/dev/week1/',
   '/dev/game/',
   '/dev/upload/',
   '/dev/assetDb.js',

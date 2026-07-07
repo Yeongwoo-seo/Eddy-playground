@@ -83,7 +83,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 /* ===== Opening cinematic: blackout -> "SYDNEY / 09:30" -> reveal ===== */
 .intro-overlay{position:absolute;inset:0;z-index:9;background:#000;display:flex;align-items:center;justify-content:center;transition:opacity .5s ease}
 .intro-overlay.hidden{opacity:0;pointer-events:none}
-.intro-card{font-family:var(--mono);color:#fff;font-size:20px;letter-spacing:.18em;text-align:center;line-height:1.9}
+.intro-card{font-family:var(--mono);color:#fff;font-size:20px;letter-spacing:.18em;text-align:center;line-height:1.9;white-space:pre-line}
 
 /* ===== Closing beat: fade to black + a small unexplained flash ===== */
 .ending-fade .bg-layer{opacity:0}
@@ -150,7 +150,7 @@ if (window.visualViewport) window.visualViewport.addEventListener('resize', setV
   <span class="unknown-signal" id="unknownSignal">UNKNOWN SIGNAL</span>
 
   <div class="intro-overlay" id="introOverlay">
-    <div class="intro-card">SYDNEY<br>09:30</div>
+    <div class="intro-card" id="introCard"></div>
   </div>
 </div>
 
@@ -177,7 +177,11 @@ if ('serviceWorker' in navigator) {
 <script src="/dev/dialogueData.js"></script>
 <script src="/dev/vnPlayer.js"></script>
 <script>
-const activeLines = dialogueTest.map(l => ({ speaker: l.speaker, text: l.text, characterId: l.characterId, pauseBeforeMs: l.pauseBeforeMs }));
+// /dev/week1 links here as /dev/game/?scene=<id> — fall back to the first
+// scene so a bare /dev/game/ link still works.
+const requestedSceneId = new URLSearchParams(location.search).get('scene');
+const activeSceneData = week1Scenes.find(s => s.id === requestedSceneId) || week1Scenes[0];
+const activeLines = activeSceneData.lines.map(l => ({ speaker: l.speaker, text: l.text, characterId: l.characterId, pauseBeforeMs: l.pauseBeforeMs }));
 
 const el = {
   frame: document.getElementById('frame'),
@@ -205,6 +209,7 @@ const el = {
   confirmTransformBtn: document.getElementById('confirmTransformBtn'),
   transformOutput: document.getElementById('transformOutput'),
   introOverlay: document.getElementById('introOverlay'),
+  introCard: document.getElementById('introCard'),
   unknownSignal: document.getElementById('unknownSignal'),
 };
 
@@ -273,13 +278,22 @@ function updateArrow(show) {
   el.tapArrow.classList.toggle('show', !!show);
 }
 
-// 화면 암전 → "SYDNEY / 09:30" → 0.8초 후 배경 등장.
+// 화면 암전 → 장소/시간 타자기 효과 → 0.8초 정지 → 배경 등장.
 function playIntro() {
+  const text = `${activeSceneData.introLabel}\n${activeSceneData.time}`;
   return new Promise(resolve => {
-    setTimeout(() => {
-      el.introOverlay.classList.add('hidden');
-      resolve();
-    }, 800);
+    let i = 0;
+    const timer = setInterval(() => {
+      i++;
+      el.introCard.textContent = text.slice(0, i);
+      if (i >= text.length) {
+        clearInterval(timer);
+        setTimeout(() => {
+          el.introOverlay.classList.add('hidden');
+          resolve();
+        }, 800);
+      }
+    }, 70);
   });
 }
 
