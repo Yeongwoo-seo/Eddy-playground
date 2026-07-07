@@ -83,14 +83,19 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .hotspot-panel{background:var(--surface-1);border:1px solid var(--divider);border-radius:14px;padding:16px;margin-bottom:24px}
 .hotspot-panel.hidden{display:none}
 .hotspot-stage{position:relative;width:100%;height:280px;background:#000;border-radius:10px;overflow:hidden;touch-action:none}
-.hotspot-stage img{position:absolute;-webkit-user-drag:none;user-select:none}
-.hotspot-marker{position:absolute;border:2px solid var(--cyan);background:rgba(89,184,200,.22);cursor:move;touch-action:none}
-.hotspot-marker.hidden{display:none}
-.hotspot-point-dot{position:absolute;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:var(--amber);border:2px solid #1c1204;pointer-events:none}
-.hotspot-other-box{position:absolute;border:1.5px dashed rgba(214,168,75,.75);background:rgba(214,168,75,.08);pointer-events:none}
+.hotspot-canvas{position:absolute;top:0;left:0;transform-origin:0 0;will-change:transform}
+.hotspot-canvas img{display:block;-webkit-user-drag:none;user-select:none}
+.hotspot-svg{position:absolute;top:0;left:0;overflow:visible;pointer-events:none}
+.hotspot-svg .hs-point{fill:var(--amber);stroke:#1c1204;stroke-width:2}
+.hotspot-svg .hs-line{fill:none;stroke:var(--amber);stroke-width:2}
+.hotspot-svg .hs-polygon{fill:rgba(89,184,200,.24);stroke:var(--cyan);stroke-width:2;pointer-events:auto;cursor:move}
+.hotspot-svg .hs-polygon.hidden{display:none}
+.hotspot-svg .hs-other-polygon{fill:rgba(214,168,75,.08);stroke:rgba(214,168,75,.75);stroke-width:1.5;stroke-dasharray:5 4}
+.hotspot-zoom-hint{font-family:var(--mono);font-size:10px;color:var(--text-muted);text-align:center;margin-top:8px}
 .hotspot-actions{display:flex;gap:8px;margin-top:12px}
-.hotspot-actions .crop-save-btn{flex:1;margin-top:0}
-.hotspot-redo-btn{flex:1;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--mono);letter-spacing:.04em;border:1px solid var(--divider);background:var(--surface-2);color:var(--text-secondary)}
+.hotspot-actions button{flex:1;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--mono);letter-spacing:.04em;border:none}
+.hotspot-actions button:disabled{opacity:.4;cursor:default}
+.hotspot-secondary-btn{background:var(--surface-2) !important;color:var(--text-secondary) !important;border:1px solid var(--divider) !important}
 
 .section-title{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase;margin:24px 0 12px}
 .empty-note{font-size:13px;color:var(--text-muted);padding:14px 0}
@@ -204,14 +209,19 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
       <div class="picker-pills" id="hotspotPickerPills"></div>
     </div>
     <div class="hotspot-stage" id="hotspotStage">
-      <img id="hotspotImg" alt="">
-      <div id="hotspotOtherBoxes"></div>
-      <div id="hotspotPointDots"></div>
-      <div class="hotspot-marker hidden" id="hotspotMarker"></div>
+      <div class="hotspot-canvas" id="hotspotCanvas">
+        <img id="hotspotImg" alt="">
+        <svg class="hotspot-svg" id="hotspotSvg">
+          <g id="hotspotOtherPolygons"></g>
+          <polygon class="hs-polygon hidden" id="hotspotPolygon"></polygon>
+          <g id="hotspotPickingGroup"></g>
+        </svg>
+      </div>
     </div>
+    <div class="hotspot-zoom-hint">손가락(또는 휠)으로 확대·축소하고 이동하며 자유롭게 그릴 수 있어요</div>
     <div class="hotspot-actions">
-      <button class="hotspot-redo-btn" id="hotspotRedoBtn">다시 지정</button>
-      <button class="crop-save-btn" id="hotspotSaveBtn" style="border-radius:10px;padding:12px;font-family:var(--mono);font-weight:700;border:none">정답 영역 저장</button>
+      <button class="hotspot-secondary-btn" id="hotspotLeftBtn"></button>
+      <button class="crop-save-btn" id="hotspotRightBtn" style="border-radius:10px;padding:12px;font-family:var(--mono);font-weight:700;border:none"></button>
     </div>
     <div class="hint" id="hotspotHint" style="margin:10px 0 0"></div>
   </div>
@@ -342,12 +352,14 @@ const el = {
   hotspotPicker: document.getElementById('hotspotPicker'),
   hotspotPickerPills: document.getElementById('hotspotPickerPills'),
   hotspotStage: document.getElementById('hotspotStage'),
+  hotspotCanvas: document.getElementById('hotspotCanvas'),
   hotspotImg: document.getElementById('hotspotImg'),
-  hotspotOtherBoxes: document.getElementById('hotspotOtherBoxes'),
-  hotspotPointDots: document.getElementById('hotspotPointDots'),
-  hotspotMarker: document.getElementById('hotspotMarker'),
-  hotspotRedoBtn: document.getElementById('hotspotRedoBtn'),
-  hotspotSaveBtn: document.getElementById('hotspotSaveBtn'),
+  hotspotSvg: document.getElementById('hotspotSvg'),
+  hotspotOtherPolygons: document.getElementById('hotspotOtherPolygons'),
+  hotspotPolygon: document.getElementById('hotspotPolygon'),
+  hotspotPickingGroup: document.getElementById('hotspotPickingGroup'),
+  hotspotLeftBtn: document.getElementById('hotspotLeftBtn'),
+  hotspotRightBtn: document.getElementById('hotspotRightBtn'),
   hotspotHint: document.getElementById('hotspotHint'),
   listTitle: document.getElementById('listTitle'),
   assetList: document.getElementById('assetList'),
@@ -378,6 +390,11 @@ function selectType(type) {
   el.tabCharacter.classList.toggle('active', type === 'character');
   el.weekPicker.classList.toggle('hidden', type !== 'background' || !!focusMinigame);
   el.scenePicker.classList.toggle('hidden', type !== 'background');
+  // bgKindPicker's own visibility (based on whether the current scene even
+  // has a minigame) is only recomputed by renderBgKindPicker() below, which
+  // only runs for type 'background' — force it hidden here too, otherwise
+  // switching to 인물 DB left it showing whatever it was left at.
+  el.bgKindPicker.classList.toggle('hidden', type !== 'background');
   el.charPicker.classList.toggle('hidden', type !== 'character');
   el.exprPicker.classList.toggle('hidden', type !== 'character');
   el.fileInput.accept = type === 'background' ? 'image/jpeg,image/png,image/webp' : 'image/png,image/webp';
@@ -743,11 +760,13 @@ el.cropSaveBtn.addEventListener('click', async () => {
 });
 
 /* ===== Answer-area designator: mark where a hotspot's tap target is on an
-   uploaded background, as a { x1, y1, x2, y2 } axis-aligned rectangle
-   (fractions of the image) so it works at any resolution. Tap the 4 corners
-   of the area in order; the bounding box of those 4 points becomes the
-   rectangle, which can then be dragged into position before saving. Three
-   modes share this one editor:
+   uploaded background, as a free-form { points: [{x,y}, ...] } polygon
+   (fractions of the image, 3+ vertices, in order) so it works at any
+   resolution. Tap as many corners as needed to trace the actual shape, then
+   "완료" closes it into a polygon you can drag into position before saving.
+   The stage supports pinch/wheel zoom + pan (same gesture set as the
+   minigame canvases) so you can zoom in for precise placement. Three modes
+   share this one editor:
    - "single" (scene.minigameId, no minigameStages) — one hotspot per
      background, via DevGameState.getMinigameHotspot/setMinigameHotspot.
    - "staged" (scene.minigameId + scene.minigameStages, e.g. the 3-stop
@@ -759,9 +778,21 @@ el.cropSaveBtn.addEventListener('click', async () => {
      DevGameState.getRoomHotspots/setRoomHotspot, picked with the 항목 pill
      row. ===== */
 let hotspotState = null;
-let hotspotDrag = null;
 let currentHotspotStageIndex = 0;
 let currentRoomHotspotId = null;
+
+// Accepts either the current { points } shape or an older saved
+// { x1, y1, x2, y2 } rectangle (from before free-form shapes shipped) and
+// always returns a normalized points array, so hotspots saved under the old
+// format still load and render instead of silently breaking.
+function hotspotToPoints(h) {
+  if (!h) return null;
+  if (h.points && h.points.length >= 3) return h.points;
+  if (h.x1 !== undefined) {
+    return [{ x: h.x1, y: h.y1 }, { x: h.x2, y: h.y1 }, { x: h.x2, y: h.y2 }, { x: h.x1, y: h.y2 }];
+  }
+  return null;
+}
 
 // Minigames with more than one sequential target (e.g. the 3-stop station
 // finder) list them in scene.minigameStages; each stop gets its own hotspot
@@ -848,34 +879,34 @@ async function loadHotspotEditor() {
   if (!asset) {
     hotspotState = null;
     el.hotspotStage.style.visibility = 'hidden';
-    el.hotspotSaveBtn.disabled = true;
-    el.hotspotRedoBtn.disabled = true;
+    el.hotspotLeftBtn.disabled = true;
+    el.hotspotRightBtn.disabled = true;
     el.hotspotHint.textContent = '먼저 이 항목의 배경 이미지를 업로드하고 "사용"으로 선택하세요.';
     return;
   }
-  el.hotspotRedoBtn.disabled = false;
   el.hotspotStage.style.visibility = '';
-  // hotspotSaveBtn's enabled state is governed by picking/placed mode below,
-  // not set eagerly here.
   // Attach onload before assigning src — this exact URL may already be warm
   // in the browser's image cache (the asset-list thumbnail above just loaded
   // it), in which case the load can complete synchronously and an onload
   // attached after src would silently never fire.
   el.hotspotImg.onload = () => {
-    const stageRect = el.hotspotStage.getBoundingClientRect();
     const nw = asset.width, nh = asset.height;
-    const imgScale = Math.min(stageRect.width / nw, stageRect.height / nh);
-    const dispW = nw * imgScale, dispH = nh * imgScale;
-    const imgLeft = (stageRect.width - dispW) / 2, imgTop = (stageRect.height - dispH) / 2;
-    el.hotspotImg.style.width = dispW + 'px';
-    el.hotspotImg.style.height = dispH + 'px';
-    el.hotspotImg.style.left = imgLeft + 'px';
-    el.hotspotImg.style.top = imgTop + 'px';
+    // The image (and the SVG overlay) are sized to the photo's actual
+    // natural pixel dimensions; hotspotCanvas's own CSS transform (below)
+    // is what scales/pans that whole content to fit and zoom — same
+    // "canvas" pattern the minigames' pan/zoom maps already use.
+    el.hotspotImg.style.width = nw + 'px';
+    el.hotspotImg.style.height = nh + 'px';
+    el.hotspotSvg.setAttribute('width', nw);
+    el.hotspotSvg.setAttribute('height', nh);
+    el.hotspotSvg.setAttribute('viewBox', `0 0 ${nw} ${nh}`);
 
-    const existing = getActiveHotspot(sceneId);
-    hotspotState = { imgLeft, imgTop, dispW, dispH, sceneId };
-    if (existing) {
-      startHotspotWithBox(rectToBox(existing, hotspotState));
+    hotspotState = { sceneId, naturalW: nw, naturalH: nh, scale: 1, baseScale: 1, tx: 0, ty: 0 };
+    fitHotspotStage();
+
+    const existingPoints = hotspotToPoints(getActiveHotspot(sceneId));
+    if (existingPoints) {
+      startHotspotWithPoints(existingPoints.map(p => ({ x: p.x * nw, y: p.y * nh })));
     } else {
       startHotspotPicking();
     }
@@ -884,116 +915,217 @@ async function loadHotspotEditor() {
     // this same photo for spatial context while placing the rest.
     if (activeHotspotKind() === 'room') {
       const all = DevGameState.getRoomHotspots(sceneId);
-      el.hotspotOtherBoxes.innerHTML = Object.keys(all)
+      el.hotspotOtherPolygons.innerHTML = Object.keys(all)
         .filter(id => id !== currentRoomHotspotId)
-        .map(id => { const b = rectToBox(all[id], hotspotState); return `<div class="hotspot-other-box" style="left:${b.left}px;top:${b.top}px;width:${b.width}px;height:${b.height}px"></div>`; })
-        .join('');
+        .map(id => {
+          const pts = hotspotToPoints(all[id]);
+          if (!pts) return '';
+          const attr = pts.map(p => `${p.x * nw},${p.y * nh}`).join(' ');
+          return `<polygon class="hs-other-polygon" points="${attr}"></polygon>`;
+        }).join('');
     } else {
-      el.hotspotOtherBoxes.innerHTML = '';
+      el.hotspotOtherPolygons.innerHTML = '';
     }
   };
   el.hotspotImg.src = asset.dataUrl;
 }
+window.addEventListener('resize', () => { if (hotspotState) fitHotspotStage(); });
 
-// Normalized {x1,y1,x2,y2} (0..1 of natural image size) -> on-screen box.
-function rectToBox(rect, s) {
+function applyHotspotTransform() {
+  el.hotspotCanvas.style.transform = `translate(${hotspotState.tx}px, ${hotspotState.ty}px) scale(${hotspotState.scale})`;
+}
+function fitHotspotStage() {
+  const rect = el.hotspotStage.getBoundingClientRect();
+  const s = hotspotState;
+  if (!rect.width || !rect.height) return;
+  s.baseScale = Math.min(rect.width / s.naturalW, rect.height / s.naturalH) * 0.98;
+  s.scale = s.baseScale;
+  s.tx = (rect.width - s.naturalW * s.scale) / 2;
+  s.ty = (rect.height - s.naturalH * s.scale) / 2;
+  applyHotspotTransform();
+}
+function clampHotspotScale(v) { return Math.min(Math.max(v, hotspotState.baseScale * 0.6), hotspotState.baseScale * 8); }
+function hotspotScreenToNatural(clientX, clientY) {
+  const rect = el.hotspotStage.getBoundingClientRect();
+  const s = hotspotState;
   return {
-    left: s.imgLeft + rect.x1 * s.dispW,
-    top: s.imgTop + rect.y1 * s.dispH,
-    width: (rect.x2 - rect.x1) * s.dispW,
-    height: (rect.y2 - rect.y1) * s.dispH,
+    x: clamp((clientX - rect.left - s.tx) / s.scale, 0, s.naturalW),
+    y: clamp((clientY - rect.top - s.ty) / s.scale, 0, s.naturalH),
   };
 }
 
 function startHotspotPicking() {
   hotspotState.mode = 'picking';
   hotspotState.points = [];
-  hotspotState.box = null;
-  el.hotspotMarker.classList.add('hidden');
-  el.hotspotSaveBtn.disabled = true;
-  renderHotspotPointDots();
-  updateHotspotPickingHint();
+  el.hotspotPolygon.classList.add('hidden');
+  renderHotspotPickingGroup();
+  renderHotspotActions();
+  updateHotspotHint();
 }
 
-function startHotspotWithBox(box) {
+function startHotspotWithPoints(points) {
   hotspotState.mode = 'placed';
-  hotspotState.points = [];
-  hotspotState.box = box;
-  el.hotspotPointDots.innerHTML = '';
-  el.hotspotSaveBtn.disabled = false;
-  renderHotspotMarker();
-  el.hotspotHint.textContent = '기존 정답 영역을 드래그해서 위치를 조정하거나, "다시 지정"으로 새로 그릴 수 있어요.';
+  hotspotState.points = points;
+  el.hotspotPickingGroup.innerHTML = '';
+  renderHotspotPolygon();
+  renderHotspotActions();
+  el.hotspotHint.textContent = '도형을 드래그해서 위치를 옮기거나, "다시 그리기"로 새로 그릴 수 있어요.';
 }
 
-function updateHotspotPickingHint() {
-  el.hotspotHint.textContent = `이미지에서 정답 영역의 네 모서리를 순서대로 탭하세요. (${hotspotState.points.length}/4)`;
+function renderHotspotPickingGroup() {
+  const pts = hotspotState.points;
+  const dots = pts.map(p => `<circle class="hs-point" cx="${p.x}" cy="${p.y}" r="8"></circle>`).join('');
+  const line = pts.length >= 2 ? `<polyline class="hs-line" points="${pts.map(p => `${p.x},${p.y}`).join(' ')}"></polyline>` : '';
+  el.hotspotPickingGroup.innerHTML = line + dots;
 }
 
-function renderHotspotPointDots() {
-  el.hotspotPointDots.innerHTML = (hotspotState.points || [])
-    .map(p => `<div class="hotspot-point-dot" style="left:${p.x}px;top:${p.y}px"></div>`)
-    .join('');
+function renderHotspotPolygon() {
+  el.hotspotPolygon.setAttribute('points', hotspotState.points.map(p => `${p.x},${p.y}`).join(' '));
+  el.hotspotPolygon.classList.remove('hidden');
 }
 
-function renderHotspotMarker() {
-  const b = hotspotState.box;
-  el.hotspotMarker.classList.remove('hidden');
-  el.hotspotMarker.style.left = b.left + 'px';
-  el.hotspotMarker.style.top = b.top + 'px';
-  el.hotspotMarker.style.width = b.width + 'px';
-  el.hotspotMarker.style.height = b.height + 'px';
-}
-
-el.hotspotStage.addEventListener('pointerdown', (e) => {
-  if (!hotspotState || hotspotState.mode !== 'picking' || e.target === el.hotspotMarker) return;
-  if (hotspotState.points.length >= 4) return;
+function renderHotspotActions() {
   const s = hotspotState;
-  const stageRect = el.hotspotStage.getBoundingClientRect();
-  const x = clamp(e.clientX - stageRect.left, s.imgLeft, s.imgLeft + s.dispW);
-  const y = clamp(e.clientY - stageRect.top, s.imgTop, s.imgTop + s.dispH);
-  s.points.push({ x, y });
-  renderHotspotPointDots();
-  if (s.points.length === 4) {
-    const xs = s.points.map(p => p.x), ys = s.points.map(p => p.y);
-    startHotspotWithBox({
-      left: Math.min(...xs), top: Math.min(...ys),
-      width: Math.max(...xs) - Math.min(...xs), height: Math.max(...ys) - Math.min(...ys),
-    });
+  if (s.mode === 'picking') {
+    el.hotspotLeftBtn.textContent = '이전 점 삭제';
+    el.hotspotLeftBtn.disabled = s.points.length === 0;
+    el.hotspotRightBtn.textContent = '완료';
+    el.hotspotRightBtn.disabled = s.points.length < 3;
   } else {
-    updateHotspotPickingHint();
+    el.hotspotLeftBtn.textContent = '다시 그리기';
+    el.hotspotLeftBtn.disabled = false;
+    el.hotspotRightBtn.textContent = '정답 영역 저장';
+    el.hotspotRightBtn.disabled = false;
+  }
+}
+
+function updateHotspotHint() {
+  const n = hotspotState.points.length;
+  el.hotspotHint.textContent = n < 3
+    ? `이미지 확대/축소·이동은 손가락(또는 휠)으로, 정답 영역의 모서리는 탭으로 순서대로 찍으세요. (${n}개, 최소 3개 필요)`
+    : `${n}개 점을 찍었어요. 계속 찍거나 "완료"를 눌러 도형을 완성하세요.`;
+}
+
+el.hotspotLeftBtn.addEventListener('click', () => {
+  if (!hotspotState) return;
+  if (hotspotState.mode === 'picking') {
+    hotspotState.points.pop();
+    renderHotspotPickingGroup();
+    renderHotspotActions();
+    updateHotspotHint();
+  } else {
+    startHotspotPicking();
   }
 });
 
-el.hotspotRedoBtn.addEventListener('click', () => { if (hotspotState) startHotspotPicking(); });
+el.hotspotRightBtn.addEventListener('click', () => {
+  if (!hotspotState) return;
+  if (hotspotState.mode === 'picking') {
+    if (hotspotState.points.length < 3) return;
+    startHotspotWithPoints(hotspotState.points.slice());
+  } else {
+    const s = hotspotState;
+    saveActiveHotspot(s.sceneId, { points: s.points.map(p => ({ x: p.x / s.naturalW, y: p.y / s.naturalH })) });
+    el.hotspotHint.textContent = '저장됐어요. 미니게임에서 이 위치를 정답으로 인식합니다.';
+    if (activeHotspotKind() === 'room') renderHotspotPicker(currentScene());
+  }
+});
 
-el.hotspotMarker.addEventListener('pointerdown', (e) => {
+/* ===== Stage pan/zoom + point-adding + whole-shape drag =====
+   Single-finger drag pans the view, unless it starts inside the placed
+   polygon (then it moves the whole shape) or nothing has moved at release
+   while still picking (then it drops a new corner point). Pinch/wheel zoom
+   in for precise placement — same gesture set as the minigame canvases. */
+const hsPointers = new Map();
+let hsPanStart = null, hsPinchStartDist = 0, hsPinchStartScale = 1, hsMoved = false, hsDraggingShape = null;
+
+function hsDist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+function hsMid(a, b) { return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; }
+function isPointInPolygon(px, py, points) {
+  let inside = false;
+  for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+    const xi = points[i].x, yi = points[i].y, xj = points[j].x, yj = points[j].y;
+    if (((yi > py) !== (yj > py)) && (px < (xj - xi) * (py - yi) / (yj - yi) + xi)) inside = !inside;
+  }
+  return inside;
+}
+
+el.hotspotStage.addEventListener('pointerdown', (e) => {
+  if (!hotspotState) return;
+  el.hotspotStage.setPointerCapture(e.pointerId);
+  hsPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  hsMoved = false;
+  if (hsPointers.size === 1) {
+    const nat = hotspotScreenToNatural(e.clientX, e.clientY);
+    hsDraggingShape = (hotspotState.mode === 'placed' && isPointInPolygon(nat.x, nat.y, hotspotState.points))
+      ? { startNat: nat, origPoints: hotspotState.points.map(p => ({ x: p.x, y: p.y })) }
+      : null;
+    hsPanStart = { x: e.clientX, y: e.clientY, tx: hotspotState.tx, ty: hotspotState.ty };
+  } else if (hsPointers.size === 2) {
+    hsDraggingShape = null;
+    const pts = [...hsPointers.values()];
+    hsPinchStartDist = hsDist(pts[0], pts[1]);
+    hsPinchStartScale = hotspotState.scale;
+  }
+});
+el.hotspotStage.addEventListener('pointermove', (e) => {
+  if (!hotspotState || !hsPointers.has(e.pointerId)) return;
+  hsPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (hsPointers.size === 1 && hsDraggingShape) {
+    const nat = hotspotScreenToNatural(e.clientX, e.clientY);
+    const dx = nat.x - hsDraggingShape.startNat.x, dy = nat.y - hsDraggingShape.startNat.y;
+    if (Math.abs(dx) + Math.abs(dy) > 1) hsMoved = true;
+    const s = hotspotState;
+    s.points = hsDraggingShape.origPoints.map(p => ({ x: clamp(p.x + dx, 0, s.naturalW), y: clamp(p.y + dy, 0, s.naturalH) }));
+    renderHotspotPolygon();
+  } else if (hsPointers.size === 1 && hsPanStart) {
+    const dx = e.clientX - hsPanStart.x, dy = e.clientY - hsPanStart.y;
+    if (Math.abs(dx) + Math.abs(dy) > 6) hsMoved = true;
+    hotspotState.tx = hsPanStart.tx + dx;
+    hotspotState.ty = hsPanStart.ty + dy;
+    applyHotspotTransform();
+  } else if (hsPointers.size === 2) {
+    const pts = [...hsPointers.values()];
+    const d = hsDist(pts[0], pts[1]);
+    const newScale = clampHotspotScale(hsPinchStartScale * (d / hsPinchStartDist));
+    const rect = el.hotspotStage.getBoundingClientRect();
+    const midNow = hsMid(pts[0], pts[1]);
+    const stageX = midNow.x - rect.left, stageY = midNow.y - rect.top;
+    const ratio = newScale / hotspotState.scale;
+    hotspotState.tx = stageX - (stageX - hotspotState.tx) * ratio;
+    hotspotState.ty = stageY - (stageY - hotspotState.ty) * ratio;
+    hotspotState.scale = newScale;
+    hsMoved = true;
+    applyHotspotTransform();
+  }
+});
+['pointerup', 'pointercancel'].forEach(evt => el.hotspotStage.addEventListener(evt, (e) => {
+  hsPointers.delete(e.pointerId);
+  if (hsPointers.size < 2) hsPinchStartDist = 0;
+  if (hsPointers.size === 0) {
+    if (evt === 'pointerup' && !hsMoved && !hsDraggingShape && hotspotState && hotspotState.mode === 'picking' && hsPanStart) {
+      const nat = hotspotScreenToNatural(hsPanStart.x, hsPanStart.y);
+      hotspotState.points.push(nat);
+      renderHotspotPickingGroup();
+      renderHotspotActions();
+      updateHotspotHint();
+    }
+    hsPanStart = null;
+    hsDraggingShape = null;
+  }
+}));
+el.hotspotStage.addEventListener('wheel', (e) => {
+  if (!hotspotState) return;
   e.preventDefault();
-  e.stopPropagation();
-  el.hotspotMarker.setPointerCapture(e.pointerId);
-  hotspotDrag = { x: e.clientX, y: e.clientY, left: hotspotState.box.left, top: hotspotState.box.top };
-});
-el.hotspotMarker.addEventListener('pointermove', (e) => {
-  if (!hotspotDrag || !hotspotState || !hotspotState.box) return;
-  const s = hotspotState, b = s.box;
-  const dx = e.clientX - hotspotDrag.x, dy = e.clientY - hotspotDrag.y;
-  b.left = clamp(hotspotDrag.left + dx, s.imgLeft, s.imgLeft + s.dispW - b.width);
-  b.top = clamp(hotspotDrag.top + dy, s.imgTop, s.imgTop + s.dispH - b.height);
-  renderHotspotMarker();
-});
-['pointerup', 'pointercancel'].forEach(evt => el.hotspotMarker.addEventListener(evt, () => { hotspotDrag = null; }));
-
-el.hotspotSaveBtn.addEventListener('click', () => {
-  if (!hotspotState || hotspotState.mode !== 'placed') return;
-  const s = hotspotState, b = s.box;
-  saveActiveHotspot(s.sceneId, {
-    x1: (b.left - s.imgLeft) / s.dispW,
-    y1: (b.top - s.imgTop) / s.dispH,
-    x2: (b.left + b.width - s.imgLeft) / s.dispW,
-    y2: (b.top + b.height - s.imgTop) / s.dispH,
-  });
-  el.hotspotHint.textContent = '저장됐어요. 미니게임에서 이 위치를 정답으로 인식합니다.';
-  if (activeHotspotKind() === 'room') renderHotspotPicker(currentScene());
-});
+  const rect = el.hotspotStage.getBoundingClientRect();
+  const stageX = e.clientX - rect.left, stageY = e.clientY - rect.top;
+  const newScale = clampHotspotScale(hotspotState.scale * (e.deltaY < 0 ? 1.12 : 0.89));
+  const ratio = newScale / hotspotState.scale;
+  hotspotState.tx = stageX - (stageX - hotspotState.tx) * ratio;
+  hotspotState.ty = stageY - (stageY - hotspotState.ty) * ratio;
+  hotspotState.scale = newScale;
+  applyHotspotTransform();
+}, { passive: false });
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
