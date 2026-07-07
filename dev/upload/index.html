@@ -85,7 +85,14 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .hotspot-stage{position:relative;width:100%;height:280px;background:#000;border-radius:10px;overflow:hidden;touch-action:none}
 .hotspot-stage img{position:absolute;-webkit-user-drag:none;user-select:none}
 .hotspot-marker{position:absolute;border:2px solid var(--cyan);border-radius:50%;background:rgba(89,184,200,.22);cursor:move;touch-action:none}
-.hotspot-other-dot{position:absolute;width:14px;height:14px;margin-left:-7px;margin-top:-7px;border-radius:50%;background:rgba(214,168,75,.85);border:1.5px solid rgba(0,0,0,.4);pointer-events:none}
+.hotspot-marker.hidden{display:none}
+/* Room-search hotspots are a normalized top-left rect {x,y,width,height},
+   not a circle — this marker is the draggable/resizable box editing that
+   rect directly, mirroring how the crop-editor's box already works above. */
+.hotspot-rect-marker{position:absolute;border:2px solid var(--cyan);background:rgba(89,184,200,.18);cursor:move;touch-action:none}
+.hotspot-rect-marker.hidden{display:none}
+.hotspot-resize-handle{position:absolute;right:-9px;bottom:-9px;width:20px;height:20px;background:var(--cyan);border:2px solid #06181c;border-radius:5px;cursor:nwse-resize;touch-action:none}
+.hotspot-other-rect{position:absolute;border:1.5px dashed rgba(214,168,75,.85);background:rgba(214,168,75,.1);pointer-events:none}
 
 .section-title{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase;margin:24px 0 12px}
 .empty-note{font-size:13px;color:var(--text-muted);padding:14px 0}
@@ -202,11 +209,15 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
       <img id="hotspotImg" alt="">
       <div id="hotspotOtherDots"></div>
       <div class="hotspot-marker" id="hotspotMarker"></div>
+      <div class="hotspot-rect-marker" id="hotspotRectMarker">
+        <div class="hotspot-resize-handle" id="hotspotRectResizeHandle"></div>
+      </div>
     </div>
-    <div class="crop-zoom-row">
+    <div class="crop-zoom-row" id="hotspotSizeRow">
       <label>영역 크기</label>
       <input type="range" id="hotspotSize" min="4" max="30" value="10">
     </div>
+    <div class="hint" id="hotspotRectHint" style="margin:0 0 10px">사각형을 드래그해서 옮기고, 우측 하단 손잡이로 크기를 조절하세요.</div>
     <button class="crop-save-btn" id="hotspotSaveBtn" style="width:100%;border-radius:10px;padding:12px;font-family:var(--mono);font-weight:700;border:none;margin-top:12px">정답 영역 저장</button>
     <div class="hint" id="hotspotHint" style="margin:10px 0 0"></div>
   </div>
@@ -340,6 +351,10 @@ const el = {
   hotspotImg: document.getElementById('hotspotImg'),
   hotspotOtherDots: document.getElementById('hotspotOtherDots'),
   hotspotMarker: document.getElementById('hotspotMarker'),
+  hotspotRectMarker: document.getElementById('hotspotRectMarker'),
+  hotspotRectResizeHandle: document.getElementById('hotspotRectResizeHandle'),
+  hotspotRectHint: document.getElementById('hotspotRectHint'),
+  hotspotSizeRow: document.getElementById('hotspotSizeRow'),
   hotspotSize: document.getElementById('hotspotSize'),
   hotspotSaveBtn: document.getElementById('hotspotSaveBtn'),
   hotspotHint: document.getElementById('hotspotHint'),
@@ -546,9 +561,16 @@ function renderPreview(url) {
 async function saveAsset() {
   if (!pendingFile || !currentScene()) return;
   try {
-    await AssetDB.addAsset({ type: 'background', name: pendingFile.name, blob: pendingFile.blob, width: pendingFile.width, height: pendingFile.height, sceneId: activeBackgroundSceneId() });
+    const record = await AssetDB.addAsset({ type: 'background', name: pendingFile.name, blob: pendingFile.blob, width: pendingFile.width, height: pendingFile.height, sceneId: activeBackgroundSceneId() });
+    // The newest upload becomes the active background automatically — same
+    // as character uploads already do below. Without this, "uploaded" and
+    // "the game actually shows it" were two separate steps (upload, then a
+    // second "사용" tap in the list below), and skipping the second step
+    // looked exactly like the upload had silently failed.
+    DevGameState.setBackgroundId(activeBackgroundSceneId(), record.id);
     clearPending();
     await refreshList();
+    renderHotspotSection();
   } catch (err) {
     DevDiag.show('이미지 저장 실패: ' + (err && err.message ? err.message : err));
   }
@@ -834,6 +856,7 @@ function renderHotspotSection() {
 async function loadHotspotEditor() {
   const scene = currentScene();
   const sceneId = activeBackgroundSceneId();
+  const isRoom = activeHotspotKind() === 'room';
   const assetId = DevGameState.getBackgroundId(sceneId);
   const asset = assetId ? await AssetDB.getAsset(assetId) : null;
   if (!asset) {
@@ -844,6 +867,13 @@ async function loadHotspotEditor() {
   }
   el.hotspotStage.style.visibility = '';
   el.hotspotSaveBtn.disabled = false;
+  // Room-search hotspots are edited as a rect (drag to move, corner handle
+  // to resize); Eastwood's single/staged hotspots stay the original
+  // draggable-circle-with-size-slider editor.
+  el.hotspotMarker.classList.toggle('hidden', isRoom);
+  el.hotspotRectMarker.classList.toggle('hidden', !isRoom);
+  el.hotspotSizeRow.classList.toggle('hidden', isRoom);
+  el.hotspotRectHint.classList.toggle('hidden', !isRoom);
   el.hotspotImg.src = asset.dataUrl;
   el.hotspotImg.onload = () => {
     const stageRect = el.hotspotStage.getBoundingClientRect();
@@ -858,23 +888,33 @@ async function loadHotspotEditor() {
 
     const existing = getActiveHotspot(sceneId);
     hotspotState = { imgLeft, imgTop, dispW, dispH };
-    el.hotspotSize.value = Math.round((existing ? existing.fr : 0.06) * 100);
-    const fx = existing ? existing.fx : 0.5;
-    const fy = existing ? existing.fy : 0.5;
-    hotspotState.markerCx = imgLeft + fx * dispW;
-    hotspotState.markerCy = imgTop + fy * dispH;
-    hotspotState.markerR = (Number(el.hotspotSize.value) / 100) * dispW;
-    renderHotspotMarker();
 
-    // In room mode, faintly show every *other* already-placed hotspot on
-    // this same photo for spatial context while placing the rest.
-    if (activeHotspotKind() === 'room') {
+    if (isRoom) {
+      const w = (existing ? existing.width : 0.24) * dispW;
+      const h = (existing ? existing.height : 0.14) * dispH;
+      hotspotState.boxX = imgLeft + (existing ? existing.x : 0.38) * dispW;
+      hotspotState.boxY = imgTop + (existing ? existing.y : 0.43) * dispH;
+      hotspotState.boxW = w;
+      hotspotState.boxH = h;
+      renderHotspotRectMarker();
+
+      // Faintly show every *other* already-placed hotspot on this same
+      // photo for spatial context while placing the rest.
       const all = DevGameState.getRoomHotspots(sceneId);
       el.hotspotOtherDots.innerHTML = Object.keys(all)
         .filter(id => id !== currentRoomHotspotId)
-        .map(id => `<div class="hotspot-other-dot" style="left:${imgLeft + all[id].fx * dispW}px;top:${imgTop + all[id].fy * dispH}px"></div>`)
-        .join('');
+        .map(id => {
+          const o = all[id];
+          return `<div class="hotspot-other-rect" style="left:${imgLeft + o.x * dispW}px;top:${imgTop + o.y * dispH}px;width:${o.width * dispW}px;height:${o.height * dispH}px"></div>`;
+        }).join('');
     } else {
+      el.hotspotSize.value = Math.round((existing ? existing.fr : 0.06) * 100);
+      const fx = existing ? existing.fx : 0.5;
+      const fy = existing ? existing.fy : 0.5;
+      hotspotState.markerCx = imgLeft + fx * dispW;
+      hotspotState.markerCy = imgTop + fy * dispH;
+      hotspotState.markerR = (Number(el.hotspotSize.value) / 100) * dispW;
+      renderHotspotMarker();
       el.hotspotOtherDots.innerHTML = '';
     }
 
@@ -890,6 +930,14 @@ function renderHotspotMarker() {
   el.hotspotMarker.style.height = s.markerR * 2 + 'px';
   el.hotspotMarker.style.left = (s.markerCx - s.markerR) + 'px';
   el.hotspotMarker.style.top = (s.markerCy - s.markerR) + 'px';
+}
+
+function renderHotspotRectMarker() {
+  const s = hotspotState;
+  el.hotspotRectMarker.style.left = s.boxX + 'px';
+  el.hotspotRectMarker.style.top = s.boxY + 'px';
+  el.hotspotRectMarker.style.width = s.boxW + 'px';
+  el.hotspotRectMarker.style.height = s.boxH + 'px';
 }
 
 el.hotspotMarker.addEventListener('pointerdown', (e) => {
@@ -911,15 +959,55 @@ el.hotspotSize.addEventListener('input', () => {
   hotspotState.markerR = (Number(el.hotspotSize.value) / 100) * hotspotState.dispW;
   renderHotspotMarker();
 });
+
+// Rect marker (room mode): drag the body to move, drag the corner handle
+// to resize — stopPropagation on the handle keeps its own resize drag from
+// also being read as a move drag by the marker's own listener below.
+let hotspotRectDrag = null;
+el.hotspotRectMarker.addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  el.hotspotRectMarker.setPointerCapture(e.pointerId);
+  hotspotRectDrag = { mode: 'move', x: e.clientX, y: e.clientY, boxX: hotspotState.boxX, boxY: hotspotState.boxY };
+});
+el.hotspotRectMarker.addEventListener('pointermove', (e) => {
+  if (!hotspotRectDrag || hotspotRectDrag.mode !== 'move' || !hotspotState) return;
+  const s = hotspotState;
+  const dx = e.clientX - hotspotRectDrag.x, dy = e.clientY - hotspotRectDrag.y;
+  s.boxX = clamp(hotspotRectDrag.boxX + dx, s.imgLeft, s.imgLeft + s.dispW - s.boxW);
+  s.boxY = clamp(hotspotRectDrag.boxY + dy, s.imgTop, s.imgTop + s.dispH - s.boxH);
+  renderHotspotRectMarker();
+});
+['pointerup', 'pointercancel'].forEach(evt => el.hotspotRectMarker.addEventListener(evt, () => {
+  if (hotspotRectDrag && hotspotRectDrag.mode === 'move') hotspotRectDrag = null;
+}));
+
+el.hotspotRectResizeHandle.addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  el.hotspotRectResizeHandle.setPointerCapture(e.pointerId);
+  hotspotRectDrag = { mode: 'resize', x: e.clientX, y: e.clientY, boxW: hotspotState.boxW, boxH: hotspotState.boxH };
+});
+el.hotspotRectResizeHandle.addEventListener('pointermove', (e) => {
+  if (!hotspotRectDrag || hotspotRectDrag.mode !== 'resize' || !hotspotState) return;
+  const s = hotspotState;
+  const dx = e.clientX - hotspotRectDrag.x, dy = e.clientY - hotspotRectDrag.y;
+  const minSize = 16;
+  s.boxW = clamp(hotspotRectDrag.boxW + dx, minSize, s.imgLeft + s.dispW - s.boxX);
+  s.boxH = clamp(hotspotRectDrag.boxH + dy, minSize, s.imgTop + s.dispH - s.boxY);
+  renderHotspotRectMarker();
+});
+['pointerup', 'pointercancel'].forEach(evt => el.hotspotRectResizeHandle.addEventListener(evt, () => {
+  if (hotspotRectDrag && hotspotRectDrag.mode === 'resize') hotspotRectDrag = null;
+}));
+
 el.hotspotSaveBtn.addEventListener('click', () => {
   if (!hotspotState) return;
   const s = hotspotState;
   const sceneId = activeBackgroundSceneId();
-  saveActiveHotspot(sceneId, {
-    fx: (s.markerCx - s.imgLeft) / s.dispW,
-    fy: (s.markerCy - s.imgTop) / s.dispH,
-    fr: s.markerR / s.dispW,
-  });
+  const hotspot = activeHotspotKind() === 'room'
+    ? { x: (s.boxX - s.imgLeft) / s.dispW, y: (s.boxY - s.imgTop) / s.dispH, width: s.boxW / s.dispW, height: s.boxH / s.dispH }
+    : { fx: (s.markerCx - s.imgLeft) / s.dispW, fy: (s.markerCy - s.imgTop) / s.dispH, fr: s.markerR / s.dispW };
+  saveActiveHotspot(sceneId, hotspot);
   el.hotspotHint.textContent = '저장됐어요. 미니게임에서 이 위치를 정답으로 인식합니다.';
   if (activeHotspotKind() === 'room') renderHotspotPicker(currentScene());
 });

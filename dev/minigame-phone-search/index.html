@@ -37,24 +37,29 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .room-view{flex:1;min-height:0;padding:4px 16px 10px;display:flex;flex-direction:column;transition:opacity .3s ease}
 .area-heading{font-size:15px;font-weight:700;color:var(--text-secondary);margin-bottom:10px;flex-shrink:0}
 
-/* Photo mode — a real uploaded room photo with invisible tap zones over
+/* Photo stage — a real uploaded room photo with invisible tap zones over
    each marked hotspot (pan/zoom like the subway minigame). Zones stay
-   invisible so hunting for the phone/key still feels like searching, not
-   just tapping the one glowing circle. */
+   invisible in normal play so hunting for the phone/key still feels like
+   searching a photo, not tapping a visible menu — see #btnToggleHotspots
+   in the DEV sheet for a dev-only outline+label overlay. */
 .photo-stage{flex:1;min-height:180px;position:relative;border-radius:14px;overflow:hidden;background:#05070a;touch-action:none;margin-bottom:10px}
 .photo-stage.hidden{display:none}
 .photo-canvas{position:absolute;top:0;left:0;transform-origin:0 0;will-change:transform}
 .photo-canvas img{position:absolute;top:0;left:0;-webkit-user-drag:none;user-select:none;display:block}
 .tap-ring{position:absolute;border-radius:50%;border:3px solid var(--cyan);opacity:.9;pointer-events:none;animation:tapRingFade 420ms ease forwards}
 @keyframes tapRingFade{0%{transform:scale(.5);opacity:.9}100%{transform:scale(1.6);opacity:0}}
+.debug-hotspot{position:absolute;border:1.5px dashed var(--amber);background:rgba(214,168,75,.16);pointer-events:none}
+.debug-hotspot-label{position:absolute;top:2px;left:2px;font-family:var(--mono);font-size:9.5px;line-height:1.4;color:var(--amber);background:rgba(0,0,0,.6);padding:2px 5px;border-radius:4px;white-space:pre}
 
-/* Grid mode — fallback for areas with no photo/hotspots marked yet in
-   /dev/upload, so the puzzle stays fully playable before real photos exist. */
-.grid-scroll{flex:1;min-height:0;overflow-y:auto}
-.grid-scroll.hidden{display:none}
-.hotspot-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.hotspot-btn{min-height:52px;background:var(--surface-1);border:1px solid var(--divider);border-radius:14px;padding:12px 14px;color:var(--text-primary);font-family:var(--sans);font-size:14px;font-weight:600;text-align:left;cursor:pointer;transition:background .15s,transform .15s}
-.hotspot-btn:active{transform:scale(.97);background:var(--surface-2)}
+/* Missing-asset notice — this minigame has no text-menu fallback (the
+   whole point of this rework is "search a photo", not "pick from a list"),
+   so an area with no photo/hotspots marked yet just says so plainly. */
+.missing-notice{flex:1;min-height:180px;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:8px;background:var(--surface-1);border:1px dashed var(--divider);border-radius:14px;margin-bottom:10px;padding:24px}
+.missing-notice.show{display:flex}
+.missing-icon{font-size:28px;opacity:.6}
+.missing-title{font-size:15px;font-weight:700;color:var(--text-secondary)}
+.missing-sub{font-size:12.5px;color:var(--text-muted);line-height:1.5;max-width:260px}
+.missing-link{margin-top:6px;font-family:var(--mono);font-size:12px;color:var(--cyan);text-decoration:none}
 
 .result-strip{flex-shrink:0;margin-top:10px;background:rgba(255,255,255,.03);border:1px dashed var(--divider);border-radius:12px;padding:12px 14px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:var(--cyan);white-space:pre-wrap;word-break:keep-all;min-height:1.6em}
 .room-view.locked{pointer-events:none;opacity:.5}
@@ -106,6 +111,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .sheet-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
 .sheet-btn{background:var(--surface-2);color:var(--text-primary);border:1px solid var(--divider);border-radius:10px;padding:12px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:var(--mono)}
 .sheet-btn.danger{color:var(--signal-red);border-color:rgba(217,65,65,.4)}
+.sheet-btn.toggle-on{color:var(--amber);border-color:rgba(214,168,75,.5)}
 .sheet-close{width:100%;margin-top:4px;background:var(--surface-2);color:var(--text-primary);border:1px solid var(--divider);border-radius:10px;padding:13px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--mono);letter-spacing:.06em}
 </style>
 </head>
@@ -126,8 +132,11 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
     <div class="photo-stage hidden" id="photoStage">
       <div class="photo-canvas" id="photoCanvas"></div>
     </div>
-    <div class="grid-scroll" id="gridScroll">
-      <div class="hotspot-grid" id="hotspotGrid"></div>
+    <div class="missing-notice" id="missingNotice">
+      <div class="missing-icon">🖼️</div>
+      <div class="missing-title" id="missingTitle">이 영역엔 아직 사진이 없다</div>
+      <div class="missing-sub" id="missingSub">사진과 정답 영역(hotspot)을 먼저 지정해야 탐색할 수 있습니다.</div>
+      <a class="missing-link" id="missingLink" href="/dev/minigames/">설정 화면 열기 →</a>
     </div>
     <div class="result-strip" id="resultStrip"></div>
   </div>
@@ -157,6 +166,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
       <button class="sheet-btn" id="btnGiveHook">GIVE HOOK</button>
       <button class="sheet-btn" id="btnGiveKey">GIVE KEY</button>
       <button class="sheet-btn" id="btnUnlockPhone">UNLOCK PHONE</button>
+      <button class="sheet-btn" id="btnToggleHotspots">SHOW HOTSPOTS: OFF</button>
       <button class="sheet-btn danger" id="btnResetMinigame">RESET MINIGAME</button>
       <button class="sheet-btn danger" id="btnClearState">CLEAR STATE</button>
     </div>
@@ -180,22 +190,20 @@ if ('serviceWorker' in navigator) {
 <script src="/dev/vnPlayer.js"></script>
 <script>
 /* OPERATION MK — WEEK 1 · SCENE 2-2 「핸드폰을 찾아라」
-   Point-and-click room search. Absolute rule this file exists to enforce:
-   the player CANNOT find jisu-phone until unknown-key has been found AND the
-   forced phoneUnlocked event has played — see canRevealPhone() below, which
+   Point-and-click room search over real photos — no text-menu fallback.
+   Absolute rule this file exists to enforce: the player CANNOT find
+   jisu-phone until unknown-key has been found AND the forced
+   phoneUnlocked event has played — see canRevealPhone() below, which
    every phone-reveal path (including the DEV sheet) must go through. State
    persists in localStorage so a refresh mid-search doesn't lose progress.
 
-   Each area (roomSearchAreas, defined in dialogueData.js) renders one of two
-   ways, decided per area every time it's opened:
-   - "photo" mode, once a dev has uploaded that area's room photo and marked
-     at least one hotspot's tap position in /dev/upload — pan/zoom over the
-     real photo, tapping the (invisible) marked zone triggers the hotspot,
-     same as tapping the Eastwood minigame's map.
-   - "grid" mode (fallback) — a card grid of the area's hotspots by name, so
-     the puzzle is fully playable before any photos exist yet. */
+   Each area (roomSearchAreas, defined in dialogueData.js) needs a photo +
+   at least one marked hotspot (set via /dev/upload's focus-mode editor,
+   reached through /dev/minigames) before it's playable — until then it
+   just shows the missing-asset notice below, since there is no
+   text-button grid to fall back to anymore. */
 const STATE_KEY = 'mkPhoneSearchState_v1';
-const HOTSPOT_MIN_FR = 0.045; // floor on tap-target size, same rationale as Eastwood's
+const HOTSPOT_MIN_TOUCH_PX = 44; // CSS px — small hotspots get their *hit test* padded out to this, not their visible size (which stays invisible)
 
 const ITEM_DEFS = {
   flashlight: { icon: '🔦', name: '손전등', selectable: true },
@@ -297,8 +305,10 @@ const el = {
   areaHeading: document.getElementById('areaHeading'),
   photoStage: document.getElementById('photoStage'),
   photoCanvas: document.getElementById('photoCanvas'),
-  gridScroll: document.getElementById('gridScroll'),
-  hotspotGrid: document.getElementById('hotspotGrid'),
+  missingNotice: document.getElementById('missingNotice'),
+  missingTitle: document.getElementById('missingTitle'),
+  missingSub: document.getElementById('missingSub'),
+  missingLink: document.getElementById('missingLink'),
   resultStrip: document.getElementById('resultStrip'),
   invList: document.getElementById('invList'),
   tabBar: document.getElementById('tabBar'),
@@ -310,6 +320,7 @@ const el = {
   fadeOverlay: document.getElementById('fadeOverlay'),
   sheetOverlay: document.getElementById('sheetOverlay'),
   sheetCloseBtn: document.getElementById('sheetCloseBtn'),
+  btnToggleHotspots: document.getElementById('btnToggleHotspots'),
 };
 
 /* ===== Dialogue popup (tap-through story beats only — item pickups/flavor
@@ -495,12 +506,13 @@ function handlePhoneFound() {
   }, 700);
 }
 
-/* ===== Photo-mode pan/zoom stage (ported from minigame-eastwood's map
-   canvas — same pinch/pan/wheel handling, just over a room photo with
-   multiple named hotspots instead of one map with one named station). ===== */
+/* ===== Photo pan/zoom stage (ported from minigame-eastwood's map canvas —
+   same pinch/pan/wheel handling, just over a room photo with several
+   named rect hotspots instead of one map with one named station). ===== */
 let scale = 1, baseScale = 1, tx = 0, ty = 0;
 let CANVAS_W = 1, CANVAS_H = 1;
-let currentHotspots = {}; // hotspotId -> {fx, fy, fr}, only populated in photo mode
+let currentHotspots = {}; // hotspotId -> {x, y, width, height} — normalized top-left rect, only populated in 'ready' mode
+let showHotspotsDebug = false;
 const pointers = new Map();
 let panStart = null;
 let pinchStartDist = 0, pinchStartScale = 1;
@@ -536,6 +548,26 @@ function buildPhotoCanvas(url) {
   img.draggable = false;
   Object.assign(img.style, { width: CANVAS_W + 'px', height: CANVAS_H + 'px' });
   el.photoCanvas.appendChild(img);
+  renderDebugHotspotOverlay();
+}
+
+// Small hotspots get their *hit test* padded out to a comfortable touch
+// target — the visible/invisible size on screen never changes, only what
+// counts as "close enough" to a tap.
+function paddedHotspotRect(h) {
+  const x = h.x * CANVAS_W, y = h.y * CANVAS_H, w = h.width * CANVAS_W, ht = h.height * CANVAS_H;
+  const minSizeCanvas = HOTSPOT_MIN_TOUCH_PX / scale;
+  const padW = Math.max(0, minSizeCanvas - w) / 2;
+  const padH = Math.max(0, minSizeCanvas - ht) / 2;
+  return { x: x - padW, y: y - padH, width: w + padW * 2, height: ht + padH * 2 };
+}
+
+function hotspotIdAtPoint(point) {
+  for (const id in currentHotspots) {
+    const r = paddedHotspotRect(currentHotspots[id]);
+    if (point.x >= r.x && point.x <= r.x + r.width && point.y >= r.y && point.y <= r.y + r.height) return id;
+  }
+  return null;
 }
 
 function flashTapRing(point) {
@@ -547,20 +579,32 @@ function flashTapRing(point) {
   setTimeout(() => ring.remove(), 450);
 }
 
-function hotspotIdAtPoint(point) {
-  for (const id in currentHotspots) {
-    const h = currentHotspots[id];
-    const r = Math.max(h.fr, HOTSPOT_MIN_FR) * CANVAS_W;
-    const dx = point.x - h.fx * CANVAS_W, dy = point.y - h.fy * CANVAS_H;
-    if (Math.hypot(dx, dy) <= r) return id;
-  }
-  return null;
-}
-
 function onPhotoTap(point) {
   flashTapRing(point);
   const hotspotId = hotspotIdAtPoint(point);
   if (hotspotId) onHotspotTap(hotspotId);
+}
+
+// DEV-only visualization of every hotspot's real (unpadded) rect + id +
+// coordinates on the current area, toggled from the DEV sheet — never
+// shown in normal play (see #6 / #25 of the rework brief).
+function renderDebugHotspotOverlay() {
+  el.photoCanvas.querySelectorAll('.debug-hotspot').forEach(n => n.remove());
+  if (!showHotspotsDebug) return;
+  Object.keys(currentHotspots).forEach(id => {
+    const h = currentHotspots[id];
+    const box = document.createElement('div');
+    box.className = 'debug-hotspot';
+    Object.assign(box.style, {
+      left: (h.x * CANVAS_W) + 'px', top: (h.y * CANVAS_H) + 'px',
+      width: (h.width * CANVAS_W) + 'px', height: (h.height * CANVAS_H) + 'px',
+    });
+    const label = document.createElement('div');
+    label.className = 'debug-hotspot-label';
+    label.textContent = `${id}\nx=${h.x.toFixed(2)} y=${h.y.toFixed(2)}`;
+    box.appendChild(label);
+    el.photoCanvas.appendChild(box);
+  });
 }
 
 el.photoStage.addEventListener('pointerdown', (e) => {
@@ -625,42 +669,47 @@ el.photoStage.addEventListener('wheel', (e) => {
 }, { passive: false });
 
 /* ===== Area loading + rendering ===== */
-let currentMode = 'grid'; // 'grid' | 'photo'
+let currentMode = 'missing'; // 'missing' | 'ready' — no text-menu fallback anymore
 
 async function loadArea(area) {
   const sceneId = roomSearchAreaSceneId(area.id);
   const assetId = DevGameState.getBackgroundId(sceneId);
   const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
   const hotspots = DevGameState.getRoomHotspots(sceneId);
-  if (asset && asset.dataUrl && Object.keys(hotspots).length) {
-    currentMode = 'photo';
-    currentHotspots = hotspots;
+  const hasPhoto = !!(asset && asset.dataUrl);
+  const hotspotCount = Object.keys(hotspots).length;
+  el.missingLink.href = `/dev/upload/?scene=${encodeURIComponent(sceneId)}&minigame=week1-scene-002-2`;
+  // Tell "no photo uploaded/active yet" and "photo's fine but no hotspot is
+  // marked yet" apart — both looked identical before, which made a missed
+  // "사용" click after uploading indistinguishable from the upload never
+  // having landed at all.
+  if (!hasPhoto) {
+    el.missingTitle.textContent = '이 영역엔 아직 사진이 없다';
+    el.missingSub.textContent = '사진을 업로드하고 "사용"으로 선택해야 탐색할 수 있습니다.';
+  } else if (!hotspotCount) {
+    el.missingTitle.textContent = '사진은 있는데 정답 영역이 없다';
+    el.missingSub.textContent = '이 사진 위에서 최소 1개 이상 hotspot을 지정해야 탐색할 수 있습니다.';
+  }
+  const ready = hasPhoto && !!hotspotCount;
+  currentMode = ready ? 'ready' : 'missing';
+  currentHotspots = ready ? hotspots : {};
+  // Un-hide (or hide) .photo-stage *before* fitToStage() runs below — it
+  // measures getBoundingClientRect(), which is always 0x0 while the stage
+  // still has display:none from whatever the previous area's mode was.
+  renderRoomView(area);
+  if (ready) {
     CANVAS_W = asset.width;
     CANVAS_H = asset.height;
     await AssetDB.preloadImage(asset.dataUrl);
     buildPhotoCanvas(asset.dataUrl);
     fitToStage();
-  } else {
-    currentMode = 'grid';
-    currentHotspots = {};
   }
-  renderRoomView(area);
 }
 
 function renderRoomView(area) {
   el.areaHeading.textContent = area.label;
-  el.photoStage.classList.toggle('hidden', currentMode !== 'photo');
-  el.gridScroll.classList.toggle('hidden', currentMode !== 'grid');
-  if (currentMode === 'grid') {
-    el.hotspotGrid.innerHTML = '';
-    area.hotspots.forEach(h => {
-      const btn = document.createElement('button');
-      btn.className = 'hotspot-btn';
-      btn.textContent = h.label;
-      btn.addEventListener('click', () => onHotspotTap(h.id));
-      el.hotspotGrid.appendChild(btn);
-    });
-  }
+  el.photoStage.classList.toggle('hidden', currentMode !== 'ready');
+  el.missingNotice.classList.toggle('show', currentMode !== 'ready');
   el.resultStrip.textContent = state.lastMessage;
 }
 
@@ -739,6 +788,12 @@ document.getElementById('btnGiveKey').addEventListener('click', () => {
   scheduleForcedPhoneUnlock(600);
 });
 document.getElementById('btnUnlockPhone').addEventListener('click', () => { state.flags.phoneUnlocked = true; saveState(); });
+el.btnToggleHotspots.addEventListener('click', () => {
+  showHotspotsDebug = !showHotspotsDebug;
+  el.btnToggleHotspots.textContent = 'SHOW HOTSPOTS: ' + (showHotspotsDebug ? 'ON' : 'OFF');
+  el.btnToggleHotspots.classList.toggle('toggle-on', showHotspotsDebug);
+  renderDebugHotspotOverlay();
+});
 document.getElementById('btnResetMinigame').addEventListener('click', () => {
   state = defaultState();
   saveState();

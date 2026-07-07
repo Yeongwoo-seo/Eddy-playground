@@ -243,7 +243,11 @@ const DevGameState = {
   // Room-search minigame variant of the hotspot above — a single background
   // image (one per area, e.g. 'week1-scene-002-2-bed') can hold several
   // independently-marked, named tap targets instead of just one, since a
-  // room photo has multiple things to investigate. { [sceneId]: { [hotspotId]: {fx,fy,fr} } }.
+  // room photo has multiple things to investigate. Normalized top-left
+  // rect (not a circle, unlike the single-hotspot map above) so it can hug
+  // an irregular object's actual bounding box:
+  // { [sceneId]: { [hotspotId]: {x, y, width, height} } }, all 0..1
+  // fractions of the image's natural width/height.
   getRoomHotspots(sceneId) {
     if (!sceneId) return {};
     return this._loadRoomHotspotMap()[sceneId] || {};

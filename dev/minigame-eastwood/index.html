@@ -223,7 +223,11 @@ async function initMap() {
   const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
   const savedHotspots = STAGES.map((_, i) => DevGameState.getMinigameHotspot(MINIGAME_ID, i));
   if (!asset || !asset.dataUrl || !savedHotspots.every(Boolean)) {
-    showMissingMapNotice();
+    // Report which of the two setup steps is actually missing — "사진 없음"
+    // and "정답 영역 부족" look identical from here otherwise, and telling
+    // them apart is the difference between "my upload didn't take" and "I
+    // still need to mark hotspot 2 of 3".
+    showMissingMapNotice(!asset || !asset.dataUrl, savedHotspots.filter(Boolean).length);
     return false;
   }
   hotspots = savedHotspots;
@@ -236,10 +240,12 @@ async function initMap() {
   return true;
 }
 
-function showMissingMapNotice() {
+function showMissingMapNotice(noPhoto, hotspotsSetCount) {
   el.missionLabelEl.textContent = '준비 필요';
   el.missionTarget.textContent = '지도 없음';
-  el.missionSub.textContent = '오른쪽 위 "지도 업로드"에서 배경 이미지와 정답 영역 3개를 먼저 지정하세요.';
+  el.missionSub.textContent = noPhoto
+    ? '오른쪽 위 "지도 업로드"에서 배경 이미지를 업로드하세요.'
+    : `정답 영역이 ${hotspotsSetCount}/${STAGES.length}개만 지정됐습니다. "지도 업로드"에서 나머지를 마저 지정하세요.`;
   say('jisoo', 'blank', '지수', '어? 지도가 없는데?');
 }
 
