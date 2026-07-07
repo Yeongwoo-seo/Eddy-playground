@@ -30,12 +30,6 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .topbar{position:absolute;top:0;left:0;right:0;z-index:6;padding:calc(14px + env(safe-area-inset-top,0)) 16px 14px;display:flex;justify-content:space-between;align-items:center;pointer-events:none}
 .vn-btn{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:#fff;background:rgba(8,10,12,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:9px 14px;cursor:pointer;text-decoration:none;display:inline-block;pointer-events:auto}
 
-/* ===== Mission card ===== */
-.mission-card{position:absolute;top:calc(58px + env(safe-area-inset-top,0));left:16px;right:16px;z-index:5;background:rgba(16,20,25,.82);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--divider);border-radius:16px;padding:12px 16px;pointer-events:none}
-.mission-label{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px}
-.mission-target{font-size:19px;font-weight:800;color:var(--amber);letter-spacing:.02em}
-.mission-sub{font-size:12px;color:var(--text-secondary);margin-top:4px;line-height:1.4}
-
 /* ===== Map stage ===== */
 .map-stage{position:absolute;inset:0;overflow:hidden;touch-action:none;background:radial-gradient(circle at 30% 20%,#141a20 0%,#0a0d10 70%)}
 .map-canvas{position:absolute;top:0;left:0;transform-origin:0 0;will-change:transform}
@@ -56,20 +50,33 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 @keyframes stampPop{0%{opacity:0;transform:translate(-50%,-50%) scale(.7)}18%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}30%{transform:translate(-50%,-50%) scale(1)}75%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) scale(1)}}
 
 /* ===== Bottom dialogue strip (idle/reaction commentary) ===== */
-.dlg-strip{position:absolute;left:0;right:0;bottom:0;z-index:5;min-height:22vh;background:rgba(5,7,10,.82);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-top:1px solid rgba(255,255,255,.08);padding:16px 18px calc(16px + env(safe-area-inset-bottom,0));display:flex;align-items:flex-end;gap:14px;transition:opacity .2s ease}
+/* Floating (not full-width-docked) so the map stays visible/tappable
+   around it — margins on all sides + full border-radius instead of an
+   edge-to-edge bar with only a top border. */
+.dlg-strip{position:absolute;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0));z-index:5;background:rgba(5,7,10,.86);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.1);border-radius:18px;box-shadow:0 8px 28px rgba(0,0,0,.35);padding:14px 16px;display:flex;align-items:flex-end;gap:14px;transition:opacity .2s ease}
 .dlg-strip.hidden{display:none}
-.portrait-wrap{width:64px;height:88px;border-radius:12px;overflow:hidden;background:var(--surface-2);flex-shrink:0;display:flex;align-items:flex-end;justify-content:center}
+.portrait-wrap{width:56px;height:76px;border-radius:10px;overflow:hidden;background:var(--surface-2);flex-shrink:0;display:flex;align-items:flex-end;justify-content:center}
 .portrait-wrap img{width:100%;height:100%;object-fit:cover;object-position:top;display:none}
 .portrait-placeholder{width:60%;height:80%;opacity:.35;color:var(--text-secondary)}
 .dlg-body-wrap{flex:1;min-width:0}
+.dlg-mission{font-family:var(--mono);font-size:12.5px;font-weight:700;color:var(--cyan);letter-spacing:.02em;margin-bottom:6px}
+.dlg-mission:empty{display:none}
 .dlg-name{font-size:14px;font-weight:700;color:var(--cyan);margin-bottom:4px}
 .dlg-name:empty{display:none}
 .dlg-text{font-size:15px;line-height:1.55;color:#fff;white-space:pre-wrap;word-break:keep-all}
 
-/* ===== Success dialogue overlay (reuses VN-style tap-to-advance) ===== */
+/* ===== Success dialogue overlay (reuses VN-style tap-to-advance) =====
+   success-char-wrap mirrors dev/game's VN character layer (full-body
+   portrait behind the floating dialogue card) so the ending plays like a
+   real scenario beat instead of text-only. */
 .success-layer{position:absolute;inset:0;z-index:8;display:none;flex-direction:column;justify-content:flex-end;cursor:pointer}
 .success-layer.show{display:flex}
-.success-dlg{background:rgba(5,7,10,.9);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-top:1px solid rgba(255,255,255,.08);padding:18px 20px calc(18px + env(safe-area-inset-bottom,0));min-height:24vh;display:flex;flex-direction:column}
+.success-char-wrap{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;pointer-events:none;opacity:0;transition:opacity .2s ease}
+.success-char-wrap.show{opacity:1}
+.success-char-img{max-height:74%;max-width:88%;object-fit:contain;object-position:bottom}
+.success-char-placeholder{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:40%;height:58%;opacity:.35;display:flex;align-items:flex-end;justify-content:center;color:var(--text-secondary)}
+.success-char-placeholder svg{width:100%;height:100%}
+.success-dlg{position:relative;margin:0 16px calc(16px + env(safe-area-inset-bottom,0));background:rgba(5,7,10,.9);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.1);border-radius:18px;box-shadow:0 8px 28px rgba(0,0,0,.35);padding:18px 20px;min-height:22vh;display:flex;flex-direction:column}
 .success-name{font-size:15px;font-weight:700;color:var(--cyan);margin-bottom:8px}
 .success-name:empty{display:none}
 .success-text{flex:1;font-size:16px;line-height:1.65;color:#fff;white-space:pre-wrap;word-break:keep-all}
@@ -89,12 +96,6 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
     <div class="map-canvas" id="mapCanvas"></div>
   </div>
 
-  <div class="mission-card">
-    <div class="mission-label" id="missionLabel">목적지 찾기</div>
-    <div class="mission-target" id="missionTarget"></div>
-    <div class="mission-sub" id="missionSub"></div>
-  </div>
-
   <div class="topbar">
     <a class="vn-btn" href="/dev/">← DEV</a>
     <a class="vn-btn" href="/dev/upload/?scene=week1-scene-001-2&kind=minigame">지도 업로드</a>
@@ -108,12 +109,17 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
       <svg class="portrait-placeholder" id="portraitPlaceholder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>
     </div>
     <div class="dlg-body-wrap">
+      <div class="dlg-mission" id="dlgMission"></div>
       <div class="dlg-name" id="dlgName"></div>
       <div class="dlg-text" id="dlgText"></div>
     </div>
   </div>
 
   <div class="success-layer" id="successLayer">
+    <div class="success-char-wrap" id="successCharWrap">
+      <img class="success-char-img" id="successCharImg" style="display:none" alt="">
+      <svg class="success-char-placeholder" id="successCharPlaceholder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>
+    </div>
     <div class="success-dlg">
       <div class="success-name" id="successName"></div>
       <div class="success-text" id="successText"></div>
@@ -180,17 +186,18 @@ const el = {
   frame: document.getElementById('frame'),
   mapStage: document.getElementById('mapStage'),
   mapCanvas: document.getElementById('mapCanvas'),
-  missionLabelEl: document.getElementById('missionLabel'),
-  missionTarget: document.getElementById('missionTarget'),
-  missionSub: document.getElementById('missionSub'),
   stamp: document.getElementById('stamp'),
   dlgStrip: document.getElementById('dlgStrip'),
   portraitWrap: document.getElementById('portraitWrap'),
   portraitImg: document.getElementById('portraitImg'),
   portraitPlaceholder: document.getElementById('portraitPlaceholder'),
+  dlgMission: document.getElementById('dlgMission'),
   dlgName: document.getElementById('dlgName'),
   dlgText: document.getElementById('dlgText'),
   successLayer: document.getElementById('successLayer'),
+  successCharWrap: document.getElementById('successCharWrap'),
+  successCharImg: document.getElementById('successCharImg'),
+  successCharPlaceholder: document.getElementById('successCharPlaceholder'),
   successName: document.getElementById('successName'),
   successText: document.getElementById('successText'),
   successArrow: document.getElementById('successArrow'),
@@ -235,11 +242,7 @@ function buildImageMap(url) {
 
 async function initMap() {
   // A large uploaded map photo can take a few seconds to fetch + decode over
-  // the network — show that as a loading state instead of leaving the
-  // mission card blank, which read as the page being stuck/broken.
-  el.missionLabelEl.textContent = '불러오는 중';
-  el.missionTarget.textContent = '지도 준비 중…';
-  el.missionSub.textContent = '';
+  // the network — LoadingOverlay covers that instead of leaving the screen blank.
   LoadingOverlay.show('지도 불러오는 중');
   const assetId = DevGameState.getBackgroundId(MINIGAME_ID);
   const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
@@ -256,22 +259,22 @@ async function initMap() {
   await AssetDB.preloadImage(asset.dataUrl);
   buildImageMap(asset.dataUrl);
   fitToStage();
-  updateMissionCard();
+  updateMissionLine();
   LoadingOverlay.hide();
   return true;
 }
 
 function showMissingMapNotice() {
-  el.missionLabelEl.textContent = '준비 필요';
-  el.missionTarget.textContent = '지도 없음';
-  el.missionSub.textContent = '오른쪽 위 "지도 업로드"에서 배경 이미지와 정답 영역 3개를 먼저 지정하세요.';
-  say('jisoo', 'blank', '지수', '어? 지도가 없는데?');
+  el.dlgMission.textContent = '지도 없음';
+  say('jisoo', 'blank', '지수', '어? 지도가 없는데?\n(오른쪽 위 "지도 업로드"에서 배경 이미지와 정답 영역 3개를 먼저 지정하세요.)');
 }
 
-function updateMissionCard() {
+// The current stage/target — shown in blue bold above the dialogue text
+// instead of a separate top mission card, so it doesn't eat into the map's
+// vertical space and stays visible right alongside whatever 지수/영우 say.
+function updateMissionLine() {
   const stage = STAGES[stageIndex];
-  el.missionTarget.textContent = stage.key;
-  el.missionSub.textContent = `노선도에서 ${stage.label}역을 찾아 클릭하세요. (${stageIndex + 1}/${STAGES.length})`;
+  el.dlgMission.textContent = `목적지 찾기: ${stage.key} (${stageIndex + 1}/${STAGES.length})`;
 }
 
 /* ===== Pan + pinch/wheel zoom =====
@@ -397,6 +400,31 @@ async function updatePortrait(characterKey, expression) {
     el.portraitImg.style.display = 'none';
     el.portraitPlaceholder.style.display = '';
   }
+}
+
+// The ending sequence plays like a real VN scenario beat, not the mini
+// corner face crop above — same full-body 인물 DB portrait + saved
+// transform dev/game's own scenes use, just shown behind this floating
+// success-dlg card instead of a docked dialogue bar.
+async function updateSuccessAvatar(characterId, expression) {
+  if (!characterId) {
+    el.successCharWrap.classList.remove('show');
+    return;
+  }
+  el.successCharWrap.classList.add('show');
+  const assetId = DevGameState.getCharacterAssetId(characterId, expression);
+  const asset = await AssetDB.getAsset(assetId).catch(() => null);
+  if (asset && asset.dataUrl) {
+    el.successCharImg.src = asset.dataUrl;
+    el.successCharImg.style.display = '';
+    el.successCharPlaceholder.style.display = 'none';
+  } else {
+    el.successCharImg.removeAttribute('src');
+    el.successCharImg.style.display = 'none';
+    el.successCharPlaceholder.style.display = '';
+  }
+  const t = DevGameState.getCharacterTransform(characterId);
+  el.successCharImg.style.transform = `translate(${t.x}px, ${t.y}px) scale(${t.scale})`;
 }
 
 function say(characterKey, expression, speakerName, text) {
@@ -526,7 +554,7 @@ function handleStageFound() {
     wrongClickCount = 0;
     hintLevel = 0;
     isStageTransition = false;
-    updateMissionCard();
+    updateMissionLine();
     scheduleHints();
   }, t + 300);
 }
@@ -547,7 +575,7 @@ function startSuccessDialogue() {
   const player = createVNPlayer({
     onLineChange: (line) => {
       el.successName.textContent = line.speaker || '';
-      updatePortrait(line.characterId, line.expression);
+      updateSuccessAvatar(line.characterId, line.expression);
     },
     onTextUpdate: (text) => { el.successText.textContent = text; },
     onArrow: (show) => el.successArrow.classList.toggle('show', show),
