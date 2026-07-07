@@ -353,9 +353,3 @@ const week1Scenes = [
     nextSceneId: 'week1-scene-002-2',
   },
 ];
-
-// Groups scene registries by week — 배경 DB (/dev/upload) lists scenes under
-// their week here instead of hardcoding a single week's worth of scenes.
-const weeks = [
-  { id: 'week1', label: '1주차', scenes: week1Scenes },
-];

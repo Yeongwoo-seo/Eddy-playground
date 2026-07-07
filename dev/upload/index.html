@@ -110,16 +110,6 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
     <button class="tab-btn" id="tabCharacter">인물 DB</button>
   </div>
 
-  <!-- 배경 DB: week -> scene picker -->
-  <div class="picker" id="weekPicker">
-    <div class="picker-label">주차</div>
-    <div class="picker-pills" id="weekPickerPills"></div>
-  </div>
-  <div class="picker" id="scenePicker">
-    <div class="picker-label">씬</div>
-    <div class="picker-pills" id="scenePickerPills"></div>
-  </div>
-
   <!-- 인물 DB: character -> expression picker -->
   <div class="picker hidden" id="charPicker">
     <div class="picker-label">등장인물</div>
@@ -140,7 +130,6 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 
   <div class="preview-panel hidden" id="previewPanel">
     <div class="preview-img-wrap"><img id="previewImg" alt="preview"></div>
-    <div class="preview-row"><span class="preview-label">Type</span><span class="preview-value" id="previewType"></span></div>
     <div class="preview-row"><span class="preview-label">File</span><span class="preview-value" id="previewFile"></span></div>
     <div class="preview-row"><span class="preview-label">Size</span><span class="preview-value" id="previewSize"></span></div>
     <button class="save-btn" id="saveBtn">SAVE BACKGROUND</button>
@@ -205,33 +194,13 @@ window.__removeBackgroundReady = import('https://cdn.jsdelivr.net/npm/@imgly/bac
 <script src="/dev/dialogueData.js"></script>
 <script>
 let currentType = 'background';
-let currentWeekId = weeks[0].id;
-let currentSceneId = weeks[0].scenes[0] && weeks[0].scenes[0].id;
 let currentCharacterKey = dialogueCharacters[0].id;
 let currentExpression = dialogueExpressions[0].id;
 let pendingFile = null;
 
-// Deep link from /dev/game's "+ 새 이미지 업로드" — jump straight to that
-// scene's background list instead of making the tester re-pick week/scene.
-(function applyDeepLink() {
-  const requestedSceneId = new URLSearchParams(location.search).get('scene');
-  if (!requestedSceneId) return;
-  for (const w of weeks) {
-    if (w.scenes.some(s => s.id === requestedSceneId)) {
-      currentWeekId = w.id;
-      currentSceneId = requestedSceneId;
-      break;
-    }
-  }
-})();
-
 const el = {
   tabBackground: document.getElementById('tabBackground'),
   tabCharacter: document.getElementById('tabCharacter'),
-  weekPicker: document.getElementById('weekPicker'),
-  weekPickerPills: document.getElementById('weekPickerPills'),
-  scenePicker: document.getElementById('scenePicker'),
-  scenePickerPills: document.getElementById('scenePickerPills'),
   charPicker: document.getElementById('charPicker'),
   charPickerPills: document.getElementById('charPickerPills'),
   exprPicker: document.getElementById('exprPicker'),
@@ -263,58 +232,17 @@ const el = {
   lightboxImg: document.getElementById('lightboxImg'),
 };
 
-function currentWeek() { return weeks.find(w => w.id === currentWeekId) || weeks[0]; }
-function currentScene() { return currentWeek().scenes.find(s => s.id === currentSceneId); }
-
 function selectType(type) {
   currentType = type;
   el.tabBackground.classList.toggle('active', type === 'background');
   el.tabCharacter.classList.toggle('active', type === 'character');
-  el.weekPicker.classList.toggle('hidden', type !== 'background');
-  el.scenePicker.classList.toggle('hidden', type !== 'background');
   el.charPicker.classList.toggle('hidden', type !== 'character');
   el.exprPicker.classList.toggle('hidden', type !== 'character');
   el.fileInput.accept = type === 'background' ? 'image/jpeg,image/png,image/webp' : 'image/png,image/webp';
   el.typeHint.textContent = type === 'background' ? '.jpg · .jpeg · .png · .webp' : '.png · .webp (투명 배경 권장)';
-  if (type === 'background') { renderWeekPicker(); renderScenePicker(); }
-  else { renderCharPicker(); renderExprPicker(); }
+  if (type === 'character') { renderCharPicker(); renderExprPicker(); }
   clearPending();
   refreshList();
-}
-
-function renderWeekPicker() {
-  el.weekPickerPills.innerHTML = weeks.map(w =>
-    `<button class="pill${w.id === currentWeekId ? ' active' : ''}" data-key="${w.id}">${escapeHtml(w.label)}</button>`
-  ).join('');
-  el.weekPickerPills.querySelectorAll('.pill').forEach(btn => {
-    btn.addEventListener('click', () => {
-      currentWeekId = btn.dataset.key;
-      currentSceneId = currentWeek().scenes[0] && currentWeek().scenes[0].id;
-      renderWeekPicker();
-      renderScenePicker();
-      clearPending();
-      refreshList();
-    });
-  });
-}
-
-function renderScenePicker() {
-  const scenes = currentWeek().scenes;
-  if (!scenes.length) {
-    el.scenePickerPills.innerHTML = '<span class="empty-note">이 주차에 등록된 씬이 없습니다.</span>';
-    return;
-  }
-  el.scenePickerPills.innerHTML = scenes.map(s =>
-    `<button class="pill${s.id === currentSceneId ? ' active' : ''}" data-key="${s.id}">${escapeHtml(s.name)}</button>`
-  ).join('');
-  el.scenePickerPills.querySelectorAll('.pill').forEach(btn => {
-    btn.addEventListener('click', () => {
-      currentSceneId = btn.dataset.key;
-      renderScenePicker();
-      clearPending();
-      refreshList();
-    });
-  });
 }
 
 function renderCharPicker() {
@@ -372,17 +300,17 @@ function onFilesSelected(files) {
 function renderPreview(url) {
   el.previewPanel.classList.remove('hidden');
   el.previewImg.src = url;
-  el.previewType.textContent = currentScene() ? currentScene().name : '';
   el.previewFile.textContent = pendingFile.name;
   el.previewSize.textContent = `${pendingFile.width} × ${pendingFile.height}`;
 }
 
 // Only reachable for backgrounds now — character uploads go through the
-// crop editor below, which saves the framing itself.
+// crop editor below, which saves the framing itself. One shared background
+// list is used across every scene, so there's nothing scene-specific to save.
 async function saveAsset() {
-  if (!pendingFile || !currentScene()) return;
+  if (!pendingFile) return;
   try {
-    await AssetDB.addAsset({ type: 'background', name: pendingFile.name, blob: pendingFile.blob, width: pendingFile.width, height: pendingFile.height, sceneId: currentSceneId });
+    await AssetDB.addAsset({ type: 'background', name: pendingFile.name, blob: pendingFile.blob, width: pendingFile.width, height: pendingFile.height });
     clearPending();
     await refreshList();
   } catch (err) {
@@ -399,6 +327,7 @@ let workingImgNatural = { width: 0, height: 0 };
 let sourceFileBaseName = '';
 let cropState = null;
 let cropDrag = null;
+let lastCropSettings = null; // { zoom, fracX, fracY } — carried over to the next expression photo
 
 function clamp(v, min, max) { return Math.min(Math.max(v, min), max); }
 
@@ -462,17 +391,35 @@ function enterCropMode() {
   else { maxBoxW = dispW; maxBoxH = dispW / CROP_ASPECT; }
 
   cropState = { imgLeft, imgTop, dispW, dispH, imgScale, maxBoxW, maxBoxH };
-  el.cropZoom.value = 62;
-  updateCropBoxFromZoom(true);
+  // Reuse the last crop's framing (zoom + relative position) instead of
+  // recentering every time — expression photos for the same character are
+  // usually framed the same way, so this makes cropping the whole set feel
+  // like one batch operation instead of repositioning per photo.
+  if (lastCropSettings) {
+    el.cropZoom.value = lastCropSettings.zoom;
+    updateCropBoxFromZoom(false, lastCropSettings);
+  } else {
+    el.cropZoom.value = 62;
+    updateCropBoxFromZoom(true);
+  }
 }
 
-function updateCropBoxFromZoom(recenter) {
+function updateCropBoxFromZoom(recenter, frac) {
   const s = cropState;
   const zoomFrac = Number(el.cropZoom.value) / 100;
   const boxW = s.maxBoxW * zoomFrac;
   const boxH = s.maxBoxH * zoomFrac;
-  const boxX = recenter ? s.imgLeft + (s.dispW - boxW) / 2 : clamp(s.boxX, s.imgLeft, s.imgLeft + s.dispW - boxW);
-  const boxY = recenter ? s.imgTop + s.dispH * CROP_V_ANCHOR : clamp(s.boxY, s.imgTop, s.imgTop + s.dispH - boxH);
+  let boxX, boxY;
+  if (frac) {
+    boxX = s.imgLeft + frac.fracX * (s.dispW - boxW);
+    boxY = s.imgTop + frac.fracY * (s.dispH - boxH);
+  } else if (recenter) {
+    boxX = s.imgLeft + (s.dispW - boxW) / 2;
+    boxY = s.imgTop + s.dispH * CROP_V_ANCHOR;
+  } else {
+    boxX = s.boxX;
+    boxY = s.boxY;
+  }
   s.boxW = boxW;
   s.boxH = boxH;
   s.boxX = clamp(boxX, s.imgLeft, s.imgLeft + s.dispW - boxW);
@@ -541,6 +488,11 @@ el.cropSaveBtn.addEventListener('click', async () => {
     // Only one photo per (character, expression) is actually rendered — the
     // newest upload for this pair becomes the active one automatically.
     DevGameState.setCharacterAssetId(currentCharacterKey, currentExpression, record.id);
+    lastCropSettings = {
+      zoom: Number(el.cropZoom.value),
+      fracX: s.dispW - s.boxW > 0 ? (s.boxX - s.imgLeft) / (s.dispW - s.boxW) : 0.5,
+      fracY: s.dispH - s.boxH > 0 ? (s.boxY - s.imgTop) / (s.dispH - s.boxH) : CROP_V_ANCHOR,
+    };
     clearPending();
     await refreshList();
   } catch (err) {
@@ -556,7 +508,7 @@ async function refreshList() {
   el.listTitle.textContent = currentType === 'background' ? 'Uploaded Backgrounds' : 'Uploaded Portraits';
   const all = await AssetDB.getAssetsByType(currentType);
   const filtered = currentType === 'background'
-    ? all.filter(a => a.sceneId === currentSceneId)
+    ? all
     : all.filter(a => a.characterKey === currentCharacterKey && a.expression === currentExpression);
   renderList(filtered);
 }
@@ -569,7 +521,7 @@ function renderList(assets) {
   el.assetList.innerHTML = assets.map(a => {
     const url = a.dataUrl;
     const isActive = a.type === 'background'
-      ? DevGameState.getBackgroundId(a.sceneId) === a.id
+      ? DevGameState.getBackgroundId() === a.id
       : DevGameState.getCharacterAssetId(a.characterKey, a.expression) === a.id;
     const tag = isActive ? '<span class="asset-tag">사용 중</span><br>' : '';
     const useAction = a.type === 'background'
@@ -596,7 +548,7 @@ function previewAsset(url) {
 }
 
 function useAsBackground(id) {
-  DevGameState.setBackgroundId(currentSceneId, id);
+  DevGameState.setBackgroundId(id);
   refreshList();
 }
 
