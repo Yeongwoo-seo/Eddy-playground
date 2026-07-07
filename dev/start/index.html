@@ -48,12 +48,25 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .reset-bg-link.hidden{display:none}
 
 /* Freely-positioned buttons: dragged to place, tapped to trigger. Position
-   is stored as a fraction of the frame so it stays put across reloads and
-   viewport sizes. */
-.float-btn{position:absolute;transform:translate(-50%,-50%);z-index:3;padding:16px 30px;border-radius:14px;font-family:var(--mono);font-weight:700;font-size:14px;letter-spacing:.05em;cursor:grab;user-select:none;touch-action:none;white-space:nowrap;filter:brightness(1);transition:filter .1s}
+   and width are stored as a fraction of the frame so they stay put across
+   reloads and viewport sizes. */
+.float-btn{position:absolute;transform:translate(-50%,-50%);z-index:3;display:flex;align-items:center;justify-content:center;padding:16px 10px;border-radius:14px;font-family:var(--mono);font-weight:700;font-size:14px;letter-spacing:.05em;cursor:grab;user-select:none;touch-action:none;filter:brightness(1);transition:filter .1s}
 .float-btn.pressed{filter:brightness(.6)}
 .float-btn.start{background:var(--cyan);color:#06181c;border:none}
 .float-btn.load{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.24);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.btn-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;pointer-events:none}
+
+/* Small grab handle on each floating button's right edge — drag it
+   horizontally to resize the button symmetrically around its own center. */
+.resize-handle{position:absolute;right:-10px;top:50%;transform:translateY(-50%);width:22px;height:22px;border-radius:50%;background:#fff;color:#111;display:flex;align-items:center;justify-content:center;font-size:11px;line-height:1;cursor:ew-resize;touch-action:none;box-shadow:0 1px 4px rgba(0,0,0,.45)}
+
+/* Always-visible dev shortcut — the floating 시작하기 above is meant to
+   eventually go fully transparent once it's overlaid on real title art, at
+   which point it's hard to find/click during layout testing. This corner
+   button triggers the exact same "start" action regardless of where that
+   zone is placed or how visible it currently is. */
+.dev-start-btn{position:absolute;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0));z-index:9;font-family:var(--mono);font-size:11px;letter-spacing:.05em;color:var(--amber);background:rgba(8,10,12,.72);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(214,168,75,.45);border-radius:18px;padding:9px 14px;cursor:pointer}
+.dev-start-btn:active{opacity:.8}
 
 .toast{position:absolute;left:50%;top:calc(112px + env(safe-area-inset-top,0));transform:translateX(-50%);z-index:8;background:rgba(8,10,12,.9);color:#fff;font-size:12.5px;padding:11px 16px;border-radius:12px;border:1px solid rgba(255,255,255,.14);opacity:0;pointer-events:none;transition:opacity .25s;max-width:calc(100% - 56px);text-align:center}
 .toast.show{opacity:1}
@@ -76,10 +89,17 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
     <div class="game-title">The <span class="accent">M</span>issing <span class="accent">K</span>ey</div>
   </div>
 
-  <button class="float-btn start" id="startBtn">시작하기</button>
-  <button class="float-btn load" id="loadBtn">불러오기</button>
+  <button class="float-btn start" id="startBtn">
+    <span class="btn-label">시작하기</span>
+    <span class="resize-handle" id="startResizeHandle">↔</span>
+  </button>
+  <button class="float-btn load" id="loadBtn">
+    <span class="btn-label">불러오기</span>
+    <span class="resize-handle" id="loadResizeHandle">↔</span>
+  </button>
 
   <button class="reset-bg-link hidden" id="resetBgBtn">기본 배경으로 초기화</button>
+  <button class="dev-start-btn" id="devStartBtn">실제 시작 테스트</button>
   <div class="toast" id="toast"></div>
 </div>
 
@@ -105,8 +125,13 @@ const el = {
   resetBgBtn: document.getElementById('resetBgBtn'),
   startBtn: document.getElementById('startBtn'),
   loadBtn: document.getElementById('loadBtn'),
+  startResizeHandle: document.getElementById('startResizeHandle'),
+  loadResizeHandle: document.getElementById('loadResizeHandle'),
+  devStartBtn: document.getElementById('devStartBtn'),
   toast: document.getElementById('toast'),
 };
+
+function goToRealStart() { location.href = '/dev/week1/'; }
 
 /* ===== Background image + drag-to-pan position ===== */
 function loadBgPos() {
@@ -175,10 +200,12 @@ function clamp(v, min, max) { return Math.min(Math.max(v, min), max); }
 
 /* ===== Freely-positioned 시작하기 / 불러오기 buttons ===== */
 function loadBtnPos() {
+  const defaults = { start: { x: 50, y: 80, w: 46 }, load: { x: 50, y: 90, w: 46 } };
   try {
-    return Object.assign({ start: { x: 50, y: 80 }, load: { x: 50, y: 90 } }, JSON.parse(localStorage.getItem(BTN_POS_KEY)));
+    const saved = JSON.parse(localStorage.getItem(BTN_POS_KEY));
+    return { start: Object.assign({}, defaults.start, saved && saved.start), load: Object.assign({}, defaults.load, saved && saved.load) };
   } catch (e) {
-    return { start: { x: 50, y: 80 }, load: { x: 50, y: 90 } };
+    return defaults;
   }
 }
 let btnPos = loadBtnPos();
@@ -186,8 +213,10 @@ let btnPos = loadBtnPos();
 function renderBtnPos() {
   el.startBtn.style.left = btnPos.start.x + '%';
   el.startBtn.style.top = btnPos.start.y + '%';
+  el.startBtn.style.width = btnPos.start.w + '%';
   el.loadBtn.style.left = btnPos.load.x + '%';
   el.loadBtn.style.top = btnPos.load.y + '%';
+  el.loadBtn.style.width = btnPos.load.w + '%';
 }
 
 function saveBtnPos() {
@@ -229,8 +258,40 @@ function makeDraggable(buttonEl, posKey, onTap) {
   }));
 }
 
-makeDraggable(el.startBtn, 'start', () => { location.href = '/dev/week1/'; });
+makeDraggable(el.startBtn, 'start', goToRealStart);
 makeDraggable(el.loadBtn, 'load', () => showToast('불러오기 기능은 아직 준비 중입니다 (테스트 버튼)'));
+
+// Resize handle grows/shrinks the button symmetrically around its own
+// center (left/right edges move equally), since position is anchored via
+// translate(-50%,-50%) — dragging the handle by dx moves that edge by dx,
+// so width changes by 2*dx.
+function makeResizable(handleEl, posKey) {
+  let resize = null;
+  handleEl.addEventListener('pointerdown', (e) => {
+    e.stopPropagation();
+    handleEl.setPointerCapture(e.pointerId);
+    const rect = el.frame.getBoundingClientRect();
+    resize = { x: e.clientX, startW: btnPos[posKey].w, rect };
+  });
+  handleEl.addEventListener('pointermove', (e) => {
+    if (!resize) return;
+    e.stopPropagation();
+    const dx = e.clientX - resize.x;
+    btnPos[posKey].w = clamp(resize.startW + (dx * 2 / resize.rect.width) * 100, 20, 92);
+    renderBtnPos();
+  });
+  ['pointerup', 'pointercancel'].forEach(evt => handleEl.addEventListener(evt, (e) => {
+    if (!resize) return;
+    e.stopPropagation();
+    resize = null;
+    saveBtnPos();
+  }));
+}
+
+makeResizable(el.startResizeHandle, 'start');
+makeResizable(el.loadResizeHandle, 'load');
+
+el.devStartBtn.addEventListener('click', goToRealStart);
 
 renderBgPos();
 renderBtnPos();
