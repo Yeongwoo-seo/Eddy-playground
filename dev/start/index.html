@@ -53,32 +53,6 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
    diagonally to resize width and height independently around its own center. */
 .resize-handle{position:absolute;right:-10px;bottom:-10px;width:22px;height:22px;border-radius:50%;background:#fff;color:#111;display:flex;align-items:center;justify-content:center;font-size:11px;line-height:1;cursor:nwse-resize;touch-action:none;box-shadow:0 1px 4px rgba(0,0,0,.45)}
 
-/* 실제 모드: the button itself is invisible (see below), so a press needs its
-   own feedback — darken exactly the hit zone's current bounds on press. */
-.frame.real-mode .float-btn.pressed{background:rgba(0,0,0,.55)}
-
-/* "실제 모드" toggle — the floating 시작하기 box is only a
-   placeholder so testers can grab and place it; in the final game it's a
-   fully transparent hit zone over real title art. This button previews that:
-   it hides the box styling/handles/edit hints and leaves the zones exactly
-   where they're currently positioned/sized, so tapping proves the hit area
-   itself is right — not just that the visible test button works. */
-.dev-start-btn{position:absolute;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0));z-index:9;font-family:var(--mono);font-size:11px;letter-spacing:.05em;color:var(--amber);background:rgba(8,10,12,.72);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(214,168,75,.45);border-radius:18px;padding:9px 14px;cursor:pointer}
-.dev-start-btn:active{opacity:.8}
-.frame.real-mode .dev-start-btn{color:var(--cyan);border-color:rgba(89,184,200,.45)}
-
-/* "확정" locks in the currently dragged/resized 시작하기 box + background
-   position — tester is done placing things, so drag/resize handles go away
-   and further presses on the box/background stop moving anything. */
-.confirm-btn{left:16px;right:auto}
-.frame.locked .confirm-btn{color:var(--cyan);border-color:rgba(89,184,200,.45)}
-.frame.locked .edit-only{display:none}
-
-.frame.real-mode .edit-only{display:none}
-.frame.real-mode .float-btn{background:transparent;border:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;cursor:pointer}
-.frame.real-mode .btn-label{opacity:0}
-.frame.real-mode .bg-layer{cursor:default}
-
 </style>
 </head>
 <body>
@@ -87,19 +61,17 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 
   <div class="topbar">
     <a class="back-btn" href="/dev/">←</a>
-    <button class="bg-upload-btn edit-only" id="bgUploadBtn">배경 이미지 테스트</button>
+    <button class="bg-upload-btn" id="bgUploadBtn">배경 이미지 테스트</button>
     <input type="file" id="bgInput" accept="image/jpeg,image/png,image/webp" style="display:none">
   </div>
-  <div class="drag-hint edit-only">배경을 드래그하면 위치가 조정돼요</div>
+  <div class="drag-hint">배경을 드래그하면 위치가 조정돼요</div>
 
   <button class="float-btn start" id="startBtn">
     <span class="btn-label">시작하기</span>
-    <span class="resize-handle edit-only" id="startResizeHandle">↘</span>
+    <span class="resize-handle" id="startResizeHandle">↘</span>
   </button>
 
-  <button class="reset-bg-link hidden edit-only" id="resetBgBtn">기본 배경으로 초기화</button>
-  <button class="dev-start-btn confirm-btn" id="confirmBtn">확정</button>
-  <button class="dev-start-btn" id="devStartBtn">실제 모드 미리보기</button>
+  <button class="reset-bg-link hidden" id="resetBgBtn">기본 배경으로 초기화</button>
 </div>
 
 <script>
@@ -124,38 +96,9 @@ const el = {
   resetBgBtn: document.getElementById('resetBgBtn'),
   startBtn: document.getElementById('startBtn'),
   startResizeHandle: document.getElementById('startResizeHandle'),
-  devStartBtn: document.getElementById('devStartBtn'),
-  confirmBtn: document.getElementById('confirmBtn'),
 };
 
 function goToRealStart() { location.href = '/dev/week1/'; }
-
-// Not persisted — always reopens in edit mode so the drag/resize handles
-// are there to greet you, and "실제 모드" is a one-off check you toggle
-// into rather than a state to leave the page in.
-let realMode = false;
-function setRealMode(on) {
-  realMode = on;
-  el.frame.classList.toggle('real-mode', on);
-  el.devStartBtn.textContent = on ? '편집 모드로 돌아가기' : '실제 모드 미리보기';
-}
-el.devStartBtn.addEventListener('click', () => setRealMode(!realMode));
-
-// Also not persisted — 확정 just locks dragging/resizing off for the rest of
-// this visit so a tester can't accidentally move the box/background while
-// checking taps; the position/size values themselves already save on every
-// drag/resize release regardless of this flag.
-let locked = false;
-function setLocked(on) {
-  locked = on;
-  el.frame.classList.toggle('locked', on);
-  el.confirmBtn.textContent = on ? '확정됨 (편집하기)' : '확정';
-  if (on) {
-    saveBtnPos();
-    localStorage.setItem(BG_POS_KEY, JSON.stringify(bgPos));
-  }
-}
-el.confirmBtn.addEventListener('click', () => setLocked(!locked));
 
 /* ===== Background image + drag-to-pan position ===== */
 function loadBgPos() {
@@ -199,7 +142,6 @@ el.resetBgBtn.addEventListener('click', () => {
 
 let bgDrag = null;
 el.bgLayer.addEventListener('pointerdown', (e) => {
-  if (realMode || locked) return;
   el.bgLayer.setPointerCapture(e.pointerId);
   el.bgLayer.classList.add('dragging');
   bgDrag = { x: e.clientX, y: e.clientY, startPos: { ...bgPos } };
@@ -253,15 +195,11 @@ function makeDraggable(buttonEl, posKey, onTap) {
     buttonEl.setPointerCapture(e.pointerId);
     clearTimeout(pressedTimer);
     buttonEl.classList.add('pressed');
-    // 실제 모드, or after 확정: the zone is frozen at its currently configured
-    // position/size, so there's nothing to drag. Any press here is just a
-    // tap attempt.
-    if (realMode || locked) { drag = { real: true }; return; }
     const rect = el.frame.getBoundingClientRect();
     drag = { x: e.clientX, y: e.clientY, startPos: { ...btnPos[posKey] }, rect, moved: false };
   });
   buttonEl.addEventListener('pointermove', (e) => {
-    if (!drag || drag.real) return;
+    if (!drag) return;
     const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
     if (Math.hypot(dx, dy) > DRAG_THRESHOLD) drag.moved = true;
     if (!drag.moved) return;
@@ -277,7 +215,7 @@ function makeDraggable(buttonEl, posKey, onTap) {
   // the darken is ever seen.
   ['pointerup', 'pointercancel'].forEach(evt => buttonEl.addEventListener(evt, () => {
     if (!drag) return;
-    const wasTap = drag.real || !drag.moved;
+    const wasTap = !drag.moved;
     clearTimeout(pressedTimer);
     if (wasTap) {
       pressedTimer = setTimeout(() => {
@@ -327,10 +265,6 @@ makeResizable(el.startResizeHandle, 'start');
 renderBgPos();
 renderBtnPos();
 applyBackground(localStorage.getItem(BG_IMG_KEY));
-
-// /dev's "게임 테스트 시작" links here with ?real=1 so testers land straight
-// on the same view 실제 모드 미리보기 shows, instead of the edit-mode chrome.
-if (new URLSearchParams(location.search).get('real') === '1') setRealMode(true);
 </script>
 </body>
 </html>
