@@ -60,13 +60,20 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
    horizontally to resize the button symmetrically around its own center. */
 .resize-handle{position:absolute;right:-10px;top:50%;transform:translateY(-50%);width:22px;height:22px;border-radius:50%;background:#fff;color:#111;display:flex;align-items:center;justify-content:center;font-size:11px;line-height:1;cursor:ew-resize;touch-action:none;box-shadow:0 1px 4px rgba(0,0,0,.45)}
 
-/* Always-visible dev shortcut — the floating 시작하기 above is meant to
-   eventually go fully transparent once it's overlaid on real title art, at
-   which point it's hard to find/click during layout testing. This corner
-   button triggers the exact same "start" action regardless of where that
-   zone is placed or how visible it currently is. */
+/* "실제 모드" toggle — the floating 시작하기/불러오기 boxes are only a
+   placeholder so testers can grab and place them; in the final game they're
+   fully transparent hit zones over real title art. This button previews that:
+   it hides the box styling/handles/edit hints and leaves the zones exactly
+   where they're currently positioned/sized, so tapping proves the hit area
+   itself is right — not just that the visible test button works. */
 .dev-start-btn{position:absolute;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0));z-index:9;font-family:var(--mono);font-size:11px;letter-spacing:.05em;color:var(--amber);background:rgba(8,10,12,.72);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(214,168,75,.45);border-radius:18px;padding:9px 14px;cursor:pointer}
 .dev-start-btn:active{opacity:.8}
+.frame.real-mode .dev-start-btn{color:var(--cyan);border-color:rgba(89,184,200,.45)}
+
+.frame.real-mode .edit-only{display:none}
+.frame.real-mode .float-btn{background:transparent;border:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;cursor:pointer}
+.frame.real-mode .btn-label{opacity:0}
+.frame.real-mode .bg-layer{cursor:default}
 
 .toast{position:absolute;left:50%;top:calc(112px + env(safe-area-inset-top,0));transform:translateX(-50%);z-index:8;background:rgba(8,10,12,.9);color:#fff;font-size:12.5px;padding:11px 16px;border-radius:12px;border:1px solid rgba(255,255,255,.14);opacity:0;pointer-events:none;transition:opacity .25s;max-width:calc(100% - 56px);text-align:center}
 .toast.show{opacity:1}
@@ -79,10 +86,10 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 
   <div class="topbar">
     <a class="back-btn" href="/dev/">←</a>
-    <button class="bg-upload-btn" id="bgUploadBtn">배경 이미지 테스트</button>
+    <button class="bg-upload-btn edit-only" id="bgUploadBtn">배경 이미지 테스트</button>
     <input type="file" id="bgInput" accept="image/jpeg,image/png,image/webp" style="display:none">
   </div>
-  <div class="drag-hint">배경을 드래그하면 위치가 조정돼요</div>
+  <div class="drag-hint edit-only">배경을 드래그하면 위치가 조정돼요</div>
 
   <div class="logo-wrap">
     <div class="game-tag">Operation MK</div>
@@ -91,15 +98,15 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 
   <button class="float-btn start" id="startBtn">
     <span class="btn-label">시작하기</span>
-    <span class="resize-handle" id="startResizeHandle">↔</span>
+    <span class="resize-handle edit-only" id="startResizeHandle">↔</span>
   </button>
   <button class="float-btn load" id="loadBtn">
     <span class="btn-label">불러오기</span>
-    <span class="resize-handle" id="loadResizeHandle">↔</span>
+    <span class="resize-handle edit-only" id="loadResizeHandle">↔</span>
   </button>
 
-  <button class="reset-bg-link hidden" id="resetBgBtn">기본 배경으로 초기화</button>
-  <button class="dev-start-btn" id="devStartBtn">실제 시작 테스트</button>
+  <button class="reset-bg-link hidden edit-only" id="resetBgBtn">기본 배경으로 초기화</button>
+  <button class="dev-start-btn" id="devStartBtn">실제 모드 미리보기</button>
   <div class="toast" id="toast"></div>
 </div>
 
@@ -132,6 +139,17 @@ const el = {
 };
 
 function goToRealStart() { location.href = '/dev/week1/'; }
+
+// Not persisted — always reopens in edit mode so the drag/resize handles
+// are there to greet you, and "실제 모드" is a one-off check you toggle
+// into rather than a state to leave the page in.
+let realMode = false;
+function setRealMode(on) {
+  realMode = on;
+  el.frame.classList.toggle('real-mode', on);
+  el.devStartBtn.textContent = on ? '편집 모드로 돌아가기' : '실제 모드 미리보기';
+}
+el.devStartBtn.addEventListener('click', () => setRealMode(!realMode));
 
 /* ===== Background image + drag-to-pan position ===== */
 function loadBgPos() {
@@ -175,6 +193,7 @@ el.resetBgBtn.addEventListener('click', () => {
 
 let bgDrag = null;
 el.bgLayer.addEventListener('pointerdown', (e) => {
+  if (realMode) return;
   el.bgLayer.setPointerCapture(e.pointerId);
   el.bgLayer.classList.add('dragging');
   bgDrag = { x: e.clientX, y: e.clientY, startPos: { ...bgPos } };
@@ -235,11 +254,15 @@ function makeDraggable(buttonEl, posKey, onTap) {
   buttonEl.addEventListener('pointerdown', (e) => {
     buttonEl.setPointerCapture(e.pointerId);
     buttonEl.classList.add('pressed');
+    // 실제 모드: the zone is frozen at its currently configured position/size
+    // (that's the whole point — proving *this* placement works), so there's
+    // nothing to drag. Any press here is just a tap attempt.
+    if (realMode) { drag = { real: true }; return; }
     const rect = el.frame.getBoundingClientRect();
     drag = { x: e.clientX, y: e.clientY, startPos: { ...btnPos[posKey] }, rect, moved: false };
   });
   buttonEl.addEventListener('pointermove', (e) => {
-    if (!drag) return;
+    if (!drag || drag.real) return;
     const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
     if (Math.hypot(dx, dy) > DRAG_THRESHOLD) drag.moved = true;
     if (!drag.moved) return;
@@ -252,6 +275,7 @@ function makeDraggable(buttonEl, posKey, onTap) {
   ['pointerup', 'pointercancel'].forEach(evt => buttonEl.addEventListener(evt, () => {
     if (!drag) return;
     buttonEl.classList.remove('pressed');
+    if (drag.real) { onTap(); drag = null; return; }
     if (drag.moved) saveBtnPos();
     else onTap();
     drag = null;
@@ -290,8 +314,6 @@ function makeResizable(handleEl, posKey) {
 
 makeResizable(el.startResizeHandle, 'start');
 makeResizable(el.loadResizeHandle, 'load');
-
-el.devStartBtn.addEventListener('click', goToRealStart);
 
 renderBgPos();
 renderBtnPos();
