@@ -67,6 +67,13 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .dev-start-btn:active{opacity:.8}
 .frame.real-mode .dev-start-btn{color:var(--cyan);border-color:rgba(89,184,200,.45)}
 
+/* "확정" locks in the currently dragged/resized 시작하기 box + background
+   position — tester is done placing things, so drag/resize handles go away
+   and further presses on the box/background stop moving anything. */
+.confirm-btn{left:16px;right:auto}
+.frame.locked .confirm-btn{color:var(--cyan);border-color:rgba(89,184,200,.45)}
+.frame.locked .edit-only{display:none}
+
 .frame.real-mode .edit-only{display:none}
 .frame.real-mode .float-btn{background:transparent;border:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;cursor:pointer}
 .frame.real-mode .btn-label{opacity:0}
@@ -91,6 +98,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
   </button>
 
   <button class="reset-bg-link hidden edit-only" id="resetBgBtn">기본 배경으로 초기화</button>
+  <button class="dev-start-btn confirm-btn" id="confirmBtn">확정</button>
   <button class="dev-start-btn" id="devStartBtn">실제 모드 미리보기</button>
 </div>
 
@@ -117,6 +125,7 @@ const el = {
   startBtn: document.getElementById('startBtn'),
   startResizeHandle: document.getElementById('startResizeHandle'),
   devStartBtn: document.getElementById('devStartBtn'),
+  confirmBtn: document.getElementById('confirmBtn'),
 };
 
 function goToRealStart() { location.href = '/dev/week1/'; }
@@ -131,6 +140,22 @@ function setRealMode(on) {
   el.devStartBtn.textContent = on ? '편집 모드로 돌아가기' : '실제 모드 미리보기';
 }
 el.devStartBtn.addEventListener('click', () => setRealMode(!realMode));
+
+// Also not persisted — 확정 just locks dragging/resizing off for the rest of
+// this visit so a tester can't accidentally move the box/background while
+// checking taps; the position/size values themselves already save on every
+// drag/resize release regardless of this flag.
+let locked = false;
+function setLocked(on) {
+  locked = on;
+  el.frame.classList.toggle('locked', on);
+  el.confirmBtn.textContent = on ? '확정됨 (편집하기)' : '확정';
+  if (on) {
+    saveBtnPos();
+    localStorage.setItem(BG_POS_KEY, JSON.stringify(bgPos));
+  }
+}
+el.confirmBtn.addEventListener('click', () => setLocked(!locked));
 
 /* ===== Background image + drag-to-pan position ===== */
 function loadBgPos() {
@@ -174,7 +199,7 @@ el.resetBgBtn.addEventListener('click', () => {
 
 let bgDrag = null;
 el.bgLayer.addEventListener('pointerdown', (e) => {
-  if (realMode) return;
+  if (realMode || locked) return;
   el.bgLayer.setPointerCapture(e.pointerId);
   el.bgLayer.classList.add('dragging');
   bgDrag = { x: e.clientX, y: e.clientY, startPos: { ...bgPos } };
@@ -226,10 +251,10 @@ function makeDraggable(buttonEl, posKey, onTap) {
   buttonEl.addEventListener('pointerdown', (e) => {
     buttonEl.setPointerCapture(e.pointerId);
     buttonEl.classList.add('pressed');
-    // 실제 모드: the zone is frozen at its currently configured position/size
-    // (that's the whole point — proving *this* placement works), so there's
-    // nothing to drag. Any press here is just a tap attempt.
-    if (realMode) { drag = { real: true }; return; }
+    // 실제 모드, or after 확정: the zone is frozen at its currently configured
+    // position/size, so there's nothing to drag. Any press here is just a
+    // tap attempt.
+    if (realMode || locked) { drag = { real: true }; return; }
     const rect = el.frame.getBoundingClientRect();
     drag = { x: e.clientX, y: e.clientY, startPos: { ...btnPos[posKey] }, rect, moved: false };
   });
