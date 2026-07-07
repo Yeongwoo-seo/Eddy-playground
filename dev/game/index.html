@@ -312,11 +312,21 @@ function playEndingSequence() {
   }, 900);
 }
 
+// Scene 001 has no nextSceneId and just loops (onComplete -> restart()), so
+// its "UNKNOWN SIGNAL" foreshadowing beat plays on every loop. A scene with
+// nextSceneId hands off elsewhere instead (e.g. into a minigame) and skips
+// that beat — it's tonally specific to scene 001's ending, not a generic one.
+function playMinigameTransition(nextSceneId) {
+  el.introCard.textContent = 'MINIGAME START';
+  el.introOverlay.classList.remove('hidden');
+  console.log('[OPERATION MK] scene complete -> nextSceneId:', nextSceneId, '(not yet built)');
+}
+
 const player = createVNPlayer({
   onLineChange: (line, index, total) => {
     el.speakerName.textContent = line.speaker || '';
     applyCharacterForLine(line.characterId, line.expression);
-    if (index === total - 1) {
+    if (index === total - 1 && !activeSceneData.nextSceneId) {
       playEndingSequence();
     } else {
       // restart() loops back to line 0 — undo the ending fade/signal from last time.
@@ -328,7 +338,13 @@ const player = createVNPlayer({
   },
   onTextUpdate: (text) => { el.dialogueText.textContent = text; },
   onArrow: updateArrow,
-  onComplete: () => player.restart(),
+  onComplete: () => {
+    if (activeSceneData.nextSceneId) {
+      playMinigameTransition(activeSceneData.nextSceneId);
+    } else {
+      player.restart();
+    }
+  },
 });
 
 function onTap() {
