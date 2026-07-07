@@ -40,8 +40,13 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .corner-stack{position:absolute;top:calc(14px + env(safe-area-inset-top,0));right:16px;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
 .plan-link{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--amber);background:rgba(214,168,75,.12);border:1px solid rgba(214,168,75,.4);border-radius:12px;padding:6px 10px;letter-spacing:.02em;text-decoration:none;white-space:nowrap}
 .plan-link:active{opacity:.8}
-.build-badge{font-family:var(--mono);font-size:9.5px;color:var(--text-muted);background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:6px 10px;letter-spacing:.02em;max-width:180px;text-align:right;line-height:1.5;white-space:pre-line}
-.build-summary{font-family:var(--sans);font-size:11px;color:var(--text-secondary);max-width:180px;text-align:right;line-height:1.4}
+.commit-toggle{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--text-muted);background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:6px 10px;letter-spacing:.02em;cursor:pointer;white-space:nowrap}
+.commit-toggle:active{opacity:.8}
+.commit-toggle.active{color:var(--cyan);border-color:rgba(89,184,200,.4)}
+.commit-panel{background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:12px 14px;margin-bottom:24px}
+.commit-panel.hidden{display:none}
+.build-badge{font-family:var(--mono);font-size:11px;color:var(--text-muted);letter-spacing:.02em;line-height:1.6;white-space:pre-line}
+.build-summary{font-family:var(--sans);font-size:12px;color:var(--text-secondary);line-height:1.5;margin-top:6px}
 .build-summary:empty{display:none}
 
 /* Floating CTA — jumps straight to the real play environment (/play/test/),
@@ -54,12 +59,16 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 <div class="frame" style="position:relative">
   <div class="corner-stack">
     <a class="plan-link" href="/dev/plan/">📋 개발계획</a>
-    <div class="build-badge" id="buildBadge">빌드 정보 확인 중…</div>
-    <div class="build-summary" id="buildSummary"></div>
+    <button class="commit-toggle" id="commitToggle">🔧 커밋</button>
   </div>
   <div class="tag">Operation MK · DEV</div>
   <div class="title">The <span class="accent">M</span>issing <span class="accent">K</span>ey</div>
   <div class="sub">비주얼노벨 대화 UX와 배경·캐릭터 업로드 흐름만 검증하는 개발용 페이지입니다.</div>
+
+  <div class="commit-panel hidden" id="commitPanel">
+    <div class="build-badge" id="buildBadge">빌드 정보 확인 중…</div>
+    <div class="build-summary" id="buildSummary"></div>
+  </div>
 
   <div class="menu">
     <a class="menu-btn" href="/dev/week1/">
@@ -130,6 +139,16 @@ async function loadBuildInfo() {
   }
 }
 loadBuildInfo();
+
+// Commit info used to always sit in the top-right corner — moved into a
+// panel that only appears below when "커밋" is tapped, so it doesn't clutter
+// the corner every time the page opens.
+const commitToggle = document.getElementById('commitToggle');
+const commitPanel = document.getElementById('commitPanel');
+commitToggle.addEventListener('click', () => {
+  const nowHidden = commitPanel.classList.toggle('hidden');
+  commitToggle.classList.toggle('active', !nowHidden);
+});
 </script>
 </body>
 </html>
