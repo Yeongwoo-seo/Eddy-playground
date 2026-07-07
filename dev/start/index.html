@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>OPERATION MK · APP START</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<meta name="theme-color" content="#080A0C">
+<link rel="manifest" href="/dev/manifest.json">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="OPERATION MK DEV">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#080A0C;--surface-1:#101419;--surface-2:#171C22;
+  --text-primary:#EDF1F4;--text-secondary:#929BA5;--text-muted:#5F6872;
+  --cyan:#59B8C8;--amber:#D6A84B;--divider:rgba(255,255,255,0.08);
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sans:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
+}
+html,body{height:100%}
+body{background:#000;color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center;min-height:100dvh}
+
+/* Full-bleed title screen — this is what a player sees the instant the app
+   opens, so it fills the whole frame instead of the usual scrolling page
+   layout the other /dev pages use. */
+.frame{position:relative;width:100%;max-width:430px;min-height:100dvh;min-height:100vh;overflow:hidden}
+
+.bg-layer{position:absolute;inset:0;background-size:cover;background-position:center;background-color:#0d1114;transition:background-image .2s ease}
+.bg-layer.placeholder{background-image:linear-gradient(160deg,#171c22 0%,#0d1114 60%,#080a0c 100%)}
+.bg-scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(5,7,10,.35) 0%,rgba(5,7,10,.15) 40%,rgba(5,7,10,.9) 100%)}
+
+.topbar{position:absolute;top:0;left:0;right:0;z-index:5;padding:calc(14px + env(safe-area-inset-top,0)) 16px 0;display:flex;justify-content:space-between;align-items:center}
+.back-btn{width:36px;height:36px;border-radius:50%;background:rgba(8,10,12,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.14);color:#fff;display:flex;align-items:center;justify-content:center;text-decoration:none;flex-shrink:0}
+.bg-upload-btn{font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;color:#fff;background:rgba(8,10,12,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:9px 13px;cursor:pointer}
+
+.content{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:0 28px calc(48px + env(safe-area-inset-bottom,0));display:flex;flex-direction:column;align-items:center;text-align:center}
+.game-tag{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--text-secondary);text-transform:uppercase;margin-bottom:10px}
+.game-title{font-size:34px;font-weight:800;letter-spacing:-.3px;margin-bottom:8px}
+.game-title .accent{color:var(--amber)}
+.game-sub{font-size:13px;color:var(--text-secondary);margin-bottom:36px;line-height:1.6}
+
+.start-btn{width:100%;background:var(--cyan);color:#06181c;border:none;border-radius:14px;padding:17px;font-size:15px;font-weight:700;cursor:pointer;font-family:var(--mono);letter-spacing:.05em}
+.start-btn:active{opacity:.85}
+.reset-bg-link{margin-top:16px;font-family:var(--mono);font-size:11px;color:var(--text-muted);background:none;border:none;cursor:pointer;text-decoration:underline}
+.reset-bg-link.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="frame">
+  <div class="bg-layer placeholder" id="bgLayer"></div>
+  <div class="bg-scrim"></div>
+
+  <div class="topbar">
+    <a class="back-btn" href="/dev/">←</a>
+    <button class="bg-upload-btn" id="bgUploadBtn">배경 이미지 테스트</button>
+    <input type="file" id="bgInput" accept="image/jpeg,image/png,image/webp" style="display:none">
+  </div>
+
+  <div class="content">
+    <div class="game-tag">Operation MK</div>
+    <div class="game-title">The <span class="accent">M</span>issing <span class="accent">K</span>ey</div>
+    <div class="game-sub">앱을 처음 열었을 때 보이는 타이틀 화면입니다</div>
+    <button class="start-btn" id="startBtn">시작하기 →</button>
+    <button class="reset-bg-link hidden" id="resetBgBtn">기본 배경으로 초기화</button>
+  </div>
+</div>
+
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
+}
+</script>
+<script>
+// Custom title background is only a local preview aid for testers — stored
+// in localStorage as a data URL so it survives a reload without needing any
+// upload/storage backend (this screen isn't part of the asset DB the other
+// /dev pages share).
+const STORAGE_KEY = 'mkDevStartScreenBg';
+
+const el = {
+  bgLayer: document.getElementById('bgLayer'),
+  bgUploadBtn: document.getElementById('bgUploadBtn'),
+  bgInput: document.getElementById('bgInput'),
+  resetBgBtn: document.getElementById('resetBgBtn'),
+  startBtn: document.getElementById('startBtn'),
+};
+
+function applyBackground(dataUrl) {
+  if (dataUrl) {
+    el.bgLayer.classList.remove('placeholder');
+    el.bgLayer.style.backgroundImage = `url("${dataUrl}")`;
+    el.resetBgBtn.classList.remove('hidden');
+  } else {
+    el.bgLayer.classList.add('placeholder');
+    el.bgLayer.style.backgroundImage = '';
+    el.resetBgBtn.classList.add('hidden');
+  }
+}
+
+el.bgUploadBtn.addEventListener('click', () => el.bgInput.click());
+el.bgInput.addEventListener('change', () => {
+  const file = el.bgInput.files && el.bgInput.files[0];
+  if (!file || !file.type.startsWith('image/')) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    localStorage.setItem(STORAGE_KEY, reader.result);
+    applyBackground(reader.result);
+  };
+  reader.readAsDataURL(file);
+});
+
+el.resetBgBtn.addEventListener('click', () => {
+  localStorage.removeItem(STORAGE_KEY);
+  applyBackground(null);
+});
+
+el.startBtn.addEventListener('click', () => {
+  location.href = '/dev/week1/';
+});
+
+applyBackground(localStorage.getItem(STORAGE_KEY));
+</script>
+</body>
+</html>
