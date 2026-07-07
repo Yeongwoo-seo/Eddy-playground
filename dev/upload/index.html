@@ -84,8 +84,13 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .hotspot-panel.hidden{display:none}
 .hotspot-stage{position:relative;width:100%;height:280px;background:#000;border-radius:10px;overflow:hidden;touch-action:none}
 .hotspot-stage img{position:absolute;-webkit-user-drag:none;user-select:none}
-.hotspot-marker{position:absolute;border:2px solid var(--cyan);border-radius:50%;background:rgba(89,184,200,.22);cursor:move;touch-action:none}
-.hotspot-other-dot{position:absolute;width:14px;height:14px;margin-left:-7px;margin-top:-7px;border-radius:50%;background:rgba(214,168,75,.85);border:1.5px solid rgba(0,0,0,.4);pointer-events:none}
+.hotspot-marker{position:absolute;border:2px solid var(--cyan);background:rgba(89,184,200,.22);cursor:move;touch-action:none}
+.hotspot-marker.hidden{display:none}
+.hotspot-point-dot{position:absolute;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:var(--amber);border:2px solid #1c1204;pointer-events:none}
+.hotspot-other-box{position:absolute;border:1.5px dashed rgba(214,168,75,.75);background:rgba(214,168,75,.08);pointer-events:none}
+.hotspot-actions{display:flex;gap:8px;margin-top:12px}
+.hotspot-actions .crop-save-btn{flex:1;margin-top:0}
+.hotspot-redo-btn{flex:1;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--mono);letter-spacing:.04em;border:1px solid var(--divider);background:var(--surface-2);color:var(--text-secondary)}
 
 .section-title{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase;margin:24px 0 12px}
 .empty-note{font-size:13px;color:var(--text-muted);padding:14px 0}
@@ -200,14 +205,14 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
     </div>
     <div class="hotspot-stage" id="hotspotStage">
       <img id="hotspotImg" alt="">
-      <div id="hotspotOtherDots"></div>
-      <div class="hotspot-marker" id="hotspotMarker"></div>
+      <div id="hotspotOtherBoxes"></div>
+      <div id="hotspotPointDots"></div>
+      <div class="hotspot-marker hidden" id="hotspotMarker"></div>
     </div>
-    <div class="crop-zoom-row">
-      <label>영역 크기</label>
-      <input type="range" id="hotspotSize" min="4" max="30" value="10">
+    <div class="hotspot-actions">
+      <button class="hotspot-redo-btn" id="hotspotRedoBtn">다시 지정</button>
+      <button class="crop-save-btn" id="hotspotSaveBtn" style="border-radius:10px;padding:12px;font-family:var(--mono);font-weight:700;border:none">정답 영역 저장</button>
     </div>
-    <button class="crop-save-btn" id="hotspotSaveBtn" style="width:100%;border-radius:10px;padding:12px;font-family:var(--mono);font-weight:700;border:none;margin-top:12px">정답 영역 저장</button>
     <div class="hint" id="hotspotHint" style="margin:10px 0 0"></div>
   </div>
 
@@ -338,9 +343,10 @@ const el = {
   hotspotPickerPills: document.getElementById('hotspotPickerPills'),
   hotspotStage: document.getElementById('hotspotStage'),
   hotspotImg: document.getElementById('hotspotImg'),
-  hotspotOtherDots: document.getElementById('hotspotOtherDots'),
+  hotspotOtherBoxes: document.getElementById('hotspotOtherBoxes'),
+  hotspotPointDots: document.getElementById('hotspotPointDots'),
   hotspotMarker: document.getElementById('hotspotMarker'),
-  hotspotSize: document.getElementById('hotspotSize'),
+  hotspotRedoBtn: document.getElementById('hotspotRedoBtn'),
   hotspotSaveBtn: document.getElementById('hotspotSaveBtn'),
   hotspotHint: document.getElementById('hotspotHint'),
   listTitle: document.getElementById('listTitle'),
@@ -737,8 +743,11 @@ el.cropSaveBtn.addEventListener('click', async () => {
 });
 
 /* ===== Answer-area designator: mark where a hotspot's tap target is on an
-   uploaded background, as a { fx, fy, fr } fraction of the image so it works
-   at any resolution. Three modes share this one editor:
+   uploaded background, as a { x1, y1, x2, y2 } axis-aligned rectangle
+   (fractions of the image) so it works at any resolution. Tap the 4 corners
+   of the area in order; the bounding box of those 4 points becomes the
+   rectangle, which can then be dragged into position before saving. Three
+   modes share this one editor:
    - "single" (scene.minigameId, no minigameStages) — one hotspot per
      background, via DevGameState.getMinigameHotspot/setMinigameHotspot.
    - "staged" (scene.minigameId + scene.minigameStages, e.g. the 3-stop
@@ -837,14 +846,21 @@ async function loadHotspotEditor() {
   const assetId = DevGameState.getBackgroundId(sceneId);
   const asset = assetId ? await AssetDB.getAsset(assetId) : null;
   if (!asset) {
+    hotspotState = null;
     el.hotspotStage.style.visibility = 'hidden';
     el.hotspotSaveBtn.disabled = true;
+    el.hotspotRedoBtn.disabled = true;
     el.hotspotHint.textContent = '먼저 이 항목의 배경 이미지를 업로드하고 "사용"으로 선택하세요.';
     return;
   }
+  el.hotspotRedoBtn.disabled = false;
   el.hotspotStage.style.visibility = '';
-  el.hotspotSaveBtn.disabled = false;
-  el.hotspotImg.src = asset.dataUrl;
+  // hotspotSaveBtn's enabled state is governed by picking/placed mode below,
+  // not set eagerly here.
+  // Attach onload before assigning src — this exact URL may already be warm
+  // in the browser's image cache (the asset-list thumbnail above just loaded
+  // it), in which case the load can complete synchronously and an onload
+  // attached after src would silently never fire.
   el.hotspotImg.onload = () => {
     const stageRect = el.hotspotStage.getBoundingClientRect();
     const nw = asset.width, nh = asset.height;
@@ -857,68 +873,123 @@ async function loadHotspotEditor() {
     el.hotspotImg.style.top = imgTop + 'px';
 
     const existing = getActiveHotspot(sceneId);
-    hotspotState = { imgLeft, imgTop, dispW, dispH };
-    el.hotspotSize.value = Math.round((existing ? existing.fr : 0.06) * 100);
-    const fx = existing ? existing.fx : 0.5;
-    const fy = existing ? existing.fy : 0.5;
-    hotspotState.markerCx = imgLeft + fx * dispW;
-    hotspotState.markerCy = imgTop + fy * dispH;
-    hotspotState.markerR = (Number(el.hotspotSize.value) / 100) * dispW;
-    renderHotspotMarker();
+    hotspotState = { imgLeft, imgTop, dispW, dispH, sceneId };
+    if (existing) {
+      startHotspotWithBox(rectToBox(existing, hotspotState));
+    } else {
+      startHotspotPicking();
+    }
 
     // In room mode, faintly show every *other* already-placed hotspot on
     // this same photo for spatial context while placing the rest.
     if (activeHotspotKind() === 'room') {
       const all = DevGameState.getRoomHotspots(sceneId);
-      el.hotspotOtherDots.innerHTML = Object.keys(all)
+      el.hotspotOtherBoxes.innerHTML = Object.keys(all)
         .filter(id => id !== currentRoomHotspotId)
-        .map(id => `<div class="hotspot-other-dot" style="left:${imgLeft + all[id].fx * dispW}px;top:${imgTop + all[id].fy * dispH}px"></div>`)
+        .map(id => { const b = rectToBox(all[id], hotspotState); return `<div class="hotspot-other-box" style="left:${b.left}px;top:${b.top}px;width:${b.width}px;height:${b.height}px"></div>`; })
         .join('');
     } else {
-      el.hotspotOtherDots.innerHTML = '';
+      el.hotspotOtherBoxes.innerHTML = '';
     }
+  };
+  el.hotspotImg.src = asset.dataUrl;
+}
 
-    el.hotspotHint.textContent = existing
-      ? '기존 정답 영역을 드래그해서 위치를 조정할 수 있어요.'
-      : '이미지에서 정답 위치를 드래그해서 지정하세요.';
+// Normalized {x1,y1,x2,y2} (0..1 of natural image size) -> on-screen box.
+function rectToBox(rect, s) {
+  return {
+    left: s.imgLeft + rect.x1 * s.dispW,
+    top: s.imgTop + rect.y1 * s.dispH,
+    width: (rect.x2 - rect.x1) * s.dispW,
+    height: (rect.y2 - rect.y1) * s.dispH,
   };
 }
 
-function renderHotspotMarker() {
-  const s = hotspotState;
-  el.hotspotMarker.style.width = s.markerR * 2 + 'px';
-  el.hotspotMarker.style.height = s.markerR * 2 + 'px';
-  el.hotspotMarker.style.left = (s.markerCx - s.markerR) + 'px';
-  el.hotspotMarker.style.top = (s.markerCy - s.markerR) + 'px';
+function startHotspotPicking() {
+  hotspotState.mode = 'picking';
+  hotspotState.points = [];
+  hotspotState.box = null;
+  el.hotspotMarker.classList.add('hidden');
+  el.hotspotSaveBtn.disabled = true;
+  renderHotspotPointDots();
+  updateHotspotPickingHint();
 }
+
+function startHotspotWithBox(box) {
+  hotspotState.mode = 'placed';
+  hotspotState.points = [];
+  hotspotState.box = box;
+  el.hotspotPointDots.innerHTML = '';
+  el.hotspotSaveBtn.disabled = false;
+  renderHotspotMarker();
+  el.hotspotHint.textContent = '기존 정답 영역을 드래그해서 위치를 조정하거나, "다시 지정"으로 새로 그릴 수 있어요.';
+}
+
+function updateHotspotPickingHint() {
+  el.hotspotHint.textContent = `이미지에서 정답 영역의 네 모서리를 순서대로 탭하세요. (${hotspotState.points.length}/4)`;
+}
+
+function renderHotspotPointDots() {
+  el.hotspotPointDots.innerHTML = (hotspotState.points || [])
+    .map(p => `<div class="hotspot-point-dot" style="left:${p.x}px;top:${p.y}px"></div>`)
+    .join('');
+}
+
+function renderHotspotMarker() {
+  const b = hotspotState.box;
+  el.hotspotMarker.classList.remove('hidden');
+  el.hotspotMarker.style.left = b.left + 'px';
+  el.hotspotMarker.style.top = b.top + 'px';
+  el.hotspotMarker.style.width = b.width + 'px';
+  el.hotspotMarker.style.height = b.height + 'px';
+}
+
+el.hotspotStage.addEventListener('pointerdown', (e) => {
+  if (!hotspotState || hotspotState.mode !== 'picking' || e.target === el.hotspotMarker) return;
+  if (hotspotState.points.length >= 4) return;
+  const s = hotspotState;
+  const stageRect = el.hotspotStage.getBoundingClientRect();
+  const x = clamp(e.clientX - stageRect.left, s.imgLeft, s.imgLeft + s.dispW);
+  const y = clamp(e.clientY - stageRect.top, s.imgTop, s.imgTop + s.dispH);
+  s.points.push({ x, y });
+  renderHotspotPointDots();
+  if (s.points.length === 4) {
+    const xs = s.points.map(p => p.x), ys = s.points.map(p => p.y);
+    startHotspotWithBox({
+      left: Math.min(...xs), top: Math.min(...ys),
+      width: Math.max(...xs) - Math.min(...xs), height: Math.max(...ys) - Math.min(...ys),
+    });
+  } else {
+    updateHotspotPickingHint();
+  }
+});
+
+el.hotspotRedoBtn.addEventListener('click', () => { if (hotspotState) startHotspotPicking(); });
 
 el.hotspotMarker.addEventListener('pointerdown', (e) => {
   e.preventDefault();
+  e.stopPropagation();
   el.hotspotMarker.setPointerCapture(e.pointerId);
-  hotspotDrag = { x: e.clientX, y: e.clientY, cx: hotspotState.markerCx, cy: hotspotState.markerCy };
+  hotspotDrag = { x: e.clientX, y: e.clientY, left: hotspotState.box.left, top: hotspotState.box.top };
 });
 el.hotspotMarker.addEventListener('pointermove', (e) => {
-  if (!hotspotDrag || !hotspotState) return;
-  const s = hotspotState;
+  if (!hotspotDrag || !hotspotState || !hotspotState.box) return;
+  const s = hotspotState, b = s.box;
   const dx = e.clientX - hotspotDrag.x, dy = e.clientY - hotspotDrag.y;
-  s.markerCx = clamp(hotspotDrag.cx + dx, s.imgLeft, s.imgLeft + s.dispW);
-  s.markerCy = clamp(hotspotDrag.cy + dy, s.imgTop, s.imgTop + s.dispH);
+  b.left = clamp(hotspotDrag.left + dx, s.imgLeft, s.imgLeft + s.dispW - b.width);
+  b.top = clamp(hotspotDrag.top + dy, s.imgTop, s.imgTop + s.dispH - b.height);
   renderHotspotMarker();
 });
 ['pointerup', 'pointercancel'].forEach(evt => el.hotspotMarker.addEventListener(evt, () => { hotspotDrag = null; }));
-el.hotspotSize.addEventListener('input', () => {
-  if (!hotspotState) return;
-  hotspotState.markerR = (Number(el.hotspotSize.value) / 100) * hotspotState.dispW;
-  renderHotspotMarker();
-});
+
 el.hotspotSaveBtn.addEventListener('click', () => {
-  if (!hotspotState) return;
-  const s = hotspotState;
-  const sceneId = activeBackgroundSceneId();
-  saveActiveHotspot(sceneId, {
-    fx: (s.markerCx - s.imgLeft) / s.dispW,
-    fy: (s.markerCy - s.imgTop) / s.dispH,
-    fr: s.markerR / s.dispW,
+  if (!hotspotState || hotspotState.mode !== 'placed') return;
+  const s = hotspotState, b = s.box;
+  saveActiveHotspot(s.sceneId, {
+    x1: (b.left - s.imgLeft) / s.dispW,
+    y1: (b.top - s.imgTop) / s.dispH,
+    x2: (b.left + b.width - s.imgLeft) / s.dispW,
+    y2: (b.top + b.height - s.imgTop) / s.dispH,
   });
   el.hotspotHint.textContent = '저장됐어요. 미니게임에서 이 위치를 정답으로 인식합니다.';
   if (activeHotspotKind() === 'room') renderHotspotPicker(currentScene());

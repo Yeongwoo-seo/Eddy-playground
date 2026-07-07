@@ -155,7 +155,7 @@ const STAGES = [
 ];
 let stageIndex = 0;
 let CANVAS_W = 0, CANVAS_H = 0;
-let hotspots = null; // [{ fx, fy, fr } x3]
+let hotspots = null; // [{ x1, y1, x2, y2 } x3]
 let mapImageGlowEls = [], mapImagePulseEls = [];
 
 const el = {
@@ -195,8 +195,10 @@ function buildImageMap(url) {
   mapImageGlowEls = [];
   mapImagePulseEls = [];
   hotspots.forEach(hs => {
-    const r = Math.max(hs.fr, HOTSPOT_MIN_FR) * CANVAS_W;
-    const cx = hs.fx * CANVAS_W, cy = hs.fy * CANVAS_H;
+    // The hint glow/pulse stay circular for the visual effect even though the
+    // tap target itself is a rectangle — derive a radius from its half-extent.
+    const cx = ((hs.x1 + hs.x2) / 2) * CANVAS_W, cy = ((hs.y1 + hs.y2) / 2) * CANVAS_H;
+    const r = Math.max((hs.x2 - hs.x1) / 2 * CANVAS_W, (hs.y2 - hs.y1) / 2 * CANVAS_H, HOTSPOT_MIN_FR * CANVAS_W);
 
     const glow = document.createElement('div');
     glow.className = 'image-area-glow';
@@ -410,9 +412,14 @@ function reactWrong() {
 function onImageTap(point) {
   if (isCompleted || isStageTransition) return;
   const hs = hotspots[stageIndex];
-  const r = Math.max(hs.fr, HOTSPOT_MIN_FR) * CANVAS_W;
-  const dx = point.x - hs.fx * CANVAS_W, dy = point.y - hs.fy * CANVAS_H;
-  if (Math.hypot(dx, dy) <= r) {
+  // A carelessly small hand-drawn rectangle still needs to stay tappable —
+  // expand it symmetrically up to a minimum width/height rather than
+  // shrinking the miss margin.
+  const cx = (hs.x1 + hs.x2) / 2, cy = (hs.y1 + hs.y2) / 2;
+  const halfW = Math.max((hs.x2 - hs.x1) / 2, HOTSPOT_MIN_FR) * CANVAS_W;
+  const halfH = Math.max((hs.y2 - hs.y1) / 2, HOTSPOT_MIN_FR) * CANVAS_H;
+  const x = cx * CANVAS_W, y = cy * CANVAS_H;
+  if (point.x >= x - halfW && point.x <= x + halfW && point.y >= y - halfH && point.y <= y + halfH) {
     handleStageFound();
     return;
   }
