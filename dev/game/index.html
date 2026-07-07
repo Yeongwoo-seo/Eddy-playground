@@ -192,6 +192,7 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 <script src="/dev/assetDb.js"></script>
+<script src="/dev/loadingOverlay.js"></script>
 <script src="/dev/dialogueData.js"></script>
 <script src="/dev/caseFileData.js"></script>
 <script src="/dev/caseFileState.js"></script>
@@ -554,8 +555,10 @@ const resumeLineIndex = (() => {
 })();
 
 (async function init() {
+  LoadingOverlay.show('장면 불러오는 중');
   await applyBackground();
   await preloadCharacterAssetsForLines(activeLines);
+  LoadingOverlay.hide();
   if (resumeLineIndex === null) {
     await playIntro();
   } else {
