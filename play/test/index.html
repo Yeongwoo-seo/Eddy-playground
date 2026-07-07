@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>OPERATION MK · PLAY</title>
 <meta name="theme-color" content="#080A0C">
+<link rel="manifest" href="/play/manifest.json">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Missing Key">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
 html,body{height:100%}
@@ -28,6 +33,11 @@ body{background:#000;display:flex;justify-content:center;min-height:100dvh}
   <button class="hit-zone" id="startBtn" aria-label="시작하기"></button>
 </div>
 
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/play/sw.js', { scope: '/play/' });
+}
+</script>
 <script>
 const BG_IMG_KEY = 'mkDevStartScreenBg';
 const BG_POS_KEY = 'mkDevStartScreenBgPos';
