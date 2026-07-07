@@ -37,7 +37,10 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .menu-desc{font-size:12.5px;color:var(--text-secondary);margin-top:3px;line-height:1.5}
 .menu-arrow{color:var(--text-muted);font-size:18px;flex-shrink:0}
 .foot{margin-top:auto;padding-top:32px;font-family:var(--mono);font-size:10.5px;color:var(--text-muted);letter-spacing:.06em;text-align:center}
-.build-badge{position:absolute;top:calc(14px + env(safe-area-inset-top,0));right:16px;font-family:var(--mono);font-size:9.5px;color:var(--text-muted);background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:6px 10px;letter-spacing:.02em;max-width:180px;text-align:right;line-height:1.5;white-space:pre-line}
+.corner-stack{position:absolute;top:calc(14px + env(safe-area-inset-top,0));right:16px;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.plan-link{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--amber);background:rgba(214,168,75,.12);border:1px solid rgba(214,168,75,.4);border-radius:12px;padding:6px 10px;letter-spacing:.02em;text-decoration:none;white-space:nowrap}
+.plan-link:active{opacity:.8}
+.build-badge{font-family:var(--mono);font-size:9.5px;color:var(--text-muted);background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:6px 10px;letter-spacing:.02em;max-width:180px;text-align:right;line-height:1.5;white-space:pre-line}
 
 /* Floating CTA — jumps straight to the real play environment (/play/test/),
    which renders whatever was configured in /dev/start/ with no dev chrome. */
@@ -47,7 +50,10 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 </head>
 <body>
 <div class="frame" style="position:relative">
-  <div class="build-badge" id="buildBadge">빌드 정보 확인 중…</div>
+  <div class="corner-stack">
+    <a class="plan-link" href="/dev/plan/">📋 개발계획</a>
+    <div class="build-badge" id="buildBadge">빌드 정보 확인 중…</div>
+  </div>
   <div class="tag">Operation MK · DEV</div>
   <div class="title">The <span class="accent">M</span>issing <span class="accent">K</span>ey</div>
   <div class="sub">비주얼노벨 대화 UX와 배경·캐릭터 업로드 흐름만 검증하는 개발용 페이지입니다.</div>
