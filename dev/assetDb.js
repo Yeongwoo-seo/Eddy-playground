@@ -217,14 +217,21 @@ const DevGameState = {
   // Minigame answer-area hotspot = { fx, fy, fr } — center and radius as
   // fractions of the background image's natural width/height, so it stays
   // correct regardless of the uploaded image's actual pixel size.
-  getMinigameHotspot(sceneId) {
-    if (!sceneId) return null;
-    return this._loadHotspotMap()[sceneId] || null;
+  // stageIndex selects which stop's hotspot to read/write for minigames with
+  // multiple sequential targets sharing one map image (e.g. the 3-stop
+  // station-finder: 0 = 공항, 1 = 이스트우드, 2 = 마라용).
+  _hotspotKey(sceneId, stageIndex) {
+    return stageIndex == null ? sceneId : `${sceneId}::${stageIndex}`;
   },
-  setMinigameHotspot(sceneId, hotspot) {
+  getMinigameHotspot(sceneId, stageIndex) {
+    if (!sceneId) return null;
+    return this._loadHotspotMap()[this._hotspotKey(sceneId, stageIndex)] || null;
+  },
+  setMinigameHotspot(sceneId, stageIndex, hotspot) {
     if (!sceneId) return;
     const map = this._loadHotspotMap();
-    if (hotspot) map[sceneId] = hotspot; else delete map[sceneId];
+    const key = this._hotspotKey(sceneId, stageIndex);
+    if (hotspot) map[key] = hotspot; else delete map[key];
     localStorage.setItem(this._keys.minigameHotspots, JSON.stringify(map));
   },
 

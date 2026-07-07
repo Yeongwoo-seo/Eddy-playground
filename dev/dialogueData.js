@@ -331,19 +331,20 @@ const week1Scene002_1Lines = [
 /* OPERATION MK — WEEK 1 · SCENE 1-2 「지하철 역 찾기」
    Dialogue Set: dialogue-week1-scene001-2
    Scene: week1-scene-001-2 (Sydney Airport Station concourse, 09:45)
-   Setup beat before the "find Eastwood station" route-map minigame —
+   Setup beat before the 3-stop "find the station" route-map minigame
+   (International Airport → Eastwood → Marayong, in order) —
    nextSceneId hands off to that minigame page directly (not another VN scene). */
 const week1Scene001_2Lines = [
   { id: 'line-001', speaker: '영우', text: '자, 이제 숙소 가자.', characterId: 'youngwoo', expression: 'soft' },
   { id: 'line-002', speaker: '지수', text: '웅웅 ㅎㅎ\n우리 어디로 가야돼 여보?', characterId: 'jisoo', expression: 'happy' },
-  { id: 'line-003', speaker: '영우', text: 'Eastwood역.', characterId: 'youngwoo', expression: 'neutral' },
-  { id: 'line-004', speaker: '지수', text: '이스트우드으?', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-005', speaker: '영우', text: '응. 노선도 보고 한번 찾아봐.', characterId: 'youngwoo', expression: 'smirk' },
-  { id: 'line-006', speaker: '지수', text: '엥\n내가아아?????', characterId: 'jisoo', expression: 'shocked' },
-  { id: 'line-007', speaker: '영우', text: '응 ㅋㅋㅋㅋ', characterId: 'youngwoo', expression: 'happy' },
+  { id: 'line-003', speaker: '영우', text: '일단 공항역부터 찾아야 돼.', characterId: 'youngwoo', expression: 'neutral' },
+  { id: 'line-004', speaker: '지수', text: '공항?? 우리 방금 나왔잖아 ㅋㅋㅋ', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-005', speaker: '영우', text: '역 이름이 International Airport라고 ㅋㅋ\n그다음엔 Eastwood, 마지막에 Marayong.', characterId: 'youngwoo', expression: 'smirk' },
+  { id: 'line-006', speaker: '지수', text: '엥\n세 개나?????', characterId: 'jisoo', expression: 'shocked' },
+  { id: 'line-007', speaker: '영우', text: '응 ㅋㅋㅋㅋ 노선도 보고 순서대로 찾아봐.', characterId: 'youngwoo', expression: 'happy' },
   { id: 'line-008', speaker: '지수', text: '아놔 여보 ㅋㅎㅋㅎㅋㅎㅋㅎ\n나 영어 못하는데에;;;;', characterId: 'jisoo', expression: 'annoyed' },
   { id: 'line-009', speaker: '영우', text: '역 이름만 찾으면 되잖아 ㅋㅋㅋㅋ', characterId: 'youngwoo', expression: 'happy' },
-  { id: 'line-010', speaker: '지수', text: '아아 알게써 ㅠㅋㅋㅋㅋ\n어디보자아...\nEastwood...', characterId: 'jisoo', expression: 'blank', pauseBeforeMs: 200 },
+  { id: 'line-010', speaker: '지수', text: '아아 알게써 ㅠㅋㅋㅋㅋ\n어디보자아...\n공항...', characterId: 'jisoo', expression: 'blank', pauseBeforeMs: 200 },
 ];
 
 // Registry of testable Week 1 scenes — /dev/week1 lists these, each linking
@@ -372,6 +373,9 @@ const week1Scenes = [
     // (the route-map image), distinct from this scene's own VN background.
     nextSceneId: 'week1-scene-001-2-minigame',
     minigameId: 'week1-scene-001-2-minigame',
+    // 3-stop sequence for this minigame, in find-order — 배경 DB's 정답 영역
+    // editor uses this to offer one hotspot slot per stop on the shared map image.
+    minigameStages: ['공항 (International Airport)', '이스트우드 (Eastwood)', '마라용 (Marayong)'],
   },
   {
     id: 'week1-scene-002-1',

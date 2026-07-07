@@ -181,6 +181,10 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 
   <div class="hotspot-panel hidden" id="hotspotPanel">
     <div class="section-title" style="margin-top:0">정답 영역 지정</div>
+    <div class="picker hidden" id="hotspotStagePicker">
+      <div class="picker-label">순서</div>
+      <div class="picker-pills" id="hotspotStagePickerPills"></div>
+    </div>
     <div class="hotspot-stage" id="hotspotStage">
       <img id="hotspotImg" alt="">
       <div class="hotspot-marker" id="hotspotMarker"></div>
@@ -289,6 +293,8 @@ const el = {
   cropCancelBtn: document.getElementById('cropCancelBtn'),
   cropSaveBtn: document.getElementById('cropSaveBtn'),
   hotspotPanel: document.getElementById('hotspotPanel'),
+  hotspotStagePicker: document.getElementById('hotspotStagePicker'),
+  hotspotStagePickerPills: document.getElementById('hotspotStagePickerPills'),
   hotspotStage: document.getElementById('hotspotStage'),
   hotspotImg: document.getElementById('hotspotImg'),
   hotspotMarker: document.getElementById('hotspotMarker'),
@@ -653,16 +659,49 @@ el.cropSaveBtn.addEventListener('click', async () => {
    as a { fx, fy, fr } fraction of the image so it works at any resolution. ===== */
 let hotspotState = null;
 let hotspotDrag = null;
+let currentHotspotStageIndex = 0;
+
+// Minigames with more than one sequential target (e.g. the 3-stop station
+// finder) list them in scene.minigameStages; each stop gets its own hotspot
+// slot on the same shared map image. Minigames without that field keep the
+// old single-hotspot behavior.
+function currentMinigameStages() {
+  const scene = currentScene();
+  return (scene && scene.minigameStages && scene.minigameStages.length > 1) ? scene.minigameStages : null;
+}
+function activeHotspotStageIndex() {
+  return currentMinigameStages() ? currentHotspotStageIndex : undefined;
+}
+
+function renderHotspotStagePicker() {
+  const stages = currentMinigameStages();
+  el.hotspotStagePicker.classList.toggle('hidden', !stages);
+  if (!stages) return;
+  el.hotspotStagePickerPills.innerHTML = stages.map((label, i) =>
+    `<button class="pill${i === currentHotspotStageIndex ? ' active' : ''}" data-index="${i}">${escapeHtml(label)}</button>`
+  ).join('');
+  el.hotspotStagePickerPills.querySelectorAll('.pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentHotspotStageIndex = Number(btn.dataset.index);
+      renderHotspotStagePicker();
+      loadHotspotEditor();
+    });
+  });
+}
 
 function renderHotspotSection() {
   const scene = currentScene();
   const show = currentType === 'background' && currentBgKind === 'minigame' && !!(scene && scene.minigameId);
   el.hotspotPanel.classList.toggle('hidden', !show);
-  if (show) loadHotspotEditor();
+  if (!show) return;
+  currentHotspotStageIndex = 0;
+  renderHotspotStagePicker();
+  loadHotspotEditor();
 }
 
 async function loadHotspotEditor() {
   const sceneId = activeBackgroundSceneId();
+  const stageIdx = activeHotspotStageIndex();
   const assetId = DevGameState.getBackgroundId(sceneId);
   const asset = assetId ? await AssetDB.getAsset(assetId) : null;
   if (!asset) {
@@ -685,7 +724,7 @@ async function loadHotspotEditor() {
     el.hotspotImg.style.left = imgLeft + 'px';
     el.hotspotImg.style.top = imgTop + 'px';
 
-    const existing = DevGameState.getMinigameHotspot(sceneId);
+    const existing = DevGameState.getMinigameHotspot(sceneId, stageIdx);
     hotspotState = { imgLeft, imgTop, dispW, dispH };
     el.hotspotSize.value = Math.round((existing ? existing.fr : 0.06) * 100);
     const fx = existing ? existing.fx : 0.5;
@@ -731,7 +770,8 @@ el.hotspotSaveBtn.addEventListener('click', () => {
   if (!hotspotState) return;
   const s = hotspotState;
   const sceneId = activeBackgroundSceneId();
-  DevGameState.setMinigameHotspot(sceneId, {
+  const stageIdx = activeHotspotStageIndex();
+  DevGameState.setMinigameHotspot(sceneId, stageIdx, {
     fx: (s.markerCx - s.imgLeft) / s.dispW,
     fy: (s.markerCy - s.imgTop) / s.dispH,
     fr: s.markerR / s.dispW,
