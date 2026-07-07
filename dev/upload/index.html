@@ -816,12 +816,15 @@ function activeHotspotKind() {
   const scene = currentScene();
   return (scene && scene.roomHotspots) ? 'room' : 'single';
 }
-function getActiveHotspot(sceneId) {
-  if (activeHotspotKind() === 'room') return DevGameState.getRoomHotspots(sceneId)[currentRoomHotspotId] || null;
+async function getActiveHotspot(sceneId) {
+  if (activeHotspotKind() === 'room') {
+    const all = await DevGameState.getRoomHotspots(sceneId);
+    return all[currentRoomHotspotId] || null;
+  }
   return DevGameState.getMinigameHotspot(sceneId, activeHotspotStageIndex());
 }
-function saveActiveHotspot(sceneId, hotspot) {
-  if (activeHotspotKind() === 'room') DevGameState.setRoomHotspot(sceneId, currentRoomHotspotId, hotspot);
+async function saveActiveHotspot(sceneId, hotspot) {
+  if (activeHotspotKind() === 'room') await DevGameState.setRoomHotspot(sceneId, currentRoomHotspotId, hotspot);
   else DevGameState.setMinigameHotspot(sceneId, activeHotspotStageIndex(), hotspot);
 }
 
@@ -841,10 +844,10 @@ function renderHotspotStagePicker() {
   });
 }
 
-function renderHotspotPicker(scene) {
+async function renderHotspotPicker(scene) {
   const sceneId = activeBackgroundSceneId();
   el.hotspotPicker.classList.remove('hidden');
-  const saved = DevGameState.getRoomHotspots(sceneId);
+  const saved = await DevGameState.getRoomHotspots(sceneId);
   el.hotspotPickerPills.innerHTML = scene.roomHotspots.map(h =>
     `<button class="pill${h.id === currentRoomHotspotId ? ' active' : ''}" data-key="${h.id}">${escapeHtml(h.label)}${saved[h.id] ? ' ✓' : ''}</button>`
   ).join('');
@@ -896,7 +899,7 @@ async function loadHotspotEditor() {
   // in the browser's image cache (the asset-list thumbnail above just loaded
   // it), in which case the load can complete synchronously and an onload
   // attached after src would silently never fire.
-  el.hotspotImg.onload = () => {
+  el.hotspotImg.onload = async () => {
     const nw = asset.width, nh = asset.height;
     // The image (and the SVG overlay) are sized to the photo's actual
     // natural pixel dimensions; hotspotCanvas's own CSS transform (below)
@@ -911,7 +914,7 @@ async function loadHotspotEditor() {
     hotspotState = { sceneId, naturalW: nw, naturalH: nh, scale: 1, baseScale: 1, tx: 0, ty: 0 };
     fitHotspotStage();
 
-    const existingPoints = hotspotToPoints(getActiveHotspot(sceneId));
+    const existingPoints = hotspotToPoints(await getActiveHotspot(sceneId));
     if (existingPoints) {
       startHotspotWithPoints(existingPoints.map(p => ({ x: p.x * nw, y: p.y * nh })));
     } else {
@@ -921,7 +924,7 @@ async function loadHotspotEditor() {
     // In room mode, faintly show every *other* already-placed hotspot on
     // this same photo for spatial context while placing the rest.
     if (activeHotspotKind() === 'room') {
-      const all = DevGameState.getRoomHotspots(sceneId);
+      const all = await DevGameState.getRoomHotspots(sceneId);
       el.hotspotOtherPolygons.innerHTML = Object.keys(all)
         .filter(id => id !== currentRoomHotspotId)
         .map(id => {
@@ -1025,16 +1028,24 @@ el.hotspotLeftBtn.addEventListener('click', () => {
   }
 });
 
-el.hotspotRightBtn.addEventListener('click', () => {
+el.hotspotRightBtn.addEventListener('click', async () => {
   if (!hotspotState) return;
   if (hotspotState.mode === 'picking') {
     if (hotspotState.points.length < 3) return;
     startHotspotWithPoints(hotspotState.points.slice());
   } else {
     const s = hotspotState;
-    saveActiveHotspot(s.sceneId, { points: s.points.map(p => ({ x: p.x / s.naturalW, y: p.y / s.naturalH })) });
-    el.hotspotHint.textContent = '저장됐어요. 미니게임에서 이 위치를 정답으로 인식합니다.';
-    if (activeHotspotKind() === 'room') renderHotspotPicker(currentScene());
+    el.hotspotRightBtn.disabled = true;
+    el.hotspotHint.textContent = '저장하는 중...';
+    try {
+      await saveActiveHotspot(s.sceneId, { points: s.points.map(p => ({ x: p.x / s.naturalW, y: p.y / s.naturalH })) });
+      el.hotspotHint.textContent = '저장됐어요. 미니게임에서 이 위치를 정답으로 인식합니다.';
+      if (activeHotspotKind() === 'room') await renderHotspotPicker(currentScene());
+    } catch (err) {
+      el.hotspotHint.textContent = '저장 실패: ' + (err && err.message ? err.message : err);
+    } finally {
+      el.hotspotRightBtn.disabled = false;
+    }
   }
 });
 

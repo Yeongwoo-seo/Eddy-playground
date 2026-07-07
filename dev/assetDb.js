@@ -3,9 +3,12 @@
    dev-assets) with metadata in the dev_assets table, so an upload
    survives closing the app, reinstalling it, or switching devices —
    unlike browser-local IndexedDB/localStorage, which several rounds of
-   on-device testing showed getting silently evicted. Selection state
-   (which asset is assigned to which character) stays in localStorage,
-   backed by navigator.storage.persist() below; it's cheap to redo if lost. */
+   on-device testing showed getting silently evicted. Room-search minigame
+   hotspot positions (which part of a room photo is tappable) live in the
+   same Storage bucket for the same reason — see AssetDB.getRoomHotspots/
+   setRoomHotspot below. Selection state (which asset is assigned to which
+   character/scene) stays in localStorage, backed by
+   navigator.storage.persist() below; it's cheap to redo if lost. */
 
 // Supabase anon key is meant to be public/client-side (that's the whole
 // point of the "anon" role) — same project already used by planner.html.
@@ -177,14 +180,59 @@ const AssetDB = (() => {
     });
   }
 
-  return { addAsset, getAssetsByType, getAsset, deleteAsset, preloadImage };
+  // Room-search minigame hotspot positions ({ [hotspotId]: {x1,y1,x2,y2} }
+  // per sceneId) — stored as one JSON blob per scene directly in the same
+  // Storage bucket the photos themselves live in (no new Postgres table/
+  // columns needed: a deterministic path IS the primary key, and Storage's
+  // upsert header does the overwrite-in-place). This replaces the old
+  // localStorage-only version of this data, which never left the device
+  // that ran /dev/upload — now marking a hotspot's position is visible from
+  // any device/browser immediately, same as the photos already are.
+  const roomHotspotsCache = new Map(); // sceneId -> hotspots map, refreshed on write; a fresh page load refetches once
+  function roomHotspotsPath(sceneId) { return `room-hotspots/${encodeURIComponent(sceneId)}.json`; }
+
+  async function getRoomHotspots(sceneId) {
+    if (!sceneId) return {};
+    if (roomHotspotsCache.has(sceneId)) return roomHotspotsCache.get(sceneId);
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${roomHotspotsPath(sceneId)}?t=${Date.now()}`;
+    try {
+      const res = await fetch(url, { headers: { apikey: SUPABASE_ANON_KEY } });
+      const map = res.ok ? await res.json() : {};
+      roomHotspotsCache.set(sceneId, map);
+      return map;
+    } catch (e) {
+      return roomHotspotsCache.get(sceneId) || {};
+    }
+  }
+
+  async function setRoomHotspot(sceneId, hotspotId, hotspot) {
+    if (!sceneId || !hotspotId) return {};
+    const current = await getRoomHotspots(sceneId);
+    const map = Object.assign({}, current);
+    if (hotspot) map[hotspotId] = hotspot; else delete map[hotspotId];
+    const blob = new Blob([JSON.stringify(map)], { type: 'application/json' });
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${DEV_ASSETS_BUCKET}/${roomHotspotsPath(sceneId)}`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'x-upsert': 'true',
+      },
+      body: blob,
+    });
+    if (!res.ok) throw new Error(`핫스팟 위치 저장 실패 (${res.status}): ${await res.text()}`);
+    roomHotspotsCache.set(sceneId, map);
+    return map;
+  }
+
+  return { addAsset, getAssetsByType, getAsset, deleteAsset, preloadImage, getRoomHotspots, setRoomHotspot };
 })();
 
 const DevGameState = {
   _keys: {
     background: 'mkDevSelectedBackgrounds', characters: 'mkDevSelectedCharacters',
     transforms: 'mkDevCharacterTransforms', minigameHotspots: 'mkDevMinigameHotspots',
-    roomHotspots: 'mkDevRoomHotspots',
   },
 
   // Each scene (or minigame — a minigame's own background is just another
@@ -239,26 +287,16 @@ const DevGameState = {
     localStorage.setItem(this._keys.minigameHotspots, JSON.stringify(map));
   },
 
-  _loadRoomHotspotMap() {
-    try { return JSON.parse(localStorage.getItem(this._keys.roomHotspots)) || {}; }
-    catch (e) { return {}; }
-  },
   // Room-search minigame variant of the hotspot above — a single background
-  // image (one per area, e.g. 'week1-scene-002-2-bed') can hold several
+  // image (one per area, e.g. 'week1-scene-002-2-kitchen') can hold several
   // independently-marked, named tap targets instead of just one, since a
-  // room photo has multiple things to investigate. { [sceneId]: { [hotspotId]: {points:[{x,y},...]} } }.
-  getRoomHotspots(sceneId) {
-    if (!sceneId) return {};
-    return this._loadRoomHotspotMap()[sceneId] || {};
-  },
-  setRoomHotspot(sceneId, hotspotId, hotspot) {
-    if (!sceneId || !hotspotId) return;
-    const map = this._loadRoomHotspotMap();
-    const forScene = Object.assign({}, map[sceneId]);
-    if (hotspot) forScene[hotspotId] = hotspot; else delete forScene[hotspotId];
-    map[sceneId] = forScene;
-    localStorage.setItem(this._keys.roomHotspots, JSON.stringify(map));
-  },
+  // room photo has multiple things to investigate.
+  // { [hotspotId]: {points:[{x,y},...]} } (or an older {x1,y1,x2,y2}
+  // rectangle). Backed by Supabase (AssetDB), not localStorage — see the
+  // comment above AssetDB's roomHotspotsCache. Both methods are now async;
+  // callers must await them.
+  getRoomHotspots(sceneId) { return AssetDB.getRoomHotspots(sceneId); },
+  setRoomHotspot(sceneId, hotspotId, hotspot) { return AssetDB.setRoomHotspot(sceneId, hotspotId, hotspot); },
 
   _loadCharacterMap() {
     try { return JSON.parse(localStorage.getItem(this._keys.characters)) || {}; }
