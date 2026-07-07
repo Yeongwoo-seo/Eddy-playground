@@ -188,6 +188,8 @@ if ('serviceWorker' in navigator) {
 </script>
 <script src="/dev/assetDb.js"></script>
 <script src="/dev/dialogueData.js"></script>
+<script src="/dev/caseFileData.js"></script>
+<script src="/dev/caseFileState.js"></script>
 <script src="/dev/vnPlayer.js"></script>
 <script>
 /* OPERATION MK — WEEK 1 · SCENE 2-2 「핸드폰을 찾아라」 (v3 — 실제 4개 장소
@@ -377,10 +379,23 @@ let state = loadState();
 function saveState() { localStorage.setItem(STATE_KEY, JSON.stringify(state)); }
 
 function hasItem(id) { return state.inventoryItemIds.includes(id); }
+// Mirrors into the CASE FILE menu's shared 소지품 list through this single
+// choke point — every addItem() call site (including the DEV sheet's GIVE
+// buttons) picks this up for free instead of needing its own extra call.
 function addItem(id) {
   if (hasItem(id)) return;
   state.inventoryItemIds.push(id);
   saveState();
+  CaseFileState.addInventoryItem(id);
+}
+
+// UNKNOWN KEY is the one item this build turns into a real Evidence record
+// (plus its starter Questions) — idempotent by id, so it's safe to call
+// from both the real pickup path and the DEV sheet's GIVE KEY shortcut.
+function registerKeyEvidence() {
+  CaseFileState.addEvidence(EVIDENCE_UNKNOWN_KEY);
+  CaseFileState.addQuestion(QUESTION_KEY_ORIGIN);
+  CaseFileState.addQuestion(QUESTION_PHONE_LOCATION);
 }
 
 function hasSearched(hotspotId) { return state.searchedHotspotIds.includes(hotspotId); }
@@ -628,6 +643,7 @@ function handleRightVent() {
       state.flags.keyFound = true;
       state.selectedItemId = null;
       saveState();
+      registerKeyEvidence();
       setMessage('[ 갈고리를 환기구 틈으로 넣었다 ]\n딸깍.\n무언가가 바닥으로 떨어졌다.\n[ 낡은 열쇠를 발견했다 ]');
       renderInventory();
       markProgress();
@@ -1069,6 +1085,7 @@ document.getElementById('btnGiveKey').addEventListener('click', () => {
   state.flags.keyVisible = true;
   state.flags.keyFound = true;
   saveState();
+  registerKeyEvidence();
   renderInventory();
   scheduleForcedPhoneUnlock(600);
 });
@@ -1089,6 +1106,10 @@ document.getElementById('btnClearState').addEventListener('click', () => {
 });
 
 /* ===== Boot ===== */
+// dev/game/index.html never actually loads this scene id (it has no `lines`
+// — MINIGAME_ROUTES and the scene's own `route` field both bypass it), so
+// this is the only place 숙소's map-location visit can be recorded for it.
+CaseFileState.recordSceneVisit('week1-scene-002-2');
 renderTabs();
 renderInventory();
 updateLockState();

@@ -66,6 +66,9 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .sheet-field select{width:100%;background:var(--surface-2);color:var(--text-primary);border:1px solid var(--divider);border-radius:10px;padding:12px 14px;font-size:14px;font-family:inherit}
 .sheet-close{width:100%;margin-top:6px;background:var(--surface-2);color:var(--text-primary);border:1px solid var(--divider);border-radius:10px;padding:13px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--mono);letter-spacing:.06em}
 .sheet-link{display:block;text-align:center;margin-top:14px;font-family:var(--mono);font-size:11px;color:var(--text-muted)}
+.sheet-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.sheet-btn{background:var(--surface-2);color:var(--text-primary);border:1px solid var(--divider);border-radius:10px;padding:11px 8px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--mono)}
+.sheet-btn.danger{color:#D94141;border-color:rgba(217,65,65,.4)}
 
 /* ===== Floating popup: character transform (top-right, doesn't cover the character) ===== */
 .transform-popup{position:absolute;top:calc(52px + env(safe-area-inset-top,0));right:16px;z-index:10;width:190px;background:rgba(8,10,12,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:14px;box-shadow:0 8px 24px rgba(0,0,0,.4)}
@@ -116,7 +119,10 @@ if (window.visualViewport) window.visualViewport.addEventListener('resize', setV
   </div>
 
   <div class="vn-topbar">
-    <a class="vn-btn" href="/dev/">← DEV</a>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span id="caseMenuMount"></span>
+      <a class="vn-btn" href="/dev/">← DEV</a>
+    </div>
     <div style="display:flex;gap:8px">
       <button class="vn-btn dev" id="transformBtn">POS</button>
       <button class="vn-btn dev" id="devBtn">DEV</button>
@@ -162,6 +168,19 @@ if (window.visualViewport) window.visualViewport.addEventListener('resize', setV
       <select id="bgSelect"></select>
     </div>
 
+    <div class="sheet-title">Dev · Case File</div>
+    <div class="sheet-grid">
+      <button class="sheet-btn" id="btnOpenCaseMenu">OPEN CASE MENU</button>
+      <button class="sheet-btn" id="btnAddSampleEvidence">ADD SAMPLE EVIDENCE</button>
+      <button class="sheet-btn" id="btnAddSampleQuestion">ADD SAMPLE QUESTION</button>
+      <button class="sheet-btn" id="btnMarkQuestionPartial">MARK Q PARTIAL</button>
+      <button class="sheet-btn" id="btnMarkQuestionResolved">MARK Q RESOLVED</button>
+      <button class="sheet-btn" id="btnAddSamplePerson">ADD SAMPLE PERSON</button>
+      <button class="sheet-btn" id="btnUnlockMapLocation">UNLOCK MAP LOC</button>
+      <button class="sheet-btn" id="btnAddInventoryItem">ADD INVENTORY ITEM</button>
+      <button class="sheet-btn danger" id="btnClearCaseData">CLEAR CASE DATA</button>
+    </div>
+
     <button class="sheet-close" id="sheetCloseBtn">CLOSE</button>
     <a class="sheet-link" id="uploadLink" href="/dev/upload/">+ 새 이미지 업로드</a>
   </div>
@@ -174,7 +193,10 @@ if ('serviceWorker' in navigator) {
 </script>
 <script src="/dev/assetDb.js"></script>
 <script src="/dev/dialogueData.js"></script>
+<script src="/dev/caseFileData.js"></script>
+<script src="/dev/caseFileState.js"></script>
 <script src="/dev/vnPlayer.js"></script>
+<script src="/dev/caseMenu.js"></script>
 <script>
 // /dev/week1 links here as /dev/game/?scene=<id> — fall back to the first
 // scene so a bare /dev/game/ link still works.
@@ -305,7 +327,7 @@ function playIntro() {
 // 공포 연출이나 과도한 글리치 없이, 플레이어만 위화감을 느끼는 정도로.
 function playEndingSequence() {
   el.frame.classList.add('ending-fade');
-  if (navigator.vibrate) navigator.vibrate(150);
+  if (navigator.vibrate && CaseFileState.getSettings().vibration) navigator.vibrate(150);
   setTimeout(() => {
     el.unknownSignal.classList.add('show');
     setTimeout(() => el.unknownSignal.classList.remove('show'), 700);
@@ -363,8 +385,38 @@ const player = createVNPlayer({
 });
 
 function onTap() {
+  if (caseMenu.isOpen()) return;
   player.tap();
 }
+
+// Text speed is applied by filling in each line's typingSpeedMs where the
+// scene data didn't already author one — vnPlayer.js itself reads
+// line.typingSpeedMs per line, so no change to the shared engine is needed.
+const TEXT_SPEED_MS = { slow: 45, normal: 28, fast: 14, instant: 1 };
+function applyTextSpeedSetting(lines) {
+  const speedMs = TEXT_SPEED_MS[CaseFileState.getSettings().textSpeed] || TEXT_SPEED_MS.normal;
+  return lines.map(l => Object.assign({}, l, { typingSpeedMs: l.typingSpeedMs || speedMs }));
+}
+
+const caseMenu = initCaseMenu({
+  missionTitle: activeSceneData.name,
+  currentSceneId: activeSceneData.id,
+  mountSelector: '#caseMenuMount',
+  onSaveRequested: (slot) => {
+    CaseFileState.saveSlot(slot, {
+      sceneId: activeSceneData.id,
+      lineIndex: player.getState().index,
+      missionTitle: activeSceneData.name,
+    });
+  },
+  onResumeToScene: (sceneId, lineIndex) => {
+    if (sceneId === activeSceneData.id) {
+      player.load(applyTextSpeedSetting(activeLines), lineIndex);
+    } else {
+      location.href = `/dev/game/?scene=${encodeURIComponent(sceneId)}&line=${lineIndex}`;
+    }
+  },
+});
 
 el.uploadLink.href = `/dev/upload/?scene=${encodeURIComponent(activeSceneData.id)}`;
 
@@ -440,6 +492,48 @@ el.bgSelect.addEventListener('change', async (e) => {
   await applyBackground();
 });
 
+/* ===== Dev · Case File debug shortcuts (brief §46) — sample ids include a
+   timestamp so repeated clicks add distinct test rows instead of no-oping
+   against the idempotent-by-id add*() methods. ===== */
+document.getElementById('btnOpenCaseMenu').addEventListener('click', () => {
+  el.sheetOverlay.classList.add('hidden');
+  caseMenu.open();
+});
+document.getElementById('btnAddSampleEvidence').addEventListener('click', () => {
+  CaseFileState.addEvidence({
+    id: 'evidence-sample-' + Date.now(),
+    code: 'E-' + Math.floor(100 + Math.random() * 900),
+    title: '수상한 사진',
+    description: '테스트용 샘플 증거입니다.',
+    discoveredLocationText: '숙소',
+  });
+});
+document.getElementById('btnAddSampleQuestion').addEventListener('click', () => {
+  const title = '테스트용 샘플 의문점입니다.';
+  const added = CaseFileState.addQuestion({ id: 'question-sample-' + Date.now(), title });
+  if (added) caseMenu.notifyNewQuestion(title);
+});
+document.getElementById('btnMarkQuestionPartial').addEventListener('click', () => {
+  const qs = CaseFileState.getQuestions();
+  if (qs.length) CaseFileState.setQuestionStatus(qs[qs.length - 1].id, 'partial');
+});
+document.getElementById('btnMarkQuestionResolved').addEventListener('click', () => {
+  const qs = CaseFileState.getQuestions();
+  if (qs.length) CaseFileState.setQuestionStatus(qs[qs.length - 1].id, 'resolved', '테스트용 해결 내용입니다.');
+});
+document.getElementById('btnAddSamplePerson').addEventListener('click', () => {
+  CaseFileState.addPerson({ id: 'person-sample-' + Date.now(), name: '윤민아', role: '목격자', summary: '테스트용 샘플 인물입니다.', status: 'witness' });
+});
+document.getElementById('btnUnlockMapLocation').addEventListener('click', () => {
+  CaseFileState.unlockMapLocation('circular-quay');
+});
+document.getElementById('btnAddInventoryItem').addEventListener('click', () => {
+  CaseFileState.addInventoryItem('flashlight');
+});
+document.getElementById('btnClearCaseData').addEventListener('click', () => {
+  if (confirm('CASE FILE 데이터를 초기화할까요? (저장 슬롯은 유지됩니다)')) CaseFileState.resetAll();
+});
+
 el.transformBtn.addEventListener('click', (e) => {
   e.stopPropagation();
   const willShow = el.transformPopup.classList.contains('hidden');
@@ -450,11 +544,24 @@ el.transformBtn.addEventListener('click', (e) => {
 // so dragging a slider or hitting 확정 doesn't also advance the dialogue.
 el.transformPopup.addEventListener('click', (e) => e.stopPropagation());
 
+// A ?line=<n> query param (written by 불러오기's cross-scene resume) means
+// this load is resuming a save mid-scene — replaying the full location-card
+// intro every time would be a real annoyance, so it's skipped in that case.
+const resumeLineIndex = (() => {
+  const raw = new URLSearchParams(location.search).get('line');
+  const n = raw === null ? NaN : parseInt(raw, 10);
+  return Number.isInteger(n) && n >= 0 ? n : null;
+})();
+
 (async function init() {
   await applyBackground();
   await preloadCharacterAssetsForLines(activeLines);
-  await playIntro();
-  player.load(activeLines);
+  if (resumeLineIndex === null) {
+    await playIntro();
+  } else {
+    el.introOverlay.classList.add('hidden');
+  }
+  player.load(applyTextSpeedSetting(activeLines), resumeLineIndex || 0);
 })();
 </script>
 </body>
