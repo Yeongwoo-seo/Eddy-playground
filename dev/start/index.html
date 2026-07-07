@@ -271,16 +271,23 @@ function makeDraggable(buttonEl, posKey, onTap) {
     };
     renderBtnPos();
   });
-  // Keep the pressed-darken visible for a beat after release instead of
-  // snapping off the instant the finger lifts, so it actually reads as
-  // feedback rather than a flicker.
+  // A tap (as opposed to an actual drag) holds the pressed-darken for 0.3s,
+  // clears it, then waits another 0.2s of plain state before firing onTap —
+  // otherwise onTap (navigation) fires instantly and the page is gone before
+  // the darken is ever seen.
   ['pointerup', 'pointercancel'].forEach(evt => buttonEl.addEventListener(evt, () => {
     if (!drag) return;
+    const wasTap = drag.real || !drag.moved;
     clearTimeout(pressedTimer);
-    pressedTimer = setTimeout(() => buttonEl.classList.remove('pressed'), 500);
-    if (drag.real) { onTap(); drag = null; return; }
-    if (drag.moved) saveBtnPos();
-    else onTap();
+    if (wasTap) {
+      pressedTimer = setTimeout(() => {
+        buttonEl.classList.remove('pressed');
+        setTimeout(onTap, 200);
+      }, 300);
+    } else {
+      buttonEl.classList.remove('pressed');
+      saveBtnPos();
+    }
     drag = null;
   }));
 }
