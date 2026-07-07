@@ -39,8 +39,8 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .foot{margin-top:auto;padding-top:32px;font-family:var(--mono);font-size:10.5px;color:var(--text-muted);letter-spacing:.06em;text-align:center}
 .build-badge{position:absolute;top:calc(14px + env(safe-area-inset-top,0));right:16px;font-family:var(--mono);font-size:9.5px;color:var(--text-muted);background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:6px 10px;letter-spacing:.02em;max-width:180px;text-align:right;line-height:1.5;white-space:pre-line}
 
-/* Floating CTA — jumps straight to the app start screen set up in
-   /dev/start/, so testers don't need the removed menu list item for it. */
+/* Floating CTA — jumps straight to the real play environment (/play/test/),
+   which renders whatever was configured in /dev/start/ with no dev chrome. */
 .float-test-btn{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0));transform:translateX(-50%);z-index:20;display:flex;align-items:center;gap:8px;background:var(--amber);color:#1a1206;font-family:var(--mono);font-weight:700;font-size:13.5px;letter-spacing:.03em;padding:14px 24px;border-radius:999px;text-decoration:none;box-shadow:0 6px 24px rgba(0,0,0,.4);white-space:nowrap;transition:transform .12s}
 .float-test-btn:active{transform:translateX(-50%) scale(.96)}
 </style>
@@ -82,7 +82,7 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
   <div class="foot">MVP v0.2 · NOT PART OF FINAL GAME</div>
 </div>
 
-<a class="float-test-btn" href="/dev/start/?real=1">🎮 게임 테스트 시작</a>
+<a class="float-test-btn" href="/play/test/">🎮 게임 테스트 시작</a>
 
 <script>
 if ('serviceWorker' in navigator) {
