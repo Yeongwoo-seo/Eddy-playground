@@ -26,6 +26,7 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .frame{width:100%;max-width:430px;min-height:100dvh;min-height:100vh;padding:calc(48px + env(safe-area-inset-top,0)) 20px calc(32px + env(safe-area-inset-bottom,0));display:flex;flex-direction:column}
 .tag{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px}
 .title{font-size:26px;font-weight:700;letter-spacing:-.2px;margin-bottom:10px}
+.title .accent{color:#E8741E}
 .sub{font-size:14px;color:var(--text-secondary);margin-bottom:40px;line-height:1.6}
 .menu{display:flex;flex-direction:column;gap:14px}
 .menu-btn{display:flex;align-items:center;gap:14px;background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:20px;text-decoration:none;color:inherit;transition:transform .15s,background .15s}
@@ -42,8 +43,8 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 <body>
 <div class="frame" style="position:relative">
   <div class="build-badge" id="buildBadge">빌드 정보 확인 중…</div>
-  <div class="tag">Operation MK</div>
-  <div class="title">DEV</div>
+  <div class="tag">Operation MK · DEV</div>
+  <div class="title">The <span class="accent">M</span>issing <span class="accent">K</span>ey</div>
   <div class="sub">비주얼노벨 대화 UX와 배경·캐릭터 업로드 흐름만 검증하는 개발용 페이지입니다.</div>
 
   <div class="menu">
