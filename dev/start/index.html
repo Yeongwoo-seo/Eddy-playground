@@ -27,30 +27,40 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 /* Full-bleed title screen — this is what a player sees the instant the app
    opens, so it fills the whole frame instead of the usual scrolling page
    layout the other /dev pages use. */
-.frame{position:relative;width:100%;max-width:430px;min-height:100dvh;min-height:100vh;overflow:hidden}
+.frame{position:relative;width:100%;max-width:430px;min-height:100dvh;min-height:100vh;overflow:hidden;touch-action:none}
 
-.bg-layer{position:absolute;inset:0;background-size:cover;background-position:center;background-color:#0d1114;transition:background-image .2s ease}
+.bg-layer{position:absolute;inset:0;background-size:cover;background-color:#0d1114;transition:background-image .2s ease;cursor:grab}
 .bg-layer.placeholder{background-image:linear-gradient(160deg,#171c22 0%,#0d1114 60%,#080a0c 100%)}
-.bg-scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(5,7,10,.35) 0%,rgba(5,7,10,.15) 40%,rgba(5,7,10,.9) 100%)}
+.bg-layer.dragging{cursor:grabbing}
+.bg-scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(5,7,10,.35) 0%,rgba(5,7,10,.15) 40%,rgba(5,7,10,.9) 100%);pointer-events:none}
 
 .topbar{position:absolute;top:0;left:0;right:0;z-index:5;padding:calc(14px + env(safe-area-inset-top,0)) 16px 0;display:flex;justify-content:space-between;align-items:center}
 .back-btn{width:36px;height:36px;border-radius:50%;background:rgba(8,10,12,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.14);color:#fff;display:flex;align-items:center;justify-content:center;text-decoration:none;flex-shrink:0}
 .bg-upload-btn{font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;color:#fff;background:rgba(8,10,12,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:9px 13px;cursor:pointer}
+.drag-hint{position:absolute;top:calc(58px + env(safe-area-inset-top,0));left:0;right:0;z-index:4;text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:.05em;color:rgba(255,255,255,.55);pointer-events:none}
 
-.content{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:0 28px calc(48px + env(safe-area-inset-bottom,0));display:flex;flex-direction:column;align-items:center;text-align:center}
+.logo-wrap{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);z-index:2;width:calc(100% - 56px);text-align:center;pointer-events:none}
 .game-tag{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--text-secondary);text-transform:uppercase;margin-bottom:10px}
-.game-title{font-size:34px;font-weight:800;letter-spacing:-.3px;margin-bottom:8px}
+.game-title{font-size:34px;font-weight:800;letter-spacing:-.3px}
 .game-title .accent{color:var(--amber)}
-.game-sub{font-size:13px;color:var(--text-secondary);margin-bottom:36px;line-height:1.6}
 
-.start-btn{width:100%;background:var(--cyan);color:#06181c;border:none;border-radius:14px;padding:17px;font-size:15px;font-weight:700;cursor:pointer;font-family:var(--mono);letter-spacing:.05em}
-.start-btn:active{opacity:.85}
-.reset-bg-link{margin-top:16px;font-family:var(--mono);font-size:11px;color:var(--text-muted);background:none;border:none;cursor:pointer;text-decoration:underline}
+.reset-bg-link{position:absolute;left:50%;bottom:calc(10px + env(safe-area-inset-bottom,0));transform:translateX(-50%);z-index:3;font-family:var(--mono);font-size:11px;color:var(--text-muted);background:rgba(8,10,12,.5);border:none;border-radius:12px;padding:5px 10px;cursor:pointer;text-decoration:underline}
 .reset-bg-link.hidden{display:none}
+
+/* Freely-positioned buttons: dragged to place, tapped to trigger. Position
+   is stored as a fraction of the frame so it stays put across reloads and
+   viewport sizes. */
+.float-btn{position:absolute;transform:translate(-50%,-50%);z-index:3;padding:16px 30px;border-radius:14px;font-family:var(--mono);font-weight:700;font-size:14px;letter-spacing:.05em;cursor:grab;user-select:none;touch-action:none;white-space:nowrap;filter:brightness(1);transition:filter .1s}
+.float-btn.pressed{filter:brightness(.6)}
+.float-btn.start{background:var(--cyan);color:#06181c;border:none}
+.float-btn.load{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.24);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+
+.toast{position:absolute;left:50%;top:calc(112px + env(safe-area-inset-top,0));transform:translateX(-50%);z-index:8;background:rgba(8,10,12,.9);color:#fff;font-size:12.5px;padding:11px 16px;border-radius:12px;border:1px solid rgba(255,255,255,.14);opacity:0;pointer-events:none;transition:opacity .25s;max-width:calc(100% - 56px);text-align:center}
+.toast.show{opacity:1}
 </style>
 </head>
 <body>
-<div class="frame">
+<div class="frame" id="frame">
   <div class="bg-layer placeholder" id="bgLayer"></div>
   <div class="bg-scrim"></div>
 
@@ -59,14 +69,18 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
     <button class="bg-upload-btn" id="bgUploadBtn">배경 이미지 테스트</button>
     <input type="file" id="bgInput" accept="image/jpeg,image/png,image/webp" style="display:none">
   </div>
+  <div class="drag-hint">배경을 드래그하면 위치가 조정돼요</div>
 
-  <div class="content">
+  <div class="logo-wrap">
     <div class="game-tag">Operation MK</div>
     <div class="game-title">The <span class="accent">M</span>issing <span class="accent">K</span>ey</div>
-    <div class="game-sub">앱을 처음 열었을 때 보이는 타이틀 화면입니다</div>
-    <button class="start-btn" id="startBtn">시작하기 →</button>
-    <button class="reset-bg-link hidden" id="resetBgBtn">기본 배경으로 초기화</button>
   </div>
+
+  <button class="float-btn start" id="startBtn">시작하기</button>
+  <button class="float-btn load" id="loadBtn">불러오기</button>
+
+  <button class="reset-bg-link hidden" id="resetBgBtn">기본 배경으로 초기화</button>
+  <div class="toast" id="toast"></div>
 </div>
 
 <script>
@@ -75,19 +89,35 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 <script>
-// Custom title background is only a local preview aid for testers — stored
-// in localStorage as a data URL so it survives a reload without needing any
-// upload/storage backend (this screen isn't part of the asset DB the other
-// /dev pages share).
-const STORAGE_KEY = 'mkDevStartScreenBg';
+// Everything below is local-preview state for testers — no backend involved.
+// Background image/position and button placement persist in localStorage so
+// a layout arrangement survives a reload.
+const BG_IMG_KEY = 'mkDevStartScreenBg';
+const BG_POS_KEY = 'mkDevStartScreenBgPos';
+const BTN_POS_KEY = 'mkDevStartScreenBtnPos';
+const DRAG_THRESHOLD = 6; // px of movement before a press counts as a drag, not a tap
 
 const el = {
+  frame: document.getElementById('frame'),
   bgLayer: document.getElementById('bgLayer'),
   bgUploadBtn: document.getElementById('bgUploadBtn'),
   bgInput: document.getElementById('bgInput'),
   resetBgBtn: document.getElementById('resetBgBtn'),
   startBtn: document.getElementById('startBtn'),
+  loadBtn: document.getElementById('loadBtn'),
+  toast: document.getElementById('toast'),
 };
+
+/* ===== Background image + drag-to-pan position ===== */
+function loadBgPos() {
+  try { return JSON.parse(localStorage.getItem(BG_POS_KEY)) || { x: 50, y: 50 }; }
+  catch (e) { return { x: 50, y: 50 }; }
+}
+let bgPos = loadBgPos();
+
+function renderBgPos() {
+  el.bgLayer.style.backgroundPosition = `${bgPos.x}% ${bgPos.y}%`;
+}
 
 function applyBackground(dataUrl) {
   if (dataUrl) {
@@ -107,22 +137,104 @@ el.bgInput.addEventListener('change', () => {
   if (!file || !file.type.startsWith('image/')) return;
   const reader = new FileReader();
   reader.onload = () => {
-    localStorage.setItem(STORAGE_KEY, reader.result);
+    localStorage.setItem(BG_IMG_KEY, reader.result);
     applyBackground(reader.result);
   };
   reader.readAsDataURL(file);
 });
 
 el.resetBgBtn.addEventListener('click', () => {
-  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(BG_IMG_KEY);
   applyBackground(null);
 });
 
-el.startBtn.addEventListener('click', () => {
-  location.href = '/dev/week1/';
+let bgDrag = null;
+el.bgLayer.addEventListener('pointerdown', (e) => {
+  el.bgLayer.setPointerCapture(e.pointerId);
+  el.bgLayer.classList.add('dragging');
+  bgDrag = { x: e.clientX, y: e.clientY, startPos: { ...bgPos } };
 });
+el.bgLayer.addEventListener('pointermove', (e) => {
+  if (!bgDrag) return;
+  const rect = el.frame.getBoundingClientRect();
+  const dx = e.clientX - bgDrag.x, dy = e.clientY - bgDrag.y;
+  bgPos = {
+    x: clamp(bgDrag.startPos.x - (dx / rect.width) * 100, 0, 100),
+    y: clamp(bgDrag.startPos.y - (dy / rect.height) * 100, 0, 100),
+  };
+  renderBgPos();
+});
+['pointerup', 'pointercancel'].forEach(evt => el.bgLayer.addEventListener(evt, () => {
+  if (!bgDrag) return;
+  bgDrag = null;
+  el.bgLayer.classList.remove('dragging');
+  localStorage.setItem(BG_POS_KEY, JSON.stringify(bgPos));
+}));
 
-applyBackground(localStorage.getItem(STORAGE_KEY));
+function clamp(v, min, max) { return Math.min(Math.max(v, min), max); }
+
+/* ===== Freely-positioned 시작하기 / 불러오기 buttons ===== */
+function loadBtnPos() {
+  try {
+    return Object.assign({ start: { x: 50, y: 80 }, load: { x: 50, y: 90 } }, JSON.parse(localStorage.getItem(BTN_POS_KEY)));
+  } catch (e) {
+    return { start: { x: 50, y: 80 }, load: { x: 50, y: 90 } };
+  }
+}
+let btnPos = loadBtnPos();
+
+function renderBtnPos() {
+  el.startBtn.style.left = btnPos.start.x + '%';
+  el.startBtn.style.top = btnPos.start.y + '%';
+  el.loadBtn.style.left = btnPos.load.x + '%';
+  el.loadBtn.style.top = btnPos.load.y + '%';
+}
+
+function saveBtnPos() {
+  localStorage.setItem(BTN_POS_KEY, JSON.stringify(btnPos));
+}
+
+function showToast(message) {
+  el.toast.textContent = message;
+  el.toast.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => el.toast.classList.remove('show'), 1800);
+}
+
+function makeDraggable(buttonEl, posKey, onTap) {
+  let drag = null;
+  buttonEl.addEventListener('pointerdown', (e) => {
+    buttonEl.setPointerCapture(e.pointerId);
+    buttonEl.classList.add('pressed');
+    const rect = el.frame.getBoundingClientRect();
+    drag = { x: e.clientX, y: e.clientY, startPos: { ...btnPos[posKey] }, rect, moved: false };
+  });
+  buttonEl.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if (Math.hypot(dx, dy) > DRAG_THRESHOLD) drag.moved = true;
+    if (!drag.moved) return;
+    btnPos[posKey] = {
+      x: clamp(drag.startPos.x + (dx / drag.rect.width) * 100, 6, 94),
+      y: clamp(drag.startPos.y + (dy / drag.rect.height) * 100, 6, 94),
+    };
+    renderBtnPos();
+  });
+  ['pointerup', 'pointercancel'].forEach(evt => buttonEl.addEventListener(evt, () => {
+    if (!drag) return;
+    buttonEl.classList.remove('pressed');
+    if (drag.moved) saveBtnPos();
+    else onTap();
+    drag = null;
+  }));
+}
+
+makeDraggable(el.startBtn, 'start', () => { location.href = '/dev/week1/'; });
+makeDraggable(el.loadBtn, 'load', () => showToast('불러오기 기능은 아직 준비 중입니다 (테스트 버튼)'));
+
+renderBgPos();
+renderBtnPos();
+applyBackground(localStorage.getItem(BG_IMG_KEY));
 </script>
 </body>
 </html>
