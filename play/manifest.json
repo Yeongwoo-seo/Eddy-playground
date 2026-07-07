@@ -1,0 +1,17 @@
+{
+  "name": "The Missing Key",
+  "short_name": "Missing Key",
+  "description": "OPERATION MK · 실제 플레이 환경",
+  "start_url": "/play/test/",
+  "scope": "/play/",
+  "id": "operation-mk-play",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#080A0C",
+  "theme_color": "#080A0C",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
