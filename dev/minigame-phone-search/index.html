@@ -58,28 +58,48 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 
 .result-strip{flex-shrink:0;margin-top:10px;background:rgba(255,255,255,.03);border:1px dashed var(--divider);border-radius:12px;padding:12px 14px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:var(--cyan);white-space:pre-wrap;word-break:keep-all;min-height:1.6em}
 .room-view.locked{pointer-events:none;opacity:.5}
-
-/* ===== Inventory list ===== */
-.inv-list{flex-shrink:0;display:flex;flex-direction:column;gap:8px;padding:10px 16px;border-top:1px solid var(--divider);max-height:180px;overflow-y:auto;transition:opacity .3s ease}
-.inv-list.hidden{display:none}
-.inv-list-label{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase}
-.inv-row{display:flex;align-items:center;gap:10px;background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:9px 12px;cursor:pointer;transition:background .15s,border-color .15s}
-.inv-row.fixed{cursor:default}
-.inv-row.selected{background:rgba(89,184,200,.14);border-color:var(--cyan)}
-.inv-row-icon{font-size:19px;width:26px;text-align:center;flex-shrink:0}
-.inv-row-name{font-size:13.5px;font-weight:600;flex:1}
-.inv-row-tag{font-family:var(--mono);font-size:9.5px;color:var(--cyan);letter-spacing:.05em;flex-shrink:0}
-.inv-row-action{flex-shrink:0;font-family:var(--mono);font-size:10.5px;color:var(--text-secondary);background:rgba(255,255,255,.06);border:1px solid var(--divider);border-radius:10px;padding:5px 9px;cursor:pointer}
-.inv-row-action:active{background:rgba(255,255,255,.12)}
-.inv-empty{font-family:var(--mono);font-size:11px;color:var(--text-muted);padding:2px}
 .debug-hotspot-box{position:absolute;border:1px dashed var(--cyan);background:rgba(89,184,200,.12);color:var(--cyan);font-family:var(--mono);font-size:9px;line-height:1.3;padding:1px 3px;pointer-events:none;overflow:hidden;white-space:nowrap}
 
-/* ===== Area tabs ===== */
-.tab-bar{flex-shrink:0;display:flex;border-top:1px solid var(--divider);padding-bottom:env(safe-area-inset-bottom,0);transition:opacity .3s ease}
-.tab-bar.hidden{display:none}
-.tab-btn{flex:1;background:none;border:none;color:var(--text-muted);font-family:var(--sans);font-size:13px;font-weight:600;padding:13px 4px;cursor:pointer;position:relative}
-.tab-btn.active{color:var(--amber)}
-.tab-btn.active::after{content:'';position:absolute;top:0;left:20%;right:20%;height:2px;background:var(--amber);border-radius:2px}
+/* ===== Floating action buttons — replace the old always-visible area tabs
+   + inventory list, freeing the room view to fill the screen. ===== */
+.fab-row{position:absolute;left:0;right:0;bottom:0;z-index:6;display:flex;justify-content:space-between;padding:0 16px calc(16px + env(safe-area-inset-bottom,0));pointer-events:none;transition:opacity .3s ease}
+.fab-row.hidden{display:none}
+.fab-btn{pointer-events:auto;width:64px;height:64px;border-radius:20px;background:var(--surface-1);border:1px solid var(--divider);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.45)}
+.fab-btn:active{transform:scale(.95);background:var(--surface-2)}
+.fab-btn .fab-icon{font-size:22px;line-height:1}
+.fab-btn .fab-label{font-family:var(--mono);font-size:9.5px;color:var(--text-secondary);letter-spacing:.02em}
+
+/* ===== Item popup — icon-only grid, tap to select/combine (no text list,
+   no separate 조사/조합 confirm buttons — tapping IS the action). ===== */
+.popup-scrim{position:absolute;inset:0;z-index:5;background:rgba(0,0,0,.4);display:none}
+.popup-scrim.show{display:block}
+.item-popup{position:absolute;left:16px;bottom:calc(96px + env(safe-area-inset-bottom,0));z-index:5;background:var(--surface-1);border:1px solid var(--divider);border-radius:18px;padding:14px;display:none;box-shadow:0 12px 32px rgba(0,0,0,.5);max-width:calc(100% - 32px)}
+.item-popup.show{display:block}
+.item-popup-title{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase;margin-bottom:10px}
+.item-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:264px;max-height:38vh;overflow-y:auto}
+.item-icon-btn{width:56px;height:56px;border-radius:14px;background:var(--surface-2);border:2px solid transparent;font-size:26px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.item-icon-btn.selected{border-color:var(--cyan);background:rgba(89,184,200,.14)}
+.item-empty{font-family:var(--mono);font-size:11px;color:var(--text-muted);padding:6px 2px}
+
+/* Anchored at the bottom-right of whichever icon was just tapped. */
+.item-tooltip{position:absolute;z-index:6;background:rgba(5,7,10,.95);border:1px solid var(--divider);border-radius:12px;padding:10px 12px;max-width:180px;display:none;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.item-tooltip.show{display:block}
+.item-tooltip-name{font-size:13px;font-weight:700;color:var(--cyan);margin-bottom:3px}
+.item-tooltip-desc{font-size:11.5px;color:var(--text-secondary);line-height:1.5}
+
+/* ===== Move popup — replaces the always-visible area tab bar. ===== */
+.move-popup{position:absolute;right:16px;bottom:calc(96px + env(safe-area-inset-bottom,0));z-index:5;background:var(--surface-1);border:1px solid var(--divider);border-radius:18px;padding:10px;display:none;box-shadow:0 12px 32px rgba(0,0,0,.5);min-width:160px}
+.move-popup.show{display:block}
+.move-popup-title{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase;padding:4px 8px 8px}
+.move-item-btn{display:block;width:100%;text-align:left;background:none;border:none;color:var(--text-primary);font-family:var(--sans);font-size:14px;font-weight:600;padding:11px 10px;border-radius:10px;cursor:pointer}
+.move-item-btn.active{color:var(--amber);background:rgba(214,168,75,.1)}
+.move-item-btn:active{background:var(--surface-2)}
+
+/* ===== Item-acquired toast — centered, slides up gently from below. ===== */
+.acquire-toast{position:absolute;left:50%;top:42%;transform:translate(-50%,16px);z-index:7;background:rgba(5,7,10,.94);border:1px solid rgba(89,184,200,.4);border-radius:16px;padding:16px 22px;display:flex;align-items:center;gap:10px;opacity:0;pointer-events:none;transition:opacity .35s ease,transform .35s ease;box-shadow:0 12px 32px rgba(0,0,0,.5)}
+.acquire-toast.show{opacity:1;transform:translate(-50%,0)}
+.acquire-toast-icon{font-size:26px;line-height:1}
+.acquire-toast-text{font-size:14.5px;font-weight:700;color:#fff}
 
 /* ===== Dialogue popup (tap-through, reused vnPlayer engine) ===== */
 .msg-layer{position:absolute;inset:0;z-index:8;display:none;flex-direction:column;justify-content:flex-end;cursor:pointer}
@@ -135,9 +155,31 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
     <div class="result-strip" id="resultStrip"></div>
   </div>
 
-  <div class="inv-list" id="invList"></div>
+  <div class="popup-scrim" id="popupScrim"></div>
 
-  <div class="tab-bar" id="tabBar"></div>
+  <div class="item-popup" id="itemPopup">
+    <div class="item-popup-title">인벤토리</div>
+    <div class="item-grid" id="itemGrid"></div>
+  </div>
+  <div class="item-tooltip" id="itemTooltip">
+    <div class="item-tooltip-name" id="itemTooltipName"></div>
+    <div class="item-tooltip-desc" id="itemTooltipDesc"></div>
+  </div>
+
+  <div class="move-popup" id="movePopup">
+    <div class="move-popup-title">이동</div>
+    <div id="moveList"></div>
+  </div>
+
+  <div class="fab-row" id="fabRow">
+    <button class="fab-btn" id="itemFabBtn"><span class="fab-icon">🎒</span><span class="fab-label">아이템</span></button>
+    <button class="fab-btn" id="moveFabBtn"><span class="fab-icon">🚪</span><span class="fab-label">이동</span></button>
+  </div>
+
+  <div class="acquire-toast" id="acquireToast">
+    <span class="acquire-toast-icon" id="acquireToastIcon"></span>
+    <span class="acquire-toast-text" id="acquireToastText"></span>
+  </div>
 
   <div class="msg-layer" id="msgLayer">
     <div class="msg-scrim"></div>
@@ -348,7 +390,6 @@ function defaultState() {
     currentAreaId: roomSearchAreas[0].id,
     inventoryItemIds: [],
     selectedItemId: null,
-    combineMode: { active: false, firstItemId: null },
     searchedHotspotIds: [],
     searchCounts: {},
     flags: {
@@ -370,7 +411,6 @@ function loadState() {
     const base = defaultState();
     return Object.assign(base, raw, {
       flags: Object.assign(base.flags, raw.flags || {}),
-      combineMode: Object.assign(base.combineMode, raw.combineMode || {}),
       searchCounts: Object.assign(base.searchCounts, raw.searchCounts || {}),
     });
   } catch (e) { return defaultState(); }
@@ -388,6 +428,26 @@ function addItem(id) {
   state.inventoryItemIds.push(id);
   saveState();
   CaseFileState.addInventoryItem(id);
+  showAcquireToast(id);
+}
+
+// 을/를 particle by Hangul batchim — final consonant present -> 을, else 를.
+function withEulReul(name) {
+  const lastChar = name.charCodeAt(name.length - 1);
+  if (lastChar < 0xAC00 || lastChar > 0xD7A3) return name + '를';
+  return name + ((lastChar - 0xAC00) % 28 === 0 ? '를' : '을');
+}
+let acquireToastTimer = null;
+function showAcquireToast(itemId) {
+  const def = ITEM_DEFS[itemId];
+  if (!def) return;
+  clearTimeout(acquireToastTimer);
+  el.acquireToast.classList.remove('show');
+  el.acquireToastIcon.textContent = def.icon;
+  el.acquireToastText.textContent = `${withEulReul(def.name)} 획득했습니다.`;
+  void el.acquireToast.offsetWidth; // restart the slide-up transition if still showing
+  el.acquireToast.classList.add('show');
+  acquireToastTimer = setTimeout(() => el.acquireToast.classList.remove('show'), 1800);
 }
 
 // UNKNOWN KEY is the one item this build turns into a real Evidence record
@@ -448,8 +508,20 @@ const el = {
   gridScroll: document.getElementById('gridScroll'),
   hotspotGrid: document.getElementById('hotspotGrid'),
   resultStrip: document.getElementById('resultStrip'),
-  invList: document.getElementById('invList'),
-  tabBar: document.getElementById('tabBar'),
+  popupScrim: document.getElementById('popupScrim'),
+  itemPopup: document.getElementById('itemPopup'),
+  itemGrid: document.getElementById('itemGrid'),
+  itemTooltip: document.getElementById('itemTooltip'),
+  itemTooltipName: document.getElementById('itemTooltipName'),
+  itemTooltipDesc: document.getElementById('itemTooltipDesc'),
+  movePopup: document.getElementById('movePopup'),
+  moveList: document.getElementById('moveList'),
+  fabRow: document.getElementById('fabRow'),
+  itemFabBtn: document.getElementById('itemFabBtn'),
+  moveFabBtn: document.getElementById('moveFabBtn'),
+  acquireToast: document.getElementById('acquireToast'),
+  acquireToastIcon: document.getElementById('acquireToastIcon'),
+  acquireToastText: document.getElementById('acquireToastText'),
   msgLayer: document.getElementById('msgLayer'),
   msgName: document.getElementById('msgName'),
   msgText: document.getElementById('msgText'),
@@ -544,7 +616,7 @@ function handleKitchenBatteryDrawer() {
   if (hasItem('aa-batteries')) { setMessage('서랍은 비어 있다.'); return; }
   addItem('aa-batteries');
   setMessage('[ 서랍을 열었다 ]\n[ AA 건전지 2개를 발견했다 ]');
-  renderInventory();
+  renderItemGrid();
   markProgress();
 }
 function handleKitchenPots() {
@@ -595,7 +667,7 @@ function handleBathroomBehindDoor() {
   if (hasItem('metal-hanger')) { setMessage('더 이상 걸려 있는 것이 없다.'); return; }
   addItem('metal-hanger');
   setMessage('문 뒤에 무언가 걸려 있다.\n[ 철제 옷걸이를 발견했다 ]');
-  renderInventory();
+  renderItemGrid();
   markProgress();
   queueDialogue(HOOK_LINES);
 }
@@ -610,7 +682,7 @@ function handleExteriorCenterShrubs() {
   }
   addItem('garden-stake');
   setMessage('가지 사이에 긴 막대 같은 것이 보인다.\n[ 정원용 지지대를 발견했다 ]');
-  renderInventory();
+  renderItemGrid();
   markProgress();
 }
 function handleExteriorExtensionWindows() {
@@ -623,7 +695,7 @@ function handleBedsideTable() {
   if (hasItem('dead-flashlight')) { setMessage('협탁 위엔 더 볼 게 없다.'); return; }
   addItem('dead-flashlight');
   setMessage('[ 협탁을 확인했다 ]\n[ 손전등을 발견했다 ]');
-  renderInventory();
+  renderItemGrid();
   markProgress();
 }
 function handleBlind() {
@@ -646,7 +718,7 @@ function handleRightVent() {
       saveState();
       registerKeyEvidence();
       setMessage('[ 갈고리를 환기구 틈으로 넣었다 ]\n딸깍.\n무언가가 바닥으로 떨어졌다.\n[ 낡은 열쇠를 발견했다 ]');
-      renderInventory();
+      renderItemGrid();
       markProgress();
       scheduleForcedPhoneUnlock(900);
     } else {
@@ -697,7 +769,7 @@ function onHotspotTap(hotspotId) {
     if (hasItem(decoy.itemId)) { setMessage('이미 확인했다.'); return; }
     addItem(decoy.itemId);
     setMessage(decoy.message);
-    renderInventory();
+    renderItemGrid();
     markProgress();
     return;
   }
@@ -712,7 +784,7 @@ function handlePhoneFound() {
   state.flags.phoneFound = true;
   state.completed = true;
   saveState();
-  renderInventory();
+  renderItemGrid();
   updateLockState();
   setMessage('부우웅—');
   if (navigator.vibrate) navigator.vibrate([120, 80, 160]);
@@ -964,120 +1036,161 @@ function renderRoomView(area) {
   el.resultStrip.textContent = state.lastMessage;
 }
 
-/* ===== Inventory list + 2-item combine mode (section 9/10/23) ===== */
-function selectItem(itemId) {
-  if (state.completed) return;
+/* ===== Item popup — icon grid, no text list. Tapping an item selects it
+   (tooltip anchored at the icon); tapping a second, different item judges
+   combinability automatically — a match auto-combines, a non-match is a
+   total no-op ("무반응", per the brief — no message, no state change).
+   Tapping the same item again deselects it. selectedItemId doubles as the
+   "item in hand" the room hotspot handlers above already check for
+   (state.selectedItemId === 'long-hook' etc.), so closing the popup keeps
+   whatever was selected active for use on the room photo. ===== */
+function canActivateItem(itemId) {
   const def = ITEM_DEFS[itemId];
-  if (!def || !def.selectable) return;
-  state.selectedItemId = (state.selectedItemId === itemId) ? null : itemId;
-  saveState();
-  renderInventory();
+  return !!def && (def.selectable || isCombinable(itemId));
 }
 
-function startCombine(itemId) {
-  state.combineMode = { active: true, firstItemId: itemId };
-  state.selectedItemId = null;
-  saveState();
-  renderInventory();
-  setMessage(`${ITEM_DEFS[itemId].name}과(와) 조합할 아이템을 선택하세요.`);
-}
-function cancelCombine() {
-  state.combineMode = { active: false, firstItemId: null };
-  saveState();
-  renderInventory();
-}
-function attemptCombine(secondItemId) {
-  const firstId = state.combineMode.firstItemId;
-  cancelCombine();
-  if (firstId === secondItemId) { setMessage('같은 아이템끼리는 조합할 수 없다.'); return; }
-  const recipe = findRecipe(firstId, secondItemId);
-  if (!recipe) { setMessage('서로 어울리지 않는다.'); return; }
+function performCombine(recipe) {
   if (recipe.consumeInputItems) {
-    state.inventoryItemIds = state.inventoryItemIds.filter(id => id !== firstId && id !== secondItemId);
+    state.inventoryItemIds = state.inventoryItemIds.filter(id => !recipe.inputItemIds.includes(id));
   }
   state.inventoryItemIds.push(recipe.outputItemId);
   state.selectedItemId = null;
   saveState();
-  renderInventory();
+  hideItemTooltip();
+  renderItemGrid();
   setMessage(`[ ${recipe.successMessage} ]`);
   markProgress();
 }
-function onInventoryRowClick(itemId) {
+
+function onItemIconTap(itemId, btnEl) {
   if (state.completed) return;
-  if (state.combineMode.active) {
-    if (itemId === state.combineMode.firstItemId) { cancelCombine(); return; }
-    if (!isCombinable(itemId)) { setMessage('이 아이템은 조합할 수 없다.'); return; }
-    attemptCombine(itemId);
+  const def = ITEM_DEFS[itemId];
+  if (!def) return;
+
+  if (state.selectedItemId && state.selectedItemId !== itemId) {
+    const recipe = findRecipe(state.selectedItemId, itemId);
+    if (recipe) performCombine(recipe);
+    return; // no recipe -> 무반응, leave everything exactly as it was
+  }
+
+  if (state.selectedItemId === itemId) {
+    state.selectedItemId = null;
+    saveState();
+    hideItemTooltip();
+    renderItemGrid();
     return;
   }
-  selectItem(itemId);
+
+  if (!canActivateItem(itemId)) {
+    showItemTooltip(itemId, btnEl);
+    return;
+  }
+
+  state.selectedItemId = itemId;
+  saveState();
+  renderItemGrid();
+  showItemTooltip(itemId, btnEl);
 }
 
-function renderInventory() {
-  el.invList.innerHTML = '';
-  const label = document.createElement('div');
-  label.className = 'inv-list-label';
-  label.textContent = state.combineMode.active
-    ? `조합: ${ITEM_DEFS[state.combineMode.firstItemId].name} + ?`
-    : '인벤토리';
-  el.invList.appendChild(label);
+function renderItemGrid() {
+  el.itemGrid.innerHTML = '';
   if (!state.inventoryItemIds.length) {
     const empty = document.createElement('div');
-    empty.className = 'inv-empty';
+    empty.className = 'item-empty';
     empty.textContent = '비어 있다';
-    el.invList.appendChild(empty);
+    el.itemGrid.appendChild(empty);
     return;
   }
   state.inventoryItemIds.forEach(itemId => {
     const def = ITEM_DEFS[itemId];
     if (!def) return;
-    const row = document.createElement('div');
-    row.className = 'inv-row ' + (def.selectable ? '' : 'fixed');
-    const isFirstCombineItem = state.combineMode.active && itemId === state.combineMode.firstItemId;
-    if (state.selectedItemId === itemId || isFirstCombineItem) row.classList.add('selected');
-    row.innerHTML = `<span class="inv-row-icon">${def.icon}</span><span class="inv-row-name">${def.name}</span>` +
-      (state.selectedItemId === itemId ? '<span class="inv-row-tag">선택됨</span>' : '');
-    row.addEventListener('click', () => onInventoryRowClick(itemId));
-    if (!state.combineMode.active && isCombinable(itemId)) {
-      const combineBtn = document.createElement('button');
-      combineBtn.className = 'inv-row-action';
-      combineBtn.textContent = '조합';
-      combineBtn.addEventListener('click', (e) => { e.stopPropagation(); startCombine(itemId); });
-      row.appendChild(combineBtn);
-    }
-    if (def.inspect) {
-      const inspectBtn = document.createElement('button');
-      inspectBtn.className = 'inv-row-action';
-      inspectBtn.textContent = '조사';
-      inspectBtn.addEventListener('click', (e) => { e.stopPropagation(); setMessage(def.inspect); });
-      row.appendChild(inspectBtn);
-    }
-    el.invList.appendChild(row);
+    const btn = document.createElement('button');
+    btn.className = 'item-icon-btn' + (state.selectedItemId === itemId ? ' selected' : '');
+    btn.textContent = def.icon;
+    btn.addEventListener('click', () => onItemIconTap(itemId, btn));
+    el.itemGrid.appendChild(btn);
   });
 }
 
-/* ===== Tabs + lock state ===== */
-function renderTabs() {
-  el.tabBar.innerHTML = '';
+function showItemTooltip(itemId, btnEl) {
+  const def = ITEM_DEFS[itemId];
+  if (!def || !def.inspect) { hideItemTooltip(); return; }
+  el.itemTooltipName.textContent = def.name;
+  el.itemTooltipDesc.textContent = def.inspect;
+  const frameRect = el.frame.getBoundingClientRect();
+  const btnRect = btnEl.getBoundingClientRect();
+  el.itemTooltip.style.left = '-999px';
+  el.itemTooltip.classList.add('show');
+  const tw = el.itemTooltip.offsetWidth || 180;
+  let left = btnRect.right - frameRect.left + 8;
+  const maxLeft = frameRect.width - tw - 8;
+  if (left > maxLeft) left = Math.max(8, maxLeft);
+  const top = btnRect.bottom - frameRect.top + 8;
+  el.itemTooltip.style.left = left + 'px';
+  el.itemTooltip.style.top = top + 'px';
+}
+function hideItemTooltip() {
+  el.itemTooltip.classList.remove('show');
+}
+
+/* ===== Popups (item / move) + FABs — replace the old always-visible
+   inventory list + area tab bar. ===== */
+function openItemPopup() {
+  closeMovePopup();
+  renderItemGrid();
+  el.itemPopup.classList.add('show');
+  el.popupScrim.classList.add('show');
+}
+function closeItemPopup() {
+  el.itemPopup.classList.remove('show');
+  hideItemTooltip();
+  if (!el.movePopup.classList.contains('show')) el.popupScrim.classList.remove('show');
+}
+function toggleItemPopup() {
+  if (el.itemPopup.classList.contains('show')) closeItemPopup();
+  else openItemPopup();
+}
+
+function renderMoveList() {
+  el.moveList.innerHTML = '';
   roomSearchAreas.forEach(a => {
     const btn = document.createElement('button');
-    btn.className = 'tab-btn' + (a.id === state.currentAreaId ? ' active' : '');
+    btn.className = 'move-item-btn' + (a.id === state.currentAreaId ? ' active' : '');
     btn.textContent = a.label;
     btn.addEventListener('click', () => {
       if (state.completed) return;
+      closeMovePopup();
+      if (a.id === state.currentAreaId) return;
       state.currentAreaId = a.id;
       saveState();
-      renderTabs();
       loadArea(a);
     });
-    el.tabBar.appendChild(btn);
+    el.moveList.appendChild(btn);
   });
 }
+function openMovePopup() {
+  closeItemPopup();
+  renderMoveList();
+  el.movePopup.classList.add('show');
+  el.popupScrim.classList.add('show');
+}
+function closeMovePopup() {
+  el.movePopup.classList.remove('show');
+  if (!el.itemPopup.classList.contains('show')) el.popupScrim.classList.remove('show');
+}
+function toggleMovePopup() {
+  if (el.movePopup.classList.contains('show')) closeMovePopup();
+  else openMovePopup();
+}
+
+el.itemFabBtn.addEventListener('click', () => { if (!state.completed) toggleItemPopup(); });
+el.moveFabBtn.addEventListener('click', () => { if (!state.completed) toggleMovePopup(); });
+el.popupScrim.addEventListener('click', () => { closeItemPopup(); closeMovePopup(); });
 
 function updateLockState() {
   el.roomView.classList.toggle('locked', state.completed);
-  el.invList.classList.toggle('hidden', state.completed);
-  el.tabBar.classList.toggle('hidden', state.completed);
+  el.fabRow.classList.toggle('hidden', state.completed);
+  if (state.completed) { closeItemPopup(); closeMovePopup(); }
 }
 
 /* ===== Dev debug sheet ===== */
@@ -1091,12 +1204,12 @@ document.getElementById('btnShowHotspots').addEventListener('click', (e) => {
   renderDebugHotspotOverlay();
 });
 document.getElementById('btnOpenBathroomDoor').addEventListener('click', () => { state.flags.bathroomDoorOpened = true; saveState(); });
-document.getElementById('btnGiveDeadFlashlight').addEventListener('click', () => { addItem('dead-flashlight'); renderInventory(); });
-document.getElementById('btnGiveBatteries').addEventListener('click', () => { addItem('aa-batteries'); renderInventory(); });
-document.getElementById('btnGiveWorkingFlashlight').addEventListener('click', () => { addItem('working-flashlight'); renderInventory(); });
-document.getElementById('btnGiveMetalHanger').addEventListener('click', () => { addItem('metal-hanger'); renderInventory(); });
-document.getElementById('btnGiveGardenStake').addEventListener('click', () => { addItem('garden-stake'); renderInventory(); });
-document.getElementById('btnGiveLongHook').addEventListener('click', () => { addItem('long-hook'); renderInventory(); });
+document.getElementById('btnGiveDeadFlashlight').addEventListener('click', () => { addItem('dead-flashlight'); renderItemGrid(); });
+document.getElementById('btnGiveBatteries').addEventListener('click', () => { addItem('aa-batteries'); renderItemGrid(); });
+document.getElementById('btnGiveWorkingFlashlight').addEventListener('click', () => { addItem('working-flashlight'); renderItemGrid(); });
+document.getElementById('btnGiveMetalHanger').addEventListener('click', () => { addItem('metal-hanger'); renderItemGrid(); });
+document.getElementById('btnGiveGardenStake').addEventListener('click', () => { addItem('garden-stake'); renderItemGrid(); });
+document.getElementById('btnGiveLongHook').addEventListener('click', () => { addItem('long-hook'); renderItemGrid(); });
 document.getElementById('btnRevealKey').addEventListener('click', () => { state.flags.keyVisible = true; saveState(); });
 document.getElementById('btnGiveKey').addEventListener('click', () => {
   addItem('unknown-key');
@@ -1104,7 +1217,7 @@ document.getElementById('btnGiveKey').addEventListener('click', () => {
   state.flags.keyFound = true;
   saveState();
   registerKeyEvidence();
-  renderInventory();
+  renderItemGrid();
   scheduleForcedPhoneUnlock(600);
 });
 document.getElementById('btnUnlockPhone').addEventListener('click', () => { state.flags.phoneUnlocked = true; saveState(); });
@@ -1128,8 +1241,7 @@ document.getElementById('btnClearState').addEventListener('click', () => {
 // — MINIGAME_ROUTES and the scene's own `route` field both bypass it), so
 // this is the only place 숙소's map-location visit can be recorded for it.
 CaseFileState.recordSceneVisit('week1-scene-002-2');
-renderTabs();
-renderInventory();
+renderItemGrid();
 updateLockState();
 loadArea(roomSearchAreas.find(a => a.id === state.currentAreaId) || roomSearchAreas[0]);
 // A refresh that landed between "key found" and "phone unlocked" must not
