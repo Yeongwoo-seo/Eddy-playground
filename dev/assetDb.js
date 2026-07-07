@@ -215,9 +215,10 @@ const DevGameState = {
     try { return JSON.parse(localStorage.getItem(this._keys.minigameHotspots)) || {}; }
     catch (e) { return {}; }
   },
-  // Minigame answer-area hotspot = { fx, fy, fr } — center and radius as
-  // fractions of the background image's natural width/height, so it stays
-  // correct regardless of the uploaded image's actual pixel size.
+  // Minigame answer-area hotspot = { x1, y1, x2, y2 } — an axis-aligned
+  // rectangle (built from 4 tapped corners in /dev/upload) as fractions of
+  // the background image's natural width/height, so it stays correct
+  // regardless of the uploaded image's actual pixel size.
   // stageIndex selects which stop's hotspot to read/write for minigames with
   // multiple sequential targets sharing one map image (e.g. the 3-stop
   // station-finder: 0 = 공항, 1 = 이스트우드, 2 = 마라용).
@@ -243,7 +244,7 @@ const DevGameState = {
   // Room-search minigame variant of the hotspot above — a single background
   // image (one per area, e.g. 'week1-scene-002-2-bed') can hold several
   // independently-marked, named tap targets instead of just one, since a
-  // room photo has multiple things to investigate. { [sceneId]: { [hotspotId]: {fx,fy,fr} } }.
+  // room photo has multiple things to investigate. { [sceneId]: { [hotspotId]: {x1,y1,x2,y2} } }.
   getRoomHotspots(sceneId) {
     if (!sceneId) return {};
     return this._loadRoomHotspotMap()[sceneId] || {};

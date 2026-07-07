@@ -195,7 +195,7 @@ if ('serviceWorker' in navigator) {
    - "grid" mode (fallback) — a card grid of the area's hotspots by name, so
      the puzzle is fully playable before any photos exist yet. */
 const STATE_KEY = 'mkPhoneSearchState_v1';
-const HOTSPOT_MIN_FR = 0.045; // floor on tap-target size, same rationale as Eastwood's
+const HOTSPOT_MIN_FR = 0.045; // floor on tap-target width/height, same rationale as Eastwood's
 
 const ITEM_DEFS = {
   flashlight: { icon: '🔦', name: '손전등', selectable: true },
@@ -500,7 +500,7 @@ function handlePhoneFound() {
    multiple named hotspots instead of one map with one named station). ===== */
 let scale = 1, baseScale = 1, tx = 0, ty = 0;
 let CANVAS_W = 1, CANVAS_H = 1;
-let currentHotspots = {}; // hotspotId -> {fx, fy, fr}, only populated in photo mode
+let currentHotspots = {}; // hotspotId -> {x1,y1,x2,y2}, only populated in photo mode
 const pointers = new Map();
 let panStart = null;
 let pinchStartDist = 0, pinchStartScale = 1;
@@ -550,9 +550,14 @@ function flashTapRing(point) {
 function hotspotIdAtPoint(point) {
   for (const id in currentHotspots) {
     const h = currentHotspots[id];
-    const r = Math.max(h.fr, HOTSPOT_MIN_FR) * CANVAS_W;
-    const dx = point.x - h.fx * CANVAS_W, dy = point.y - h.fy * CANVAS_H;
-    if (Math.hypot(dx, dy) <= r) return id;
+    // A carelessly small hand-drawn rectangle still needs to stay tappable —
+    // expand it symmetrically up to a minimum width/height (same floor
+    // fraction Eastwood's circular hotspots use) rather than shrinking the miss margin.
+    const cx = (h.x1 + h.x2) / 2, cy = (h.y1 + h.y2) / 2;
+    const halfW = Math.max((h.x2 - h.x1) / 2, HOTSPOT_MIN_FR) * CANVAS_W;
+    const halfH = Math.max((h.y2 - h.y1) / 2, HOTSPOT_MIN_FR) * CANVAS_H;
+    const x = cx * CANVAS_W, y = cy * CANVAS_H;
+    if (point.x >= x - halfW && point.x <= x + halfW && point.y >= y - halfH && point.y <= y + halfH) return id;
   }
   return null;
 }
