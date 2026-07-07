@@ -45,6 +45,7 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .dropzone-text{font-size:13px;color:var(--text-secondary);margin-bottom:14px}
 .select-btn{display:inline-block;background:var(--surface-2);border:1px solid var(--divider);color:var(--text-primary);padding:11px 20px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--mono);letter-spacing:.05em}
 .hint{font-size:11px;color:var(--text-muted);margin:10px 0 24px;text-align:center}
+.hint.hidden{display:none}
 
 .preview-panel{background:var(--surface-1);border:1px solid var(--divider);border-radius:14px;padding:16px;margin-bottom:24px}
 .preview-panel.hidden{display:none}
@@ -133,7 +134,9 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
   <div class="tabs" id="tabsRow">
     <button class="tab-btn active" id="tabBackground">배경 DB</button>
     <button class="tab-btn" id="tabCharacter">인물 DB</button>
+    <button class="tab-btn" id="tabMinigameFace">미니게임 얼굴</button>
   </div>
+  <div class="hint hidden" id="minigameFaceHint" style="margin:-8px 0 14px">미니게임 대화창의 작은 초상화 칸에 쓰이는 얼굴 사진이에요. 정면 얼굴이 꽉 차게 정사각형으로 잘라주세요.</div>
 
   <!-- 배경 DB: week -> scene -> (배경/미니게임) picker -->
   <div class="picker" id="weekPicker">
@@ -316,6 +319,8 @@ const el = {
   testFab: document.getElementById('testFab'),
   tabBackground: document.getElementById('tabBackground'),
   tabCharacter: document.getElementById('tabCharacter'),
+  tabMinigameFace: document.getElementById('tabMinigameFace'),
+  minigameFaceHint: document.getElementById('minigameFaceHint'),
   weekPicker: document.getElementById('weekPicker'),
   weekPickerPills: document.getElementById('weekPickerPills'),
   scenePicker: document.getElementById('scenePicker'),
@@ -383,12 +388,13 @@ function activeBackgroundSceneId() {
 
 function selectType(type) {
   // Focus mode is background-only setup for one specific minigame — the
-  // 인물 DB tab has nothing to do with that, so it's hidden and can't be
-  // switched into (see applyFocusModeChrome).
+  // 인물 DB / 미니게임 얼굴 tabs have nothing to do with that, so they're
+  // hidden and can't be switched into (see applyFocusModeChrome).
   if (focusMinigame) type = 'background';
   currentType = type;
   el.tabBackground.classList.toggle('active', type === 'background');
   el.tabCharacter.classList.toggle('active', type === 'character');
+  el.tabMinigameFace.classList.toggle('active', type === 'minigameFace');
   el.weekPicker.classList.toggle('hidden', type !== 'background' || !!focusMinigame);
   el.scenePicker.classList.toggle('hidden', type !== 'background');
   // bgKindPicker's own visibility (based on whether the current scene even
@@ -396,12 +402,18 @@ function selectType(type) {
   // only runs for type 'background' — force it hidden here too, otherwise
   // switching to 인물 DB left it showing whatever it was left at.
   el.bgKindPicker.classList.toggle('hidden', type !== 'background');
-  el.charPicker.classList.toggle('hidden', type !== 'character');
+  el.charPicker.classList.toggle('hidden', type === 'background');
   el.exprPicker.classList.toggle('hidden', type !== 'character');
+  el.minigameFaceHint.classList.toggle('hidden', type !== 'minigameFace');
   el.fileInput.accept = type === 'background' ? 'image/jpeg,image/png,image/webp' : 'image/png,image/webp';
   el.typeHint.textContent = type === 'background' ? '.jpg · .jpeg · .png · .webp' : '.png · .webp (투명 배경 권장)';
+  // 미니게임 얼굴은 표정별이 아니라 캐릭터당 사진 한 장 — 감정표현 피커 대신
+  // 고정 sentinel 키를 씀. 이 sentinel에 있다가 다른 탭으로 넘어가는 경우에만
+  // 되돌려서, 인물 DB에서 고르고 있던 표정(예: 기쁨)은 탭을 왔다갔다해도 유지된다.
+  if (type === 'minigameFace') currentExpression = MINIGAME_FACE_EXPRESSION;
+  else if (currentExpression === MINIGAME_FACE_EXPRESSION) currentExpression = dialogueExpressions[0].id;
   if (type === 'background') { renderWeekPicker(); renderScenePicker(); renderBgKindPicker(); }
-  else { renderCharPicker(); renderExprPicker(); }
+  else { renderCharPicker(); if (type === 'character') renderExprPicker(); }
   clearPending();
   refreshList();
   renderHotspotSection();
@@ -591,16 +603,20 @@ async function saveAsset() {
   }
 }
 
-/* ===== Character photo editor: optional background removal + one dialogue-framed crop ===== */
-const CROP_ASPECT = 3 / 4;
-const CROP_V_ANCHOR = 0.08;
+/* ===== Character photo editor: optional background removal + one crop =====
+   인물 DB (표정별 대사 초상화)는 반신 세로 프레임(3:4, 위쪽 앵커)을 쓰고,
+   미니게임 얼굴 DB는 미니게임 대화창의 작은 초상화 칸에 맞춘 얼굴 클로즈업
+   1:1 정사각 프레임(가운데 앵커)을 쓴다 — 같은 반신 크롭을 그대로 축소해서
+   쓰면 얼굴 대신 옷/몸통만 보였던 문제를 해결하기 위함. */
+function activeCropAspect() { return currentType === 'minigameFace' ? 1 : 3 / 4; }
+function activeCropVAnchor() { return currentType === 'minigameFace' ? 0.5 : 0.08; }
 
 let workingBlob = null;
 let workingImgNatural = { width: 0, height: 0 };
 let sourceFileBaseName = '';
 let cropState = null;
 let cropDrag = null;
-let lastCropSettings = null; // { zoom, fracX, fracY } — carried over to the next expression photo
+let lastCropSettingsByType = {}; // { [currentType]: { zoom, fracX, fracY } } — carried over to the next photo in the same mode only; character vs minigameFace frame very differently
 
 function clamp(v, min, max) { return Math.min(Math.max(v, min), max); }
 
@@ -614,6 +630,7 @@ function openCharEditor(file, url, img) {
   el.bgRemoveBtn.classList.remove('done');
   el.cropEditor.classList.add('hidden');
   el.charEditorPanel.classList.remove('hidden');
+  el.cropEnterBtn.textContent = currentType === 'minigameFace' ? '다음: 얼굴 자르기' : '다음: 자르기';
 }
 
 el.bgRemoveBtn.addEventListener('click', async () => {
@@ -660,17 +677,20 @@ function enterCropMode() {
   el.cropImg.style.top = imgTop + 'px';
 
   let maxBoxW, maxBoxH;
-  if (dispW / dispH > CROP_ASPECT) { maxBoxH = dispH; maxBoxW = dispH * CROP_ASPECT; }
-  else { maxBoxW = dispW; maxBoxH = dispW / CROP_ASPECT; }
+  const aspect = activeCropAspect();
+  if (dispW / dispH > aspect) { maxBoxH = dispH; maxBoxW = dispH * aspect; }
+  else { maxBoxW = dispW; maxBoxH = dispW / aspect; }
 
   cropState = { imgLeft, imgTop, dispW, dispH, imgScale, maxBoxW, maxBoxH };
+  el.cropSaveBtn.textContent = currentType === 'minigameFace' ? '이 사진을 미니게임 얼굴로 저장' : '이 표정으로 저장';
   // Reuse the last crop's framing (zoom + relative position) instead of
   // recentering every time — expression photos for the same character are
   // usually framed the same way, so this makes cropping the whole set feel
   // like one batch operation instead of repositioning per photo.
-  if (lastCropSettings) {
-    el.cropZoom.value = lastCropSettings.zoom;
-    updateCropBoxFromZoom(false, lastCropSettings);
+  const remembered = lastCropSettingsByType[currentType];
+  if (remembered) {
+    el.cropZoom.value = remembered.zoom;
+    updateCropBoxFromZoom(false, remembered);
   } else {
     el.cropZoom.value = 62;
     updateCropBoxFromZoom(true);
@@ -688,7 +708,7 @@ function updateCropBoxFromZoom(recenter, frac) {
     boxY = s.imgTop + frac.fracY * (s.dispH - boxH);
   } else if (recenter) {
     boxX = s.imgLeft + (s.dispW - boxW) / 2;
-    boxY = s.imgTop + s.dispH * CROP_V_ANCHOR;
+    boxY = s.imgTop + s.dispH * activeCropVAnchor();
   } else {
     boxX = s.boxX;
     boxY = s.boxY;
@@ -755,16 +775,16 @@ el.cropSaveBtn.addEventListener('click', async () => {
   try {
     const cropBlob = await cropImageElementToBlob(el.cropImg, natX, natY, natW, natH);
     const croppedImg = await loadImageFromBlob(cropBlob);
-    const exprLabel = dialogueExpressions.find(x => x.id === currentExpression).label;
+    const exprLabel = currentType === 'minigameFace' ? '미니게임 얼굴' : dialogueExpressions.find(x => x.id === currentExpression).label;
     const name = `${sourceFileBaseName} (${exprLabel}).png`;
     const record = await AssetDB.addAsset({ type: 'character', name, blob: cropBlob, width: croppedImg.naturalWidth, height: croppedImg.naturalHeight, characterKey: currentCharacterKey, expression: currentExpression });
     // Only one photo per (character, expression) is actually rendered — the
     // newest upload for this pair becomes the active one automatically.
     DevGameState.setCharacterAssetId(currentCharacterKey, currentExpression, record.id);
-    lastCropSettings = {
+    lastCropSettingsByType[currentType] = {
       zoom: Number(el.cropZoom.value),
       fracX: s.dispW - s.boxW > 0 ? (s.boxX - s.imgLeft) / (s.dispW - s.boxW) : 0.5,
-      fracY: s.dispH - s.boxH > 0 ? (s.boxY - s.imgTop) / (s.dispH - s.boxH) : CROP_V_ANCHOR,
+      fracY: s.dispH - s.boxH > 0 ? (s.boxY - s.imgTop) / (s.dispH - s.boxH) : activeCropVAnchor(),
     };
     clearPending();
     await refreshList();
@@ -1157,8 +1177,10 @@ function escapeHtml(s) {
 }
 
 async function refreshList() {
-  el.listTitle.textContent = currentType === 'background' ? 'Uploaded Backgrounds' : 'Uploaded Portraits';
-  const all = await AssetDB.getAssetsByType(currentType);
+  el.listTitle.textContent = currentType === 'background' ? 'Uploaded Backgrounds' : currentType === 'minigameFace' ? 'Uploaded Minigame Faces' : 'Uploaded Portraits';
+  // 미니게임 얼굴은 실제 저장은 'character' 타입을 공유하고 expression
+  // sentinel(MINIGAME_FACE_EXPRESSION)로만 구분되므로 조회도 'character'로.
+  const all = await AssetDB.getAssetsByType(currentType === 'minigameFace' ? 'character' : currentType);
   const filtered = currentType === 'background'
     ? all.filter(a => a.sceneId === activeBackgroundSceneId())
     : all.filter(a => a.characterKey === currentCharacterKey && a.expression === currentExpression);
@@ -1222,6 +1244,7 @@ async function removeAsset(type, id) {
 
 el.tabBackground.addEventListener('click', () => selectType('background'));
 el.tabCharacter.addEventListener('click', () => selectType('character'));
+el.tabMinigameFace.addEventListener('click', () => selectType('minigameFace'));
 el.selectBtn.addEventListener('click', () => el.fileInput.click());
 el.dropzone.addEventListener('click', (e) => { if (e.target === el.selectBtn) return; el.fileInput.click(); });
 el.fileInput.addEventListener('change', (e) => onFilesSelected(e.target.files));

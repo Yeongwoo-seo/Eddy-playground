@@ -367,9 +367,13 @@ el.mapStage.addEventListener('wheel', (e) => {
   applyTransform();
 }, { passive: false });
 
-/* ===== Character portrait + dialogue strip ===== */
+/* ===== Character portrait + dialogue strip =====
+   This small corner box always shows the character's dedicated 미니게임
+   얼굴 DB close-up (see /dev/upload), not the per-mood 인물 DB portrait —
+   a half-body 표정 crop scaled down to this box mostly showed clothes, not
+   a face. `expression` is accepted for call-site compatibility but unused. */
 async function updatePortrait(characterKey, expression) {
-  const assetId = DevGameState.getCharacterAssetId(characterKey, expression);
+  const assetId = DevGameState.getCharacterAssetId(characterKey, MINIGAME_FACE_EXPRESSION);
   const asset = await AssetDB.getAsset(assetId).catch(() => null);
   if (asset && asset.dataUrl) {
     el.portraitImg.src = asset.dataUrl;

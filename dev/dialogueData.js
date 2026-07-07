@@ -27,6 +27,14 @@ const dialogueExpressions = [
   { id: 'serious', label: '진지' },
 ];
 
+// Sentinel "expression" a minigame face photo is stored/looked up under in
+// the same (character, expression) asset map 인물 DB uses — not a real mood,
+// just one dedicated square close-up per character for small in-minigame
+// portrait slots (e.g. minigame-eastwood's dlg-strip), which look wrong
+// scaled down from a half-body 표정 crop. See "미니게임 얼굴 DB" in
+// /dev/upload.
+const MINIGAME_FACE_EXPRESSION = 'minigame-face';
+
 // Pure stage-direction beats (no speaker) use characterId to say who, if
 // anyone, stays on screen for that beat — keeps the portrait from flickering
 // out and back in across a beat with no line of its own.
