@@ -390,6 +390,11 @@ function selectType(type) {
   el.tabCharacter.classList.toggle('active', type === 'character');
   el.weekPicker.classList.toggle('hidden', type !== 'background' || !!focusMinigame);
   el.scenePicker.classList.toggle('hidden', type !== 'background');
+  // bgKindPicker's own visibility (based on whether the current scene even
+  // has a minigame) is only recomputed by renderBgKindPicker() below, which
+  // only runs for type 'background' — force it hidden here too, otherwise
+  // switching to 인물 DB left it showing whatever it was left at.
+  el.bgKindPicker.classList.toggle('hidden', type !== 'background');
   el.charPicker.classList.toggle('hidden', type !== 'character');
   el.exprPicker.classList.toggle('hidden', type !== 'character');
   el.fileInput.accept = type === 'background' ? 'image/jpeg,image/png,image/webp' : 'image/png,image/webp';
