@@ -39,29 +39,9 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 /* ===== Map stage ===== */
 .map-stage{position:absolute;inset:0;overflow:hidden;touch-action:none;background:radial-gradient(circle at 30% 20%,#141a20 0%,#0a0d10 70%)}
 .map-canvas{position:absolute;top:0;left:0;transform-origin:0 0;will-change:transform}
-.map-svg{display:block}
-.line-path{fill:none;stroke-width:6;stroke-linecap:round;stroke-linejoin:round;opacity:.85}
-.line-path.line-highlight{animation:lineGlow 1.4s ease-in-out infinite}
-@keyframes lineGlow{0%,100%{stroke-width:6;filter:none}50%{stroke-width:12;filter:drop-shadow(0 0 12px currentColor)}}
-
-.station{cursor:pointer}
-.station-hit{fill:transparent}
-.station-dot{fill:#EDF1F4;stroke:#050607;stroke-width:2;transition:fill .2s,r .2s}
-.station-label{font-family:var(--mono);font-size:22px;fill:var(--text-secondary);text-anchor:middle;pointer-events:none;transition:fill .2s,font-weight .2s}
-.station.wrong-flash .station-dot{animation:wrongFlash 420ms ease}
-@keyframes wrongFlash{0%,100%{fill:#EDF1F4}40%{fill:var(--signal-red)}}
-.station.success .station-dot{fill:var(--cyan);r:11}
-.station.success .station-label{fill:var(--cyan);font-weight:700;font-size:26px}
-
-.station-area-glow{fill:var(--amber);opacity:0;pointer-events:none}
-.station-area-glow.show{animation:areaGlow 1.6s ease-in-out infinite}
 @keyframes areaGlow{0%,100%{opacity:.1}50%{opacity:.4}}
 
-.pulse-ring{fill:none;stroke:var(--cyan);stroke-width:4;opacity:0;pointer-events:none}
-.pulse-ring.success{animation:pulseRing 900ms ease-out}
-@keyframes pulseRing{0%{r:10;opacity:.9;stroke-width:6}100%{r:70;opacity:0;stroke-width:1}}
-
-/* ===== Image-mode overlays (uploaded map + hand-marked hotspot) ===== */
+/* ===== Map overlays (uploaded map image + hand-marked hotspot) ===== */
 .image-area-glow{position:absolute;border-radius:50%;background:var(--amber);opacity:0;pointer-events:none}
 .image-area-glow.show{animation:areaGlow 1.6s ease-in-out infinite}
 .image-pulse-ring{position:absolute;border-radius:50%;border:4px solid var(--cyan);opacity:0;pointer-events:none;transform-origin:center}
@@ -159,55 +139,30 @@ if ('serviceWorker' in navigator) {
 <script src="/dev/dialogueData.js"></script>
 <script src="/dev/vnPlayer.js"></script>
 <script>
-/* ===== Schematic Sydney rail network — stylized, not to scale.
-   Used as a fallback demo until a real map image + answer hotspot is
-   uploaded via /dev/upload (배경 DB → 미니게임), at which point this
-   minigame switches to "image mode": the uploaded photo becomes the map,
-   and the hand-marked hotspot becomes the tap target instead of a named
-   SVG station. ===== */
+/* ===== Route-map minigame: an uploaded map image + hand-marked answer
+   hotspots (배경 DB → 미니게임, /dev/upload). Players tap the map image
+   itself — there is no schematic fallback map, so a background image and
+   all 3 hotspots must be set via /dev/upload before this page works. ===== */
 const MINIGAME_ID = 'week1-scene-001-2-minigame';
 const HOTSPOT_MIN_FR = 0.035; // floor on tap-target size so a careless hotspot still stays easy to hit
-const SVG_W = 1600, SVG_H = 1000;
 
-// 3-stop sequence, in find-order. Each stage's `key` is the station name as
-// it appears on the schematic map (STATION_POS/LINES); `label` is the
-// Korean gloss shown in the mission card / spoken dialogue.
+// 3-stop sequence, in find-order. `key` is the display name shown in the
+// mission card / spoken dialogue; `label` is its Korean gloss.
 const STAGES = [
   { key: 'International Airport', label: '공항' },
   { key: 'Eastwood', label: '이스트우드' },
   { key: 'Marayong', label: '마라용' },
 ];
 let stageIndex = 0;
-let mode = 'svg'; // 'svg' | 'image'
-let CANVAS_W = SVG_W, CANVAS_H = SVG_H;
-let hotspots = null; // [{ fx, fy, fr } x3] — only set in image mode
+let CANVAS_W = 0, CANVAS_H = 0;
+let hotspots = null; // [{ fx, fy, fr } x3]
 let mapImageGlowEls = [], mapImagePulseEls = [];
-
-const STATION_POS = {
-  'Central': [250, 620], 'Strathfield': [420, 600], 'North Strathfield': [520, 560],
-  'Concord West': [610, 520], 'Rhodes': [700, 480], 'Meadowbank': [790, 440],
-  'West Ryde': [880, 400], 'Denistone': [970, 370], 'Eastwood': [1060, 340],
-  'Epping': [1160, 310], 'Chatswood': [1320, 260],
-  'St Leonards': [1300, 420], 'North Sydney': [1260, 560], 'Milsons Point': [1200, 660],
-  'International Airport': [1020, 740], 'Town Hall': [820, 760],
-  'Redfern': [240, 760], 'Ashfield': [180, 860], 'Burwood': [300, 900],
-  'Homebush': [450, 920], 'Marayong': [600, 930],
-};
-
-const LINES = [
-  { id: 'amber', color: '#D6A84B', stations: ['Central', 'Strathfield', 'North Strathfield', 'Concord West', 'Rhodes', 'Meadowbank', 'West Ryde', 'Denistone', 'Eastwood', 'Epping', 'Chatswood'] },
-  { id: 'cyan', color: '#59B8C8', stations: ['Chatswood', 'St Leonards', 'North Sydney', 'Milsons Point', 'International Airport', 'Town Hall', 'Central'] },
-  { id: 'violet', color: '#8B7BD8', stations: ['Central', 'Redfern', 'Ashfield', 'Burwood', 'Homebush', 'Marayong'] },
-];
-function lineIdForStation(name) {
-  const line = LINES.find(l => l.stations.includes(name));
-  return line ? line.id : null;
-}
 
 const el = {
   frame: document.getElementById('frame'),
   mapStage: document.getElementById('mapStage'),
   mapCanvas: document.getElementById('mapCanvas'),
+  missionLabelEl: document.getElementById('missionLabel'),
   missionTarget: document.getElementById('missionTarget'),
   missionSub: document.getElementById('missionSub'),
   stamp: document.getElementById('stamp'),
@@ -224,79 +179,11 @@ const el = {
   fadeOverlay: document.getElementById('fadeOverlay'),
 };
 
-/* ===== Build the map SVG ===== */
-const svgNS = 'http://www.w3.org/2000/svg';
-let mapSvg = null;
-
-function buildMapSvg() {
-  const svg = document.createElementNS(svgNS, 'svg');
-  svg.setAttribute('viewBox', `0 0 ${SVG_W} ${SVG_H}`);
-  svg.setAttribute('width', SVG_W);
-  svg.setAttribute('height', SVG_H);
-  svg.classList.add('map-svg');
-
-  LINES.forEach(line => {
-    const points = line.stations.map(name => STATION_POS[name].join(',')).join(' ');
-    const poly = document.createElementNS(svgNS, 'polyline');
-    poly.setAttribute('points', points);
-    poly.setAttribute('class', 'line-path');
-    poly.dataset.line = line.id;
-    poly.style.stroke = line.color;
-    poly.style.color = line.color; // lets currentColor drive the hint glow filter
-    svg.appendChild(poly);
-  });
-
-  const drawn = new Set();
-  LINES.forEach(line => {
-    line.stations.forEach(name => {
-      if (drawn.has(name)) return;
-      drawn.add(name);
-      const [x, y] = STATION_POS[name];
-      const g = document.createElementNS(svgNS, 'g');
-      g.setAttribute('class', 'station');
-      g.dataset.name = name;
-      g.setAttribute('transform', `translate(${x},${y})`);
-
-      if (STAGES.some(s => s.key === name)) {
-        const glow = document.createElementNS(svgNS, 'circle');
-        glow.setAttribute('class', 'station-area-glow');
-        glow.setAttribute('r', '46');
-        g.appendChild(glow);
-        const pulse = document.createElementNS(svgNS, 'circle');
-        pulse.setAttribute('class', 'pulse-ring');
-        pulse.setAttribute('r', '12');
-        g.appendChild(pulse);
-      }
-
-      const hit = document.createElementNS(svgNS, 'circle');
-      hit.setAttribute('class', 'station-hit');
-      hit.setAttribute('r', '32');
-      g.appendChild(hit);
-
-      const dot = document.createElementNS(svgNS, 'circle');
-      dot.setAttribute('class', 'station-dot');
-      dot.setAttribute('r', '7');
-      g.appendChild(dot);
-
-      const label = document.createElementNS(svgNS, 'text');
-      label.setAttribute('class', 'station-label');
-      label.setAttribute('y', '-14');
-      label.textContent = name;
-      g.appendChild(label);
-
-      svg.appendChild(g);
-    });
-  });
-
-  el.mapCanvas.appendChild(svg);
-  mapSvg = svg;
-}
-
-// Image mode: the uploaded background image becomes the map, sized to its
-// natural pixel dimensions (CANVAS_W/H) so map-canvas's own pan/zoom
-// transform scales it exactly like the SVG mode's viewBox did. The hotspot
-// (and its hint-glow / success-pulse) are separate absolutely-positioned
-// siblings in that same natural-pixel coordinate space.
+/* ===== Build the map ===== */
+// The uploaded background image becomes the map, sized to its natural pixel
+// dimensions (CANVAS_W/H) so map-canvas's own pan/zoom transform scales it.
+// The hotspots (and their hint-glow / success-pulse) are separate
+// absolutely-positioned siblings in that same natural-pixel coordinate space.
 function buildImageMap(url) {
   const img = document.createElement('img');
   img.src = url;
@@ -329,19 +216,25 @@ async function initMap() {
   const assetId = DevGameState.getBackgroundId(MINIGAME_ID);
   const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
   const savedHotspots = STAGES.map((_, i) => DevGameState.getMinigameHotspot(MINIGAME_ID, i));
-  if (asset && asset.dataUrl && savedHotspots.every(Boolean)) {
-    mode = 'image';
-    hotspots = savedHotspots;
-    CANVAS_W = asset.width;
-    CANVAS_H = asset.height;
-    await AssetDB.preloadImage(asset.dataUrl);
-    buildImageMap(asset.dataUrl);
-  } else {
-    mode = 'svg';
-    buildMapSvg();
+  if (!asset || !asset.dataUrl || !savedHotspots.every(Boolean)) {
+    showMissingMapNotice();
+    return false;
   }
+  hotspots = savedHotspots;
+  CANVAS_W = asset.width;
+  CANVAS_H = asset.height;
+  await AssetDB.preloadImage(asset.dataUrl);
+  buildImageMap(asset.dataUrl);
   fitToStage();
   updateMissionCard();
+  return true;
+}
+
+function showMissingMapNotice() {
+  el.missionLabelEl.textContent = '준비 필요';
+  el.missionTarget.textContent = '지도 없음';
+  el.missionSub.textContent = '오른쪽 위 "지도 업로드"에서 배경 이미지와 정답 영역 3개를 먼저 지정하세요.';
+  say('jisoo', 'blank', '지수', '어? 지도가 없는데?');
 }
 
 function updateMissionCard() {
@@ -356,7 +249,6 @@ const pointers = new Map();
 let panStart = null;
 let pinchStartDist = 0, pinchStartScale = 1;
 let didPan = false;
-let pressedStationName = null;
 let pressedPoint = null;
 const MIN_SCALE_MULT = 0.7, MAX_SCALE_MULT = 3;
 
@@ -384,23 +276,16 @@ function screenToCanvas(clientX, clientY) {
 el.mapStage.addEventListener('pointerdown', (e) => {
   if (isCompleted) return;
   // setPointerCapture retargets the synthetic 'click' event to mapStage
-  // itself, not whatever was under the finger — so station taps are
-  // detected here from the original press target instead of relying on
-  // a 'click' listener on the SVG.
+  // itself, not whatever was under the finger — so the tap is detected here
+  // from the original press point instead of relying on a 'click' listener.
   el.mapStage.setPointerCapture(e.pointerId);
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
   didPan = false;
   if (pointers.size === 1) {
     panStart = { x: e.clientX, y: e.clientY, tx, ty };
-    if (mode === 'svg') {
-      const g = e.target.closest && e.target.closest('.station');
-      pressedStationName = g ? g.dataset.name : null;
-    } else {
-      pressedPoint = screenToCanvas(e.clientX, e.clientY);
-    }
+    pressedPoint = screenToCanvas(e.clientX, e.clientY);
   } else if (pointers.size === 2) {
-    pressedStationName = null; // a second finger down means this is a pinch, not a tap
-    pressedPoint = null;
+    pressedPoint = null; // a second finger down means this is a pinch, not a tap
     const pts = [...pointers.values()];
     pinchStartDist = dist(pts[0], pts[1]);
     pinchStartScale = scale;
@@ -435,11 +320,7 @@ el.mapStage.addEventListener('pointermove', (e) => {
   if (pointers.size < 2) pinchStartDist = 0;
   if (pointers.size === 0) {
     panStart = null;
-    if (evt === 'pointerup' && !didPan && !isCompleted) {
-      if (mode === 'svg' && pressedStationName) onStationClick(pressedStationName);
-      else if (mode === 'image' && pressedPoint) onImageTap(pressedPoint);
-    }
-    pressedStationName = null;
+    if (evt === 'pointerup' && !didPan && !isCompleted && pressedPoint) onImageTap(pressedPoint);
     pressedPoint = null;
   }
 }));
@@ -494,31 +375,14 @@ function clearHintTimers() { hintTimers.forEach(clearTimeout); hintTimers = []; 
 function triggerHint(level) {
   if (isCompleted || isStageTransition) return;
   hintLevel = level;
-  const targetKey = STAGES[stageIndex].key;
   if (level === 1) {
     say('jisoo', 'curious', '지수', '영우…\n힌트 하나만 주면 안 돼?');
-    setTimeout(() => { if (!isCompleted && !isStageTransition) say('youngwoo', 'soft', '영우', '노선 색부터 한번 봐봐.'); }, 1600);
+    setTimeout(() => { if (!isCompleted && !isStageTransition) say('youngwoo', 'soft', '영우', '지도 잘 보고 찾아봐.'); }, 1600);
   } else if (level === 2) {
-    if (mode === 'svg') {
-      const lineId = lineIdForStation(targetKey);
-      if (lineId) mapSvg.querySelectorAll(`.line-path[data-line="${lineId}"]`).forEach(p => p.classList.add('line-highlight'));
-    }
     say('jisoo', 'curious', '지수', '음…\n이 근처인가…?');
   } else if (level === 3) {
-    if (mode === 'svg') {
-      const glow = mapSvg.querySelector(`.station[data-name="${CSS.escape(targetKey)}"] .station-area-glow`);
-      if (glow) glow.classList.add('show');
-    } else if (mapImageGlowEls[stageIndex]) {
-      mapImageGlowEls[stageIndex].classList.add('show');
-    }
+    if (mapImageGlowEls[stageIndex]) mapImageGlowEls[stageIndex].classList.add('show');
   }
-}
-
-function flashWrongMarker(name) {
-  const g = mapSvg.querySelector(`.station[data-name="${CSS.escape(name)}"]`);
-  if (!g) return;
-  g.classList.add('wrong-flash');
-  setTimeout(() => g.classList.remove('wrong-flash'), 450);
 }
 
 function flashWrongAtPoint(point) {
@@ -535,16 +399,6 @@ function reactWrong() {
   if (wrongClickCount === 1) say('jisoo', 'suspicious', '지수', '여긴 아닌 것 같은데?');
   else if (wrongClickCount === 2) say('jisoo', 'blank', '지수', `${STAGES[stageIndex].key}가 이렇게 안 보일 일이야…?`);
   else say('jisoo', 'annoyed', '지수', '아 나 진짜 영어 못한다니까;;;;');
-}
-
-function onStationClick(name) {
-  if (isCompleted || isStageTransition) return;
-  if (name === STAGES[stageIndex].key) {
-    handleStageFound();
-    return;
-  }
-  flashWrongMarker(name);
-  reactWrong();
 }
 
 function onImageTap(point) {
@@ -593,22 +447,13 @@ const STAGE_CLEAR_LINES = [
   ],
 ];
 
-function markStationSuccess(key) {
-  if (mode === 'svg') {
-    const g = mapSvg.querySelector(`.station[data-name="${CSS.escape(key)}"]`);
-    if (g) {
-      g.classList.add('success');
-      const ring = g.querySelector('.pulse-ring');
-      if (ring) ring.classList.add('success');
-    }
-  } else if (mapImagePulseEls[stageIndex]) {
-    mapImagePulseEls[stageIndex].classList.add('success');
-  }
+function markStationSuccess() {
+  if (mapImagePulseEls[stageIndex]) mapImagePulseEls[stageIndex].classList.add('success');
 }
 
 function handleStageFound() {
   clearHintTimers();
-  markStationSuccess(STAGES[stageIndex].key);
+  markStationSuccess();
   playSuccessBeep();
 
   if (stageIndex === STAGES.length - 1) {
@@ -668,7 +513,8 @@ function fadeOutAndRedirect() {
 }
 
 /* ===== Boot ===== */
-initMap().then(() => {
+initMap().then((ready) => {
+  if (!ready) return;
   const key = STAGES[stageIndex].key;
   say('jisoo', 'curious', '지수', `${key}… ${key}…`);
   setTimeout(() => { if (!isCompleted && !isStageTransition) say('jisoo', 'annoyed', '지수', '아 역이 왜 이렇게 많아;;'); }, 2200);
