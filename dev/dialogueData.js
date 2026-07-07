@@ -424,8 +424,20 @@ const week1Scenes = [
     nextSceneId: 'week1-scene-002-2',
   },
   {
-    id: 'week1-scene-002-3',
+    id: 'week1-scene-002-2',
     order: 4,
+    name: '핸드폰을 찾아라',
+    location: 'Sydney Accommodation',
+    time: '20:20',
+    // No `lines` — this isn't a VN scene, it's the point-and-click minigame
+    // itself. `route` overrides /dev/week1's default /dev/game/?scene=<id>
+    // link so this entry opens the minigame page directly, letting it be
+    // tested standalone instead of only via week1-scene-002-1's VN handoff.
+    route: '/dev/minigame-phone-search/',
+  },
+  {
+    id: 'week1-scene-002-3',
+    order: 5,
     name: '근데 이 열쇠 뭐지?',
     location: 'Sydney Accommodation',
     introLabel: 'ACCOMMODATION',
