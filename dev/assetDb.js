@@ -3,12 +3,13 @@
    dev-assets) with metadata in the dev_assets table, so an upload
    survives closing the app, reinstalling it, or switching devices —
    unlike browser-local IndexedDB/localStorage, which several rounds of
-   on-device testing showed getting silently evicted. Room-search minigame
-   hotspot positions (which part of a room photo is tappable) live in the
-   same Storage bucket for the same reason — see AssetDB.getRoomHotspots/
-   setRoomHotspot below. Selection state (which asset is assigned to which
-   character/scene) stays in localStorage, backed by
-   navigator.storage.persist() below; it's cheap to redo if lost. */
+   on-device testing showed getting silently evicted. Every hotspot ("정답
+   영역") position — room-search hotspots and single/staged minigame
+   hotspots alike — lives in that same Storage bucket for the same reason;
+   see AssetDB.getRoomHotspots/setRoomHotspot and
+   AssetDB.getMinigameHotspot/setMinigameHotspot below. Selection state
+   (which asset is assigned to which character/scene) stays in localStorage,
+   backed by navigator.storage.persist() below; it's cheap to redo if lost. */
 
 // Supabase anon key is meant to be public/client-side (that's the whole
 // point of the "anon" role) — same project already used by planner.html.
@@ -226,13 +227,69 @@ const AssetDB = (() => {
     return map;
   }
 
-  return { addAsset, getAssetsByType, getAsset, deleteAsset, preloadImage, getRoomHotspots, setRoomHotspot };
+  // Single/staged minigame hotspot positions (one per sceneId, or several
+  // sharing one map image via a stageIndex — e.g. the 3-stop station
+  // finder) — same per-scene JSON-blob-in-Storage pattern as room hotspots
+  // above, just keyed by stage instead of by named hotspot id:
+  // { [stageKey]: {points:[{x,y},...]} }, stageKey is '_single' or a stage
+  // index string.
+  const minigameHotspotsCache = new Map();
+  function minigameHotspotsPath(sceneId) { return `minigame-hotspots/${encodeURIComponent(sceneId)}.json`; }
+  function minigameStageKey(stageIndex) { return stageIndex == null ? '_single' : String(stageIndex); }
+
+  async function getMinigameHotspots(sceneId) {
+    if (!sceneId) return {};
+    if (minigameHotspotsCache.has(sceneId)) return minigameHotspotsCache.get(sceneId);
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${minigameHotspotsPath(sceneId)}?t=${Date.now()}`;
+    try {
+      const res = await fetch(url, { headers: { apikey: SUPABASE_ANON_KEY } });
+      const map = res.ok ? await res.json() : {};
+      minigameHotspotsCache.set(sceneId, map);
+      return map;
+    } catch (e) {
+      return minigameHotspotsCache.get(sceneId) || {};
+    }
+  }
+
+  async function getMinigameHotspot(sceneId, stageIndex) {
+    if (!sceneId) return null;
+    const all = await getMinigameHotspots(sceneId);
+    return all[minigameStageKey(stageIndex)] || null;
+  }
+
+  async function setMinigameHotspot(sceneId, stageIndex, hotspot) {
+    if (!sceneId) return {};
+    const current = await getMinigameHotspots(sceneId);
+    const map = Object.assign({}, current);
+    const key = minigameStageKey(stageIndex);
+    if (hotspot) map[key] = hotspot; else delete map[key];
+    const blob = new Blob([JSON.stringify(map)], { type: 'application/json' });
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${DEV_ASSETS_BUCKET}/${minigameHotspotsPath(sceneId)}`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'x-upsert': 'true',
+      },
+      body: blob,
+    });
+    if (!res.ok) throw new Error(`핫스팟 위치 저장 실패 (${res.status}): ${await res.text()}`);
+    minigameHotspotsCache.set(sceneId, map);
+    return map;
+  }
+
+  return {
+    addAsset, getAssetsByType, getAsset, deleteAsset, preloadImage,
+    getRoomHotspots, setRoomHotspot,
+    getMinigameHotspot, setMinigameHotspot,
+  };
 })();
 
 const DevGameState = {
   _keys: {
     background: 'mkDevSelectedBackgrounds', characters: 'mkDevSelectedCharacters',
-    transforms: 'mkDevCharacterTransforms', minigameHotspots: 'mkDevMinigameHotspots',
+    transforms: 'mkDevCharacterTransforms',
   },
 
   // Each scene (or minigame — a minigame's own background is just another
@@ -259,10 +316,6 @@ const DevGameState = {
     if (changed) localStorage.setItem(this._keys.background, JSON.stringify(map));
   },
 
-  _loadHotspotMap() {
-    try { return JSON.parse(localStorage.getItem(this._keys.minigameHotspots)) || {}; }
-    catch (e) { return {}; }
-  },
   // Minigame answer-area hotspot = { points: [{x,y}, ...] } — a free-form
   // polygon (traced corner-by-corner in /dev/upload, 3+ vertices) as
   // fractions of the background image's natural width/height, so it stays
@@ -271,21 +324,11 @@ const DevGameState = {
   // hotspotToPoints in /dev/upload and the equivalent in each minigame).
   // stageIndex selects which stop's hotspot to read/write for minigames with
   // multiple sequential targets sharing one map image (e.g. the 3-stop
-  // station-finder: 0 = 공항, 1 = 이스트우드, 2 = 마라용).
-  _hotspotKey(sceneId, stageIndex) {
-    return stageIndex == null ? sceneId : `${sceneId}::${stageIndex}`;
-  },
-  getMinigameHotspot(sceneId, stageIndex) {
-    if (!sceneId) return null;
-    return this._loadHotspotMap()[this._hotspotKey(sceneId, stageIndex)] || null;
-  },
-  setMinigameHotspot(sceneId, stageIndex, hotspot) {
-    if (!sceneId) return;
-    const map = this._loadHotspotMap();
-    const key = this._hotspotKey(sceneId, stageIndex);
-    if (hotspot) map[key] = hotspot; else delete map[key];
-    localStorage.setItem(this._keys.minigameHotspots, JSON.stringify(map));
-  },
+  // station-finder: 0 = 공항, 1 = 이스트우드, 2 = 마라용). Backed by Supabase
+  // (AssetDB), not localStorage — same reasoning as the room-hotspot
+  // comment below. Both methods are now async; callers must await them.
+  getMinigameHotspot(sceneId, stageIndex) { return AssetDB.getMinigameHotspot(sceneId, stageIndex); },
+  setMinigameHotspot(sceneId, stageIndex, hotspot) { return AssetDB.setMinigameHotspot(sceneId, stageIndex, hotspot); },
 
   // Room-search minigame variant of the hotspot above — a single background
   // image (one per area, e.g. 'week1-scene-002-2-kitchen') can hold several

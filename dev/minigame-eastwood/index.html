@@ -243,7 +243,8 @@ async function initMap() {
   LoadingOverlay.show('지도 불러오는 중');
   const assetId = DevGameState.getBackgroundId(MINIGAME_ID);
   const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
-  const savedHotspots = STAGES.map((_, i) => hotspotToPoints(DevGameState.getMinigameHotspot(MINIGAME_ID, i)));
+  const savedHotspots = await Promise.all(STAGES.map((_, i) => DevGameState.getMinigameHotspot(MINIGAME_ID, i)))
+    .then(hs => hs.map(hotspotToPoints));
   if (!asset || !asset.dataUrl || !savedHotspots.every(Boolean)) {
     LoadingOverlay.hide();
     showMissingMapNotice();
