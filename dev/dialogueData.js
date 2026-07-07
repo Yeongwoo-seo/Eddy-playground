@@ -328,6 +328,44 @@ const week1Scene002_1Lines = [
   { id: 'line-106', speaker: '', text: 'MINIGAME START', characterId: null },
 ];
 
+/* OPERATION MK — WEEK 1 · SCENE 2-3 「근데 이 열쇠 뭐지?」
+   Dialogue Set: dialogue-week1-scene002-3
+   Scene: week1-scene-002-3 (Sydney Accommodation, right after the phone-hunt
+   minigame). Reached by minigame-phone-search/'s GAME CLEAR redirect, not by
+   another scene's nextSceneId — see MINIGAME_ROUTES in game/index.html and
+   the redirect at the bottom of minigame-phone-search/index.html. Narration/
+   system beats use speaker:'' (no name shown), matching the convention used
+   throughout week1Scene001Lines/week1Scene002_1Lines. No nextSceneId yet —
+   loops like week1-scene-001 until Week 1 Scene 3 is written. */
+const week1Scene002_3Lines = [
+  { id: 'line-001', speaker: '지수', text: '찾았다.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-002', speaker: '영우', text: '아 다행이다 ㅎㅎㅎㅎㅎ', characterId: 'youngwoo', expression: 'happy' },
+  { id: 'line-003', speaker: '지수', text: '진짜 여기 있었네.', characterId: 'jisoo', expression: 'soft' },
+  { id: 'line-004', speaker: '영우', text: '아까 봤던 데 아니야?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-005', speaker: '지수', text: '그러니까.', characterId: 'jisoo', expression: 'blank' },
+  { id: 'line-006', speaker: '', text: '지수가 손에 들린 낡은 열쇠를 내려다본다.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-007', speaker: '지수', text: '근데 쌤.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-008', speaker: '영우', text: '웅?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-009', speaker: '지수', text: '이거 뭐예요?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-010', speaker: '영우', text: '뭐가?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-011', speaker: '지수', text: '아까 그 열쇠.', characterId: 'jisoo', expression: 'suspicious' },
+  { id: 'line-012', speaker: '', text: '[ 낡은 열쇠 ]', characterId: null },
+  { id: 'line-013', speaker: '영우', text: '아.', characterId: 'youngwoo', expression: 'blank' },
+  { id: 'line-014', speaker: '영우', text: '그러게.', characterId: 'youngwoo', expression: 'blank' },
+  { id: 'line-015', speaker: '지수', text: '숙소 열쇠는 아니죠?', characterId: 'jisoo', expression: 'suspicious' },
+  { id: 'line-016', speaker: '영우', text: '웅.\n여긴 카드키자나.', characterId: 'youngwoo', expression: 'neutral' },
+  { id: 'line-017', speaker: '지수', text: '...', characterId: 'jisoo', pauseBeforeMs: 300, expression: 'blank' },
+  { id: 'line-018', speaker: '영우', text: '뭐지?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-019', speaker: '지수', text: '몰라.', characterId: 'jisoo', expression: 'blank' },
+  { id: 'line-020', speaker: '지수', text: '일단 가지고 있어봐요.', characterId: 'jisoo', expression: 'neutral' },
+  { id: 'line-021', speaker: '영우', text: '내가?', characterId: 'youngwoo', expression: 'shocked' },
+  { id: 'line-022', speaker: '지수', text: '네.', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-023', speaker: '영우', text: '왜 내가 ㅋㅎㅋㅎㅋㅎㅋㅎ', characterId: 'youngwoo', expression: 'happy' },
+  { id: 'line-024', speaker: '지수', text: '몰라요.\n그냥 느낌이 그래요.', characterId: 'jisoo', expression: 'soft' },
+  { id: 'line-025', speaker: '', text: '[ ITEM ACQUIRED ]\n\nUNKNOWN KEY', characterId: null },
+  { id: 'line-026', speaker: '', text: 'SCENE COMPLETE', characterId: null },
+];
+
 /* OPERATION MK — WEEK 1 · SCENE 1-2 「지하철 역 찾기」
    Dialogue Set: dialogue-week1-scene001-2
    Scene: week1-scene-001-2 (Sydney Airport Station concourse, 09:45)
@@ -382,8 +420,20 @@ const week1Scenes = [
     time: '20:18',
     lines: week1Scene002_1Lines,
     // Not a loop — this scene hands off to the point-and-click phone-hunt
-    // minigame (week1-scene-002-2), which isn't built yet. See game/index.html.
+    // minigame (week1-scene-002-2). See MINIGAME_ROUTES in game/index.html.
     nextSceneId: 'week1-scene-002-2',
+  },
+  {
+    id: 'week1-scene-002-3',
+    order: 4,
+    name: '근데 이 열쇠 뭐지?',
+    location: 'Sydney Accommodation',
+    introLabel: 'ACCOMMODATION',
+    time: '20:41',
+    lines: week1Scene002_3Lines,
+    // Reached from the phone-search minigame's GAME CLEAR redirect, not from
+    // another VN scene's nextSceneId — listed here so /dev/week1 and the
+    // dev asset selector can still target it directly for testing.
   },
 ];
 

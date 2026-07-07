@@ -9,6 +9,7 @@ const APP_SHELL = [
   '/dev/upload/',
   '/dev/login/',
   '/dev/minigame-eastwood/',
+  '/dev/minigame-phone-search/',
   '/dev/assetDb.js',
   '/dev/dialogueData.js',
   '/dev/vnPlayer.js',

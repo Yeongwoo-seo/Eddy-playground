@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>OPERATION MK · 핸드폰을 찾아라</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<meta name="theme-color" content="#080A0C">
+<link rel="manifest" href="/dev/manifest.json">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="OPERATION MK DEV">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+:root{
+  --bg:#080A0C;--surface-1:#101419;--surface-2:#171C22;--surface-3:#1E252D;
+  --text-primary:#EDF1F4;--text-secondary:#929BA5;--text-muted:#5F6872;
+  --cyan:#59B8C8;--amber:#D6A84B;--signal-red:#D94141;--divider:rgba(255,255,255,0.08);
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sans:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
+}
+html,body{height:100%}
+body{background:#000;color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center}
+
+.frame{position:relative;width:100%;max-width:430px;height:100dvh;height:100vh;height:var(--vh100, 100vh);overflow:hidden;background:var(--bg);display:flex;flex-direction:column}
+
+/* ===== Top bar + mission strip ===== */
+.topbar{flex-shrink:0;padding:calc(14px + env(safe-area-inset-top,0)) 16px 10px;display:flex;justify-content:space-between;align-items:center}
+.vn-btn{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:#fff;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:9px 14px;cursor:pointer;text-decoration:none;display:inline-block}
+.mission-bar{flex-shrink:0;margin:0 16px 12px;background:var(--surface-1);border:1px solid var(--divider);border-radius:14px;padding:12px 14px}
+.mission-label{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px}
+.mission-target{font-size:16px;font-weight:800;color:var(--amber)}
+
+/* ===== Room view ===== */
+.room-view{flex:1;min-height:0;overflow-y:auto;padding:4px 16px 14px;display:flex;flex-direction:column;transition:opacity .3s ease}
+.area-heading{font-size:15px;font-weight:700;color:var(--text-secondary);margin-bottom:10px}
+.hotspot-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.hotspot-btn{min-height:52px;background:var(--surface-1);border:1px solid var(--divider);border-radius:14px;padding:12px 14px;color:var(--text-primary);font-family:var(--sans);font-size:14px;font-weight:600;text-align:left;cursor:pointer;transition:background .15s,transform .15s}
+.hotspot-btn:active{transform:scale(.97);background:var(--surface-2)}
+.result-strip{margin-top:14px;background:rgba(255,255,255,.03);border:1px dashed var(--divider);border-radius:12px;padding:12px 14px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:var(--cyan);white-space:pre-wrap;word-break:keep-all;min-height:1.6em}
+.room-view.locked{pointer-events:none;opacity:.5}
+
+/* ===== Inventory bar ===== */
+.inv-bar{flex-shrink:0;display:flex;gap:10px;padding:10px 16px;border-top:1px solid var(--divider);overflow-x:auto;transition:opacity .3s ease}
+.inv-bar.hidden{display:none}
+.inv-item{width:44px;height:44px;flex-shrink:0;border-radius:12px;background:var(--surface-1);border:1px solid var(--divider);display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;transition:background .15s,border-color .15s}
+.inv-item.selectable{cursor:pointer}
+.inv-item.fixed{cursor:default}
+.inv-item.selected{background:rgba(89,184,200,.18);border-color:var(--cyan);box-shadow:0 0 0 1px var(--cyan) inset}
+.inv-empty{font-family:var(--mono);font-size:11px;color:var(--text-muted);align-self:center}
+
+/* ===== Area tabs ===== */
+.tab-bar{flex-shrink:0;display:flex;border-top:1px solid var(--divider);padding-bottom:env(safe-area-inset-bottom,0);transition:opacity .3s ease}
+.tab-bar.hidden{display:none}
+.tab-btn{flex:1;background:none;border:none;color:var(--text-muted);font-family:var(--sans);font-size:13px;font-weight:600;padding:13px 4px;cursor:pointer;position:relative}
+.tab-btn.active{color:var(--amber)}
+.tab-btn.active::after{content:'';position:absolute;top:0;left:20%;right:20%;height:2px;background:var(--amber);border-radius:2px}
+
+/* ===== Dialogue popup (tap-through, reused vnPlayer engine) ===== */
+.msg-layer{position:absolute;inset:0;z-index:8;display:none;flex-direction:column;justify-content:flex-end;cursor:pointer}
+.msg-layer.show{display:flex}
+.msg-scrim{position:absolute;inset:0;background:rgba(0,0,0,.35)}
+.msg-panel{position:relative;background:rgba(5,7,10,.92);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-top:1px solid rgba(255,255,255,.08);padding:18px 20px calc(18px + env(safe-area-inset-bottom,0));min-height:24vh;display:flex;flex-direction:column}
+.msg-name{font-size:15px;font-weight:700;color:var(--cyan);margin-bottom:8px}
+.msg-name:empty{display:none}
+.msg-text{flex:1;font-size:16px;line-height:1.65;color:#fff;white-space:pre-wrap;word-break:keep-all}
+.msg-foot{display:flex;justify-content:flex-end;padding-top:6px}
+.msg-arrow{font-size:13px;color:var(--text-secondary);visibility:hidden}
+@keyframes arrowBob{0%,100%{transform:translateY(0)}50%{transform:translateY(4px)}}
+.msg-arrow.show{visibility:visible;animation:arrowBob 1.1s ease-in-out infinite}
+
+/* ===== GAME CLEAR stamp + fade/redirect ===== */
+.stamp{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(.85);z-index:9;font-family:var(--mono);font-size:32px;font-weight:700;letter-spacing:.12em;color:var(--cyan);text-shadow:0 0 24px rgba(89,184,200,.6);opacity:0;pointer-events:none}
+.stamp.show{animation:stampPop 1.3s ease-out forwards}
+@keyframes stampPop{0%{opacity:0;transform:translate(-50%,-50%) scale(.7)}18%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}30%{transform:translate(-50%,-50%) scale(1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) scale(1)}}
+.fade-overlay{position:absolute;inset:0;z-index:10;background:#000;opacity:0;pointer-events:none;transition:opacity .9s ease}
+.fade-overlay.show{opacity:1}
+
+/* ===== Dev debug sheet ===== */
+.sheet-overlay{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center}
+.sheet-overlay.hidden{display:none}
+.sheet{width:100%;max-width:430px;background:var(--surface-1);border-radius:20px 20px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom,0));border-top:1px solid var(--divider)}
+.sheet-title{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--text-muted);margin-bottom:14px;text-transform:uppercase}
+.sheet-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.sheet-btn{background:var(--surface-2);color:var(--text-primary);border:1px solid var(--divider);border-radius:10px;padding:12px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:var(--mono)}
+.sheet-btn.danger{color:var(--signal-red);border-color:rgba(217,65,65,.4)}
+.sheet-close{width:100%;margin-top:4px;background:var(--surface-2);color:var(--text-primary);border:1px solid var(--divider);border-radius:10px;padding:13px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--mono);letter-spacing:.06em}
+</style>
+</head>
+<body>
+<div class="frame" id="frame">
+  <div class="topbar">
+    <a class="vn-btn" href="/dev/">← DEV</a>
+    <button class="vn-btn" id="devBtn">DEV</button>
+  </div>
+
+  <div class="mission-bar">
+    <div class="mission-label">미션</div>
+    <div class="mission-target">지수의 핸드폰을 찾아라</div>
+  </div>
+
+  <div class="room-view" id="roomView">
+    <div class="area-heading" id="areaHeading"></div>
+    <div class="hotspot-grid" id="hotspotGrid"></div>
+    <div class="result-strip" id="resultStrip"></div>
+  </div>
+
+  <div class="inv-bar" id="invBar"></div>
+
+  <div class="tab-bar" id="tabBar"></div>
+
+  <div class="msg-layer" id="msgLayer">
+    <div class="msg-scrim"></div>
+    <div class="msg-panel">
+      <div class="msg-name" id="msgName"></div>
+      <div class="msg-text" id="msgText"></div>
+      <div class="msg-foot"><span class="msg-arrow" id="msgArrow">▼</span></div>
+    </div>
+  </div>
+
+  <div class="stamp" id="stamp">GAME CLEAR</div>
+  <div class="fade-overlay" id="fadeOverlay"></div>
+</div>
+
+<div class="sheet-overlay hidden" id="sheetOverlay">
+  <div class="sheet">
+    <div class="sheet-title">Dev · Minigame Debug</div>
+    <div class="sheet-grid">
+      <button class="sheet-btn" id="btnGiveFlashlight">GIVE FLASHLIGHT</button>
+      <button class="sheet-btn" id="btnGiveHook">GIVE HOOK</button>
+      <button class="sheet-btn" id="btnGiveKey">GIVE KEY</button>
+      <button class="sheet-btn" id="btnUnlockPhone">UNLOCK PHONE</button>
+      <button class="sheet-btn danger" id="btnResetMinigame">RESET MINIGAME</button>
+      <button class="sheet-btn danger" id="btnClearState">CLEAR STATE</button>
+    </div>
+    <button class="sheet-close" id="sheetCloseBtn">CLOSE</button>
+  </div>
+</div>
+
+<script>
+function setVh100() { document.documentElement.style.setProperty('--vh100', window.innerHeight + 'px'); }
+setVh100();
+window.addEventListener('resize', setVh100);
+window.addEventListener('orientationchange', setVh100);
+if (window.visualViewport) window.visualViewport.addEventListener('resize', setVh100);
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
+}
+</script>
+<script src="/dev/assetDb.js"></script>
+<script src="/dev/dialogueData.js"></script>
+<script src="/dev/vnPlayer.js"></script>
+<script>
+/* OPERATION MK — WEEK 1 · SCENE 2-2 「핸드폰을 찾아라」
+   Point-and-click room search. Absolute rule this file exists to enforce:
+   the player CANNOT find jisu-phone until unknown-key has been found AND the
+   forced phoneUnlocked event has played — see canRevealPhone() below, which
+   every phone-reveal path (including the DEV sheet) must go through. State
+   persists in localStorage so a refresh mid-search doesn't lose progress. */
+const MINIGAME_ID = 'week1-scene-002-2';
+const STATE_KEY = 'mkPhoneSearchState_v1';
+
+const ITEM_DEFS = {
+  flashlight: { icon: '🔦', name: '손전등', selectable: true },
+  hook: { icon: '🪝', name: '갈고리', selectable: true },
+  'unknown-key': { icon: '🗝️', name: '낡은 열쇠', selectable: false },
+  lipbalm: { icon: '💄', name: '립밤', selectable: false },
+  'jisu-phone': { icon: '📱', name: '핸드폰', selectable: false },
+};
+
+// Hotspot ids are unique across areas, so a single flat lookup is enough —
+// no need to namespace by areaId.
+const AREAS = [
+  { id: 'bed', label: '침대', hotspots: [
+    { id: 'bed', label: '침대' },
+    { id: 'pillow', label: '베개' },
+    { id: 'blanket', label: '이불' },
+    { id: 'under-bed', label: '침대 밑' },
+    { id: 'behind-bed', label: '침대 뒤' },
+    { id: 'bedside-table', label: '협탁' },
+  ] },
+  { id: 'living', label: '거실', hotspots: [
+    { id: 'sofa', label: '소파' },
+    { id: 'sofa-cushion', label: '소파 쿠션' },
+    { id: 'under-sofa', label: '소파 밑' },
+    { id: 'behind-sofa', label: '소파 뒤' },
+    { id: 'coffee-table', label: '테이블' },
+  ] },
+  { id: 'desk', label: '책상', hotspots: [
+    { id: 'desk', label: '책상' },
+    { id: 'desk-drawer', label: '책상 서랍' },
+    { id: 'tv-stand', label: 'TV장' },
+    { id: 'charger-area', label: '충전기 옆' },
+    { id: 'bag', label: '가방' },
+  ] },
+  { id: 'entrance', label: '현관', hotspots: [
+    { id: 'shoe-cabinet', label: '신발장' },
+    { id: 'closet', label: '옷장' },
+    { id: 'upper-shelf', label: '선반 위' },
+    { id: 'luggage', label: '캐리어' },
+    { id: 'utility-cabinet', label: '수납장' },
+  ] },
+];
+
+// Flavor text for hotspots with no special gating logic — fixed, not random
+// (brief explicitly forbids randomized key/phone placement; keeping every
+// result deterministic is simplest and consistent).
+const FLAVOR = {
+  bed: '평범한 침대다.',
+  pillow: '베개일 뿐이다.',
+  blanket: '그냥 이불이다.',
+  'behind-bed': '먼지만 조금 있다.',
+  'bedside-table': '별거 없다.',
+  sofa: '평범한 소파다.',
+  'behind-sofa': '아무것도 없다.',
+  'coffee-table': '잡지 몇 권이 있다.',
+  desk: '책상이다.',
+  'desk-drawer': '필기구뿐이다.',
+  'charger-area': '충전기만 꽂혀 있다.',
+  bag: '지수 가방이다. 뒤져볼 필요는 없을 것 같다.',
+  'shoe-cabinet': '신발뿐이다.',
+  closet: '옷 몇 벌이 걸려있다.',
+  luggage: '캐리어다. 아직 짐도 안 풀었다.',
+  'utility-cabinet': '청소도구뿐이다.',
+};
+
+const DARK_UNDER_BED_LINES = [
+  { speaker: '영우', text: '어두워서 안 보이네.', characterId: 'youngwoo', expression: 'blank' },
+  { speaker: '지수', text: '쌤 눈 크게 떠봐요.', characterId: 'jisoo', expression: 'smirk' },
+  { speaker: '영우', text: '그걸로 되는 문제야?', characterId: 'youngwoo', expression: 'curious' },
+];
+const HOOK_LINES = [
+  { speaker: '영우', text: '이건 왜 있지.', characterId: 'youngwoo', expression: 'curious' },
+  { speaker: '지수', text: '몰라.\n일단 가져요.', characterId: 'jisoo', expression: 'neutral' },
+  { speaker: '영우', text: '왜 이렇게 자연스럽게 챙겨 ㅋㅎㅋㅎㅋㅎㅋㅎ', characterId: 'youngwoo', expression: 'happy' },
+];
+const LIPBALM_LINES = [
+  { speaker: '지수', text: '헐 내 거다.', characterId: 'jisoo', expression: 'shocked' },
+  { speaker: '영우', text: '핸드폰 찾다가 립밤 찾았네.', characterId: 'youngwoo', expression: 'curious' },
+  { speaker: '지수', text: '개이득.', characterId: 'jisoo', expression: 'smirk' },
+];
+const KEY_FORCED_LINES = [
+  { speaker: '', text: '부우웅—', characterId: null },
+  { speaker: '지수', text: '...어?', characterId: 'jisoo', expression: 'shocked' },
+  { speaker: '영우', text: '핸드폰 아니야?', characterId: 'youngwoo', expression: 'curious' },
+  { speaker: '지수', text: '맞아.', characterId: 'jisoo', expression: 'shocked' },
+  { speaker: '', text: '부우웅—', characterId: null },
+];
+
+function defaultState() {
+  return {
+    currentAreaId: 'bed',
+    inventoryItemIds: [],
+    selectedItemId: null,
+    flags: { keyVisible: false, keyFound: false, phoneUnlocked: false, phoneFound: false },
+    completed: false,
+    coinShown: false,
+    lastMessage: '방 안 어딘가에 핸드폰이 있을 것이다.',
+  };
+}
+
+function loadState() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(STATE_KEY));
+    if (!raw || typeof raw !== 'object') return defaultState();
+    return Object.assign(defaultState(), raw, { flags: Object.assign(defaultState().flags, raw.flags || {}) });
+  } catch (e) { return defaultState(); }
+}
+
+let state = loadState();
+function saveState() { localStorage.setItem(STATE_KEY, JSON.stringify(state)); }
+
+function hasItem(id) { return state.inventoryItemIds.includes(id); }
+function addItem(id) {
+  if (hasItem(id)) return;
+  state.inventoryItemIds.push(id);
+  saveState();
+}
+
+function canRevealPhone() {
+  return state.flags.keyFound && state.flags.phoneUnlocked;
+}
+
+function setMessage(text) {
+  state.lastMessage = text;
+  saveState();
+  el.resultStrip.textContent = text;
+}
+
+const el = {
+  frame: document.getElementById('frame'),
+  devBtn: document.getElementById('devBtn'),
+  roomView: document.getElementById('roomView'),
+  areaHeading: document.getElementById('areaHeading'),
+  hotspotGrid: document.getElementById('hotspotGrid'),
+  resultStrip: document.getElementById('resultStrip'),
+  invBar: document.getElementById('invBar'),
+  tabBar: document.getElementById('tabBar'),
+  msgLayer: document.getElementById('msgLayer'),
+  msgName: document.getElementById('msgName'),
+  msgText: document.getElementById('msgText'),
+  msgArrow: document.getElementById('msgArrow'),
+  stamp: document.getElementById('stamp'),
+  fadeOverlay: document.getElementById('fadeOverlay'),
+  sheetOverlay: document.getElementById('sheetOverlay'),
+  sheetCloseBtn: document.getElementById('sheetCloseBtn'),
+};
+
+/* ===== Dialogue popup (tap-through story beats only — item pickups/flavor
+   text use the instant result strip instead, per the brief's "미니게임 중
+   긴 대화 컷신 남발 금지"). ===== */
+let dialogueActive = false;
+function queueDialogue(lines, onComplete) {
+  dialogueActive = true;
+  el.msgLayer.classList.add('show');
+  const player = createVNPlayer({
+    onLineChange: (line) => { el.msgName.textContent = line.speaker || ''; },
+    onTextUpdate: (text) => { el.msgText.textContent = text; },
+    onArrow: (show) => el.msgArrow.classList.toggle('show', show),
+    onComplete: () => {
+      el.msgLayer.classList.remove('show');
+      dialogueActive = false;
+      el.msgLayer.removeEventListener('click', tapHandler);
+      if (onComplete) onComplete();
+    },
+  });
+  const tapHandler = () => player.tap();
+  el.msgLayer.addEventListener('click', tapHandler);
+  player.load(lines.map(l => ({ speaker: l.speaker, text: l.text })));
+}
+
+/* ===== Forced key -> phone-unlock event (section 11 of the brief) =====
+   Scheduled 700-1200ms after the key is found, independent of what the
+   player taps in the meantime — the phone stays gated on phoneUnlocked
+   regardless, so there's no way to race past it. Also re-armed on page load
+   if a refresh happened between keyFound and phoneUnlocked, otherwise a
+   refresh in that narrow window would soft-lock the phone forever. */
+let forcedEventArmed = false;
+function scheduleForcedPhoneUnlock(delayMs) {
+  if (forcedEventArmed || state.flags.phoneUnlocked || state.completed) return;
+  forcedEventArmed = true;
+  setTimeout(() => {
+    if (navigator.vibrate) navigator.vibrate(200);
+    playBuzzSound();
+    queueDialogue(KEY_FORCED_LINES, () => {
+      state.flags.phoneUnlocked = true;
+      saveState();
+      setMessage('[ 어디선가 진동 소리가 들린다 ]');
+    });
+  }, delayMs);
+}
+
+function playBuzzSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(90, ctx.currentTime);
+    g.gain.setValueAtTime(0.0001, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.22, ctx.currentTime + 0.05);
+    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.5);
+    o.connect(g); g.connect(ctx.destination);
+    o.start(); o.stop(ctx.currentTime + 0.5);
+  } catch (e) { /* audio unavailable — not critical to gameplay */ }
+}
+function playSuccessBeep() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(880, ctx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(1320, ctx.currentTime + 0.15);
+    g.gain.setValueAtTime(0.0001, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.4);
+    o.connect(g); g.connect(ctx.destination);
+    o.start(); o.stop(ctx.currentTime + 0.4);
+  } catch (e) { /* audio unavailable — not critical to gameplay */ }
+}
+
+/* ===== Hotspot handlers ===== */
+function handleFlashlight() {
+  if (hasItem('flashlight')) { setMessage('이미 챙겼다.'); return; }
+  addItem('flashlight');
+  setMessage('[ 손전등을 발견했다 ]');
+  render();
+}
+function handleHook() {
+  if (hasItem('hook')) { setMessage('이미 챙겼다.'); return; }
+  addItem('hook');
+  setMessage('[ 긴 갈고리를 발견했다 ]');
+  render();
+  queueDialogue(HOOK_LINES);
+}
+function handleUnderBed() {
+  if (state.flags.keyFound) { setMessage('이미 다 찾아봤다.'); return; }
+  if (state.selectedItemId === 'hook') {
+    if (state.flags.keyVisible) {
+      addItem('unknown-key');
+      state.flags.keyFound = true;
+      state.selectedItemId = null;
+      saveState();
+      setMessage('짤랑.\n[ 낡은 열쇠를 발견했다 ]');
+      render();
+      scheduleForcedPhoneUnlock(900);
+    } else {
+      setMessage('손이 닿지 않는다. 뭔가 다른 게 먼저 필요할 것 같다.');
+    }
+    return;
+  }
+  if (state.selectedItemId === 'flashlight') {
+    if (!state.flags.keyVisible) {
+      state.flags.keyVisible = true;
+      saveState();
+      setMessage('반짝이는 무언가가 보인다.\n하지만 손이 닿지 않는다.');
+    } else {
+      setMessage('아까 그 반짝이는 물건이다. 손이 닿지 않는다.');
+    }
+    return;
+  }
+  if (!hasItem('flashlight')) {
+    queueDialogue(DARK_UNDER_BED_LINES);
+  } else if (state.flags.keyVisible) {
+    setMessage('반짝이는 게 보이는데 손이 닿지 않는다.');
+  } else {
+    setMessage('어두워서 잘 보이지 않는다.');
+  }
+}
+function handleSofaCushion() {
+  if (state.completed) return;
+  if (canRevealPhone()) { handlePhoneFound(); return; }
+  if (!state.coinShown) {
+    state.coinShown = true;
+    saveState();
+    setMessage('동전 하나가 있다.');
+  } else {
+    setMessage('아무것도 없다.');
+  }
+}
+function handleUnderSofa() {
+  if (state.selectedItemId === 'flashlight' && !hasItem('lipbalm')) {
+    addItem('lipbalm');
+    setMessage('[ 립밤을 발견했다 ]');
+    render();
+    queueDialogue(LIPBALM_LINES);
+    return;
+  }
+  setMessage('아무것도 없다.');
+}
+
+const HOTSPOT_HANDLERS = {
+  'tv-stand': handleFlashlight,
+  'upper-shelf': handleHook,
+  'under-bed': handleUnderBed,
+  'sofa-cushion': handleSofaCushion,
+  'under-sofa': handleUnderSofa,
+};
+
+function onHotspotTap(hotspotId) {
+  if (dialogueActive || state.completed) return;
+  const handler = HOTSPOT_HANDLERS[hotspotId];
+  if (handler) { handler(); return; }
+  setMessage(FLAVOR[hotspotId] || '아무것도 없다.');
+}
+
+/* ===== GAME CLEAR ===== */
+function handlePhoneFound() {
+  addItem('jisu-phone');
+  state.flags.phoneFound = true;
+  state.completed = true;
+  saveState();
+  render();
+  setMessage('부우웅—');
+  if (navigator.vibrate) navigator.vibrate([120, 80, 160]);
+  playBuzzSound();
+  setTimeout(() => {
+    setMessage('[ 지수의 핸드폰을 발견했다 ]');
+    setTimeout(() => {
+      playSuccessBeep();
+      el.stamp.classList.add('show');
+      setTimeout(() => {
+        el.fadeOverlay.classList.add('show');
+        setTimeout(() => { location.href = '/dev/game/?scene=week1-scene-002-3'; }, 950);
+      }, 1000);
+    }, 700);
+  }, 700);
+}
+
+/* ===== Rendering ===== */
+function selectItem(itemId) {
+  if (state.completed) return;
+  const def = ITEM_DEFS[itemId];
+  if (!def || !def.selectable) return;
+  state.selectedItemId = (state.selectedItemId === itemId) ? null : itemId;
+  saveState();
+  render();
+}
+
+function render() {
+  const area = AREAS.find(a => a.id === state.currentAreaId) || AREAS[0];
+  el.areaHeading.textContent = area.label;
+  el.hotspotGrid.innerHTML = '';
+  area.hotspots.forEach(h => {
+    const btn = document.createElement('button');
+    btn.className = 'hotspot-btn';
+    btn.textContent = h.label;
+    btn.addEventListener('click', () => onHotspotTap(h.id));
+    el.hotspotGrid.appendChild(btn);
+  });
+  el.resultStrip.textContent = state.lastMessage;
+
+  el.invBar.innerHTML = '';
+  if (!state.inventoryItemIds.length) {
+    const empty = document.createElement('div');
+    empty.className = 'inv-empty';
+    empty.textContent = '인벤토리가 비어 있다';
+    el.invBar.appendChild(empty);
+  } else {
+    state.inventoryItemIds.forEach(itemId => {
+      const def = ITEM_DEFS[itemId];
+      if (!def) return;
+      const btn = document.createElement('button');
+      btn.className = 'inv-item ' + (def.selectable ? 'selectable' : 'fixed');
+      if (state.selectedItemId === itemId) btn.classList.add('selected');
+      btn.textContent = def.icon;
+      btn.title = def.name;
+      btn.addEventListener('click', () => selectItem(itemId));
+      el.invBar.appendChild(btn);
+    });
+  }
+
+  el.tabBar.innerHTML = '';
+  AREAS.forEach(a => {
+    const btn = document.createElement('button');
+    btn.className = 'tab-btn' + (a.id === state.currentAreaId ? ' active' : '');
+    btn.textContent = a.label;
+    btn.addEventListener('click', () => {
+      if (state.completed) return;
+      state.currentAreaId = a.id;
+      saveState();
+      render();
+    });
+    el.tabBar.appendChild(btn);
+  });
+
+  el.roomView.classList.toggle('locked', state.completed);
+  el.invBar.classList.toggle('hidden', state.completed);
+  el.tabBar.classList.toggle('hidden', state.completed);
+}
+
+/* ===== Dev debug sheet ===== */
+el.devBtn.addEventListener('click', () => el.sheetOverlay.classList.remove('hidden'));
+el.sheetCloseBtn.addEventListener('click', () => el.sheetOverlay.classList.add('hidden'));
+el.sheetOverlay.addEventListener('click', (e) => { if (e.target === el.sheetOverlay) el.sheetOverlay.classList.add('hidden'); });
+
+document.getElementById('btnGiveFlashlight').addEventListener('click', () => { addItem('flashlight'); render(); });
+document.getElementById('btnGiveHook').addEventListener('click', () => { addItem('hook'); render(); });
+document.getElementById('btnGiveKey').addEventListener('click', () => {
+  addItem('unknown-key');
+  state.flags.keyFound = true;
+  saveState();
+  render();
+  scheduleForcedPhoneUnlock(600);
+});
+document.getElementById('btnUnlockPhone').addEventListener('click', () => { state.flags.phoneUnlocked = true; saveState(); render(); });
+document.getElementById('btnResetMinigame').addEventListener('click', () => {
+  state = defaultState();
+  saveState();
+  location.reload();
+});
+document.getElementById('btnClearState').addEventListener('click', () => {
+  localStorage.removeItem(STATE_KEY);
+  location.reload();
+});
+
+/* ===== Boot ===== */
+render();
+// A refresh that landed between "key found" and "phone unlocked" must not
+// soft-lock the phone forever — re-arm the forced event on load.
+if (state.flags.keyFound && !state.flags.phoneUnlocked && !state.completed) {
+  scheduleForcedPhoneUnlock(800);
+}
+</script>
+</body>
+</html>
