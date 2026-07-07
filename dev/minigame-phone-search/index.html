@@ -53,36 +53,43 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
    /dev/upload, so the puzzle stays fully playable before real photos exist.
    Padded top/bottom to clear the floating topbar/status-card/FAB row since
    it's a static scrollable list, unlike the pannable photo stage. */
-.grid-scroll{position:absolute;inset:0;overflow-y:auto;padding:calc(60px + env(safe-area-inset-top,0)) 16px calc(230px + env(safe-area-inset-bottom,0))}
+.grid-scroll{position:absolute;inset:0;overflow-y:auto;padding:calc(104px + env(safe-area-inset-top,0)) 16px calc(140px + env(safe-area-inset-bottom,0))}
 .grid-scroll.hidden{display:none}
 .hotspot-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .hotspot-btn{min-height:52px;background:var(--surface-1);border:1px solid var(--divider);border-radius:14px;padding:12px 14px;color:var(--text-primary);font-family:var(--sans);font-size:14px;font-weight:600;text-align:left;cursor:pointer;transition:background .15s,transform .15s}
 .hotspot-btn:active{transform:scale(.97);background:var(--surface-2)}
 
-/* ===== Status card — area name + mission + last result, floating above
-   the FAB row (same anchor as item/move popups) instead of live inside
-   room-view's flow, so the photo/grid behind it can be full-bleed. ===== */
-.status-card{position:absolute;left:16px;right:16px;bottom:calc(96px + env(safe-area-inset-bottom,0));z-index:4;background:rgba(5,7,10,.86);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.1);border-radius:18px;box-shadow:0 8px 28px rgba(0,0,0,.35);padding:14px 16px;transition:opacity .3s ease}
-.status-card.locked{pointer-events:none;opacity:.5}
-.area-heading{font-size:13px;font-weight:700;color:var(--text-secondary);margin-bottom:6px}
-.mission-line{font-size:13.5px;font-weight:700;color:var(--cyan);letter-spacing:.01em;margin-bottom:6px}
-.result-strip{background:rgba(255,255,255,.03);border:1px dashed var(--divider);border-radius:12px;padding:10px 12px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:var(--cyan);white-space:pre-wrap;word-break:keep-all;min-height:1.4em;max-height:18vh;overflow-y:auto}
+/* ===== Status card — area name + mission only (persistent context, not a
+   message). Sits low now that the FAB row moved up to the topbar area, so
+   the photo/grid behind it can be full-bleed. ===== */
+.status-card{position:relative;background:rgba(5,7,10,.86);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.1);border-radius:18px;box-shadow:0 8px 28px rgba(0,0,0,.35);padding:14px 16px;transition:opacity .3s ease}
+.area-heading{font-size:13px;font-weight:700;color:var(--text-secondary);margin-bottom:4px}
+.mission-line{font-size:13.5px;font-weight:700;color:var(--cyan);letter-spacing:.01em}
+
+/* ===== Flavor box — the per-tap result text. Only exists on screen while
+   there's something to say: appears on a hotspot tap, auto-closes once
+   it's been read, instead of sitting permanently docked. ===== */
+.flavor-box{position:relative;background:rgba(255,255,255,.03);border:1px dashed var(--divider);border-radius:12px;padding:10px 12px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:var(--cyan);white-space:pre-wrap;word-break:keep-all;max-height:18vh;overflow-y:auto;opacity:0;transform:translateY(6px);pointer-events:none;transition:opacity .3s ease,transform .3s ease}
+.flavor-box.show{opacity:1;transform:translateY(0)}
+
+.bottom-stack{position:absolute;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0));z-index:4;display:flex;flex-direction:column;gap:10px;transition:opacity .3s ease}
+.bottom-stack.locked{pointer-events:none;opacity:.5}
+
 .debug-hotspot-box{position:absolute;border:1px dashed var(--cyan);background:rgba(89,184,200,.12);color:var(--cyan);font-family:var(--mono);font-size:9px;line-height:1.3;padding:1px 3px;pointer-events:none;overflow:hidden;white-space:nowrap}
 
-/* ===== Floating action buttons — replace the old always-visible area tabs
-   + inventory list, freeing the room view to fill the screen. ===== */
-.fab-row{position:absolute;left:0;right:0;bottom:0;z-index:6;display:flex;justify-content:space-between;padding:0 16px calc(16px + env(safe-area-inset-bottom,0));pointer-events:none;transition:opacity .3s ease}
+/* ===== Item/move buttons — moved up next to the topbar (was a floating
+   bottom FAB row), text-only pills matching vn-btn instead of emoji icons. ===== */
+.fab-row{position:absolute;left:16px;right:16px;top:calc(58px + env(safe-area-inset-top,0));z-index:6;display:flex;gap:8px;pointer-events:none;transition:opacity .3s ease}
 .fab-row.hidden{display:none}
-.fab-btn{pointer-events:auto;width:64px;height:64px;border-radius:20px;background:var(--surface-1);border:1px solid var(--divider);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.45)}
-.fab-btn:active{transform:scale(.95);background:var(--surface-2)}
-.fab-btn .fab-icon{font-size:22px;line-height:1}
-.fab-btn .fab-label{font-family:var(--mono);font-size:9.5px;color:var(--text-secondary);letter-spacing:.02em}
+.fab-btn{pointer-events:auto;font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:#fff;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:9px 14px;cursor:pointer}
+.fab-btn:active{transform:scale(.96);background:rgba(255,255,255,.12)}
+.fab-btn.active{color:var(--amber);border-color:rgba(214,168,75,.4);background:rgba(214,168,75,.1)}
 
 /* ===== Item popup — icon-only grid, tap to select/combine (no text list,
    no separate 조사/조합 confirm buttons — tapping IS the action). ===== */
 .popup-scrim{position:absolute;inset:0;z-index:5;background:rgba(0,0,0,.4);display:none}
 .popup-scrim.show{display:block}
-.item-popup{position:absolute;left:16px;bottom:calc(96px + env(safe-area-inset-bottom,0));z-index:5;background:var(--surface-1);border:1px solid var(--divider);border-radius:18px;padding:14px;display:none;box-shadow:0 12px 32px rgba(0,0,0,.5);max-width:calc(100% - 32px)}
+.item-popup{position:absolute;left:16px;top:calc(100px + env(safe-area-inset-top,0));z-index:5;background:var(--surface-1);border:1px solid var(--divider);border-radius:18px;padding:14px;display:none;box-shadow:0 12px 32px rgba(0,0,0,.5);max-width:calc(100% - 32px)}
 .item-popup.show{display:block}
 .item-popup-title{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase;margin-bottom:10px}
 .item-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:264px;max-height:38vh;overflow-y:auto}
@@ -97,7 +104,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .item-tooltip-desc{font-size:11.5px;color:var(--text-secondary);line-height:1.5}
 
 /* ===== Move popup — replaces the always-visible area tab bar. ===== */
-.move-popup{position:absolute;right:16px;bottom:calc(96px + env(safe-area-inset-bottom,0));z-index:5;background:var(--surface-1);border:1px solid var(--divider);border-radius:18px;padding:10px;display:none;box-shadow:0 12px 32px rgba(0,0,0,.5);min-width:160px}
+.move-popup{position:absolute;right:16px;top:calc(100px + env(safe-area-inset-top,0));z-index:5;background:var(--surface-1);border:1px solid var(--divider);border-radius:18px;padding:10px;display:none;box-shadow:0 12px 32px rgba(0,0,0,.5);min-width:160px}
 .move-popup.show{display:block}
 .move-popup-title{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase;padding:4px 8px 8px}
 .move-item-btn{display:block;width:100%;text-align:left;background:none;border:none;color:var(--text-primary);font-family:var(--sans);font-size:14px;font-weight:600;padding:11px 10px;border-radius:10px;cursor:pointer}
@@ -160,10 +167,12 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
     </div>
   </div>
 
-  <div class="status-card" id="statusCard">
-    <div class="area-heading" id="areaHeading"></div>
-    <div class="mission-line" id="missionLine">지수의 핸드폰을 찾아라</div>
-    <div class="result-strip" id="resultStrip"></div>
+  <div class="bottom-stack" id="bottomStack">
+    <div class="status-card" id="statusCard">
+      <div class="area-heading" id="areaHeading"></div>
+      <div class="mission-line" id="missionLine">지수의 핸드폰을 찾아라</div>
+    </div>
+    <div class="flavor-box" id="flavorBox"></div>
   </div>
 
   <div class="popup-scrim" id="popupScrim"></div>
@@ -183,8 +192,8 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
   </div>
 
   <div class="fab-row" id="fabRow">
-    <button class="fab-btn" id="itemFabBtn"><span class="fab-icon">🎒</span><span class="fab-label">아이템</span></button>
-    <button class="fab-btn" id="moveFabBtn"><span class="fab-icon">🚪</span><span class="fab-label">이동</span></button>
+    <button class="fab-btn" id="itemFabBtn">아이템</button>
+    <button class="fab-btn" id="moveFabBtn">이동</button>
   </div>
 
   <div class="acquire-toast" id="acquireToast">
@@ -502,10 +511,18 @@ setInterval(() => {
   }
 }, 5000);
 
+// Flavor box behaves like a transient toast, not a permanently docked
+// panel — it appears on a hotspot tap and auto-closes once read, per the
+// brief's "항상 떠있는게 아니라" (not always floating).
+let flavorBoxTimer = null;
 function setMessage(text) {
   state.lastMessage = text;
   saveState();
-  el.resultStrip.textContent = text;
+  el.flavorBox.textContent = text;
+  clearTimeout(flavorBoxTimer);
+  if (!text) { el.flavorBox.classList.remove('show'); return; }
+  el.flavorBox.classList.add('show');
+  flavorBoxTimer = setTimeout(() => el.flavorBox.classList.remove('show'), 3200);
 }
 
 const el = {
@@ -518,7 +535,8 @@ const el = {
   photoCanvas: document.getElementById('photoCanvas'),
   gridScroll: document.getElementById('gridScroll'),
   hotspotGrid: document.getElementById('hotspotGrid'),
-  resultStrip: document.getElementById('resultStrip'),
+  bottomStack: document.getElementById('bottomStack'),
+  flavorBox: document.getElementById('flavorBox'),
   popupScrim: document.getElementById('popupScrim'),
   itemPopup: document.getElementById('itemPopup'),
   itemGrid: document.getElementById('itemGrid'),
@@ -1077,7 +1095,6 @@ function renderRoomView(area) {
       el.hotspotGrid.appendChild(btn);
     });
   }
-  el.resultStrip.textContent = state.lastMessage;
 }
 
 /* ===== Item popup — icon grid, no text list. Tapping an item selects it
@@ -1132,8 +1149,12 @@ function onItemIconTap(itemId, btnEl) {
 
   state.selectedItemId = itemId;
   saveState();
-  renderItemGrid();
+  // Position the tooltip off the tapped button *before* re-rendering the
+  // grid — renderItemGrid() replaces every button node, so calling this
+  // after would read getBoundingClientRect() off an already-detached
+  // element (collapses to 0,0, landing the tooltip top-left of the frame).
   showItemTooltip(itemId, btnEl);
+  renderItemGrid();
 }
 
 function renderItemGrid() {
@@ -1184,10 +1205,12 @@ function openItemPopup() {
   renderItemGrid();
   el.itemPopup.classList.add('show');
   el.popupScrim.classList.add('show');
+  el.itemFabBtn.classList.add('active');
 }
 function closeItemPopup() {
   el.itemPopup.classList.remove('show');
   hideItemTooltip();
+  el.itemFabBtn.classList.remove('active');
   if (!el.movePopup.classList.contains('show')) el.popupScrim.classList.remove('show');
 }
 function toggleItemPopup() {
@@ -1217,9 +1240,11 @@ function openMovePopup() {
   renderMoveList();
   el.movePopup.classList.add('show');
   el.popupScrim.classList.add('show');
+  el.moveFabBtn.classList.add('active');
 }
 function closeMovePopup() {
   el.movePopup.classList.remove('show');
+  el.moveFabBtn.classList.remove('active');
   if (!el.itemPopup.classList.contains('show')) el.popupScrim.classList.remove('show');
 }
 function toggleMovePopup() {
@@ -1233,7 +1258,7 @@ el.popupScrim.addEventListener('click', () => { closeItemPopup(); closeMovePopup
 
 function updateLockState() {
   el.roomView.classList.toggle('locked', state.completed);
-  el.statusCard.classList.toggle('locked', state.completed);
+  el.bottomStack.classList.toggle('locked', state.completed);
   el.fabRow.classList.toggle('hidden', state.completed);
   if (state.completed) { closeItemPopup(); closeMovePopup(); }
 }
@@ -1291,6 +1316,7 @@ updateLockState();
 (async function boot() {
   await preloadAllAreas();
   await loadArea(roomSearchAreas.find(a => a.id === state.currentAreaId) || roomSearchAreas[0]);
+  setMessage(state.lastMessage);
 })();
 // A refresh that landed between "key found" and "phone unlocked" must not
 // soft-lock the phone forever — re-arm the forced event on load.
