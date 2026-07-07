@@ -443,15 +443,45 @@ function clearPending() {
   el.fileInput.value = '';
 }
 
+// Phone-camera photos routinely come in at several MB and 3000px+ on a
+// side — that's the actual reason the minigame maps/room photos were slow
+// to load in-game (a multi-MB image has to fully download over the network
+// *and* get decoded/rasterized before the map/room can render at all). None
+// of these minigames ever zoom in past baseScale * 3 on a ~390px-wide phone
+// frame, so anything long-side beyond BG_MAX_DIMENSION is detail nobody can
+// ever see — downscaling (and re-encoding as JPEG, since these are all
+// opaque photos with no transparency to preserve) cuts both the transfer
+// and decode cost drastically with no visible quality loss in-game.
+const BG_MAX_DIMENSION = 1600;
+const BG_JPEG_QUALITY = 0.85;
+
+function resizeImageToBlob(img, maxDim, quality) {
+  const scale = Math.min(1, maxDim / Math.max(img.naturalWidth, img.naturalHeight));
+  const w = Math.max(1, Math.round(img.naturalWidth * scale));
+  const h = Math.max(1, Math.round(img.naturalHeight * scale));
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+  return new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality));
+}
+
 function onFilesSelected(files) {
   const file = files && files[0];
   if (!file || !file.type.startsWith('image/')) return;
   const url = URL.createObjectURL(file);
   const img = new Image();
-  img.onload = () => {
+  img.onload = async () => {
     if (currentType === 'background') {
-      pendingFile = { blob: file, name: file.name, width: img.naturalWidth, height: img.naturalHeight };
-      renderPreview(url);
+      if (Math.max(img.naturalWidth, img.naturalHeight) > BG_MAX_DIMENSION) {
+        const resizedBlob = await resizeImageToBlob(img, BG_MAX_DIMENSION, BG_JPEG_QUALITY);
+        const resizedImg = await loadImageFromBlob(resizedBlob);
+        pendingFile = { blob: resizedBlob, name: file.name.replace(/\.[^.]+$/, '') + '.jpg', width: resizedImg.naturalWidth, height: resizedImg.naturalHeight };
+        renderPreview(URL.createObjectURL(resizedBlob));
+      } else {
+        pendingFile = { blob: file, name: file.name, width: img.naturalWidth, height: img.naturalHeight };
+        renderPreview(url);
+      }
     } else {
       openCharEditor(file, url, img);
     }

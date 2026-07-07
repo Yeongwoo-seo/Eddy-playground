@@ -213,6 +213,12 @@ function buildImageMap(url) {
 }
 
 async function initMap() {
+  // A large uploaded map photo can take a few seconds to fetch + decode over
+  // the network — show that as a loading state instead of leaving the
+  // mission card blank, which read as the page being stuck/broken.
+  el.missionLabelEl.textContent = '불러오는 중';
+  el.missionTarget.textContent = '지도 준비 중…';
+  el.missionSub.textContent = '';
   const assetId = DevGameState.getBackgroundId(MINIGAME_ID);
   const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
   const savedHotspots = STAGES.map((_, i) => DevGameState.getMinigameHotspot(MINIGAME_ID, i));
