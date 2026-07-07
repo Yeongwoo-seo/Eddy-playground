@@ -493,23 +493,26 @@ const week1Scenes = [
   },
 ];
 
-// Registry of standalone-testable minigames — /dev/minigames lists these,
-// each linking straight to its own page (not through /dev/game or a VN
-// scene's handoff), so a minigame can be opened and tested on its own
-// without playing through the story scene that normally leads into it.
-// Keep in sync with MINIGAME_ROUTES in game/index.html.
+// Registry of standalone-testable minigames — /dev/minigames lists these.
+// Tapping one no longer jumps straight into the live game: it opens
+// `setupUrl` first (그 미니게임의 배경/정답영역 에디터, focused via
+// /dev/upload's ?minigame= param — see applyFocusModeChrome there), and
+// only that screen's floating 테스트하기 button (entry.route) actually
+// starts the game. Keep `route` in sync with MINIGAME_ROUTES in game/index.html.
 const minigames = [
   {
     id: 'week1-scene-001-2-minigame',
     name: '지하철 역 찾기',
     location: 'Sydney Airport Station',
     route: '/dev/minigame-eastwood/',
+    setupUrl: '/dev/upload/?scene=week1-scene-001-2&kind=minigame&minigame=week1-scene-001-2-minigame',
   },
   {
     id: 'week1-scene-002-2',
     name: '핸드폰을 찾아라',
     location: 'Sydney Accommodation',
     route: '/dev/minigame-phone-search/',
+    setupUrl: `/dev/upload/?scene=${roomSearchAreaSceneId(roomSearchAreas[0].id)}&minigame=week1-scene-002-2`,
   },
 ];
 

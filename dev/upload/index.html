@@ -103,16 +103,24 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .lightbox{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;padding:24px}
 .lightbox.hidden{display:none}
 .lightbox img{max-width:100%;max-height:100%;object-fit:contain;border-radius:10px}
+
+/* ===== Minigame setup focus mode (?minigame=<id>) — reached from
+   /dev/minigames instead of the general 배경 DB tool: pickers are locked
+   to just that minigame's own scene(s), and this floating button is the
+   only way to actually launch the live game from here. ===== */
+.test-fab{position:fixed;left:20px;right:20px;bottom:calc(20px + env(safe-area-inset-bottom,0));z-index:15;background:var(--cyan);color:#06181c;text-align:center;text-decoration:none;font-family:var(--mono);font-weight:700;font-size:14px;letter-spacing:.05em;padding:16px;border-radius:14px;box-shadow:0 8px 28px rgba(0,0,0,.5)}
+.test-fab.hidden{display:none}
+.frame.has-fab{padding-bottom:calc(84px + env(safe-area-inset-bottom,0))}
 </style>
 </head>
 <body>
-<div class="frame">
+<div class="frame" id="frame">
   <div class="topbar">
-    <a class="back-btn" href="/dev/">←</a>
-    <div class="page-title">PHOTO UPLOAD</div>
+    <a class="back-btn" id="backBtn" href="/dev/">←</a>
+    <div class="page-title" id="pageTitle">PHOTO UPLOAD</div>
   </div>
 
-  <div class="tabs">
+  <div class="tabs" id="tabsRow">
     <button class="tab-btn active" id="tabBackground">배경 DB</button>
     <button class="tab-btn" id="tabCharacter">인물 DB</button>
   </div>
@@ -211,6 +219,8 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
   <img id="lightboxImg" alt="preview">
 </div>
 
+<a class="test-fab hidden" id="testFab" href="#">🎮 테스트하기</a>
+
 <script>
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
@@ -264,7 +274,30 @@ let pendingFile = null;
   if (params.get('kind') === 'minigame') currentBgKind = 'minigame';
 })();
 
+// ?minigame=<id> deep link from /dev/minigames — locks this page down to
+// just that one minigame's own scene(s), hiding the week/type pickers that
+// don't apply here, and reveals the floating 테스트하기 button (the only
+// way to actually launch the live game from this setup screen).
+const focusMinigame = (function () {
+  const minigameId = new URLSearchParams(location.search).get('minigame');
+  const entry = minigameId ? minigames.find(m => m.id === minigameId) : null;
+  if (!entry) return null;
+  const sceneIds = minigameId === ROOM_SEARCH_MINIGAME_ID
+    ? roomSearchAreas.map(a => roomSearchAreaSceneId(a.id))
+    : (function () { const owner = week1Scenes.find(s => s.minigameId === minigameId); return owner ? [owner.id] : []; })();
+  if (!sceneIds.length) return null;
+  currentWeekId = 'week1';
+  currentSceneId = sceneIds.includes(currentSceneId) ? currentSceneId : sceneIds[0];
+  currentBgKind = 'minigame';
+  return { entry, sceneIds };
+})();
+
 const el = {
+  frame: document.getElementById('frame'),
+  backBtn: document.getElementById('backBtn'),
+  pageTitle: document.getElementById('pageTitle'),
+  tabsRow: document.getElementById('tabsRow'),
+  testFab: document.getElementById('testFab'),
   tabBackground: document.getElementById('tabBackground'),
   tabCharacter: document.getElementById('tabCharacter'),
   weekPicker: document.getElementById('weekPicker'),
@@ -330,10 +363,14 @@ function activeBackgroundSceneId() {
 }
 
 function selectType(type) {
+  // Focus mode is background-only setup for one specific minigame — the
+  // 인물 DB tab has nothing to do with that, so it's hidden and can't be
+  // switched into (see applyFocusModeChrome).
+  if (focusMinigame) type = 'background';
   currentType = type;
   el.tabBackground.classList.toggle('active', type === 'background');
   el.tabCharacter.classList.toggle('active', type === 'character');
-  el.weekPicker.classList.toggle('hidden', type !== 'background');
+  el.weekPicker.classList.toggle('hidden', type !== 'background' || !!focusMinigame);
   el.scenePicker.classList.toggle('hidden', type !== 'background');
   el.charPicker.classList.toggle('hidden', type !== 'character');
   el.exprPicker.classList.toggle('hidden', type !== 'character');
@@ -366,7 +403,11 @@ function renderWeekPicker() {
 }
 
 function renderScenePicker() {
-  const scenes = currentWeek().scenes;
+  // In focus mode, only this minigame's own scene(s) are pickable — e.g.
+  // just the 4 room-search areas, or nothing at all for a single-scene
+  // minigame like Eastwood (picker stays hidden, there's nothing to choose).
+  const scenes = focusMinigame ? currentWeek().scenes.filter(s => focusMinigame.sceneIds.includes(s.id)) : currentWeek().scenes;
+  el.scenePicker.classList.toggle('hidden', !!focusMinigame && scenes.length <= 1);
   if (!scenes.length) {
     el.scenePickerPills.innerHTML = '<span class="empty-note">이 주차에 등록된 씬이 없습니다.</span>';
     return;
@@ -377,7 +418,7 @@ function renderScenePicker() {
   el.scenePickerPills.querySelectorAll('.pill').forEach(btn => {
     btn.addEventListener('click', () => {
       currentSceneId = btn.dataset.key;
-      currentBgKind = 'scene';
+      if (!focusMinigame) currentBgKind = 'scene';
       renderScenePicker();
       renderBgKindPicker();
       clearPending();
@@ -389,7 +430,9 @@ function renderScenePicker() {
 
 function renderBgKindPicker() {
   const scene = currentScene();
-  const hasMinigame = !!(scene && scene.minigameId);
+  // Focus mode forces currentBgKind itself — nothing to toggle, so the
+  // picker stays hidden even though scene.minigameId is set.
+  const hasMinigame = !focusMinigame && !!(scene && scene.minigameId);
   el.bgKindPicker.classList.toggle('hidden', !hasMinigame);
   if (!hasMinigame) return;
   const kinds = [{ id: 'scene', label: '배경' }, { id: 'minigame', label: '미니게임' }];
@@ -967,6 +1010,17 @@ el.dropzone.addEventListener('drop', (e) => {
   onFilesSelected(e.dataTransfer.files);
 });
 
+function applyFocusModeChrome() {
+  if (!focusMinigame) return;
+  el.tabsRow.classList.add('hidden');
+  el.backBtn.href = '/dev/minigames/';
+  el.pageTitle.textContent = focusMinigame.entry.name;
+  el.frame.classList.add('has-fab');
+  el.testFab.href = focusMinigame.entry.route;
+  el.testFab.classList.remove('hidden');
+}
+
+applyFocusModeChrome();
 selectType('background');
 </script>
 </body>
