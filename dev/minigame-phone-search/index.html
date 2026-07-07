@@ -69,7 +69,10 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .inv-row-icon{font-size:19px;width:26px;text-align:center;flex-shrink:0}
 .inv-row-name{font-size:13.5px;font-weight:600;flex:1}
 .inv-row-tag{font-family:var(--mono);font-size:9.5px;color:var(--cyan);letter-spacing:.05em;flex-shrink:0}
+.inv-row-action{flex-shrink:0;font-family:var(--mono);font-size:10.5px;color:var(--text-secondary);background:rgba(255,255,255,.06);border:1px solid var(--divider);border-radius:10px;padding:5px 9px;cursor:pointer}
+.inv-row-action:active{background:rgba(255,255,255,.12)}
 .inv-empty{font-family:var(--mono);font-size:11px;color:var(--text-muted);padding:2px}
+.debug-hotspot-box{position:absolute;border:1px dashed var(--cyan);background:rgba(89,184,200,.12);color:var(--cyan);font-family:var(--mono);font-size:9px;line-height:1.3;padding:1px 3px;pointer-events:none;overflow:hidden;white-space:nowrap}
 
 /* ===== Area tabs ===== */
 .tab-bar{flex-shrink:0;display:flex;border-top:1px solid var(--divider);padding-bottom:env(safe-area-inset-bottom,0);transition:opacity .3s ease}
@@ -153,11 +156,19 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
   <div class="sheet">
     <div class="sheet-title">Dev · Minigame Debug</div>
     <div class="sheet-grid">
-      <button class="sheet-btn" id="btnGiveFlashlight">GIVE FLASHLIGHT</button>
-      <button class="sheet-btn" id="btnGiveHook">GIVE HOOK</button>
+      <button class="sheet-btn" id="btnShowHotspots">SHOW HOTSPOTS</button>
+      <button class="sheet-btn" id="btnOpenBathroomDoor">OPEN BATHROOM DOOR</button>
+      <button class="sheet-btn" id="btnGiveDeadFlashlight">GIVE DEAD FLASHLIGHT</button>
+      <button class="sheet-btn" id="btnGiveBatteries">GIVE BATTERIES</button>
+      <button class="sheet-btn" id="btnGiveWorkingFlashlight">GIVE WORKING FLASHLIGHT</button>
+      <button class="sheet-btn" id="btnGiveMetalHanger">GIVE METAL HANGER</button>
+      <button class="sheet-btn" id="btnGiveGardenStake">GIVE GARDEN STAKE</button>
+      <button class="sheet-btn" id="btnGiveLongHook">GIVE LONG HOOK</button>
+      <button class="sheet-btn" id="btnRevealKey">REVEAL KEY</button>
       <button class="sheet-btn" id="btnGiveKey">GIVE KEY</button>
       <button class="sheet-btn" id="btnUnlockPhone">UNLOCK PHONE</button>
-      <button class="sheet-btn danger" id="btnResetMinigame">RESET MINIGAME</button>
+      <button class="sheet-btn" id="btnGivePhone">GIVE PHONE</button>
+      <button class="sheet-btn danger" id="btnResetMinigame">RESET GAME</button>
       <button class="sheet-btn danger" id="btnClearState">CLEAR STATE</button>
     </div>
     <button class="sheet-close" id="sheetCloseBtn">CLOSE</button>
@@ -179,75 +190,154 @@ if ('serviceWorker' in navigator) {
 <script src="/dev/dialogueData.js"></script>
 <script src="/dev/vnPlayer.js"></script>
 <script>
-/* OPERATION MK — WEEK 1 · SCENE 2-2 「핸드폰을 찾아라」
-   Point-and-click room search. Absolute rule this file exists to enforce:
-   the player CANNOT find jisu-phone until unknown-key has been found AND the
-   forced phoneUnlocked event has played — see canRevealPhone() below, which
-   every phone-reveal path (including the DEV sheet) must go through. State
-   persists in localStorage so a refresh mid-search doesn't lose progress.
+/* OPERATION MK — WEEK 1 · SCENE 2-2 「핸드폰을 찾아라」 (v3 — 실제 4개 장소
+   이미지 기반 Hotspot · 아이템 조합 · 상태 변화 · 재탐색).
+   Point-and-click room search across 4 real accommodation photos (주방/욕실/
+   외부/침실 — roomSearchAreas in dialogueData.js). Absolute rule this file
+   exists to enforce: the player CANNOT find jisu-phone until unknown-key has
+   been found AND the forced phoneUnlocked event has played — see
+   canRevealPhone() below, which every phone-reveal path (including the DEV
+   sheet) must go through. State persists in localStorage so a refresh
+   mid-search doesn't lose progress.
 
-   Each area (roomSearchAreas, defined in dialogueData.js) renders one of two
-   ways, decided per area every time it's opened:
+   Each area renders one of two ways, decided per area every time it's opened:
    - "photo" mode, once a dev has uploaded that area's room photo and marked
-     at least one hotspot's tap position in /dev/upload — pan/zoom over the
-     real photo, tapping the (invisible) marked zone triggers the hotspot,
-     same as tapping the Eastwood minigame's map.
+     at least one hotspot's tap position in /dev/upload's 4-corner-tap area
+     designator — pan/zoom over the real photo, tapping the (invisible)
+     marked zone triggers the hotspot, same as tapping the Eastwood
+     minigame's map. Hotspot positions live in Supabase (AssetDB), not
+     localStorage, so marking them from any device works immediately.
    - "grid" mode (fallback) — a card grid of the area's hotspots by name, so
-     the puzzle is fully playable before any photos exist yet. */
-const STATE_KEY = 'mkPhoneSearchState_v1';
+     the puzzle is fully playable before any photo/hotspot has been marked. */
+const STATE_KEY = 'mkPhoneSearchState_v2';
 const HOTSPOT_MIN_FR = 0.045; // floor on tap-target width/height, same rationale as Eastwood's
 
 const ITEM_DEFS = {
-  flashlight: { icon: '🔦', name: '손전등', selectable: true },
-  hook: { icon: '🪝', name: '갈고리', selectable: true },
-  'unknown-key': { icon: '🗝️', name: '낡은 열쇠', selectable: false },
-  lipbalm: { icon: '💄', name: '립밤', selectable: false },
+  'dead-flashlight': { icon: '🔦', name: '손전등', selectable: true, inspect: '배터리가 들어 있지 않다.' },
+  'aa-batteries': { icon: '🔋', name: 'AA 건전지', selectable: false, inspect: 'AA 건전지 두 개다.' },
+  'working-flashlight': { icon: '🔦', name: '작동 손전등', selectable: true, inspect: '불빛이 밝게 켜진다.' },
+  'metal-hanger': { icon: '🧷', name: '철제 옷걸이', selectable: false, inspect: '길게 펴면 뭔가에 쓸 수 있을 것 같다.' },
+  'garden-stake': { icon: '🥢', name: '정원용 지지대', selectable: false, inspect: '끝에 무언가 걸 수 있을 것 같다.' },
+  'long-hook': { icon: '🪝', name: '긴 갈고리', selectable: true, inspect: '옷걸이와 지지대를 엮어 만든 갈고리다.' },
+  'unknown-key': { icon: '🗝️', name: '낡은 열쇠', selectable: false, inspect: '어디에 쓰는 열쇠인지 모르겠다.' },
   'jisu-phone': { icon: '📱', name: '핸드폰', selectable: false },
+  // Section 18 decoys — one-time flavor collectibles, never used by any
+  // recipe or hotspot gating. Purely for "방 탐색 감각 강화".
+  'dish-towel': { icon: '🧻', name: '행주', selectable: false, inspect: '평범한 행주다.' },
+  'plastic-bag': { icon: '🛍️', name: '비닐봉지', selectable: false, inspect: '접힌 비닐봉지다.' },
+  'rubber-band': { icon: '➰', name: '고무줄', selectable: false, inspect: '작은 고무줄이다.' },
+  'small-coin': { icon: '🪙', name: '동전', selectable: false, inspect: '동전 하나다.' },
+  'dry-twig': { icon: '🌿', name: '마른 나뭇가지', selectable: false, inspect: '마른 나뭇가지다.' },
+  'bottle-cap': { icon: '🧢', name: '병뚜껑', selectable: false, inspect: '녹슨 병뚜껑이다.' },
+  receipt: { icon: '🧾', name: '영수증', selectable: false, inspect: '오래돼서 글씨가 잘 안 보인다.' },
+  paperclip: { icon: '📎', name: '클립', selectable: false, inspect: '작은 클립이다.' },
+};
+
+// Section 9/10 — 2-item combination recipes. Order-independent.
+const RECIPES = [
+  {
+    id: 'make-working-flashlight',
+    inputItemIds: ['dead-flashlight', 'aa-batteries'],
+    outputItemId: 'working-flashlight',
+    consumeInputItems: true,
+    successMessage: '건전지를 넣자 손전등이 켜졌다.',
+  },
+  {
+    id: 'make-long-hook',
+    inputItemIds: ['metal-hanger', 'garden-stake'],
+    outputItemId: 'long-hook',
+    consumeInputItems: true,
+    successMessage: '옷걸이를 길게 펴 지지대 끝에 고정했다.\n임시 긴 갈고리를 만들었다.',
+  },
+];
+function findRecipe(idA, idB) {
+  return RECIPES.find(r =>
+    (r.inputItemIds[0] === idA && r.inputItemIds[1] === idB) ||
+    (r.inputItemIds[0] === idB && r.inputItemIds[1] === idA)
+  );
+}
+function isCombinable(itemId) {
+  return hasItem(itemId) && RECIPES.some(r => r.inputItemIds.includes(itemId));
+}
+
+// One-time decoy pickups (section 18) keyed by hotspot ID — no gating, no
+// recipe use, just an inventory flavor item the first time each is tapped.
+const DECOY_ITEMS = {
+  'kitchen-oven-handle': { itemId: 'dish-towel', message: '[ 행주를 발견했다 ]' },
+  'kitchen-left-lower-cabinet': { itemId: 'plastic-bag', message: '[ 비닐봉지를 발견했다 ]' },
+  'bathroom-vanity-drawer': { itemId: 'rubber-band', message: '[ 서랍을 열었다 ]\n작은 고무줄을 발견했다.' },
+  'bathroom-tub-edge': { itemId: 'small-coin', message: '[ 작은 동전을 발견했다 ]' },
+  'exterior-left-bush': { itemId: 'dry-twig', message: '[ 마른 나뭇가지를 발견했다 ]' },
+  'exterior-grass': { itemId: 'bottle-cap', message: '[ 병뚜껑을 발견했다 ]' },
+  'bedroom-floorboards': { itemId: 'receipt', message: '[ 영수증을 발견했다 ]' },
+  'bedroom-mantel-shelf': { itemId: 'paperclip', message: '[ 작은 클립을 발견했다 ]' },
 };
 
 // Flavor text for hotspots with no special gating logic — fixed, not random
 // (brief explicitly forbids randomized key/phone placement; keeping every
 // result deterministic is simplest and consistent).
 const FLAVOR = {
-  bed: '평범한 침대다.',
-  pillow: '베개일 뿐이다.',
-  blanket: '그냥 이불이다.',
-  'behind-bed': '먼지만 조금 있다.',
-  'bedside-table': '별거 없다.',
-  sofa: '평범한 소파다.',
-  'behind-sofa': '아무것도 없다.',
-  'coffee-table': '잡지 몇 권이 있다.',
-  desk: '책상이다.',
-  'desk-drawer': '필기구뿐이다.',
-  'charger-area': '충전기만 꽂혀 있다.',
-  bag: '지수 가방이다. 뒤져볼 필요는 없을 것 같다.',
-  'shoe-cabinet': '신발뿐이다.',
-  closet: '옷 몇 벌이 걸려있다.',
-  luggage: '캐리어다. 아직 짐도 안 풀었다.',
-  'utility-cabinet': '청소도구뿐이다.',
+  // 주방
+  'kitchen-left-counter': '조리대 위엔 별다른 게 없다.',
+  'kitchen-kettle': '전기포트다.\n아직 따뜻하지 않다.',
+  'kitchen-mini-fridge': '소형 냉장고다.\n안에는 음료수뿐이다.',
+  'kitchen-back-door': '안쪽으로 이어지는 나무문이다.',
+  'kitchen-upper-cabinets': '그릇과 컵뿐이다.',
+  'kitchen-rangehood': '레인지 후드다.\n딱히 조사할 게 없다.',
+  'kitchen-knife-block': '칼꽂이다.\n굳이 건드릴 필요는 없어 보인다.',
+  'kitchen-cooktop': '가스레인지다.\n불은 꺼져 있다.',
+  'kitchen-microwave': '전자레인지 안은 비어 있다.',
+  'kitchen-oven': '오븐이다.\n안은 비어 있다.',
+  'kitchen-right-lower-cabinet': '그릇 몇 개뿐이다.',
+  // 욕실
+  'bathroom-bathtub': '평범한 욕조다.',
+  'bathroom-sink-bowl': '세면대다.\n비어 있다.',
+  'bathroom-faucet': '수도꼭지다.\n잠겨 있다.',
+  'bathroom-vanity-top': '칫솔과 치약이 놓여 있다.',
+  'bathroom-vanity-cabinet': '수건과 휴지뿐이다.',
+  'bathroom-plant': '작은 화분이다.',
+  'bathroom-towel-rail': '수건이 걸려 있다.',
+  // 외부
+  'exterior-left-tree': '잎이 무성하다.\n핸드폰이 떨어진 흔적은 없다.',
+  'exterior-right-shrubs': '특별한 것은 없다.',
+  'exterior-side-path': '집 옆으로 이어지는 좁은 길이다.',
+  'exterior-driveway': '차가 다니는 길이다.',
+  'exterior-garage-edge': '차고 일부가 보인다.',
+  'exterior-house-wall': '평범한 외벽이다.',
+  'exterior-main-house': '본채가 보인다.',
+  'exterior-entry-porch': '뒤쪽 현관으로 이어지는 구조다.',
+  // 침실
+  'bedroom-bed': '평범한 침대다.',
+  'bedroom-under-bed': '어두워서 잘 보이지 않는다.',
+  'bedroom-pillows': '베개일 뿐이다.',
+  'bedroom-duvet': '그냥 이불이다.',
+  'bedroom-folded-towels': '곱게 접힌 수건뿐이다.',
+  'bedroom-bedside-lamp': '램프다.\n불을 켜본다.\n딱히 달라지는 건 없다.',
+  'bedroom-bedside-bottle': '작은 병이다.\n비어 있다.',
+  'bedroom-window': '창문 밖이 어둡다.',
+  'bedroom-mantel-painting': '평범한 그림이다.',
+  'bedroom-black-vases': '검은 화병 두 개가 놓여 있다.',
+  'bedroom-hanging-plant': '늘어진 식물이다.',
+  'bedroom-floor-plant': '바닥에 놓인 화분이다.',
+  'bedroom-floor-fan': '선풍기다.\n꺼져 있다.',
+  'bedroom-wall-art': '액자 속 사진이다.',
+  'bedroom-bed-gap': '침대와 벽 사이 좁은 틈이다.\n아무것도 없다.',
 };
 
-const DARK_UNDER_BED_LINES = [
-  { speaker: '영우', text: '어두워서 안 보이네.', characterId: 'youngwoo', expression: 'blank' },
-  { speaker: '지수', text: '쌤 눈 크게 떠봐요.', characterId: 'jisoo', expression: 'smirk' },
-  { speaker: '영우', text: '그걸로 되는 문제야?', characterId: 'youngwoo', expression: 'curious' },
-];
 const HOOK_LINES = [
-  { speaker: '영우', text: '이건 왜 있지.', characterId: 'youngwoo', expression: 'curious' },
-  { speaker: '지수', text: '몰라.\n일단 가져요.', characterId: 'jisoo', expression: 'neutral' },
-  { speaker: '영우', text: '왜 이렇게 자연스럽게 챙겨 ㅋㅎㅋㅎㅋㅎㅋㅎ', characterId: 'youngwoo', expression: 'happy' },
+  { speaker: '영우', text: '이건 왜 있지.' },
+  { speaker: '지수', text: '몰라.\n일단 가져요.' },
+  { speaker: '영우', text: '왜 이렇게 자연스럽게 챙겨 ㅋㅎㅋㅎㅋㅎㅋㅎ' },
 ];
-const LIPBALM_LINES = [
-  { speaker: '지수', text: '헐 내 거다.', characterId: 'jisoo', expression: 'shocked' },
-  { speaker: '영우', text: '핸드폰 찾다가 립밤 찾았네.', characterId: 'youngwoo', expression: 'curious' },
-  { speaker: '지수', text: '개이득.', characterId: 'jisoo', expression: 'smirk' },
+const KITCHEN_POTS_LINES = [
+  { speaker: '지수', text: '쌤 설마 냄비 안까지 보는 거예요?' },
 ];
+// Section 12 — key -> phone-unlock forced event, verbatim.
 const KEY_FORCED_LINES = [
-  { speaker: '', text: '부우웅—', characterId: null },
-  { speaker: '지수', text: '...어?', characterId: 'jisoo', expression: 'shocked' },
-  { speaker: '영우', text: '핸드폰 아니야?', characterId: 'youngwoo', expression: 'curious' },
-  { speaker: '지수', text: '맞아.', characterId: 'jisoo', expression: 'shocked' },
-  { speaker: '', text: '부우웅—', characterId: null },
+  { speaker: '', text: '부우웅—' },
+  { speaker: '지수', text: '...어?' },
+  { speaker: '영우', text: '핸드폰 아니야?' },
+  { speaker: '', text: '부우웅—' },
 ];
 
 function defaultState() {
@@ -255,9 +345,17 @@ function defaultState() {
     currentAreaId: roomSearchAreas[0].id,
     inventoryItemIds: [],
     selectedItemId: null,
-    flags: { keyVisible: false, keyFound: false, phoneUnlocked: false, phoneFound: false },
+    combineMode: { active: false, firstItemId: null },
+    searchedHotspotIds: [],
+    searchCounts: {},
+    flags: {
+      bathroomDoorOpened: false,
+      keyVisible: false, keyFound: false,
+      phoneGlowSeen: false,
+      phoneUnlocked: false, phoneFound: false,
+      blindOpen: false,
+    },
     completed: false,
-    coinShown: false,
     lastMessage: '방 안 어딘가에 핸드폰이 있을 것이다.',
   };
 }
@@ -266,7 +364,12 @@ function loadState() {
   try {
     const raw = JSON.parse(localStorage.getItem(STATE_KEY));
     if (!raw || typeof raw !== 'object') return defaultState();
-    return Object.assign(defaultState(), raw, { flags: Object.assign(defaultState().flags, raw.flags || {}) });
+    const base = defaultState();
+    return Object.assign(base, raw, {
+      flags: Object.assign(base.flags, raw.flags || {}),
+      combineMode: Object.assign(base.combineMode, raw.combineMode || {}),
+      searchCounts: Object.assign(base.searchCounts, raw.searchCounts || {}),
+    });
   } catch (e) { return defaultState(); }
 }
 
@@ -280,9 +383,38 @@ function addItem(id) {
   saveState();
 }
 
+function hasSearched(hotspotId) { return state.searchedHotspotIds.includes(hotspotId); }
+function markSearched(hotspotId) {
+  if (!state.searchedHotspotIds.includes(hotspotId)) state.searchedHotspotIds.push(hotspotId);
+  state.searchCounts[hotspotId] = (state.searchCounts[hotspotId] || 0) + 1;
+  saveState();
+}
+
 function canRevealPhone() {
   return state.flags.keyFound && state.flags.phoneUnlocked;
 }
+
+// ===== Hint system (section 20) — nudges after real stretches with no
+// progress, not a fixed timer from page load, so replays/testing aren't
+// spammed. markProgress() resets the clock on every meaningful state change. =====
+let lastProgressAt = Date.now();
+let hint60Shown = false, hint120Shown = false;
+function markProgress() {
+  lastProgressAt = Date.now();
+  hint60Shown = false;
+  hint120Shown = false;
+}
+setInterval(() => {
+  if (state.completed || dialogueActive) return;
+  const elapsed = Date.now() - lastProgressAt;
+  if (elapsed >= 120000 && !hint120Shown) {
+    hint120Shown = true;
+    queueDialogue([{ speaker: '지수', text: '쌤.\n뭔가 합쳐서 쓸 수 있는 거 없어요?' }]);
+  } else if (elapsed >= 60000 && !hint60Shown) {
+    hint60Shown = true;
+    setMessage('눈에 보이는 물건 중\n그대로는 쓸 수 없는 것도 있어 보인다.');
+  }
+}, 5000);
 
 function setMessage(text) {
   state.lastMessage = text;
@@ -386,86 +518,172 @@ function playSuccessBeep() {
   } catch (e) { /* audio unavailable — not critical to gameplay */ }
 }
 
-/* ===== Hotspot handlers ===== */
-function handleFlashlight() {
-  if (hasItem('flashlight')) { setMessage('이미 챙겼다.'); return; }
-  addItem('flashlight');
-  setMessage('[ 손전등을 발견했다 ]');
+/* ===== Hotspot handlers =====
+   Each area's core-route handlers below implement the graph in section 11
+   of the brief. Decoys (DECOY_ITEMS) and plain flavor (FLAVOR) are handled
+   generically by onHotspotTap and don't need their own function. */
+
+// --- 주방 ---
+function handleKitchenBatteryDrawer() {
+  if (hasItem('aa-batteries')) { setMessage('서랍은 비어 있다.'); return; }
+  addItem('aa-batteries');
+  setMessage('[ 서랍을 열었다 ]\n[ AA 건전지 2개를 발견했다 ]');
   renderInventory();
+  markProgress();
 }
-function handleHook() {
-  if (hasItem('hook')) { setMessage('이미 챙겼다.'); return; }
-  addItem('hook');
-  setMessage('[ 긴 갈고리를 발견했다 ]');
+function handleKitchenPots() {
+  if (!hasSearched('kitchen-pots')) {
+    markSearched('kitchen-pots');
+    queueDialogue(KITCHEN_POTS_LINES, () => setMessage('냄비를 확인했다.\n핸드폰은 없다.'));
+  } else {
+    setMessage('냄비를 확인했다.\n핸드폰은 없다.');
+  }
+}
+function handleKitchenFridgeGap() {
+  if (state.flags.phoneFound) { setMessage('더 이상 아무것도 없다.'); return; }
+  if (!canRevealPhone()) {
+    setMessage(hasSearched('kitchen-fridge-gap')
+      ? '여전히 좁은 틈이다.\n특별한 것은 보이지 않는다.'
+      : '좁은 틈이다.\n특별한 것은 보이지 않는다.');
+    markSearched('kitchen-fridge-gap');
+    return;
+  }
+  if (state.selectedItemId === 'long-hook') { handlePhoneFound(); return; }
+  if (!state.flags.phoneGlowSeen) {
+    state.flags.phoneGlowSeen = true;
+    saveState();
+    setMessage('안쪽 깊은 곳에서 화면 불빛이 보인다.\n하지만 손이 닿지 않는다.');
+  } else {
+    setMessage('반짝이는 화면 불빛이 보인다.\n손이 닿지 않는다.');
+  }
+}
+
+// --- 욕실 ---
+function handleBathroomMirror() {
+  setMessage(hasSearched('bathroom-mirror') ? '여전히 내 모습뿐이다.' : '거울에 내 모습이 비친다.');
+  markSearched('bathroom-mirror');
+}
+function handleBathroomWallSwitch() {
+  setMessage(hasSearched('bathroom-wall-switch') ? '스위치를 다시 눌렀다.\n달라지는 건 없다.' : '불이 켜져 있다.');
+  markSearched('bathroom-wall-switch');
+}
+function handleBathroomDoor() {
+  if (state.flags.bathroomDoorOpened) { setMessage('문은 이미 열려 있다.'); return; }
+  state.flags.bathroomDoorOpened = true;
+  saveState();
+  setMessage('[ 문을 조금 더 열었다 ]');
+  markProgress();
+}
+function handleBathroomBehindDoor() {
+  if (!state.flags.bathroomDoorOpened) { setMessage('문이 가로막고 있어 보이지 않는다.'); return; }
+  if (hasItem('metal-hanger')) { setMessage('더 이상 걸려 있는 것이 없다.'); return; }
+  addItem('metal-hanger');
+  setMessage('문 뒤에 무언가 걸려 있다.\n[ 철제 옷걸이를 발견했다 ]');
   renderInventory();
+  markProgress();
   queueDialogue(HOOK_LINES);
 }
-function handleUnderBed() {
-  if (state.flags.keyFound) { setMessage('이미 다 찾아봤다.'); return; }
-  if (state.selectedItemId === 'hook') {
+
+// --- 외부 ---
+function handleExteriorCenterShrubs() {
+  if (hasItem('garden-stake')) { setMessage('더 이상 걸리는 게 없다.'); return; }
+  if (!hasSearched('exterior-center-shrubs')) {
+    markSearched('exterior-center-shrubs');
+    setMessage('수풀이 빽빽하다.');
+    return;
+  }
+  addItem('garden-stake');
+  setMessage('가지 사이에 긴 막대 같은 것이 보인다.\n[ 정원용 지지대를 발견했다 ]');
+  renderInventory();
+  markProgress();
+}
+function handleExteriorExtensionWindows() {
+  setMessage(hasSearched('exterior-extension-windows') ? '내 모습만 보인다.' : '유리에 방 안쪽이 희미하게 비친다.');
+  markSearched('exterior-extension-windows');
+}
+
+// --- 침실 ---
+function handleBedsideTable() {
+  if (hasItem('dead-flashlight')) { setMessage('협탁 위엔 더 볼 게 없다.'); return; }
+  addItem('dead-flashlight');
+  setMessage('[ 협탁을 확인했다 ]\n[ 손전등을 발견했다 ]');
+  renderInventory();
+  markProgress();
+}
+function handleBlind() {
+  state.flags.blindOpen = !state.flags.blindOpen;
+  saveState();
+  setMessage(state.flags.blindOpen ? '블라인드를 열었다.' : '블라인드를 닫았다.');
+}
+function handleLeftVent() {
+  if (state.selectedItemId === 'working-flashlight') { setMessage('먼지만 보인다.'); return; }
+  setMessage(hasSearched('bedroom-left-vent') ? '여전히 안쪽이 어둡다.' : '환기구다.\n안쪽은 잘 보이지 않는다.');
+  markSearched('bedroom-left-vent');
+}
+function handleRightVent() {
+  if (state.flags.keyFound) { setMessage('환기구 안은 이미 비어 있다.'); return; }
+  if (state.selectedItemId === 'long-hook') {
     if (state.flags.keyVisible) {
       addItem('unknown-key');
       state.flags.keyFound = true;
       state.selectedItemId = null;
       saveState();
-      setMessage('짤랑.\n[ 낡은 열쇠를 발견했다 ]');
+      setMessage('[ 갈고리를 환기구 틈으로 넣었다 ]\n딸깍.\n무언가가 바닥으로 떨어졌다.\n[ 낡은 열쇠를 발견했다 ]');
       renderInventory();
+      markProgress();
       scheduleForcedPhoneUnlock(900);
     } else {
-      setMessage('손이 닿지 않는다. 뭔가 다른 게 먼저 필요할 것 같다.');
+      setMessage('아직 안쪽에 뭐가 있는지 보이지 않는다.');
     }
     return;
   }
-  if (state.selectedItemId === 'flashlight') {
+  if (state.selectedItemId === 'working-flashlight') {
     if (!state.flags.keyVisible) {
       state.flags.keyVisible = true;
       saveState();
-      setMessage('반짝이는 무언가가 보인다.\n하지만 손이 닿지 않는다.');
+      setMessage('[ 환기구 안쪽을 비춘다 ]\n안쪽에서 무언가 반짝인다.\n너무 높아서 손이 닿지 않는다.');
+      markProgress();
     } else {
-      setMessage('아까 그 반짝이는 물건이다. 손이 닿지 않는다.');
+      setMessage('아까 그 반짝이는 물건이다.\n손이 닿지 않는다.');
     }
     return;
   }
-  if (!hasItem('flashlight')) {
-    queueDialogue(DARK_UNDER_BED_LINES);
-  } else if (state.flags.keyVisible) {
+  if (state.selectedItemId === 'dead-flashlight') { setMessage('손전등이 켜지지 않는다.'); return; }
+  if (!state.flags.keyVisible) {
+    setMessage(hasSearched('bedroom-right-vent') ? '여전히 안쪽이 어둡다.' : '높고 어두워서 안쪽이 보이지 않는다.');
+    markSearched('bedroom-right-vent');
+  } else {
     setMessage('반짝이는 게 보이는데 손이 닿지 않는다.');
-  } else {
-    setMessage('어두워서 잘 보이지 않는다.');
   }
-}
-function handleSofaCushion() {
-  if (state.completed) return;
-  if (canRevealPhone()) { handlePhoneFound(); return; }
-  if (!state.coinShown) {
-    state.coinShown = true;
-    saveState();
-    setMessage('동전 하나가 있다.');
-  } else {
-    setMessage('아무것도 없다.');
-  }
-}
-function handleUnderSofa() {
-  if (state.selectedItemId === 'flashlight' && !hasItem('lipbalm')) {
-    addItem('lipbalm');
-    setMessage('[ 립밤을 발견했다 ]');
-    renderInventory();
-    queueDialogue(LIPBALM_LINES);
-    return;
-  }
-  setMessage('아무것도 없다.');
 }
 
 const HOTSPOT_HANDLERS = {
-  'tv-stand': handleFlashlight,
-  'upper-shelf': handleHook,
-  'under-bed': handleUnderBed,
-  'sofa-cushion': handleSofaCushion,
-  'under-sofa': handleUnderSofa,
+  'kitchen-right-lower-drawer': handleKitchenBatteryDrawer,
+  'kitchen-pots': handleKitchenPots,
+  'kitchen-fridge-gap': handleKitchenFridgeGap,
+  'bathroom-mirror': handleBathroomMirror,
+  'bathroom-wall-switch': handleBathroomWallSwitch,
+  'bathroom-right-door': handleBathroomDoor,
+  'bathroom-behind-door': handleBathroomBehindDoor,
+  'exterior-center-shrubs': handleExteriorCenterShrubs,
+  'exterior-extension-windows': handleExteriorExtensionWindows,
+  'bedroom-bedside-table': handleBedsideTable,
+  'bedroom-blind': handleBlind,
+  'bedroom-left-vent': handleLeftVent,
+  'bedroom-right-vent': handleRightVent,
 };
 
 function onHotspotTap(hotspotId) {
   if (dialogueActive || state.completed) return;
+  if (DECOY_ITEMS[hotspotId]) {
+    const decoy = DECOY_ITEMS[hotspotId];
+    if (hasItem(decoy.itemId)) { setMessage('이미 확인했다.'); return; }
+    addItem(decoy.itemId);
+    setMessage(decoy.message);
+    renderInventory();
+    markProgress();
+    return;
+  }
   const handler = HOTSPOT_HANDLERS[hotspotId];
   if (handler) { handler(); return; }
   setMessage(FLAVOR[hotspotId] || '아무것도 없다.');
@@ -536,6 +754,28 @@ function buildPhotoCanvas(url) {
   img.draggable = false;
   Object.assign(img.style, { width: CANVAS_W + 'px', height: CANVAS_H + 'px' });
   el.photoCanvas.appendChild(img);
+}
+
+// Dev-only overlay (DEV sheet's SHOW HOTSPOTS toggle) — draws every marked
+// hotspot's rectangle + id directly on the photo, so a dev can confirm
+// /dev/upload's 4-corner-tap placements line up before testing blind.
+let debugShowHotspots = false;
+function renderDebugHotspotOverlay() {
+  el.photoCanvas.querySelectorAll('.debug-hotspot-box').forEach(n => n.remove());
+  if (!debugShowHotspots || currentMode !== 'photo') return;
+  Object.keys(currentHotspots).forEach(id => {
+    const h = currentHotspots[id];
+    const box = document.createElement('div');
+    box.className = 'debug-hotspot-box';
+    Object.assign(box.style, {
+      left: (h.x1 * CANVAS_W) + 'px',
+      top: (h.y1 * CANVAS_H) + 'px',
+      width: ((h.x2 - h.x1) * CANVAS_W) + 'px',
+      height: ((h.y2 - h.y1) * CANVAS_H) + 'px',
+    });
+    box.textContent = id;
+    el.photoCanvas.appendChild(box);
+  });
 }
 
 function flashTapRing(point) {
@@ -636,7 +876,7 @@ async function loadArea(area) {
   const sceneId = roomSearchAreaSceneId(area.id);
   const assetId = DevGameState.getBackgroundId(sceneId);
   const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
-  const hotspots = DevGameState.getRoomHotspots(sceneId);
+  const hotspots = await DevGameState.getRoomHotspots(sceneId);
   if (asset && asset.dataUrl && Object.keys(hotspots).length) {
     currentMode = 'photo';
     currentHotspots = hotspots;
@@ -645,6 +885,7 @@ async function loadArea(area) {
     await AssetDB.preloadImage(asset.dataUrl);
     buildPhotoCanvas(asset.dataUrl);
     fitToStage();
+    renderDebugHotspotOverlay();
   } else {
     currentMode = 'grid';
     currentHotspots = {};
@@ -669,7 +910,7 @@ function renderRoomView(area) {
   el.resultStrip.textContent = state.lastMessage;
 }
 
-/* ===== Inventory list ===== */
+/* ===== Inventory list + 2-item combine mode (section 9/10/23) ===== */
 function selectItem(itemId) {
   if (state.completed) return;
   const def = ITEM_DEFS[itemId];
@@ -679,11 +920,52 @@ function selectItem(itemId) {
   renderInventory();
 }
 
+function startCombine(itemId) {
+  state.combineMode = { active: true, firstItemId: itemId };
+  state.selectedItemId = null;
+  saveState();
+  renderInventory();
+  setMessage(`${ITEM_DEFS[itemId].name}과(와) 조합할 아이템을 선택하세요.`);
+}
+function cancelCombine() {
+  state.combineMode = { active: false, firstItemId: null };
+  saveState();
+  renderInventory();
+}
+function attemptCombine(secondItemId) {
+  const firstId = state.combineMode.firstItemId;
+  cancelCombine();
+  if (firstId === secondItemId) { setMessage('같은 아이템끼리는 조합할 수 없다.'); return; }
+  const recipe = findRecipe(firstId, secondItemId);
+  if (!recipe) { setMessage('서로 어울리지 않는다.'); return; }
+  if (recipe.consumeInputItems) {
+    state.inventoryItemIds = state.inventoryItemIds.filter(id => id !== firstId && id !== secondItemId);
+  }
+  state.inventoryItemIds.push(recipe.outputItemId);
+  state.selectedItemId = null;
+  saveState();
+  renderInventory();
+  setMessage(`[ ${recipe.successMessage} ]`);
+  markProgress();
+}
+function onInventoryRowClick(itemId) {
+  if (state.completed) return;
+  if (state.combineMode.active) {
+    if (itemId === state.combineMode.firstItemId) { cancelCombine(); return; }
+    if (!isCombinable(itemId)) { setMessage('이 아이템은 조합할 수 없다.'); return; }
+    attemptCombine(itemId);
+    return;
+  }
+  selectItem(itemId);
+}
+
 function renderInventory() {
   el.invList.innerHTML = '';
   const label = document.createElement('div');
   label.className = 'inv-list-label';
-  label.textContent = '인벤토리';
+  label.textContent = state.combineMode.active
+    ? `조합: ${ITEM_DEFS[state.combineMode.firstItemId].name} + ?`
+    : '인벤토리';
   el.invList.appendChild(label);
   if (!state.inventoryItemIds.length) {
     const empty = document.createElement('div');
@@ -697,10 +979,25 @@ function renderInventory() {
     if (!def) return;
     const row = document.createElement('div');
     row.className = 'inv-row ' + (def.selectable ? '' : 'fixed');
-    if (state.selectedItemId === itemId) row.classList.add('selected');
+    const isFirstCombineItem = state.combineMode.active && itemId === state.combineMode.firstItemId;
+    if (state.selectedItemId === itemId || isFirstCombineItem) row.classList.add('selected');
     row.innerHTML = `<span class="inv-row-icon">${def.icon}</span><span class="inv-row-name">${def.name}</span>` +
       (state.selectedItemId === itemId ? '<span class="inv-row-tag">선택됨</span>' : '');
-    if (def.selectable) row.addEventListener('click', () => selectItem(itemId));
+    row.addEventListener('click', () => onInventoryRowClick(itemId));
+    if (!state.combineMode.active && isCombinable(itemId)) {
+      const combineBtn = document.createElement('button');
+      combineBtn.className = 'inv-row-action';
+      combineBtn.textContent = '조합';
+      combineBtn.addEventListener('click', (e) => { e.stopPropagation(); startCombine(itemId); });
+      row.appendChild(combineBtn);
+    }
+    if (def.inspect) {
+      const inspectBtn = document.createElement('button');
+      inspectBtn.className = 'inv-row-action';
+      inspectBtn.textContent = '조사';
+      inspectBtn.addEventListener('click', (e) => { e.stopPropagation(); setMessage(def.inspect); });
+      row.appendChild(inspectBtn);
+    }
     el.invList.appendChild(row);
   });
 }
@@ -734,16 +1031,33 @@ el.devBtn.addEventListener('click', () => el.sheetOverlay.classList.remove('hidd
 el.sheetCloseBtn.addEventListener('click', () => el.sheetOverlay.classList.add('hidden'));
 el.sheetOverlay.addEventListener('click', (e) => { if (e.target === el.sheetOverlay) el.sheetOverlay.classList.add('hidden'); });
 
-document.getElementById('btnGiveFlashlight').addEventListener('click', () => { addItem('flashlight'); renderInventory(); });
-document.getElementById('btnGiveHook').addEventListener('click', () => { addItem('hook'); renderInventory(); });
+document.getElementById('btnShowHotspots').addEventListener('click', (e) => {
+  debugShowHotspots = !debugShowHotspots;
+  e.target.textContent = debugShowHotspots ? 'HIDE HOTSPOTS' : 'SHOW HOTSPOTS';
+  renderDebugHotspotOverlay();
+});
+document.getElementById('btnOpenBathroomDoor').addEventListener('click', () => { state.flags.bathroomDoorOpened = true; saveState(); });
+document.getElementById('btnGiveDeadFlashlight').addEventListener('click', () => { addItem('dead-flashlight'); renderInventory(); });
+document.getElementById('btnGiveBatteries').addEventListener('click', () => { addItem('aa-batteries'); renderInventory(); });
+document.getElementById('btnGiveWorkingFlashlight').addEventListener('click', () => { addItem('working-flashlight'); renderInventory(); });
+document.getElementById('btnGiveMetalHanger').addEventListener('click', () => { addItem('metal-hanger'); renderInventory(); });
+document.getElementById('btnGiveGardenStake').addEventListener('click', () => { addItem('garden-stake'); renderInventory(); });
+document.getElementById('btnGiveLongHook').addEventListener('click', () => { addItem('long-hook'); renderInventory(); });
+document.getElementById('btnRevealKey').addEventListener('click', () => { state.flags.keyVisible = true; saveState(); });
 document.getElementById('btnGiveKey').addEventListener('click', () => {
   addItem('unknown-key');
+  state.flags.keyVisible = true;
   state.flags.keyFound = true;
   saveState();
   renderInventory();
   scheduleForcedPhoneUnlock(600);
 });
 document.getElementById('btnUnlockPhone').addEventListener('click', () => { state.flags.phoneUnlocked = true; saveState(); });
+document.getElementById('btnGivePhone').addEventListener('click', () => {
+  state.flags.keyFound = true;
+  state.flags.phoneUnlocked = true;
+  handlePhoneFound();
+});
 document.getElementById('btnResetMinigame').addEventListener('click', () => {
   state = defaultState();
   saveState();

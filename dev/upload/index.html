@@ -778,12 +778,15 @@ function activeHotspotKind() {
   const scene = currentScene();
   return (scene && scene.roomHotspots) ? 'room' : 'single';
 }
-function getActiveHotspot(sceneId) {
-  if (activeHotspotKind() === 'room') return DevGameState.getRoomHotspots(sceneId)[currentRoomHotspotId] || null;
+async function getActiveHotspot(sceneId) {
+  if (activeHotspotKind() === 'room') {
+    const all = await DevGameState.getRoomHotspots(sceneId);
+    return all[currentRoomHotspotId] || null;
+  }
   return DevGameState.getMinigameHotspot(sceneId, activeHotspotStageIndex());
 }
-function saveActiveHotspot(sceneId, hotspot) {
-  if (activeHotspotKind() === 'room') DevGameState.setRoomHotspot(sceneId, currentRoomHotspotId, hotspot);
+async function saveActiveHotspot(sceneId, hotspot) {
+  if (activeHotspotKind() === 'room') await DevGameState.setRoomHotspot(sceneId, currentRoomHotspotId, hotspot);
   else DevGameState.setMinigameHotspot(sceneId, activeHotspotStageIndex(), hotspot);
 }
 
@@ -803,10 +806,10 @@ function renderHotspotStagePicker() {
   });
 }
 
-function renderHotspotPicker(scene) {
+async function renderHotspotPicker(scene) {
   const sceneId = activeBackgroundSceneId();
   el.hotspotPicker.classList.remove('hidden');
-  const saved = DevGameState.getRoomHotspots(sceneId);
+  const saved = await DevGameState.getRoomHotspots(sceneId);
   el.hotspotPickerPills.innerHTML = scene.roomHotspots.map(h =>
     `<button class="pill${h.id === currentRoomHotspotId ? ' active' : ''}" data-key="${h.id}">${escapeHtml(h.label)}${saved[h.id] ? ' ✓' : ''}</button>`
   ).join('');
@@ -861,7 +864,7 @@ async function loadHotspotEditor() {
   // in the browser's image cache (the asset-list thumbnail above just loaded
   // it), in which case the load can complete synchronously and an onload
   // attached after src would silently never fire.
-  el.hotspotImg.onload = () => {
+  el.hotspotImg.onload = async () => {
     const stageRect = el.hotspotStage.getBoundingClientRect();
     const nw = asset.width, nh = asset.height;
     const imgScale = Math.min(stageRect.width / nw, stageRect.height / nh);
@@ -872,7 +875,7 @@ async function loadHotspotEditor() {
     el.hotspotImg.style.left = imgLeft + 'px';
     el.hotspotImg.style.top = imgTop + 'px';
 
-    const existing = getActiveHotspot(sceneId);
+    const existing = await getActiveHotspot(sceneId);
     hotspotState = { imgLeft, imgTop, dispW, dispH, sceneId };
     if (existing) {
       startHotspotWithBox(rectToBox(existing, hotspotState));
@@ -883,7 +886,7 @@ async function loadHotspotEditor() {
     // In room mode, faintly show every *other* already-placed hotspot on
     // this same photo for spatial context while placing the rest.
     if (activeHotspotKind() === 'room') {
-      const all = DevGameState.getRoomHotspots(sceneId);
+      const all = await DevGameState.getRoomHotspots(sceneId);
       el.hotspotOtherBoxes.innerHTML = Object.keys(all)
         .filter(id => id !== currentRoomHotspotId)
         .map(id => { const b = rectToBox(all[id], hotspotState); return `<div class="hotspot-other-box" style="left:${b.left}px;top:${b.top}px;width:${b.width}px;height:${b.height}px"></div>`; })
@@ -982,17 +985,25 @@ el.hotspotMarker.addEventListener('pointermove', (e) => {
 });
 ['pointerup', 'pointercancel'].forEach(evt => el.hotspotMarker.addEventListener(evt, () => { hotspotDrag = null; }));
 
-el.hotspotSaveBtn.addEventListener('click', () => {
+el.hotspotSaveBtn.addEventListener('click', async () => {
   if (!hotspotState || hotspotState.mode !== 'placed') return;
   const s = hotspotState, b = s.box;
-  saveActiveHotspot(s.sceneId, {
-    x1: (b.left - s.imgLeft) / s.dispW,
-    y1: (b.top - s.imgTop) / s.dispH,
-    x2: (b.left + b.width - s.imgLeft) / s.dispW,
-    y2: (b.top + b.height - s.imgTop) / s.dispH,
-  });
-  el.hotspotHint.textContent = '저장됐어요. 미니게임에서 이 위치를 정답으로 인식합니다.';
-  if (activeHotspotKind() === 'room') renderHotspotPicker(currentScene());
+  el.hotspotSaveBtn.disabled = true;
+  el.hotspotHint.textContent = '저장하는 중...';
+  try {
+    await saveActiveHotspot(s.sceneId, {
+      x1: (b.left - s.imgLeft) / s.dispW,
+      y1: (b.top - s.imgTop) / s.dispH,
+      x2: (b.left + b.width - s.imgLeft) / s.dispW,
+      y2: (b.top + b.height - s.imgTop) / s.dispH,
+    });
+    el.hotspotHint.textContent = '저장됐어요. 미니게임에서 이 위치를 정답으로 인식합니다.';
+    if (activeHotspotKind() === 'room') await renderHotspotPicker(currentScene());
+  } catch (err) {
+    el.hotspotHint.textContent = '저장 실패: ' + (err && err.message ? err.message : err);
+  } finally {
+    el.hotspotSaveBtn.disabled = false;
+  }
 });
 
 function escapeHtml(s) {
