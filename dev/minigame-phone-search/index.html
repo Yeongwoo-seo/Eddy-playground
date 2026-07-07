@@ -742,15 +742,28 @@ let pinchStartDist = 0, pinchStartScale = 1;
 let didPan = false;
 let pressedPoint = null;
 
+// The photo always fills the stage vertically — baseScale comes from height
+// alone, not the usual "contain" min(width,height) fit — so a wide photo
+// overflows horizontally and is swiped/panned into view instead of being
+// letterboxed down to fit. The zoom floor is exactly baseScale (no *0.7
+// margin below it) so zooming out can never go past that height-filled
+// state; clampPan keeps every pan/zoom from revealing empty space beyond
+// the photo's edges.
 function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
 function mid(a, b) { return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; }
-function clampScale(s) { return Math.min(Math.max(s, baseScale * 0.7), baseScale * 3); }
-function applyCanvasTransform() { el.photoCanvas.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`; }
+function clampScale(s) { return Math.min(Math.max(s, baseScale), baseScale * 3); }
+function clampPan() {
+  const rect = el.photoStage.getBoundingClientRect();
+  const scaledW = CANVAS_W * scale, scaledH = CANVAS_H * scale;
+  tx = scaledW <= rect.width ? (rect.width - scaledW) / 2 : Math.min(0, Math.max(rect.width - scaledW, tx));
+  ty = scaledH <= rect.height ? (rect.height - scaledH) / 2 : Math.min(0, Math.max(rect.height - scaledH, ty));
+}
+function applyCanvasTransform() { clampPan(); el.photoCanvas.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`; }
 
 function fitToStage() {
   const rect = el.photoStage.getBoundingClientRect();
   if (!rect.width || !rect.height) return;
-  baseScale = Math.min(rect.width / CANVAS_W, rect.height / CANVAS_H) * 0.98;
+  baseScale = rect.height / CANVAS_H;
   scale = baseScale;
   tx = (rect.width - CANVAS_W * scale) / 2;
   ty = (rect.height - CANVAS_H * scale) / 2;
@@ -781,14 +794,16 @@ function renderDebugHotspotOverlay() {
   el.photoCanvas.querySelectorAll('.debug-hotspot-box').forEach(n => n.remove());
   if (!debugShowHotspots || currentMode !== 'photo') return;
   Object.keys(currentHotspots).forEach(id => {
-    const h = currentHotspots[id];
+    const pts = currentHotspots[id].map(p => ({ x: p.x * CANVAS_W, y: p.y * CANVAS_H }));
+    const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
+    const x1 = Math.min(...xs), y1 = Math.min(...ys), x2 = Math.max(...xs), y2 = Math.max(...ys);
     const box = document.createElement('div');
     box.className = 'debug-hotspot-box';
     Object.assign(box.style, {
-      left: (h.x1 * CANVAS_W) + 'px',
-      top: (h.y1 * CANVAS_H) + 'px',
-      width: ((h.x2 - h.x1) * CANVAS_W) + 'px',
-      height: ((h.y2 - h.y1) * CANVAS_H) + 'px',
+      left: x1 + 'px',
+      top: y1 + 'px',
+      width: (x2 - x1) + 'px',
+      height: (y2 - y1) + 'px',
     });
     box.textContent = id;
     el.photoCanvas.appendChild(box);
