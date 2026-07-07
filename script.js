@@ -280,7 +280,7 @@ function renderTable() {
         let k = 1;
         while (gap * k < len - 25) {
             let pos = gap * k;
-            addRow('Lip Cut', (pos - 20.5).toFixed(1), (pos + 20.5).toFixed(1));
+            addRow('Lip Cut', (pos - 22.5).toFixed(1), (pos + 22.5).toFixed(1));
             addRow('Dimple', pos.toFixed(1));
             k++;
         }
@@ -299,8 +299,8 @@ function renderTable() {
             let k = 1;
             while (gap * k < len - 25) {
                 let pos = gap * k;
-                addRow('WebNotch', (pos - 20.5).toFixed(1), (pos + 20.5).toFixed(1));
-                addRow('Lip Cut', (pos - 20.5).toFixed(1), (pos + 20.5).toFixed(1));
+                addRow('WebNotch', (pos - 22.5).toFixed(1), (pos + 22.5).toFixed(1));
+                addRow('Lip Cut', (pos - 22.5).toFixed(1), (pos + 22.5).toFixed(1));
                 addRow('Dimple', pos.toFixed(1));
                 k++;
             }
