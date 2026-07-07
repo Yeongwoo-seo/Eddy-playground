@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>OPERATION MK · 핸드폰을 찾아라</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<meta name="theme-color" content="#080A0C">
+<link rel="manifest" href="/dev/manifest.json">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="OPERATION MK DEV">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+:root{
+  --bg:#080A0C;--surface-1:#101419;--surface-2:#171C22;--surface-3:#1D232B;
+  --text-primary:#EDF1F4;--text-secondary:#929BA5;--text-muted:#5F6872;
+  --cyan:#59B8C8;--amber:#D6A84B;--divider:rgba(255,255,255,0.08);
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sans:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
+}
+html,body{height:100%;overflow:hidden}
+body{background:#000;color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center}
+
+.frame{position:relative;width:100%;max-width:430px;height:100dvh;height:100vh;height:var(--vh100, 100vh);overflow:hidden;background:#0d1114;display:flex;flex-direction:column}
+
+/* ===== Top bar + mission card ===== */
+.topbar{position:relative;z-index:5;padding:calc(14px + env(safe-area-inset-top,0)) 16px 10px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.vn-btn{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:#fff;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:9px 14px;cursor:pointer;text-decoration:none;display:inline-block;min-height:44px;display:inline-flex;align-items:center}
+.vn-btn.dev{color:var(--amber);border-color:rgba(214,168,75,.4)}
+
+.mission-card{margin:0 16px 12px;flex-shrink:0;background:var(--surface-1);border:1px solid var(--divider);border-radius:16px;padding:12px 16px}
+.mission-label{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase;margin-bottom:4px}
+.mission-target{font-size:19px;font-weight:800;color:var(--amber);letter-spacing:.02em}
+.hint-banner{margin-top:8px;font-family:var(--mono);font-size:11.5px;color:var(--cyan);display:none;align-items:center;gap:6px}
+.hint-banner.show{display:flex}
+.hint-banner::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--cyan);box-shadow:0 0 6px var(--cyan);animation:hintPulse 1.2s ease-in-out infinite}
+@keyframes hintPulse{0%,100%{opacity:.4}50%{opacity:1}}
+
+/* ===== Room stage ===== */
+.room-stage{flex:1;min-height:0;overflow-y:auto;padding:4px 16px 16px}
+.area-title{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--text-secondary);text-transform:uppercase;margin-bottom:12px}
+.hotspot-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.hotspot-btn{min-height:64px;background:var(--surface-1);border:1px solid var(--divider);border-radius:14px;padding:12px;display:flex;flex-direction:column;justify-content:center;color:var(--text-primary);font-family:var(--sans);font-size:14px;font-weight:600;text-align:left;cursor:pointer;transition:background .15s,transform .15s}
+.hotspot-btn:active{transform:scale(.97);background:var(--surface-2)}
+.hotspot-btn.found{border-color:rgba(89,184,200,.4);color:var(--cyan)}
+
+/* ===== Photo-mode room (background photo + tappable region overlays) =====
+   Used once an Area has a background photo + at least one hotspot region
+   configured via /dev/minigame-phone/setup/; any hotspot in that Area still
+   missing a saved region falls back to the plain button below the photo, so
+   nothing becomes unreachable while art/regions are still being set up. */
+.photo-stage{position:relative;width:100%;height:46vh;min-height:220px;background:#000;border-radius:14px;overflow:hidden;margin-bottom:10px}
+.photo-stage.hidden{display:none}
+.photo-stage img{position:absolute;-webkit-user-drag:none}
+.photo-hit{position:absolute;background:transparent;cursor:pointer}
+.photo-hit.debug-outline{border:1px dashed rgba(89,184,200,.5);background:rgba(89,184,200,.08)}
+
+/* ===== Inventory bar ===== */
+.inventory-bar{flex-shrink:0;display:flex;gap:10px;padding:10px 16px;overflow-x:auto;border-top:1px solid var(--divider);background:var(--surface-1)}
+.inventory-bar:empty::before{content:'인벤토리가 비어 있다';font-family:var(--mono);font-size:11px;color:var(--text-muted);line-height:44px}
+.item-btn{flex-shrink:0;width:52px;height:52px;border-radius:14px;background:var(--surface-2);border:2px solid transparent;font-size:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:border-color .15s,transform .15s}
+.item-btn:active{transform:scale(.94)}
+.item-btn.selected{border-color:var(--amber);background:rgba(214,168,75,.14)}
+
+/* ===== Area tabs ===== */
+.area-tabs{flex-shrink:0;display:flex;gap:8px;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0));background:var(--surface-1);border-top:1px solid var(--divider)}
+.area-tab{flex:1;min-height:44px;border-radius:12px;background:var(--surface-2);color:var(--text-secondary);border:none;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer}
+.area-tab.active{background:var(--amber);color:#1c1204}
+
+/* ===== Dialogue / system-message overlay ===== */
+.dlg-overlay{position:absolute;inset:0;z-index:8;display:none;flex-direction:column;justify-content:flex-end;cursor:pointer;background:rgba(0,0,0,.28)}
+.dlg-overlay.show{display:flex}
+.dlg-box{background:rgba(5,7,10,.92);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-top:1px solid rgba(255,255,255,.08);padding:18px 20px calc(18px + env(safe-area-inset-bottom,0));min-height:20vh;display:flex;flex-direction:column}
+.dlg-name{font-size:14px;font-weight:700;color:var(--cyan);margin-bottom:8px}
+.dlg-name:empty{display:none}
+.dlg-text{flex:1;font-size:16px;line-height:1.65;color:#fff;white-space:pre-wrap;word-break:keep-all}
+.dlg-foot{display:flex;justify-content:flex-end;padding-top:6px}
+.dlg-arrow{font-size:13px;color:var(--text-secondary);visibility:hidden}
+@keyframes arrowBob{0%,100%{transform:translateY(0)}50%{transform:translateY(4px)}}
+.dlg-arrow.show{visibility:visible;animation:arrowBob 1.1s ease-in-out infinite}
+
+/* ===== GAME CLEAR ===== */
+.clear-overlay{position:absolute;inset:0;z-index:9;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.6)}
+.clear-overlay.show{display:flex;animation:clearFade .4s ease}
+@keyframes clearFade{from{opacity:0}to{opacity:1}}
+.clear-stamp{font-family:var(--mono);font-size:28px;font-weight:700;letter-spacing:.14em;color:var(--cyan);text-shadow:0 0 24px rgba(89,184,200,.6)}
+
+/* ===== Fade to black + redirect ===== */
+.fade-overlay{position:absolute;inset:0;z-index:10;background:#000;opacity:0;pointer-events:none;transition:opacity .9s ease}
+.fade-overlay.show{opacity:1}
+
+/* ===== Debug sheet ===== */
+.debug-sheet-overlay{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center}
+.debug-sheet-overlay.hidden{display:none}
+.debug-sheet{width:100%;max-width:430px;background:var(--surface-1);border-radius:20px 20px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom,0));border-top:1px solid var(--divider)}
+.debug-title{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--text-muted);margin-bottom:14px;text-transform:uppercase}
+.debug-btn{width:100%;text-align:left;background:var(--surface-2);color:var(--text-primary);border:1px solid var(--divider);border-radius:10px;padding:13px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--mono);letter-spacing:.03em;margin-bottom:8px}
+.debug-btn.danger{color:#e07a7a}
+.debug-close{width:100%;margin-top:4px;background:transparent;color:var(--text-secondary);border:1px solid var(--divider);border-radius:10px;padding:13px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--mono);letter-spacing:.06em}
+</style>
+</head>
+<body>
+<div class="frame" id="frame">
+  <div class="topbar">
+    <a class="vn-btn" href="/dev/">← DEV</a>
+    <div style="display:flex;gap:8px">
+      <a class="vn-btn dev" href="/dev/minigame-phone/setup/">SETUP</a>
+      <button class="vn-btn dev" id="debugBtn">DEV</button>
+    </div>
+  </div>
+
+  <div class="mission-card">
+    <div class="mission-label">미션</div>
+    <div class="mission-target">지수의 핸드폰을 찾아라</div>
+    <div class="hint-banner" id="hintBanner">[ 어디선가 진동 소리가 들린다 ]</div>
+  </div>
+
+  <div class="room-stage" id="roomStage">
+    <div class="area-title" id="areaTitle"></div>
+    <div class="photo-stage hidden" id="photoStage"><img id="photoStageImg" alt=""></div>
+    <div class="hotspot-grid" id="hotspotGrid"></div>
+  </div>
+
+  <div class="inventory-bar" id="inventoryBar"></div>
+
+  <div class="area-tabs" id="areaTabs"></div>
+
+  <div class="dlg-overlay" id="dlgOverlay">
+    <div class="dlg-box">
+      <div class="dlg-name" id="dlgName"></div>
+      <div class="dlg-text" id="dlgText"></div>
+      <div class="dlg-foot"><span class="dlg-arrow" id="dlgArrow">▼</span></div>
+    </div>
+  </div>
+
+  <div class="clear-overlay" id="clearOverlay">
+    <div class="clear-stamp">GAME CLEAR</div>
+  </div>
+
+  <div class="fade-overlay" id="fadeOverlay"></div>
+</div>
+
+<div class="debug-sheet-overlay hidden" id="debugSheetOverlay">
+  <div class="debug-sheet">
+    <div class="debug-title">Dev · Minigame Debug</div>
+    <button class="debug-btn" id="dbgGiveFlashlight">GIVE FLASHLIGHT</button>
+    <button class="debug-btn" id="dbgGiveHook">GIVE HOOK</button>
+    <button class="debug-btn" id="dbgGiveKey">GIVE KEY</button>
+    <button class="debug-btn" id="dbgUnlockPhone">UNLOCK PHONE</button>
+    <button class="debug-btn danger" id="dbgReset">RESET MINIGAME</button>
+    <button class="debug-btn danger" id="dbgClearState">CLEAR STATE</button>
+    <button class="debug-close" id="debugCloseBtn">CLOSE</button>
+  </div>
+</div>
+
+<script>
+function setVh100() { document.documentElement.style.setProperty('--vh100', window.innerHeight + 'px'); }
+setVh100();
+window.addEventListener('resize', setVh100);
+window.addEventListener('orientationchange', setVh100);
+if (window.visualViewport) window.visualViewport.addEventListener('resize', setVh100);
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
+}
+</script>
+<script src="/dev/vnPlayer.js"></script>
+<script src="/dev/assetDb.js"></script>
+<script src="/dev/minigamePhoneData.js"></script>
+<script>
+/* ===== Data: items =====
+   Areas/hotspots themselves live in /dev/minigamePhoneData.js, shared with
+   the setup page (/dev/minigame-phone/setup/) so the two never drift. An
+   Area with a configured background photo + hotspot regions renders as a
+   real tappable photo; anything not yet configured falls back to the plain
+   button grid below it, so the game stays playable while art is in progress. */
+const ITEMS = {
+  flashlight: { id: 'flashlight', name: '손전등', icon: '🔦' },
+  hook: { id: 'hook', name: '갈고리', icon: '🪝' },
+  'unknown-key': { id: 'unknown-key', name: '낡은 열쇠', icon: '🗝️' },
+  lipbalm: { id: 'lipbalm', name: '립밤', icon: '💄' },
+};
+
+const FLAVOR_TEXT = {
+  bed: '침대일 뿐이다.',
+  pillow: '베개를 들춰본다.\n아무것도 없다.',
+  blanket: '이불을 걷어본다.\n아무것도 없다.',
+  'behind-bed': '침대와 벽 사이 좁은 틈이다.\n딱히 뭔가 있어 보이진 않는다.',
+  'bedside-table': '충전기와 물컵만 놓여 있다.',
+  sofa: '소파에 앉아본다.\n푹신하다.',
+  'behind-sofa': '소파 뒤쪽이다.\n먼지뿐이다.',
+  'coffee-table': '잡지 몇 권이 놓여 있다.',
+  desk: '책상 위엔 별다른 게 없다.',
+  'desk-drawer': '펜과 메모지뿐이다.',
+  'charger-area': '충전 케이블만 꽂혀 있다.',
+  bag: '아직 풀지 않은 짐가방이다.',
+  'shoe-cabinet': '신발 몇 켤레뿐이다.',
+  closet: '옷걸이만 몇 개 걸려 있다.',
+  luggage: '비어 있는 캐리어다.',
+  'utility-cabinet': '청소도구들이 들어있다.',
+};
+
+/* ===== State ===== */
+const STATE_KEY = 'mkPhoneMinigameState';
+function defaultState() {
+  return {
+    currentAreaId: 'bed',
+    inventoryItemIds: [],
+    selectedItemId: null,
+    flags: { keyVisible: false, keyFound: false, phoneUnlocked: false, phoneFound: false },
+    completed: false,
+  };
+}
+function loadState() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(STATE_KEY));
+    if (!raw) return defaultState();
+    const base = defaultState();
+    return Object.assign(base, raw, { flags: Object.assign(base.flags, raw.flags) });
+  } catch (e) { return defaultState(); }
+}
+let state = loadState();
+function saveState() { localStorage.setItem(STATE_KEY, JSON.stringify(state)); }
+
+function hasItem(id) { return state.inventoryItemIds.includes(id); }
+function addItem(id) {
+  if (!hasItem(id)) state.inventoryItemIds.push(id);
+  saveState();
+  renderInventory();
+}
+
+/* ===== DOM refs ===== */
+const el = {
+  frame: document.getElementById('frame'),
+  areaTitle: document.getElementById('areaTitle'),
+  photoStage: document.getElementById('photoStage'),
+  photoStageImg: document.getElementById('photoStageImg'),
+  hotspotGrid: document.getElementById('hotspotGrid'),
+  inventoryBar: document.getElementById('inventoryBar'),
+  areaTabs: document.getElementById('areaTabs'),
+  hintBanner: document.getElementById('hintBanner'),
+  dlgOverlay: document.getElementById('dlgOverlay'),
+  dlgName: document.getElementById('dlgName'),
+  dlgText: document.getElementById('dlgText'),
+  dlgArrow: document.getElementById('dlgArrow'),
+  clearOverlay: document.getElementById('clearOverlay'),
+  fadeOverlay: document.getElementById('fadeOverlay'),
+  debugBtn: document.getElementById('debugBtn'),
+  debugSheetOverlay: document.getElementById('debugSheetOverlay'),
+  debugCloseBtn: document.getElementById('debugCloseBtn'),
+};
+
+let inputLocked = false;
+let currentPlayer = null;
+
+/* ===== Sequence overlay (system messages + short dialogue popups) =====
+   Reuses the shared VN typewriter engine so a one-line system message
+   ("[ 손전등을 발견했다 ]") and a multi-line 영우/지수 exchange render through
+   the exact same tap-to-advance mechanic. */
+function showSequence(lines, onComplete) {
+  inputLocked = true;
+  el.dlgOverlay.classList.add('show');
+  currentPlayer = createVNPlayer({
+    onLineChange: (line) => { el.dlgName.textContent = line.speaker || ''; },
+    onTextUpdate: (text) => { el.dlgText.textContent = text; },
+    onArrow: (show) => el.dlgArrow.classList.toggle('show', show),
+    onComplete: () => {
+      el.dlgOverlay.classList.remove('show');
+      inputLocked = false;
+      currentPlayer = null;
+      if (onComplete) onComplete();
+    },
+  });
+  currentPlayer.load(lines);
+}
+el.dlgOverlay.addEventListener('click', () => { if (currentPlayer) currentPlayer.tap(); });
+
+function genericFlavor(hotspotId) {
+  showSequence([{ speaker: '', text: FLAVOR_TEXT[hotspotId] || '아무것도 없다.' }]);
+}
+
+/* ===== Core puzzle interactions ===== */
+function handleTvStand() {
+  if (hasItem('flashlight')) { showSequence([{ speaker: '', text: '이미 확인했다.' }]); return; }
+  addItem('flashlight');
+  showSequence([{ speaker: '', text: '[ 손전등을 발견했다 ]' }]);
+}
+
+function handleUpperShelf() {
+  if (hasItem('hook')) { showSequence([{ speaker: '', text: '이미 확인했다.' }]); return; }
+  addItem('hook');
+  showSequence([
+    { speaker: '', text: '[ 긴 갈고리를 발견했다 ]' },
+    { speaker: '영우', text: '이건 왜 있지.' },
+    { speaker: '지수', text: '몰라.\n일단 가져요.' },
+    { speaker: '영우', text: '왜 이렇게 자연스럽게 챙겨 ㅋㅎㅋㅎㅋㅎㅋㅎ' },
+  ]);
+}
+
+function handleUnderBed() {
+  if (!hasItem('flashlight')) {
+    showSequence([
+      { speaker: '', text: '어두워서 잘 보이지 않는다.' },
+      { speaker: '영우', text: '어두워서 안 보이네.' },
+      { speaker: '지수', text: '쌤 눈 크게 떠봐요.' },
+      { speaker: '영우', text: '그걸로 되는 문제야?' },
+    ]);
+    return;
+  }
+  if (state.flags.keyFound) { showSequence([{ speaker: '', text: '이미 확인했다.' }]); return; }
+  if (!state.flags.keyVisible) {
+    state.flags.keyVisible = true;
+    saveState();
+    showSequence([{ speaker: '', text: '반짝이는 무언가가 보인다.\n하지만 손이 닿지 않는다.' }]);
+    return;
+  }
+  if (state.selectedItemId === 'hook') {
+    state.inventoryItemIds.push('unknown-key');
+    state.flags.keyFound = true;
+    state.selectedItemId = null;
+    saveState();
+    renderInventory();
+    showSequence([
+      { speaker: '', text: '짤랑.' },
+      { speaker: '', text: '[ 낡은 열쇠를 발견했다 ]' },
+    ], scheduleForcedPhoneUnlockEvent);
+    return;
+  }
+  showSequence([{ speaker: '', text: '반짝이는 게 보이지만 손이 닿지 않는다.\n뭔가 도구가 필요할 것 같다.' }]);
+}
+
+function handleUnderSofa() {
+  if (hasItem('lipbalm')) { showSequence([{ speaker: '', text: '이미 확인했다.' }]); return; }
+  if (state.selectedItemId !== 'flashlight') {
+    showSequence([{ speaker: '', text: '어두워서 잘 보이지 않는다.' }]);
+    return;
+  }
+  addItem('lipbalm');
+  showSequence([
+    { speaker: '', text: '[ 립밤을 발견했다 ]' },
+    { speaker: '지수', text: '헐 내 거다.' },
+    { speaker: '영우', text: '핸드폰 찾다가 립밤 찾았네.' },
+    { speaker: '지수', text: '개이득.' },
+  ]);
+}
+
+function canRevealPhone() { return state.flags.keyFound && state.flags.phoneUnlocked; }
+
+function handleSofaCushion() {
+  if (state.completed) return;
+  if (!canRevealPhone()) {
+    showSequence([{ speaker: '', text: '아무것도 없다.' }]);
+    return;
+  }
+  playPhoneBuzz();
+  showSequence([{ speaker: '', text: '부우웅—' }], () => {
+    showSequence([{ speaker: '', text: '[ 지수의 핸드폰을 발견했다 ]' }], () => {
+      state.inventoryItemIds.push('jisu-phone');
+      state.flags.phoneFound = true;
+      state.completed = true;
+      saveState();
+      gameClear();
+    });
+  });
+}
+
+function scheduleForcedPhoneUnlockEvent() {
+  inputLocked = true;
+  setTimeout(() => {
+    playPhoneBuzz();
+    showSequence([
+      { speaker: '', text: '부우웅—' },
+      { speaker: '지수', text: '...어?' },
+      { speaker: '영우', text: '핸드폰 아니야?' },
+      { speaker: '지수', text: '맞아.' },
+      { speaker: '', text: '부우웅—' },
+    ], () => {
+      state.flags.phoneUnlocked = true;
+      saveState();
+      el.hintBanner.classList.add('show');
+    });
+  }, 700 + Math.random() * 500);
+}
+
+const HOTSPOT_HANDLERS = {
+  'tv-stand': handleTvStand,
+  'upper-shelf': handleUpperShelf,
+  'under-bed': handleUnderBed,
+  'under-sofa': handleUnderSofa,
+  'sofa-cushion': handleSofaCushion,
+};
+
+function inspect(hotspotId) {
+  if (state.completed || inputLocked) return;
+  (HOTSPOT_HANDLERS[hotspotId] || (() => genericFlavor(hotspotId)))();
+}
+
+/* ===== Rendering ===== */
+const HOTSPOT_RESOLVED = {
+  'tv-stand': () => hasItem('flashlight'),
+  'upper-shelf': () => hasItem('hook'),
+  'under-bed': () => state.flags.keyFound,
+  'under-sofa': () => hasItem('lipbalm'),
+  'sofa-cushion': () => state.flags.phoneFound,
+};
+
+// Positions the invisible tap regions over the background photo, converting
+// each hotspot's normalized {x1,y1,x2,y2} rect (saved by the setup page) into
+// on-screen pixels — same object-fit:contain math the setup page's stage uses,
+// so a region marked there lines up here regardless of viewport size.
+function renderPhotoHitAreas(area, cfg, asset) {
+  el.photoStage.querySelectorAll('.photo-hit').forEach(n => n.remove());
+  const stageRect = el.photoStage.getBoundingClientRect();
+  const nw = asset.width, nh = asset.height;
+  if (!nw || !nh || !stageRect.width || !stageRect.height) return;
+  const imgScale = Math.min(stageRect.width / nw, stageRect.height / nh);
+  const dispW = nw * imgScale, dispH = nh * imgScale;
+  const imgLeft = (stageRect.width - dispW) / 2, imgTop = (stageRect.height - dispH) / 2;
+  el.photoStageImg.style.width = dispW + 'px';
+  el.photoStageImg.style.height = dispH + 'px';
+  el.photoStageImg.style.left = imgLeft + 'px';
+  el.photoStageImg.style.top = imgTop + 'px';
+
+  area.hotspots.forEach(h => {
+    const rect = cfg.hotspots[h.id];
+    if (!rect) return;
+    const div = document.createElement('div');
+    div.className = 'photo-hit debug-outline';
+    div.style.left = (imgLeft + rect.x1 * dispW) + 'px';
+    div.style.top = (imgTop + rect.y1 * dispH) + 'px';
+    div.style.width = ((rect.x2 - rect.x1) * dispW) + 'px';
+    div.style.height = ((rect.y2 - rect.y1) * dispH) + 'px';
+    div.title = h.label;
+    div.addEventListener('click', () => inspect(h.id));
+    el.photoStage.appendChild(div);
+  });
+}
+
+// Any hotspot with a saved region renders as a tappable area on the photo
+// instead; anything not yet marked in the setup page still shows as a plain
+// button below, so an Area is playable even before every region is drawn.
+async function renderArea() {
+  const area = PHONE_MINIGAME_AREAS.find(a => a.id === state.currentAreaId) || PHONE_MINIGAME_AREAS[0];
+  el.areaTitle.textContent = area.label;
+
+  const cfg = MinigameAreaConfig.getArea(PHONE_MINIGAME_ID, area.id);
+  const configuredIds = new Set(Object.keys(cfg.hotspots));
+  let photoActive = false;
+
+  if (cfg.backgroundAssetId && configuredIds.size > 0) {
+    const asset = await AssetDB.getAsset(cfg.backgroundAssetId).catch(() => null);
+    // Bail out silently to the button-grid fallback if the area changed
+    // again while this asset fetch was in flight.
+    if (state.currentAreaId !== area.id) return;
+    if (asset && asset.dataUrl) {
+      photoActive = true;
+      el.photoStage.classList.remove('hidden');
+      el.photoStageImg.src = asset.dataUrl;
+      renderPhotoHitAreas(area, cfg, asset);
+    }
+  }
+  if (!photoActive) {
+    el.photoStage.classList.add('hidden');
+    el.photoStage.querySelectorAll('.photo-hit').forEach(n => n.remove());
+  }
+
+  const gridHotspots = photoActive ? area.hotspots.filter(h => !configuredIds.has(h.id)) : area.hotspots;
+  el.hotspotGrid.innerHTML = gridHotspots.map(h => {
+    const resolved = HOTSPOT_RESOLVED[h.id];
+    const foundClass = (resolved && resolved()) ? ' found' : '';
+    return `<button class="hotspot-btn${foundClass}" data-hotspot="${h.id}">${h.label}</button>`;
+  }).join('');
+  el.hotspotGrid.querySelectorAll('.hotspot-btn').forEach(btn => {
+    btn.addEventListener('click', () => inspect(btn.dataset.hotspot));
+  });
+
+  el.areaTabs.querySelectorAll('.area-tab').forEach(tab => {
+    tab.classList.toggle('active', tab.dataset.area === area.id);
+  });
+}
+window.addEventListener('resize', () => { if (!el.photoStage.classList.contains('hidden')) renderArea(); });
+
+function renderInventory() {
+  el.inventoryBar.innerHTML = state.inventoryItemIds
+    .filter(id => ITEMS[id])
+    .map(id => {
+      const item = ITEMS[id];
+      const selected = state.selectedItemId === id ? ' selected' : '';
+      return `<button class="item-btn${selected}" data-item="${id}" title="${item.name}">${item.icon}</button>`;
+    }).join('');
+  el.inventoryBar.querySelectorAll('.item-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (inputLocked || state.completed) return;
+      const id = btn.dataset.item;
+      state.selectedItemId = (state.selectedItemId === id) ? null : id;
+      saveState();
+      renderInventory();
+    });
+  });
+}
+
+function renderAreaTabs() {
+  el.areaTabs.innerHTML = PHONE_MINIGAME_AREAS.map(a =>
+    `<button class="area-tab${a.id === state.currentAreaId ? ' active' : ''}" data-area="${a.id}">${a.label}</button>`
+  ).join('');
+  el.areaTabs.querySelectorAll('.area-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      if (inputLocked || state.completed) return;
+      state.currentAreaId = tab.dataset.area;
+      saveState();
+      renderArea();
+    });
+  });
+}
+
+function renderAll() {
+  renderAreaTabs();
+  renderArea();
+  renderInventory();
+  el.hintBanner.classList.toggle('show', state.flags.phoneUnlocked && !state.flags.phoneFound);
+}
+
+/* ===== Sound ===== */
+function playPhoneBuzz() {
+  if (navigator.vibrate) navigator.vibrate(220);
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(90, ctx.currentTime);
+    g.gain.setValueAtTime(0.0001, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.22, ctx.currentTime + 0.03);
+    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.35);
+    o.connect(g); g.connect(ctx.destination);
+    o.start(); o.stop(ctx.currentTime + 0.35);
+  } catch (e) { /* audio unavailable — not critical to gameplay */ }
+}
+
+function playClearBeep() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(880, ctx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(1320, ctx.currentTime + 0.15);
+    g.gain.setValueAtTime(0.0001, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.4);
+    o.connect(g); g.connect(ctx.destination);
+    o.start(); o.stop(ctx.currentTime + 0.4);
+  } catch (e) { /* audio unavailable — not critical to gameplay */ }
+}
+
+/* ===== Game clear -> hand off to VN follow-up scene ===== */
+function gameClear() {
+  inputLocked = true;
+  el.inventoryBar.style.display = 'none';
+  el.areaTabs.style.display = 'none';
+  el.hotspotGrid.querySelectorAll('.hotspot-btn').forEach(btn => { btn.disabled = true; });
+  el.photoStage.querySelectorAll('.photo-hit').forEach(hit => { hit.style.pointerEvents = 'none'; });
+  playClearBeep();
+  el.clearOverlay.classList.add('show');
+  setTimeout(() => {
+    el.fadeOverlay.classList.add('show');
+    setTimeout(() => { location.href = '/dev/game/?scene=week1-scene-002-3'; }, 950);
+  }, 1100);
+}
+
+/* ===== Debug sheet ===== */
+el.debugBtn.addEventListener('click', () => el.debugSheetOverlay.classList.remove('hidden'));
+el.debugCloseBtn.addEventListener('click', () => el.debugSheetOverlay.classList.add('hidden'));
+el.debugSheetOverlay.addEventListener('click', (e) => {
+  if (e.target === el.debugSheetOverlay) el.debugSheetOverlay.classList.add('hidden');
+});
+document.getElementById('dbgGiveFlashlight').addEventListener('click', () => { addItem('flashlight'); });
+document.getElementById('dbgGiveHook').addEventListener('click', () => { addItem('hook'); });
+document.getElementById('dbgGiveKey').addEventListener('click', () => {
+  state.flags.keyVisible = true;
+  state.flags.keyFound = true;
+  if (!hasItem('unknown-key')) state.inventoryItemIds.push('unknown-key');
+  saveState();
+  renderInventory();
+});
+document.getElementById('dbgUnlockPhone').addEventListener('click', () => {
+  state.flags.phoneUnlocked = true;
+  saveState();
+  el.hintBanner.classList.add('show');
+});
+document.getElementById('dbgReset').addEventListener('click', () => {
+  state = defaultState();
+  saveState();
+  el.debugSheetOverlay.classList.add('hidden');
+  location.reload();
+});
+document.getElementById('dbgClearState').addEventListener('click', () => {
+  localStorage.removeItem(STATE_KEY);
+  el.debugSheetOverlay.classList.add('hidden');
+  location.reload();
+});
+
+/* ===== Init ===== */
+if (state.completed) {
+  renderAll();
+  gameClear();
+} else {
+  renderAll();
+}
+</script>
+</body>
+</html>

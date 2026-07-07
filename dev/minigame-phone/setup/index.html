@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>OPERATION MK · 핸드폰 미니게임 설정</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<meta name="theme-color" content="#080A0C">
+<link rel="manifest" href="/dev/manifest.json">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#080A0C;--surface-1:#101419;--surface-2:#171C22;--surface-3:#20262D;
+  --text-primary:#EDF1F4;--text-secondary:#929BA5;--text-muted:#5F6872;
+  --cyan:#59B8C8;--amber:#D6A84B;--signal-red:#D94141;--divider:rgba(255,255,255,0.08);
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sans:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
+}
+html,body{height:100%}
+body{background:#050607;color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center}
+.frame{width:100%;max-width:430px;min-height:100dvh;min-height:100vh;padding:calc(20px + env(safe-area-inset-top,0)) 20px calc(40px + env(safe-area-inset-bottom,0))}
+.hidden{display:none}
+
+.topbar{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.back-btn{width:36px;height:36px;border-radius:50%;background:var(--surface-1);border:1px solid var(--divider);color:var(--text-primary);display:flex;align-items:center;justify-content:center;text-decoration:none;flex-shrink:0}
+.page-title{font-size:17px;font-weight:700}
+.page-sub{font-size:12.5px;color:var(--text-secondary);margin:-10px 0 18px;line-height:1.5}
+
+.area-tabs{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+.area-tab{flex:1;min-width:70px;min-height:44px;padding:10px;border-radius:10px;background:var(--surface-1);border:1px solid var(--divider);color:var(--text-secondary);font-size:13px;font-weight:600;cursor:pointer}
+.area-tab.active{background:rgba(214,168,75,.14);color:var(--amber);border-color:rgba(214,168,75,.4)}
+
+.section-title{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase;margin:22px 0 10px}
+.section-title:first-of-type{margin-top:0}
+
+.dropzone{border:1.5px dashed var(--divider);border-radius:14px;padding:28px 16px;text-align:center;transition:border-color .15s,background .15s}
+.dropzone.drag{border-color:var(--cyan);background:rgba(89,184,200,.06)}
+.dropzone-icon{font-size:24px;margin-bottom:8px}
+.dropzone-text{font-size:12.5px;color:var(--text-secondary);margin-bottom:12px}
+.select-btn{display:inline-block;background:var(--surface-2);border:1px solid var(--divider);color:var(--text-primary);padding:11px 20px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--mono);letter-spacing:.05em;min-height:44px}
+
+.bg-card{display:flex;align-items:center;gap:12px;background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:12px}
+.bg-thumb{width:56px;height:56px;border-radius:8px;object-fit:cover;background:var(--surface-3);flex-shrink:0}
+.bg-info{flex:1;min-width:0;font-size:12.5px;color:var(--text-secondary)}
+.bg-replace-btn{font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;padding:8px 12px;border-radius:16px;border:1px solid var(--divider);background:var(--surface-2);color:var(--text-secondary);cursor:pointer;white-space:nowrap;min-height:38px}
+
+.stage-wrap{margin-top:4px}
+.stage{position:relative;width:100%;height:280px;background:#000;border-radius:10px;overflow:hidden;touch-action:none}
+.stage img{position:absolute;-webkit-user-drag:none;user-select:none;pointer-events:none}
+.stage-hint{position:absolute;top:8px;left:8px;right:8px;z-index:3;font-family:var(--mono);font-size:10.5px;color:#fff;background:rgba(0,0,0,.6);border-radius:8px;padding:6px 10px;line-height:1.5;pointer-events:none}
+.pick-dot{position:absolute;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:var(--amber);border:2px solid #1c1204;z-index:4;pointer-events:none}
+.region-box{position:absolute;border:2px solid rgba(89,184,200,.85);background:rgba(89,184,200,.14);z-index:2;pointer-events:none}
+.region-box.editing{border-color:var(--amber);background:rgba(214,168,75,.16);z-index:3}
+.region-label{position:absolute;top:-1px;left:-1px;transform:translateY(-100%);font-family:var(--mono);font-size:9.5px;color:#06181c;background:var(--cyan);border-radius:4px 4px 0 0;padding:2px 6px;white-space:nowrap}
+.region-box.editing .region-label{background:var(--amber)}
+
+.pick-actions{display:flex;gap:8px;margin-top:10px}
+.pick-actions.hidden{display:none}
+.pick-actions button{flex:1;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--mono);letter-spacing:.04em;border:none;min-height:44px}
+.pick-save-btn{background:var(--cyan);color:#06181c}
+.pick-save-btn:disabled{opacity:.4;cursor:default}
+.pick-cancel-btn{background:var(--surface-2) !important;color:var(--text-secondary) !important;border:1px solid var(--divider) !important}
+
+.hotspot-list{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.hotspot-row{display:flex;align-items:center;gap:10px;background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:11px 12px}
+.hotspot-row.active{border-color:rgba(214,168,75,.5)}
+.hotspot-name{flex:1;min-width:0;font-size:13.5px;font-weight:600}
+.hotspot-status{font-family:var(--mono);font-size:9.5px;letter-spacing:.04em;padding:3px 8px;border-radius:10px;background:var(--surface-2);color:var(--text-muted)}
+.hotspot-status.done{background:rgba(89,184,200,.14);color:var(--cyan)}
+.hotspot-row-actions{display:flex;gap:6px;flex-shrink:0}
+.hotspot-row-actions button{font-family:var(--mono);font-size:10px;letter-spacing:.03em;padding:7px 10px;border-radius:16px;border:1px solid var(--divider);background:var(--surface-2);color:var(--text-secondary);cursor:pointer;white-space:nowrap;min-height:38px}
+.hotspot-row-actions button.mark{color:var(--amber);border-color:rgba(214,168,75,.4)}
+.hotspot-row-actions button.danger{color:var(--signal-red);border-color:rgba(217,65,65,.35)}
+
+.empty-note{font-size:13px;color:var(--text-muted);padding:14px 0}
+</style>
+</head>
+<body>
+<div class="frame">
+  <div class="topbar">
+    <a class="back-btn" href="/dev/minigame-phone/">←</a>
+    <div class="page-title">핸드폰 미니게임 설정</div>
+  </div>
+  <div class="page-sub">Area별 방 사진을 올리고, 핫스팟마다 4개의 점을 찍어 사각형 영역을 지정합니다.</div>
+
+  <div class="area-tabs" id="areaTabs"></div>
+
+  <div class="section-title">배경 사진</div>
+  <div class="dropzone" id="dropzone">
+    <div class="dropzone-icon">🖼️</div>
+    <div class="dropzone-text">이 Area의 방 사진을 올려주세요</div>
+    <button class="select-btn" id="selectBtn">SELECT IMAGE</button>
+    <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp" style="display:none">
+  </div>
+  <div class="bg-card hidden" id="bgCard">
+    <img class="bg-thumb" id="bgThumb" alt="">
+    <div class="bg-info" id="bgInfo"></div>
+    <button class="bg-replace-btn" id="bgReplaceBtn">교체</button>
+  </div>
+
+  <div id="hotspotSection" class="hidden">
+    <div class="section-title">핫스팟 영역 지정</div>
+    <div class="stage-wrap">
+      <div class="stage" id="stage">
+        <img id="stageImg" alt="">
+        <div class="stage-hint" id="stageHint"></div>
+      </div>
+      <div class="pick-actions hidden" id="pickActions">
+        <button class="pick-cancel-btn" id="pickCancelBtn">취소</button>
+        <button class="pick-save-btn" id="pickSaveBtn" disabled>이 영역 저장</button>
+      </div>
+    </div>
+
+    <div class="section-title">핫스팟 목록</div>
+    <div class="hotspot-list" id="hotspotList"></div>
+  </div>
+</div>
+
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
+}
+</script>
+<script src="/dev/assetDb.js"></script>
+<script src="/dev/minigamePhoneData.js"></script>
+<script>
+let currentAreaId = PHONE_MINIGAME_AREAS[0].id;
+let currentAreaAssets = []; // cached minigame-bg assets for the current area
+let picking = null; // { hotspotId, points: [{natX,natY}, ...] }
+
+const el = {
+  areaTabs: document.getElementById('areaTabs'),
+  dropzone: document.getElementById('dropzone'),
+  selectBtn: document.getElementById('selectBtn'),
+  fileInput: document.getElementById('fileInput'),
+  bgCard: document.getElementById('bgCard'),
+  bgThumb: document.getElementById('bgThumb'),
+  bgInfo: document.getElementById('bgInfo'),
+  bgReplaceBtn: document.getElementById('bgReplaceBtn'),
+  hotspotSection: document.getElementById('hotspotSection'),
+  stage: document.getElementById('stage'),
+  stageImg: document.getElementById('stageImg'),
+  stageHint: document.getElementById('stageHint'),
+  pickActions: document.getElementById('pickActions'),
+  pickCancelBtn: document.getElementById('pickCancelBtn'),
+  pickSaveBtn: document.getElementById('pickSaveBtn'),
+  hotspotList: document.getElementById('hotspotList'),
+};
+
+function currentArea() { return PHONE_MINIGAME_AREAS.find(a => a.id === currentAreaId); }
+
+function renderAreaTabs() {
+  el.areaTabs.innerHTML = PHONE_MINIGAME_AREAS.map(a =>
+    `<button class="area-tab${a.id === currentAreaId ? ' active' : ''}" data-area="${a.id}">${a.label}</button>`
+  ).join('');
+  el.areaTabs.querySelectorAll('.area-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      if (tab.dataset.area === currentAreaId) return;
+      currentAreaId = tab.dataset.area;
+      picking = null;
+      renderAreaTabs();
+      loadArea();
+    });
+  });
+}
+
+async function loadArea() {
+  el.fileInput.value = '';
+  const all = await AssetDB.getAssetsByType('minigame-bg');
+  currentAreaAssets = all.filter(a => a.minigameId === PHONE_MINIGAME_ID && a.areaId === currentAreaId);
+  const cfg = MinigameAreaConfig.getArea(PHONE_MINIGAME_ID, currentAreaId);
+  const activeAsset = currentAreaAssets.find(a => a.id === cfg.backgroundAssetId) || currentAreaAssets[0] || null;
+
+  if (activeAsset) {
+    el.dropzone.classList.add('hidden');
+    el.bgCard.classList.remove('hidden');
+    el.bgThumb.src = activeAsset.dataUrl;
+    el.bgInfo.textContent = `${activeAsset.name} · ${activeAsset.width}×${activeAsset.height}`;
+    el.hotspotSection.classList.remove('hidden');
+    el.stageImg.src = activeAsset.dataUrl;
+    // Natural size already came back with the upload — no need to re-probe
+    // the image (and no need to wait on it loading) just to read dimensions.
+    stageImgNatural = { width: activeAsset.width, height: activeAsset.height };
+    computeStageLayout();
+    renderHotspotList(cfg);
+  } else {
+    el.dropzone.classList.remove('hidden');
+    el.bgCard.classList.add('hidden');
+    el.hotspotSection.classList.add('hidden');
+  }
+}
+
+let stageImgNatural = { width: 0, height: 0 };
+let stageLayout = null; // { imgLeft, imgTop, dispW, dispH, imgScale }
+
+function computeStageLayout() {
+  const rect = el.stage.getBoundingClientRect();
+  const nw = stageImgNatural.width, nh = stageImgNatural.height;
+  if (!nw || !nh) return;
+  const imgScale = Math.min(rect.width / nw, rect.height / nh);
+  const dispW = nw * imgScale, dispH = nh * imgScale;
+  const imgLeft = (rect.width - dispW) / 2, imgTop = (rect.height - dispH) / 2;
+  stageLayout = { imgLeft, imgTop, dispW, dispH, imgScale };
+  el.stageImg.style.width = dispW + 'px';
+  el.stageImg.style.height = dispH + 'px';
+  el.stageImg.style.left = imgLeft + 'px';
+  el.stageImg.style.top = imgTop + 'px';
+  renderRegionOverlays();
+}
+window.addEventListener('resize', () => { if (stageImgNatural.width) computeStageLayout(); });
+
+function clamp(v, min, max) { return Math.min(Math.max(v, min), max); }
+
+/* Normalized rect {x1,y1,x2,y2} (0..1 of natural image size) -> on-screen box. */
+function rectToBoxStyle(rect) {
+  const s = stageLayout;
+  const x = s.imgLeft + rect.x1 * s.dispW;
+  const y = s.imgTop + rect.y1 * s.dispH;
+  const w = (rect.x2 - rect.x1) * s.dispW;
+  const h = (rect.y2 - rect.y1) * s.dispH;
+  return { left: x, top: y, width: w, height: h };
+}
+
+function renderRegionOverlays() {
+  el.stage.querySelectorAll('.region-box, .pick-dot').forEach(n => n.remove());
+  if (!stageLayout) return;
+  const cfg = MinigameAreaConfig.getArea(PHONE_MINIGAME_ID, currentAreaId);
+  const area = currentArea();
+  area.hotspots.forEach(h => {
+    const rect = cfg.hotspots[h.id];
+    if (!rect) return;
+    const isEditing = picking && picking.hotspotId === h.id;
+    const box = rectToBoxStyle(rect);
+    const div = document.createElement('div');
+    div.className = 'region-box' + (isEditing ? ' editing' : '');
+    div.style.left = box.left + 'px';
+    div.style.top = box.top + 'px';
+    div.style.width = box.width + 'px';
+    div.style.height = box.height + 'px';
+    div.innerHTML = `<span class="region-label">${h.label}</span>`;
+    el.stage.appendChild(div);
+  });
+  if (picking) {
+    picking.points.forEach(p => {
+      const dot = document.createElement('div');
+      dot.className = 'pick-dot';
+      dot.style.left = (stageLayout.imgLeft + p.natX * stageLayout.imgScale) + 'px';
+      dot.style.top = (stageLayout.imgTop + p.natY * stageLayout.imgScale) + 'px';
+      el.stage.appendChild(dot);
+    });
+  }
+}
+
+function renderHotspotList(cfg) {
+  const area = currentArea();
+  el.hotspotList.innerHTML = area.hotspots.map(h => {
+    const done = !!cfg.hotspots[h.id];
+    const isEditing = picking && picking.hotspotId === h.id;
+    return `<div class="hotspot-row${isEditing ? ' active' : ''}">
+      <div class="hotspot-name">${h.label}</div>
+      <div class="hotspot-status${done ? ' done' : ''}">${done ? '지정됨' : '미지정'}</div>
+      <div class="hotspot-row-actions">
+        <button class="mark" data-mark="${h.id}">${done ? '다시 지정' : '영역 지정'}</button>
+        ${done ? `<button class="danger" data-clear="${h.id}">삭제</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+  el.hotspotList.querySelectorAll('[data-mark]').forEach(btn => {
+    btn.addEventListener('click', () => startPicking(btn.dataset.mark));
+  });
+  el.hotspotList.querySelectorAll('[data-clear]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      MinigameAreaConfig.clearHotspotRect(PHONE_MINIGAME_ID, currentAreaId, btn.dataset.clear);
+      renderHotspotList(MinigameAreaConfig.getArea(PHONE_MINIGAME_ID, currentAreaId));
+      renderRegionOverlays();
+    });
+  });
+}
+
+function startPicking(hotspotId) {
+  picking = { hotspotId, points: [] };
+  el.stageHint.textContent = `"${currentArea().hotspots.find(h => h.id === hotspotId).label}" 영역의 네 모서리를 순서대로 탭하세요 (0/4)`;
+  el.pickActions.classList.remove('hidden');
+  el.pickSaveBtn.disabled = true;
+  renderRegionOverlays();
+  renderHotspotList(MinigameAreaConfig.getArea(PHONE_MINIGAME_ID, currentAreaId));
+}
+
+function stopPicking() {
+  picking = null;
+  el.stageHint.textContent = '';
+  el.pickActions.classList.add('hidden');
+  renderRegionOverlays();
+  renderHotspotList(MinigameAreaConfig.getArea(PHONE_MINIGAME_ID, currentAreaId));
+}
+
+el.stage.addEventListener('click', (e) => {
+  if (!picking || !stageLayout || picking.points.length >= 4) return;
+  const rect = el.stage.getBoundingClientRect();
+  const stageX = e.clientX - rect.left, stageY = e.clientY - rect.top;
+  const natX = clamp((stageX - stageLayout.imgLeft) / stageLayout.imgScale, 0, stageImgNatural.width);
+  const natY = clamp((stageY - stageLayout.imgTop) / stageLayout.imgScale, 0, stageImgNatural.height);
+  picking.points.push({ natX, natY });
+  el.stageHint.textContent = `"${currentArea().hotspots.find(h => h.id === picking.hotspotId).label}" 영역의 네 모서리를 순서대로 탭하세요 (${picking.points.length}/4)`;
+  if (picking.points.length === 4) {
+    el.pickSaveBtn.disabled = false;
+    el.stageHint.textContent = '4개 점을 모두 찍었습니다. 저장하거나 다시 시작하세요.';
+  }
+  renderRegionOverlays();
+});
+
+el.pickCancelBtn.addEventListener('click', stopPicking);
+el.pickSaveBtn.addEventListener('click', () => {
+  if (!picking || picking.points.length < 4) return;
+  const xs = picking.points.map(p => p.natX), ys = picking.points.map(p => p.natY);
+  const rect = {
+    x1: Math.min(...xs) / stageImgNatural.width,
+    y1: Math.min(...ys) / stageImgNatural.height,
+    x2: Math.max(...xs) / stageImgNatural.width,
+    y2: Math.max(...ys) / stageImgNatural.height,
+  };
+  MinigameAreaConfig.setHotspotRect(PHONE_MINIGAME_ID, currentAreaId, picking.hotspotId, rect);
+  stopPicking();
+});
+
+/* ===== Upload ===== */
+function onFilesSelected(files) {
+  const file = files && files[0];
+  if (!file || !file.type.startsWith('image/')) return;
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = async () => {
+    try {
+      const asset = await AssetDB.addAsset({
+        type: 'minigame-bg', name: file.name, blob: file,
+        width: img.naturalWidth, height: img.naturalHeight,
+        minigameId: PHONE_MINIGAME_ID, areaId: currentAreaId,
+      });
+      MinigameAreaConfig.setAreaBackground(PHONE_MINIGAME_ID, currentAreaId, asset.id);
+      await loadArea();
+    } catch (err) {
+      alert('이미지 저장 실패: ' + (err && err.message ? err.message : err));
+    }
+  };
+  img.src = url;
+}
+
+el.selectBtn.addEventListener('click', () => el.fileInput.click());
+el.dropzone.addEventListener('click', (e) => { if (e.target === el.selectBtn) return; el.fileInput.click(); });
+el.fileInput.addEventListener('change', (e) => onFilesSelected(e.target.files));
+el.bgReplaceBtn.addEventListener('click', () => el.fileInput.click());
+['dragover', 'dragenter'].forEach(evt => el.dropzone.addEventListener(evt, (e) => { e.preventDefault(); el.dropzone.classList.add('drag'); }));
+['dragleave', 'dragend'].forEach(evt => el.dropzone.addEventListener(evt, () => el.dropzone.classList.remove('drag')));
+el.dropzone.addEventListener('drop', (e) => { e.preventDefault(); el.dropzone.classList.remove('drag'); onFilesSelected(e.dataTransfer.files); });
+
+renderAreaTabs();
+loadArea();
+</script>
+</body>
+</html>

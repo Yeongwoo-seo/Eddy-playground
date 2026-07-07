@@ -68,10 +68,15 @@ const AssetDB = (() => {
   // to) rides along in the Storage path instead of new dev_assets columns —
   // avoids a schema migration against the shared Supabase project for a
   // dev-only sandbox. Backgrounds carry no metadata — there's just one
-  // shared background list used across every scene.
+  // shared background list used across every scene. Minigame room photos
+  // (type 'minigame-bg') are a separate list per (minigame, area) — kept out
+  // of /dev/upload entirely (its 배경/인물 tabs only ever request types
+  // 'background'/'character') so they never show up mixed into the VN
+  // background picker; only the minigame's own setup page requests them.
   function parsePathMeta(type, path) {
     const parts = (path || '').split('/');
     if (type === 'character') return { characterKey: parts[1] || null, expression: parts[2] || null };
+    if (type === 'minigame-bg') return { minigameId: parts[1] || null, areaId: parts[2] || null };
     return {};
   }
 
@@ -84,11 +89,13 @@ const AssetDB = (() => {
     );
   }
 
-  async function addAsset({ type, name, blob, width, height, characterKey, expression }) {
+  async function addAsset({ type, name, blob, width, height, characterKey, expression, minigameId, areaId }) {
     const id = `${type}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const ext = (name.split('.').pop() || 'png').toLowerCase().replace(/[^a-z0-9]/g, '') || 'png';
     const path = type === 'character'
       ? `character/${characterKey || 'unassigned'}/${expression || 'unassigned'}/${id}.${ext}`
+      : type === 'minigame-bg'
+      ? `minigame-bg/${minigameId || 'unassigned'}/${areaId || 'unassigned'}/${id}.${ext}`
       : `${type}/${id}.${ext}`;
 
     const uploadRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${DEV_ASSETS_BUCKET}/${path}`, {
