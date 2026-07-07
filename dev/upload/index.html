@@ -80,6 +80,12 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .crop-save-btn{background:var(--cyan);color:#06181c}
 .crop-cancel-btn{background:var(--surface-2) !important;color:var(--text-secondary) !important;border:1px solid var(--divider) !important}
 
+.hotspot-panel{background:var(--surface-1);border:1px solid var(--divider);border-radius:14px;padding:16px;margin-bottom:24px}
+.hotspot-panel.hidden{display:none}
+.hotspot-stage{position:relative;width:100%;height:280px;background:#000;border-radius:10px;overflow:hidden;touch-action:none}
+.hotspot-stage img{position:absolute;-webkit-user-drag:none;user-select:none}
+.hotspot-marker{position:absolute;border:2px solid var(--cyan);border-radius:50%;background:rgba(89,184,200,.22);cursor:move;touch-action:none}
+
 .section-title{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase;margin:24px 0 12px}
 .empty-note{font-size:13px;color:var(--text-muted);padding:14px 0}
 .asset-card{display:flex;align-items:center;gap:12px;background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:12px;margin-bottom:10px}
@@ -110,6 +116,20 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
     <button class="tab-btn" id="tabCharacter">인물 DB</button>
   </div>
 
+  <!-- 배경 DB: week -> scene -> (배경/미니게임) picker -->
+  <div class="picker" id="weekPicker">
+    <div class="picker-label">주차</div>
+    <div class="picker-pills" id="weekPickerPills"></div>
+  </div>
+  <div class="picker" id="scenePicker">
+    <div class="picker-label">씬</div>
+    <div class="picker-pills" id="scenePickerPills"></div>
+  </div>
+  <div class="picker hidden" id="bgKindPicker">
+    <div class="picker-label">배경 종류</div>
+    <div class="picker-pills" id="bgKindPickerPills"></div>
+  </div>
+
   <!-- 인물 DB: character -> expression picker -->
   <div class="picker hidden" id="charPicker">
     <div class="picker-label">등장인물</div>
@@ -130,6 +150,7 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 
   <div class="preview-panel hidden" id="previewPanel">
     <div class="preview-img-wrap"><img id="previewImg" alt="preview"></div>
+    <div class="preview-row"><span class="preview-label">Type</span><span class="preview-value" id="previewType"></span></div>
     <div class="preview-row"><span class="preview-label">File</span><span class="preview-value" id="previewFile"></span></div>
     <div class="preview-row"><span class="preview-label">Size</span><span class="preview-value" id="previewSize"></span></div>
     <button class="save-btn" id="saveBtn">SAVE BACKGROUND</button>
@@ -156,6 +177,20 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
         <button class="crop-save-btn" id="cropSaveBtn">이 표정으로 저장</button>
       </div>
     </div>
+  </div>
+
+  <div class="hotspot-panel hidden" id="hotspotPanel">
+    <div class="section-title" style="margin-top:0">정답 영역 지정</div>
+    <div class="hotspot-stage" id="hotspotStage">
+      <img id="hotspotImg" alt="">
+      <div class="hotspot-marker" id="hotspotMarker"></div>
+    </div>
+    <div class="crop-zoom-row">
+      <label>영역 크기</label>
+      <input type="range" id="hotspotSize" min="4" max="30" value="10">
+    </div>
+    <button class="crop-save-btn" id="hotspotSaveBtn" style="width:100%;border-radius:10px;padding:12px;font-family:var(--mono);font-weight:700;border:none;margin-top:12px">정답 영역 저장</button>
+    <div class="hint" id="hotspotHint" style="margin:10px 0 0"></div>
   </div>
 
   <div class="section-title" id="listTitle">Uploaded Backgrounds</div>
@@ -194,13 +229,40 @@ window.__removeBackgroundReady = import('https://cdn.jsdelivr.net/npm/@imgly/bac
 <script src="/dev/dialogueData.js"></script>
 <script>
 let currentType = 'background';
+let currentWeekId = weeks[0].id;
+let currentSceneId = weeks[0].scenes[0] && weeks[0].scenes[0].id;
+let currentBgKind = 'scene'; // 'scene' | 'minigame' — only relevant for scenes with a minigameId
 let currentCharacterKey = dialogueCharacters[0].id;
 let currentExpression = dialogueExpressions[0].id;
 let pendingFile = null;
 
+// Deep link from /dev/game's "+ 새 이미지 업로드" — jump straight to that
+// scene's background list instead of making the tester re-pick week/scene.
+// ?kind=minigame also pre-selects the 미니게임 background sub-category.
+(function applyDeepLink() {
+  const params = new URLSearchParams(location.search);
+  const requestedSceneId = params.get('scene');
+  if (requestedSceneId) {
+    for (const w of weeks) {
+      if (w.scenes.some(s => s.id === requestedSceneId)) {
+        currentWeekId = w.id;
+        currentSceneId = requestedSceneId;
+        break;
+      }
+    }
+  }
+  if (params.get('kind') === 'minigame') currentBgKind = 'minigame';
+})();
+
 const el = {
   tabBackground: document.getElementById('tabBackground'),
   tabCharacter: document.getElementById('tabCharacter'),
+  weekPicker: document.getElementById('weekPicker'),
+  weekPickerPills: document.getElementById('weekPickerPills'),
+  scenePicker: document.getElementById('scenePicker'),
+  scenePickerPills: document.getElementById('scenePickerPills'),
+  bgKindPicker: document.getElementById('bgKindPicker'),
+  bgKindPickerPills: document.getElementById('bgKindPickerPills'),
   charPicker: document.getElementById('charPicker'),
   charPickerPills: document.getElementById('charPickerPills'),
   exprPicker: document.getElementById('exprPicker'),
@@ -226,23 +288,108 @@ const el = {
   cropZoom: document.getElementById('cropZoom'),
   cropCancelBtn: document.getElementById('cropCancelBtn'),
   cropSaveBtn: document.getElementById('cropSaveBtn'),
+  hotspotPanel: document.getElementById('hotspotPanel'),
+  hotspotStage: document.getElementById('hotspotStage'),
+  hotspotImg: document.getElementById('hotspotImg'),
+  hotspotMarker: document.getElementById('hotspotMarker'),
+  hotspotSize: document.getElementById('hotspotSize'),
+  hotspotSaveBtn: document.getElementById('hotspotSaveBtn'),
+  hotspotHint: document.getElementById('hotspotHint'),
   listTitle: document.getElementById('listTitle'),
   assetList: document.getElementById('assetList'),
   lightbox: document.getElementById('lightbox'),
   lightboxImg: document.getElementById('lightboxImg'),
 };
 
+function currentWeek() { return weeks.find(w => w.id === currentWeekId) || weeks[0]; }
+function currentScene() { return currentWeek().scenes.find(s => s.id === currentSceneId); }
+
+// The "virtual" sceneId background storage/uploads are keyed against — a
+// scene with a minigame has two independent background slots: its own VN
+// background, and the minigame's (e.g. the route-map image), selected via
+// the 배경/미니게임 sub-picker.
+function activeBackgroundSceneId() {
+  const scene = currentScene();
+  if (!scene) return currentSceneId;
+  return currentBgKind === 'minigame' && scene.minigameId ? scene.minigameId : scene.id;
+}
+
 function selectType(type) {
   currentType = type;
   el.tabBackground.classList.toggle('active', type === 'background');
   el.tabCharacter.classList.toggle('active', type === 'character');
+  el.weekPicker.classList.toggle('hidden', type !== 'background');
+  el.scenePicker.classList.toggle('hidden', type !== 'background');
   el.charPicker.classList.toggle('hidden', type !== 'character');
   el.exprPicker.classList.toggle('hidden', type !== 'character');
   el.fileInput.accept = type === 'background' ? 'image/jpeg,image/png,image/webp' : 'image/png,image/webp';
   el.typeHint.textContent = type === 'background' ? '.jpg · .jpeg · .png · .webp' : '.png · .webp (투명 배경 권장)';
-  if (type === 'character') { renderCharPicker(); renderExprPicker(); }
+  if (type === 'background') { renderWeekPicker(); renderScenePicker(); renderBgKindPicker(); }
+  else { renderCharPicker(); renderExprPicker(); }
   clearPending();
   refreshList();
+  renderHotspotSection();
+}
+
+function renderWeekPicker() {
+  el.weekPickerPills.innerHTML = weeks.map(w =>
+    `<button class="pill${w.id === currentWeekId ? ' active' : ''}" data-key="${w.id}">${escapeHtml(w.label)}</button>`
+  ).join('');
+  el.weekPickerPills.querySelectorAll('.pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentWeekId = btn.dataset.key;
+      currentSceneId = currentWeek().scenes[0] && currentWeek().scenes[0].id;
+      currentBgKind = 'scene';
+      renderWeekPicker();
+      renderScenePicker();
+      renderBgKindPicker();
+      clearPending();
+      refreshList();
+      renderHotspotSection();
+    });
+  });
+}
+
+function renderScenePicker() {
+  const scenes = currentWeek().scenes;
+  if (!scenes.length) {
+    el.scenePickerPills.innerHTML = '<span class="empty-note">이 주차에 등록된 씬이 없습니다.</span>';
+    return;
+  }
+  el.scenePickerPills.innerHTML = scenes.map(s =>
+    `<button class="pill${s.id === currentSceneId ? ' active' : ''}" data-key="${s.id}">${escapeHtml(s.name)}</button>`
+  ).join('');
+  el.scenePickerPills.querySelectorAll('.pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentSceneId = btn.dataset.key;
+      currentBgKind = 'scene';
+      renderScenePicker();
+      renderBgKindPicker();
+      clearPending();
+      refreshList();
+      renderHotspotSection();
+    });
+  });
+}
+
+function renderBgKindPicker() {
+  const scene = currentScene();
+  const hasMinigame = !!(scene && scene.minigameId);
+  el.bgKindPicker.classList.toggle('hidden', !hasMinigame);
+  if (!hasMinigame) return;
+  const kinds = [{ id: 'scene', label: '배경' }, { id: 'minigame', label: '미니게임' }];
+  el.bgKindPickerPills.innerHTML = kinds.map(k =>
+    `<button class="pill${k.id === currentBgKind ? ' active' : ''}" data-key="${k.id}">${escapeHtml(k.label)}</button>`
+  ).join('');
+  el.bgKindPickerPills.querySelectorAll('.pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentBgKind = btn.dataset.key;
+      renderBgKindPicker();
+      clearPending();
+      refreshList();
+      renderHotspotSection();
+    });
+  });
 }
 
 function renderCharPicker() {
@@ -300,17 +447,18 @@ function onFilesSelected(files) {
 function renderPreview(url) {
   el.previewPanel.classList.remove('hidden');
   el.previewImg.src = url;
+  const scene = currentScene();
+  el.previewType.textContent = scene ? scene.name + (currentBgKind === 'minigame' ? ' · 미니게임' : '') : '';
   el.previewFile.textContent = pendingFile.name;
   el.previewSize.textContent = `${pendingFile.width} × ${pendingFile.height}`;
 }
 
 // Only reachable for backgrounds now — character uploads go through the
-// crop editor below, which saves the framing itself. One shared background
-// list is used across every scene, so there's nothing scene-specific to save.
+// crop editor below, which saves the framing itself.
 async function saveAsset() {
-  if (!pendingFile) return;
+  if (!pendingFile || !currentScene()) return;
   try {
-    await AssetDB.addAsset({ type: 'background', name: pendingFile.name, blob: pendingFile.blob, width: pendingFile.width, height: pendingFile.height });
+    await AssetDB.addAsset({ type: 'background', name: pendingFile.name, blob: pendingFile.blob, width: pendingFile.width, height: pendingFile.height, sceneId: activeBackgroundSceneId() });
     clearPending();
     await refreshList();
   } catch (err) {
@@ -500,6 +648,97 @@ el.cropSaveBtn.addEventListener('click', async () => {
   }
 });
 
+/* ===== Minigame answer-area designator: mark where the correct tap target
+   is on an uploaded 미니게임 background (e.g. the Sydney route-map image),
+   as a { fx, fy, fr } fraction of the image so it works at any resolution. ===== */
+let hotspotState = null;
+let hotspotDrag = null;
+
+function renderHotspotSection() {
+  const scene = currentScene();
+  const show = currentType === 'background' && currentBgKind === 'minigame' && !!(scene && scene.minigameId);
+  el.hotspotPanel.classList.toggle('hidden', !show);
+  if (show) loadHotspotEditor();
+}
+
+async function loadHotspotEditor() {
+  const sceneId = activeBackgroundSceneId();
+  const assetId = DevGameState.getBackgroundId(sceneId);
+  const asset = assetId ? await AssetDB.getAsset(assetId) : null;
+  if (!asset) {
+    el.hotspotStage.style.visibility = 'hidden';
+    el.hotspotSaveBtn.disabled = true;
+    el.hotspotHint.textContent = '먼저 미니게임 배경 이미지를 업로드하고 "사용"으로 선택하세요.';
+    return;
+  }
+  el.hotspotStage.style.visibility = '';
+  el.hotspotSaveBtn.disabled = false;
+  el.hotspotImg.src = asset.dataUrl;
+  el.hotspotImg.onload = () => {
+    const stageRect = el.hotspotStage.getBoundingClientRect();
+    const nw = asset.width, nh = asset.height;
+    const imgScale = Math.min(stageRect.width / nw, stageRect.height / nh);
+    const dispW = nw * imgScale, dispH = nh * imgScale;
+    const imgLeft = (stageRect.width - dispW) / 2, imgTop = (stageRect.height - dispH) / 2;
+    el.hotspotImg.style.width = dispW + 'px';
+    el.hotspotImg.style.height = dispH + 'px';
+    el.hotspotImg.style.left = imgLeft + 'px';
+    el.hotspotImg.style.top = imgTop + 'px';
+
+    const existing = DevGameState.getMinigameHotspot(sceneId);
+    hotspotState = { imgLeft, imgTop, dispW, dispH };
+    el.hotspotSize.value = Math.round((existing ? existing.fr : 0.06) * 100);
+    const fx = existing ? existing.fx : 0.5;
+    const fy = existing ? existing.fy : 0.5;
+    hotspotState.markerCx = imgLeft + fx * dispW;
+    hotspotState.markerCy = imgTop + fy * dispH;
+    hotspotState.markerR = (Number(el.hotspotSize.value) / 100) * dispW;
+    renderHotspotMarker();
+    el.hotspotHint.textContent = existing
+      ? '기존 정답 영역을 드래그해서 위치를 조정할 수 있어요.'
+      : '이미지에서 정답 위치를 드래그해서 지정하세요.';
+  };
+}
+
+function renderHotspotMarker() {
+  const s = hotspotState;
+  el.hotspotMarker.style.width = s.markerR * 2 + 'px';
+  el.hotspotMarker.style.height = s.markerR * 2 + 'px';
+  el.hotspotMarker.style.left = (s.markerCx - s.markerR) + 'px';
+  el.hotspotMarker.style.top = (s.markerCy - s.markerR) + 'px';
+}
+
+el.hotspotMarker.addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  el.hotspotMarker.setPointerCapture(e.pointerId);
+  hotspotDrag = { x: e.clientX, y: e.clientY, cx: hotspotState.markerCx, cy: hotspotState.markerCy };
+});
+el.hotspotMarker.addEventListener('pointermove', (e) => {
+  if (!hotspotDrag || !hotspotState) return;
+  const s = hotspotState;
+  const dx = e.clientX - hotspotDrag.x, dy = e.clientY - hotspotDrag.y;
+  s.markerCx = clamp(hotspotDrag.cx + dx, s.imgLeft, s.imgLeft + s.dispW);
+  s.markerCy = clamp(hotspotDrag.cy + dy, s.imgTop, s.imgTop + s.dispH);
+  renderHotspotMarker();
+});
+['pointerup', 'pointercancel'].forEach(evt => el.hotspotMarker.addEventListener(evt, () => { hotspotDrag = null; }));
+el.hotspotSize.addEventListener('input', () => {
+  if (!hotspotState) return;
+  hotspotState.markerR = (Number(el.hotspotSize.value) / 100) * hotspotState.dispW;
+  renderHotspotMarker();
+});
+el.hotspotSaveBtn.addEventListener('click', () => {
+  if (!hotspotState) return;
+  const s = hotspotState;
+  const sceneId = activeBackgroundSceneId();
+  DevGameState.setMinigameHotspot(sceneId, {
+    fx: (s.markerCx - s.imgLeft) / s.dispW,
+    fy: (s.markerCy - s.imgTop) / s.dispH,
+    fr: s.markerR / s.dispW,
+  });
+  el.hotspotHint.textContent = '저장됐어요. 미니게임에서 이 위치를 정답으로 인식합니다.';
+});
+
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
@@ -508,7 +747,7 @@ async function refreshList() {
   el.listTitle.textContent = currentType === 'background' ? 'Uploaded Backgrounds' : 'Uploaded Portraits';
   const all = await AssetDB.getAssetsByType(currentType);
   const filtered = currentType === 'background'
-    ? all
+    ? all.filter(a => a.sceneId === activeBackgroundSceneId())
     : all.filter(a => a.characterKey === currentCharacterKey && a.expression === currentExpression);
   renderList(filtered);
 }
@@ -521,7 +760,7 @@ function renderList(assets) {
   el.assetList.innerHTML = assets.map(a => {
     const url = a.dataUrl;
     const isActive = a.type === 'background'
-      ? DevGameState.getBackgroundId() === a.id
+      ? DevGameState.getBackgroundId(a.sceneId) === a.id
       : DevGameState.getCharacterAssetId(a.characterKey, a.expression) === a.id;
     const tag = isActive ? '<span class="asset-tag">사용 중</span><br>' : '';
     const useAction = a.type === 'background'
@@ -548,8 +787,9 @@ function previewAsset(url) {
 }
 
 function useAsBackground(id) {
-  DevGameState.setBackgroundId(id);
+  DevGameState.setBackgroundId(activeBackgroundSceneId(), id);
   refreshList();
+  renderHotspotSection();
 }
 
 function useAsCharacter(id) {
@@ -563,6 +803,7 @@ async function removeAsset(type, id) {
   if (type === 'background') DevGameState.removeAllBackgroundAssetRefs(id);
   if (type === 'character') DevGameState.removeAllCharacterAssetRefs(id);
   await refreshList();
+  renderHotspotSection();
 }
 
 el.tabBackground.addEventListener('click', () => selectType('background'));

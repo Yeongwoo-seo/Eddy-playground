@@ -235,7 +235,7 @@ function setCharacterAsset(asset) {
 }
 
 async function applyBackground() {
-  const bgAsset = await AssetDB.getAsset(DevGameState.getBackgroundId());
+  const bgAsset = await AssetDB.getAsset(DevGameState.getBackgroundId(activeSceneData.id));
   if (bgAsset) await AssetDB.preloadImage(bgAsset.dataUrl);
   setBackground(bgAsset);
 }
@@ -365,14 +365,14 @@ function onTap() {
   player.tap();
 }
 
-el.uploadLink.href = '/dev/upload/';
+el.uploadLink.href = `/dev/upload/?scene=${encodeURIComponent(activeSceneData.id)}`;
 
 // Character portraits are driven entirely by each line's (characterId,
 // expression) pair looked up in 인물 DB (/dev/upload) — this sheet only
-// needs a manual override for the one shared background used everywhere.
+// needs a manual override for the background, scoped to the active scene.
 async function renderAssetSelectors() {
-  const bgs = await AssetDB.getAssetsByType('background');
-  fillSelect(el.bgSelect, bgs, DevGameState.getBackgroundId());
+  const bgs = (await AssetDB.getAssetsByType('background')).filter(a => a.sceneId === activeSceneData.id);
+  fillSelect(el.bgSelect, bgs, DevGameState.getBackgroundId(activeSceneData.id));
 }
 
 function fillSelect(selectEl, assets, selectedId) {
@@ -435,7 +435,7 @@ el.sheetOverlay.addEventListener('click', (e) => {
   if (e.target === el.sheetOverlay) el.sheetOverlay.classList.add('hidden');
 });
 el.bgSelect.addEventListener('change', async (e) => {
-  DevGameState.setBackgroundId(e.target.value || null);
+  DevGameState.setBackgroundId(activeSceneData.id, e.target.value || null);
   await applyBackground();
 });
 

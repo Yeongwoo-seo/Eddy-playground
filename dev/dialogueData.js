@@ -367,8 +367,11 @@ const week1Scenes = [
     time: '09:45',
     lines: week1Scene001_2Lines,
     // Hands off straight into the route-map minigame (not another VN scene) —
-    // see MINIGAME_ROUTES in game/index.html.
+    // see MINIGAME_ROUTES in game/index.html. minigameId marks that this
+    // scene has its own separate "미니게임" background slot in 배경 DB
+    // (the route-map image), distinct from this scene's own VN background.
     nextSceneId: 'week1-scene-001-2-minigame',
+    minigameId: 'week1-scene-001-2-minigame',
   },
   {
     id: 'week1-scene-002-1',
@@ -382,4 +385,10 @@ const week1Scenes = [
     // minigame (week1-scene-002-2), which isn't built yet. See game/index.html.
     nextSceneId: 'week1-scene-002-2',
   },
+];
+
+// Groups scene registries by week — 배경 DB (/dev/upload) lists scenes under
+// their week here instead of hardcoding a single week's worth of scenes.
+const weeks = [
+  { id: 'week1', label: '1주차', scenes: week1Scenes },
 ];

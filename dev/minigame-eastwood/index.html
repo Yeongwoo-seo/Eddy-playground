@@ -61,6 +61,15 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .pulse-ring.success{animation:pulseRing 900ms ease-out}
 @keyframes pulseRing{0%{r:10;opacity:.9;stroke-width:6}100%{r:70;opacity:0;stroke-width:1}}
 
+/* ===== Image-mode overlays (uploaded map + hand-marked hotspot) ===== */
+.image-area-glow{position:absolute;border-radius:50%;background:var(--amber);opacity:0;pointer-events:none}
+.image-area-glow.show{animation:areaGlow 1.6s ease-in-out infinite}
+.image-pulse-ring{position:absolute;border-radius:50%;border:4px solid var(--cyan);opacity:0;pointer-events:none;transform-origin:center}
+.image-pulse-ring.success{animation:imgPulseRing 900ms ease-out}
+@keyframes imgPulseRing{0%{transform:scale(.3);opacity:.9;border-width:6px}100%{transform:scale(2.2);opacity:0;border-width:1px}}
+.tap-wrong-ring{position:absolute;border-radius:50%;border:3px solid var(--signal-red);opacity:.9;pointer-events:none;animation:tapWrongFade 420ms ease forwards}
+@keyframes tapWrongFade{0%{transform:scale(.6);opacity:.9}100%{transform:scale(1.4);opacity:0}}
+
 /* ===== EASTWOOD stamp ===== */
 .stamp{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(.85);z-index:7;font-family:var(--mono);font-size:34px;font-weight:700;letter-spacing:.14em;color:var(--cyan);text-shadow:0 0 24px rgba(89,184,200,.6);opacity:0;pointer-events:none}
 .stamp.show{animation:stampPop 1.1s ease-out forwards}
@@ -108,6 +117,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 
   <div class="topbar">
     <a class="vn-btn" href="/dev/">← DEV</a>
+    <a class="vn-btn" href="/dev/upload/?scene=week1-scene-001-2&kind=minigame">지도 업로드</a>
   </div>
 
   <div class="stamp" id="stamp">EASTWOOD</div>
@@ -150,10 +160,19 @@ if ('serviceWorker' in navigator) {
 <script src="/dev/vnPlayer.js"></script>
 <script>
 /* ===== Schematic Sydney rail network — stylized, not to scale.
-   Eastwood sits on the amber line among real neighbouring stations, with a
-   cyan CBD loop and a violet decoy branch to keep "역이 왜 이렇게 많아" true. ===== */
+   Used as a fallback demo until a real map image + answer hotspot is
+   uploaded via /dev/upload (배경 DB → 미니게임), at which point this
+   minigame switches to "image mode": the uploaded photo becomes the map,
+   and the hand-marked hotspot becomes the tap target instead of a named
+   SVG station. ===== */
+const MINIGAME_ID = 'week1-scene-001-2-minigame';
+const HOTSPOT_MIN_FR = 0.035; // floor on tap-target size so a careless hotspot still stays easy to hit
 const SVG_W = 1600, SVG_H = 1000;
 const TARGET_STATION = 'Eastwood';
+let mode = 'svg'; // 'svg' | 'image'
+let CANVAS_W = SVG_W, CANVAS_H = SVG_H;
+let hotspot = null; // { fx, fy, fr } — only set in image mode
+let mapImageGlowEl = null, mapImagePulseEl = null;
 
 const STATION_POS = {
   'Central': [250, 620], 'Strathfield': [420, 600], 'North Strathfield': [520, 560],
@@ -258,7 +277,53 @@ function buildMapSvg() {
   el.mapCanvas.appendChild(svg);
   mapSvg = svg;
 }
-buildMapSvg();
+
+// Image mode: the uploaded background image becomes the map, sized to its
+// natural pixel dimensions (CANVAS_W/H) so map-canvas's own pan/zoom
+// transform scales it exactly like the SVG mode's viewBox did. The hotspot
+// (and its hint-glow / success-pulse) are separate absolutely-positioned
+// siblings in that same natural-pixel coordinate space.
+function buildImageMap(url) {
+  const img = document.createElement('img');
+  img.src = url;
+  img.alt = '';
+  img.draggable = false;
+  Object.assign(img.style, { position: 'absolute', left: '0', top: '0', width: CANVAS_W + 'px', height: CANVAS_H + 'px' });
+  el.mapCanvas.appendChild(img);
+
+  const r = Math.max(hotspot.fr, HOTSPOT_MIN_FR) * CANVAS_W;
+  const cx = hotspot.fx * CANVAS_W, cy = hotspot.fy * CANVAS_H;
+
+  const glow = document.createElement('div');
+  glow.className = 'image-area-glow';
+  Object.assign(glow.style, { left: (cx - r * 1.6) + 'px', top: (cy - r * 1.6) + 'px', width: r * 3.2 + 'px', height: r * 3.2 + 'px' });
+  el.mapCanvas.appendChild(glow);
+  mapImageGlowEl = glow;
+
+  const pulse = document.createElement('div');
+  pulse.className = 'image-pulse-ring';
+  Object.assign(pulse.style, { left: (cx - r) + 'px', top: (cy - r) + 'px', width: r * 2 + 'px', height: r * 2 + 'px' });
+  el.mapCanvas.appendChild(pulse);
+  mapImagePulseEl = pulse;
+}
+
+async function initMap() {
+  const assetId = DevGameState.getBackgroundId(MINIGAME_ID);
+  const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
+  const savedHotspot = DevGameState.getMinigameHotspot(MINIGAME_ID);
+  if (asset && asset.dataUrl && savedHotspot) {
+    mode = 'image';
+    hotspot = savedHotspot;
+    CANVAS_W = asset.width;
+    CANVAS_H = asset.height;
+    await AssetDB.preloadImage(asset.dataUrl);
+    buildImageMap(asset.dataUrl);
+  } else {
+    mode = 'svg';
+    buildMapSvg();
+  }
+  fitToStage();
+}
 
 /* ===== Pan + pinch/wheel zoom ===== */
 let scale = 1, baseScale = 1, tx = 0, ty = 0;
@@ -267,6 +332,7 @@ let panStart = null;
 let pinchStartDist = 0, pinchStartScale = 1;
 let didPan = false;
 let pressedStationName = null;
+let pressedPoint = null;
 const MIN_SCALE_MULT = 0.7, MAX_SCALE_MULT = 3;
 
 function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
@@ -276,14 +342,19 @@ function applyTransform() { el.mapCanvas.style.transform = `translate(${tx}px, $
 
 function fitToStage() {
   const rect = el.mapStage.getBoundingClientRect();
-  baseScale = Math.min(rect.width / SVG_W, rect.height / SVG_H) * 0.94;
+  baseScale = Math.min(rect.width / CANVAS_W, rect.height / CANVAS_H) * 0.94;
   scale = baseScale;
-  tx = (rect.width - SVG_W * scale) / 2;
-  ty = (rect.height - SVG_H * scale) / 2;
+  tx = (rect.width - CANVAS_W * scale) / 2;
+  ty = (rect.height - CANVAS_H * scale) / 2;
   applyTransform();
 }
-fitToStage();
 window.addEventListener('resize', fitToStage);
+
+function screenToCanvas(clientX, clientY) {
+  const rect = el.mapStage.getBoundingClientRect();
+  const stageX = clientX - rect.left, stageY = clientY - rect.top;
+  return { x: (stageX - tx) / scale, y: (stageY - ty) / scale };
+}
 
 el.mapStage.addEventListener('pointerdown', (e) => {
   if (isCompleted) return;
@@ -296,10 +367,15 @@ el.mapStage.addEventListener('pointerdown', (e) => {
   didPan = false;
   if (pointers.size === 1) {
     panStart = { x: e.clientX, y: e.clientY, tx, ty };
-    const g = e.target.closest && e.target.closest('.station');
-    pressedStationName = g ? g.dataset.name : null;
+    if (mode === 'svg') {
+      const g = e.target.closest && e.target.closest('.station');
+      pressedStationName = g ? g.dataset.name : null;
+    } else {
+      pressedPoint = screenToCanvas(e.clientX, e.clientY);
+    }
   } else if (pointers.size === 2) {
     pressedStationName = null; // a second finger down means this is a pinch, not a tap
+    pressedPoint = null;
     const pts = [...pointers.values()];
     pinchStartDist = dist(pts[0], pts[1]);
     pinchStartScale = scale;
@@ -334,10 +410,12 @@ el.mapStage.addEventListener('pointermove', (e) => {
   if (pointers.size < 2) pinchStartDist = 0;
   if (pointers.size === 0) {
     panStart = null;
-    if (evt === 'pointerup' && !didPan && !isCompleted && pressedStationName) {
-      onStationClick(pressedStationName);
+    if (evt === 'pointerup' && !didPan && !isCompleted) {
+      if (mode === 'svg' && pressedStationName) onStationClick(pressedStationName);
+      else if (mode === 'image' && pressedPoint) onImageTap(pressedPoint);
     }
     pressedStationName = null;
+    pressedPoint = null;
   }
 }));
 el.mapStage.addEventListener('wheel', (e) => {
@@ -394,11 +472,15 @@ function triggerHint(level) {
     say('jisoo', 'curious', '지수', '영우, 힌트 없어?');
     setTimeout(() => { if (!isCompleted) say('youngwoo', 'soft', '영우', '노선 색부터 한번 봐봐.'); }, 1600);
   } else if (level === 2) {
-    mapSvg.querySelectorAll(`.line-path[data-line="${TARGET_LINE_ID}"]`).forEach(p => p.classList.add('line-highlight'));
+    if (mode === 'svg') mapSvg.querySelectorAll(`.line-path[data-line="${TARGET_LINE_ID}"]`).forEach(p => p.classList.add('line-highlight'));
     say('jisoo', 'curious', '지수', '이 근처인가…?');
   } else if (level === 3) {
-    const glow = mapSvg.querySelector('.station-area-glow');
-    if (glow) glow.classList.add('show');
+    if (mode === 'svg') {
+      const glow = mapSvg.querySelector('.station-area-glow');
+      if (glow) glow.classList.add('show');
+    } else if (mapImageGlowEl) {
+      mapImageGlowEl.classList.add('show');
+    }
   }
 }
 
@@ -409,17 +491,42 @@ function flashWrongMarker(name) {
   setTimeout(() => g.classList.remove('wrong-flash'), 450);
 }
 
+function flashWrongAtPoint(point) {
+  const ring = document.createElement('div');
+  ring.className = 'tap-wrong-ring';
+  const r = 40;
+  Object.assign(ring.style, { left: (point.x - r) + 'px', top: (point.y - r) + 'px', width: r * 2 + 'px', height: r * 2 + 'px' });
+  el.mapCanvas.appendChild(ring);
+  setTimeout(() => ring.remove(), 450);
+}
+
+function reactWrong() {
+  wrongClickCount++;
+  if (wrongClickCount === 1) say('jisoo', 'suspicious', '지수', '여긴 아닌 것 같은데?');
+  else if (wrongClickCount === 2) say('jisoo', 'blank', '지수', 'Eastwood가 이렇게 안 보일 일이야…?');
+  else say('jisoo', 'annoyed', '지수', '아 나 진짜 영어 못한다니까;');
+}
+
 function onStationClick(name) {
   if (isCompleted) return;
   if (name === TARGET_STATION) {
     handleSuccess();
     return;
   }
-  wrongClickCount++;
   flashWrongMarker(name);
-  if (wrongClickCount === 1) say('jisoo', 'suspicious', '지수', '여긴 아닌 것 같은데?');
-  else if (wrongClickCount === 2) say('jisoo', 'blank', '지수', 'Eastwood가 이렇게 안 보일 일이야…?');
-  else say('jisoo', 'annoyed', '지수', '아 나 진짜 영어 못한다니까;');
+  reactWrong();
+}
+
+function onImageTap(point) {
+  if (isCompleted) return;
+  const r = Math.max(hotspot.fr, HOTSPOT_MIN_FR) * CANVAS_W;
+  const dx = point.x - hotspot.fx * CANVAS_W, dy = point.y - hotspot.fy * CANVAS_H;
+  if (Math.hypot(dx, dy) <= r) {
+    handleSuccess();
+    return;
+  }
+  flashWrongAtPoint(point);
+  reactWrong();
 }
 
 /* ===== Success sequence ===== */
@@ -442,11 +549,15 @@ function playSuccessBeep() {
 function handleSuccess() {
   isCompleted = true;
   clearHintTimers();
-  const g = mapSvg.querySelector(`.station[data-name="${CSS.escape(TARGET_STATION)}"]`);
-  if (g) {
-    g.classList.add('success');
-    const ring = g.querySelector('.pulse-ring');
-    if (ring) ring.classList.add('success');
+  if (mode === 'svg') {
+    const g = mapSvg.querySelector(`.station[data-name="${CSS.escape(TARGET_STATION)}"]`);
+    if (g) {
+      g.classList.add('success');
+      const ring = g.querySelector('.pulse-ring');
+      if (ring) ring.classList.add('success');
+    }
+  } else if (mapImagePulseEl) {
+    mapImagePulseEl.classList.add('success');
   }
   playSuccessBeep();
   el.stamp.classList.add('show');
@@ -484,11 +595,13 @@ function fadeOutAndRedirect() {
   setTimeout(() => { location.href = '/dev/game/?scene=week1-scene-002-1'; }, 950);
 }
 
-/* ===== Intro monologue ===== */
-say('jisoo', 'curious', '지수', 'Eastwood… Eastwood…');
-setTimeout(() => { if (!isCompleted) say('jisoo', 'annoyed', '지수', '아니 역이 왜 이렇게 많아;'); }, 2200);
-setTimeout(() => { if (!isCompleted) say('jisoo', 'blank', '지수', 'Eastwood… 어디 있는데…'); }, 4600);
-scheduleHints();
+/* ===== Boot ===== */
+initMap().then(() => {
+  say('jisoo', 'curious', '지수', 'Eastwood… Eastwood…');
+  setTimeout(() => { if (!isCompleted) say('jisoo', 'annoyed', '지수', '아니 역이 왜 이렇게 많아;'); }, 2200);
+  setTimeout(() => { if (!isCompleted) say('jisoo', 'blank', '지수', 'Eastwood… 어디 있는데…'); }, 4600);
+  scheduleHints();
+});
 </script>
 </body>
 </html>
