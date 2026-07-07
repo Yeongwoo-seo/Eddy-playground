@@ -24,21 +24,25 @@
 html,body{height:100%}
 body{background:#000;color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center}
 
-.frame{position:relative;width:100%;max-width:430px;height:100dvh;height:100vh;height:var(--vh100, 100vh);overflow:hidden;background:var(--bg);display:flex;flex-direction:column}
+.frame{position:relative;width:100%;max-width:430px;height:100dvh;height:100vh;height:var(--vh100, 100vh);overflow:hidden;background:var(--bg)}
 
-/* ===== Top bar ===== */
-.topbar{flex-shrink:0;padding:calc(14px + env(safe-area-inset-top,0)) 16px 10px;display:flex;justify-content:space-between;align-items:center}
-.vn-btn{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:#fff;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:9px 14px;cursor:pointer;text-decoration:none;display:inline-block}
+/* ===== Top bar — floats over the full-bleed room view below, same
+   pattern as minigame-eastwood's map ===== */
+.topbar{position:absolute;top:0;left:0;right:0;z-index:6;padding:calc(14px + env(safe-area-inset-top,0)) 16px 10px;display:flex;justify-content:space-between;align-items:center;pointer-events:none}
+.vn-btn{pointer-events:auto;font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:#fff;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:9px 14px;cursor:pointer;text-decoration:none;display:inline-block}
 
-/* ===== Room view ===== */
-.room-view{flex:1;min-height:0;padding:4px 16px calc(96px + env(safe-area-inset-bottom,0));display:flex;flex-direction:column;transition:opacity .3s ease}
-.area-heading{font-size:15px;font-weight:700;color:var(--text-secondary);margin-bottom:10px;flex-shrink:0}
+/* ===== Room view — fills the entire frame edge-to-edge (photo-stage/
+   grid-scroll are each full-bleed too); the topbar, status card, and FABs
+   all float on top of it as separate absolutely-positioned overlays
+   instead of squeezing it into a leftover flex slot. ===== */
+.room-view{position:absolute;inset:0;transition:opacity .3s ease}
+.room-view.locked{pointer-events:none;opacity:.5}
 
 /* Photo mode — a real uploaded room photo with invisible tap zones over
    each marked hotspot (pan/zoom like the subway minigame). Zones stay
    invisible so hunting for the phone/key still feels like searching, not
    just tapping the one glowing circle. */
-.photo-stage{flex:1;min-height:180px;position:relative;border-radius:14px;overflow:hidden;background:#05070a;touch-action:none;margin-bottom:10px}
+.photo-stage{position:absolute;inset:0;overflow:hidden;background:#05070a;touch-action:none}
 .photo-stage.hidden{display:none}
 .photo-canvas{position:absolute;top:0;left:0;transform-origin:0 0;will-change:transform}
 .photo-canvas img{position:absolute;top:0;left:0;-webkit-user-drag:none;user-select:none;display:block}
@@ -46,16 +50,23 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 @keyframes tapRingFade{0%{transform:scale(.5);opacity:.9}100%{transform:scale(1.6);opacity:0}}
 
 /* Grid mode — fallback for areas with no photo/hotspots marked yet in
-   /dev/upload, so the puzzle stays fully playable before real photos exist. */
-.grid-scroll{flex:1;min-height:0;overflow-y:auto}
+   /dev/upload, so the puzzle stays fully playable before real photos exist.
+   Padded top/bottom to clear the floating topbar/status-card/FAB row since
+   it's a static scrollable list, unlike the pannable photo stage. */
+.grid-scroll{position:absolute;inset:0;overflow-y:auto;padding:calc(60px + env(safe-area-inset-top,0)) 16px calc(230px + env(safe-area-inset-bottom,0))}
 .grid-scroll.hidden{display:none}
 .hotspot-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .hotspot-btn{min-height:52px;background:var(--surface-1);border:1px solid var(--divider);border-radius:14px;padding:12px 14px;color:var(--text-primary);font-family:var(--sans);font-size:14px;font-weight:600;text-align:left;cursor:pointer;transition:background .15s,transform .15s}
 .hotspot-btn:active{transform:scale(.97);background:var(--surface-2)}
 
-.mission-line{flex-shrink:0;margin-top:10px;font-size:13.5px;font-weight:700;color:var(--cyan);letter-spacing:.01em}
-.result-strip{flex-shrink:0;margin-top:6px;background:rgba(255,255,255,.03);border:1px dashed var(--divider);border-radius:12px;padding:12px 14px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:var(--cyan);white-space:pre-wrap;word-break:keep-all;min-height:1.6em}
-.room-view.locked{pointer-events:none;opacity:.5}
+/* ===== Status card — area name + mission + last result, floating above
+   the FAB row (same anchor as item/move popups) instead of live inside
+   room-view's flow, so the photo/grid behind it can be full-bleed. ===== */
+.status-card{position:absolute;left:16px;right:16px;bottom:calc(96px + env(safe-area-inset-bottom,0));z-index:4;background:rgba(5,7,10,.86);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.1);border-radius:18px;box-shadow:0 8px 28px rgba(0,0,0,.35);padding:14px 16px;transition:opacity .3s ease}
+.status-card.locked{pointer-events:none;opacity:.5}
+.area-heading{font-size:13px;font-weight:700;color:var(--text-secondary);margin-bottom:6px}
+.mission-line{font-size:13.5px;font-weight:700;color:var(--cyan);letter-spacing:.01em;margin-bottom:6px}
+.result-strip{background:rgba(255,255,255,.03);border:1px dashed var(--divider);border-radius:12px;padding:10px 12px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:var(--cyan);white-space:pre-wrap;word-break:keep-all;min-height:1.4em;max-height:18vh;overflow-y:auto}
 .debug-hotspot-box{position:absolute;border:1px dashed var(--cyan);background:rgba(89,184,200,.12);color:var(--cyan);font-family:var(--mono);font-size:9px;line-height:1.3;padding:1px 3px;pointer-events:none;overflow:hidden;white-space:nowrap}
 
 /* ===== Floating action buttons — replace the old always-visible area tabs
@@ -120,6 +131,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 @keyframes stampPop{0%{opacity:0;transform:translate(-50%,-50%) scale(.7)}18%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}30%{transform:translate(-50%,-50%) scale(1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) scale(1)}}
 .fade-overlay{position:absolute;inset:0;z-index:10;background:#000;opacity:0;pointer-events:none;transition:opacity .9s ease}
 .fade-overlay.show{opacity:1}
+.fade-overlay.fast{transition-duration:.16s}
 
 /* ===== Dev debug sheet ===== */
 .sheet-overlay{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center}
@@ -140,13 +152,16 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
   </div>
 
   <div class="room-view" id="roomView">
-    <div class="area-heading" id="areaHeading"></div>
     <div class="photo-stage hidden" id="photoStage">
       <div class="photo-canvas" id="photoCanvas"></div>
     </div>
     <div class="grid-scroll" id="gridScroll">
       <div class="hotspot-grid" id="hotspotGrid"></div>
     </div>
+  </div>
+
+  <div class="status-card" id="statusCard">
+    <div class="area-heading" id="areaHeading"></div>
     <div class="mission-line" id="missionLine">지수의 핸드폰을 찾아라</div>
     <div class="result-strip" id="resultStrip"></div>
   </div>
@@ -497,6 +512,7 @@ const el = {
   frame: document.getElementById('frame'),
   devBtn: document.getElementById('devBtn'),
   roomView: document.getElementById('roomView'),
+  statusCard: document.getElementById('statusCard'),
   areaHeading: document.getElementById('areaHeading'),
   photoStage: document.getElementById('photoStage'),
   photoCanvas: document.getElementById('photoCanvas'),
@@ -987,8 +1003,13 @@ el.photoStage.addEventListener('wheel', (e) => {
 /* ===== Area loading + rendering ===== */
 let currentMode = 'grid'; // 'grid' | 'photo'
 
+// Every area's photo/hotspots are already fetched into AssetDB's own caches
+// up front (see preloadAllAreas, called once at boot) — getAsset/
+// getRoomHotspots/preloadImage below all resolve from cache instantly by
+// the time this runs again for an area switch, no network wait, so no
+// per-call loading state is needed here (see switchArea for the quick
+// blackout transition that plays instead).
 async function loadArea(area) {
-  LoadingOverlay.show(`${area.label} 불러오는 중`);
   const sceneId = roomSearchAreaSceneId(area.id);
   const assetId = DevGameState.getBackgroundId(sceneId);
   const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
@@ -1011,7 +1032,35 @@ async function loadArea(area) {
     currentHotspots = {};
   }
   renderRoomView(area);
+}
+
+// Fetches every area's background asset + hotspots + image bytes up front
+// (not just the one being shown), behind a single loading screen — so
+// switching areas afterward never has to show its own "OO 불러오는 중"
+// state; it's already warm.
+async function preloadAllAreas() {
+  LoadingOverlay.show('불러오는 중');
+  await Promise.all(roomSearchAreas.map(async (area) => {
+    const sceneId = roomSearchAreaSceneId(area.id);
+    const assetId = DevGameState.getBackgroundId(sceneId);
+    const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
+    await DevGameState.getRoomHotspots(sceneId).catch(() => ({}));
+    if (asset && asset.dataUrl) await AssetDB.preloadImage(asset.dataUrl);
+  }));
   LoadingOverlay.hide();
+}
+
+// A player-initiated area switch: everything's already cached (see
+// preloadAllAreas), so instead of a loading state, it just plays a quick
+// blackout — fade to black, swap the content underneath, fade back in —
+// like a scene cut rather than a fetch.
+async function switchArea(area) {
+  el.fadeOverlay.classList.add('fast', 'show');
+  await new Promise(resolve => setTimeout(resolve, 180));
+  await loadArea(area);
+  await new Promise(resolve => requestAnimationFrame(resolve));
+  el.fadeOverlay.classList.remove('show');
+  setTimeout(() => el.fadeOverlay.classList.remove('fast'), 180);
 }
 
 function renderRoomView(area) {
@@ -1158,7 +1207,7 @@ function renderMoveList() {
       if (a.id === state.currentAreaId) return;
       state.currentAreaId = a.id;
       saveState();
-      loadArea(a);
+      switchArea(a);
     });
     el.moveList.appendChild(btn);
   });
@@ -1184,6 +1233,7 @@ el.popupScrim.addEventListener('click', () => { closeItemPopup(); closeMovePopup
 
 function updateLockState() {
   el.roomView.classList.toggle('locked', state.completed);
+  el.statusCard.classList.toggle('locked', state.completed);
   el.fabRow.classList.toggle('hidden', state.completed);
   if (state.completed) { closeItemPopup(); closeMovePopup(); }
 }
@@ -1238,7 +1288,10 @@ document.getElementById('btnClearState').addEventListener('click', () => {
 CaseFileState.recordSceneVisit('week1-scene-002-2');
 renderItemGrid();
 updateLockState();
-loadArea(roomSearchAreas.find(a => a.id === state.currentAreaId) || roomSearchAreas[0]);
+(async function boot() {
+  await preloadAllAreas();
+  await loadArea(roomSearchAreas.find(a => a.id === state.currentAreaId) || roomSearchAreas[0]);
+})();
 // A refresh that landed between "key found" and "phone unlocked" must not
 // soft-lock the phone forever — re-arm the forced event on load.
 if (state.flags.keyFound && !state.flags.phoneUnlocked && !state.completed) {
