@@ -161,10 +161,9 @@ if (window.visualViewport) window.visualViewport.addEventListener('resize', setV
       <label>Background</label>
       <select id="bgSelect"></select>
     </div>
-    <div id="characterFields"></div>
 
     <button class="sheet-close" id="sheetCloseBtn">CLOSE</button>
-    <a class="sheet-link" href="/dev/upload/">+ 새 이미지 업로드</a>
+    <a class="sheet-link" id="uploadLink" href="/dev/upload/">+ 새 이미지 업로드</a>
   </div>
 </div>
 
@@ -181,7 +180,7 @@ if ('serviceWorker' in navigator) {
 // scene so a bare /dev/game/ link still works.
 const requestedSceneId = new URLSearchParams(location.search).get('scene');
 const activeSceneData = week1Scenes.find(s => s.id === requestedSceneId) || week1Scenes[0];
-const activeLines = activeSceneData.lines.map(l => ({ speaker: l.speaker, text: l.text, characterId: l.characterId, pauseBeforeMs: l.pauseBeforeMs }));
+const activeLines = activeSceneData.lines.map(l => ({ speaker: l.speaker, text: l.text, characterId: l.characterId, expression: l.expression, pauseBeforeMs: l.pauseBeforeMs }));
 
 const el = {
   frame: document.getElementById('frame'),
@@ -197,7 +196,7 @@ const el = {
   sheetOverlay: document.getElementById('sheetOverlay'),
   sheetCloseBtn: document.getElementById('sheetCloseBtn'),
   bgSelect: document.getElementById('bgSelect'),
-  characterFields: document.getElementById('characterFields'),
+  uploadLink: document.getElementById('uploadLink'),
   transformBtn: document.getElementById('transformBtn'),
   transformPopup: document.getElementById('transformPopup'),
   xRange: document.getElementById('xRange'),
@@ -236,19 +235,23 @@ function setCharacterAsset(asset) {
 }
 
 async function applyBackground() {
-  const bgAsset = await AssetDB.getAsset(DevGameState.getBackgroundId());
+  const bgAsset = await AssetDB.getAsset(DevGameState.getBackgroundId(activeSceneData.id));
   if (bgAsset) await AssetDB.preloadImage(bgAsset.dataUrl);
   setBackground(bgAsset);
 }
 
 // Warms both the metadata cache and the browser's own image cache for every
-// character a line might show, before the first line is shown — a mid-
-// dialogue character swap (e.g. 지수 ↔ 영우) then never waits on the network,
-// which is what made the character portrait visibly lag behind the text.
+// (character, expression) pair a line might show, before the first line is
+// shown — a mid-dialogue character/expression swap then never waits on the
+// network, which is what made the character portrait visibly lag behind the text.
 async function preloadCharacterAssetsForLines(lines) {
-  const characterIds = [...new Set(lines.map(l => l.characterId).filter(Boolean))];
-  await Promise.all(characterIds.map(async (characterId) => {
-    const assetId = DevGameState.getCharacterAssetId(characterId);
+  const pairs = new Map();
+  lines.forEach(l => {
+    if (!l.characterId) return;
+    pairs.set(`${l.characterId}::${l.expression || 'neutral'}`, l);
+  });
+  await Promise.all([...pairs.values()].map(async (l) => {
+    const assetId = DevGameState.getCharacterAssetId(l.characterId, l.expression);
     if (!assetId) return;
     const asset = await AssetDB.getAsset(assetId).catch(() => null);
     if (asset) await AssetDB.preloadImage(asset.dataUrl);
@@ -259,16 +262,16 @@ function applyTransformToImage(transform) {
   el.charImg.style.transform = `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`;
 }
 
-// Each named character (from dialogueCharacters) has its own assigned asset
-// and its own CharacterTransform (x/y/scale), looked up per dialogue line's
-// characterId — unlike the single shared background slot.
-async function applyCharacterForLine(characterId) {
+// Each named character (from dialogueCharacters) has its own uploaded asset
+// per expression, and its own CharacterTransform (x/y/scale) — looked up per
+// dialogue line's (characterId, expression) pair.
+async function applyCharacterForLine(characterId, expression) {
   if (!characterId) {
     el.charWrap.style.opacity = '0';
     return;
   }
   el.charWrap.style.opacity = '1';
-  const assetId = DevGameState.getCharacterAssetId(characterId);
+  const assetId = DevGameState.getCharacterAssetId(characterId, expression);
   const asset = await AssetDB.getAsset(assetId);
   setCharacterAsset(asset);
   applyTransformToImage(DevGameState.getCharacterTransform(characterId));
@@ -312,7 +315,7 @@ function playEndingSequence() {
 const player = createVNPlayer({
   onLineChange: (line, index, total) => {
     el.speakerName.textContent = line.speaker || '';
-    applyCharacterForLine(line.characterId);
+    applyCharacterForLine(line.characterId, line.expression);
     if (index === total - 1) {
       playEndingSequence();
     } else {
@@ -332,28 +335,14 @@ function onTap() {
   player.tap();
 }
 
-async function renderAssetSelectors() {
-  const [bgs, chars] = await Promise.all([
-    AssetDB.getAssetsByType('background'),
-    AssetDB.getAssetsByType('character'),
-  ]);
-  fillSelect(el.bgSelect, bgs, DevGameState.getBackgroundId());
+el.uploadLink.href = `/dev/upload/?scene=${encodeURIComponent(activeSceneData.id)}`;
 
-  el.characterFields.innerHTML = dialogueCharacters.map(c => `
-    <div class="sheet-field">
-      <label>${escapeHtml(c.name)}</label>
-      <select data-character-key="${c.id}"></select>
-    </div>
-  `).join('');
-  el.characterFields.querySelectorAll('select').forEach(selectEl => {
-    const key = selectEl.dataset.characterKey;
-    fillSelect(selectEl, chars, DevGameState.getCharacterAssetId(key));
-    selectEl.addEventListener('change', async (e) => {
-      DevGameState.setCharacterAssetId(key, e.target.value || null);
-      const activeLine = activeLines[player.getState().index];
-      await applyCharacterForLine(activeLine.characterId);
-    });
-  });
+// Character portraits are now driven entirely by each line's (characterId,
+// expression) pair looked up in 인물 DB (/dev/upload) — this sheet only
+// needs a manual override for the background, scoped to the active scene.
+async function renderAssetSelectors() {
+  const bgs = (await AssetDB.getAssetsByType('background')).filter(a => a.sceneId === activeSceneData.id);
+  fillSelect(el.bgSelect, bgs, DevGameState.getBackgroundId(activeSceneData.id));
 }
 
 function fillSelect(selectEl, assets, selectedId) {
@@ -416,7 +405,7 @@ el.sheetOverlay.addEventListener('click', (e) => {
   if (e.target === el.sheetOverlay) el.sheetOverlay.classList.add('hidden');
 });
 el.bgSelect.addEventListener('change', async (e) => {
-  DevGameState.setBackgroundId(e.target.value || null);
+  DevGameState.setBackgroundId(activeSceneData.id, e.target.value || null);
   await applyBackground();
 });
 
