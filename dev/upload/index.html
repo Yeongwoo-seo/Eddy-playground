@@ -576,9 +576,16 @@ function renderPreview(url) {
 async function saveAsset() {
   if (!pendingFile || !currentScene()) return;
   try {
-    await AssetDB.addAsset({ type: 'background', name: pendingFile.name, blob: pendingFile.blob, width: pendingFile.width, height: pendingFile.height, sceneId: activeBackgroundSceneId() });
+    const record = await AssetDB.addAsset({ type: 'background', name: pendingFile.name, blob: pendingFile.blob, width: pendingFile.width, height: pendingFile.height, sceneId: activeBackgroundSceneId() });
+    // The newest upload becomes the active background automatically — same
+    // as character uploads already do below. Without this, "uploaded" and
+    // "the game actually shows it" were two separate steps (upload, then a
+    // second "사용" tap in the list below), and skipping the second step
+    // looked exactly like the upload had silently failed.
+    DevGameState.setBackgroundId(activeBackgroundSceneId(), record.id);
     clearPending();
     await refreshList();
+    renderHotspotSection();
   } catch (err) {
     DevDiag.show('이미지 저장 실패: ' + (err && err.message ? err.message : err));
   }
