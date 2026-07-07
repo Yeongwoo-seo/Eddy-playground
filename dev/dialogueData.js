@@ -386,41 +386,89 @@ const week1Scene001_2Lines = [
 ];
 
 // OPERATION MK — Week 1 Scene 2-2 room-search minigame's area/hotspot
-// registry. Single source of truth shared by minigame-phone-search/ (which
-// hotspots exist and what they're called) and /dev/upload (which lets a dev
-// upload a real room photo per area and mark each hotspot's tap position on
-// it). Each area's own background+hotspots are stored under the sceneId
+// registry (v3 — "실제 4개 장소 이미지 기반" brief). Single source of truth
+// shared by minigame-phone-search/ (which hotspots exist and what they're
+// called) and /dev/upload (which lets a dev upload a real room photo per
+// area and mark each hotspot's tap position on it, via the 4-corner-tap
+// area designator — see /dev/upload's "정답 영역 지정" section). Each area's
+// own background+hotspots are stored under the sceneId
 // `${ROOM_SEARCH_MINIGAME_ID}-${area.id}` — see roomSearchAreaSceneId below.
+//
+// Every hotspot ID here corresponds to something actually visible in one of
+// the 4 real accommodation photos (주방/욕실/외부/침실) — no invented
+// furniture. Only IDs + display labels live here; per-hotspot flavor text,
+// item grants, and gating logic live in minigame-phone-search/index.html.
 const ROOM_SEARCH_MINIGAME_ID = 'week1-scene-002-2';
 const roomSearchAreas = [
-  { id: 'bed', label: '침대', hotspots: [
-    { id: 'bed', label: '침대' },
-    { id: 'pillow', label: '베개' },
-    { id: 'blanket', label: '이불' },
-    { id: 'under-bed', label: '침대 밑' },
-    { id: 'behind-bed', label: '침대 뒤' },
-    { id: 'bedside-table', label: '협탁' },
+  { id: 'kitchen', label: '주방', hotspots: [
+    { id: 'kitchen-left-counter', label: '좌측 조리대' },
+    { id: 'kitchen-kettle', label: '전기포트' },
+    { id: 'kitchen-mini-fridge', label: '소형 냉장고' },
+    { id: 'kitchen-fridge-gap', label: '냉장고 옆 틈' },
+    { id: 'kitchen-back-door', label: '안쪽 나무문' },
+    { id: 'kitchen-upper-cabinets', label: '상부 수납장' },
+    { id: 'kitchen-rangehood', label: '레인지 후드' },
+    { id: 'kitchen-knife-block', label: '칼꽂이' },
+    { id: 'kitchen-cooktop', label: '가스레인지' },
+    { id: 'kitchen-pots', label: '냄비' },
+    { id: 'kitchen-microwave', label: '전자레인지' },
+    { id: 'kitchen-oven', label: '오븐' },
+    { id: 'kitchen-oven-handle', label: '오븐 손잡이' },
+    { id: 'kitchen-left-lower-cabinet', label: '좌측 하부장' },
+    { id: 'kitchen-right-lower-drawer', label: '하부 서랍' },
+    { id: 'kitchen-right-lower-cabinet', label: '우측 하부장' },
   ] },
-  { id: 'living', label: '거실', hotspots: [
-    { id: 'sofa', label: '소파' },
-    { id: 'sofa-cushion', label: '소파 쿠션' },
-    { id: 'under-sofa', label: '소파 밑' },
-    { id: 'behind-sofa', label: '소파 뒤' },
-    { id: 'coffee-table', label: '테이블' },
+  { id: 'bathroom', label: '욕실', hotspots: [
+    { id: 'bathroom-bathtub', label: '욕조' },
+    { id: 'bathroom-tub-edge', label: '욕조 가장자리' },
+    { id: 'bathroom-mirror', label: '벽거울' },
+    { id: 'bathroom-sink-bowl', label: '세면대' },
+    { id: 'bathroom-faucet', label: '수도꼭지' },
+    { id: 'bathroom-vanity-top', label: '세면대 상판' },
+    { id: 'bathroom-vanity-drawer', label: '하부 서랍' },
+    { id: 'bathroom-vanity-cabinet', label: '하부 수납장' },
+    { id: 'bathroom-plant', label: '화분' },
+    { id: 'bathroom-right-door', label: '우측 문' },
+    { id: 'bathroom-behind-door', label: '문 뒤' },
+    { id: 'bathroom-towel-rail', label: '수건걸이' },
+    { id: 'bathroom-wall-switch', label: '벽 스위치' },
   ] },
-  { id: 'desk', label: '책상', hotspots: [
-    { id: 'desk', label: '책상' },
-    { id: 'desk-drawer', label: '책상 서랍' },
-    { id: 'tv-stand', label: 'TV장' },
-    { id: 'charger-area', label: '충전기 옆' },
-    { id: 'bag', label: '가방' },
+  { id: 'exterior', label: '외부', hotspots: [
+    { id: 'exterior-left-tree', label: '좌측 과실수' },
+    { id: 'exterior-left-bush', label: '좌측 수풀' },
+    { id: 'exterior-center-shrubs', label: '중앙 수풀' },
+    { id: 'exterior-right-shrubs', label: '우측 수풀' },
+    { id: 'exterior-grass', label: '잔디' },
+    { id: 'exterior-side-path', label: '옆길' },
+    { id: 'exterior-driveway', label: '진입로' },
+    { id: 'exterior-garage-edge', label: '차고' },
+    { id: 'exterior-extension-windows', label: '증축부 창문' },
+    { id: 'exterior-house-wall', label: '외벽' },
+    { id: 'exterior-main-house', label: '본채' },
+    { id: 'exterior-entry-porch', label: '뒤쪽 현관' },
   ] },
-  { id: 'entrance', label: '현관', hotspots: [
-    { id: 'shoe-cabinet', label: '신발장' },
-    { id: 'closet', label: '옷장' },
-    { id: 'upper-shelf', label: '선반 위' },
-    { id: 'luggage', label: '캐리어' },
-    { id: 'utility-cabinet', label: '수납장' },
+  { id: 'bedroom', label: '침실', hotspots: [
+    { id: 'bedroom-bed', label: '침대' },
+    { id: 'bedroom-under-bed', label: '침대 밑' },
+    { id: 'bedroom-pillows', label: '베개' },
+    { id: 'bedroom-duvet', label: '이불' },
+    { id: 'bedroom-folded-towels', label: '접힌 수건' },
+    { id: 'bedroom-bedside-table', label: '협탁' },
+    { id: 'bedroom-bedside-lamp', label: '협탁 램프' },
+    { id: 'bedroom-bedside-bottle', label: '협탁 위 병' },
+    { id: 'bedroom-window', label: '창문' },
+    { id: 'bedroom-blind', label: '블라인드' },
+    { id: 'bedroom-left-vent', label: '좌측 환기구' },
+    { id: 'bedroom-right-vent', label: '우측 환기구' },
+    { id: 'bedroom-mantel-shelf', label: '벽난로 선반' },
+    { id: 'bedroom-mantel-painting', label: '선반 위 그림' },
+    { id: 'bedroom-black-vases', label: '검은 화병' },
+    { id: 'bedroom-hanging-plant', label: '늘어진 식물' },
+    { id: 'bedroom-floor-plant', label: '바닥 화분' },
+    { id: 'bedroom-floor-fan', label: '선풍기' },
+    { id: 'bedroom-wall-art', label: '액자' },
+    { id: 'bedroom-floorboards', label: '바닥' },
+    { id: 'bedroom-bed-gap', label: '침대 옆 틈' },
   ] },
 ];
 function roomSearchAreaSceneId(areaId) { return `${ROOM_SEARCH_MINIGAME_ID}-${areaId}`; }
