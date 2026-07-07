@@ -147,6 +147,7 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
   <div class="picker hidden" id="bgKindPicker">
     <div class="picker-label">배경 종류</div>
     <div class="picker-pills" id="bgKindPickerPills"></div>
+    <div class="hint" style="margin-top:8px">미니게임 지도/사진은 반드시 "미니게임"을 선택한 상태에서 올려야 게임에 반영돼요.</div>
   </div>
 
   <!-- 인물 DB: character -> expression picker -->
@@ -458,10 +459,16 @@ function renderBgKindPicker() {
   const hasMinigame = !focusMinigame && !!(scene && scene.minigameId);
   el.bgKindPicker.classList.toggle('hidden', !hasMinigame);
   if (!hasMinigame) return;
-  const kinds = [{ id: 'scene', label: '배경' }, { id: 'minigame', label: '미니게임' }];
-  el.bgKindPickerPills.innerHTML = kinds.map(k =>
-    `<button class="pill${k.id === currentBgKind ? ' active' : ''}" data-key="${k.id}">${escapeHtml(k.label)}</button>`
-  ).join('');
+  // Uploading while the wrong kind is selected here silently saves the photo
+  // under the wrong scene bucket — the minigame then looks "missing" even
+  // though a photo really was uploaded, just to the VN scene's own
+  // background instead. Marking which bucket already has something (✓) vs.
+  // is empty makes that mistake much harder to make unnoticed.
+  const kinds = [{ id: 'scene', label: '배경', sceneId: scene.id }, { id: 'minigame', label: '미니게임', sceneId: scene.minigameId }];
+  el.bgKindPickerPills.innerHTML = kinds.map(k => {
+    const has = !!DevGameState.getBackgroundId(k.sceneId);
+    return `<button class="pill${k.id === currentBgKind ? ' active' : ''}" data-key="${k.id}">${escapeHtml(k.label)} ${has ? '✓' : '(사진 없음)'}</button>`;
+  }).join('');
   el.bgKindPickerPills.querySelectorAll('.pill').forEach(btn => {
     btn.addEventListener('click', () => {
       currentBgKind = btn.dataset.key;
@@ -1177,6 +1184,7 @@ function previewAsset(url) {
 function useAsBackground(id) {
   DevGameState.setBackgroundId(activeBackgroundSceneId(), id);
   refreshList();
+  renderBgKindPicker();
   renderHotspotSection();
 }
 
