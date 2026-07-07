@@ -55,7 +55,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 
 /* 실제 모드: the button itself is invisible (see below), so a press needs its
    own feedback — darken exactly the hit zone's current bounds on press. */
-.frame.real-mode .float-btn.pressed{background:rgba(0,0,0,.35)}
+.frame.real-mode .float-btn.pressed{background:rgba(0,0,0,.55)}
 
 /* "실제 모드" toggle — the floating 시작하기 box is only a
    placeholder so testers can grab and place it; in the final game it's a
@@ -248,8 +248,10 @@ function saveBtnPos() {
 
 function makeDraggable(buttonEl, posKey, onTap) {
   let drag = null;
+  let pressedTimer = null;
   buttonEl.addEventListener('pointerdown', (e) => {
     buttonEl.setPointerCapture(e.pointerId);
+    clearTimeout(pressedTimer);
     buttonEl.classList.add('pressed');
     // 실제 모드, or after 확정: the zone is frozen at its currently configured
     // position/size, so there's nothing to drag. Any press here is just a
@@ -269,9 +271,13 @@ function makeDraggable(buttonEl, posKey, onTap) {
     };
     renderBtnPos();
   });
+  // Keep the pressed-darken visible for a beat after release instead of
+  // snapping off the instant the finger lifts, so it actually reads as
+  // feedback rather than a flicker.
   ['pointerup', 'pointercancel'].forEach(evt => buttonEl.addEventListener(evt, () => {
     if (!drag) return;
-    buttonEl.classList.remove('pressed');
+    clearTimeout(pressedTimer);
+    pressedTimer = setTimeout(() => buttonEl.classList.remove('pressed'), 500);
     if (drag.real) { onTap(); drag = null; return; }
     if (drag.moved) saveBtnPos();
     else onTap();
