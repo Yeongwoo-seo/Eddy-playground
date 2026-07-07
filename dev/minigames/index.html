@@ -55,7 +55,7 @@ if (!minigames.length) {
   list.innerHTML = '<div class="empty">등록된 미니게임이 없습니다.</div>';
 } else {
   list.innerHTML = minigames.map(m => `
-    <a class="scene-btn" href="${m.route}">
+    <a class="scene-btn" href="${m.setupUrl}">
       <div class="scene-icon">🧩</div>
       <div class="scene-txt">
         <div class="scene-name">${m.name}</div>
