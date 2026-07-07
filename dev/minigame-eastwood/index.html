@@ -391,11 +391,11 @@ function triggerHint(level) {
   if (isCompleted) return;
   hintLevel = level;
   if (level === 1) {
-    say('jisoo', 'curious', '지수', '영우, 힌트 없어?');
+    say('jisoo', 'curious', '지수', '영우…\n힌트 하나만 주면 안 돼?');
     setTimeout(() => { if (!isCompleted) say('youngwoo', 'soft', '영우', '노선 색부터 한번 봐봐.'); }, 1600);
   } else if (level === 2) {
     mapSvg.querySelectorAll(`.line-path[data-line="${TARGET_LINE_ID}"]`).forEach(p => p.classList.add('line-highlight'));
-    say('jisoo', 'curious', '지수', '이 근처인가…?');
+    say('jisoo', 'curious', '지수', '음…\n이 근처인가…?');
   } else if (level === 3) {
     const glow = mapSvg.querySelector('.station-area-glow');
     if (glow) glow.classList.add('show');
@@ -419,7 +419,7 @@ function onStationClick(name) {
   flashWrongMarker(name);
   if (wrongClickCount === 1) say('jisoo', 'suspicious', '지수', '여긴 아닌 것 같은데?');
   else if (wrongClickCount === 2) say('jisoo', 'blank', '지수', 'Eastwood가 이렇게 안 보일 일이야…?');
-  else say('jisoo', 'annoyed', '지수', '아 나 진짜 영어 못한다니까;');
+  else say('jisoo', 'annoyed', '지수', '아 나 진짜 영어 못한다니까;;;;');
 }
 
 /* ===== Success sequence ===== */
@@ -454,13 +454,13 @@ function handleSuccess() {
 }
 
 const successLines = [
-  { speaker: '지수', text: '찾았다!', characterId: 'jisoo', expression: 'happy' },
+  { speaker: '지수', text: '악 찾았다아아아!!!!!\n야르 ㅎㅎㅎㅎㅎㅎ\n여보 나 찾았어!!!!', characterId: 'jisoo', expression: 'happy', typingSpeedMs: 16 },
   { speaker: '영우', text: '오. 생각보다 빨리 찾았는데?', characterId: 'youngwoo', expression: 'curious' },
-  { speaker: '지수', text: '내가 또 이런 건 잘하지.', characterId: 'jisoo', expression: 'smirk' },
+  { speaker: '지수', text: '헤헤\n내가 또 이런 건 잘하지 ㅎㅎㅎㅎ', characterId: 'jisoo', expression: 'smirk' },
   { speaker: '영우', text: '아까 영어 못한다며.', characterId: 'youngwoo', expression: 'curious' },
-  { speaker: '지수', text: '역 찾는 거랑 영어는 다르지.', characterId: 'jisoo', expression: 'smirk' },
+  { speaker: '지수', text: '아 그거랑 이거는 다르지 여보;;;;\nㅋㅎㅋㅎㅋㅎㅋㅎㅋㅎ', characterId: 'jisoo', expression: 'smirk' },
   { speaker: '영우', text: '그래그래 ㅋㅋㅋㅋ', characterId: 'youngwoo', expression: 'happy' },
-  { speaker: '지수', text: '자, 빨리 가자.', characterId: 'jisoo', expression: 'happy' },
+  { speaker: '지수', text: '자, 빨리 가자아!', characterId: 'jisoo', expression: 'happy' },
 ];
 
 function startSuccessDialogue() {
@@ -475,7 +475,7 @@ function startSuccessDialogue() {
     onArrow: (show) => el.successArrow.classList.toggle('show', show),
     onComplete: fadeOutAndRedirect,
   });
-  player.load(successLines.map(l => ({ speaker: l.speaker, text: l.text, characterId: l.characterId, expression: l.expression })));
+  player.load(successLines.map(l => ({ speaker: l.speaker, text: l.text, characterId: l.characterId, expression: l.expression, pauseBeforeMs: l.pauseBeforeMs, typingSpeedMs: l.typingSpeedMs })));
   el.successLayer.addEventListener('click', () => player.tap());
 }
 
@@ -486,8 +486,8 @@ function fadeOutAndRedirect() {
 
 /* ===== Intro monologue ===== */
 say('jisoo', 'curious', '지수', 'Eastwood… Eastwood…');
-setTimeout(() => { if (!isCompleted) say('jisoo', 'annoyed', '지수', '아니 역이 왜 이렇게 많아;'); }, 2200);
-setTimeout(() => { if (!isCompleted) say('jisoo', 'blank', '지수', 'Eastwood… 어디 있는데…'); }, 4600);
+setTimeout(() => { if (!isCompleted) say('jisoo', 'annoyed', '지수', '아 역이 왜 이렇게 많아;;'); }, 2200);
+setTimeout(() => { if (!isCompleted) say('jisoo', 'blank', '지수', 'Eastwood… 어디 있는데 진짜…'); }, 4600);
 scheduleHints();
 </script>
 </body>
