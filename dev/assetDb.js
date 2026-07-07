@@ -64,16 +64,34 @@ const AssetDB = (() => {
     }, extra || {});
   }
 
+  // Background/character DB metadata (which scene a background belongs to;
+  // which character+expression a portrait belongs to) rides along in the
+  // Storage path instead of new dev_assets columns — avoids a schema
+  // migration against the shared Supabase project for a dev-only sandbox.
+  function parsePathMeta(type, path) {
+    const parts = (path || '').split('/');
+    if (type === 'background') return { sceneId: parts[1] || null };
+    if (type === 'character') return { characterKey: parts[1] || null, expression: parts[2] || null };
+    return {};
+  }
+
   function toAsset(row) {
     // `dataUrl` kept as the field name consumers read (game/upload pages) —
     // it's just a public Storage URL now instead of a base64 string.
-    return { id: row.id, type: row.type, name: row.name, width: row.width, height: row.height, dataUrl: row.url };
+    return Object.assign(
+      { id: row.id, type: row.type, name: row.name, width: row.width, height: row.height, dataUrl: row.url },
+      parsePathMeta(row.type, row.path)
+    );
   }
 
-  async function addAsset({ type, name, blob, width, height }) {
+  async function addAsset({ type, name, blob, width, height, sceneId, characterKey, expression }) {
     const id = `${type}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const ext = (name.split('.').pop() || 'png').toLowerCase().replace(/[^a-z0-9]/g, '') || 'png';
-    const path = `${type}/${id}.${ext}`;
+    const path = type === 'background'
+      ? `background/${sceneId || 'unassigned'}/${id}.${ext}`
+      : type === 'character'
+        ? `character/${characterKey || 'unassigned'}/${expression || 'unassigned'}/${id}.${ext}`
+        : `${type}/${id}.${ext}`;
 
     const uploadRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${DEV_ASSETS_BUCKET}/${path}`, {
       method: 'POST',
@@ -162,24 +180,57 @@ const AssetDB = (() => {
 })();
 
 const DevGameState = {
-  _keys: { background: 'mkDevSelectedBackground', characters: 'mkDevSelectedCharacters', transforms: 'mkDevCharacterTransforms' },
-  getBackgroundId() { return localStorage.getItem(this._keys.background) || null; },
-  setBackgroundId(id) { id ? localStorage.setItem(this._keys.background, id) : localStorage.removeItem(this._keys.background); },
+  _keys: { background: 'mkDevSelectedBackgrounds', characters: 'mkDevSelectedCharacters', transforms: 'mkDevCharacterTransforms' },
+
+  // Each scene gets its own background slot (배경 DB is scene-scoped), unlike
+  // the single shared slot this used to be.
+  _loadBackgroundMap() {
+    try { return JSON.parse(localStorage.getItem(this._keys.background)) || {}; }
+    catch (e) { return {}; }
+  },
+  getBackgroundId(sceneId) {
+    if (!sceneId) return null;
+    return this._loadBackgroundMap()[sceneId] || null;
+  },
+  setBackgroundId(sceneId, assetId) {
+    if (!sceneId) return;
+    const map = this._loadBackgroundMap();
+    if (assetId) map[sceneId] = assetId; else delete map[sceneId];
+    localStorage.setItem(this._keys.background, JSON.stringify(map));
+  },
+  removeAllBackgroundAssetRefs(assetId) {
+    const map = this._loadBackgroundMap();
+    let changed = false;
+    Object.keys(map).forEach(sceneId => { if (map[sceneId] === assetId) { delete map[sceneId]; changed = true; } });
+    if (changed) localStorage.setItem(this._keys.background, JSON.stringify(map));
+  },
 
   _loadCharacterMap() {
     try { return JSON.parse(localStorage.getItem(this._keys.characters)) || {}; }
     catch (e) { return {}; }
   },
-  // characterKey is a dialogue character id, e.g. 'jisoo' / 'youngwoo' — each
-  // one gets its own uploaded asset, unlike the single shared background slot.
-  getCharacterAssetId(characterKey) {
+  // characterKey is a dialogue character id (e.g. 'jisoo' / 'youngwoo'); each
+  // (characterKey, expression) pair gets its own uploaded asset, driven by the
+  // `expression` field on the active dialogue line. Falls back to that
+  // character's 'neutral' portrait when the exact expression isn't registered
+  // yet, so a scene doesn't go blank just because one expression is missing.
+  getCharacterAssetId(characterKey, expression) {
     if (!characterKey) return null;
-    return this._loadCharacterMap()[characterKey] || null;
-  },
-  setCharacterAssetId(characterKey, assetId) {
     const map = this._loadCharacterMap();
-    if (assetId) map[characterKey] = assetId; else delete map[characterKey];
+    return map[`${characterKey}::${expression || 'neutral'}`] || map[`${characterKey}::neutral`] || null;
+  },
+  setCharacterAssetId(characterKey, expression, assetId) {
+    if (!characterKey) return;
+    const map = this._loadCharacterMap();
+    const key = `${characterKey}::${expression || 'neutral'}`;
+    if (assetId) map[key] = assetId; else delete map[key];
     localStorage.setItem(this._keys.characters, JSON.stringify(map));
+  },
+  removeAllCharacterAssetRefs(assetId) {
+    const map = this._loadCharacterMap();
+    let changed = false;
+    Object.keys(map).forEach(key => { if (map[key] === assetId) { delete map[key]; changed = true; } });
+    if (changed) localStorage.setItem(this._keys.characters, JSON.stringify(map));
   },
 
   _loadTransformMap() {

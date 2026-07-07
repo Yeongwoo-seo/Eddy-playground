@@ -33,12 +33,11 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .tab-btn{flex:1;padding:12px;border-radius:10px;background:var(--surface-1);border:1px solid var(--divider);color:var(--text-secondary);font-size:13px;font-weight:600;font-family:var(--mono);letter-spacing:.05em;cursor:pointer}
 .tab-btn.active{background:var(--surface-3);color:var(--cyan);border-color:rgba(89,184,200,.4)}
 
-.char-picker{margin-bottom:18px}
-.char-picker.hidden{display:none}
-.char-picker-label{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px}
-.char-picker-pills{display:flex;gap:8px;flex-wrap:wrap}
-.char-pill{padding:9px 16px;border-radius:20px;background:var(--surface-1);border:1px solid var(--divider);color:var(--text-secondary);font-size:13px;font-weight:600;cursor:pointer}
-.char-pill.active{background:rgba(89,184,200,.12);color:var(--cyan);border-color:rgba(89,184,200,.4)}
+.picker{margin-bottom:14px}
+.picker-label{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px}
+.picker-pills{display:flex;gap:8px;flex-wrap:wrap}
+.pill{padding:9px 16px;border-radius:20px;background:var(--surface-1);border:1px solid var(--divider);color:var(--text-secondary);font-size:13px;font-weight:600;cursor:pointer}
+.pill.active{background:rgba(89,184,200,.12);color:var(--cyan);border-color:rgba(89,184,200,.4)}
 
 .dropzone{border:1.5px dashed var(--divider);border-radius:14px;padding:36px 16px;text-align:center;margin-bottom:8px;transition:border-color .15s,background .15s}
 .dropzone.drag{border-color:var(--cyan);background:rgba(89,184,200,.06)}
@@ -66,11 +65,7 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .bg-remove-btn{width:100%;background:var(--surface-2);border:1px solid var(--divider);color:var(--text-primary);padding:12px;border-radius:10px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:var(--mono);letter-spacing:.03em}
 .bg-remove-btn:disabled{opacity:.5;cursor:default}
 .bg-remove-btn.done{color:var(--cyan);border-color:rgba(89,184,200,.4)}
-
-.frame-hint{font-size:11px;color:var(--text-muted);margin-bottom:8px}
-.frame-row{display:flex;gap:8px}
-.frame-btn{flex:1;background:var(--surface-2);border:1px solid var(--divider);color:var(--text-secondary);padding:12px 6px;border-radius:10px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:var(--mono);letter-spacing:.02em}
-.frame-btn.done{color:var(--cyan);border-color:rgba(89,184,200,.4)}
+.crop-enter-btn{width:100%;background:var(--cyan);color:#06181c;border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--mono);letter-spacing:.04em}
 
 .crop-editor{margin-top:14px}
 .crop-editor.hidden{display:none}
@@ -111,13 +106,28 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
   </div>
 
   <div class="tabs">
-    <button class="tab-btn active" id="tabBackground">BACKGROUND</button>
-    <button class="tab-btn" id="tabCharacter">CHARACTER</button>
+    <button class="tab-btn active" id="tabBackground">배경 DB</button>
+    <button class="tab-btn" id="tabCharacter">인물 DB</button>
   </div>
 
-  <div class="char-picker hidden" id="charPicker">
-    <div class="char-picker-label">어떤 등장인물의 사진인가요?</div>
-    <div class="char-picker-pills" id="charPickerPills"></div>
+  <!-- 배경 DB: week -> scene picker -->
+  <div class="picker" id="weekPicker">
+    <div class="picker-label">주차</div>
+    <div class="picker-pills" id="weekPickerPills"></div>
+  </div>
+  <div class="picker" id="scenePicker">
+    <div class="picker-label">씬</div>
+    <div class="picker-pills" id="scenePickerPills"></div>
+  </div>
+
+  <!-- 인물 DB: character -> expression picker -->
+  <div class="picker hidden" id="charPicker">
+    <div class="picker-label">등장인물</div>
+    <div class="picker-pills" id="charPickerPills"></div>
+  </div>
+  <div class="picker hidden" id="exprPicker">
+    <div class="picker-label">감정표현</div>
+    <div class="picker-pills" id="exprPickerPills"></div>
   </div>
 
   <div class="dropzone" id="dropzone">
@@ -141,12 +151,7 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
     <div class="bg-remove-row">
       <button class="bg-remove-btn" id="bgRemoveBtn">배경 제거 (누끼)</button>
     </div>
-    <div class="frame-hint">이 사진에서 프레임을 골라 저장하세요 (여러 개 만들 수 있어요)</div>
-    <div class="frame-row">
-      <button class="frame-btn" id="frameBtnFull" data-preset="full">전신</button>
-      <button class="frame-btn" id="frameBtnDialogue" data-preset="dialogue">대화신</button>
-      <button class="frame-btn" id="frameBtnFace" data-preset="face">얼굴</button>
-    </div>
+    <button class="crop-enter-btn" id="cropEnterBtn">다음: 자르기</button>
 
     <div class="crop-editor hidden" id="cropEditor">
       <div class="crop-stage" id="cropStage">
@@ -155,20 +160,17 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
       </div>
       <div class="crop-zoom-row">
         <label>확대/축소</label>
-        <input type="range" id="cropZoom" min="15" max="100" value="70">
+        <input type="range" id="cropZoom" min="15" max="100" value="62">
       </div>
       <div class="crop-actions">
         <button class="crop-cancel-btn" id="cropCancelBtn">취소</button>
-        <button class="crop-save-btn" id="cropSaveBtn">이 프레임 저장</button>
+        <button class="crop-save-btn" id="cropSaveBtn">이 표정으로 저장</button>
       </div>
     </div>
   </div>
 
-  <div class="section-title">Uploaded Backgrounds</div>
-  <div id="backgroundList"><div class="empty-note">아직 업로드한 이미지가 없습니다.</div></div>
-
-  <div class="section-title">Uploaded Characters</div>
-  <div id="characterList"><div class="empty-note">아직 업로드한 이미지가 없습니다.</div></div>
+  <div class="section-title" id="listTitle">Uploaded Backgrounds</div>
+  <div id="assetList"><div class="empty-note">아직 업로드한 이미지가 없습니다.</div></div>
 </div>
 
 <div class="lightbox hidden" id="lightbox">
@@ -203,14 +205,37 @@ window.__removeBackgroundReady = import('https://cdn.jsdelivr.net/npm/@imgly/bac
 <script src="/dev/dialogueData.js"></script>
 <script>
 let currentType = 'background';
+let currentWeekId = weeks[0].id;
+let currentSceneId = weeks[0].scenes[0] && weeks[0].scenes[0].id;
 let currentCharacterKey = dialogueCharacters[0].id;
+let currentExpression = dialogueExpressions[0].id;
 let pendingFile = null;
+
+// Deep link from /dev/game's "+ 새 이미지 업로드" — jump straight to that
+// scene's background list instead of making the tester re-pick week/scene.
+(function applyDeepLink() {
+  const requestedSceneId = new URLSearchParams(location.search).get('scene');
+  if (!requestedSceneId) return;
+  for (const w of weeks) {
+    if (w.scenes.some(s => s.id === requestedSceneId)) {
+      currentWeekId = w.id;
+      currentSceneId = requestedSceneId;
+      break;
+    }
+  }
+})();
 
 const el = {
   tabBackground: document.getElementById('tabBackground'),
   tabCharacter: document.getElementById('tabCharacter'),
+  weekPicker: document.getElementById('weekPicker'),
+  weekPickerPills: document.getElementById('weekPickerPills'),
+  scenePicker: document.getElementById('scenePicker'),
+  scenePickerPills: document.getElementById('scenePickerPills'),
   charPicker: document.getElementById('charPicker'),
   charPickerPills: document.getElementById('charPickerPills'),
+  exprPicker: document.getElementById('exprPicker'),
+  exprPickerPills: document.getElementById('exprPickerPills'),
   dropzone: document.getElementById('dropzone'),
   selectBtn: document.getElementById('selectBtn'),
   fileInput: document.getElementById('fileInput'),
@@ -224,9 +249,7 @@ const el = {
   charEditorPanel: document.getElementById('charEditorPanel'),
   editorImg: document.getElementById('editorImg'),
   bgRemoveBtn: document.getElementById('bgRemoveBtn'),
-  frameBtnFull: document.getElementById('frameBtnFull'),
-  frameBtnDialogue: document.getElementById('frameBtnDialogue'),
-  frameBtnFace: document.getElementById('frameBtnFace'),
+  cropEnterBtn: document.getElementById('cropEnterBtn'),
   cropEditor: document.getElementById('cropEditor'),
   cropStage: document.getElementById('cropStage'),
   cropImg: document.getElementById('cropImg'),
@@ -234,31 +257,90 @@ const el = {
   cropZoom: document.getElementById('cropZoom'),
   cropCancelBtn: document.getElementById('cropCancelBtn'),
   cropSaveBtn: document.getElementById('cropSaveBtn'),
-  backgroundList: document.getElementById('backgroundList'),
-  characterList: document.getElementById('characterList'),
+  listTitle: document.getElementById('listTitle'),
+  assetList: document.getElementById('assetList'),
   lightbox: document.getElementById('lightbox'),
   lightboxImg: document.getElementById('lightboxImg'),
 };
+
+function currentWeek() { return weeks.find(w => w.id === currentWeekId) || weeks[0]; }
+function currentScene() { return currentWeek().scenes.find(s => s.id === currentSceneId); }
 
 function selectType(type) {
   currentType = type;
   el.tabBackground.classList.toggle('active', type === 'background');
   el.tabCharacter.classList.toggle('active', type === 'character');
+  el.weekPicker.classList.toggle('hidden', type !== 'background');
+  el.scenePicker.classList.toggle('hidden', type !== 'background');
   el.charPicker.classList.toggle('hidden', type !== 'character');
+  el.exprPicker.classList.toggle('hidden', type !== 'character');
   el.fileInput.accept = type === 'background' ? 'image/jpeg,image/png,image/webp' : 'image/png,image/webp';
   el.typeHint.textContent = type === 'background' ? '.jpg · .jpeg · .png · .webp' : '.png · .webp (투명 배경 권장)';
-  if (type === 'character') renderCharPicker();
+  if (type === 'background') { renderWeekPicker(); renderScenePicker(); }
+  else { renderCharPicker(); renderExprPicker(); }
   clearPending();
+  refreshList();
+}
+
+function renderWeekPicker() {
+  el.weekPickerPills.innerHTML = weeks.map(w =>
+    `<button class="pill${w.id === currentWeekId ? ' active' : ''}" data-key="${w.id}">${escapeHtml(w.label)}</button>`
+  ).join('');
+  el.weekPickerPills.querySelectorAll('.pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentWeekId = btn.dataset.key;
+      currentSceneId = currentWeek().scenes[0] && currentWeek().scenes[0].id;
+      renderWeekPicker();
+      renderScenePicker();
+      clearPending();
+      refreshList();
+    });
+  });
+}
+
+function renderScenePicker() {
+  const scenes = currentWeek().scenes;
+  if (!scenes.length) {
+    el.scenePickerPills.innerHTML = '<span class="empty-note">이 주차에 등록된 씬이 없습니다.</span>';
+    return;
+  }
+  el.scenePickerPills.innerHTML = scenes.map(s =>
+    `<button class="pill${s.id === currentSceneId ? ' active' : ''}" data-key="${s.id}">${escapeHtml(s.name)}</button>`
+  ).join('');
+  el.scenePickerPills.querySelectorAll('.pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentSceneId = btn.dataset.key;
+      renderScenePicker();
+      clearPending();
+      refreshList();
+    });
+  });
 }
 
 function renderCharPicker() {
   el.charPickerPills.innerHTML = dialogueCharacters.map(c =>
-    `<button class="char-pill${c.id === currentCharacterKey ? ' active' : ''}" data-key="${c.id}">${escapeHtml(c.name)}</button>`
+    `<button class="pill${c.id === currentCharacterKey ? ' active' : ''}" data-key="${c.id}">${escapeHtml(c.name)}</button>`
   ).join('');
-  el.charPickerPills.querySelectorAll('.char-pill').forEach(btn => {
+  el.charPickerPills.querySelectorAll('.pill').forEach(btn => {
     btn.addEventListener('click', () => {
       currentCharacterKey = btn.dataset.key;
       renderCharPicker();
+      clearPending();
+      refreshList();
+    });
+  });
+}
+
+function renderExprPicker() {
+  el.exprPickerPills.innerHTML = dialogueExpressions.map(x =>
+    `<button class="pill${x.id === currentExpression ? ' active' : ''}" data-key="${x.id}">${escapeHtml(x.label)}</button>`
+  ).join('');
+  el.exprPickerPills.querySelectorAll('.pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentExpression = btn.dataset.key;
+      renderExprPicker();
+      clearPending();
+      refreshList();
     });
   });
 }
@@ -290,35 +372,31 @@ function onFilesSelected(files) {
 function renderPreview(url) {
   el.previewPanel.classList.remove('hidden');
   el.previewImg.src = url;
-  el.previewType.textContent = currentType.toUpperCase();
+  el.previewType.textContent = currentScene() ? currentScene().name : '';
   el.previewFile.textContent = pendingFile.name;
   el.previewSize.textContent = `${pendingFile.width} × ${pendingFile.height}`;
 }
 
 // Only reachable for backgrounds now — character uploads go through the
-// crop editor below, which saves each framing itself.
+// crop editor below, which saves the framing itself.
 async function saveAsset() {
-  if (!pendingFile) return;
+  if (!pendingFile || !currentScene()) return;
   try {
-    await AssetDB.addAsset({ type: 'background', name: pendingFile.name, blob: pendingFile.blob, width: pendingFile.width, height: pendingFile.height });
+    await AssetDB.addAsset({ type: 'background', name: pendingFile.name, blob: pendingFile.blob, width: pendingFile.width, height: pendingFile.height, sceneId: currentSceneId });
     clearPending();
-    await refreshLists();
+    await refreshList();
   } catch (err) {
     DevDiag.show('이미지 저장 실패: ' + (err && err.message ? err.message : err));
   }
 }
 
-/* ===== Character photo editor: optional background removal + 3 crop presets ===== */
-const CROP_PRESETS = {
-  full: { aspect: 9 / 16, zoomDefault: 92, vAnchor: 'center', label: '전신' },
-  dialogue: { aspect: 3 / 4, zoomDefault: 62, vAnchor: 0.08, label: '대화신' },
-  face: { aspect: 1, zoomDefault: 26, vAnchor: 0.05, label: '얼굴' },
-};
+/* ===== Character photo editor: optional background removal + one dialogue-framed crop ===== */
+const CROP_ASPECT = 3 / 4;
+const CROP_V_ANCHOR = 0.08;
 
 let workingBlob = null;
 let workingImgNatural = { width: 0, height: 0 };
 let sourceFileBaseName = '';
-let activePreset = null;
 let cropState = null;
 let cropDrag = null;
 
@@ -332,10 +410,6 @@ function openCharEditor(file, url, img) {
   el.bgRemoveBtn.disabled = false;
   el.bgRemoveBtn.textContent = '배경 제거 (누끼)';
   el.bgRemoveBtn.classList.remove('done');
-  [el.frameBtnFull, el.frameBtnDialogue, el.frameBtnFace].forEach(btn => {
-    btn.classList.remove('done');
-    btn.textContent = CROP_PRESETS[btn.dataset.preset].label;
-  });
   el.cropEditor.classList.add('hidden');
   el.charEditorPanel.classList.remove('hidden');
 }
@@ -369,9 +443,7 @@ el.bgRemoveBtn.addEventListener('click', async () => {
   }
 });
 
-function enterCropMode(preset) {
-  activePreset = preset;
-  const cfg = CROP_PRESETS[preset];
+function enterCropMode() {
   el.cropImg.src = URL.createObjectURL(workingBlob);
   el.cropEditor.classList.remove('hidden');
 
@@ -386,27 +458,21 @@ function enterCropMode(preset) {
   el.cropImg.style.top = imgTop + 'px';
 
   let maxBoxW, maxBoxH;
-  if (dispW / dispH > cfg.aspect) { maxBoxH = dispH; maxBoxW = dispH * cfg.aspect; }
-  else { maxBoxW = dispW; maxBoxH = dispW / cfg.aspect; }
+  if (dispW / dispH > CROP_ASPECT) { maxBoxH = dispH; maxBoxW = dispH * CROP_ASPECT; }
+  else { maxBoxW = dispW; maxBoxH = dispW / CROP_ASPECT; }
 
   cropState = { imgLeft, imgTop, dispW, dispH, imgScale, maxBoxW, maxBoxH };
-  el.cropZoom.value = cfg.zoomDefault;
+  el.cropZoom.value = 62;
   updateCropBoxFromZoom(true);
 }
 
 function updateCropBoxFromZoom(recenter) {
   const s = cropState;
-  const cfg = CROP_PRESETS[activePreset];
   const zoomFrac = Number(el.cropZoom.value) / 100;
   const boxW = s.maxBoxW * zoomFrac;
   const boxH = s.maxBoxH * zoomFrac;
   const boxX = recenter ? s.imgLeft + (s.dispW - boxW) / 2 : clamp(s.boxX, s.imgLeft, s.imgLeft + s.dispW - boxW);
-  let boxY;
-  if (recenter) {
-    boxY = cfg.vAnchor === 'center' ? s.imgTop + (s.dispH - boxH) / 2 : s.imgTop + s.dispH * cfg.vAnchor;
-  } else {
-    boxY = clamp(s.boxY, s.imgTop, s.imgTop + s.dispH - boxH);
-  }
+  const boxY = recenter ? s.imgTop + s.dispH * CROP_V_ANCHOR : clamp(s.boxY, s.imgTop, s.imgTop + s.dispH - boxH);
   s.boxW = boxW;
   s.boxH = boxH;
   s.boxX = clamp(boxX, s.imgLeft, s.imgLeft + s.dispW - boxW);
@@ -437,6 +503,7 @@ el.cropBox.addEventListener('pointermove', (e) => {
 });
 ['pointerup', 'pointercancel'].forEach(evt => el.cropBox.addEventListener(evt, () => { cropDrag = null; }));
 el.cropZoom.addEventListener('input', () => updateCropBoxFromZoom(false));
+el.cropEnterBtn.addEventListener('click', enterCropMode);
 
 function cropImageElementToBlob(imgEl, x, y, w, h) {
   return new Promise((resolve) => {
@@ -457,12 +524,6 @@ function loadImageFromBlob(blob) {
   });
 }
 
-function markFrameDone(preset) {
-  const btn = { full: el.frameBtnFull, dialogue: el.frameBtnDialogue, face: el.frameBtnFace }[preset];
-  btn.classList.add('done');
-  btn.textContent = `${CROP_PRESETS[preset].label} ✓`;
-}
-
 el.cropCancelBtn.addEventListener('click', () => el.cropEditor.classList.add('hidden'));
 
 el.cropSaveBtn.addEventListener('click', async () => {
@@ -474,52 +535,46 @@ el.cropSaveBtn.addEventListener('click', async () => {
   try {
     const cropBlob = await cropImageElementToBlob(el.cropImg, natX, natY, natW, natH);
     const croppedImg = await loadImageFromBlob(cropBlob);
-    const presetLabel = CROP_PRESETS[activePreset].label;
-    const name = `${sourceFileBaseName} (${presetLabel}).png`;
-    const record = await AssetDB.addAsset({ type: 'character', name, blob: cropBlob, width: croppedImg.naturalWidth, height: croppedImg.naturalHeight });
-    // The dialogue-scene framing is what /dev/game actually renders, so make
-    // it the active photo for this character; 전신/얼굴 just join the library.
-    if (activePreset === 'dialogue') DevGameState.setCharacterAssetId(currentCharacterKey, record.id);
-    markFrameDone(activePreset);
-    el.cropEditor.classList.add('hidden');
-    await refreshLists();
+    const exprLabel = dialogueExpressions.find(x => x.id === currentExpression).label;
+    const name = `${sourceFileBaseName} (${exprLabel}).png`;
+    const record = await AssetDB.addAsset({ type: 'character', name, blob: cropBlob, width: croppedImg.naturalWidth, height: croppedImg.naturalHeight, characterKey: currentCharacterKey, expression: currentExpression });
+    // Only one photo per (character, expression) is actually rendered — the
+    // newest upload for this pair becomes the active one automatically.
+    DevGameState.setCharacterAssetId(currentCharacterKey, currentExpression, record.id);
+    clearPending();
+    await refreshList();
   } catch (err) {
     DevDiag.show('프레임 저장 실패: ' + (err && err.message ? err.message : err));
   }
-});
-
-[el.frameBtnFull, el.frameBtnDialogue, el.frameBtnFace].forEach(btn => {
-  btn.addEventListener('click', () => enterCropMode(btn.dataset.preset));
 });
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-async function refreshLists() {
-  const [bgs, chars] = await Promise.all([
-    AssetDB.getAssetsByType('background'),
-    AssetDB.getAssetsByType('character'),
-  ]);
-  renderList('backgroundList', bgs);
-  renderList('characterList', chars);
+async function refreshList() {
+  el.listTitle.textContent = currentType === 'background' ? 'Uploaded Backgrounds' : 'Uploaded Portraits';
+  const all = await AssetDB.getAssetsByType(currentType);
+  const filtered = currentType === 'background'
+    ? all.filter(a => a.sceneId === currentSceneId)
+    : all.filter(a => a.characterKey === currentCharacterKey && a.expression === currentExpression);
+  renderList(filtered);
 }
 
-function renderList(listKey, assets) {
-  const listEl = el[listKey];
+function renderList(assets) {
   if (!assets.length) {
-    listEl.innerHTML = '<div class="empty-note">아직 업로드한 이미지가 없습니다.</div>';
+    el.assetList.innerHTML = '<div class="empty-note">아직 업로드한 이미지가 없습니다.</div>';
     return;
   }
-  listEl.innerHTML = assets.map(a => {
+  el.assetList.innerHTML = assets.map(a => {
     const url = a.dataUrl;
-    const actionButtons = a.type === 'background'
-      ? `<button class="use" onclick="useAsBackground('${a.id}')">USE IN TEST</button>`
-      : dialogueCharacters.map(c => `<button class="use" onclick="useAsCharacter('${c.id}','${a.id}')">${escapeHtml(c.name)}로 사용</button>`).join('');
-    const assignedTo = a.type === 'character'
-      ? dialogueCharacters.filter(c => DevGameState.getCharacterAssetId(c.id) === a.id).map(c => c.name)
-      : [];
-    const tag = assignedTo.length ? `<span class="asset-tag">${escapeHtml(assignedTo.join(' · '))} 사용 중</span><br>` : '';
+    const isActive = a.type === 'background'
+      ? DevGameState.getBackgroundId(a.sceneId) === a.id
+      : DevGameState.getCharacterAssetId(a.characterKey, a.expression) === a.id;
+    const tag = isActive ? '<span class="asset-tag">사용 중</span><br>' : '';
+    const useAction = a.type === 'background'
+      ? `useAsBackground('${a.id}')`
+      : `useAsCharacter('${a.id}')`;
     return `<div class="asset-card">
       <img class="asset-thumb" src="${url}" data-url="${url}" onclick="previewAsset(this.dataset.url)">
       <div class="asset-info">
@@ -528,7 +583,7 @@ function renderList(listKey, assets) {
         <div class="asset-meta">${a.width} × ${a.height}</div>
       </div>
       <div class="asset-actions">
-        ${actionButtons}
+        ${isActive ? '' : `<button class="use" onclick="${useAction}">사용</button>`}
         <button class="danger" onclick="removeAsset('${a.type}','${a.id}')">DELETE</button>
       </div>
     </div>`;
@@ -541,25 +596,21 @@ function previewAsset(url) {
 }
 
 function useAsBackground(id) {
-  DevGameState.setBackgroundId(id);
-  location.href = '/dev/game/';
+  DevGameState.setBackgroundId(currentSceneId, id);
+  refreshList();
 }
 
-function useAsCharacter(characterKey, id) {
-  DevGameState.setCharacterAssetId(characterKey, id);
-  location.href = '/dev/game/';
+function useAsCharacter(id) {
+  DevGameState.setCharacterAssetId(currentCharacterKey, currentExpression, id);
+  refreshList();
 }
 
 async function removeAsset(type, id) {
   if (!confirm('이 이미지를 삭제할까요?')) return;
   await AssetDB.deleteAsset(id);
-  if (type === 'background' && DevGameState.getBackgroundId() === id) DevGameState.setBackgroundId(null);
-  if (type === 'character') {
-    dialogueCharacters.forEach(c => {
-      if (DevGameState.getCharacterAssetId(c.id) === id) DevGameState.setCharacterAssetId(c.id, null);
-    });
-  }
-  await refreshLists();
+  if (type === 'background') DevGameState.removeAllBackgroundAssetRefs(id);
+  if (type === 'character') DevGameState.removeAllCharacterAssetRefs(id);
+  await refreshList();
 }
 
 el.tabBackground.addEventListener('click', () => selectType('background'));
@@ -581,7 +632,7 @@ el.dropzone.addEventListener('drop', (e) => {
   onFilesSelected(e.dataTransfer.files);
 });
 
-refreshLists();
+selectType('background');
 </script>
 </body>
 </html>
