@@ -3,16 +3,23 @@
    state for the same reason dialogueData.js is separate from DevGameState:
    this is content a writer edits, not something that changes at runtime. */
 
-// 지도 locations. Only 숙소/공항/지하철역 have real scene content right now —
-// the other three are the brief's own example locations (§16), modeled as
-// permanently-locked placeholders so the map has its intended "6 total"
-// shape without pretending content exists that hasn't been written yet.
-// mapX/mapY are rough placement percentages for a future Sydney map graphic.
+// 지도 locations. 숙소/공항/지하철역/Circular Quay have real scene content —
+// Opera House/Harbour Bridge remain the brief's own example locations (§16),
+// modeled as permanently-locked placeholders so the map has its intended
+// "6 total" shape without pretending content exists that hasn't been written
+// yet. mapX/mapY are rough placement percentages for a future Sydney map graphic.
 const caseMapLocations = [
   { id: 'airport', name: '공항', mapX: 12, mapY: 70, relatedSceneIds: ['week0-scene-001'] },
   { id: 'station', name: '지하철 역', mapX: 30, mapY: 55, relatedSceneIds: ['week0-scene-001-2'] },
-  { id: 'accommodation', name: '숙소', mapX: 50, mapY: 40, relatedSceneIds: ['week0-scene-002-1', 'week0-scene-002-2', 'week0-scene-002-3'] },
-  { id: 'circular-quay', name: 'Circular Quay', mapX: 62, mapY: 30, relatedSceneIds: [] },
+  { id: 'accommodation', name: '숙소', mapX: 50, mapY: 40, relatedSceneIds: ['week0-scene-002-1', 'week0-scene-002-2', 'week0-scene-002-3', 'week1-scene-011'] },
+  {
+    id: 'circular-quay', name: 'Circular Quay', mapX: 62, mapY: 30,
+    relatedSceneIds: [
+      'week1-scene-001', 'week1-scene-002', 'week1-scene-003', 'week1-scene-004',
+      'week1-scene-005', 'week1-scene-006', 'week1-scene-007', 'week1-scene-008',
+      'week1-scene-009', 'week1-scene-010',
+    ],
+  },
   { id: 'opera-house', name: 'Opera House', mapX: 70, mapY: 22, relatedSceneIds: [] },
   { id: 'harbour-bridge', name: 'Harbour Bridge', mapX: 58, mapY: 18, relatedSceneIds: [] },
 ];

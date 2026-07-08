@@ -203,10 +203,12 @@ if ('serviceWorker' in navigator) {
 <script src="/dev/vnPlayer.js"></script>
 <script src="/dev/caseMenu.js"></script>
 <script>
-// /dev/week0 links here as /dev/game/?scene=<id> — fall back to the first
-// scene so a bare /dev/game/ link still works.
+// /dev/week0 and /dev/week1 link here as /dev/game/?scene=<id> — resolve
+// against allScenes (every week's scenes combined) so a scene from any week
+// can be requested, falling back to the very first scene so a bare
+// /dev/game/ link still works.
 const requestedSceneId = new URLSearchParams(location.search).get('scene');
-const activeSceneData = week0Scenes.find(s => s.id === requestedSceneId) || week0Scenes[0];
+const activeSceneData = allScenes.find(s => s.id === requestedSceneId) || allScenes[0];
 const activeLines = activeSceneData.lines.map(l => ({ speaker: l.speaker, text: l.text, characterId: l.characterId, expression: l.expression, pauseBeforeMs: l.pauseBeforeMs }));
 
 const el = {
