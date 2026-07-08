@@ -323,6 +323,7 @@ function startReeling() {
 
   const style = RARITY_STYLE[currentFish.rarity];
   el.fishEmoji.textContent = currentFish.emoji;
+  el.fishIcon.textContent = currentFish.emoji;
   el.fishName.textContent = currentFish.name;
   el.fishRarity.textContent = style.label;
   el.fishRarity.style.color = style.color;
