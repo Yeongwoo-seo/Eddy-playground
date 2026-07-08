@@ -1034,13 +1034,21 @@ async function loadArea(area) {
     CANVAS_H = asset.height;
     await AssetDB.preloadImage(asset.dataUrl);
     buildPhotoCanvas(asset.dataUrl);
-    fitToStage();
-    renderDebugHotspotOverlay();
   } else {
     currentMode = 'grid';
     currentHotspots = {};
   }
+  // Un-hide .photo-stage (renderRoomView) before fitToStage measures its
+  // rect — while still "hidden" (display:none) getBoundingClientRect() is
+  // 0x0, so fitToStage silently no-ops and the photo renders unscaled at
+  // native pixel size, cropped to its top-left corner instead of scaled to
+  // fill the screen. Only mattered on the very first area shown per page
+  // load; later area switches kept the stage already visible from before.
   renderRoomView(area);
+  if (currentMode === 'photo') {
+    fitToStage();
+    renderDebugHotspotOverlay();
+  }
 }
 
 // Fetches every area's background asset + hotspots + image bytes up front
