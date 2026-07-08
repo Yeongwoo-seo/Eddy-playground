@@ -77,17 +77,22 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .fab-btn:active{transform:scale(.96);background:#000}
 .fab-btn.active{color:var(--amber);border-color:rgba(214,168,75,.4);background:rgba(214,168,75,.1)}
 
-/* ===== Item popup — icon-only grid, tap to select/combine (no text list,
-   no separate 조사/조합 confirm buttons — tapping IS the action). ===== */
+/* ===== Inventory — a persistent floating bottom bar (not a button-
+   triggered popup) showing 5 slots per view, icon-only, tap to select/
+   combine (no text list, no separate 조사/조합 confirm buttons — tapping IS
+   the action). grid-auto-columns sizes each slot so exactly 5 fit the
+   visible width regardless of frame size; extra items past 5 sit off to the
+   side and are reached by dragging/swiping the row (native overflow-x
+   scroll on touch, plus a small mouse-drag helper below for desktop
+   testing). ===== */
 .popup-scrim{position:absolute;inset:0;z-index:5;background:rgba(0,0,0,.4);display:none}
 .popup-scrim.show{display:block}
-.item-popup{position:absolute;left:16px;top:calc(100px + env(safe-area-inset-top,0));z-index:5;background:var(--surface-1);border:1px solid var(--divider);border-radius:18px;padding:14px;display:none;box-shadow:0 12px 32px rgba(0,0,0,.5);max-width:calc(100% - 32px)}
-.item-popup.show{display:block}
-.item-popup-title{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase;margin-bottom:10px}
-.item-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:264px;max-height:38vh;overflow-y:auto}
-.item-icon-btn{width:56px;height:56px;border-radius:14px;background:var(--surface-2);border:2px solid transparent;font-size:26px;display:flex;align-items:center;justify-content:center;cursor:pointer}
-.item-icon-btn.selected{border-color:var(--cyan);background:rgba(89,184,200,.14)}
-.item-empty{font-family:var(--mono);font-size:11px;color:var(--text-muted);padding:6px 2px}
+.inventory-bar{position:absolute;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0));z-index:6;display:grid;grid-auto-flow:column;grid-auto-columns:calc((100% - 32px) / 5);gap:8px;overflow-x:auto;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;touch-action:pan-x;padding:10px;background:rgba(5,7,10,.86);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.1);border-radius:18px;box-shadow:0 8px 28px rgba(0,0,0,.35);transition:opacity .3s ease;scrollbar-width:none;cursor:grab}
+.inventory-bar::-webkit-scrollbar{display:none}
+.inventory-bar.hidden{display:none}
+.inventory-slot{scroll-snap-align:start;aspect-ratio:1/1;width:100%;background:var(--surface-2);border:2px solid transparent;border-radius:14px;font-size:24px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.inventory-slot.selected{border-color:var(--cyan);background:rgba(89,184,200,.14)}
+.inventory-empty{grid-column:1/-1;font-family:var(--mono);font-size:11px;color:var(--text-muted);padding:6px 2px;text-align:center}
 
 /* Anchored at the bottom-right of whichever icon was just tapped. */
 .item-tooltip{position:absolute;z-index:6;background:rgba(5,7,10,.95);border:1px solid var(--divider);border-radius:12px;padding:10px 12px;max-width:180px;display:none;box-shadow:0 8px 24px rgba(0,0,0,.5)}
@@ -161,10 +166,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 
   <div class="popup-scrim" id="popupScrim"></div>
 
-  <div class="item-popup" id="itemPopup">
-    <div class="item-popup-title">인벤토리</div>
-    <div class="item-grid" id="itemGrid"></div>
-  </div>
+  <div class="inventory-bar" id="inventoryBar"></div>
   <div class="item-tooltip" id="itemTooltip">
     <div class="item-tooltip-name" id="itemTooltipName"></div>
     <div class="item-tooltip-desc" id="itemTooltipDesc"></div>
@@ -176,7 +178,6 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
   </div>
 
   <div class="fab-row" id="fabRow">
-    <button class="fab-btn" id="itemFabBtn">아이템</button>
     <button class="fab-btn" id="moveFabBtn">이동</button>
   </div>
 
@@ -528,15 +529,13 @@ const el = {
   gridScroll: document.getElementById('gridScroll'),
   hotspotGrid: document.getElementById('hotspotGrid'),
   popupScrim: document.getElementById('popupScrim'),
-  itemPopup: document.getElementById('itemPopup'),
-  itemGrid: document.getElementById('itemGrid'),
+  inventoryBar: document.getElementById('inventoryBar'),
   itemTooltip: document.getElementById('itemTooltip'),
   itemTooltipName: document.getElementById('itemTooltipName'),
   itemTooltipDesc: document.getElementById('itemTooltipDesc'),
   movePopup: document.getElementById('movePopup'),
   moveList: document.getElementById('moveList'),
   fabRow: document.getElementById('fabRow'),
-  itemFabBtn: document.getElementById('itemFabBtn'),
   moveFabBtn: document.getElementById('moveFabBtn'),
   acquireToast: document.getElementById('acquireToast'),
   acquireToastIcon: document.getElementById('acquireToastIcon'),
@@ -562,6 +561,7 @@ function queueDialogue(lines, onComplete) {
   if (activeMsgTapHandler) el.msgLayer.removeEventListener('click', activeMsgTapHandler);
   dialogueActive = true;
   el.msgLayer.classList.add('show');
+  el.inventoryBar.classList.add('hidden'); // both dock at the bottom edge — dialogue takes priority
   const player = createVNPlayer({
     onLineChange: (line) => { el.msgName.textContent = line.speaker || ''; },
     onTextUpdate: (text) => { el.msgText.textContent = text; },
@@ -569,6 +569,7 @@ function queueDialogue(lines, onComplete) {
     onComplete: () => {
       el.msgLayer.classList.remove('show');
       dialogueActive = false;
+      if (!state.completed) el.inventoryBar.classList.remove('hidden');
       el.msgLayer.removeEventListener('click', activeMsgTapHandler);
       activeMsgTapHandler = null;
       if (onComplete) onComplete();
@@ -1185,22 +1186,22 @@ function onItemIconTap(itemId, btnEl) {
 }
 
 function renderItemGrid() {
-  el.itemGrid.innerHTML = '';
+  el.inventoryBar.innerHTML = '';
   if (!state.inventoryItemIds.length) {
     const empty = document.createElement('div');
-    empty.className = 'item-empty';
+    empty.className = 'inventory-empty';
     empty.textContent = '비어 있다';
-    el.itemGrid.appendChild(empty);
+    el.inventoryBar.appendChild(empty);
     return;
   }
   state.inventoryItemIds.forEach(itemId => {
     const def = ITEM_DEFS[itemId];
     if (!def) return;
     const btn = document.createElement('button');
-    btn.className = 'item-icon-btn' + (state.selectedItemId === itemId ? ' selected' : '');
+    btn.className = 'inventory-slot' + (state.selectedItemId === itemId ? ' selected' : '');
     btn.textContent = def.icon;
     btn.addEventListener('click', () => onItemIconTap(itemId, btn));
-    el.itemGrid.appendChild(btn);
+    el.inventoryBar.appendChild(btn);
   });
 }
 
@@ -1225,26 +1226,9 @@ function hideItemTooltip() {
   el.itemTooltip.classList.remove('show');
 }
 
-/* ===== Popups (item / move) + FABs — replace the old always-visible
-   inventory list + area tab bar. ===== */
-function openItemPopup() {
-  closeMovePopup();
-  renderItemGrid();
-  el.itemPopup.classList.add('show');
-  el.popupScrim.classList.add('show');
-  el.itemFabBtn.classList.add('active');
-}
-function closeItemPopup() {
-  el.itemPopup.classList.remove('show');
-  hideItemTooltip();
-  el.itemFabBtn.classList.remove('active');
-  if (!el.movePopup.classList.contains('show')) el.popupScrim.classList.remove('show');
-}
-function toggleItemPopup() {
-  if (el.itemPopup.classList.contains('show')) closeItemPopup();
-  else openItemPopup();
-}
-
+/* ===== Move popup + FAB — replaces the old always-visible area tab bar.
+   The inventory is no longer a popup (see the persistent .inventory-bar +
+   renderItemGrid above), so this only handles 이동 now. ===== */
 function renderMoveList() {
   el.moveList.innerHTML = '';
   roomSearchAreas.forEach(a => {
@@ -1263,7 +1247,6 @@ function renderMoveList() {
   });
 }
 function openMovePopup() {
-  closeItemPopup();
   renderMoveList();
   el.movePopup.classList.add('show');
   el.popupScrim.classList.add('show');
@@ -1272,21 +1255,47 @@ function openMovePopup() {
 function closeMovePopup() {
   el.movePopup.classList.remove('show');
   el.moveFabBtn.classList.remove('active');
-  if (!el.itemPopup.classList.contains('show')) el.popupScrim.classList.remove('show');
+  el.popupScrim.classList.remove('show');
 }
 function toggleMovePopup() {
   if (el.movePopup.classList.contains('show')) closeMovePopup();
   else openMovePopup();
 }
 
-el.itemFabBtn.addEventListener('click', () => { if (!state.completed) toggleItemPopup(); });
 el.moveFabBtn.addEventListener('click', () => { if (!state.completed) toggleMovePopup(); });
-el.popupScrim.addEventListener('click', () => { closeItemPopup(); closeMovePopup(); });
+el.popupScrim.addEventListener('click', () => { closeMovePopup(); });
+
+/* ===== Inventory bar drag-to-scroll — touch already gets native panning
+   from overflow-x:auto + touch-action:pan-x above; this just adds the same
+   for mouse (desktop testing has no trackpad-swipe equivalent otherwise).
+   Suppresses the click that would otherwise fire on the slot under the
+   cursor once a drag has actually moved past a small threshold, so a
+   plain click still selects/combines normally. ===== */
+let invDrag = null;
+let invSuppressClick = false;
+el.inventoryBar.addEventListener('pointerdown', (e) => {
+  if (e.pointerType !== 'mouse') return;
+  invDrag = { startX: e.clientX, startScroll: el.inventoryBar.scrollLeft, moved: false };
+});
+el.inventoryBar.addEventListener('pointermove', (e) => {
+  if (!invDrag) return;
+  const dx = e.clientX - invDrag.startX;
+  if (Math.abs(dx) > 4) invDrag.moved = true;
+  el.inventoryBar.scrollLeft = invDrag.startScroll - dx;
+});
+window.addEventListener('pointerup', () => {
+  if (invDrag && invDrag.moved) invSuppressClick = true;
+  invDrag = null;
+});
+el.inventoryBar.addEventListener('click', (e) => {
+  if (invSuppressClick) { e.stopPropagation(); invSuppressClick = false; }
+}, true);
 
 function updateLockState() {
   el.roomView.classList.toggle('locked', state.completed);
   el.fabRow.classList.toggle('hidden', state.completed);
-  if (state.completed) { closeItemPopup(); closeMovePopup(); }
+  el.inventoryBar.classList.toggle('hidden', state.completed);
+  if (state.completed) { hideItemTooltip(); closeMovePopup(); }
 }
 
 /* ===== Dev debug sheet ===== */
