@@ -467,10 +467,39 @@ const week0Scene002_3Lines = [
   { id: 'line-017', speaker: '지수', text: '이니셜 같은데.\n누구 거지 이거.', characterId: 'jisoo', expression: 'suspicious' },
   { id: 'line-018', speaker: '영우', text: '전에 있던 사람 물건 아닐까?', characterId: 'youngwoo', expression: 'neutral' },
   { id: 'line-019', speaker: '지수', text: '숙소 열쇠는 아니죠?', characterId: 'jisoo', expression: 'suspicious' },
-  { id: 'line-020', speaker: '영우', text: '웅.\n여긴 카드키자나.', characterId: 'youngwoo', expression: 'neutral' },
+  {
+    id: 'line-020', speaker: '영우', text: '웅.\n여긴 카드키자나.', characterId: 'youngwoo', expression: 'neutral',
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-accommodation-keycard', code: 'E-000', title: '숙소 카드키',
+        description: '두 사람이 묵고 있는 숙소의 정식 카드키. 낡은 열쇠와는 다른 물건이다.',
+        discoveredLocationText: '숙소 객실',
+      },
+    }],
+  },
   { id: 'line-021', speaker: '지수', text: '...', characterId: 'jisoo', pauseBeforeMs: 300, expression: 'blank' },
   { id: 'line-022', speaker: '영우', text: '뭐지?', characterId: 'youngwoo', expression: 'curious' },
   { id: 'line-023', speaker: '지수', text: '몰라.', characterId: 'jisoo', expression: 'blank' },
+  {
+    id: 'line-023-choice', type: 'choice', speaker: '', text: '지수는 열쇠를 만지작거리며 생각했다.', characterId: 'jisoo', expression: 'suspicious',
+    choices: [
+      {
+        id: 'hunch-danger', label: '“왠지 불길한 느낌이 드는데...”',
+        effects: [{
+          type: 'addQuestion',
+          question: { id: 'question-key-hunch', title: '이 열쇠, 위험한 물건일까?', description: '지수는 열쇠에서 왠지 불길한 기운을 느꼈다.' },
+        }],
+      },
+      {
+        id: 'hunch-curious', label: '“그냥 순수하게 궁금한데?”',
+        effects: [{
+          type: 'addQuestion',
+          question: { id: 'question-key-hunch', title: '이 열쇠는 대체 누구 것일까?', description: '지수는 순수한 호기심을 느꼈다.' },
+        }],
+      },
+    ],
+  },
   { id: 'line-024', speaker: '지수', text: '일단 가지고 있어봐요.', characterId: 'jisoo', expression: 'neutral' },
   { id: 'line-025', speaker: '영우', text: '내가?', characterId: 'youngwoo', expression: 'shocked' },
   { id: 'line-026', speaker: '지수', text: '네.', characterId: 'jisoo', expression: 'smirk' },
@@ -494,8 +523,13 @@ const week0SceneFrontdeskLines = [
   { id: 'line-001', speaker: '', text: '숙소 로비.\n밤 10시 50분.', characterId: null },
   { id: 'line-002', speaker: '지수', text: '저기, 잠깐 여쭤봐도 될까요?', characterId: 'jisoo', expression: 'neutral' },
   { id: 'line-003', speaker: '프런트 직원', text: '네, 무슨 일이세요?', characterId: null },
-  { id: 'line-004', speaker: '지수', text: '방에서 이 열쇠를 발견했는데요.\n숙소 물건인가 해서요.', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-005', speaker: '', text: '지수가 열쇠를 보여준다.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-004', speaker: '지수', text: '방에서 뭘 좀 발견했는데요.\n뭔가 짚이는 게 있으실까 해서요.', characterId: 'jisoo', expression: 'curious' },
+  {
+    id: 'line-005', type: 'evidence', speaker: '', text: '직원에게 무엇을 보여줄지 골라보세요.', characterId: 'jisoo', expression: 'curious',
+    evidenceIds: ['evidence-unknown-key'],
+    correctGoto: 'line-006',
+    wrongText: '지수: “어, 이건 아니고...” 직원이 고개를 갸웃한다.',
+  },
   { id: 'line-006', speaker: '프런트 직원', text: '음...\n저희 쪽 물건은 아닌 것 같은데요.', characterId: null },
   { id: 'line-007', speaker: '프런트 직원', text: '분실물 등록된 것도 없고요.', characterId: null },
   { id: 'line-008', speaker: '영우', text: '그럼 이전 투숙객 거일까요?', characterId: 'youngwoo', expression: 'curious' },
