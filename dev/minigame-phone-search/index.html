@@ -39,9 +39,9 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .vn-btn{pointer-events:auto;font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:#fff;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:9px 14px;cursor:pointer;text-decoration:none;display:inline-block}
 
 /* ===== Room view — fills the entire frame edge-to-edge (photo-stage/
-   grid-scroll are each full-bleed too); the topbar, status card, and FABs
-   all float on top of it as separate absolutely-positioned overlays
-   instead of squeezing it into a leftover flex slot. ===== */
+   grid-scroll are each full-bleed too); the topbar and FABs float on top
+   of it as separate absolutely-positioned overlays instead of squeezing
+   it into a leftover flex slot. ===== */
 .room-view{position:absolute;inset:0;transition:opacity .3s ease}
 .room-view.locked{pointer-events:none;opacity:.5}
 
@@ -58,29 +58,13 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 
 /* Grid mode — fallback for areas with no photo/hotspots marked yet in
    /dev/upload, so the puzzle stays fully playable before real photos exist.
-   Padded top/bottom to clear the floating topbar/status-card/FAB row since
-   it's a static scrollable list, unlike the pannable photo stage. */
+   Padded top/bottom to clear the floating topbar/FAB row since it's a
+   static scrollable list, unlike the pannable photo stage. */
 .grid-scroll{position:absolute;inset:0;overflow-y:auto;padding:calc(104px + env(safe-area-inset-top,0)) 16px calc(140px + env(safe-area-inset-bottom,0))}
 .grid-scroll.hidden{display:none}
 .hotspot-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .hotspot-btn{min-height:52px;background:var(--surface-1);border:1px solid var(--divider);border-radius:14px;padding:12px 14px;color:var(--text-primary);font-family:var(--sans);font-size:14px;font-weight:600;text-align:left;cursor:pointer;transition:background .15s,transform .15s}
 .hotspot-btn:active{transform:scale(.97);background:var(--surface-2)}
-
-/* ===== Status card — area name + mission only (persistent context, not a
-   message). Sits low now that the FAB row moved up to the topbar area, so
-   the photo/grid behind it can be full-bleed. ===== */
-.status-card{position:relative;background:rgba(5,7,10,.86);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.1);border-radius:18px;box-shadow:0 8px 28px rgba(0,0,0,.35);padding:14px 16px;transition:opacity .3s ease}
-.area-heading{font-size:13px;font-weight:700;color:var(--text-secondary);margin-bottom:4px}
-.mission-line{font-size:13.5px;font-weight:700;color:var(--cyan);letter-spacing:.01em}
-
-/* ===== Flavor box — the per-tap result text. Only exists on screen while
-   there's something to say: appears on a hotspot tap, auto-closes once
-   it's been read, instead of sitting permanently docked. ===== */
-.flavor-box{position:relative;background:rgba(255,255,255,.03);border:1px dashed var(--divider);border-radius:12px;padding:10px 12px;font-family:var(--mono);font-size:12.5px;line-height:1.6;color:var(--cyan);white-space:pre-wrap;word-break:keep-all;max-height:18vh;overflow-y:auto;opacity:0;transform:translateY(6px);pointer-events:none;transition:opacity .3s ease,transform .3s ease}
-.flavor-box.show{opacity:1;transform:translateY(0)}
-
-.bottom-stack{position:absolute;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0));z-index:4;display:flex;flex-direction:column;gap:10px;transition:opacity .3s ease}
-.bottom-stack.locked{pointer-events:none;opacity:.5}
 
 .debug-hotspot-box{position:absolute;border:1px dashed var(--cyan);background:rgba(89,184,200,.12);color:var(--cyan);font-family:var(--mono);font-size:9px;line-height:1.3;padding:1px 3px;pointer-events:none;overflow:hidden;white-space:nowrap}
 
@@ -172,14 +156,6 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
     <div class="grid-scroll" id="gridScroll">
       <div class="hotspot-grid" id="hotspotGrid"></div>
     </div>
-  </div>
-
-  <div class="bottom-stack" id="bottomStack">
-    <div class="status-card" id="statusCard">
-      <div class="area-heading" id="areaHeading"></div>
-      <div class="mission-line" id="missionLine">지수의 핸드폰을 찾아라</div>
-    </div>
-    <div class="flavor-box" id="flavorBox"></div>
   </div>
 
   <div class="popup-scrim" id="popupScrim"></div>
@@ -529,32 +505,22 @@ setInterval(() => {
   }
 }, 5000);
 
-// Flavor box behaves like a transient toast, not a permanently docked
-// panel — it appears on a hotspot tap and auto-closes once read, per the
-// brief's "항상 떠있는게 아니라" (not always floating).
-let flavorBoxTimer = null;
+// One-off flavor/result line (no speaker) — shown in the same tap-gated
+// dialogue box as real character lines, via queueDialogue below.
 function setMessage(text) {
   state.lastMessage = text;
   saveState();
-  el.flavorBox.textContent = text;
-  clearTimeout(flavorBoxTimer);
-  if (!text) { el.flavorBox.classList.remove('show'); return; }
-  el.flavorBox.classList.add('show');
-  flavorBoxTimer = setTimeout(() => el.flavorBox.classList.remove('show'), 3200);
+  queueDialogue([{ speaker: '', text }]);
 }
 
 const el = {
   frame: document.getElementById('frame'),
   devBtn: document.getElementById('devBtn'),
   roomView: document.getElementById('roomView'),
-  statusCard: document.getElementById('statusCard'),
-  areaHeading: document.getElementById('areaHeading'),
   photoStage: document.getElementById('photoStage'),
   photoCanvas: document.getElementById('photoCanvas'),
   gridScroll: document.getElementById('gridScroll'),
   hotspotGrid: document.getElementById('hotspotGrid'),
-  bottomStack: document.getElementById('bottomStack'),
-  flavorBox: document.getElementById('flavorBox'),
   popupScrim: document.getElementById('popupScrim'),
   itemPopup: document.getElementById('itemPopup'),
   itemGrid: document.getElementById('itemGrid'),
@@ -579,11 +545,15 @@ const el = {
   sheetCloseBtn: document.getElementById('sheetCloseBtn'),
 };
 
-/* ===== Dialogue popup (tap-through story beats only — item pickups/flavor
-   text use the instant result strip instead, per the brief's "미니게임 중
-   긴 대화 컷신 남발 금지"). ===== */
+/* ===== Dialogue popup — every player-facing line goes through here now,
+   both real character dialogue (queueDialogue) and one-off flavor/result
+   text (setMessage, below): a tap-blocking box with the same typewriter +
+   tap-to-reveal/tap-to-advance behavior either way. Flavor lines just carry
+   no speaker, so msg-name's :empty rule collapses that row automatically. */
 let dialogueActive = false;
+let activeMsgTapHandler = null;
 function queueDialogue(lines, onComplete) {
+  if (activeMsgTapHandler) el.msgLayer.removeEventListener('click', activeMsgTapHandler);
   dialogueActive = true;
   el.msgLayer.classList.add('show');
   const player = createVNPlayer({
@@ -593,12 +563,13 @@ function queueDialogue(lines, onComplete) {
     onComplete: () => {
       el.msgLayer.classList.remove('show');
       dialogueActive = false;
-      el.msgLayer.removeEventListener('click', tapHandler);
+      el.msgLayer.removeEventListener('click', activeMsgTapHandler);
+      activeMsgTapHandler = null;
       if (onComplete) onComplete();
     },
   });
-  const tapHandler = () => player.tap();
-  el.msgLayer.addEventListener('click', tapHandler);
+  activeMsgTapHandler = () => player.tap();
+  el.msgLayer.addEventListener('click', activeMsgTapHandler);
   player.load(lines.map(l => ({ speaker: l.speaker, text: l.text })));
 }
 
@@ -1102,7 +1073,6 @@ async function switchArea(area) {
 }
 
 function renderRoomView(area) {
-  el.areaHeading.textContent = area.label;
   el.photoStage.classList.toggle('hidden', currentMode !== 'photo');
   el.gridScroll.classList.toggle('hidden', currentMode !== 'grid');
   if (currentMode === 'grid') {
@@ -1278,7 +1248,6 @@ el.popupScrim.addEventListener('click', () => { closeItemPopup(); closeMovePopup
 
 function updateLockState() {
   el.roomView.classList.toggle('locked', state.completed);
-  el.bottomStack.classList.toggle('locked', state.completed);
   el.fabRow.classList.toggle('hidden', state.completed);
   if (state.completed) { closeItemPopup(); closeMovePopup(); }
 }
@@ -1336,7 +1305,6 @@ updateLockState();
 (async function boot() {
   await preloadAllAreas();
   await loadArea(roomSearchAreas.find(a => a.id === state.currentAreaId) || roomSearchAreas[0]);
-  setMessage(state.lastMessage);
 })();
 // A refresh that landed between "key found" and "phone unlocked" must not
 // soft-lock the phone forever — re-arm the forced event on load.
