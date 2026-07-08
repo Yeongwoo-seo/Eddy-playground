@@ -284,6 +284,7 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
         <div class="picker-pills" id="itemAreaPickerPills"></div>
         <div class="field-label hidden" id="itemHotspotFieldLabel">발견 위치 — 항목</div>
         <div class="picker-pills" id="itemHotspotPickerPills"></div>
+        <div class="hint" id="itemHotspotHint" style="margin-top:8px"></div>
       </div>
       <div class="field-label">발견 메시지</div>
       <input type="text" class="text-input" id="itemMessageInput" placeholder="예) [ 행주를 발견했다 ]">
@@ -420,6 +421,7 @@ const el = {
   itemAreaPickerPills: document.getElementById('itemAreaPickerPills'),
   itemHotspotFieldLabel: document.getElementById('itemHotspotFieldLabel'),
   itemHotspotPickerPills: document.getElementById('itemHotspotPickerPills'),
+  itemHotspotHint: document.getElementById('itemHotspotHint'),
   itemMessageInput: document.getElementById('itemMessageInput'),
   itemSaveBtn: document.getElementById('itemSaveBtn'),
   itemDeleteBtn: document.getElementById('itemDeleteBtn'),
@@ -1526,55 +1528,76 @@ async function openItemEditor(itemId) {
 
   // 씬(area) then 항목(hotspot within it) — two-step so the hotspot list
   // stays short instead of one flat dropdown of 50+ entries. A core item's
-  // location is fixed in code, so this row doesn't apply to it at all.
-  pendingItemHotspotId = saved.hotspotId || null;
+  // location is fixed in code (ROOM_SEARCH_CORE_ITEM_HOTSPOTS, from
+  // dialogueData.js), so its row shows read-only instead of being hidden —
+  // seeing where it already lives is still useful even though it can't be
+  // reassigned from here.
+  const fixedHotspotId = isCore ? (ROOM_SEARCH_CORE_ITEM_HOTSPOTS[itemId] || null) : null;
+  pendingItemHotspotId = isCore ? fixedHotspotId : (saved.hotspotId || null);
   const owningArea = pendingItemHotspotId
     ? roomSearchAreas.find(a => a.hotspots.some(h => h.id === pendingItemHotspotId))
     : null;
   currentItemAreaId = owningArea ? owningArea.id : null;
-  const canAssignLocation = !isCore && evidenceId() === ROOM_SEARCH_MINIGAME_ID;
-  el.itemHotspotRow.classList.toggle('hidden', !canAssignLocation);
-  if (canAssignLocation) { renderItemAreaPicker(); renderItemHotspotPicker(); }
+  const showLocationRow = evidenceId() === ROOM_SEARCH_MINIGAME_ID;
+  el.itemHotspotRow.classList.toggle('hidden', !showLocationRow);
+  if (showLocationRow) {
+    if (isCore) {
+      el.itemHotspotHint.textContent = fixedHotspotId
+        ? '핵심 진행 아이템은 발견 위치가 코드에 고정되어 있어요 (참고용, 수정 불가).'
+        : '조합법으로 만들어지는 아이템이라 발견 위치가 없어요.';
+    } else {
+      el.itemHotspotHint.textContent = '';
+    }
+    renderItemAreaPicker(isCore);
+    renderItemHotspotPicker(isCore);
+  }
   el.itemDeleteBtn.classList.toggle('hidden', isCore);
 }
 
-function renderItemAreaPicker() {
+function renderItemAreaPicker(readOnly) {
   const areas = [{ id: null, label: '위치 없음' }].concat(roomSearchAreas.map(a => ({ id: a.id, label: a.label })));
-  el.itemAreaPickerPills.innerHTML = areas.map(a =>
-    `<button class="pill${a.id === currentItemAreaId ? ' active' : ''}" data-key="${a.id || ''}">${escapeHtml(a.label)}</button>`
-  ).join('');
+  el.itemAreaPickerPills.innerHTML = areas.map(a => {
+    const active = a.id === currentItemAreaId;
+    const disabledAttrs = readOnly ? ' disabled style="opacity:.55;cursor:default"' : '';
+    return `<button class="pill${active ? ' active' : ''}"${disabledAttrs} data-key="${a.id || ''}">${escapeHtml(a.label)}</button>`;
+  }).join('');
+  if (readOnly) return;
   el.itemAreaPickerPills.querySelectorAll('.pill').forEach(btn => {
     btn.addEventListener('click', () => {
       currentItemAreaId = btn.dataset.key || null;
       if (!currentItemAreaId) pendingItemHotspotId = null;
-      renderItemAreaPicker();
-      renderItemHotspotPicker();
+      renderItemAreaPicker(false);
+      renderItemHotspotPicker(false);
     });
   });
 }
 
 // 이미 다른 아이템(또는 core-route 핸들러)이 쓰고 있는 항목은 골라도 실제로는
 // 작동하지 않으므로 — reserved 핫스팟은 아예 목록에서 빼고, 다른 아이템이
-// 이미 차지한 핫스팟은 라벨에 표시만 해서 실수로 덮어쓰지 않게 한다.
-function renderItemHotspotPicker() {
+// 이미 차지한 핫스팟은 라벨에 표시만 해서 실수로 덮어쓰지 않게 한다. readOnly
+// (core item)일 땐 이미 고정된 핫스팟 하나만 비활성 상태로 보여준다.
+function renderItemHotspotPicker(readOnly) {
   const area = roomSearchAreas.find(a => a.id === currentItemAreaId);
   el.itemHotspotFieldLabel.classList.toggle('hidden', !area);
   if (!area) { el.itemHotspotPickerPills.innerHTML = ''; return; }
   const reserved = new Set(ROOM_SEARCH_RESERVED_HOTSPOT_IDS);
   const owners = itemsHotspotOwnerMap();
-  const hotspots = area.hotspots.filter(h => !reserved.has(h.id));
+  const hotspots = readOnly ? area.hotspots.filter(h => h.id === pendingItemHotspotId) : area.hotspots.filter(h => !reserved.has(h.id));
   el.itemHotspotPickerPills.innerHTML = hotspots.length
     ? hotspots.map(h => {
         const ownerId = owners[h.id];
-        const taken = ownerId && ownerId !== currentEvidenceItemId;
+        const taken = !readOnly && ownerId && ownerId !== currentEvidenceItemId;
         const label = h.label + (taken ? ` (사용 중: ${(evidenceItemsCache[ownerId] || {}).name || ownerId})` : '');
-        return `<button class="pill${h.id === pendingItemHotspotId ? ' active' : ''}" data-key="${h.id}">${escapeHtml(label)}</button>`;
+        const active = readOnly || h.id === pendingItemHotspotId;
+        const disabledAttrs = readOnly ? ' disabled style="opacity:.55;cursor:default"' : '';
+        return `<button class="pill${active ? ' active' : ''}"${disabledAttrs} data-key="${h.id}">${escapeHtml(label)}</button>`;
       }).join('')
     : '<span class="empty-note">이 씬에는 지정 가능한 항목이 없습니다.</span>';
+  if (readOnly) return;
   el.itemHotspotPickerPills.querySelectorAll('.pill').forEach(btn => {
     btn.addEventListener('click', () => {
       pendingItemHotspotId = btn.dataset.key;
-      renderItemHotspotPicker();
+      renderItemHotspotPicker(false);
     });
   });
 }
@@ -1627,9 +1650,12 @@ el.itemSaveBtn.addEventListener('click', async () => {
   if (!name) { DevDiag.show('아이템 이름을 입력하세요.'); return; }
   const icon = el.itemIconInput.value.trim() || '❔';
   const imageAssetId = (evidenceItemsCache[currentEvidenceItemId] || {}).imageAssetId || null;
-  const hotspotId = el.itemHotspotRow.classList.contains('hidden')
-    ? (evidenceItemsCache[currentEvidenceItemId] || {}).hotspotId || null
-    : pendingItemHotspotId;
+  // A core item's location is read-only (fixed by ROOM_SEARCH_CORE_ITEM_HOTSPOTS
+  // in code) — don't write pendingItemHotspotId for it, that'd just persist a
+  // redundant/misleading value that plays no actual role in-game.
+  const catalogEntry = evidenceItemCatalog().find(it => it.id === currentEvidenceItemId);
+  const isCore = !catalogEntry || !catalogEntry.custom;
+  const hotspotId = isCore ? null : pendingItemHotspotId;
   const message = el.itemMessageInput.value.trim();
   try {
     const def = { name, icon, imageAssetId, hotspotId, message };
