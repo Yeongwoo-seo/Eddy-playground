@@ -282,16 +282,6 @@ const ITEM_DEFS = {
   'long-hook': { icon: '🪝', name: '긴 갈고리', selectable: true, inspect: '옷걸이와 지지대를 엮어 만든 갈고리다.' },
   'unknown-key': { icon: '🗝️', name: '낡은 열쇠', selectable: false, inspect: '어디에 쓰는 열쇠인지 모르겠다.' },
   'jisu-phone': { icon: '📱', name: '핸드폰', selectable: false },
-  // Section 18 decoys — one-time flavor collectibles, never used by any
-  // recipe or hotspot gating. Purely for "방 탐색 감각 강화".
-  'dish-towel': { icon: '🧻', name: '행주', selectable: false, inspect: '평범한 행주다.' },
-  'plastic-bag': { icon: '🛍️', name: '비닐봉지', selectable: false, inspect: '접힌 비닐봉지다.' },
-  'rubber-band': { icon: '➰', name: '고무줄', selectable: false, inspect: '작은 고무줄이다.' },
-  'small-coin': { icon: '🪙', name: '동전', selectable: false, inspect: '동전 하나다.' },
-  'dry-twig': { icon: '🌿', name: '마른 나뭇가지', selectable: false, inspect: '마른 나뭇가지다.' },
-  'bottle-cap': { icon: '🧢', name: '병뚜껑', selectable: false, inspect: '녹슨 병뚜껑이다.' },
-  receipt: { icon: '🧾', name: '영수증', selectable: false, inspect: '오래돼서 글씨가 잘 안 보인다.' },
-  paperclip: { icon: '📎', name: '클립', selectable: false, inspect: '작은 클립이다.' },
 };
 
 // Section 9/10 — 2-item combination recipes. Order-independent.
@@ -317,26 +307,12 @@ function findRecipe(idA, idB) {
     (r.inputItemIds[0] === idB && r.inputItemIds[1] === idA)
   );
 }
-// One-time decoy pickups (section 18) keyed by hotspot ID — no gating, no
-// recipe use, just an inventory flavor item the first time each is tapped.
-const DECOY_ITEMS = {
-  'kitchen-oven-handle': { itemId: 'dish-towel', message: '[ 행주를 발견했다 ]' },
-  'kitchen-left-lower-cabinet': { itemId: 'plastic-bag', message: '[ 비닐봉지를 발견했다 ]' },
-  'bathroom-vanity-drawer': { itemId: 'rubber-band', message: '[ 서랍을 열었다 ]\n작은 고무줄을 발견했다.' },
-  'bathroom-tub-edge': { itemId: 'small-coin', message: '[ 작은 동전을 발견했다 ]' },
-  'exterior-left-bush': { itemId: 'dry-twig', message: '[ 마른 나뭇가지를 발견했다 ]' },
-  'exterior-grass': { itemId: 'bottle-cap', message: '[ 병뚜껑을 발견했다 ]' },
-  'bedroom-floorboards': { itemId: 'receipt', message: '[ 영수증을 발견했다 ]' },
-  'bedroom-mantel-shelf': { itemId: 'paperclip', message: '[ 작은 클립을 발견했다 ]' },
-};
-
 // Hotspot ID -> itemId, for every hotspot whose handler can hand the player
-// an item. DECOY_ITEMS is table-driven so its mapping is read straight off
-// it; the core-route handlers below aren't, so those are kept in sync by
-// hand. Used to narrow the DEV sheet's SHOW HOTSPOTS overlay down to just
-// the spots worth checking, and to label each with the item it holds.
+// an item. The core-route handlers below aren't table-driven, so this is
+// kept in sync by hand. Used to narrow the DEV sheet's SHOW HOTSPOTS overlay
+// down to just the spots worth checking, and to label each with the item it
+// holds.
 const ITEM_HOTSPOT_ITEM_IDS = new Map([
-  ...Object.entries(DECOY_ITEMS).map(([id, d]) => [id, d.itemId]),
   ['kitchen-right-lower-drawer', 'aa-batteries'],
   ['kitchen-fridge-gap', 'jisu-phone'], // win condition
   ['bathroom-behind-door', 'metal-hanger'],
@@ -457,13 +433,28 @@ function withEulReul(name) {
   if (lastChar < 0xAC00 || lastChar > 0xD7A3) return name + '를';
   return name + ((lastChar - 0xAC00) % 28 === 0 ? '를' : '을');
 }
+// Custom items given a dev-uploaded image (see loadCustomItemsAndRecipes)
+// render that image instead of the emoji `icon` fallback.
+function setItemIconContent(iconEl, def) {
+  iconEl.innerHTML = '';
+  if (def.imageUrl) {
+    const img = document.createElement('img');
+    img.src = def.imageUrl;
+    img.alt = def.name;
+    img.style.cssText = 'width:70%;height:70%;object-fit:contain';
+    iconEl.appendChild(img);
+  } else {
+    iconEl.textContent = def.icon;
+  }
+}
+
 let acquireToastTimer = null;
 function showAcquireToast(itemId) {
   const def = ITEM_DEFS[itemId];
   if (!def) return;
   clearTimeout(acquireToastTimer);
   el.acquireToast.classList.remove('show');
-  el.acquireToastIcon.textContent = def.icon;
+  setItemIconContent(el.acquireToastIcon, def);
   el.acquireToastText.textContent = `${withEulReul(def.name)} 획득했습니다.`;
   void el.acquireToast.offsetWidth; // restart the slide-up transition if still showing
   el.acquireToast.classList.add('show');
@@ -633,8 +624,8 @@ function playSuccessBeep() {
 
 /* ===== Hotspot handlers =====
    Each area's core-route handlers below implement the graph in section 11
-   of the brief. Decoys (DECOY_ITEMS) and plain flavor (FLAVOR) are handled
-   generically by onHotspotTap and don't need their own function. */
+   of the brief. Plain flavor (FLAVOR) is handled generically by onHotspotTap
+   and doesn't need its own function. */
 
 // --- 주방 ---
 function handleKitchenBatteryDrawer() {
@@ -809,17 +800,19 @@ const HOTSPOT_HANDLERS = {
 
 function onHotspotTap(hotspotId) {
   if (dialogueActive || state.completed) return;
-  if (DECOY_ITEMS[hotspotId]) {
-    const decoy = DECOY_ITEMS[hotspotId];
-    if (hasItem(decoy.itemId)) { setMessage('이미 확인했다.'); return; }
-    addItem(decoy.itemId);
-    setMessage(decoy.message);
+  const handler = HOTSPOT_HANDLERS[hotspotId];
+  if (handler) { handler(); return; }
+  // Dev-added simple pickups (see loadCustomItemsAndRecipes) — one-time,
+  // no gating, same shape the old hardcoded DECOY_ITEMS table used to be.
+  const customItemId = CUSTOM_PICKUP_MESSAGES.has(hotspotId) ? ITEM_HOTSPOT_ITEM_IDS.get(hotspotId) : null;
+  if (customItemId) {
+    if (hasItem(customItemId)) { setMessage('이미 확인했다.'); return; }
+    addItem(customItemId);
+    setMessage(CUSTOM_PICKUP_MESSAGES.get(hotspotId));
     renderItemGrid();
     markProgress();
     return;
   }
-  const handler = HOTSPOT_HANDLERS[hotspotId];
-  if (handler) { handler(); return; }
   setMessage(FLAVOR[hotspotId] || '아무것도 없다.');
 }
 
@@ -1214,7 +1207,7 @@ function renderItemGrid() {
       continue;
     }
     btn.className = 'inventory-slot' + (state.selectedItemId === itemId ? ' selected' : '');
-    btn.textContent = def.icon;
+    setItemIconContent(btn, def);
     btn.addEventListener('click', () => onItemIconTap(itemId, btn));
     el.inventoryBar.appendChild(btn);
   }
@@ -1360,6 +1353,54 @@ document.getElementById('btnClearState').addEventListener('click', () => {
   location.reload();
 });
 
+// hotspotId -> pickup message, for custom (dev-added) simple item pickups
+// only — core items' pickup messages stay inline in their handler functions.
+const CUSTOM_PICKUP_MESSAGES = new Map();
+
+// Loads dev-configured items/recipes for this evidence collection (added via
+// /dev/upload's 아이템/조합법 tabs — see AssetDB.getItems/getRecipes) and
+// merges them into ITEM_DEFS/RECIPES/ITEM_HOTSPOT_ITEM_IDS above. Core
+// items/recipes stay hardcoded here (their gating logic isn't data-driven),
+// but a dev can still reskin a core item's icon/image from there, or add a
+// brand new hotspot pickup + recipe without touching this file at all —
+// same role the old hardcoded DECOY_ITEMS table used to fill, minus the
+// "never used by a recipe" restriction.
+async function loadCustomItemsAndRecipes() {
+  const [customItems, customRecipes] = await Promise.all([
+    AssetDB.getItems(ROOM_SEARCH_MINIGAME_ID),
+    AssetDB.getRecipes(ROOM_SEARCH_MINIGAME_ID),
+  ]);
+  const reservedHotspotIds = new Set(ROOM_SEARCH_RESERVED_HOTSPOT_IDS);
+  for (const [itemId, def] of Object.entries(customItems)) {
+    const imageUrl = def.imageAssetId ? (await AssetDB.getAsset(def.imageAssetId) || {}).dataUrl : null;
+    if (ITEM_DEFS[itemId]) {
+      // Core item — only its look is overridable from the dev tool; the
+      // gating logic that grants it stays hand-written below.
+      if (def.icon) ITEM_DEFS[itemId].icon = def.icon;
+      if (imageUrl) ITEM_DEFS[itemId].imageUrl = imageUrl;
+      continue;
+    }
+    ITEM_DEFS[itemId] = { icon: def.icon || '❔', name: def.name || itemId, selectable: false, inspect: def.message || def.name, imageUrl: imageUrl || undefined };
+    // A hotspot already claimed by a core-route handler always wins in
+    // onHotspotTap, so skip wiring the pickup here too (avoids a dead
+    // assignment that looks configured but silently never fires).
+    if (def.hotspotId && !reservedHotspotIds.has(def.hotspotId) && !HOTSPOT_HANDLERS[def.hotspotId]) {
+      ITEM_HOTSPOT_ITEM_IDS.set(def.hotspotId, itemId);
+      CUSTOM_PICKUP_MESSAGES.set(def.hotspotId, def.message || `[ ${def.name}를 발견했다 ]`);
+    }
+  }
+  customRecipes.forEach(r => {
+    if (!r.inputItemIds || r.inputItemIds.length !== 2 || !r.outputItemId) return;
+    RECIPES.push({
+      id: r.id,
+      inputItemIds: r.inputItemIds,
+      outputItemId: r.outputItemId,
+      consumeInputItems: true,
+      successMessage: r.message || '두 아이템을 조합했다.',
+    });
+  });
+}
+
 /* ===== Boot ===== */
 // dev/game/index.html never actually loads this scene id (it has no `lines`
 // — MINIGAME_ROUTES and the scene's own `route` field both bypass it), so
@@ -1368,6 +1409,8 @@ CaseFileState.recordSceneVisit('week1-scene-002-2');
 renderItemGrid();
 updateLockState();
 (async function boot() {
+  await loadCustomItemsAndRecipes();
+  renderItemGrid();
   await preloadAllAreas();
   await loadArea(roomSearchAreas.find(a => a.id === state.currentAreaId) || roomSearchAreas[0]);
 })();

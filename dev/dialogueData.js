@@ -481,6 +481,37 @@ const roomSearchAreas = [
 ];
 function roomSearchAreaSceneId(areaId) { return `${ROOM_SEARCH_MINIGAME_ID}-${areaId}`; }
 
+// Hotspot IDs already wired by hand to a core-route handler (or a core
+// item's hardcoded gating logic) in minigame-phone-search's HOTSPOT_HANDLERS/
+// ITEM_HOTSPOT_ITEM_IDS. /dev/upload's 아이템 tab reads this to keep a
+// dev from assigning a new custom item to a hotspot that's already spoken
+// for — that assignment would just silently never fire, since the core
+// handler always wins.
+const ROOM_SEARCH_RESERVED_HOTSPOT_IDS = [
+  'kitchen-right-lower-drawer', 'kitchen-fridge-gap',
+  'bathroom-behind-door',
+  'exterior-center-shrubs',
+  'bedroom-bedside-table', 'bedroom-right-vent',
+];
+
+// Flat id/name/icon catalog of the room-search minigame's core (code-gated)
+// items — mirrors minigame-phone-search's own ITEM_DEFS (same reasoning as
+// caseFileData.js's inventoryItemDefs above it) so /dev/upload's 아이템 tab
+// can list every item, core or custom, from one place without needing the
+// gating logic that actually lives in the minigame file. Each core item's
+// full definition (inspect text, selectable flag, hotspot wiring) still
+// lives only in minigame-phone-search/index.html.
+const ROOM_SEARCH_CORE_ITEMS = [
+  { id: 'dead-flashlight', name: '손전등', icon: '🔦' },
+  { id: 'aa-batteries', name: 'AA 건전지', icon: '🔋' },
+  { id: 'working-flashlight', name: '작동 손전등', icon: '🔦' },
+  { id: 'metal-hanger', name: '철제 옷걸이', icon: '🧷' },
+  { id: 'garden-stake', name: '정원용 지지대', icon: '🥢' },
+  { id: 'long-hook', name: '긴 갈고리', icon: '🪝' },
+  { id: 'unknown-key', name: '낡은 열쇠', icon: '🗝️' },
+  { id: 'jisu-phone', name: '핸드폰', icon: '📱' },
+];
+
 // Registry of testable Week 1 scenes — /dev/week1 lists these, each linking
 // to /dev/game/?scene=<id>. Add future scenes here as they're written.
 const week1Scenes = [
