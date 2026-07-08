@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>증거 수집 · OPERATION MK DEV</title>
+<title>증거 수집 환경설정 · OPERATION MK DEV</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <meta name="theme-color" content="#080A0C">
@@ -25,29 +25,23 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .title{font-size:26px;font-weight:700;letter-spacing:-.2px;margin-bottom:10px}
 .sub{font-size:14px;color:var(--text-secondary);margin-bottom:32px;line-height:1.6}
 .scene-list{display:flex;flex-direction:column;gap:14px}
-.scene-row{display:flex;align-items:stretch;gap:10px}
-.scene-btn{flex:1;min-width:0;display:flex;align-items:center;gap:14px;background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:18px 20px;text-decoration:none;color:inherit;transition:transform .15s,background .15s}
+.scene-btn{display:flex;align-items:center;gap:14px;background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:18px 20px;text-decoration:none;color:inherit;transition:transform .15s,background .15s}
 .scene-btn:active{transform:scale(.98);background:var(--surface-2)}
 .scene-icon{font-size:20px;flex-shrink:0}
 .scene-txt{flex:1;min-width:0}
 .scene-name{font-size:16px;font-weight:700}
 .scene-meta{font-size:12.5px;color:var(--text-secondary);margin-top:3px;line-height:1.5;font-family:var(--mono)}
 .scene-arrow{color:var(--text-muted);font-size:18px;flex-shrink:0}
-/* Setup(scene-btn) still opens the 배경/핫스팟 에디터 — this is the shortcut
-   past it, straight into the live game, for when a dev just wants to play
-   through what's already configured. */
-.play-btn{flex-shrink:0;width:56px;display:flex;align-items:center;justify-content:center;background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;color:var(--cyan);font-size:19px;text-decoration:none;transition:transform .15s,background .15s}
-.play-btn:active{transform:scale(.94);background:var(--surface-2)}
 .empty{font-size:13px;color:var(--text-muted);padding:20px 0}
 </style>
 </head>
 <body>
 <div class="frame">
-  <a class="back" href="/dev/">‹ DEV</a>
-  <div class="tag">Operation MK</div>
-  <div class="title">증거 수집</div>
-  <div class="sub">스토리 흐름과 상관없이 증거 수집 파트만 따로 열어서 테스트할 수 있습니다.</div>
-  <div class="scene-list" id="evidenceList"></div>
+  <a class="back" id="backBtn" href="/dev/evidence/">‹ 증거 수집</a>
+  <div class="tag">Operation MK · 증거 수집</div>
+  <div class="title" id="pageTitle">환경설정</div>
+  <div class="sub" id="pageSub">배경, 아이템 위치, 조합법을 한 곳에서 확인/설정합니다.</div>
+  <div class="scene-list" id="menuList"></div>
 </div>
 <script>
 if ('serviceWorker' in navigator) {
@@ -56,22 +50,32 @@ if ('serviceWorker' in navigator) {
 </script>
 <script src="/dev/dialogueData.js"></script>
 <script>
-const list = document.getElementById('evidenceList');
-if (!evidenceCollections.length) {
-  list.innerHTML = '<div class="empty">등록된 증거 수집이 없습니다.</div>';
+const evidenceId = new URLSearchParams(location.search).get('evidence');
+const entry = evidenceId ? evidenceCollections.find(m => m.id === evidenceId) : null;
+const list = document.getElementById('menuList');
+
+if (!entry) {
+  document.getElementById('pageSub').textContent = '등록된 증거 수집 항목을 찾을 수 없습니다.';
+  list.innerHTML = '<div class="empty">/dev/evidence 목록에서 다시 들어와주세요.</div>';
 } else {
-  list.innerHTML = evidenceCollections.map(m => `
-    <div class="scene-row">
-      <a class="scene-btn" href="/dev/evidence/settings/?evidence=${encodeURIComponent(m.id)}">
-        <div class="scene-icon">🔍</div>
-        <div class="scene-txt">
-          <div class="scene-name">${m.name}</div>
-          <div class="scene-meta">${m.location}</div>
-        </div>
-        <div class="scene-arrow">›</div>
-      </a>
-      <a class="play-btn" href="${m.route}" aria-label="바로 플레이">▶</a>
-    </div>
+  document.getElementById('pageTitle').textContent = entry.name;
+  document.getElementById('pageSub').textContent = `${entry.location} · 이 항목의 배경/아이템 위치/조합법을 확인합니다.`;
+
+  const qs = `?evidence=${encodeURIComponent(entry.id)}`;
+  const menu = [
+    { icon: '🖼️', name: '배경DB', meta: '장소별 배경 사진을 업로드/교체합니다', href: entry.setupUrl },
+    { icon: '📍', name: '아이템 위치', meta: '어느 핫스팟에 어떤 아이템이 있는지 확인합니다', href: `/dev/evidence/settings/items/${qs}` },
+    { icon: '🧩', name: '조합법', meta: '아이템 조합 레시피를 확인합니다', href: `/dev/evidence/settings/recipes/${qs}` },
+  ];
+  list.innerHTML = menu.map(m => `
+    <a class="scene-btn" href="${m.href}">
+      <div class="scene-icon">${m.icon}</div>
+      <div class="scene-txt">
+        <div class="scene-name">${m.name}</div>
+        <div class="scene-meta">${m.meta}</div>
+      </div>
+      <div class="scene-arrow">›</div>
+    </a>
   `).join('');
 }
 </script>

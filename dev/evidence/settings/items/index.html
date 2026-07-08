@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>아이템 위치 · OPERATION MK DEV</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<meta name="theme-color" content="#080A0C">
+<link rel="manifest" href="/dev/manifest.json">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#080A0C;--surface-1:#101419;--surface-2:#171C22;
+  --text-primary:#EDF1F4;--text-secondary:#929BA5;--text-muted:#5F6872;
+  --cyan:#59B8C8;--amber:#D6A84B;--divider:rgba(255,255,255,0.08);
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sans:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
+}
+html,body{height:100%}
+body{background:#050607;color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center;min-height:100dvh}
+.frame{width:100%;max-width:430px;min-height:100dvh;min-height:100vh;padding:calc(48px + env(safe-area-inset-top,0)) 20px calc(32px + env(safe-area-inset-bottom,0));display:flex;flex-direction:column}
+.back{font-family:var(--mono);font-size:12px;color:var(--text-muted);text-decoration:none;margin-bottom:18px;display:inline-flex;align-items:center;gap:4px;width:fit-content}
+.tag{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px}
+.title{font-size:24px;font-weight:700;letter-spacing:-.2px;margin-bottom:10px}
+.sub{font-size:14px;color:var(--text-secondary);margin-bottom:28px;line-height:1.6}
+.area-group{margin-bottom:24px}
+.area-heading{font-size:13px;font-weight:700;color:var(--text-secondary);letter-spacing:.02em;margin-bottom:10px;padding-left:2px}
+.item-row{display:flex;align-items:center;gap:12px;background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:12px 14px;margin-bottom:8px}
+.item-icon{font-size:20px;flex-shrink:0;width:28px;text-align:center}
+.item-txt{flex:1;min-width:0}
+.item-name{font-size:14.5px;font-weight:700}
+.item-hotspot{font-size:12px;color:var(--text-muted);margin-top:2px;font-family:var(--mono)}
+.empty{font-size:13px;color:var(--text-muted);padding:20px 0;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="frame">
+  <a class="back" id="backBtn" href="/dev/evidence/settings/">‹ 환경설정</a>
+  <div class="tag">Operation MK · 증거 수집</div>
+  <div class="title" id="pageTitle">아이템 위치</div>
+  <div class="sub" id="pageSub">각 장소의 어느 핫스팟에서 어떤 아이템을 얻는지 보여줍니다 (읽기 전용 — 위치 좌표 자체는 배경DB의 사진 편집 화면에서 지정합니다).</div>
+  <div id="content"></div>
+</div>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
+}
+</script>
+<script src="/dev/dialogueData.js"></script>
+<script src="/dev/evidenceItemData.js"></script>
+<script>
+const evidenceId = new URLSearchParams(location.search).get('evidence');
+const entry = evidenceId ? evidenceCollections.find(m => m.id === evidenceId) : null;
+if (entry) document.getElementById('backBtn').href = `/dev/evidence/settings/?evidence=${encodeURIComponent(entry.id)}`;
+
+const content = document.getElementById('content');
+
+// roomSearchAreas + ITEM_HOTSPOT_ITEM_IDS are specific to the 핸드폰을 찾아라
+// room-search shape (see dialogueData.js / evidenceItemData.js) — this page
+// is the 아이템위치 template for evidence-collection entries built the same
+// way. A future entry with a different data shape needs its own read here.
+const supportsRoomSearch = entry && entry.id === ROOM_SEARCH_MINIGAME_ID;
+
+if (!entry) {
+  document.getElementById('pageSub').textContent = '등록된 증거 수집 항목을 찾을 수 없습니다.';
+  content.innerHTML = '<div class="empty">/dev/evidence 목록에서 다시 들어와주세요.</div>';
+} else if (!supportsRoomSearch) {
+  content.innerHTML = '<div class="empty">이 항목은 아직 아이템 위치 보기를 지원하지 않습니다.</div>';
+} else {
+  content.innerHTML = roomSearchAreas.map(area => {
+    const rows = area.hotspots
+      .filter(h => ITEM_HOTSPOT_ITEM_IDS.has(h.id))
+      .map(h => {
+        const itemId = ITEM_HOTSPOT_ITEM_IDS.get(h.id);
+        const def = ITEM_DEFS[itemId] || { icon: '❔', name: itemId };
+        return `
+          <div class="item-row">
+            <div class="item-icon">${def.icon}</div>
+            <div class="item-txt">
+              <div class="item-name">${def.name}</div>
+              <div class="item-hotspot">${h.label} · ${h.id}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    if (!rows) return '';
+    return `
+      <div class="area-group">
+        <div class="area-heading">${area.label}</div>
+        ${rows}
+      </div>
+    `;
+  }).join('') || '<div class="empty">등록된 아이템 위치가 없습니다.</div>';
+}
+</script>
+</body>
+</html>

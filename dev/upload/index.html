@@ -310,7 +310,10 @@ const focusMinigame = (function () {
   currentWeekId = 'week1';
   currentSceneId = sceneIds.includes(currentSceneId) ? currentSceneId : sceneIds[0];
   currentBgKind = 'minigame';
-  return { entry, sceneIds, backHref: fromMinigames ? '/dev/minigames/' : '/dev/evidence/' };
+  return {
+    entry, sceneIds,
+    backHref: fromMinigames ? '/dev/minigames/' : `/dev/evidence/settings/?evidence=${encodeURIComponent(minigameId)}`,
+  };
 })();
 
 const el = {

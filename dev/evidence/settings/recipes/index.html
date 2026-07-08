@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>조합법 · OPERATION MK DEV</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<meta name="theme-color" content="#080A0C">
+<link rel="manifest" href="/dev/manifest.json">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#080A0C;--surface-1:#101419;--surface-2:#171C22;
+  --text-primary:#EDF1F4;--text-secondary:#929BA5;--text-muted:#5F6872;
+  --cyan:#59B8C8;--amber:#D6A84B;--divider:rgba(255,255,255,0.08);
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sans:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
+}
+html,body{height:100%}
+body{background:#050607;color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center;min-height:100dvh}
+.frame{width:100%;max-width:430px;min-height:100dvh;min-height:100vh;padding:calc(48px + env(safe-area-inset-top,0)) 20px calc(32px + env(safe-area-inset-bottom,0));display:flex;flex-direction:column}
+.back{font-family:var(--mono);font-size:12px;color:var(--text-muted);text-decoration:none;margin-bottom:18px;display:inline-flex;align-items:center;gap:4px;width:fit-content}
+.tag{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px}
+.title{font-size:24px;font-weight:700;letter-spacing:-.2px;margin-bottom:10px}
+.sub{font-size:14px;color:var(--text-secondary);margin-bottom:28px;line-height:1.6}
+.recipe-card{background:var(--surface-1);border:1px solid var(--divider);border-radius:14px;padding:16px 18px;margin-bottom:12px}
+.recipe-combine{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.recipe-item{display:flex;flex-direction:column;align-items:center;gap:4px;width:64px}
+.recipe-icon{font-size:24px}
+.recipe-name{font-size:11.5px;color:var(--text-secondary);text-align:center;line-height:1.3}
+.recipe-plus{color:var(--text-muted);font-size:16px;flex-shrink:0}
+.recipe-arrow{color:var(--amber);font-size:16px;flex-shrink:0}
+.recipe-message{font-size:13px;color:var(--text-secondary);line-height:1.6;padding-top:10px;border-top:1px solid var(--divider);white-space:pre-wrap;word-break:keep-all}
+.empty{font-size:13px;color:var(--text-muted);padding:20px 0;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="frame">
+  <a class="back" id="backBtn" href="/dev/evidence/settings/">‹ 환경설정</a>
+  <div class="tag">Operation MK · 증거 수집</div>
+  <div class="title">조합법</div>
+  <div class="sub">인벤토리 아이템 두 개를 조합해서 새 아이템을 만드는 레시피입니다 (읽기 전용).</div>
+  <div id="content"></div>
+</div>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
+}
+</script>
+<script src="/dev/dialogueData.js"></script>
+<script src="/dev/evidenceItemData.js"></script>
+<script>
+const evidenceId = new URLSearchParams(location.search).get('evidence');
+const entry = evidenceId ? evidenceCollections.find(m => m.id === evidenceId) : null;
+if (entry) document.getElementById('backBtn').href = `/dev/evidence/settings/?evidence=${encodeURIComponent(entry.id)}`;
+
+const content = document.getElementById('content');
+
+// RECIPES (evidenceItemData.js) currently only backs 핸드폰을 찾아라's item
+// system — this page is the 조합법 template for entries built the same way.
+const supportsRecipes = entry && entry.id === ROOM_SEARCH_MINIGAME_ID;
+
+function itemLabel(itemId) {
+  const def = ITEM_DEFS[itemId] || { icon: '❔', name: itemId };
+  return `<div class="recipe-item"><div class="recipe-icon">${def.icon}</div><div class="recipe-name">${def.name}</div></div>`;
+}
+
+if (!entry) {
+  document.querySelector('.sub').textContent = '등록된 증거 수집 항목을 찾을 수 없습니다.';
+  content.innerHTML = '<div class="empty">/dev/evidence 목록에서 다시 들어와주세요.</div>';
+} else if (!supportsRecipes) {
+  content.innerHTML = '<div class="empty">이 항목은 아직 조합법 보기를 지원하지 않습니다.</div>';
+} else if (!RECIPES.length) {
+  content.innerHTML = '<div class="empty">등록된 조합법이 없습니다.</div>';
+} else {
+  content.innerHTML = RECIPES.map(r => `
+    <div class="recipe-card">
+      <div class="recipe-combine">
+        ${itemLabel(r.inputItemIds[0])}
+        <div class="recipe-plus">+</div>
+        ${itemLabel(r.inputItemIds[1])}
+        <div class="recipe-arrow">→</div>
+        ${itemLabel(r.outputItemId)}
+      </div>
+      <div class="recipe-message">${r.successMessage}</div>
+    </div>
+  `).join('');
+}
+</script>
+</body>
+</html>

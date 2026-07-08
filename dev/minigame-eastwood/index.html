@@ -315,14 +315,12 @@ function fitToStage() {
   ty = (rect.height - CANVAS_H * scale) / 2;
   applyTransform();
 }
-// Same event set as setVh100() above (--vh100 drives .frame's height) — a
-// plain window 'resize' alone misses iOS Safari's address-bar collapse/
-// expand, which only fires visualViewport's own 'resize' event, leaving
-// the map stale-scaled/positioned for the old stage height until the next
-// full resize.
+// Same event set as setVh100() above (--vh100 drives .frame's height), NOT
+// visualViewport's own 'resize' (see the comment on setVh100: that fires on
+// plain taps too, which would reset the map's pan/zoom on every tap, not
+// just on a real address-bar collapse/expand).
 window.addEventListener('resize', fitToStage);
 window.addEventListener('orientationchange', fitToStage);
-if (window.visualViewport) window.visualViewport.addEventListener('resize', fitToStage);
 
 function screenToCanvas(clientX, clientY) {
   const rect = el.mapStage.getBoundingClientRect();
