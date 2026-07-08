@@ -138,6 +138,11 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .test-fab{position:fixed;left:20px;right:20px;bottom:calc(20px + env(safe-area-inset-bottom,0));z-index:15;background:var(--cyan);color:#06181c;text-align:center;text-decoration:none;font-family:var(--mono);font-weight:700;font-size:14px;letter-spacing:.05em;padding:16px;border-radius:14px;box-shadow:0 8px 28px rgba(0,0,0,.5)}
 .test-fab.hidden{display:none}
 .frame.has-fab{padding-bottom:calc(84px + env(safe-area-inset-bottom,0))}
+/* Evidence-collection focus mode (see applyFocusModeChrome) — the fab moves
+   to a compact top-right badge instead of the full-width bottom bar, since
+   증거수집 setup screens scroll a lot further (아이템/조합법 lists) and a
+   bottom bar would sit over content most of the time. */
+.test-fab.test-fab-top{left:auto;right:calc(20px + env(safe-area-inset-right,0));bottom:auto;top:calc(20px + env(safe-area-inset-top,0));padding:10px 16px;border-radius:12px;font-size:13px;box-shadow:0 4px 16px rgba(0,0,0,.4)}
 
 /* Generic hidden-state utility — several elements (.picker, .dropzone,
    .tabs, .tab-btn, .section-title, plain #assetList) only ever had their
@@ -1815,10 +1820,13 @@ function applyFocusModeChrome() {
   if (!focusMinigame) return;
   el.backBtn.href = focusMinigame.backHref;
   el.pageTitle.textContent = focusMinigame.entry.name;
-  el.frame.classList.add('has-fab');
   el.testFab.href = focusMinigame.entry.route;
   el.testFab.classList.remove('hidden');
   if (focusMinigame.isEvidence) {
+    // Top-right badge instead of the full-width bottom bar — see
+    // .test-fab-top — so it doesn't sit over the 아이템/조합법 tabs' own
+    // content while scrolling.
+    el.testFab.classList.add('test-fab-top');
     // 인물 DB/미니게임 얼굴 don't apply to an evidence collection — swap
     // them out for 아이템/조합법 instead of hiding the whole tab row.
     el.tabCharacter.classList.add('hidden');
@@ -1826,6 +1834,7 @@ function applyFocusModeChrome() {
     el.tabItems.classList.remove('hidden');
     el.tabRecipes.classList.remove('hidden');
   } else {
+    el.frame.classList.add('has-fab');
     // Plain arcade minigames (e.g. Eastwood) have no items/recipes either —
     // background setup is the only thing to do here, so hide the row.
     el.tabsRow.classList.add('hidden');
