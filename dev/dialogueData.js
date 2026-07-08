@@ -1760,6 +1760,967 @@ const evidenceCollections = [
   },
 ];
 
+/* OPERATION MK — WEEK 3 · SCENE 01 「숙소 — 지금까지 정리」
+   Dialogue Set: dialogue-week3-scene001
+   Scene: week3-scene-001 (Sydney Accommodation, 09:00) */
+const week3Scene001Lines = [
+  { id: 'line-001', speaker: '', text: '숙소.\n오전 9시.', characterId: null },
+  { id: 'line-002', speaker: '', text: '3주차 첫날, 지수는 벽에 그동안의 단서를 하나씩 붙이기 시작했다.', characterId: null },
+  { id: 'line-003', speaker: '지수', text: 'M.K. 열쇠, M. KOV... 봉투, Mika Kovac 문의, MK_Consult.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-004', speaker: '지수', text: 'KOVAC 문자열, M. Kovac 사진 문의, MKOVAC 메타데이터.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-005', speaker: '영우', text: '이렇게 늘어놓으니까 진짜 많다.', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-006', speaker: '지수', text: '이게 미카 아니면 누군데.', characterId: 'jisoo', expression: 'suspicious' },
+  { id: 'line-007', speaker: '영우', text: '문제는 왜 우리 근처에 있냐는 거지.', characterId: 'youngwoo', expression: 'blank' },
+  { id: 'line-008', speaker: '지수', text: '...\n그건 저도 모르겠어요.', characterId: 'jisoo', pauseBeforeMs: 300, expression: 'blank' },
+  { id: 'line-009', speaker: '영우', text: '오늘은 일단 좀 쉬자.\n본다이 가기로 했잖아.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-010', speaker: '지수', text: '웅웅.\n오늘 하루는 진짜 그냥 놀 거예요.', characterId: 'jisoo', expression: 'happy' },
+];
+
+/* OPERATION MK — WEEK 3 · SCENE 02 「Bondi — 그냥 놀자」
+   Dialogue Set: dialogue-week3-scene002
+   Scene: week3-scene-002 (Bondi Beach, 11:00)
+   미스터리 없음 — 브리프대로 하루 정도 사건을 잊는 낭만 파트. */
+const week3Scene002Lines = [
+  { id: 'line-001', speaker: '', text: 'Bondi Beach.\n오전 11시.', characterId: null },
+  { id: 'line-002', speaker: '지수', text: '바다다아!', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-003', speaker: '영우', text: '뛰지 마, 넘어져.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-004', speaker: '', text: '지수는 이미 신발을 벗어던지고 모래사장을 가로지르고 있었다.', characterId: null },
+  { id: 'line-005', speaker: '지수', text: '사진 찍어줘요!', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-006', speaker: '영우', text: '벌써 몇 장째야.', characterId: 'youngwoo', expression: 'smirk' },
+  { id: 'line-007', speaker: '지수', text: '오늘은 사건 얘기 안 하기로 했잖아요.\n대신 사진은 무제한.', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-008', speaker: '영우', text: '그런 규칙이 어딨어 ㅋㅋㅋ', characterId: 'youngwoo', expression: 'happy' },
+  { id: 'line-009', speaker: '', text: '둘은 파도 앞에서 한참을 장난치며 놀았다.', characterId: null },
+  { id: 'line-010', speaker: '지수', text: '아 진짜 오랜만에 아무 생각이 없다.', characterId: 'jisoo', expression: 'soft' },
+  { id: 'line-011', speaker: '영우', text: '그치.\n오늘은 그냥 이렇게 있자.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-012', speaker: '', text: '한참 뒤, 둘은 짐을 챙겨두었던 자리로 돌아왔다.', characterId: null },
+];
+
+/* OPERATION MK — WEEK 3 · SCENE 03 「황동 열쇠 실종」
+   Dialogue Set: dialogue-week3-scene003
+   Scene: week3-scene-003 (Bondi Beach, 12:30) */
+const week3Scene003Lines = [
+  { id: 'line-001', speaker: '', text: 'Bondi Beach, 짐을 둔 자리.\n낮 12시 30분.', characterId: null },
+  { id: 'line-002', speaker: '지수', text: '가방 좀 열어볼게요.', characterId: 'jisoo', expression: 'neutral' },
+  { id: 'line-003', speaker: '', text: '지수가 가방을 뒤적이다 멈춘다.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-004', speaker: '지수', text: '어?', characterId: 'jisoo', expression: 'shocked' },
+  { id: 'line-005', speaker: '영우', text: '왜?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-006', speaker: '지수', text: '지갑 있고, 폰 있고, 선크림도 있는데.', characterId: 'jisoo', expression: 'shocked' },
+  { id: 'line-007', speaker: '지수', text: '열쇠가 없어요.', characterId: 'jisoo', expression: 'shocked' },
+  { id: 'line-008', speaker: '영우', text: '그 M.K. 열쇠?', characterId: 'youngwoo', expression: 'shocked' },
+  { id: 'line-009', speaker: '지수', text: '웅.\n다른 건 다 그대로인데 그것만요.', characterId: 'jisoo', expression: 'suspicious' },
+  { id: 'line-010', speaker: '영우', text: '단순 분실이면 다른 것도 없어져야 정상 아니야?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-011', speaker: '지수', text: '그러니까요.\n딱 그것만 가져갔어요.', characterId: 'jisoo', expression: 'suspicious' },
+  { id: 'line-012', speaker: '영우', text: '...\n오늘은 사건 얘기 안 하기로 했는데.', characterId: 'youngwoo', pauseBeforeMs: 300, expression: 'blank' },
+  { id: 'line-013', speaker: '지수', text: '얘기가 저를 찾아온 거예요.', characterId: 'jisoo', expression: 'serious' },
+];
+
+/* OPERATION MK — WEEK 3 · SCENE 04 「Bondi 동선 재구성」
+   Dialogue Set: dialogue-week3-scene004
+   Scene: week3-scene-004 (Bondi Beach, 12:40)
+   Ends on a MINIGAME START beat — nextSceneId hands off to a not-yet-built
+   결제/사진 시각 · 벤치/탈의공간/카페 동선 재구성 minigame,
+   week3-scene-004-minigame. */
+const week3Scene004Lines = [
+  { id: 'line-001', speaker: '', text: 'Bondi Beach 산책로.\n낮 12시 40분.', characterId: null },
+  { id: 'line-002', speaker: '지수', text: '오늘 우리 동선부터 한번 정리해봐요.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-003', speaker: '영우', text: '카페에서 결제하고, 사진 찍고, 벤치에 앉았다가,\n탈의 공간 갔다 왔잖아.', characterId: 'youngwoo', expression: 'neutral' },
+  { id: 'line-004', speaker: '지수', text: '그 사이 어느 순간에 가방을 손 뻗을 거리에 안 뒀는지가 중요해요.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-005', speaker: '영우', text: '결제 영수증에 시간 찍혀 있을 거야.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-006', speaker: '지수', text: '사진 찍은 시간도 있고요.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-007', speaker: '영우', text: '그럼 그 시간들이랑 우리가 어디 있었는지를 겹쳐보자.', characterId: 'youngwoo', expression: 'serious' },
+  { id: 'line-008', speaker: '지수', text: '단순 분실이면 이렇게까지 안 맞아떨어질 텐데.', characterId: 'jisoo', expression: 'suspicious' },
+  { id: 'line-009', speaker: '', text: '지수가 영수증과 사진, 기억나는 동선을\n하나씩 시간 순서에 맞춰 배치하기 시작했다.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-010', speaker: '', text: 'MINIGAME START', characterId: null },
+];
+
+/* OPERATION MK — WEEK 3 · SCENE 05 「사진 속 검은 재킷」
+   Dialogue Set: dialogue-week3-scene005
+   Scene: week3-scene-005 (Bondi Beach, 13:10)
+   Ends on a MINIGAME START beat — nextSceneId hands off to a not-yet-built
+   1주차/3주차 사진 실루엣 비교 minigame, week3-scene-005-minigame. */
+const week3Scene005Lines = [
+  { id: 'line-001', speaker: '', text: 'Bondi Beach 산책로.\n오후 1시 10분.', characterId: null },
+  { id: 'line-002', speaker: '', text: '동선을 다시 맞춰보니, 탈의 공간에 다녀온 5분 사이\n가방이 손이 안 닿는 곳에 있었다.', characterId: null },
+  { id: 'line-003', speaker: '영우', text: '그 5분 사이에 누가 지나갔는지가 관건이네.', characterId: 'youngwoo', expression: 'serious' },
+  { id: 'line-004', speaker: '지수', text: '그때 찍은 사진들 배경에 사람들 있을 거예요.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-005', speaker: '', text: '지수가 그 시간대 사진들을 확대해서 살펴본다.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-006', speaker: '지수', text: '...\n잠깐.', characterId: 'jisoo', pauseBeforeMs: 300, expression: 'shocked' },
+  { id: 'line-007', speaker: '영우', text: '왜?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-008', speaker: '지수', text: '이 재킷, 1주차 전시장 사진에서 본 그 실루엣 아니에요?', characterId: 'jisoo', expression: 'shocked' },
+  { id: 'line-009', speaker: '영우', text: '설마.\n한번 나란히 놓고 보자.', characterId: 'youngwoo', expression: 'shocked' },
+  { id: 'line-010', speaker: '', text: '지수가 1주차 전시장 사진과 방금 찍은 사진을 나란히 띄운다.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-011', speaker: '', text: 'MINIGAME START', characterId: null },
+];
+
+/* OPERATION MK — WEEK 3 · SCENE 06 「Fish Market — 노아 리」
+   Dialogue Set: dialogue-week3-scene006
+   Scene: week3-scene-006 (Sydney Fish Market, 16:00) */
+const week3Scene006Lines = [
+  { id: 'line-001', speaker: '', text: 'Sydney Fish Market 근처, 공예품 가판.\n오후 4시.', characterId: null },
+  { id: 'line-002', speaker: '', text: '재킷 절개선, 은색 USB 케이스, 왼손 시계까지\n1주차 사진 속 인물과 동일했다.', characterId: null },
+  { id: 'line-003', speaker: '지수', text: '저기, 실례합니다.\n금속 공예 하시는 분 맞으시죠?', characterId: 'jisoo', expression: 'neutral' },
+  { id: 'line-004', speaker: '노아 리', text: '네, 맞아요.\n뭐 도와드릴까요?', characterId: 'noah', expression: 'neutral' },
+  { id: 'line-005', speaker: '', text: '지수가 사라졌던 열쇠 사진을 보여준다.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-006', speaker: '지수', text: '이 열쇠, 혹시 봐주실 수 있어요?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-007', speaker: '노아 리', text: '음...', characterId: 'noah', pauseBeforeMs: 300, expression: 'curious' },
+  { id: 'line-008', speaker: '노아 리', text: '이거 오래된 거 아니에요.', characterId: 'noah', expression: 'serious' },
+  { id: 'line-009', speaker: '영우', text: '네?\n딱 봐도 낡았는데요.', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-010', speaker: '노아 리', text: '겉만 그렇게 보이게 만든 거예요.\n표면 처리가 딱 그 방식이에요.', characterId: 'noah', expression: 'serious' },
+  { id: 'line-011', speaker: '지수', text: '그게 무슨 말이에요?', characterId: 'jisoo', expression: 'suspicious' },
+  { id: 'line-012', speaker: '노아 리', text: '제대로 확인해봐도 될까요?\n좀 더 자세히 볼게요.', characterId: 'noah', expression: 'neutral' },
+];
+
+/* OPERATION MK — WEEK 3 · SCENE 07 「낡게 만든 열쇠」
+   Dialogue Set: dialogue-week3-scene007
+   Scene: week3-scene-007 (Sydney Fish Market, 16:20)
+   브리프가 명시한 "미카 진범설의 가장 강한 물리 증거" 장면. */
+const week3Scene007Lines = [
+  { id: 'line-001', speaker: '', text: 'Sydney Fish Market 근처, 공예품 가판.\n오후 4시 20분.', characterId: null },
+  { id: 'line-002', speaker: '노아 리', text: '역시 그렇네요.', characterId: 'noah', expression: 'serious' },
+  { id: 'line-003', speaker: '지수', text: '뭐가요?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-004', speaker: '노아 리', text: '인공 산화 처리예요.\n녹슬어 보이게 화학약품으로 처리한 거고, 가공 자체는 최근이에요.', characterId: 'noah', expression: 'serious' },
+  { id: 'line-005', speaker: '영우', text: '그럼 이거 맞춤 제작이라는 거예요?', characterId: 'youngwoo', expression: 'shocked' },
+  { id: 'line-006', speaker: '노아 리', text: '네, 각인 방식 보면 확실해요.\n저희 업계에서 흔히 쓰는 방식이거든요.', characterId: 'noah', expression: 'serious' },
+  { id: 'line-007', speaker: '지수', text: '어디서 만든 건지 알 수 있어요?', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-008', speaker: '노아 리', text: '저희 쪽 업계 주문망에 비슷한 요청이 있었는지 한번 찾아볼게요.', characterId: 'noah', expression: 'neutral' },
+  { id: 'line-009', speaker: '', text: '노아가 태블릿으로 주문 기록을 뒤진다.', characterId: 'noah', expression: 'curious' },
+  { id: 'line-010', speaker: '노아 리', text: '...\n찾았어요.', characterId: 'noah', pauseBeforeMs: 400, expression: 'serious' },
+  { id: 'line-011', speaker: '', text: '[ 주문 담당: M. KOVAC / CLIENT CONFIDENTIAL ]', characterId: null },
+  { id: 'line-012', speaker: '지수', text: '...', characterId: 'jisoo', pauseBeforeMs: 500, expression: 'shocked' },
+  { id: 'line-013', speaker: '영우', text: '이건 진짜 물건이잖아.\n각인, 주문 기록, 다 남아 있어.', characterId: 'youngwoo', expression: 'shocked' },
+  { id: 'line-014', speaker: '지수', text: '이 열쇠, 처음부터 진짜 낡은 게 아니었어요.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-015', speaker: '지수', text: '미카 코바치가 일부러 만들어서 우리한테 흘린 거예요.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-016', speaker: '노아 리', text: '도움이 되셨다니 다행이네요.\n근데 이거, 좀 불안하실 것 같은데요.', characterId: 'noah', expression: 'curious' },
+  { id: 'line-017', speaker: '영우', text: '...\n그러게요.', characterId: 'youngwoo', pauseBeforeMs: 400, expression: 'blank' },
+];
+
+/* OPERATION MK — WEEK 3 · SCENE 08 「지수와 영우의 갈등」
+   Dialogue Set: dialogue-week3-scene008
+   Scene: week3-scene-008 (Sydney Fish Market 근처 부두, 17:00) */
+const week3Scene008Lines = [
+  { id: 'line-001', speaker: '', text: 'Fish Market 근처 부두.\n오후 5시.', characterId: null },
+  { id: 'line-002', speaker: '지수', text: '이거 이제 진짜 무서워요.', characterId: 'jisoo', expression: 'suspicious' },
+  { id: 'line-003', speaker: '영우', text: '그래서 하는 말인데, 이제 경찰에 말하는 게 어때.', characterId: 'youngwoo', expression: 'serious' },
+  { id: 'line-004', speaker: '지수', text: '뭐라고요?\nM.K.가 우리 여행마다 나온다고요?', characterId: 'jisoo', expression: 'suspicious' },
+  { id: 'line-005', speaker: '영우', text: '그거 말고 뭐라고 설명해.', characterId: 'youngwoo', expression: 'annoyed' },
+  { id: 'line-006', speaker: '지수', text: '증거라고는 이니셜 몇 개랑 맞춤 제작 열쇠 하나예요.', characterId: 'jisoo', expression: 'annoyed' },
+  { id: 'line-007', speaker: '영우', text: '그래도 이건 우리 동선을 안다는 거잖아.', characterId: 'youngwoo', expression: 'annoyed' },
+  { id: 'line-008', speaker: '지수', text: '그러니까 제가 더 파야죠.', characterId: 'jisoo', expression: 'annoyed' },
+  { id: 'line-009', speaker: '영우', text: '지수야, 이거 게임 아니야.', characterId: 'youngwoo', expression: 'serious' },
+  { id: 'line-010', speaker: '지수', text: '누가 게임이래요.', characterId: 'jisoo', expression: 'annoyed' },
+  { id: 'line-011', speaker: '영우', text: '요즘 계속 이 얘기만 하잖아.\n나는 그냥 지수가 걱정돼서 그래.', characterId: 'youngwoo', expression: 'blank' },
+  { id: 'line-012', speaker: '지수', text: '...', characterId: 'jisoo', pauseBeforeMs: 400, expression: 'blank' },
+  { id: 'line-013', speaker: '지수', text: '저도 알아요.\n근데 여기까지 와서 그냥 덮을 순 없잖아요.', characterId: 'jisoo', expression: 'blank' },
+  { id: 'line-014', speaker: '영우', text: '...', characterId: 'youngwoo', pauseBeforeMs: 400, expression: 'blank' },
+  { id: 'line-015', speaker: '', text: '둘 다 한동안 말이 없었다.', characterId: null },
+];
+
+/* OPERATION MK — WEEK 3 · SCENE 09 「고래 투어 — 화해」
+   Dialogue Set: dialogue-week3-scene009
+   Scene: week3-scene-009 (Whale Watching Boat, 다음날 09:30)
+   브리프대로 말보다 행동으로 화해하는 파트 — 갈등을 억지로 봉합하는 대사 없이 지나간다. */
+const week3Scene009Lines = [
+  { id: 'line-001', speaker: '', text: 'Whale Watching 보트.\n다음날 오전 9시 30분.', characterId: null },
+  { id: 'line-002', speaker: '', text: '어젯밤의 어색함이 아직 남은 채로, 둘은 나란히 뱃머리에 서 있었다.', characterId: null },
+  { id: 'line-003', speaker: '영우', text: '춥지 않아?', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-004', speaker: '지수', text: '괜찮아요.', characterId: 'jisoo', expression: 'blank' },
+  { id: 'line-005', speaker: '', text: '멀리서 물기둥이 솟아오른다.', characterId: null },
+  { id: 'line-006', speaker: '지수', text: '어! 저기!', characterId: 'jisoo', expression: 'shocked' },
+  { id: 'line-007', speaker: '지수', text: '영우야, 여기 와봐요!\n빨리!', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-008', speaker: '', text: '지수가 반사적으로 영우의 손을 잡아끈다.', characterId: null },
+  { id: 'line-009', speaker: '영우', text: '와...', characterId: 'youngwoo', expression: 'shocked' },
+  { id: 'line-010', speaker: '', text: '고래가 수면 위로 몸을 반쯤 드러냈다 사라졌다.', characterId: null },
+  { id: 'line-011', speaker: '지수', text: '봤어요?? 봤어요??', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-012', speaker: '영우', text: '봤어, 봤어.', characterId: 'youngwoo', expression: 'happy' },
+  { id: 'line-013', speaker: '', text: '둘은 한참을 그렇게 손을 잡은 채 바다만 바라봤다.\n사과의 말은 필요 없었다.', characterId: null },
+];
+
+/* OPERATION MK — WEEK 3 · SCENE 10 「첫 직접 연락」
+   Dialogue Set: dialogue-week3-scene010
+   Scene: week3-scene-010 (Whale Watching Boat, 11:00) */
+const week3Scene010Lines = [
+  { id: 'line-001', speaker: '', text: 'Whale Watching 보트, 갑판.\n오전 11시.', characterId: null },
+  { id: 'line-002', speaker: '', text: '지수의 폰이 짧게 진동한다.', characterId: null },
+  { id: 'line-003', speaker: '지수', text: '어?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-004', speaker: '영우', text: '왜?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-005', speaker: '', text: '[ 발신: M.K. ]', characterId: null },
+  { id: 'line-006', speaker: '지수', text: '...', characterId: 'jisoo', pauseBeforeMs: 500, expression: 'shocked' },
+  { id: 'line-007', speaker: '영우', text: '뭐야, 왜 그래.', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-008', speaker: '지수', text: '이거 봐요.', characterId: 'jisoo', expression: 'shocked' },
+  { id: 'line-009', speaker: '', text: '[ You are looking for the wrong person. ]', characterId: null },
+  { id: 'line-010', speaker: '영우', text: '...\n뭐라는 거야 이게.', characterId: 'youngwoo', pauseBeforeMs: 400, expression: 'blank' },
+  { id: 'line-011', speaker: '지수', text: '틀린 사람을 찾고 있다는 거잖아요.', characterId: 'jisoo', expression: 'suspicious' },
+  { id: 'line-012', speaker: '영우', text: '들켰다는 거 아니야?\n그래서 다른 사람 보라고 흔드는 거고.', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-013', speaker: '지수', text: '그럴 수도 있죠.', characterId: 'jisoo', expression: 'suspicious' },
+  { id: 'line-014', speaker: '지수', text: '근데 미카가 자기 자신 아니라고 할 이유가 있나?', characterId: 'jisoo', expression: 'suspicious' },
+  { id: 'line-015', speaker: '영우', text: '당연히 있지, 들키기 싫으니까.', characterId: 'youngwoo', expression: 'annoyed' },
+  { id: 'line-016', speaker: '지수', text: '...\n그런가.', characterId: 'jisoo', pauseBeforeMs: 300, expression: 'blank' },
+  { id: 'line-017', speaker: '지수', text: '일단 이 메시지, 어디서 온 건지 추적해볼게요.', characterId: 'jisoo', expression: 'serious' },
+];
+
+/* OPERATION MK — WEEK 3 · SCENE 11 「발신 흔적」
+   Dialogue Set: dialogue-week3-scene011
+   Scene: week3-scene-011 (숙소, 20:00)
+   Ends on a MINIGAME START beat — nextSceneId hands off to a not-yet-built
+   네트워크 경로 단순 추적 minigame, week3-scene-011-minigame. */
+const week3Scene011Lines = [
+  { id: 'line-001', speaker: '', text: '숙소.\n밤 8시.', characterId: null },
+  { id: 'line-002', speaker: '지수', text: '메시지 발신 경로, 한번 따라가볼게요.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-003', speaker: '영우', text: '그런 것도 할 수 있어?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-004', speaker: '지수', text: '완전히는 안 되겠지만, 중간에 거쳐간 경로 정도는요.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-005', speaker: '영우', text: '검색해보니까 이런 거 관련 공개 툴이 있긴 하더라.', characterId: 'youngwoo', expression: 'neutral' },
+  { id: 'line-006', speaker: '지수', text: '한번 넣어볼게요.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-007', speaker: '', text: '지수가 발신 경로를 한 단계씩 추적하기 시작했다.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-008', speaker: '', text: 'MINIGAME START', characterId: null },
+];
+
+/* OPERATION MK — WEEK 3 · SCENE 12 「Aquarium — 에블린 쇼」
+   Dialogue Set: dialogue-week3-scene012
+   Scene: week3-scene-012 (SEA LIFE Sydney Aquarium, 다음날 14:00) */
+const week3Scene012Lines = [
+  { id: 'line-001', speaker: '', text: 'SEA LIFE Sydney Aquarium.\n다음날 오후 2시.', characterId: null },
+  { id: 'line-002', speaker: '', text: '추적 끝에 나온 중간 릴레이 노드 하나가\n과거 미카가 썼던 보안 서비스와 일치했다.', characterId: null },
+  { id: 'line-003', speaker: '', text: '그 서비스를 소개해준 사람이 지금 이 수족관에서 일한다는 정보를 얻었다.', characterId: null },
+  { id: 'line-004', speaker: '지수', text: '에블린 쇼 님 맞으실까요?', characterId: 'jisoo', expression: 'neutral' },
+  { id: 'line-005', speaker: '에블린 쇼', text: '네, 맞는데요.\n무슨 일이시죠?', characterId: 'evelyn', expression: 'neutral' },
+  { id: 'line-006', speaker: '영우', text: '익명 의뢰 중개 쪽 일 하신 적 있으시다고 들어서요.', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-007', speaker: '에블린 쇼', text: '...\n누구한테 들으셨어요?', characterId: 'evelyn', expression: 'suspicious' },
+  { id: 'line-008', speaker: '지수', text: '혹시 M.K.라는 이름, 들어보신 적 있으세요?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-009', speaker: '에블린 쇼', text: '...', characterId: 'evelyn', pauseBeforeMs: 500, expression: 'neutral' },
+  { id: 'line-010', speaker: '에블린 쇼', text: 'M.K.?\n그 여자, 직접 본 적 있어요.', characterId: 'evelyn', expression: 'serious' },
+  { id: 'line-011', speaker: '지수', text: '...\n미카 코바치요?', characterId: 'jisoo', pauseBeforeMs: 400, expression: 'shocked' },
+  { id: 'line-012', speaker: '에블린 쇼', text: '...', characterId: 'evelyn', pauseBeforeMs: 500, expression: 'neutral' },
+  { id: 'line-013', speaker: '영우', text: '왜 대답을 안 하세요?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-014', speaker: '에블린 쇼', text: '아니, 그냥.\n오랜만에 그 이름 들으니까.', characterId: 'evelyn', expression: 'neutral' },
+  { id: 'line-015', speaker: '에블린 쇼', text: '자리 좀 옮겨서 얘기할까요.', characterId: 'evelyn', expression: 'neutral' },
+];
+
+/* OPERATION MK — WEEK 3 · SCENE 13 「가짜 목격 증언」
+   Dialogue Set: dialogue-week3-scene013
+   Scene: week3-scene-013 (SEA LIFE Sydney Aquarium 카페, 14:20)
+   브리프 명시 사항: 에블린은 실제로 얼굴을 선명하게 본 적이 없다는 사실은
+   여기서 밝히지 않는다 — 4주차에 가서야 드러난다. */
+const week3Scene013Lines = [
+  { id: 'line-001', speaker: '', text: 'Aquarium 내 카페.\n오후 2시 20분.', characterId: null },
+  { id: 'line-002', speaker: '에블린 쇼', text: '몇 년 전에 딱 한 번 마주친 적 있어요.', characterId: 'evelyn', expression: 'neutral' },
+  { id: 'line-003', speaker: '지수', text: '어떤 사람이었어요?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-004', speaker: '에블린 쇼', text: '검은 재킷 입고 있었고, 동유럽 억양이 있었어요.', characterId: 'evelyn', expression: 'serious' },
+  { id: 'line-005', speaker: '에블린 쇼', text: '은색 케이스를 항상 들고 다녔고, 왼손에 시계를 찼었어요.', characterId: 'evelyn', expression: 'serious' },
+  { id: 'line-006', speaker: '영우', text: '...', characterId: 'youngwoo', pauseBeforeMs: 400, expression: 'shocked' },
+  { id: 'line-007', speaker: '지수', text: '검은 재킷, 은색 케이스, 왼손 시계.', characterId: 'jisoo', expression: 'shocked' },
+  { id: 'line-008', speaker: '지수', text: '지금까지 저희가 본 사진이랑 완전히 똑같아요.', characterId: 'jisoo', expression: 'shocked' },
+  { id: 'line-009', speaker: '에블린 쇼', text: '그렇겠죠.\nM.K.면 항상 그런 모습이었으니까.', characterId: 'evelyn', expression: 'neutral' },
+  { id: 'line-010', speaker: '영우', text: '확실한 거죠?\n직접 보셨다는 거.', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-011', speaker: '에블린 쇼', text: '네, 확실해요.', characterId: 'evelyn', expression: 'neutral' },
+  { id: 'line-012', speaker: '지수', text: '이제 진짜 다 맞아떨어지네요.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-013', speaker: '에블린 쇼', text: '조심하세요.\n그 사람 근처엔 안 가는 게 나아요.', characterId: 'evelyn', expression: 'suspicious' },
+  { id: 'line-014', speaker: '', text: '지수는 그 말을 오래 곱씹게 될 줄, 아직 몰랐다.', characterId: null },
+];
+
+/* OPERATION MK — WEEK 3 · SCENE 14 「열쇠의 귀환」
+   Dialogue Set: dialogue-week3-scene014
+   Scene: week3-scene-014 (Sydney Accommodation, 22:00)
+   Closes out Week 3's main weekend arc — 3주차 평일 미니씬(W3-D1~D5)은 별도로
+   추가될 예정. No nextSceneId; ends on the "NOT WHO. WHY." note per brief §8. */
+const week3Scene014Lines = [
+  { id: 'line-001', speaker: '', text: '숙소.\n밤 10시.', characterId: null },
+  { id: 'line-002', speaker: '', text: '방으로 들어온 두 사람은 협탁 위를 보고 그대로 멈춰 섰다.', characterId: null },
+  { id: 'line-003', speaker: '지수', text: '...', characterId: 'jisoo', pauseBeforeMs: 500, expression: 'shocked' },
+  { id: 'line-004', speaker: '영우', text: '이거.', characterId: 'youngwoo', expression: 'shocked' },
+  { id: 'line-005', speaker: '', text: '협탁 한가운데, 사라졌던 열쇠가 돌아와 있었다.', characterId: null },
+  { id: 'line-006', speaker: '지수', text: '문은 분명 잠겨 있었잖아요.', characterId: 'jisoo', expression: 'shocked' },
+  { id: 'line-007', speaker: '영우', text: '...', characterId: 'youngwoo', pauseBeforeMs: 400, expression: 'blank' },
+  { id: 'line-008', speaker: '', text: '열쇠 옆에 작은 종이 한 장이 놓여 있다.', characterId: null },
+  { id: 'line-009', speaker: '', text: '[ NOT WHO. ]\n[ WHY. ]', characterId: null },
+  { id: 'line-010', speaker: '', text: '하단에 작은 서명.', characterId: null },
+  { id: 'line-011', speaker: '', text: '[ M.K. ]', characterId: null },
+  { id: 'line-012', speaker: '지수', text: '...\n미카가 우리 갖고 노는 거야.', characterId: 'jisoo', pauseBeforeMs: 400, expression: 'suspicious' },
+  { id: 'line-013', speaker: '영우', text: '아니면 진짜로 하고 싶은 말이 있는 걸 수도 있고.', characterId: 'youngwoo', expression: 'serious' },
+  { id: 'line-014', speaker: '지수', text: '...\n어느 쪽이든, 다음 주엔 끝내야겠어요.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-015', speaker: '', text: '지수의 3주차는,\nWHY라는 질문 하나를 남기고 저물었다.', characterId: null },
+];
+
+// Registry of testable Week 3 scenes — /dev/week3 lists these, each linking
+// to /dev/game/?scene=<id>. Covers only the 3주차 main weekend arc
+// (W3-S01~S14, "사라진 원본 열쇠") — 3주차 평일 미니씬(W3-D1~D5)은 아직 미구현.
+const week3Scenes = [
+  {
+    id: 'week3-scene-001',
+    order: 1,
+    name: '숙소 — 지금까지 정리',
+    location: 'Sydney Accommodation',
+    introLabel: 'ACCOMMODATION',
+    time: '09:00',
+    lines: week3Scene001Lines,
+  },
+  {
+    id: 'week3-scene-002',
+    order: 2,
+    name: 'Bondi — 그냥 놀자',
+    location: 'Bondi Beach',
+    introLabel: 'BONDI BEACH',
+    time: '11:00',
+    lines: week3Scene002Lines,
+  },
+  {
+    id: 'week3-scene-003',
+    order: 3,
+    name: '황동 열쇠 실종',
+    location: 'Bondi Beach',
+    introLabel: 'BONDI BEACH',
+    time: '12:30',
+    lines: week3Scene003Lines,
+  },
+  {
+    id: 'week3-scene-004',
+    order: 4,
+    name: 'Bondi 동선 재구성',
+    location: 'Bondi Beach',
+    introLabel: 'BONDI BEACH',
+    time: '12:40',
+    lines: week3Scene004Lines,
+    // Hands off into the (not yet built) 동선 재구성 minigame — see
+    // MINIGAME_ROUTES in game/index.html. Falls back to a "MINIGAME START"
+    // placeholder overlay until that route exists.
+    nextSceneId: 'week3-scene-004-minigame',
+  },
+  {
+    id: 'week3-scene-005',
+    order: 5,
+    name: '사진 속 검은 재킷',
+    location: 'Bondi Beach',
+    introLabel: 'BONDI BEACH',
+    time: '13:10',
+    lines: week3Scene005Lines,
+    // Hands off into the (not yet built) 실루엣 비교 minigame — same
+    // placeholder fallback as above.
+    nextSceneId: 'week3-scene-005-minigame',
+  },
+  {
+    id: 'week3-scene-006',
+    order: 6,
+    name: 'Fish Market — 노아 리',
+    location: 'Sydney Fish Market',
+    introLabel: 'FISH MARKET',
+    time: '16:00',
+    lines: week3Scene006Lines,
+  },
+  {
+    id: 'week3-scene-007',
+    order: 7,
+    name: '낡게 만든 열쇠',
+    location: 'Sydney Fish Market',
+    introLabel: 'FISH MARKET',
+    time: '16:20',
+    lines: week3Scene007Lines,
+  },
+  {
+    id: 'week3-scene-008',
+    order: 8,
+    name: '지수와 영우의 갈등',
+    location: 'Sydney Fish Market',
+    introLabel: 'FISH MARKET',
+    time: '17:00',
+    lines: week3Scene008Lines,
+  },
+  {
+    id: 'week3-scene-009',
+    order: 9,
+    name: '고래 투어 — 화해',
+    location: 'Whale Watching Boat',
+    introLabel: 'WHALE WATCHING',
+    time: '09:30',
+    lines: week3Scene009Lines,
+  },
+  {
+    id: 'week3-scene-010',
+    order: 10,
+    name: '첫 직접 연락',
+    location: 'Whale Watching Boat',
+    introLabel: 'WHALE WATCHING',
+    time: '11:00',
+    lines: week3Scene010Lines,
+  },
+  {
+    id: 'week3-scene-011',
+    order: 11,
+    name: '발신 흔적',
+    location: 'Sydney Accommodation',
+    introLabel: 'ACCOMMODATION',
+    time: '20:00',
+    lines: week3Scene011Lines,
+    // Hands off into the (not yet built) 네트워크 경로 추적 minigame — same
+    // placeholder fallback as above.
+    nextSceneId: 'week3-scene-011-minigame',
+  },
+  {
+    id: 'week3-scene-012',
+    order: 12,
+    name: 'Aquarium — 에블린 쇼',
+    location: 'SEA LIFE Sydney Aquarium',
+    introLabel: 'AQUARIUM',
+    time: '14:00',
+    lines: week3Scene012Lines,
+  },
+  {
+    id: 'week3-scene-013',
+    order: 13,
+    name: '가짜 목격 증언',
+    location: 'SEA LIFE Sydney Aquarium',
+    introLabel: 'AQUARIUM',
+    time: '14:20',
+    lines: week3Scene013Lines,
+  },
+  {
+    id: 'week3-scene-014',
+    order: 14,
+    name: '열쇠의 귀환',
+    location: 'Sydney Accommodation',
+    introLabel: 'ACCOMMODATION',
+    time: '22:00',
+    lines: week3Scene014Lines,
+  },
+];
+
+/* OPERATION MK — WEEK 4 · SCENE 01 「마지막 주 아침」
+   Dialogue Set: dialogue-week4-scene001
+   Scene: week4-scene-001 (Sydney Accommodation, 09:00) */
+const week4Scene001Lines = [
+  { id: 'line-001', speaker: '', text: '숙소.\n오전 9시.', characterId: null },
+  { id: 'line-002', speaker: '', text: '마지막 주, 지수는 벽에 붙여둔 모든 자료를 다시 펼쳤다.', characterId: null },
+  { id: 'line-003', speaker: '지수', text: '황동 열쇠, 봉투, 문의 메일, 중개 계정, 사진 문의, 맞춤 제작, 발신 흔적, 목격담.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-004', speaker: '영우', text: '전부 한 방향을 가리키고 있어.', characterId: 'youngwoo', expression: 'serious' },
+  { id: 'line-005', speaker: '지수', text: '웅.\nM.K. = Mika Kovac.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-006', speaker: '영우', text: '그럼 이제 남은 건.', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-007', speaker: '지수', text: '왜 하필 우리한테 접근했느냐, 그거예요.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-008', speaker: '영우', text: '위치는 The Rocks 쪽으로 좁혀졌었지.', characterId: 'youngwoo', expression: 'serious' },
+  { id: 'line-009', speaker: '지수', text: '보관함, 픽업 지점, 릴레이 접속.\n전부 그 동네예요.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-010', speaker: '영우', text: '그럼 오늘 거기부터 가보자.', characterId: 'youngwoo', expression: 'serious' },
+  { id: 'line-011', speaker: '지수', text: '이번 주엔 끝내요, 진짜로.', characterId: 'jisoo', expression: 'serious' },
+];
+
+/* OPERATION MK — WEEK 4 · SCENE 02 「The Rocks 이동」
+   Dialogue Set: dialogue-week4-scene002
+   Scene: week4-scene-002 (The Rocks 이동 중, 10:00) */
+const week4Scene002Lines = [
+  { id: 'line-001', speaker: '', text: 'The Rocks 이동 중.\n오전 10시.', characterId: null },
+  { id: 'line-002', speaker: '', text: '좁은 골목과 오래된 사암 건물들이 늘어선 동네였다.', characterId: null },
+  { id: 'line-003', speaker: '지수', text: '여기 진짜 오래된 동네네요.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-004', speaker: '영우', text: '숨기 좋은 동네지, 뭘 하든.', characterId: 'youngwoo', expression: 'serious' },
+  { id: 'line-005', speaker: '지수', text: '보관함 위치부터 가볼까요.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-006', speaker: '영우', text: '웅, 지도에 표시해둔 데로.', characterId: 'youngwoo', expression: 'neutral' },
+  { id: 'line-007', speaker: '', text: '둘은 말없이 걸었다.\n이전 세 번의 사건과는 다른 긴장감이었다.', characterId: null },
+  { id: 'line-008', speaker: '지수', text: '떨려요?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-009', speaker: '영우', text: '조금.\n지수는?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-010', speaker: '지수', text: '저도요.\n근데 여기까지 왔으니까.', characterId: 'jisoo', expression: 'serious' },
+];
+
+/* OPERATION MK — WEEK 4 · SCENE 03 「첫 보관함」
+   Dialogue Set: dialogue-week4-scene003
+   Scene: week4-scene-003 (The Rocks 공용 보관함, 10:30)
+   Ends on a MINIGAME START beat — nextSceneId hands off to a not-yet-built
+   4자리 코드 추리 minigame, week4-scene-003-minigame. */
+const week4Scene003Lines = [
+  { id: 'line-001', speaker: '', text: 'The Rocks 공용 보관함 구역.\n오전 10시 30분.', characterId: null },
+  { id: 'line-002', speaker: '영우', text: '번호 자물쇠네.\n4자리.', characterId: 'youngwoo', expression: 'neutral' },
+  { id: 'line-003', speaker: '지수', text: '단서가 될 만한 숫자들, 정리해볼게요.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-004', speaker: '지수', text: 'K-01 사건 날짜, K-01이라는 번호, 사진 파일 번호.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-005', speaker: '영우', text: '조합해보면 뭔가 나올 것 같은데.', characterId: 'youngwoo', expression: 'serious' },
+  { id: 'line-006', speaker: '', text: '지수가 지금까지 모은 숫자들을 하나씩 조합해보기 시작했다.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-007', speaker: '', text: 'MINIGAME START', characterId: null },
+];
+
+/* OPERATION MK — WEEK 4 · SCENE 04 「포렌식 작업실 흔적」
+   Dialogue Set: dialogue-week4-scene004
+   Scene: week4-scene-004 (폐업한 공유 작업실, 11:30) */
+const week4Scene004Lines = [
+  { id: 'line-001', speaker: '', text: '폐업한 공유 작업실.\n오전 11시 30분.', characterId: null },
+  { id: 'line-002', speaker: '', text: '보관함에서 나온 영수증 주소를 따라가니\n오래전에 문을 닫은 공유 작업실이 나왔다.', characterId: null },
+  { id: 'line-003', speaker: '지수', text: '보관함 안엔 빈 USB 케이스랑 황동 가루,\n영수증뿐이었는데.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-004', speaker: '영우', text: '영수증 수취인, M. KOVAC.', characterId: 'youngwoo', expression: 'serious' },
+  { id: 'line-005', speaker: '', text: '관리인의 협조로 예전 대여 기록을 확인할 수 있었다.', characterId: null },
+  { id: 'line-006', speaker: '지수', text: '여기, 이 자리예요.\n미카가 실제로 썼던 좌석.', characterId: 'jisoo', expression: 'shocked' },
+  { id: 'line-007', speaker: '', text: '자리 근처 서랍에서 오래된 외장 드라이브 하나가 나온다.', characterId: null },
+  { id: 'line-008', speaker: '영우', text: '이거 열어봐도 될까?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-009', speaker: '지수', text: '일단 열어봐요.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-010', speaker: '', text: '안에는 SSD 이미지 파일과 단발성 의뢰 목록,\n그리고 폴더 하나가 있었다.', characterId: null },
+  { id: 'line-011', speaker: '', text: '[ 폴더명: MK ]', characterId: null },
+  { id: 'line-012', speaker: '지수', text: '...', characterId: 'jisoo', pauseBeforeMs: 500, expression: 'shocked' },
+  { id: 'line-013', speaker: '영우', text: '...\n찾았다.', characterId: 'youngwoo', pauseBeforeMs: 400, expression: 'shocked' },
+  { id: 'line-014', speaker: '지수', text: '이 자리, 아직도 쓰는 사람이 있을까요?', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-015', speaker: '', text: '그때, 작업실 입구에서 인기척이 들렸다.', characterId: null },
+];
+
+/* OPERATION MK — WEEK 4 · SCENE 05 「미카 코바치 등장」
+   Dialogue Set: dialogue-week4-scene005
+   Scene: week4-scene-005 (폐업한 공유 작업실, 11:35)
+   첫 실물 대면 — 그녀는 도망치지 않는다. */
+const week4Scene005Lines = [
+  { id: 'line-001', speaker: '', text: '같은 작업실.\n오전 11시 35분.', characterId: null },
+  { id: 'line-002', speaker: '', text: '문 앞에 한 여자가 서 있었다.\n검은 재킷, 은색 케이스, 왼손의 시계.', characterId: null },
+  { id: 'line-003', speaker: '미카 코바치', text: '생각보다 늦었네요.', characterId: 'mika', expression: 'neutral' },
+  { id: 'line-004', speaker: '지수', text: '...', characterId: 'jisoo', pauseBeforeMs: 500, expression: 'shocked' },
+  { id: 'line-005', speaker: '영우', text: '당신이...', characterId: 'youngwoo', expression: 'shocked' },
+  { id: 'line-006', speaker: '미카 코바치', text: '미카 코바치예요.\n이미 짐작하셨겠지만.', characterId: 'mika', expression: 'neutral' },
+  { id: 'line-007', speaker: '지수', text: '도망 안 가요?', characterId: 'jisoo', expression: 'suspicious' },
+  { id: 'line-008', speaker: '미카 코바치', text: '왜요.\n딱히 도망갈 이유가 없는데.', characterId: 'mika', expression: 'neutral' },
+  { id: 'line-009', speaker: '미카 코바치', text: '열쇠, 아직 가지고 있죠?', characterId: 'mika', expression: 'neutral' },
+  { id: 'line-010', speaker: '지수', text: '...\n네.', characterId: 'jisoo', pauseBeforeMs: 400, expression: 'suspicious' },
+  { id: 'line-011', speaker: '미카 코바치', text: '앉아서 얘기할까요.\n어차피 오늘 끝낼 거잖아요, 그쪽도.', characterId: 'mika', expression: 'neutral' },
+];
+
+/* OPERATION MK — WEEK 4 · SCENE 06 「지수의 추리 제시」
+   Dialogue Set: dialogue-week4-scene006
+   Scene: week4-scene-006 (폐업한 공유 작업실, 11:45)
+   플레이어 확신 100% — 하지만 미카가 그대로 인정한다는 것 자체가
+   최종 반전을 값싸지 않게 만드는 장치. */
+const week4Scene006Lines = [
+  { id: 'line-001', speaker: '', text: '같은 작업실.\n오전 11시 45분.', characterId: null },
+  { id: 'line-002', speaker: '지수', text: '처음부터 순서대로 말씀드릴게요.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-003', speaker: '지수', text: '1주차, 황동 물건을 찾는 문의가 애드리언 콜한테 갔어요.\n발신인 Mika Kovac.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-004', speaker: '지수', text: '레오 박이 그 일감을 받았고, 중개 계정은 MK_Consult였고요.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-005', speaker: '지수', text: '2주차, 한소라한테 사진 구매 문의가 갔어요.\n발신 M. Kovac, 메타데이터 작성자 MKOVAC.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-006', speaker: '지수', text: '3주차, 제 열쇠는 맞춤 제작이었고\n주문 담당은 M. KOVAC이었어요.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-007', speaker: '지수', text: '발신 경로 추적하니까 당신이 예전에 쓰던 보안 릴레이가 나왔고,\n그게 이 동네로 좁혀졌어요.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-008', speaker: '지수', text: '그리고 방금, 이 자리에서 MK 폴더를 찾았어요.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-009', speaker: '지수', text: 'M.K.는 당신이야.\n미카 코바치.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-010', speaker: '', text: '잠깐 정적이 흘렀다.', characterId: null },
+  { id: 'line-011', speaker: '미카 코바치', text: '맞아요.', characterId: 'mika', expression: 'neutral' },
+];
+
+/* OPERATION MK — WEEK 4 · SCENE 07 「가짜 진범 고백」
+   Dialogue Set: dialogue-week4-scene007
+   Scene: week4-scene-007 (폐업한 공유 작업실, 11:50)
+   미카는 실제로 관여한 것들을 전부 인정한다 — 거짓 단서가 아니라 진짜
+   연결 인물이었음을 확정하는 장면. */
+const week4Scene007Lines = [
+  { id: 'line-001', speaker: '', text: '같은 작업실.\n오전 11시 50분.', characterId: null },
+  { id: 'line-002', speaker: '미카 코바치', text: '전부 맞아요.\nMK 프로젝트 폴더, 제가 쓴 거예요.', characterId: 'mika', expression: 'neutral' },
+  { id: 'line-003', speaker: '미카 코바치', text: '황동 물건 조사했고, 레오 씨 쪽 작업 흐름에도 관여했고요.', characterId: 'mika', expression: 'neutral' },
+  { id: 'line-004', speaker: '미카 코바치', text: '한소라 씨한테 사진 문의도 보냈고,\n그쪽 열쇠 회수·촬영·반환도 제가 중개했어요.', characterId: 'mika', expression: 'neutral' },
+  { id: 'line-005', speaker: '미카 코바치', text: '메시지 일부도 제가 직접 전달했고요.\n"틀린 사람을 찾고 있다"는 것도요.', characterId: 'mika', expression: 'neutral' },
+  { id: 'line-006', speaker: '영우', text: '그럼 그거 진짜 자기 자신 얘기 아니었어요?', characterId: 'youngwoo', expression: 'suspicious' },
+  { id: 'line-007', speaker: '미카 코바치', text: '아니었어요.\n제 얘기가 아니라.', characterId: 'mika', expression: 'neutral' },
+  { id: 'line-008', speaker: '지수', text: '그럼 끝났네.', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-009', speaker: '미카 코바치', text: '아뇨.', characterId: 'mika', expression: 'serious' },
+  { id: 'line-010', speaker: '지수', text: '...\n뭐가 아니에요.\n다 인정했잖아요.', characterId: 'jisoo', pauseBeforeMs: 400, expression: 'suspicious' },
+  { id: 'line-011', speaker: '미카 코바치', text: '제가 한 일들은 다 맞아요.', characterId: 'mika', expression: 'serious' },
+  { id: 'line-012', speaker: '미카 코바치', text: '근데 그게 제가 다라는 뜻은 아니에요.', characterId: 'mika', expression: 'serious' },
+];
+
+/* OPERATION MK — WEEK 4 · SCENE 08 「한 문장으로 붕괴」
+   Dialogue Set: dialogue-week4-scene008
+   Scene: week4-scene-008 (폐업한 공유 작업실, 11:55) */
+const week4Scene008Lines = [
+  { id: 'line-001', speaker: '', text: '같은 작업실.\n오전 11시 55분.', characterId: null },
+  { id: 'line-002', speaker: '미카 코바치', text: '난 내가 뭘 찾는지도 몰랐어요.', characterId: 'mika', expression: 'serious' },
+  { id: 'line-003', speaker: '지수', text: '무슨 소리예요.\nM.K.가 당신이라며.', characterId: 'jisoo', expression: 'suspicious' },
+  { id: 'line-004', speaker: '미카 코바치', text: '내 이름도 M.K.죠.', characterId: 'mika', expression: 'serious' },
+  { id: 'line-005', speaker: '미카 코바치', text: '그래서 처음엔 나도 그렇게 생각했어요.', characterId: 'mika', expression: 'serious' },
+  { id: 'line-006', speaker: '영우', text: '그게 무슨 말이에요, 처음엔이라니.', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-007', speaker: '미카 코바치', text: '난 그 의뢰인을 한 번도 만난 적 없어요.', characterId: 'mika', expression: 'serious' },
+  { id: 'line-008', speaker: '지수', text: '...', characterId: 'jisoo', pauseBeforeMs: 600, expression: 'shocked' },
+  { id: 'line-009', speaker: '영우', text: '잠깐만요.\n그럼 지금까지 그 문의들은 다 누가 보낸 거예요?', characterId: 'youngwoo', expression: 'shocked' },
+  { id: 'line-010', speaker: '미카 코바치', text: '그걸 저도 몰라서 이러고 있는 거예요, 몇 달째.', characterId: 'mika', expression: 'serious' },
+];
+
+/* OPERATION MK — WEEK 4 · SCENE 09 「미카의 진실」
+   Dialogue Set: dialogue-week4-scene009
+   Scene: week4-scene-009 (폐업한 공유 작업실, 12:05) */
+const week4Scene009Lines = [
+  { id: 'line-001', speaker: '', text: '같은 작업실.\n낮 12시 5분.', characterId: null },
+  { id: 'line-002', speaker: '미카 코바치', text: '몇 달 전부터 이상한 단발성 의뢰가 계속 들어왔어요.', characterId: 'mika', expression: 'serious' },
+  { id: 'line-003', speaker: '미카 코바치', text: '매번 계정이 달랐고, 결제 수단도 달랐어요.\n근데 다 정상적으로 처리됐고요.', characterId: 'mika', expression: 'serious' },
+  { id: 'line-004', speaker: '지수', text: '내용은요?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-005', speaker: '미카 코바치', text: '특정 황동 물건 사진 찾기, 특정 시간대 원본 사진 확보,\n특정 열쇠 촬영 후 반환, 특정 인물의 귀환 일정 확인.', characterId: 'mika', expression: 'serious' },
+  { id: 'line-006', speaker: '영우', text: '전부 작고 합법이거나 애매한 회색지대였네요.', characterId: 'youngwoo', expression: 'serious' },
+  { id: 'line-007', speaker: '미카 코바치', text: '맞아요.\n근데 문장 습관이랑 목표가 이상하게 똑같았어요.', characterId: 'mika', expression: 'serious' },
+  { id: 'line-008', speaker: '미카 코바치', text: '그래서 편의상 제 이니셜이랑 겹쳐서\n"MK 프로젝트"로 분류해둔 거예요.', characterId: 'mika', expression: 'serious' },
+  { id: 'line-009', speaker: '지수', text: '...\n그럼 M.K.가 당신을 가리키는 것도 맞고,', characterId: 'jisoo', pauseBeforeMs: 400, expression: 'shocked' },
+  { id: 'line-010', speaker: '지수', text: '당신 뒤에 있는 무언가를 가리키는 것도 맞다는 거예요.', characterId: 'jisoo', expression: 'shocked' },
+  { id: 'line-011', speaker: '미카 코바치', text: '그런 것 같아요.', characterId: 'mika', expression: 'serious' },
+];
+
+/* OPERATION MK — WEEK 4 · SCENE 10 「플레이어 추리의 재평가」
+   Dialogue Set: dialogue-week4-scene010
+   Scene: week4-scene-010 (폐업한 공유 작업실, 12:15)
+   브리프의 핵심 감정 비트 — "속은 게 아니라 한 층 부족했을 뿐"이라는 걸
+   대사로 직접 짚어준다. */
+const week4Scene010Lines = [
+  { id: 'line-001', speaker: '', text: '같은 작업실.\n낮 12시 15분.', characterId: null },
+  { id: 'line-002', speaker: '영우', text: '지수야, 괜찮아?', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-003', speaker: '지수', text: '...\n모르겠어요.', characterId: 'jisoo', pauseBeforeMs: 400, expression: 'blank' },
+  { id: 'line-004', speaker: '지수', text: '근데 이상하게 속은 기분은 아니에요.', characterId: 'jisoo', expression: 'blank' },
+  { id: 'line-005', speaker: '영우', text: '왜?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-006', speaker: '지수', text: '지금까지 본 증거들, 다 진짜였잖아요.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-007', speaker: '지수', text: '틀린 게 아니라 딱 한 층 부족했던 거예요.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-008', speaker: '미카 코바치', text: '정확해요.', characterId: 'mika', expression: 'neutral' },
+  { id: 'line-009', speaker: '지수', text: '그럼 이제 물어볼게요.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-010', speaker: '지수', text: '그 의뢰인, 진짜 목적이 뭐였어요?', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-011', speaker: '미카 코바치', text: '그건 저도 궁금해요, 진심으로.', characterId: 'mika', expression: 'serious' },
+];
+
+/* OPERATION MK — WEEK 4 · SCENE 11 「질문 전환」
+   Dialogue Set: dialogue-week4-scene011
+   Scene: week4-scene-011 (폐업한 공유 작업실, 12:20) */
+const week4Scene011Lines = [
+  { id: 'line-001', speaker: '', text: '같은 작업실.\n낮 12시 20분.', characterId: null },
+  { id: 'line-002', speaker: '', text: '지수가 3주차에 받았던 종이를 다시 꺼내 든다.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-003', speaker: '', text: '[ NOT WHO. ]\n[ WHY. ]', characterId: null },
+  { id: 'line-004', speaker: '지수', text: '미카가 누군지는 맞았어.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-005', speaker: '지수', text: '근데 얘가 말한 건 그게 아니었네.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-006', speaker: '영우', text: '이거, 미카가 우리한테 남긴 거잖아.', characterId: 'youngwoo', expression: 'shocked' },
+  { id: 'line-007', speaker: '미카 코바치', text: '...\n네, 제가 남긴 거 맞아요.', characterId: 'mika', pauseBeforeMs: 400, expression: 'neutral' },
+  { id: 'line-008', speaker: '미카 코바치', text: '누군지는 이미 알려드린 셈이니까.\n다음 질문으로 넘어가시라고요.', characterId: 'mika', expression: 'neutral' },
+  { id: 'line-009', speaker: '지수', text: '왜 M.K.는 계속 무언가를 찾았을까요.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-010', speaker: '미카 코바치', text: '그거, 같이 다시 짚어볼래요?\n제가 처리했던 의뢰들 기준으로.', characterId: 'mika', expression: 'neutral' },
+];
+
+/* OPERATION MK — WEEK 4 · SCENE 12 「세 사건 재해석」
+   Dialogue Set: dialogue-week4-scene012
+   Scene: week4-scene-012 (폐업한 공유 작업실, 12:30) */
+const week4Scene012Lines = [
+  { id: 'line-001', speaker: '', text: '같은 작업실.\n낮 12시 30분.', characterId: null },
+  { id: 'line-002', speaker: '미카 코바치', text: '1주차 K-01, 그건 도난을 원한 게 아니었어요.', characterId: 'mika', expression: 'neutral' },
+  { id: 'line-003', speaker: '미카 코바치', text: '비슷한 황동 물건이 맞는지 확인하고, 사진만 확보하면 되는 일이었어요.', characterId: 'mika', expression: 'neutral' },
+  { id: 'line-004', speaker: '영우', text: '근데 레오 씨가 욕심을 냈고.', characterId: 'youngwoo', expression: 'blank' },
+  { id: 'line-005', speaker: '미카 코바치', text: '맞아요.\n그쪽 사정으로 일이 커진 거예요.', characterId: 'mika', expression: 'neutral' },
+  { id: 'line-006', speaker: '지수', text: '2주차 메모리카드는요?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-007', speaker: '미카 코바치', text: '기억 조작 같은 건 필요 없었어요.\n그냥 특정 시간대 원본 사진이 필요했을 뿐이에요.', characterId: 'mika', expression: 'neutral' },
+  { id: 'line-008', speaker: '영우', text: '한소라 씨가 자기 사정 때문에 범죄를 만든 거고.', characterId: 'youngwoo', expression: 'blank' },
+  { id: 'line-009', speaker: '미카 코바치', text: '네.\n그것도 제 의도랑은 상관없는 일이었어요.', characterId: 'mika', expression: 'neutral' },
+  { id: 'line-010', speaker: '지수', text: '제 열쇠는요?', characterId: 'jisoo', expression: 'suspicious' },
+  { id: 'line-011', speaker: '미카 코바치', text: '촬영, 확인, 반환.\n그게 전부였어요.', characterId: 'mika', expression: 'neutral' },
+  { id: 'line-012', speaker: '미카 코바치', text: '그래서 다른 귀중품은 손도 안 댄 거고요.', characterId: 'mika', expression: 'neutral' },
+];
+
+/* OPERATION MK — WEEK 4 · SCENE 13 「M.K.의 목적어」
+   Dialogue Set: dialogue-week4-scene013
+   Scene: week4-scene-013 (폐업한 공유 작업실, 12:40) */
+const week4Scene013Lines = [
+  { id: 'line-001', speaker: '', text: '같은 작업실.\n낮 12시 40분.', characterId: null },
+  { id: 'line-002', speaker: '미카 코바치', text: '의뢰문들, 지금 다시 보면 이상한 게 하나 있어요.', characterId: 'mika', expression: 'neutral' },
+  { id: 'line-003', speaker: '지수', text: '뭐가요?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-004', speaker: '미카 코바치', text: '뭘 찾는지, 누굴 기다리는지는 한 번도 명확히 안 써 있어요.', characterId: 'mika', expression: 'neutral' },
+  { id: 'line-005', speaker: '영우', text: '그럼 뭐가 써 있는데요?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-006', speaker: '미카 코바치', text: '돌아오다, 집, 기다리다, 찾다.\n이 네 단어만 계속 반복돼요.', characterId: 'mika', expression: 'serious' },
+  { id: 'line-007', speaker: '지수', text: '...', characterId: 'jisoo', pauseBeforeMs: 500, expression: 'blank' },
+  { id: 'line-008', speaker: '지수', text: '그거, 사람한테 쓰는 말이 아니라\n뭔가 기다리는 존재가 쓰는 말 같은데.', characterId: 'jisoo', expression: 'suspicious' },
+  { id: 'line-009', speaker: '미카 코바치', text: '이건 사람 한 명의 문체라기엔 이상해요.\n제가 처음부터 그렇게 생각했어요.', characterId: 'mika', expression: 'serious' },
+  { id: 'line-010', speaker: '영우', text: '...\n지수야.', characterId: 'youngwoo', pauseBeforeMs: 400, expression: 'blank' },
+  { id: 'line-011', speaker: '지수', text: '왜요.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-012', speaker: '영우', text: '아니야, 아무것도.', characterId: 'youngwoo', expression: 'blank' },
+];
+
+/* OPERATION MK — WEEK 4 · SCENE 14 「무깽이 연결」
+   Dialogue Set: dialogue-week4-scene014
+   Scene: week4-scene-014 (폐업한 공유 작업실, 12:50)
+   브리프의 "무깽이 리마인드 #5이자 첫 강한 연결" — 여기서 처음으로
+   무깽이가 미스터리와 접촉한다. */
+const week4Scene014Lines = [
+  { id: 'line-001', speaker: '', text: '같은 작업실.\n낮 12시 50분.', characterId: null },
+  { id: 'line-002', speaker: '미카 코바치', text: '이것도 보여드릴게요.\n의뢰 로그에 첨부돼 있던 이미지 아이콘이에요.', characterId: 'mika', expression: 'neutral' },
+  { id: 'line-003', speaker: '', text: '작은 발바닥 모양의 아이콘이 화면에 뜬다.', characterId: null },
+  { id: 'line-004', speaker: '지수', text: '...\n어?', characterId: 'jisoo', pauseBeforeMs: 400, expression: 'shocked' },
+  { id: 'line-005', speaker: '영우', text: '왜?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-006', speaker: '지수', text: '이거 좀 닮지 않았어요?', characterId: 'jisoo', expression: 'suspicious' },
+  { id: 'line-007', speaker: '', text: '지수가 폰에서 무깽이 옷 위에 누운 사진, 오래된 발바닥 사진을 함께 띄운다.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-008', speaker: '영우', text: '설마.', characterId: 'youngwoo', expression: 'shocked' },
+  { id: 'line-009', speaker: '지수', text: '...\n무깽이?', characterId: 'jisoo', pauseBeforeMs: 500, expression: 'shocked' },
+  { id: 'line-010', speaker: '영우', text: '...', characterId: 'youngwoo', pauseBeforeMs: 500, expression: 'blank' },
+  { id: 'line-011', speaker: '미카 코바치', text: '...\n왜 그러세요?', characterId: 'mika', expression: 'suspicious' },
+  { id: 'line-012', speaker: '영우', text: '아니, 잠깐.', characterId: 'youngwoo', pauseBeforeMs: 400, expression: 'blank' },
+  { id: 'line-013', speaker: '영우', text: '이 이름...\n내가 쓴 적 있어.', characterId: 'youngwoo', expression: 'blank' },
+];
+
+/* OPERATION MK — WEEK 4 · SCENE 15 「최종 정체」
+   Dialogue Set: dialogue-week4-scene015
+   Scene: week4-scene-015 (폐업한 공유 작업실, 13:00)
+   영우가 직접 설명하는 최종 캐논 — 무깽이 관련 자동화 계정이
+   여러 실행자를 거치며 남긴 동일한 작업 패턴. */
+const week4Scene015Lines = [
+  { id: 'line-001', speaker: '', text: '같은 작업실.\n낮 1시.', characterId: null },
+  { id: 'line-002', speaker: '지수', text: '무슨 소리예요, 쓴 적 있다니.', characterId: 'jisoo', expression: 'suspicious' },
+  { id: 'line-003', speaker: '영우', text: '...\n한국에서, 지수 만나기 전에.', characterId: 'youngwoo', pauseBeforeMs: 400, expression: 'blank' },
+  { id: 'line-004', speaker: '영우', text: '무깽이 집 상태 확인하고, 사진 정리하고,\n루틴 자동화하려고 작은 계정 하나 만들었었어.', characterId: 'youngwoo', expression: 'blank' },
+  { id: 'line-005', speaker: '영우', text: '필요하면 사람한테 작은 일 맡기는 기능도 넣었고.', characterId: 'youngwoo', expression: 'blank' },
+  { id: 'line-006', speaker: '지수', text: '...\n그 계정 이름이.', characterId: 'jisoo', pauseBeforeMs: 500, expression: 'shocked' },
+  { id: 'line-007', speaker: '영우', text: '이니셜로 대충 지었었어.\n그러고 완전히 잊고 있었고.', characterId: 'youngwoo', expression: 'blank' },
+  { id: 'line-008', speaker: '미카 코바치', text: '...\n그게 사실이면, 설명이 되네요.', characterId: 'mika', expression: 'serious' },
+  { id: 'line-009', speaker: '미카 코바치', text: '계정마다 다 달랐던 이유, 근데 문체는 똑같았던 이유.', characterId: 'mika', expression: 'serious' },
+  { id: 'line-010', speaker: '미카 코바치', text: '사람이 하나하나 지시한 게 아니라\n오래된 자동화 계정이 여러 서비스랑 사람을 거치면서\n같은 패턴을 반복한 거예요.', characterId: 'mika', expression: 'serious' },
+  { id: 'line-011', speaker: '지수', text: '그럼 저는요.\n저 지금까지 뭘 쫓은 거예요.', characterId: 'jisoo', expression: 'suspicious' },
+  { id: 'line-012', speaker: '미카 코바치', text: '전부 다 맞았어요.', characterId: 'mika', expression: 'neutral' },
+  { id: 'line-013', speaker: '미카 코바치', text: 'M.K.는 미카 코바치이기도 하고,\nMissing Key이기도 하고,', characterId: 'mika', expression: 'neutral' },
+  { id: 'line-014', speaker: '미카 코바치', text: '그쪽 고양이랑 연결된 이름이기도 해요.\n셋 다 참이에요.', characterId: 'mika', expression: 'neutral' },
+];
+
+/* OPERATION MK — WEEK 4 · SCENE 16 「감정 반전」
+   Dialogue Set: dialogue-week4-scene016
+   Scene: week4-scene-016 (폐업한 공유 작업실, 13:10)
+   브리프 지정 순서: 황당함 → 안 믿김 → 웃음 → 영우 타박 → 뒤늦은 뭉클함. */
+const week4Scene016Lines = [
+  { id: 'line-001', speaker: '', text: '같은 작업실.\n낮 1시 10분.', characterId: null },
+  { id: 'line-002', speaker: '지수', text: '잠깐.', characterId: 'jisoo', expression: 'blank' },
+  { id: 'line-003', speaker: '지수', text: '그러니까 내가 4주 동안 쫓은 M.K.가...', characterId: 'jisoo', expression: 'blank' },
+  { id: 'line-004', speaker: '영우', text: '미카도 맞긴 한데...', characterId: 'youngwoo', expression: 'blank' },
+  { id: 'line-005', speaker: '지수', text: '그 말 하지 마.', characterId: 'jisoo', expression: 'annoyed' },
+  { id: 'line-006', speaker: '', text: '잠깐 정적이 흘렀다.', characterId: null },
+  { id: 'line-007', speaker: '지수', text: '...\n무깽이 때문이라고?', characterId: 'jisoo', pauseBeforeMs: 500, expression: 'shocked' },
+  { id: 'line-008', speaker: '영우', text: '어...\n결과적으로는.', characterId: 'youngwoo', expression: 'blank' },
+  { id: 'line-009', speaker: '지수', text: '...', characterId: 'jisoo', pauseBeforeMs: 500, expression: 'blank' },
+  { id: 'line-010', speaker: '지수', text: 'ㅋㅋㅋㅋㅋㅋ 미친.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-011', speaker: '영우', text: '...\n왜 웃어.', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-012', speaker: '지수', text: '안 웃게 생겼어요, 이게?', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-013', speaker: '지수', text: '4주 내내 탐정 놀이 했는데 범인이 우리 집 고양이 계정이라니.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-014', speaker: '영우', text: '내 계정이었지, 정확히는.', characterId: 'youngwoo', expression: 'blank' },
+  { id: 'line-015', speaker: '지수', text: '그러니까 당신 탓이잖아요.', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-016', speaker: '영우', text: '...\n미안.', characterId: 'youngwoo', pauseBeforeMs: 300, expression: 'blank' },
+  { id: 'line-017', speaker: '지수', text: '...', characterId: 'jisoo', pauseBeforeMs: 400, expression: 'soft' },
+  { id: 'line-018', speaker: '지수', text: '근데 생각해보면, 그거 다 무깽이 잘 있나 걱정돼서 만든 거잖아요.', characterId: 'jisoo', expression: 'soft' },
+  { id: 'line-019', speaker: '영우', text: '...\n그렇지.', characterId: 'youngwoo', pauseBeforeMs: 300, expression: 'soft' },
+  { id: 'line-020', speaker: '지수', text: '바보같이 다정하네, 진짜.', characterId: 'jisoo', expression: 'soft' },
+  { id: 'line-021', speaker: '미카 코바치', text: '...\n두 분, 얘기 다 끝나셨으면 저는 이만.', characterId: 'mika', expression: 'neutral' },
+  { id: 'line-022', speaker: '지수', text: '아, 죄송해요.', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-023', speaker: '미카 코바치', text: '아니에요.\n오히려 저도 후련하네요, 몇 달 만에.', characterId: 'mika', expression: 'neutral' },
+];
+
+/* OPERATION MK — WEEK 4 · SCENE 17 「마지막 영상」
+   Dialogue Set: dialogue-week4-scene017
+   Scene: week4-scene-017 (Sydney Accommodation, 20:00)
+   거창한 편집 없이 평범한 무깽이 영상 하나로 끝맺는다. */
+const week4Scene017Lines = [
+  { id: 'line-001', speaker: '', text: '숙소.\n밤 8시.', characterId: null },
+  { id: 'line-002', speaker: '영우', text: '가족한테 영상통화 걸어볼까.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-003', speaker: '지수', text: '웅웅, 좋아요.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-004', speaker: '', text: '화면 너머로 무깽이가 잠깐 비쳤다.', characterId: null },
+  { id: 'line-005', speaker: '', text: '하품을 하고, 카메라를 완전히 무시하고,\n지수 옷 위에 가서 앉는다.', characterId: null },
+  { id: 'line-006', speaker: '지수', text: '...\nㅋㅋㅋㅋ 쟤 진짜 아무것도 모르네.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-007', speaker: '영우', text: '알 리가 없지.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-008', speaker: '지수', text: '4주 내내 이 정도로 평범할 줄이야.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-009', speaker: '영우', text: '오히려 그래서 다행인 것 같아.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-010', speaker: '지수', text: '웅.\n너무 거창했으면 더 이상했을 듯.', characterId: 'jisoo', expression: 'soft' },
+  { id: 'line-011', speaker: '', text: '거대했던 미스터리의 끝이,\n너무 평범해서 오히려 마음이 놓였다.', characterId: null },
+];
+
+/* OPERATION MK — WEEK 4 · SCENE 18 「다음 날 체크아웃」
+   Dialogue Set: dialogue-week4-scene018
+   Scene: week4-scene-018 (Sydney Accommodation, 다음날 10:00) */
+const week4Scene018Lines = [
+  { id: 'line-001', speaker: '', text: '숙소.\n다음날 오전 10시.', characterId: null },
+  { id: 'line-002', speaker: '', text: '캐리어를 정리하며 둘은 짐을 챙겼다.', characterId: null },
+  { id: 'line-003', speaker: '지수', text: '이제 진짜 끝난 거지?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-004', speaker: '영우', text: '아마도?', characterId: 'youngwoo', expression: 'blank' },
+  { id: 'line-005', speaker: '지수', text: '아마도 하지 마.', characterId: 'jisoo', expression: 'annoyed' },
+  { id: 'line-006', speaker: '영우', text: 'ㅋㅋㅋ 알겠어, 끝났어.', characterId: 'youngwoo', expression: 'happy' },
+  { id: 'line-007', speaker: '지수', text: '됐어요, 이미 늦었어요.', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-008', speaker: '영우', text: '그 열쇠는 어떻게 할 거야?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-009', speaker: '지수', text: '기념품이죠, 뭐.\n4주짜리 기념품.', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-010', speaker: '영우', text: '무거운 기념품이네.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-011', speaker: '지수', text: '그만큼 값진 거죠.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-012', speaker: '', text: '둘은 캐리어를 끌고 방을 나섰다.', characterId: null },
+];
+
+/* OPERATION MK — WEEK 4 · SCENE 19 「12초」
+   Dialogue Set: dialogue-week4-scene019
+   Scene: week4-scene-019 (Sydney Accommodation, 빈 방)
+   엔딩 컷 — 0주차부터 있던 녹슨 나사가 떨어지며 K-02가 등장한다.
+   No nextSceneId; ends 4주차 and the whole 시즌. */
+const week4Scene019Lines = [
+  { id: 'line-001', speaker: '', text: '숙소, 빈 방.', characterId: null },
+  { id: 'line-002', speaker: '', text: '문이 닫힌다.', characterId: null },
+  { id: 'line-003', speaker: '', text: '정적.', characterId: null },
+  { id: 'line-004', speaker: '', text: '환풍기가 멈춘다.', characterId: null },
+  { id: 'line-005', speaker: '', text: '0주차부터 있던 녹슨 나사가 떨어진다.', characterId: null },
+  { id: 'line-006', speaker: '', text: '작은 금속음.', characterId: null },
+  { id: 'line-007', speaker: '', text: '환풍구 안쪽에서, 작은 황동 열쇠 하나가 굴러떨어진다.', characterId: null },
+  { id: 'line-008', speaker: '', text: '태그.', characterId: null },
+  { id: 'line-009', speaker: '', text: '[ K-02 ]', characterId: null },
+  { id: 'line-010', speaker: '', text: '컷.', characterId: null },
+];
+
+// Registry of testable Week 4 scenes — /dev/week4 lists these, each linking
+// to /dev/game/?scene=<id>. Covers only the 4주차 main arc (W4-S01~S19,
+// "M.K.는 미카 코바치인가" + NOT WHO, WHY 최종부) — 4주차 평일 미니씬
+// (W4-D1~D5)은 아직 미구현.
+const week4Scenes = [
+  {
+    id: 'week4-scene-001',
+    order: 1,
+    name: '마지막 주 아침',
+    location: 'Sydney Accommodation',
+    introLabel: 'ACCOMMODATION',
+    time: '09:00',
+    lines: week4Scene001Lines,
+  },
+  {
+    id: 'week4-scene-002',
+    order: 2,
+    name: 'The Rocks 이동',
+    location: 'The Rocks',
+    introLabel: 'THE ROCKS',
+    time: '10:00',
+    lines: week4Scene002Lines,
+  },
+  {
+    id: 'week4-scene-003',
+    order: 3,
+    name: '첫 보관함',
+    location: 'The Rocks',
+    introLabel: 'THE ROCKS',
+    time: '10:30',
+    lines: week4Scene003Lines,
+    // Hands off into the (not yet built) 4자리 코드 추리 minigame — see
+    // MINIGAME_ROUTES in game/index.html. Falls back to a "MINIGAME START"
+    // placeholder overlay until that route exists.
+    nextSceneId: 'week4-scene-003-minigame',
+  },
+  {
+    id: 'week4-scene-004',
+    order: 4,
+    name: '포렌식 작업실 흔적',
+    location: 'Former Shared Workspace',
+    introLabel: 'THE ROCKS',
+    time: '11:30',
+    lines: week4Scene004Lines,
+  },
+  {
+    id: 'week4-scene-005',
+    order: 5,
+    name: '미카 코바치 등장',
+    location: 'Former Shared Workspace',
+    introLabel: 'THE ROCKS',
+    time: '11:35',
+    lines: week4Scene005Lines,
+  },
+  {
+    id: 'week4-scene-006',
+    order: 6,
+    name: '지수의 추리 제시',
+    location: 'Former Shared Workspace',
+    introLabel: 'THE ROCKS',
+    time: '11:45',
+    lines: week4Scene006Lines,
+  },
+  {
+    id: 'week4-scene-007',
+    order: 7,
+    name: '가짜 진범 고백',
+    location: 'Former Shared Workspace',
+    introLabel: 'THE ROCKS',
+    time: '11:50',
+    lines: week4Scene007Lines,
+  },
+  {
+    id: 'week4-scene-008',
+    order: 8,
+    name: '한 문장으로 붕괴',
+    location: 'Former Shared Workspace',
+    introLabel: 'THE ROCKS',
+    time: '11:55',
+    lines: week4Scene008Lines,
+  },
+  {
+    id: 'week4-scene-009',
+    order: 9,
+    name: '미카의 진실',
+    location: 'Former Shared Workspace',
+    introLabel: 'THE ROCKS',
+    time: '12:05',
+    lines: week4Scene009Lines,
+  },
+  {
+    id: 'week4-scene-010',
+    order: 10,
+    name: '플레이어 추리의 재평가',
+    location: 'Former Shared Workspace',
+    introLabel: 'THE ROCKS',
+    time: '12:15',
+    lines: week4Scene010Lines,
+  },
+  {
+    id: 'week4-scene-011',
+    order: 11,
+    name: '질문 전환',
+    location: 'Former Shared Workspace',
+    introLabel: 'THE ROCKS',
+    time: '12:20',
+    lines: week4Scene011Lines,
+  },
+  {
+    id: 'week4-scene-012',
+    order: 12,
+    name: '세 사건 재해석',
+    location: 'Former Shared Workspace',
+    introLabel: 'THE ROCKS',
+    time: '12:30',
+    lines: week4Scene012Lines,
+  },
+  {
+    id: 'week4-scene-013',
+    order: 13,
+    name: 'M.K.의 목적어',
+    location: 'Former Shared Workspace',
+    introLabel: 'THE ROCKS',
+    time: '12:40',
+    lines: week4Scene013Lines,
+  },
+  {
+    id: 'week4-scene-014',
+    order: 14,
+    name: '무깽이 연결',
+    location: 'Former Shared Workspace',
+    introLabel: 'THE ROCKS',
+    time: '12:50',
+    lines: week4Scene014Lines,
+  },
+  {
+    id: 'week4-scene-015',
+    order: 15,
+    name: '최종 정체',
+    location: 'Former Shared Workspace',
+    introLabel: 'THE ROCKS',
+    time: '13:00',
+    lines: week4Scene015Lines,
+  },
+  {
+    id: 'week4-scene-016',
+    order: 16,
+    name: '감정 반전',
+    location: 'Former Shared Workspace',
+    introLabel: 'THE ROCKS',
+    time: '13:10',
+    lines: week4Scene016Lines,
+  },
+  {
+    id: 'week4-scene-017',
+    order: 17,
+    name: '마지막 영상',
+    location: 'Sydney Accommodation',
+    introLabel: 'ACCOMMODATION',
+    time: '20:00',
+    lines: week4Scene017Lines,
+  },
+  {
+    id: 'week4-scene-018',
+    order: 18,
+    name: '다음 날 체크아웃',
+    location: 'Sydney Accommodation',
+    introLabel: 'ACCOMMODATION',
+    time: '10:00',
+    lines: week4Scene018Lines,
+  },
+  {
+    id: 'week4-scene-019',
+    order: 19,
+    name: '12초',
+    location: 'Sydney Accommodation',
+    introLabel: '',
+    time: '',
+    lines: week4Scene019Lines,
+  },
+];
+
 // Groups scene registries by week — 배경 DB (/dev/upload) lists scenes under
 // their week here instead of hardcoding a single week's worth of scenes.
 //
@@ -1776,11 +2737,13 @@ const weeks = [
   { id: 'week0', label: '0주차', scenes: week0UploadScenes },
   { id: 'week1', label: '1주차', scenes: week1Scenes },
   { id: 'week2', label: '2주차', scenes: week2Scenes },
+  { id: 'week3', label: '3주차', scenes: week3Scenes },
+  { id: 'week4', label: '4주차', scenes: week4Scenes },
 ];
 
 // Combined lookup across every week's scenes — /dev/game resolves a
 // requested ?scene= id against this instead of a single week's array, since
-// a scene can belong to any week. Per-week test pages (/dev/week0,
-// /dev/week1, /dev/week2) still read their own week*Scenes array directly so
-// their listing stays scoped to just that week.
-const allScenes = week0Scenes.concat(week1Scenes).concat(week2Scenes);
+// a scene can belong to any week. Per-week test pages (/dev/week0 ~
+// /dev/week4) still read their own week*Scenes array directly so their
+// listing stays scoped to just that week.
+const allScenes = week0Scenes.concat(week1Scenes).concat(week2Scenes).concat(week3Scenes).concat(week4Scenes);

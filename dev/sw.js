@@ -1,11 +1,14 @@
 // Scoped to /dev/ only (this file lives in dev/, so the browser won't let it
 // control anything outside that path) — keeps the OPERATION MK DEV sandbox as
 // its own installable app, independent of the 강낭콩 투어 PWA's service worker.
-const CACHE_NAME = 'operation-mk-dev-v14';
+const CACHE_NAME = 'operation-mk-dev-v16';
 const APP_SHELL = [
   '/dev/',
   '/dev/week0/',
   '/dev/week1/',
+  '/dev/week2/',
+  '/dev/week3/',
+  '/dev/week4/',
   '/dev/game/',
   '/dev/upload/',
   '/dev/start/',
