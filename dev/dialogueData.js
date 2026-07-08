@@ -1758,6 +1758,16 @@ const evidenceCollections = [
     route: '/dev/minigame-phone-search/',
     setupUrl: `/dev/upload/?scene=${roomSearchAreaSceneId(roomSearchAreas[0].id)}&minigame=week0-scene-002-2`,
   },
+  {
+    // Standalone/self-contained like fishing-minigame — the player's own
+    // uploaded photo IS the background, so there's no dev-marked
+    // background/hotspot pair to set up in /dev/upload first.
+    id: 'special-ability-test',
+    name: '특수 능력 테스트',
+    location: '독립형 테스트 (스토리 미연동)',
+    route: '/dev/minigame-item-scan/',
+    setupUrl: '/dev/minigame-item-scan/',
+  },
 ];
 
 /* OPERATION MK — WEEK 3 · SCENE 01 「숙소 — 지금까지 정리」
