@@ -201,7 +201,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
   <div class="sheet">
     <div class="sheet-title">Dev · Minigame Debug</div>
     <div class="sheet-grid">
-      <button class="sheet-btn" id="btnShowHotspots">SHOW HOTSPOTS</button>
+      <button class="sheet-btn" id="btnShowHotspots">HIDE HOTSPOTS</button>
       <button class="sheet-btn" id="btnOpenBathroomDoor">OPEN BATHROOM DOOR</button>
       <button class="sheet-btn" id="btnGiveDeadFlashlight">GIVE DEAD FLASHLIGHT</button>
       <button class="sheet-btn" id="btnGiveBatteries">GIVE BATTERIES</button>
@@ -882,12 +882,13 @@ function buildPhotoCanvas(url) {
   el.photoCanvas.appendChild(img);
 }
 
-// Dev-only overlay (DEV sheet's SHOW HOTSPOTS toggle) — draws just the
-// item-bearing hotspots' rectangle + id directly on the photo (not every
-// marked hotspot — pure-flavor spots with no item add noise when a dev is
-// hunting for where an item actually is), so placements can be confirmed
-// before testing blind.
-let debugShowHotspots = false;
+// Overlay (still toggleable via the DEV sheet's SHOW/HIDE HOTSPOTS button)
+// — draws just the item-bearing hotspots' rectangle + id + item label
+// directly on the photo (not every marked hotspot — pure-flavor spots with
+// no item add noise). Defaults to ON while the game is still in testing —
+// TODO: flip back to false once testing wraps, so real players don't see
+// where items are.
+let debugShowHotspots = true;
 function renderDebugHotspotOverlay() {
   el.photoCanvas.querySelectorAll('.debug-hotspot-box, .debug-item-label').forEach(n => n.remove());
   if (!debugShowHotspots || currentMode !== 'photo') return;
