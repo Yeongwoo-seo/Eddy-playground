@@ -700,7 +700,6 @@ function handleBathroomDoor() {
   markProgress();
 }
 function handleBathroomBehindDoor() {
-  if (!state.flags.bathroomDoorOpened) { setMessage('문이 가로막고 있어 보이지 않는다.'); return; }
   if (hasItem('metal-hanger')) { setMessage('더 이상 걸려 있는 것이 없다.'); return; }
   addItem('metal-hanger');
   setMessage('문 뒤에 무언가 걸려 있다.\n[ 철제 옷걸이를 발견했다 ]');
