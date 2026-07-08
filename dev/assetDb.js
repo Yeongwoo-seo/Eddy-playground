@@ -413,11 +413,56 @@ const AssetDB = (() => {
     return recipes;
   }
 
+  // Per-line dialogue text overrides — { [lineId]: text } per sceneId, same
+  // JSON-blob-in-Storage pattern as room hotspots/items above. Only
+  // overrides a line's `text` field — speaker/characterId/expression stay
+  // fixed from dialogueData.js's static script, this is for wording tweaks
+  // (typos, voice passes) made from /dev/upload's 대사 tab, not for
+  // restructuring a scene's line list.
+  const dialogueOverridesCache = new Map();
+  function dialogueOverridesPath(sceneId) { return `dialogue-overrides/${encodeURIComponent(sceneId)}.json`; }
+
+  async function getDialogueOverrides(sceneId) {
+    if (!sceneId) return {};
+    if (dialogueOverridesCache.has(sceneId)) return dialogueOverridesCache.get(sceneId);
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${dialogueOverridesPath(sceneId)}?t=${Date.now()}`;
+    try {
+      const map = (await fetchJsonBlob(url)) || {};
+      dialogueOverridesCache.set(sceneId, map);
+      return map;
+    } catch (e) {
+      return dialogueOverridesCache.get(sceneId) || {};
+    }
+  }
+
+  async function setDialogueLineText(sceneId, lineId, text) {
+    if (!sceneId || !lineId) return {};
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${dialogueOverridesPath(sceneId)}?t=${Date.now()}`;
+    const current = await readCurrentForWrite(dialogueOverridesCache, sceneId, url, {});
+    const map = Object.assign({}, current);
+    if (text) map[lineId] = text; else delete map[lineId];
+    const blob = new Blob([JSON.stringify(map)], { type: 'application/json' });
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${DEV_ASSETS_BUCKET}/${dialogueOverridesPath(sceneId)}`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'x-upsert': 'true',
+      },
+      body: blob,
+    });
+    if (!res.ok) throw new Error(`대사 저장 실패 (${res.status}): ${await res.text()}`);
+    dialogueOverridesCache.set(sceneId, map);
+    return map;
+  }
+
   return {
     addAsset, getAssetsByType, getAsset, deleteAsset, preloadImage,
     getRoomHotspots, setRoomHotspot,
     getMinigameHotspot, setMinigameHotspot,
     getItems, setItem, getRecipes, setRecipes,
+    getDialogueOverrides, setDialogueLineText,
   };
 })();
 

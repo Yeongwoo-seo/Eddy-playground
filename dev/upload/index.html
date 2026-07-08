@@ -115,16 +115,22 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .item-actions-row button{flex:1}
 .recipe-editor{margin-top:18px;padding-top:16px;border-top:1px solid var(--divider)}
 
-/* ===== 대사 tab — read-only script view for the current scene, so a dev
-   doesn't have to leave this screen to check who says what while setting
-   up its background/characters. See selectType('dialogue'). ===== */
+/* ===== 대사 tab — editable script view for the current scene, so a dev can
+   fix wording without leaving this screen or touching dialogueData.js.
+   Only `text` is editable (speaker/characterId/expression stay fixed) —
+   saved as a per-line override in AssetDB (getDialogueOverrides/
+   setDialogueLineText), not back into the static source file. See
+   selectType('dialogue') / renderDialoguePanel. ===== */
 .dialogue-panel.hidden{display:none}
 .dialogue-line{background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:12px 14px;margin-bottom:8px}
-.dialogue-line-head{display:flex;align-items:baseline;gap:8px;margin-bottom:4px}
+.dialogue-line-head{display:flex;align-items:baseline;gap:8px;margin-bottom:6px}
 .dialogue-speaker{font-size:13.5px;font-weight:700;color:var(--cyan)}
 .dialogue-speaker.narration{color:var(--text-muted);font-style:italic;font-weight:600}
 .dialogue-tags{font-family:var(--mono);font-size:10.5px;color:var(--text-muted);letter-spacing:.03em}
-.dialogue-text{font-size:13.5px;line-height:1.55;color:var(--text-primary);white-space:pre-wrap;word-break:keep-all}
+.dialogue-modified-badge{font-family:var(--mono);font-size:9.5px;color:var(--amber);letter-spacing:.04em;margin-left:auto;flex-shrink:0}
+.dialogue-modified-badge.hidden{display:none}
+.dialogue-text-input{width:100%;background:var(--surface-2);border:1px solid var(--divider);border-radius:8px;padding:9px 11px;color:var(--text-primary);font-size:13.5px;line-height:1.55;font-family:var(--sans);resize:vertical;min-height:52px}
+.dialogue-text-input:focus{outline:none;border-color:rgba(89,184,200,.4)}
 .section-title{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase;margin:24px 0 12px}
 .empty-note{font-size:13px;color:var(--text-muted);padding:14px 0}
 .asset-card{display:flex;align-items:center;gap:12px;background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:12px;margin-bottom:10px}
@@ -328,11 +334,13 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
     </div>
   </div>
 
-  <!-- 대사 tab — see selectType('dialogue') / renderDialoguePanel. Read-only:
-       line text lives in dev/dialogueData.js's source, not in AssetDB, so
-       there's nowhere to persist an edit back to yet. -->
+  <!-- 대사 tab — see selectType('dialogue') / renderDialoguePanel. Editing a
+       line's text here saves an override to AssetDB (not back into
+       dialogueData.js's static source) — /dev/game applies it over the
+       static script at load time. Speaker/expression aren't editable here. -->
   <div class="dialogue-panel hidden" id="dialoguePanel">
-    <div class="section-title" style="margin-top:0">대사 (읽기 전용)</div>
+    <div class="section-title" style="margin-top:0">대사</div>
+    <div class="hint" style="margin:-8px 0 14px">텍스트를 고치고 벗어나면(blur) 자동 저장됩니다. 원래 대사로 되돌리려면 원문 그대로 다시 입력하세요.</div>
     <div id="dialogueList"></div>
   </div>
 
@@ -547,6 +555,10 @@ function selectType(type) {
   // 대사 / 인물 DB / 미니게임 얼굴 tabs have nothing to do with that, so
   // they're hidden and can't be switched into (see applyFocusModeChrome).
   if (focusMinigame) type = 'background';
+  // 인물 DB/미니게임 얼굴 are also hidden (not switchable) for a plain scene
+  // deep link — see applyFocusModeChrome — since they're character-wide,
+  // not scene-specific.
+  if (focusScene && (type === 'character' || type === 'minigameFace')) type = 'background';
   currentType = type;
   currentFocusTab = 'background';
   // selectFocusTab (아이템/조합법) hides these — always restore them when
@@ -689,25 +701,62 @@ function renderScenePicker() {
 // selected. Line text/speaker/expression live in dev/dialogueData.js's
 // static source, not AssetDB, so there's nothing to save back yet; this is
 // purely for reading the script while setting up backgrounds/characters.
-function renderDialoguePanel() {
+async function renderDialoguePanel() {
   const scene = currentScene();
   const lines = scene && scene.lines;
   if (!lines || !lines.length) {
     el.dialogueList.innerHTML = '<div class="empty-note">이 씬에는 대사 데이터가 없습니다. (미니게임/증거수집 항목이거나 아직 미구현)</div>';
     return;
   }
+  const sceneId = scene.id;
+  el.dialogueList.innerHTML = '<div class="empty-note">불러오는 중…</div>';
+  let overrides;
+  try {
+    overrides = await AssetDB.getDialogueOverrides(sceneId);
+  } catch (err) {
+    el.dialogueList.innerHTML = '<div class="empty-note">대사를 불러오지 못했습니다.</div>';
+    DevDiag.show('대사 불러오기 실패: ' + (err && err.message ? err.message : err));
+    return;
+  }
+  // The dev may have switched week/scene (or tabs) while that fetch was in
+  // flight — bail instead of overwriting whatever's now on screen.
+  if (currentType !== 'dialogue' || currentSceneId !== sceneId) return;
+
   el.dialogueList.innerHTML = lines.map(l => {
     const isNarration = !l.speaker;
     const speakerLabel = isNarration ? '내레이션' : l.speaker;
     const tags = [l.characterId, l.expression].filter(Boolean).join(' · ');
-    return `<div class="dialogue-line">
+    const modified = Object.prototype.hasOwnProperty.call(overrides, l.id);
+    const text = modified ? overrides[l.id] : l.text;
+    return `<div class="dialogue-line" data-line-id="${escapeHtml(l.id)}">
       <div class="dialogue-line-head">
         <span class="dialogue-speaker${isNarration ? ' narration' : ''}">${escapeHtml(speakerLabel)}</span>
         ${tags ? `<span class="dialogue-tags">${escapeHtml(tags)}</span>` : ''}
+        <span class="dialogue-modified-badge${modified ? '' : ' hidden'}">수정됨</span>
       </div>
-      <div class="dialogue-text">${escapeHtml(l.text)}</div>
+      <textarea class="dialogue-text-input" rows="2">${escapeHtml(text)}</textarea>
     </div>`;
   }).join('');
+
+  el.dialogueList.querySelectorAll('.dialogue-line').forEach(row => {
+    const lineId = row.dataset.lineId;
+    const original = lines.find(l => l.id === lineId);
+    const textarea = row.querySelector('.dialogue-text-input');
+    const badge = row.querySelector('.dialogue-modified-badge');
+    let lastSaved = textarea.value;
+    textarea.addEventListener('blur', async () => {
+      const value = textarea.value;
+      if (value === lastSaved) return; // no change since last save — skip the round-trip
+      const isOverridden = value !== original.text;
+      try {
+        await AssetDB.setDialogueLineText(sceneId, lineId, isOverridden ? value : null);
+        lastSaved = value;
+        badge.classList.toggle('hidden', !isOverridden);
+      } catch (err) {
+        DevDiag.show('대사 저장 실패: ' + (err && err.message ? err.message : err));
+      }
+    });
+  });
 }
 
 function renderBgKindPicker() {
@@ -1907,6 +1956,15 @@ function applyFocusModeChrome() {
       el.testFab.href = `/dev/game/?scene=${encodeURIComponent(deepLinkedSceneId)}`;
       el.testFab.classList.remove('hidden');
       el.frame.classList.add('has-fab');
+    }
+    if (focusScene) {
+      // 인물 DB/미니게임 얼굴 manage characters across every scene they
+      // appear in — nothing here is specific to the one scene this screen
+      // is locked to, so they're just noise for "이 씬의 설정" (unlike 배경
+      // DB/대사, which are genuinely per-scene). Same reasoning as
+      // focusMinigame hiding them below, just for a different focus.
+      el.tabCharacter.classList.add('hidden');
+      el.tabMinigameFace.classList.add('hidden');
     }
     return;
   }
