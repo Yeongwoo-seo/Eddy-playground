@@ -563,6 +563,17 @@ const minigames = [
     route: '/dev/minigame-eastwood/',
     setupUrl: '/dev/upload/?scene=week1-scene-001-2&kind=minigame&minigame=week1-scene-001-2-minigame',
   },
+];
+
+// Registry of standalone-testable 증거 수집 (evidence-collection) scenes —
+// /dev/evidence lists these. Same shape/flow as `minigames` above (tap opens
+// `setupUrl`'s 배경/핫스팟 에디터 first, only its 테스트하기 button actually
+// starts the game) — 핸드폰을 찾아라 was the first of these and moved out of
+// `minigames` since it's item/inventory-driven investigation, not an
+// arcade-style minigame. Use this entry as the template for any future
+// addition.
+// Keep `route` in sync with MINIGAME_ROUTES in game/index.html.
+const evidenceCollections = [
   {
     id: 'week1-scene-002-2',
     name: '핸드폰을 찾아라',
