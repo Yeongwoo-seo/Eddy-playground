@@ -1312,6 +1312,410 @@ const week1Scenes = [
   },
 ];
 
+/* OPERATION MK — WEEK 2 · SCENE 01 「아침 출발」
+   Dialogue Set: dialogue-week2-scene001
+   Scene: week2-scene-001 (Featherdale 이동 중, 08:20) */
+const week2Scene001Lines = [
+  { id: 'line-001', speaker: '', text: '2주차 첫째 날 아침.\n숙소를 나와 페더데일로 향하는 길.', characterId: null },
+  { id: 'line-002', speaker: '영우', text: '오늘은 늦게 나온다 했더니, 그건 또 뭐야.', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-003', speaker: '지수', text: '수첩이요.', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-004', speaker: '영우', text: '수첩?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-005', speaker: '지수', text: '탐정 수첩.', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-006', speaker: '영우', text: '...\n진심이었어?', characterId: 'youngwoo', pauseBeforeMs: 300, expression: 'blank' },
+  { id: 'line-007', speaker: '지수', text: '지난주에 레오씨 시간 계산할 때\n폰 메모장 스크롤하다가 놓친 거 있었잖아요.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-008', speaker: '영우', text: '아, 그거.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-009', speaker: '지수', text: '이번엔 손으로 바로바로 적으려고요.', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-010', speaker: '영우', text: '오늘은 그냥 놀러 가는 거 아니었어?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-011', speaker: '지수', text: '놀러 가는 거 맞아요.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-012', speaker: '지수', text: '만약을 위해서 준비만 해두는 거지.', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-013', speaker: '영우', text: '만약은 무슨.\n오늘은 코알라랑 캥거루 보러 가는 날이야.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-014', speaker: '지수', text: '웅웅 알아요.\n근데 또 모르잖아요.', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-015', speaker: '영우', text: '아이고, 알겠습니다 탐정님.', characterId: 'youngwoo', expression: 'happy' },
+  { id: 'line-016', speaker: '지수', text: '오늘은 그거 안 시켰는데.', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-017', speaker: '영우', text: 'ㅋㅎㅋㅎㅋㅎ\n입에 붙었나 봐.', characterId: 'youngwoo', expression: 'happy' },
+  { id: 'line-018', speaker: '', text: '창밖으로 시드니 시내가 점점 멀어지고,\n초록이 짙어지기 시작했다.', characterId: null },
+];
+
+/* OPERATION MK — WEEK 2 · SCENE 02 「Featherdale 데이트」
+   Dialogue Set: dialogue-week2-scene002
+   Scene: week2-scene-002 (Featherdale Wildlife Park, 10:00) */
+const week2Scene002Lines = [
+  { id: 'line-001', speaker: '', text: 'Featherdale Wildlife Park.\n오전 10시.', characterId: null },
+  { id: 'line-002', speaker: '지수', text: '엄마야, 저기 코알라 봐요.', characterId: 'jisoo', expression: 'shocked' },
+  { id: 'line-003', speaker: '영우', text: '진짜 자기만 하네.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-004', speaker: '지수', text: '나 안고 사진 찍을래요.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-005', speaker: '영우', text: '그건 여기선 안 될걸.', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-006', speaker: '지수', text: '...\n확인은 해봐야죠.', characterId: 'jisoo', pauseBeforeMs: 300, expression: 'smirk' },
+  { id: 'line-007', speaker: '', text: '직원에게 물어보러 갔던 지수가\n금방 시무룩한 얼굴로 돌아왔다.', characterId: 'jisoo', expression: 'blank' },
+  { id: 'line-008', speaker: '영우', text: '안 된대?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-009', speaker: '지수', text: '어깨 위에 손 올리는 것까지만이래요.', characterId: 'jisoo', expression: 'blank' },
+  { id: 'line-010', speaker: '영우', text: '그거라도 어디야.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-011', speaker: '', text: '지수가 코알라 옆에서 어정쩡하게 손을 올렸고,\n영우는 그 모습을 놓치지 않고 열 장쯤 찍었다.', characterId: null },
+  { id: 'line-012', speaker: '지수', text: '나 표정 이상하지 않았어요?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-013', speaker: '영우', text: '이상해.\n근데 그게 제일 좋은 컷이야.', characterId: 'youngwoo', expression: 'happy' },
+  { id: 'line-014', speaker: '지수', text: '그런 게 어딨어요.', characterId: 'jisoo', expression: 'annoyed' },
+  { id: 'line-015', speaker: '', text: '캥거루 방목장으로 넘어가자\n작은 캥거루 한 마리가 지수 손바닥의 먹이를 덥썩 물었다.', characterId: null },
+  { id: 'line-016', speaker: '지수', text: '으아앗!', characterId: 'jisoo', expression: 'shocked' },
+  { id: 'line-017', speaker: '영우', text: 'ㅋㅎㅋㅎㅋㅎㅋㅎ\n놀란 얼굴 그거 완전 찍혔다.', characterId: 'youngwoo', expression: 'happy' },
+  { id: 'line-018', speaker: '지수', text: '지워요, 그거.', characterId: 'jisoo', expression: 'annoyed' },
+  { id: 'line-019', speaker: '영우', text: '싫은데.', characterId: 'youngwoo', expression: 'smirk' },
+  { id: 'line-020', speaker: '지수', text: '영우야.', characterId: 'jisoo', expression: 'annoyed' },
+  { id: 'line-021', speaker: '영우', text: '알겠어, 알겠어.\n대신 이건 나만 볼게.', characterId: 'youngwoo', expression: 'happy' },
+];
+
+/* OPERATION MK — WEEK 2 · SCENE 03 「고양잇과 동물 앞 농담」
+   Dialogue Set: dialogue-week2-scene003
+   Scene: week2-scene-003 (Featherdale Wildlife Park, 10:20)
+   무깽이 리마인드 #3 — 매우 짧게, 단서 처리 없이 지나가는 농담. */
+const week2Scene003Lines = [
+  { id: 'line-001', speaker: '', text: '작은 우리 앞 표지판.\n"Spotted-tail Quoll (Native Cat)"', characterId: null },
+  { id: 'line-002', speaker: '지수', text: '어? 얘 고양이과래요.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-003', speaker: '영우', text: '이름만 그런 거야.\n사실 유대류라던데.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-004', speaker: '지수', text: '몰라요, 그런 거.\n생긴 건 딱 고양이야.', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-005', speaker: '지수', text: '무깽이도 지가 저런 줄 알 듯.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-006', speaker: '영우', text: '쟤는 자기가 사자라고 생각하지.', characterId: 'youngwoo', expression: 'smirk' },
+  { id: 'line-007', speaker: '지수', text: 'ㅋㅎㅋㅎㅋㅎ\n맞네.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-008', speaker: '', text: '둘은 잠깐 웃고는 다음 구역으로 걸음을 옮겼다.', characterId: null },
+];
+
+/* OPERATION MK — WEEK 2 · SCENE 04 「투어 그룹 사람들」
+   Dialogue Set: dialogue-week2-scene004
+   Scene: week2-scene-004 (Featherdale Wildlife Park, 10:40)
+   여기서 자연스럽게 스친 소규모 단체 관광객 넷이 다음 씬의 목격자가 된다. */
+const week2Scene004Lines = [
+  { id: 'line-001', speaker: '', text: '웜뱃 우리 앞.\n오전 10시 40분.', characterId: null },
+  { id: 'line-002', speaker: '', text: '같은 자리에서 사진을 찍던 소규모 투어 그룹과 자리가 겹쳤다.', characterId: null },
+  { id: 'line-003', speaker: '지수', text: '저희가 먼저 볼게요, 하시고 천천히 오세요.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-004', speaker: '관광객 일행', text: '아뇨아뇨, 편하게 보세요.\n저희도 방금 왔어요.', characterId: null },
+  { id: 'line-005', speaker: '영우', text: '단체로 오셨나 봐요.', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-006', speaker: '관광객 일행', text: '네, 작은 투어 상품으로요.\n오전엔 여기, 오후엔 블루마운틴 가요.', characterId: null },
+  { id: 'line-007', speaker: '지수', text: '저희랑 코스가 똑같네요.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-008', speaker: '관광객 일행', text: '그러네요, 반갑네요.\n웜뱃 진짜 안 움직이죠?', characterId: null },
+  { id: 'line-009', speaker: '영우', text: '한 시간째 저 자세인 것 같은데요.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-010', speaker: '관광객 일행', text: 'ㅎㅎ 저희도 그거 보면서 웃었어요.', characterId: null },
+  { id: 'line-011', speaker: '', text: '별다를 것 없는 짧은 스몰토크였고,\n둘은 곧 다음 구역으로 넘어갔다.', characterId: null },
+  { id: 'line-012', speaker: '지수', text: '사람들 되게 친절하다.', characterId: 'jisoo', expression: 'soft' },
+  { id: 'line-013', speaker: '영우', text: '여행 오면 다들 좀 너그러워지잖아.', characterId: 'youngwoo', expression: 'soft' },
+];
+
+/* OPERATION MK — WEEK 2 · SCENE 05 「분실된 메모리카드」
+   Dialogue Set: dialogue-week2-scene005
+   Scene: week2-scene-005 (Featherdale Wildlife Park, 11:15) */
+const week2Scene005Lines = [
+  { id: 'line-001', speaker: '', text: '캥거루 방목장 근처.\n오전 11시 15분.', characterId: null },
+  { id: 'line-002', speaker: '', text: '아까 그 투어 그룹 쪽에서 다급한 목소리가 들렸다.', characterId: null },
+  { id: 'line-003', speaker: '카메라 주인', text: '어, 어...\n제 카메라 메모리카드가 없어졌어요.', characterId: null },
+  { id: 'line-004', speaker: '영우', text: '무슨 일이세요?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-005', speaker: '카메라 주인', text: '가방 안에 카드 케이스가 있었는데,\n지금 열어보니까 카드만 딱 없어요.', characterId: null },
+  { id: 'line-006', speaker: '지수', text: '카메라 본체는요?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-007', speaker: '카메라 주인', text: '그건 있어요.\n카드만요.', characterId: null },
+  { id: 'line-008', speaker: '지수', text: '...', characterId: 'jisoo', pauseBeforeMs: 300, expression: 'suspicious' },
+  { id: 'line-009', speaker: '영우', text: '지수야, 그 표정.', characterId: 'youngwoo', expression: 'blank' },
+  { id: 'line-010', speaker: '지수', text: '아뇨, 그냥.\n1주차 생각나서요.', characterId: 'jisoo', expression: 'blank' },
+  { id: 'line-011', speaker: '', text: '주변에 있던 일행 세 명이 하나둘 다가왔다.', characterId: null },
+  { id: 'line-012', speaker: '관광객 일행', text: '저희 다 같이 있었는데, 아무도 못 봤어요.', characterId: null },
+  { id: 'line-013', speaker: '관광객 일행', text: '아, 잠깐만.\n아까 그 여자분 이상하지 않았어요?', characterId: null },
+  { id: 'line-014', speaker: '관광객 일행', text: '맞아요, 회색 코트 입은 분.', characterId: null },
+  { id: 'line-015', speaker: '관광객 일행', text: '저도 봤어요, 회색 코트.\n계속 저희 근처에서 얼쩡거렸어요.', characterId: null },
+  { id: 'line-016', speaker: '관광객 일행', text: '저도요.\n은색 귀걸이 하고 있던 그 여자분.', characterId: null },
+  { id: 'line-017', speaker: '지수', text: '...\n회색 코트, 은색 귀걸이.', characterId: 'jisoo', pauseBeforeMs: 300, expression: 'suspicious' },
+  { id: 'line-018', speaker: '영우', text: '다들 한 명을 정확히 기억하고 있네.', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-019', speaker: '지수', text: '웅, 근데 저는 그런 사람 못 봤는데.', characterId: 'jisoo', expression: 'blank' },
+  { id: 'line-020', speaker: '지수', text: '일단 한 분씩 따로 여쭤볼게요.', characterId: 'jisoo', expression: 'serious' },
+];
+
+/* OPERATION MK — WEEK 2 · SCENE 06 「네 명의 같은 증언」
+   Dialogue Set: dialogue-week2-scene006
+   Scene: week2-scene-006 (Featherdale Wildlife Park, 11:30)
+   Ends on a MINIGAME START beat — nextSceneId hands off to a not-yet-built
+   증언 문장 겹치기 minigame, week2-scene-006-minigame. Result(표현이 비정상적으로
+   유사함을 확인)은 week2-scene-007이 열릴 때 이미 찾은 것으로 취급한다. */
+const week2Scene006Lines = [
+  { id: 'line-001', speaker: '', text: '방목장 벤치.\n오전 11시 30분.', characterId: null },
+  { id: 'line-002', speaker: '', text: '네 명을 한 명씩 따로 불러 같은 질문을 던졌다.', characterId: null },
+  { id: 'line-003', speaker: '영우', text: '한 명씩 물어봤는데, 진술이 너무 비슷해.', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-004', speaker: '지수', text: '저도 그렇게 느꼈어요.\n단어까지 겹쳐요.', characterId: 'jisoo', expression: 'suspicious' },
+  { id: 'line-005', speaker: '지수', text: '회색 코트, 은색 귀걸이, 낮은 목소리, 왼손잡이.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-006', speaker: '영우', text: '넷이 각자 다른 자리에 있었잖아.', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-007', speaker: '지수', text: '웅.\n근데 표현까지 똑같이 나올 수가 있나.', characterId: 'jisoo', expression: 'suspicious' },
+  { id: 'line-008', speaker: '영우', text: '네 사람 진술을 한 번 나란히 놓고 봐야겠다.', characterId: 'youngwoo', expression: 'serious' },
+  { id: 'line-009', speaker: '지수', text: '문장 단위로 겹치는 부분 표시해볼게요.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-010', speaker: '', text: '지수가 수첩에 네 사람의 진술을 한 줄씩 옮겨 적고,\n같은 표현이 나오는 자리를 겹쳐보기 시작했다.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-011', speaker: '', text: 'MINIGAME START', characterId: null },
+];
+
+/* OPERATION MK — WEEK 2 · SCENE 07 「CCTV에 없는 여자」
+   Dialogue Set: dialogue-week2-scene007
+   Scene: week2-scene-007 (Featherdale 방문자센터, 13:00) */
+const week2Scene007Lines = [
+  { id: 'line-001', speaker: '', text: 'Featherdale 방문자센터.\n낮 1시.', characterId: null },
+  { id: 'line-002', speaker: '', text: '네 사람의 진술을 겹쳐보니 표현이 비정상적으로 일치했다.\n관리 직원에게 CCTV 확인을 부탁했다.', characterId: null },
+  { id: 'line-003', speaker: '방문자센터 직원', text: '말씀하신 시간대, 다 돌려봤는데요.', characterId: null },
+  { id: 'line-004', speaker: '영우', text: '회색 코트 입은 여자분, 나오나요?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-005', speaker: '방문자센터 직원', text: '그게... 없어요.', characterId: null },
+  { id: 'line-006', speaker: '지수', text: '없다고요?', characterId: 'jisoo', expression: 'shocked' },
+  { id: 'line-007', speaker: '방문자센터 직원', text: '그 시간대에 회색 코트 입은 사람 자체가\n어느 화면에도 안 잡혀요.', characterId: null },
+  { id: 'line-008', speaker: '영우', text: '넷이나 봤다는 사람이 카메라에는 하나도 안 찍혔다고요?', characterId: 'youngwoo', expression: 'shocked' },
+  { id: 'line-009', speaker: '방문자센터 직원', text: '사각지대가 있긴 한데, 넷이 각자 다른 자리에서 봤다면서요.\n그럼 최소 한 대에는 걸려야 정상이에요.', characterId: null },
+  { id: 'line-010', speaker: '지수', text: '...', characterId: 'jisoo', pauseBeforeMs: 400, expression: 'suspicious' },
+  { id: 'line-011', speaker: '지수', text: '그 여자, 처음부터 없었던 거 아니에요?', characterId: 'jisoo', expression: 'suspicious' },
+  { id: 'line-012', speaker: '영우', text: '그럼 그 카드는 누가 가져간 건데.', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-013', speaker: '방문자센터 직원', text: '그 시간대에 카드 주인 근처에 계속 있던 분들은\n따로 세 분 정도 걸리네요.', characterId: null },
+  { id: 'line-014', speaker: '', text: '화면 속 세 사람이 확대된다.', characterId: null },
+  { id: 'line-015', speaker: '', text: '[ 한소라 / 이든 브룩스 / 다니엘 우 ]', characterId: null },
+  { id: 'line-016', speaker: '지수', text: '이 세 분, 어디 계신지 알 수 있을까요?', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-017', speaker: '방문자센터 직원', text: '같은 투어 명단이라 아직 근처에 계실 거예요.', characterId: null },
+  { id: 'line-018', speaker: '영우', text: '한 명씩 만나보자.', characterId: 'youngwoo', expression: 'serious' },
+];
+
+/* OPERATION MK — WEEK 2 · SCENE 08 「이든 브룩스 조사」
+   Dialogue Set: dialogue-week2-scene008
+   Scene: week2-scene-008 (Featherdale Wildlife Park, 13:20) */
+const week2Scene008Lines = [
+  { id: 'line-001', speaker: '', text: '조류 사육장 앞.\n오후 1시 20분.', characterId: null },
+  { id: 'line-002', speaker: '지수', text: '이든 브룩스 님 맞으시죠?\n잠깐 여쭤볼 게 있어서요.', characterId: 'jisoo', expression: 'neutral' },
+  { id: 'line-003', speaker: '이든 브룩스', text: '네? 아, 네.\n그 메모리카드 일이요?', characterId: 'ethan', expression: 'neutral' },
+  { id: 'line-004', speaker: '영우', text: '아까 그 근처에 계셨죠?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-005', speaker: '이든 브룩스', text: '아뇨, 저는 반대쪽에 있었는데요.', characterId: 'ethan', expression: 'neutral' },
+  { id: 'line-006', speaker: '지수', text: 'CCTV에는 그쪽에 계신 걸로 나와서요.', characterId: 'jisoo', expression: 'suspicious' },
+  { id: 'line-007', speaker: '이든 브룩스', text: '...', characterId: 'ethan', pauseBeforeMs: 400, expression: 'neutral' },
+  { id: 'line-008', speaker: '이든 브룩스', text: '...\n사실 조금 있었어요, 잠깐.', characterId: 'ethan', expression: 'annoyed' },
+  { id: 'line-009', speaker: '영우', text: '왜 아니라고 하신 거예요?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-010', speaker: '이든 브룩스', text: '거기, 촬영 금지 구역이거든요.\n번식장 쪽이라.', characterId: 'ethan', expression: 'annoyed' },
+  { id: 'line-011', speaker: '이든 브룩스', text: '몰래 좀 찍고 있었어요.\n괜히 걸릴까 봐 아니라고 한 거예요.', characterId: 'ethan', expression: 'annoyed' },
+  { id: 'line-012', speaker: '지수', text: '그럼 메모리카드는요?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-013', speaker: '이든 브룩스', text: '그건 진짜 몰라요.\n제 폰으로 찍었지 카메라도 안 썼어요.', characterId: 'ethan', expression: 'neutral' },
+  { id: 'line-014', speaker: '영우', text: '...\n이분은 그냥 촬영 금지 구역 때문에 숨긴 거네.', characterId: 'youngwoo', expression: 'blank' },
+  { id: 'line-015', speaker: '지수', text: '웅.\n동기가 안 맞아요.', characterId: 'jisoo', expression: 'blank' },
+  { id: 'line-016', speaker: '이든 브룩스', text: '저 신고하실 건 아니죠...?', characterId: 'ethan', expression: 'annoyed' },
+  { id: 'line-017', speaker: '지수', text: '아뇨, 저희는 그쪽 담당 아니에요.\n걱정 마세요.', characterId: 'jisoo', expression: 'soft' },
+];
+
+/* OPERATION MK — WEEK 2 · SCENE 09 「다니엘 우 조사」
+   Dialogue Set: dialogue-week2-scene009
+   Scene: week2-scene-009 (Featherdale Wildlife Park, 13:40) */
+const week2Scene009Lines = [
+  { id: 'line-001', speaker: '', text: '피크닉 테이블 근처.\n오후 1시 40분.', characterId: null },
+  { id: 'line-002', speaker: '영우', text: '다니엘 우 님이세요?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-003', speaker: '다니엘 우', text: '네, 맞아요.\n무슨 일이시죠.', characterId: 'daniel', expression: 'neutral' },
+  { id: 'line-004', speaker: '지수', text: '아까 카드 없어진 시간대에\n혹시 그 근처 계셨나 해서요.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-005', speaker: '다니엘 우', text: '아뇨, 전 계속 반대쪽에 있었어요.', characterId: 'daniel', expression: 'neutral' },
+  { id: 'line-006', speaker: '영우', text: 'CCTV에는 그 근처에 계신 걸로 나오던데요.', characterId: 'youngwoo', expression: 'suspicious' },
+  { id: 'line-007', speaker: '다니엘 우', text: '...', characterId: 'daniel', pauseBeforeMs: 400, expression: 'annoyed' },
+  { id: 'line-008', speaker: '다니엘 우', text: '아, 그게.\n제가 좀 창피해서 그랬어요.', characterId: 'daniel', expression: 'annoyed' },
+  { id: 'line-009', speaker: '지수', text: '창피해서요?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-010', speaker: '다니엘 우', text: '거기서 넘어졌거든요, 아무것도 없는데 혼자.\n그게 카메라에 찍혔을까봐 신경 쓰였어요.', characterId: 'daniel', expression: 'shocked' },
+  { id: 'line-011', speaker: '다니엘 우', text: '그거 물어보시는 줄 알고 일단 아니라고 한 거예요.', characterId: 'daniel', expression: 'annoyed' },
+  { id: 'line-012', speaker: '영우', text: '메모리카드는요?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-013', speaker: '다니엘 우', text: '전혀 몰라요.\n남 물건에 손댈 이유가 없죠.', characterId: 'daniel', expression: 'neutral' },
+  { id: 'line-014', speaker: '지수', text: '...', characterId: 'jisoo', pauseBeforeMs: 300, expression: 'blank' },
+  { id: 'line-015', speaker: '지수', text: '이분도 아니네요.', characterId: 'jisoo', expression: 'blank' },
+  { id: 'line-016', speaker: '영우', text: '넘어진 거 안 찍혔을 거예요, 아마.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-017', speaker: '다니엘 우', text: '제발요.', characterId: 'daniel', expression: 'annoyed' },
+];
+
+/* OPERATION MK — WEEK 2 · SCENE 10 「한소라 — 기억을 심은 사람」
+   Dialogue Set: dialogue-week2-scene010
+   Scene: week2-scene-010 (Featherdale Wildlife Park, 14:00)
+   Ends on a MINIGAME START beat — nextSceneId hands off to a not-yet-built
+   대화 순서 재구성 minigame, week2-scene-010-minigame. 미니게임 결과(한소라가
+   사건 전 각 목격자에게 서로 다른 특징을 심어 하나의 가짜 여성을 완성했다는 것)는
+   week2-scene-011이 열릴 때 이미 밝혀진 것으로 취급한다. */
+const week2Scene010Lines = [
+  { id: 'line-001', speaker: '', text: '기념품 가게 앞.\n오후 2시.', characterId: null },
+  { id: 'line-002', speaker: '지수', text: '한소라 님이시죠?\n잠깐 여쭤볼게요.', characterId: 'jisoo', expression: 'neutral' },
+  { id: 'line-003', speaker: '한소라', text: '아, 네.\n그 카드 없어진 거요?', characterId: 'sora', expression: 'neutral' },
+  { id: 'line-004', speaker: '한소라', text: '저도 들었어요, 진짜 놀랐어요.\n회색 코트 여자가 그랬다면서요.', characterId: 'sora', expression: 'shocked' },
+  { id: 'line-005', speaker: '영우', text: '그 얘기, 어디서 들으셨어요?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-006', speaker: '한소라', text: '다들 그렇게 얘기하던데요.', characterId: 'sora', expression: 'neutral' },
+  { id: 'line-007', speaker: '지수', text: '...', characterId: 'jisoo', pauseBeforeMs: 400, expression: 'suspicious' },
+  { id: 'line-008', speaker: '지수', text: '근데 저희가 확인해보니\nCCTV에는 그런 여자가 안 잡혀요.', characterId: 'jisoo', expression: 'suspicious' },
+  { id: 'line-009', speaker: '한소라', text: '...', characterId: 'sora', pauseBeforeMs: 500, expression: 'neutral' },
+  { id: 'line-010', speaker: '영우', text: '그리고 CCTV에는 카드 주인 근처에\n소라 님이 계속 계셨던 걸로 나오고요.', characterId: 'youngwoo', expression: 'serious' },
+  { id: 'line-011', speaker: '한소라', text: '그건... 우연히 근처에 있었던 거예요.', characterId: 'sora', expression: 'neutral' },
+  { id: 'line-012', speaker: '지수', text: '넷이 겹쳐 말한 인상착의, 소라 님이 한 명씩 따로\n먼저 얘기 꺼내신 적 있으세요?', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-013', speaker: '한소라', text: '...\n무슨 말씀이신지.', characterId: 'sora', pauseBeforeMs: 400, expression: 'neutral' },
+  { id: 'line-014', speaker: '영우', text: '누구한테는 회색 코트, 누구한테는 은색 귀걸이,\n따로따로 흘리면 나중에 넷이 모여서 합쳐지잖아요.', characterId: 'youngwoo', expression: 'serious' },
+  { id: 'line-015', speaker: '지수', text: '한 사람씩 나눠서 심으면\n실제로 있지도 않은 사람이 완성되죠.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-016', speaker: '한소라', text: '...', characterId: 'sora', pauseBeforeMs: 500, expression: 'neutral' },
+  { id: 'line-017', speaker: '', text: '지수가 아까 넷에게 들은 대화를 순서대로 다시 늘어놓기 시작했다.\n누가 먼저 무슨 말을 꺼냈는지 맞춰보면 답이 나올 것 같았다.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-018', speaker: '', text: 'MINIGAME START', characterId: null },
+];
+
+/* OPERATION MK — WEEK 2 · SCENE 11 「두 번째 추리」
+   Dialogue Set: dialogue-week2-scene011
+   Scene: week2-scene-011 (Featherdale Wildlife Park, 14:30) */
+const week2Scene011Lines = [
+  { id: 'line-001', speaker: '', text: '기념품 가게 뒤편.\n오후 2시 30분.', characterId: null },
+  { id: 'line-002', speaker: '', text: '대화 순서를 다시 맞춰보니, 네 사람에게 각각 다른 특징을\n먼저 흘린 사람은 전부 한소라였다.', characterId: null },
+  { id: 'line-003', speaker: '지수', text: '회색 코트는 첫 번째 분한테,\n은색 귀걸이는 두 번째 분한테.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-004', speaker: '영우', text: '낮은 목소리랑 왼손잡이는 나머지 두 분한테.', characterId: 'youngwoo', expression: 'serious' },
+  { id: 'line-005', speaker: '지수', text: '넷이 나중에 모여서 얘기하다가\n그게 전부 한 사람 얘기인 줄 알고 합친 거예요.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-006', speaker: '한소라', text: '...\n하아.', characterId: 'sora', pauseBeforeMs: 400, expression: 'neutral' },
+  { id: 'line-007', speaker: '한소라', text: '...\n맞아요, 제가 그런 거예요.', characterId: 'sora', expression: 'neutral' },
+  { id: 'line-008', speaker: '영우', text: '카드는 왜 가져가신 거예요?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-009', speaker: '한소라', text: '그 안에 제가 찍힌 사진이 있었어요.\n좀... 곤란한 자리에서 찍힌 거요.', characterId: 'sora', expression: 'neutral' },
+  { id: 'line-010', speaker: '지수', text: '지워달라고 하면 되지 않았어요?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-011', speaker: '한소라', text: '설명하기가 더 복잡했어요.\n그냥 카드째 없애는 게 빠르다고 생각했어요.', characterId: 'sora', expression: 'neutral' },
+  { id: 'line-012', speaker: '한소라', text: '근데 바로 없어진 걸 알아채실 줄은 몰랐어요.\n그래서 급하게 다른 사람 얘기를 만든 거고요.', characterId: 'sora', expression: 'neutral' },
+  { id: 'line-013', speaker: '지수', text: '그럼 진짜 회색 코트 여자 같은 건.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-014', speaker: '한소라', text: '없어요.\n제가 지어낸 거예요.', characterId: 'sora', expression: 'neutral' },
+  { id: 'line-015', speaker: '영우', text: '...\n그럼 이번엔 그냥 소라 님 혼자 벌인 일이네요.', characterId: 'youngwoo', expression: 'blank' },
+  { id: 'line-016', speaker: '한소라', text: '네.\n죄송해요, 카드는 돌려드릴게요.', characterId: 'sora', expression: 'neutral' },
+  { id: 'line-017', speaker: '', text: '한소라가 가방에서 메모리카드를 꺼내 건넸다.\n그 순간 폰 알림이 화면에 떴다.', characterId: 'sora', expression: 'neutral' },
+  { id: 'line-018', speaker: '지수', text: '어...\n그거 뭐예요?', characterId: 'jisoo', expression: 'shocked' },
+];
+
+/* OPERATION MK — WEEK 2 · SCENE 12 「미카의 두 번째 흔적」
+   Dialogue Set: dialogue-week2-scene012
+   Scene: week2-scene-012 (Sydney Accommodation, 21:00)
+   Closes out Week 2's main weekend arc — 2주차 평일 미니씬(W2-D1~D5)은 별도로
+   추가될 예정. No nextSceneId; ends on narration like week1-scene-011. */
+const week2Scene012Lines = [
+  { id: 'line-001', speaker: '', text: '숙소.\n밤 9시.', characterId: null },
+  { id: 'line-002', speaker: '', text: '한소라가 얼결에 보여준 화면이 계속 마음에 걸렸다.\n숙소로 돌아와 사진을 다시 확인해봤다.', characterId: null },
+  { id: 'line-003', speaker: '영우', text: '아까 그 알림, 뭐라고 찍혀 있었어?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-004', speaker: '지수', text: '제가 사진 찍어놨어요.\n잠깐만요.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-005', speaker: '', text: '[ 발신: M. Kovac ]\n[ 요청: 특정 날짜, 특정 관광객 동선의 원본 사진 확보 ]', characterId: null },
+  { id: 'line-006', speaker: '영우', text: '...', characterId: 'youngwoo', pauseBeforeMs: 400, expression: 'blank' },
+  { id: 'line-007', speaker: '지수', text: '며칠 전에 소라 님한테 온 문의래요.\n저희 일이랑은 상관없이요.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-008', speaker: '영우', text: '근데 왜 하필 또 M.K.야.', characterId: 'youngwoo', expression: 'blank' },
+  { id: 'line-009', speaker: '지수', text: '첨부돼 있던 계약서도 같이 보내주셨어요.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-010', speaker: '', text: '[ 문서 메타데이터 · 작성자: MKOVAC ]', characterId: null },
+  { id: 'line-011', speaker: '영우', text: '1주차 그 문의 메일이랑 똑같은 이름이잖아.', characterId: 'youngwoo', expression: 'shocked' },
+  { id: 'line-012', speaker: '지수', text: '웅.\n이번엔 도난이랑 상관도 없는데 또 나왔어요.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-013', speaker: '지수', text: '소라 님 사건은 소라 님 혼자 벌인 거고,\nM.K.는 그냥 사진을 사려고 한 것뿐이에요.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-014', speaker: '지수', text: '근데 그 사진 문의가 하필 이 동네, 이 시기에 왔어요.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-015', speaker: '영우', text: '...', characterId: 'youngwoo', pauseBeforeMs: 400, expression: 'blank' },
+  { id: 'line-016', speaker: '지수', text: '이제 우연이라고 하지 마.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-017', speaker: '영우', text: '...', characterId: 'youngwoo', pauseBeforeMs: 500, expression: 'blank' },
+  { id: 'line-018', speaker: '', text: '영우는 대답하지 못했다.', characterId: 'youngwoo', expression: 'blank' },
+  { id: 'line-019', speaker: '지수', text: '용의자 카드 업데이트할게요.', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-020', speaker: '', text: '[ 용의자 카드 갱신 ]\n미카 코바치 — M.K. 가능성 65%', characterId: null },
+  { id: 'line-021', speaker: '', text: '지수의 2주차는,\n또 하나의 M.K.를 남기고 저물었다.', characterId: null },
+];
+
+// Registry of testable Week 2 scenes — /dev/week2 lists these, each linking
+// to /dev/game/?scene=<id>. Covers only the 2주차 main weekend arc
+// (W2-S01~S12, "존재하지 않는 여자") — 2주차 평일 미니씬(W2-D1~D5)은 아직 미구현.
+const week2Scenes = [
+  {
+    id: 'week2-scene-001',
+    order: 1,
+    name: '아침 출발',
+    location: 'Featherdale 이동 중',
+    introLabel: 'FEATHERDALE',
+    time: '08:20',
+    lines: week2Scene001Lines,
+  },
+  {
+    id: 'week2-scene-002',
+    order: 2,
+    name: 'Featherdale 데이트',
+    location: 'Featherdale Wildlife Park',
+    introLabel: 'FEATHERDALE',
+    time: '10:00',
+    lines: week2Scene002Lines,
+  },
+  {
+    id: 'week2-scene-003',
+    order: 3,
+    name: '고양잇과 동물 앞 농담',
+    location: 'Featherdale Wildlife Park',
+    introLabel: 'FEATHERDALE',
+    time: '10:20',
+    lines: week2Scene003Lines,
+  },
+  {
+    id: 'week2-scene-004',
+    order: 4,
+    name: '투어 그룹 사람들',
+    location: 'Featherdale Wildlife Park',
+    introLabel: 'FEATHERDALE',
+    time: '10:40',
+    lines: week2Scene004Lines,
+  },
+  {
+    id: 'week2-scene-005',
+    order: 5,
+    name: '분실된 메모리카드',
+    location: 'Featherdale Wildlife Park',
+    introLabel: 'FEATHERDALE',
+    time: '11:15',
+    lines: week2Scene005Lines,
+  },
+  {
+    id: 'week2-scene-006',
+    order: 6,
+    name: '네 명의 같은 증언',
+    location: 'Featherdale Wildlife Park',
+    introLabel: 'FEATHERDALE',
+    time: '11:30',
+    lines: week2Scene006Lines,
+    // Hands off into the (not yet built) 증언 문장 겹치기 minigame — see
+    // MINIGAME_ROUTES in game/index.html. Falls back to a "MINIGAME START"
+    // placeholder overlay until that route exists.
+    nextSceneId: 'week2-scene-006-minigame',
+  },
+  {
+    id: 'week2-scene-007',
+    order: 7,
+    name: 'CCTV에 없는 여자',
+    location: 'Featherdale 방문자센터',
+    introLabel: 'FEATHERDALE',
+    time: '13:00',
+    lines: week2Scene007Lines,
+  },
+  {
+    id: 'week2-scene-008',
+    order: 8,
+    name: '이든 브룩스 조사',
+    location: 'Featherdale Wildlife Park',
+    introLabel: 'FEATHERDALE',
+    time: '13:20',
+    lines: week2Scene008Lines,
+  },
+  {
+    id: 'week2-scene-009',
+    order: 9,
+    name: '다니엘 우 조사',
+    location: 'Featherdale Wildlife Park',
+    introLabel: 'FEATHERDALE',
+    time: '13:40',
+    lines: week2Scene009Lines,
+  },
+  {
+    id: 'week2-scene-010',
+    order: 10,
+    name: '한소라 — 기억을 심은 사람',
+    location: 'Featherdale Wildlife Park',
+    introLabel: 'FEATHERDALE',
+    time: '14:00',
+    lines: week2Scene010Lines,
+    // Hands off into the (not yet built) 대화 순서 재구성 minigame that
+    // surfaces 한소라's coached testimony — same placeholder fallback as above.
+    nextSceneId: 'week2-scene-010-minigame',
+  },
+  {
+    id: 'week2-scene-011',
+    order: 11,
+    name: '두 번째 추리',
+    location: 'Featherdale Wildlife Park',
+    introLabel: 'FEATHERDALE',
+    time: '14:30',
+    lines: week2Scene011Lines,
+  },
+  {
+    id: 'week2-scene-012',
+    order: 12,
+    name: '미카의 두 번째 흔적',
+    location: 'Sydney Accommodation',
+    introLabel: 'ACCOMMODATION',
+    time: '21:00',
+    lines: week2Scene012Lines,
+  },
+];
+
 // Registry of standalone-testable minigames — /dev/minigames lists these.
 // Tapping one no longer jumps straight into the live game: it opens
 // `setupUrl` first (그 미니게임의 배경/정답영역 에디터, focused via
@@ -1371,11 +1775,12 @@ const week0UploadScenes = week0Scenes.concat(roomSearchAreas.map(area => ({
 const weeks = [
   { id: 'week0', label: '0주차', scenes: week0UploadScenes },
   { id: 'week1', label: '1주차', scenes: week1Scenes },
+  { id: 'week2', label: '2주차', scenes: week2Scenes },
 ];
 
 // Combined lookup across every week's scenes — /dev/game resolves a
 // requested ?scene= id against this instead of a single week's array, since
 // a scene can belong to any week. Per-week test pages (/dev/week0,
-// /dev/week1) still read their own week*Scenes array directly so their
-// listing stays scoped to just that week.
-const allScenes = week0Scenes.concat(week1Scenes);
+// /dev/week1, /dev/week2) still read their own week*Scenes array directly so
+// their listing stays scoped to just that week.
+const allScenes = week0Scenes.concat(week1Scenes).concat(week2Scenes);

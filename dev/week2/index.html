@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>2주차 · OPERATION MK DEV</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<meta name="theme-color" content="#080A0C">
+<link rel="manifest" href="/dev/manifest.json">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#080A0C;--surface-1:#101419;--surface-2:#171C22;
+  --text-primary:#EDF1F4;--text-secondary:#929BA5;--text-muted:#5F6872;
+  --cyan:#59B8C8;--amber:#D6A84B;--divider:rgba(255,255,255,0.08);
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sans:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
+}
+html,body{height:100%}
+body{background:#050607;color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center;min-height:100dvh}
+.frame{width:100%;max-width:430px;min-height:100dvh;min-height:100vh;padding:calc(48px + env(safe-area-inset-top,0)) 20px calc(32px + env(safe-area-inset-bottom,0));display:flex;flex-direction:column}
+.back{font-family:var(--mono);font-size:12px;color:var(--text-muted);text-decoration:none;margin-bottom:18px;display:inline-flex;align-items:center;gap:4px;width:fit-content}
+.tag{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px}
+.title{font-size:26px;font-weight:700;letter-spacing:-.2px;margin-bottom:10px}
+.sub{font-size:14px;color:var(--text-secondary);margin-bottom:32px;line-height:1.6}
+.scene-list{display:flex;flex-direction:column;gap:14px}
+.scene-btn{display:flex;align-items:center;gap:14px;background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:18px 20px;text-decoration:none;color:inherit;transition:transform .15s,background .15s}
+.scene-btn:active{transform:scale(.98);background:var(--surface-2)}
+.scene-num{font-family:var(--mono);font-size:13px;color:var(--cyan);flex-shrink:0}
+.scene-txt{flex:1;min-width:0}
+.scene-name{font-size:16px;font-weight:700}
+.scene-meta{font-size:12.5px;color:var(--text-secondary);margin-top:3px;line-height:1.5;font-family:var(--mono)}
+.scene-arrow{color:var(--text-muted);font-size:18px;flex-shrink:0}
+.empty{font-size:13px;color:var(--text-muted);padding:20px 0}
+</style>
+</head>
+<body>
+<div class="frame">
+  <a class="back" href="/dev/">‹ DEV</a>
+  <div class="tag">Operation MK</div>
+  <div class="title">2주차</div>
+  <div class="sub">씬을 선택해서 개별로 테스트할 수 있습니다. 씬 6, 10은 아직 미구현 미니게임으로 이어집니다.</div>
+  <div class="scene-list" id="sceneList"></div>
+</div>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
+}
+</script>
+<script src="/dev/dialogueData.js"></script>
+<script>
+const list = document.getElementById('sceneList');
+if (!week2Scenes.length) {
+  list.innerHTML = '<div class="empty">등록된 씬이 없습니다.</div>';
+} else {
+  list.innerHTML = week2Scenes.map(s => `
+    <a class="scene-btn" href="${s.route || ('/dev/game/?scene=' + encodeURIComponent(s.id))}">
+      <div class="scene-num">#${String(s.order).padStart(2, '0')}</div>
+      <div class="scene-txt">
+        <div class="scene-name">${s.name}</div>
+        <div class="scene-meta">${s.location} · ${s.time}</div>
+      </div>
+      <div class="scene-arrow">›</div>
+    </a>
+  `).join('');
+}
+</script>
+</body>
+</html>
