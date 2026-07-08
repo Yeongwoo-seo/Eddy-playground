@@ -252,8 +252,12 @@ if ('serviceWorker' in navigator) {
    exists to enforce: the player CANNOT find jisu-phone until unknown-key has
    been found AND the forced phoneUnlocked event has played — see
    canRevealPhone() below, which every phone-reveal path (including the DEV
-   sheet) must go through. State persists in localStorage so a refresh
-   mid-search doesn't lose progress.
+   sheet) must go through. State still round-trips through localStorage
+   (saveState()/STATE_KEY) so within-session actions like area moves keep
+   working the same way, but every fresh load of this page starts clean —
+   entering the minigame (from /dev/minigames, the VN story flow, or a
+   plain refresh) always resets items/progress rather than resuming a
+   stale run from a previous test pass.
 
    Each area renders one of two ways, decided per area every time it's opened:
    - "photo" mode, once a dev has uploaded that area's room photo and marked
@@ -414,20 +418,13 @@ function defaultState() {
   };
 }
 
-function loadState() {
-  try {
-    const raw = JSON.parse(localStorage.getItem(STATE_KEY));
-    if (!raw || typeof raw !== 'object') return defaultState();
-    const base = defaultState();
-    return Object.assign(base, raw, {
-      flags: Object.assign(base.flags, raw.flags || {}),
-      searchCounts: Object.assign(base.searchCounts, raw.searchCounts || {}),
-    });
-  } catch (e) { return defaultState(); }
-}
-
-let state = loadState();
+// Every entry into this page is a fresh run — no loadState()/restore from a
+// previous test pass. saveState() still writes to STATE_KEY so within-session
+// helpers (e.g. the DEV sheet) that read it back stay in sync, but nothing
+// reads it back in on boot.
+let state = defaultState();
 function saveState() { localStorage.setItem(STATE_KEY, JSON.stringify(state)); }
+saveState();
 
 function hasItem(id) { return state.inventoryItemIds.includes(id); }
 // Mirrors into the CASE FILE menu's shared 소지품 list through this single
