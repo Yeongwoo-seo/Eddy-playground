@@ -114,6 +114,17 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .item-actions-row{display:flex;gap:8px;margin-top:18px}
 .item-actions-row button{flex:1}
 .recipe-editor{margin-top:18px;padding-top:16px;border-top:1px solid var(--divider)}
+
+/* ===== 대사 tab — read-only script view for the current scene, so a dev
+   doesn't have to leave this screen to check who says what while setting
+   up its background/characters. See selectType('dialogue'). ===== */
+.dialogue-panel.hidden{display:none}
+.dialogue-line{background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:12px 14px;margin-bottom:8px}
+.dialogue-line-head{display:flex;align-items:baseline;gap:8px;margin-bottom:4px}
+.dialogue-speaker{font-size:13.5px;font-weight:700;color:var(--cyan)}
+.dialogue-speaker.narration{color:var(--text-muted);font-style:italic;font-weight:600}
+.dialogue-tags{font-family:var(--mono);font-size:10.5px;color:var(--text-muted);letter-spacing:.03em}
+.dialogue-text{font-size:13.5px;line-height:1.55;color:var(--text-primary);white-space:pre-wrap;word-break:keep-all}
 .section-title{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase;margin:24px 0 12px}
 .empty-note{font-size:13px;color:var(--text-muted);padding:14px 0}
 .asset-card{display:flex;align-items:center;gap:12px;background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:12px;margin-bottom:10px}
@@ -163,6 +174,7 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 
   <div class="tabs" id="tabsRow">
     <button class="tab-btn active" id="tabBackground">배경 DB</button>
+    <button class="tab-btn" id="tabDialogue">대사</button>
     <button class="tab-btn" id="tabCharacter">인물 DB</button>
     <button class="tab-btn" id="tabMinigameFace">미니게임 얼굴</button>
     <!-- Evidence-collection focus mode only (see applyFocusModeChrome) —
@@ -316,6 +328,14 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
     </div>
   </div>
 
+  <!-- 대사 tab — see selectType('dialogue') / renderDialoguePanel. Read-only:
+       line text lives in dev/dialogueData.js's source, not in AssetDB, so
+       there's nowhere to persist an edit back to yet. -->
+  <div class="dialogue-panel hidden" id="dialoguePanel">
+    <div class="section-title" style="margin-top:0">대사 (읽기 전용)</div>
+    <div id="dialogueList"></div>
+  </div>
+
   <div class="section-title" id="listTitle">Uploaded Backgrounds</div>
   <div id="assetList"><div class="empty-note">아직 업로드한 이미지가 없습니다.</div></div>
 </div>
@@ -402,6 +422,14 @@ const focusMinigame = (function () {
   return { entry, sceneIds, backHref: fromMinigames ? '/dev/minigames/' : '/dev/evidence/', isEvidence: !fromMinigames };
 })();
 
+// Plain ?scene=<id> deep link (from /dev/game's 업로드 link or a /dev/weekN
+// 설정 button), as opposed to a ?minigame= focus — the week/scene are
+// already decided by whichever scene the dev tapped, so showing pickers
+// for "which week, which scene" again is just dead weight. Locks the
+// pickers the same way focusMinigame does, without touching anything else
+// focusMinigame controls (back link, tab set, fab position).
+const focusScene = !!deepLinkedSceneId && !focusMinigame;
+
 const el = {
   frame: document.getElementById('frame'),
   backBtn: document.getElementById('backBtn'),
@@ -409,6 +437,9 @@ const el = {
   tabsRow: document.getElementById('tabsRow'),
   testFab: document.getElementById('testFab'),
   tabBackground: document.getElementById('tabBackground'),
+  tabDialogue: document.getElementById('tabDialogue'),
+  dialoguePanel: document.getElementById('dialoguePanel'),
+  dialogueList: document.getElementById('dialogueList'),
   tabCharacter: document.getElementById('tabCharacter'),
   tabMinigameFace: document.getElementById('tabMinigameFace'),
   minigameFaceHint: document.getElementById('minigameFaceHint'),
@@ -513,8 +544,8 @@ function activeBackgroundSceneId() {
 
 function selectType(type) {
   // Focus mode is background-only setup for one specific minigame — the
-  // 인물 DB / 미니게임 얼굴 tabs have nothing to do with that, so they're
-  // hidden and can't be switched into (see applyFocusModeChrome).
+  // 대사 / 인물 DB / 미니게임 얼굴 tabs have nothing to do with that, so
+  // they're hidden and can't be switched into (see applyFocusModeChrome).
   if (focusMinigame) type = 'background';
   currentType = type;
   currentFocusTab = 'background';
@@ -525,16 +556,31 @@ function selectType(type) {
   el.listTitle.classList.remove('hidden');
   el.assetList.classList.remove('hidden');
   el.tabBackground.classList.toggle('active', type === 'background');
+  el.tabDialogue.classList.toggle('active', type === 'dialogue');
   el.tabCharacter.classList.toggle('active', type === 'character');
   el.tabMinigameFace.classList.toggle('active', type === 'minigameFace');
-  el.weekPicker.classList.toggle('hidden', type !== 'background' || !!focusMinigame);
-  el.scenePicker.classList.toggle('hidden', type !== 'background');
+  // 배경 DB and 대사 both work off the same week/scene pickers (배경 DB to
+  // pick where to upload, 대사 to pick which scene's script to read) — a
+  // ?scene=<id> deep link already decided that, though, so focusScene locks
+  // them the same way focusMinigame does.
+  const showScenePickers = (type === 'background' || type === 'dialogue') && !focusMinigame && !focusScene;
+  el.weekPicker.classList.toggle('hidden', !showScenePickers);
+  el.scenePicker.classList.toggle('hidden', !showScenePickers);
+  el.dialoguePanel.classList.toggle('hidden', type !== 'dialogue');
+  // 대사 is a read-only script view, not part of the image-upload flow —
+  // none of the dropzone/list/character UI applies.
+  if (type === 'dialogue') {
+    el.dropzone.classList.add('hidden');
+    el.typeHint.classList.add('hidden');
+    el.listTitle.classList.add('hidden');
+    el.assetList.classList.add('hidden');
+  }
   // bgKindPicker's own visibility (based on whether the current scene even
   // has a minigame) is only recomputed by renderBgKindPicker() below, which
   // only runs for type 'background' — force it hidden here too, otherwise
   // switching to 인물 DB left it showing whatever it was left at.
   el.bgKindPicker.classList.toggle('hidden', type !== 'background');
-  el.charPicker.classList.toggle('hidden', type === 'background');
+  el.charPicker.classList.toggle('hidden', type !== 'character' && type !== 'minigameFace');
   el.exprPicker.classList.toggle('hidden', type !== 'character');
   el.minigameFaceHint.classList.toggle('hidden', type !== 'minigameFace');
   el.fileInput.accept = type === 'background' ? 'image/jpeg,image/png,image/webp' : 'image/png,image/webp';
@@ -544,8 +590,11 @@ function selectType(type) {
   // 되돌려서, 인물 DB에서 고르고 있던 표정(예: 기쁨)은 탭을 왔다갔다해도 유지된다.
   if (type === 'minigameFace') currentExpression = MINIGAME_FACE_EXPRESSION;
   else if (currentExpression === MINIGAME_FACE_EXPRESSION) currentExpression = dialogueExpressions[0].id;
-  if (type === 'background') { renderWeekPicker(); renderScenePicker(); renderBgKindPicker(); }
-  else { renderCharPicker(); if (type === 'character') renderExprPicker(); }
+  if (type === 'background' || type === 'dialogue') { renderWeekPicker(); renderScenePicker(); }
+  if (type === 'background') renderBgKindPicker();
+  if (type === 'character' || type === 'minigameFace') renderCharPicker();
+  if (type === 'character') renderExprPicker();
+  if (type === 'dialogue') renderDialoguePanel();
   clearPending();
   refreshList();
   renderHotspotSection();
@@ -602,6 +651,7 @@ function renderWeekPicker() {
       clearPending();
       refreshList();
       renderHotspotSection();
+      if (currentType === 'dialogue') renderDialoguePanel();
     });
   });
 }
@@ -610,8 +660,10 @@ function renderScenePicker() {
   // In focus mode, only this minigame's own scene(s) are pickable — e.g.
   // just the 4 room-search areas, or nothing at all for a single-scene
   // minigame like Eastwood (picker stays hidden, there's nothing to choose).
+  // focusScene locks it the same way — the scene was already decided by
+  // whichever /dev/weekN 설정 button got tapped, so re-picking is dead weight.
   const scenes = focusMinigame ? currentWeek().scenes.filter(s => focusMinigame.sceneIds.includes(s.id)) : currentWeek().scenes;
-  el.scenePicker.classList.toggle('hidden', !!focusMinigame && scenes.length <= 1);
+  el.scenePicker.classList.toggle('hidden', focusScene || (!!focusMinigame && scenes.length <= 1));
   if (!scenes.length) {
     el.scenePickerPills.innerHTML = '<span class="empty-note">이 주차에 등록된 씬이 없습니다.</span>';
     return;
@@ -628,8 +680,34 @@ function renderScenePicker() {
       clearPending();
       refreshList();
       renderHotspotSection();
+      if (currentType === 'dialogue') renderDialoguePanel();
     });
   });
+}
+
+// 대사 tab — read-only script view for whatever scene is currently
+// selected. Line text/speaker/expression live in dev/dialogueData.js's
+// static source, not AssetDB, so there's nothing to save back yet; this is
+// purely for reading the script while setting up backgrounds/characters.
+function renderDialoguePanel() {
+  const scene = currentScene();
+  const lines = scene && scene.lines;
+  if (!lines || !lines.length) {
+    el.dialogueList.innerHTML = '<div class="empty-note">이 씬에는 대사 데이터가 없습니다. (미니게임/증거수집 항목이거나 아직 미구현)</div>';
+    return;
+  }
+  el.dialogueList.innerHTML = lines.map(l => {
+    const isNarration = !l.speaker;
+    const speakerLabel = isNarration ? '내레이션' : l.speaker;
+    const tags = [l.characterId, l.expression].filter(Boolean).join(' · ');
+    return `<div class="dialogue-line">
+      <div class="dialogue-line-head">
+        <span class="dialogue-speaker${isNarration ? ' narration' : ''}">${escapeHtml(speakerLabel)}</span>
+        ${tags ? `<span class="dialogue-tags">${escapeHtml(tags)}</span>` : ''}
+      </div>
+      <div class="dialogue-text">${escapeHtml(l.text)}</div>
+    </div>`;
+  }).join('');
 }
 
 function renderBgKindPicker() {
@@ -1450,6 +1528,7 @@ async function removeAsset(type, id) {
 }
 
 el.tabBackground.addEventListener('click', () => selectType('background'));
+el.tabDialogue.addEventListener('click', () => selectType('dialogue'));
 el.tabCharacter.addEventListener('click', () => selectType('character'));
 el.tabMinigameFace.addEventListener('click', () => selectType('minigameFace'));
 el.tabItems.addEventListener('click', () => selectFocusTab('item'));
@@ -1820,9 +1899,10 @@ el.recipeAddBtn.addEventListener('click', async () => {
 function applyFocusModeChrome() {
   if (!focusMinigame) {
     // Plain ?scene=<id> deep link (from /dev/game's 업로드 link or a
-    // /dev/weekN 설정 button) — not a minigame focus, so the week/scene
-    // pickers stay visible, but still surface a quick way back into the
-    // live scene without hunting for it again.
+    // /dev/weekN 설정 button) — not a minigame focus, but the scene is
+    // already decided, so selectType/renderScenePicker lock the week/scene
+    // pickers via focusScene. Still surface a quick way back into the live
+    // scene without hunting for it again.
     if (deepLinkedSceneId) {
       el.testFab.href = `/dev/game/?scene=${encodeURIComponent(deepLinkedSceneId)}`;
       el.testFab.classList.remove('hidden');
@@ -1839,8 +1919,9 @@ function applyFocusModeChrome() {
     // .test-fab-top — so it doesn't sit over the 아이템/조합법 tabs' own
     // content while scrolling.
     el.testFab.classList.add('test-fab-top');
-    // 인물 DB/미니게임 얼굴 don't apply to an evidence collection — swap
-    // them out for 아이템/조합법 instead of hiding the whole tab row.
+    // 대사/인물 DB/미니게임 얼굴 don't apply to an evidence collection —
+    // swap them out for 아이템/조합법 instead of hiding the whole tab row.
+    el.tabDialogue.classList.add('hidden');
     el.tabCharacter.classList.add('hidden');
     el.tabMinigameFace.classList.add('hidden');
     el.tabItems.classList.remove('hidden');
