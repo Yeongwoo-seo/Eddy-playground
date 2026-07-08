@@ -361,17 +361,18 @@ let currentCharacterKey = dialogueCharacters[0].id;
 let currentExpression = dialogueExpressions[0].id;
 let pendingFile = null;
 
-// Deep link from /dev/game's "+ 새 이미지 업로드" — jump straight to that
-// scene's background list instead of making the tester re-pick week/scene.
-// ?kind=minigame also pre-selects the 미니게임 background sub-category.
+// Deep link from /dev/game's "+ 새 이미지 업로드" and from /dev/weekN's
+// per-scene 설정 button — jump straight to that scene's background list
+// instead of making the tester re-pick week/scene. ?kind=minigame also
+// pre-selects the 미니게임 background sub-category.
+const deepLinkedSceneId = new URLSearchParams(location.search).get('scene');
 (function applyDeepLink() {
   const params = new URLSearchParams(location.search);
-  const requestedSceneId = params.get('scene');
-  if (requestedSceneId) {
+  if (deepLinkedSceneId) {
     for (const w of weeks) {
-      if (w.scenes.some(s => s.id === requestedSceneId)) {
+      if (w.scenes.some(s => s.id === deepLinkedSceneId)) {
         currentWeekId = w.id;
-        currentSceneId = requestedSceneId;
+        currentSceneId = deepLinkedSceneId;
         break;
       }
     }
@@ -1817,7 +1818,18 @@ el.recipeAddBtn.addEventListener('click', async () => {
 });
 
 function applyFocusModeChrome() {
-  if (!focusMinigame) return;
+  if (!focusMinigame) {
+    // Plain ?scene=<id> deep link (from /dev/game's 업로드 link or a
+    // /dev/weekN 설정 button) — not a minigame focus, so the week/scene
+    // pickers stay visible, but still surface a quick way back into the
+    // live scene without hunting for it again.
+    if (deepLinkedSceneId) {
+      el.testFab.href = `/dev/game/?scene=${encodeURIComponent(deepLinkedSceneId)}`;
+      el.testFab.classList.remove('hidden');
+      el.frame.classList.add('has-fab');
+    }
+    return;
+  }
   el.backBtn.href = focusMinigame.backHref;
   el.pageTitle.textContent = focusMinigame.entry.name;
   el.testFab.href = focusMinigame.entry.route;
