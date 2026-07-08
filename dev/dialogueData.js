@@ -1,6 +1,6 @@
-/* OPERATION MK — WEEK 1 · SCENE 01 v4 「진짜 왔네」
-   Dialogue Set: dialogue-week1-scene001-v4
-   Scene: week1-scene-001 (Sydney Airport Arrival Area, 09:30)
+/* OPERATION MK — WEEK 0 · SCENE 01 v4 「진짜 왔네」
+   Dialogue Set: dialogue-week0-scene001-v4
+   Scene: week0-scene-001 (Sydney Airport Arrival Area, 09:30)
    Loaded into /dev/game for VN UX testing. */
 
 // role 'protagonist' gets its own dedicated CharacterTransform; every other
@@ -38,7 +38,7 @@ const MINIGAME_FACE_EXPRESSION = 'minigame-face';
 // Pure stage-direction beats (no speaker) use characterId to say who, if
 // anyone, stays on screen for that beat — keeps the portrait from flickering
 // out and back in across a beat with no line of its own.
-const week1Scene001Lines = [
+const week0Scene001Lines = [
   { id: 'line-001', speaker: '', text: '시드니 공항.\n오전 9시 30분.', characterId: null },
   { id: 'line-002', speaker: '', text: '긴 비행 끝에 도착한 지수는\n도착 게이트 앞에서 같은 곳을 네 번째로 둘러보고 있었다.', characterId: null },
   { id: 'line-003', speaker: '지수', text: '아 진짜.\n어디 있는 거야 대체.', characterId: 'jisoo', expression: 'annoyed' },
@@ -222,12 +222,12 @@ const week1Scene001Lines = [
   { id: 'line-181', speaker: '', text: '지수의 첫날은,\n아직 평범한 여행에 가까웠다.', characterId: null }
 ];
 
-/* OPERATION MK — WEEK 1 · SCENE 2-1 「진짜 같이 있네」
-   Dialogue Set: dialogue-week1-scene002-1
-   Scene: week1-scene-002-1 (Sydney Accommodation, 20:18)
+/* OPERATION MK — WEEK 0 · SCENE 2-1 「진짜 같이 있네」
+   Dialogue Set: dialogue-week0-scene002-1
+   Scene: week0-scene-002-1 (Sydney Accommodation, 20:18)
    Ends on a MINIGAME START beat — nextSceneId hands off to the (not yet
-   built) point-and-click phone-hunt scene, week1-scene-002-2. */
-const week1Scene002_1Lines = [
+   built) point-and-click phone-hunt scene, week0-scene-002-2. */
+const week0Scene002_1Lines = [
   { id: 'line-001', speaker: '', text: '숙소.\n오후 8시 18분.', characterId: null },
   { id: 'line-002', speaker: '', text: '공항에서 나온 뒤,\n두 사람은 늦은 저녁을 간단히 먹고 숙소에 도착했다.', characterId: null },
   { id: 'line-003', speaker: '지수', text: '와아.', characterId: 'jisoo', expression: 'shocked' },
@@ -336,16 +336,16 @@ const week1Scene002_1Lines = [
   { id: 'line-106', speaker: '', text: 'MINIGAME START', characterId: null },
 ];
 
-/* OPERATION MK — WEEK 1 · SCENE 2-3 「근데 이 열쇠 뭐지?」
-   Dialogue Set: dialogue-week1-scene002-3
-   Scene: week1-scene-002-3 (Sydney Accommodation, right after the phone-hunt
+/* OPERATION MK — WEEK 0 · SCENE 2-3 「근데 이 열쇠 뭐지?」
+   Dialogue Set: dialogue-week0-scene002-3
+   Scene: week0-scene-002-3 (Sydney Accommodation, right after the phone-hunt
    minigame). Reached by minigame-phone-search/'s GAME CLEAR redirect, not by
    another scene's nextSceneId — see MINIGAME_ROUTES in game/index.html and
    the redirect at the bottom of minigame-phone-search/index.html. Narration/
    system beats use speaker:'' (no name shown), matching the convention used
-   throughout week1Scene001Lines/week1Scene002_1Lines. No nextSceneId yet —
-   loops like week1-scene-001 until Week 1 Scene 3 is written. */
-const week1Scene002_3Lines = [
+   throughout week0Scene001Lines/week0Scene002_1Lines. No nextSceneId yet —
+   loops like week0-scene-001 until Week 0 Scene 3 is written. */
+const week0Scene002_3Lines = [
   { id: 'line-001', speaker: '지수', text: '찾았다.', characterId: 'jisoo', expression: 'happy' },
   { id: 'line-002', speaker: '영우', text: '아 다행이다 ㅎㅎㅎㅎㅎ', characterId: 'youngwoo', expression: 'happy' },
   { id: 'line-003', speaker: '지수', text: '진짜 여기 있었네.', characterId: 'jisoo', expression: 'soft' },
@@ -374,13 +374,13 @@ const week1Scene002_3Lines = [
   { id: 'line-026', speaker: '', text: 'SCENE COMPLETE', characterId: null },
 ];
 
-/* OPERATION MK — WEEK 1 · SCENE 1-2 「지하철 역 찾기」
-   Dialogue Set: dialogue-week1-scene001-2
-   Scene: week1-scene-001-2 (Sydney Airport Station concourse, 09:45)
+/* OPERATION MK — WEEK 0 · SCENE 1-2 「지하철 역 찾기」
+   Dialogue Set: dialogue-week0-scene001-2
+   Scene: week0-scene-001-2 (Sydney Airport Station concourse, 09:45)
    Setup beat before the 3-stop "find the station" route-map minigame
    (International Airport → Eastwood → Marayong, in order) —
    nextSceneId hands off to that minigame page directly (not another VN scene). */
-const week1Scene001_2Lines = [
+const week0Scene001_2Lines = [
   { id: 'line-001', speaker: '영우', text: '자, 이제 숙소 가자.', characterId: 'youngwoo', expression: 'soft' },
   { id: 'line-002', speaker: '지수', text: '웅웅 ㅎㅎ\n우리 어디로 가야돼 여보?', characterId: 'jisoo', expression: 'happy' },
   { id: 'line-003', speaker: '영우', text: '일단 공항역부터 찾아야 돼.', characterId: 'youngwoo', expression: 'neutral' },
@@ -393,7 +393,7 @@ const week1Scene001_2Lines = [
   { id: 'line-010', speaker: '지수', text: '아아 알게써 ㅠㅋㅋㅋㅋ\n어디보자아...\n공항...', characterId: 'jisoo', expression: 'blank', pauseBeforeMs: 200 },
 ];
 
-// OPERATION MK — Week 1 Scene 2-2 room-search minigame's area/hotspot
+// OPERATION MK — Week 0 Scene 2-2 room-search minigame's area/hotspot
 // registry (v3 — "실제 4개 장소 이미지 기반" brief). Single source of truth
 // shared by minigame-phone-search/ (which hotspots exist and what they're
 // called) and /dev/upload (which lets a dev upload a real room photo per
@@ -406,7 +406,7 @@ const week1Scene001_2Lines = [
 // the 4 real accommodation photos (주방/욕실/외부/침실) — no invented
 // furniture. Only IDs + display labels live here; per-hotspot flavor text,
 // item grants, and gating logic live in minigame-phone-search/index.html.
-const ROOM_SEARCH_MINIGAME_ID = 'week1-scene-002-2';
+const ROOM_SEARCH_MINIGAME_ID = 'week0-scene-002-2';
 const roomSearchAreas = [
   { id: 'kitchen', label: '주방', hotspots: [
     { id: 'kitchen-left-counter', label: '좌측 조리대' },
@@ -528,70 +528,70 @@ const ROOM_SEARCH_CORE_ITEMS = [
   { id: 'jisu-phone', name: '핸드폰', icon: '📱' },
 ];
 
-// Registry of testable Week 1 scenes — /dev/week1 lists these, each linking
+// Registry of testable Week 0 scenes — /dev/week0 lists these, each linking
 // to /dev/game/?scene=<id>. Add future scenes here as they're written.
-const week1Scenes = [
+const week0Scenes = [
   {
-    id: 'week1-scene-001',
+    id: 'week0-scene-001',
     order: 1,
     name: '진짜 왔네',
     location: 'Sydney Airport Arrival Area',
     introLabel: 'SYDNEY',
     time: '09:30',
-    lines: week1Scene001Lines,
+    lines: week0Scene001Lines,
   },
   {
-    id: 'week1-scene-001-2',
+    id: 'week0-scene-001-2',
     order: 2,
     name: '지하철 역 찾기',
     location: 'Sydney Airport Station',
     introLabel: 'SYDNEY',
     time: '09:45',
-    lines: week1Scene001_2Lines,
+    lines: week0Scene001_2Lines,
     // Hands off straight into the route-map minigame (not another VN scene) —
     // see MINIGAME_ROUTES in game/index.html. minigameId marks that this
     // scene has its own separate "미니게임" background slot in 배경 DB
     // (the route-map image), distinct from this scene's own VN background.
-    nextSceneId: 'week1-scene-001-2-minigame',
-    minigameId: 'week1-scene-001-2-minigame',
+    nextSceneId: 'week0-scene-001-2-minigame',
+    minigameId: 'week0-scene-001-2-minigame',
     // 3-stop sequence for this minigame, in find-order — 배경 DB's 정답 영역
     // editor uses this to offer one hotspot slot per stop on the shared map image.
     minigameStages: ['공항 (International Airport)', '이스트우드 (Eastwood)', '마라용 (Marayong)'],
   },
   {
-    id: 'week1-scene-002-1',
+    id: 'week0-scene-002-1',
     order: 3,
     name: '진짜 같이 있네',
     location: 'Sydney Accommodation',
     introLabel: 'ACCOMMODATION',
     time: '20:18',
-    lines: week1Scene002_1Lines,
+    lines: week0Scene002_1Lines,
     // Not a loop — this scene hands off to the point-and-click phone-hunt
-    // minigame (week1-scene-002-2). See MINIGAME_ROUTES in game/index.html.
-    nextSceneId: 'week1-scene-002-2',
+    // minigame (week0-scene-002-2). See MINIGAME_ROUTES in game/index.html.
+    nextSceneId: 'week0-scene-002-2',
   },
   {
-    id: 'week1-scene-002-2',
+    id: 'week0-scene-002-2',
     order: 4,
     name: '핸드폰을 찾아라',
     location: 'Sydney Accommodation',
     time: '20:20',
     // No `lines` — this isn't a VN scene, it's the point-and-click minigame
-    // itself. `route` overrides /dev/week1's default /dev/game/?scene=<id>
+    // itself. `route` overrides /dev/week0's default /dev/game/?scene=<id>
     // link so this entry opens the minigame page directly, letting it be
-    // tested standalone instead of only via week1-scene-002-1's VN handoff.
+    // tested standalone instead of only via week0-scene-002-1's VN handoff.
     route: '/dev/minigame-phone-search/',
   },
   {
-    id: 'week1-scene-002-3',
+    id: 'week0-scene-002-3',
     order: 5,
     name: '근데 이 열쇠 뭐지?',
     location: 'Sydney Accommodation',
     introLabel: 'ACCOMMODATION',
     time: '20:41',
-    lines: week1Scene002_3Lines,
+    lines: week0Scene002_3Lines,
     // Reached from the phone-search minigame's GAME CLEAR redirect, not from
-    // another VN scene's nextSceneId — listed here so /dev/week1 and the
+    // another VN scene's nextSceneId — listed here so /dev/week0 and the
     // dev asset selector can still target it directly for testing.
   },
 ];
@@ -604,11 +604,11 @@ const week1Scenes = [
 // starts the game. Keep `route` in sync with MINIGAME_ROUTES in game/index.html.
 const minigames = [
   {
-    id: 'week1-scene-001-2-minigame',
+    id: 'week0-scene-001-2-minigame',
     name: '지하철 역 찾기',
     location: 'Sydney Airport Station',
     route: '/dev/minigame-eastwood/',
-    setupUrl: '/dev/upload/?scene=week1-scene-001-2&kind=minigame&minigame=week1-scene-001-2-minigame',
+    setupUrl: '/dev/upload/?scene=week0-scene-001-2&kind=minigame&minigame=week0-scene-001-2-minigame',
   },
   {
     // Standalone physics/AI minigame — no background image or hand-marked
@@ -632,11 +632,11 @@ const minigames = [
 // Keep `route` in sync with MINIGAME_ROUTES in game/index.html.
 const evidenceCollections = [
   {
-    id: 'week1-scene-002-2',
+    id: 'week0-scene-002-2',
     name: '핸드폰을 찾아라',
     location: 'Sydney Accommodation',
     route: '/dev/minigame-phone-search/',
-    setupUrl: `/dev/upload/?scene=${roomSearchAreaSceneId(roomSearchAreas[0].id)}&minigame=week1-scene-002-2`,
+    setupUrl: `/dev/upload/?scene=${roomSearchAreaSceneId(roomSearchAreas[0].id)}&minigame=week0-scene-002-2`,
   },
 ];
 
@@ -645,13 +645,13 @@ const evidenceCollections = [
 //
 // /dev/upload's picker gets one extra pseudo-scene per room-search area
 // (`roomHotspots` marks it as such) so a dev can upload that area's photo
-// and mark its hotspots — /dev/week1's list reads week1Scenes directly, not
+// and mark its hotspots — /dev/week0's list reads week0Scenes directly, not
 // weeks, so these stay invisible there and don't clutter the scene list.
-const week1UploadScenes = week1Scenes.concat(roomSearchAreas.map(area => ({
+const week0UploadScenes = week0Scenes.concat(roomSearchAreas.map(area => ({
   id: roomSearchAreaSceneId(area.id),
   name: `핸드폰찾기 · ${area.label}`,
   roomHotspots: area.hotspots,
 })));
 const weeks = [
-  { id: 'week1', label: '1주차', scenes: week1UploadScenes },
+  { id: 'week0', label: '0주차', scenes: week0UploadScenes },
 ];

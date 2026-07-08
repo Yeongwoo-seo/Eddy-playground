@@ -288,7 +288,7 @@ const AssetDB = (() => {
 
   // Evidence-collection item catalog — { [itemId]: { name, icon, imageAssetId,
   // hotspotId, message } } per evidence-collection id (e.g.
-  // 'week1-scene-002-2'). Same per-scene JSON-blob-in-Storage pattern as
+  // 'week0-scene-002-2'). Same per-scene JSON-blob-in-Storage pattern as
   // room hotspots above. `hotspotId` is which hotspot (across every area of
   // that evidence collection) grants this item on tap — null/absent means
   // the item isn't a simple hotspot pickup (a core-route item, or a
@@ -384,7 +384,7 @@ const DevGameState = {
   },
 
   // Each scene (or minigame — a minigame's own background is just another
-  // sceneId string, e.g. 'week1-scene-001-2-minigame') gets its own
+  // sceneId string, e.g. 'week0-scene-001-2-minigame') gets its own
   // background slot.
   _loadBackgroundMap() {
     try { return JSON.parse(localStorage.getItem(this._keys.background)) || {}; }
@@ -422,7 +422,7 @@ const DevGameState = {
   setMinigameHotspot(sceneId, stageIndex, hotspot) { return AssetDB.setMinigameHotspot(sceneId, stageIndex, hotspot); },
 
   // Room-search minigame variant of the hotspot above — a single background
-  // image (one per area, e.g. 'week1-scene-002-2-kitchen') can hold several
+  // image (one per area, e.g. 'week0-scene-002-2-kitchen') can hold several
   // independently-marked, named tap targets instead of just one, since a
   // room photo has multiple things to investigate.
   // { [hotspotId]: {points:[{x,y},...]} } (or an older {x1,y1,x2,y2}

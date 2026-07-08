@@ -4,7 +4,7 @@
 const CACHE_NAME = 'operation-mk-dev-v13';
 const APP_SHELL = [
   '/dev/',
-  '/dev/week1/',
+  '/dev/week0/',
   '/dev/game/',
   '/dev/upload/',
   '/dev/start/',

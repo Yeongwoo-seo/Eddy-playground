@@ -247,7 +247,7 @@ if ('serviceWorker' in navigator) {
 <script src="/dev/caseFileState.js"></script>
 <script src="/dev/vnPlayer.js"></script>
 <script>
-/* OPERATION MK — WEEK 1 · SCENE 2-2 「핸드폰을 찾아라」 (v3 — 실제 4개 장소
+/* OPERATION MK — WEEK 0 · SCENE 2-2 「핸드폰을 찾아라」 (v3 — 실제 4개 장소
    이미지 기반 Hotspot · 아이템 조합 · 상태 변화 · 재탐색).
    Point-and-click room search across 4 real accommodation photos (주방/욕실/
    외부/침실 — roomSearchAreas in dialogueData.js). Absolute rule this file
@@ -834,7 +834,7 @@ function handlePhoneFound() {
       el.stamp.classList.add('show');
       setTimeout(() => {
         el.fadeOverlay.classList.add('show');
-        setTimeout(() => { location.href = '/dev/game/?scene=week1-scene-002-3'; }, 950);
+        setTimeout(() => { location.href = '/dev/game/?scene=week0-scene-002-3'; }, 950);
       }, 1000);
     }, 700);
   }, 700);
@@ -1405,7 +1405,7 @@ async function loadCustomItemsAndRecipes() {
 // dev/game/index.html never actually loads this scene id (it has no `lines`
 // — MINIGAME_ROUTES and the scene's own `route` field both bypass it), so
 // this is the only place 숙소's map-location visit can be recorded for it.
-CaseFileState.recordSceneVisit('week1-scene-002-2');
+CaseFileState.recordSceneVisit('week0-scene-002-2');
 renderItemGrid();
 updateLockState();
 (async function boot() {

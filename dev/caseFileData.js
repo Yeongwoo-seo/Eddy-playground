@@ -9,9 +9,9 @@
 // shape without pretending content exists that hasn't been written yet.
 // mapX/mapY are rough placement percentages for a future Sydney map graphic.
 const caseMapLocations = [
-  { id: 'airport', name: '공항', mapX: 12, mapY: 70, relatedSceneIds: ['week1-scene-001'] },
-  { id: 'station', name: '지하철 역', mapX: 30, mapY: 55, relatedSceneIds: ['week1-scene-001-2'] },
-  { id: 'accommodation', name: '숙소', mapX: 50, mapY: 40, relatedSceneIds: ['week1-scene-002-1', 'week1-scene-002-2', 'week1-scene-002-3'] },
+  { id: 'airport', name: '공항', mapX: 12, mapY: 70, relatedSceneIds: ['week0-scene-001'] },
+  { id: 'station', name: '지하철 역', mapX: 30, mapY: 55, relatedSceneIds: ['week0-scene-001-2'] },
+  { id: 'accommodation', name: '숙소', mapX: 50, mapY: 40, relatedSceneIds: ['week0-scene-002-1', 'week0-scene-002-2', 'week0-scene-002-3'] },
   { id: 'circular-quay', name: 'Circular Quay', mapX: 62, mapY: 30, relatedSceneIds: [] },
   { id: 'opera-house', name: 'Opera House', mapX: 70, mapY: 22, relatedSceneIds: [] },
   { id: 'harbour-bridge', name: 'Harbour Bridge', mapX: 58, mapY: 18, relatedSceneIds: [] },
