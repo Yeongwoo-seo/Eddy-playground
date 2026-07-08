@@ -188,6 +188,43 @@ const AssetDB = (() => {
     return Promise.resolve(ready).catch(() => {}); // a broken image shouldn't block the scene
   }
 
+  // Fetches one of the JSON-blob-in-Storage documents (room hotspots, item
+  // catalog, recipes, ...) below. A missing object (nothing saved there yet)
+  // is a normal, expected case — Supabase Storage's public GET reports it as
+  // either a real 404 or a 400 with a `not_found` error body depending on
+  // version, so both are treated as "doesn't exist yet" and resolve to null.
+  // Anything else non-ok (auth/RLS misconfig, rate limit, a transient 5xx)
+  // must NOT be treated the same way: getRoomHotspots/getItems/etc used to
+  // silently cache `{}` for ANY non-ok response, and every set* function
+  // reads that cache as "current data" before overwriting the blob with
+  // just the one field being edited — so one transient failure at just the
+  // wrong moment would permanently poison the session's cache and the next
+  // save would silently wipe out everything else already stored. Throwing
+  // here instead lets that reach the caller's own error handling (usually a
+  // visible DevDiag banner) instead of failing silently.
+  async function fetchJsonBlob(url) {
+    const res = await fetch(url, { headers: { apikey: SUPABASE_ANON_KEY } });
+    if (res.ok) return await res.json();
+    if (res.status === 404) return null;
+    let body = null;
+    try { body = await res.json(); } catch (e) { /* not JSON — fall through */ }
+    if (body && /not.?found/i.test(String(body.error || body.message || ''))) return null;
+    throw new Error(`데이터를 불러오지 못했습니다 (${res.status})`);
+  }
+
+  // Every set* below calls this (not the paired lenient get*) to read the
+  // blob it's about to overwrite — trusts an already-populated cache, but on
+  // a cache miss lets fetchJsonBlob's error propagate instead of swallowing
+  // it into "empty," which is what get* does for read-time display. A save
+  // has to fail loudly rather than silently write over real data with just
+  // the one field being edited.
+  async function readCurrentForWrite(cache, key, url, emptyValue) {
+    if (cache.has(key)) return cache.get(key);
+    const value = (await fetchJsonBlob(url)) || emptyValue;
+    cache.set(key, value);
+    return value;
+  }
+
   // Room-search minigame hotspot positions ({ [hotspotId]: {x1,y1,x2,y2} }
   // per sceneId) — stored as one JSON blob per scene directly in the same
   // Storage bucket the photos themselves live in (no new Postgres table/
@@ -204,8 +241,7 @@ const AssetDB = (() => {
     if (roomHotspotsCache.has(sceneId)) return roomHotspotsCache.get(sceneId);
     const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${roomHotspotsPath(sceneId)}?t=${Date.now()}`;
     try {
-      const res = await fetch(url, { headers: { apikey: SUPABASE_ANON_KEY } });
-      const map = res.ok ? await res.json() : {};
+      const map = (await fetchJsonBlob(url)) || {};
       roomHotspotsCache.set(sceneId, map);
       return map;
     } catch (e) {
@@ -215,7 +251,8 @@ const AssetDB = (() => {
 
   async function setRoomHotspot(sceneId, hotspotId, hotspot) {
     if (!sceneId || !hotspotId) return {};
-    const current = await getRoomHotspots(sceneId);
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${roomHotspotsPath(sceneId)}?t=${Date.now()}`;
+    const current = await readCurrentForWrite(roomHotspotsCache, sceneId, url, {});
     const map = Object.assign({}, current);
     if (hotspot) map[hotspotId] = hotspot; else delete map[hotspotId];
     const blob = new Blob([JSON.stringify(map)], { type: 'application/json' });
@@ -249,8 +286,7 @@ const AssetDB = (() => {
     if (minigameHotspotsCache.has(sceneId)) return minigameHotspotsCache.get(sceneId);
     const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${minigameHotspotsPath(sceneId)}?t=${Date.now()}`;
     try {
-      const res = await fetch(url, { headers: { apikey: SUPABASE_ANON_KEY } });
-      const map = res.ok ? await res.json() : {};
+      const map = (await fetchJsonBlob(url)) || {};
       minigameHotspotsCache.set(sceneId, map);
       return map;
     } catch (e) {
@@ -266,7 +302,8 @@ const AssetDB = (() => {
 
   async function setMinigameHotspot(sceneId, stageIndex, hotspot) {
     if (!sceneId) return {};
-    const current = await getMinigameHotspots(sceneId);
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${minigameHotspotsPath(sceneId)}?t=${Date.now()}`;
+    const current = await readCurrentForWrite(minigameHotspotsCache, sceneId, url, {});
     const map = Object.assign({}, current);
     const key = minigameStageKey(stageIndex);
     if (hotspot) map[key] = hotspot; else delete map[key];
@@ -302,8 +339,7 @@ const AssetDB = (() => {
     if (itemsCache.has(evidenceId)) return itemsCache.get(evidenceId);
     const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${itemsPath(evidenceId)}?t=${Date.now()}`;
     try {
-      const res = await fetch(url, { headers: { apikey: SUPABASE_ANON_KEY } });
-      const map = res.ok ? await res.json() : {};
+      const map = (await fetchJsonBlob(url)) || {};
       itemsCache.set(evidenceId, map);
       return map;
     } catch (e) {
@@ -313,7 +349,8 @@ const AssetDB = (() => {
 
   async function setItem(evidenceId, itemId, def) {
     if (!evidenceId || !itemId) return {};
-    const current = await getItems(evidenceId);
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${itemsPath(evidenceId)}?t=${Date.now()}`;
+    const current = await readCurrentForWrite(itemsCache, evidenceId, url, {});
     const map = Object.assign({}, current);
     if (def) map[itemId] = def; else delete map[itemId];
     const blob = new Blob([JSON.stringify(map)], { type: 'application/json' });
@@ -342,8 +379,7 @@ const AssetDB = (() => {
     if (recipesCache.has(evidenceId)) return recipesCache.get(evidenceId);
     const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${recipesPath(evidenceId)}?t=${Date.now()}`;
     try {
-      const res = await fetch(url, { headers: { apikey: SUPABASE_ANON_KEY } });
-      const list = res.ok ? await res.json() : [];
+      const list = (await fetchJsonBlob(url)) || [];
       recipesCache.set(evidenceId, list);
       return list;
     } catch (e) {
@@ -351,6 +387,14 @@ const AssetDB = (() => {
     }
   }
 
+  // Unlike setItem/setRoomHotspot/setMinigameHotspot, this takes the whole
+  // desired list rather than doing its own read-modify-write — callers
+  // (dev/upload's 조합법 tab) derive `recipes` from their own
+  // evidenceRecipesCache, itself seeded from getRecipes() at tab-open time.
+  // That means a getRecipes() call that fails and falls back to [] (see
+  // above) can still lead to a real overwrite-with-incomplete-list if a dev
+  // adds/deletes a recipe right after — same class of risk as the other
+  // stores, just one layer up in the caller instead of in here.
   async function setRecipes(evidenceId, recipes) {
     if (!evidenceId) return [];
     const blob = new Blob([JSON.stringify(recipes)], { type: 'application/json' });
