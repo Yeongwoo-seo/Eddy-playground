@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>OPERATION MK · 특수 능력 테스트</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<meta name="theme-color" content="#080A0C">
+<link rel="manifest" href="/dev/manifest.json">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="OPERATION MK DEV">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+:root{
+  --bg:#080A0C;--surface-1:#101419;--surface-2:#171C22;--surface-3:#1E252D;
+  --text-primary:#EDF1F4;--text-secondary:#929BA5;--text-muted:#5F6872;
+  --cyan:#59B8C8;--amber:#D6A84B;--signal-red:#D94141;--divider:rgba(255,255,255,0.08);
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sans:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
+}
+html,body{height:100%}
+body{background:#000;color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center;align-items:center}
+.frame{position:relative;width:100%;max-width:430px;height:100dvh;height:100vh;height:var(--vh100, 100vh);max-height:932px;overflow:hidden;background:var(--bg)}
+
+.topbar{position:absolute;top:0;left:0;right:0;z-index:6;padding:calc(14px + env(safe-area-inset-top,0)) 16px 10px;display:flex;justify-content:space-between;align-items:center;pointer-events:none}
+.vn-btn{pointer-events:auto;font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:#fff;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:9px 14px;cursor:pointer;text-decoration:none;display:inline-block}
+.vn-btn:active{transform:scale(.96)}
+.vn-btn[disabled]{opacity:.35;pointer-events:none}
+.vn-btn.hidden{display:none}
+
+/* ===== Upload screen ===== */
+.upload-screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 28px;text-align:center;transition:opacity .3s ease}
+.upload-screen.hidden{display:none}
+.upload-badge{font-family:var(--mono);font-size:11px;letter-spacing:.16em;color:var(--amber);text-transform:uppercase;margin-bottom:14px}
+.upload-title{font-size:22px;font-weight:700;margin-bottom:12px}
+.upload-desc{font-size:13.5px;color:var(--text-secondary);line-height:1.65;margin-bottom:30px;max-width:300px}
+.upload-label{display:inline-flex;align-items:center;gap:8px;background:var(--cyan);color:#04181c;font-weight:700;font-size:14.5px;border-radius:16px;padding:15px 26px;cursor:pointer;transition:transform .15s}
+.upload-label:active{transform:scale(.97)}
+.upload-input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+
+/* ===== Scan stage ===== */
+.scan-stage{position:absolute;inset:0;background:#05070a;display:none;overflow:hidden}
+.scan-stage.show{display:block}
+.image-wrap{position:absolute;inset:0;overflow:hidden;background:#05070a}
+.image-wrap img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;display:block;-webkit-user-drag:none}
+
+.scan-sweep{position:absolute;left:0;right:0;height:38%;top:-40%;background:linear-gradient(180deg,rgba(89,184,200,0) 0%,rgba(89,184,200,.28) 50%,rgba(89,184,200,0) 100%);pointer-events:none;opacity:0}
+.image-wrap.scanning .scan-sweep{opacity:1;animation:sweepDown 1.4s cubic-bezier(.4,0,.2,1) 2}
+@keyframes sweepDown{0%{top:-40%}100%{top:100%}}
+.scan-label{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;color:var(--cyan);background:rgba(5,7,10,.75);border:1px solid rgba(89,184,200,.35);border-radius:20px;padding:8px 16px;opacity:0;transition:opacity .2s ease;white-space:nowrap}
+.image-wrap.scanning .scan-label{opacity:1}
+
+.marker{position:absolute;width:38px;height:38px;transform:translate(-50%,-50%);cursor:pointer;opacity:0;animation:markerPop .35s cubic-bezier(.2,.8,.2,1) forwards}
+.marker-ring{position:absolute;inset:0;border-radius:50%;border:2px solid var(--cyan);box-shadow:0 0 0 4px rgba(89,184,200,.14);animation:ringPulse 1.8s ease-in-out infinite}
+.marker.found .marker-ring{border-color:var(--amber);box-shadow:0 0 0 4px rgba(214,168,75,.16);animation:none}
+.marker-dot{position:absolute;left:50%;top:50%;width:7px;height:7px;border-radius:50%;background:var(--cyan);transform:translate(-50%,-50%)}
+.marker.found .marker-dot{background:var(--amber)}
+@keyframes markerPop{0%{opacity:0;transform:translate(-50%,-50%) scale(.4)}100%{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+@keyframes ringPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.35);opacity:.35}}
+
+.scan-topbar{position:absolute;left:16px;right:16px;top:calc(58px + env(safe-area-inset-top,0));z-index:6;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.progress-pill{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;color:#fff;background:rgba(5,7,10,.75);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:9px 14px}
+.progress-pill .n{color:var(--amber);font-weight:600}
+
+.complete-toast{position:absolute;left:50%;top:42%;transform:translate(-50%,16px);z-index:7;background:rgba(5,7,10,.94);border:1px solid rgba(214,168,75,.45);border-radius:16px;padding:14px 22px;opacity:0;pointer-events:none;transition:opacity .35s ease,transform .35s ease;font-size:13.5px;font-weight:700;color:var(--amber);text-align:center}
+.complete-toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* ===== Dialogue popup (reused vnPlayer engine, same look as the other minigames) ===== */
+.msg-layer{position:absolute;inset:0;z-index:8;display:none;flex-direction:column;justify-content:flex-end;cursor:pointer}
+.msg-layer.show{display:flex}
+.msg-panel{position:relative;margin:0 16px calc(16px + env(safe-area-inset-bottom,0));background:rgba(5,7,10,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.1);border-radius:18px;box-shadow:0 8px 28px rgba(0,0,0,.35);padding:16px 18px;min-height:20vh;display:flex;flex-direction:column}
+.msg-name{font-size:15px;font-weight:700;color:var(--cyan);margin-bottom:8px}
+.msg-name:empty{display:none}
+.msg-text{flex:1;font-size:16px;line-height:1.65;color:#fff;white-space:pre-wrap;word-break:keep-all}
+.msg-foot{display:flex;justify-content:flex-end;padding-top:6px}
+.msg-arrow{font-size:13px;color:var(--text-secondary);visibility:hidden}
+@keyframes arrowBob{0%,100%{transform:translateY(0)}50%{transform:translateY(4px)}}
+.msg-arrow.show{visibility:visible;animation:arrowBob 1.1s ease-in-out infinite}
+</style>
+</head>
+<body>
+<div class="frame" id="frame">
+  <div class="topbar">
+    <a class="vn-btn" href="/dev/evidence/">← DEV</a>
+    <button class="vn-btn hidden" id="resetBtn" disabled>새 사진</button>
+  </div>
+
+  <div class="upload-screen" id="uploadScreen">
+    <div class="upload-badge">특수 능력 테스트</div>
+    <div class="upload-title">사진 속 물품을 감지합니다</div>
+    <div class="upload-desc">사진을 업로드하면 지수의 특수 능력이 발동해 사진 속 물품을 감지합니다.<br>감지된 영역을 눌러 물품을 조사해 보세요.</div>
+    <label class="upload-label" for="fileInput">📷 사진 업로드</label>
+    <input class="upload-input" type="file" id="fileInput" accept="image/*">
+  </div>
+
+  <div class="scan-stage" id="scanStage">
+    <div class="scan-topbar">
+      <div class="progress-pill" id="progressPill">감지된 물품 <span class="n" id="foundCount">0</span>/<span id="totalCount">0</span></div>
+    </div>
+    <div class="image-wrap" id="imageWrap">
+      <img id="scanImg" alt="">
+      <div class="scan-sweep"></div>
+      <div class="scan-label">지수의 특수 능력 발동 중...</div>
+      <div id="markerLayer"></div>
+    </div>
+    <div class="complete-toast" id="completeToast">감지된 물품을 모두 조사했다.</div>
+  </div>
+
+  <div class="msg-layer" id="msgLayer">
+    <div class="msg-panel">
+      <div class="msg-name" id="msgName"></div>
+      <div class="msg-text" id="msgText"></div>
+      <div class="msg-foot"><span class="msg-arrow" id="msgArrow">▼</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+function setVh100() { document.documentElement.style.setProperty('--vh100', window.innerHeight + 'px'); }
+setVh100();
+window.addEventListener('resize', setVh100);
+window.addEventListener('orientationchange', setVh100);
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
+}
+</script>
+<script src="/dev/vnPlayer.js"></script>
+<script>
+/* OPERATION MK — 「특수 능력 테스트」 evidence-collection entry.
+   Standalone/self-contained like fishing-minigame (no story link, no
+   assetDb/dev-uploaded background) — the player's own photo IS the
+   background. Real object detection isn't feasible client-side, so the
+   "감지" is a themed simulation: a random subset of ITEM_POOL is placed at
+   random non-overlapping positions over whatever photo the player picks,
+   framed as 지수's 특수 능력 rather than real computer vision. Each item
+   type always carries the same investigation lines regardless of what the
+   uploaded photo actually shows, same reasoning as CUSTOM_PICKUP_MESSAGES
+   flavor text elsewhere — the point is testing the interaction, not real
+   recognition accuracy. */
+
+const ITEM_POOL = [
+  { id: 'wallet', label: '지갑', lines: [
+    { speaker: '지수', text: '지갑이에요.\n안에 카드가 몇 장 보이는데...' },
+    { speaker: '영우', text: '주인 이름부터 확인해보자.' },
+  ] },
+  { id: 'phone', label: '휴대폰', lines: [
+    { speaker: '지수', text: '휴대폰이 하나 놓여 있어요.' },
+    { speaker: '영우', text: '잠금화면에 뭐 떠 있는지 잘 봐.' },
+  ] },
+  { id: 'receipt', label: '영수증', lines: [
+    { speaker: '지수', text: '영수증이네요.\n날짜랑 장소가 나와 있어요.' },
+    { speaker: '영우', text: '그거 시간표 맞추는 데 쓸 수 있겠다.' },
+  ] },
+  { id: 'keys', label: '열쇠', lines: [
+    { speaker: '지수', text: '열쇠예요.\n낯익은 모양은 아닌데.' },
+    { speaker: '영우', text: '어디 열쇠인지부터 알아내야겠네.' },
+  ] },
+  { id: 'watch', label: '손목시계', lines: [
+    { speaker: '지수', text: '손목시계다.\n시간이 멈춰 있어요.' },
+    { speaker: '영우', text: '멈춘 시각, 기록해 둬.' },
+  ] },
+  { id: 'glasses', label: '안경', lines: [
+    { speaker: '지수', text: '안경이 떨어져 있어요.' },
+    { speaker: '영우', text: '렌즈 도수 보면 누구 건지 좁혀지려나.' },
+  ] },
+  { id: 'note', label: '메모지', lines: [
+    { speaker: '지수', text: '메모지에 뭔가 적혀 있어요.' },
+    { speaker: '영우', text: '글씨체, 사진으로 남겨놔.' },
+  ] },
+  { id: 'cup', label: '커피컵', lines: [
+    { speaker: '지수', text: '커피컵이에요.\n아직 온기가 남아 있을지도.' },
+    { speaker: '영우', text: '그럼 얼마 안 됐다는 거네.' },
+  ] },
+  { id: 'card', label: '명함', lines: [
+    { speaker: '지수', text: '명함이 하나 보여요.' },
+    { speaker: '영우', text: '이름이랑 회사, 나중에 찾아보자.' },
+  ] },
+  { id: 'envelope', label: '봉투', lines: [
+    { speaker: '지수', text: '서류봉투예요.\n안에 뭐가 들었는지는 안 보여요.' },
+    { speaker: '영우', text: '함부로 열진 말고, 위치만 기록해.' },
+  ] },
+  { id: 'ring', label: '반지', lines: [
+    { speaker: '지수', text: '반지가 하나 놓여 있어요.' },
+    { speaker: '영우', text: '안쪽에 뭐 새겨져 있는지 확인해봐.' },
+  ] },
+  { id: 'usb', label: 'USB', lines: [
+    { speaker: '지수', text: 'USB네요.\n뭐가 들어있을지 궁금하다.' },
+    { speaker: '영우', text: '함부로 꽂진 말고.' },
+  ] },
+];
+const MIN_ITEMS = 5, MAX_ITEMS = 7;
+const MIN_SPACING_FR = 0.16; // fraction of the shorter box dimension between marker centers
+
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function pickPositions(count) {
+  const positions = [];
+  let attempts = 0;
+  while (positions.length < count && attempts < 400) {
+    attempts++;
+    const x = 0.12 + Math.random() * 0.76;
+    const y = 0.12 + Math.random() * 0.76;
+    if (positions.every(p => Math.hypot(p.x - x, p.y - y) >= MIN_SPACING_FR)) {
+      positions.push({ x, y });
+    }
+  }
+  while (positions.length < count) {
+    positions.push({ x: 0.12 + Math.random() * 0.76, y: 0.12 + Math.random() * 0.76 });
+  }
+  return positions;
+}
+
+const el = {
+  uploadScreen: document.getElementById('uploadScreen'),
+  fileInput: document.getElementById('fileInput'),
+  scanStage: document.getElementById('scanStage'),
+  imageWrap: document.getElementById('imageWrap'),
+  scanImg: document.getElementById('scanImg'),
+  markerLayer: document.getElementById('markerLayer'),
+  resetBtn: document.getElementById('resetBtn'),
+  foundCount: document.getElementById('foundCount'),
+  totalCount: document.getElementById('totalCount'),
+  completeToast: document.getElementById('completeToast'),
+  msgLayer: document.getElementById('msgLayer'),
+  msgName: document.getElementById('msgName'),
+  msgText: document.getElementById('msgText'),
+  msgArrow: document.getElementById('msgArrow'),
+};
+
+let activeItems = [];   // [{ ...ITEM_POOL entry, x, y, found }]
+let activeMsgTapHandler = null;
+
+const player = createVNPlayer({
+  onLineChange: (line) => { el.msgName.textContent = line.speaker || ''; },
+  onTextUpdate: (text) => { el.msgText.textContent = text; },
+  onArrow: (show) => el.msgArrow.classList.toggle('show', show),
+  onComplete: () => {
+    el.msgLayer.classList.remove('show');
+    if (activeMsgTapHandler) { el.msgLayer.removeEventListener('click', activeMsgTapHandler); activeMsgTapHandler = null; }
+  },
+});
+function queueDialogue(lines) {
+  if (activeMsgTapHandler) el.msgLayer.removeEventListener('click', activeMsgTapHandler);
+  el.msgLayer.classList.add('show');
+  activeMsgTapHandler = () => player.tap();
+  el.msgLayer.addEventListener('click', activeMsgTapHandler);
+  player.load(lines, 0);
+}
+
+function renderMarkers() {
+  el.markerLayer.innerHTML = '';
+  activeItems.forEach((item, index) => {
+    const m = document.createElement('div');
+    m.className = 'marker' + (item.found ? ' found' : '');
+    m.style.left = (item.x * 100) + '%';
+    m.style.top = (item.y * 100) + '%';
+    m.style.animationDelay = (index * 70) + 'ms';
+    m.innerHTML = '<div class="marker-ring"></div><div class="marker-dot"></div>';
+    m.addEventListener('click', () => onMarkerTap(item, m));
+    el.markerLayer.appendChild(m);
+  });
+}
+
+function onMarkerTap(item, markerEl) {
+  if (!item.found) {
+    item.found = true;
+    markerEl.classList.add('found');
+    updateProgress();
+  }
+  queueDialogue(item.lines);
+}
+
+function updateProgress() {
+  const foundNum = activeItems.filter(i => i.found).length;
+  el.foundCount.textContent = foundNum;
+  el.totalCount.textContent = activeItems.length;
+  el.completeToast.classList.toggle('show', foundNum === activeItems.length);
+}
+
+function startScan(dataUrl) {
+  el.uploadScreen.classList.add('hidden');
+  el.scanStage.classList.add('show');
+  el.resetBtn.classList.remove('hidden');
+  el.resetBtn.disabled = false;
+  el.completeToast.classList.remove('show');
+  el.markerLayer.innerHTML = '';
+  el.imageWrap.classList.remove('scanning');
+  el.scanImg.src = dataUrl;
+
+  const count = MIN_ITEMS + Math.floor(Math.random() * (MAX_ITEMS - MIN_ITEMS + 1));
+  const chosen = shuffle(ITEM_POOL).slice(0, count);
+  const positions = pickPositions(count);
+  activeItems = chosen.map((item, i) => ({ ...item, x: positions[i].x, y: positions[i].y, found: false }));
+  updateProgress();
+
+  // Scanning-sweep animation plays twice (see .scan-sweep's 2x iteration) —
+  // reveal the (still-invisible) markers only once it's finished so tapping
+  // early can't skip the "analysis" beat.
+  void el.imageWrap.offsetWidth; // restart the CSS animation from a clean state
+  el.imageWrap.classList.add('scanning');
+  setTimeout(() => {
+    el.imageWrap.classList.remove('scanning');
+    renderMarkers();
+  }, 2 * 1400);
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+el.fileInput.addEventListener('change', async () => {
+  const file = el.fileInput.files && el.fileInput.files[0];
+  if (!file) return;
+  const dataUrl = await readFileAsDataUrl(file);
+  startScan(dataUrl);
+  el.fileInput.value = '';
+});
+
+el.resetBtn.addEventListener('click', () => {
+  el.scanStage.classList.remove('show');
+  el.uploadScreen.classList.remove('hidden');
+  el.resetBtn.classList.add('hidden');
+  el.resetBtn.disabled = true;
+  activeItems = [];
+});
+</script>
+</body>
+</html>
