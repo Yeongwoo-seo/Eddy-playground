@@ -865,7 +865,17 @@ function fitToStage() {
   ty = (rect.height - CANVAS_H * scale) / 2;
   applyCanvasTransform();
 }
-window.addEventListener('resize', () => { if (!el.photoStage.classList.contains('hidden')) fitToStage(); });
+// Re-fit whenever .frame's actual height can change, same event set as
+// setVh100() above (--vh100 drives .frame's height) — a plain window
+// 'resize' alone misses iOS Safari's address-bar collapse/expand, which
+// only fires visualViewport's own 'resize' event. Without this, the photo
+// stays scaled/positioned for the old (shorter or taller) stage height
+// after the bar animates, leaving the stage's own dark background exposed
+// as a black strip at the top or bottom depending on which way it moved.
+function refitStageOnResize() { if (!el.photoStage.classList.contains('hidden')) fitToStage(); }
+window.addEventListener('resize', refitStageOnResize);
+window.addEventListener('orientationchange', refitStageOnResize);
+if (window.visualViewport) window.visualViewport.addEventListener('resize', refitStageOnResize);
 
 function screenToCanvas(clientX, clientY) {
   const rect = el.photoStage.getBoundingClientRect();
