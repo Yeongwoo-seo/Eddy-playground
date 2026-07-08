@@ -8,7 +8,16 @@
 // tune it once on any non-protagonist character and it applies to all of them.
 const dialogueCharacters = [
   { id: 'jisoo', name: '지수', role: 'protagonist' },
-  { id: 'youngwoo', name: '영우', role: 'other' }
+  { id: 'youngwoo', name: '영우', role: 'other' },
+  { id: 'mika', name: '미카 코바치', role: 'other' },
+  { id: 'minah', name: '윤민아', role: 'other' },
+  { id: 'adrian', name: '애드리언 콜', role: 'other' },
+  { id: 'leo', name: '레오 박', role: 'other' },
+  { id: 'sora', name: '한소라', role: 'other' },
+  { id: 'ethan', name: '이든 브룩스', role: 'other' },
+  { id: 'daniel', name: '다니엘 우', role: 'other' },
+  { id: 'noah', name: '노아 리', role: 'other' },
+  { id: 'evelyn', name: '에블린 쇼', role: 'other' },
 ];
 
 // Every dialogue line's `expression` field is one of these ids — 인물 DB
