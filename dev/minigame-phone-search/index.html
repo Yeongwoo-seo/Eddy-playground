@@ -80,19 +80,23 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 /* ===== Inventory — a persistent floating bottom bar (not a button-
    triggered popup) showing 5 slots per view, icon-only, tap to select/
    combine (no text list, no separate 조사/조합 confirm buttons — tapping IS
-   the action). grid-auto-columns sizes each slot so exactly 5 fit the
-   visible width regardless of frame size; extra items past 5 sit off to the
-   side and are reached by dragging/swiping the row (native overflow-x
-   scroll on touch, plus a small mouse-drag helper below for desktop
-   testing). ===== */
+   the action). Flexbox, not grid — a grid's auto-placed columns re-measure
+   in a way that misbehaved specifically when scrolling backward (leftward)
+   in Safari; flex:0 0 <equal-fifth> is the standard, well-tested pattern
+   for a horizontal snap carousel and sizes each slot identically. Extra
+   items past 5 sit off to the side and are reached by dragging/swiping the
+   row (native overflow-x scroll on touch, plus a small mouse-drag helper
+   below for desktop testing). Always renders at least 5 slots (empty ones
+   just dimmed, no icon) so the bar never changes size depending on how many
+   items are held. ===== */
 .popup-scrim{position:absolute;inset:0;z-index:5;background:rgba(0,0,0,.4);display:none}
 .popup-scrim.show{display:block}
-.inventory-bar{position:absolute;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0));z-index:6;display:grid;grid-auto-flow:column;grid-auto-columns:calc((100% - 32px) / 5);gap:8px;overflow-x:auto;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;touch-action:pan-x;padding:10px;background:rgba(5,7,10,.86);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.1);border-radius:18px;box-shadow:0 8px 28px rgba(0,0,0,.35);transition:opacity .3s ease;scrollbar-width:none;cursor:grab}
+.inventory-bar{position:absolute;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0));z-index:6;display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;touch-action:pan-x;padding:10px;background:rgba(5,7,10,.86);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.1);border-radius:18px;box-shadow:0 8px 28px rgba(0,0,0,.35);transition:opacity .3s ease;scrollbar-width:none;cursor:grab}
 .inventory-bar::-webkit-scrollbar{display:none}
 .inventory-bar.hidden{display:none}
-.inventory-slot{scroll-snap-align:start;aspect-ratio:1/1;width:100%;background:var(--surface-2);border:2px solid transparent;border-radius:14px;font-size:24px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.inventory-slot{scroll-snap-align:start;flex:0 0 calc((100% - 32px) / 5);aspect-ratio:1/1;background:var(--surface-2);border:2px solid transparent;border-radius:14px;font-size:24px;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .inventory-slot.selected{border-color:var(--cyan);background:rgba(89,184,200,.14)}
-.inventory-empty{grid-column:1/-1;font-family:var(--mono);font-size:11px;color:var(--text-muted);padding:6px 2px;text-align:center}
+.inventory-slot.empty{opacity:.45;cursor:default}
 
 /* Anchored at the bottom-right of whichever icon was just tapped. */
 .item-tooltip{position:absolute;z-index:6;background:rgba(5,7,10,.95);border:1px solid var(--divider);border-radius:12px;padding:10px 12px;max-width:180px;display:none;box-shadow:0 8px 24px rgba(0,0,0,.5)}
@@ -313,10 +317,6 @@ function findRecipe(idA, idB) {
     (r.inputItemIds[0] === idB && r.inputItemIds[1] === idA)
   );
 }
-function isCombinable(itemId) {
-  return hasItem(itemId) && RECIPES.some(r => r.inputItemIds.includes(itemId));
-}
-
 // One-time decoy pickups (section 18) keyed by hotspot ID — no gating, no
 // recipe use, just an inventory flavor item the first time each is tapped.
 const DECOY_ITEMS = {
@@ -1145,19 +1145,15 @@ function renderRoomView(area) {
   }
 }
 
-/* ===== Item popup — icon grid, no text list. Tapping an item selects it
-   (tooltip anchored at the icon); tapping a second, different item judges
-   combinability automatically — a match auto-combines, a non-match is a
-   total no-op ("무반응", per the brief — no message, no state change).
-   Tapping the same item again deselects it. selectedItemId doubles as the
-   "item in hand" the room hotspot handlers above already check for
-   (state.selectedItemId === 'long-hook' etc.), so closing the popup keeps
-   whatever was selected active for use on the room photo. ===== */
-function canActivateItem(itemId) {
-  const def = ITEM_DEFS[itemId];
-  return !!def && (def.selectable || isCombinable(itemId));
-}
-
+/* ===== Inventory bar — icon slots, no text list. Tapping any item always
+   gives it the same selected highlight (+ its inspect tooltip, if it has
+   one) regardless of whether it's actually usable for anything — tapping a
+   second, different item while one is selected judges combinability
+   automatically: a match auto-combines, a non-match just switches the
+   selected highlight to the newly tapped item instead of a no-op. Tapping
+   the same item again deselects it. selectedItemId doubles as the "item in
+   hand" the room hotspot handlers above already check for
+   (state.selectedItemId === 'long-hook' etc.). ===== */
 function performCombine(recipe) {
   if (recipe.consumeInputItems) {
     state.inventoryItemIds = state.inventoryItemIds.filter(id => !recipe.inputItemIds.includes(id));
@@ -1176,12 +1172,6 @@ function onItemIconTap(itemId, btnEl) {
   const def = ITEM_DEFS[itemId];
   if (!def) return;
 
-  if (state.selectedItemId && state.selectedItemId !== itemId) {
-    const recipe = findRecipe(state.selectedItemId, itemId);
-    if (recipe) performCombine(recipe);
-    return; // no recipe -> 무반응, leave everything exactly as it was
-  }
-
   if (state.selectedItemId === itemId) {
     state.selectedItemId = null;
     saveState();
@@ -1190,9 +1180,11 @@ function onItemIconTap(itemId, btnEl) {
     return;
   }
 
-  if (!canActivateItem(itemId)) {
-    showItemTooltip(itemId, btnEl);
-    return;
+  if (state.selectedItemId) {
+    const recipe = findRecipe(state.selectedItemId, itemId);
+    if (recipe) { performCombine(recipe); return; }
+    // no recipe -> fall through and switch the selected highlight to the
+    // newly tapped item instead of leaving the old one stuck selected
   }
 
   state.selectedItemId = itemId;
@@ -1207,22 +1199,25 @@ function onItemIconTap(itemId, btnEl) {
 
 function renderItemGrid() {
   el.inventoryBar.innerHTML = '';
-  if (!state.inventoryItemIds.length) {
-    const empty = document.createElement('div');
-    empty.className = 'inventory-empty';
-    empty.textContent = '비어 있다';
-    el.inventoryBar.appendChild(empty);
-    return;
-  }
-  state.inventoryItemIds.forEach(itemId => {
-    const def = ITEM_DEFS[itemId];
-    if (!def) return;
+  // Always at least 5 same-sized slots, filled ones first — an empty
+  // inventory (or one with fewer than 5 items) still reads as "an item bar",
+  // not a shrunk bar with placeholder text.
+  const slotCount = Math.max(5, state.inventoryItemIds.length);
+  for (let i = 0; i < slotCount; i++) {
+    const itemId = state.inventoryItemIds[i];
+    const def = itemId ? ITEM_DEFS[itemId] : null;
     const btn = document.createElement('button');
+    if (!def) {
+      btn.className = 'inventory-slot empty';
+      btn.disabled = true;
+      el.inventoryBar.appendChild(btn);
+      continue;
+    }
     btn.className = 'inventory-slot' + (state.selectedItemId === itemId ? ' selected' : '');
     btn.textContent = def.icon;
     btn.addEventListener('click', () => onItemIconTap(itemId, btn));
     el.inventoryBar.appendChild(btn);
-  });
+  }
 }
 
 function showItemTooltip(itemId, btnEl) {
@@ -1233,12 +1228,16 @@ function showItemTooltip(itemId, btnEl) {
   const frameRect = el.frame.getBoundingClientRect();
   const btnRect = btnEl.getBoundingClientRect();
   el.itemTooltip.style.left = '-999px';
+  el.itemTooltip.style.top = '-999px';
   el.itemTooltip.classList.add('show');
   const tw = el.itemTooltip.offsetWidth || 180;
-  let left = btnRect.right - frameRect.left + 8;
+  const th = el.itemTooltip.offsetHeight || 60;
+  let left = btnRect.left - frameRect.left;
   const maxLeft = frameRect.width - tw - 8;
-  if (left > maxLeft) left = Math.max(8, maxLeft);
-  const top = btnRect.bottom - frameRect.top + 8;
+  left = Math.min(Math.max(8, left), Math.max(8, maxLeft));
+  // Above the slot, not below — the inventory bar docks to the bottom of
+  // the frame now, so there's rarely room underneath a tapped slot.
+  const top = btnRect.top - frameRect.top - th - 8;
   el.itemTooltip.style.left = left + 'px';
   el.itemTooltip.style.top = top + 'px';
 }
