@@ -280,8 +280,10 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
         <input type="file" id="itemImageInput" style="display:none" accept="image/jpeg,image/png,image/webp">
       </div>
       <div id="itemHotspotRow">
-        <div class="field-label">발견 위치 (핫스팟)</div>
-        <select class="select-input" id="itemHotspotSelect"></select>
+        <div class="field-label">발견 위치 — 씬</div>
+        <div class="picker-pills" id="itemAreaPickerPills"></div>
+        <div class="field-label hidden" id="itemHotspotFieldLabel">발견 위치 — 항목</div>
+        <div class="picker-pills" id="itemHotspotPickerPills"></div>
       </div>
       <div class="field-label">발견 메시지</div>
       <input type="text" class="text-input" id="itemMessageInput" placeholder="예) [ 행주를 발견했다 ]">
@@ -415,7 +417,9 @@ const el = {
   itemImageBtn: document.getElementById('itemImageBtn'),
   itemImageInput: document.getElementById('itemImageInput'),
   itemHotspotRow: document.getElementById('itemHotspotRow'),
-  itemHotspotSelect: document.getElementById('itemHotspotSelect'),
+  itemAreaPickerPills: document.getElementById('itemAreaPickerPills'),
+  itemHotspotFieldLabel: document.getElementById('itemHotspotFieldLabel'),
+  itemHotspotPickerPills: document.getElementById('itemHotspotPickerPills'),
   itemMessageInput: document.getElementById('itemMessageInput'),
   itemSaveBtn: document.getElementById('itemSaveBtn'),
   itemDeleteBtn: document.getElementById('itemDeleteBtn'),
@@ -716,6 +720,7 @@ function onFilesSelected(files) {
         renderPreview(url);
       }
     } else {
+      imageEditorTarget = currentType; // 'character' | 'minigameFace'
       openCharEditor(file, url, img);
     }
   };
@@ -753,18 +758,26 @@ async function saveAsset() {
 
 /* ===== Character photo editor: optional background removal + one crop =====
    인물 DB (표정별 대사 초상화)는 반신 세로 프레임(3:4, 위쪽 앵커)을 쓰고,
-   미니게임 얼굴 DB는 미니게임 대화창의 작은 초상화 칸에 맞춘 얼굴 클로즈업
-   1:1 정사각 프레임(가운데 앵커)을 쓴다 — 같은 반신 크롭을 그대로 축소해서
-   쓰면 얼굴 대신 옷/몸통만 보였던 문제를 해결하기 위함. */
-function activeCropAspect() { return currentType === 'minigameFace' ? 1 : 3 / 4; }
-function activeCropVAnchor() { return currentType === 'minigameFace' ? 0.5 : 0.08; }
+   미니게임 얼굴 DB/아이템 이미지는 작은 아이콘 칸에 맞춘 클로즈업 1:1 정사각
+   프레임(가운데 앵커)을 쓴다 — 같은 반신 크롭을 그대로 축소해서 쓰면 얼굴
+   대신 옷/몸통만 보였던 문제를 해결하기 위함. 아이템 이미지도 인벤토리 아이콘
+   한 칸에 들어가는 건 마찬가지라 미니게임 얼굴과 같은 프레임을 쓴다.
+   imageEditorTarget ('character' | 'minigameFace' | 'item')는 이 에디터를 연
+   진입점에 따라 openFilesSelected/아이템 탭의 이미지 업로드 버튼이 세팅 —
+   아이템 탭은 selectType의 tab이 아니라 currentType이 항상 'background'로
+   고정돼 있으므로 currentType으로는 구분할 수 없다. */
+let imageEditorTarget = 'character';
+function activeCropAspect() { return imageEditorTarget === 'character' ? 3 / 4 : 1; }
+function activeCropVAnchor() { return imageEditorTarget === 'character' ? 0.08 : 0.5; }
+const CROP_ENTER_LABELS = { character: '다음: 자르기', minigameFace: '다음: 얼굴 자르기', item: '다음: 자르기' };
+const CROP_SAVE_LABELS = { character: '이 표정으로 저장', minigameFace: '이 사진을 미니게임 얼굴로 저장', item: '이 이미지를 아이템 이미지로 저장' };
 
 let workingBlob = null;
 let workingImgNatural = { width: 0, height: 0 };
 let sourceFileBaseName = '';
 let cropState = null;
 let cropDrag = null;
-let lastCropSettingsByType = {}; // { [currentType]: { zoom, fracX, fracY } } — carried over to the next photo in the same mode only; character vs minigameFace frame very differently
+let lastCropSettingsByType = {}; // { [imageEditorTarget]: { zoom, fracX, fracY } } — carried over to the next photo in the same mode only; character/minigameFace/item frame very differently
 
 function clamp(v, min, max) { return Math.min(Math.max(v, min), max); }
 
@@ -778,7 +791,8 @@ function openCharEditor(file, url, img) {
   el.bgRemoveBtn.classList.remove('done');
   el.cropEditor.classList.add('hidden');
   el.charEditorPanel.classList.remove('hidden');
-  el.cropEnterBtn.textContent = currentType === 'minigameFace' ? '다음: 얼굴 자르기' : '다음: 자르기';
+  el.cropEnterBtn.textContent = CROP_ENTER_LABELS[imageEditorTarget];
+  if (imageEditorTarget === 'item') el.charEditorPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 el.bgRemoveBtn.addEventListener('click', async () => {
@@ -830,12 +844,12 @@ function enterCropMode() {
   else { maxBoxW = dispW; maxBoxH = dispW / aspect; }
 
   cropState = { imgLeft, imgTop, dispW, dispH, imgScale, maxBoxW, maxBoxH };
-  el.cropSaveBtn.textContent = currentType === 'minigameFace' ? '이 사진을 미니게임 얼굴로 저장' : '이 표정으로 저장';
+  el.cropSaveBtn.textContent = CROP_SAVE_LABELS[imageEditorTarget];
   // Reuse the last crop's framing (zoom + relative position) instead of
   // recentering every time — expression photos for the same character are
   // usually framed the same way, so this makes cropping the whole set feel
   // like one batch operation instead of repositioning per photo.
-  const remembered = lastCropSettingsByType[currentType];
+  const remembered = lastCropSettingsByType[imageEditorTarget];
   if (remembered) {
     el.cropZoom.value = remembered.zoom;
     updateCropBoxFromZoom(false, remembered);
@@ -923,23 +937,40 @@ el.cropSaveBtn.addEventListener('click', async () => {
   try {
     const cropBlob = await cropImageElementToBlob(el.cropImg, natX, natY, natW, natH);
     const croppedImg = await loadImageFromBlob(cropBlob);
-    const exprLabel = currentType === 'minigameFace' ? '미니게임 얼굴' : dialogueExpressions.find(x => x.id === currentExpression).label;
-    const name = `${sourceFileBaseName} (${exprLabel}).png`;
-    const record = await AssetDB.addAsset({ type: 'character', name, blob: cropBlob, width: croppedImg.naturalWidth, height: croppedImg.naturalHeight, characterKey: currentCharacterKey, expression: currentExpression });
-    // Only one photo per (character, expression) is actually rendered — the
-    // newest upload for this pair becomes the active one automatically.
-    DevGameState.setCharacterAssetId(currentCharacterKey, currentExpression, record.id);
-    lastCropSettingsByType[currentType] = {
+    lastCropSettingsByType[imageEditorTarget] = {
       zoom: Number(el.cropZoom.value),
       fracX: s.dispW - s.boxW > 0 ? (s.boxX - s.imgLeft) / (s.dispW - s.boxW) : 0.5,
       fracY: s.dispH - s.boxH > 0 ? (s.boxY - s.imgTop) / (s.dispH - s.boxH) : activeCropVAnchor(),
     };
+    if (imageEditorTarget === 'item') {
+      await saveCroppedItemImage(cropBlob, croppedImg);
+    } else {
+      const exprLabel = imageEditorTarget === 'minigameFace' ? '미니게임 얼굴' : dialogueExpressions.find(x => x.id === currentExpression).label;
+      const name = `${sourceFileBaseName} (${exprLabel}).png`;
+      const record = await AssetDB.addAsset({ type: 'character', name, blob: cropBlob, width: croppedImg.naturalWidth, height: croppedImg.naturalHeight, characterKey: currentCharacterKey, expression: currentExpression });
+      // Only one photo per (character, expression) is actually rendered — the
+      // newest upload for this pair becomes the active one automatically.
+      DevGameState.setCharacterAssetId(currentCharacterKey, currentExpression, record.id);
+      await refreshList();
+    }
     clearPending();
-    await refreshList();
   } catch (err) {
     DevDiag.show('프레임 저장 실패: ' + (err && err.message ? err.message : err));
   }
 });
+
+// Item images upload+save immediately on crop, same "upload = done" feel as
+// character portraits above — merges into the item def already sitting in
+// evidenceItemsCache (works whether that item has been 저장'd to the server
+// yet or not) and persists it right away.
+async function saveCroppedItemImage(cropBlob, croppedImg) {
+  if (!currentEvidenceItemId) return;
+  const record = await AssetDB.addAsset({ type: 'item', name: `${sourceFileBaseName}.png`, blob: cropBlob, width: croppedImg.naturalWidth, height: croppedImg.naturalHeight });
+  const def = Object.assign({}, evidenceItemsCache[currentEvidenceItemId], { imageAssetId: record.id });
+  await AssetDB.setItem(evidenceId(), currentEvidenceItemId, def);
+  evidenceItemsCache[currentEvidenceItemId] = def;
+  await renderItemImagePreview(record.id);
+}
 
 /* ===== Answer-area designator: mark where a hotspot's tap target is on an
    uploaded background, as a free-form { points: [{x,y}, ...] } polygon
@@ -1423,7 +1454,8 @@ el.dropzone.addEventListener('drop', (e) => {
 let currentEvidenceItemId = null;
 let evidenceItemsCache = {};
 let evidenceRecipesCache = [];
-let pendingItemImage = null;
+let currentItemAreaId = null;    // which 씬 pill is selected while editing an item's location
+let pendingItemHotspotId = null; // working 항목 value, applied to hotspotId on 저장
 
 function evidenceId() { return focusMinigame ? focusMinigame.entry.id : null; }
 
@@ -1439,20 +1471,6 @@ function evidenceItemCatalog() {
     .filter(id => !coreIds.has(id))
     .map(id => ({ id, name: evidenceItemsCache[id].name || id, icon: evidenceItemsCache[id].icon || '❔', custom: true }));
   return core.map(it => Object.assign({ custom: false }, it)).concat(custom);
-}
-
-// Every hotspot across every area of this evidence collection, minus the
-// ones already wired by hand to a core-route handler — assigning a custom
-// item to one of those would silently never fire (the core handler always
-// wins), so they're not offered here at all.
-function evidenceHotspotOptions() {
-  if (evidenceId() !== ROOM_SEARCH_MINIGAME_ID) return [];
-  const reserved = new Set(typeof ROOM_SEARCH_RESERVED_HOTSPOT_IDS !== 'undefined' ? ROOM_SEARCH_RESERVED_HOTSPOT_IDS : []);
-  const opts = [];
-  roomSearchAreas.forEach(area => {
-    area.hotspots.forEach(h => { if (!reserved.has(h.id)) opts.push({ id: h.id, label: `${area.label} · ${h.label}` }); });
-  });
-  return opts;
 }
 
 function itemsHotspotOwnerMap() {
@@ -1504,18 +1522,61 @@ async function openItemEditor(itemId) {
   el.itemNameInput.disabled = isCore;
   el.itemIconInput.value = saved.icon || catalogEntry.icon;
   el.itemMessageInput.value = saved.message || '';
-  pendingItemImage = null;
   await renderItemImagePreview(saved.imageAssetId);
-  const hotspotOptions = evidenceHotspotOptions();
-  const owners = itemsHotspotOwnerMap();
-  el.itemHotspotRow.classList.toggle('hidden', isCore || hotspotOptions.length === 0);
-  el.itemHotspotSelect.innerHTML = '<option value="">(위치 없음 — 코드에서 직접 부여)</option>' + hotspotOptions.map(h => {
-    const ownerId = owners[h.id];
-    const taken = ownerId && ownerId !== itemId;
-    const label = h.label + (taken ? ` — 사용 중(${(evidenceItemsCache[ownerId] || {}).name || ownerId})` : '');
-    return `<option value="${h.id}"${saved.hotspotId === h.id ? ' selected' : ''}>${escapeHtml(label)}</option>`;
-  }).join('');
+
+  // 씬(area) then 항목(hotspot within it) — two-step so the hotspot list
+  // stays short instead of one flat dropdown of 50+ entries. A core item's
+  // location is fixed in code, so this row doesn't apply to it at all.
+  pendingItemHotspotId = saved.hotspotId || null;
+  const owningArea = pendingItemHotspotId
+    ? roomSearchAreas.find(a => a.hotspots.some(h => h.id === pendingItemHotspotId))
+    : null;
+  currentItemAreaId = owningArea ? owningArea.id : null;
+  const canAssignLocation = !isCore && evidenceId() === ROOM_SEARCH_MINIGAME_ID;
+  el.itemHotspotRow.classList.toggle('hidden', !canAssignLocation);
+  if (canAssignLocation) { renderItemAreaPicker(); renderItemHotspotPicker(); }
   el.itemDeleteBtn.classList.toggle('hidden', isCore);
+}
+
+function renderItemAreaPicker() {
+  const areas = [{ id: null, label: '위치 없음' }].concat(roomSearchAreas.map(a => ({ id: a.id, label: a.label })));
+  el.itemAreaPickerPills.innerHTML = areas.map(a =>
+    `<button class="pill${a.id === currentItemAreaId ? ' active' : ''}" data-key="${a.id || ''}">${escapeHtml(a.label)}</button>`
+  ).join('');
+  el.itemAreaPickerPills.querySelectorAll('.pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentItemAreaId = btn.dataset.key || null;
+      if (!currentItemAreaId) pendingItemHotspotId = null;
+      renderItemAreaPicker();
+      renderItemHotspotPicker();
+    });
+  });
+}
+
+// 이미 다른 아이템(또는 core-route 핸들러)이 쓰고 있는 항목은 골라도 실제로는
+// 작동하지 않으므로 — reserved 핫스팟은 아예 목록에서 빼고, 다른 아이템이
+// 이미 차지한 핫스팟은 라벨에 표시만 해서 실수로 덮어쓰지 않게 한다.
+function renderItemHotspotPicker() {
+  const area = roomSearchAreas.find(a => a.id === currentItemAreaId);
+  el.itemHotspotFieldLabel.classList.toggle('hidden', !area);
+  if (!area) { el.itemHotspotPickerPills.innerHTML = ''; return; }
+  const reserved = new Set(ROOM_SEARCH_RESERVED_HOTSPOT_IDS);
+  const owners = itemsHotspotOwnerMap();
+  const hotspots = area.hotspots.filter(h => !reserved.has(h.id));
+  el.itemHotspotPickerPills.innerHTML = hotspots.length
+    ? hotspots.map(h => {
+        const ownerId = owners[h.id];
+        const taken = ownerId && ownerId !== currentEvidenceItemId;
+        const label = h.label + (taken ? ` (사용 중: ${(evidenceItemsCache[ownerId] || {}).name || ownerId})` : '');
+        return `<button class="pill${h.id === pendingItemHotspotId ? ' active' : ''}" data-key="${h.id}">${escapeHtml(label)}</button>`;
+      }).join('')
+    : '<span class="empty-note">이 씬에는 지정 가능한 항목이 없습니다.</span>';
+  el.itemHotspotPickerPills.querySelectorAll('.pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      pendingItemHotspotId = btn.dataset.key;
+      renderItemHotspotPicker();
+    });
+  });
 }
 
 async function renderItemImagePreview(assetId) {
@@ -1537,44 +1598,40 @@ el.newItemBtn.addEventListener('click', () => {
   openItemEditor(id);
 });
 
+// Item images go through the same 배경 제거(누끼) + 크롭 editor as 인물 DB
+// uploads (openCharEditor/cropSaveBtn below) — see imageEditorTarget, which
+// that shared editor branches on instead of `currentType` (아이템 tab isn't
+// one of selectType's own tabs, so currentType stays 'background' the whole
+// time it's open).
 el.itemImageBtn.addEventListener('click', () => el.itemImageInput.click());
 el.itemImageInput.addEventListener('change', (e) => {
   const file = e.target.files && e.target.files[0];
+  e.target.value = '';
   if (!file) return;
   const url = URL.createObjectURL(file);
   const img = new Image();
-  img.onload = async () => {
-    let blob = file, name = file.name, w = img.naturalWidth, h = img.naturalHeight;
-    if (Math.max(w, h) > 512) {
-      blob = await resizeImageToBlob(img, 512, 0.9);
-      const resized = await loadImageFromBlob(blob);
-      w = resized.naturalWidth; h = resized.naturalHeight;
-      name = name.replace(/\.[^.]+$/, '') + '.jpg';
-    }
-    pendingItemImage = { blob, name, width: w, height: h };
-    el.itemImagePreview.innerHTML = '';
-    const preview = document.createElement('img');
-    preview.src = URL.createObjectURL(blob);
-    el.itemImagePreview.appendChild(preview);
+  img.onload = () => {
+    imageEditorTarget = 'item';
+    openCharEditor(file, url, img);
   };
   img.src = url;
 });
 
+// Uploads immediately persist the crop result (see saveCroppedItemImage) —
+// same "upload = done" feel as 인물 DB. This save button only covers the
+// text fields (name/icon/location/message).
 el.itemSaveBtn.addEventListener('click', async () => {
   if (!currentEvidenceItemId) return;
   const id = evidenceId();
   const name = el.itemNameInput.value.trim();
   if (!name) { DevDiag.show('아이템 이름을 입력하세요.'); return; }
   const icon = el.itemIconInput.value.trim() || '❔';
-  const hotspotId = el.itemHotspotSelect.value || null;
+  const imageAssetId = (evidenceItemsCache[currentEvidenceItemId] || {}).imageAssetId || null;
+  const hotspotId = el.itemHotspotRow.classList.contains('hidden')
+    ? (evidenceItemsCache[currentEvidenceItemId] || {}).hotspotId || null
+    : pendingItemHotspotId;
   const message = el.itemMessageInput.value.trim();
-  let imageAssetId = (evidenceItemsCache[currentEvidenceItemId] || {}).imageAssetId || null;
   try {
-    if (pendingItemImage) {
-      const record = await AssetDB.addAsset({ type: 'item', name: pendingItemImage.name, blob: pendingItemImage.blob, width: pendingItemImage.width, height: pendingItemImage.height });
-      imageAssetId = record.id;
-      pendingItemImage = null;
-    }
     const def = { name, icon, imageAssetId, hotspotId, message };
     await AssetDB.setItem(id, currentEvidenceItemId, def);
     evidenceItemsCache[currentEvidenceItemId] = def;
