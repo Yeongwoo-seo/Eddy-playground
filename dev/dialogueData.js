@@ -6,18 +6,23 @@
 // role 'protagonist' gets its own dedicated CharacterTransform; every other
 // role shares one common default transform (see DevGameState in assetDb.js) —
 // tune it once on any non-protagonist character and it applies to all of them.
+// `expressions` lists which of the 10 dialogueExpressions below this
+// character actually needs — per the "최종 감정 이미지 최소 제작표" in the
+// character-art spec (44 portraits total across all 11 characters). 인물 DB's
+// 감정표현 picker in /dev/upload only offers these, so NPCs can't be uploaded
+// under an emotion the story never uses for them.
 const dialogueCharacters = [
-  { id: 'jisoo', name: '지수', role: 'protagonist' },
-  { id: 'youngwoo', name: '영우', role: 'other' },
-  { id: 'mika', name: '미카 코바치', role: 'other' },
-  { id: 'minah', name: '윤민아', role: 'other' },
-  { id: 'adrian', name: '애드리언 콜', role: 'other' },
-  { id: 'leo', name: '레오 박', role: 'other' },
-  { id: 'sora', name: '한소라', role: 'other' },
-  { id: 'ethan', name: '이든 브룩스', role: 'other' },
-  { id: 'daniel', name: '다니엘 우', role: 'other' },
-  { id: 'noah', name: '노아 리', role: 'other' },
-  { id: 'evelyn', name: '에블린 쇼', role: 'other' },
+  { id: 'jisoo', name: '지수', role: 'protagonist', expressions: ['neutral', 'happy', 'annoyed', 'shocked', 'smirk', 'suspicious', 'serious'] },
+  { id: 'youngwoo', name: '영우', role: 'other', expressions: ['neutral', 'happy', 'soft', 'smirk', 'shocked', 'serious'] },
+  { id: 'mika', name: '미카 코바치', role: 'other', expressions: ['neutral', 'annoyed', 'shocked', 'suspicious', 'serious'] },
+  { id: 'minah', name: '윤민아', role: 'other', expressions: ['neutral', 'annoyed', 'shocked'] },
+  { id: 'adrian', name: '애드리언 콜', role: 'other', expressions: ['neutral', 'suspicious', 'serious'] },
+  { id: 'leo', name: '레오 박', role: 'other', expressions: ['neutral', 'blank', 'shocked', 'serious'] },
+  { id: 'sora', name: '한소라', role: 'other', expressions: ['neutral', 'happy', 'shocked', 'serious'] },
+  { id: 'ethan', name: '이든 브룩스', role: 'other', expressions: ['neutral', 'annoyed'] },
+  { id: 'daniel', name: '다니엘 우', role: 'other', expressions: ['neutral', 'shocked', 'annoyed'] },
+  { id: 'noah', name: '노아 리', role: 'other', expressions: ['neutral', 'curious', 'serious'] },
+  { id: 'evelyn', name: '에블린 쇼', role: 'other', expressions: ['neutral', 'suspicious', 'shocked', 'serious'] },
 ];
 
 // Every dialogue line's `expression` field is one of these ids — 인물 DB

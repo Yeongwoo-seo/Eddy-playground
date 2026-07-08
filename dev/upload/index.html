@@ -486,6 +486,14 @@ const el = {
 
 function currentWeek() { return weeks.find(w => w.id === currentWeekId) || weeks[0]; }
 function currentScene() { return currentWeek().scenes.find(s => s.id === currentSceneId); }
+function currentCharacter() { return dialogueCharacters.find(c => c.id === currentCharacterKey) || dialogueCharacters[0]; }
+// A character's own `expressions` list (see dialogueData.js) — falls back to
+// every expression if a character somehow has none listed, so a missing list
+// shows everything rather than silently hiding the whole picker.
+function allowedExpressions() {
+  const list = currentCharacter().expressions;
+  return list && list.length ? dialogueExpressions.filter(x => list.includes(x.id)) : dialogueExpressions;
+}
 
 // The "virtual" sceneId background storage/uploads are keyed against — a
 // scene with a minigame has two independent background slots: its own VN
@@ -653,7 +661,19 @@ function renderCharPicker() {
   el.charPickerPills.querySelectorAll('.pill').forEach(btn => {
     btn.addEventListener('click', () => {
       currentCharacterKey = btn.dataset.key;
+      // The new character may not use the expression that was selected for
+      // the previous one (e.g. leaving 지수's '장난' for 이든, who only has
+      // 기본/짜증) — fall back to the first expression this character
+      // actually needs instead of showing a stale, now-invalid selection.
+      // Only applies in 인물 DB mode — 미니게임 얼굴 mode keeps currentExpression
+      // pinned to its own sentinel (MINIGAME_FACE_EXPRESSION), which never
+      // appears in any character's `expressions` list.
+      if (currentType === 'character') {
+        const allowed = allowedExpressions();
+        if (!allowed.some(x => x.id === currentExpression)) currentExpression = allowed[0].id;
+      }
       renderCharPicker();
+      if (currentType === 'character') renderExprPicker();
       clearPending();
       refreshList();
     });
@@ -661,7 +681,7 @@ function renderCharPicker() {
 }
 
 function renderExprPicker() {
-  el.exprPickerPills.innerHTML = dialogueExpressions.map(x =>
+  el.exprPickerPills.innerHTML = allowedExpressions().map(x =>
     `<button class="pill${x.id === currentExpression ? ' active' : ''}" data-key="${x.id}">${escapeHtml(x.label)}</button>`
   ).join('');
   el.exprPickerPills.querySelectorAll('.pill').forEach(btn => {
