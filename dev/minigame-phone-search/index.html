@@ -280,7 +280,7 @@ const ITEM_DEFS = {
   'metal-hanger': { icon: '🧷', name: '철제 옷걸이', selectable: false, inspect: '길게 펴면 뭔가에 쓸 수 있을 것 같다.' },
   'garden-stake': { icon: '🥢', name: '정원용 지지대', selectable: false, inspect: '끝에 무언가 걸 수 있을 것 같다.' },
   'long-hook': { icon: '🪝', name: '긴 갈고리', selectable: true, inspect: '옷걸이와 지지대를 엮어 만든 갈고리다.' },
-  'unknown-key': { icon: '🗝️', name: '낡은 열쇠', selectable: false, inspect: '어디에 쓰는 열쇠인지 모르겠다.' },
+  'unknown-key': { icon: '🗝️', name: '낡은 열쇠', selectable: false, inspect: '어디에 쓰는 열쇠인지 모르겠다.\n뒷면에 작게 M.K.라는 글자가 새겨져 있다.' },
   'jisu-phone': { icon: '📱', name: '핸드폰', selectable: false },
 };
 
@@ -742,7 +742,8 @@ function handleBlind() {
 }
 function handleLeftVent() {
   if (state.selectedItemId === 'working-flashlight') { setMessage('먼지만 보인다.'); return; }
-  setMessage(hasSearched('bedroom-left-vent') ? '여전히 안쪽이 어둡다.' : '환기구다.\n안쪽은 잘 보이지 않는다.');
+  // 0주차 브리프의 "환풍기 한쪽의 녹슨 나사" 복선 — 지금은 아무 의미 없는 순수 플레이버 텍스트.
+  setMessage(hasSearched('bedroom-left-vent') ? '여전히 안쪽이 어둡다.' : '환기구다.\n안쪽은 잘 보이지 않는다.\n한쪽 나사가 유독 녹슬어 있다.');
   markSearched('bedroom-left-vent');
 }
 function handleRightVent(hotspotId) {

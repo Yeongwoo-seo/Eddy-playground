@@ -49,6 +49,28 @@ const dialogueExpressions = [
 // /dev/upload.
 const MINIGAME_FACE_EXPRESSION = 'minigame-face';
 
+/* OPERATION MK — WEEK 0 · SCENE 00 「시드니 상공」
+   Dialogue Set: dialogue-week0-scene-flight
+   Scene: week0-scene-flight (In flight, 10 minutes before landing)
+   No mystery here — per the brief, 0주차 opens on anticipation and reunion,
+   not plot. This is purely the "지수 시점 오프닝 + 카톡" beat. */
+const week0SceneFlightLines = [
+  { id: 'line-001', speaker: '', text: '시드니 상공.\n착륙 10분 전.', characterId: null },
+  { id: 'line-002', speaker: '', text: '창밖으로 구름 아래 도시의 불빛이 하나둘 보이기 시작했다.', characterId: null },
+  { id: 'line-003', speaker: '지수', text: '...\n다 왔다.', characterId: 'jisoo', pauseBeforeMs: 300, expression: 'neutral' },
+  { id: 'line-004', speaker: '', text: '안내방송이 흐릿하게 들린다.\n"곧 시드니 킹스포드 스미스 공항에 착륙하겠습니다."', characterId: null },
+  { id: 'line-005', speaker: '지수', text: '와, 진짜 실감 안 나네.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-006', speaker: '', text: '지수가 비행기 모드를 풀자마자 메시지 알림이 뜬다.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-007', speaker: '영우', text: '도착하면 톡해 ㅋㅋ 나 근처야', characterId: 'youngwoo', expression: 'happy' },
+  { id: 'line-008', speaker: '지수', text: '근처가 어디임\n또 길 잃은 거 아냐', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-009', speaker: '영우', text: '아닌데\n이번엔 진짜 안 잃었는데', characterId: 'youngwoo', expression: 'annoyed' },
+  { id: 'line-010', speaker: '지수', text: '그 말 어디서 많이 들었는데.', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-011', speaker: '영우', text: 'ㅋㅋㅋㅋ 일단 와봐', characterId: 'youngwoo', expression: 'happy' },
+  { id: 'line-012', speaker: '지수', text: '가고 있잖아요, 지금.', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-013', speaker: '', text: '창밖 풍경이 점점 가까워진다.\n지수는 폰을 무릎에 내려놓고 창에 이마를 기댔다.', characterId: 'jisoo', expression: 'soft' },
+  { id: 'line-014', speaker: '', text: '설렘 반, 긴장 반.\n시드니가 그렇게 가까워지고 있었다.', characterId: null },
+];
+
 // Pure stage-direction beats (no speaker) use characterId to say who, if
 // anyone, stays on screen for that beat — keeps the portrait from flickering
 // out and back in across a beat with no line of its own.
@@ -236,11 +258,12 @@ const week0Scene001Lines = [
   { id: 'line-181', speaker: '', text: '지수의 첫날은,\n아직 평범한 여행에 가까웠다.', characterId: null }
 ];
 
-/* OPERATION MK — WEEK 0 · SCENE 2-1 「진짜 같이 있네」
+/* OPERATION MK — WEEK 0 · SCENE 05 「진짜 같이 있네」
    Dialogue Set: dialogue-week0-scene002-1
    Scene: week0-scene-002-1 (Sydney Accommodation, 20:18)
-   Ends on a MINIGAME START beat — nextSceneId hands off to the (not yet
-   built) point-and-click phone-hunt scene, week0-scene-002-2. */
+   Ends heading out to dinner (week0-scene-dinner) — no nextSceneId/minigame
+   handoff here anymore. The phone goes missing later that night, in
+   week0-scene-charger, after dinner. */
 const week0Scene002_1Lines = [
   { id: 'line-001', speaker: '', text: '숙소.\n오후 8시 18분.', characterId: null },
   { id: 'line-002', speaker: '', text: '공항에서 나온 뒤,\n두 사람은 늦은 저녁을 간단히 먹고 숙소에 도착했다.', characterId: null },
@@ -336,29 +359,94 @@ const week0Scene002_1Lines = [
   { id: 'line-092', speaker: '지수', text: '쌤!\n우리 이제 나가요?', characterId: 'jisoo', expression: 'curious' },
   { id: 'line-093', speaker: '영우', text: '웅웅.\n지수 괜찮으면 근처만 좀 걷자.', characterId: 'youngwoo', expression: 'soft' },
   { id: 'line-094', speaker: '지수', text: '좋아요.\n잠깐만.', characterId: 'jisoo', expression: 'neutral' },
-  { id: 'line-095', speaker: '', text: '지수가 침대와 테이블 주변을 둘러본다.', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-096', speaker: '지수', text: '어?!', characterId: 'jisoo', expression: 'shocked' },
-  { id: 'line-097', speaker: '영우', text: '왜?', characterId: 'youngwoo', expression: 'curious' },
-  { id: 'line-098', speaker: '지수', text: '내 핸드폰 어디 갔지??', characterId: 'jisoo', expression: 'shocked' },
-  { id: 'line-099', speaker: '영우', text: '엉?', characterId: 'youngwoo', expression: 'curious' },
-  { id: 'line-100', speaker: '지수', text: '잠깐만.\n분명 아까까지 들고 있었는데.', characterId: 'jisoo', expression: 'shocked' },
-  { id: 'line-101', speaker: '영우', text: '아 그래?\n어디다 뒀지', characterId: 'youngwoo', expression: 'curious' },
-  { id: 'line-102', speaker: '지수', text: '쌤.', characterId: 'jisoo', expression: 'suspicious' },
-  { id: 'line-103', speaker: '영우', text: '아니 왜 나 봐 ㅋㅎㅋㅎㅋㅎㅋㅎㅋㅎ', characterId: 'youngwoo', expression: 'happy' },
-  { id: 'line-104', speaker: '지수', text: '아니 그냥.\n같이 찾아요.', characterId: 'jisoo', expression: 'neutral' },
-  { id: 'line-105', speaker: '영우', text: '웅웅.\n찾아보자.', characterId: 'youngwoo', expression: 'neutral' },
-  { id: 'line-106', speaker: '', text: 'MINIGAME START', characterId: null },
+  { id: 'line-095', speaker: '지수', text: '나 배고픈데.\n뭐 먹을 거예요?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-096', speaker: '영우', text: '숙소 앞에 괜찮은 데 봐놨어.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-097', speaker: '지수', text: '오오, 준비성 좋은데요?', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-098', speaker: '영우', text: '나름 알아봤지 ㅎㅎㅎㅎ', characterId: 'youngwoo', expression: 'happy' },
+  { id: 'line-099', speaker: '', text: '둘은 짐을 대충 방에 던져두고 숙소를 나섰다.', characterId: null },
 ];
 
-/* OPERATION MK — WEEK 0 · SCENE 2-3 「근데 이 열쇠 뭐지?」
+/* OPERATION MK — WEEK 0 · SCENE 06 「첫날 저녁」
+   Dialogue Set: dialogue-week0-scene-dinner
+   Scene: week0-scene-dinner (근처 식당, 21:10)
+   No mystery — per the brief, just food/photos/a short tired spat that
+   resolves fast. */
+const week0SceneDinnerLines = [
+  { id: 'line-001', speaker: '', text: '숙소 근처 작은 식당.\n오후 9시 10분.', characterId: null },
+  { id: 'line-002', speaker: '', text: '영우가 미리 봐뒀다던 곳은\n생각보다 훨씬 아늑했다.', characterId: null },
+  { id: 'line-003', speaker: '지수', text: '여기 냄새 미쳤다.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-004', speaker: '영우', text: '그치?\n여기 로컬들만 아는 데래.', characterId: 'youngwoo', expression: 'smirk' },
+  { id: 'line-005', speaker: '지수', text: '오, 그럼 뭐 시킬 거예요?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-006', speaker: '영우', text: '나는 이거.\n지수는?', characterId: 'youngwoo', expression: 'neutral' },
+  { id: 'line-007', speaker: '지수', text: '음...\n저도 그거요.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-008', speaker: '영우', text: '똑같은 거 시키면 하나만 시키면 되잖아.', characterId: 'youngwoo', expression: 'smirk' },
+  { id: 'line-009', speaker: '지수', text: '싫어요.\n저도 제 거 있어야 돼요.', characterId: 'jisoo', expression: 'annoyed' },
+  { id: 'line-010', speaker: '영우', text: 'ㅋㅋㅋ 알겠어 알겠어.', characterId: 'youngwoo', expression: 'happy' },
+  { id: 'line-011', speaker: '', text: '음식이 나오고,\n지수가 바로 사진부터 찍는다.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-012', speaker: '영우', text: '먹기도 전에 열 장은 찍은 것 같은데.', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-013', speaker: '지수', text: '기록이라니까요.', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-014', speaker: '', text: '한참 먹던 중,\n지수가 갑자기 조용해진다.', characterId: 'jisoo', expression: 'blank' },
+  { id: 'line-015', speaker: '영우', text: '왜 말이 없어?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-016', speaker: '지수', text: '아니 그냥.\n좀 피곤한가봐요.', characterId: 'jisoo', expression: 'blank' },
+  { id: 'line-017', speaker: '영우', text: '무리했나보다.\n다 먹으면 바로 들어가자.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-018', speaker: '지수', text: '아니에요, 괜찮아요.\n오늘 첫날인데 더 놀아야지.', characterId: 'jisoo', expression: 'annoyed' },
+  { id: 'line-019', speaker: '영우', text: '그러다 내일 못 일어나.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-020', speaker: '지수', text: '...\n조금만요.', characterId: 'jisoo', pauseBeforeMs: 300, expression: 'blank' },
+  { id: 'line-021', speaker: '영우', text: 'ㅎㅎ 알겠어.\n조금만 더 있다 가자.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-022', speaker: '', text: '짧은 티격태격은 늘 그렇듯 금방 풀렸다.', characterId: null },
+];
+
+/* OPERATION MK — WEEK 0 · SCENE 07 「떨어진 충전기」
+   Dialogue Set: dialogue-week0-scene-charger
+   Scene: week0-scene-charger (Sydney Accommodation, 22:30)
+   The 침대 밑 손 넣기 beat plants the "something else is in here" hook, but
+   the actual unknown-key pickup still happens inside the room-search
+   minigame (behind the vent + long-hook combo, per
+   ROOM_SEARCH_CORE_ITEM_HOTSPOTS) — this scene doesn't award it directly,
+   just supplies the reason both the phone AND "that glint" need looking for.
+   Ends on a MINIGAME START beat — nextSceneId hands off to the existing
+   point-and-click phone-hunt scene, week0-scene-002-2. */
+const week0SceneChargerLines = [
+  { id: 'line-001', speaker: '', text: '숙소.\n밤 10시 30분.', characterId: null },
+  { id: 'line-002', speaker: '', text: '저녁을 먹고 돌아온 두 사람은\n잘 준비를 시작했다.', characterId: null },
+  { id: 'line-003', speaker: '지수', text: '폰 충전 좀 할게요.', characterId: 'jisoo', expression: 'neutral' },
+  { id: 'line-004', speaker: '', text: '지수가 충전기를 꽂으려다\n케이블이 발에 걸려 놓친다.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-005', speaker: '지수', text: '어어.', characterId: 'jisoo', expression: 'shocked' },
+  { id: 'line-006', speaker: '', text: '충전기가 침대 밑으로 굴러들어간다.', characterId: null },
+  { id: 'line-007', speaker: '지수', text: '아 진짜.', characterId: 'jisoo', expression: 'annoyed' },
+  { id: 'line-008', speaker: '영우', text: '내가 꺼내줄게.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-009', speaker: '지수', text: '아니에요, 제가 떨어뜨렸으니까.', characterId: 'jisoo', expression: 'neutral' },
+  { id: 'line-010', speaker: '', text: '지수가 침대 밑으로 손을 뻗는다.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-011', speaker: '지수', text: '...\n어?', characterId: 'jisoo', pauseBeforeMs: 300, expression: 'curious' },
+  { id: 'line-012', speaker: '영우', text: '왜?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-013', speaker: '지수', text: '뭔가 있는 것 같은데.\n안쪽이 너무 깊어서 손이 안 닿아요.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-014', speaker: '영우', text: '뭔데?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-015', speaker: '지수', text: '몰라요.\n너무 안쪽이라 안 보여요.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-016', speaker: '', text: '지수가 결국 충전기만 겨우 꺼낸다.', characterId: 'jisoo', expression: 'blank' },
+  { id: 'line-017', speaker: '영우', text: '내일 밝을 때 다시 보자.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-018', speaker: '지수', text: '음...\n그래요.', characterId: 'jisoo', pauseBeforeMs: 300, expression: 'blank' },
+  { id: 'line-019', speaker: '', text: '지수가 충전기를 꽂으려고 폰을 찾는다.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-020', speaker: '지수', text: '어?!', characterId: 'jisoo', expression: 'shocked' },
+  { id: 'line-021', speaker: '영우', text: '또 왜요.', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-022', speaker: '지수', text: '제 폰 어디 갔지??', characterId: 'jisoo', expression: 'shocked' },
+  { id: 'line-023', speaker: '영우', text: '엉?\n분명 아까까지 들고 있었잖아.', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-024', speaker: '지수', text: '그러니까요.\n갑자기 어디 갔지.', characterId: 'jisoo', expression: 'shocked' },
+  { id: 'line-025', speaker: '영우', text: '침대 밑 그 반짝이는 거랑 같이 있는 거 아니야?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-026', speaker: '지수', text: '설마.\n일단 방 전체를 좀 뒤져봐야겠어요.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-027', speaker: '영우', text: '웅웅.\n같이 찾아보자.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-028', speaker: '', text: 'MINIGAME START', characterId: null },
+];
+
+/* OPERATION MK — WEEK 0 · SCENE 08 「근데 이 열쇠 뭐지?」
    Dialogue Set: dialogue-week0-scene002-3
    Scene: week0-scene-002-3 (Sydney Accommodation, right after the phone-hunt
    minigame). Reached by minigame-phone-search/'s GAME CLEAR redirect, not by
    another scene's nextSceneId — see MINIGAME_ROUTES in game/index.html and
    the redirect at the bottom of minigame-phone-search/index.html. Narration/
    system beats use speaker:'' (no name shown), matching the convention used
-   throughout week0Scene001Lines/week0Scene002_1Lines. No nextSceneId yet —
-   loops like week0-scene-001 until Week 0 Scene 3 is written. */
+   throughout week0Scene001Lines/week0Scene002_1Lines. This is the M.K.
+   engraving reveal — the seed for the whole 4-week mystery — so it doesn't
+   loop or dead-end; it ends heading down to reception (week0-scene-frontdesk). */
 const week0Scene002_3Lines = [
   { id: 'line-001', speaker: '지수', text: '찾았다.', characterId: 'jisoo', expression: 'happy' },
   { id: 'line-002', speaker: '영우', text: '아 다행이다 ㅎㅎㅎㅎㅎ', characterId: 'youngwoo', expression: 'happy' },
@@ -372,20 +460,113 @@ const week0Scene002_3Lines = [
   { id: 'line-010', speaker: '영우', text: '뭐가?', characterId: 'youngwoo', expression: 'curious' },
   { id: 'line-011', speaker: '지수', text: '아까 그 열쇠.', characterId: 'jisoo', expression: 'suspicious' },
   { id: 'line-012', speaker: '', text: '[ 낡은 열쇠 ]', characterId: null },
-  { id: 'line-013', speaker: '영우', text: '아.', characterId: 'youngwoo', expression: 'blank' },
-  { id: 'line-014', speaker: '영우', text: '그러게.', characterId: 'youngwoo', expression: 'blank' },
-  { id: 'line-015', speaker: '지수', text: '숙소 열쇠는 아니죠?', characterId: 'jisoo', expression: 'suspicious' },
-  { id: 'line-016', speaker: '영우', text: '웅.\n여긴 카드키자나.', characterId: 'youngwoo', expression: 'neutral' },
-  { id: 'line-017', speaker: '지수', text: '...', characterId: 'jisoo', pauseBeforeMs: 300, expression: 'blank' },
-  { id: 'line-018', speaker: '영우', text: '뭐지?', characterId: 'youngwoo', expression: 'curious' },
-  { id: 'line-019', speaker: '지수', text: '몰라.', characterId: 'jisoo', expression: 'blank' },
-  { id: 'line-020', speaker: '지수', text: '일단 가지고 있어봐요.', characterId: 'jisoo', expression: 'neutral' },
-  { id: 'line-021', speaker: '영우', text: '내가?', characterId: 'youngwoo', expression: 'shocked' },
-  { id: 'line-022', speaker: '지수', text: '네.', characterId: 'jisoo', expression: 'smirk' },
-  { id: 'line-023', speaker: '영우', text: '왜 내가 ㅋㅎㅋㅎㅋㅎㅋㅎ', characterId: 'youngwoo', expression: 'happy' },
-  { id: 'line-024', speaker: '지수', text: '몰라요.\n그냥 느낌이 그래요.', characterId: 'jisoo', expression: 'soft' },
-  { id: 'line-025', speaker: '', text: '[ ITEM ACQUIRED ]\n\nUNKNOWN KEY', characterId: null },
-  { id: 'line-026', speaker: '', text: 'SCENE COMPLETE', characterId: null },
+  { id: 'line-013', speaker: '지수', text: '근데 이거 뒤에 뭐 있어요.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-014', speaker: '', text: '지수가 열쇠를 뒤집어 본다.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-015', speaker: '', text: '[ 뒷면에 작게 새겨진 M.K. ]', characterId: null },
+  { id: 'line-016', speaker: '영우', text: 'M.K.?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-017', speaker: '지수', text: '이니셜 같은데.\n누구 거지 이거.', characterId: 'jisoo', expression: 'suspicious' },
+  { id: 'line-018', speaker: '영우', text: '전에 있던 사람 물건 아닐까?', characterId: 'youngwoo', expression: 'neutral' },
+  { id: 'line-019', speaker: '지수', text: '숙소 열쇠는 아니죠?', characterId: 'jisoo', expression: 'suspicious' },
+  { id: 'line-020', speaker: '영우', text: '웅.\n여긴 카드키자나.', characterId: 'youngwoo', expression: 'neutral' },
+  { id: 'line-021', speaker: '지수', text: '...', characterId: 'jisoo', pauseBeforeMs: 300, expression: 'blank' },
+  { id: 'line-022', speaker: '영우', text: '뭐지?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-023', speaker: '지수', text: '몰라.', characterId: 'jisoo', expression: 'blank' },
+  { id: 'line-024', speaker: '지수', text: '일단 가지고 있어봐요.', characterId: 'jisoo', expression: 'neutral' },
+  { id: 'line-025', speaker: '영우', text: '내가?', characterId: 'youngwoo', expression: 'shocked' },
+  { id: 'line-026', speaker: '지수', text: '네.', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-027', speaker: '영우', text: '왜 내가 ㅋㅎㅋㅎㅋㅎㅋㅎ', characterId: 'youngwoo', expression: 'happy' },
+  { id: 'line-028', speaker: '지수', text: '몰라요.\n그냥 느낌이 그래요.', characterId: 'jisoo', expression: 'soft' },
+  { id: 'line-029', speaker: '', text: '[ ITEM ACQUIRED ]\n\nUNKNOWN KEY', characterId: null },
+  { id: 'line-030', speaker: '지수', text: '이거 신경 쓰이는데.\n프런트에 한번 물어볼까요?', characterId: 'jisoo', expression: 'suspicious' },
+  { id: 'line-031', speaker: '영우', text: '이 시간에?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-032', speaker: '지수', text: '로비에 아직 사람 있던데요.', characterId: 'jisoo', expression: 'neutral' },
+  { id: 'line-033', speaker: '영우', text: '음...\n그래, 가보자.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-034', speaker: '', text: '두 사람은 열쇠를 챙겨 로비로 향했다.', characterId: null },
+];
+
+/* OPERATION MK — WEEK 0 · SCENE 09 「프런트 문의」
+   Dialogue Set: dialogue-week0-scene-frontdesk
+   Scene: week0-scene-frontdesk (숙소 로비, 22:50)
+   Per the brief: the staff member's "M.K..." recollection must NOT resolve
+   into the full name Mika Kovac here — that reveal is reserved for
+   1주차 (week1-scene-007). */
+const week0SceneFrontdeskLines = [
+  { id: 'line-001', speaker: '', text: '숙소 로비.\n밤 10시 50분.', characterId: null },
+  { id: 'line-002', speaker: '지수', text: '저기, 잠깐 여쭤봐도 될까요?', characterId: 'jisoo', expression: 'neutral' },
+  { id: 'line-003', speaker: '프런트 직원', text: '네, 무슨 일이세요?', characterId: null },
+  { id: 'line-004', speaker: '지수', text: '방에서 이 열쇠를 발견했는데요.\n숙소 물건인가 해서요.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-005', speaker: '', text: '지수가 열쇠를 보여준다.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-006', speaker: '프런트 직원', text: '음...\n저희 쪽 물건은 아닌 것 같은데요.', characterId: null },
+  { id: 'line-007', speaker: '프런트 직원', text: '분실물 등록된 것도 없고요.', characterId: null },
+  { id: 'line-008', speaker: '영우', text: '그럼 이전 투숙객 거일까요?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-009', speaker: '프런트 직원', text: '그럴 수도 있죠.\n저희가 따로 기록은 안 남겨서.', characterId: null },
+  { id: 'line-010', speaker: '지수', text: '아, 그렇구나.', characterId: 'jisoo', expression: 'blank' },
+  { id: 'line-011', speaker: '', text: '직원이 열쇠 뒷면을 잠깐 살펴본다.', characterId: null },
+  { id: 'line-012', speaker: '프런트 직원', text: 'M.K...', characterId: null },
+  { id: 'line-013', speaker: '프런트 직원', text: '잠깐, 비슷한 이름의 이전 문의가 있었던 것 같은데요.', characterId: null },
+  { id: 'line-014', speaker: '지수', text: '정말요?', characterId: 'jisoo', expression: 'shocked' },
+  { id: 'line-015', speaker: '', text: '직원이 컴퓨터로 뭔가를 검색해본다.', characterId: null },
+  { id: 'line-016', speaker: '프런트 직원', text: '음...\n죄송해요, 안 나오네요.\n제가 착각했나봐요.', characterId: null },
+  { id: 'line-017', speaker: '영우', text: '그래요?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-018', speaker: '프런트 직원', text: '네, 그냥 갖고 계셔도 될 것 같아요.\n혹시 나중에 찾는 분 있으면 다시 알려드릴게요.', characterId: null },
+  { id: 'line-019', speaker: '지수', text: '네, 감사합니다.', characterId: 'jisoo', expression: 'soft' },
+  { id: 'line-020', speaker: '', text: '방으로 돌아가는 길,\n지수는 어쩐지 마음에 걸렸다.', characterId: 'jisoo', expression: 'blank' },
+  { id: 'line-021', speaker: '영우', text: '왜 그래?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-022', speaker: '지수', text: '아니에요.\n그냥 좀 이상해서.', characterId: 'jisoo', expression: 'blank' },
+];
+
+/* OPERATION MK — WEEK 0 · SCENE 09-2 「엘리베이터의 우편 봉투」
+   Dialogue Set: dialogue-week0-scene-mailroom
+   Scene: week0-scene-mailroom (숙소 엘리베이터 앞, 23:00)
+   The brief's "초장 가짜 진범 씨앗" — a seed only the player is meant to
+   remember. Full name (Mika Kovac) still not revealed. */
+const week0SceneMailroomLines = [
+  { id: 'line-001', speaker: '', text: '숙소 엘리베이터 앞.\n밤 11시.', characterId: null },
+  { id: 'line-002', speaker: '', text: '엘리베이터를 기다리던 중,\n공용 우편함 쪽에 지수의 눈길이 닿았다.', characterId: null },
+  { id: 'line-003', speaker: '지수', text: '어?\n저거 뭐예요?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-004', speaker: '영우', text: '뭐가?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-005', speaker: '지수', text: '저 봉투.\n반송 도장 찍혀있는데.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-006', speaker: '', text: '오래돼 보이는 봉투 하나가\n우편함 위에 놓여 있었다.', characterId: null },
+  { id: 'line-007', speaker: '', text: '수취인 이름 일부가 보인다.', characterId: null },
+  { id: 'line-008', speaker: '', text: '[ M. KOV... ]', characterId: null },
+  { id: 'line-009', speaker: '지수', text: 'M.K.네 ㅋㅋ', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-010', speaker: '영우', text: '세상에 M이랑 K가 한둘이냐.', characterId: 'youngwoo', expression: 'happy' },
+  { id: 'line-011', speaker: '지수', text: '그건 그런데.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-012', speaker: '', text: '마침 지나가던 직원이 봉투를 집어 든다.', characterId: null },
+  { id: 'line-013', speaker: '프런트 직원', text: '아, 이거 다른 투숙객분 우편이에요.', characterId: null },
+  { id: 'line-014', speaker: '', text: '직원이 봉투를 챙겨 안쪽으로 사라진다.', characterId: null },
+  { id: 'line-015', speaker: '영우', text: '가자, 엘리베이터 왔다.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-016', speaker: '지수', text: '웅웅.', characterId: 'jisoo', expression: 'neutral' },
+  { id: 'line-017', speaker: '', text: '별거 아닌 순간이었다.\n적어도 그때는 그렇게 느껴졌다.', characterId: null },
+];
+
+/* OPERATION MK — WEEK 0 · SCENE 10 「첫날 밤」
+   Dialogue Set: dialogue-week0-scene-firstnight
+   Scene: week0-scene-firstnight (Sydney Accommodation, 23:15)
+   Closes out 0주차 — no nextSceneId, this is the last scene of the week. */
+const week0SceneFirstNightLines = [
+  { id: 'line-001', speaker: '', text: '숙소.\n밤 11시 15분.', characterId: null },
+  { id: 'line-002', speaker: '', text: '방으로 돌아온 두 사람은\n내일 일정을 정리하기 시작했다.', characterId: null },
+  { id: 'line-003', speaker: '지수', text: '내일은 뭐부터 해요?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-004', speaker: '영우', text: '일단 시티 쪽 가볼까 하는데.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-005', speaker: '지수', text: '오오 좋아요.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-006', speaker: '', text: '지수의 시선이 협탁 위 열쇠로 향한다.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-007', speaker: '지수', text: '근데 이거 진짜 뭘까요.', characterId: 'jisoo', expression: 'suspicious' },
+  { id: 'line-008', speaker: '영우', text: '몰라, 그냥 옛날 투숙객 거겠지.', characterId: 'youngwoo', expression: 'neutral' },
+  { id: 'line-009', speaker: '지수', text: '그래도 왠지 보물 같지 않아요?', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-010', speaker: '영우', text: '보물이면 뭐, 반씩 나눌까?', characterId: 'youngwoo', expression: 'happy' },
+  { id: 'line-011', speaker: '지수', text: '보물 열쇠면 내가 8, 너 2.', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-012', speaker: '영우', text: '왜 줄었는데.', characterId: 'youngwoo', expression: 'annoyed' },
+  { id: 'line-013', speaker: '지수', text: '제가 찾았잖아요.', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-014', speaker: '영우', text: '아니 애초에 네 충전기 때문에 시작된 일인데.', characterId: 'youngwoo', expression: 'annoyed' },
+  { id: 'line-015', speaker: '지수', text: '그거랑 이거랑 무슨 상관이에요.', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-016', speaker: '영우', text: '아 그러네.', characterId: 'youngwoo', expression: 'blank' },
+  { id: 'line-017', speaker: '지수', text: '그니까 8, 2로 하죠.', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-018', speaker: '영우', text: 'ㅎㅎㅎㅎㅎ 알겠어 알겠어.', characterId: 'youngwoo', expression: 'happy' },
+  { id: 'line-019', speaker: '', text: '둘은 한참을 그렇게 시답잖은 농담을 주고받다\n하나둘 잠들었다.', characterId: null },
+  { id: 'line-020', speaker: '', text: '협탁 위,\n작은 황동 열쇠만이 조용히 남아 있었다.', characterId: null },
+  { id: 'line-021', speaker: '', text: '[ M.K. ]', characterId: null },
+  { id: 'line-022', speaker: '', text: '0주차 종료.', characterId: null },
 ];
 
 /* OPERATION MK — WEEK 0 · SCENE 1-2 「지하철 역 찾기」
@@ -405,6 +586,32 @@ const week0Scene001_2Lines = [
   { id: 'line-008', speaker: '지수', text: '아놔 여보 ㅋㅎㅋㅎㅋㅎㅋㅎ\n나 영어 못하는데에;;;;', characterId: 'jisoo', expression: 'annoyed' },
   { id: 'line-009', speaker: '영우', text: '역 이름만 찾으면 되잖아 ㅋㅋㅋㅋ', characterId: 'youngwoo', expression: 'happy' },
   { id: 'line-010', speaker: '지수', text: '아아 알게써 ㅠㅋㅋㅋㅋ\n어디보자아...\n공항...', characterId: 'jisoo', expression: 'blank', pauseBeforeMs: 200 },
+];
+
+/* OPERATION MK — WEEK 0 · SCENE 04 「열차 — 밀린 이야기」
+   Dialogue Set: dialogue-week0-scene-train
+   Scene: week0-scene-train (Sydney Trains, 10:05)
+   minigame-eastwood's GAME CLEAR redirect hands off here (not straight to
+   the accommodation scene) so 무깽이 리마인드 #1 gets its own beat, per the
+   brief's "매우 약하게" instruction — no clue UI, no music cue, just banter. */
+const week0SceneTrainLines = [
+  { id: 'line-001', speaker: '', text: 'Sydney Trains 열차 안.\n오전 10시 05분.', characterId: null },
+  { id: 'line-002', speaker: '', text: '공항역에서 겨우 노선을 찾은 두 사람은\n숙소 방향 열차에 자리를 잡았다.', characterId: null },
+  { id: 'line-003', speaker: '영우', text: '거봐, 결국 찾았잖아.', characterId: 'youngwoo', expression: 'smirk' },
+  { id: 'line-004', speaker: '지수', text: '제가 찾았죠, 제가.', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-005', speaker: '영우', text: '그건 그렇지 ㅋㅋㅋ', characterId: 'youngwoo', expression: 'happy' },
+  { id: 'line-006', speaker: '지수', text: '근데 숙소까지 얼마나 걸려요?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-007', speaker: '영우', text: '한 40분?\n가면서 뭐 먹을지 정하자.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-008', speaker: '지수', text: '오오 좋아요.\n저 사실 기내식 말고 뭔가 먹고 싶었어요.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-009', speaker: '영우', text: '그럴 줄 알고 봐놓은 데 있어.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-010', speaker: '지수', text: '역시.', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-011', speaker: '', text: '지수가 창에 기댄 채 눈을 감는다.', characterId: 'jisoo', expression: 'blank' },
+  { id: 'line-012', speaker: '영우', text: '많이 피곤해?', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-013', speaker: '지수', text: '조금요.\n근데 졸리진 않아요.', characterId: 'jisoo', expression: 'blank' },
+  { id: 'line-014', speaker: '지수', text: '무깽이 나 없다고 찾으려나.', characterId: 'jisoo', pauseBeforeMs: 300, expression: 'soft' },
+  { id: 'line-015', speaker: '영우', text: '지금쯤 네 침대 차지했을 듯.', characterId: 'youngwoo', expression: 'smirk' },
+  { id: 'line-016', speaker: '지수', text: 'ㅎㅎ 딱 걔답네.', characterId: 'jisoo', expression: 'soft' },
+  { id: 'line-017', speaker: '', text: '창밖으로 낯선 동네 풍경이 지나간다.\n열차는 계속 달렸다.', characterId: null },
 ];
 
 // OPERATION MK — Week 0 Scene 2-2 room-search minigame's area/hotspot
@@ -547,11 +754,22 @@ const ROOM_SEARCH_CORE_ITEMS = [
 ];
 
 // Registry of testable Week 0 scenes — /dev/week0 lists these, each linking
-// to /dev/game/?scene=<id>. Add future scenes here as they're written.
+// to /dev/game/?scene=<id>. Covers the full 0주차 ARRIVAL arc (W0-S01~S10 in
+// the story doc) — 비행기 오프닝부터 첫날 밤 마무리까지, including the M.K.
+// engraving reveal that seeds the entire 4-week mystery.
 const week0Scenes = [
   {
-    id: 'week0-scene-001',
+    id: 'week0-scene-flight',
     order: 1,
+    name: '시드니 상공',
+    location: 'In Flight',
+    introLabel: 'IN FLIGHT',
+    time: '착륙 10분 전',
+    lines: week0SceneFlightLines,
+  },
+  {
+    id: 'week0-scene-001',
+    order: 2,
     name: '진짜 왔네',
     location: 'Sydney Airport Arrival Area',
     introLabel: 'SYDNEY',
@@ -560,7 +778,7 @@ const week0Scenes = [
   },
   {
     id: 'week0-scene-001-2',
-    order: 2,
+    order: 3,
     name: '지하철 역 찾기',
     location: 'Sydney Airport Station',
     introLabel: 'SYDNEY',
@@ -577,40 +795,102 @@ const week0Scenes = [
     minigameStages: ['공항 (International Airport)', '이스트우드 (Eastwood)', '마라용 (Marayong)'],
   },
   {
+    id: 'week0-scene-001-2-minigame',
+    order: 4,
+    name: '지하철 역 찾기 (미니게임)',
+    location: 'Sydney Airport Station',
+    time: '09:50',
+    route: '/dev/minigame-eastwood/',
+  },
+  {
+    id: 'week0-scene-train',
+    order: 5,
+    name: '열차 — 밀린 이야기',
+    location: 'Sydney Trains',
+    introLabel: 'SYDNEY TRAINS',
+    time: '10:05',
+    lines: week0SceneTrainLines,
+  },
+  {
     id: 'week0-scene-002-1',
-    order: 3,
+    order: 6,
     name: '진짜 같이 있네',
     location: 'Sydney Accommodation',
     introLabel: 'ACCOMMODATION',
     time: '20:18',
     lines: week0Scene002_1Lines,
+  },
+  {
+    id: 'week0-scene-dinner',
+    order: 7,
+    name: '첫날 저녁',
+    location: 'Restaurant near Accommodation',
+    introLabel: 'DINNER',
+    time: '21:10',
+    lines: week0SceneDinnerLines,
+  },
+  {
+    id: 'week0-scene-charger',
+    order: 8,
+    name: '떨어진 충전기',
+    location: 'Sydney Accommodation',
+    introLabel: 'ACCOMMODATION',
+    time: '22:30',
+    lines: week0SceneChargerLines,
     // Not a loop — this scene hands off to the point-and-click phone-hunt
     // minigame (week0-scene-002-2). See MINIGAME_ROUTES in game/index.html.
     nextSceneId: 'week0-scene-002-2',
   },
   {
     id: 'week0-scene-002-2',
-    order: 4,
+    order: 9,
     name: '핸드폰을 찾아라',
     location: 'Sydney Accommodation',
-    time: '20:20',
+    time: '22:35',
     // No `lines` — this isn't a VN scene, it's the point-and-click minigame
     // itself. `route` overrides /dev/week0's default /dev/game/?scene=<id>
     // link so this entry opens the minigame page directly, letting it be
-    // tested standalone instead of only via week0-scene-002-1's VN handoff.
+    // tested standalone instead of only via week0-scene-charger's VN handoff.
     route: '/dev/minigame-phone-search/',
   },
   {
     id: 'week0-scene-002-3',
-    order: 5,
+    order: 10,
     name: '근데 이 열쇠 뭐지?',
     location: 'Sydney Accommodation',
     introLabel: 'ACCOMMODATION',
-    time: '20:41',
+    time: '22:41',
     lines: week0Scene002_3Lines,
     // Reached from the phone-search minigame's GAME CLEAR redirect, not from
     // another VN scene's nextSceneId — listed here so /dev/week0 and the
     // dev asset selector can still target it directly for testing.
+  },
+  {
+    id: 'week0-scene-frontdesk',
+    order: 11,
+    name: '프런트 문의',
+    location: 'Accommodation Lobby',
+    introLabel: 'FRONT DESK',
+    time: '22:50',
+    lines: week0SceneFrontdeskLines,
+  },
+  {
+    id: 'week0-scene-mailroom',
+    order: 12,
+    name: '엘리베이터의 우편 봉투',
+    location: 'Accommodation Lobby',
+    introLabel: 'ACCOMMODATION',
+    time: '23:00',
+    lines: week0SceneMailroomLines,
+  },
+  {
+    id: 'week0-scene-firstnight',
+    order: 13,
+    name: '첫날 밤',
+    location: 'Sydney Accommodation',
+    introLabel: 'ACCOMMODATION',
+    time: '23:15',
+    lines: week0SceneFirstNightLines,
   },
 ];
 

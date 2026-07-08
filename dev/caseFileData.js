@@ -10,8 +10,15 @@
 // yet. mapX/mapY are rough placement percentages for a future Sydney map graphic.
 const caseMapLocations = [
   { id: 'airport', name: '공항', mapX: 12, mapY: 70, relatedSceneIds: ['week0-scene-001'] },
-  { id: 'station', name: '지하철 역', mapX: 30, mapY: 55, relatedSceneIds: ['week0-scene-001-2'] },
-  { id: 'accommodation', name: '숙소', mapX: 50, mapY: 40, relatedSceneIds: ['week0-scene-002-1', 'week0-scene-002-2', 'week0-scene-002-3', 'week1-scene-011'] },
+  { id: 'station', name: '지하철 역', mapX: 30, mapY: 55, relatedSceneIds: ['week0-scene-001-2', 'week0-scene-001-2-minigame', 'week0-scene-train'] },
+  {
+    id: 'accommodation', name: '숙소', mapX: 50, mapY: 40,
+    relatedSceneIds: [
+      'week0-scene-002-1', 'week0-scene-dinner', 'week0-scene-charger', 'week0-scene-002-2',
+      'week0-scene-002-3', 'week0-scene-frontdesk', 'week0-scene-mailroom', 'week0-scene-firstnight',
+      'week1-scene-011',
+    ],
+  },
   {
     id: 'circular-quay', name: 'Circular Quay', mapX: 62, mapY: 30,
     relatedSceneIds: [
