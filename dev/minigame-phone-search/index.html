@@ -991,7 +991,12 @@ function isPointInPolygon(px, py, points) {
 }
 
 function hotspotIdAtPoint(point) {
-  for (const id in currentHotspots) {
+  // Later-specified hotspots are saved last (see AssetDB.setRoomHotspot), so
+  // checking keys in reverse order makes the most recently specified hotspot
+  // win when its area overlaps an earlier one — i.e. it behaves as if it's
+  // stacked on top.
+  const ids = Object.keys(currentHotspots).reverse();
+  for (const id of ids) {
     const pts = currentHotspots[id].map(p => ({ x: p.x * CANVAS_W, y: p.y * CANVAS_H }));
     if (isPointInPolygon(point.x, point.y, pts)) return id;
     // A carelessly small/thin hand-drawn shape still needs to stay tappable —
