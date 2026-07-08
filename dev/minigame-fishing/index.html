@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>OPERATION MK · FISHING</title>
+<title>OPERATION MK · 낚시 설정</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <meta name="theme-color" content="#080A0C">
@@ -13,7 +13,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="OPERATION MK DEV">
 <style>
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
   --bg:#080A0C;--surface-1:#101419;--surface-2:#171C22;
   --text-primary:#EDF1F4;--text-secondary:#929BA5;--text-muted:#5F6872;
@@ -21,514 +21,248 @@
   --mono:'IBM Plex Mono',ui-monospace,monospace;
   --sans:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
 }
-html,body{height:100%;overflow:hidden}
-body{background:#000;color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center}
+html,body{height:100%}
+body{background:#050607;color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center;min-height:100dvh}
+.frame{width:100%;max-width:430px;min-height:100dvh;min-height:100vh;padding:calc(48px + env(safe-area-inset-top,0)) 20px calc(32px + env(safe-area-inset-bottom,0));display:flex;flex-direction:column}
+.back{font-family:var(--mono);font-size:12px;color:var(--text-muted);text-decoration:none;margin-bottom:18px;display:inline-flex;align-items:center;gap:4px;width:fit-content}
+.tag{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px}
+.title{font-size:26px;font-weight:700;letter-spacing:-.2px;margin-bottom:10px}
+.sub{font-size:14px;color:var(--text-secondary);margin-bottom:32px;line-height:1.6}
 
-.frame{position:relative;width:100%;max-width:430px;height:100dvh;height:100vh;height:var(--vh100, 100vh);overflow:hidden;background:#0a0d10;display:flex;flex-direction:column}
+.option-group{margin-bottom:28px}
+.option-label{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;color:var(--text-muted);text-transform:uppercase;margin-bottom:12px}
+.option-pills{display:flex;flex-wrap:wrap;gap:8px}
+.option-pill{font-family:var(--sans);font-size:13.5px;font-weight:600;color:var(--text-secondary);background:var(--surface-1);border:1px solid var(--divider);border-radius:20px;padding:10px 16px;cursor:pointer;transition:transform .15s,background .15s,color .15s,border-color .15s}
+.option-pill:active{transform:scale(.96)}
+.option-pill.active{color:#04181c;background:var(--cyan);border-color:var(--cyan)}
 
-.topbar{position:absolute;top:0;left:0;right:0;z-index:6;padding:calc(14px + env(safe-area-inset-top,0)) 16px 14px;display:flex;justify-content:space-between;align-items:center;pointer-events:none}
-.vn-btn{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:#fff;background:rgba(8,10,12,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:9px 14px;cursor:pointer;text-decoration:none;display:inline-block;pointer-events:auto;border-width:1px}
+.upload-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.upload-btn{font-family:var(--sans);font-size:13.5px;font-weight:600;color:#04181c;background:var(--cyan);border:none;border-radius:14px;padding:11px 16px;cursor:pointer;transition:transform .15s}
+.upload-btn:active{transform:scale(.96)}
+.upload-input-hidden{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.remove-btn{font-family:var(--mono);font-size:11.5px;color:var(--text-muted);background:none;border:1px solid var(--divider);border-radius:12px;padding:9px 12px;cursor:pointer;display:none}
+.remove-btn:active{opacity:.7}
+.image-preview{display:none;margin-top:10px;max-width:160px;max-height:100px;border-radius:12px;border:1px solid var(--divider);object-fit:cover}
+.image-preview.character-preview{object-fit:contain;background:var(--surface-1);padding:6px}
+.upload-hint{font-size:12px;color:var(--text-muted);margin-top:8px;line-height:1.5}
+.upload-error{font-size:12px;color:var(--signal-red);margin-top:8px;display:none}
 
-/* ===== Game stage ===== */
-.game-stage{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:14px;padding:calc(64px + env(safe-area-inset-top,0)) 20px calc(28px + env(safe-area-inset-bottom,0))}
-
-.track-wrap{position:relative;width:132px;height:100%;max-height:100%}
-.track{position:relative;width:100%;height:100%;border-radius:20px;overflow:hidden;background:linear-gradient(180deg,#0f2a33 0%,#0a1b21 55%,#081318 100%);border:1px solid rgba(255,255,255,.08);box-shadow:inset 0 0 24px rgba(0,0,0,.5)}
-.track::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(180deg,rgba(255,255,255,.03) 0 2px,transparent 2px 26px);pointer-events:none}
-
-.catch-bar{position:absolute;left:6px;right:6px;top:0;border-radius:12px;background:rgba(62,207,107,.22);border:2px solid rgba(62,207,107,.65);box-shadow:0 0 0 rgba(62,207,107,0);transition:background .15s ease,border-color .15s ease,box-shadow .15s ease;will-change:transform}
-.catch-bar.hooked{background:rgba(62,207,107,.38);border-color:var(--green);box-shadow:0 0 18px rgba(62,207,107,.45)}
-
-.fish{position:absolute;left:50%;top:0;font-size:28px;line-height:1;width:36px;height:36px;margin-left:-18px;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5));will-change:transform;transition:filter .15s ease}
-
-.progress-rail{position:relative;width:22px;height:100%;border-radius:11px;background:var(--surface-1);border:1px solid var(--divider);overflow:hidden;flex-shrink:0}
-.progress-fill{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(180deg,#F2C879 0%,var(--amber) 100%);border-radius:0 0 10px 10px;transition:background .2s ease}
-.progress-fill.danger{background:linear-gradient(180deg,#E88686 0%,var(--signal-red) 100%)}
-.progress-mid-mark{position:absolute;left:0;right:0;top:50%;height:1px;background:rgba(255,255,255,.18)}
-
-/* ===== Press zone (full stage minus topbar) ===== */
-.press-zone{position:absolute;inset:0;z-index:5;touch-action:none}
-.press-hint{position:absolute;left:0;right:0;bottom:calc(14px + env(safe-area-inset-bottom,0));z-index:6;text-align:center;font-family:var(--mono);font-size:11.5px;color:var(--text-muted);letter-spacing:.02em;pointer-events:none;transition:opacity .2s ease}
-.press-hint.hold{color:var(--green)}
-
-/* ===== Debug panel ===== */
-.debug-panel{position:absolute;top:calc(50px + env(safe-area-inset-top,0));left:12px;z-index:6;font-family:var(--mono);font-size:10.5px;line-height:1.55;color:rgba(146,155,165,.9);background:rgba(5,7,10,.7);border:1px solid var(--divider);border-radius:10px;padding:8px 10px;pointer-events:none;white-space:pre;display:none}
-.debug-panel.show{display:block}
-
-/* ===== Overlays ===== */
-.overlay{position:absolute;inset:0;z-index:8;display:none;align-items:center;justify-content:center;flex-direction:column;gap:18px;text-align:center;padding:32px;background:rgba(5,7,10,.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
-.overlay.show{display:flex}
-.overlay-tag{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--text-muted);text-transform:uppercase}
-.overlay-title{font-size:24px;font-weight:800}
-.overlay-sub{font-size:13.5px;color:var(--text-secondary);line-height:1.6;max-width:280px}
-.primary-btn{font-family:var(--mono);font-size:13px;font-weight:600;letter-spacing:.04em;color:#08110c;background:var(--green);border:none;border-radius:14px;padding:14px 28px;cursor:pointer}
-.primary-btn:active{opacity:.8}
-
-.result-banner{font-size:30px;font-weight:800}
-.result-banner.success{color:var(--green)}
-.result-banner.fail{color:var(--signal-red)}
-.perfect-tag{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.1em;color:var(--amber);background:rgba(214,168,75,.14);border:1px solid rgba(214,168,75,.4);border-radius:20px;padding:5px 12px}
+.test-btn{margin-top:auto;font-family:var(--mono);font-size:14.5px;font-weight:700;letter-spacing:.04em;color:#08110c;background:var(--green);border:none;border-radius:16px;padding:16px;cursor:pointer;text-align:center;text-decoration:none;display:block}
+.test-btn:active{opacity:.8}
 </style>
 </head>
 <body>
-<div class="frame" id="frame">
+<div class="frame">
+  <a class="back" href="/dev/minigames/">‹ DEV</a>
+  <div class="tag">Minigame · 설정</div>
+  <div class="title">🎣 낚시</div>
+  <div class="sub">화면을 꾹 누르고 있으면 초록 바가 위로 떠오릅니다. 손을 떼면 서서히 가라앉아요.<br>물고기를 초록 바 안에 가둔 채로 게이지를 100%까지 채우세요.</div>
 
-  <div class="topbar">
-    <a class="vn-btn" href="/dev/minigames/">← DEV</a>
-    <button class="vn-btn" id="debugToggle" type="button">DEBUG</button>
+  <div class="option-group">
+    <div class="option-label">난이도</div>
+    <div class="option-pills" id="diffPills"></div>
   </div>
 
-  <div class="debug-panel" id="debugPanel"></div>
+  <div class="option-group">
+    <div class="option-label">물고기 움직임</div>
+    <div class="option-pills" id="motionPills"></div>
+  </div>
 
-  <div class="game-stage">
-    <div class="track-wrap">
-      <div class="track" id="track">
-        <div class="catch-bar" id="catchBar"></div>
-        <div class="fish" id="fish">🐟</div>
-      </div>
+  <div class="option-group">
+    <div class="option-label">배경화면 (선택)</div>
+    <div class="upload-row">
+      <label class="upload-btn" for="bgInput">🖼️ 배경 업로드</label>
+      <input type="file" id="bgInput" accept="image/*" class="upload-input-hidden">
+      <button type="button" class="remove-btn" id="bgRemoveBtn">제거</button>
     </div>
-    <div class="progress-rail" id="progressRail">
-      <div class="progress-mid-mark"></div>
-      <div class="progress-fill" id="progressFill"></div>
+    <img class="image-preview" id="bgPreview" alt="배경 미리보기">
+    <div class="upload-error" id="bgError"></div>
+    <div class="upload-hint">이 브라우저에만 저장돼요. 업로드하지 않으면 기본 배경이 나옵니다.</div>
+  </div>
+
+  <div class="option-group">
+    <div class="option-label">캐릭터 (선택)</div>
+    <div class="upload-row">
+      <label class="upload-btn" for="characterInput">🧍 캐릭터 업로드</label>
+      <input type="file" id="characterInput" accept="image/*" class="upload-input-hidden">
+      <button type="button" class="remove-btn" id="characterRemoveBtn">제거</button>
     </div>
+    <img class="image-preview character-preview" id="characterPreview" alt="캐릭터 미리보기">
+    <div class="upload-error" id="characterError"></div>
+    <div class="upload-hint">배경 없이 캐릭터만 있으면 물가에 떠 있는 것처럼 보일 수 있어요. 투명 배경 이미지를 추천해요.</div>
   </div>
 
-  <div class="press-zone" id="pressZone"></div>
-  <div class="press-hint" id="pressHint">누르면 위로 떠오르고 · 떼면 가라앉아요</div>
-
-  <div class="overlay show" id="startOverlay">
-    <div class="overlay-tag">Minigame</div>
-    <div class="overlay-title">🎣 낚시</div>
-    <div class="overlay-sub">화면을 꾹 누르고 있으면 초록 바가 위로 떠오릅니다. 손을 떼면 서서히 가라앉아요.<br>물고기를 초록 바 안에 가둔 채로 게이지를 100%까지 채우세요.</div>
-    <button class="primary-btn" id="startBtn" type="button">시작하기</button>
-  </div>
-
-  <div class="overlay" id="resultOverlay">
-    <div class="result-banner" id="resultBanner"></div>
-    <div class="perfect-tag" id="perfectTag" style="display:none">PERFECT!</div>
-  </div>
-
+  <a class="test-btn" id="testBtn" href="/dev/minigame-fishing/play/">테스트하기</a>
 </div>
-
 <script>
-function setVh100() { document.documentElement.style.setProperty('--vh100', window.innerHeight + 'px'); }
-setVh100();
-window.addEventListener('resize', setVh100);
-window.addEventListener('orientationchange', setVh100);
-
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
 }
 </script>
 <script>
-/* =========================================================================
-   Stardew-style vertical fishing minigame.
-   Simulation is entirely state-driven (barY/fishY/catchProgress are the real
-   truth) and stepped on a fixed 60Hz timestep, independent of rAF's dt — see
-   FISHING_CONFIG.fixedStep and the accumulator loop at the bottom. Rendering
-   only ever reads state and never feeds back into it.
-   ========================================================================= */
+// Bands mirror difficultyLabel()'s cutoffs in play/index.html so "쉬움" here
+// picks from the same range the play screen would label "쉬움".
+const DIFFICULTY_OPTIONS = [
+  { id: 'random', label: '랜덤' },
+  { id: 'very-easy', label: '매우 쉬움' },
+  { id: 'easy', label: '쉬움' },
+  { id: 'normal', label: '보통' },
+  { id: 'hard', label: '어려움' },
+  { id: 'very-hard', label: '매우 어려움' },
+];
+const MOTION_OPTIONS = [
+  { id: 'random', label: '랜덤' },
+  { id: 'mixed', label: '뒤섞임' },
+  { id: 'smooth', label: '매끄러움' },
+  { id: 'dart', label: '돌진' },
+  { id: 'sinker', label: '가라앉음' },
+  { id: 'floater', label: '떠오름' },
+];
 
-const FISHING_CONFIG = {
-  fixedStep: 1 / 60,
+let selectedDifficulty = 'random';
+let selectedMotion = 'random';
 
-  bar: {
-    upAccel: 0.25,
-    downAccel: 0.25,
-    insideAccelMultiplier: 0.6,
-    bounce: 2 / 3,
-    heightRatio: 0.30,
-  },
-
-  progress: {
-    start: 0.5,
-    gainPerSecond: 0.20,
-    lossPerSecond: 0.085,
-  },
-
-  fish: {
-    difficultyMin: 15,
-    difficultyMax: 95,
-    targetDistanceThreshold: 3,
-    velocityLerpDivisor: 5,
-    biasStep: 0.01,
-    biasMax: 1.5,
-  },
-};
-
-const FISH_HITBOX_INSET = 2; // shrinks the hitbox slightly inside the 36px sprite so the visual and the judgement don't feel mismatched
-const FISH_SIZE = 36;
-
-function clamp(v, min, max) { return Math.min(Math.max(v, min), max); }
-function randomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
-function randomBetween(min, max) { return Math.random() * (max - min) + min; }
-function weightedRandom(pairs) {
-  const total = pairs.reduce((s, [, w]) => s + w, 0);
-  let r = Math.random() * total;
-  for (const [value, weight] of pairs) {
-    r -= weight;
-    if (r <= 0) return value;
-  }
-  return pairs[pairs.length - 1][0];
+function renderPills(container, options, selected, onPick) {
+  container.innerHTML = options.map(o =>
+    `<button type="button" class="option-pill${o.id === selected ? ' active' : ''}" data-id="${o.id}">${o.label}</button>`
+  ).join('');
+  container.querySelectorAll('.option-pill').forEach(btn => {
+    btn.addEventListener('click', () => onPick(btn.dataset.id));
+  });
 }
-
-/* ===== Fish profile: difficulty scalar + motion type, generated fresh
-   every round instead of picking from a handful of easy/normal/hard/crazy
-   presets — see request doc §11, §40. ===== */
-function generateFishProfile() {
-  return {
-    difficulty: randomInt(FISHING_CONFIG.fish.difficultyMin, FISHING_CONFIG.fish.difficultyMax),
-    motionType: weightedRandom([
-      ['mixed', 30],
-      ['smooth', 20],
-      ['dart', 20],
-      ['sinker', 15],
-      ['floater', 15],
-    ]),
-  };
-}
-
-function difficultyLabel(d) {
-  if (d <= 30) return '매우 쉬움';
-  if (d <= 45) return '쉬움';
-  if (d <= 60) return '보통';
-  if (d <= 78) return '어려움';
-  return '매우 어려움';
-}
-
-/* ===== Runtime state ===== */
-const state = {
-  gameState: 'start', // 'start' | 'playing' | 'success' | 'fail'
-  isPressing: false,
-
-  barY: 0,
-  barVelocity: 0,
-  barHeight: 0,
-
-  fishY: 0,
-  fishVelocity: 0,
-  fishTargetY: null,
-  verticalBias: 0,
-  targetCooldownFrames: 0,
-
-  catchProgress: FISHING_CONFIG.progress.start,
-  isPerfect: true,
-  fishInsideBar: false,
-
-  currentFish: generateFishProfile(),
-};
 
 const el = {
-  track: document.getElementById('track'),
-  catchBar: document.getElementById('catchBar'),
-  fish: document.getElementById('fish'),
-  progressFill: document.getElementById('progressFill'),
-  pressZone: document.getElementById('pressZone'),
-  pressHint: document.getElementById('pressHint'),
-  debugPanel: document.getElementById('debugPanel'),
-  debugToggle: document.getElementById('debugToggle'),
-  startOverlay: document.getElementById('startOverlay'),
-  startBtn: document.getElementById('startBtn'),
-  resultOverlay: document.getElementById('resultOverlay'),
-  resultBanner: document.getElementById('resultBanner'),
-  perfectTag: document.getElementById('perfectTag'),
+  diffPills: document.getElementById('diffPills'),
+  motionPills: document.getElementById('motionPills'),
+  testBtn: document.getElementById('testBtn'),
+  bgInput: document.getElementById('bgInput'),
+  bgPreview: document.getElementById('bgPreview'),
+  bgRemoveBtn: document.getElementById('bgRemoveBtn'),
+  bgError: document.getElementById('bgError'),
+  characterInput: document.getElementById('characterInput'),
+  characterPreview: document.getElementById('characterPreview'),
+  characterRemoveBtn: document.getElementById('characterRemoveBtn'),
+  characterError: document.getElementById('characterError'),
 };
 
-/* ===== Track measurement — cached on resize, never read per-frame ===== */
-let trackHeight = 0;
-function measure() {
-  trackHeight = el.track.clientHeight;
-  state.barHeight = trackHeight * FISHING_CONFIG.bar.heightRatio;
-}
-function maxBarY() { return trackHeight - state.barHeight; }
-function maxFishY() { return trackHeight - FISH_SIZE; }
-window.addEventListener('resize', () => { measure(); });
-window.addEventListener('orientationchange', () => { measure(); });
-if (window.visualViewport) window.visualViewport.addEventListener('resize', () => measure());
-
-/* ===== Fish AI — target-seeking, not sine waves or per-frame random jumps
-   (request doc §9-§23, and explicitly forbidden in §50). ===== */
-function chooseMainTarget() {
-  const mfy = maxFishY();
-  const spaceAbove = state.fishY;
-  const spaceBelow = mfy - state.fishY;
-  const movePercent = Math.min(99, state.currentFish.difficulty + randomInt(10, 44)) / 100;
-  const target = Math.random() < 0.5
-    ? state.fishY - spaceAbove * movePercent
-    : state.fishY + spaceBelow * movePercent;
-  state.fishTargetY = clamp(target, 0, mfy);
+function updateTestBtnHref() {
+  const params = new URLSearchParams();
+  if (selectedDifficulty !== 'random') params.set('diff', selectedDifficulty);
+  if (selectedMotion !== 'random') params.set('motion', selectedMotion);
+  const qs = params.toString();
+  el.testBtn.href = '/dev/minigame-fishing/play/' + (qs ? '?' + qs : '');
 }
 
-function maybeChooseMainTarget() {
-  if (state.targetCooldownFrames > 0) { state.targetCooldownFrames--; return; }
-  const difficulty = state.currentFish.difficulty;
-  const isSmooth = state.currentFish.motionType === 'smooth';
-  const baseChance = difficulty * (isSmooth ? 20 : 1) / 4000;
-  if (Math.random() < baseChance && (!isSmooth || state.fishTargetY === null)) {
-    chooseMainTarget();
+function renderAll() {
+  renderPills(el.diffPills, DIFFICULTY_OPTIONS, selectedDifficulty, (id) => {
+    selectedDifficulty = id;
+    renderAll();
+  });
+  renderPills(el.motionPills, MOTION_OPTIONS, selectedMotion, (id) => {
+    selectedMotion = id;
+    renderAll();
+  });
+  updateTestBtnHref();
+}
+renderAll();
+</script>
+<script>
+/* ===== Background/character customization — Stardew-style overworld dressing
+   for the play screen. Read there straight out of localStorage rather than
+   passed via query string, since a raw photo's data URL is far too large for
+   a URL. Images are downscaled through a canvas before storing so a full-size
+   phone photo doesn't blow the ~5MB localStorage quota (background keeps its
+   photo detail as JPEG; character stays PNG so an uploaded cutout keeps its
+   transparent background instead of gaining a black box). ===== */
+const CUSTOMIZATION_KEY = 'mkFishingCustomization';
+
+function loadCustomization() {
+  try { return JSON.parse(localStorage.getItem(CUSTOMIZATION_KEY)) || {}; }
+  catch (e) { return {}; }
+}
+function saveCustomization(data) {
+  try {
+    localStorage.setItem(CUSTOMIZATION_KEY, JSON.stringify(data));
+  } catch (e) {
+    throw new Error(e && e.name === 'QuotaExceededError'
+      ? '저장 공간이 부족해요. 더 작은 이미지를 사용해 보세요.'
+      : '이미지 저장에 실패했어요.');
   }
 }
 
-function updateMotionBias() {
-  const { biasStep, biasMax } = FISHING_CONFIG.fish;
-  if (state.currentFish.motionType === 'floater') {
-    state.verticalBias = Math.max(state.verticalBias - biasStep, -biasMax);
-  } else if (state.currentFish.motionType === 'sinker') {
-    state.verticalBias = Math.min(state.verticalBias + biasStep, biasMax);
+function resizeImageToDataUrl(file, maxDim, mimeType, quality) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          const scale = maxDim / Math.max(width, height);
+          width = Math.round(width * scale);
+          height = Math.round(height * scale);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL(mimeType, quality));
+      };
+      img.onerror = () => reject(new Error('이미지를 불러오지 못했어요.'));
+      img.src = reader.result;
+    };
+    reader.onerror = () => reject(new Error('파일을 읽지 못했어요.'));
+    reader.readAsDataURL(file);
+  });
+}
+
+let customization = loadCustomization();
+
+function renderImagePreview(key, previewEl, removeBtnEl) {
+  const dataUrl = customization[key];
+  previewEl.src = dataUrl || '';
+  previewEl.style.display = dataUrl ? 'block' : 'none';
+  removeBtnEl.style.display = dataUrl ? 'inline-block' : 'none';
+}
+
+async function handleImageUpload(file, key, maxDim, mimeType, quality, previewEl, removeBtnEl, errorEl) {
+  errorEl.style.display = 'none';
+  try {
+    const dataUrl = await resizeImageToDataUrl(file, maxDim, mimeType, quality);
+    customization[key] = dataUrl;
+    saveCustomization(customization);
+    renderImagePreview(key, previewEl, removeBtnEl);
+  } catch (e) {
+    errorEl.textContent = (e && e.message) || '이미지 업로드에 실패했어요.';
+    errorEl.style.display = 'block';
   }
 }
 
-function followTarget() {
-  if (state.fishTargetY === null) return;
-  const dist = state.fishTargetY - state.fishY;
-  const divisor = FISHING_CONFIG.fish.velocityLerpDivisor;
-  if (Math.abs(dist) <= FISHING_CONFIG.fish.targetDistanceThreshold) {
-    // Target reached — release it so the base reselection logic above (and
-    // Smooth's "only pick when there's no target" rule) can kick in again.
-    state.fishTargetY = null;
-    state.fishVelocity += (0 - state.fishVelocity) / divisor;
-    return;
-  }
-  const denominator = randomInt(10, 29) + (100 - Math.min(100, state.currentFish.difficulty));
-  const desiredVelocity = dist / denominator;
-  state.fishVelocity += (desiredVelocity - state.fishVelocity) / divisor;
-}
-
-function maybeApplyMixedJump() {
-  if (state.currentFish.motionType !== 'mixed') return;
-  if (Math.random() < state.currentFish.difficulty / 2000) {
-    const goUp = Math.random() < 0.5;
-    const offset = goUp ? -randomBetween(50, 100) : randomBetween(50, 100);
-    state.fishTargetY = clamp(state.fishY + offset, 0, maxFishY());
-  }
-}
-
-function maybeApplyDartJump() {
-  if (state.currentFish.motionType !== 'dart') return;
-  if (Math.random() < state.currentFish.difficulty / 1000) {
-    const jumpSize = randomBetween(50, 100 + state.currentFish.difficulty * 2);
-    const offset = Math.random() < 0.5 ? -jumpSize : jumpSize;
-    state.fishTargetY = clamp(state.fishY + offset, 0, maxFishY());
-  }
-}
-
-function updateFish() {
-  maybeChooseMainTarget();
-  updateMotionBias();
-  followTarget();
-  maybeApplyMixedJump();
-  maybeApplyDartJump();
-  state.fishY = clamp(state.fishY + state.fishVelocity + state.verticalBias, 0, maxFishY());
-}
-
-/* ===== Catch-bar physics — acceleration only, never a direct position
-   write, and velocity is never zeroed on release (request doc §6, §50). ===== */
-function updateBar() {
-  const cfg = FISHING_CONFIG.bar;
-  let accel = state.isPressing ? -cfg.upAccel : cfg.downAccel;
-  if (state.fishInsideBar) accel *= cfg.insideAccelMultiplier;
-  state.barVelocity += accel;
-  state.barY += state.barVelocity;
-
-  if (state.barY < 0) {
-    state.barY = 0;
-    state.barVelocity = -state.barVelocity * cfg.bounce;
-  }
-  const maxY = maxBarY();
-  if (state.barY > maxY) {
-    state.barY = maxY;
-    state.barVelocity = -state.barVelocity * cfg.bounce;
-  }
-}
-
-/* ===== Collision — full hitbox containment, not a center-point check
-   (request doc §24), plus a bottom-edge compensation (§25) so pixel-rounding
-   near the floor doesn't make an otherwise-caught fish flicker outside. ===== */
-function computeInside() {
-  const fishTop = state.fishY + FISH_HITBOX_INSET;
-  const fishBottom = state.fishY + FISH_SIZE - FISH_HITBOX_INSET;
-  const barTop = state.barY;
-  const barBottom = state.barY + state.barHeight;
-  let inside = fishTop >= barTop && fishBottom <= barBottom;
-
-  const atBottom = state.barY >= maxBarY() - 4;
-  const fishNearBottom = state.fishY >= maxFishY() - state.barHeight;
-  if (atBottom && fishNearBottom) inside = true;
-
-  return inside;
-}
-
-function updateProgress(inside, dt) {
-  const cfg = FISHING_CONFIG.progress;
-  state.catchProgress = clamp(
-    state.catchProgress + (inside ? cfg.gainPerSecond : -cfg.lossPerSecond) * dt,
-    0, 1
-  );
-  if (!inside) state.isPerfect = false;
-  if (state.catchProgress >= 1) success();
-  else if (state.catchProgress <= 0) fail();
-}
-
-/* ===== Fixed update ===== */
-function fixedUpdate(dt) {
-  if (state.gameState !== 'playing') return;
-  updateBar();
-  updateFish();
-  const inside = computeInside();
-  state.fishInsideBar = inside;
-  updateProgress(inside, dt);
-}
-
-/* ===== Round lifecycle ===== */
-function resetRound() {
-  measure();
-  state.barY = maxBarY();
-  state.barVelocity = 0;
-
-  state.fishY = maxFishY();
-  state.fishVelocity = 0;
-  state.fishTargetY = null;
-  state.verticalBias = 0;
-  // Round-start grace period so the fish doesn't snap toward a target the
-  // instant the round begins (request doc §37).
-  state.targetCooldownFrames = Math.round(randomBetween(0.3, 0.8) / FISHING_CONFIG.fixedStep);
-
-  state.catchProgress = FISHING_CONFIG.progress.start;
-  state.currentFish = generateFishProfile();
-  state.isPerfect = true;
-  state.isPressing = false;
-  state.fishInsideBar = false;
-
-  el.resultOverlay.classList.remove('show');
-  el.pressHint.style.opacity = '1';
-  state.gameState = 'playing';
-}
-
-function success() {
-  state.gameState = 'success';
-  state.isPressing = false;
-  el.resultBanner.textContent = '잡았다! 🐟';
-  el.resultBanner.className = 'result-banner success';
-  el.perfectTag.style.display = state.isPerfect ? '' : 'none';
-  el.resultOverlay.classList.add('show');
-  setTimeout(resetRound, randomBetween(800, 1200));
-}
-
-function fail() {
-  state.gameState = 'fail';
-  state.isPressing = false;
-  el.resultBanner.textContent = '놓쳤다! 💦';
-  el.resultBanner.className = 'result-banner fail';
-  el.perfectTag.style.display = 'none';
-  el.resultOverlay.classList.add('show');
-  setTimeout(resetRound, randomBetween(800, 1200));
-}
-
-/* ===== Input — hold-based only (a single tap must never move the bar),
-   with pointer capture so a dragging finger doesn't drop the hold, plus
-   touch/mouse/keyboard fallbacks and app-backgrounding safety (§8, §50). ===== */
-function startPress(e) {
-  if (e && e.preventDefault) e.preventDefault();
-  if (state.gameState !== 'playing') return;
-  state.isPressing = true;
-}
-function endPress(e) {
-  if (e && e.preventDefault) e.preventDefault();
-  state.isPressing = false;
-}
-
-el.pressZone.addEventListener('pointerdown', (e) => {
-  el.pressZone.setPointerCapture(e.pointerId);
-  startPress(e);
+el.bgInput.addEventListener('change', () => {
+  const file = el.bgInput.files && el.bgInput.files[0];
+  el.bgInput.value = '';
+  if (!file) return;
+  handleImageUpload(file, 'background', 960, 'image/jpeg', 0.75, el.bgPreview, el.bgRemoveBtn, el.bgError);
 });
-el.pressZone.addEventListener('pointerup', endPress);
-el.pressZone.addEventListener('pointercancel', endPress);
-el.pressZone.addEventListener('lostpointercapture', endPress);
-el.pressZone.addEventListener('touchstart', startPress, { passive: false });
-el.pressZone.addEventListener('touchend', endPress, { passive: false });
-el.pressZone.addEventListener('touchcancel', endPress, { passive: false });
-el.pressZone.addEventListener('mousedown', startPress);
-window.addEventListener('mouseup', endPress);
-window.addEventListener('keydown', (e) => {
-  if (e.code === 'Space' || e.code === 'ArrowUp') startPress(e);
+el.characterInput.addEventListener('change', () => {
+  const file = el.characterInput.files && el.characterInput.files[0];
+  el.characterInput.value = '';
+  if (!file) return;
+  handleImageUpload(file, 'character', 480, 'image/png', 1, el.characterPreview, el.characterRemoveBtn, el.characterError);
 });
-window.addEventListener('keyup', (e) => {
-  if (e.code === 'Space' || e.code === 'ArrowUp') endPress(e);
+el.bgRemoveBtn.addEventListener('click', () => {
+  delete customization.background;
+  saveCustomization(customization);
+  renderImagePreview('background', el.bgPreview, el.bgRemoveBtn);
 });
-window.addEventListener('blur', () => endPress());
-document.addEventListener('visibilitychange', () => { if (document.hidden) endPress(); });
-
-el.startBtn.addEventListener('click', () => {
-  el.startOverlay.classList.remove('show');
-  resetRound();
+el.characterRemoveBtn.addEventListener('click', () => {
+  delete customization.character;
+  saveCustomization(customization);
+  renderImagePreview('character', el.characterPreview, el.characterRemoveBtn);
 });
 
-el.debugToggle.addEventListener('click', () => {
-  el.debugPanel.classList.toggle('show');
-});
-
-/* ===== Render — reads state only, never mutates it ===== */
-let fps = 0, fpsFrames = 0, fpsAccum = 0;
-function render() {
-  el.catchBar.style.height = state.barHeight + 'px';
-  el.catchBar.style.transform = `translateY(${state.barY}px)`;
-  el.catchBar.classList.toggle('hooked', state.fishInsideBar);
-
-  const tilt = clamp(state.fishVelocity * 3, -22, 22);
-  el.fish.style.transform = `translateY(${state.fishY}px) rotate(${tilt}deg)`;
-
-  el.progressFill.style.height = (state.catchProgress * 100) + '%';
-  el.progressFill.classList.toggle('danger', state.catchProgress < 0.25);
-
-  el.pressHint.classList.toggle('hold', state.isPressing);
-  el.pressHint.style.opacity = state.gameState === 'playing' ? '1' : '0';
-
-  if (el.debugPanel.classList.contains('show')) {
-    const f = state.currentFish;
-    el.debugPanel.textContent =
-`State: ${state.gameState}
-FPS: ${fps}
-Difficulty: ${f.difficulty} (${difficultyLabel(f.difficulty)})
-Motion: ${f.motionType}
-FishY: ${state.fishY.toFixed(1)}
-FishVel: ${state.fishVelocity.toFixed(2)}
-FishTarget: ${state.fishTargetY === null ? '-' : state.fishTargetY.toFixed(1)}
-BarY: ${state.barY.toFixed(1)}
-BarVel: ${state.barVelocity.toFixed(2)}
-Progress: ${(state.catchProgress * 100).toFixed(1)}%
-Inside: ${state.fishInsideBar}
-Perfect: ${state.isPerfect}`;
-  }
-}
-
-/* ===== Fixed-timestep main loop (request doc §5) ===== */
-const FIXED_STEP = FISHING_CONFIG.fixedStep;
-let accumulator = 0;
-let lastTime = performance.now();
-
-function frame(now) {
-  let dt = (now - lastTime) / 1000;
-  lastTime = now;
-  dt = Math.min(dt, 0.1);
-  accumulator += dt;
-
-  fpsAccum += dt;
-  fpsFrames++;
-  if (fpsAccum >= 1) { fps = fpsFrames; fpsFrames = 0; fpsAccum = 0; }
-
-  while (accumulator >= FIXED_STEP) {
-    fixedUpdate(FIXED_STEP);
-    accumulator -= FIXED_STEP;
-  }
-
-  render();
-  requestAnimationFrame(frame);
-}
-
-measure();
-state.fishY = maxFishY();
-state.barY = maxBarY();
-requestAnimationFrame(frame);
+renderImagePreview('background', el.bgPreview, el.bgRemoveBtn);
+renderImagePreview('character', el.characterPreview, el.characterRemoveBtn);
 </script>
 <script src="/dev/devPlanFab.js"></script>
 </body>
