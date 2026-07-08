@@ -594,6 +594,16 @@ const minigames = [
     route: '/dev/minigame-eastwood/',
     setupUrl: '/dev/upload/?scene=week1-scene-001-2&kind=minigame&minigame=week1-scene-001-2-minigame',
   },
+  {
+    // Standalone physics/AI minigame — no background image or hand-marked
+    // hotspots to set up, so setupUrl points straight at the playable game
+    // instead of an /dev/upload editor screen.
+    id: 'fishing-minigame',
+    name: '낚시',
+    location: '독립형 미니게임 (스토리 미연동)',
+    route: '/dev/minigame-fishing/',
+    setupUrl: '/dev/minigame-fishing/',
+  },
 ];
 
 // Registry of standalone-testable 증거 수집 (evidence-collection) scenes —
