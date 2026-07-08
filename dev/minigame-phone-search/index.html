@@ -665,11 +665,31 @@ function handleKitchenFridgeGap() {
     markSearched('kitchen-fridge-gap');
     return;
   }
-  if (state.selectedItemId === 'long-hook') { handlePhoneFound(); return; }
+  // Needs the flashlight to actually reveal the glow (phoneGlowSeen) before
+  // the hook can pull it out — mirrors handleRightVent's flashlight-then-
+  // hook pattern instead of auto-revealing as soon as the key chain is done.
+  if (state.selectedItemId === 'long-hook') {
+    if (state.flags.phoneGlowSeen) { handlePhoneFound(); return; }
+    setMessage('안쪽에 무엇이 있는지 아직 보이지 않는다.');
+    return;
+  }
+  if (state.selectedItemId === 'working-flashlight') {
+    if (!state.flags.phoneGlowSeen) {
+      state.flags.phoneGlowSeen = true;
+      saveState();
+      setMessage('[ 안쪽을 비춘다 ]\n깊은 곳에서 화면 불빛이 보인다.\n손이 닿지 않는다.');
+      markProgress();
+    } else {
+      setMessage('반짝이는 화면 불빛이 보인다.\n손이 닿지 않는다.');
+    }
+    return;
+  }
+  if (state.selectedItemId === 'dead-flashlight') { setMessage('손전등이 켜지지 않는다.'); return; }
   if (!state.flags.phoneGlowSeen) {
-    state.flags.phoneGlowSeen = true;
-    saveState();
-    setMessage('안쪽 깊은 곳에서 화면 불빛이 보인다.\n하지만 손이 닿지 않는다.');
+    setMessage(hasSearched('kitchen-fridge-gap')
+      ? '여전히 안쪽이 어둡다.'
+      : '안쪽 깊은 곳은 어두워서 잘 보이지 않는다.');
+    markSearched('kitchen-fridge-gap');
   } else {
     setMessage('반짝이는 화면 불빛이 보인다.\n손이 닿지 않는다.');
   }
