@@ -286,10 +286,94 @@ const AssetDB = (() => {
     return map;
   }
 
+  // Evidence-collection item catalog — { [itemId]: { name, icon, imageAssetId,
+  // hotspotId, message } } per evidence-collection id (e.g.
+  // 'week1-scene-002-2'). Same per-scene JSON-blob-in-Storage pattern as
+  // room hotspots above. `hotspotId` is which hotspot (across every area of
+  // that evidence collection) grants this item on tap — null/absent means
+  // the item isn't a simple hotspot pickup (a core-route item, or a
+  // recipe's output). `imageAssetId` points at a normal AssetDB asset
+  // (type 'item') and overrides `icon` (an emoji fallback) when set.
+  const itemsCache = new Map();
+  function itemsPath(evidenceId) { return `items/${encodeURIComponent(evidenceId)}.json`; }
+
+  async function getItems(evidenceId) {
+    if (!evidenceId) return {};
+    if (itemsCache.has(evidenceId)) return itemsCache.get(evidenceId);
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${itemsPath(evidenceId)}?t=${Date.now()}`;
+    try {
+      const res = await fetch(url, { headers: { apikey: SUPABASE_ANON_KEY } });
+      const map = res.ok ? await res.json() : {};
+      itemsCache.set(evidenceId, map);
+      return map;
+    } catch (e) {
+      return itemsCache.get(evidenceId) || {};
+    }
+  }
+
+  async function setItem(evidenceId, itemId, def) {
+    if (!evidenceId || !itemId) return {};
+    const current = await getItems(evidenceId);
+    const map = Object.assign({}, current);
+    if (def) map[itemId] = def; else delete map[itemId];
+    const blob = new Blob([JSON.stringify(map)], { type: 'application/json' });
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${DEV_ASSETS_BUCKET}/${itemsPath(evidenceId)}`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'x-upsert': 'true',
+      },
+      body: blob,
+    });
+    if (!res.ok) throw new Error(`아이템 저장 실패 (${res.status}): ${await res.text()}`);
+    itemsCache.set(evidenceId, map);
+    return map;
+  }
+
+  // Evidence-collection recipes — [{ id, inputItemIds: [a, b], outputItemId,
+  // message }] per evidence-collection id, same JSON-blob pattern.
+  const recipesCache = new Map();
+  function recipesPath(evidenceId) { return `recipes/${encodeURIComponent(evidenceId)}.json`; }
+
+  async function getRecipes(evidenceId) {
+    if (!evidenceId) return [];
+    if (recipesCache.has(evidenceId)) return recipesCache.get(evidenceId);
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${recipesPath(evidenceId)}?t=${Date.now()}`;
+    try {
+      const res = await fetch(url, { headers: { apikey: SUPABASE_ANON_KEY } });
+      const list = res.ok ? await res.json() : [];
+      recipesCache.set(evidenceId, list);
+      return list;
+    } catch (e) {
+      return recipesCache.get(evidenceId) || [];
+    }
+  }
+
+  async function setRecipes(evidenceId, recipes) {
+    if (!evidenceId) return [];
+    const blob = new Blob([JSON.stringify(recipes)], { type: 'application/json' });
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${DEV_ASSETS_BUCKET}/${recipesPath(evidenceId)}`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'x-upsert': 'true',
+      },
+      body: blob,
+    });
+    if (!res.ok) throw new Error(`조합법 저장 실패 (${res.status}): ${await res.text()}`);
+    recipesCache.set(evidenceId, recipes);
+    return recipes;
+  }
+
   return {
     addAsset, getAssetsByType, getAsset, deleteAsset, preloadImage,
     getRoomHotspots, setRoomHotspot,
     getMinigameHotspot, setMinigameHotspot,
+    getItems, setItem, getRecipes, setRecipes,
   };
 })();
 

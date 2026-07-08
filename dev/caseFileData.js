@@ -31,14 +31,6 @@ const inventoryItemDefs = {
   'long-hook': { name: '긴 갈고리', icon: '🪝', description: '옷걸이와 지지대를 엮어 만든 갈고리다.' },
   'unknown-key': { name: '낡은 열쇠', icon: '🗝️', description: '정체불명의 낡은 열쇠. 수사 노트의 증거 항목에도 등록되어 있다.', discoveredLocationText: '숙소 침실 환기구' },
   'jisu-phone': { name: '핸드폰', icon: '📱', description: '지수의 핸드폰. 드디어 찾았다.' },
-  'dish-towel': { name: '행주', icon: '🧻', description: '평범한 행주다.' },
-  'plastic-bag': { name: '비닐봉지', icon: '🛍️', description: '접힌 비닐봉지다.' },
-  'rubber-band': { name: '고무줄', icon: '➰', description: '작은 고무줄이다.' },
-  'small-coin': { name: '동전', icon: '🪙', description: '동전 하나다.' },
-  'dry-twig': { name: '마른 나뭇가지', icon: '🌿', description: '마른 나뭇가지다.' },
-  'bottle-cap': { name: '병뚜껑', icon: '🧢', description: '녹슨 병뚜껑이다.' },
-  receipt: { name: '영수증', icon: '🧾', description: '오래돼서 글씨가 잘 안 보인다.' },
-  paperclip: { name: '클립', icon: '📎', description: '작은 클립이다.' },
 };
 
 // Evidence/Question content for the one real end-to-end wire-up in this
