@@ -166,19 +166,26 @@ const AssetDB = (() => {
   }
 
   // Caching the metadata/URL above isn't enough on its own — setting an
-  // <img>/background-image src still has to download and decode the actual
-  // bytes the first time. Warming the browser's own image cache ahead of
-  // time (before the line that needs it is shown) makes that swap instant.
+  // <img>/background-image src still has to download AND decode the actual
+  // bytes the first time. `onload` only guarantees the download finished;
+  // the (often more expensive, for a full-resolution room photo) bitmap
+  // decode/rasterize step still gets deferred to whenever the image is
+  // first actually painted — which, without this, is the first real paint
+  // after a switch, i.e. exactly the stutter this was meant to prevent.
+  // img.decode() forces that decode to happen now, off-DOM, during the
+  // loading screen, so every switch afterward is a plain paint of an
+  // already-decoded bitmap.
   const warmedImages = new Set();
   function preloadImage(url) {
     if (!url || warmedImages.has(url)) return Promise.resolve();
     warmedImages.add(url);
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => resolve();
-      img.onerror = () => resolve(); // a broken image shouldn't block the scene
-      img.src = url;
+    const img = new Image();
+    img.src = url;
+    const ready = img.decode ? img.decode() : new Promise((resolve) => {
+      img.onload = resolve;
+      img.onerror = resolve;
     });
+    return Promise.resolve(ready).catch(() => {}); // a broken image shouldn't block the scene
   }
 
   // Room-search minigame hotspot positions ({ [hotspotId]: {x1,y1,x2,y2} }
