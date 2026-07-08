@@ -135,7 +135,11 @@ function setVh100() { document.documentElement.style.setProperty('--vh100', wind
 setVh100();
 window.addEventListener('resize', setVh100);
 window.addEventListener('orientationchange', setVh100);
-if (window.visualViewport) window.visualViewport.addEventListener('resize', setVh100);
+// NOT window.visualViewport's 'resize' — iOS Safari's dynamic toolbar
+// (address bar) hides/shows in response to plain taps, firing visualViewport
+// resize each time and making --vh100 (and the frame's height with it)
+// visibly jump up/down mid-tap. window/orientationchange above already
+// cover real layout changes.
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });

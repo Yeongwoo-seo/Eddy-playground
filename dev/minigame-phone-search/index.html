@@ -67,6 +67,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .hotspot-btn:active{transform:scale(.97);background:var(--surface-2)}
 
 .debug-hotspot-box{position:absolute;border:1px dashed var(--cyan);background:rgba(89,184,200,.12);color:var(--cyan);font-family:var(--mono);font-size:9px;line-height:1.3;padding:1px 3px;pointer-events:none;overflow:hidden;white-space:nowrap}
+.debug-item-label{position:absolute;background:rgba(5,7,10,.9);border:1px solid var(--amber);color:var(--amber);font-family:var(--sans);font-size:11px;font-weight:700;line-height:1.3;padding:2px 6px;border-radius:8px;pointer-events:none;white-space:nowrap;z-index:1}
 
 /* ===== Item/move buttons — moved up next to the topbar (was a floating
    bottom FAB row), text-only pills matching vn-btn instead of emoji icons. ===== */
@@ -224,7 +225,11 @@ function setVh100() { document.documentElement.style.setProperty('--vh100', wind
 setVh100();
 window.addEventListener('resize', setVh100);
 window.addEventListener('orientationchange', setVh100);
-if (window.visualViewport) window.visualViewport.addEventListener('resize', setVh100);
+// NOT window.visualViewport's 'resize' — iOS Safari's dynamic toolbar
+// (address bar) hides/shows in response to plain taps (e.g. tapping to
+// advance dialogue), firing visualViewport resize each time and making
+// --vh100 (and the frame's height with it) visibly jump up/down mid-tap.
+// window/orientationchange above already cover real layout changes.
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
@@ -324,18 +329,19 @@ const DECOY_ITEMS = {
   'bedroom-mantel-shelf': { itemId: 'paperclip', message: '[ 작은 클립을 발견했다 ]' },
 };
 
-// Hotspots whose handler can hand the player an item (the core-route
-// handlers below, since those aren't table-driven like DECOY_ITEMS and so
-// can't be introspected — kept in sync by hand). Used to narrow the DEV
-// sheet's SHOW HOTSPOTS overlay down to just the spots worth checking.
-const ITEM_HOTSPOT_IDS = new Set([
-  ...Object.keys(DECOY_ITEMS),
-  'kitchen-right-lower-drawer', // aa-batteries
-  'kitchen-fridge-gap', // jisu-phone (win condition)
-  'bathroom-behind-door', // metal-hanger
-  'exterior-center-shrubs', // garden-stake
-  'bedroom-bedside-table', // dead-flashlight
-  'bedroom-right-vent', // unknown-key
+// Hotspot ID -> itemId, for every hotspot whose handler can hand the player
+// an item. DECOY_ITEMS is table-driven so its mapping is read straight off
+// it; the core-route handlers below aren't, so those are kept in sync by
+// hand. Used to narrow the DEV sheet's SHOW HOTSPOTS overlay down to just
+// the spots worth checking, and to label each with the item it holds.
+const ITEM_HOTSPOT_ITEM_IDS = new Map([
+  ...Object.entries(DECOY_ITEMS).map(([id, d]) => [id, d.itemId]),
+  ['kitchen-right-lower-drawer', 'aa-batteries'],
+  ['kitchen-fridge-gap', 'jisu-phone'], // win condition
+  ['bathroom-behind-door', 'metal-hanger'],
+  ['exterior-center-shrubs', 'garden-stake'],
+  ['bedroom-bedside-table', 'dead-flashlight'],
+  ['bedroom-right-vent', 'unknown-key'],
 ]);
 
 // Flavor text for hotspots with no special gating logic — fixed, not random
@@ -883,9 +889,9 @@ function buildPhotoCanvas(url) {
 // before testing blind.
 let debugShowHotspots = false;
 function renderDebugHotspotOverlay() {
-  el.photoCanvas.querySelectorAll('.debug-hotspot-box').forEach(n => n.remove());
+  el.photoCanvas.querySelectorAll('.debug-hotspot-box, .debug-item-label').forEach(n => n.remove());
   if (!debugShowHotspots || currentMode !== 'photo') return;
-  Object.keys(currentHotspots).filter(id => ITEM_HOTSPOT_IDS.has(id)).forEach(id => {
+  Object.keys(currentHotspots).filter(id => ITEM_HOTSPOT_ITEM_IDS.has(id)).forEach(id => {
     const pts = currentHotspots[id].map(p => ({ x: p.x * CANVAS_W, y: p.y * CANVAS_H }));
     const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
     const x1 = Math.min(...xs), y1 = Math.min(...ys), x2 = Math.max(...xs), y2 = Math.max(...ys);
@@ -899,6 +905,18 @@ function renderDebugHotspotOverlay() {
     });
     box.textContent = id;
     el.photoCanvas.appendChild(box);
+
+    // Item name label, floated just outside the box's right edge (so it
+    // never covers the hotspot itself) — the dev-sheet debug overlay is the
+    // only place this ever renders, never seen during real play.
+    const itemDef = ITEM_DEFS[ITEM_HOTSPOT_ITEM_IDS.get(id)];
+    if (itemDef) {
+      const label = document.createElement('div');
+      label.className = 'debug-item-label';
+      Object.assign(label.style, { left: (x2 + 4) + 'px', top: y1 + 'px' });
+      label.textContent = `${itemDef.icon} ${itemDef.name}`;
+      el.photoCanvas.appendChild(label);
+    }
   });
 }
 
