@@ -495,26 +495,16 @@ const roomSearchAreas = [
 ];
 function roomSearchAreaSceneId(areaId) { return `${ROOM_SEARCH_MINIGAME_ID}-${areaId}`; }
 
-// Hotspot IDs already wired by hand to a core-route handler (or a core
-// item's hardcoded gating logic) in minigame-phone-search's HOTSPOT_HANDLERS/
-// ITEM_HOTSPOT_ITEM_IDS. /dev/upload's 아이템 tab reads this to keep a
-// dev from assigning a new custom item to a hotspot that's already spoken
-// for — that assignment would just silently never fire, since the core
-// handler always wins.
-const ROOM_SEARCH_RESERVED_HOTSPOT_IDS = [
-  'kitchen-right-lower-drawer', 'kitchen-fridge-gap',
-  'bathroom-behind-door',
-  'exterior-center-shrubs',
-  'bedroom-bedside-table', 'bedroom-right-vent',
-];
-
-// Core item -> the (reserved) hotspot its hand-written handler grants it
-// from, mirroring ITEM_HOTSPOT_ITEM_IDS's core entries in
-// minigame-phone-search/index.html. /dev/upload's 아이템 tab reads this to
-// show a core item's location read-only instead of hiding the row outright
-// — a dev can't reassign it (the handler is hardcoded), but seeing where it
-// already lives is still useful. working-flashlight/long-hook are recipe
-// outputs, not hotspot pickups, so they're absent here on purpose.
+// Core item -> the default hotspot its hand-written handler grants it from,
+// mirroring ITEM_HOTSPOT_ITEM_IDS's core entries in
+// minigame-phone-search/index.html. /dev/upload's 아이템 tab reads this as
+// the fallback when a dev hasn't repositioned the item, and both that page
+// and the minigame itself derive "which hotspots are currently a core
+// item's" from it (plus any saved override) instead of a separate static
+// list — a dev can drag a core item's location elsewhere and the handler
+// (and this reserved-ness) follows it there. working-flashlight/long-hook
+// are recipe outputs, not hotspot pickups, so they're absent here on
+// purpose and stay non-repositionable.
 const ROOM_SEARCH_CORE_ITEM_HOTSPOTS = {
   'aa-batteries': 'kitchen-right-lower-drawer',
   'jisu-phone': 'kitchen-fridge-gap',
@@ -523,6 +513,20 @@ const ROOM_SEARCH_CORE_ITEM_HOTSPOTS = {
   'dead-flashlight': 'bedroom-bedside-table',
   'unknown-key': 'bedroom-right-vent',
 };
+
+// Hotspot IDs with their own hand-written flavor logic but no item attached
+// (mirrors minigame-phone-search's own HOTSPOT_HANDLERS non-core entries).
+// /dev/upload's 아이템 tab excludes these from every item's location picker,
+// core or custom — pointing an item at one would silently replace that
+// logic instead of layering on top of it (e.g. moving an item onto
+// 'bathroom-right-door' would swallow the handler that opens the door
+// 'bathroom-behind-door' depends on).
+const ROOM_SEARCH_SPECIAL_HOTSPOT_IDS = [
+  'kitchen-pots',
+  'bathroom-mirror', 'bathroom-wall-switch', 'bathroom-right-door',
+  'exterior-extension-windows',
+  'bedroom-blind', 'bedroom-left-vent',
+];
 
 // Flat id/name/icon catalog of the room-search minigame's core (code-gated)
 // items — mirrors minigame-phone-search's own ITEM_DEFS (same reasoning as

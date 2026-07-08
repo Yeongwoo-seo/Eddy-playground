@@ -1468,11 +1468,14 @@ el.dropzone.addEventListener('drop', (e) => {
 /* ===== 아이템 tab — item catalog editor =====
    Catalog = this evidence collection's core (code-defined, id/name/icon only
    — see ROOM_SEARCH_CORE_ITEMS in dialogueData.js) items, plus any custom
-   items a dev has added here. Core items' name/hotspot aren't editable
-   (their gating logic is hand-written in the minigame file, not
-   data-driven), but their image can still be overridden. Custom items are
-   fully editable and can be assigned a hotspot to be found at, mirroring
-   what the old hardcoded DECOY_ITEMS table used to do. */
+   items a dev has added here. Core items' name isn't editable (their
+   gating logic is hand-written in the minigame file, not data-driven), but
+   their image can be overridden, and their hotspot (for the 6 that have one
+   — see ROOM_SEARCH_CORE_ITEM_HOTSPOTS) can be moved to another spot in the
+   same way a custom item's can; minigame-phone-search resolves the saved
+   override at load time and relocates that item's handler along with it.
+   Custom items are fully editable and can be assigned a hotspot to be found
+   at, mirroring what the old hardcoded DECOY_ITEMS table used to do. */
 let currentEvidenceItemId = null;
 let evidenceItemsCache = {};
 let evidenceRecipesCache = [];
@@ -1495,13 +1498,46 @@ function evidenceItemCatalog() {
   return core.map(it => Object.assign({ custom: false }, it)).concat(custom);
 }
 
+// A core item's saved hotspotId (if a dev has moved it) wins over its
+// code-defined default (ROOM_SEARCH_CORE_ITEM_HOTSPOTS) — see
+// minigame-phone-search's loadCustomItemsAndRecipes, which resolves the
+// same override to rebuild HOTSPOT_HANDLERS at runtime. Not every core item
+// has a slot at all (working-flashlight/long-hook are recipe outputs).
+function coreItemEffectiveHotspot(itemId) {
+  const saved = evidenceItemsCache[itemId];
+  if (saved && saved.hotspotId) return saved.hotspotId;
+  return ROOM_SEARCH_CORE_ITEM_HOTSPOTS[itemId] || null;
+}
+function isRepositionableCoreItem(itemId) {
+  return Object.prototype.hasOwnProperty.call(ROOM_SEARCH_CORE_ITEM_HOTSPOTS, itemId);
+}
+
 function itemsHotspotOwnerMap() {
   const map = {};
+  evidenceCoreCatalog().forEach(it => {
+    const hotspotId = coreItemEffectiveHotspot(it.id);
+    if (hotspotId) map[hotspotId] = it.id;
+  });
   Object.keys(evidenceItemsCache).forEach(id => {
     const hotspotId = evidenceItemsCache[id].hotspotId;
     if (hotspotId) map[hotspotId] = id;
   });
   return map;
+}
+
+// Hotspots currently occupied by a core item's hand-written handler — a
+// custom item (or a *different* core item) can't be pointed at one of
+// these, since HOTSPOT_HANDLERS always wins over a data-driven pickup in
+// onHotspotTap. Computed fresh each time (rather than a fixed list) so that
+// moving a core item away from its default frees the slot it vacated and
+// reserves the one it moved to.
+function reservedCoreHotspotIds() {
+  const ids = new Set();
+  evidenceCoreCatalog().forEach(it => {
+    const hotspotId = coreItemEffectiveHotspot(it.id);
+    if (hotspotId) ids.add(hotspotId);
+  });
+  return ids;
 }
 
 async function loadEvidenceData() {
@@ -1548,12 +1584,13 @@ async function openItemEditor(itemId) {
 
   // 씬(area) then 항목(hotspot within it) — two-step so the hotspot list
   // stays short instead of one flat dropdown of 50+ entries. A core item's
-  // location is fixed in code (ROOM_SEARCH_CORE_ITEM_HOTSPOTS, from
-  // dialogueData.js), so its row shows read-only instead of being hidden —
-  // seeing where it already lives is still useful even though it can't be
-  // reassigned from here.
-  const fixedHotspotId = isCore ? (ROOM_SEARCH_CORE_ITEM_HOTSPOTS[itemId] || null) : null;
-  pendingItemHotspotId = isCore ? fixedHotspotId : (saved.hotspotId || null);
+  // location defaults to ROOM_SEARCH_CORE_ITEM_HOTSPOTS (dialogueData.js)
+  // but can be moved from here — the saved override is picked up at runtime
+  // by minigame-phone-search to relocate its hand-written handler along with
+  // it. Recipe-output core items (working-flashlight/long-hook) have no
+  // hotspot at all and stay non-repositionable.
+  const coreHasSlot = isCore && isRepositionableCoreItem(itemId);
+  pendingItemHotspotId = isCore ? coreItemEffectiveHotspot(itemId) : (saved.hotspotId || null);
   const owningArea = pendingItemHotspotId
     ? roomSearchAreas.find(a => a.hotspots.some(h => h.id === pendingItemHotspotId))
     : null;
@@ -1561,15 +1598,16 @@ async function openItemEditor(itemId) {
   const showLocationRow = evidenceId() === ROOM_SEARCH_MINIGAME_ID;
   el.itemHotspotRow.classList.toggle('hidden', !showLocationRow);
   if (showLocationRow) {
+    const readOnly = isCore && !coreHasSlot;
     if (isCore) {
-      el.itemHotspotHint.textContent = fixedHotspotId
-        ? '핵심 진행 아이템은 발견 위치가 코드에 고정되어 있어요 (참고용, 수정 불가).'
+      el.itemHotspotHint.textContent = coreHasSlot
+        ? '핵심 진행 아이템의 발견 위치예요. 옮기면 게임 속 상호작용도 함께 이동해요.'
         : '조합법으로 만들어지는 아이템이라 발견 위치가 없어요.';
     } else {
       el.itemHotspotHint.textContent = '';
     }
-    renderItemAreaPicker(isCore);
-    renderItemHotspotPicker(isCore);
+    renderItemAreaPicker(readOnly);
+    renderItemHotspotPicker(readOnly);
   }
   el.itemDeleteBtn.classList.toggle('hidden', isCore);
 }
@@ -1592,28 +1630,31 @@ function renderItemAreaPicker(readOnly) {
   });
 }
 
-// 이미 다른 아이템(또는 core-route 핸들러)이 쓰고 있는 항목은 골라도 실제로는
-// 작동하지 않으므로 — reserved 핫스팟은 아예 목록에서 빼고, 다른 아이템이
-// 이미 차지한 핫스팟은 라벨에 표시만 해서 실수로 덮어쓰지 않게 한다. readOnly
-// (core item)일 땐 이미 고정된 핫스팟 하나만 비활성 상태로 보여준다.
+// 이미 다른 핵심 아이템의 핸들러가 차지했거나(reservedCoreHotspotIds) 아이템과
+// 무관한 전용 로직이 걸려 있는(ROOM_SEARCH_SPECIAL_HOTSPOT_IDS) 핫스팟은
+// 골라도 실제로는 작동하지 않으므로 (onHotspotTap에서 HOTSPOT_HANDLERS가
+// 항상 우선) 아예 목록에서 뺀다 — 단, 지금 편집 중인 아이템 자신이 차지한
+// 자리는 예외로 보여준다. 다른 커스텀 아이템이 이미 차지한 핫스팟은 라벨에
+// 표시만 해서 실수로 덮어쓰지 않게 한다. readOnly(발견 위치가 아예 없는
+// 조합 아이템)일 땐 아무 것도 고를 수 없다.
 function renderItemHotspotPicker(readOnly) {
   const area = roomSearchAreas.find(a => a.id === currentItemAreaId);
   el.itemHotspotFieldLabel.classList.toggle('hidden', !area);
   if (!area) { el.itemHotspotPickerPills.innerHTML = ''; return; }
-  const reserved = new Set(ROOM_SEARCH_RESERVED_HOTSPOT_IDS);
+  if (readOnly) { el.itemHotspotPickerPills.innerHTML = ''; return; }
+  const reserved = reservedCoreHotspotIds();
+  ROOM_SEARCH_SPECIAL_HOTSPOT_IDS.forEach(id => reserved.add(id));
   const owners = itemsHotspotOwnerMap();
-  const hotspots = readOnly ? area.hotspots.filter(h => h.id === pendingItemHotspotId) : area.hotspots.filter(h => !reserved.has(h.id));
+  const hotspots = area.hotspots.filter(h => h.id === pendingItemHotspotId || !reserved.has(h.id));
   el.itemHotspotPickerPills.innerHTML = hotspots.length
     ? hotspots.map(h => {
         const ownerId = owners[h.id];
-        const taken = !readOnly && ownerId && ownerId !== currentEvidenceItemId;
-        const label = h.label + (taken ? ` (사용 중: ${(evidenceItemsCache[ownerId] || {}).name || ownerId})` : '');
-        const active = readOnly || h.id === pendingItemHotspotId;
-        const disabledAttrs = readOnly ? ' disabled style="opacity:.55;cursor:default"' : '';
-        return `<button class="pill${active ? ' active' : ''}"${disabledAttrs} data-key="${h.id}">${escapeHtml(label)}</button>`;
+        const taken = ownerId && ownerId !== currentEvidenceItemId;
+        const label = h.label + (taken ? ` (사용 중: ${evidenceCatalogNameFor(ownerId)})` : '');
+        const active = h.id === pendingItemHotspotId;
+        return `<button class="pill${active ? ' active' : ''}" data-key="${h.id}">${escapeHtml(label)}</button>`;
       }).join('')
     : '<span class="empty-note">이 씬에는 지정 가능한 항목이 없습니다.</span>';
-  if (readOnly) return;
   el.itemHotspotPickerPills.querySelectorAll('.pill').forEach(btn => {
     btn.addEventListener('click', () => {
       pendingItemHotspotId = btn.dataset.key;
@@ -1670,12 +1711,13 @@ el.itemSaveBtn.addEventListener('click', async () => {
   if (!name) { DevDiag.show('아이템 이름을 입력하세요.'); return; }
   const icon = el.itemIconInput.value.trim() || '❔';
   const imageAssetId = (evidenceItemsCache[currentEvidenceItemId] || {}).imageAssetId || null;
-  // A core item's location is read-only (fixed by ROOM_SEARCH_CORE_ITEM_HOTSPOTS
-  // in code) — don't write pendingItemHotspotId for it, that'd just persist a
-  // redundant/misleading value that plays no actual role in-game.
+  // Recipe-output core items (working-flashlight/long-hook) have no hotspot
+  // at all — don't write pendingItemHotspotId for them, that'd just persist
+  // a redundant/misleading value that plays no actual role in-game. Every
+  // other item (core with a slot, or custom) can save its location.
   const catalogEntry = evidenceItemCatalog().find(it => it.id === currentEvidenceItemId);
   const isCore = !catalogEntry || !catalogEntry.custom;
-  const hotspotId = isCore ? null : pendingItemHotspotId;
+  const hotspotId = (isCore && !isRepositionableCoreItem(currentEvidenceItemId)) ? null : pendingItemHotspotId;
   const message = el.itemMessageInput.value.trim();
   try {
     const def = { name, icon, imageAssetId, hotspotId, message };
