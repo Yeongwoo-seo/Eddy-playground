@@ -21,8 +21,13 @@
   --mono:'IBM Plex Mono',ui-monospace,monospace;
   --sans:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
 }
-html,body{height:100%}
+html,body{height:100%;overscroll-behavior-y:contain}
 body{background:#050607;color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center;min-height:100dvh}
+
+/* ===== Pull-to-refresh — standalone PWA mode has no browser chrome to
+   pull down on, so this reimplements the gesture manually: drag down from
+   scrollY 0 past PTR_THRESHOLD, release, reload. ===== */
+.ptr-indicator{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:center;justify-content:center;height:52px;margin-top:-52px;font-family:var(--mono);font-size:11.5px;letter-spacing:.02em;color:var(--text-secondary);pointer-events:none;transition:margin-top .2s ease}
 .frame{width:100%;max-width:430px;min-height:100dvh;min-height:100vh;padding:calc(48px + env(safe-area-inset-top,0)) 20px calc(100px + env(safe-area-inset-bottom,0));display:flex;flex-direction:column}
 .tag{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px}
 .title{font-size:26px;font-weight:700;letter-spacing:-.2px;margin-bottom:10px}
@@ -55,6 +60,7 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 </style>
 </head>
 <body>
+<div class="ptr-indicator" id="ptrIndicator">↓ 당겨서 새로고침</div>
 <div class="frame" style="position:relative">
   <div class="corner-stack">
     <a class="plan-link" href="/dev/plan/">📋 개발계획</a>
@@ -101,6 +107,46 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
 }
+</script>
+<script>
+(function() {
+  const THRESHOLD = 70;
+  const MAX_PULL = 100;
+  const indicator = document.getElementById('ptrIndicator');
+  let startY = null, pulling = false, refreshing = false;
+
+  document.addEventListener('touchstart', (e) => {
+    if (refreshing || window.scrollY > 0) { startY = null; return; }
+    startY = e.touches[0].clientY;
+    pulling = true;
+  }, { passive: true });
+
+  document.addEventListener('touchmove', (e) => {
+    if (!pulling || startY === null || refreshing) return;
+    const dy = e.touches[0].clientY - startY;
+    if (dy <= 0 || window.scrollY > 0) { pulling = false; indicator.style.marginTop = '-52px'; return; }
+    e.preventDefault();
+    const dist = Math.min(dy * 0.5, MAX_PULL);
+    indicator.style.transition = 'none';
+    indicator.style.marginTop = (dist - 52) + 'px';
+    indicator.textContent = dist >= THRESHOLD ? '놓으면 새로고침' : '↓ 당겨서 새로고침';
+  }, { passive: false });
+
+  document.addEventListener('touchend', () => {
+    if (!pulling) return;
+    pulling = false;
+    const dist = parseFloat(indicator.style.marginTop || '-52') + 52;
+    indicator.style.transition = 'margin-top .2s ease';
+    if (dist >= THRESHOLD) {
+      refreshing = true;
+      indicator.textContent = '새로고침 중…';
+      indicator.style.marginTop = '0px';
+      setTimeout(() => location.reload(), 200);
+    } else {
+      indicator.style.marginTop = '-52px';
+    }
+  });
+})();
 </script>
 <script>
 // Shows which merge is actually live, since Vercel deploy lag has repeatedly
