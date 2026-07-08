@@ -22,9 +22,16 @@
   --sans:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
 }
 html,body{height:100%}
-body{background:#000;color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center}
+body{background:#000;color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center;align-items:center}
 
-.frame{position:relative;width:100%;max-width:430px;height:100dvh;height:100vh;height:var(--vh100, 100vh);overflow:hidden;background:var(--bg)}
+/* Height is capped at a real phone's portrait screen height (iPhone 15 Pro
+   Max logical px, matching the 430 max-width's ~19.5:9 ratio) instead of
+   always filling 100dvh/vh — on a desktop-height viewport the frame stops
+   growing past phone-screen size and just centers with letterboxing above/
+   below, rather than stretching the room photo/hotspots taller than any
+   real phone. Everything inside is already positioned relative to .frame,
+   so capping its height is enough; no JS changes needed. */
+.frame{position:relative;width:100%;max-width:430px;height:100dvh;height:100vh;height:var(--vh100, 100vh);max-height:932px;overflow:hidden;background:var(--bg)}
 
 /* ===== Top bar — floats over the full-bleed room view below, same
    pattern as minigame-eastwood's map ===== */
