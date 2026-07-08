@@ -308,10 +308,11 @@ function findRecipe(idA, idB) {
   );
 }
 // Hotspot ID -> itemId, for every hotspot whose handler can hand the player
-// an item. The core-route handlers below aren't table-driven, so this is
-// kept in sync by hand. Used to narrow the DEV sheet's SHOW HOTSPOTS overlay
-// down to just the spots worth checking, and to label each with the item it
-// holds.
+// an item. Seeded with each core item's code-defined default position;
+// loadCustomItemsAndRecipes moves an entry to a dev-chosen hotspot instead
+// if one was saved from /dev/upload. Used to narrow the DEV sheet's SHOW
+// HOTSPOTS overlay down to just the spots worth checking, and to label each
+// with the item it holds.
 const ITEM_HOTSPOT_ITEM_IDS = new Map([
   ['kitchen-right-lower-drawer', 'aa-batteries'],
   ['kitchen-fridge-gap', 'jisu-phone'], // win condition
@@ -643,13 +644,13 @@ function handleKitchenPots() {
     setMessage('냄비를 확인했다.\n핸드폰은 없다.');
   }
 }
-function handleKitchenFridgeGap() {
+function handleKitchenFridgeGap(hotspotId) {
   if (state.flags.phoneFound) { setMessage('더 이상 아무것도 없다.'); return; }
   if (!canRevealPhone()) {
-    setMessage(hasSearched('kitchen-fridge-gap')
+    setMessage(hasSearched(hotspotId)
       ? '여전히 좁은 틈이다.\n특별한 것은 보이지 않는다.'
       : '좁은 틈이다.\n특별한 것은 보이지 않는다.');
-    markSearched('kitchen-fridge-gap');
+    markSearched(hotspotId);
     return;
   }
   // Needs the flashlight to actually reveal the glow (phoneGlowSeen) before
@@ -673,10 +674,10 @@ function handleKitchenFridgeGap() {
   }
   if (state.selectedItemId === 'dead-flashlight') { setMessage('손전등이 켜지지 않는다.'); return; }
   if (!state.flags.phoneGlowSeen) {
-    setMessage(hasSearched('kitchen-fridge-gap')
+    setMessage(hasSearched(hotspotId)
       ? '여전히 안쪽이 어둡다.'
       : '안쪽 깊은 곳은 어두워서 잘 보이지 않는다.');
-    markSearched('kitchen-fridge-gap');
+    markSearched(hotspotId);
   } else {
     setMessage('반짝이는 화면 불빛이 보인다.\n손이 닿지 않는다.');
   }
@@ -709,10 +710,10 @@ function handleBathroomBehindDoor() {
 }
 
 // --- 외부 ---
-function handleExteriorCenterShrubs() {
+function handleExteriorCenterShrubs(hotspotId) {
   if (hasItem('garden-stake')) { setMessage('더 이상 걸리는 게 없다.'); return; }
-  if (!hasSearched('exterior-center-shrubs')) {
-    markSearched('exterior-center-shrubs');
+  if (!hasSearched(hotspotId)) {
+    markSearched(hotspotId);
     setMessage('수풀이 빽빽하다.');
     return;
   }
@@ -744,7 +745,7 @@ function handleLeftVent() {
   setMessage(hasSearched('bedroom-left-vent') ? '여전히 안쪽이 어둡다.' : '환기구다.\n안쪽은 잘 보이지 않는다.');
   markSearched('bedroom-left-vent');
 }
-function handleRightVent() {
+function handleRightVent(hotspotId) {
   if (state.flags.keyFound) { setMessage('환기구 안은 이미 비어 있다.'); return; }
   if (state.selectedItemId === 'long-hook') {
     if (state.flags.keyVisible) {
@@ -775,33 +776,49 @@ function handleRightVent() {
   }
   if (state.selectedItemId === 'dead-flashlight') { setMessage('손전등이 켜지지 않는다.'); return; }
   if (!state.flags.keyVisible) {
-    setMessage(hasSearched('bedroom-right-vent') ? '여전히 안쪽이 어둡다.' : '높고 어두워서 안쪽이 보이지 않는다.');
-    markSearched('bedroom-right-vent');
+    setMessage(hasSearched(hotspotId) ? '여전히 안쪽이 어둡다.' : '높고 어두워서 안쪽이 보이지 않는다.');
+    markSearched(hotspotId);
   } else {
     setMessage('반짝이는 게 보이는데 손이 닿지 않는다.');
   }
 }
 
+// Flavor hotspots with hand-written logic but no item attached to them —
+// these aren't in ROOM_SEARCH_CORE_ITEM_HOTSPOTS, so their key stays fixed
+// (nothing to reposition them by from /dev/upload).
 const HOTSPOT_HANDLERS = {
-  'kitchen-right-lower-drawer': handleKitchenBatteryDrawer,
   'kitchen-pots': handleKitchenPots,
-  'kitchen-fridge-gap': handleKitchenFridgeGap,
   'bathroom-mirror': handleBathroomMirror,
   'bathroom-wall-switch': handleBathroomWallSwitch,
   'bathroom-right-door': handleBathroomDoor,
-  'bathroom-behind-door': handleBathroomBehindDoor,
-  'exterior-center-shrubs': handleExteriorCenterShrubs,
   'exterior-extension-windows': handleExteriorExtensionWindows,
-  'bedroom-bedside-table': handleBedsideTable,
   'bedroom-blind': handleBlind,
   'bedroom-left-vent': handleLeftVent,
-  'bedroom-right-vent': handleRightVent,
 };
+
+// Core item -> the hand-written handler that grants it. Keyed by itemId
+// (not hotspotId) so it can follow the item when a dev repositions it from
+// /dev/upload's 아이템 tab — loadCustomItemsAndRecipes below wires each of
+// these into HOTSPOT_HANDLERS at whatever hotspot the item currently
+// resolves to (its saved override, or ROOM_SEARCH_CORE_ITEM_HOTSPOTS's
+// default).
+const CORE_ITEM_HANDLERS = {
+  'aa-batteries': handleKitchenBatteryDrawer,
+  'jisu-phone': handleKitchenFridgeGap,
+  'metal-hanger': handleBathroomBehindDoor,
+  'garden-stake': handleExteriorCenterShrubs,
+  'dead-flashlight': handleBedsideTable,
+  'unknown-key': handleRightVent,
+};
+Object.keys(CORE_ITEM_HANDLERS).forEach(itemId => {
+  const hotspotId = ROOM_SEARCH_CORE_ITEM_HOTSPOTS[itemId];
+  if (hotspotId) HOTSPOT_HANDLERS[hotspotId] = CORE_ITEM_HANDLERS[itemId];
+});
 
 function onHotspotTap(hotspotId) {
   if (dialogueActive || state.completed) return;
   const handler = HOTSPOT_HANDLERS[hotspotId];
-  if (handler) { handler(); return; }
+  if (handler) { handler(hotspotId); return; }
   // Dev-added simple pickups (see loadCustomItemsAndRecipes) — one-time,
   // no gating, same shape the old hardcoded DECOY_ITEMS table used to be.
   const customItemId = CUSTOM_PICKUP_MESSAGES.has(hotspotId) ? ITEM_HOTSPOT_ITEM_IDS.get(hotspotId) : null;
@@ -1370,12 +1387,37 @@ async function loadCustomItemsAndRecipes() {
     AssetDB.getItems(ROOM_SEARCH_MINIGAME_ID),
     AssetDB.getRecipes(ROOM_SEARCH_MINIGAME_ID),
   ]);
-  const reservedHotspotIds = new Set(ROOM_SEARCH_RESERVED_HOTSPOT_IDS);
+  // Move each core item's hand-written handler to wherever a dev has
+  // repositioned it from /dev/upload's 아이템 tab (falling back to its
+  // code-defined default) — must run before the reservedHotspotIds/custom-
+  // pickup pass below so that pass sees each core item's *current* spot,
+  // not its old one.
+  const specialHotspotIds = new Set(ROOM_SEARCH_SPECIAL_HOTSPOT_IDS);
+  const reservedHotspotIds = new Set();
+  Object.keys(CORE_ITEM_HANDLERS).forEach(itemId => {
+    const defaultHotspotId = ROOM_SEARCH_CORE_ITEM_HOTSPOTS[itemId];
+    let resolvedHotspotId = (customItems[itemId] || {}).hotspotId || defaultHotspotId;
+    // /dev/upload's picker already keeps a dev from choosing one of these,
+    // but fall back to the code default rather than silently swallowing a
+    // flavor hotspot's own hand-written logic if stale data somehow points
+    // here anyway.
+    if (specialHotspotIds.has(resolvedHotspotId)) resolvedHotspotId = defaultHotspotId;
+    if (defaultHotspotId && defaultHotspotId !== resolvedHotspotId) {
+      delete HOTSPOT_HANDLERS[defaultHotspotId];
+      ITEM_HOTSPOT_ITEM_IDS.delete(defaultHotspotId);
+    }
+    if (resolvedHotspotId) {
+      HOTSPOT_HANDLERS[resolvedHotspotId] = CORE_ITEM_HANDLERS[itemId];
+      ITEM_HOTSPOT_ITEM_IDS.set(resolvedHotspotId, itemId);
+      reservedHotspotIds.add(resolvedHotspotId);
+    }
+  });
   for (const [itemId, def] of Object.entries(customItems)) {
     const imageUrl = def.imageAssetId ? (await AssetDB.getAsset(def.imageAssetId) || {}).dataUrl : null;
     if (ITEM_DEFS[itemId]) {
-      // Core item — only its look is overridable from the dev tool; the
-      // gating logic that grants it stays hand-written below.
+      // Core item — only its look is overridable from the dev tool here;
+      // its location was already resolved above, and the gating logic that
+      // grants it stays hand-written.
       if (def.icon) ITEM_DEFS[itemId].icon = def.icon;
       if (imageUrl) ITEM_DEFS[itemId].imageUrl = imageUrl;
       continue;
