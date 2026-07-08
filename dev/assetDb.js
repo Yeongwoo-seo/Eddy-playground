@@ -254,7 +254,12 @@ const AssetDB = (() => {
     const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${roomHotspotsPath(sceneId)}?t=${Date.now()}`;
     const current = await readCurrentForWrite(roomHotspotsCache, sceneId, url, {});
     const map = Object.assign({}, current);
-    if (hotspot) map[hotspotId] = hotspot; else delete map[hotspotId];
+    // Delete-then-set (rather than a plain overwrite) so a re-saved hotspot's
+    // key moves to the end of insertion order — overlapping hotspots are hit-
+    // tested in reverse key order, so this keeps the most recently specified
+    // one on top even when it's just an edit of an existing hotspot.
+    delete map[hotspotId];
+    if (hotspot) map[hotspotId] = hotspot;
     const blob = new Blob([JSON.stringify(map)], { type: 'application/json' });
     const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${DEV_ASSETS_BUCKET}/${roomHotspotsPath(sceneId)}`, {
       method: 'POST',
