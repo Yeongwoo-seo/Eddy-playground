@@ -494,6 +494,22 @@ const ROOM_SEARCH_RESERVED_HOTSPOT_IDS = [
   'bedroom-bedside-table', 'bedroom-right-vent',
 ];
 
+// Core item -> the (reserved) hotspot its hand-written handler grants it
+// from, mirroring ITEM_HOTSPOT_ITEM_IDS's core entries in
+// minigame-phone-search/index.html. /dev/upload's 아이템 tab reads this to
+// show a core item's location read-only instead of hiding the row outright
+// — a dev can't reassign it (the handler is hardcoded), but seeing where it
+// already lives is still useful. working-flashlight/long-hook are recipe
+// outputs, not hotspot pickups, so they're absent here on purpose.
+const ROOM_SEARCH_CORE_ITEM_HOTSPOTS = {
+  'aa-batteries': 'kitchen-right-lower-drawer',
+  'jisu-phone': 'kitchen-fridge-gap',
+  'metal-hanger': 'bathroom-behind-door',
+  'garden-stake': 'exterior-center-shrubs',
+  'dead-flashlight': 'bedroom-bedside-table',
+  'unknown-key': 'bedroom-right-vent',
+};
+
 // Flat id/name/icon catalog of the room-search minigame's core (code-gated)
 // items — mirrors minigame-phone-search's own ITEM_DEFS (same reasoning as
 // caseFileData.js's inventoryItemDefs above it) so /dev/upload's 아이템 tab
