@@ -26,6 +26,16 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 
 .frame{position:relative;width:100%;max-width:430px;height:100dvh;height:100vh;height:var(--vh100, 100vh);overflow:hidden;background:#0a0d10;display:flex;flex-direction:column}
 
+/* ===== Optional Stardew-style dressing from /dev/minigame-fishing/'s 설정
+   screen (localStorage, not query string — see that page's comment). Both
+   sit below the game-stage/press-zone/topbar in DOM order so they never
+   intercept input. ===== */
+.bg-layer{position:absolute;inset:0;z-index:0;background-size:cover;background-position:center;display:none}
+.bg-layer.show{display:block}
+.bg-layer::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(5,7,10,.4) 0%,rgba(5,7,10,.6) 100%)}
+.character-sprite{position:absolute;left:14px;bottom:calc(64px + env(safe-area-inset-bottom,0));max-width:96px;max-height:150px;z-index:1;display:none;filter:drop-shadow(0 4px 10px rgba(0,0,0,.5))}
+.character-sprite.show{display:block}
+
 .topbar{position:absolute;top:0;left:0;right:0;z-index:6;padding:calc(14px + env(safe-area-inset-top,0)) 16px 14px;display:flex;justify-content:space-between;align-items:center;pointer-events:none}
 .topbar-right{display:flex;gap:8px;pointer-events:none}
 .vn-btn{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:#fff;background:rgba(8,10,12,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:9px 14px;cursor:pointer;text-decoration:none;display:inline-block;pointer-events:auto;border-width:1px}
@@ -68,6 +78,9 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 </head>
 <body>
 <div class="frame" id="frame">
+
+  <div class="bg-layer" id="bgLayer"></div>
+  <img class="character-sprite" id="characterSprite" alt="">
 
   <div class="topbar">
     <a class="vn-btn" href="/dev/">← DEV</a>
@@ -230,7 +243,17 @@ const state = {
   currentFish: generateFishProfile(),
 };
 
+/* ===== Background/character dressing chosen on the 설정 screen — see that
+   page's CUSTOMIZATION_KEY comment. Missing/unparsable data just leaves the
+   layers hidden, same as never having set them. ===== */
+const CUSTOMIZATION_KEY = 'mkFishingCustomization';
+let customization = {};
+try { customization = JSON.parse(localStorage.getItem(CUSTOMIZATION_KEY)) || {}; }
+catch (e) { customization = {}; }
+
 const el = {
+  bgLayer: document.getElementById('bgLayer'),
+  characterSprite: document.getElementById('characterSprite'),
   track: document.getElementById('track'),
   catchBar: document.getElementById('catchBar'),
   fish: document.getElementById('fish'),
@@ -530,6 +553,18 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
+function applyCustomization() {
+  if (customization.background) {
+    el.bgLayer.style.backgroundImage = `url("${customization.background}")`;
+    el.bgLayer.classList.add('show');
+  }
+  if (customization.character) {
+    el.characterSprite.src = customization.character;
+    el.characterSprite.classList.add('show');
+  }
+}
+
+applyCustomization();
 resetRound();
 requestAnimationFrame(frame);
 </script>
