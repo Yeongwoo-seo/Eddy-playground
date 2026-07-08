@@ -98,7 +98,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 
   <div class="topbar">
     <a class="vn-btn" href="/dev/">← DEV</a>
-    <a class="vn-btn" href="/dev/upload/?scene=week1-scene-001-2&kind=minigame">지도 업로드</a>
+    <a class="vn-btn" href="/dev/upload/?scene=week0-scene-001-2&kind=minigame">지도 업로드</a>
   </div>
 
   <div class="stamp" id="stamp"></div>
@@ -154,7 +154,7 @@ if ('serviceWorker' in navigator) {
    hotspots (배경 DB → 미니게임, /dev/upload). Players tap the map image
    itself — there is no schematic fallback map, so a background image and
    all 3 hotspots must be set via /dev/upload before this page works. ===== */
-const MINIGAME_ID = 'week1-scene-001-2-minigame';
+const MINIGAME_ID = 'week0-scene-001-2-minigame';
 const HOTSPOT_MIN_FR = 0.035; // floor on tap-target size so a careless hotspot still stays easy to hit
 
 // 3-stop sequence, in find-order. `key` is the display name shown in the
@@ -598,7 +598,7 @@ function startSuccessDialogue() {
 
 function fadeOutAndRedirect() {
   el.fadeOverlay.classList.add('show');
-  setTimeout(() => { location.href = '/dev/game/?scene=week1-scene-002-1'; }, 950);
+  setTimeout(() => { location.href = '/dev/game/?scene=week0-scene-002-1'; }, 950);
 }
 
 /* ===== Boot ===== */

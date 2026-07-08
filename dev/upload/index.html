@@ -386,9 +386,9 @@ const focusMinigame = (function () {
   if (!entry) return null;
   const sceneIds = minigameId === ROOM_SEARCH_MINIGAME_ID
     ? roomSearchAreas.map(a => roomSearchAreaSceneId(a.id))
-    : (function () { const owner = week1Scenes.find(s => s.minigameId === minigameId); return owner ? [owner.id] : []; })();
+    : (function () { const owner = week0Scenes.find(s => s.minigameId === minigameId); return owner ? [owner.id] : []; })();
   if (!sceneIds.length) return null;
-  currentWeekId = 'week1';
+  currentWeekId = 'week0';
   currentSceneId = sceneIds.includes(currentSceneId) ? currentSceneId : sceneIds[0];
   currentBgKind = 'minigame';
   // Evidence collections (not plain arcade minigames) get the 아이템/조합법

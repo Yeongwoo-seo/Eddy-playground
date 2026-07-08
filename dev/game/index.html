@@ -203,10 +203,10 @@ if ('serviceWorker' in navigator) {
 <script src="/dev/vnPlayer.js"></script>
 <script src="/dev/caseMenu.js"></script>
 <script>
-// /dev/week1 links here as /dev/game/?scene=<id> — fall back to the first
+// /dev/week0 links here as /dev/game/?scene=<id> — fall back to the first
 // scene so a bare /dev/game/ link still works.
 const requestedSceneId = new URLSearchParams(location.search).get('scene');
-const activeSceneData = week1Scenes.find(s => s.id === requestedSceneId) || week1Scenes[0];
+const activeSceneData = week0Scenes.find(s => s.id === requestedSceneId) || week0Scenes[0];
 const activeLines = activeSceneData.lines.map(l => ({ speaker: l.speaker, text: l.text, characterId: l.characterId, expression: l.expression, pauseBeforeMs: l.pauseBeforeMs }));
 
 const el = {
@@ -349,8 +349,8 @@ function playEndingSequence() {
 // A nextSceneId with no route here isn't built yet, so it just shows a
 // placeholder overlay instead of navigating to a dead page.
 const MINIGAME_ROUTES = {
-  'week1-scene-001-2-minigame': '/dev/minigame-eastwood/',
-  'week1-scene-002-2': '/dev/minigame-phone-search/',
+  'week0-scene-001-2-minigame': '/dev/minigame-eastwood/',
+  'week0-scene-002-2': '/dev/minigame-phone-search/',
 };
 
 function playMinigameTransition(nextSceneId) {
