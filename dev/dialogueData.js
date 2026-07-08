@@ -563,6 +563,16 @@ const minigames = [
     route: '/dev/minigame-eastwood/',
     setupUrl: '/dev/upload/?scene=week1-scene-001-2&kind=minigame&minigame=week1-scene-001-2-minigame',
   },
+  {
+    // Standalone arcade minigame, not tied to any VN scene — no background/
+    // hotspot editing needed, so setupUrl points straight at the game itself
+    // instead of a /dev/upload editor screen.
+    id: 'fishing-minigame',
+    name: '낚시하기',
+    location: '스타듀밸리 스타일 낚시',
+    route: '/dev/minigame-fishing/',
+    setupUrl: '/dev/minigame-fishing/',
+  },
 ];
 
 // Registry of standalone-testable 증거 수집 (evidence-collection) scenes —

@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>OPERATION MK · FISHING</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<meta name="theme-color" content="#080A0C">
+<link rel="manifest" href="/dev/manifest.json">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="OPERATION MK DEV">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+:root{
+  --bg:#080A0C;--surface-1:#101419;--surface-2:#171C22;
+  --text-primary:#EDF1F4;--text-secondary:#929BA5;--text-muted:#5F6872;
+  --cyan:#59B8C8;--amber:#D6A84B;--violet:#8B7BD8;--green:#4CC38A;--signal-red:#D94141;
+  --divider:rgba(255,255,255,0.08);
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sans:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
+}
+html,body{height:100%;overflow:hidden}
+body{background:#000;color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center}
+
+.frame{position:relative;width:100%;max-width:430px;height:100dvh;height:100vh;height:var(--vh100, 100vh);overflow:hidden;background:#0d1114;display:flex;flex-direction:column}
+
+/* ===== Top bar ===== */
+.topbar{position:absolute;top:0;left:0;right:0;z-index:6;padding:calc(14px + env(safe-area-inset-top,0)) 16px 14px;display:flex;justify-content:space-between;align-items:center}
+.back-btn{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:#fff;background:rgba(8,10,12,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:9px 14px;cursor:pointer;text-decoration:none;display:inline-block}
+.catch-counter{font-family:var(--mono);font-size:12px;color:#fff;background:rgba(8,10,12,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:9px 14px;display:flex;align-items:center;gap:6px}
+
+/* ===== Pond ===== */
+.pond{position:absolute;inset:0;overflow:hidden;background:
+  radial-gradient(circle at 30% 15%, rgba(255,220,150,.16) 0%, rgba(255,220,150,0) 38%),
+  linear-gradient(180deg,#1c3a4a 0%,#123042 30%,#0a2230 60%,#061620 100%);}
+.pond::before{content:'';position:absolute;inset:0;background-image:repeating-linear-gradient(0deg, rgba(255,255,255,.035) 0px, rgba(255,255,255,.035) 1px, transparent 1px, transparent 26px);animation:waterDrift 9s linear infinite;opacity:.6}
+@keyframes waterDrift{0%{transform:translateY(0)}100%{transform:translateY(26px)}}
+.shore{position:absolute;left:0;right:0;bottom:0;height:12%;background:linear-gradient(180deg,#3a5a3a 0%,#274327 60%,#1b2f1b 100%);border-top:3px solid #2f4d2f}
+
+.ripple{position:absolute;border-radius:50%;border:2px solid rgba(255,255,255,.5);pointer-events:none;transform:translate(-50%,-50%);opacity:.7;animation:rippleGrow 1.3s ease-out forwards}
+@keyframes rippleGrow{0%{width:6px;height:6px;opacity:.7}100%{width:120px;height:34px;opacity:0}}
+
+.bobber-wrap{position:absolute;z-index:3;transform:translate(-50%,-100%);transition:left .5s cubic-bezier(.2,.8,.2,1), top .5s cubic-bezier(.2,.8,.2,1)}
+.bobber-wrap.bob{animation:bobFloat 1.6s ease-in-out infinite}
+@keyframes bobFloat{0%,100%{transform:translate(-50%,-100%) translateY(0)}50%{transform:translate(-50%,-100%) translateY(-6px)}}
+.bobber-wrap.dip{animation:bobDip .3s ease-in forwards}
+@keyframes bobDip{0%{transform:translate(-50%,-100%) translateY(0)}100%{transform:translate(-50%,-100%) translateY(10px)}}
+.bobber{width:16px;height:20px;border-radius:50% 50% 45% 45%;background:linear-gradient(180deg,#e0453f 0%,#e0453f 48%,#fff 48%,#fff 100%);box-shadow:0 3px 8px rgba(0,0,0,.4);position:relative}
+.bite-mark{position:absolute;left:50%;top:-26px;transform:translateX(-50%) scale(.6);font-family:var(--mono);font-weight:700;font-size:20px;color:var(--amber);opacity:0;text-shadow:0 0 10px rgba(214,168,75,.8);pointer-events:none}
+.bite-mark.show{animation:biteMarkPop .55s ease-out infinite}
+@keyframes biteMarkPop{0%{opacity:0;transform:translateX(-50%) scale(.5) translateY(4px)}30%{opacity:1;transform:translateX(-50%) scale(1.1) translateY(-6px)}100%{opacity:0;transform:translateX(-50%) scale(1) translateY(-6px)}}
+
+.tap-hint{position:absolute;left:50%;bottom:calc(148px + env(safe-area-inset-bottom,0));transform:translateX(-50%);font-family:var(--mono);font-size:12px;color:var(--text-secondary);letter-spacing:.04em;z-index:4;opacity:0;transition:opacity .2s}
+.tap-hint.show{opacity:1}
+
+/* ===== Bottom action bar ===== */
+.action-bar{position:absolute;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0));z-index:5;display:flex;flex-direction:column;gap:12px}
+.cast-btn{width:100%;font-family:var(--sans);font-size:16px;font-weight:700;color:#04181d;background:linear-gradient(135deg,var(--cyan) 0%,#7fd4e0 100%);border:none;border-radius:16px;padding:16px;cursor:pointer;box-shadow:0 8px 20px rgba(89,184,200,.28);transition:transform .12s,opacity .12s}
+.cast-btn:active{transform:scale(.98);opacity:.9}
+.cast-btn:disabled{opacity:.4;box-shadow:none;pointer-events:none}
+.log-strip{display:flex;gap:6px;justify-content:center;min-height:28px}
+.log-item{width:28px;height:28px;border-radius:8px;background:var(--surface-1);border:1px solid var(--divider);display:flex;align-items:center;justify-content:center;font-size:15px;animation:logPop .3s ease-out}
+@keyframes logPop{0%{transform:scale(.4);opacity:0}100%{transform:scale(1);opacity:1}}
+
+/* ===== Reel layer (the catch minigame) ===== */
+.reel-layer{position:absolute;inset:0;z-index:8;display:none;align-items:center;justify-content:center;background:rgba(3,6,8,.55);backdrop-filter:blur(2px)}
+.reel-layer.show{display:flex}
+.reel-card{width:min(86%,340px);background:rgba(10,14,18,.92);border:1px solid rgba(255,255,255,.1);border-radius:22px;box-shadow:0 12px 36px rgba(0,0,0,.45);padding:20px 22px 22px;display:flex;flex-direction:column;align-items:center}
+.fish-label{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.fish-emoji{font-size:22px}
+.fish-name{font-size:15px;font-weight:700}
+.fish-rarity{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;padding:3px 8px;border-radius:20px;text-transform:uppercase}
+.reel-stage{display:flex;gap:12px;align-items:stretch}
+.fish-track{position:relative;width:74px;height:240px;background:linear-gradient(180deg,#173444 0%,#0a1d28 100%);border:1px solid rgba(255,255,255,.1);border-radius:14px;overflow:hidden;touch-action:none}
+.fish-icon{position:absolute;left:50%;transform:translateX(-50%);font-size:22px;transition:filter .15s;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5))}
+.catch-bar{position:absolute;left:3px;right:3px;border-radius:8px;background:linear-gradient(180deg,rgba(89,184,200,.5) 0%,rgba(89,184,200,.28) 100%);border:1.5px solid rgba(89,184,200,.85);box-shadow:0 0 12px rgba(89,184,200,.35)}
+.progress-track{width:14px;border-radius:8px;background:var(--surface-2);border:1px solid var(--divider);overflow:hidden;display:flex;align-items:flex-end}
+.progress-fill{width:100%;background:linear-gradient(180deg,var(--green) 0%,#2f9c6c 100%);border-radius:8px 8px 0 0;transition:background .2s}
+.reel-hint{font-family:var(--mono);font-size:11.5px;color:var(--text-muted);margin-top:14px;text-align:center;line-height:1.5}
+
+/* ===== Result layer ===== */
+.result-layer{position:absolute;inset:0;z-index:9;display:none;align-items:center;justify-content:center;background:rgba(3,6,8,.65);backdrop-filter:blur(3px)}
+.result-layer.show{display:flex}
+.result-card{width:min(84%,320px);background:rgba(10,14,18,.94);border:1px solid rgba(255,255,255,.1);border-radius:22px;box-shadow:0 12px 36px rgba(0,0,0,.5);padding:30px 24px 24px;text-align:center}
+.result-icon{font-size:52px;margin-bottom:14px}
+.result-title{font-size:19px;font-weight:700;margin-bottom:6px}
+.result-desc{font-size:13.5px;color:var(--text-secondary);line-height:1.6;margin-bottom:22px;white-space:pre-wrap}
+.result-btn{width:100%;font-family:var(--sans);font-size:15px;font-weight:700;color:#fff;background:var(--surface-2);border:1px solid var(--divider);border-radius:14px;padding:14px;cursor:pointer;transition:transform .12s}
+.result-btn:active{transform:scale(.98)}
+</style>
+</head>
+<body>
+<div class="frame" id="frame">
+  <div class="pond" id="pond">
+    <div class="shore"></div>
+    <div class="tap-hint" id="tapHint">지금 탭해서 낚아채세요!</div>
+    <div class="bobber-wrap" id="bobberWrap" style="display:none">
+      <div class="bite-mark" id="biteMark">!</div>
+      <div class="bobber"></div>
+    </div>
+  </div>
+
+  <div class="topbar">
+    <a class="back-btn" href="/dev/minigames/">← 미니게임</a>
+    <div class="catch-counter"><span>🐟</span><span id="catchCount">0</span></div>
+  </div>
+
+  <div class="action-bar" id="actionBar">
+    <div class="log-strip" id="logStrip"></div>
+    <button class="cast-btn" id="castBtn">낚싯대 던지기</button>
+  </div>
+
+  <div class="reel-layer" id="reelLayer">
+    <div class="reel-card">
+      <div class="fish-label">
+        <span class="fish-emoji" id="fishEmoji"></span>
+        <span class="fish-name" id="fishName"></span>
+        <span class="fish-rarity" id="fishRarity"></span>
+      </div>
+      <div class="reel-stage">
+        <div class="fish-track" id="fishTrack">
+          <div class="catch-bar" id="catchBar"></div>
+          <div class="fish-icon" id="fishIcon"></div>
+        </div>
+        <div class="progress-track"><div class="progress-fill" id="progressFill" style="height:35%"></div></div>
+      </div>
+      <div class="reel-hint">누르고 있으면 낚싯대가 올라가요<br>물고기를 초록 구간 안에 맞춰서 게이지를 채우세요</div>
+    </div>
+  </div>
+
+  <div class="result-layer" id="resultLayer">
+    <div class="result-card">
+      <div class="result-icon" id="resultIcon"></div>
+      <div class="result-title" id="resultTitle"></div>
+      <div class="result-desc" id="resultDesc"></div>
+      <button class="result-btn" id="resultBtn">다시 낚시하기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function setVh100() { document.documentElement.style.setProperty('--vh100', window.innerHeight + 'px'); }
+setVh100();
+window.addEventListener('resize', setVh100);
+window.addEventListener('orientationchange', setVh100);
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
+}
+</script>
+<script>
+/* ===== Stardew Valley-style fishing minigame =====
+   Standalone arcade minigame, not wired into the OPERATION MK VN flow — no
+   scene/character/asset coupling, just cast -> hook -> reel -> catch. */
+
+const FISH = [
+  { key: 'anchovy', name: '멸치', emoji: '🐟', rarity: 'common', weight: 40,
+    barFrac: 0.40, fishSpeed: 95, jitter: 26, retargetMin: 900, retargetMax: 1500,
+    fillRate: 62, drainRate: 28, biteWindow: 1000, score: 10 },
+  { key: 'mackerel', name: '고등어', emoji: '🐠', rarity: 'common', weight: 30,
+    barFrac: 0.33, fishSpeed: 125, jitter: 34, retargetMin: 700, retargetMax: 1150,
+    fillRate: 55, drainRate: 33, biteWindow: 900, score: 16 },
+  { key: 'pufferfish', name: '복어', emoji: '🐡', rarity: 'uncommon', weight: 16,
+    barFrac: 0.27, fishSpeed: 155, jitter: 42, retargetMin: 550, retargetMax: 950,
+    fillRate: 49, drainRate: 39, biteWindow: 780, score: 28 },
+  { key: 'octopus', name: '문어', emoji: '🐙', rarity: 'rare', weight: 9,
+    barFrac: 0.21, fishSpeed: 190, jitter: 55, retargetMin: 420, retargetMax: 760,
+    fillRate: 44, drainRate: 46, biteWindow: 650, score: 48 },
+  { key: 'goldencarp', name: '황금잉어', emoji: '🐠', rarity: 'legendary', weight: 3,
+    barFrac: 0.16, fishSpeed: 235, jitter: 68, retargetMin: 300, retargetMax: 600,
+    fillRate: 39, drainRate: 52, biteWindow: 520, score: 100 },
+];
+const RARITY_STYLE = {
+  common: { color: '#59B8C8', label: '일반' },
+  uncommon: { color: '#4CC38A', label: '희귀' },
+  rare: { color: '#8B7BD8', label: '레어' },
+  legendary: { color: '#D6A84B', label: '전설' },
+};
+
+function pickFish() {
+  const total = FISH.reduce((s, f) => s + f.weight, 0);
+  let r = Math.random() * total;
+  for (const f of FISH) { if (r < f.weight) return f; r -= f.weight; }
+  return FISH[0];
+}
+function rand(min, max) { return min + Math.random() * (max - min); }
+function clamp(v, lo, hi) { return Math.min(Math.max(v, lo), hi); }
+
+const el = {
+  pond: document.getElementById('pond'),
+  bobberWrap: document.getElementById('bobberWrap'),
+  biteMark: document.getElementById('biteMark'),
+  tapHint: document.getElementById('tapHint'),
+  castBtn: document.getElementById('castBtn'),
+  catchCount: document.getElementById('catchCount'),
+  logStrip: document.getElementById('logStrip'),
+  reelLayer: document.getElementById('reelLayer'),
+  fishEmoji: document.getElementById('fishEmoji'),
+  fishName: document.getElementById('fishName'),
+  fishRarity: document.getElementById('fishRarity'),
+  fishTrack: document.getElementById('fishTrack'),
+  fishIcon: document.getElementById('fishIcon'),
+  catchBar: document.getElementById('catchBar'),
+  progressFill: document.getElementById('progressFill'),
+  resultLayer: document.getElementById('resultLayer'),
+  resultIcon: document.getElementById('resultIcon'),
+  resultTitle: document.getElementById('resultTitle'),
+  resultDesc: document.getElementById('resultDesc'),
+  resultBtn: document.getElementById('resultBtn'),
+};
+
+let phase = 'idle'; // idle -> casting -> waiting -> biting -> reeling -> result
+let catchTotal = 0;
+let biteTimer = null, biteWindowTimer = null;
+let currentFish = null;
+
+function spawnRipple(x, y) {
+  const r = document.createElement('div');
+  r.className = 'ripple';
+  r.style.left = x + 'px';
+  r.style.top = y + 'px';
+  el.pond.appendChild(r);
+  setTimeout(() => r.remove(), 1350);
+}
+
+/* ===== Cast -> wait -> bite ===== */
+function startCast() {
+  if (phase !== 'idle') return;
+  phase = 'casting';
+  el.castBtn.disabled = true;
+  el.castBtn.textContent = '던지는 중...';
+
+  const rect = el.pond.getBoundingClientRect();
+  const x = rand(rect.width * 0.28, rect.width * 0.72);
+  const y = rand(rect.height * 0.32, rect.height * 0.58);
+  el.bobberWrap.classList.remove('bob', 'dip');
+  el.biteMark.classList.remove('show');
+  // Start near the rod (bottom-center) with no transition, then let the CSS
+  // left/top transition animate the "cast" flight out to the landing spot.
+  el.bobberWrap.style.transition = 'none';
+  el.bobberWrap.style.left = (rect.width / 2) + 'px';
+  el.bobberWrap.style.top = (rect.height * 0.94) + 'px';
+  el.bobberWrap.style.display = 'block';
+  void el.bobberWrap.offsetWidth; // force reflow so the position above applies before re-enabling the transition
+  el.bobberWrap.style.transition = '';
+  el.bobberWrap.style.left = x + 'px';
+  el.bobberWrap.style.top = y + 'px';
+
+  setTimeout(() => {
+    spawnRipple(x, y);
+    startWaiting(x, y);
+  }, 520);
+}
+
+function startWaiting(x, y) {
+  phase = 'waiting';
+  el.castBtn.textContent = '입질 기다리는 중...';
+  el.bobberWrap.classList.add('bob');
+  const delay = rand(1500, 3600);
+  biteTimer = setTimeout(() => startBite(x, y), delay);
+}
+
+function startBite(x, y) {
+  phase = 'biting';
+  currentFish = pickFish();
+  el.bobberWrap.classList.remove('bob');
+  el.bobberWrap.classList.add('dip');
+  el.biteMark.classList.add('show');
+  el.tapHint.classList.add('show');
+  spawnRipple(x, y);
+
+  biteWindowTimer = setTimeout(() => missBite(), currentFish.biteWindow);
+}
+
+function missBite() {
+  if (phase !== 'biting') return;
+  phase = 'idle';
+  cleanupBobber();
+  el.castBtn.textContent = '놓쳤다! 다시 던지기';
+  el.castBtn.disabled = false;
+}
+
+function cleanupBobber() {
+  el.bobberWrap.style.display = 'none';
+  el.bobberWrap.classList.remove('bob', 'dip');
+  el.biteMark.classList.remove('show');
+  el.tapHint.classList.remove('show');
+}
+
+el.pond.addEventListener('pointerdown', (e) => {
+  if (phase !== 'biting') return;
+  e.preventDefault();
+  clearTimeout(biteWindowTimer);
+  cleanupBobber();
+  startReeling();
+});
+
+el.castBtn.addEventListener('click', () => {
+  el.castBtn.textContent = '낚싯대 던지기';
+  startCast();
+});
+
+/* ===== Reeling minigame ===== */
+let reelRAF = null;
+let trackH = 0, barH = 0;
+let catchY = 0, catchVel = 0;
+let fishY = 0, fishTargetY = 0, fishVel = 0;
+let nextRetargetAt = 0;
+let progress = 35;
+let holding = false;
+let lastT = 0;
+
+const PULL_ACCEL = 780;   // px/s^2 while holding
+const GRAVITY = 480;      // px/s^2 always
+const MAX_VEL = 420;      // px/s
+
+function startReeling() {
+  phase = 'reeling';
+  el.castBtn.disabled = true;
+
+  const style = RARITY_STYLE[currentFish.rarity];
+  el.fishEmoji.textContent = currentFish.emoji;
+  el.fishName.textContent = currentFish.name;
+  el.fishRarity.textContent = style.label;
+  el.fishRarity.style.color = style.color;
+  el.fishRarity.style.background = 'rgba(255,255,255,.08)';
+  el.fishRarity.style.border = `1px solid ${style.color}`;
+  el.catchBar.style.background = `linear-gradient(180deg, ${style.color}88 0%, ${style.color}44 100%)`;
+  el.catchBar.style.borderColor = style.color;
+  el.catchBar.style.boxShadow = `0 0 12px ${style.color}55`;
+
+  el.reelLayer.classList.add('show');
+
+  const trackRect = el.fishTrack.getBoundingClientRect();
+  trackH = trackRect.height;
+  barH = trackH * currentFish.barFrac;
+  el.catchBar.style.height = barH + 'px';
+
+  catchY = trackH - barH;
+  catchVel = 0;
+  fishY = trackH * 0.3;
+  fishTargetY = trackH * 0.5;
+  fishVel = 0;
+  nextRetargetAt = 0;
+  progress = 35;
+  holding = false;
+  updateReelVisuals();
+
+  lastT = performance.now();
+  reelRAF = requestAnimationFrame(reelLoop);
+}
+
+function pickNewFishTarget() {
+  const iconH = 26;
+  fishTargetY = rand(0, Math.max(0, trackH - iconH));
+}
+
+function reelLoop(now) {
+  const dt = Math.min((now - lastT) / 1000, 0.05);
+  lastT = now;
+
+  // Catch bar physics
+  const accel = holding ? -PULL_ACCEL : GRAVITY;
+  catchVel = clamp(catchVel + accel * dt, -MAX_VEL, MAX_VEL);
+  catchY = clamp(catchY + catchVel * dt, 0, trackH - barH);
+  if (catchY === 0 || catchY === trackH - barH) catchVel = 0;
+
+  // Fish erratic movement — retarget periodically, chase with jitter
+  if (now >= nextRetargetAt) {
+    pickNewFishTarget();
+    nextRetargetAt = now + rand(currentFish.retargetMin, currentFish.retargetMax);
+  }
+  const diff = fishTargetY - fishY;
+  fishVel += Math.sign(diff) * currentFish.fishSpeed * dt * 3;
+  fishVel += rand(-currentFish.jitter, currentFish.jitter) * dt * 6;
+  fishVel = clamp(fishVel, -currentFish.fishSpeed, currentFish.fishSpeed);
+  fishY = clamp(fishY + fishVel * dt, 0, Math.max(0, trackH - 26));
+
+  // Progress
+  const fishCenter = fishY + 13;
+  const overlap = fishCenter >= catchY && fishCenter <= catchY + barH;
+  progress = clamp(progress + (overlap ? currentFish.fillRate : -currentFish.drainRate) * dt, 0, 100);
+
+  updateReelVisuals();
+
+  if (progress >= 100) { endReeling(true); return; }
+  if (progress <= 0) { endReeling(false); return; }
+  reelRAF = requestAnimationFrame(reelLoop);
+}
+
+function updateReelVisuals() {
+  el.catchBar.style.top = catchY + 'px';
+  el.fishIcon.style.top = fishY + 'px';
+  el.progressFill.style.height = progress + '%';
+}
+
+function reelHold(state) {
+  if (phase !== 'reeling') return;
+  holding = state;
+}
+el.fishTrack.addEventListener('pointerdown', (e) => { e.preventDefault(); reelHold(true); });
+window.addEventListener('pointerup', () => reelHold(false));
+window.addEventListener('pointercancel', () => reelHold(false));
+el.fishTrack.addEventListener('contextmenu', (e) => e.preventDefault());
+
+function endReeling(caught) {
+  cancelAnimationFrame(reelRAF);
+  el.reelLayer.classList.remove('show');
+  phase = 'result';
+  showResult(caught);
+}
+
+/* ===== Result ===== */
+function showResult(caught) {
+  if (caught) {
+    catchTotal++;
+    el.catchCount.textContent = catchTotal;
+    addLogEntry(currentFish.emoji);
+    const style = RARITY_STYLE[currentFish.rarity];
+    el.resultIcon.textContent = currentFish.emoji;
+    el.resultTitle.textContent = `${currentFish.name}을(를) 잡았다!`;
+    el.resultDesc.textContent = `${style.label} 등급 · +${currentFish.score}점`;
+  } else {
+    el.resultIcon.textContent = '💦';
+    el.resultTitle.textContent = '놓쳤다...';
+    el.resultDesc.textContent = `${currentFish.name}이(가) 도망갔어요.\n다시 도전해보세요!`;
+  }
+  el.resultLayer.classList.add('show');
+}
+
+function addLogEntry(emoji) {
+  const item = document.createElement('div');
+  item.className = 'log-item';
+  item.textContent = emoji;
+  el.logStrip.appendChild(item);
+  while (el.logStrip.children.length > 8) el.logStrip.removeChild(el.logStrip.firstChild);
+}
+
+el.resultBtn.addEventListener('click', () => {
+  el.resultLayer.classList.remove('show');
+  phase = 'idle';
+  currentFish = null;
+  el.castBtn.disabled = false;
+  el.castBtn.textContent = '낚싯대 던지기';
+});
+</script>
+</body>
+</html>
