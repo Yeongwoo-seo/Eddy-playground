@@ -734,15 +734,17 @@ const resumeLineIndex = (() => {
   return Number.isInteger(n) && n >= 0 ? n : null;
 })();
 
-// Per-line text tweaks made from /dev/upload's 대사 tab (typos, voice
-// passes) — stored separately from dialogueData.js's static script, so
-// merge them into activeLines here before anything reads .text. Best-effort:
-// falls back to the static script untouched if the override fetch fails.
+// Per-line tweaks made from /dev/upload's 대사 tab (wording, speaker,
+// expression) — stored separately from dialogueData.js's static script, so
+// merge them into activeLines here before anything reads .text/.speaker/
+// .characterId/.expression. Best-effort: falls back to the static script
+// untouched if the override fetch fails.
 async function applyDialogueOverrides() {
   try {
     const overrides = await AssetDB.getDialogueOverrides(activeSceneData.id);
     activeSceneData.lines.forEach((l, i) => {
-      if (overrides[l.id]) activeLines[i].text = overrides[l.id];
+      const o = overrides[l.id];
+      if (o) Object.assign(activeLines[i], o);
     });
   } catch (e) { /* keep the static script as-is */ }
 }
