@@ -348,6 +348,20 @@ const DECOY_ITEMS = {
   'bedroom-mantel-shelf': { itemId: 'paperclip', message: '[ 작은 클립을 발견했다 ]' },
 };
 
+// Hotspots whose handler can hand the player an item (the core-route
+// handlers below, since those aren't table-driven like DECOY_ITEMS and so
+// can't be introspected — kept in sync by hand). Used to narrow the DEV
+// sheet's SHOW HOTSPOTS overlay down to just the spots worth checking.
+const ITEM_HOTSPOT_IDS = new Set([
+  ...Object.keys(DECOY_ITEMS),
+  'kitchen-right-lower-drawer', // aa-batteries
+  'kitchen-fridge-gap', // jisu-phone (win condition)
+  'bathroom-behind-door', // metal-hanger
+  'exterior-center-shrubs', // garden-stake
+  'bedroom-bedside-table', // dead-flashlight
+  'bedroom-right-vent', // unknown-key
+]);
+
 // Flavor text for hotspots with no special gating logic — fixed, not random
 // (brief explicitly forbids randomized key/phone placement; keeping every
 // result deterministic is simplest and consistent).
@@ -891,14 +905,16 @@ function buildPhotoCanvas(url) {
   el.photoCanvas.appendChild(img);
 }
 
-// Dev-only overlay (DEV sheet's SHOW HOTSPOTS toggle) — draws every marked
-// hotspot's rectangle + id directly on the photo, so a dev can confirm
-// /dev/upload's 4-corner-tap placements line up before testing blind.
+// Dev-only overlay (DEV sheet's SHOW HOTSPOTS toggle) — draws just the
+// item-bearing hotspots' rectangle + id directly on the photo (not every
+// marked hotspot — pure-flavor spots with no item add noise when a dev is
+// hunting for where an item actually is), so placements can be confirmed
+// before testing blind.
 let debugShowHotspots = false;
 function renderDebugHotspotOverlay() {
   el.photoCanvas.querySelectorAll('.debug-hotspot-box').forEach(n => n.remove());
   if (!debugShowHotspots || currentMode !== 'photo') return;
-  Object.keys(currentHotspots).forEach(id => {
+  Object.keys(currentHotspots).filter(id => ITEM_HOTSPOT_IDS.has(id)).forEach(id => {
     const pts = currentHotspots[id].map(p => ({ x: p.x * CANVAS_W, y: p.y * CANVAS_H }));
     const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
     const x1 = Math.min(...xs), y1 = Math.min(...ys), x2 = Math.max(...xs), y2 = Math.max(...ys);
