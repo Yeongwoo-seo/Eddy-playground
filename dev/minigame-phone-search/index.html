@@ -926,10 +926,9 @@ function buildPhotoCanvas(url) {
 // Overlay (still toggleable via the DEV sheet's SHOW/HIDE HOTSPOTS button)
 // — draws just the item-bearing hotspots' rectangle + id + item label
 // directly on the photo (not every marked hotspot — pure-flavor spots with
-// no item add noise). Defaults to ON while the game is still in testing —
-// TODO: flip back to false once testing wraps, so real players don't see
-// where items are.
-let debugShowHotspots = true;
+// no item add noise). Off by default so real players don't see where items
+// are; devs flip it on via the SHOW HOTSPOTS button when they need it.
+let debugShowHotspots = false;
 function renderDebugHotspotOverlay() {
   el.photoCanvas.querySelectorAll('.debug-hotspot-box, .debug-item-label').forEach(n => n.remove());
   if (!debugShowHotspots || currentMode !== 'photo') return;
