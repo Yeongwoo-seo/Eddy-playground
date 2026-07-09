@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>전체 대사 · OPERATION MK DEV</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<meta name="theme-color" content="#080A0C">
+<link rel="manifest" href="/dev/manifest.json">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#080A0C;--surface-1:#101419;--surface-2:#171C22;
+  --text-primary:#EDF1F4;--text-secondary:#929BA5;--text-muted:#5F6872;
+  --cyan:#59B8C8;--amber:#D6A84B;--divider:rgba(255,255,255,0.08);
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sans:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
+}
+html,body{height:100%}
+body{background:#050607;color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center;min-height:100dvh}
+.frame{width:100%;max-width:430px;min-height:100dvh;min-height:100vh;padding:calc(20px + env(safe-area-inset-top,0)) 20px calc(40px + env(safe-area-inset-bottom,0));display:flex;flex-direction:column}
+.topbar{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.back-btn{width:36px;height:36px;border-radius:50%;background:var(--surface-1);border:1px solid var(--divider);color:var(--text-primary);display:flex;align-items:center;justify-content:center;text-decoration:none;flex-shrink:0}
+.page-title{font-size:19px;font-weight:700;flex:1;min-width:0}
+.week-select{font-family:var(--mono);font-size:11.5px;background:var(--surface-1);color:var(--text-primary);border:1px solid var(--divider);border-radius:10px;padding:8px 10px;flex-shrink:0}
+.sub{font-size:13px;color:var(--text-secondary);margin:10px 0 16px;line-height:1.6}
+
+/* Quick jump strip — one pill per scene in this week, so a long script is
+   still "referenced from here" without endless scrolling. */
+.jump-nav{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:20px;-webkit-overflow-scrolling:touch}
+.jump-nav::-webkit-scrollbar{display:none}
+.jump-pill{flex-shrink:0;font-family:var(--mono);font-size:11px;padding:7px 12px;border-radius:14px;background:var(--surface-1);border:1px solid var(--divider);color:var(--text-secondary);text-decoration:none;white-space:nowrap}
+.jump-pill:active{background:var(--surface-2)}
+
+.scene-section{margin-bottom:26px;scroll-margin-top:14px}
+.scene-section-head{margin-bottom:10px}
+.scene-section-title{font-size:15.5px;font-weight:700}
+.scene-section-meta{font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-top:2px}
+
+/* ===== Bulk dialogue editor — same look/classes as /dev/upload's 대사 탭
+   (see dialoguePanel.js's mountBulkDialogueEditor), one instance per scene
+   section here instead of one for a single picked scene. ===== */
+.dialogue-bulk-input{width:100%;background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:14px 16px;color:var(--text-primary);font-size:13.5px;line-height:1.7;font-family:var(--mono);resize:vertical;min-height:200px}
+.dialogue-bulk-input:focus{outline:none;border-color:rgba(89,184,200,.4)}
+.hotspot-actions{display:flex;gap:8px;margin-top:12px}
+.hotspot-actions button{flex:1;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--mono);letter-spacing:.04em;border:none}
+.hotspot-actions button:disabled{opacity:.4;cursor:default}
+.hotspot-secondary-btn{background:var(--surface-2);color:var(--text-secondary);border:1px solid var(--divider)}
+.crop-save-btn{background:var(--cyan);color:#06181c}
+.hint{font-size:11px;color:var(--text-muted);margin:10px 0 0;line-height:1.6}
+.empty-note{font-size:13px;color:var(--text-muted);padding:14px 0}
+</style>
+</head>
+<body>
+<div class="frame">
+  <div class="topbar">
+    <a class="back-btn" id="backBtn" href="/dev/">←</a>
+    <div class="page-title" id="pageTitle">전체 대사</div>
+    <select class="week-select" id="weekSelect"></select>
+  </div>
+  <div class="sub">이 주차의 모든 씬 대사를 한 화면에서 보고 고칠 수 있습니다. 씬마다 한 줄당 <b>[화자] (감정)</b> 헤더 + 대사 텍스트, 줄 사이는 <b>---</b>로 구분합니다. 저장하면 실제 플레이(/dev/game)에도 그대로 반영됩니다.</div>
+  <div class="jump-nav" id="jumpNav"></div>
+  <div id="scriptList"></div>
+</div>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
+}
+</script>
+<script src="/dev/assetDb.js"></script>
+<script src="/dev/dialogueData.js"></script>
+<script src="/dev/dialoguePanel.js"></script>
+<script>
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+const params = new URLSearchParams(location.search);
+const requestedWeekId = params.get('week');
+const weekId = weeks.some(w => w.id === requestedWeekId) ? requestedWeekId : weeks[0].id;
+const week = weeks.find(w => w.id === weekId);
+
+document.getElementById('backBtn').href = `/dev/${weekId}/`;
+document.getElementById('pageTitle').textContent = `${week.label} · 전체 대사`;
+
+const weekSelect = document.getElementById('weekSelect');
+weekSelect.innerHTML = weeks.map(w => `<option value="${w.id}"${w.id === weekId ? ' selected' : ''}>${escapeHtml(w.label)}</option>`).join('');
+weekSelect.addEventListener('change', () => {
+  location.href = `/dev/script/?week=${encodeURIComponent(weekSelect.value)}`;
+});
+
+// week0's `weeks[0].scenes` also carries /dev/upload's room-search
+// pseudo-scenes (no `.lines`) — filtering them out here leaves exactly the
+// same real scenes /dev/week0 itself lists.
+const scenesWithLines = week.scenes.filter(s => s.lines && s.lines.length);
+
+const jumpNav = document.getElementById('jumpNav');
+jumpNav.innerHTML = scenesWithLines.map(s => `<a class="jump-pill" href="#scene-${escapeHtml(s.id)}">${escapeHtml(s.name)}</a>`).join('');
+
+const listEl = document.getElementById('scriptList');
+if (!scenesWithLines.length) {
+  listEl.innerHTML = '<div class="empty-note">이 주차에는 대사가 있는 씬이 없습니다.</div>';
+} else {
+  listEl.innerHTML = scenesWithLines.map(s => `
+    <div class="scene-section" id="scene-${escapeHtml(s.id)}">
+      <div class="scene-section-head">
+        <div class="scene-section-title">#${String(s.order || 0).padStart(2, '0')} ${escapeHtml(s.name)}</div>
+        <div class="scene-section-meta">${escapeHtml(s.location || '')}${s.time ? ' · ' + escapeHtml(s.time) : ''}</div>
+      </div>
+      <textarea class="dialogue-bulk-input" data-scene-id="${escapeHtml(s.id)}" rows="10" spellcheck="false" disabled></textarea>
+      <div class="hotspot-actions">
+        <button class="hotspot-secondary-btn" data-scene-id="${escapeHtml(s.id)}" data-role="revert" disabled>되돌리기</button>
+        <button class="crop-save-btn" data-scene-id="${escapeHtml(s.id)}" data-role="save" disabled>저장</button>
+      </div>
+      <div class="hint" data-scene-id="${escapeHtml(s.id)}" data-role="status"></div>
+    </div>
+  `).join('');
+}
+
+// Every scene's override fetch runs independently in parallel — each
+// mounts into its own fixed set of elements, so there's no shared
+// "currently selected scene" to go stale here (unlike /dev/upload's
+// single-scene picker).
+Promise.all(scenesWithLines.map(scene => {
+  const sel = CSS.escape(scene.id);
+  const textarea = listEl.querySelector(`.dialogue-bulk-input[data-scene-id="${sel}"]`);
+  const revertBtn = listEl.querySelector(`[data-scene-id="${sel}"][data-role="revert"]`);
+  const saveBtn = listEl.querySelector(`[data-scene-id="${sel}"][data-role="save"]`);
+  const status = listEl.querySelector(`[data-scene-id="${sel}"][data-role="status"]`);
+  return mountBulkDialogueEditor({ textarea, revertBtn, saveBtn, status }, scene);
+}));
+</script>
+<script src="/dev/devPlanFab.js"></script>
+</body>
+</html>
