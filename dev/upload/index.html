@@ -247,8 +247,7 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
     </div>
     <div class="reuse-bg-body hidden" id="reuseBgBody">
       <div class="reuse-bg-pickers">
-        <select class="select-input" id="reuseBgWeekSelect"></select>
-        <select class="select-input" id="reuseBgSceneSelect"></select>
+        <select class="select-input" id="reuseBgLocationSelect"></select>
       </div>
       <div class="reuse-bg-list" id="reuseBgList"></div>
     </div>
@@ -528,8 +527,7 @@ const el = {
   reuseBgPanel: document.getElementById('reuseBgPanel'),
   reuseBgToggle: document.getElementById('reuseBgToggle'),
   reuseBgBody: document.getElementById('reuseBgBody'),
-  reuseBgWeekSelect: document.getElementById('reuseBgWeekSelect'),
-  reuseBgSceneSelect: document.getElementById('reuseBgSceneSelect'),
+  reuseBgLocationSelect: document.getElementById('reuseBgLocationSelect'),
   reuseBgList: document.getElementById('reuseBgList'),
   previewPanel: document.getElementById('previewPanel'),
   previewImg: document.getElementById('previewImg'),
@@ -1646,10 +1644,10 @@ async function refreshList() {
     ? backgroundListFor(all, activeBackgroundSceneId())
     : all.filter(a => a.characterKey === currentCharacterKey && a.expression === currentExpression);
   renderList(filtered);
-  // The reuse-source scene's own list needs refreshing too whenever the
+  // The reuse-source location's own list needs refreshing too whenever the
   // destination scene changes, since it hides whichever asset is already
   // active there — see renderReuseBgList.
-  if (currentType === 'background' && reuseBgSceneId) renderReuseBgList();
+  if (currentType === 'background' && reuseBgLocation) renderReuseBgList();
 }
 
 // This scene's own uploads, plus — if "다른 씬 배경 가져오기" assigned a
@@ -1711,35 +1709,56 @@ function useAsBackground(id) {
   renderHotspotSection();
 }
 
-/* ===== 다른 씬 배경 가져오기 — a second, independent week/scene picker
-   (reuseBgWeekId/reuseBgSceneId) just for browsing which scene's uploads to
-   pull from; picking one calls the same useAsBackground() the main
-   "Uploaded Backgrounds" list above uses, so it's not a separate code path,
-   just a different way to reach it without re-uploading the same photo. */
-let reuseBgWeekId = null;
-let reuseBgSceneId = null;
+/* ===== 다른 씬 배경 가져오기 — browse by 장소(location), not by week/씬 —
+   the same location (e.g. "Sydney Accommodation") repeats across dozens of
+   scenes and weeks, so grouping by week just made a dev hunt for which
+   specific scene happened to have the photo. Every scene sharing a location
+   is folded into one group here; picking a photo from any of them calls the
+   same useAsBackground() the main "Uploaded Backgrounds" list above uses,
+   so it's not a separate code path, just a different way to reach it
+   without re-uploading the same photo. */
+let reuseBgLocation = null;
 
-function reuseBgWeek() { return weeks.find(w => w.id === reuseBgWeekId) || weeks[0]; }
+// Scenes with no `location` tag (e.g. /dev/upload's own room-search
+// pseudo-scenes) fall back to their own name as a one-scene "location" —
+// keeps them reachable here without a special case, they just never merge
+// with anything else.
+function sceneLocationOf(scene) { return scene.location || scene.name; }
 
-function renderReuseBgPanel() {
-  if (!reuseBgWeekId) reuseBgWeekId = currentWeekId;
-  el.reuseBgWeekSelect.innerHTML = weeks.map(w =>
-    `<option value="${w.id}"${w.id === reuseBgWeekId ? ' selected' : ''}>${escapeHtml(w.label)}</option>`
-  ).join('');
-  renderReuseBgSceneSelect();
+// { [location]: [{ sceneId, sceneName }] } across every week's scenes —
+// this is what actually "merges" scenes: many scene ids can share one
+// location key.
+function reuseBgLocationGroups() {
+  const groups = {};
+  weeks.forEach(w => w.scenes.forEach(s => {
+    const loc = sceneLocationOf(s);
+    (groups[loc] || (groups[loc] = [])).push({ sceneId: s.id, sceneName: s.name });
+  }));
+  return groups;
 }
 
-function renderReuseBgSceneSelect() {
-  const scenes = reuseBgWeek().scenes;
-  if (!scenes.some(s => s.id === reuseBgSceneId)) reuseBgSceneId = scenes[0] && scenes[0].id;
-  el.reuseBgSceneSelect.innerHTML = scenes.map(s =>
-    `<option value="${s.id}"${s.id === reuseBgSceneId ? ' selected' : ''}>${escapeHtml(s.name)}</option>`
-  ).join('');
+function renderReuseBgPanel() {
+  const groups = reuseBgLocationGroups();
+  const locations = Object.keys(groups).sort((a, b) => a.localeCompare(b, 'ko'));
+  if (!reuseBgLocation || !groups[reuseBgLocation]) {
+    const scene = currentScene();
+    const here = scene && sceneLocationOf(scene);
+    reuseBgLocation = (here && groups[here]) ? here : locations[0];
+  }
+  el.reuseBgLocationSelect.innerHTML = locations.map(loc => {
+    const count = groups[loc].length;
+    const label = count > 1 ? `${loc} (${count}개 씬)` : loc;
+    return `<option value="${escapeHtml(loc)}"${loc === reuseBgLocation ? ' selected' : ''}>${escapeHtml(label)}</option>`;
+  }).join('');
 }
 
 async function renderReuseBgList() {
-  if (!reuseBgSceneId) { el.reuseBgList.innerHTML = '<div class="empty-note">이 주차에 등록된 씬이 없습니다.</div>'; return; }
-  const sceneId = reuseBgSceneId;
+  if (!reuseBgLocation) { el.reuseBgList.innerHTML = '<div class="empty-note">등록된 씬이 없습니다.</div>'; return; }
+  const location = reuseBgLocation;
+  const groups = reuseBgLocationGroups();
+  const scenesHere = groups[location] || [];
+  const sceneIdsHere = new Set(scenesHere.map(s => s.sceneId));
+  const sceneNameById = new Map(scenesHere.map(s => [s.sceneId, s.sceneName]));
   el.reuseBgList.innerHTML = '<div class="empty-note">불러오는 중…</div>';
   let all;
   try {
@@ -1748,20 +1767,22 @@ async function renderReuseBgList() {
     el.reuseBgList.innerHTML = '<div class="empty-note">불러오지 못했습니다.</div>';
     return;
   }
-  // The dev may have switched the reuse-source scene (or the destination
+  // The dev may have switched the reuse-source location (or the destination
   // scene/tab) while that fetch was in flight — bail instead of overwriting
   // whatever's now on screen.
-  if (reuseBgSceneId !== sceneId || currentType !== 'background') return;
+  if (reuseBgLocation !== location || currentType !== 'background') return;
   const activeId = DevGameState.getBackgroundId(activeBackgroundSceneId());
-  const assets = all.filter(a => a.sceneId === sceneId && a.id !== activeId);
+  const assets = all.filter(a => sceneIdsHere.has(a.sceneId) && a.id !== activeId);
   if (!assets.length) {
-    el.reuseBgList.innerHTML = '<div class="empty-note">이 씬에 가져올 배경이 없습니다.</div>';
+    el.reuseBgList.innerHTML = '<div class="empty-note">이 장소에 가져올 배경이 없습니다.</div>';
     return;
   }
+  // Several scenes are folded into one location group, so each card also
+  // shows which scene the photo actually came from (not just the filename).
   el.reuseBgList.innerHTML = assets.map(a => `
     <div class="reuse-bg-card">
       <img class="reuse-bg-thumb" src="${a.dataUrl}" data-url="${a.dataUrl}" onclick="previewAsset(this.dataset.url)">
-      <div class="reuse-bg-name">${escapeHtml(a.name)}</div>
+      <div class="reuse-bg-name">${escapeHtml(sceneNameById.get(a.sceneId) || a.name)}</div>
       <button class="reuse-bg-use-btn" onclick="importReuseBg('${a.id}')">가져오기</button>
     </div>
   `).join('');
@@ -1775,14 +1796,8 @@ el.reuseBgToggle.addEventListener('click', () => {
   const nowHidden = el.reuseBgBody.classList.toggle('hidden');
   el.reuseBgToggle.classList.toggle('open', !nowHidden);
 });
-el.reuseBgWeekSelect.addEventListener('change', () => {
-  reuseBgWeekId = el.reuseBgWeekSelect.value;
-  reuseBgSceneId = null;
-  renderReuseBgSceneSelect();
-  renderReuseBgList();
-});
-el.reuseBgSceneSelect.addEventListener('change', () => {
-  reuseBgSceneId = el.reuseBgSceneSelect.value;
+el.reuseBgLocationSelect.addEventListener('change', () => {
+  reuseBgLocation = el.reuseBgLocationSelect.value;
   renderReuseBgList();
 });
 
