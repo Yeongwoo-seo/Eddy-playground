@@ -40,26 +40,40 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .upload-label{display:inline-flex;align-items:center;gap:8px;background:var(--cyan);color:#04181c;font-weight:700;font-size:14.5px;border-radius:16px;padding:15px 26px;cursor:pointer;transition:transform .15s}
 .upload-label:active{transform:scale(.97)}
 .upload-input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.upload-error{margin-top:18px;font-size:12.5px;color:var(--signal-red);max-width:280px;line-height:1.5}
+.upload-label.hidden{display:none}
+
+/* ===== API key setup (first run only — saved to localStorage, never to a file) ===== */
+.key-setup{width:100%;max-width:280px;display:flex;flex-direction:column;gap:10px}
+.key-setup.hidden{display:none}
+.key-setup-label{font-size:12.5px;color:var(--text-secondary);text-align:left}
+.key-setup-row{display:flex;gap:8px}
+.key-setup-input{flex:1;min-width:0;background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:12px 14px;color:var(--text-primary);font-family:var(--mono);font-size:13px}
+.key-setup-input:focus{outline:none;border-color:var(--cyan)}
+.key-setup-save{flex-shrink:0;background:var(--cyan);color:#04181c;font-weight:700;font-size:13.5px;border:none;border-radius:12px;padding:0 18px;cursor:pointer}
+.key-setup-save:active{transform:scale(.96)}
+.key-setup-note{font-size:11.5px;color:var(--text-muted);line-height:1.5;text-align:left}
+.key-change-link{margin-top:16px;background:none;border:none;color:var(--text-muted);font-family:var(--mono);font-size:11px;text-decoration:underline;cursor:pointer}
+.key-change-link.hidden{display:none}
 
 /* ===== Scan stage ===== */
 .scan-stage{position:absolute;inset:0;background:#05070a;display:none;overflow:hidden}
 .scan-stage.show{display:block}
 .image-wrap{position:absolute;inset:0;overflow:hidden;background:#05070a}
-.image-wrap img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;display:block;-webkit-user-drag:none}
+.image-box{position:absolute}
+.image-box img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:fill;display:block;-webkit-user-drag:none}
 
 .scan-sweep{position:absolute;left:0;right:0;height:38%;top:-40%;background:linear-gradient(180deg,rgba(89,184,200,0) 0%,rgba(89,184,200,.28) 50%,rgba(89,184,200,0) 100%);pointer-events:none;opacity:0}
-.image-wrap.scanning .scan-sweep{opacity:1;animation:sweepDown 1.4s cubic-bezier(.4,0,.2,1) 2}
+.image-box.scanning .scan-sweep{opacity:1;animation:sweepDown 1.4s cubic-bezier(.4,0,.2,1) infinite}
 @keyframes sweepDown{0%{top:-40%}100%{top:100%}}
-.scan-label{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;color:var(--cyan);background:rgba(5,7,10,.75);border:1px solid rgba(89,184,200,.35);border-radius:20px;padding:8px 16px;opacity:0;transition:opacity .2s ease;white-space:nowrap}
-.image-wrap.scanning .scan-label{opacity:1}
+.scan-label{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;color:var(--cyan);background:rgba(5,7,10,.75);border:1px solid rgba(89,184,200,.35);border-radius:20px;padding:8px 16px;opacity:0;transition:opacity .2s ease;white-space:nowrap;z-index:2}
+.image-box.scanning .scan-label{opacity:1}
 
-.marker{position:absolute;width:38px;height:38px;transform:translate(-50%,-50%);cursor:pointer;opacity:0;animation:markerPop .35s cubic-bezier(.2,.8,.2,1) forwards}
-.marker-ring{position:absolute;inset:0;border-radius:50%;border:2px solid var(--cyan);box-shadow:0 0 0 4px rgba(89,184,200,.14);animation:ringPulse 1.8s ease-in-out infinite}
-.marker.found .marker-ring{border-color:var(--amber);box-shadow:0 0 0 4px rgba(214,168,75,.16);animation:none}
-.marker-dot{position:absolute;left:50%;top:50%;width:7px;height:7px;border-radius:50%;background:var(--cyan);transform:translate(-50%,-50%)}
-.marker.found .marker-dot{background:var(--amber)}
-@keyframes markerPop{0%{opacity:0;transform:translate(-50%,-50%) scale(.4)}100%{opacity:1;transform:translate(-50%,-50%) scale(1)}}
-@keyframes ringPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.35);opacity:.35}}
+.marker{position:absolute;border:2px solid var(--cyan);background:rgba(89,184,200,.1);border-radius:8px;cursor:pointer;opacity:0;animation:markerPop .3s cubic-bezier(.2,.8,.2,1) forwards;box-shadow:0 0 0 3px rgba(89,184,200,.12)}
+.marker.found{border-color:var(--amber);background:rgba(214,168,75,.12);box-shadow:0 0 0 3px rgba(214,168,75,.14)}
+.marker-tag{position:absolute;left:0;bottom:100%;margin-bottom:4px;background:rgba(5,7,10,.88);border:1px solid rgba(89,184,200,.4);color:var(--cyan);font-family:var(--sans);font-size:11px;font-weight:700;padding:3px 8px;border-radius:8px;white-space:nowrap;pointer-events:none}
+.marker.found .marker-tag{border-color:rgba(214,168,75,.5);color:var(--amber)}
+@keyframes markerPop{0%{opacity:0;transform:scale(.85)}100%{opacity:1;transform:scale(1)}}
 
 .scan-topbar{position:absolute;left:16px;right:16px;top:calc(58px + env(safe-area-inset-top,0));z-index:6;display:flex;justify-content:space-between;align-items:center;gap:8px}
 .progress-pill{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;color:#fff;background:rgba(5,7,10,.75);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:9px 14px}
@@ -67,6 +81,10 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 
 .complete-toast{position:absolute;left:50%;top:42%;transform:translate(-50%,16px);z-index:7;background:rgba(5,7,10,.94);border:1px solid rgba(214,168,75,.45);border-radius:16px;padding:14px 22px;opacity:0;pointer-events:none;transition:opacity .35s ease,transform .35s ease;font-size:13.5px;font-weight:700;color:var(--amber);text-align:center}
 .complete-toast.show{opacity:1;transform:translate(-50%,0)}
+
+.scan-error{position:absolute;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0));z-index:7;background:rgba(58,13,13,.92);border:1px solid rgba(217,65,65,.4);color:#ffb4b4;border-radius:14px;padding:14px 16px;font-size:13px;line-height:1.5;display:none}
+.scan-error.show{display:block}
+.scan-error-retry{margin-top:10px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);color:#fff;border-radius:10px;padding:8px 14px;font-size:12.5px;font-weight:600;cursor:pointer}
 
 /* ===== Dialogue popup (reused vnPlayer engine, same look as the other minigames) ===== */
 .msg-layer{position:absolute;inset:0;z-index:8;display:none;flex-direction:column;justify-content:flex-end;cursor:pointer}
@@ -101,8 +119,20 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
     <div class="upload-badge">특수 능력 테스트</div>
     <div class="upload-title">사진 속 물품을 감지합니다</div>
     <div class="upload-desc">사진을 업로드하면 지수의 특수 능력이 발동해 사진 속 물품을 감지합니다.<br>감지된 영역을 눌러 물품을 조사해 보세요.</div>
-    <label class="upload-label" for="fileInput">📷 사진 업로드</label>
+
+    <div class="key-setup" id="keySetup">
+      <div class="key-setup-label">먼저 Anthropic API 키를 입력해주세요 (최초 1회)</div>
+      <div class="key-setup-row">
+        <input class="key-setup-input" type="password" id="apiKeyInput" placeholder="sk-ant-..." autocomplete="off">
+        <button class="key-setup-save" id="apiKeySave">저장</button>
+      </div>
+      <div class="key-setup-note">키는 이 브라우저에만 저장되며, 여기서 Anthropic API를 직접 호출하는 데만 쓰입니다. 서버나 저장소로 전송되지 않습니다.</div>
+    </div>
+
+    <label class="upload-label hidden" for="fileInput" id="uploadLabel">📷 사진 업로드</label>
     <input class="upload-input" type="file" id="fileInput" accept="image/*">
+    <button class="key-change-link hidden" id="keyChangeLink">API 키 변경</button>
+    <div class="upload-error" id="uploadError"></div>
   </div>
 
   <div class="scan-stage" id="scanStage">
@@ -110,12 +140,18 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
       <div class="progress-pill" id="progressPill">감지된 물품 <span class="n" id="foundCount">0</span>/<span id="totalCount">0</span></div>
     </div>
     <div class="image-wrap" id="imageWrap">
-      <img id="scanImg" alt="">
-      <div class="scan-sweep"></div>
-      <div class="scan-label">지수의 특수 능력 발동 중...</div>
-      <div id="markerLayer"></div>
+      <div class="image-box" id="imageBox">
+        <img id="scanImg" alt="">
+        <div class="scan-sweep"></div>
+        <div class="scan-label" id="scanLabel">지수의 특수 능력 발동 중...</div>
+        <div id="markerLayer"></div>
+      </div>
     </div>
     <div class="complete-toast" id="completeToast">감지된 물품을 모두 조사했다.</div>
+    <div class="scan-error" id="scanError">
+      <div id="scanErrorText"></div>
+      <button class="scan-error-retry" id="scanErrorRetry">다시 시도</button>
+    </div>
   </div>
 
   <div class="msg-layer" id="msgLayer">
@@ -145,113 +181,122 @@ if ('serviceWorker' in navigator) {
 </script>
 <script src="/dev/assetDb.js"></script>
 <script src="/dev/dialogueData.js"></script>
+<script src="/dev/caseFileData.js"></script>
+<script src="/dev/caseFileState.js"></script>
 <script src="/dev/vnPlayer.js"></script>
 <script>
 /* OPERATION MK — 「특수 능력 테스트」 evidence-collection entry.
-   Standalone/self-contained like fishing-minigame (no story link, no
-   dev-uploaded scan background) — the player's own photo IS the scan
-   background. assetDb.js/dialogueData.js are only here for the dialogue
-   popup's 미니게임 얼굴 portraits (see updateMsgPortrait), same as every
-   other minigame's dialogue box. Real object detection isn't feasible
-   client-side, so the "감지" is a themed simulation: a random subset of
-   ITEM_POOL is placed at random non-overlapping positions over whatever
-   photo the player picks,
-   framed as 지수's 특수 능력 rather than real computer vision. Each item
-   type always carries the same investigation lines regardless of what the
-   uploaded photo actually shows, same reasoning as CUSTOM_PICKUP_MESSAGES
-   flavor text elsewhere — the point is testing the interaction, not real
-   recognition accuracy. */
+   Player uploads a photo -> it's downscaled client-side and sent straight
+   from the browser to the Anthropic Messages API (vision + a forced tool
+   call) to find physical objects and return a bounding box + investigation
+   dialogue per object. Detected items are rendered as labeled clickable
+   boxes over the photo; tapping one shows the dialogue and registers the
+   item as 증거 via CaseFileState.addEvidence. assetDb.js/dialogueData.js
+   are only here for the dialogue popup's 미니게임 얼굴 portraits (see
+   updateMsgPortrait), same as every other minigame's dialogue box.
 
-const ITEM_POOL = [
-  { id: 'wallet', label: '지갑', lines: [
-    { speaker: '지수', text: '지갑이에요.\n안에 카드가 몇 장 보이는데...' },
-    { speaker: '영우', text: '주인 이름부터 확인해보자.' },
-  ] },
-  { id: 'phone', label: '휴대폰', lines: [
-    { speaker: '지수', text: '휴대폰이 하나 놓여 있어요.' },
-    { speaker: '영우', text: '잠금화면에 뭐 떠 있는지 잘 봐.' },
-  ] },
-  { id: 'receipt', label: '영수증', lines: [
-    { speaker: '지수', text: '영수증이네요.\n날짜랑 장소가 나와 있어요.' },
-    { speaker: '영우', text: '그거 시간표 맞추는 데 쓸 수 있겠다.' },
-  ] },
-  { id: 'keys', label: '열쇠', lines: [
-    { speaker: '지수', text: '열쇠예요.\n낯익은 모양은 아닌데.' },
-    { speaker: '영우', text: '어디 열쇠인지부터 알아내야겠네.' },
-  ] },
-  { id: 'watch', label: '손목시계', lines: [
-    { speaker: '지수', text: '손목시계다.\n시간이 멈춰 있어요.' },
-    { speaker: '영우', text: '멈춘 시각, 기록해 둬.' },
-  ] },
-  { id: 'glasses', label: '안경', lines: [
-    { speaker: '지수', text: '안경이 떨어져 있어요.' },
-    { speaker: '영우', text: '렌즈 도수 보면 누구 건지 좁혀지려나.' },
-  ] },
-  { id: 'note', label: '메모지', lines: [
-    { speaker: '지수', text: '메모지에 뭔가 적혀 있어요.' },
-    { speaker: '영우', text: '글씨체, 사진으로 남겨놔.' },
-  ] },
-  { id: 'cup', label: '커피컵', lines: [
-    { speaker: '지수', text: '커피컵이에요.\n아직 온기가 남아 있을지도.' },
-    { speaker: '영우', text: '그럼 얼마 안 됐다는 거네.' },
-  ] },
-  { id: 'card', label: '명함', lines: [
-    { speaker: '지수', text: '명함이 하나 보여요.' },
-    { speaker: '영우', text: '이름이랑 회사, 나중에 찾아보자.' },
-  ] },
-  { id: 'envelope', label: '봉투', lines: [
-    { speaker: '지수', text: '서류봉투예요.\n안에 뭐가 들었는지는 안 보여요.' },
-    { speaker: '영우', text: '함부로 열진 말고, 위치만 기록해.' },
-  ] },
-  { id: 'ring', label: '반지', lines: [
-    { speaker: '지수', text: '반지가 하나 놓여 있어요.' },
-    { speaker: '영우', text: '안쪽에 뭐 새겨져 있는지 확인해봐.' },
-  ] },
-  { id: 'usb', label: 'USB', lines: [
-    { speaker: '지수', text: 'USB네요.\n뭐가 들어있을지 궁금하다.' },
-    { speaker: '영우', text: '함부로 꽂진 말고.' },
-  ] },
-];
-const MIN_ITEMS = 5, MAX_ITEMS = 7;
-const MIN_SPACING_FR = 0.16; // fraction of the shorter box dimension between marker centers
-
-function shuffle(arr) {
-  const a = arr.slice();
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
+   ⚠️ SECURITY: each visitor enters their own Anthropic API key once (below,
+   § API key setup) and it's saved to that browser's localStorage — nothing
+   is hardcoded in this file or committed to the repo, so no key is ever
+   shared across visitors. It's still sent as a plain request header
+   straight from this page's JS on every scan, so anyone with devtools
+   access to that specific browser/profile can read it back out of
+   localStorage or the network tab. That's an acceptable tradeoff for a
+   dev-only test page with no backend in this repo to hide it behind, but
+   don't reuse this pattern for anything production-facing — set a spend
+   limit on any key you enter here regardless. */
+const API_KEY_STORAGE_KEY = 'mkItemScanAnthropicApiKey';
+function getApiKey() { return localStorage.getItem(API_KEY_STORAGE_KEY) || ''; }
+function setApiKey(key) {
+  if (key) localStorage.setItem(API_KEY_STORAGE_KEY, key);
+  else localStorage.removeItem(API_KEY_STORAGE_KEY);
 }
+const ANTHROPIC_MODEL = 'claude-sonnet-5';
 
-function pickPositions(count) {
-  const positions = [];
-  let attempts = 0;
-  while (positions.length < count && attempts < 400) {
-    attempts++;
-    const x = 0.12 + Math.random() * 0.76;
-    const y = 0.12 + Math.random() * 0.76;
-    if (positions.every(p => Math.hypot(p.x - x, p.y - y) >= MIN_SPACING_FR)) {
-      positions.push({ x, y });
-    }
-  }
-  while (positions.length < count) {
-    positions.push({ x: 0.12 + Math.random() * 0.76, y: 0.12 + Math.random() * 0.76 });
-  }
-  return positions;
-}
+const DETECT_ITEMS_TOOL = {
+  name: 'report_detected_items',
+  description: 'Report the distinct physical objects visible in the photo, for a detective visual-novel game\'s item-scan minigame.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      items: {
+        type: 'array',
+        minItems: 1,
+        maxItems: 8,
+        items: {
+          type: 'object',
+          properties: {
+            label: { type: 'string', description: '짧은 한국어 물품 이름 (예: 지갑, 열쇠, 커피컵). 2~6자 내외.' },
+            box: {
+              type: 'object',
+              description: '물품을 감싸는 사각형 영역. 이미지 가로/세로 대비 0~1 비율.',
+              properties: {
+                x: { type: 'number', description: '왼쪽 상단 x (0~1)' },
+                y: { type: 'number', description: '왼쪽 상단 y (0~1)' },
+                w: { type: 'number', description: '너비 (0~1)' },
+                h: { type: 'number', description: '높이 (0~1)' },
+              },
+              required: ['x', 'y', 'w', 'h'],
+            },
+            description: { type: 'string', description: '이 물품에 대한 한 문장짜리 수사 관찰 (한국어).' },
+            dialogue: {
+              type: 'array',
+              description: '이 물품을 조사할 때 나오는 2~3줄 대사. 지수(호기심 많고 관찰력 좋은 신입 수사관)와 영우(차분한 파트너)가 번갈아 말한다.',
+              minItems: 2,
+              maxItems: 3,
+              items: {
+                type: 'object',
+                properties: {
+                  speaker: { type: 'string', enum: ['지수', '영우'] },
+                  text: { type: 'string' },
+                },
+                required: ['speaker', 'text'],
+              },
+            },
+          },
+          required: ['label', 'box', 'description', 'dialogue'],
+        },
+      },
+    },
+    required: ['items'],
+  },
+};
+
+const DETECT_ITEMS_SYSTEM_PROMPT = `당신은 한국어 형사/추리 비주얼노벨 게임 "OPERATION MK"의 물품 인식 기능을 담당합니다.
+업로드된 사진을 분석해 뚜렷하게 구분되는 실제 물체를 최대 8개까지 찾아 report_detected_items 도구로 보고하세요.
+
+규칙:
+- 배경, 벽, 바닥처럼 개별 "물품"이 아닌 것은 제외하세요.
+- 사진 속에 실존 인물로 보이는 사람이 있어도 그 사람이 누구인지 추정하거나 신원을 언급하지 마세요. 사람 자체를 물품으로 보고하지 말고, 사람이 들고 있거나 곁에 있는 물건만 보고하세요.
+- 각 물품의 한국어 이름, 0~1 비율의 사각형 영역, 한 문장 관찰, 그리고 지수/영우가 번갈아 말하는 2~3줄의 짧은 수사 대사를 작성하세요.
+- 대사는 자연스러운 한국어 구어체로, 게임의 톤(가볍고 티키타카가 있는 파트너 수사관 케미)에 맞게 쓰세요.
+- 물품이 하나도 없다면 items를 빈 배열로 두지 말고, 가장 두드러지는 배경 요소 하나라도 보고하세요.`;
+
+const MAX_LONG_EDGE = 1200;
+const JPEG_QUALITY = 0.85;
+const RUN_ID_LEN = 6;
 
 const el = {
   uploadScreen: document.getElementById('uploadScreen'),
   fileInput: document.getElementById('fileInput'),
+  uploadLabel: document.getElementById('uploadLabel'),
+  uploadError: document.getElementById('uploadError'),
+  keySetup: document.getElementById('keySetup'),
+  apiKeyInput: document.getElementById('apiKeyInput'),
+  apiKeySave: document.getElementById('apiKeySave'),
+  keyChangeLink: document.getElementById('keyChangeLink'),
   scanStage: document.getElementById('scanStage'),
   imageWrap: document.getElementById('imageWrap'),
+  imageBox: document.getElementById('imageBox'),
   scanImg: document.getElementById('scanImg'),
   markerLayer: document.getElementById('markerLayer'),
   resetBtn: document.getElementById('resetBtn'),
   foundCount: document.getElementById('foundCount'),
   totalCount: document.getElementById('totalCount'),
   completeToast: document.getElementById('completeToast'),
+  scanError: document.getElementById('scanError'),
+  scanErrorText: document.getElementById('scanErrorText'),
+  scanErrorRetry: document.getElementById('scanErrorRetry'),
   msgLayer: document.getElementById('msgLayer'),
   msgPortraitWrap: document.getElementById('msgPortraitWrap'),
   msgPortraitImg: document.getElementById('msgPortraitImg'),
@@ -261,8 +306,11 @@ const el = {
   msgArrow: document.getElementById('msgArrow'),
 };
 
-let activeItems = [];   // [{ ...ITEM_POOL entry, x, y, found }]
+let activeItems = [];   // [{ label, box:{x,y,w,h}, description, dialogue, found }]
 let activeMsgTapHandler = null;
+let naturalW = 1, naturalH = 1;
+let currentRunId = '';
+let lastPayload = null; // retained so "다시 시도" can resend without re-reading the file
 
 // ITEM_POOL's hardcoded lines only ever carry a display speaker name
 // ('지수'/'영우'), not a dialogueData.js-style characterId — this is the
@@ -308,78 +356,202 @@ function queueDialogue(lines) {
   player.load(lines, 0);
 }
 
+function randomRunId() {
+  return Math.random().toString(36).slice(2, 2 + RUN_ID_LEN);
+}
+
+/* ===== Image downscale (also caps the payload sent to the Anthropic API) ===== */
+function loadImageFromFile(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('이미지를 불러올 수 없습니다.')); };
+    img.src = url;
+  });
+}
+function downscaleToJpeg(img) {
+  const scale = Math.min(1, MAX_LONG_EDGE / Math.max(img.naturalWidth, img.naturalHeight));
+  const w = Math.round(img.naturalWidth * scale);
+  const h = Math.round(img.naturalHeight * scale);
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+  const dataUrl = canvas.toDataURL('image/jpeg', JPEG_QUALITY);
+  return { dataUrl, width: w, height: h, base64: dataUrl.split(',')[1] };
+}
+
+/* ===== Layout — position the image + markers as an exact "contain" box
+   inside the stage, so bounding-box fractions from the API line up with
+   what's actually on screen (object-fit:cover would crop and misalign
+   them). Recomputed on resize; markers stay correct since they're
+   percentage-positioned within this box. ===== */
+function layoutImageBox() {
+  const stageW = el.imageWrap.clientWidth, stageH = el.imageWrap.clientHeight;
+  if (!stageW || !stageH || !naturalW || !naturalH) return;
+  const stageRatio = stageW / stageH, imgRatio = naturalW / naturalH;
+  let boxW, boxH;
+  if (imgRatio > stageRatio) { boxW = stageW; boxH = boxW / imgRatio; }
+  else { boxH = stageH; boxW = boxH * imgRatio; }
+  el.imageBox.style.left = ((stageW - boxW) / 2) + 'px';
+  el.imageBox.style.top = ((stageH - boxH) / 2) + 'px';
+  el.imageBox.style.width = boxW + 'px';
+  el.imageBox.style.height = boxH + 'px';
+}
+window.addEventListener('resize', layoutImageBox);
+window.addEventListener('orientationchange', layoutImageBox);
+
+/* ===== Markers ===== */
 function renderMarkers() {
   el.markerLayer.innerHTML = '';
   activeItems.forEach((item, index) => {
+    const b = item.box || { x: 0.1, y: 0.1, w: 0.2, h: 0.2 };
     const m = document.createElement('div');
     m.className = 'marker' + (item.found ? ' found' : '');
-    m.style.left = (item.x * 100) + '%';
-    m.style.top = (item.y * 100) + '%';
-    m.style.animationDelay = (index * 70) + 'ms';
-    m.innerHTML = '<div class="marker-ring"></div><div class="marker-dot"></div>';
+    m.style.left = (clamp01(b.x) * 100) + '%';
+    m.style.top = (clamp01(b.y) * 100) + '%';
+    m.style.width = (clamp01(b.w) * 100) + '%';
+    m.style.height = (clamp01(b.h) * 100) + '%';
+    m.style.animationDelay = (index * 60) + 'ms';
+    const tag = document.createElement('div');
+    tag.className = 'marker-tag';
+    tag.textContent = item.label;
+    m.appendChild(tag);
     m.addEventListener('click', () => onMarkerTap(item, m));
     el.markerLayer.appendChild(m);
   });
 }
+function clamp01(n) { return Math.max(0, Math.min(1, typeof n === 'number' ? n : 0)); }
 
 function onMarkerTap(item, markerEl) {
   if (!item.found) {
     item.found = true;
     markerEl.classList.add('found');
     updateProgress();
+    CaseFileState.addEvidence({
+      id: `special-ability-${currentRunId}-${item.label}`,
+      code: 'E-SA',
+      title: item.label,
+      description: item.description || '',
+      discoveredLocationText: '특수 능력 테스트',
+    });
   }
-  queueDialogue(item.lines);
+  const lines = (item.dialogue && item.dialogue.length ? item.dialogue : [{ speaker: '', text: item.description || '별다른 특이사항은 없다.' }])
+    .map(l => ({ speaker: l.speaker || '', text: l.text }));
+  queueDialogue(lines);
 }
 
 function updateProgress() {
   const foundNum = activeItems.filter(i => i.found).length;
   el.foundCount.textContent = foundNum;
   el.totalCount.textContent = activeItems.length;
-  el.completeToast.classList.toggle('show', foundNum === activeItems.length);
+  el.completeToast.classList.toggle('show', activeItems.length > 0 && foundNum === activeItems.length);
 }
 
-function startScan(dataUrl) {
+/* ===== Network call — straight to the Anthropic API from the browser.
+   `anthropic-dangerous-direct-browser-access` is required by Anthropic for
+   any request sent directly from browser JS (as opposed to a server); it
+   exists precisely to flag that this pattern exposes the API key to
+   anyone viewing page source, which is the tradeoff this page accepts. ===== */
+async function detectItems(payload) {
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    throw new Error('Anthropic API 키가 설정되지 않았습니다. 새 사진을 눌러 키를 먼저 입력해주세요.');
+  }
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: ANTHROPIC_MODEL,
+      max_tokens: 2048,
+      system: DETECT_ITEMS_SYSTEM_PROMPT,
+      tools: [DETECT_ITEMS_TOOL],
+      tool_choice: { type: 'tool', name: 'report_detected_items' },
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'image', source: { type: 'base64', media_type: payload.mediaType, data: payload.imageBase64 } },
+          { type: 'text', text: '이 사진 속 물품들을 감지해주세요.' },
+        ],
+      }],
+    }),
+  });
+  let data;
+  try { data = await res.json(); } catch { data = null; }
+  if (!res.ok) {
+    const msg = data && data.error && data.error.message;
+    throw new Error(msg || `물품 인식에 실패했습니다. (${res.status})`);
+  }
+  const toolUseBlock = (data.content || []).find(b => b.type === 'tool_use');
+  const items = toolUseBlock && toolUseBlock.input && toolUseBlock.input.items;
+  if (!Array.isArray(items) || !items.length) {
+    throw new Error('사진에서 물품을 찾지 못했습니다.');
+  }
+  return items;
+}
+
+function showScanError(message) {
+  el.imageBox.classList.remove('scanning');
+  el.scanErrorText.textContent = message;
+  el.scanError.classList.add('show');
+}
+function hideScanError() {
+  el.scanError.classList.remove('show');
+}
+
+async function runScan(dataUrl, payload) {
   el.uploadScreen.classList.add('hidden');
   el.scanStage.classList.add('show');
   el.resetBtn.classList.remove('hidden');
   el.resetBtn.disabled = false;
   el.completeToast.classList.remove('show');
+  hideScanError();
   el.markerLayer.innerHTML = '';
-  el.imageWrap.classList.remove('scanning');
-  el.scanImg.src = dataUrl;
-
-  const count = MIN_ITEMS + Math.floor(Math.random() * (MAX_ITEMS - MIN_ITEMS + 1));
-  const chosen = shuffle(ITEM_POOL).slice(0, count);
-  const positions = pickPositions(count);
-  activeItems = chosen.map((item, i) => ({ ...item, x: positions[i].x, y: positions[i].y, found: false }));
+  activeItems = [];
   updateProgress();
+  el.scanImg.src = dataUrl;
+  el.imageBox.classList.add('scanning');
+  // .scan-stage only becomes visible on the line above, so its clientWidth/
+  // Height were 0 (display:none) if measured any earlier — lay out the image
+  // box now that the stage actually has a size.
+  layoutImageBox();
 
-  // Scanning-sweep animation plays twice (see .scan-sweep's 2x iteration) —
-  // reveal the (still-invisible) markers only once it's finished so tapping
-  // early can't skip the "analysis" beat.
-  void el.imageWrap.offsetWidth; // restart the CSS animation from a clean state
-  el.imageWrap.classList.add('scanning');
-  setTimeout(() => {
-    el.imageWrap.classList.remove('scanning');
+  lastPayload = payload;
+  try {
+    const items = await detectItems(payload);
+    activeItems = items.map(it => ({ ...it, found: false }));
+    el.imageBox.classList.remove('scanning');
     renderMarkers();
-  }, 2 * 1400);
-}
-
-function readFileAsDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
+    updateProgress();
+  } catch (err) {
+    showScanError(err.message || '물품 인식 중 오류가 발생했습니다.');
+  }
 }
 
 el.fileInput.addEventListener('change', async () => {
   const file = el.fileInput.files && el.fileInput.files[0];
-  if (!file) return;
-  const dataUrl = await readFileAsDataUrl(file);
-  startScan(dataUrl);
   el.fileInput.value = '';
+  if (!file) return;
+  el.uploadError.textContent = '';
+  currentRunId = randomRunId();
+  try {
+    const img = await loadImageFromFile(file);
+    const { dataUrl, width, height, base64 } = downscaleToJpeg(img);
+    naturalW = width; naturalH = height;
+    await runScan(dataUrl, { imageBase64: base64, mediaType: 'image/jpeg' });
+  } catch (err) {
+    el.uploadError.textContent = err.message || '사진을 처리할 수 없습니다.';
+  }
+});
+
+el.scanErrorRetry.addEventListener('click', () => {
+  if (!lastPayload) return;
+  runScan(el.scanImg.src, lastPayload);
 });
 
 el.resetBtn.addEventListener('click', () => {
@@ -388,7 +560,31 @@ el.resetBtn.addEventListener('click', () => {
   el.resetBtn.classList.add('hidden');
   el.resetBtn.disabled = true;
   activeItems = [];
+  hideScanError();
 });
+
+/* ===== API key setup screen ===== */
+function refreshKeyUi() {
+  const hasKey = !!getApiKey();
+  el.keySetup.classList.toggle('hidden', hasKey);
+  el.uploadLabel.classList.toggle('hidden', !hasKey);
+  el.keyChangeLink.classList.toggle('hidden', !hasKey);
+}
+function saveApiKeyFromInput() {
+  const value = el.apiKeyInput.value.trim();
+  if (!value) return;
+  setApiKey(value);
+  el.apiKeyInput.value = '';
+  el.uploadError.textContent = '';
+  refreshKeyUi();
+}
+el.apiKeySave.addEventListener('click', saveApiKeyFromInput);
+el.apiKeyInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') saveApiKeyFromInput(); });
+el.keyChangeLink.addEventListener('click', () => {
+  setApiKey('');
+  refreshKeyUi();
+});
+refreshKeyUi();
 </script>
 </body>
 </html>
