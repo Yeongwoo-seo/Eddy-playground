@@ -378,6 +378,7 @@ window.__removeBackgroundReady = import('https://cdn.jsdelivr.net/npm/@imgly/bac
 </script>
 <script src="/dev/assetDb.js"></script>
 <script src="/dev/dialogueData.js"></script>
+<script src="/dev/dialoguePanel.js"></script>
 <script>
 let currentType = 'background';
 let currentWeekId = weeks[0].id;
@@ -695,152 +696,24 @@ function renderScenePicker() {
   });
 }
 
-// 대사 tab — the current scene's whole script as one editable text block.
-// Each line renders as a `[화자] (감정)` header line followed by its text,
-// blocks separated by a lone "---" line; narration is `[내레이션]`. A "---"
-// line (not a blank line) is the delimiter because some lines' own text
-// already contains blank lines (e.g. "[ ITEM ACQUIRED ]\n\nUNKNOWN KEY"),
-// which a blank-line separator would misread as a block boundary. Saving
-// parses the block back into lines by position and diffs each against
-// dialogueData.js's static line to build one combined override object per
-// changed line (see AssetDB.getDialogueOverrides/setDialogueOverrides) —
-// the static source itself is never touched, /dev/game merges the override
-// over it at load time. This only supports editing existing lines in place,
-// not adding/removing/reordering them.
-function dialogueHeaderLine(characterId, expression) {
-  const char = dialogueCharacters.find(c => c.id === characterId);
-  if (!char) return '[내레이션]';
-  const label = (dialogueExpressions.find(x => x.id === expression) || {}).label || expression;
-  return `[${char.name}] (${label})`;
-}
-function formatDialogueBulkText(lines, overrides) {
-  return lines.map(l => {
-    const o = overrides[l.id] || {};
-    const characterId = 'characterId' in o ? o.characterId : l.characterId;
-    const expression = 'expression' in o ? o.expression : l.expression;
-    const text = 'text' in o ? o.text : l.text;
-    return `${dialogueHeaderLine(characterId, expression)}\n${text}`;
-  }).join('\n\n---\n\n');
-}
-const DIALOGUE_HEADER_RE = /^\[(.+?)\]\s*(?:\((.+?)\))?\s*$/;
-// Splits the bulk text back into per-line { characterId, expression, text }
-// (or { error }) by position — a lone "---" line separates blocks, first
-// line of each block is the `[화자] (감정)` header, the rest is the line's
-// text.
-function parseDialogueBulkText(raw) {
-  const blocks = raw.replace(/\r\n/g, '\n').split(/\n[ \t]*-{3,}[ \t]*\n/).map(b => b.trim()).filter(b => b.length);
-  return blocks.map((block, i) => {
-    const nl = block.indexOf('\n');
-    const headerLine = nl === -1 ? block : block.slice(0, nl);
-    const text = nl === -1 ? '' : block.slice(nl + 1);
-    const m = headerLine.match(DIALOGUE_HEADER_RE);
-    if (!m) return { error: `${i + 1}번째 블록: "[화자] (감정)" 헤더 형식이 아닙니다 ("${headerLine}")` };
-    const nameRaw = m[1].trim();
-    if (nameRaw === '내레이션') return { characterId: null, expression: null, text };
-    const char = dialogueCharacters.find(c => c.name === nameRaw);
-    if (!char) return { error: `${i + 1}번째 블록: "${nameRaw}"는 알 수 없는 화자입니다.` };
-    const emotionLabel = m[2] ? m[2].trim() : null;
-    // Any of the 10 canonical emotion labels is accepted here, not just the
-    // character's own `expressions` subset — that subset only limits which
-    // portraits the 인물 DB upload picker offers, and existing script lines
-    // already reference emotions outside it for some characters (e.g.
-    // 지수/호기심), so enforcing it here would block re-saving those
-    // untouched lines.
-    const expr = emotionLabel && dialogueExpressions.find(x => x.label === emotionLabel);
-    if (!expr) {
-      const allowed = dialogueExpressions.map(x => x.label).join(', ');
-      return { error: `${i + 1}번째 블록: "${nameRaw}"의 감정표현 "${emotionLabel || ''}"을(를) 알 수 없습니다. (가능: ${allowed})` };
-    }
-    return { characterId: char.id, expression: expr.id, text };
-  });
-}
-
-let dialogueBulkLines = null;
-let dialogueBulkSceneId = null;
-let dialogueBulkOriginalText = '';
-
+// 대사 tab — the current scene's whole script as one editable text block,
+// via the shared mountBulkDialogueEditor (dialoguePanel.js) — see
+// /dev/script for the week-wide version of the same editor.
 async function renderDialoguePanel() {
   const scene = currentScene();
-  const lines = scene && scene.lines;
-  dialogueBulkLines = null;
-  dialogueBulkSceneId = null;
-  el.dialogueBulkInput.disabled = true;
-  el.dialogueBulkSaveBtn.disabled = true;
-  el.dialogueBulkRevertBtn.disabled = true;
-  if (!lines || !lines.length) {
-    el.dialogueBulkInput.value = '';
-    el.dialogueBulkStatus.textContent = '이 씬에는 대사 데이터가 없습니다. (미니게임/증거수집 항목이거나 아직 미구현)';
-    return;
-  }
-  const sceneId = scene.id;
-  el.dialogueBulkInput.value = '';
-  el.dialogueBulkStatus.textContent = '불러오는 중…';
-  let overrides;
-  try {
-    overrides = await AssetDB.getDialogueOverrides(sceneId);
-  } catch (err) {
-    el.dialogueBulkStatus.textContent = '대사를 불러오지 못했습니다.';
-    DevDiag.show('대사 불러오기 실패: ' + (err && err.message ? err.message : err));
-    return;
-  }
-  // The dev may have switched week/scene (or tabs) while that fetch was in
-  // flight — bail instead of overwriting whatever's now on screen.
-  if (currentType !== 'dialogue' || currentSceneId !== sceneId) return;
-
-  dialogueBulkLines = lines;
-  dialogueBulkSceneId = sceneId;
-  dialogueBulkOriginalText = formatDialogueBulkText(lines, overrides);
-  el.dialogueBulkInput.value = dialogueBulkOriginalText;
-  el.dialogueBulkInput.disabled = false;
-  el.dialogueBulkSaveBtn.disabled = false;
-  el.dialogueBulkRevertBtn.disabled = false;
-  el.dialogueBulkStatus.textContent = '';
-}
-
-el.dialogueBulkRevertBtn.addEventListener('click', () => {
-  el.dialogueBulkInput.value = dialogueBulkOriginalText;
-  el.dialogueBulkStatus.textContent = '';
-});
-
-el.dialogueBulkSaveBtn.addEventListener('click', async () => {
-  if (!dialogueBulkLines || !dialogueBulkSceneId) return;
-  const parsed = parseDialogueBulkText(el.dialogueBulkInput.value);
-  if (parsed.length !== dialogueBulkLines.length) {
-    el.dialogueBulkStatus.textContent = `블록 개수(${parsed.length}개)가 원래 대사 줄 수(${dialogueBulkLines.length}개)와 다릅니다 — 이 편집기로는 줄을 추가/삭제할 수 없어요.`;
-    return;
-  }
-  const errors = parsed.map(p => p.error).filter(Boolean);
-  if (errors.length) {
-    el.dialogueBulkStatus.textContent = errors.join(' / ');
-    return;
-  }
-  const overridesMap = {};
-  dialogueBulkLines.forEach((l, i) => {
-    const p = parsed[i];
-    const char = dialogueCharacters.find(c => c.id === p.characterId);
-    const speaker = char ? char.name : '';
-    const patch = {};
-    if (p.characterId !== l.characterId) patch.characterId = p.characterId;
-    if (speaker !== (l.speaker || '')) patch.speaker = speaker;
-    if (p.expression !== (l.expression || null)) patch.expression = p.expression;
-    if (p.text !== l.text) patch.text = p.text;
-    if (Object.keys(patch).length) overridesMap[l.id] = patch;
+  const sceneId = scene && scene.id;
+  await mountBulkDialogueEditor({
+    textarea: el.dialogueBulkInput,
+    revertBtn: el.dialogueBulkRevertBtn,
+    saveBtn: el.dialogueBulkSaveBtn,
+    status: el.dialogueBulkStatus,
+  }, scene, {
+    // The dev may have switched week/scene (or tabs) while the override
+    // fetch was in flight — bail instead of overwriting whatever's now on
+    // screen.
+    isStale: () => currentType !== 'dialogue' || currentSceneId !== sceneId,
   });
-  const sceneId = dialogueBulkSceneId, lines = dialogueBulkLines;
-  el.dialogueBulkSaveBtn.disabled = true;
-  el.dialogueBulkStatus.textContent = '저장 중…';
-  try {
-    await AssetDB.setDialogueOverrides(sceneId, overridesMap);
-    dialogueBulkOriginalText = formatDialogueBulkText(lines, overridesMap);
-    el.dialogueBulkInput.value = dialogueBulkOriginalText;
-    el.dialogueBulkStatus.textContent = '저장됨';
-  } catch (err) {
-    el.dialogueBulkStatus.textContent = '저장 실패';
-    DevDiag.show('대사 저장 실패: ' + (err && err.message ? err.message : err));
-  } finally {
-    el.dialogueBulkSaveBtn.disabled = false;
-  }
-});
+}
 
 function renderBgKindPicker() {
   const scene = currentScene();
