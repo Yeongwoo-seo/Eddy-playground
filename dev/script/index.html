@@ -56,7 +56,7 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
     <div class="page-title" id="pageTitle">전체 대사</div>
     <select class="week-select" id="weekSelect"></select>
   </div>
-  <div class="sub">이 주차의 모든 씬 대사가 한 텍스트에 묶여 있습니다. 씬 사이는 <b>===== #번호 씬이름 [씬ID] =====</b> 헤더로, 대사 줄 사이는 <b>---</b>로 구분합니다. 헤더 줄은 지우거나 고치지 마세요. 저장하면 실제 플레이(/dev/game)에도 그대로 반영됩니다.</div>
+  <div class="sub">이 주차의 모든 씬 대사가 한 텍스트에 묶여 있습니다. 씬 사이는 <b>===== #번호 씬이름 [씬ID] =====</b> 헤더로, 대사 줄 사이는 <b>---</b>로 구분합니다. 씬 헤더 줄은 지우거나 고치지 마세요 (씬 자체는 추가/삭제/재정렬 불가). 대사 줄은 <b>{id}</b> 태그로 식별돼요 — 태그를 지우면 그 줄이 삭제되고, 태그 없이 새로 쓰면 줄이 추가되고, 옮기면 순서가 바뀝니다. <b>[LOCKED]</b> 블록(선택지/분기)은 위치만 옮길 수 있어요. 저장하면 실제 플레이(/dev/game)에도 그대로 반영됩니다.</div>
   <div class="jump-nav" id="jumpNav"></div>
   <div class="editor-body" id="editorBody"></div>
 </div>
@@ -160,20 +160,15 @@ if (!scenesWithLines.length) {
       // Parse + validate every scene's chunk before saving anything —
       // all-or-nothing, so a mistake in one scene never leaves the rest
       // half-saved.
-      const perSceneOverrides = {};
+      const perSceneLineLists = {};
       const errors = [];
       scenesWithLines.forEach(scene => {
-        const parsed = parseDialogueBulkText(chunks[scene.id]);
-        if (parsed.length !== scene.lines.length) {
-          errors.push(`[${scene.name}] 블록 개수(${parsed.length}개)가 원래 대사 줄 수(${scene.lines.length}개)와 다릅니다.`);
+        const result = buildSceneLineList(scene.lines, chunks[scene.id]);
+        if (result.error) {
+          errors.push(`[${scene.name}] ${result.error}`);
           return;
         }
-        const lineErrors = parsed.map(p => p.error).filter(Boolean);
-        if (lineErrors.length) {
-          errors.push(`[${scene.name}] ${lineErrors.join(' / ')}`);
-          return;
-        }
-        perSceneOverrides[scene.id] = buildLineOverridesMap(scene.lines, parsed);
+        perSceneLineLists[scene.id] = result.lineList;
       });
       if (errors.length) {
         status.textContent = errors.join(' / ');
@@ -183,8 +178,10 @@ if (!scenesWithLines.length) {
       saveBtn.disabled = true;
       status.textContent = '저장 중…';
       try {
-        await Promise.all(scenesWithLines.map(scene => AssetDB.setDialogueOverrides(scene.id, perSceneOverrides[scene.id])));
-        originalText = formatCombinedDialogueText(scenesWithLines, perSceneOverrides);
+        await Promise.all(scenesWithLines.map(scene => AssetDB.setDialogueOverrides(scene.id, { lineList: perSceneLineLists[scene.id] })));
+        const overridesForFormat = {};
+        scenesWithLines.forEach(scene => { overridesForFormat[scene.id] = { lineList: perSceneLineLists[scene.id] }; });
+        originalText = formatCombinedDialogueText(scenesWithLines, overridesForFormat);
         textarea.value = originalText;
         status.textContent = '저장됨';
       } catch (err) {

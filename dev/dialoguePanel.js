@@ -1,6 +1,6 @@
 /* OPERATION MK DEV — shared bulk dialogue-script editor.
    Renders one scene's whole script as a single editable text block and
-   saves it as a per-line override map via AssetDB.getDialogueOverrides/
+   saves it as a full ordered line manifest via AssetDB.getDialogueOverrides/
    setDialogueOverrides. Used by both /dev/upload's 대사 tab (one scene at a
    time) and /dev/script's 전체 대사보기 (every scene in a week, one editor
    per scene) so the two can't drift into two different formats/save paths.
@@ -12,18 +12,13 @@
    separated by a lone "---" line. A "---" line (not a blank line) is the
    delimiter because some lines' own text already contains blank lines
    (e.g. "[ ITEM ACQUIRED ]\n\nUNKNOWN KEY"), which a blank-line separator
-   would misread as a block boundary. Saving parses the block back into
-   lines by position and diffs each against dialogueData.js's static line
-   to build one combined override object per changed line — the static
-   source itself is never touched, /dev/game merges the override over it
-   at load time. This only supports editing existing lines in place, not
-   adding/removing/reordering them.
+   would misread as a block boundary.
 
-   Header format is `[화자] (감정)`, e.g. `[지수] (기쁨)`, or `[내레이션]`
-   for a line with no speaker at all. `화자` and "which character's
-   portrait is on screen" are DIFFERENT things in the underlying data —
-   `speaker` (the name tag shown) and `characterId` (whose portrait stays
-   up) can diverge: a narration beat can keep a character's portrait
+   Header format is `[화자] (감정) {id}`, e.g. `[지수] (기쁨) {line-003}`, or
+   `[내레이션] {id}` for a line with no speaker at all. `화자` and "which
+   character's portrait is on screen" are DIFFERENT things in the underlying
+   data — `speaker` (the name tag shown) and `characterId` (whose portrait
+   stays up) can diverge: a narration beat can keep a character's portrait
    visible with no one speaking, and a speaker's own text-message lines
    have no portrait at all even though the same speaker also has portrait
    lines elsewhere. Presence of "(감정)" is what says whether a portrait is
@@ -31,8 +26,24 @@
    화자 alone doesn't already tell you which portrait that is (narration
    keeping a portrait up, or a nickname that isn't the character's
    registered name), the header spells it out: `[내레이션 · 지수] (호기심)`.
-   Getting this wrong previously meant *every* narration-with-portrait or
-   portrait-less-speaker line silently mutated on a no-op save. */
+
+   The trailing `{id}` tag is what makes free add/remove/reorder of plain
+   lines possible without guessing by position: a block that keeps its
+   original `{id}` is "the same line, maybe reworded"; a block with no
+   `{id}` is a brand-new plain line (gets a generated id on save); deleting
+   a tagged block removes that line; reordering blocks reorders the line-up.
+   A line with any interactive field (선택지/분기/증거 트리거 — see
+   isInteractiveDialogueLine) renders as `[LOCKED] {id}` instead and can be
+   moved but never edited/deleted here, since its wording/branch targets
+   aren't representable in this plain-text format and vnPlayer.js resolves
+   goto/correctGoto by that exact id.
+
+   Saved as a full ordered `{ lineList }` manifest (see
+   buildEffectiveDialogueLines/buildSceneLineList below) via
+   AssetDB.setDialogueOverrides — dialogueData.js's static source itself is
+   never touched, /dev/game rebuilds the scene's actual line-up from it at
+   load time. Older saves (a flat `{ [lineId]: patch }` map, from before
+   free add/remove/reorder existed) are still read correctly. */
 
 function dialogueHeaderLine(speaker, characterId, expression) {
   const char = dialogueCharacters.find(c => c.id === characterId);
@@ -45,29 +56,30 @@ function dialogueHeaderLine(speaker, characterId, expression) {
   return `[${displayName} · ${char.name}] (${label})`;
 }
 
-function formatDialogueBulkText(lines, overrides) {
-  return lines.map(l => {
-    const o = overrides[l.id] || {};
-    const speaker = 'speaker' in o ? o.speaker : (l.speaker || '');
-    const characterId = 'characterId' in o ? o.characterId : l.characterId;
-    const expression = 'expression' in o ? o.expression : l.expression;
-    const text = 'text' in o ? o.text : l.text;
-    return `${dialogueHeaderLine(speaker, characterId, expression)}\n${text}`;
+// effectiveLines: [{ id, speaker, characterId, expression, text, locked }],
+// see buildEffectiveDialogueLines. Each line already carries its resolved
+// (post-override) fields, so formatting doesn't need a separate overrides
+// map — just render what's there, plus the `{id}` tag every line already
+// has by the time it reaches here.
+function formatDialogueBulkText(effectiveLines) {
+  return effectiveLines.map(l => {
+    const header = l.locked ? `[LOCKED] {${l.id}}` : `${dialogueHeaderLine(l.speaker, l.characterId, l.expression)} {${l.id}}`;
+    return `${header}\n${l.text}`;
   }).join('\n\n---\n\n');
 }
 
-const DIALOGUE_HEADER_RE = /^\[(.+?)\]\s*(?:\((.+?)\))?\s*$/;
+const DIALOGUE_HEADER_RE = /^\[(.+?)\]\s*(?:\((.+?)\))?\s*(?:\{(.+?)\})?\s*$/;
 const DASH_DELIMITER_RE = /^[ \t]*-{3,}[ \t]*$/;
 
 // Splits bulk text into blocks on lone "---" lines, but ONLY where that
 // line is actually acting as a delimiter — i.e. the next non-blank line
-// looks like a "[화자] (감정)" header, which every real block boundary is
-// followed by. A "---"-shaped line that turns up inside a line's own text
-// (a written-out pause, a divider some writer typed, dialogue quoting a
-// horizontal rule, etc.) has ordinary text after it, not a header, so it's
-// left alone and stays part of the block it's in. Without this guard any
-// such line silently inflated the block count past the scene's real line
-// count on save (see the "블록 개수가 ... 다릅니다" check below).
+// looks like a "[화자] (감정) {id}" header, which every real block boundary
+// is followed by. A "---"-shaped line that turns up inside a line's own
+// text (a written-out pause, a divider some writer typed, dialogue quoting
+// a horizontal rule, etc.) has ordinary text after it, not a header, so
+// it's left alone and stays part of the block it's in. Without this guard
+// any such line silently inflated the block count past the scene's real
+// line count on save.
 function splitDialogueBlocks(raw) {
   const lines = raw.replace(/\r\n/g, '\n').split('\n');
   const blocks = [];
@@ -88,10 +100,12 @@ function splitDialogueBlocks(raw) {
   return blocks.map(b => b.trim()).filter(b => b.length);
 }
 
-// Splits the bulk text back into per-line { speaker, characterId,
-// expression, text } (or { error }) by position — a lone "---" line
-// separates blocks, first line of each block is the header, the rest is
-// the line's text.
+// Splits the bulk text back into per-block { speaker, characterId,
+// expression, text, id } / { locked: true, id } (or { error }) — a lone
+// "---" line separates blocks, first line of each block is the header, the
+// rest is the line's text. `id` is null when the block has no `{id}` tag
+// (a brand-new plain line, only valid for non-locked blocks — see
+// buildSceneLineList, which is what actually knows which ids already exist).
 function parseDialogueBulkText(raw) {
   const blocks = splitDialogueBlocks(raw);
   return blocks.map((block, i) => {
@@ -99,7 +113,13 @@ function parseDialogueBulkText(raw) {
     const headerLine = nl === -1 ? block : block.slice(0, nl);
     const text = nl === -1 ? '' : block.slice(nl + 1);
     const m = headerLine.match(DIALOGUE_HEADER_RE);
-    if (!m) return { error: `${i + 1}번째 블록: "[화자] (감정)" 헤더 형식이 아닙니다 ("${headerLine}")` };
+    if (!m) return { error: `${i + 1}번째 블록: "[화자] (감정) {id}" 헤더 형식이 아닙니다 ("${headerLine}")` };
+    const nameField = m[1].trim();
+    const id = m[3] ? m[3].trim() : null;
+    if (nameField === 'LOCKED') {
+      if (!id) return { error: `${i + 1}번째 블록: [LOCKED] 블록에는 {id}가 있어야 합니다 — 지우거나 새로 만들 수 없어요.` };
+      return { locked: true, id };
+    }
     const emotionLabel = m[2] ? m[2].trim() : null;
     // A portrait always carries "(감정)" (see the format comment above) —
     // no parens means no portrait, full stop, regardless of whether the
@@ -107,15 +127,13 @@ function parseDialogueBulkText(raw) {
     // own text-message lines have no portrait even though 영우 also has
     // portrait lines elsewhere).
     if (!emotionLabel) {
-      const nameField = m[1].trim();
       const speaker = nameField === '내레이션' ? '' : nameField;
-      return { speaker, characterId: null, expression: null, text };
+      return { speaker, characterId: null, expression: null, text, id };
     }
     // A portrait line's 화자 is either the portrait's own registered name
     // ("[지수] (기쁨)") or, when 화자 and the portrait diverge (narration
     // keeping a portrait up, or a nickname), "화자 · 인물명"
     // ("[내레이션 · 지수] (호기심)").
-    const nameField = m[1].trim();
     const dotIdx = nameField.indexOf(' · ');
     const speakerLabel = dotIdx === -1 ? nameField : nameField.slice(0, dotIdx).trim();
     const portraitLabel = dotIdx === -1 ? nameField : nameField.slice(dotIdx + 3).trim();
@@ -133,26 +151,138 @@ function parseDialogueBulkText(raw) {
       return { error: `${i + 1}번째 블록: "${portraitLabel}"의 감정표현 "${emotionLabel}"을(를) 알 수 없습니다. (가능: ${allowed})` };
     }
     const speaker = speakerLabel === '내레이션' ? '' : speakerLabel;
-    return { speaker, characterId: char.id, expression: expr.id, text };
+    return { speaker, characterId: char.id, expression: expr.id, text, id };
   });
 }
 
-// Diffs a scene's parsed blocks (from parseDialogueBulkText, already
-// validated to have no .error entries) against its static lines to build
-// the override map AssetDB.setDialogueOverrides expects — only the fields
-// that actually changed go in, per line.
-function buildLineOverridesMap(lines, parsed) {
-  const overridesMap = {};
-  lines.forEach((l, i) => {
-    const p = parsed[i];
-    const patch = {};
-    if (p.characterId !== l.characterId) patch.characterId = p.characterId;
-    if (p.speaker !== (l.speaker || '')) patch.speaker = p.speaker;
-    if (p.expression !== (l.expression || null)) patch.expression = p.expression;
-    if (p.text !== l.text) patch.text = p.text;
-    if (Object.keys(patch).length) overridesMap[l.id] = patch;
+/* ===== Line-level override model — a scene's dialogue-overrides JSON blob
+   (AssetDB.getDialogueOverrides/setDialogueOverrides) is either:
+     - Old/flat form: { [lineId]: { text?, speaker?, characterId?,
+       expression? } } — per-line patches applied directly onto
+       dialogueData.js's static lines array, same order/count as the static
+       script. Still readable for scenes saved before free add/remove/
+       reorder existed.
+     - New form: { lineList: [ ...entries ] } — a full ordered manifest.
+       Each entry is either { ref: <staticLineId>, patch?: {...} } (an
+       existing static line, used as-is or with a text/화자/감정 patch) or
+       { new: <generatedId>, characterId, expression, speaker, text } (a
+       brand-new plain line with no counterpart in dialogueData.js).
+
+   Lines with any field beyond the plain set below (choices/goto/effects/
+   evidenceIds/correctGoto/wrongText/type, or any future field this file
+   doesn't know about) are "interactive" — this editor can move them but
+   never edit or delete them, since their wording/branch targets are
+   load-bearing for vnPlayer.js. ===== */
+
+const DIALOGUE_PLAIN_LINE_FIELDS = new Set(['id', 'speaker', 'text', 'characterId', 'expression', 'pauseBeforeMs']);
+
+function isInteractiveDialogueLine(line) {
+  return Object.keys(line).some(k => !DIALOGUE_PLAIN_LINE_FIELDS.has(k));
+}
+
+// Every line id an interactive line can jump to directly — used so a save
+// can be refused if it would remove a line something else still targets.
+function dialogueLineGotoTargets(line) {
+  const targets = [];
+  if (line.goto) targets.push(line.goto);
+  if (line.correctGoto) targets.push(line.correctGoto);
+  (line.choices || []).forEach(c => { if (c && c.goto) targets.push(c.goto); });
+  return targets;
+}
+
+// Builds the ordered list of *effective* lines for a scene: the static
+// script (dialogueData.js) with `rawOverride` layered on top. Every entry
+// gets a `locked` flag (see isInteractiveDialogueLine).
+function buildEffectiveDialogueLines(staticLines, rawOverride) {
+  if (rawOverride && Array.isArray(rawOverride.lineList)) {
+    const byId = new Map(staticLines.map(l => [l.id, l]));
+    return rawOverride.lineList.map(entry => {
+      if (entry.ref) {
+        const staticLine = byId.get(entry.ref);
+        if (!staticLine) return null; // dangling ref — dropped rather than crashing playback
+        const locked = isInteractiveDialogueLine(staticLine);
+        return Object.assign({}, staticLine, (!locked && entry.patch) ? entry.patch : {}, { locked });
+      }
+      return {
+        id: entry.new, speaker: entry.speaker || '', text: entry.text || '',
+        characterId: entry.characterId || null, expression: entry.expression || null,
+        locked: false,
+      };
+    }).filter(Boolean);
+  }
+  // Old flat-patch form (or no override yet) — same order/count as the
+  // static script, each line optionally patched by id. Never patches an
+  // interactive line, same as the new form.
+  return staticLines.map(l => {
+    const patch = rawOverride && rawOverride[l.id];
+    const locked = isInteractiveDialogueLine(l);
+    const applied = (!locked && patch) ? (typeof patch === 'string' ? { text: patch } : patch) : {};
+    return Object.assign({}, l, applied, { locked });
   });
-  return overridesMap;
+}
+
+// Validates a scene's parsed blocks (from parseDialogueBulkText) against
+// its static `lines` and builds the `{ lineList }` manifest to save, or
+// `{ error }`. Used by both mountBulkDialogueEditor and /dev/script.
+function buildSceneLineList(staticLines, bulkText) {
+  const parsed = parseDialogueBulkText(bulkText);
+  const blockErrors = parsed.map(p => p.error).filter(Boolean);
+  if (blockErrors.length) return { error: blockErrors.join(' / ') };
+
+  const staticById = new Map(staticLines.map(l => [l.id, l]));
+  const staticInteractiveIds = new Set(staticLines.filter(isInteractiveDialogueLine).map(l => l.id));
+  const seenIds = new Set();
+  const lockedSeen = new Set();
+  const lineList = [];
+
+  for (const p of parsed) {
+    if (p.locked) {
+      if (!staticInteractiveIds.has(p.id)) {
+        return { error: `[LOCKED] {${p.id}} — 이 씬에서 선택지/분기가 있는 줄이 아닙니다. 지우거나 바꾸지 마세요.` };
+      }
+      if (seenIds.has(p.id)) return { error: `{${p.id}}가 중복됐습니다.` };
+      seenIds.add(p.id);
+      lockedSeen.add(p.id);
+      lineList.push({ ref: p.id });
+      continue;
+    }
+    if (p.id && staticInteractiveIds.has(p.id)) {
+      return { error: `{${p.id}}는 선택지/분기가 있는 줄이라 [LOCKED]로만 다룰 수 있어요.` };
+    }
+    const id = p.id || `new-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    if (seenIds.has(id)) return { error: `{${id}}가 중복됐습니다.` };
+    seenIds.add(id);
+    const staticLine = staticById.get(id);
+    if (staticLine) {
+      const patch = {};
+      if ((p.characterId || null) !== (staticLine.characterId || null)) patch.characterId = p.characterId || null;
+      if (p.speaker !== (staticLine.speaker || '')) patch.speaker = p.speaker;
+      if ((p.expression || null) !== (staticLine.expression || null)) patch.expression = p.expression || null;
+      if (p.text !== staticLine.text) patch.text = p.text;
+      lineList.push(Object.keys(patch).length ? { ref: id, patch } : { ref: id });
+    } else {
+      lineList.push({ new: id, characterId: p.characterId || null, expression: p.expression || null, speaker: p.speaker || '', text: p.text || '' });
+    }
+  }
+
+  // Every interactive/선택지·분기 line from the static source must still be
+  // present exactly once — this editor can move them but never add/remove one.
+  const missingLocked = [...staticInteractiveIds].filter(id => !lockedSeen.has(id));
+  if (missingLocked.length) {
+    return { error: `선택지/분기가 있는 줄이 빠졌습니다: ${missingLocked.join(', ')} — [LOCKED] 블록은 지울 수 없어요, 되돌리기로 복구하세요.` };
+  }
+  // goto/correctGoto/choices[].goto targets must still resolve somewhere in
+  // the final line-up, or the branch silently falls through to "just
+  // advance one line" instead of jumping where it's supposed to.
+  for (const id of lockedSeen) {
+    for (const target of dialogueLineGotoTargets(staticById.get(id))) {
+      if (!seenIds.has(target)) {
+        return { error: `"${id}"가 가리키는 "${target}" 줄이 사라졌습니다 — 분기가 깨져요. 그 줄을 되돌리거나 지우지 마세요.` };
+      }
+    }
+  }
+
+  return { lineList };
 }
 
 // els = { textarea, revertBtn, saveBtn, status } — already-created DOM
@@ -180,9 +310,9 @@ async function mountBulkDialogueEditor(els, scene, { isStale } = {}) {
   const sceneId = scene.id;
   textarea.value = '';
   status.textContent = '불러오는 중…';
-  let overrides;
+  let rawOverride;
   try {
-    overrides = await AssetDB.getDialogueOverrides(sceneId);
+    rawOverride = await AssetDB.getDialogueOverrides(sceneId);
   } catch (err) {
     status.textContent = '대사를 불러오지 못했습니다.';
     if (window.DevDiag) DevDiag.show('대사 불러오기 실패: ' + (err && err.message ? err.message : err));
@@ -190,7 +320,7 @@ async function mountBulkDialogueEditor(els, scene, { isStale } = {}) {
   }
   if (isStale && isStale()) return;
 
-  let originalText = formatDialogueBulkText(lines, overrides);
+  let originalText = formatDialogueBulkText(buildEffectiveDialogueLines(lines, rawOverride));
   textarea.value = originalText;
   textarea.disabled = false;
   revertBtn.disabled = false;
@@ -203,22 +333,16 @@ async function mountBulkDialogueEditor(els, scene, { isStale } = {}) {
   };
 
   saveBtn.onclick = async () => {
-    const parsed = parseDialogueBulkText(textarea.value);
-    if (parsed.length !== lines.length) {
-      status.textContent = `블록 개수(${parsed.length}개)가 원래 대사 줄 수(${lines.length}개)와 다릅니다 — 이 편집기로는 줄을 추가/삭제할 수 없어요.`;
+    const result = buildSceneLineList(lines, textarea.value);
+    if (result.error) {
+      status.textContent = result.error;
       return;
     }
-    const errors = parsed.map(p => p.error).filter(Boolean);
-    if (errors.length) {
-      status.textContent = errors.join(' / ');
-      return;
-    }
-    const overridesMap = buildLineOverridesMap(lines, parsed);
     saveBtn.disabled = true;
     status.textContent = '저장 중…';
     try {
-      await AssetDB.setDialogueOverrides(sceneId, overridesMap);
-      originalText = formatDialogueBulkText(lines, overridesMap);
+      await AssetDB.setDialogueOverrides(sceneId, { lineList: result.lineList });
+      originalText = formatDialogueBulkText(buildEffectiveDialogueLines(lines, { lineList: result.lineList }));
       textarea.value = originalText;
       status.textContent = '저장됨';
     } catch (err) {
@@ -247,15 +371,16 @@ function sceneHeaderLine(scene) {
 
 function formatCombinedDialogueText(scenes, overridesByScene) {
   return scenes.map(scene => {
-    const overrides = overridesByScene[scene.id] || {};
-    return `${sceneHeaderLine(scene)}\n\n${formatDialogueBulkText(scene.lines, overrides)}`;
+    const rawOverride = overridesByScene[scene.id] || {};
+    return `${sceneHeaderLine(scene)}\n\n${formatDialogueBulkText(buildEffectiveDialogueLines(scene.lines, rawOverride))}`;
   }).join('\n\n\n');
 }
 
 // Splits combined text back into { [sceneId]: chunkText } using the scene
 // header lines above. Returns { chunks } or { error } — every scene in
 // `scenes` must have exactly one header found (this editor can't add/
-// remove/reorder scenes, same as parseDialogueBulkText can't for lines).
+// remove/reorder scenes, though lines within a scene can be — see
+// buildSceneLineList).
 function parseCombinedDialogueText(raw, scenes) {
   const knownIds = new Set(scenes.map(s => s.id));
   const lines = raw.replace(/\r\n/g, '\n').split('\n');

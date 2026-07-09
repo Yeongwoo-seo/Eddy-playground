@@ -243,6 +243,7 @@ if ('serviceWorker' in navigator) {
 <script src="/dev/youtubeSound.js"></script>
 <script src="/dev/loadingOverlay.js"></script>
 <script src="/dev/dialogueData.js"></script>
+<script src="/dev/dialoguePanel.js"></script>
 <script src="/dev/caseFileData.js"></script>
 <script src="/dev/caseFileState.js"></script>
 <script src="/dev/vnPlayer.js"></script>
@@ -258,6 +259,12 @@ const activeSceneData = allScenes.find(s => s.id === requestedSceneId) || allSce
 // type, choices, effects, goto, evidenceIds, correctGoto, wrongText — reach
 // the player. A whitelist here previously dropped exactly those fields,
 // silently disabling choice/evidence lines despite the engine supporting them.
+// Starts as the static script; applyDialogueOverrides() below replaces its
+// contents in place (same array reference, so nothing that captured
+// `activeLines` before init() finishes needs to re-read it) once the
+// scene's actual effective line-up (static + overrides — see
+// dialoguePanel.js's buildEffectiveDialogueLines, which may add/remove/
+// reorder plain lines via /dev/upload's 대사 tab or /dev/script) is known.
 const activeLines = activeSceneData.lines.map(l => Object.assign({}, l));
 
 const el = {
@@ -781,17 +788,23 @@ const resumeLineIndex = (() => {
   return Number.isInteger(n) && n >= 0 ? n : null;
 })();
 
-// Per-line tweaks made from /dev/upload's 대사 tab (wording, speaker,
-// expression) — stored separately from dialogueData.js's static script, so
-// merge them into activeLines here before anything reads .text/.speaker/
-// .characterId/.expression. Best-effort: falls back to the static script
-// untouched if the override fetch fails.
+// Tweaks made from /dev/upload's 대사 tab or /dev/script (wording, speaker,
+// expression, and — for non-interactive lines — free add/remove/reorder) —
+// stored separately from dialogueData.js's static script as either a
+// per-line patch map or a full { lineList } manifest (see dialoguePanel.js's
+// buildEffectiveDialogueLines). Rebuilds activeLines in place (same array
+// reference — see above) to the scene's effective line-up before anything
+// reads .text/.speaker/.characterId/.expression. Best-effort: falls back to
+// the static script untouched if the override fetch fails.
 async function applyDialogueOverrides() {
   try {
-    const overrides = await AssetDB.getDialogueOverrides(activeSceneData.id);
-    activeSceneData.lines.forEach((l, i) => {
-      const o = overrides[l.id];
-      if (o) Object.assign(activeLines[i], o);
+    const raw = await AssetDB.getDialogueOverrides(activeSceneData.id);
+    const effective = buildEffectiveDialogueLines(activeSceneData.lines, raw);
+    activeLines.length = 0;
+    effective.forEach(l => {
+      const clone = Object.assign({}, l);
+      delete clone.locked; // editor-only bookkeeping, not a real line field
+      activeLines.push(clone);
     });
   } catch (e) { /* keep the static script as-is */ }
 }
