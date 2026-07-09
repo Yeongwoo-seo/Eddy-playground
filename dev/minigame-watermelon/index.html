@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>OPERATION MK · 수박 게임</title>
+<title>OPERATION MK · 수박 게임 설정</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <meta name="theme-color" content="#080A0C">
@@ -12,475 +12,182 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="OPERATION MK DEV">
-<script src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js"></script>
 <style>
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
   --bg:#080A0C;--surface-1:#101419;--surface-2:#171C22;
   --text-primary:#EDF1F4;--text-secondary:#929BA5;--text-muted:#5F6872;
   --cyan:#59B8C8;--amber:#D6A84B;--green:#3ECF6B;--signal-red:#D94141;--divider:rgba(255,255,255,0.08);
-  --yellow-bg-top:#FBEAB8;--yellow-bg-bottom:#F3D98D;
-  --coin-ring:#5A3B14;--coin-a:#F3CB5E;--coin-b:#DE9F2E;--coin-c:#C6841D;--coin-text:#5A3110;
-  --avatar-ring:#FFF6E0;--avatar-fill:#FBEFC7;
-  --brown-text:rgba(74,48,20,.7);
   --mono:'IBM Plex Mono',ui-monospace,monospace;
   --sans:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
 }
-html,body{height:100%;overflow:hidden}
-body{background:linear-gradient(180deg,var(--yellow-bg-top) 0%,var(--yellow-bg-bottom) 100%);color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center}
+html,body{height:100%}
+body{background:#050607;color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center;min-height:100dvh}
+.frame{width:100%;max-width:430px;min-height:100dvh;min-height:100vh;padding:calc(48px + env(safe-area-inset-top,0)) 20px calc(32px + env(safe-area-inset-bottom,0));display:flex;flex-direction:column}
+.back{font-family:var(--mono);font-size:12px;color:var(--text-muted);text-decoration:none;margin-bottom:18px;display:inline-flex;align-items:center;gap:4px;width:fit-content}
+.tag{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px}
+.title{font-size:26px;font-weight:700;letter-spacing:-.2px;margin-bottom:10px}
+.sub{font-size:14px;color:var(--text-secondary);margin-bottom:28px;line-height:1.6}
 
-.frame{position:relative;width:100%;max-width:430px;height:100dvh;height:100vh;height:var(--vh100, 100vh);overflow:hidden;background:linear-gradient(180deg,var(--yellow-bg-top) 0%,var(--yellow-bg-bottom) 100%);display:flex;flex-direction:column}
+.fruit-list{display:flex;flex-direction:column;border-top:1px solid var(--divider)}
+.fruit-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--divider)}
+.fruit-preview{width:46px;height:46px;border-radius:50%;background:var(--surface-1);border:1px solid var(--divider);display:flex;align-items:center;justify-content:center;font-size:22px;overflow:hidden;flex-shrink:0}
+.fruit-preview img{width:100%;height:100%;object-fit:cover}
+.fruit-info{flex:1;min-width:0}
+.fruit-name{font-size:14.5px;font-weight:600}
+.fruit-status{font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-top:2px}
+.fruit-actions{display:flex;gap:6px;flex-shrink:0}
+.fruit-btn{font-family:var(--mono);font-size:11.5px;font-weight:600;color:#04181c;background:var(--cyan);border:none;border-radius:12px;padding:9px 12px;cursor:pointer;white-space:nowrap}
+.fruit-btn:active{transform:scale(.95)}
+.fruit-remove{font-family:var(--mono);font-size:11.5px;color:var(--text-muted);background:none;border:1px solid var(--divider);border-radius:12px;padding:9px 10px;cursor:pointer;display:none}
+.fruit-remove.show{display:inline-block}
+.fruit-remove:active{opacity:.7}
+.fruit-input-hidden{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.fruit-error{font-size:11.5px;color:var(--signal-red);margin-top:6px;display:none}
 
-.topbar{position:absolute;top:0;left:0;right:0;z-index:6;padding:calc(14px + env(safe-area-inset-top,0)) 16px 10px;display:flex;align-items:center;gap:10px;pointer-events:none}
-.back-chip{pointer-events:auto;flex-shrink:0;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.4);border:1px solid rgba(90,60,20,.25);color:#5A3B14;font-size:18px;font-weight:700;line-height:1;text-decoration:none}
-.back-chip:active{transform:scale(.92)}
-
-.score-coin{pointer-events:none;flex-shrink:0;width:58px;height:58px;border-radius:50%;border:5px solid var(--coin-ring);background:radial-gradient(circle at 35% 30%,var(--coin-a) 0%,var(--coin-b) 60%,var(--coin-c) 100%);box-shadow:0 3px 8px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center}
-.score-coin-value{font-family:var(--mono);font-weight:800;color:var(--coin-text);font-size:15px;line-height:1;text-align:center;padding:0 4px}
-.score-coin-value.small{font-size:11.5px}
-
-.next-avatar{position:absolute;top:calc(16px + env(safe-area-inset-top,0));left:50%;transform:translateX(-50%);z-index:6;width:62px;height:62px;border-radius:50%;border:4px solid var(--avatar-ring);background:var(--avatar-fill);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,.2);pointer-events:none}
-.next-avatar-emoji{font-size:30px;line-height:1}
-
-.stage{position:absolute;inset:0;touch-action:none}
-#gameCanvas{display:block;width:100%;height:100%;touch-action:none}
-
-.hint{position:absolute;left:0;right:0;bottom:calc(14px + env(safe-area-inset-bottom,0));z-index:6;text-align:center;font-family:var(--mono);font-size:11px;color:var(--brown-text);letter-spacing:.02em;pointer-events:none}
-
-.toast{position:absolute;top:calc(70px + env(safe-area-inset-top,0));left:50%;transform:translate(-50%,-8px);z-index:7;font-family:var(--mono);font-weight:700;font-size:13px;letter-spacing:.04em;color:#08110c;background:var(--amber);border-radius:20px;padding:8px 16px;opacity:0;transition:opacity .25s ease,transform .25s ease;pointer-events:none;white-space:nowrap}
-.toast.show{opacity:1;transform:translate(-50%,0)}
-
-.overlay{position:absolute;inset:0;z-index:8;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;text-align:center;padding:32px;background:rgba(5,7,10,.78);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
-.overlay.show{display:flex}
-.overlay-title{font-family:var(--mono);font-size:14px;letter-spacing:.12em;color:var(--signal-red)}
-.overlay-score{font-size:38px;font-weight:800;color:var(--text-primary)}
-.overlay-best{font-family:var(--mono);font-size:12.5px;color:var(--text-secondary);margin-bottom:8px}
-.restart-btn{font-family:var(--mono);font-size:14px;font-weight:700;letter-spacing:.04em;color:#08110c;background:var(--green);border:none;border-radius:16px;padding:14px 28px;cursor:pointer}
-.restart-btn:active{opacity:.8}
+.test-btn{margin-top:24px;font-family:var(--mono);font-size:14.5px;font-weight:700;letter-spacing:.04em;color:#08110c;background:var(--green);border:none;border-radius:16px;padding:16px;cursor:pointer;text-align:center;text-decoration:none;display:block}
+.test-btn:active{opacity:.8}
 </style>
 </head>
 <body>
-<div class="frame" id="frame">
+<div class="frame">
+  <a class="back" href="/dev/minigames/">‹ DEV</a>
+  <div class="tag">Minigame · 설정</div>
+  <div class="title">🍉 수박 게임</div>
+  <div class="sub">과일마다 사진을 설정하면 게임 속 이모지 대신 그 사진이 굴러다녀요. 설정하지 않은 과일은 기본 이모지로 나와요.</div>
 
-  <div class="topbar">
-    <a class="back-chip" href="/dev/minigames/" aria-label="뒤로">‹</a>
-    <div class="score-coin">
-      <div class="score-coin-value" id="scoreValue">0</div>
-    </div>
-  </div>
-  <div class="next-avatar">
-    <div class="next-avatar-emoji" id="nextFruit">🍒</div>
-  </div>
+  <div class="fruit-list" id="fruitList"></div>
+  <div class="fruit-error" id="fruitError"></div>
 
-  <div class="toast" id="toast"></div>
-
-  <div class="stage" id="stage">
-    <canvas id="gameCanvas"></canvas>
-  </div>
-
-  <div class="hint" id="hint">움직여서 조준 · 탭해서 떨어뜨리기 · 같은 과일을 합쳐 수박을 만드세요</div>
-
-  <div class="overlay" id="overlay">
-    <div class="overlay-title">GAME OVER</div>
-    <div class="overlay-score" id="finalScore">0</div>
-    <div class="overlay-best" id="bestScoreLine"></div>
-    <button class="restart-btn" id="restartBtn" type="button">다시하기</button>
-  </div>
-
+  <a class="test-btn" id="testBtn" href="/dev/minigame-watermelon/play/">테스트하기</a>
 </div>
-
 <script>
-function setVh100() { document.documentElement.style.setProperty('--vh100', window.innerHeight + 'px'); }
-setVh100();
-window.addEventListener('resize', setVh100);
-window.addEventListener('orientationchange', setVh100);
-
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
 }
 </script>
 <script>
-/* =========================================================================
-   수박 게임 (watermelon merge game, Suika-style) — standalone/독립형
-   미니게임, 스토리 미연동. Reference: https://github.com/liyupi/daxigua.git
-
-   Physics runs on Matter.js (loaded via CDN above); this file only owns
-   spawning/merging/game-over rules and a plain canvas render pass that
-   reads body positions straight out of the Matter world each frame.
-   ========================================================================= */
-
-const { Engine, Bodies, Composite, Events } = Matter;
-
-// Tiers small -> large. `r` is world/CSS-px radius. Score on a merge is the
-// triangular number of the *resulting* tier's rank (1,3,6,10,15,...) —
-// matches the scoring convention of the original Suika/수박게임.
-const FRUITS = [
-  { name: '체리',     r: 15,  color: '#E5445A', emoji: '🍒' },
-  { name: '딸기',     r: 19,  color: '#FF6584', emoji: '🍓' },
-  { name: '포도',     r: 24,  color: '#8C5FD6', emoji: '🍇' },
-  { name: '귤',       r: 30,  color: '#FFA23E', emoji: '🍊' },
-  { name: '사과',     r: 37,  color: '#FF5F4E', emoji: '🍎' },
-  { name: '배',       r: 45,  color: '#C7D93B', emoji: '🍐' },
-  { name: '복숭아',   r: 55,  color: '#FFB199', emoji: '🍑' },
-  { name: '파인애플', r: 67,  color: '#FFD93E', emoji: '🍍' },
-  { name: '코코넛',   r: 81,  color: '#C9A76A', emoji: '🥥' },
-  { name: '멜론',     r: 98,  color: '#9FDB6B', emoji: '🍈' },
-  { name: '수박',     r: 118, color: '#3FAE4A', emoji: '🍉' },
+/* ===== Per-fruit photo picker — stores a downscaled data URL per tier in
+   localStorage under FRUIT_IMAGE_KEY, read straight off there by the play
+   screen (dev/minigame-watermelon/play/). Same downscale-through-canvas
+   approach as the fishing minigame's 설정 screen, so a full-size phone
+   photo doesn't blow the localStorage quota. ===== */
+const FRUIT_META = [
+  { name: '체리',     emoji: '🍒' },
+  { name: '딸기',     emoji: '🍓' },
+  { name: '포도',     emoji: '🍇' },
+  { name: '귤',       emoji: '🍊' },
+  { name: '사과',     emoji: '🍎' },
+  { name: '배',       emoji: '🍐' },
+  { name: '복숭아',   emoji: '🍑' },
+  { name: '파인애플', emoji: '🍍' },
+  { name: '코코넛',   emoji: '🥥' },
+  { name: '멜론',     emoji: '🍈' },
+  { name: '수박',     emoji: '🍉' },
 ];
-function fruitScore(tierIdx) { const n = tierIdx + 1; return (n * (n + 1)) / 2; }
+const FRUIT_IMAGE_KEY = 'mkWatermelonFruitImages';
 
-// Only the first 5 tiers ever drop from the top, same as the original game —
-// bigger fruit only ever appears by merging.
-const DROP_POOL = [0, 1, 2, 3, 4];
-function randomDropTier() { return DROP_POOL[Math.floor(Math.random() * DROP_POOL.length)]; }
-
-/* ===== Layout — the play field is the whole screen (edge to edge, matching
-   the reference), not a smaller boxed-in jar. Only the brown strip at the
-   bottom is solid ground ("table") that fruit rests/rolls on; fruit falls
-   and can roll freely across the full width above it. Logical/world px ==
-   CSS px, sized once off the frame's actual box (no runtime rescaling —
-   this is a dev test page, not expected to survive a mid-game rotation). ===== */
-const WALL = 14;
-const WALL_MARGIN = 10; // side walls sit just inside the screen edges
-const TOPBAR_CLEARANCE = 112; // keeps fruit below the score-coin/next-avatar badges
-const frameEl = document.getElementById('frame');
-const LOGICAL_W = frameEl.clientWidth;
-const LOGICAL_H = frameEl.clientHeight;
-const TABLE_H = Math.round(LOGICAL_H * 0.16);
-const containerLeft = WALL_MARGIN;
-const containerRight = LOGICAL_W - WALL_MARGIN;
-const containerTop = TOPBAR_CLEARANCE;
-const containerBottom = LOGICAL_H - TABLE_H; // physics floor == top surface of the table
-const dropY = containerTop + 22; // fixed hover/spawn height for the current fruit
-const dangerLineY = containerTop + 62;
-
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
-canvas.width = LOGICAL_W * dpr;
-canvas.height = LOGICAL_H * dpr;
-canvas.style.width = LOGICAL_W + 'px';
-canvas.style.height = LOGICAL_H + 'px';
-ctx.scale(dpr, dpr);
-
-const engine = Engine.create();
-engine.gravity.y = 1.15;
-
-function addWalls() {
-  Composite.add(engine.world, [
-    Bodies.rectangle(containerLeft - WALL / 2, LOGICAL_H / 2, WALL, LOGICAL_H * 2, { isStatic: true, label: 'wall' }),
-    Bodies.rectangle(containerRight + WALL / 2, LOGICAL_H / 2, WALL, LOGICAL_H * 2, { isStatic: true, label: 'wall' }),
-    Bodies.rectangle(LOGICAL_W / 2, containerBottom + WALL / 2, containerRight - containerLeft + WALL * 2, WALL, { isStatic: true, label: 'wall' }),
-  ]);
+function loadImages() {
+  try { return JSON.parse(localStorage.getItem(FRUIT_IMAGE_KEY)) || {}; }
+  catch (e) { return {}; }
 }
-addWalls();
+function saveImages(data) {
+  try {
+    localStorage.setItem(FRUIT_IMAGE_KEY, JSON.stringify(data));
+  } catch (e) {
+    throw new Error(e && e.name === 'QuotaExceededError'
+      ? '저장 공간이 부족해요. 다른 과일 사진을 지우고 다시 시도해 보세요.'
+      : '이미지 저장에 실패했어요.');
+  }
+}
 
-function spawnFruitBody(tierIdx, x, y) {
-  const f = FRUITS[tierIdx];
-  const body = Bodies.circle(x, y, f.r, {
-    restitution: 0.15,
-    friction: 0.5,
-    frictionStatic: 0.6,
-    frictionAir: 0.0015,
-    label: 'fruit',
+function resizeImageToDataUrl(file, maxDim, mimeType, quality) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          const scale = maxDim / Math.max(width, height);
+          width = Math.round(width * scale);
+          height = Math.round(height * scale);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL(mimeType, quality));
+      };
+      img.onerror = () => reject(new Error('이미지를 불러오지 못했어요.'));
+      img.src = reader.result;
+    };
+    reader.onerror = () => reject(new Error('파일을 읽지 못했어요.'));
+    reader.readAsDataURL(file);
   });
-  body.plugin = { tier: tierIdx, merging: false };
-  return body;
 }
 
-/* ===== Runtime state ===== */
-const BEST_KEY = 'mkWatermelonBest';
-const state = {
-  score: 0,
-  best: Number(localStorage.getItem(BEST_KEY)) || 0,
-  current: randomDropTier(),
-  next: randomDropTier(),
-  aimX: LOGICAL_W / 2,
-  canDrop: true,
-  gameOver: false,
-  dangerSince: null,
-};
-let pendingMerges = [];
-let particles = [];
+let images = loadImages();
+const listEl = document.getElementById('fruitList');
+const errorEl = document.getElementById('fruitError');
 
-const el = {
-  scoreValue: document.getElementById('scoreValue'),
-  nextFruit: document.getElementById('nextFruit'),
-  toast: document.getElementById('toast'),
-  hint: document.getElementById('hint'),
-  overlay: document.getElementById('overlay'),
-  finalScore: document.getElementById('finalScore'),
-  bestScoreLine: document.getElementById('bestScoreLine'),
-  restartBtn: document.getElementById('restartBtn'),
-};
-// Sits just above the table strip instead of a fixed CSS offset, since
-// TABLE_H is a proportion of the actual screen height.
-el.hint.style.bottom = 'calc(' + (TABLE_H + 14) + 'px + env(safe-area-inset-bottom,0))';
-
-function addScore(n) {
-  state.score += n;
-  el.scoreValue.textContent = state.score.toLocaleString('ko-KR');
-  el.scoreValue.classList.toggle('small', state.score >= 1000);
-  if (state.score > state.best) {
-    state.best = state.score;
-    localStorage.setItem(BEST_KEY, String(state.best));
-  }
-}
-function updateNextPreview() { el.nextFruit.textContent = FRUITS[state.next].emoji; }
-updateNextPreview();
-
-let toastTimer = null;
-function showToast(msg) {
-  el.toast.textContent = msg;
-  el.toast.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.toast.classList.remove('show'), 1400);
+function rowHtml(tierIdx, meta) {
+  const dataUrl = images[tierIdx];
+  return `
+    <div class="fruit-row">
+      <div class="fruit-preview" id="preview-${tierIdx}">${dataUrl ? `<img src="${dataUrl}" alt="">` : meta.emoji}</div>
+      <div class="fruit-info">
+        <div class="fruit-name">${meta.name} ${meta.emoji}</div>
+        <div class="fruit-status" id="status-${tierIdx}">${dataUrl ? '사진 설정됨' : '기본 이모지'}</div>
+      </div>
+      <div class="fruit-actions">
+        <label class="fruit-btn" for="input-${tierIdx}">사진 설정</label>
+        <input type="file" id="input-${tierIdx}" accept="image/*" class="fruit-input-hidden" data-tier="${tierIdx}">
+        <button type="button" class="fruit-remove${dataUrl ? ' show' : ''}" id="remove-${tierIdx}" data-tier="${tierIdx}">제거</button>
+      </div>
+    </div>
+  `;
 }
 
-function spawnBurst(x, y, color) {
-  for (let i = 0; i < 12; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const speed = 1.5 + Math.random() * 2.5;
-    particles.push({
-      x, y,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed - 1,
-      life: 420,
-      maxLife: 420,
-      color,
-      r: 2 + Math.random() * 3,
-    });
-  }
+function renderList() {
+  listEl.innerHTML = FRUIT_META.map((meta, i) => rowHtml(i, meta)).join('');
+  FRUIT_META.forEach((meta, i) => {
+    document.getElementById(`input-${i}`).addEventListener('change', (e) => onUpload(i, e));
+    document.getElementById(`remove-${i}`).addEventListener('click', () => onRemove(i));
+  });
 }
-function updateParticles(dt) {
-  particles = particles.filter(p => p.life > 0);
-  for (const p of particles) {
-    p.x += p.vx * (dt / 16);
-    p.y += p.vy * (dt / 16);
-    p.vy += 0.12 * (dt / 16);
-    p.life -= dt;
+
+function updateRow(tierIdx) {
+  const meta = FRUIT_META[tierIdx];
+  const dataUrl = images[tierIdx];
+  document.getElementById(`preview-${tierIdx}`).innerHTML = dataUrl ? `<img src="${dataUrl}" alt="">` : meta.emoji;
+  document.getElementById(`status-${tierIdx}`).textContent = dataUrl ? '사진 설정됨' : '기본 이모지';
+  document.getElementById(`remove-${tierIdx}`).classList.toggle('show', !!dataUrl);
+}
+
+async function onUpload(tierIdx, e) {
+  const file = e.target.files && e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+  errorEl.style.display = 'none';
+  try {
+    const dataUrl = await resizeImageToDataUrl(file, 260, 'image/jpeg', 0.8);
+    images[tierIdx] = dataUrl;
+    saveImages(images);
+    updateRow(tierIdx);
+  } catch (err) {
+    errorEl.textContent = (err && err.message) || '이미지 업로드에 실패했어요.';
+    errorEl.style.display = 'block';
   }
 }
 
-/* ===== Merge handling — flagged immediately on collisionStart so a body
-   can't be claimed by two simultaneous merges, actually removed/replaced
-   in afterUpdate so we never mutate the world mid-collision-callback. ===== */
-Events.on(engine, 'collisionStart', (event) => {
-  for (const pair of event.pairs) {
-    const { bodyA, bodyB } = pair;
-    if (bodyA.label !== 'fruit' || bodyB.label !== 'fruit') continue;
-    if (bodyA.plugin.merging || bodyB.plugin.merging) continue;
-    if (bodyA.plugin.tier !== bodyB.plugin.tier) continue;
-    bodyA.plugin.merging = true;
-    bodyB.plugin.merging = true;
-    pendingMerges.push({ a: bodyA, b: bodyB });
-  }
-});
-
-Events.on(engine, 'afterUpdate', () => {
-  if (!pendingMerges.length) return;
-  const merges = pendingMerges.splice(0);
-  for (const { a, b } of merges) {
-    const tier = a.plugin.tier;
-    const midX = (a.position.x + b.position.x) / 2;
-    const midY = (a.position.y + b.position.y) / 2;
-    Composite.remove(engine.world, [a, b]);
-    spawnBurst(midX, midY, FRUITS[tier].color);
-    if (tier >= FRUITS.length - 1) {
-      addScore(fruitScore(tier) * 2);
-      showToast('수박 합체! 🎉');
-      continue;
-    }
-    const newTier = tier + 1;
-    Composite.add(engine.world, spawnFruitBody(newTier, midX, midY));
-    addScore(fruitScore(newTier));
-  }
-});
-
-/* ===== Drop ===== */
-function clamp(v, min, max) { return Math.min(Math.max(v, min), max); }
-
-function doDrop() {
-  if (state.gameOver || !state.canDrop) return;
-  const tier = state.current;
-  const r = FRUITS[tier].r;
-  const x = clamp(state.aimX, containerLeft + r + 2, containerRight - r - 2);
-  Composite.add(engine.world, spawnFruitBody(tier, x, dropY));
-  state.canDrop = false;
-  state.current = state.next;
-  state.next = randomDropTier();
-  updateNextPreview();
-  setTimeout(() => { state.canDrop = true; }, 380);
+function onRemove(tierIdx) {
+  delete images[tierIdx];
+  saveImages(images);
+  updateRow(tierIdx);
 }
 
-/* ===== Game over — a settled fruit resting with its top above the danger
-   line for a sustained stretch ends the run. Fast-falling fruit (still
-   settling in) is excluded via the speed check, not by exempting the most
-   recently dropped body. ===== */
-function checkGameOver() {
-  if (state.gameOver) return;
-  let violating = false;
-  for (const body of Composite.allBodies(engine.world)) {
-    if (body.label !== 'fruit' || body.plugin.merging) continue;
-    const top = body.position.y - body.circleRadius;
-    if (top < dangerLineY && body.speed < 0.5) { violating = true; break; }
-  }
-  if (violating) {
-    if (state.dangerSince === null) state.dangerSince = performance.now();
-    else if (performance.now() - state.dangerSince > 1200) triggerGameOver();
-  } else {
-    state.dangerSince = null;
-  }
-}
-
-function triggerGameOver() {
-  state.gameOver = true;
-  el.finalScore.textContent = state.score.toLocaleString('ko-KR');
-  el.bestScoreLine.textContent = '최고 기록 ' + state.best.toLocaleString('ko-KR');
-  el.overlay.classList.add('show');
-}
-
-function restart() {
-  Composite.clear(engine.world, true); // keeps static walls, drops all fruit
-  particles = [];
-  pendingMerges = [];
-  state.score = 0;
-  state.current = randomDropTier();
-  state.next = randomDropTier();
-  state.canDrop = true;
-  state.gameOver = false;
-  state.dangerSince = null;
-  el.scoreValue.textContent = '0';
-  el.scoreValue.classList.remove('small');
-  updateNextPreview();
-  el.overlay.classList.remove('show');
-}
-el.restartBtn.addEventListener('click', restart);
-
-/* ===== Input — pointermove aims (works while hovering, no press needed on
-   desktop; on touch the first contact itself sets the aim), pointerup/tap
-   drops. Arrow keys + space are a desktop-testing convenience. ===== */
-function localX(e) {
-  const rect = canvas.getBoundingClientRect();
-  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-  return (clientX - rect.left) * (LOGICAL_W / rect.width);
-}
-function onAimMove(e) { state.aimX = clamp(localX(e), 0, LOGICAL_W); }
-function onAimEnd(e) { if (e.cancelable) e.preventDefault(); doDrop(); }
-
-canvas.addEventListener('pointermove', onAimMove);
-canvas.addEventListener('pointerdown', onAimMove);
-canvas.addEventListener('pointerup', onAimEnd);
-canvas.addEventListener('touchmove', (e) => { e.preventDefault(); onAimMove(e); }, { passive: false });
-canvas.addEventListener('touchend', onAimEnd, { passive: false });
-
-window.addEventListener('keydown', (e) => {
-  if (e.code === 'ArrowLeft') state.aimX = clamp(state.aimX - 14, 0, LOGICAL_W);
-  else if (e.code === 'ArrowRight') state.aimX = clamp(state.aimX + 14, 0, LOGICAL_W);
-  else if (e.code === 'Space' || e.code === 'Enter') doDrop();
-});
-
-/* ===== Render — canvas only, reads Matter body positions straight off the
-   world; never mutates simulation state. The table strip is the only solid
-   ground; fruit falls and rolls freely across the rest of the full-screen
-   canvas above it. Each fruit is drawn rotated to its physics body.angle
-   so it visibly spins as it rolls, instead of always sitting upright. ===== */
-function drawTable() {
-  const tTop = containerBottom;
-  const grad = ctx.createLinearGradient(0, tTop, 0, LOGICAL_H);
-  grad.addColorStop(0, '#C79A5C');
-  grad.addColorStop(1, '#4A3018');
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, tTop, LOGICAL_W, LOGICAL_H - tTop);
-  ctx.fillStyle = 'rgba(255,255,255,0.18)';
-  ctx.fillRect(0, tTop, LOGICAL_W, 2);
-}
-
-function draw() {
-  ctx.clearRect(0, 0, LOGICAL_W, LOGICAL_H);
-
-  drawTable();
-
-  ctx.save();
-  ctx.setLineDash([6, 6]);
-  ctx.strokeStyle = 'rgba(140,40,20,0.5)';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(containerLeft + 6, dangerLineY);
-  ctx.lineTo(containerRight - 6, dangerLineY);
-  ctx.stroke();
-  ctx.restore();
-
-  for (const body of Composite.allBodies(engine.world)) {
-    if (body.label !== 'fruit') continue;
-    const f = FRUITS[body.plugin.tier];
-    const { x, y } = body.position;
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.rotate(body.angle);
-    ctx.beginPath();
-    ctx.arc(0, 0, f.r, 0, Math.PI * 2);
-    ctx.fillStyle = f.color;
-    ctx.fill();
-    ctx.lineWidth = 1.5;
-    ctx.strokeStyle = 'rgba(0,0,0,0.25)';
-    ctx.stroke();
-    ctx.font = Math.round(f.r * 1.15) + 'px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(f.emoji, 0, f.r * 0.05);
-    ctx.restore();
-  }
-
-  if (!state.gameOver) {
-    const r = FRUITS[state.current].r;
-    const x = clamp(state.aimX, containerLeft + r + 2, containerRight - r - 2);
-    ctx.save();
-    ctx.setLineDash([4, 6]);
-    ctx.strokeStyle = 'rgba(90,60,20,0.35)';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(x, dropY);
-    ctx.lineTo(x, containerBottom);
-    ctx.stroke();
-    ctx.restore();
-
-    ctx.globalAlpha = state.canDrop ? 0.95 : 0.4;
-    ctx.beginPath();
-    ctx.arc(x, dropY, r, 0, Math.PI * 2);
-    ctx.fillStyle = FRUITS[state.current].color;
-    ctx.fill();
-    ctx.font = Math.round(r * 1.15) + 'px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(FRUITS[state.current].emoji, x, dropY + r * 0.05);
-    ctx.globalAlpha = 1;
-  }
-
-  for (const p of particles) {
-    ctx.globalAlpha = Math.max(p.life / p.maxLife, 0);
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-    ctx.fillStyle = p.color;
-    ctx.fill();
-  }
-  ctx.globalAlpha = 1;
-}
-
-/* ===== Main loop ===== */
-let lastTime = performance.now();
-function loop(now) {
-  const dt = Math.min(now - lastTime, 33);
-  lastTime = now;
-  if (!state.gameOver) {
-    Engine.update(engine, dt);
-    checkGameOver();
-    updateParticles(dt);
-  }
-  draw();
-  requestAnimationFrame(loop);
-}
-requestAnimationFrame(loop);
+renderList();
 </script>
 <script src="/dev/devPlanFab.js"></script>
 </body>

@@ -1717,13 +1717,13 @@ const minigames = [
     setupUrl: '/dev/minigame-fishing/',
   },
   {
-    // Standalone Suika-style merge game — single self-contained page, no
-    // dev-side setup step, so setupUrl and route are the same page (same
-    // shape as special-ability-test below).
+    // Standalone Suika-style merge game — same setupUrl/route split as
+    // fishing above, but the settings screen picks a per-fruit photo
+    // instead of difficulty/motion.
     id: 'watermelon-minigame',
     name: '수박 게임',
     location: '독립형 미니게임 (스토리 미연동)',
-    route: '/dev/minigame-watermelon/',
+    route: '/dev/minigame-watermelon/play/',
     setupUrl: '/dev/minigame-watermelon/',
   },
 ];
