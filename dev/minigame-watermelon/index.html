@@ -42,8 +42,8 @@ body{background:linear-gradient(180deg,var(--yellow-bg-top) 0%,var(--yellow-bg-b
 .next-avatar{position:absolute;top:calc(16px + env(safe-area-inset-top,0));left:50%;transform:translateX(-50%);z-index:6;width:62px;height:62px;border-radius:50%;border:4px solid var(--avatar-ring);background:var(--avatar-fill);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,.2);pointer-events:none}
 .next-avatar-emoji{font-size:30px;line-height:1}
 
-.stage{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:calc(74px + env(safe-area-inset-top,0)) 16px calc(40px + env(safe-area-inset-bottom,0));touch-action:none}
-#gameCanvas{touch-action:none;max-width:100%;max-height:100%}
+.stage{position:absolute;inset:0;touch-action:none}
+#gameCanvas{display:block;width:100%;height:100%;touch-action:none}
 
 .hint{position:absolute;left:0;right:0;bottom:calc(14px + env(safe-area-inset-bottom,0));z-index:6;text-align:center;font-family:var(--mono);font-size:11px;color:var(--brown-text);letter-spacing:.02em;pointer-events:none}
 
@@ -134,19 +134,25 @@ function fruitScore(tierIdx) { const n = tierIdx + 1; return (n * (n + 1)) / 2; 
 const DROP_POOL = [0, 1, 2, 3, 4];
 function randomDropTier() { return DROP_POOL[Math.floor(Math.random() * DROP_POOL.length)]; }
 
-/* ===== Fixed logical layout (CSS px == world px, no runtime rescaling —
+/* ===== Layout — the play field is the whole screen (edge to edge, matching
+   the reference), not a smaller boxed-in jar. Only the brown strip at the
+   bottom is solid ground ("table") that fruit rests/rolls on; fruit falls
+   and can roll freely across the full width above it. Logical/world px ==
+   CSS px, sized once off the frame's actual box (no runtime rescaling —
    this is a dev test page, not expected to survive a mid-game rotation). ===== */
 const WALL = 14;
-const CONTAINER_W = 290;
-const CONTAINER_H = 430;
-const SPAWN_MARGIN = 80;
-const LOGICAL_W = CONTAINER_W + 40;
-const LOGICAL_H = SPAWN_MARGIN + CONTAINER_H;
-const containerLeft = (LOGICAL_W - CONTAINER_W) / 2;
-const containerRight = containerLeft + CONTAINER_W;
-const containerTop = SPAWN_MARGIN;
-const containerBottom = containerTop + CONTAINER_H;
-const dangerLineY = containerTop + 55;
+const WALL_MARGIN = 10; // side walls sit just inside the screen edges
+const TOPBAR_CLEARANCE = 112; // keeps fruit below the score-coin/next-avatar badges
+const frameEl = document.getElementById('frame');
+const LOGICAL_W = frameEl.clientWidth;
+const LOGICAL_H = frameEl.clientHeight;
+const TABLE_H = Math.round(LOGICAL_H * 0.16);
+const containerLeft = WALL_MARGIN;
+const containerRight = LOGICAL_W - WALL_MARGIN;
+const containerTop = TOPBAR_CLEARANCE;
+const containerBottom = LOGICAL_H - TABLE_H; // physics floor == top surface of the table
+const dropY = containerTop + 22; // fixed hover/spawn height for the current fruit
+const dangerLineY = containerTop + 62;
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -164,7 +170,7 @@ function addWalls() {
   Composite.add(engine.world, [
     Bodies.rectangle(containerLeft - WALL / 2, LOGICAL_H / 2, WALL, LOGICAL_H * 2, { isStatic: true, label: 'wall' }),
     Bodies.rectangle(containerRight + WALL / 2, LOGICAL_H / 2, WALL, LOGICAL_H * 2, { isStatic: true, label: 'wall' }),
-    Bodies.rectangle(LOGICAL_W / 2, containerBottom + WALL / 2, CONTAINER_W + WALL * 2, WALL, { isStatic: true, label: 'wall' }),
+    Bodies.rectangle(LOGICAL_W / 2, containerBottom + WALL / 2, containerRight - containerLeft + WALL * 2, WALL, { isStatic: true, label: 'wall' }),
   ]);
 }
 addWalls();
@@ -201,11 +207,15 @@ const el = {
   scoreValue: document.getElementById('scoreValue'),
   nextFruit: document.getElementById('nextFruit'),
   toast: document.getElementById('toast'),
+  hint: document.getElementById('hint'),
   overlay: document.getElementById('overlay'),
   finalScore: document.getElementById('finalScore'),
   bestScoreLine: document.getElementById('bestScoreLine'),
   restartBtn: document.getElementById('restartBtn'),
 };
+// Sits just above the table strip instead of a fixed CSS offset, since
+// TABLE_H is a proportion of the actual screen height.
+el.hint.style.bottom = 'calc(' + (TABLE_H + 14) + 'px + env(safe-area-inset-bottom,0))';
 
 function addScore(n) {
   state.score += n;
@@ -295,8 +305,7 @@ function doDrop() {
   const tier = state.current;
   const r = FRUITS[tier].r;
   const x = clamp(state.aimX, containerLeft + r + 2, containerRight - r - 2);
-  const y = containerTop - r - 6;
-  Composite.add(engine.world, spawnFruitBody(tier, x, y));
+  Composite.add(engine.world, spawnFruitBody(tier, x, dropY));
   state.canDrop = false;
   state.current = state.next;
   state.next = randomDropTier();
@@ -372,23 +381,25 @@ window.addEventListener('keydown', (e) => {
 });
 
 /* ===== Render — canvas only, reads Matter body positions straight off the
-   world; never mutates simulation state. ===== */
-const GROUND_H = 42;
-function drawGround() {
-  const gTop = LOGICAL_H - GROUND_H;
-  const grad = ctx.createLinearGradient(0, gTop, 0, LOGICAL_H);
+   world; never mutates simulation state. The table strip is the only solid
+   ground; fruit falls and rolls freely across the rest of the full-screen
+   canvas above it. Each fruit is drawn rotated to its physics body.angle
+   so it visibly spins as it rolls, instead of always sitting upright. ===== */
+function drawTable() {
+  const tTop = containerBottom;
+  const grad = ctx.createLinearGradient(0, tTop, 0, LOGICAL_H);
   grad.addColorStop(0, '#C79A5C');
   grad.addColorStop(1, '#4A3018');
   ctx.fillStyle = grad;
-  ctx.fillRect(0, gTop, LOGICAL_W, GROUND_H);
+  ctx.fillRect(0, tTop, LOGICAL_W, LOGICAL_H - tTop);
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
-  ctx.fillRect(0, gTop, LOGICAL_W, 2);
+  ctx.fillRect(0, tTop, LOGICAL_W, 2);
 }
 
 function draw() {
   ctx.clearRect(0, 0, LOGICAL_W, LOGICAL_H);
 
-  drawGround();
+  drawTable();
 
   ctx.save();
   ctx.setLineDash([6, 6]);
@@ -404,8 +415,11 @@ function draw() {
     if (body.label !== 'fruit') continue;
     const f = FRUITS[body.plugin.tier];
     const { x, y } = body.position;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(body.angle);
     ctx.beginPath();
-    ctx.arc(x, y, f.r, 0, Math.PI * 2);
+    ctx.arc(0, 0, f.r, 0, Math.PI * 2);
     ctx.fillStyle = f.color;
     ctx.fill();
     ctx.lineWidth = 1.5;
@@ -414,7 +428,8 @@ function draw() {
     ctx.font = Math.round(f.r * 1.15) + 'px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(f.emoji, x, y + f.r * 0.05);
+    ctx.fillText(f.emoji, 0, f.r * 0.05);
+    ctx.restore();
   }
 
   if (!state.gameOver) {
@@ -425,21 +440,20 @@ function draw() {
     ctx.strokeStyle = 'rgba(90,60,20,0.35)';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.moveTo(x, containerTop);
+    ctx.moveTo(x, dropY);
     ctx.lineTo(x, containerBottom);
     ctx.stroke();
     ctx.restore();
 
-    const previewY = containerTop - r - 6;
     ctx.globalAlpha = state.canDrop ? 0.95 : 0.4;
     ctx.beginPath();
-    ctx.arc(x, previewY, r, 0, Math.PI * 2);
+    ctx.arc(x, dropY, r, 0, Math.PI * 2);
     ctx.fillStyle = FRUITS[state.current].color;
     ctx.fill();
     ctx.font = Math.round(r * 1.15) + 'px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(FRUITS[state.current].emoji, x, previewY + r * 0.05);
+    ctx.fillText(FRUITS[state.current].emoji, x, dropY + r * 0.05);
     ctx.globalAlpha = 1;
   }
 
