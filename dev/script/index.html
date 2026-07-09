@@ -26,30 +26,27 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .week-select{font-family:var(--mono);font-size:11.5px;background:var(--surface-1);color:var(--text-primary);border:1px solid var(--divider);border-radius:10px;padding:8px 10px;flex-shrink:0}
 .sub{font-size:13px;color:var(--text-secondary);margin:10px 0 16px;line-height:1.6}
 
-/* Quick jump strip — one pill per scene in this week, so a long script is
-   still "referenced from here" without endless scrolling. */
-.jump-nav{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:20px;-webkit-overflow-scrolling:touch}
+/* Quick jump strip — one pill per scene in this week; since every scene now
+   lives in the SAME textarea, a tap scrolls/positions the caret at that
+   scene's header line instead of anchor-scrolling to a separate element. */
+.jump-nav{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:16px;-webkit-overflow-scrolling:touch}
 .jump-nav::-webkit-scrollbar{display:none}
-.jump-pill{flex-shrink:0;font-family:var(--mono);font-size:11px;padding:7px 12px;border-radius:14px;background:var(--surface-1);border:1px solid var(--divider);color:var(--text-secondary);text-decoration:none;white-space:nowrap}
+.jump-pill{flex-shrink:0;font-family:var(--mono);font-size:11px;padding:7px 12px;border-radius:14px;background:var(--surface-1);border:1px solid var(--divider);color:var(--text-secondary);cursor:pointer;white-space:nowrap}
 .jump-pill:active{background:var(--surface-2)}
 
-.scene-section{margin-bottom:26px;scroll-margin-top:14px}
-.scene-section-head{margin-bottom:10px}
-.scene-section-title{font-size:15.5px;font-weight:700}
-.scene-section-meta{font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-top:2px}
-
-/* ===== Bulk dialogue editor — same look/classes as /dev/upload's 대사 탭
-   (see dialoguePanel.js's mountBulkDialogueEditor), one instance per scene
-   section here instead of one for a single picked scene. ===== */
-.dialogue-bulk-input{width:100%;background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:14px 16px;color:var(--text-primary);font-size:13.5px;line-height:1.7;font-family:var(--mono);resize:vertical;min-height:200px}
+/* ===== One combined bulk editor for the whole week — same look/classes as
+   /dev/upload's 대사 탭 (see dialoguePanel.js), just holding every scene's
+   script (each under its own "===== ... =====" header) instead of one. ===== */
+.dialogue-bulk-input{width:100%;flex:1;background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:14px 16px;color:var(--text-primary);font-size:13px;line-height:1.7;font-family:var(--mono);resize:vertical;min-height:56vh}
 .dialogue-bulk-input:focus{outline:none;border-color:rgba(89,184,200,.4)}
-.hotspot-actions{display:flex;gap:8px;margin-top:12px}
+.hotspot-actions{display:flex;gap:8px;margin-top:12px;flex-shrink:0}
 .hotspot-actions button{flex:1;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--mono);letter-spacing:.04em;border:none}
 .hotspot-actions button:disabled{opacity:.4;cursor:default}
 .hotspot-secondary-btn{background:var(--surface-2);color:var(--text-secondary);border:1px solid var(--divider)}
 .crop-save-btn{background:var(--cyan);color:#06181c}
-.hint{font-size:11px;color:var(--text-muted);margin:10px 0 0;line-height:1.6}
+.hint{font-size:11px;color:var(--text-muted);margin:10px 0 0;line-height:1.6;flex-shrink:0}
 .empty-note{font-size:13px;color:var(--text-muted);padding:14px 0}
+.editor-body{display:flex;flex-direction:column;flex:1;min-height:0}
 </style>
 </head>
 <body>
@@ -59,9 +56,9 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
     <div class="page-title" id="pageTitle">전체 대사</div>
     <select class="week-select" id="weekSelect"></select>
   </div>
-  <div class="sub">이 주차의 모든 씬 대사를 한 화면에서 보고 고칠 수 있습니다. 씬마다 한 줄당 <b>[화자] (감정)</b> 헤더 + 대사 텍스트, 줄 사이는 <b>---</b>로 구분합니다. 저장하면 실제 플레이(/dev/game)에도 그대로 반영됩니다.</div>
+  <div class="sub">이 주차의 모든 씬 대사가 한 텍스트에 묶여 있습니다. 씬 사이는 <b>===== #번호 씬이름 [씬ID] =====</b> 헤더로, 대사 줄 사이는 <b>---</b>로 구분합니다. 헤더 줄은 지우거나 고치지 마세요. 저장하면 실제 플레이(/dev/game)에도 그대로 반영됩니다.</div>
   <div class="jump-nav" id="jumpNav"></div>
-  <div id="scriptList"></div>
+  <div class="editor-body" id="editorBody"></div>
 </div>
 <script>
 if ('serviceWorker' in navigator) {
@@ -96,40 +93,109 @@ weekSelect.addEventListener('change', () => {
 const scenesWithLines = week.scenes.filter(s => s.lines && s.lines.length);
 
 const jumpNav = document.getElementById('jumpNav');
-jumpNav.innerHTML = scenesWithLines.map(s => `<a class="jump-pill" href="#scene-${escapeHtml(s.id)}">${escapeHtml(s.name)}</a>`).join('');
+const editorBody = document.getElementById('editorBody');
 
-const listEl = document.getElementById('scriptList');
 if (!scenesWithLines.length) {
-  listEl.innerHTML = '<div class="empty-note">이 주차에는 대사가 있는 씬이 없습니다.</div>';
+  jumpNav.innerHTML = '';
+  editorBody.innerHTML = '<div class="empty-note">이 주차에는 대사가 있는 씬이 없습니다.</div>';
 } else {
-  listEl.innerHTML = scenesWithLines.map(s => `
-    <div class="scene-section" id="scene-${escapeHtml(s.id)}">
-      <div class="scene-section-head">
-        <div class="scene-section-title">#${String(s.order || 0).padStart(2, '0')} ${escapeHtml(s.name)}</div>
-        <div class="scene-section-meta">${escapeHtml(s.location || '')}${s.time ? ' · ' + escapeHtml(s.time) : ''}</div>
-      </div>
-      <textarea class="dialogue-bulk-input" data-scene-id="${escapeHtml(s.id)}" rows="10" spellcheck="false" disabled></textarea>
-      <div class="hotspot-actions">
-        <button class="hotspot-secondary-btn" data-scene-id="${escapeHtml(s.id)}" data-role="revert" disabled>되돌리기</button>
-        <button class="crop-save-btn" data-scene-id="${escapeHtml(s.id)}" data-role="save" disabled>저장</button>
-      </div>
-      <div class="hint" data-scene-id="${escapeHtml(s.id)}" data-role="status"></div>
+  jumpNav.innerHTML = scenesWithLines.map(s =>
+    `<button class="jump-pill" type="button" data-scene-id="${escapeHtml(s.id)}">${escapeHtml(s.name)}</button>`
+  ).join('');
+  editorBody.innerHTML = `
+    <textarea class="dialogue-bulk-input" rows="24" spellcheck="false" disabled></textarea>
+    <div class="hotspot-actions">
+      <button class="hotspot-secondary-btn" data-role="revert" disabled>되돌리기</button>
+      <button class="crop-save-btn" data-role="save" disabled>저장</button>
     </div>
-  `).join('');
-}
+    <div class="hint" data-role="status">불러오는 중…</div>
+  `;
 
-// Every scene's override fetch runs independently in parallel — each
-// mounts into its own fixed set of elements, so there's no shared
-// "currently selected scene" to go stale here (unlike /dev/upload's
-// single-scene picker).
-Promise.all(scenesWithLines.map(scene => {
-  const sel = CSS.escape(scene.id);
-  const textarea = listEl.querySelector(`.dialogue-bulk-input[data-scene-id="${sel}"]`);
-  const revertBtn = listEl.querySelector(`[data-scene-id="${sel}"][data-role="revert"]`);
-  const saveBtn = listEl.querySelector(`[data-scene-id="${sel}"][data-role="save"]`);
-  const status = listEl.querySelector(`[data-scene-id="${sel}"][data-role="status"]`);
-  return mountBulkDialogueEditor({ textarea, revertBtn, saveBtn, status }, scene);
-}));
+  const textarea = editorBody.querySelector('.dialogue-bulk-input');
+  const revertBtn = editorBody.querySelector('[data-role="revert"]');
+  const saveBtn = editorBody.querySelector('[data-role="save"]');
+  const status = editorBody.querySelector('[data-role="status"]');
+
+  jumpNav.querySelectorAll('.jump-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = textarea.value.indexOf(`[${btn.dataset.sceneId}]`);
+      if (idx === -1) return;
+      textarea.focus();
+      textarea.setSelectionRange(idx, idx);
+      const lineNo = textarea.value.slice(0, idx).split('\n').length - 1;
+      const lineHeight = parseFloat(getComputedStyle(textarea).lineHeight) || 22;
+      textarea.scrollTop = Math.max(0, lineNo * lineHeight - 20);
+    });
+  });
+
+  (async () => {
+    let overridesByScene = {};
+    try {
+      const overridesList = await Promise.all(scenesWithLines.map(s => AssetDB.getDialogueOverrides(s.id)));
+      scenesWithLines.forEach((s, i) => { overridesByScene[s.id] = overridesList[i]; });
+    } catch (err) {
+      status.textContent = '대사를 불러오지 못했습니다.';
+      if (window.DevDiag) DevDiag.show('대사 불러오기 실패: ' + (err && err.message ? err.message : err));
+      return;
+    }
+
+    let originalText = formatCombinedDialogueText(scenesWithLines, overridesByScene);
+    textarea.value = originalText;
+    textarea.disabled = false;
+    revertBtn.disabled = false;
+    saveBtn.disabled = false;
+    status.textContent = '';
+
+    revertBtn.addEventListener('click', () => {
+      textarea.value = originalText;
+      status.textContent = '';
+    });
+
+    saveBtn.addEventListener('click', async () => {
+      const { chunks, error } = parseCombinedDialogueText(textarea.value, scenesWithLines);
+      if (error) {
+        status.textContent = error;
+        return;
+      }
+      // Parse + validate every scene's chunk before saving anything —
+      // all-or-nothing, so a mistake in one scene never leaves the rest
+      // half-saved.
+      const perSceneOverrides = {};
+      const errors = [];
+      scenesWithLines.forEach(scene => {
+        const parsed = parseDialogueBulkText(chunks[scene.id]);
+        if (parsed.length !== scene.lines.length) {
+          errors.push(`[${scene.name}] 블록 개수(${parsed.length}개)가 원래 대사 줄 수(${scene.lines.length}개)와 다릅니다.`);
+          return;
+        }
+        const lineErrors = parsed.map(p => p.error).filter(Boolean);
+        if (lineErrors.length) {
+          errors.push(`[${scene.name}] ${lineErrors.join(' / ')}`);
+          return;
+        }
+        perSceneOverrides[scene.id] = buildLineOverridesMap(scene.lines, parsed);
+      });
+      if (errors.length) {
+        status.textContent = errors.join(' / ');
+        return;
+      }
+
+      saveBtn.disabled = true;
+      status.textContent = '저장 중…';
+      try {
+        await Promise.all(scenesWithLines.map(scene => AssetDB.setDialogueOverrides(scene.id, perSceneOverrides[scene.id])));
+        originalText = formatCombinedDialogueText(scenesWithLines, perSceneOverrides);
+        textarea.value = originalText;
+        status.textContent = '저장됨';
+      } catch (err) {
+        status.textContent = '저장 실패';
+        if (window.DevDiag) DevDiag.show('대사 저장 실패: ' + (err && err.message ? err.message : err));
+      } finally {
+        saveBtn.disabled = false;
+      }
+    });
+  })();
+}
 </script>
 <script src="/dev/devPlanFab.js"></script>
 </body>
