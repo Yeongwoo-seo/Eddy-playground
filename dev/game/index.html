@@ -346,6 +346,10 @@ async function applyBgm() {
   if (!def) return;
   bgmPlayer = createYTSoundPlayer(el.bgmMount, {
     videoId: def.videoId, start: def.start, end: def.end, loop: true, muted: true,
+    onError: (message) => {
+      DevDiag.show('씬 BGM 재생 실패: ' + message);
+      bgmPlayer = null;
+    },
   });
 }
 
