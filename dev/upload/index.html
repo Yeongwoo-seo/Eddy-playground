@@ -126,6 +126,26 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .dialogue-panel.hidden{display:none}
 .dialogue-bulk-input{width:100%;background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:14px 16px;color:var(--text-primary);font-size:13.5px;line-height:1.7;font-family:var(--mono);resize:vertical;min-height:320px}
 .dialogue-bulk-input:focus{outline:none;border-color:rgba(89,184,200,.4)}
+
+/* weekPicker's own label row gets a right-aligned "전체 대사보기" button —
+   see #weekDialogueAllBtn / openWeekDialogueModal. Only relevant for the
+   대사 tab; toggled in selectType alongside weekPicker itself. */
+.picker-label-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.picker-label-row .picker-label{margin-bottom:0}
+.week-dialogue-all-btn{font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--cyan);background:rgba(89,184,200,.12);border:1px solid rgba(89,184,200,.4);border-radius:14px;padding:6px 12px;cursor:pointer}
+.week-dialogue-all-btn.hidden{display:none}
+
+/* Full-week combined 대사 modal — every scene in the current week's script,
+   one big textarea, saved back out per-scene via the same
+   AssetDB.setDialogueOverrides each scene's own 대사 tab uses. See
+   openWeekDialogueModal / formatWeekDialogueBulkText / parseWeekDialogueBulkText. */
+.modal-overlay{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center}
+.modal-overlay.hidden{display:none}
+.modal-panel{width:100%;max-width:430px;max-height:92vh;background:var(--surface-1);border-top-left-radius:20px;border-top-right-radius:20px;border:1px solid var(--divider);border-bottom:none;padding:18px 18px calc(18px + env(safe-area-inset-bottom,0));display:flex;flex-direction:column;overflow:hidden}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-shrink:0}
+.modal-title{font-size:16px;font-weight:700}
+.modal-close-btn{width:32px;height:32px;border-radius:50%;background:var(--surface-2);border:1px solid var(--divider);color:var(--text-primary);font-size:14px;cursor:pointer;flex-shrink:0}
+.week-dialogue-bulk-input{flex:1;min-height:50vh}
 .section-title{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase;margin:24px 0 12px}
 .empty-note{font-size:13px;color:var(--text-muted);padding:14px 0}
 .asset-card{display:flex;align-items:center;gap:12px;background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:12px;margin-bottom:10px}
@@ -187,7 +207,10 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 
   <!-- 배경 DB: week -> scene -> (배경/미니게임) picker -->
   <div class="picker" id="weekPicker">
-    <div class="picker-label">주차</div>
+    <div class="picker-label-row">
+      <div class="picker-label">주차</div>
+      <button class="week-dialogue-all-btn hidden" id="weekDialogueAllBtn">전체 대사보기</button>
+    </div>
     <div class="picker-pills" id="weekPickerPills"></div>
   </div>
   <div class="picker" id="scenePicker">
@@ -350,6 +373,31 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
   <img id="lightboxImg" alt="preview">
 </div>
 
+<!-- 주차 전체 대사 모달 — see openWeekDialogueModal. 씬별 대사 tab과 같은
+     [화자] (감정) + --- 형식이되, 씬 사이는 "## 씬: 이름 (id) ##" 헤더로
+     구분한다. 저장하면 씬마다 AssetDB.setDialogueOverrides를 나눠 호출해서
+     각 씬의 대사 tab이 읽는 것과 같은 오버라이드 저장소에 반영된다 — 별도
+     저장소가 아니라 씬별 편집기가 "참조"하는 바로 그 데이터를 통합 편집하는
+     것뿐이다. -->
+<div class="modal-overlay hidden" id="weekDialogueModal">
+  <div class="modal-panel">
+    <div class="modal-header">
+      <div class="modal-title" id="weekDialogueModalTitle">전체 대사</div>
+      <button class="modal-close-btn" id="weekDialogueCloseBtn">✕</button>
+    </div>
+    <div class="hint" style="margin:0 0 12px;text-align:left">
+      씬 구분은 <b>## 씬: 이름 (id) ##</b> 헤더로 표시됩니다 — 이 헤더 줄은 지우거나 순서를 바꾸지 마세요.
+      씬 안의 형식은 기존 대사 편집기와 같습니다 ([화자] (감정) + 텍스트, --- 로 구분).
+    </div>
+    <textarea class="dialogue-bulk-input week-dialogue-bulk-input" id="weekDialogueBulkInput" spellcheck="false"></textarea>
+    <div class="hotspot-actions">
+      <button class="hotspot-secondary-btn" id="weekDialogueRevertBtn">되돌리기</button>
+      <button class="crop-save-btn" id="weekDialogueSaveBtn" style="border-radius:10px;padding:12px;font-family:var(--mono);font-weight:700;border:none">저장</button>
+    </div>
+    <div class="hint" id="weekDialogueStatus" style="margin-top:10px"></div>
+  </div>
+</div>
+
 <a class="test-fab hidden" id="testFab" href="#">🎮 테스트하기</a>
 
 <script>
@@ -477,6 +525,14 @@ const el = {
   interactionSaveBtn: document.getElementById('interactionSaveBtn'),
   weekPicker: document.getElementById('weekPicker'),
   weekPickerPills: document.getElementById('weekPickerPills'),
+  weekDialogueAllBtn: document.getElementById('weekDialogueAllBtn'),
+  weekDialogueModal: document.getElementById('weekDialogueModal'),
+  weekDialogueModalTitle: document.getElementById('weekDialogueModalTitle'),
+  weekDialogueCloseBtn: document.getElementById('weekDialogueCloseBtn'),
+  weekDialogueBulkInput: document.getElementById('weekDialogueBulkInput'),
+  weekDialogueRevertBtn: document.getElementById('weekDialogueRevertBtn'),
+  weekDialogueSaveBtn: document.getElementById('weekDialogueSaveBtn'),
+  weekDialogueStatus: document.getElementById('weekDialogueStatus'),
   scenePicker: document.getElementById('scenePicker'),
   scenePickerPills: document.getElementById('scenePickerPills'),
   bgKindPicker: document.getElementById('bgKindPicker'),
@@ -576,6 +632,7 @@ function selectType(type) {
   const showScenePickers = (type === 'background' || type === 'dialogue') && !focusMinigame && !focusScene;
   el.weekPicker.classList.toggle('hidden', !showScenePickers);
   el.scenePicker.classList.toggle('hidden', !showScenePickers);
+  el.weekDialogueAllBtn.classList.toggle('hidden', !(type === 'dialogue' && showScenePickers));
   el.dialoguePanel.classList.toggle('hidden', type !== 'dialogue');
   // 대사 is a read-only script view, not part of the image-upload flow —
   // none of the dropzone/list/character UI applies.
@@ -839,6 +896,159 @@ el.dialogueBulkSaveBtn.addEventListener('click', async () => {
     DevDiag.show('대사 저장 실패: ' + (err && err.message ? err.message : err));
   } finally {
     el.dialogueBulkSaveBtn.disabled = false;
+  }
+});
+
+// ===== 주차 전체 대사 모달 — same per-scene 오버라이드 storage as the 대사
+// tab above (AssetDB.getDialogueOverrides/setDialogueOverrides), just
+// viewed/edited as one combined text block for every scene in a week
+// instead of one scene at a time. Scenes are separated by a
+// "## 씬: 이름 (id) ##" header line; within a scene the format is identical
+// to formatDialogueBulkText/parseDialogueBulkText above, reused as-is. Saving
+// re-derives each scene's whole overrides map and writes it out with the
+// same setDialogueOverrides call the per-scene editor uses, so a scene's own
+// 대사 tab and this combined view are just two windows onto the same data. =====
+function weekSceneHeaderLine(scene) {
+  return `## 씬: ${scene.name} (${scene.id}) ##`;
+}
+const WEEK_SCENE_HEADER_RE = /^##\s*씬:\s*(.+?)\s*\(([^)]+)\)\s*##[ \t]*$/gm;
+
+function formatWeekDialogueBulkText(scenes, overridesById) {
+  return scenes.map(scene =>
+    `${weekSceneHeaderLine(scene)}\n\n${formatDialogueBulkText(scene.lines, overridesById[scene.id] || {})}`
+  ).join('\n\n\n');
+}
+
+// Splits the combined text back into per-scene bodies by the "## 씬: ... ##"
+// header lines, in order. Doesn't validate scene identity/order — the save
+// handler below checks the parsed sceneIds against the scenes this modal was
+// opened with.
+function parseWeekDialogueBulkText(raw) {
+  const text = raw.replace(/\r\n/g, '\n');
+  const matches = [...text.matchAll(WEEK_SCENE_HEADER_RE)];
+  if (!matches.length) return { error: '씬 구분 헤더("## 씬: 이름 (id) ##")를 찾을 수 없습니다.' };
+  const scenes = matches.map((m, i) => {
+    const start = m.index + m[0].length;
+    const end = i + 1 < matches.length ? matches[i + 1].index : text.length;
+    return { sceneId: m[2].trim(), body: text.slice(start, end).trim() };
+  });
+  return { scenes };
+}
+
+let weekDialogueScenes = null; // [{id, name, lines}], set once the modal has loaded
+let weekDialogueOriginalText = '';
+
+async function openWeekDialogueModal() {
+  const week = currentWeek();
+  const scenes = week.scenes.filter(s => s.lines && s.lines.length);
+  weekDialogueScenes = null;
+  el.weekDialogueModalTitle.textContent = `${week.label} 전체 대사`;
+  el.weekDialogueBulkInput.value = '';
+  el.weekDialogueBulkInput.disabled = true;
+  el.weekDialogueSaveBtn.disabled = true;
+  el.weekDialogueRevertBtn.disabled = true;
+  el.weekDialogueStatus.textContent = '';
+  el.weekDialogueModal.classList.remove('hidden');
+  if (!scenes.length) {
+    el.weekDialogueStatus.textContent = '이 주차에는 대사 데이터가 있는 씬이 없습니다.';
+    return;
+  }
+  el.weekDialogueStatus.textContent = '불러오는 중…';
+  let overridesList;
+  try {
+    overridesList = await Promise.all(scenes.map(s => AssetDB.getDialogueOverrides(s.id)));
+  } catch (err) {
+    el.weekDialogueStatus.textContent = '대사를 불러오지 못했습니다.';
+    DevDiag.show('전체 대사 불러오기 실패: ' + (err && err.message ? err.message : err));
+    return;
+  }
+  // The dev may have closed the modal (or it was reopened for a different
+  // week) while that fetch was in flight — bail instead of clobbering
+  // whatever's now on screen.
+  if (el.weekDialogueModal.classList.contains('hidden') || el.weekDialogueModalTitle.textContent !== `${week.label} 전체 대사`) return;
+  const overridesById = {};
+  scenes.forEach((s, i) => { overridesById[s.id] = overridesList[i]; });
+  weekDialogueScenes = scenes;
+  weekDialogueOriginalText = formatWeekDialogueBulkText(scenes, overridesById);
+  el.weekDialogueBulkInput.value = weekDialogueOriginalText;
+  el.weekDialogueBulkInput.disabled = false;
+  el.weekDialogueSaveBtn.disabled = false;
+  el.weekDialogueRevertBtn.disabled = false;
+  el.weekDialogueStatus.textContent = '';
+}
+
+function closeWeekDialogueModal() {
+  el.weekDialogueModal.classList.add('hidden');
+  weekDialogueScenes = null;
+}
+
+el.weekDialogueAllBtn.addEventListener('click', openWeekDialogueModal);
+el.weekDialogueCloseBtn.addEventListener('click', closeWeekDialogueModal);
+el.weekDialogueRevertBtn.addEventListener('click', () => {
+  el.weekDialogueBulkInput.value = weekDialogueOriginalText;
+  el.weekDialogueStatus.textContent = '';
+});
+
+el.weekDialogueSaveBtn.addEventListener('click', async () => {
+  if (!weekDialogueScenes) return;
+  const parsedWeek = parseWeekDialogueBulkText(el.weekDialogueBulkInput.value);
+  if (parsedWeek.error) {
+    el.weekDialogueStatus.textContent = parsedWeek.error;
+    return;
+  }
+  if (parsedWeek.scenes.length !== weekDialogueScenes.length ||
+      parsedWeek.scenes.some((s, i) => s.sceneId !== weekDialogueScenes[i].id)) {
+    el.weekDialogueStatus.textContent = '씬 헤더 개수/순서가 원래와 다릅니다 — 이 편집기로는 씬을 추가/삭제/재정렬할 수 없어요.';
+    return;
+  }
+  const perScene = [];
+  for (let i = 0; i < weekDialogueScenes.length; i++) {
+    const scene = weekDialogueScenes[i];
+    const lines = scene.lines;
+    const parsed = parseDialogueBulkText(parsedWeek.scenes[i].body);
+    if (parsed.length !== lines.length) {
+      el.weekDialogueStatus.textContent = `"${scene.name}" 씬: 블록 개수(${parsed.length}개)가 원래 대사 줄 수(${lines.length}개)와 다릅니다.`;
+      return;
+    }
+    const errors = parsed.map(p => p.error).filter(Boolean);
+    if (errors.length) {
+      el.weekDialogueStatus.textContent = `"${scene.name}" 씬: ${errors.join(' / ')}`;
+      return;
+    }
+    const overridesMap = {};
+    lines.forEach((l, j) => {
+      const p = parsed[j];
+      const char = dialogueCharacters.find(c => c.id === p.characterId);
+      const speaker = char ? char.name : '';
+      const patch = {};
+      if (p.characterId !== l.characterId) patch.characterId = p.characterId;
+      if (speaker !== (l.speaker || '')) patch.speaker = speaker;
+      if (p.expression !== (l.expression || null)) patch.expression = p.expression;
+      if (p.text !== l.text) patch.text = p.text;
+      if (Object.keys(patch).length) overridesMap[l.id] = patch;
+    });
+    perScene.push({ sceneId: scene.id, overridesMap });
+  }
+  el.weekDialogueSaveBtn.disabled = true;
+  el.weekDialogueStatus.textContent = '저장 중…';
+  try {
+    await Promise.all(perScene.map(p => AssetDB.setDialogueOverrides(p.sceneId, p.overridesMap)));
+    const overridesById = {};
+    perScene.forEach(p => { overridesById[p.sceneId] = p.overridesMap; });
+    weekDialogueOriginalText = formatWeekDialogueBulkText(weekDialogueScenes, overridesById);
+    el.weekDialogueBulkInput.value = weekDialogueOriginalText;
+    el.weekDialogueStatus.textContent = '저장됨';
+    // The per-scene 대사 tab underneath may be showing one of these scenes —
+    // refresh it so it doesn't keep displaying stale text after a save made
+    // here.
+    if (currentType === 'dialogue' && weekDialogueScenes.some(s => s.id === currentSceneId)) {
+      renderDialoguePanel();
+    }
+  } catch (err) {
+    el.weekDialogueStatus.textContent = '저장 실패';
+    DevDiag.show('전체 대사 저장 실패: ' + (err && err.message ? err.message : err));
+  } finally {
+    el.weekDialogueSaveBtn.disabled = false;
   }
 });
 
