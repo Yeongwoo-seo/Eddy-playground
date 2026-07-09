@@ -10,10 +10,8 @@
 // regions and dialogue. The ANTHROPIC_API_KEY only ever lives in this
 // function's Supabase project secrets, never in client JS.
 //
-// Deploy (run by a human with Supabase CLI access to this project — see
-// dev/minigame-item-scan/README.md for the exact commands):
-//   supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
-//   supabase functions deploy detect-items
+// Deploy: see README.md in this folder (Supabase Dashboard copy-paste
+// steps, no CLI required).
 
 import Anthropic from "npm:@anthropic-ai/sdk@^0.68.0";
 

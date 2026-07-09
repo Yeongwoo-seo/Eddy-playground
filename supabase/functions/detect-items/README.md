@@ -6,33 +6,53 @@ a forced tool call, and returns detected objects (label, bounding box,
 investigation dialogue). This keeps the Anthropic API key out of the
 client — it only ever lives in this function's Supabase project secrets.
 
-## One-time setup (run by a human with access to this Supabase project)
+## Deploy via the Supabase Dashboard (no CLI needed)
+
+The `supabase link`/CLI flow can get stuck on things unrelated to this
+function (database password prompts, org membership checks) — the
+dashboard skips all of that. Two steps, both copy-paste:
+
+**1. Create the function**
+
+1. Open **[Edge Functions in this project's dashboard](https://supabase.com/dashboard/project/dhtstqnksjoyyshnhksv/functions)**.
+2. Click **Deploy a new function** → **Via Editor**.
+3. Name it exactly `detect-items`.
+4. Delete whatever placeholder code is in the editor, then paste the
+   entire contents of **`index.ts`** (the file next to this README) in
+   its place.
+5. Click **Deploy function**.
+
+**2. Add the API key as a secret**
+
+1. Open **[Edge Functions secrets for this project](https://supabase.com/dashboard/project/dhtstqnksjoyyshnhksv/settings/functions)**.
+2. Click **Add new secret**.
+3. Name: `ANTHROPIC_API_KEY` — Value: your Anthropic API key.
+4. Save.
+
+That's it — no login, no linking, no `--project-ref` flags. The function
+is live the moment you deploy it in step 1; the secret from step 2 is
+picked up automatically the next time it runs (redeploy the function once
+after adding the secret if a call still fails with an auth error — the
+dashboard sometimes needs a redeploy to pick up a brand-new secret).
+
+**Redeploying after future edits to `index.ts`:** repeat step 1 (paste the
+updated file into the same function's editor and click Deploy again) —
+no need to touch the secret again unless the key itself changes.
+
+## CLI alternative (if you prefer it)
 
 ```bash
-# from the repo root
 supabase login
-
-# register the Anthropic API key as a project secret — never commit this key
-# or paste it into chat/PRs
 supabase secrets set ANTHROPIC_API_KEY=sk-ant-... --project-ref dhtstqnksjoyyshnhksv
-
-# deploy the function
 supabase functions deploy detect-items --project-ref dhtstqnksjoyyshnhksv
 ```
 
-Passing `--project-ref` directly (instead of running `supabase link` first)
-is deliberate: `supabase link` also tries to link the project's local
-Postgres config and can fail or hang asking for the database password or
-org membership that isn't actually needed just to manage secrets/functions.
-If you *want* to link anyway (e.g. for other `supabase` commands later),
-`supabase link --project-ref dhtstqnksjoyyshnhksv` should still work as
-long as your logged-in account is a member of the project/org that owns
-`dhtstqnksjoyyshnhksv` — if it fails, that's usually either (a) you're
-logged into the wrong Supabase account, or (b) it's prompting for the
-database password, which you can skip by not linking at all and using
-`--project-ref` on each command as above.
+Pass `--project-ref` directly rather than running `supabase link` first —
+`link` also tries to link the project's local Postgres config and can
+fail/hang asking for the database password, which isn't needed just to
+manage secrets/functions.
 
-The client calls it at:
+## What the client calls
 
 ```
 https://dhtstqnksjoyyshnhksv.supabase.co/functions/v1/detect-items
@@ -41,12 +61,6 @@ https://dhtstqnksjoyyshnhksv.supabase.co/functions/v1/detect-items
 using the existing public Supabase anon key (same one `dev/assetDb.js`
 already uses) as the `apikey` / `Authorization: Bearer` headers — that's
 normal for Supabase's anon role and does not need to change.
-
-## Redeploying after edits
-
-```bash
-supabase functions deploy detect-items --project-ref dhtstqnksjoyyshnhksv
-```
 
 ## Local testing (optional)
 
