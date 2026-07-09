@@ -19,30 +19,33 @@
   --bg:#080A0C;--surface-1:#101419;--surface-2:#171C22;
   --text-primary:#EDF1F4;--text-secondary:#929BA5;--text-muted:#5F6872;
   --cyan:#59B8C8;--amber:#D6A84B;--green:#3ECF6B;--signal-red:#D94141;--divider:rgba(255,255,255,0.08);
+  --yellow-bg-top:#FBEAB8;--yellow-bg-bottom:#F3D98D;
+  --coin-ring:#5A3B14;--coin-a:#F3CB5E;--coin-b:#DE9F2E;--coin-c:#C6841D;--coin-text:#5A3110;
+  --avatar-ring:#FFF6E0;--avatar-fill:#FBEFC7;
+  --brown-text:rgba(74,48,20,.7);
   --mono:'IBM Plex Mono',ui-monospace,monospace;
   --sans:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
 }
 html,body{height:100%;overflow:hidden}
-body{background:#000;color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center}
+body{background:linear-gradient(180deg,var(--yellow-bg-top) 0%,var(--yellow-bg-bottom) 100%);color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center}
 
-.frame{position:relative;width:100%;max-width:430px;height:100dvh;height:100vh;height:var(--vh100, 100vh);overflow:hidden;background:#0a0d10;display:flex;flex-direction:column}
+.frame{position:relative;width:100%;max-width:430px;height:100dvh;height:100vh;height:var(--vh100, 100vh);overflow:hidden;background:linear-gradient(180deg,var(--yellow-bg-top) 0%,var(--yellow-bg-bottom) 100%);display:flex;flex-direction:column}
 
-.topbar{position:absolute;top:0;left:0;right:0;z-index:6;padding:calc(14px + env(safe-area-inset-top,0)) 16px 10px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none}
-.vn-btn{pointer-events:auto;font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:#fff;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:9px 14px;cursor:pointer;text-decoration:none;display:inline-block}
-.vn-btn:active{transform:scale(.96)}
+.topbar{position:absolute;top:0;left:0;right:0;z-index:6;padding:calc(14px + env(safe-area-inset-top,0)) 16px 10px;display:flex;align-items:center;gap:10px;pointer-events:none}
+.back-chip{pointer-events:auto;flex-shrink:0;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.4);border:1px solid rgba(90,60,20,.25);color:#5A3B14;font-size:18px;font-weight:700;line-height:1;text-decoration:none}
+.back-chip:active{transform:scale(.92)}
 
-.score-box{pointer-events:none;text-align:center;background:rgba(8,10,12,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:8px 18px}
-.score-label{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--text-muted)}
-.score-value{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--amber)}
+.score-coin{pointer-events:none;flex-shrink:0;width:58px;height:58px;border-radius:50%;border:5px solid var(--coin-ring);background:radial-gradient(circle at 35% 30%,var(--coin-a) 0%,var(--coin-b) 60%,var(--coin-c) 100%);box-shadow:0 3px 8px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center}
+.score-coin-value{font-family:var(--mono);font-weight:800;color:var(--coin-text);font-size:15px;line-height:1;text-align:center;padding:0 4px}
+.score-coin-value.small{font-size:11.5px}
 
-.next-box{pointer-events:none;text-align:center;background:rgba(8,10,12,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:6px 12px;min-width:52px}
-.next-label{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;color:var(--text-muted);margin-bottom:2px}
-.next-fruit{font-size:22px;line-height:1}
+.next-avatar{position:absolute;top:calc(16px + env(safe-area-inset-top,0));left:50%;transform:translateX(-50%);z-index:6;width:62px;height:62px;border-radius:50%;border:4px solid var(--avatar-ring);background:var(--avatar-fill);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(0,0,0,.2);pointer-events:none}
+.next-avatar-emoji{font-size:30px;line-height:1}
 
 .stage{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:calc(74px + env(safe-area-inset-top,0)) 16px calc(40px + env(safe-area-inset-bottom,0));touch-action:none}
 #gameCanvas{touch-action:none;max-width:100%;max-height:100%}
 
-.hint{position:absolute;left:0;right:0;bottom:calc(14px + env(safe-area-inset-bottom,0));z-index:6;text-align:center;font-family:var(--mono);font-size:11px;color:var(--text-muted);letter-spacing:.02em;pointer-events:none}
+.hint{position:absolute;left:0;right:0;bottom:calc(14px + env(safe-area-inset-bottom,0));z-index:6;text-align:center;font-family:var(--mono);font-size:11px;color:var(--brown-text);letter-spacing:.02em;pointer-events:none}
 
 .toast{position:absolute;top:calc(70px + env(safe-area-inset-top,0));left:50%;transform:translate(-50%,-8px);z-index:7;font-family:var(--mono);font-weight:700;font-size:13px;letter-spacing:.04em;color:#08110c;background:var(--amber);border-radius:20px;padding:8px 16px;opacity:0;transition:opacity .25s ease,transform .25s ease;pointer-events:none;white-space:nowrap}
 .toast.show{opacity:1;transform:translate(-50%,0)}
@@ -60,15 +63,13 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 <div class="frame" id="frame">
 
   <div class="topbar">
-    <a class="vn-btn" href="/dev/minigames/">← DEV</a>
-    <div class="score-box">
-      <div class="score-label">SCORE</div>
-      <div class="score-value" id="scoreValue">0</div>
+    <a class="back-chip" href="/dev/minigames/" aria-label="뒤로">‹</a>
+    <div class="score-coin">
+      <div class="score-coin-value" id="scoreValue">0</div>
     </div>
-    <div class="next-box">
-      <div class="next-label">NEXT</div>
-      <div class="next-fruit" id="nextFruit">🍒</div>
-    </div>
+  </div>
+  <div class="next-avatar">
+    <div class="next-avatar-emoji" id="nextFruit">🍒</div>
   </div>
 
   <div class="toast" id="toast"></div>
@@ -209,6 +210,7 @@ const el = {
 function addScore(n) {
   state.score += n;
   el.scoreValue.textContent = state.score.toLocaleString('ko-KR');
+  el.scoreValue.classList.toggle('small', state.score >= 1000);
   if (state.score > state.best) {
     state.best = state.score;
     localStorage.setItem(BEST_KEY, String(state.best));
@@ -340,6 +342,7 @@ function restart() {
   state.gameOver = false;
   state.dangerSince = null;
   el.scoreValue.textContent = '0';
+  el.scoreValue.classList.remove('small');
   updateNextPreview();
   el.overlay.classList.remove('show');
 }
@@ -370,29 +373,26 @@ window.addEventListener('keydown', (e) => {
 
 /* ===== Render — canvas only, reads Matter body positions straight off the
    world; never mutates simulation state. ===== */
-function roundRectPath(c, x, y, w, h, radius) {
-  c.beginPath();
-  c.moveTo(x + radius, y);
-  c.arcTo(x + w, y, x + w, y + h, radius);
-  c.arcTo(x + w, y + h, x, y + h, radius);
-  c.arcTo(x, y + h, x, y, radius);
-  c.arcTo(x, y, x + w, y, radius);
-  c.closePath();
+const GROUND_H = 42;
+function drawGround() {
+  const gTop = LOGICAL_H - GROUND_H;
+  const grad = ctx.createLinearGradient(0, gTop, 0, LOGICAL_H);
+  grad.addColorStop(0, '#C79A5C');
+  grad.addColorStop(1, '#4A3018');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, gTop, LOGICAL_W, GROUND_H);
+  ctx.fillStyle = 'rgba(255,255,255,0.18)';
+  ctx.fillRect(0, gTop, LOGICAL_W, 2);
 }
 
 function draw() {
   ctx.clearRect(0, 0, LOGICAL_W, LOGICAL_H);
 
-  roundRectPath(ctx, containerLeft, containerTop, CONTAINER_W, CONTAINER_H, 18);
-  ctx.fillStyle = 'rgba(16,20,25,0.55)';
-  ctx.fill();
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = 'rgba(255,255,255,0.14)';
-  ctx.stroke();
+  drawGround();
 
   ctx.save();
   ctx.setLineDash([6, 6]);
-  ctx.strokeStyle = 'rgba(217,65,65,0.55)';
+  ctx.strokeStyle = 'rgba(140,40,20,0.5)';
   ctx.lineWidth = 1.5;
   ctx.beginPath();
   ctx.moveTo(containerLeft + 6, dangerLineY);
@@ -422,7 +422,7 @@ function draw() {
     const x = clamp(state.aimX, containerLeft + r + 2, containerRight - r - 2);
     ctx.save();
     ctx.setLineDash([4, 6]);
-    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.strokeStyle = 'rgba(90,60,20,0.35)';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(x, containerTop);
