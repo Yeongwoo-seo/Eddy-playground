@@ -104,7 +104,10 @@ function initCaseMenu(options) {
       render();
     } else if (action === 'toggleBoolSetting') {
       const s = CaseFileState.getSettings();
-      CaseFileState.setSetting(actionTarget.dataset.key, !s[actionTarget.dataset.key]);
+      const key = actionTarget.dataset.key;
+      const value = !s[key];
+      CaseFileState.setSetting(key, value);
+      if (options.onSettingChange) options.onSettingChange(key, value);
       render();
     } else if (action === 'replayLocation') {
       location.href = `/dev/game/?scene=${encodeURIComponent(actionTarget.dataset.scene)}`;

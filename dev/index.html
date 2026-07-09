@@ -43,8 +43,6 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .menu-arrow{color:var(--text-muted);font-size:18px;flex-shrink:0}
 .foot{margin-top:auto;padding-top:32px;font-family:var(--mono);font-size:10.5px;color:var(--text-muted);letter-spacing:.06em;text-align:center}
 .corner-stack{position:absolute;top:calc(14px + env(safe-area-inset-top,0));right:16px;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
-.plan-link{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--amber);background:rgba(214,168,75,.12);border:1px solid rgba(214,168,75,.4);border-radius:12px;padding:6px 10px;letter-spacing:.02em;text-decoration:none;white-space:nowrap}
-.plan-link:active{opacity:.8}
 .build-badge{font-family:var(--mono);font-size:9.5px;color:var(--text-muted);background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:6px 10px;letter-spacing:.02em;max-width:180px;text-align:right;line-height:1.5;white-space:pre-line;cursor:pointer;-webkit-user-select:none;user-select:none}
 .build-badge:active{opacity:.8}
 
@@ -63,7 +61,6 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 <div class="ptr-indicator" id="ptrIndicator">↓ 당겨서 새로고침</div>
 <div class="frame" style="position:relative">
   <div class="corner-stack">
-    <a class="plan-link" href="/dev/plan/">📋 개발계획</a>
     <div class="build-badge" id="buildBadge">빌드 정보 확인 중…</div>
   </div>
   <div class="build-summary-popup" id="buildSummaryPopup"></div>
@@ -200,5 +197,6 @@ function hideSummaryPopup() { clearTimeout(pressTimer); buildSummaryPopup.classL
 buildBadge.addEventListener('pointerdown', () => { pressTimer = setTimeout(showSummaryPopup, 350); });
 ['pointerup', 'pointercancel', 'pointerleave'].forEach(evt => buildBadge.addEventListener(evt, hideSummaryPopup));
 </script>
+<script src="/dev/devPlanFab.js"></script>
 </body>
 </html>

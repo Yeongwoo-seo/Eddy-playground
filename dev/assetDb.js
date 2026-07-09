@@ -254,7 +254,12 @@ const AssetDB = (() => {
     const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${roomHotspotsPath(sceneId)}?t=${Date.now()}`;
     const current = await readCurrentForWrite(roomHotspotsCache, sceneId, url, {});
     const map = Object.assign({}, current);
-    if (hotspot) map[hotspotId] = hotspot; else delete map[hotspotId];
+    // Delete-then-set (rather than a plain overwrite) so a re-saved hotspot's
+    // key moves to the end of insertion order — overlapping hotspots are hit-
+    // tested in reverse key order, so this keeps the most recently specified
+    // one on top even when it's just an edit of an existing hotspot.
+    delete map[hotspotId];
+    if (hotspot) map[hotspotId] = hotspot;
     const blob = new Blob([JSON.stringify(map)], { type: 'application/json' });
     const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${DEV_ASSETS_BUCKET}/${roomHotspotsPath(sceneId)}`, {
       method: 'POST',
@@ -388,10 +393,12 @@ const AssetDB = (() => {
   }
 
   // Unlike setItem/setRoomHotspot/setMinigameHotspot, this takes the whole
-  // desired list rather than doing its own read-modify-write — callers
-  // (dev/upload's 조합법 tab) derive `recipes` from their own
-  // evidenceRecipesCache, itself seeded from getRecipes() at tab-open time.
-  // That means a getRecipes() call that fails and falls back to [] (see
+  // desired list rather than doing its own read-modify-write. No caller in
+  // dev/upload reaches this anymore (its 조합법 tab was replaced by 상호작용
+  // — see that file's history), but minigame-phone-search's
+  // loadCustomItemsAndRecipes still reads getRecipes() at boot, so this
+  // stays a valid store for whatever custom recipes were saved before then.
+  // A getRecipes() call that fails and falls back to [] (see
   // above) can still lead to a real overwrite-with-incomplete-list if a dev
   // adds/deletes a recipe right after — same class of risk as the other
   // stores, just one layer up in the caller instead of in here.
@@ -413,18 +420,126 @@ const AssetDB = (() => {
     return recipes;
   }
 
+  // Per-line dialogue overrides — { [lineId]: { text?, speaker?,
+  // characterId?, expression? } } per sceneId, same JSON-blob-in-Storage
+  // pattern as room hotspots/items above. Only the fields that differ from
+  // dialogueData.js's static script are stored, so a line can have its
+  // wording, speaker (이름) and/or expression (감정) tweaked together from
+  // /dev/upload's 대사 tab, without restructuring a scene's line list.
+  // Older saves stored just the text as a bare string — normalized to
+  // { text } on read so both shapes keep working.
+  //
+  // /dev/upload's 대사 tab edits a scene's whole script as one text block
+  // and always re-derives the complete overrides map for that scene from
+  // it, so — like setRecipes above — setDialogueOverrides takes the whole
+  // desired map and does a plain overwrite rather than its own
+  // read-modify-write (that also sidesteps the lost-update race a
+  // per-line read-modify-write would have if this ever saved concurrently).
+  const dialogueOverridesCache = new Map();
+  function dialogueOverridesPath(sceneId) { return `dialogue-overrides/${encodeURIComponent(sceneId)}.json`; }
+  function normalizeDialogueOverrides(map) {
+    const out = {};
+    Object.keys(map).forEach(id => {
+      const v = map[id];
+      out[id] = typeof v === 'string' ? { text: v } : v;
+    });
+    return out;
+  }
+
+  async function getDialogueOverrides(sceneId) {
+    if (!sceneId) return {};
+    if (dialogueOverridesCache.has(sceneId)) return dialogueOverridesCache.get(sceneId);
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${dialogueOverridesPath(sceneId)}?t=${Date.now()}`;
+    try {
+      const map = normalizeDialogueOverrides((await fetchJsonBlob(url)) || {});
+      dialogueOverridesCache.set(sceneId, map);
+      return map;
+    } catch (e) {
+      return dialogueOverridesCache.get(sceneId) || {};
+    }
+  }
+
+  async function setDialogueOverrides(sceneId, overrides) {
+    if (!sceneId) return {};
+    const map = Object.assign({}, overrides);
+    const blob = new Blob([JSON.stringify(map)], { type: 'application/json' });
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${DEV_ASSETS_BUCKET}/${dialogueOverridesPath(sceneId)}`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'x-upsert': 'true',
+      },
+      body: blob,
+    });
+    if (!res.ok) throw new Error(`대사 저장 실패 (${res.status}): ${await res.text()}`);
+    dialogueOverridesCache.set(sceneId, map);
+    return map;
+  }
+
+  // 사운드 카탈로그 — { [soundId]: { name, kind: 'bgm'|'sfx', videoId, start,
+  // end } }, one JSON blob for the whole catalog (not per-scene like items/
+  // hotspots — a sound isn't tied to a single scene; which scene plays a
+  // given BGM lives separately in DevGameState's own sceneBgm map, same
+  // localStorage-backed pattern as background/character selection). `end: 0`
+  // means "play to the natural end of the clip" rather than a fixed loop
+  // point — see youtubeSound.js's createYTSoundPlayer.
+  const soundsCache = new Map(); // single entry keyed 'catalog'
+  const SOUNDS_PATH = 'sounds/catalog.json';
+
+  async function getSounds() {
+    if (soundsCache.has('catalog')) return soundsCache.get('catalog');
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${SOUNDS_PATH}?t=${Date.now()}`;
+    try {
+      const map = (await fetchJsonBlob(url)) || {};
+      soundsCache.set('catalog', map);
+      return map;
+    } catch (e) {
+      return soundsCache.get('catalog') || {};
+    }
+  }
+
+  async function setSound(soundId, def) {
+    if (!soundId) return {};
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${SOUNDS_PATH}?t=${Date.now()}`;
+    const current = await readCurrentForWrite(soundsCache, 'catalog', url, {});
+    const map = Object.assign({}, current);
+    if (def) map[soundId] = def; else delete map[soundId];
+    const blob = new Blob([JSON.stringify(map)], { type: 'application/json' });
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${DEV_ASSETS_BUCKET}/${SOUNDS_PATH}`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'x-upsert': 'true',
+      },
+      body: blob,
+    });
+    if (!res.ok) throw new Error(`사운드 저장 실패 (${res.status}): ${await res.text()}`);
+    soundsCache.set('catalog', map);
+    return map;
+  }
+
+  function deleteSound(soundId) {
+    return setSound(soundId, null);
+  }
+
   return {
     addAsset, getAssetsByType, getAsset, deleteAsset, preloadImage,
     getRoomHotspots, setRoomHotspot,
     getMinigameHotspot, setMinigameHotspot,
     getItems, setItem, getRecipes, setRecipes,
+    getDialogueOverrides, setDialogueOverrides,
+    getSounds, setSound, deleteSound,
   };
 })();
 
 const DevGameState = {
   _keys: {
     background: 'mkDevSelectedBackgrounds', characters: 'mkDevSelectedCharacters',
-    transforms: 'mkDevCharacterTransforms',
+    transforms: 'mkDevCharacterTransforms', sceneBgm: 'mkDevSceneBgm',
   },
 
   // Each scene (or minigame — a minigame's own background is just another
@@ -449,6 +564,31 @@ const DevGameState = {
     let changed = false;
     Object.keys(map).forEach(sceneId => { if (map[sceneId] === assetId) { delete map[sceneId]; changed = true; } });
     if (changed) localStorage.setItem(this._keys.background, JSON.stringify(map));
+  },
+
+  // Which AssetDB sound-catalog entry (a 'bgm'-kind one) plays as a scene's
+  // background music — same one-slot-per-scene, localStorage-backed pattern
+  // as the background map above. /dev/game reads this on scene load; the
+  // catalog entry itself (videoId/start/end) lives in AssetDB.getSounds().
+  _loadSceneBgmMap() {
+    try { return JSON.parse(localStorage.getItem(this._keys.sceneBgm)) || {}; }
+    catch (e) { return {}; }
+  },
+  getSceneBgmId(sceneId) {
+    if (!sceneId) return null;
+    return this._loadSceneBgmMap()[sceneId] || null;
+  },
+  setSceneBgmId(sceneId, soundId) {
+    if (!sceneId) return;
+    const map = this._loadSceneBgmMap();
+    if (soundId) map[sceneId] = soundId; else delete map[sceneId];
+    localStorage.setItem(this._keys.sceneBgm, JSON.stringify(map));
+  },
+  removeAllSceneBgmRefs(soundId) {
+    const map = this._loadSceneBgmMap();
+    let changed = false;
+    Object.keys(map).forEach(sceneId => { if (map[sceneId] === soundId) { delete map[sceneId]; changed = true; } });
+    if (changed) localStorage.setItem(this._keys.sceneBgm, JSON.stringify(map));
   },
 
   // Minigame answer-area hotspot = { points: [{x,y}, ...] } — a free-form
