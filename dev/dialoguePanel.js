@@ -8,41 +8,60 @@
    .hotspot-actions/.hotspot-secondary-btn/.crop-save-btn classes, reused
    as-is by /dev/script) — this module only owns the format + behavior.
 
-   Format: each line renders as a `[화자] (감정)` header line followed by
-   its text, blocks separated by a lone "---" line; narration is
-   `[내레이션]`. A "---" line (not a blank line) is the delimiter because
-   some lines' own text already contains blank lines (e.g.
-   "[ ITEM ACQUIRED ]\n\nUNKNOWN KEY"), which a blank-line separator would
-   misread as a block boundary. Saving parses the block back into lines by
-   position and diffs each against dialogueData.js's static line to build
-   one combined override object per changed line — the static source
-   itself is never touched, /dev/game merges the override over it at load
-   time. This only supports editing existing lines in place, not
-   adding/removing/reordering them. */
+   Format: each line renders as a header line followed by its text, blocks
+   separated by a lone "---" line. A "---" line (not a blank line) is the
+   delimiter because some lines' own text already contains blank lines
+   (e.g. "[ ITEM ACQUIRED ]\n\nUNKNOWN KEY"), which a blank-line separator
+   would misread as a block boundary. Saving parses the block back into
+   lines by position and diffs each against dialogueData.js's static line
+   to build one combined override object per changed line — the static
+   source itself is never touched, /dev/game merges the override over it
+   at load time. This only supports editing existing lines in place, not
+   adding/removing/reordering them.
 
-function dialogueHeaderLine(characterId, expression) {
+   Header format is `[화자] (감정)`, e.g. `[지수] (기쁨)`, or `[내레이션]`
+   for a line with no speaker at all. `화자` and "which character's
+   portrait is on screen" are DIFFERENT things in the underlying data —
+   `speaker` (the name tag shown) and `characterId` (whose portrait stays
+   up) can diverge: a narration beat can keep a character's portrait
+   visible with no one speaking, and a speaker's own text-message lines
+   have no portrait at all even though the same speaker also has portrait
+   lines elsewhere. Presence of "(감정)" is what says whether a portrait is
+   showing — a portrait always carries an expression, never omitted. When
+   화자 alone doesn't already tell you which portrait that is (narration
+   keeping a portrait up, or a nickname that isn't the character's
+   registered name), the header spells it out: `[내레이션 · 지수] (호기심)`.
+   Getting this wrong previously meant *every* narration-with-portrait or
+   portrait-less-speaker line silently mutated on a no-op save. */
+
+function dialogueHeaderLine(speaker, characterId, expression) {
   const char = dialogueCharacters.find(c => c.id === characterId);
-  if (!char) return '[내레이션]';
+  const displayName = speaker || '내레이션';
+  if (!char) return `[${displayName}]`;
   const label = (dialogueExpressions.find(x => x.id === expression) || {}).label || expression;
-  return `[${char.name}] (${label})`;
+  // 화자 already identifies this exact portrait — no need to spell it out
+  // a second time.
+  if (char.name === displayName) return `[${displayName}] (${label})`;
+  return `[${displayName} · ${char.name}] (${label})`;
 }
 
 function formatDialogueBulkText(lines, overrides) {
   return lines.map(l => {
     const o = overrides[l.id] || {};
+    const speaker = 'speaker' in o ? o.speaker : (l.speaker || '');
     const characterId = 'characterId' in o ? o.characterId : l.characterId;
     const expression = 'expression' in o ? o.expression : l.expression;
     const text = 'text' in o ? o.text : l.text;
-    return `${dialogueHeaderLine(characterId, expression)}\n${text}`;
+    return `${dialogueHeaderLine(speaker, characterId, expression)}\n${text}`;
   }).join('\n\n---\n\n');
 }
 
 const DIALOGUE_HEADER_RE = /^\[(.+?)\]\s*(?:\((.+?)\))?\s*$/;
 
-// Splits the bulk text back into per-line { characterId, expression, text }
-// (or { error }) by position — a lone "---" line separates blocks, first
-// line of each block is the `[화자] (감정)` header, the rest is the line's
-// text.
+// Splits the bulk text back into per-line { speaker, characterId,
+// expression, text } (or { error }) by position — a lone "---" line
+// separates blocks, first line of each block is the header, the rest is
+// the line's text.
 function parseDialogueBulkText(raw) {
   const blocks = raw.replace(/\r\n/g, '\n').split(/\n[ \t]*-{3,}[ \t]*\n/).map(b => b.trim()).filter(b => b.length);
   return blocks.map((block, i) => {
@@ -51,23 +70,40 @@ function parseDialogueBulkText(raw) {
     const text = nl === -1 ? '' : block.slice(nl + 1);
     const m = headerLine.match(DIALOGUE_HEADER_RE);
     if (!m) return { error: `${i + 1}번째 블록: "[화자] (감정)" 헤더 형식이 아닙니다 ("${headerLine}")` };
-    const nameRaw = m[1].trim();
-    if (nameRaw === '내레이션') return { characterId: null, expression: null, text };
-    const char = dialogueCharacters.find(c => c.name === nameRaw);
-    if (!char) return { error: `${i + 1}번째 블록: "${nameRaw}"는 알 수 없는 화자입니다.` };
     const emotionLabel = m[2] ? m[2].trim() : null;
+    // A portrait always carries "(감정)" (see the format comment above) —
+    // no parens means no portrait, full stop, regardless of whether the
+    // 화자 text happens to match a registered character's name (e.g. 영우's
+    // own text-message lines have no portrait even though 영우 also has
+    // portrait lines elsewhere).
+    if (!emotionLabel) {
+      const nameField = m[1].trim();
+      const speaker = nameField === '내레이션' ? '' : nameField;
+      return { speaker, characterId: null, expression: null, text };
+    }
+    // A portrait line's 화자 is either the portrait's own registered name
+    // ("[지수] (기쁨)") or, when 화자 and the portrait diverge (narration
+    // keeping a portrait up, or a nickname), "화자 · 인물명"
+    // ("[내레이션 · 지수] (호기심)").
+    const nameField = m[1].trim();
+    const dotIdx = nameField.indexOf(' · ');
+    const speakerLabel = dotIdx === -1 ? nameField : nameField.slice(0, dotIdx).trim();
+    const portraitLabel = dotIdx === -1 ? nameField : nameField.slice(dotIdx + 3).trim();
+    const char = dialogueCharacters.find(c => c.name === portraitLabel);
+    if (!char) return { error: `${i + 1}번째 블록: "${portraitLabel}"는 알 수 없는 인물입니다.` };
     // Any of the 10 canonical emotion labels is accepted here, not just the
     // character's own `expressions` subset — that subset only limits which
     // portraits the 인물 DB upload picker offers, and existing script lines
     // already reference emotions outside it for some characters (e.g.
     // 지수/호기심), so enforcing it here would block re-saving those
     // untouched lines.
-    const expr = emotionLabel && dialogueExpressions.find(x => x.label === emotionLabel);
+    const expr = dialogueExpressions.find(x => x.label === emotionLabel);
     if (!expr) {
       const allowed = dialogueExpressions.map(x => x.label).join(', ');
-      return { error: `${i + 1}번째 블록: "${nameRaw}"의 감정표현 "${emotionLabel || ''}"을(를) 알 수 없습니다. (가능: ${allowed})` };
+      return { error: `${i + 1}번째 블록: "${portraitLabel}"의 감정표현 "${emotionLabel}"을(를) 알 수 없습니다. (가능: ${allowed})` };
     }
-    return { characterId: char.id, expression: expr.id, text };
+    const speaker = speakerLabel === '내레이션' ? '' : speakerLabel;
+    return { speaker, characterId: char.id, expression: expr.id, text };
   });
 }
 
@@ -79,11 +115,9 @@ function buildLineOverridesMap(lines, parsed) {
   const overridesMap = {};
   lines.forEach((l, i) => {
     const p = parsed[i];
-    const char = dialogueCharacters.find(c => c.id === p.characterId);
-    const speaker = char ? char.name : '';
     const patch = {};
     if (p.characterId !== l.characterId) patch.characterId = p.characterId;
-    if (speaker !== (l.speaker || '')) patch.speaker = speaker;
+    if (p.speaker !== (l.speaker || '')) patch.speaker = p.speaker;
     if (p.expression !== (l.expression || null)) patch.expression = p.expression;
     if (p.text !== l.text) patch.text = p.text;
     if (Object.keys(patch).length) overridesMap[l.id] = patch;
