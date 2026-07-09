@@ -426,6 +426,13 @@ const AssetDB = (() => {
   // /dev/upload's 대사 tab, without restructuring a scene's line list.
   // Older saves stored just the text as a bare string — normalized to
   // { text } on read so both shapes keep working.
+  //
+  // /dev/upload's 대사 tab edits a scene's whole script as one text block
+  // and always re-derives the complete overrides map for that scene from
+  // it, so — like setRecipes above — setDialogueOverrides takes the whole
+  // desired map and does a plain overwrite rather than its own
+  // read-modify-write (that also sidesteps the lost-update race a
+  // per-line read-modify-write would have if this ever saved concurrently).
   const dialogueOverridesCache = new Map();
   function dialogueOverridesPath(sceneId) { return `dialogue-overrides/${encodeURIComponent(sceneId)}.json`; }
   function normalizeDialogueOverrides(map) {
@@ -450,15 +457,9 @@ const AssetDB = (() => {
     }
   }
 
-  // `override` is the full { text?, speaker?, characterId?, expression? }
-  // patch for this line (only keys that differ from the original), or
-  // null/{} to clear it back to the static script.
-  async function setDialogueLineOverride(sceneId, lineId, override) {
-    if (!sceneId || !lineId) return {};
-    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${dialogueOverridesPath(sceneId)}?t=${Date.now()}`;
-    const current = normalizeDialogueOverrides(await readCurrentForWrite(dialogueOverridesCache, sceneId, url, {}));
-    const map = Object.assign({}, current);
-    if (override && Object.keys(override).length) map[lineId] = override; else delete map[lineId];
+  async function setDialogueOverrides(sceneId, overrides) {
+    if (!sceneId) return {};
+    const map = Object.assign({}, overrides);
     const blob = new Blob([JSON.stringify(map)], { type: 'application/json' });
     const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${DEV_ASSETS_BUCKET}/${dialogueOverridesPath(sceneId)}`, {
       method: 'POST',
@@ -480,7 +481,7 @@ const AssetDB = (() => {
     getRoomHotspots, setRoomHotspot,
     getMinigameHotspot, setMinigameHotspot,
     getItems, setItem, getRecipes, setRecipes,
-    getDialogueOverrides, setDialogueLineOverride,
+    getDialogueOverrides, setDialogueOverrides,
   };
 })();
 
