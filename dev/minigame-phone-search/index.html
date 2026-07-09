@@ -632,9 +632,9 @@ function playSuccessBeep() {
 function handleKitchenBatteryDrawer() {
   if (hasItem('aa-batteries')) { setMessage('서랍은 비어 있다.'); return; }
   addItem('aa-batteries');
-  setMessage('[ 서랍을 열었다 ]\n[ AA 건전지 2개를 발견했다 ]');
   renderItemGrid();
   markProgress();
+  revealPickup('aa-batteries', '[ 서랍을 열었다 ]\n[ AA 건전지 2개를 발견했다 ]');
 }
 function handleKitchenPots() {
   if (!hasSearched('kitchen-pots')) {
@@ -702,10 +702,18 @@ function handleBathroomDoor() {
 function handleBathroomBehindDoor() {
   if (hasItem('metal-hanger')) { setMessage('더 이상 걸려 있는 것이 없다.'); return; }
   addItem('metal-hanger');
-  setMessage('문 뒤에 무언가 걸려 있다.\n[ 철제 옷걸이를 발견했다 ]');
   renderItemGrid();
   markProgress();
-  queueDialogue(HOOK_LINES);
+  // Already had its own hardcoded follow-up dialogue (HOOK_LINES) — an
+  // 상호작용 override replaces that whole reveal beat instead of stacking
+  // on top of it.
+  const override = ITEM_PICKUP_LINES.get('metal-hanger');
+  if (override && override.length) {
+    queueDialogue(override);
+  } else {
+    setMessage('문 뒤에 무언가 걸려 있다.\n[ 철제 옷걸이를 발견했다 ]');
+    queueDialogue(HOOK_LINES);
+  }
 }
 
 // --- 외부 ---
@@ -717,9 +725,9 @@ function handleExteriorCenterShrubs(hotspotId) {
     return;
   }
   addItem('garden-stake');
-  setMessage('가지 사이에 긴 막대 같은 것이 보인다.\n[ 정원용 지지대를 발견했다 ]');
   renderItemGrid();
   markProgress();
+  revealPickup('garden-stake', '가지 사이에 긴 막대 같은 것이 보인다.\n[ 정원용 지지대를 발견했다 ]');
 }
 function handleExteriorExtensionWindows() {
   setMessage(hasSearched('exterior-extension-windows') ? '내 모습만 보인다.' : '유리에 방 안쪽이 희미하게 비친다.');
@@ -730,9 +738,9 @@ function handleExteriorExtensionWindows() {
 function handleBedsideTable() {
   if (hasItem('dead-flashlight')) { setMessage('협탁 위엔 더 볼 게 없다.'); return; }
   addItem('dead-flashlight');
-  setMessage('[ 협탁을 확인했다 ]\n[ 손전등을 발견했다 ]');
   renderItemGrid();
   markProgress();
+  revealPickup('dead-flashlight', '[ 협탁을 확인했다 ]\n[ 손전등을 발견했다 ]');
 }
 function handleBlind() {
   state.flags.blindOpen = !state.flags.blindOpen;
@@ -754,9 +762,9 @@ function handleRightVent(hotspotId) {
       state.selectedItemId = null;
       saveState();
       registerKeyEvidence();
-      setMessage('[ 갈고리를 환기구 틈으로 넣었다 ]\n딸깍.\n무언가가 바닥으로 떨어졌다.\n[ 낡은 열쇠를 발견했다 ]');
       renderItemGrid();
       markProgress();
+      revealPickup('unknown-key', '[ 갈고리를 환기구 틈으로 넣었다 ]\n딸깍.\n무언가가 바닥으로 떨어졌다.\n[ 낡은 열쇠를 발견했다 ]');
       scheduleForcedPhoneUnlock(900);
     } else {
       setMessage('아직 안쪽에 뭐가 있는지 보이지 않는다.');
@@ -830,9 +838,7 @@ function onHotspotTap(hotspotId) {
     addItem(customItemId);
     renderItemGrid();
     markProgress();
-    const lines = CUSTOM_PICKUP_LINES.get(hotspotId);
-    if (lines && lines.length) queueDialogue(lines);
-    else setMessage(CUSTOM_PICKUP_MESSAGES.get(hotspotId));
+    revealPickup(customItemId, CUSTOM_PICKUP_MESSAGES.get(hotspotId));
     return;
   }
   setMessage(FLAVOR[hotspotId] || '아무것도 없다.');
@@ -1182,7 +1188,7 @@ function performCombine(recipe) {
   saveState();
   hideItemTooltip();
   renderItemGrid();
-  setMessage(`[ ${recipe.successMessage} ]`);
+  revealPickup(recipe.outputItemId, `[ ${recipe.successMessage} ]`);
   markProgress();
 }
 
@@ -1382,10 +1388,24 @@ document.getElementById('btnClearState').addEventListener('click', () => {
 // hotspotId -> pickup message, for custom (dev-added) simple item pickups
 // only — core items' pickup messages stay inline in their handler functions.
 const CUSTOM_PICKUP_MESSAGES = new Map();
-// hotspotId -> pickup dialogue ([{speaker, text}, ...]) authored on
-// /dev/upload's 상호작용 tab — takes priority over CUSTOM_PICKUP_MESSAGES's
-// flat toast when present (see onHotspotTap).
-const CUSTOM_PICKUP_LINES = new Map();
+// itemId -> pickup dialogue ([{speaker, text}, ...]) authored on
+// /dev/upload's 상호작용 tab. Covers every item, core or custom — every
+// hand-written pickup handler below (and performCombine, for recipe
+// outputs) calls revealPickup() at its reveal moment, which plays this
+// instead of the hardcoded fallback text when present. Only jisu-phone
+// (핸드폰, via handlePhoneFound) is excluded — it's a scripted, timed
+// ending sequence, not a single reveal beat a dialogue can drop into.
+const ITEM_PICKUP_LINES = new Map();
+
+// Shows an item's pickup reveal: the dev-authored dialogue from 상호작용 if
+// one exists for this item, otherwise the hardcoded fallback text. Callers
+// still do their own addItem/renderItemGrid/markProgress around this —
+// it only owns the "what does the player see" half of a pickup.
+function revealPickup(itemId, fallbackMessage) {
+  const lines = ITEM_PICKUP_LINES.get(itemId);
+  if (lines && lines.length) queueDialogue(lines);
+  else setMessage(fallbackMessage);
+}
 
 // Loads dev-configured items (added via /dev/upload's 아이템/상호작용 tabs —
 // see AssetDB.getItems) plus any recipes left over from when a 조합법 tab
@@ -1429,10 +1449,13 @@ async function loadCustomItemsAndRecipes() {
   });
   for (const [itemId, def] of Object.entries(customItems)) {
     const imageUrl = def.imageAssetId ? (await AssetDB.getAsset(def.imageAssetId) || {}).dataUrl : null;
+    if (def.lines && def.lines.length && itemId !== 'jisu-phone') ITEM_PICKUP_LINES.set(itemId, def.lines);
     if (ITEM_DEFS[itemId]) {
-      // Core item — only its look is overridable from the dev tool here;
-      // its location was already resolved above, and the gating logic that
-      // grants it stays hand-written.
+      // Core item — only its look and pickup dialogue are overridable from
+      // the dev tool here; its location was already resolved above, and the
+      // gating logic that grants it stays hand-written (revealPickup calls
+      // below just swap the reveal text/dialogue, not the conditions around
+      // it).
       if (def.icon) ITEM_DEFS[itemId].icon = def.icon;
       if (imageUrl) ITEM_DEFS[itemId].imageUrl = imageUrl;
       continue;
@@ -1444,7 +1467,6 @@ async function loadCustomItemsAndRecipes() {
     if (def.hotspotId && !reservedHotspotIds.has(def.hotspotId) && !HOTSPOT_HANDLERS[def.hotspotId]) {
       ITEM_HOTSPOT_ITEM_IDS.set(def.hotspotId, itemId);
       CUSTOM_PICKUP_MESSAGES.set(def.hotspotId, def.message || `[ ${def.name}를 발견했다 ]`);
-      if (def.lines && def.lines.length) CUSTOM_PICKUP_LINES.set(def.hotspotId, def.lines);
     }
   }
   customRecipes.forEach(r => {

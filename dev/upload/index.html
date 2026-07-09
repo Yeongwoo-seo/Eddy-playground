@@ -316,9 +316,10 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
   <div class="interactions-panel hidden" id="interactionsPanel">
     <div class="section-title" style="margin-top:0">상호작용</div>
     <div class="interaction-hint">
-      커스텀 아이템을 처음 주웠을 때 나올 대사를 한 번에 편집해요. 아이템별로
+      아이템을 처음 주웠을 때(🔒 핵심 아이템 포함) 나올 대사를 한 번에 편집해요. 아이템별로
       <code>[아이템ID] 아이콘 이름</code> 줄 아래에 <code>화자: 대사</code> 한 줄씩 적어주세요
       (화자를 비워두면 나레이션, 대사 안에서 줄바꿈은 <code>\n</code>). 대괄호 안 ID는 지우거나 바꾸지 마세요.
+      비워두면 기존 대사/메시지가 그대로 나옵니다. 핸드폰(jisu-phone)은 엔딩 연출이라 목록에서 빠져 있어요.
     </div>
     <textarea class="interaction-textarea" id="interactionTextarea" spellcheck="false"></textarea>
     <div class="interaction-error" id="interactionError"></div>
@@ -1965,15 +1966,21 @@ function evidenceCatalogNameFor(id) {
 }
 
 /* ===== 상호작용 tab — bulk pickup-dialogue editor =====
-   Only custom (dev-added) items are data-driven here — core items' pickups
-   stay hand-written in minigame-phone-search (CORE_ITEM_HANDLERS), same
-   scope restriction as their 발견 메시지 field on the 아이템 tab, which this
-   supersedes with real multi-turn dialogue instead of one flat toast.
+   Covers every item in the catalog — core (🔒) and custom alike, not just
+   dev-added ones. Core items keep their hand-written gating logic in
+   minigame-phone-search (CORE_ITEM_HANDLERS/performCombine still decide
+   *whether* and *when* an item is granted), but the reveal moment itself —
+   what the player sees right when they get it — now calls a shared
+   revealPickup() there that plays whatever's authored here instead of the
+   hardcoded fallback text, when present. jisu-phone (핸드폰) is the one
+   exception: finding it triggers a scripted, timed ending sequence
+   (vibration/sound/scene transition), not a single reveal beat a dialogue
+   can drop into, so it's left out of this list entirely.
    Everything lives in one big textarea (not a form per item) so a dev can
    read/write a whole item's back-and-forth as a contiguous script instead
    of hopping between small fields — see the on-screen hint for the format. */
-function customEvidenceItems() {
-  return evidenceItemCatalog().filter(it => it.custom);
+function interactionEditableItems() {
+  return evidenceItemCatalog().filter(it => it.id !== 'jisu-phone');
 }
 
 // Placeholder text for an item with no dialogue yet — stripped back out on
@@ -1987,20 +1994,21 @@ function formatInteractionLines(lines) {
 }
 
 function interactionTextareaContent() {
-  return customEvidenceItems().map(it => {
+  return interactionEditableItems().map(it => {
     const saved = evidenceItemsCache[it.id] || {};
-    return `[${it.id}] ${it.icon} ${it.name}\n${formatInteractionLines(saved.lines)}`;
+    const lockTag = it.custom ? '' : ' 🔒';
+    return `[${it.id}] ${it.icon} ${it.name}${lockTag}\n${formatInteractionLines(saved.lines)}`;
   }).join('\n\n');
 }
 
 async function renderInteractionsTab() {
   await loadEvidenceData();
   el.interactionError.style.display = 'none';
-  const items = customEvidenceItems();
+  const items = interactionEditableItems();
   el.interactionTextarea.disabled = !items.length;
   el.interactionSaveBtn.disabled = !items.length;
   el.interactionTextarea.value = items.length ? interactionTextareaContent() : '';
-  el.interactionTextarea.placeholder = items.length ? '' : '아직 커스텀 아이템이 없습니다. 아이템 탭에서 먼저 추가해주세요.';
+  el.interactionTextarea.placeholder = items.length ? '' : '등록된 아이템이 없습니다. 아이템 탭에서 먼저 추가해주세요.';
 }
 
 // Parses the whole textarea back into { itemId: [{speaker, text}, ...] }.
@@ -2033,7 +2041,7 @@ function parseInteractionTextarea(text) {
 el.interactionSaveBtn.addEventListener('click', async () => {
   const id = evidenceId();
   const blocks = parseInteractionTextarea(el.interactionTextarea.value);
-  const knownIds = new Set(customEvidenceItems().map(it => it.id));
+  const knownIds = new Set(interactionEditableItems().map(it => it.id));
   const unknownIds = Object.keys(blocks).filter(bid => !knownIds.has(bid));
   if (unknownIds.length) {
     el.interactionError.textContent = `알 수 없는 아이템 ID: ${unknownIds.join(', ')} — 헤더 줄의 [ ] 안 내용을 지우거나 바꾸지 마세요.`;
@@ -2041,7 +2049,7 @@ el.interactionSaveBtn.addEventListener('click', async () => {
     return;
   }
   try {
-    for (const it of customEvidenceItems()) {
+    for (const it of interactionEditableItems()) {
       const lines = (blocks[it.id] || []).filter(l => l.text && l.text !== INTERACTION_PLACEHOLDER_TEXT);
       const def = Object.assign({}, evidenceItemsCache[it.id], { lines });
       await AssetDB.setItem(id, it.id, def);
