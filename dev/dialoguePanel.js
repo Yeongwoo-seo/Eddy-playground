@@ -57,13 +57,43 @@ function formatDialogueBulkText(lines, overrides) {
 }
 
 const DIALOGUE_HEADER_RE = /^\[(.+?)\]\s*(?:\((.+?)\))?\s*$/;
+const DASH_DELIMITER_RE = /^[ \t]*-{3,}[ \t]*$/;
+
+// Splits bulk text into blocks on lone "---" lines, but ONLY where that
+// line is actually acting as a delimiter — i.e. the next non-blank line
+// looks like a "[화자] (감정)" header, which every real block boundary is
+// followed by. A "---"-shaped line that turns up inside a line's own text
+// (a written-out pause, a divider some writer typed, dialogue quoting a
+// horizontal rule, etc.) has ordinary text after it, not a header, so it's
+// left alone and stays part of the block it's in. Without this guard any
+// such line silently inflated the block count past the scene's real line
+// count on save (see the "블록 개수가 ... 다릅니다" check below).
+function splitDialogueBlocks(raw) {
+  const lines = raw.replace(/\r\n/g, '\n').split('\n');
+  const blocks = [];
+  let current = [];
+  for (let i = 0; i < lines.length; i++) {
+    if (DASH_DELIMITER_RE.test(lines[i])) {
+      let j = i + 1;
+      while (j < lines.length && lines[j].trim() === '') j++;
+      if (j < lines.length && DIALOGUE_HEADER_RE.test(lines[j])) {
+        blocks.push(current.join('\n'));
+        current = [];
+        continue;
+      }
+    }
+    current.push(lines[i]);
+  }
+  blocks.push(current.join('\n'));
+  return blocks.map(b => b.trim()).filter(b => b.length);
+}
 
 // Splits the bulk text back into per-line { speaker, characterId,
 // expression, text } (or { error }) by position — a lone "---" line
 // separates blocks, first line of each block is the header, the rest is
 // the line's text.
 function parseDialogueBulkText(raw) {
-  const blocks = raw.replace(/\r\n/g, '\n').split(/\n[ \t]*-{3,}[ \t]*\n/).map(b => b.trim()).filter(b => b.length);
+  const blocks = splitDialogueBlocks(raw);
   return blocks.map((block, i) => {
     const nl = block.indexOf('\n');
     const headerLine = nl === -1 ? block : block.slice(0, nl);
