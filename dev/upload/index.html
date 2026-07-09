@@ -178,6 +178,7 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
     <button class="tab-btn" id="tabDialogue">대사</button>
     <button class="tab-btn" id="tabCharacter">인물 DB</button>
     <button class="tab-btn" id="tabMinigameFace">미니게임 얼굴</button>
+    <button class="tab-btn" id="tabSound">사운드</button>
     <!-- Evidence-collection focus mode only (see applyFocusModeChrome) —
          replaces 인물 DB / 미니게임 얼굴, which don't apply there. -->
     <button class="tab-btn hidden" id="tabItems">아이템</button>
@@ -342,6 +343,44 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
     <div class="hint" id="dialogueBulkStatus" style="margin-top:10px"></div>
   </div>
 
+  <!-- 사운드 tab — see selectType('sound') / renderSoundPanel. 유튜브 링크 +
+       구간(시작~종료)을 카탈로그에 저장해두면, 게임 실행 시 그 구간을 유튜브
+       플레이어로 그대로 스트리밍 재생한다(파일을 내려받아 재호스팅하지 않음 —
+       유튜브 이용약관상 오디오 추출/다운로드는 지원하지 않기로 함). BGM은
+       씬에 지정해두면 /dev/game이 그 씬 진입 시 자동 재생/루프하고, 효과음은
+       이 화면에서 미리듣기만 지원한다(게임 내 자동 트리거 연결은 범위 밖). -->
+  <div class="sound-panel hidden" id="soundPanel">
+    <div class="section-title" style="margin-top:0">사운드 등록</div>
+    <div class="picker" id="soundKindPicker">
+      <div class="picker-label">종류</div>
+      <div class="picker-pills" id="soundKindPickerPills"></div>
+    </div>
+    <div class="field-label" style="margin-top:0">이름</div>
+    <input type="text" class="text-input" id="soundNameInput" placeholder="예) 긴장감 있는 탐문 BGM">
+    <div class="field-label">유튜브 링크</div>
+    <input type="text" class="text-input" id="soundUrlInput" placeholder="https://www.youtube.com/watch?v=...">
+    <div class="item-image-row" style="gap:10px;align-items:flex-start">
+      <div style="flex:1">
+        <div class="field-label">시작(초)</div>
+        <input type="text" inputmode="numeric" class="text-input" id="soundStartInput" value="0">
+      </div>
+      <div style="flex:1">
+        <div class="field-label">종료(초, 선택)</div>
+        <input type="text" inputmode="numeric" class="text-input" id="soundEndInput" placeholder="끝까지">
+      </div>
+    </div>
+    <div class="hint" id="soundError" style="display:none;color:var(--signal-red);text-align:left;margin:10px 0 0"></div>
+    <div id="soundPreviewMount" style="position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden"></div>
+    <div class="item-actions-row">
+      <button class="hotspot-secondary-btn" id="soundPreviewBtn">미리듣기</button>
+      <button class="crop-save-btn" id="soundSaveBtn" style="border-radius:10px;padding:12px;font-family:var(--mono);font-weight:700;border:none">저장</button>
+    </div>
+    <button class="select-btn" id="soundNewBtn" style="width:100%;margin-top:10px">+ 새 사운드로 초기화</button>
+
+    <div class="section-title">등록된 사운드</div>
+    <div id="soundList"><div class="empty-note">아직 등록한 사운드가 없습니다.</div></div>
+  </div>
+
   <div class="section-title" id="listTitle">Uploaded Backgrounds</div>
   <div id="assetList"><div class="empty-note">아직 업로드한 이미지가 없습니다.</div></div>
 </div>
@@ -377,6 +416,7 @@ window.__removeBackgroundReady = import('https://cdn.jsdelivr.net/npm/@imgly/bac
   });
 </script>
 <script src="/dev/assetDb.js"></script>
+<script src="/dev/youtubeSound.js"></script>
 <script src="/dev/dialogueData.js"></script>
 <script src="/dev/dialoguePanel.js"></script>
 <script>
@@ -453,6 +493,19 @@ const el = {
   tabCharacter: document.getElementById('tabCharacter'),
   tabMinigameFace: document.getElementById('tabMinigameFace'),
   minigameFaceHint: document.getElementById('minigameFaceHint'),
+  tabSound: document.getElementById('tabSound'),
+  soundPanel: document.getElementById('soundPanel'),
+  soundKindPickerPills: document.getElementById('soundKindPickerPills'),
+  soundNameInput: document.getElementById('soundNameInput'),
+  soundUrlInput: document.getElementById('soundUrlInput'),
+  soundStartInput: document.getElementById('soundStartInput'),
+  soundEndInput: document.getElementById('soundEndInput'),
+  soundError: document.getElementById('soundError'),
+  soundPreviewMount: document.getElementById('soundPreviewMount'),
+  soundPreviewBtn: document.getElementById('soundPreviewBtn'),
+  soundSaveBtn: document.getElementById('soundSaveBtn'),
+  soundNewBtn: document.getElementById('soundNewBtn'),
+  soundList: document.getElementById('soundList'),
   tabItems: document.getElementById('tabItems'),
   tabInteractions: document.getElementById('tabInteractions'),
   itemsPanel: document.getElementById('itemsPanel'),
@@ -570,17 +623,19 @@ function selectType(type) {
   el.tabDialogue.classList.toggle('active', type === 'dialogue');
   el.tabCharacter.classList.toggle('active', type === 'character');
   el.tabMinigameFace.classList.toggle('active', type === 'minigameFace');
-  // 배경 DB and 대사 both work off the same week/scene pickers (배경 DB to
-  // pick where to upload, 대사 to pick which scene's script to read) — a
-  // ?scene=<id> deep link already decided that, though, so focusScene locks
-  // them the same way focusMinigame does.
-  const showScenePickers = (type === 'background' || type === 'dialogue') && !focusMinigame && !focusScene;
+  el.tabSound.classList.toggle('active', type === 'sound');
+  // 배경 DB, 대사, 사운드 모두 같은 week/scene 피커로 "어느 씬인지" 고른다
+  // (배경 DB는 업로드 대상, 대사는 읽을 스크립트, 사운드는 BGM을 지정할 씬) —
+  // ?scene=<id> 딥링크가 이미 그걸 정해준 경우엔 focusScene이 다른 탭과 같은
+  // 방식으로 피커를 잠근다.
+  const showScenePickers = (type === 'background' || type === 'dialogue' || type === 'sound') && !focusMinigame && !focusScene;
   el.weekPicker.classList.toggle('hidden', !showScenePickers);
   el.scenePicker.classList.toggle('hidden', !showScenePickers);
   el.dialoguePanel.classList.toggle('hidden', type !== 'dialogue');
-  // 대사 is a read-only script view, not part of the image-upload flow —
-  // none of the dropzone/list/character UI applies.
-  if (type === 'dialogue') {
+  el.soundPanel.classList.toggle('hidden', type !== 'sound');
+  // 대사/사운드는 읽기/카탈로그 화면이지, 이미지 업로드 플로우가 아니다 —
+  // 드롭존/목록/캐릭터 UI가 하나도 필요 없다.
+  if (type === 'dialogue' || type === 'sound') {
     el.dropzone.classList.add('hidden');
     el.typeHint.classList.add('hidden');
     el.listTitle.classList.add('hidden');
@@ -606,6 +661,7 @@ function selectType(type) {
   if (type === 'character' || type === 'minigameFace') renderCharPicker();
   if (type === 'character') renderExprPicker();
   if (type === 'dialogue') renderDialoguePanel();
+  if (type === 'sound') renderSoundPanel();
   clearPending();
   refreshList();
   renderHotspotSection();
@@ -663,6 +719,7 @@ function renderWeekPicker() {
       refreshList();
       renderHotspotSection();
       if (currentType === 'dialogue') renderDialoguePanel();
+      if (currentType === 'sound') renderSoundList();
     });
   });
 }
@@ -692,6 +749,7 @@ function renderScenePicker() {
       refreshList();
       renderHotspotSection();
       if (currentType === 'dialogue') renderDialoguePanel();
+      if (currentType === 'sound') renderSoundList();
     });
   });
 }
@@ -1550,10 +1608,182 @@ async function removeAsset(type, id) {
   renderHotspotSection();
 }
 
+/* ===== 사운드 tab — see selectType('sound') / renderSoundPanel. Catalog is
+   global (not per-scene, see AssetDB.getSounds), BGM entries can additionally
+   be assigned to whichever scene the week/scene pickers above have selected
+   (DevGameState.getSceneBgmId/setSceneBgmId — same localStorage-backed
+   pattern as background/character selection), which is what /dev/game reads
+   to auto-play a scene's BGM. 효과음 entries only get catalog + preview here —
+   there's no single natural in-game trigger point for them yet. ===== */
+let currentSoundKind = 'bgm'; // 'bgm' | 'sfx'
+let soundsCatalog = {};
+let editingSoundId = null;
+let soundPreviewPlayer = null;
+
+const SOUND_KIND_LABELS = { bgm: '배경음악(BGM)', sfx: '효과음' };
+
+function renderSoundKindPicker() {
+  el.soundKindPickerPills.innerHTML = Object.keys(SOUND_KIND_LABELS).map(k =>
+    `<button class="pill${k === currentSoundKind ? ' active' : ''}" data-key="${k}">${escapeHtml(SOUND_KIND_LABELS[k])}</button>`
+  ).join('');
+  el.soundKindPickerPills.querySelectorAll('.pill').forEach(btn => {
+    btn.addEventListener('click', () => { currentSoundKind = btn.dataset.key; renderSoundKindPicker(); });
+  });
+}
+
+function stopSoundPreview() {
+  if (soundPreviewPlayer) { soundPreviewPlayer.stop(); soundPreviewPlayer = null; }
+  el.soundPreviewBtn.textContent = '미리듣기';
+}
+
+function resetSoundForm() {
+  editingSoundId = null;
+  el.soundNameInput.value = '';
+  el.soundUrlInput.value = '';
+  el.soundStartInput.value = '0';
+  el.soundEndInput.value = '';
+  el.soundError.style.display = 'none';
+  stopSoundPreview();
+}
+
+async function renderSoundPanel() {
+  renderSoundKindPicker();
+  resetSoundForm();
+  el.soundList.innerHTML = '<div class="empty-note">불러오는 중…</div>';
+  try {
+    soundsCatalog = await AssetDB.getSounds();
+  } catch (err) {
+    soundsCatalog = {};
+    DevDiag.show('사운드 목록을 불러오지 못했습니다: ' + (err && err.message ? err.message : err));
+  }
+  renderSoundList();
+}
+
+function renderSoundList() {
+  const entries = Object.keys(soundsCatalog).map(id => Object.assign({ id }, soundsCatalog[id]));
+  if (!entries.length) {
+    el.soundList.innerHTML = '<div class="empty-note">아직 등록한 사운드가 없습니다.</div>';
+    return;
+  }
+  el.soundList.innerHTML = entries.map(s => {
+    const isSceneBgm = s.kind === 'bgm' && DevGameState.getSceneBgmId(currentSceneId) === s.id;
+    const tag = isSceneBgm ? '<span class="asset-tag">이 씬 BGM</span><br>' : '';
+    const range = s.end ? `${s.start}s ~ ${s.end}s` : `${s.start}s ~ (끝까지)`;
+    const bgmAction = s.kind === 'bgm'
+      ? (isSceneBgm
+          ? `<button onclick="unassignSceneBgm()">지정 해제</button>`
+          : `<button class="use" onclick="assignSceneBgm('${s.id}')">이 씬에 지정</button>`)
+      : '';
+    return `<div class="asset-card">
+      <div class="asset-info">
+        ${tag}
+        <div class="asset-name">${escapeHtml(s.name)}</div>
+        <div class="asset-meta">${escapeHtml(SOUND_KIND_LABELS[s.kind] || s.kind)} · ${escapeHtml(range)}</div>
+      </div>
+      <div class="asset-actions">
+        <button onclick="previewSavedSound('${s.id}')">미리듣기</button>
+        ${bgmAction}
+        <button onclick="editSound('${s.id}')">수정</button>
+        <button class="danger" onclick="deleteSoundEntry('${s.id}')">DELETE</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function editSound(id) {
+  const s = soundsCatalog[id];
+  if (!s) return;
+  stopSoundPreview();
+  editingSoundId = id;
+  currentSoundKind = s.kind;
+  renderSoundKindPicker();
+  el.soundNameInput.value = s.name;
+  el.soundUrlInput.value = `https://youtu.be/${s.videoId}`;
+  el.soundStartInput.value = String(s.start || 0);
+  el.soundEndInput.value = s.end ? String(s.end) : '';
+  el.soundError.style.display = 'none';
+  el.soundPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function assignSceneBgm(id) {
+  DevGameState.setSceneBgmId(currentSceneId, id);
+  renderSoundList();
+}
+function unassignSceneBgm() {
+  DevGameState.setSceneBgmId(currentSceneId, null);
+  renderSoundList();
+}
+
+async function deleteSoundEntry(id) {
+  if (!confirm('이 사운드를 삭제할까요?')) return;
+  try {
+    await AssetDB.deleteSound(id);
+    DevGameState.removeAllSceneBgmRefs(id);
+    delete soundsCatalog[id];
+    if (editingSoundId === id) resetSoundForm();
+    renderSoundList();
+  } catch (err) {
+    DevDiag.show('사운드 삭제 실패: ' + (err && err.message ? err.message : err));
+  }
+}
+
+function readSoundFormOrError() {
+  const name = el.soundNameInput.value.trim();
+  const videoId = parseYouTubeId(el.soundUrlInput.value);
+  const start = Math.max(0, Math.floor(Number(el.soundStartInput.value) || 0));
+  const endRaw = el.soundEndInput.value.trim();
+  const end = endRaw ? Math.floor(Number(endRaw)) : 0;
+  if (!name) return { error: '이름을 입력하세요.' };
+  if (!videoId) return { error: '유효한 유튜브 링크가 아닙니다.' };
+  if (endRaw && (!Number.isFinite(end) || end <= start)) return { error: '종료 시간은 시작 시간보다 커야 합니다.' };
+  return { value: { name, videoId, start, end, kind: currentSoundKind } };
+}
+
+el.soundPreviewBtn.addEventListener('click', () => {
+  if (soundPreviewPlayer) { stopSoundPreview(); return; }
+  const { value, error } = readSoundFormOrError();
+  el.soundError.style.display = error ? 'block' : 'none';
+  el.soundError.textContent = error || '';
+  if (error) return;
+  soundPreviewPlayer = createYTSoundPlayer(el.soundPreviewMount, {
+    videoId: value.videoId, start: value.start, end: value.end, loop: value.kind === 'bgm', muted: false,
+  });
+  el.soundPreviewBtn.textContent = '정지';
+});
+
+async function previewSavedSound(id) {
+  const s = soundsCatalog[id];
+  if (!s) return;
+  stopSoundPreview();
+  soundPreviewPlayer = createYTSoundPlayer(el.soundPreviewMount, {
+    videoId: s.videoId, start: s.start, end: s.end, loop: s.kind === 'bgm', muted: false,
+  });
+  el.soundPreviewBtn.textContent = '정지';
+}
+
+el.soundSaveBtn.addEventListener('click', async () => {
+  const { value, error } = readSoundFormOrError();
+  el.soundError.style.display = error ? 'block' : 'none';
+  el.soundError.textContent = error || '';
+  if (error) return;
+  const id = editingSoundId || `sound_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  try {
+    soundsCatalog = await AssetDB.setSound(id, value);
+    resetSoundForm();
+    renderSoundList();
+  } catch (err) {
+    el.soundError.textContent = '저장 실패: ' + (err && err.message ? err.message : err);
+    el.soundError.style.display = 'block';
+  }
+});
+
+el.soundNewBtn.addEventListener('click', resetSoundForm);
+
 el.tabBackground.addEventListener('click', () => selectType('background'));
 el.tabDialogue.addEventListener('click', () => selectType('dialogue'));
 el.tabCharacter.addEventListener('click', () => selectType('character'));
 el.tabMinigameFace.addEventListener('click', () => selectType('minigameFace'));
+el.tabSound.addEventListener('click', () => selectType('sound'));
 el.tabItems.addEventListener('click', () => selectFocusTab('item'));
 el.tabInteractions.addEventListener('click', () => selectFocusTab('interaction'));
 el.selectBtn.addEventListener('click', () => el.fileInput.click());
@@ -1986,11 +2216,12 @@ function applyFocusModeChrome() {
     // .test-fab-top — so it doesn't sit over the 아이템/상호작용 tabs' own
     // content while scrolling.
     el.testFab.classList.add('test-fab-top');
-    // 대사/인물 DB/미니게임 얼굴 don't apply to an evidence collection —
+    // 대사/인물 DB/미니게임 얼굴/사운드 don't apply to an evidence collection —
     // swap them out for 아이템/상호작용 instead of hiding the whole tab row.
     el.tabDialogue.classList.add('hidden');
     el.tabCharacter.classList.add('hidden');
     el.tabMinigameFace.classList.add('hidden');
+    el.tabSound.classList.add('hidden');
     el.tabItems.classList.remove('hidden');
     el.tabInteractions.classList.remove('hidden');
   } else {

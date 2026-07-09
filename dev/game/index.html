@@ -194,6 +194,11 @@ window.addEventListener('orientationchange', setVh100);
   </div>
 </div>
 
+<!-- Scene BGM (사운드 tab, /dev/upload) streams straight from YouTube's own
+     embedded player rather than a downloaded file — see youtubeSound.js —
+     mounted 1x1 and off-screen since only the audio matters here. -->
+<div id="bgmMount" style="position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden"></div>
+
 <div class="sheet-overlay hidden" id="sheetOverlay">
   <div class="sheet">
     <div class="sheet-title">Dev · Asset Selector</div>
@@ -235,6 +240,7 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 <script src="/dev/assetDb.js"></script>
+<script src="/dev/youtubeSound.js"></script>
 <script src="/dev/loadingOverlay.js"></script>
 <script src="/dev/dialogueData.js"></script>
 <script src="/dev/caseFileData.js"></script>
@@ -289,6 +295,7 @@ const el = {
   evidenceSheetOverlay: document.getElementById('evidenceSheetOverlay'),
   evidenceSheetList: document.getElementById('evidenceSheetList'),
   evidenceSheetCloseBtn: document.getElementById('evidenceSheetCloseBtn'),
+  bgmMount: document.getElementById('bgmMount'),
 };
 
 function setBackground(asset) {
@@ -317,6 +324,35 @@ async function applyBackground() {
   const bgAsset = await AssetDB.getAsset(DevGameState.getBackgroundId(activeSceneData.id));
   if (bgAsset) await AssetDB.preloadImage(bgAsset.dataUrl);
   setBackground(bgAsset);
+}
+
+/* ===== Scene BGM (사운드 tab, /dev/upload) — a scene can have a 'bgm'-kind
+   sound catalog entry assigned via DevGameState.getSceneBgmId; when it does,
+   this streams that YouTube clip on loop for as long as the scene is active.
+   Starts muted+autoplay (required for autoplay to work at all without a user
+   gesture) and unmutes on the player's first tap — same "start muted, ask
+   forgiveness on first interaction" pattern most embedded video/audio uses
+   to get around browser autoplay restrictions. ===== */
+let bgmPlayer = null;
+let bgmUnlocked = false;
+let desiredBgmOn = CaseFileState.getSettings().bgm;
+
+async function applyBgm() {
+  const soundId = DevGameState.getSceneBgmId(activeSceneData.id);
+  if (!soundId) return;
+  let sounds;
+  try { sounds = await AssetDB.getSounds(); } catch (e) { return; }
+  const def = sounds[soundId];
+  if (!def) return;
+  bgmPlayer = createYTSoundPlayer(el.bgmMount, {
+    videoId: def.videoId, start: def.start, end: def.end, loop: true, muted: true,
+  });
+}
+
+function unlockBgmOnFirstTap() {
+  if (bgmUnlocked) return;
+  bgmUnlocked = true;
+  if (bgmPlayer && desiredBgmOn) bgmPlayer.unMute();
 }
 
 // Warms both the metadata cache and the browser's own image cache for every
@@ -557,6 +593,7 @@ const player = createVNPlayer({
 });
 
 function onTap() {
+  unlockBgmOnFirstTap();
   if (caseMenu.isOpen()) return;
   player.tap();
 }
@@ -587,6 +624,12 @@ const caseMenu = initCaseMenu({
     } else {
       location.href = `/dev/game/?scene=${encodeURIComponent(sceneId)}&line=${lineIndex}`;
     }
+  },
+  onSettingChange: (key, value) => {
+    if (key !== 'bgm') return;
+    desiredBgmOn = value;
+    if (!bgmPlayer) return;
+    if (value) { if (bgmUnlocked) bgmPlayer.unMute(); } else { bgmPlayer.mute(); }
   },
 });
 
@@ -753,6 +796,7 @@ async function applyDialogueOverrides() {
   LoadingOverlay.show('장면 불러오는 중');
   await applyDialogueOverrides();
   await applyBackground();
+  applyBgm();
   await preloadCharacterAssetsForLines(activeLines);
   LoadingOverlay.hide();
   if (resumeLineIndex === null) {
