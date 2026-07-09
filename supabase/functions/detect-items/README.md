@@ -11,15 +11,26 @@ client — it only ever lives in this function's Supabase project secrets.
 ```bash
 # from the repo root
 supabase login
-supabase link --project-ref dhtstqnksjoyyshnhksv
 
 # register the Anthropic API key as a project secret — never commit this key
 # or paste it into chat/PRs
-supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
+supabase secrets set ANTHROPIC_API_KEY=sk-ant-... --project-ref dhtstqnksjoyyshnhksv
 
 # deploy the function
-supabase functions deploy detect-items
+supabase functions deploy detect-items --project-ref dhtstqnksjoyyshnhksv
 ```
+
+Passing `--project-ref` directly (instead of running `supabase link` first)
+is deliberate: `supabase link` also tries to link the project's local
+Postgres config and can fail or hang asking for the database password or
+org membership that isn't actually needed just to manage secrets/functions.
+If you *want* to link anyway (e.g. for other `supabase` commands later),
+`supabase link --project-ref dhtstqnksjoyyshnhksv` should still work as
+long as your logged-in account is a member of the project/org that owns
+`dhtstqnksjoyyshnhksv` — if it fails, that's usually either (a) you're
+logged into the wrong Supabase account, or (b) it's prompting for the
+database password, which you can skip by not linking at all and using
+`--project-ref` on each command as above.
 
 The client calls it at:
 
@@ -34,7 +45,7 @@ normal for Supabase's anon role and does not need to change.
 ## Redeploying after edits
 
 ```bash
-supabase functions deploy detect-items
+supabase functions deploy detect-items --project-ref dhtstqnksjoyyshnhksv
 ```
 
 ## Local testing (optional)
