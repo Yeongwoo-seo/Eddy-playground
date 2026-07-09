@@ -478,19 +478,68 @@ const AssetDB = (() => {
     return map;
   }
 
+  // 사운드 카탈로그 — { [soundId]: { name, kind: 'bgm'|'sfx', videoId, start,
+  // end } }, one JSON blob for the whole catalog (not per-scene like items/
+  // hotspots — a sound isn't tied to a single scene; which scene plays a
+  // given BGM lives separately in DevGameState's own sceneBgm map, same
+  // localStorage-backed pattern as background/character selection). `end: 0`
+  // means "play to the natural end of the clip" rather than a fixed loop
+  // point — see youtubeSound.js's createYTSoundPlayer.
+  const soundsCache = new Map(); // single entry keyed 'catalog'
+  const SOUNDS_PATH = 'sounds/catalog.json';
+
+  async function getSounds() {
+    if (soundsCache.has('catalog')) return soundsCache.get('catalog');
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${SOUNDS_PATH}?t=${Date.now()}`;
+    try {
+      const map = (await fetchJsonBlob(url)) || {};
+      soundsCache.set('catalog', map);
+      return map;
+    } catch (e) {
+      return soundsCache.get('catalog') || {};
+    }
+  }
+
+  async function setSound(soundId, def) {
+    if (!soundId) return {};
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${SOUNDS_PATH}?t=${Date.now()}`;
+    const current = await readCurrentForWrite(soundsCache, 'catalog', url, {});
+    const map = Object.assign({}, current);
+    if (def) map[soundId] = def; else delete map[soundId];
+    const blob = new Blob([JSON.stringify(map)], { type: 'application/json' });
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${DEV_ASSETS_BUCKET}/${SOUNDS_PATH}`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'x-upsert': 'true',
+      },
+      body: blob,
+    });
+    if (!res.ok) throw new Error(`사운드 저장 실패 (${res.status}): ${await res.text()}`);
+    soundsCache.set('catalog', map);
+    return map;
+  }
+
+  function deleteSound(soundId) {
+    return setSound(soundId, null);
+  }
+
   return {
     addAsset, getAssetsByType, getAsset, deleteAsset, preloadImage,
     getRoomHotspots, setRoomHotspot,
     getMinigameHotspot, setMinigameHotspot,
     getItems, setItem, getRecipes, setRecipes,
     getDialogueOverrides, setDialogueOverrides,
+    getSounds, setSound, deleteSound,
   };
 })();
 
 const DevGameState = {
   _keys: {
     background: 'mkDevSelectedBackgrounds', characters: 'mkDevSelectedCharacters',
-    transforms: 'mkDevCharacterTransforms',
+    transforms: 'mkDevCharacterTransforms', sceneBgm: 'mkDevSceneBgm',
   },
 
   // Each scene (or minigame — a minigame's own background is just another
@@ -515,6 +564,31 @@ const DevGameState = {
     let changed = false;
     Object.keys(map).forEach(sceneId => { if (map[sceneId] === assetId) { delete map[sceneId]; changed = true; } });
     if (changed) localStorage.setItem(this._keys.background, JSON.stringify(map));
+  },
+
+  // Which AssetDB sound-catalog entry (a 'bgm'-kind one) plays as a scene's
+  // background music — same one-slot-per-scene, localStorage-backed pattern
+  // as the background map above. /dev/game reads this on scene load; the
+  // catalog entry itself (videoId/start/end) lives in AssetDB.getSounds().
+  _loadSceneBgmMap() {
+    try { return JSON.parse(localStorage.getItem(this._keys.sceneBgm)) || {}; }
+    catch (e) { return {}; }
+  },
+  getSceneBgmId(sceneId) {
+    if (!sceneId) return null;
+    return this._loadSceneBgmMap()[sceneId] || null;
+  },
+  setSceneBgmId(sceneId, soundId) {
+    if (!sceneId) return;
+    const map = this._loadSceneBgmMap();
+    if (soundId) map[sceneId] = soundId; else delete map[sceneId];
+    localStorage.setItem(this._keys.sceneBgm, JSON.stringify(map));
+  },
+  removeAllSceneBgmRefs(soundId) {
+    const map = this._loadSceneBgmMap();
+    let changed = false;
+    Object.keys(map).forEach(sceneId => { if (map[sceneId] === soundId) { delete map[sceneId]; changed = true; } });
+    if (changed) localStorage.setItem(this._keys.sceneBgm, JSON.stringify(map));
   },
 
   // Minigame answer-area hotspot = { points: [{x,y}, ...] } — a free-form
