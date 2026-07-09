@@ -1231,6 +1231,11 @@ async function saveCroppedItemImage(cropBlob, croppedImg) {
 let hotspotState = null;
 let currentHotspotStageIndex = 0;
 let currentRoomHotspotId = null;
+// Carries the zoom/pan across switching hotspot slot/area (stage picker,
+// 항목 picker) on the SAME photo, so re-picking a different area doesn't
+// snap back to the fit-to-view zoom every time — only a genuinely different
+// photo (different sceneId) falls back to fitHotspotStage()'s default fit.
+let savedHotspotView = null; // { sceneId, scale, tx, ty }
 
 // Accepts either the current { points } shape or an older saved
 // { x1, y1, x2, y2 } rectangle (from before free-form shapes shipped) and
@@ -1328,6 +1333,10 @@ function renderHotspotSection() {
 async function loadHotspotEditor() {
   const scene = currentScene();
   const sceneId = activeBackgroundSceneId();
+  // Snapshot the outgoing view before hotspotState gets replaced below.
+  if (hotspotState) {
+    savedHotspotView = { sceneId: hotspotState.sceneId, scale: hotspotState.scale, tx: hotspotState.tx, ty: hotspotState.ty };
+  }
   const assetId = DevGameState.getBackgroundId(sceneId);
   const asset = assetId ? await AssetDB.getAsset(assetId) : null;
   if (!asset) {
@@ -1357,6 +1366,15 @@ async function loadHotspotEditor() {
 
     hotspotState = { sceneId, naturalW: nw, naturalH: nh, scale: 1, baseScale: 1, tx: 0, ty: 0 };
     fitHotspotStage();
+    // Re-apply the last zoom/pan instead of the fresh fit-to-view above,
+    // but only when it was captured on this same photo — a different photo
+    // (different sceneId) has no meaningful relationship to that framing.
+    if (savedHotspotView && savedHotspotView.sceneId === sceneId) {
+      hotspotState.scale = clampHotspotScale(savedHotspotView.scale);
+      hotspotState.tx = savedHotspotView.tx;
+      hotspotState.ty = savedHotspotView.ty;
+      applyHotspotTransform();
+    }
 
     const existingPoints = hotspotToPoints(await getActiveHotspot(sceneId));
     if (existingPoints) {
