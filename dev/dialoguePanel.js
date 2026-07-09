@@ -71,6 +71,26 @@ function parseDialogueBulkText(raw) {
   });
 }
 
+// Diffs a scene's parsed blocks (from parseDialogueBulkText, already
+// validated to have no .error entries) against its static lines to build
+// the override map AssetDB.setDialogueOverrides expects — only the fields
+// that actually changed go in, per line.
+function buildLineOverridesMap(lines, parsed) {
+  const overridesMap = {};
+  lines.forEach((l, i) => {
+    const p = parsed[i];
+    const char = dialogueCharacters.find(c => c.id === p.characterId);
+    const speaker = char ? char.name : '';
+    const patch = {};
+    if (p.characterId !== l.characterId) patch.characterId = p.characterId;
+    if (speaker !== (l.speaker || '')) patch.speaker = speaker;
+    if (p.expression !== (l.expression || null)) patch.expression = p.expression;
+    if (p.text !== l.text) patch.text = p.text;
+    if (Object.keys(patch).length) overridesMap[l.id] = patch;
+  });
+  return overridesMap;
+}
+
 // els = { textarea, revertBtn, saveBtn, status } — already-created DOM
 // elements owned by the host page. Fetches this scene's overrides, fills
 // the textarea, and (re)wires revert/save on these exact elements — safe to
@@ -81,8 +101,7 @@ function parseDialogueBulkText(raw) {
 // `isStale`, if given, is checked right after the async override fetch —
 // lets a caller whose own selection may have changed mid-fetch (e.g.
 // /dev/upload switching scene/tab) skip overwriting whatever's now on
-// screen. A caller with one dedicated els set per scene (e.g. /dev/script)
-// can omit it.
+// screen. A caller with one dedicated els set per scene can omit it.
 async function mountBulkDialogueEditor(els, scene, { isStale } = {}) {
   const { textarea, revertBtn, saveBtn, status } = els;
   const lines = scene && scene.lines;
@@ -130,18 +149,7 @@ async function mountBulkDialogueEditor(els, scene, { isStale } = {}) {
       status.textContent = errors.join(' / ');
       return;
     }
-    const overridesMap = {};
-    lines.forEach((l, i) => {
-      const p = parsed[i];
-      const char = dialogueCharacters.find(c => c.id === p.characterId);
-      const speaker = char ? char.name : '';
-      const patch = {};
-      if (p.characterId !== l.characterId) patch.characterId = p.characterId;
-      if (speaker !== (l.speaker || '')) patch.speaker = speaker;
-      if (p.expression !== (l.expression || null)) patch.expression = p.expression;
-      if (p.text !== l.text) patch.text = p.text;
-      if (Object.keys(patch).length) overridesMap[l.id] = patch;
-    });
+    const overridesMap = buildLineOverridesMap(lines, parsed);
     saveBtn.disabled = true;
     status.textContent = '저장 중…';
     try {
@@ -156,4 +164,62 @@ async function mountBulkDialogueEditor(els, scene, { isStale } = {}) {
       saveBtn.disabled = false;
     }
   };
+}
+
+/* ===== Multi-scene "one big text" combining — used by /dev/script's 전체
+   대사보기 to bundle a whole week's scenes into a single editable text
+   block (/dev/upload's 대사 tab only ever edits one scene, so it has no
+   need for these). A scene boundary is its own header line, distinct from
+   the "---" per-line delimiter above so the two never collide:
+     ===== #01 씬 이름 [sceneId] =====
+   The bracketed sceneId (not just the name) is what parsing actually keys
+   off, so a display name with unusual characters can't break the split. */
+
+const SCENE_HEADER_RE = /^={3,}\s*#\d+\s+.*?\[([\w-]+)\]\s*={3,}\s*$/;
+
+function sceneHeaderLine(scene) {
+  return `===== #${String(scene.order || 0).padStart(2, '0')} ${scene.name} [${scene.id}] =====`;
+}
+
+function formatCombinedDialogueText(scenes, overridesByScene) {
+  return scenes.map(scene => {
+    const overrides = overridesByScene[scene.id] || {};
+    return `${sceneHeaderLine(scene)}\n\n${formatDialogueBulkText(scene.lines, overrides)}`;
+  }).join('\n\n\n');
+}
+
+// Splits combined text back into { [sceneId]: chunkText } using the scene
+// header lines above. Returns { chunks } or { error } — every scene in
+// `scenes` must have exactly one header found (this editor can't add/
+// remove/reorder scenes, same as parseDialogueBulkText can't for lines).
+function parseCombinedDialogueText(raw, scenes) {
+  const knownIds = new Set(scenes.map(s => s.id));
+  const lines = raw.replace(/\r\n/g, '\n').split('\n');
+  const chunks = {};
+  let currentId = null;
+  let currentLines = [];
+  function flush() {
+    if (currentId) chunks[currentId] = currentLines.join('\n').trim();
+  }
+  for (const line of lines) {
+    const m = line.match(SCENE_HEADER_RE);
+    if (m) {
+      flush();
+      const id = m[1];
+      if (!knownIds.has(id)) return { error: `알 수 없는 씬 헤더입니다: "${line.trim()}"` };
+      if (id in chunks) return { error: `씬 헤더가 두 번 나옵니다: "${line.trim()}"` };
+      currentId = id;
+      currentLines = [];
+    } else if (currentId) {
+      currentLines.push(line);
+    } else if (line.trim()) {
+      return { error: `첫 씬 헤더(===== ... =====) 앞에 알 수 없는 텍스트가 있습니다: "${line.trim()}"` };
+    }
+  }
+  flush();
+  const missing = scenes.filter(s => !(s.id in chunks));
+  if (missing.length) {
+    return { error: `다음 씬의 헤더를 찾을 수 없습니다 — 헤더 줄은 지우거나 고치지 마세요: ${missing.map(s => s.name).join(', ')}` };
+  }
+  return { chunks };
 }
