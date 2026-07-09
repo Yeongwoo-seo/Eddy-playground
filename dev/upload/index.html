@@ -118,14 +118,6 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .interaction-textarea:disabled{opacity:.5}
 .interaction-error{font-size:12px;color:var(--signal-red, #D94141);margin-top:10px;display:none}
 
-/* ===== 대사 tab — the current scene's whole script as one editable text
-   block (화자/감정/텍스트를 통으로 편집), parsed back into per-line
-   overrides on save. Saved to AssetDB (getDialogueOverrides/
-   setDialogueOverrides), not back into dialogueData.js's static source.
-   See selectType('dialogue') / renderDialoguePanel. ===== */
-.dialogue-panel.hidden{display:none}
-.dialogue-bulk-input{width:100%;background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:14px 16px;color:var(--text-primary);font-size:13.5px;line-height:1.7;font-family:var(--mono);resize:vertical;min-height:320px}
-.dialogue-bulk-input:focus{outline:none;border-color:rgba(89,184,200,.4)}
 .section-title{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase;margin:24px 0 12px}
 .empty-note{font-size:13px;color:var(--text-muted);padding:14px 0}
 .asset-card{display:flex;align-items:center;gap:12px;background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:12px;margin-bottom:10px}
@@ -175,16 +167,13 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 
   <div class="tabs" id="tabsRow">
     <button class="tab-btn active" id="tabBackground">배경 DB</button>
-    <button class="tab-btn" id="tabDialogue">대사</button>
     <button class="tab-btn" id="tabCharacter">인물 DB</button>
-    <button class="tab-btn" id="tabMinigameFace">미니게임 얼굴</button>
     <button class="tab-btn" id="tabSound">사운드</button>
     <!-- Evidence-collection focus mode only (see applyFocusModeChrome) —
-         replaces 인물 DB / 미니게임 얼굴, which don't apply there. -->
+         replaces 인물 DB, which doesn't apply there. -->
     <button class="tab-btn hidden" id="tabItems">아이템</button>
     <button class="tab-btn hidden" id="tabInteractions">상호작용</button>
   </div>
-  <div class="hint hidden" id="minigameFaceHint" style="margin:-8px 0 14px">미니게임 대화창의 작은 초상화 칸에 쓰이는 얼굴 사진이에요. 정면 얼굴이 꽉 차게 정사각형으로 잘라주세요.</div>
 
   <!-- 배경 DB: week -> scene -> (배경/미니게임) picker -->
   <div class="picker" id="weekPicker">
@@ -327,22 +316,6 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
     <button class="crop-save-btn" id="interactionSaveBtn" style="width:100%;margin-top:16px;border-radius:10px;padding:12px;font-family:var(--mono);font-weight:700;border:none">저장</button>
   </div>
 
-  <!-- 대사 tab — see selectType('dialogue') / renderDialoguePanel. The whole
-       scene's script is one big text block — 화자(이름)/감정표현/텍스트를
-       한 번에 통으로 고치고 저장 버튼 한 번으로 반영. AssetDB에 오버라이드로
-       저장되며(dialogueData.js의 static source는 안 건드림), /dev/game이
-       로드 시 그 위에 덮어씀. -->
-  <div class="dialogue-panel hidden" id="dialoguePanel">
-    <div class="section-title" style="margin-top:0">대사</div>
-    <div class="hint" style="margin:-8px 0 14px">한 줄당 <b>[화자] (감정)</b> 헤더 + 대사 텍스트, 줄 사이는 <b>---</b> 로 구분합니다. 내레이션은 <b>[내레이션]</b>으로 씁니다. 블록 개수는 원래 대사 줄 수와 같아야 합니다 — 다 고쳤으면 저장을 누르세요.</div>
-    <textarea class="dialogue-bulk-input" id="dialogueBulkInput" rows="24" spellcheck="false"></textarea>
-    <div class="hotspot-actions">
-      <button class="hotspot-secondary-btn" id="dialogueBulkRevertBtn">되돌리기</button>
-      <button class="crop-save-btn" id="dialogueBulkSaveBtn" style="border-radius:10px;padding:12px;font-family:var(--mono);font-weight:700;border:none">저장</button>
-    </div>
-    <div class="hint" id="dialogueBulkStatus" style="margin-top:10px"></div>
-  </div>
-
   <!-- 사운드 tab — see selectType('sound') / renderSoundPanel. 유튜브 링크 +
        구간(시작~종료)을 카탈로그에 저장해두면, 게임 실행 시 그 구간을 유튜브
        플레이어로 그대로 스트리밍 재생한다(파일을 내려받아 재호스팅하지 않음 —
@@ -420,7 +393,6 @@ window.__removeBackgroundReady = import('https://cdn.jsdelivr.net/npm/@imgly/bac
 <script src="/dev/assetDb.js"></script>
 <script src="/dev/youtubeSound.js"></script>
 <script src="/dev/dialogueData.js"></script>
-<script src="/dev/dialoguePanel.js"></script>
 <script>
 let currentType = 'background';
 let currentWeekId = weeks[0].id;
@@ -467,7 +439,7 @@ const focusMinigame = (function () {
   currentSceneId = sceneIds.includes(currentSceneId) ? currentSceneId : sceneIds[0];
   currentBgKind = 'minigame';
   // Evidence collections (not plain arcade minigames) get the 아이템/조합법
-  // tabs instead of 인물 DB/미니게임 얼굴 — see applyFocusModeChrome.
+  // tabs instead of 인물 DB — see applyFocusModeChrome.
   return { entry, sceneIds, backHref: fromMinigames ? '/dev/minigames/' : '/dev/evidence/', isEvidence: !fromMinigames };
 })();
 
@@ -486,15 +458,7 @@ const el = {
   tabsRow: document.getElementById('tabsRow'),
   testFab: document.getElementById('testFab'),
   tabBackground: document.getElementById('tabBackground'),
-  tabDialogue: document.getElementById('tabDialogue'),
-  dialoguePanel: document.getElementById('dialoguePanel'),
-  dialogueBulkInput: document.getElementById('dialogueBulkInput'),
-  dialogueBulkRevertBtn: document.getElementById('dialogueBulkRevertBtn'),
-  dialogueBulkSaveBtn: document.getElementById('dialogueBulkSaveBtn'),
-  dialogueBulkStatus: document.getElementById('dialogueBulkStatus'),
   tabCharacter: document.getElementById('tabCharacter'),
-  tabMinigameFace: document.getElementById('tabMinigameFace'),
-  minigameFaceHint: document.getElementById('minigameFaceHint'),
   tabSound: document.getElementById('tabSound'),
   soundPanel: document.getElementById('soundPanel'),
   soundPresetsBtn: document.getElementById('soundPresetsBtn'),
@@ -608,13 +572,12 @@ function activeBackgroundSceneId() {
 
 function selectType(type) {
   // Focus mode is background-only setup for one specific minigame — the
-  // 대사 / 인물 DB / 미니게임 얼굴 tabs have nothing to do with that, so
-  // they're hidden and can't be switched into (see applyFocusModeChrome).
+  // 인물 DB tab has nothing to do with that, so it's hidden and can't be
+  // switched into (see applyFocusModeChrome).
   if (focusMinigame) type = 'background';
-  // 인물 DB/미니게임 얼굴 are also hidden (not switchable) for a plain scene
-  // deep link — see applyFocusModeChrome — since they're character-wide,
-  // not scene-specific.
-  if (focusScene && (type === 'character' || type === 'minigameFace')) type = 'background';
+  // 인물 DB is also hidden (not switchable) for a plain scene deep link —
+  // see applyFocusModeChrome — since it's character-wide, not scene-specific.
+  if (focusScene && type === 'character') type = 'background';
   currentType = type;
   currentFocusTab = 'background';
   // selectFocusTab (아이템/조합법) hides these — always restore them when
@@ -624,22 +587,18 @@ function selectType(type) {
   el.listTitle.classList.remove('hidden');
   el.assetList.classList.remove('hidden');
   el.tabBackground.classList.toggle('active', type === 'background');
-  el.tabDialogue.classList.toggle('active', type === 'dialogue');
   el.tabCharacter.classList.toggle('active', type === 'character');
-  el.tabMinigameFace.classList.toggle('active', type === 'minigameFace');
   el.tabSound.classList.toggle('active', type === 'sound');
-  // 배경 DB, 대사, 사운드 모두 같은 week/scene 피커로 "어느 씬인지" 고른다
-  // (배경 DB는 업로드 대상, 대사는 읽을 스크립트, 사운드는 BGM을 지정할 씬) —
-  // ?scene=<id> 딥링크가 이미 그걸 정해준 경우엔 focusScene이 다른 탭과 같은
-  // 방식으로 피커를 잠근다.
-  const showScenePickers = (type === 'background' || type === 'dialogue' || type === 'sound') && !focusMinigame && !focusScene;
+  // 배경 DB, 사운드 모두 같은 week/scene 피커로 "어느 씬인지" 고른다 (배경
+  // DB는 업로드 대상, 사운드는 BGM을 지정할 씬) — ?scene=<id> 딥링크가 이미
+  // 그걸 정해준 경우엔 focusScene이 다른 탭과 같은 방식으로 피커를 잠근다.
+  const showScenePickers = (type === 'background' || type === 'sound') && !focusMinigame && !focusScene;
   el.weekPicker.classList.toggle('hidden', !showScenePickers);
   el.scenePicker.classList.toggle('hidden', !showScenePickers);
-  el.dialoguePanel.classList.toggle('hidden', type !== 'dialogue');
   el.soundPanel.classList.toggle('hidden', type !== 'sound');
-  // 대사/사운드는 읽기/카탈로그 화면이지, 이미지 업로드 플로우가 아니다 —
-  // 드롭존/목록/캐릭터 UI가 하나도 필요 없다.
-  if (type === 'dialogue' || type === 'sound') {
+  // 사운드는 읽기/카탈로그 화면이지, 이미지 업로드 플로우가 아니다 — 드롭존/
+  // 목록/캐릭터 UI가 하나도 필요 없다.
+  if (type === 'sound') {
     el.dropzone.classList.add('hidden');
     el.typeHint.classList.add('hidden');
     el.listTitle.classList.add('hidden');
@@ -650,21 +609,12 @@ function selectType(type) {
   // only runs for type 'background' — force it hidden here too, otherwise
   // switching to 인물 DB left it showing whatever it was left at.
   el.bgKindPicker.classList.toggle('hidden', type !== 'background');
-  el.charPicker.classList.toggle('hidden', type !== 'character' && type !== 'minigameFace');
+  el.charPicker.classList.toggle('hidden', type !== 'character');
   el.exprPicker.classList.toggle('hidden', type !== 'character');
-  el.minigameFaceHint.classList.toggle('hidden', type !== 'minigameFace');
   el.fileInput.accept = type === 'background' ? 'image/jpeg,image/png,image/webp' : 'image/png,image/webp';
   el.typeHint.textContent = type === 'background' ? '.jpg · .jpeg · .png · .webp' : '.png · .webp (투명 배경 권장)';
-  // 미니게임 얼굴은 표정별이 아니라 캐릭터당 사진 한 장 — 감정표현 피커 대신
-  // 고정 sentinel 키를 씀. 이 sentinel에 있다가 다른 탭으로 넘어가는 경우에만
-  // 되돌려서, 인물 DB에서 고르고 있던 표정(예: 기쁨)은 탭을 왔다갔다해도 유지된다.
-  if (type === 'minigameFace') currentExpression = MINIGAME_FACE_EXPRESSION;
-  else if (currentExpression === MINIGAME_FACE_EXPRESSION) currentExpression = dialogueExpressions[0].id;
-  if (type === 'background' || type === 'dialogue') { renderWeekPicker(); renderScenePicker(); }
-  if (type === 'background') renderBgKindPicker();
-  if (type === 'character' || type === 'minigameFace') renderCharPicker();
-  if (type === 'character') renderExprPicker();
-  if (type === 'dialogue') renderDialoguePanel();
+  if (type === 'background') { renderWeekPicker(); renderScenePicker(); renderBgKindPicker(); }
+  if (type === 'character') { renderCharPicker(); renderExprPicker(); }
   if (type === 'sound') renderSoundPanel();
   clearPending();
   refreshList();
@@ -680,9 +630,9 @@ function selectType(type) {
 
 /* ===== Evidence-collection 아이템/상호작용 tabs (focusMinigame.isEvidence
    only) — a third and fourth "mode" alongside selectType's background/
-   character/minigameFace, but shaped nothing like them (no image dropzone,
-   just an item form editor / a bulk dialogue textarea), so they get their
-   own switch function instead of another branch inside selectType. ===== */
+   character, but shaped nothing like them (no image dropzone, just an item
+   form editor / a bulk dialogue textarea), so they get their own switch
+   function instead of another branch inside selectType. ===== */
 let currentFocusTab = 'background';
 
 function selectFocusTab(tab) {
@@ -722,7 +672,6 @@ function renderWeekPicker() {
       clearPending();
       refreshList();
       renderHotspotSection();
-      if (currentType === 'dialogue') renderDialoguePanel();
       if (currentType === 'sound') renderSoundList();
     });
   });
@@ -752,28 +701,8 @@ function renderScenePicker() {
       clearPending();
       refreshList();
       renderHotspotSection();
-      if (currentType === 'dialogue') renderDialoguePanel();
       if (currentType === 'sound') renderSoundList();
     });
-  });
-}
-
-// 대사 tab — the current scene's whole script as one editable text block,
-// via the shared mountBulkDialogueEditor (dialoguePanel.js) — see
-// /dev/script for the week-wide version of the same editor.
-async function renderDialoguePanel() {
-  const scene = currentScene();
-  const sceneId = scene && scene.id;
-  await mountBulkDialogueEditor({
-    textarea: el.dialogueBulkInput,
-    revertBtn: el.dialogueBulkRevertBtn,
-    saveBtn: el.dialogueBulkSaveBtn,
-    status: el.dialogueBulkStatus,
-  }, scene, {
-    // The dev may have switched week/scene (or tabs) while the override
-    // fetch was in flight — bail instead of overwriting whatever's now on
-    // screen.
-    isStale: () => currentType !== 'dialogue' || currentSceneId !== sceneId,
   });
 }
 
@@ -816,9 +745,6 @@ function renderCharPicker() {
       // the previous one (e.g. leaving 지수's '장난' for 이든, who only has
       // 기본/짜증) — fall back to the first expression this character
       // actually needs instead of showing a stale, now-invalid selection.
-      // Only applies in 인물 DB mode — 미니게임 얼굴 mode keeps currentExpression
-      // pinned to its own sentinel (MINIGAME_FACE_EXPRESSION), which never
-      // appears in any character's `expressions` list.
       if (currentType === 'character') {
         const allowed = allowedExpressions();
         if (!allowed.some(x => x.id === currentExpression)) currentExpression = allowed[0].id;
@@ -893,7 +819,7 @@ function onFilesSelected(files) {
         renderPreview(url);
       }
     } else {
-      imageEditorTarget = currentType; // 'character' | 'minigameFace'
+      imageEditorTarget = currentType; // 'character'
       openCharEditor(file, url, img);
     }
   };
@@ -931,26 +857,25 @@ async function saveAsset() {
 
 /* ===== Character photo editor: optional background removal + one crop =====
    인물 DB (표정별 대사 초상화)는 반신 세로 프레임(3:4, 위쪽 앵커)을 쓰고,
-   미니게임 얼굴 DB/아이템 이미지는 작은 아이콘 칸에 맞춘 클로즈업 1:1 정사각
-   프레임(가운데 앵커)을 쓴다 — 같은 반신 크롭을 그대로 축소해서 쓰면 얼굴
-   대신 옷/몸통만 보였던 문제를 해결하기 위함. 아이템 이미지도 인벤토리 아이콘
-   한 칸에 들어가는 건 마찬가지라 미니게임 얼굴과 같은 프레임을 쓴다.
-   imageEditorTarget ('character' | 'minigameFace' | 'item')는 이 에디터를 연
-   진입점에 따라 openFilesSelected/아이템 탭의 이미지 업로드 버튼이 세팅 —
-   아이템 탭은 selectType의 tab이 아니라 currentType이 항상 'background'로
-   고정돼 있으므로 currentType으로는 구분할 수 없다. */
+   아이템 이미지는 인벤토리 아이콘 한 칸에 맞춘 클로즈업 1:1 정사각 프레임
+   (가운데 앵커)을 쓴다 — 같은 반신 크롭을 그대로 축소해서 쓰면 얼굴 대신
+   옷/몸통만 보였던 문제를 해결하기 위함.
+   imageEditorTarget ('character' | 'item')는 이 에디터를 연 진입점에 따라
+   openFilesSelected/아이템 탭의 이미지 업로드 버튼이 세팅 — 아이템 탭은
+   selectType의 tab이 아니라 currentType이 항상 'background'로 고정돼
+   있으므로 currentType으로는 구분할 수 없다. */
 let imageEditorTarget = 'character';
 function activeCropAspect() { return imageEditorTarget === 'character' ? 3 / 4 : 1; }
 function activeCropVAnchor() { return imageEditorTarget === 'character' ? 0 : 0.5; }
-const CROP_ENTER_LABELS = { character: '다음: 자르기', minigameFace: '다음: 얼굴 자르기', item: '다음: 자르기' };
-const CROP_SAVE_LABELS = { character: '이 표정으로 저장', minigameFace: '이 사진을 미니게임 얼굴로 저장', item: '이 이미지를 아이템 이미지로 저장' };
+const CROP_ENTER_LABELS = { character: '다음: 자르기', item: '다음: 자르기' };
+const CROP_SAVE_LABELS = { character: '이 표정으로 저장', item: '이 이미지를 아이템 이미지로 저장' };
 
 let workingBlob = null;
 let workingImgNatural = { width: 0, height: 0 };
 let sourceFileBaseName = '';
 let cropState = null;
 let cropDrag = null;
-let lastCropSettingsByType = {}; // { [imageEditorTarget]: { zoom, fracX, fracY } } — carried over to the next photo in the same mode only; character/minigameFace/item frame very differently
+let lastCropSettingsByType = {}; // { [imageEditorTarget]: { zoom, fracX, fracY } } — carried over to the next photo in the same mode only; character/item frame very differently
 
 function clamp(v, min, max) { return Math.min(Math.max(v, min), max); }
 
@@ -1118,7 +1043,7 @@ el.cropSaveBtn.addEventListener('click', async () => {
     if (imageEditorTarget === 'item') {
       await saveCroppedItemImage(cropBlob, croppedImg);
     } else {
-      const exprLabel = imageEditorTarget === 'minigameFace' ? '미니게임 얼굴' : dialogueExpressions.find(x => x.id === currentExpression).label;
+      const exprLabel = dialogueExpressions.find(x => x.id === currentExpression).label;
       const name = `${sourceFileBaseName} (${exprLabel}).png`;
       const record = await AssetDB.addAsset({ type: 'character', name, blob: cropBlob, width: croppedImg.naturalWidth, height: croppedImg.naturalHeight, characterKey: currentCharacterKey, expression: currentExpression });
       // Only one photo per (character, expression) is actually rendered — the
@@ -1547,10 +1472,8 @@ function escapeHtml(s) {
 }
 
 async function refreshList() {
-  el.listTitle.textContent = currentType === 'background' ? 'Uploaded Backgrounds' : currentType === 'minigameFace' ? 'Uploaded Minigame Faces' : 'Uploaded Portraits';
-  // 미니게임 얼굴은 실제 저장은 'character' 타입을 공유하고 expression
-  // sentinel(MINIGAME_FACE_EXPRESSION)로만 구분되므로 조회도 'character'로.
-  const all = await AssetDB.getAssetsByType(currentType === 'minigameFace' ? 'character' : currentType);
+  el.listTitle.textContent = currentType === 'background' ? 'Uploaded Backgrounds' : 'Uploaded Portraits';
+  const all = await AssetDB.getAssetsByType(currentType);
   const filtered = currentType === 'background'
     ? all.filter(a => a.sceneId === activeBackgroundSceneId())
     : all.filter(a => a.characterKey === currentCharacterKey && a.expression === currentExpression);
@@ -1838,9 +1761,7 @@ el.soundSaveBtn.addEventListener('click', async () => {
 el.soundNewBtn.addEventListener('click', resetSoundForm);
 
 el.tabBackground.addEventListener('click', () => selectType('background'));
-el.tabDialogue.addEventListener('click', () => selectType('dialogue'));
 el.tabCharacter.addEventListener('click', () => selectType('character'));
-el.tabMinigameFace.addEventListener('click', () => selectType('minigameFace'));
 el.tabSound.addEventListener('click', () => selectType('sound'));
 el.tabItems.addEventListener('click', () => selectFocusTab('item'));
 el.tabInteractions.addEventListener('click', () => selectFocusTab('interaction'));
@@ -2255,13 +2176,12 @@ function applyFocusModeChrome() {
       el.frame.classList.add('has-fab');
     }
     if (focusScene) {
-      // 인물 DB/미니게임 얼굴 manage characters across every scene they
-      // appear in — nothing here is specific to the one scene this screen
-      // is locked to, so they're just noise for "이 씬의 설정" (unlike 배경
-      // DB/대사, which are genuinely per-scene). Same reasoning as
-      // focusMinigame hiding them below, just for a different focus.
+      // 인물 DB manages characters across every scene they appear in —
+      // nothing here is specific to the one scene this screen is locked to,
+      // so it's just noise for "이 씬의 설정" (unlike 배경 DB, which is
+      // genuinely per-scene). Same reasoning as focusMinigame hiding it
+      // below, just for a different focus.
       el.tabCharacter.classList.add('hidden');
-      el.tabMinigameFace.classList.add('hidden');
     }
     return;
   }
@@ -2274,11 +2194,9 @@ function applyFocusModeChrome() {
     // .test-fab-top — so it doesn't sit over the 아이템/상호작용 tabs' own
     // content while scrolling.
     el.testFab.classList.add('test-fab-top');
-    // 대사/인물 DB/미니게임 얼굴/사운드 don't apply to an evidence collection —
-    // swap them out for 아이템/상호작용 instead of hiding the whole tab row.
-    el.tabDialogue.classList.add('hidden');
+    // 인물 DB/사운드 don't apply to an evidence collection — swap them out
+    // for 아이템/상호작용 instead of hiding the whole tab row.
     el.tabCharacter.classList.add('hidden');
-    el.tabMinigameFace.classList.add('hidden');
     el.tabSound.classList.add('hidden');
     el.tabItems.classList.remove('hidden');
     el.tabInteractions.classList.remove('hidden');
