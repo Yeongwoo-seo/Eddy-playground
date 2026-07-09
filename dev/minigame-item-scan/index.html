@@ -139,22 +139,86 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
 }
 </script>
-<script src="/dev/assetDb.js"></script>
 <script src="/dev/caseFileData.js"></script>
 <script src="/dev/caseFileState.js"></script>
 <script src="/dev/vnPlayer.js"></script>
 <script>
 /* OPERATION MK — 「특수 능력 테스트」 evidence-collection entry.
-   Player uploads a photo -> it's downscaled client-side and sent to the
-   `detect-items` Supabase Edge Function (supabase/functions/detect-items),
-   which calls the Anthropic Messages API (vision + a forced tool call) to
-   find physical objects and return a bounding box + investigation dialogue
-   per object. The Anthropic API key lives only in that function's Supabase
-   project secrets — this page never sees it. Detected items are rendered
-   as labeled clickable boxes over the photo; tapping one shows the
-   dialogue and registers the item as 증거 via CaseFileState.addEvidence. */
+   Player uploads a photo -> it's downscaled client-side and sent straight
+   from the browser to the Anthropic Messages API (vision + a forced tool
+   call) to find physical objects and return a bounding box + investigation
+   dialogue per object. Detected items are rendered as labeled clickable
+   boxes over the photo; tapping one shows the dialogue and registers the
+   item as 증거 via CaseFileState.addEvidence.
 
-const DETECT_ITEMS_URL = `${SUPABASE_URL}/functions/v1/detect-items`;
+   ⚠️ SECURITY: ANTHROPIC_API_KEY below is shipped in this page's source and
+   is visible to anyone who opens dev tools on this page — this is a
+   deliberate tradeoff for a dev-only test page (no backend in this repo to
+   hide it behind). Do not point this at a production/public deployment
+   without moving the call server-side again. If you're worried about
+   cost/abuse, set a spend limit on this key in the Anthropic Console. */
+const ANTHROPIC_API_KEY = 'REPLACE_WITH_YOUR_ANTHROPIC_API_KEY';
+const ANTHROPIC_MODEL = 'claude-sonnet-5';
+
+const DETECT_ITEMS_TOOL = {
+  name: 'report_detected_items',
+  description: 'Report the distinct physical objects visible in the photo, for a detective visual-novel game\'s item-scan minigame.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      items: {
+        type: 'array',
+        minItems: 1,
+        maxItems: 8,
+        items: {
+          type: 'object',
+          properties: {
+            label: { type: 'string', description: '짧은 한국어 물품 이름 (예: 지갑, 열쇠, 커피컵). 2~6자 내외.' },
+            box: {
+              type: 'object',
+              description: '물품을 감싸는 사각형 영역. 이미지 가로/세로 대비 0~1 비율.',
+              properties: {
+                x: { type: 'number', description: '왼쪽 상단 x (0~1)' },
+                y: { type: 'number', description: '왼쪽 상단 y (0~1)' },
+                w: { type: 'number', description: '너비 (0~1)' },
+                h: { type: 'number', description: '높이 (0~1)' },
+              },
+              required: ['x', 'y', 'w', 'h'],
+            },
+            description: { type: 'string', description: '이 물품에 대한 한 문장짜리 수사 관찰 (한국어).' },
+            dialogue: {
+              type: 'array',
+              description: '이 물품을 조사할 때 나오는 2~3줄 대사. 지수(호기심 많고 관찰력 좋은 신입 수사관)와 영우(차분한 파트너)가 번갈아 말한다.',
+              minItems: 2,
+              maxItems: 3,
+              items: {
+                type: 'object',
+                properties: {
+                  speaker: { type: 'string', enum: ['지수', '영우'] },
+                  text: { type: 'string' },
+                },
+                required: ['speaker', 'text'],
+              },
+            },
+          },
+          required: ['label', 'box', 'description', 'dialogue'],
+        },
+      },
+    },
+    required: ['items'],
+  },
+};
+
+const DETECT_ITEMS_SYSTEM_PROMPT = `당신은 한국어 형사/추리 비주얼노벨 게임 "OPERATION MK"의 물품 인식 기능을 담당합니다.
+업로드된 사진을 분석해 뚜렷하게 구분되는 실제 물체를 최대 8개까지 찾아 report_detected_items 도구로 보고하세요.
+
+규칙:
+- 배경, 벽, 바닥처럼 개별 "물품"이 아닌 것은 제외하세요.
+- 사진 속에 실존 인물로 보이는 사람이 있어도 그 사람이 누구인지 추정하거나 신원을 언급하지 마세요. 사람 자체를 물품으로 보고하지 말고, 사람이 들고 있거나 곁에 있는 물건만 보고하세요.
+- 각 물품의 한국어 이름, 0~1 비율의 사각형 영역, 한 문장 관찰, 그리고 지수/영우가 번갈아 말하는 2~3줄의 짧은 수사 대사를 작성하세요.
+- 대사는 자연스러운 한국어 구어체로, 게임의 톤(가볍고 티키타카가 있는 파트너 수사관 케미)에 맞게 쓰세요.
+- 물품이 하나도 없다면 items를 빈 배열로 두지 말고, 가장 두드러지는 배경 요소 하나라도 보고하세요.`;
+
 const MAX_LONG_EDGE = 1200;
 const JPEG_QUALITY = 0.85;
 const RUN_ID_LEN = 6;
@@ -296,23 +360,50 @@ function updateProgress() {
   el.completeToast.classList.toggle('show', activeItems.length > 0 && foundNum === activeItems.length);
 }
 
-/* ===== Network call ===== */
+/* ===== Network call — straight to the Anthropic API from the browser.
+   `anthropic-dangerous-direct-browser-access` is required by Anthropic for
+   any request sent directly from browser JS (as opposed to a server); it
+   exists precisely to flag that this pattern exposes the API key to
+   anyone viewing page source, which is the tradeoff this page accepts. ===== */
 async function detectItems(payload) {
-  const res = await fetch(DETECT_ITEMS_URL, {
+  if (!ANTHROPIC_API_KEY || ANTHROPIC_API_KEY.indexOf('REPLACE_WITH') === 0) {
+    throw new Error('ANTHROPIC_API_KEY가 설정되지 않았습니다. 이 페이지 소스코드 상단의 ANTHROPIC_API_KEY 값을 본인의 Anthropic API 키로 바꿔주세요.');
+  }
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
-      apikey: SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-      'Content-Type': 'application/json',
+      'x-api-key': ANTHROPIC_API_KEY,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+      'content-type': 'application/json',
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      model: ANTHROPIC_MODEL,
+      max_tokens: 2048,
+      system: DETECT_ITEMS_SYSTEM_PROMPT,
+      tools: [DETECT_ITEMS_TOOL],
+      tool_choice: { type: 'tool', name: 'report_detected_items' },
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'image', source: { type: 'base64', media_type: payload.mediaType, data: payload.imageBase64 } },
+          { type: 'text', text: '이 사진 속 물품들을 감지해주세요.' },
+        ],
+      }],
+    }),
   });
   let data;
   try { data = await res.json(); } catch { data = null; }
-  if (!res.ok || !data || !Array.isArray(data.items)) {
-    throw new Error((data && data.error) || `물품 인식에 실패했습니다. (${res.status})`);
+  if (!res.ok) {
+    const msg = data && data.error && data.error.message;
+    throw new Error(msg || `물품 인식에 실패했습니다. (${res.status})`);
   }
-  return data.items;
+  const toolUseBlock = (data.content || []).find(b => b.type === 'tool_use');
+  const items = toolUseBlock && toolUseBlock.input && toolUseBlock.input.items;
+  if (!Array.isArray(items) || !items.length) {
+    throw new Error('사진에서 물품을 찾지 못했습니다.');
+  }
+  return items;
 }
 
 function showScanError(message) {
