@@ -1776,6 +1776,16 @@ const minigames = [
     route: '/dev/minigame-fishing/play/',
     setupUrl: '/dev/minigame-fishing/',
   },
+  {
+    // Standalone Suika-style merge game — single self-contained page, no
+    // dev-side setup step, so setupUrl and route are the same page (same
+    // shape as special-ability-test below).
+    id: 'watermelon-minigame',
+    name: '수박 게임',
+    location: '독립형 미니게임 (스토리 미연동)',
+    route: '/dev/minigame-watermelon/',
+    setupUrl: '/dev/minigame-watermelon/',
+  },
 ];
 
 // Registry of standalone-testable 증거 수집 (evidence-collection) scenes —
