@@ -1682,6 +1682,16 @@ function stopSoundPreview() {
   el.soundPreviewBtn.textContent = '미리듣기';
 }
 
+// YT.Player's onError was previously unhandled, so a video whose owner
+// disabled embedding (very common on small "no copyright SFX" reup
+// channels — several of the 추천 프리셋 entries may hit this) just sat there
+// with the button stuck on "정지" and no sound, no explanation. Surface it.
+function handlePreviewError(message) {
+  stopSoundPreview();
+  el.soundError.textContent = message;
+  el.soundError.style.display = 'block';
+}
+
 function resetSoundForm() {
   editingSoundId = null;
   el.soundNameInput.value = '';
@@ -1793,6 +1803,7 @@ el.soundPreviewBtn.addEventListener('click', () => {
   if (error) return;
   soundPreviewPlayer = createYTSoundPlayer(el.soundPreviewMount, {
     videoId: value.videoId, start: value.start, end: value.end, loop: value.kind === 'bgm', muted: false,
+    onError: handlePreviewError,
   });
   el.soundPreviewBtn.textContent = '정지';
 });
@@ -1803,6 +1814,7 @@ async function previewSavedSound(id) {
   stopSoundPreview();
   soundPreviewPlayer = createYTSoundPlayer(el.soundPreviewMount, {
     videoId: s.videoId, start: s.start, end: s.end, loop: s.kind === 'bgm', muted: false,
+    onError: handlePreviewError,
   });
   el.soundPreviewBtn.textContent = '정지';
 }

@@ -38,13 +38,30 @@ const YouTubeAPI = (() => {
   return { ensureReady };
 })();
 
+// YT.Player's onError codes (per the IFrame API docs) — surfaced through
+// `onError` below instead of being silently dropped, which is what made a
+// non-embeddable/removed video look exactly like "미리듣기가 안 되는" with no
+// clue why: playVideo() was still called, but the iframe never actually
+// started, and nothing told the caller.
+const YT_ERROR_MESSAGES = {
+  2: '유튜브 링크가 올바르지 않습니다.',
+  5: '이 브라우저에서 재생할 수 없는 영상입니다.',
+  100: '삭제되었거나 비공개로 전환된 영상입니다.',
+  101: '영상 업로더가 외부 재생(임베드)을 막아둔 영상이라 미리듣기를 지원하지 않습니다. 다른 영상으로 등록해주세요.',
+  150: '영상 업로더가 외부 재생(임베드)을 막아둔 영상이라 미리듣기를 지원하지 않습니다. 다른 영상으로 등록해주세요.',
+};
+
 // Mounts a YouTube player inside `containerEl` (a fresh child element is
 // appended each call, since the IFrame API replaces whatever element it's
 // given with its own <iframe> — reusing the same node after stop() isn't
 // possible once the API has consumed it). Plays [start, end) once, looping
 // back to `start` when `end` is reached (or, if `end` is 0/omitted, when the
 // whole video ends) — set `loop: false` for a one-shot effect instead.
-function createYTSoundPlayer(containerEl, { videoId, start = 0, end = 0, loop = true, muted = false } = {}) {
+// `onError(message, code)` fires (once) on any YT.Player error — most
+// commonly a video whose owner disabled embedding (101/150) or removed it
+// (100) — the player is already unusable at that point, so the caller
+// should treat this the same as a failed load.
+function createYTSoundPlayer(containerEl, { videoId, start = 0, end = 0, loop = true, muted = false, onError } = {}) {
   const target = document.createElement('div');
   containerEl.appendChild(target);
 
@@ -88,6 +105,10 @@ function createYTSoundPlayer(containerEl, { videoId, start = 0, end = 0, loop = 
             player.seekTo(start, true);
             player.playVideo();
           }
+        },
+        onError: (e) => {
+          if (destroyed) return;
+          if (onError) onError(YT_ERROR_MESSAGES[e.data] || `재생 중 알 수 없는 오류가 발생했습니다. (code ${e.data})`, e.data);
         },
       },
     });
