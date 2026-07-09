@@ -787,10 +787,27 @@ const ROOM_SEARCH_CORE_ITEMS = [
   { id: 'jisu-phone', name: '핸드폰', icon: '📱' },
 ];
 
+// Concatenates line arrays from scenes that got folded into one merged
+// entry below (scenes are grouped by location, not by time slice, so
+// several old scene beats now live under a single id) and re-numbers
+// `id` sequentially so dialogue-override lookups (keyed by line id — see
+// AssetDB.getDialogueOverrides/setDialogueOverrides) stay unique within
+// the merged scene instead of colliding on 'line-001' etc.
+function mergeLines(...lineArrays) {
+  let n = 0;
+  return lineArrays.flat().map(line => ({ ...line, id: 'line-' + String(++n).padStart(3, '0') }));
+}
+
 // Registry of testable Week 0 scenes — /dev/week0 lists these, each linking
 // to /dev/game/?scene=<id>. Covers the full 0주차 ARRIVAL arc (W0-S01~S10 in
 // the story doc) — 비행기 오프닝부터 첫날 밤 마무리까지, including the M.K.
 // engraving reveal that seeds the entire 4-week mystery.
+//
+// Grouped by location rather than by time slice — consecutive scenes at the
+// same place are merged into one entry (see mergeLines above) so the list
+// isn't split on every clock-time change. A scene keeps its own entry when
+// the location changes, or when it hands off to a minigame (nextSceneId) —
+// that handoff always has to be the last beat of an entry.
 const week0Scenes = [
   {
     id: 'week0-scene-flight',
@@ -902,24 +919,17 @@ const week0Scenes = [
   {
     id: 'week0-scene-frontdesk',
     order: 11,
-    name: '프런트 문의',
+    name: '프런트 문의 · 우편 봉투',
     location: 'Accommodation Lobby',
     introLabel: 'FRONT DESK',
     time: '22:50',
-    lines: week0SceneFrontdeskLines,
-  },
-  {
-    id: 'week0-scene-mailroom',
-    order: 12,
-    name: '엘리베이터의 우편 봉투',
-    location: 'Accommodation Lobby',
-    introLabel: 'ACCOMMODATION',
-    time: '23:00',
-    lines: week0SceneMailroomLines,
+    // Merged week0-scene-frontdesk + week0-scene-mailroom (both Accommodation
+    // Lobby, back to back).
+    lines: mergeLines(week0SceneFrontdeskLines, week0SceneMailroomLines),
   },
   {
     id: 'week0-scene-firstnight',
-    order: 13,
+    order: 12,
     name: '첫날 밤',
     location: 'Sydney Accommodation',
     introLabel: 'ACCOMMODATION',
@@ -1237,6 +1247,9 @@ const week1Scene011Lines = [
 // Registry of testable Week 1 scenes — /dev/week1 lists these, each linking
 // to /dev/game/?scene=<id>. Covers only the 1주차 main weekend arc
 // (W1-S01~S11, "사라진 K-01") — 평일 미니씬(W1-D1~D5)은 아직 미구현.
+//
+// Grouped by location rather than by time slice — see the mergeLines note
+// above week0Scenes.
 const week1Scenes = [
   {
     id: 'week1-scene-001',
@@ -1259,55 +1272,30 @@ const week1Scenes = [
   {
     id: 'week1-scene-003',
     order: 3,
-    name: '전시장, K-01',
+    name: '전시장, K-01 · 사건 직전 사진',
     location: 'Pop-up Exhibition',
     introLabel: 'CIRCULAR QUAY',
     time: '10:40',
-    lines: week1Scene003Lines,
-  },
-  {
-    id: 'week1-scene-004',
-    order: 4,
-    name: '7분 뒤',
-    location: 'Pop-up Exhibition',
-    introLabel: 'CIRCULAR QUAY',
-    time: '10:47',
-    lines: week1Scene004Lines,
-  },
-  {
-    id: 'week1-scene-005',
-    order: 5,
-    name: '사건 직전 사진',
-    location: 'Pop-up Exhibition',
-    introLabel: 'CIRCULAR QUAY',
-    time: '10:52',
-    lines: week1Scene005Lines,
-    // Hands off into the (not yet built) photo zoom-in investigation
+    // Merged week1-scene-003 + 004 + 005 (all Pop-up Exhibition, back to
+    // back). Hands off into the (not yet built) photo zoom-in investigation
     // minigame — see MINIGAME_ROUTES in game/index.html. Falls back to a
     // "MINIGAME START" placeholder overlay until that route exists.
+    lines: mergeLines(week1Scene003Lines, week1Scene004Lines, week1Scene005Lines),
     nextSceneId: 'week1-scene-005-minigame',
   },
   {
     id: 'week1-scene-006',
-    order: 6,
-    name: '윤민아 조사',
+    order: 4,
+    name: '윤민아 · 애드리언 콜 조사',
     location: 'Pop-up Exhibition',
     introLabel: 'CIRCULAR QUAY',
     time: '11:10',
-    lines: week1Scene006Lines,
-  },
-  {
-    id: 'week1-scene-007',
-    order: 7,
-    name: '애드리언 콜 조사',
-    location: 'Pop-up Exhibition',
-    introLabel: 'CIRCULAR QUAY',
-    time: '11:25',
-    lines: week1Scene007Lines,
+    // Merged week1-scene-006 + 007 (both Pop-up Exhibition, back to back).
+    lines: mergeLines(week1Scene006Lines, week1Scene007Lines),
   },
   {
     id: 'week1-scene-008',
-    order: 8,
+    order: 5,
     name: '레오 박 조사',
     location: 'Café near Circular Quay',
     introLabel: 'CIRCULAR QUAY',
@@ -1319,7 +1307,7 @@ const week1Scenes = [
   },
   {
     id: 'week1-scene-009',
-    order: 9,
+    order: 6,
     name: '첫 추리',
     location: 'Pop-up Exhibition',
     introLabel: 'CIRCULAR QUAY',
@@ -1328,7 +1316,7 @@ const week1Scenes = [
   },
   {
     id: 'week1-scene-010',
-    order: 10,
+    order: 7,
     name: '탐정님과 조수',
     location: 'Circular Quay Harbour Walk',
     introLabel: 'CIRCULAR QUAY',
@@ -1337,7 +1325,7 @@ const week1Scenes = [
   },
   {
     id: 'week1-scene-011',
-    order: 11,
+    order: 8,
     name: '첫 용의자 카드',
     location: 'Sydney Accommodation',
     introLabel: 'ACCOMMODATION',
@@ -1632,6 +1620,9 @@ const week2Scene012Lines = [
 // Registry of testable Week 2 scenes — /dev/week2 lists these, each linking
 // to /dev/game/?scene=<id>. Covers only the 2주차 main weekend arc
 // (W2-S01~S12, "존재하지 않는 여자") — 2주차 평일 미니씬(W2-D1~D5)은 아직 미구현.
+//
+// Grouped by location rather than by time slice — see the mergeLines note
+// above week0Scenes.
 const week2Scenes = [
   {
     id: 'week2-scene-001',
@@ -1645,55 +1636,20 @@ const week2Scenes = [
   {
     id: 'week2-scene-002',
     order: 2,
-    name: 'Featherdale 데이트',
+    name: 'Featherdale 데이트 · 분실된 메모리카드',
     location: 'Featherdale Wildlife Park',
     introLabel: 'FEATHERDALE',
     time: '10:00',
-    lines: week2Scene002Lines,
-  },
-  {
-    id: 'week2-scene-003',
-    order: 3,
-    name: '고양잇과 동물 앞 농담',
-    location: 'Featherdale Wildlife Park',
-    introLabel: 'FEATHERDALE',
-    time: '10:20',
-    lines: week2Scene003Lines,
-  },
-  {
-    id: 'week2-scene-004',
-    order: 4,
-    name: '투어 그룹 사람들',
-    location: 'Featherdale Wildlife Park',
-    introLabel: 'FEATHERDALE',
-    time: '10:40',
-    lines: week2Scene004Lines,
-  },
-  {
-    id: 'week2-scene-005',
-    order: 5,
-    name: '분실된 메모리카드',
-    location: 'Featherdale Wildlife Park',
-    introLabel: 'FEATHERDALE',
-    time: '11:15',
-    lines: week2Scene005Lines,
-  },
-  {
-    id: 'week2-scene-006',
-    order: 6,
-    name: '네 명의 같은 증언',
-    location: 'Featherdale Wildlife Park',
-    introLabel: 'FEATHERDALE',
-    time: '11:30',
-    lines: week2Scene006Lines,
-    // Hands off into the (not yet built) 증언 문장 겹치기 minigame — see
-    // MINIGAME_ROUTES in game/index.html. Falls back to a "MINIGAME START"
-    // placeholder overlay until that route exists.
+    // Merged week2-scene-002~006 (all Featherdale Wildlife Park, back to
+    // back). Hands off into the (not yet built) 증언 문장 겹치기 minigame —
+    // see MINIGAME_ROUTES in game/index.html. Falls back to a "MINIGAME
+    // START" placeholder overlay until that route exists.
+    lines: mergeLines(week2Scene002Lines, week2Scene003Lines, week2Scene004Lines, week2Scene005Lines, week2Scene006Lines),
     nextSceneId: 'week2-scene-006-minigame',
   },
   {
     id: 'week2-scene-007',
-    order: 7,
+    order: 3,
     name: 'CCTV에 없는 여자',
     location: 'Featherdale 방문자센터',
     introLabel: 'FEATHERDALE',
@@ -1702,37 +1658,21 @@ const week2Scenes = [
   },
   {
     id: 'week2-scene-008',
-    order: 8,
-    name: '이든 브룩스 조사',
+    order: 4,
+    name: '이든 · 다니엘 · 한소라 조사',
     location: 'Featherdale Wildlife Park',
     introLabel: 'FEATHERDALE',
     time: '13:20',
-    lines: week2Scene008Lines,
-  },
-  {
-    id: 'week2-scene-009',
-    order: 9,
-    name: '다니엘 우 조사',
-    location: 'Featherdale Wildlife Park',
-    introLabel: 'FEATHERDALE',
-    time: '13:40',
-    lines: week2Scene009Lines,
-  },
-  {
-    id: 'week2-scene-010',
-    order: 10,
-    name: '한소라 — 기억을 심은 사람',
-    location: 'Featherdale Wildlife Park',
-    introLabel: 'FEATHERDALE',
-    time: '14:00',
-    lines: week2Scene010Lines,
-    // Hands off into the (not yet built) 대화 순서 재구성 minigame that
-    // surfaces 한소라's coached testimony — same placeholder fallback as above.
+    // Merged week2-scene-008~010 (all Featherdale Wildlife Park, back to
+    // back). Hands off into the (not yet built) 대화 순서 재구성 minigame
+    // that surfaces 한소라's coached testimony — same placeholder fallback
+    // as above.
+    lines: mergeLines(week2Scene008Lines, week2Scene009Lines, week2Scene010Lines),
     nextSceneId: 'week2-scene-010-minigame',
   },
   {
     id: 'week2-scene-011',
-    order: 11,
+    order: 5,
     name: '두 번째 추리',
     location: 'Featherdale Wildlife Park',
     introLabel: 'FEATHERDALE',
@@ -1741,7 +1681,7 @@ const week2Scenes = [
   },
   {
     id: 'week2-scene-012',
-    order: 12,
+    order: 6,
     name: '미카의 두 번째 흔적',
     location: 'Sydney Accommodation',
     introLabel: 'ACCOMMODATION',
@@ -2099,6 +2039,9 @@ const week3Scene014Lines = [
 // Registry of testable Week 3 scenes — /dev/week3 lists these, each linking
 // to /dev/game/?scene=<id>. Covers only the 3주차 main weekend arc
 // (W3-S01~S14, "사라진 원본 열쇠") — 3주차 평일 미니씬(W3-D1~D5)은 아직 미구현.
+//
+// Grouped by location rather than by time slice — see the mergeLines note
+// above week0Scenes.
 const week3Scenes = [
   {
     id: 'week3-scene-001',
@@ -2112,37 +2055,20 @@ const week3Scenes = [
   {
     id: 'week3-scene-002',
     order: 2,
-    name: 'Bondi — 그냥 놀자',
+    name: 'Bondi — 그냥 놀자 · 황동 열쇠 실종',
     location: 'Bondi Beach',
     introLabel: 'BONDI BEACH',
     time: '11:00',
-    lines: week3Scene002Lines,
-  },
-  {
-    id: 'week3-scene-003',
-    order: 3,
-    name: '황동 열쇠 실종',
-    location: 'Bondi Beach',
-    introLabel: 'BONDI BEACH',
-    time: '12:30',
-    lines: week3Scene003Lines,
-  },
-  {
-    id: 'week3-scene-004',
-    order: 4,
-    name: 'Bondi 동선 재구성',
-    location: 'Bondi Beach',
-    introLabel: 'BONDI BEACH',
-    time: '12:40',
-    lines: week3Scene004Lines,
-    // Hands off into the (not yet built) 동선 재구성 minigame — see
-    // MINIGAME_ROUTES in game/index.html. Falls back to a "MINIGAME START"
-    // placeholder overlay until that route exists.
+    // Merged week3-scene-002~004 (all Bondi Beach, back to back). Hands off
+    // into the (not yet built) 동선 재구성 minigame — see MINIGAME_ROUTES in
+    // game/index.html. Falls back to a "MINIGAME START" placeholder overlay
+    // until that route exists.
+    lines: mergeLines(week3Scene002Lines, week3Scene003Lines, week3Scene004Lines),
     nextSceneId: 'week3-scene-004-minigame',
   },
   {
     id: 'week3-scene-005',
-    order: 5,
+    order: 3,
     name: '사진 속 검은 재킷',
     location: 'Bondi Beach',
     introLabel: 'BONDI BEACH',
@@ -2154,52 +2080,27 @@ const week3Scenes = [
   },
   {
     id: 'week3-scene-006',
-    order: 6,
-    name: 'Fish Market — 노아 리',
+    order: 4,
+    name: 'Fish Market — 노아 리 · 지수와 영우의 갈등',
     location: 'Sydney Fish Market',
     introLabel: 'FISH MARKET',
     time: '16:00',
-    lines: week3Scene006Lines,
-  },
-  {
-    id: 'week3-scene-007',
-    order: 7,
-    name: '낡게 만든 열쇠',
-    location: 'Sydney Fish Market',
-    introLabel: 'FISH MARKET',
-    time: '16:20',
-    lines: week3Scene007Lines,
-  },
-  {
-    id: 'week3-scene-008',
-    order: 8,
-    name: '지수와 영우의 갈등',
-    location: 'Sydney Fish Market',
-    introLabel: 'FISH MARKET',
-    time: '17:00',
-    lines: week3Scene008Lines,
+    // Merged week3-scene-006~008 (all Sydney Fish Market, back to back).
+    lines: mergeLines(week3Scene006Lines, week3Scene007Lines, week3Scene008Lines),
   },
   {
     id: 'week3-scene-009',
-    order: 9,
-    name: '고래 투어 — 화해',
+    order: 5,
+    name: '고래 투어 — 화해 · 첫 직접 연락',
     location: 'Whale Watching Boat',
     introLabel: 'WHALE WATCHING',
     time: '09:30',
-    lines: week3Scene009Lines,
-  },
-  {
-    id: 'week3-scene-010',
-    order: 10,
-    name: '첫 직접 연락',
-    location: 'Whale Watching Boat',
-    introLabel: 'WHALE WATCHING',
-    time: '11:00',
-    lines: week3Scene010Lines,
+    // Merged week3-scene-009 + 010 (both Whale Watching Boat, back to back).
+    lines: mergeLines(week3Scene009Lines, week3Scene010Lines),
   },
   {
     id: 'week3-scene-011',
-    order: 11,
+    order: 6,
     name: '발신 흔적',
     location: 'Sydney Accommodation',
     introLabel: 'ACCOMMODATION',
@@ -2211,25 +2112,18 @@ const week3Scenes = [
   },
   {
     id: 'week3-scene-012',
-    order: 12,
-    name: 'Aquarium — 에블린 쇼',
+    order: 7,
+    name: 'Aquarium — 에블린 쇼 · 가짜 목격 증언',
     location: 'SEA LIFE Sydney Aquarium',
     introLabel: 'AQUARIUM',
     time: '14:00',
-    lines: week3Scene012Lines,
-  },
-  {
-    id: 'week3-scene-013',
-    order: 13,
-    name: '가짜 목격 증언',
-    location: 'SEA LIFE Sydney Aquarium',
-    introLabel: 'AQUARIUM',
-    time: '14:20',
-    lines: week3Scene013Lines,
+    // Merged week3-scene-012 + 013 (both SEA LIFE Sydney Aquarium, back to
+    // back).
+    lines: mergeLines(week3Scene012Lines, week3Scene013Lines),
   },
   {
     id: 'week3-scene-014',
-    order: 14,
+    order: 8,
     name: '열쇠의 귀환',
     location: 'Sydney Accommodation',
     introLabel: 'ACCOMMODATION',
@@ -2599,6 +2493,11 @@ const week4Scene019Lines = [
 // to /dev/game/?scene=<id>. Covers only the 4주차 main arc (W4-S01~S19,
 // "M.K.는 미카 코바치인가" + NOT WHO, WHY 최종부) — 4주차 평일 미니씬
 // (W4-D1~D5)은 아직 미구현.
+//
+// Grouped by location rather than by time slice — see the mergeLines note
+// above week0Scenes. The Former Shared Workspace confrontation (원래
+// week4-scene-004~016, 13 beats) never leaves that one room, so it's now a
+// single long entry — a not-yet-built minigame never interrupts it.
 const week4Scenes = [
   {
     id: 'week4-scene-001',
@@ -2612,168 +2511,43 @@ const week4Scenes = [
   {
     id: 'week4-scene-002',
     order: 2,
-    name: 'The Rocks 이동',
+    name: 'The Rocks 이동 · 첫 보관함',
     location: 'The Rocks',
     introLabel: 'THE ROCKS',
     time: '10:00',
-    lines: week4Scene002Lines,
-  },
-  {
-    id: 'week4-scene-003',
-    order: 3,
-    name: '첫 보관함',
-    location: 'The Rocks',
-    introLabel: 'THE ROCKS',
-    time: '10:30',
-    lines: week4Scene003Lines,
-    // Hands off into the (not yet built) 4자리 코드 추리 minigame — see
+    // Merged week4-scene-002 + 003 (both The Rocks, back to back). Hands off
+    // into the (not yet built) 4자리 코드 추리 minigame — see
     // MINIGAME_ROUTES in game/index.html. Falls back to a "MINIGAME START"
     // placeholder overlay until that route exists.
+    lines: mergeLines(week4Scene002Lines, week4Scene003Lines),
     nextSceneId: 'week4-scene-003-minigame',
   },
   {
     id: 'week4-scene-004',
-    order: 4,
-    name: '포렌식 작업실 흔적',
+    order: 3,
+    name: '포렌식 작업실 — 미카 코바치와의 대면',
     location: 'Former Shared Workspace',
     introLabel: 'THE ROCKS',
     time: '11:30',
-    lines: week4Scene004Lines,
-  },
-  {
-    id: 'week4-scene-005',
-    order: 5,
-    name: '미카 코바치 등장',
-    location: 'Former Shared Workspace',
-    introLabel: 'THE ROCKS',
-    time: '11:35',
-    lines: week4Scene005Lines,
-  },
-  {
-    id: 'week4-scene-006',
-    order: 6,
-    name: '지수의 추리 제시',
-    location: 'Former Shared Workspace',
-    introLabel: 'THE ROCKS',
-    time: '11:45',
-    lines: week4Scene006Lines,
-  },
-  {
-    id: 'week4-scene-007',
-    order: 7,
-    name: '가짜 진범 고백',
-    location: 'Former Shared Workspace',
-    introLabel: 'THE ROCKS',
-    time: '11:50',
-    lines: week4Scene007Lines,
-  },
-  {
-    id: 'week4-scene-008',
-    order: 8,
-    name: '한 문장으로 붕괴',
-    location: 'Former Shared Workspace',
-    introLabel: 'THE ROCKS',
-    time: '11:55',
-    lines: week4Scene008Lines,
-  },
-  {
-    id: 'week4-scene-009',
-    order: 9,
-    name: '미카의 진실',
-    location: 'Former Shared Workspace',
-    introLabel: 'THE ROCKS',
-    time: '12:05',
-    lines: week4Scene009Lines,
-  },
-  {
-    id: 'week4-scene-010',
-    order: 10,
-    name: '플레이어 추리의 재평가',
-    location: 'Former Shared Workspace',
-    introLabel: 'THE ROCKS',
-    time: '12:15',
-    lines: week4Scene010Lines,
-  },
-  {
-    id: 'week4-scene-011',
-    order: 11,
-    name: '질문 전환',
-    location: 'Former Shared Workspace',
-    introLabel: 'THE ROCKS',
-    time: '12:20',
-    lines: week4Scene011Lines,
-  },
-  {
-    id: 'week4-scene-012',
-    order: 12,
-    name: '세 사건 재해석',
-    location: 'Former Shared Workspace',
-    introLabel: 'THE ROCKS',
-    time: '12:30',
-    lines: week4Scene012Lines,
-  },
-  {
-    id: 'week4-scene-013',
-    order: 13,
-    name: 'M.K.의 목적어',
-    location: 'Former Shared Workspace',
-    introLabel: 'THE ROCKS',
-    time: '12:40',
-    lines: week4Scene013Lines,
-  },
-  {
-    id: 'week4-scene-014',
-    order: 14,
-    name: '무깽이 연결',
-    location: 'Former Shared Workspace',
-    introLabel: 'THE ROCKS',
-    time: '12:50',
-    lines: week4Scene014Lines,
-  },
-  {
-    id: 'week4-scene-015',
-    order: 15,
-    name: '최종 정체',
-    location: 'Former Shared Workspace',
-    introLabel: 'THE ROCKS',
-    time: '13:00',
-    lines: week4Scene015Lines,
-  },
-  {
-    id: 'week4-scene-016',
-    order: 16,
-    name: '감정 반전',
-    location: 'Former Shared Workspace',
-    introLabel: 'THE ROCKS',
-    time: '13:10',
-    lines: week4Scene016Lines,
+    // Merged week4-scene-004~016 (all Former Shared Workspace, back to
+    // back) — 포렌식 흔적 발견부터 미카 등장, 지수의 추리, 가짜 진범 붕괴,
+    // 미카의 진실, 최종 정체 공개, 감정 반전까지 전부 이 방을 벗어나지 않는다.
+    lines: mergeLines(
+      week4Scene004Lines, week4Scene005Lines, week4Scene006Lines, week4Scene007Lines,
+      week4Scene008Lines, week4Scene009Lines, week4Scene010Lines, week4Scene011Lines,
+      week4Scene012Lines, week4Scene013Lines, week4Scene014Lines, week4Scene015Lines,
+      week4Scene016Lines,
+    ),
   },
   {
     id: 'week4-scene-017',
-    order: 17,
-    name: '마지막 영상',
+    order: 4,
+    name: '마지막 영상 · 체크아웃 · 12초',
     location: 'Sydney Accommodation',
     introLabel: 'ACCOMMODATION',
     time: '20:00',
-    lines: week4Scene017Lines,
-  },
-  {
-    id: 'week4-scene-018',
-    order: 18,
-    name: '다음 날 체크아웃',
-    location: 'Sydney Accommodation',
-    introLabel: 'ACCOMMODATION',
-    time: '10:00',
-    lines: week4Scene018Lines,
-  },
-  {
-    id: 'week4-scene-019',
-    order: 19,
-    name: '12초',
-    location: 'Sydney Accommodation',
-    introLabel: '',
-    time: '',
-    lines: week4Scene019Lines,
+    // Merged week4-scene-017~019 (all Sydney Accommodation, back to back).
+    lines: mergeLines(week4Scene017Lines, week4Scene018Lines, week4Scene019Lines),
   },
 ];
 

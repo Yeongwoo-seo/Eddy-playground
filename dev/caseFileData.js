@@ -14,16 +14,21 @@ const caseMapLocations = [
   {
     id: 'accommodation', name: '숙소', mapX: 50, mapY: 40,
     relatedSceneIds: [
+      // week0-scene-mailroom merged into week0-scene-frontdesk (both
+      // Accommodation Lobby) — see week0Scenes in dialogueData.js.
       'week0-scene-002-1', 'week0-scene-dinner', 'week0-scene-charger', 'week0-scene-002-2',
-      'week0-scene-002-3', 'week0-scene-frontdesk', 'week0-scene-mailroom', 'week0-scene-firstnight',
+      'week0-scene-002-3', 'week0-scene-frontdesk', 'week0-scene-firstnight',
       'week1-scene-011',
     ],
   },
   {
     id: 'circular-quay', name: 'Circular Quay', mapX: 62, mapY: 30,
     relatedSceneIds: [
-      'week1-scene-001', 'week1-scene-002', 'week1-scene-003', 'week1-scene-004',
-      'week1-scene-005', 'week1-scene-006', 'week1-scene-007', 'week1-scene-008',
+      // week1-scene-004/005 merged into week1-scene-003, and week1-scene-007
+      // merged into week1-scene-006 (all Pop-up Exhibition) — see
+      // week1Scenes in dialogueData.js.
+      'week1-scene-001', 'week1-scene-002', 'week1-scene-003',
+      'week1-scene-006', 'week1-scene-008',
       'week1-scene-009', 'week1-scene-010',
     ],
   },
