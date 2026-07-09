@@ -98,11 +98,11 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .hotspot-actions button:disabled{opacity:.4;cursor:default}
 .hotspot-secondary-btn{background:var(--surface-2) !important;color:var(--text-secondary) !important;border:1px solid var(--divider) !important}
 
-/* ===== Evidence-collection 아이템/조합법 tabs — see applyFocusModeChrome
+/* ===== Evidence-collection 아이템/상호작용 tabs — see applyFocusModeChrome
    and selectFocusTab. Plain form fields styled to match the picker/panel
    look used everywhere else on this page (surface-2 fill, divider border,
    mono uppercase labels). ===== */
-.items-panel.hidden,.recipes-panel.hidden{display:none}
+.items-panel.hidden,.interactions-panel.hidden{display:none}
 .field-label{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--text-muted);text-transform:uppercase;margin:14px 0 6px}
 .text-input,.select-input{width:100%;background:var(--surface-2);border:1px solid var(--divider);border-radius:10px;padding:11px 12px;color:var(--text-primary);font-size:13.5px;font-family:var(--sans)}
 .select-input{-webkit-appearance:none;appearance:none}
@@ -113,7 +113,10 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .item-image-preview img{max-width:100%;max-height:100%;object-fit:contain}
 .item-actions-row{display:flex;gap:8px;margin-top:18px}
 .item-actions-row button{flex:1}
-.recipe-editor{margin-top:18px;padding-top:16px;border-top:1px solid var(--divider)}
+.interaction-hint{font-size:12px;color:var(--text-muted);line-height:1.6;margin-bottom:12px}
+.interaction-textarea{width:100%;min-height:56vh;background:var(--surface-2);border:1px solid var(--divider);border-radius:10px;padding:14px;color:var(--text-primary);font-size:13px;font-family:var(--mono);line-height:1.7;white-space:pre;resize:vertical}
+.interaction-textarea:disabled{opacity:.5}
+.interaction-error{font-size:12px;color:var(--signal-red, #D94141);margin-top:10px;display:none}
 
 /* ===== 대사 tab — the current scene's whole script as one editable text
    block (화자/감정/텍스트를 통으로 편집), parsed back into per-line
@@ -178,7 +181,7 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
     <!-- Evidence-collection focus mode only (see applyFocusModeChrome) —
          replaces 인물 DB / 미니게임 얼굴, which don't apply there. -->
     <button class="tab-btn hidden" id="tabItems">아이템</button>
-    <button class="tab-btn hidden" id="tabRecipes">조합법</button>
+    <button class="tab-btn hidden" id="tabInteractions">상호작용</button>
   </div>
   <div class="hint hidden" id="minigameFaceHint" style="margin:-8px 0 14px">미니게임 대화창의 작은 초상화 칸에 쓰이는 얼굴 사진이에요. 정면 얼굴이 꽉 차게 정사각형으로 잘라주세요.</div>
 
@@ -310,20 +313,16 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
     </div>
   </div>
 
-  <div class="recipes-panel hidden" id="recipesPanel">
-    <div class="section-title" style="margin-top:0">조합법</div>
-    <div id="recipeList"><div class="empty-note">등록된 조합법이 없습니다.</div></div>
-    <div class="recipe-editor">
-      <div class="field-label">재료 1</div>
-      <select class="select-input" id="recipeInputA"></select>
-      <div class="field-label">재료 2</div>
-      <select class="select-input" id="recipeInputB"></select>
-      <div class="field-label">결과 아이템</div>
-      <select class="select-input" id="recipeOutput"></select>
-      <div class="field-label">성공 메시지</div>
-      <input type="text" class="text-input" id="recipeMessageInput" placeholder="예) 건전지를 넣자 손전등이 켜졌다.">
-      <button class="crop-save-btn" id="recipeAddBtn" style="width:100%;margin-top:16px;border-radius:10px;padding:12px;font-family:var(--mono);font-weight:700;border:none">조합법 추가</button>
+  <div class="interactions-panel hidden" id="interactionsPanel">
+    <div class="section-title" style="margin-top:0">상호작용</div>
+    <div class="interaction-hint">
+      커스텀 아이템을 처음 주웠을 때 나올 대사를 한 번에 편집해요. 아이템별로
+      <code>[아이템ID] 아이콘 이름</code> 줄 아래에 <code>화자: 대사</code> 한 줄씩 적어주세요
+      (화자를 비워두면 나레이션, 대사 안에서 줄바꿈은 <code>\n</code>). 대괄호 안 ID는 지우거나 바꾸지 마세요.
     </div>
+    <textarea class="interaction-textarea" id="interactionTextarea" spellcheck="false"></textarea>
+    <div class="interaction-error" id="interactionError"></div>
+    <button class="crop-save-btn" id="interactionSaveBtn" style="width:100%;margin-top:16px;border-radius:10px;padding:12px;font-family:var(--mono);font-weight:700;border:none">저장</button>
   </div>
 
   <!-- 대사 tab — see selectType('dialogue') / renderDialoguePanel. The whole
@@ -453,7 +452,7 @@ const el = {
   tabMinigameFace: document.getElementById('tabMinigameFace'),
   minigameFaceHint: document.getElementById('minigameFaceHint'),
   tabItems: document.getElementById('tabItems'),
-  tabRecipes: document.getElementById('tabRecipes'),
+  tabInteractions: document.getElementById('tabInteractions'),
   itemsPanel: document.getElementById('itemsPanel'),
   itemPickerPills: document.getElementById('itemPickerPills'),
   newItemBtn: document.getElementById('newItemBtn'),
@@ -471,13 +470,10 @@ const el = {
   itemMessageInput: document.getElementById('itemMessageInput'),
   itemSaveBtn: document.getElementById('itemSaveBtn'),
   itemDeleteBtn: document.getElementById('itemDeleteBtn'),
-  recipesPanel: document.getElementById('recipesPanel'),
-  recipeList: document.getElementById('recipeList'),
-  recipeInputA: document.getElementById('recipeInputA'),
-  recipeInputB: document.getElementById('recipeInputB'),
-  recipeOutput: document.getElementById('recipeOutput'),
-  recipeMessageInput: document.getElementById('recipeMessageInput'),
-  recipeAddBtn: document.getElementById('recipeAddBtn'),
+  interactionsPanel: document.getElementById('interactionsPanel'),
+  interactionTextarea: document.getElementById('interactionTextarea'),
+  interactionError: document.getElementById('interactionError'),
+  interactionSaveBtn: document.getElementById('interactionSaveBtn'),
   weekPicker: document.getElementById('weekPicker'),
   weekPickerPills: document.getElementById('weekPickerPills'),
   scenePicker: document.getElementById('scenePicker'),
@@ -612,19 +608,19 @@ function selectType(type) {
   refreshList();
   renderHotspotSection();
   // selectType always means "one of the background-flow tabs" now — 아이템/
-  // 조합법 live outside this function (see selectFocusTab) but share the
+  // 상호작용 live outside this function (see selectFocusTab) but share the
   // same tab row, so switching back here has to clear their state too.
   if (el.tabItems) el.tabItems.classList.remove('active');
-  if (el.tabRecipes) el.tabRecipes.classList.remove('active');
+  if (el.tabInteractions) el.tabInteractions.classList.remove('active');
   el.itemsPanel.classList.add('hidden');
-  el.recipesPanel.classList.add('hidden');
+  el.interactionsPanel.classList.add('hidden');
 }
 
-/* ===== Evidence-collection 아이템/조합법 tabs (focusMinigame.isEvidence
+/* ===== Evidence-collection 아이템/상호작용 tabs (focusMinigame.isEvidence
    only) — a third and fourth "mode" alongside selectType's background/
    character/minigameFace, but shaped nothing like them (no image dropzone,
-   just item/recipe form editors), so they get their own switch function
-   instead of another branch inside selectType. ===== */
+   just an item form editor / a bulk dialogue textarea), so they get their
+   own switch function instead of another branch inside selectType. ===== */
 let currentFocusTab = 'background';
 
 function selectFocusTab(tab) {
@@ -632,7 +628,7 @@ function selectFocusTab(tab) {
   currentFocusTab = tab;
   el.tabBackground.classList.remove('active');
   el.tabItems.classList.toggle('active', tab === 'item');
-  el.tabRecipes.classList.toggle('active', tab === 'recipe');
+  el.tabInteractions.classList.toggle('active', tab === 'interaction');
   el.weekPicker.classList.add('hidden');
   el.scenePicker.classList.add('hidden');
   el.bgKindPicker.classList.add('hidden');
@@ -642,10 +638,10 @@ function selectFocusTab(tab) {
   el.listTitle.classList.add('hidden');
   el.assetList.classList.add('hidden');
   el.itemsPanel.classList.toggle('hidden', tab !== 'item');
-  el.recipesPanel.classList.toggle('hidden', tab !== 'recipe');
+  el.interactionsPanel.classList.toggle('hidden', tab !== 'interaction');
   clearPending();
   if (tab === 'item') renderItemsTab();
-  else renderRecipesTab();
+  else renderInteractionsTab();
 }
 
 
@@ -1667,7 +1663,7 @@ el.tabDialogue.addEventListener('click', () => selectType('dialogue'));
 el.tabCharacter.addEventListener('click', () => selectType('character'));
 el.tabMinigameFace.addEventListener('click', () => selectType('minigameFace'));
 el.tabItems.addEventListener('click', () => selectFocusTab('item'));
-el.tabRecipes.addEventListener('click', () => selectFocusTab('recipe'));
+el.tabInteractions.addEventListener('click', () => selectFocusTab('interaction'));
 el.selectBtn.addEventListener('click', () => el.fileInput.click());
 el.dropzone.addEventListener('click', (e) => { if (e.target === el.selectBtn) return; el.fileInput.click(); });
 el.fileInput.addEventListener('change', (e) => onFilesSelected(e.target.files));
@@ -1698,7 +1694,6 @@ el.dropzone.addEventListener('drop', (e) => {
    at, mirroring what the old hardcoded DECOY_ITEMS table used to do. */
 let currentEvidenceItemId = null;
 let evidenceItemsCache = {};
-let evidenceRecipesCache = [];
 let currentItemAreaId = null;    // which 씬 pill is selected while editing an item's location
 let pendingItemHotspotId = null; // working 항목 value, applied to hotspotId on 저장
 
@@ -1762,9 +1757,7 @@ function reservedCoreHotspotIds() {
 
 async function loadEvidenceData() {
   const id = evidenceId();
-  const [items, recipes] = await Promise.all([AssetDB.getItems(id), AssetDB.getRecipes(id)]);
-  evidenceItemsCache = items;
-  evidenceRecipesCache = recipes;
+  evidenceItemsCache = await AssetDB.getItems(id);
 }
 
 async function renderItemsTab() {
@@ -1940,11 +1933,13 @@ el.itemSaveBtn.addEventListener('click', async () => {
   const hotspotId = (isCore && !isRepositionableCoreItem(currentEvidenceItemId)) ? null : pendingItemHotspotId;
   const message = el.itemMessageInput.value.trim();
   try {
-    const def = { name, icon, imageAssetId, hotspotId, message };
+    // Merge onto the existing def (not a fresh object) so a plain
+    // name/icon/location edit here never clobbers `lines`, only ever
+    // touched from the 상호작용 tab.
+    const def = Object.assign({}, evidenceItemsCache[currentEvidenceItemId], { name, icon, imageAssetId, hotspotId, message });
     await AssetDB.setItem(id, currentEvidenceItemId, def);
     evidenceItemsCache[currentEvidenceItemId] = def;
     renderItemPicker();
-    if (currentFocusTab === 'recipe') renderRecipeFormOptions();
   } catch (err) {
     DevDiag.show('아이템 저장 실패: ' + (err && err.message ? err.message : err));
   }
@@ -1964,70 +1959,99 @@ el.itemDeleteBtn.addEventListener('click', async () => {
   }
 });
 
-/* ===== 조합법 tab — recipe editor =====
-   Two input items (order-independent, same as RECIPES in
-   minigame-phone-search) combine into one output item — any item from the
-   full catalog (core or custom) can play either role. */
 function evidenceCatalogNameFor(id) {
   const entry = evidenceItemCatalog().find(it => it.id === id);
   return entry ? `${entry.icon} ${entry.name}` : id;
 }
 
-function renderRecipesTab() {
-  renderRecipeFormOptions();
-  renderRecipeList();
+/* ===== 상호작용 tab — bulk pickup-dialogue editor =====
+   Only custom (dev-added) items are data-driven here — core items' pickups
+   stay hand-written in minigame-phone-search (CORE_ITEM_HANDLERS), same
+   scope restriction as their 발견 메시지 field on the 아이템 tab, which this
+   supersedes with real multi-turn dialogue instead of one flat toast.
+   Everything lives in one big textarea (not a form per item) so a dev can
+   read/write a whole item's back-and-forth as a contiguous script instead
+   of hopping between small fields — see the on-screen hint for the format. */
+function customEvidenceItems() {
+  return evidenceItemCatalog().filter(it => it.custom);
 }
 
-function renderRecipeFormOptions() {
-  const optionsHtml = evidenceItemCatalog().map(it => `<option value="${it.id}">${escapeHtml(it.icon)} ${escapeHtml(it.name)}</option>`).join('');
-  [el.recipeInputA, el.recipeInputB, el.recipeOutput].forEach(sel => {
-    const prev = sel.value;
-    sel.innerHTML = '<option value="">선택</option>' + optionsHtml;
-    sel.value = prev;
+// Placeholder text for an item with no dialogue yet — stripped back out on
+// save (see interactionSaveBtn below) so leaving it untouched never
+// persists it as a real narration line.
+const INTERACTION_PLACEHOLDER_TEXT = '(여기에 대사를 적어주세요)';
+
+function formatInteractionLines(lines) {
+  if (!lines || !lines.length) return `: ${INTERACTION_PLACEHOLDER_TEXT}`;
+  return lines.map(l => `${l.speaker || ''}: ${(l.text || '').replace(/\n/g, '\\n')}`).join('\n');
+}
+
+function interactionTextareaContent() {
+  return customEvidenceItems().map(it => {
+    const saved = evidenceItemsCache[it.id] || {};
+    return `[${it.id}] ${it.icon} ${it.name}\n${formatInteractionLines(saved.lines)}`;
+  }).join('\n\n');
+}
+
+async function renderInteractionsTab() {
+  await loadEvidenceData();
+  el.interactionError.style.display = 'none';
+  const items = customEvidenceItems();
+  el.interactionTextarea.disabled = !items.length;
+  el.interactionSaveBtn.disabled = !items.length;
+  el.interactionTextarea.value = items.length ? interactionTextareaContent() : '';
+  el.interactionTextarea.placeholder = items.length ? '' : '아직 커스텀 아이템이 없습니다. 아이템 탭에서 먼저 추가해주세요.';
+}
+
+// Parses the whole textarea back into { itemId: [{speaker, text}, ...] }.
+// A header line looks like "[itemId] 🔑 열쇠" — only the bracketed id
+// matters, the rest is just a readability label and is ignored. Every
+// following non-empty line up to the next header is one dialogue turn,
+// "화자: 대사" (화자 blank means narration); a literal "\n" inside the text
+// becomes a real line break in the speech bubble.
+function parseInteractionTextarea(text) {
+  const blocks = {};
+  let currentId = null;
+  text.split('\n').forEach(rawLine => {
+    const headerMatch = rawLine.match(/^\s*\[([^\]]+)\]/);
+    if (headerMatch) {
+      currentId = headerMatch[1].trim();
+      blocks[currentId] = [];
+      return;
+    }
+    const line = rawLine.trim();
+    if (!currentId || !line) return;
+    const colonIdx = line.indexOf(':');
+    const speaker = colonIdx === -1 ? '' : line.slice(0, colonIdx).trim();
+    const rawText = (colonIdx === -1 ? line : line.slice(colonIdx + 1)).trim();
+    if (!rawText) return;
+    blocks[currentId].push({ speaker, text: rawText.replace(/\\n/g, '\n') });
   });
+  return blocks;
 }
 
-function renderRecipeList() {
-  if (!evidenceRecipesCache.length) {
-    el.recipeList.innerHTML = '<div class="empty-note">등록된 조합법이 없습니다.</div>';
+el.interactionSaveBtn.addEventListener('click', async () => {
+  const id = evidenceId();
+  const blocks = parseInteractionTextarea(el.interactionTextarea.value);
+  const knownIds = new Set(customEvidenceItems().map(it => it.id));
+  const unknownIds = Object.keys(blocks).filter(bid => !knownIds.has(bid));
+  if (unknownIds.length) {
+    el.interactionError.textContent = `알 수 없는 아이템 ID: ${unknownIds.join(', ')} — 헤더 줄의 [ ] 안 내용을 지우거나 바꾸지 마세요.`;
+    el.interactionError.style.display = 'block';
     return;
   }
-  el.recipeList.innerHTML = evidenceRecipesCache.map(r => `
-    <div class="asset-card">
-      <div class="asset-info">
-        <div class="asset-name">${escapeHtml(evidenceCatalogNameFor(r.inputItemIds[0]))} + ${escapeHtml(evidenceCatalogNameFor(r.inputItemIds[1]))} → ${escapeHtml(evidenceCatalogNameFor(r.outputItemId))}</div>
-        ${r.message ? `<div class="asset-meta">${escapeHtml(r.message)}</div>` : ''}
-      </div>
-      <div class="asset-actions"><button class="danger" data-id="${r.id}">DELETE</button></div>
-    </div>
-  `).join('');
-  el.recipeList.querySelectorAll('.danger').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      if (!confirm('이 조합법을 삭제할까요?')) return;
-      const next = evidenceRecipesCache.filter(r => r.id !== btn.dataset.id);
-      try {
-        await AssetDB.setRecipes(evidenceId(), next);
-        evidenceRecipesCache = next;
-        renderRecipeList();
-      } catch (err) {
-        DevDiag.show('조합법 삭제 실패: ' + (err && err.message ? err.message : err));
-      }
-    });
-  });
-}
-
-el.recipeAddBtn.addEventListener('click', async () => {
-  const a = el.recipeInputA.value, b = el.recipeInputB.value, out = el.recipeOutput.value;
-  if (!a || !b || !out || a === b) { DevDiag.show('재료 두 개(서로 다른 아이템)와 결과 아이템을 모두 선택하세요.'); return; }
-  const recipe = { id: 'recipe-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), inputItemIds: [a, b], outputItemId: out, message: el.recipeMessageInput.value.trim() };
-  const next = evidenceRecipesCache.concat([recipe]);
   try {
-    await AssetDB.setRecipes(evidenceId(), next);
-    evidenceRecipesCache = next;
-    el.recipeMessageInput.value = '';
-    renderRecipeList();
+    for (const it of customEvidenceItems()) {
+      const lines = (blocks[it.id] || []).filter(l => l.text && l.text !== INTERACTION_PLACEHOLDER_TEXT);
+      const def = Object.assign({}, evidenceItemsCache[it.id], { lines });
+      await AssetDB.setItem(id, it.id, def);
+      evidenceItemsCache[it.id] = def;
+    }
+    el.interactionError.style.display = 'none';
+    el.interactionTextarea.value = interactionTextareaContent();
   } catch (err) {
-    DevDiag.show('조합법 저장 실패: ' + (err && err.message ? err.message : err));
+    el.interactionError.textContent = '저장 실패: ' + (err && err.message ? err.message : err);
+    el.interactionError.style.display = 'block';
   }
 });
 
@@ -2060,20 +2084,21 @@ function applyFocusModeChrome() {
   el.testFab.classList.remove('hidden');
   if (focusMinigame.isEvidence) {
     // Top-right badge instead of the full-width bottom bar — see
-    // .test-fab-top — so it doesn't sit over the 아이템/조합법 tabs' own
+    // .test-fab-top — so it doesn't sit over the 아이템/상호작용 tabs' own
     // content while scrolling.
     el.testFab.classList.add('test-fab-top');
     // 대사/인물 DB/미니게임 얼굴 don't apply to an evidence collection —
-    // swap them out for 아이템/조합법 instead of hiding the whole tab row.
+    // swap them out for 아이템/상호작용 instead of hiding the whole tab row.
     el.tabDialogue.classList.add('hidden');
     el.tabCharacter.classList.add('hidden');
     el.tabMinigameFace.classList.add('hidden');
     el.tabItems.classList.remove('hidden');
-    el.tabRecipes.classList.remove('hidden');
+    el.tabInteractions.classList.remove('hidden');
   } else {
     el.frame.classList.add('has-fab');
-    // Plain arcade minigames (e.g. Eastwood) have no items/recipes either —
-    // background setup is the only thing to do here, so hide the row.
+    // Plain arcade minigames (e.g. Eastwood) have no items/interactions
+    // either — background setup is the only thing to do here, so hide the
+    // row.
     el.tabsRow.classList.add('hidden');
   }
 }

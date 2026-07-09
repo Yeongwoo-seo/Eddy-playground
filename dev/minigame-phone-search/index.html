@@ -821,13 +821,18 @@ function onHotspotTap(hotspotId) {
   if (handler) { handler(hotspotId); return; }
   // Dev-added simple pickups (see loadCustomItemsAndRecipes) — one-time,
   // no gating, same shape the old hardcoded DECOY_ITEMS table used to be.
+  // Item is granted immediately either way (same order handleRightVent etc.
+  // use) — a dialogue authored on 상호작용 plays on top of that; otherwise
+  // it's just the flat 발견 메시지 toast.
   const customItemId = CUSTOM_PICKUP_MESSAGES.has(hotspotId) ? ITEM_HOTSPOT_ITEM_IDS.get(hotspotId) : null;
   if (customItemId) {
     if (hasItem(customItemId)) { setMessage('이미 확인했다.'); return; }
     addItem(customItemId);
-    setMessage(CUSTOM_PICKUP_MESSAGES.get(hotspotId));
     renderItemGrid();
     markProgress();
+    const lines = CUSTOM_PICKUP_LINES.get(hotspotId);
+    if (lines && lines.length) queueDialogue(lines);
+    else setMessage(CUSTOM_PICKUP_MESSAGES.get(hotspotId));
     return;
   }
   setMessage(FLAVOR[hotspotId] || '아무것도 없다.');
@@ -1377,12 +1382,18 @@ document.getElementById('btnClearState').addEventListener('click', () => {
 // hotspotId -> pickup message, for custom (dev-added) simple item pickups
 // only — core items' pickup messages stay inline in their handler functions.
 const CUSTOM_PICKUP_MESSAGES = new Map();
+// hotspotId -> pickup dialogue ([{speaker, text}, ...]) authored on
+// /dev/upload's 상호작용 tab — takes priority over CUSTOM_PICKUP_MESSAGES's
+// flat toast when present (see onHotspotTap).
+const CUSTOM_PICKUP_LINES = new Map();
 
-// Loads dev-configured items/recipes for this evidence collection (added via
-// /dev/upload's 아이템/조합법 tabs — see AssetDB.getItems/getRecipes) and
-// merges them into ITEM_DEFS/RECIPES/ITEM_HOTSPOT_ITEM_IDS above. Core
-// items/recipes stay hardcoded here (their gating logic isn't data-driven),
-// but a dev can still reskin a core item's icon/image from there, or add a
+// Loads dev-configured items (added via /dev/upload's 아이템/상호작용 tabs —
+// see AssetDB.getItems) plus any recipes left over from when a 조합법 tab
+// existed there (AssetDB.getRecipes/setRecipes are still valid store
+// methods, just no longer reachable from the UI), and merges them into
+// ITEM_DEFS/RECIPES/ITEM_HOTSPOT_ITEM_IDS above. Core items/recipes stay
+// hardcoded here (their gating logic isn't data-driven), but a dev can
+// still reskin a core item's icon/image from there, or add a
 // brand new hotspot pickup + recipe without touching this file at all —
 // same role the old hardcoded DECOY_ITEMS table used to fill, minus the
 // "never used by a recipe" restriction.
@@ -1433,6 +1444,7 @@ async function loadCustomItemsAndRecipes() {
     if (def.hotspotId && !reservedHotspotIds.has(def.hotspotId) && !HOTSPOT_HANDLERS[def.hotspotId]) {
       ITEM_HOTSPOT_ITEM_IDS.set(def.hotspotId, itemId);
       CUSTOM_PICKUP_MESSAGES.set(def.hotspotId, def.message || `[ ${def.name}를 발견했다 ]`);
+      if (def.lines && def.lines.length) CUSTOM_PICKUP_LINES.set(def.hotspotId, def.lines);
     }
   }
   customRecipes.forEach(r => {

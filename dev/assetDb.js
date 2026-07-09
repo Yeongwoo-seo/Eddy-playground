@@ -393,10 +393,12 @@ const AssetDB = (() => {
   }
 
   // Unlike setItem/setRoomHotspot/setMinigameHotspot, this takes the whole
-  // desired list rather than doing its own read-modify-write — callers
-  // (dev/upload's 조합법 tab) derive `recipes` from their own
-  // evidenceRecipesCache, itself seeded from getRecipes() at tab-open time.
-  // That means a getRecipes() call that fails and falls back to [] (see
+  // desired list rather than doing its own read-modify-write. No caller in
+  // dev/upload reaches this anymore (its 조합법 tab was replaced by 상호작용
+  // — see that file's history), but minigame-phone-search's
+  // loadCustomItemsAndRecipes still reads getRecipes() at boot, so this
+  // stays a valid store for whatever custom recipes were saved before then.
+  // A getRecipes() call that fails and falls back to [] (see
   // above) can still lead to a real overwrite-with-incomplete-list if a dev
   // adds/deletes a recipe right after — same class of risk as the other
   // stores, just one layer up in the caller instead of in here.
