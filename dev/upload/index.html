@@ -39,13 +39,33 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .pill{padding:9px 16px;border-radius:20px;background:var(--surface-1);border:1px solid var(--divider);color:var(--text-secondary);font-size:13px;font-weight:600;cursor:pointer}
 .pill.active{background:rgba(89,184,200,.12);color:var(--cyan);border-color:rgba(89,184,200,.4)}
 
-.dropzone{border:1.5px dashed var(--divider);border-radius:14px;padding:36px 16px;text-align:center;margin-bottom:8px;transition:border-color .15s,background .15s}
+.dropzone{border:1.5px dashed var(--divider);border-radius:14px;padding:14px 16px;text-align:center;margin-bottom:8px;transition:border-color .15s,background .15s;display:flex;align-items:center;justify-content:center;gap:10px}
 .dropzone.drag{border-color:var(--cyan);background:rgba(89,184,200,.06)}
-.dropzone-icon{font-size:26px;margin-bottom:10px}
-.dropzone-text{font-size:13px;color:var(--text-secondary);margin-bottom:14px}
-.select-btn{display:inline-block;background:var(--surface-2);border:1px solid var(--divider);color:var(--text-primary);padding:11px 20px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--mono);letter-spacing:.05em}
+.dropzone-icon{font-size:17px}
+.dropzone-text{font-size:11.5px;color:var(--text-secondary);letter-spacing:.02em}
+.select-btn{display:inline-block;background:var(--surface-2);border:1px solid var(--divider);color:var(--text-primary);padding:8px 16px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--mono);letter-spacing:.05em}
 .hint{font-size:11px;color:var(--text-muted);margin:10px 0 24px;text-align:center}
 .hint.hidden{display:none}
+
+/* ===== 다른 씬 배경 가져오기 — reuse an already-uploaded background from a
+   different scene as this scene's background, instead of re-uploading the
+   same photo (e.g. the same room/location shot appears in several scenes).
+   See renderReuseBgPanel/renderReuseBgList; picking one just calls the same
+   useAsBackground() the "Uploaded Backgrounds" list below uses. ===== */
+.reuse-bg-panel{margin-bottom:24px}
+.reuse-bg-panel.hidden{display:none}
+.reuse-bg-toggle{display:flex;align-items:center;justify-content:space-between;background:var(--surface-1);border:1px solid var(--divider);border-radius:10px;padding:11px 14px;font-size:12.5px;font-weight:600;color:var(--text-secondary);cursor:pointer;font-family:var(--mono);letter-spacing:.03em}
+.reuse-bg-toggle .chevron{transition:transform .15s}
+.reuse-bg-toggle.open .chevron{transform:rotate(180deg)}
+.reuse-bg-body{padding:14px 2px 0}
+.reuse-bg-body.hidden{display:none}
+.reuse-bg-pickers{display:flex;gap:8px;margin-bottom:12px}
+.reuse-bg-pickers select{flex:1}
+.reuse-bg-list{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
+.reuse-bg-card{flex:0 0 auto;width:96px;text-align:center}
+.reuse-bg-thumb{width:96px;height:72px;border-radius:8px;object-fit:cover;background:var(--surface-3);cursor:pointer;display:block}
+.reuse-bg-name{font-size:10.5px;color:var(--text-muted);margin:6px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.reuse-bg-use-btn{width:100%;font-family:var(--mono);font-size:10px;letter-spacing:.04em;padding:6px 0;border-radius:16px;border:1px solid rgba(89,184,200,.4);background:var(--surface-2);color:var(--cyan);cursor:pointer}
 
 .preview-panel{background:var(--surface-1);border:1px solid var(--divider);border-radius:14px;padding:16px;margin-bottom:24px}
 .preview-panel.hidden{display:none}
@@ -217,6 +237,22 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
     <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp" style="display:none">
   </div>
   <div class="hint" id="typeHint">.jpg · .jpeg · .png · .webp</div>
+
+  <!-- 다른 씬 배경 가져오기 — see renderReuseBgPanel/renderReuseBgList.
+       background 탭에서만 쓰이는 기능이라 selectType()이 보임/숨김을 관리. -->
+  <div class="reuse-bg-panel hidden" id="reuseBgPanel">
+    <div class="reuse-bg-toggle" id="reuseBgToggle">
+      <span>다른 씬 배경 가져오기</span>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="reuse-bg-body hidden" id="reuseBgBody">
+      <div class="reuse-bg-pickers">
+        <select class="select-input" id="reuseBgWeekSelect"></select>
+        <select class="select-input" id="reuseBgSceneSelect"></select>
+      </div>
+      <div class="reuse-bg-list" id="reuseBgList"></div>
+    </div>
+  </div>
 
   <div class="preview-panel hidden" id="previewPanel">
     <div class="preview-img-wrap"><img id="previewImg" alt="preview"></div>
@@ -489,6 +525,12 @@ const el = {
   selectBtn: document.getElementById('selectBtn'),
   fileInput: document.getElementById('fileInput'),
   typeHint: document.getElementById('typeHint'),
+  reuseBgPanel: document.getElementById('reuseBgPanel'),
+  reuseBgToggle: document.getElementById('reuseBgToggle'),
+  reuseBgBody: document.getElementById('reuseBgBody'),
+  reuseBgWeekSelect: document.getElementById('reuseBgWeekSelect'),
+  reuseBgSceneSelect: document.getElementById('reuseBgSceneSelect'),
+  reuseBgList: document.getElementById('reuseBgList'),
   previewPanel: document.getElementById('previewPanel'),
   previewImg: document.getElementById('previewImg'),
   previewType: document.getElementById('previewType'),
@@ -565,6 +607,7 @@ function selectType(type) {
   el.typeHint.classList.remove('hidden');
   el.listTitle.classList.remove('hidden');
   el.assetList.classList.remove('hidden');
+  el.reuseBgPanel.classList.toggle('hidden', type !== 'background');
   el.tabBackground.classList.toggle('active', type === 'background');
   el.tabDialogue.classList.toggle('active', type === 'dialogue');
   el.tabCharacter.classList.toggle('active', type === 'character');
@@ -601,7 +644,7 @@ function selectType(type) {
   if (type === 'minigameFace') currentExpression = MINIGAME_FACE_EXPRESSION;
   else if (currentExpression === MINIGAME_FACE_EXPRESSION) currentExpression = dialogueExpressions[0].id;
   if (type === 'background' || type === 'dialogue') { renderWeekPicker(); renderScenePicker(); }
-  if (type === 'background') renderBgKindPicker();
+  if (type === 'background') { renderBgKindPicker(); renderReuseBgPanel(); }
   if (type === 'character' || type === 'minigameFace') renderCharPicker();
   if (type === 'character') renderExprPicker();
   if (type === 'dialogue') renderDialoguePanel();
@@ -635,6 +678,7 @@ function selectFocusTab(tab) {
   el.bgKindPicker.classList.add('hidden');
   el.dropzone.classList.add('hidden');
   el.typeHint.classList.add('hidden');
+  el.reuseBgPanel.classList.add('hidden');
   el.hotspotPanel.classList.add('hidden');
   el.listTitle.classList.add('hidden');
   el.assetList.classList.add('hidden');
@@ -1599,9 +1643,27 @@ async function refreshList() {
   // sentinel(MINIGAME_FACE_EXPRESSION)로만 구분되므로 조회도 'character'로.
   const all = await AssetDB.getAssetsByType(currentType === 'minigameFace' ? 'character' : currentType);
   const filtered = currentType === 'background'
-    ? all.filter(a => a.sceneId === activeBackgroundSceneId())
+    ? backgroundListFor(all, activeBackgroundSceneId())
     : all.filter(a => a.characterKey === currentCharacterKey && a.expression === currentExpression);
   renderList(filtered);
+  // The reuse-source scene's own list needs refreshing too whenever the
+  // destination scene changes, since it hides whichever asset is already
+  // active there — see renderReuseBgList.
+  if (currentType === 'background' && reuseBgSceneId) renderReuseBgList();
+}
+
+// This scene's own uploads, plus — if "다른 씬 배경 가져오기" assigned a
+// background that was originally uploaded under a different scene — that
+// asset too, so the list still shows what's actually active here instead of
+// looking empty just because the file lives under another sceneId.
+function backgroundListFor(all, sceneId) {
+  const own = all.filter(a => a.sceneId === sceneId);
+  const activeId = DevGameState.getBackgroundId(sceneId);
+  if (activeId && !own.some(a => a.id === activeId)) {
+    const activeAsset = all.find(a => a.id === activeId);
+    if (activeAsset) return [activeAsset, ...own];
+  }
+  return own;
 }
 
 function renderList(assets) {
@@ -1611,8 +1673,12 @@ function renderList(assets) {
   }
   el.assetList.innerHTML = assets.map(a => {
     const url = a.dataUrl;
+    // Compares against the scene/character currently being edited, not the
+    // asset's own stored sceneId — a background reused from another scene
+    // (see above) still needs to show "사용 중" here, not just in whichever
+    // scene it was originally uploaded for.
     const isActive = a.type === 'background'
-      ? DevGameState.getBackgroundId(a.sceneId) === a.id
+      ? DevGameState.getBackgroundId(activeBackgroundSceneId()) === a.id
       : DevGameState.getCharacterAssetId(a.characterKey, a.expression) === a.id;
     const tag = isActive ? '<span class="asset-tag">사용 중</span><br>' : '';
     const useAction = a.type === 'background'
@@ -1644,6 +1710,81 @@ function useAsBackground(id) {
   renderBgKindPicker();
   renderHotspotSection();
 }
+
+/* ===== 다른 씬 배경 가져오기 — a second, independent week/scene picker
+   (reuseBgWeekId/reuseBgSceneId) just for browsing which scene's uploads to
+   pull from; picking one calls the same useAsBackground() the main
+   "Uploaded Backgrounds" list above uses, so it's not a separate code path,
+   just a different way to reach it without re-uploading the same photo. */
+let reuseBgWeekId = null;
+let reuseBgSceneId = null;
+
+function reuseBgWeek() { return weeks.find(w => w.id === reuseBgWeekId) || weeks[0]; }
+
+function renderReuseBgPanel() {
+  if (!reuseBgWeekId) reuseBgWeekId = currentWeekId;
+  el.reuseBgWeekSelect.innerHTML = weeks.map(w =>
+    `<option value="${w.id}"${w.id === reuseBgWeekId ? ' selected' : ''}>${escapeHtml(w.label)}</option>`
+  ).join('');
+  renderReuseBgSceneSelect();
+}
+
+function renderReuseBgSceneSelect() {
+  const scenes = reuseBgWeek().scenes;
+  if (!scenes.some(s => s.id === reuseBgSceneId)) reuseBgSceneId = scenes[0] && scenes[0].id;
+  el.reuseBgSceneSelect.innerHTML = scenes.map(s =>
+    `<option value="${s.id}"${s.id === reuseBgSceneId ? ' selected' : ''}>${escapeHtml(s.name)}</option>`
+  ).join('');
+}
+
+async function renderReuseBgList() {
+  if (!reuseBgSceneId) { el.reuseBgList.innerHTML = '<div class="empty-note">이 주차에 등록된 씬이 없습니다.</div>'; return; }
+  const sceneId = reuseBgSceneId;
+  el.reuseBgList.innerHTML = '<div class="empty-note">불러오는 중…</div>';
+  let all;
+  try {
+    all = await AssetDB.getAssetsByType('background');
+  } catch (err) {
+    el.reuseBgList.innerHTML = '<div class="empty-note">불러오지 못했습니다.</div>';
+    return;
+  }
+  // The dev may have switched the reuse-source scene (or the destination
+  // scene/tab) while that fetch was in flight — bail instead of overwriting
+  // whatever's now on screen.
+  if (reuseBgSceneId !== sceneId || currentType !== 'background') return;
+  const activeId = DevGameState.getBackgroundId(activeBackgroundSceneId());
+  const assets = all.filter(a => a.sceneId === sceneId && a.id !== activeId);
+  if (!assets.length) {
+    el.reuseBgList.innerHTML = '<div class="empty-note">이 씬에 가져올 배경이 없습니다.</div>';
+    return;
+  }
+  el.reuseBgList.innerHTML = assets.map(a => `
+    <div class="reuse-bg-card">
+      <img class="reuse-bg-thumb" src="${a.dataUrl}" data-url="${a.dataUrl}" onclick="previewAsset(this.dataset.url)">
+      <div class="reuse-bg-name">${escapeHtml(a.name)}</div>
+      <button class="reuse-bg-use-btn" onclick="importReuseBg('${a.id}')">가져오기</button>
+    </div>
+  `).join('');
+}
+
+function importReuseBg(id) {
+  useAsBackground(id);
+}
+
+el.reuseBgToggle.addEventListener('click', () => {
+  const nowHidden = el.reuseBgBody.classList.toggle('hidden');
+  el.reuseBgToggle.classList.toggle('open', !nowHidden);
+});
+el.reuseBgWeekSelect.addEventListener('change', () => {
+  reuseBgWeekId = el.reuseBgWeekSelect.value;
+  reuseBgSceneId = null;
+  renderReuseBgSceneSelect();
+  renderReuseBgList();
+});
+el.reuseBgSceneSelect.addEventListener('change', () => {
+  reuseBgSceneId = el.reuseBgSceneSelect.value;
+  renderReuseBgList();
+});
 
 function useAsCharacter(id) {
   DevGameState.setCharacterAssetId(currentCharacterKey, currentExpression, id);
