@@ -351,6 +351,8 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
        이 화면에서 미리듣기만 지원한다(게임 내 자동 트리거 연결은 범위 밖). -->
   <div class="sound-panel hidden" id="soundPanel">
     <div class="section-title" style="margin-top:0">사운드 등록</div>
+    <button class="select-btn" id="soundPresetsBtn" style="width:100%">+ 추천 프리셋 불러오기 (BGM 3 · 효과음 9)</button>
+    <div class="hint" id="soundPresetsStatus" style="margin:8px 0 20px"></div>
     <div class="picker" id="soundKindPicker">
       <div class="picker-label">종류</div>
       <div class="picker-pills" id="soundKindPickerPills"></div>
@@ -495,6 +497,8 @@ const el = {
   minigameFaceHint: document.getElementById('minigameFaceHint'),
   tabSound: document.getElementById('tabSound'),
   soundPanel: document.getElementById('soundPanel'),
+  soundPresetsBtn: document.getElementById('soundPresetsBtn'),
+  soundPresetsStatus: document.getElementById('soundPresetsStatus'),
   soundKindPickerPills: document.getElementById('soundKindPickerPills'),
   soundNameInput: document.getElementById('soundNameInput'),
   soundUrlInput: document.getElementById('soundUrlInput'),
@@ -1621,6 +1625,48 @@ let editingSoundId = null;
 let soundPreviewPlayer = null;
 
 const SOUND_KIND_LABELS = { bgm: '배경음악(BGM)', sfx: '효과음' };
+
+// 추리게임/비쥬얼노벨에 흔히 쓰이는 BGM/효과음을 미리 찾아 정리해둔 프리셋 —
+// 전부 유튜브에 "no copyright"/royalty-free로 업로드된 영상. 업로더 표시일 뿐
+// 라이선스를 이 프로젝트가 직접 검증한 건 아니니, 실제로 출시할 영상은 설명란/
+// 라이선스 조건을 한 번 더 확인하는 걸 권장. id가 고정돼 있어 "불러오기"를 여러
+// 번 눌러도 중복 추가되지 않고 이미 있는 것만 건너뛴다.
+const SOUND_PRESETS = [
+  { id: 'preset_bgm_investigation_tension', kind: 'bgm', name: '긴장감 있는 탐문 BGM', videoId: 'y5gkdmmnRls', start: 0, end: 0 },
+  { id: 'preset_bgm_detective_crime', kind: 'bgm', name: '형사·탐정 조사 BGM', videoId: 'b0bRw1faiws', start: 0, end: 0 },
+  { id: 'preset_bgm_suspense_interrogation', kind: 'bgm', name: '서스펜스 심문 BGM', videoId: '_vbM9Xtv0y8', start: 0, end: 0 },
+  { id: 'preset_sfx_doorbell', kind: 'sfx', name: '초인종', videoId: 'mucRTH9ysoc', start: 0, end: 0 },
+  { id: 'preset_sfx_phone_ring', kind: 'sfx', name: '전화벨', videoId: 'baJVNKExoh8', start: 0, end: 0 },
+  { id: 'preset_sfx_gasp', kind: 'sfx', name: '놀람 (헉)', videoId: 'em7MmfpzrX8', start: 0, end: 0 },
+  { id: 'preset_sfx_page_turn', kind: 'sfx', name: '책장 넘기는 소리', videoId: 'AG-qEbbjkR0', start: 0, end: 0 },
+  { id: 'preset_sfx_glass_break', kind: 'sfx', name: '유리 깨지는 소리', videoId: 'JHHBkUtcluc', start: 0, end: 0 },
+  { id: 'preset_sfx_footsteps_wood', kind: 'sfx', name: '발소리 (나무 바닥)', videoId: 'oH6x8LhXebg', start: 0, end: 0 },
+  { id: 'preset_sfx_heartbeat', kind: 'sfx', name: '긴장되는 심장박동', videoId: 'YBSKw45r2rU', start: 0, end: 0 },
+  { id: 'preset_sfx_camera_shutter', kind: 'sfx', name: '카메라 셔터음', videoId: 'xtg4Vn3MM7w', start: 0, end: 0 },
+  { id: 'preset_sfx_reveal_sting', kind: 'sfx', name: '극적인 리빌 사운드', videoId: 'K375c9gY_A8', start: 0, end: 0 },
+];
+
+el.soundPresetsBtn.addEventListener('click', async () => {
+  el.soundPresetsBtn.disabled = true;
+  el.soundPresetsStatus.textContent = '불러오는 중…';
+  try {
+    const existing = await AssetDB.getSounds();
+    const toAdd = SOUND_PRESETS.filter(p => !existing[p.id]);
+    for (const p of toAdd) {
+      const { id, ...def } = p;
+      soundsCatalog = await AssetDB.setSound(id, def);
+    }
+    renderSoundList();
+    el.soundPresetsStatus.textContent = toAdd.length
+      ? `${toAdd.length}개 추가했습니다. (유튜브 업로더가 표시한 라이선스이니 실제 사용 전 한 번 더 확인하세요)`
+      : '이미 모두 등록돼 있습니다.';
+  } catch (err) {
+    el.soundPresetsStatus.textContent = '프리셋 불러오기 실패';
+    DevDiag.show('프리셋 불러오기 실패: ' + (err && err.message ? err.message : err));
+  } finally {
+    el.soundPresetsBtn.disabled = false;
+  }
+});
 
 function renderSoundKindPicker() {
   el.soundKindPickerPills.innerHTML = Object.keys(SOUND_KIND_LABELS).map(k =>
