@@ -1804,6 +1804,7 @@ el.soundPreviewBtn.addEventListener('click', () => {
   soundPreviewPlayer = createYTSoundPlayer(el.soundPreviewMount, {
     videoId: value.videoId, start: value.start, end: value.end, loop: value.kind === 'bgm', muted: false,
     onError: handlePreviewError,
+    onEnded: stopSoundPreview,
   });
   el.soundPreviewBtn.textContent = '정지';
 });
@@ -1812,9 +1813,12 @@ async function previewSavedSound(id) {
   const s = soundsCatalog[id];
   if (!s) return;
   stopSoundPreview();
+  el.soundError.style.display = 'none';
+  el.soundError.textContent = '';
   soundPreviewPlayer = createYTSoundPlayer(el.soundPreviewMount, {
     videoId: s.videoId, start: s.start, end: s.end, loop: s.kind === 'bgm', muted: false,
     onError: handlePreviewError,
+    onEnded: stopSoundPreview,
   });
   el.soundPreviewBtn.textContent = '정지';
 }
