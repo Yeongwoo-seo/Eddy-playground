@@ -38,6 +38,16 @@ const YouTubeAPI = (() => {
   return { ensureReady };
 })();
 
+// Kick the iframe API script off as soon as this file loads, not on first
+// use. createYTSoundPlayer's construction of `new YT.Player(...)` has to
+// happen close enough to the triggering click for the browser to still
+// credit it with a user gesture (otherwise unmuted autoplay is silently
+// blocked, with nothing visible since the player is mounted off-screen at
+// 1x1). Fetching the (~small) API script over the network on first click
+// reliably blows that window; pre-fetching removes the wait entirely for
+// every click that follows.
+YouTubeAPI.ensureReady();
+
 // YT.Player's onError codes (per the IFrame API docs) — surfaced through
 // `onError` below instead of being silently dropped, which is what made a
 // non-embeddable/removed video look exactly like "미리듣기가 안 되는" with no
@@ -61,7 +71,11 @@ const YT_ERROR_MESSAGES = {
 // commonly a video whose owner disabled embedding (101/150) or removed it
 // (100) — the player is already unusable at that point, so the caller
 // should treat this the same as a failed load.
-function createYTSoundPlayer(containerEl, { videoId, start = 0, end = 0, loop = true, muted = false, onError } = {}) {
+// `onEnded()` fires (once) when a one-shot (`loop: false`) preview reaches
+// its `end` bound, or the whole video, without the caller calling stop() —
+// lets a caller drop its own "is this playing" state instead of it going
+// stale once nothing is actually audible anymore.
+function createYTSoundPlayer(containerEl, { videoId, start = 0, end = 0, loop = true, muted = false, onError, onEnded } = {}) {
   const target = document.createElement('div');
   containerEl.appendChild(target);
 
@@ -79,8 +93,13 @@ function createYTSoundPlayer(containerEl, { videoId, start = 0, end = 0, loop = 
     loopTimer = setInterval(() => {
       if (!player || typeof player.getCurrentTime !== 'function') return;
       if (player.getCurrentTime() >= end) {
-        if (loop) player.seekTo(start, true);
-        else player.pauseVideo();
+        if (loop) {
+          player.seekTo(start, true);
+        } else {
+          clearLoopTimer();
+          player.pauseVideo();
+          if (onEnded) onEnded();
+        }
       }
     }, 250);
   }
@@ -101,9 +120,13 @@ function createYTSoundPlayer(containerEl, { videoId, start = 0, end = 0, loop = 
         },
         onStateChange: (e) => {
           if (destroyed) return;
-          if (e.data === YT.PlayerState.ENDED && loop) {
-            player.seekTo(start, true);
-            player.playVideo();
+          if (e.data === YT.PlayerState.ENDED) {
+            if (loop) {
+              player.seekTo(start, true);
+              player.playVideo();
+            } else if (onEnded) {
+              onEnded();
+            }
           }
         },
         onError: (e) => {
