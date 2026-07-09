@@ -124,7 +124,16 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
    still advances the line, same as before. */
 .msg-layer{position:absolute;inset:0;z-index:8;display:none;flex-direction:column;justify-content:flex-end;cursor:pointer}
 .msg-layer.show{display:flex}
-.msg-panel{position:relative;margin:0 16px calc(16px + env(safe-area-inset-bottom,0));background:rgba(5,7,10,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.1);border-radius:18px;box-shadow:0 8px 28px rgba(0,0,0,.35);padding:16px 18px;min-height:20vh;display:flex;flex-direction:column}
+.msg-panel{position:relative;margin:0 16px calc(16px + env(safe-area-inset-bottom,0));background:rgba(5,7,10,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.1);border-radius:18px;box-shadow:0 8px 28px rgba(0,0,0,.35);padding:16px 18px;min-height:20vh;display:flex;flex-direction:row;align-items:flex-start;gap:14px}
+/* Same 미니게임 얼굴 DB close-up crop minigame-eastwood's dlg-strip uses
+   (see /dev/upload) — a dev only has to upload it once per character and
+   every minigame's dialogue box picks it up. Hidden entirely for
+   speaker-less narration lines instead of showing a placeholder. */
+.msg-portrait-wrap{width:56px;height:76px;border-radius:10px;overflow:hidden;background:var(--surface-2, #171C22);flex-shrink:0;display:flex;align-items:flex-end;justify-content:center}
+.msg-portrait-wrap.hidden{display:none}
+.msg-portrait-wrap img{width:100%;height:100%;object-fit:cover;object-position:top;display:none}
+.msg-portrait-placeholder{width:60%;height:78%;opacity:.35;color:var(--text-secondary)}
+.msg-body-wrap{flex:1;min-width:0;min-height:20vh;display:flex;flex-direction:column}
 .msg-name{font-size:15px;font-weight:700;color:var(--cyan);margin-bottom:8px}
 .msg-name:empty{display:none}
 .msg-text{flex:1;font-size:16px;line-height:1.65;color:#fff;white-space:pre-wrap;word-break:keep-all}
@@ -192,9 +201,15 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 
   <div class="msg-layer" id="msgLayer">
     <div class="msg-panel">
-      <div class="msg-name" id="msgName"></div>
-      <div class="msg-text" id="msgText"></div>
-      <div class="msg-foot"><span class="msg-arrow" id="msgArrow">▼</span></div>
+      <div class="msg-portrait-wrap hidden" id="msgPortraitWrap">
+        <img id="msgPortraitImg" alt="">
+        <svg class="msg-portrait-placeholder" id="msgPortraitPlaceholder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>
+      </div>
+      <div class="msg-body-wrap">
+        <div class="msg-name" id="msgName"></div>
+        <div class="msg-text" id="msgText"></div>
+        <div class="msg-foot"><span class="msg-arrow" id="msgArrow">▼</span></div>
+      </div>
     </div>
   </div>
 
@@ -388,6 +403,20 @@ const KEY_FORCED_LINES = [
   { speaker: '영우', text: '핸드폰 아니야?' },
   { speaker: '', text: '부우웅—' },
 ];
+// Boot-time hint pointing the player at the kitchen (see boot() below) —
+// the phone is hidden at kitchen-fridge-gap, not bedroom-under-bed (that
+// hotspot's FLAVOR line is a dead-end decoy).
+const INTRO_HINT_LINES = [
+  { speaker: '영우', text: '핸드폰이 대체 어디 있는 거야.' },
+  { speaker: '지수', text: '쌤, 잠깐만요.\n저기 부엌 쪽에서 무슨 소리 나는 거 같은데?' },
+];
+// First flashlight shine into kitchen-fridge-gap (handleKitchenFridgeGap) —
+// an explicit "is that a phone?" beat before the hook can pull it out.
+const PHONE_GLOW_CONFIRM_LINES = [
+  { speaker: '', text: '[ 안쪽을 비춘다 ]' },
+  { speaker: '지수', text: '어? 저거 화면 불빛 아니에요?' },
+  { speaker: '영우', text: '핸드폰인가?\n일단 손이 안 닿네.' },
+];
 
 function defaultState() {
   return {
@@ -533,6 +562,9 @@ const el = {
   acquireToastIcon: document.getElementById('acquireToastIcon'),
   acquireToastText: document.getElementById('acquireToastText'),
   msgLayer: document.getElementById('msgLayer'),
+  msgPortraitWrap: document.getElementById('msgPortraitWrap'),
+  msgPortraitImg: document.getElementById('msgPortraitImg'),
+  msgPortraitPlaceholder: document.getElementById('msgPortraitPlaceholder'),
   msgName: document.getElementById('msgName'),
   msgText: document.getElementById('msgText'),
   msgArrow: document.getElementById('msgArrow'),
@@ -542,11 +574,36 @@ const el = {
   sheetCloseBtn: document.getElementById('sheetCloseBtn'),
 };
 
+// Hardcoded LINES arrays here only ever carry a display speaker name
+// ('지수'/'영우'), not a dialogueData.js-style characterId — this is the
+// lookup back to the 미니게임 얼굴 DB key (see updateMsgPortrait).
+const SPEAKER_TO_CHARACTER_KEY = { '지수': 'jisoo', '영우': 'youngwoo' };
+
+// Same 미니게임 얼굴 DB close-up crop minigame-eastwood's dlg-strip uses —
+// a dev only has to upload it once per character (/dev/upload's 미니게임
+// 얼굴 tab) and every minigame's dialogue box picks it up from here.
+async function updateMsgPortrait(characterKey) {
+  if (!characterKey) { el.msgPortraitWrap.classList.add('hidden'); return; }
+  el.msgPortraitWrap.classList.remove('hidden');
+  const assetId = DevGameState.getCharacterAssetId(characterKey, MINIGAME_FACE_EXPRESSION);
+  const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
+  if (asset && asset.dataUrl) {
+    el.msgPortraitImg.src = asset.dataUrl;
+    el.msgPortraitImg.style.display = '';
+    el.msgPortraitPlaceholder.style.display = 'none';
+  } else {
+    el.msgPortraitImg.removeAttribute('src');
+    el.msgPortraitImg.style.display = 'none';
+    el.msgPortraitPlaceholder.style.display = '';
+  }
+}
+
 /* ===== Dialogue popup — every player-facing line goes through here now,
    both real character dialogue (queueDialogue) and one-off flavor/result
    text (setMessage, below): a tap-blocking box with the same typewriter +
    tap-to-reveal/tap-to-advance behavior either way. Flavor lines just carry
-   no speaker, so msg-name's :empty rule collapses that row automatically. */
+   no speaker, so msg-name's :empty rule collapses that row automatically
+   (and updateMsgPortrait hides the portrait box entirely for them). */
 let dialogueActive = false;
 let activeMsgTapHandler = null;
 function queueDialogue(lines, onComplete) {
@@ -555,7 +612,10 @@ function queueDialogue(lines, onComplete) {
   el.msgLayer.classList.add('show');
   el.inventoryBar.classList.add('hidden'); // both dock at the bottom edge — dialogue takes priority
   const player = createVNPlayer({
-    onLineChange: (line) => { el.msgName.textContent = line.speaker || ''; },
+    onLineChange: (line) => {
+      el.msgName.textContent = line.speaker || '';
+      updateMsgPortrait(SPEAKER_TO_CHARACTER_KEY[line.speaker] || null);
+    },
     onTextUpdate: (text) => { el.msgText.textContent = text; },
     onArrow: (show) => el.msgArrow.classList.toggle('show', show),
     onComplete: () => {
@@ -665,7 +725,7 @@ function handleKitchenFridgeGap(hotspotId) {
     if (!state.flags.phoneGlowSeen) {
       state.flags.phoneGlowSeen = true;
       saveState();
-      setMessage('[ 안쪽을 비춘다 ]\n깊은 곳에서 화면 불빛이 보인다.\n손이 닿지 않는다.');
+      queueDialogue(PHONE_GLOW_CONFIRM_LINES);
       markProgress();
     } else {
       setMessage('반짝이는 화면 불빛이 보인다.\n손이 닿지 않는다.');
@@ -1493,6 +1553,10 @@ updateLockState();
   renderItemGrid();
   await preloadAllAreas();
   await loadArea(roomSearchAreas.find(a => a.id === state.currentAreaId) || roomSearchAreas[0]);
+  // Every entry into this page is a fresh run (see defaultState above), so
+  // this always replays — same as it would the first time a player opens
+  // the minigame.
+  queueDialogue(INTRO_HINT_LINES);
 })();
 // A refresh that landed between "key found" and "phone unlocked" must not
 // soft-lock the phone forever — re-arm the forced event on load.
