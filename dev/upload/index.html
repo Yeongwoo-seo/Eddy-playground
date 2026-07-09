@@ -115,24 +115,14 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .item-actions-row button{flex:1}
 .recipe-editor{margin-top:18px;padding-top:16px;border-top:1px solid var(--divider)}
 
-/* ===== 대사 tab — editable script view for the current scene, so a dev can
-   fix a line's 화자(이름)/감정표현/텍스트 without leaving this screen or
-   touching dialogueData.js. Saved as a per-line override in AssetDB
-   (getDialogueOverrides/setDialogueLineOverride), not back into the static
-   source file. See selectType('dialogue') / renderDialoguePanel. ===== */
+/* ===== 대사 tab — the current scene's whole script as one editable text
+   block (화자/감정/텍스트를 통으로 편집), parsed back into per-line
+   overrides on save. Saved to AssetDB (getDialogueOverrides/
+   setDialogueOverrides), not back into dialogueData.js's static source.
+   See selectType('dialogue') / renderDialoguePanel. ===== */
 .dialogue-panel.hidden{display:none}
-.dialogue-line{background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:12px 14px;margin-bottom:8px}
-.dialogue-line-head{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
-.dialogue-speaker-select{background:none;border:none;border-bottom:1px dashed var(--divider);color:var(--cyan);font-size:13.5px;font-weight:700;font-family:var(--sans);padding:2px 2px;cursor:pointer;-webkit-appearance:none;appearance:none}
-.dialogue-speaker-select.narration{color:var(--text-muted);font-style:italic;font-weight:600}
-.dialogue-speaker-select:focus{outline:none;border-color:var(--cyan)}
-.dialogue-expression-select{background:var(--surface-2);border:1px solid var(--divider);border-radius:8px;color:var(--text-secondary);font-family:var(--mono);font-size:10.5px;letter-spacing:.03em;padding:3px 6px;cursor:pointer}
-.dialogue-expression-select.hidden{display:none}
-.dialogue-expression-select:focus{outline:none;border-color:rgba(89,184,200,.4)}
-.dialogue-modified-badge{font-family:var(--mono);font-size:9.5px;color:var(--amber);letter-spacing:.04em;margin-left:auto;flex-shrink:0}
-.dialogue-modified-badge.hidden{display:none}
-.dialogue-text-input{width:100%;background:var(--surface-2);border:1px solid var(--divider);border-radius:8px;padding:9px 11px;color:var(--text-primary);font-size:13.5px;line-height:1.55;font-family:var(--sans);resize:vertical;min-height:52px}
-.dialogue-text-input:focus{outline:none;border-color:rgba(89,184,200,.4)}
+.dialogue-bulk-input{width:100%;background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:14px 16px;color:var(--text-primary);font-size:13.5px;line-height:1.7;font-family:var(--mono);resize:vertical;min-height:320px}
+.dialogue-bulk-input:focus{outline:none;border-color:rgba(89,184,200,.4)}
 .section-title{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase;margin:24px 0 12px}
 .empty-note{font-size:13px;color:var(--text-muted);padding:14px 0}
 .asset-card{display:flex;align-items:center;gap:12px;background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:12px;margin-bottom:10px}
@@ -336,14 +326,20 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
     </div>
   </div>
 
-  <!-- 대사 tab — see selectType('dialogue') / renderDialoguePanel. Editing a
-       line's 화자(이름)/감정표현/텍스트 here saves one combined override to
-       AssetDB (not back into dialogueData.js's static source) — /dev/game
-       applies it over the static script at load time. -->
+  <!-- 대사 tab — see selectType('dialogue') / renderDialoguePanel. The whole
+       scene's script is one big text block — 화자(이름)/감정표현/텍스트를
+       한 번에 통으로 고치고 저장 버튼 한 번으로 반영. AssetDB에 오버라이드로
+       저장되며(dialogueData.js의 static source는 안 건드림), /dev/game이
+       로드 시 그 위에 덮어씀. -->
   <div class="dialogue-panel hidden" id="dialoguePanel">
     <div class="section-title" style="margin-top:0">대사</div>
-    <div class="hint" style="margin:-8px 0 14px">이름·감정·텍스트를 고치면 자동 저장됩니다. 원래 대사로 되돌리려면 셋 다 원문 그대로 다시 맞추세요.</div>
-    <div id="dialogueList"></div>
+    <div class="hint" style="margin:-8px 0 14px">한 줄당 <b>[화자] (감정)</b> 헤더 + 대사 텍스트, 줄 사이는 <b>---</b> 로 구분합니다. 내레이션은 <b>[내레이션]</b>으로 씁니다. 블록 개수는 원래 대사 줄 수와 같아야 합니다 — 다 고쳤으면 저장을 누르세요.</div>
+    <textarea class="dialogue-bulk-input" id="dialogueBulkInput" rows="24" spellcheck="false"></textarea>
+    <div class="hotspot-actions">
+      <button class="hotspot-secondary-btn" id="dialogueBulkRevertBtn">되돌리기</button>
+      <button class="crop-save-btn" id="dialogueBulkSaveBtn" style="border-radius:10px;padding:12px;font-family:var(--mono);font-weight:700;border:none">저장</button>
+    </div>
+    <div class="hint" id="dialogueBulkStatus" style="margin-top:10px"></div>
   </div>
 
   <div class="section-title" id="listTitle">Uploaded Backgrounds</div>
@@ -449,7 +445,10 @@ const el = {
   tabBackground: document.getElementById('tabBackground'),
   tabDialogue: document.getElementById('tabDialogue'),
   dialoguePanel: document.getElementById('dialoguePanel'),
-  dialogueList: document.getElementById('dialogueList'),
+  dialogueBulkInput: document.getElementById('dialogueBulkInput'),
+  dialogueBulkRevertBtn: document.getElementById('dialogueBulkRevertBtn'),
+  dialogueBulkSaveBtn: document.getElementById('dialogueBulkSaveBtn'),
+  dialogueBulkStatus: document.getElementById('dialogueBulkStatus'),
   tabCharacter: document.getElementById('tabCharacter'),
   tabMinigameFace: document.getElementById('tabMinigameFace'),
   minigameFaceHint: document.getElementById('minigameFaceHint'),
@@ -699,41 +698,91 @@ function renderScenePicker() {
   });
 }
 
-// 대사 tab — editable script view for whatever scene is currently selected.
-// Each line's 화자(이름)/감정표현/텍스트 are all editable together and saved
-// as one combined override object (see AssetDB.getDialogueOverrides/
-// setDialogueLineOverride) — dev/dialogueData.js's static source is never
-// touched, /dev/game merges the override over it at load time.
-function dialogueSpeakerOptionsHtml(selectedCharacterId) {
-  const narrationOpt = `<option value=""${selectedCharacterId ? '' : ' selected'}>내레이션</option>`;
-  const charOpts = dialogueCharacters.map(c =>
-    `<option value="${escapeHtml(c.id)}"${c.id === selectedCharacterId ? ' selected' : ''}>${escapeHtml(c.name)}</option>`
-  ).join('');
-  return narrationOpt + charOpts;
-}
-function dialogueExpressionOptionsHtml(characterId, selectedExpression) {
+// 대사 tab — the current scene's whole script as one editable text block.
+// Each line renders as a `[화자] (감정)` header line followed by its text,
+// blocks separated by a lone "---" line; narration is `[내레이션]`. A "---"
+// line (not a blank line) is the delimiter because some lines' own text
+// already contains blank lines (e.g. "[ ITEM ACQUIRED ]\n\nUNKNOWN KEY"),
+// which a blank-line separator would misread as a block boundary. Saving
+// parses the block back into lines by position and diffs each against
+// dialogueData.js's static line to build one combined override object per
+// changed line (see AssetDB.getDialogueOverrides/setDialogueOverrides) —
+// the static source itself is never touched, /dev/game merges the override
+// over it at load time. This only supports editing existing lines in place,
+// not adding/removing/reordering them.
+function dialogueHeaderLine(characterId, expression) {
   const char = dialogueCharacters.find(c => c.id === characterId);
-  if (!char) return '';
-  return char.expressions.map(id => {
-    const label = (dialogueExpressions.find(x => x.id === id) || {}).label || id;
-    return `<option value="${escapeHtml(id)}"${id === selectedExpression ? ' selected' : ''}>${escapeHtml(label)}</option>`;
-  }).join('');
+  if (!char) return '[내레이션]';
+  const label = (dialogueExpressions.find(x => x.id === expression) || {}).label || expression;
+  return `[${char.name}] (${label})`;
 }
+function formatDialogueBulkText(lines, overrides) {
+  return lines.map(l => {
+    const o = overrides[l.id] || {};
+    const characterId = 'characterId' in o ? o.characterId : l.characterId;
+    const expression = 'expression' in o ? o.expression : l.expression;
+    const text = 'text' in o ? o.text : l.text;
+    return `${dialogueHeaderLine(characterId, expression)}\n${text}`;
+  }).join('\n\n---\n\n');
+}
+const DIALOGUE_HEADER_RE = /^\[(.+?)\]\s*(?:\((.+?)\))?\s*$/;
+// Splits the bulk text back into per-line { characterId, expression, text }
+// (or { error }) by position — a lone "---" line separates blocks, first
+// line of each block is the `[화자] (감정)` header, the rest is the line's
+// text.
+function parseDialogueBulkText(raw) {
+  const blocks = raw.replace(/\r\n/g, '\n').split(/\n[ \t]*-{3,}[ \t]*\n/).map(b => b.trim()).filter(b => b.length);
+  return blocks.map((block, i) => {
+    const nl = block.indexOf('\n');
+    const headerLine = nl === -1 ? block : block.slice(0, nl);
+    const text = nl === -1 ? '' : block.slice(nl + 1);
+    const m = headerLine.match(DIALOGUE_HEADER_RE);
+    if (!m) return { error: `${i + 1}번째 블록: "[화자] (감정)" 헤더 형식이 아닙니다 ("${headerLine}")` };
+    const nameRaw = m[1].trim();
+    if (nameRaw === '내레이션') return { characterId: null, expression: null, text };
+    const char = dialogueCharacters.find(c => c.name === nameRaw);
+    if (!char) return { error: `${i + 1}번째 블록: "${nameRaw}"는 알 수 없는 화자입니다.` };
+    const emotionLabel = m[2] ? m[2].trim() : null;
+    // Any of the 10 canonical emotion labels is accepted here, not just the
+    // character's own `expressions` subset — that subset only limits which
+    // portraits the 인물 DB upload picker offers, and existing script lines
+    // already reference emotions outside it for some characters (e.g.
+    // 지수/호기심), so enforcing it here would block re-saving those
+    // untouched lines.
+    const expr = emotionLabel && dialogueExpressions.find(x => x.label === emotionLabel);
+    if (!expr) {
+      const allowed = dialogueExpressions.map(x => x.label).join(', ');
+      return { error: `${i + 1}번째 블록: "${nameRaw}"의 감정표현 "${emotionLabel || ''}"을(를) 알 수 없습니다. (가능: ${allowed})` };
+    }
+    return { characterId: char.id, expression: expr.id, text };
+  });
+}
+
+let dialogueBulkLines = null;
+let dialogueBulkSceneId = null;
+let dialogueBulkOriginalText = '';
 
 async function renderDialoguePanel() {
   const scene = currentScene();
   const lines = scene && scene.lines;
+  dialogueBulkLines = null;
+  dialogueBulkSceneId = null;
+  el.dialogueBulkInput.disabled = true;
+  el.dialogueBulkSaveBtn.disabled = true;
+  el.dialogueBulkRevertBtn.disabled = true;
   if (!lines || !lines.length) {
-    el.dialogueList.innerHTML = '<div class="empty-note">이 씬에는 대사 데이터가 없습니다. (미니게임/증거수집 항목이거나 아직 미구현)</div>';
+    el.dialogueBulkInput.value = '';
+    el.dialogueBulkStatus.textContent = '이 씬에는 대사 데이터가 없습니다. (미니게임/증거수집 항목이거나 아직 미구현)';
     return;
   }
   const sceneId = scene.id;
-  el.dialogueList.innerHTML = '<div class="empty-note">불러오는 중…</div>';
+  el.dialogueBulkInput.value = '';
+  el.dialogueBulkStatus.textContent = '불러오는 중…';
   let overrides;
   try {
     overrides = await AssetDB.getDialogueOverrides(sceneId);
   } catch (err) {
-    el.dialogueList.innerHTML = '<div class="empty-note">대사를 불러오지 못했습니다.</div>';
+    el.dialogueBulkStatus.textContent = '대사를 불러오지 못했습니다.';
     DevDiag.show('대사 불러오기 실패: ' + (err && err.message ? err.message : err));
     return;
   }
@@ -741,70 +790,60 @@ async function renderDialoguePanel() {
   // flight — bail instead of overwriting whatever's now on screen.
   if (currentType !== 'dialogue' || currentSceneId !== sceneId) return;
 
-  el.dialogueList.innerHTML = lines.map(l => {
-    const o = overrides[l.id] || {};
-    const characterId = 'characterId' in o ? o.characterId : l.characterId;
-    const expression = 'expression' in o ? o.expression : l.expression;
-    const text = 'text' in o ? o.text : l.text;
-    const isNarration = !characterId;
-    const modified = Object.keys(o).length > 0;
-    return `<div class="dialogue-line" data-line-id="${escapeHtml(l.id)}">
-      <div class="dialogue-line-head">
-        <select class="dialogue-speaker-select${isNarration ? ' narration' : ''}">${dialogueSpeakerOptionsHtml(characterId)}</select>
-        <select class="dialogue-expression-select${isNarration ? ' hidden' : ''}">${dialogueExpressionOptionsHtml(characterId, expression)}</select>
-        <span class="dialogue-modified-badge${modified ? '' : ' hidden'}">수정됨</span>
-      </div>
-      <textarea class="dialogue-text-input" rows="2">${escapeHtml(text)}</textarea>
-    </div>`;
-  }).join('');
-
-  el.dialogueList.querySelectorAll('.dialogue-line').forEach(row => {
-    const lineId = row.dataset.lineId;
-    const original = lines.find(l => l.id === lineId);
-    const speakerSelect = row.querySelector('.dialogue-speaker-select');
-    const expressionSelect = row.querySelector('.dialogue-expression-select');
-    const textarea = row.querySelector('.dialogue-text-input');
-    const badge = row.querySelector('.dialogue-modified-badge');
-
-    function syncExpressionOptions() {
-      const characterId = speakerSelect.value || null;
-      speakerSelect.classList.toggle('narration', !characterId);
-      expressionSelect.classList.toggle('hidden', !characterId);
-      if (!characterId) { expressionSelect.innerHTML = ''; return; }
-      const current = expressionSelect.value;
-      const char = dialogueCharacters.find(c => c.id === characterId);
-      const keepCurrent = char && char.expressions.includes(current) ? current : (char ? char.expressions[0] : null);
-      expressionSelect.innerHTML = dialogueExpressionOptionsHtml(characterId, keepCurrent);
-    }
-
-    async function saveIfChanged() {
-      const characterId = speakerSelect.value || null;
-      const char = dialogueCharacters.find(c => c.id === characterId);
-      const override = {};
-      if (characterId !== original.characterId) override.characterId = characterId;
-      const speaker = char ? char.name : '';
-      if (speaker !== (original.speaker || '')) override.speaker = speaker;
-      const expression = characterId ? (expressionSelect.value || null) : null;
-      if (expression !== (original.expression || null)) override.expression = expression;
-      if (textarea.value !== original.text) override.text = textarea.value;
-      try {
-        await AssetDB.setDialogueLineOverride(sceneId, lineId, override);
-        badge.classList.toggle('hidden', Object.keys(override).length === 0);
-      } catch (err) {
-        DevDiag.show('대사 저장 실패: ' + (err && err.message ? err.message : err));
-      }
-    }
-
-    speakerSelect.addEventListener('change', () => { syncExpressionOptions(); saveIfChanged(); });
-    expressionSelect.addEventListener('change', saveIfChanged);
-    let lastSavedText = textarea.value;
-    textarea.addEventListener('blur', () => {
-      if (textarea.value === lastSavedText) return; // no change since last save — skip the round-trip
-      lastSavedText = textarea.value;
-      saveIfChanged();
-    });
-  });
+  dialogueBulkLines = lines;
+  dialogueBulkSceneId = sceneId;
+  dialogueBulkOriginalText = formatDialogueBulkText(lines, overrides);
+  el.dialogueBulkInput.value = dialogueBulkOriginalText;
+  el.dialogueBulkInput.disabled = false;
+  el.dialogueBulkSaveBtn.disabled = false;
+  el.dialogueBulkRevertBtn.disabled = false;
+  el.dialogueBulkStatus.textContent = '';
 }
+
+el.dialogueBulkRevertBtn.addEventListener('click', () => {
+  el.dialogueBulkInput.value = dialogueBulkOriginalText;
+  el.dialogueBulkStatus.textContent = '';
+});
+
+el.dialogueBulkSaveBtn.addEventListener('click', async () => {
+  if (!dialogueBulkLines || !dialogueBulkSceneId) return;
+  const parsed = parseDialogueBulkText(el.dialogueBulkInput.value);
+  if (parsed.length !== dialogueBulkLines.length) {
+    el.dialogueBulkStatus.textContent = `블록 개수(${parsed.length}개)가 원래 대사 줄 수(${dialogueBulkLines.length}개)와 다릅니다 — 이 편집기로는 줄을 추가/삭제할 수 없어요.`;
+    return;
+  }
+  const errors = parsed.map(p => p.error).filter(Boolean);
+  if (errors.length) {
+    el.dialogueBulkStatus.textContent = errors.join(' / ');
+    return;
+  }
+  const overridesMap = {};
+  dialogueBulkLines.forEach((l, i) => {
+    const p = parsed[i];
+    const char = dialogueCharacters.find(c => c.id === p.characterId);
+    const speaker = char ? char.name : '';
+    const patch = {};
+    if (p.characterId !== l.characterId) patch.characterId = p.characterId;
+    if (speaker !== (l.speaker || '')) patch.speaker = speaker;
+    if (p.expression !== (l.expression || null)) patch.expression = p.expression;
+    if (p.text !== l.text) patch.text = p.text;
+    if (Object.keys(patch).length) overridesMap[l.id] = patch;
+  });
+  const sceneId = dialogueBulkSceneId, lines = dialogueBulkLines;
+  el.dialogueBulkSaveBtn.disabled = true;
+  el.dialogueBulkStatus.textContent = '저장 중…';
+  try {
+    await AssetDB.setDialogueOverrides(sceneId, overridesMap);
+    dialogueBulkOriginalText = formatDialogueBulkText(lines, overridesMap);
+    el.dialogueBulkInput.value = dialogueBulkOriginalText;
+    el.dialogueBulkStatus.textContent = '저장됨';
+  } catch (err) {
+    el.dialogueBulkStatus.textContent = '저장 실패';
+    DevDiag.show('대사 저장 실패: ' + (err && err.message ? err.message : err));
+  } finally {
+    el.dialogueBulkSaveBtn.disabled = false;
+  }
+});
 
 function renderBgKindPicker() {
   const scene = currentScene();
