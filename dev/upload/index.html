@@ -1006,7 +1006,7 @@ async function saveAsset() {
    고정돼 있으므로 currentType으로는 구분할 수 없다. */
 let imageEditorTarget = 'character';
 function activeCropAspect() { return imageEditorTarget === 'character' ? 3 / 4 : 1; }
-function activeCropVAnchor() { return imageEditorTarget === 'character' ? 0.08 : 0.5; }
+function activeCropVAnchor() { return imageEditorTarget === 'character' ? 0 : 0.5; }
 const CROP_ENTER_LABELS = { character: '다음: 자르기', minigameFace: '다음: 얼굴 자르기', item: '다음: 자르기' };
 const CROP_SAVE_LABELS = { character: '이 표정으로 저장', minigameFace: '이 사진을 미니게임 얼굴로 저장', item: '이 이미지를 아이템 이미지로 저장' };
 
