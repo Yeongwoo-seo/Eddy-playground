@@ -320,11 +320,14 @@ const SPEAKER_TO_CHARACTER_KEY = { '지수': 'jisoo', '영우': 'youngwoo' };
 // Same 미니게임 얼굴 DB close-up crop minigame-eastwood's dlg-strip uses —
 // a dev only has to upload it once per character (/dev/upload's 미니게임
 // 얼굴 탭) and every minigame's dialogue box picks it up from here.
+let msgPortraitRequestToken = 0;
 async function updateMsgPortrait(characterKey) {
+  const requestToken = ++msgPortraitRequestToken;
   if (!characterKey) { el.msgPortraitWrap.classList.add('hidden'); return; }
   el.msgPortraitWrap.classList.remove('hidden');
   const assetId = DevGameState.getCharacterAssetId(characterKey, MINIGAME_FACE_EXPRESSION);
   const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
+  if (requestToken !== msgPortraitRequestToken) return; // a later call already superseded this one
   if (asset && asset.dataUrl) {
     el.msgPortraitImg.src = asset.dataUrl;
     el.msgPortraitImg.style.display = '';

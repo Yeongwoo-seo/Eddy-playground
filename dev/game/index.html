@@ -387,7 +387,17 @@ function applyTransformToImage(transform) {
 // Each named character (from dialogueCharacters) has its own uploaded asset
 // per expression, and its own CharacterTransform (x/y/scale) — looked up per
 // dialogue line's (characterId, expression) pair.
+//
+// applyCharacterForLine is async (AssetDB.getAsset can hit the network on a
+// cache miss), and onLineChange fires again on every tap — so a fast tapper
+// could have an older call's fetch resolve *after* a newer line has already
+// changed the speaker, painting the wrong character's portrait over the
+// current line (a.k.a. 지수 말하는데 영우 얼굴 뜨는 버그). charRequestToken
+// makes each call check, once its awaits resolve, whether it's still the
+// most recent request before touching the DOM.
+let charRequestToken = 0;
 async function applyCharacterForLine(characterId, expression) {
+  const requestToken = ++charRequestToken;
   if (!characterId) {
     el.charWrap.style.opacity = '0';
     return;
@@ -395,6 +405,7 @@ async function applyCharacterForLine(characterId, expression) {
   el.charWrap.style.opacity = '1';
   const assetId = DevGameState.getCharacterAssetId(characterId, expression);
   const asset = await AssetDB.getAsset(assetId);
+  if (requestToken !== charRequestToken) return; // superseded by a later line change
   setCharacterAsset(asset);
   applyTransformToImage(DevGameState.getCharacterTransform(characterId));
 }

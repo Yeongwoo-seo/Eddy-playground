@@ -399,9 +399,12 @@ el.mapStage.addEventListener('wheel', (e) => {
    얼굴 DB close-up (see /dev/upload), not the per-mood 인물 DB portrait —
    a half-body 표정 crop scaled down to this box mostly showed clothes, not
    a face. `expression` is accepted for call-site compatibility but unused. */
+let portraitRequestToken = 0;
 async function updatePortrait(characterKey, expression) {
+  const requestToken = ++portraitRequestToken;
   const assetId = DevGameState.getCharacterAssetId(characterKey, MINIGAME_FACE_EXPRESSION);
   const asset = await AssetDB.getAsset(assetId).catch(() => null);
+  if (requestToken !== portraitRequestToken) return; // a later call already superseded this one
   if (asset && asset.dataUrl) {
     el.portraitImg.src = asset.dataUrl;
     el.portraitImg.style.display = '';
@@ -417,7 +420,9 @@ async function updatePortrait(characterKey, expression) {
 // corner face crop above — same full-body 인물 DB portrait + saved
 // transform dev/game's own scenes use, just shown behind this floating
 // success-dlg card instead of a docked dialogue bar.
+let successAvatarRequestToken = 0;
 async function updateSuccessAvatar(characterId, expression) {
+  const requestToken = ++successAvatarRequestToken;
   if (!characterId) {
     el.successCharWrap.classList.remove('show');
     return;
@@ -425,6 +430,7 @@ async function updateSuccessAvatar(characterId, expression) {
   el.successCharWrap.classList.add('show');
   const assetId = DevGameState.getCharacterAssetId(characterId, expression);
   const asset = await AssetDB.getAsset(assetId).catch(() => null);
+  if (requestToken !== successAvatarRequestToken) return; // a later call already superseded this one
   if (asset && asset.dataUrl) {
     el.successCharImg.src = asset.dataUrl;
     el.successCharImg.style.display = '';
