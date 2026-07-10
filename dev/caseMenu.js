@@ -513,7 +513,7 @@ function injectCaseMenuStyles() {
     .cm-back.cm-hidden{visibility:hidden}
     .cm-header-title{flex:1;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:13px;letter-spacing:.08em;color:#F1F3F5;font-weight:700;text-transform:uppercase}
     .cm-close{margin-left:auto}
-    .cm-body{flex:1;overflow-y:auto;padding:18px}
+    .cm-body{flex:1;overflow-y:auto;touch-action:pan-y;padding:18px}
 
     .cm-mission{background:#171F29;border:1px solid rgba(255,255,255,.10);border-radius:14px;padding:14px 16px;margin-bottom:18px}
     .cm-mission-label{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;letter-spacing:.1em;color:#7E8791;text-transform:uppercase;margin-bottom:6px}
