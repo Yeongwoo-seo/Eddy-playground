@@ -721,8 +721,8 @@ document.getElementById('btnOpenCaseMenu').addEventListener('click', () => {
 document.getElementById('btnGiveKeyEvidence').addEventListener('click', () => {
   // Mirrors minigame-phone-search's own GIVE KEY shortcut — lets a scene
   // reached directly from /dev/week0 (skipping the minigame) still be able
-  // to present the 낡은 열쇠 evidence, e.g. at week0-scene-frontdesk's
-  // "증거 제시" beat.
+  // to present the 낡은 열쇠 evidence, e.g. at week0-scene-002-3's landlord
+  // phone-call "증거 제시" beat.
   CaseFileState.addEvidence(EVIDENCE_UNKNOWN_KEY);
   CaseFileState.addQuestion(QUESTION_KEY_ORIGIN);
   CaseFileState.addQuestion(QUESTION_PHONE_LOCATION);

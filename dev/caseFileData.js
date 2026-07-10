@@ -14,10 +14,11 @@ const caseMapLocations = [
   {
     id: 'accommodation', name: '숙소', mapX: 50, mapY: 40,
     relatedSceneIds: [
-      // week0-scene-mailroom merged into week0-scene-frontdesk (both
-      // Accommodation Lobby) — see week0Scenes in dialogueData.js.
+      // week0-scene-frontdesk (now a landlord phone call, no more lobby trip)
+      // and week0-scene-firstnight merged into week0-scene-002-3 — see
+      // week0Scenes in dialogueData.js.
       'week0-scene-002-1', 'week0-scene-dinner', 'week0-scene-charger', 'week0-scene-002-2',
-      'week0-scene-002-3', 'week0-scene-frontdesk', 'week0-scene-firstnight',
+      'week0-scene-002-3',
       'week1-scene-011',
     ],
   },

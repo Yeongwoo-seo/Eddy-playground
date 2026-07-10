@@ -446,7 +446,9 @@ const week0SceneChargerLines = [
    system beats use speaker:'' (no name shown), matching the convention used
    throughout week0Scene001Lines/week0Scene002_1Lines. This is the M.K.
    engraving reveal — the seed for the whole 4-week mystery — so it doesn't
-   loop or dead-end; it ends heading down to reception (week0-scene-frontdesk). */
+   loop or dead-end; it ends deciding to call the landlord instead of going
+   down to a lobby (week0-scene-frontdesk, now a phone call — see that
+   scene's own header comment). */
 const week0Scene002_3Lines = [
   { id: 'line-001', speaker: '지수', text: '찾았다.', characterId: 'jisoo', expression: 'happy' },
   { id: 'line-002', speaker: '영우', text: '아 다행이다 ㅎㅎㅎㅎㅎ', characterId: 'youngwoo', expression: 'happy' },
@@ -506,72 +508,59 @@ const week0Scene002_3Lines = [
   { id: 'line-027', speaker: '영우', text: '왜 내가 ㅋㅎㅋㅎㅋㅎㅋㅎ', characterId: 'youngwoo', expression: 'happy' },
   { id: 'line-028', speaker: '지수', text: '몰라요.\n그냥 느낌이 그래요.', characterId: 'jisoo', expression: 'soft' },
   { id: 'line-029', speaker: '', text: '[ ITEM ACQUIRED ]\n\nUNKNOWN KEY', characterId: null },
-  { id: 'line-030', speaker: '지수', text: '이거 신경 쓰이는데.\n프런트에 한번 물어볼까요?', characterId: 'jisoo', expression: 'suspicious' },
+  { id: 'line-030', speaker: '지수', text: '이거 신경 쓰이는데.\n집주인한테 전화해볼까요?', characterId: 'jisoo', expression: 'suspicious' },
   { id: 'line-031', speaker: '영우', text: '이 시간에?', characterId: 'youngwoo', expression: 'curious' },
-  { id: 'line-032', speaker: '지수', text: '로비에 아직 사람 있던데요.', characterId: 'jisoo', expression: 'neutral' },
-  { id: 'line-033', speaker: '영우', text: '음...\n그래, 가보자.', characterId: 'youngwoo', expression: 'soft' },
-  { id: 'line-034', speaker: '', text: '두 사람은 열쇠를 챙겨 로비로 향했다.', characterId: null },
+  { id: 'line-032', speaker: '지수', text: '예약 확인서에 번호 있던데요.', characterId: 'jisoo', expression: 'neutral' },
+  { id: 'line-033', speaker: '영우', text: '음...\n그래, 한번 걸어보자.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-034', speaker: '', text: '지수가 핸드폰을 꺼내\n집주인 번호를 눌렀다.', characterId: null },
 ];
 
-/* OPERATION MK — WEEK 0 · SCENE 09 「프런트 문의」
+/* OPERATION MK — WEEK 0 · SCENE 09 「집주인과의 통화」
    Dialogue Set: dialogue-week0-scene-frontdesk
-   Scene: week0-scene-frontdesk (숙소 로비, 22:50)
-   Per the brief: the staff member's "M.K..." recollection must NOT resolve
-   into the full name Mika Kovac here — that reveal is reserved for
-   1주차 (week1-scene-007). */
+   Scene: week0-scene-frontdesk (Sydney Accommodation, 22:50)
+   Was originally a trip down to the lobby to ask the front desk staff, with
+   a separate elevator/mailroom beat where a torn parcel revealed the "M.
+   KOV..." name seed. Reworked so the pair never leave the room: 지수 calls
+   the listing's landlord instead, and the "M.KOV..." seed now surfaces as
+   the caller-ID name on 지수's phone while the call is connecting, rather
+   than on a mail parcel. Per the brief: the landlord's "M.K..." recollection
+   must NOT resolve into the full name Mika Kovac here — that reveal is
+   reserved for 1주차 (week1-scene-007). */
 const week0SceneFrontdeskLines = [
-  { id: 'line-001', speaker: '', text: '숙소 로비.\n밤 10시 50분.', characterId: null },
-  { id: 'line-002', speaker: '지수', text: '저기, 잠깐 여쭤봐도 될까요?', characterId: 'jisoo', expression: 'neutral' },
-  { id: 'line-003', speaker: '프런트 직원', text: '네, 무슨 일이세요?', characterId: null },
-  { id: 'line-004', speaker: '지수', text: '방에서 뭘 좀 발견했는데요.\n뭔가 짚이는 게 있으실까 해서요.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-001', speaker: '', text: '숙소 객실.\n밤 10시 50분.', characterId: null },
+  { id: 'line-002', speaker: '지수', text: '어, 잠깐만요.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-003', speaker: '', text: '전화가 연결되길 기다리는 동안,\n화면에 뜬 이름이 지수의 눈에 들어왔다.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-004', speaker: '', text: '[ 발신 표시: M. KOV... ]', characterId: null },
+  { id: 'line-005', speaker: '지수', text: 'M.K.네 ㅋㅋ', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-006', speaker: '영우', text: '세상에 M이랑 K가 한둘이냐.', characterId: 'youngwoo', expression: 'happy' },
+  { id: 'line-007', speaker: '지수', text: '그건 그런데.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-008', speaker: '', text: '신호음이 몇 번 울리고,\n전화가 연결됐다.', characterId: null },
+  { id: 'line-009', speaker: '집주인', text: '여보세요?', characterId: null },
+  { id: 'line-010', speaker: '지수', text: '안녕하세요, 지금 묵고 있는 손님인데요.\n밤늦게 죄송해요.', characterId: 'jisoo', expression: 'neutral' },
+  { id: 'line-011', speaker: '집주인', text: '아니에요, 무슨 일이세요?', characterId: null },
+  { id: 'line-012', speaker: '지수', text: '방에서 뭘 좀 발견했는데요.\n뭔가 짚이는 게 있으실까 해서요.', characterId: 'jisoo', expression: 'curious' },
   {
-    id: 'line-005', type: 'evidence', speaker: '', text: '직원에게 무엇을 보여줄지 골라보세요.', characterId: 'jisoo', expression: 'curious',
+    id: 'line-013', type: 'evidence', speaker: '', text: '전화로 무엇을 설명할지 골라보세요.', characterId: 'jisoo', expression: 'curious',
     evidenceIds: ['evidence-unknown-key'],
-    correctGoto: 'line-006',
-    wrongText: '지수: “어, 이건 아니고...” 직원이 고개를 갸웃한다.',
+    wrongText: '지수: “어, 이건 아니고...” 집주인이 갸웃하는 게 느껴진다.',
   },
-  { id: 'line-006', speaker: '프런트 직원', text: '음...\n저희 쪽 물건은 아닌 것 같은데요.', characterId: null },
-  { id: 'line-007', speaker: '프런트 직원', text: '분실물 등록된 것도 없고요.', characterId: null },
-  { id: 'line-008', speaker: '영우', text: '그럼 이전 투숙객 거일까요?', characterId: 'youngwoo', expression: 'curious' },
-  { id: 'line-009', speaker: '프런트 직원', text: '그럴 수도 있죠.\n저희가 따로 기록은 안 남겨서.', characterId: null },
-  { id: 'line-010', speaker: '지수', text: '아, 그렇구나.', characterId: 'jisoo', expression: 'blank' },
-  { id: 'line-011', speaker: '', text: '직원이 열쇠 뒷면을 잠깐 살펴본다.', characterId: null },
-  { id: 'line-012', speaker: '프런트 직원', text: 'M.K...', characterId: null },
-  { id: 'line-013', speaker: '프런트 직원', text: '잠깐, 비슷한 이름의 이전 문의가 있었던 것 같은데요.', characterId: null },
-  { id: 'line-014', speaker: '지수', text: '정말요?', characterId: 'jisoo', expression: 'shocked' },
-  { id: 'line-015', speaker: '', text: '직원이 컴퓨터로 뭔가를 검색해본다.', characterId: null },
-  { id: 'line-016', speaker: '프런트 직원', text: '음...\n죄송해요, 안 나오네요.\n제가 착각했나봐요.', characterId: null },
-  { id: 'line-017', speaker: '영우', text: '그래요?', characterId: 'youngwoo', expression: 'curious' },
-  { id: 'line-018', speaker: '프런트 직원', text: '네, 그냥 갖고 계셔도 될 것 같아요.\n혹시 나중에 찾는 분 있으면 다시 알려드릴게요.', characterId: null },
-  { id: 'line-019', speaker: '지수', text: '네, 감사합니다.', characterId: 'jisoo', expression: 'soft' },
-  { id: 'line-020', speaker: '', text: '방으로 돌아가는 길,\n지수는 어쩐지 마음에 걸렸다.', characterId: 'jisoo', expression: 'blank' },
-  { id: 'line-021', speaker: '영우', text: '왜 그래?', characterId: 'youngwoo', expression: 'curious' },
-  { id: 'line-022', speaker: '지수', text: '아니에요.\n그냥 좀 이상해서.', characterId: 'jisoo', expression: 'blank' },
-];
-
-/* OPERATION MK — WEEK 0 · SCENE 09-2 「엘리베이터의 우편 봉투」
-   Dialogue Set: dialogue-week0-scene-mailroom
-   Scene: week0-scene-mailroom (숙소 엘리베이터 앞, 23:00)
-   The brief's "초장 가짜 진범 씨앗" — a seed only the player is meant to
-   remember. Full name (Mika Kovac) still not revealed. */
-const week0SceneMailroomLines = [
-  { id: 'line-001', speaker: '', text: '숙소 엘리베이터 앞.\n밤 11시.', characterId: null },
-  { id: 'line-002', speaker: '', text: '엘리베이터를 기다리던 중,\n공용 우편함 쪽에 지수의 눈길이 닿았다.', characterId: null },
-  { id: 'line-003', speaker: '지수', text: '어?\n저거 뭐예요?', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-004', speaker: '영우', text: '뭐가?', characterId: 'youngwoo', expression: 'curious' },
-  { id: 'line-005', speaker: '지수', text: '저 봉투.\n반송 도장 찍혀있는데.', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-006', speaker: '', text: '오래돼 보이는 봉투 하나가\n우편함 위에 놓여 있었다.', characterId: null },
-  { id: 'line-007', speaker: '', text: '수취인 이름 일부가 보인다.', characterId: null },
-  { id: 'line-008', speaker: '', text: '[ M. KOV... ]', characterId: null },
-  { id: 'line-009', speaker: '지수', text: 'M.K.네 ㅋㅋ', characterId: 'jisoo', expression: 'smirk' },
-  { id: 'line-010', speaker: '영우', text: '세상에 M이랑 K가 한둘이냐.', characterId: 'youngwoo', expression: 'happy' },
-  { id: 'line-011', speaker: '지수', text: '그건 그런데.', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-012', speaker: '', text: '마침 지나가던 직원이 봉투를 집어 든다.', characterId: null },
-  { id: 'line-013', speaker: '프런트 직원', text: '아, 이거 다른 투숙객분 우편이에요.', characterId: null },
-  { id: 'line-014', speaker: '', text: '직원이 봉투를 챙겨 안쪽으로 사라진다.', characterId: null },
-  { id: 'line-015', speaker: '영우', text: '가자, 엘리베이터 왔다.', characterId: 'youngwoo', expression: 'soft' },
-  { id: 'line-016', speaker: '지수', text: '웅웅.', characterId: 'jisoo', expression: 'neutral' },
-  { id: 'line-017', speaker: '', text: '별거 아닌 순간이었다.\n적어도 그때는 그렇게 느껴졌다.', characterId: null },
+  { id: 'line-014', speaker: '집주인', text: '음...\n저희 쪽 물건은 아닌 것 같은데요.', characterId: null },
+  { id: 'line-015', speaker: '집주인', text: '분실물 등록된 것도 없고요.', characterId: null },
+  { id: 'line-016', speaker: '영우', text: '그럼 이전 투숙객 거일까요?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-017', speaker: '집주인', text: '그럴 수도 있죠.\n저희가 따로 기록은 안 남겨서.', characterId: null },
+  { id: 'line-018', speaker: '지수', text: '아, 그렇구나.', characterId: 'jisoo', expression: 'blank' },
+  { id: 'line-019', speaker: '지수', text: '근데 뒷면에 M.K.라고 새겨져 있는데요.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-020', speaker: '집주인', text: 'M.K...', characterId: null },
+  { id: 'line-021', speaker: '집주인', text: '잠깐, 비슷한 이름의 이전 문의가 있었던 것 같은데요.', characterId: null },
+  { id: 'line-022', speaker: '지수', text: '정말요?', characterId: 'jisoo', expression: 'shocked' },
+  { id: 'line-023', speaker: '', text: '집주인이 뭔가를 찾아보는 듯\n잠시 조용해졌다.', characterId: null },
+  { id: 'line-024', speaker: '집주인', text: '음...\n죄송해요, 안 나오네요.\n제가 착각했나봐요.', characterId: null },
+  { id: 'line-025', speaker: '영우', text: '그래요?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-026', speaker: '집주인', text: '네, 그냥 갖고 계셔도 될 것 같아요.\n혹시 나중에 찾는 분 있으면 다시 연락드릴게요.', characterId: null },
+  { id: 'line-027', speaker: '지수', text: '네, 감사합니다.', characterId: 'jisoo', expression: 'soft' },
+  { id: 'line-028', speaker: '', text: '전화를 끊고 나서도,\n지수는 어쩐지 마음에 걸렸다.', characterId: 'jisoo', expression: 'blank' },
+  { id: 'line-029', speaker: '영우', text: '왜 그래?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-030', speaker: '지수', text: '아니에요.\n그냥 좀 이상해서.', characterId: 'jisoo', expression: 'blank' },
 ];
 
 /* OPERATION MK — WEEK 0 · SCENE 10 「첫날 밤」
@@ -907,34 +896,19 @@ const week0Scenes = [
   {
     id: 'week0-scene-002-3',
     order: 10,
-    name: '근데 이 열쇠 뭐지?',
+    name: '근데 이 열쇠 뭐지? · 집주인과의 통화 · 첫날 밤',
     location: 'Sydney Accommodation',
     introLabel: 'ACCOMMODATION',
     time: '22:41',
-    lines: week0Scene002_3Lines,
-    // Reached from the phone-search minigame's GAME CLEAR redirect, not from
-    // another VN scene's nextSceneId — listed here so /dev/week0 and the
-    // dev asset selector can still target it directly for testing.
-  },
-  {
-    id: 'week0-scene-frontdesk',
-    order: 11,
-    name: '프런트 문의 · 우편 봉투',
-    location: 'Accommodation Lobby',
-    introLabel: 'FRONT DESK',
-    time: '22:50',
-    // Merged week0-scene-frontdesk + week0-scene-mailroom (both Accommodation
-    // Lobby, back to back).
-    lines: mergeLines(week0SceneFrontdeskLines, week0SceneMailroomLines),
-  },
-  {
-    id: 'week0-scene-firstnight',
-    order: 12,
-    name: '첫날 밤',
-    location: 'Sydney Accommodation',
-    introLabel: 'ACCOMMODATION',
-    time: '23:15',
-    lines: week0SceneFirstNightLines,
+    // Reached from the phone-search minigame's GAME CLEAR redirect (hardcoded
+    // in minigame-phone-search/index.html) — keeps this id even after the
+    // merge below so that redirect still resolves.
+    //
+    // Merged week0-scene-002-3 + week0-scene-frontdesk + week0-scene-firstnight
+    // (all Sydney Accommodation, back to back, no minigame handoff between
+    // them now that the old lobby/front-desk trip was reworked into a phone
+    // call from the room — see week0SceneFrontdeskLines' header comment).
+    lines: mergeLines(week0Scene002_3Lines, week0SceneFrontdeskLines, week0SceneFirstNightLines),
   },
 ];
 
