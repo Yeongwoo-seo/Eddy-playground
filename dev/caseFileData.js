@@ -22,19 +22,21 @@ const caseMapLocations = [
       // and week0-scene-firstnight merged into week0-scene-002-3 — see
       // week0Scenes in dialogueData.js.
       'week0-scene-002-1', 'week0-scene-002-2', 'week0-scene-002-3',
-      'week1-scene-011',
+      'week1-scene-013',
     ],
   },
   {
     id: 'circular-quay', name: 'Circular Quay', mapX: 62, mapY: 30,
     relatedSceneIds: [
-      // week1-scene-004/005 merged into week1-scene-003, and week1-scene-007
-      // merged into week1-scene-006 (all Pop-up Exhibition) — see
-      // week1Scenes in dialogueData.js.
+      // 1주차 추리 개편 v2 — week1-scene-004/005는 week1-scene-003에 합쳐졌고,
+      // 애드리언 콜 조사는 자기 씬(week1-scene-007)으로 분리됐다. A 재오픈(010),
+      // 최종 심문(011), 사건 재구성(012)도 모두 Circular Quay 권역이라 여기 포함.
+      // 엔딩(013)만 숙소라 위 accommodation 항목으로 옮겨졌다 — see week1Scenes
+      // in dialogueData.js.
       'week1-scene-001', 'week1-scene-002', 'week1-scene-003',
       'week1-scene-005-minigame',
-      'week1-scene-006', 'week1-scene-008', 'week1-scene-008-minigame',
-      'week1-scene-009', 'week1-scene-010',
+      'week1-scene-006', 'week1-scene-007', 'week1-scene-008', 'week1-scene-008-minigame',
+      'week1-scene-009', 'week1-scene-010', 'week1-scene-011', 'week1-scene-012',
     ],
   },
   { id: 'opera-house', name: 'Opera House', mapX: 70, mapY: 22, relatedSceneIds: [] },

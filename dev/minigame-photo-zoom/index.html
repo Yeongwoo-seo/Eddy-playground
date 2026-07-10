@@ -182,7 +182,7 @@ if ('serviceWorker' in navigator) {
    인물, 총 8회 목격을 다 찾으면 완료. 이름은 아직 밝히지 않는다 —
    week1-scene-006/007/008에서 실제로 만나기 전이라 서술만 색/옷차림으로 한다. */
 const CANVAS_W = 640, CANVAS_H = 860;
-const REQUIRED_TOTAL = 8;
+const REQUIRED_TOTAL = 9; // 8 people sightings + 1 required K-01 empty-case tap
 
 // 모든 사진에서 고정된 K-01 진열장 위치 (같은 방, 같은 케이스).
 const CASE_BOX = { cx: 320, cy: 344, w: 150, h: 110 };
@@ -256,7 +256,11 @@ const PHOTOS = [
     ],
   },
   {
-    time: '10:53', caption: '인파가 빠져나간 뒤, 케이스는 비어 있다', hasItem: false,
+    // caseTappable — 1주차 추리 개편 v2: K-01 자체의 "상태 변화"(§5.3)도 발견
+    // 대상이어야 한다는 요구에 맞춰, 빈 케이스 자체를 눌러서 찾는 필수 단서로
+    // 만들었다. 사진 분석 미니게임을 완주해야만 나올 수 있는 흐름이라
+    // (REQUIRED_TOTAL에 포함) week1-scene-009의 C-3 게이트가 항상 통과 가능하다.
+    time: '10:53', caption: '인파가 빠져나간 뒤, 케이스는 비어 있다', hasItem: false, caseTappable: true,
     figures: [
       { tag: '관광객', cx: 500, cy: 700, w: 56, h: 120, correct: false },
     ],
@@ -265,9 +269,9 @@ const PHOTOS = [
 
 const TAP_RADIUS = 60; // canvas-space px — generous, touch-friendly hit radius per figure
 
-let foundIds = new Set(); // `${photoIdx}-${figIdx}` of every correct figure already found
+let foundIds = new Set(); // `${photoIdx}-${figIdx}` (or `${photoIdx}-case`) of every correct target already found
 let sightingCounts = {}; // personKey -> how many correct sightings found so far
-let evidenceGranted = new Set(); // personKey already registered as CaseFileState evidence
+let evidenceGranted = new Set(); // personKey (or 'case') already registered as CaseFileState evidence
 let activePhotoIdx = -1;
 let figureEls = []; // DOM refs for the currently-open photo's figures, index-aligned to PHOTOS[activePhotoIdx].figures
 let wrongClickCount = 0;
@@ -299,9 +303,14 @@ const el = {
 
 function totalFound() { return foundIds.size; }
 function foundInPhoto(photoIdx) {
-  return PHOTOS[photoIdx].figures.filter((f, i) => f.correct && foundIds.has(`${photoIdx}-${i}`)).length;
+  const photo = PHOTOS[photoIdx];
+  const figuresFound = photo.figures.filter((f, i) => f.correct && foundIds.has(`${photoIdx}-${i}`)).length;
+  return figuresFound + (photo.caseTappable && foundIds.has(`${photoIdx}-case`) ? 1 : 0);
 }
-function correctInPhoto(photoIdx) { return PHOTOS[photoIdx].figures.filter(f => f.correct).length; }
+function correctInPhoto(photoIdx) {
+  const photo = PHOTOS[photoIdx];
+  return photo.figures.filter(f => f.correct).length + (photo.caseTappable ? 1 : 0);
+}
 
 function updateProgressUi() {
   el.gridProgressN.textContent = totalFound();
@@ -544,9 +553,44 @@ const REPEAT_FIND_LINES = {
   leo: { 2: ['영우', '이 사람도 두 번째... 근데 이게 마지막 사진이네.'] },
 };
 
+// 1주차 추리 개편 v2 — §5.4 "같은 인물 3회 태그 시 QUESTION_UNLOCKED"를 그대로
+// 구현: 지수/영우가 결론("11분 공백이다" 같은)을 대신 말하지 않고, 플레이어가
+// 반복 목격을 스스로 만들어낸 순간에만 의문점이 뜬다.
+function unlockRepeatQuestionIfNeeded(personKey, count) {
+  if (personKey !== 'minah' || count !== 3) return;
+  const added = CaseFileState.addQuestion({
+    id: 'question-mina-repeat', title: '왜 이 사람은 계속 K-01 근처에 있었지?',
+    linkedEvidenceIds: ['evidence-photo-minah'],
+  });
+  if (added && typeof caseMenu !== 'undefined' && caseMenu.notifyNewQuestion) caseMenu.notifyNewQuestion('왜 이 사람은 계속 K-01 근처에 있었지?');
+}
+
+function onCaseTap() {
+  const caseId = `${activePhotoIdx}-case`;
+  if (foundIds.has(caseId)) return;
+  foundIds.add(caseId);
+  if (!evidenceGranted.has('case')) {
+    evidenceGranted.add('case');
+    CaseFileState.addEvidence({
+      id: 'evidence-k01-empty-case', code: 'E-K01', title: 'K-01 상태 변화 사진',
+      description: '인파가 빠져나간 직후 사진 — K-01이 있어야 할 자리가 비어 있다.',
+      discoveredLocationText: 'Pop-up Exhibition · 사건 직전 사진',
+    });
+  }
+  say('영우', '어? 이 사진, 케이스가 비어 있는데?');
+  updateProgressUi();
+  if (totalFound() >= REQUIRED_TOTAL) setTimeout(startSuccessDialogue, 1400);
+}
+
 function onCanvasTap(point) {
   if (activePhotoIdx < 0) return;
   const photo = PHOTOS[activePhotoIdx];
+  if (photo.caseTappable && !foundIds.has(`${activePhotoIdx}-case`)
+    && point.x >= CASE_BOX.cx - CASE_BOX.w / 2 && point.x <= CASE_BOX.cx + CASE_BOX.w / 2
+    && point.y >= CASE_BOX.cy - CASE_BOX.h / 2 && point.y <= CASE_BOX.cy + CASE_BOX.h / 2) {
+    onCaseTap();
+    return;
+  }
   let bestIdx = -1, bestDist = Infinity;
   photo.figures.forEach((fig, i) => {
     const d = Math.hypot(point.x - fig.cx, point.y - (fig.cy - fig.h / 2));
@@ -576,6 +620,7 @@ function onCanvasTap(point) {
       description: def.evidenceDesc, discoveredLocationText: 'Pop-up Exhibition · 사건 직전 사진',
     });
   }
+  unlockRepeatQuestionIfNeeded(fig.personKey, count);
   const line = (REPEAT_FIND_LINES[fig.personKey] && REPEAT_FIND_LINES[fig.personKey][count]) || FIRST_FIND_LINES[fig.personKey];
   say(line[0], line[1]);
   updateProgressUi();

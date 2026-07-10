@@ -536,6 +536,9 @@ function applyEffect(effect) {
     case 'addPerson':
       CaseFileState.addPerson(effect.person);
       break;
+    case 'setPersonStatus':
+      CaseFileState.setPersonStatus(effect.id, effect.status, effect.patch);
+      break;
     case 'addInventoryItem':
       CaseFileState.addInventoryItem(effect.id);
       break;
