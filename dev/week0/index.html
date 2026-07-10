@@ -27,6 +27,11 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .title{font-size:26px;font-weight:700;letter-spacing:-.2px;margin-bottom:10px}
 .sub{font-size:14px;color:var(--text-secondary);margin-bottom:32px;line-height:1.6}
 .scene-list{display:flex;flex-direction:column;gap:14px}
+.scene-group{display:flex;flex-direction:column;gap:14px}
+.scene-group + .scene-group{margin-top:8px}
+.group-header{display:flex;align-items:baseline;gap:8px;padding:0 2px}
+.group-range{font-family:var(--mono);font-size:12px;color:var(--amber);letter-spacing:.06em}
+.group-label{font-size:14px;font-weight:700;color:var(--text-secondary)}
 .scene-row{display:flex;align-items:stretch;gap:10px}
 .scene-btn{flex:1;min-width:0;display:flex;align-items:center;gap:14px;background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:18px 20px;text-decoration:none;color:inherit;transition:transform .15s,background .15s}
 .scene-btn:active{transform:scale(.98);background:var(--surface-2)}
@@ -70,11 +75,8 @@ function setupHref(s) {
   return entry ? entry.setupUrl : '/dev/upload/?scene=' + encodeURIComponent(s.id);
 }
 
-const list = document.getElementById('sceneList');
-if (!week0Scenes.length) {
-  list.innerHTML = '<div class="empty">등록된 씬이 없습니다.</div>';
-} else {
-  list.innerHTML = week0Scenes.map(s => `
+function sceneRowHtml(s) {
+  return `
     <div class="scene-row">
       <a class="scene-btn" href="${setupHref(s)}">
         <div class="scene-num">#${String(s.order).padStart(2, '0')}</div>
@@ -85,6 +87,26 @@ if (!week0Scenes.length) {
         <div class="scene-arrow">›</div>
       </a>
       <a class="play-btn" href="${s.route || ('/dev/game/?scene=' + encodeURIComponent(s.id))}" aria-label="바로 플레이">▶</a>
+    </div>
+  `;
+}
+
+const list = document.getElementById('sceneList');
+if (!week0Scenes.length) {
+  list.innerHTML = '<div class="empty">등록된 씬이 없습니다.</div>';
+} else {
+  const byId = new Map(week0Scenes.map(s => [s.id, s]));
+  // week0SceneGroups (dialogueData.js) buckets the flat week0Scenes list
+  // into the 3 narrative beats writers think in (#1-2/#3-5/#6-12) — a
+  // group's members can be a mix of merged VN scenes and standalone
+  // minigame entries, shown in play order under one header.
+  list.innerHTML = week0SceneGroups.map(g => `
+    <div class="scene-group">
+      <div class="group-header">
+        <span class="group-range">${g.range}</span>
+        <span class="group-label">${g.label}</span>
+      </div>
+      ${g.sceneIds.map(id => byId.get(id)).filter(Boolean).map(sceneRowHtml).join('')}
     </div>
   `).join('');
 }

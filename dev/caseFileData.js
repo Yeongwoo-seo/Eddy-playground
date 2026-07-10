@@ -9,15 +9,19 @@
 // "6 total" shape without pretending content exists that hasn't been written
 // yet. mapX/mapY are rough placement percentages for a future Sydney map graphic.
 const caseMapLocations = [
-  { id: 'airport', name: '공항', mapX: 12, mapY: 70, relatedSceneIds: ['week0-scene-001'] },
+  // week0-scene-flight now also covers week0-scene-001 (진짜 왔네, merged —
+  // see week0Scenes in dialogueData.js), hence the id mismatch with this
+  // location's own name.
+  { id: 'airport', name: '공항', mapX: 12, mapY: 70, relatedSceneIds: ['week0-scene-flight'] },
   { id: 'station', name: '지하철 역', mapX: 30, mapY: 55, relatedSceneIds: ['week0-scene-001-2', 'week0-scene-001-2-minigame', 'week0-scene-train'] },
   {
     id: 'accommodation', name: '숙소', mapX: 50, mapY: 40,
     relatedSceneIds: [
-      // week0-scene-mailroom merged into week0-scene-frontdesk (both
-      // Accommodation Lobby) — see week0Scenes in dialogueData.js.
-      'week0-scene-002-1', 'week0-scene-dinner', 'week0-scene-charger', 'week0-scene-002-2',
-      'week0-scene-002-3', 'week0-scene-frontdesk', 'week0-scene-firstnight',
+      // week0-scene-dinner + week0-scene-charger merged into week0-scene-002-1;
+      // week0-scene-frontdesk (now a landlord phone call, no more lobby trip)
+      // and week0-scene-firstnight merged into week0-scene-002-3 — see
+      // week0Scenes in dialogueData.js.
+      'week0-scene-002-1', 'week0-scene-002-2', 'week0-scene-002-3',
       'week1-scene-011',
     ],
   },
