@@ -473,7 +473,7 @@ window.__removeBackgroundReady = import('https://cdn.jsdelivr.net/npm/@imgly/bac
 let currentType = 'background';
 let currentWeekId = weeks[0].id;
 let currentSceneId = weeks[0].scenes[0] && weeks[0].scenes[0].id;
-let currentBgKind = 'scene'; // 'scene' | 'minigame' — only relevant for scenes with a minigameId
+let currentBgKind = 'scene'; // 'scene' | 'loc:N' | 'minigame' — see backgroundKinds()
 let currentCharacterKey = dialogueCharacters[0].id;
 let currentExpression = dialogueExpressions[0].id;
 let pendingFile = null;
@@ -652,14 +652,27 @@ function allowedExpressions() {
   return list && list.length ? dialogueExpressions.filter(x => list.includes(x.id)) : dialogueExpressions;
 }
 
-// The "virtual" sceneId background storage/uploads are keyed against — a
-// scene with a minigame has two independent background slots: its own VN
-// background, and the minigame's (e.g. the route-map image), selected via
-// the 배경/미니게임 sub-picker.
+// Every background slot the current scene has, as { id, label, sceneId } —
+// 'scene' is always the default slot (scene.locations[0].key when the scene
+// declares multiple locations — see dialogueData.js's merged, multi-location
+// scenes like week0-scene-flight — else just scene.id), further location
+// segments get 'loc:1', 'loc:2', ..., and a scene with a minigameId gets one
+// more 'minigame' slot on top. Each is its own independent virtual sceneId
+// background storage/uploads are keyed against, same one-slot-per-id pattern
+// the old scene/minigame-only picker used, just generalized past 2 slots.
+function backgroundKinds(scene) {
+  if (!scene) return [];
+  const locs = (scene.locations && scene.locations.length) ? scene.locations : [{ key: scene.id, label: '배경' }];
+  const kinds = locs.map((loc, i) => ({ id: i === 0 ? 'scene' : 'loc:' + i, label: loc.label, sceneId: loc.key }));
+  if (scene.minigameId) kinds.push({ id: 'minigame', label: '미니게임', sceneId: scene.minigameId });
+  return kinds;
+}
+
 function activeBackgroundSceneId() {
   const scene = currentScene();
   if (!scene) return currentSceneId;
-  return currentBgKind === 'minigame' && scene.minigameId ? scene.minigameId : scene.id;
+  const match = backgroundKinds(scene).find(k => k.id === currentBgKind);
+  return match ? match.sceneId : scene.id;
 }
 
 function selectType(type) {
@@ -990,16 +1003,18 @@ el.weekDialogueSaveBtn.addEventListener('click', async () => {
 function renderBgKindPicker() {
   const scene = currentScene();
   // Focus mode forces currentBgKind itself — nothing to toggle, so the
-  // picker stays hidden even though scene.minigameId is set.
-  const hasMinigame = !focusMinigame && !!(scene && scene.minigameId);
-  el.bgKindPicker.classList.toggle('hidden', !hasMinigame);
-  if (!hasMinigame) return;
+  // picker stays hidden even if the scene has multiple slots.
+  const kinds = focusMinigame ? [] : backgroundKinds(scene);
+  // Only worth showing when there's an actual choice — a plain single-
+  // location, no-minigame scene has exactly one kind ('scene').
+  const showPicker = kinds.length > 1;
+  el.bgKindPicker.classList.toggle('hidden', !showPicker);
+  if (!showPicker) return;
   // Uploading while the wrong kind is selected here silently saves the photo
-  // under the wrong scene bucket — the minigame then looks "missing" even
-  // though a photo really was uploaded, just to the VN scene's own
-  // background instead. Marking which bucket already has something (✓) vs.
-  // is empty makes that mistake much harder to make unnoticed.
-  const kinds = [{ id: 'scene', label: '배경', sceneId: scene.id }, { id: 'minigame', label: '미니게임', sceneId: scene.minigameId }];
+  // under the wrong bucket — the minigame/other location then looks
+  // "missing" even though a photo really was uploaded, just to a different
+  // slot instead. Marking which bucket already has something (✓) vs. is
+  // empty makes that mistake much harder to make unnoticed.
   el.bgKindPickerPills.innerHTML = kinds.map(k => {
     const has = !!DevGameState.getBackgroundId(k.sceneId);
     return `<button class="pill${k.id === currentBgKind ? ' active' : ''}" data-key="${k.id}">${escapeHtml(k.label)} ${has ? '✓' : '(사진 없음)'}</button>`;
@@ -1114,7 +1129,8 @@ function renderPreview(url) {
   el.previewPanel.classList.remove('hidden');
   el.previewImg.src = url;
   const scene = currentScene();
-  el.previewType.textContent = scene ? scene.name + (currentBgKind === 'minigame' ? ' · 미니게임' : '') : '';
+  const kind = scene ? backgroundKinds(scene).find(k => k.id === currentBgKind) : null;
+  el.previewType.textContent = scene ? scene.name + (kind && kind.id !== 'scene' ? ' · ' + kind.label : '') : '';
   el.previewFile.textContent = pendingFile.name;
   el.previewSize.textContent = `${pendingFile.width} × ${pendingFile.height}`;
 }

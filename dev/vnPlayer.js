@@ -20,11 +20,18 @@
      player.presentEvidence(evidenceId); the engine checks it against
      line.evidenceIds, reports the result via onEvidenceResult(correct,
      evidenceId, line), and only advances (to line.correctGoto or the
-     next line) once a correct id is presented. */
+     next line) once a correct id is presented.
+   - line.sceneTransition: marks a line as the start of a new location
+     inside a merged, multi-location scene (see dialogueData.js's
+     week0-scene-flight/week0-scene-002-1 for authored examples). Before
+     typing the line's text, the engine calls onSceneTransition(transition,
+     line) and waits for it (a Promise) — the host uses this to play its
+     own black-overlay/background-swap beat. Tapping is ignored for the
+     duration, same as an in-flight pauseBeforeMs delay. */
 
 const DEFAULT_TYPING_SPEED_MS = 28;
 
-function createVNPlayer({ onLineChange, onTextUpdate, onArrow, onComplete, onEffect, onChoicePrompt, onEvidencePrompt, onEvidenceResult }) {
+function createVNPlayer({ onLineChange, onTextUpdate, onArrow, onComplete, onEffect, onChoicePrompt, onEvidencePrompt, onEvidenceResult, onSceneTransition }) {
   let lines = [];
   let idIndex = new Map();
   let currentIndex = 0;
@@ -89,7 +96,16 @@ function createVNPlayer({ onLineChange, onTextUpdate, onArrow, onComplete, onEff
     awaitingEvidence = false;
     onLineChange(line, index, lines.length);
     if (line.effects && onEffect) onEffect(line.effects, line);
-    typeText(line.text || '', line.typingSpeedMs, line);
+    if (line.sceneTransition && onSceneTransition) {
+      isPausing = true;
+      onArrow(false);
+      Promise.resolve(onSceneTransition(line.sceneTransition, line)).then(() => {
+        isPausing = false;
+        typeText(line.text || '', line.typingSpeedMs, line);
+      });
+    } else {
+      typeText(line.text || '', line.typingSpeedMs, line);
+    }
   }
 
   function load(newLines, startIndex) {

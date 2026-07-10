@@ -1,7 +1,8 @@
 /* OPERATION MK — WEEK 0 · SCENE 01 v4 「진짜 왔네」
    Dialogue Set: dialogue-week0-scene001-v4
    Scene: week0-scene-001 (Sydney Airport Arrival Area, 09:30)
-   Loaded into /dev/game for VN UX testing. */
+   Merged into week0-scene-flight (see that scene's header comment) — its
+   first line below carries the sceneTransition into this location. */
 
 // role 'protagonist' gets its own dedicated CharacterTransform; every other
 // role shares one common default transform (see DevGameState in assetDb.js) —
@@ -53,7 +54,13 @@ const MINIGAME_FACE_EXPRESSION = 'minigame-face';
    Dialogue Set: dialogue-week0-scene-flight
    Scene: week0-scene-flight (In flight, 10 minutes before landing)
    No mystery here — per the brief, 0주차 opens on anticipation and reunion,
-   not plot. This is purely the "지수 시점 오프닝 + 카톡" beat. */
+   not plot. This is purely the "지수 시점 오프닝 + 카톡" beat.
+   Merged with week0Scene001Lines below (both part of the same "도착" beat,
+   no minigame in between) — the location change from In Flight to Sydney
+   Airport Arrival Area is carried by a `sceneTransition` marker on that
+   array's first line instead of a scene-list split. See week0Scenes'
+   week0-scene-flight entry (locations: [...]) for the two background slots
+   this scene now needs. */
 const week0SceneFlightLines = [
   { id: 'line-001', speaker: '', text: '시드니 상공.\n착륙 10분 전.', characterId: null },
   { id: 'line-002', speaker: '', text: '창밖으로 구름 아래 도시의 불빛이 하나둘 보이기 시작했다.', characterId: null },
@@ -75,7 +82,10 @@ const week0SceneFlightLines = [
 // anyone, stays on screen for that beat — keeps the portrait from flickering
 // out and back in across a beat with no line of its own.
 const week0Scene001Lines = [
-  { id: 'line-001', speaker: '', text: '시드니 공항.\n오전 9시 30분.', characterId: null },
+  {
+    id: 'line-001', speaker: '', text: '시드니 공항.\n오전 9시 30분.', characterId: null,
+    sceneTransition: { backgroundKey: 'week0-scene-flight--arrival', introLabel: 'SYDNEY', time: '09:30' },
+  },
   { id: 'line-002', speaker: '', text: '긴 비행 끝에 도착한 지수는\n도착 게이트 앞에서 같은 곳을 네 번째로 둘러보고 있었다.', characterId: null },
   { id: 'line-003', speaker: '지수', text: '아 진짜.\n어디 있는 거야 대체.', characterId: 'jisoo', expression: 'annoyed' },
   { id: 'line-004', speaker: '지수', text: '분명 바로 보인댔는데.\n그 바로가 대체 누구 기준이야.', characterId: 'jisoo', expression: 'annoyed' },
@@ -261,9 +271,12 @@ const week0Scene001Lines = [
 /* OPERATION MK — WEEK 0 · SCENE 05 「진짜 같이 있네」
    Dialogue Set: dialogue-week0-scene002-1
    Scene: week0-scene-002-1 (Sydney Accommodation, 20:18)
-   Ends heading out to dinner (week0-scene-dinner) — no nextSceneId/minigame
-   handoff here anymore. The phone goes missing later that night, in
-   week0-scene-charger, after dinner. */
+   Merged with week0SceneDinnerLines + week0SceneChargerLines below (no
+   minigame in between) into one registry entry — heading out to dinner and
+   back are both plain location changes now, carried by `sceneTransition`
+   markers on those arrays' first lines instead of separate scene-list
+   entries. The phone goes missing later that night, in the charger portion,
+   which still ends on its own minigame handoff. */
 const week0Scene002_1Lines = [
   { id: 'line-001', speaker: '', text: '숙소.\n오후 8시 18분.', characterId: null },
   { id: 'line-002', speaker: '', text: '공항에서 나온 뒤,\n두 사람은 늦은 저녁을 간단히 먹고 숙소에 도착했다.', characterId: null },
@@ -370,9 +383,14 @@ const week0Scene002_1Lines = [
    Dialogue Set: dialogue-week0-scene-dinner
    Scene: week0-scene-dinner (근처 식당, 21:10)
    No mystery — per the brief, just food/photos/a short tired spat that
-   resolves fast. */
+   resolves fast. Merged into week0-scene-002-1 (see that scene's header
+   comment) — its first line below carries the sceneTransition into this
+   location. */
 const week0SceneDinnerLines = [
-  { id: 'line-001', speaker: '', text: '숙소 근처 작은 식당.\n오후 9시 10분.', characterId: null },
+  {
+    id: 'line-001', speaker: '', text: '숙소 근처 작은 식당.\n오후 9시 10분.', characterId: null,
+    sceneTransition: { backgroundKey: 'week0-scene-002-1--dinner', introLabel: 'DINNER', time: '21:10' },
+  },
   { id: 'line-002', speaker: '', text: '영우가 미리 봐뒀다던 곳은\n생각보다 훨씬 아늑했다.', characterId: null },
   { id: 'line-003', speaker: '지수', text: '여기 냄새 미쳤다.', characterId: 'jisoo', expression: 'happy' },
   { id: 'line-004', speaker: '영우', text: '그치?\n여기 로컬들만 아는 데래.', characterId: 'youngwoo', expression: 'smirk' },
@@ -405,9 +423,15 @@ const week0SceneDinnerLines = [
    ROOM_SEARCH_CORE_ITEM_HOTSPOTS) — this scene doesn't award it directly,
    just supplies the reason both the phone AND "that glint" need looking for.
    Ends on a MINIGAME START beat — nextSceneId hands off to the existing
-   point-and-click phone-hunt scene, week0-scene-002-2. */
+   point-and-click phone-hunt scene, week0-scene-002-2. Merged into
+   week0-scene-002-1 (see that scene's header comment) — its first line
+   below carries the sceneTransition back into the accommodation, reusing
+   that scene's own default background key since it's the same room. */
 const week0SceneChargerLines = [
-  { id: 'line-001', speaker: '', text: '숙소.\n밤 10시 30분.', characterId: null },
+  {
+    id: 'line-001', speaker: '', text: '숙소.\n밤 10시 30분.', characterId: null,
+    sceneTransition: { backgroundKey: 'week0-scene-002-1', introLabel: 'ACCOMMODATION', time: '22:30' },
+  },
   { id: 'line-002', speaker: '', text: '저녁을 먹고 돌아온 두 사람은\n잘 준비를 시작했다.', characterId: null },
   { id: 'line-003', speaker: '지수', text: '폰 충전 좀 할게요.', characterId: 'jisoo', expression: 'neutral' },
   { id: 'line-004', speaker: '', text: '지수가 충전기를 꽂으려다\n케이블이 발에 걸려 놓친다.', characterId: 'jisoo', expression: 'curious' },
@@ -792,33 +816,39 @@ function mergeLines(...lineArrays) {
 // the story doc) — 비행기 오프닝부터 첫날 밤 마무리까지, including the M.K.
 // engraving reveal that seeds the entire 4-week mystery.
 //
-// Grouped by location rather than by time slice — consecutive scenes at the
-// same place are merged into one entry (see mergeLines above) so the list
-// isn't split on every clock-time change. A scene keeps its own entry when
-// the location changes, or when it hands off to a minigame (nextSceneId) —
-// that handoff always has to be the last beat of an entry.
+// Grouped into 3 beats (week0SceneGroups below: #1-2, #3-5, #6-12) rather
+// than one entry per original scene/time-slice. A scene only keeps its own
+// registry entry when it hands off to a minigame (nextSceneId) — that
+// handoff always has to be the last beat of an entry, since a minigame is a
+// separate routed page, not a `lines` array. A plain location change inside
+// a merged entry (e.g. In Flight -> Sydney Airport Arrival Area) is instead
+// carried by a `sceneTransition` marker on the first line of the new
+// location (see mergeLines above for how ids get renumbered across the
+// merge, and playSceneTransition in game/index.html for the black-card
+// beat it triggers). Each such scene also declares a `locations` array
+// naming every background slot it now needs — one per location segment,
+// each its own virtual scene-id key, same one-slot-per-id pattern
+// minigameId already used for a scene's separate minigame background.
 const week0Scenes = [
   {
     id: 'week0-scene-flight',
     order: 1,
-    name: '시드니 상공',
+    name: '시드니 상공 · 진짜 왔네',
     location: 'In Flight',
     introLabel: 'IN FLIGHT',
     time: '착륙 10분 전',
-    lines: week0SceneFlightLines,
-  },
-  {
-    id: 'week0-scene-001',
-    order: 2,
-    name: '진짜 왔네',
-    location: 'Sydney Airport Arrival Area',
-    introLabel: 'SYDNEY',
-    time: '09:30',
-    lines: week0Scene001Lines,
+    // Merged week0-scene-flight + week0-scene-001 (no minigame between them) —
+    // week0Scene001Lines' first line carries the sceneTransition into the
+    // second location below.
+    locations: [
+      { key: 'week0-scene-flight', label: 'In Flight' },
+      { key: 'week0-scene-flight--arrival', label: 'Sydney Airport Arrival Area' },
+    ],
+    lines: mergeLines(week0SceneFlightLines, week0Scene001Lines),
   },
   {
     id: 'week0-scene-001-2',
-    order: 3,
+    order: 2,
     name: '지하철 역 찾기',
     location: 'Sydney Airport Station',
     introLabel: 'SYDNEY',
@@ -836,7 +866,7 @@ const week0Scenes = [
   },
   {
     id: 'week0-scene-001-2-minigame',
-    order: 4,
+    order: 3,
     name: '지하철 역 찾기 (미니게임)',
     location: 'Sydney Airport Station',
     time: '09:50',
@@ -844,7 +874,7 @@ const week0Scenes = [
   },
   {
     id: 'week0-scene-train',
-    order: 5,
+    order: 4,
     name: '열차 — 밀린 이야기',
     location: 'Sydney Trains',
     introLabel: 'SYDNEY TRAINS',
@@ -853,37 +883,29 @@ const week0Scenes = [
   },
   {
     id: 'week0-scene-002-1',
-    order: 6,
-    name: '진짜 같이 있네',
+    order: 5,
+    name: '진짜 같이 있네 · 첫날 저녁 · 떨어진 충전기',
     location: 'Sydney Accommodation',
     introLabel: 'ACCOMMODATION',
     time: '20:18',
-    lines: week0Scene002_1Lines,
-  },
-  {
-    id: 'week0-scene-dinner',
-    order: 7,
-    name: '첫날 저녁',
-    location: 'Restaurant near Accommodation',
-    introLabel: 'DINNER',
-    time: '21:10',
-    lines: week0SceneDinnerLines,
-  },
-  {
-    id: 'week0-scene-charger',
-    order: 8,
-    name: '떨어진 충전기',
-    location: 'Sydney Accommodation',
-    introLabel: 'ACCOMMODATION',
-    time: '22:30',
-    lines: week0SceneChargerLines,
+    // Merged week0-scene-002-1 + week0-scene-dinner + week0-scene-charger —
+    // dinner and the trip back are plain location changes now (see
+    // sceneTransition markers on week0SceneDinnerLines/week0SceneChargerLines'
+    // first lines), not minigame boundaries, so they no longer need their
+    // own registry entries. Still ends on charger's own minigame handoff —
+    // that has to stay the last beat of this entry.
+    locations: [
+      { key: 'week0-scene-002-1', label: 'Sydney Accommodation' },
+      { key: 'week0-scene-002-1--dinner', label: 'Restaurant near Accommodation' },
+    ],
+    lines: mergeLines(week0Scene002_1Lines, week0SceneDinnerLines, week0SceneChargerLines),
     // Not a loop — this scene hands off to the point-and-click phone-hunt
     // minigame (week0-scene-002-2). See MINIGAME_ROUTES in game/index.html.
     nextSceneId: 'week0-scene-002-2',
   },
   {
     id: 'week0-scene-002-2',
-    order: 9,
+    order: 6,
     name: '핸드폰을 찾아라',
     location: 'Sydney Accommodation',
     time: '22:35',
@@ -895,7 +917,7 @@ const week0Scenes = [
   },
   {
     id: 'week0-scene-002-3',
-    order: 10,
+    order: 7,
     name: '근데 이 열쇠 뭐지? · 집주인과의 통화 · 첫날 밤',
     location: 'Sydney Accommodation',
     introLabel: 'ACCOMMODATION',
@@ -910,6 +932,19 @@ const week0Scenes = [
     // call from the room — see week0SceneFrontdeskLines' header comment).
     lines: mergeLines(week0Scene002_3Lines, week0SceneFrontdeskLines, week0SceneFirstNightLines),
   },
+];
+
+// 0주차's 3 narrative beats — /dev/week0 groups week0Scenes under these
+// headers instead of one flat list, each range naming the original (pre-
+// merge) scene numbers it covers. A group's sceneIds list its member
+// registry entries in play order, minigames included in sequence alongside
+// the VN scenes around them — a minigame can never be folded into a single
+// `lines` array (it's a separate routed page), so it stays its own entry
+// even inside a group whose other members got merged.
+const week0SceneGroups = [
+  { range: '#1-2', label: '공항 도착', sceneIds: ['week0-scene-flight'] },
+  { range: '#3-5', label: '지하철 · 열차', sceneIds: ['week0-scene-001-2', 'week0-scene-001-2-minigame', 'week0-scene-train'] },
+  { range: '#6-12', label: '숙소 첫날', sceneIds: ['week0-scene-002-1', 'week0-scene-002-2', 'week0-scene-002-3'] },
 ];
 
 /* OPERATION MK — WEEK 1 · SCENE 01 「시티로 출발」

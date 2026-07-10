@@ -320,8 +320,11 @@ function setCharacterAsset(asset) {
   }
 }
 
-async function applyBackground() {
-  const bgAsset = await AssetDB.getAsset(DevGameState.getBackgroundId(activeSceneData.id));
+// `backgroundKey` defaults to the scene's own id — pass a different key
+// (e.g. a location-segment key from scene.locations) to swap in a
+// different background without leaving the scene, for playSceneTransition.
+async function applyBackground(backgroundKey) {
+  const bgAsset = await AssetDB.getAsset(DevGameState.getBackgroundId(backgroundKey || activeSceneData.id));
   if (bgAsset) await AssetDB.preloadImage(bgAsset.dataUrl);
   setBackground(bgAsset);
 }
@@ -400,9 +403,16 @@ function updateArrow(show) {
   el.tapArrow.classList.toggle('show', !!show);
 }
 
-// 화면 암전 → 장소/시간 타자기 효과 → 0.8초 정지 → 배경 등장.
-function playIntro() {
-  const text = `${activeSceneData.introLabel}\n${activeSceneData.time}`;
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Typewriter effect for the intro-overlay's black card, shared by playIntro
+// (scene start) and playSceneTransition (mid-scene location change) below.
+// Resolves 0.8s after the last character lands, matching the original
+// "화면 암전 → 장소/시간 타자기 효과 → 0.8초 정지 → 배경 등장" beat.
+function typeIntroCard(text) {
+  el.introCard.textContent = '';
   return new Promise(resolve => {
     let i = 0;
     const timer = setInterval(() => {
@@ -410,13 +420,33 @@ function playIntro() {
       el.introCard.textContent = text.slice(0, i);
       if (i >= text.length) {
         clearInterval(timer);
-        setTimeout(() => {
-          el.introOverlay.classList.add('hidden');
-          resolve();
-        }, 800);
+        setTimeout(resolve, 800);
       }
     }, 70);
   });
+}
+
+// 화면 암전 → 장소/시간 타자기 효과 → 0.8초 정지 → 배경 등장.
+async function playIntro() {
+  await typeIntroCard(`${activeSceneData.introLabel}\n${activeSceneData.time}`);
+  el.introOverlay.classList.add('hidden');
+}
+
+// Mid-scene location change inside a merged, multi-location scene (see
+// dialogueData.js lines carrying a `sceneTransition` marker, e.g.
+// week0-scene-flight/week0-scene-002-1) — vnPlayer.js awaits this before
+// typing that line's text. Reuses the same black-card beat as playIntro(),
+// but the overlay starts hidden here, so it has to fade in first (matching
+// .intro-overlay's own .5s CSS transition) before the card starts typing,
+// and it swaps in the new location's background — stored under its own
+// virtual scene-id key, same one-slot-per-id pattern minigameId already
+// uses — while the screen is still black.
+async function playSceneTransition(transition) {
+  el.introOverlay.classList.remove('hidden');
+  await sleep(500);
+  await typeIntroCard(`${transition.introLabel}\n${transition.time}`);
+  await applyBackground(transition.backgroundKey);
+  el.introOverlay.classList.add('hidden');
 }
 
 // 마지막 대사 직전: 배경이 서서히 어두워지고, 짧은 진동과 함께 화면 우측 아래에
@@ -431,10 +461,12 @@ function playEndingSequence() {
   }, 900);
 }
 
-// Scene 001 has no nextSceneId and just loops (onComplete -> restart()), so
-// its "UNKNOWN SIGNAL" foreshadowing beat plays on every loop. A scene with
-// nextSceneId hands off elsewhere instead (e.g. into a minigame) and skips
-// that beat — it's tonally specific to scene 001's ending, not a generic one.
+// week0-scene-flight (formerly scene 001 alone, now merged with it — see
+// dialogueData.js) has no nextSceneId and just loops (onComplete ->
+// restart()), so its "UNKNOWN SIGNAL" foreshadowing beat plays on every
+// loop. A scene with nextSceneId hands off elsewhere instead (e.g. into a
+// minigame) and skips that beat — it's tonally specific to that scene's
+// ending, not a generic one.
 //
 // Each built minigame gets its own standalone page (not routed through
 // /dev/game, since gameplay differs too much from tap-to-advance dialogue).
@@ -587,6 +619,7 @@ const player = createVNPlayer({
       showEvidenceToast(line.wrongText || '그건 아닌 것 같아요...', false);
     }
   },
+  onSceneTransition: (transition) => playSceneTransition(transition),
   onComplete: () => {
     if (activeSceneData.nextSceneId) {
       playMinigameTransition(activeSceneData.nextSceneId);
