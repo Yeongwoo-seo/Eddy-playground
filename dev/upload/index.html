@@ -1117,8 +1117,13 @@ function onFilesSelected(files) {
         pendingFile = { blob: file, name: file.name, width: img.naturalWidth, height: img.naturalHeight };
         renderPreview(url);
       }
+    } else if (currentType === 'character') {
+      // 인물 DB skips the manual 배경 제거/자르기/저장 steps entirely — see
+      // autoRegisterCharacterPhoto below.
+      imageEditorTarget = 'character';
+      await autoRegisterCharacterPhoto(file, url, img);
     } else {
-      imageEditorTarget = currentType; // 'character' | 'minigameFace'
+      imageEditorTarget = currentType; // 'minigameFace'
       openCharEditor(file, url, img);
     }
   };
@@ -1135,8 +1140,10 @@ function renderPreview(url) {
   el.previewSize.textContent = `${pendingFile.width} × ${pendingFile.height}`;
 }
 
-// Only reachable for backgrounds now — character uploads go through the
-// crop editor below, which saves the framing itself.
+// Only reachable for backgrounds now — 미니게임 얼굴/아이템 uploads go
+// through the crop editor below, which saves the framing itself, and 인물 DB
+// uploads register themselves via autoRegisterCharacterPhoto without ever
+// showing a save button.
 async function saveAsset() {
   if (!pendingFile || !currentScene()) return;
   try {
@@ -1190,8 +1197,108 @@ function openCharEditor(file, url, img) {
   el.bgRemoveBtn.classList.remove('done');
   el.cropEditor.classList.add('hidden');
   el.charEditorPanel.classList.remove('hidden');
+  el.cropEnterBtn.style.display = '';
   el.cropEnterBtn.textContent = CROP_ENTER_LABELS[imageEditorTarget];
   if (imageEditorTarget === 'item') el.charEditorPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// Natural-pixel equivalent of enterCropMode/updateCropBoxFromZoom's box math
+// above — used by the 인물 DB auto-pipeline below, which never lays the crop
+// stage out in the DOM. The box's ratios are scale-invariant between display
+// space (nw*imgScale) and natural space, so given the same zoom/frac inputs
+// this reproduces exactly the frame the manual editor would have produced.
+// Returns both the crop rect and the frac values actually used (after
+// clamping), so callers can feed them back into lastCropSettingsByType.
+function autoCropBoxNatural(nw, nh, aspect, vAnchor, remembered) {
+  let maxBoxW, maxBoxH;
+  if (nw / nh > aspect) { maxBoxH = nh; maxBoxW = nh * aspect; }
+  else { maxBoxW = nw; maxBoxH = nw / aspect; }
+  const zoom = remembered ? remembered.zoom : 62;
+  const w = maxBoxW * (zoom / 100);
+  const h = maxBoxH * (zoom / 100);
+  let x = remembered ? (nw - w) * remembered.fracX : (nw - w) / 2;
+  let y = remembered ? (nh - h) * remembered.fracY : nh * vAnchor;
+  x = clamp(x, 0, nw - w);
+  y = clamp(y, 0, nh - h);
+  return {
+    x, y, w, h, zoom,
+    fracX: (nw - w) > 0 ? x / (nw - w) : 0.5,
+    fracY: (nh - h) > 0 ? y / (nh - h) : vAnchor,
+  };
+}
+
+// 인물 DB (currentType === 'character') uploads skip the manual 배경 제거
+// (누끼) → 자르기 → 저장 steps below entirely: dropping a photo in while a
+// character+expression is selected background-removes it, crops it to the
+// same framing (zoom + position) used for the last photo saved in this mode
+// — "현재 위치 기준" — or the default framing on the very first one, and
+// registers it as that character/expression's active portrait immediately.
+// Falls back to leaving the manual editor open (same as openCharEditor)
+// if the background-removal module or any step fails, so a bad photo never
+// gets silently registered and nothing already picked is lost.
+async function autoRegisterCharacterPhoto(file, url, img) {
+  workingBlob = file;
+  workingImgNatural = { width: img.naturalWidth, height: img.naturalHeight };
+  sourceFileBaseName = file.name.replace(/\.[^.]+$/, '');
+
+  el.editorImg.src = url;
+  el.charEditorPanel.classList.remove('hidden');
+  el.cropEditor.classList.add('hidden');
+  el.cropEnterBtn.style.display = 'none';
+  el.bgRemoveBtn.classList.remove('done');
+  el.bgRemoveBtn.disabled = true;
+  el.bgRemoveBtn.textContent = '모듈 확인 중...';
+
+  const fallbackToManual = (message) => {
+    DevDiag.show(message + ' — 아래에서 수동으로 진행해주세요.');
+    el.cropEnterBtn.style.display = '';
+    el.cropEnterBtn.textContent = CROP_ENTER_LABELS.character;
+    el.bgRemoveBtn.textContent = '배경 제거 (누끼)';
+    el.bgRemoveBtn.disabled = false;
+  };
+
+  await window.__removeBackgroundReady;
+  if (!window.__removeBackground) {
+    const reason = window.__removeBackgroundLoadError;
+    fallbackToManual('배경 제거 모듈 로드 실패: ' + (reason && reason.message ? reason.message : '네트워크 또는 CDN 문제로 모듈을 불러오지 못했습니다.'));
+    return;
+  }
+
+  el.bgRemoveBtn.textContent = '자동 처리 중: 배경 제거...';
+  try {
+    workingBlob = await window.__removeBackground(workingBlob);
+    el.editorImg.src = URL.createObjectURL(workingBlob);
+
+    el.bgRemoveBtn.textContent = '자동 처리 중: 자르기...';
+    const cropImgEl = await loadImageFromBlob(workingBlob);
+    const box = autoCropBoxNatural(cropImgEl.naturalWidth, cropImgEl.naturalHeight, activeCropAspect(), activeCropVAnchor(), lastCropSettingsByType.character);
+    const cropBlob = await cropImageElementToBlob(cropImgEl, box.x, box.y, box.w, box.h);
+    const croppedImg = await loadImageFromBlob(cropBlob);
+    lastCropSettingsByType.character = { zoom: box.zoom, fracX: box.fracX, fracY: box.fracY };
+
+    el.bgRemoveBtn.textContent = '자동 처리 중: 등록...';
+    const exprLabel = dialogueExpressions.find(x => x.id === currentExpression).label;
+    const name = `${sourceFileBaseName} (${exprLabel}).png`;
+    const record = await AssetDB.addAsset({ type: 'character', name, blob: cropBlob, width: croppedImg.naturalWidth, height: croppedImg.naturalHeight, characterKey: currentCharacterKey, expression: currentExpression });
+    // Only one photo per (character, expression) is actually rendered — the
+    // newest upload for this pair becomes the active one automatically.
+    DevGameState.setCharacterAssetId(currentCharacterKey, currentExpression, record.id);
+  } catch (err) {
+    // Nothing was registered yet at this point, so it's safe to send the
+    // user back to the manual editor to retry with the same photo.
+    fallbackToManual('자동 등록 실패: ' + (err && err.message ? err.message : err));
+    return;
+  }
+  // The photo is already registered at this point — close the editor
+  // regardless of what happens next. A refreshList() failure below is just a
+  // stale-looking list (fixed by the next successful load), not a reason to
+  // reopen the editor and risk registering the same photo a second time.
+  clearPending();
+  try {
+    await refreshList();
+  } catch (err) {
+    DevDiag.show('목록 새로고침 실패 (사진은 정상 등록됨): ' + (err && err.message ? err.message : err));
+  }
 }
 
 el.bgRemoveBtn.addEventListener('click', async () => {
