@@ -461,17 +461,20 @@ function playEndingSequence() {
   }, 900);
 }
 
-// week0-scene-flight (formerly scene 001 alone, now merged with it — see
-// dialogueData.js) has no nextSceneId and just loops (onComplete ->
-// restart()), so its "UNKNOWN SIGNAL" foreshadowing beat plays on every
-// loop. A scene with nextSceneId hands off elsewhere instead (e.g. into a
-// minigame) and skips that beat — it's tonally specific to that scene's
-// ending, not a generic one.
+// week0-scene-002-3 (0주차's last scene, "0주차 종료.") is the only week0
+// scene left with no nextSceneId, so it's the only one that loops
+// (onComplete -> restart()) and gets this "UNKNOWN SIGNAL" foreshadowing
+// beat on every loop. Every other scene now chains into the next one via
+// nextSceneId (see dialogueData.js) so a real playthrough (시작하기 on
+// /play/test) taps straight through 0주차 instead of stopping at each
+// scene boundary — that handoff skips this beat, since it's tonally
+// specific to 0주차's actual ending, not a generic one.
 //
 // Each built minigame gets its own standalone page (not routed through
 // /dev/game, since gameplay differs too much from tap-to-advance dialogue).
-// A nextSceneId with no route here isn't built yet, so it just shows a
-// placeholder overlay instead of navigating to a dead page.
+// A nextSceneId with no route here and no matching VN scene isn't built
+// yet, so it just shows a placeholder overlay instead of navigating to a
+// dead page.
 const MINIGAME_ROUTES = {
   'week0-scene-001-2-minigame': '/dev/minigame-eastwood/',
   'week0-scene-002-2': '/dev/minigame-phone-search/',
@@ -479,10 +482,19 @@ const MINIGAME_ROUTES = {
   'week1-scene-008-minigame': '/dev/minigame-timeline/',
 };
 
+// Most nextSceneId handoffs are into a minigame (MINIGAME_ROUTES above), but
+// a plain location change with no minigame in between — e.g.
+// week0-scene-flight -> week0-scene-001-2 — hands off straight to another
+// VN scene instead, so a real playthrough (시작하기 on /play/test) taps
+// through the whole week without stopping at every scene boundary.
 function playMinigameTransition(nextSceneId) {
   const route = MINIGAME_ROUTES[nextSceneId];
   if (route) {
     location.href = route;
+    return;
+  }
+  if (allScenes.some(s => s.id === nextSceneId)) {
+    location.href = `/dev/game/?scene=${encodeURIComponent(nextSceneId)}`;
     return;
   }
   el.introCard.textContent = 'MINIGAME START';

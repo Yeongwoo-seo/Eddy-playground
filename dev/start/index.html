@@ -98,7 +98,10 @@ const el = {
   startResizeHandle: document.getElementById('startResizeHandle'),
 };
 
-function goToRealStart() { location.href = '/dev/week0/'; }
+// Straight into 0주차's first scene, not the /dev/week0 scene picker — same
+// entry point /play/test/'s 시작하기 uses, so positioning the button here
+// previews the real tap-through-the-whole-story flow, not a scene list.
+function goToRealStart() { location.href = '/dev/game/?scene=week0-scene-flight'; }
 
 /* ===== Background image + drag-to-pan position ===== */
 function loadBgPos() {
