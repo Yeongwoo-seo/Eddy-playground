@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>OPERATION MK · 전시장 둘러보기</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<meta name="theme-color" content="#080A0C">
+<link rel="manifest" href="/dev/manifest.json">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="OPERATION MK DEV">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+:root{
+  --bg:#080A0C;--surface-1:#101419;--surface-2:#171C22;
+  --text-primary:#EDF1F4;--text-secondary:#929BA5;--text-muted:#5F6872;
+  --cyan:#59B8C8;--amber:#D6A84B;--signal-red:#D94141;--divider:rgba(255,255,255,0.08);
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sans:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
+}
+html,body{height:100%;overflow:hidden}
+body{background:#000;color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center;align-items:center}
+.frame{position:relative;width:100%;max-width:430px;height:100dvh;height:100vh;height:var(--vh100, 100vh);max-height:932px;overflow:hidden;background:var(--bg);touch-action:none}
+
+/* ===== Top bar ===== */
+.topbar{position:absolute;top:0;left:0;right:0;z-index:6;padding:calc(14px + env(safe-area-inset-top,0)) 16px 10px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.vn-btn{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:#fff;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:9px 14px;cursor:pointer;text-decoration:none;display:inline-block;flex-shrink:0}
+.vn-btn:active{transform:scale(.96)}
+.progress-pill{font-family:var(--mono);font-size:11px;letter-spacing:.05em;color:#fff;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:9px 12px;white-space:nowrap}
+.progress-pill .n{color:var(--amber);font-weight:600}
+.progress-pill .req{color:var(--cyan);font-weight:600}
+
+/* ===== Room grid (grid-mode, same idiom as minigame-phone-search's
+   no-photo-yet fallback — this exhibition has no uploaded room photo, so
+   grid mode is the primary experience here, not a fallback) ===== */
+.grid-scroll{position:absolute;inset:0;overflow-y:auto;touch-action:pan-y;padding:calc(96px + env(safe-area-inset-top,0)) 16px calc(110px + env(safe-area-inset-bottom,0))}
+.grid-tag{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px}
+.grid-title{font-size:22px;font-weight:700;margin-bottom:8px}
+.grid-desc{font-size:13.5px;color:var(--text-secondary);line-height:1.6;margin-bottom:18px}
+.hotspot-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.hotspot-btn{position:relative;min-height:88px;background:var(--surface-1);border:1px solid var(--divider);border-radius:14px;padding:14px;color:var(--text-primary);font-family:inherit;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:8px;transition:background .15s,transform .15s}
+.hotspot-btn:active{transform:scale(.97);background:var(--surface-2)}
+.hotspot-btn.found{border-color:rgba(214,168,75,.4)}
+.hotspot-btn .hs-icon{font-size:22px}
+.hotspot-btn .hs-name{font-size:13.5px;font-weight:700;line-height:1.3}
+.hotspot-btn .hs-tag{position:absolute;top:10px;right:10px;font-family:var(--mono);font-size:9px;letter-spacing:.06em;color:var(--cyan);border:1px solid rgba(89,184,200,.35);border-radius:8px;padding:1px 6px}
+.hotspot-btn .hs-check{position:absolute;bottom:10px;right:10px;width:20px;height:20px;border-radius:50%;background:var(--amber);color:#211703;font-size:12px;font-weight:700;display:none;align-items:center;justify-content:center}
+.hotspot-btn.found .hs-check{display:flex}
+
+/* ===== Bottom exit bar — always available, never blocks (§20 게임오버 없음) ===== */
+.exit-bar{position:absolute;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0));z-index:6}
+.exit-btn{width:100%;font-family:var(--mono);font-size:13px;letter-spacing:.04em;color:#06181c;background:var(--cyan);border:none;border-radius:16px;padding:15px;font-weight:700;cursor:pointer}
+.exit-btn:active{opacity:.85}
+
+/* ===== Item-acquired toast (same idiom as minigame-phone-search) ===== */
+.acquire-toast{position:absolute;left:50%;top:38%;transform:translate(-50%,16px);z-index:7;background:rgba(5,7,10,.94);border:1px solid rgba(89,184,200,.4);border-radius:16px;padding:14px 20px;display:flex;align-items:center;gap:10px;opacity:0;pointer-events:none;transition:opacity .35s ease,transform .35s ease;box-shadow:0 12px 32px rgba(0,0,0,.5);max-width:80%}
+.acquire-toast.show{opacity:1;transform:translate(-50%,0)}
+.acquire-toast-icon{font-size:24px;line-height:1;flex-shrink:0}
+.acquire-toast-text{font-size:13.5px;font-weight:700;color:#fff;line-height:1.4}
+
+/* ===== Embedded VN popup (reused engine) — for the K-01 discovery beat,
+   the only hotspot with more than one line of back-and-forth. ===== */
+.msg-layer{position:absolute;inset:0;z-index:8;display:none;flex-direction:column;justify-content:flex-end;cursor:pointer;background:rgba(0,0,0,.45)}
+.msg-layer.show{display:flex}
+.msg-char-wrap{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;pointer-events:none;opacity:0;transition:opacity .2s ease}
+.msg-char-wrap.show{opacity:1}
+.msg-char-img{max-height:70%;max-width:84%;object-fit:contain;object-position:bottom}
+.msg-char-placeholder{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:38%;height:54%;opacity:.35;display:flex;align-items:flex-end;justify-content:center;color:var(--text-secondary)}
+.msg-char-placeholder svg{width:100%;height:100%}
+.msg-panel{position:relative;margin:0 16px calc(16px + env(safe-area-inset-bottom,0));background:rgba(5,7,10,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.1);border-radius:18px;box-shadow:0 8px 28px rgba(0,0,0,.35);padding:18px 20px;min-height:20vh;display:flex;flex-direction:column}
+.msg-name{font-size:15px;font-weight:700;color:var(--cyan);margin-bottom:8px}
+.msg-name:empty{display:none}
+.msg-text{flex:1;font-size:16px;line-height:1.65;color:#fff;white-space:pre-wrap;word-break:keep-all}
+.msg-foot{display:flex;justify-content:flex-end;padding-top:6px}
+.msg-arrow{font-size:13px;color:var(--text-secondary);visibility:hidden}
+@keyframes arrowBob{0%,100%{transform:translateY(0)}50%{transform:translateY(4px)}}
+.msg-arrow.show{visibility:visible;animation:arrowBob 1.1s ease-in-out infinite}
+
+/* ===== Success dialogue overlay (crowd rushes in -> hands off to theft scene) ===== */
+.success-layer{position:absolute;inset:0;z-index:9;display:none;flex-direction:column;justify-content:flex-end;cursor:pointer;background:rgba(0,0,0,.55)}
+.success-layer.show{display:flex}
+.success-char-wrap{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;pointer-events:none;opacity:0;transition:opacity .2s ease}
+.success-char-wrap.show{opacity:1}
+.success-char-img{max-height:74%;max-width:88%;object-fit:contain;object-position:bottom}
+.success-char-placeholder{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:40%;height:58%;opacity:.35;display:flex;align-items:flex-end;justify-content:center;color:var(--text-secondary)}
+.success-char-placeholder svg{width:100%;height:100%}
+.success-dlg{position:relative;margin:0 16px calc(16px + env(safe-area-inset-bottom,0));background:rgba(5,7,10,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.1);border-radius:18px;box-shadow:0 8px 28px rgba(0,0,0,.35);padding:18px 20px;min-height:22vh;display:flex;flex-direction:column}
+.success-name{font-size:15px;font-weight:700;color:var(--cyan);margin-bottom:8px}
+.success-name:empty{display:none}
+.success-text{flex:1;font-size:16px;line-height:1.65;color:#fff;white-space:pre-wrap;word-break:keep-all}
+.success-foot{display:flex;justify-content:flex-end;padding-top:6px}
+.success-arrow{font-size:13px;color:var(--text-secondary);visibility:hidden}
+.success-arrow.show{visibility:visible;animation:arrowBob 1.1s ease-in-out infinite}
+
+.fade-overlay{position:absolute;inset:0;z-index:10;background:#000;opacity:0;pointer-events:none;transition:opacity .9s ease}
+.fade-overlay.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="frame" id="frame">
+  <div class="topbar">
+    <a class="vn-btn" href="/dev/">← DEV</a>
+    <div class="progress-pill">필수 <span class="req" id="reqN">0</span>/<span id="reqTotal">3</span> · 선택 <span class="n" id="optN">0</span>/<span id="optTotal">7</span></div>
+  </div>
+
+  <div class="grid-scroll" id="gridScroll">
+    <div class="grid-tag">Operation MK · Pop-up Exhibition</div>
+    <div class="grid-title">전시장 자유 조사</div>
+    <div class="grid-desc">진열장을 하나씩 눌러서 살펴보세요. 표시 없는 항목까지 다 둘러보면 조사 보너스가 있어요. 언제든 아래 버튼으로 안쪽으로 들어갈 수 있어요.</div>
+    <div class="hotspot-grid" id="hotspotGrid"></div>
+  </div>
+
+  <div class="exit-bar">
+    <button class="exit-btn" id="exitBtn">이제 안쪽으로 들어가자</button>
+  </div>
+
+  <div class="acquire-toast" id="acquireToast">
+    <span class="acquire-toast-icon" id="acquireToastIcon">🔎</span>
+    <span class="acquire-toast-text" id="acquireToastText"></span>
+  </div>
+
+  <div class="msg-layer" id="msgLayer">
+    <div class="msg-char-wrap" id="msgCharWrap">
+      <img class="msg-char-img" id="msgCharImg" style="display:none" alt="">
+      <svg class="msg-char-placeholder" id="msgCharPlaceholder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>
+    </div>
+    <div class="msg-panel">
+      <div class="msg-name" id="msgName"></div>
+      <div class="msg-text" id="msgText"></div>
+      <div class="msg-foot"><span class="msg-arrow" id="msgArrow">▼</span></div>
+    </div>
+  </div>
+
+  <div class="success-layer" id="successLayer">
+    <div class="success-char-wrap" id="successCharWrap">
+      <img class="success-char-img" id="successCharImg" style="display:none" alt="">
+      <svg class="success-char-placeholder" id="successCharPlaceholder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>
+    </div>
+    <div class="success-dlg">
+      <div class="success-name" id="successName"></div>
+      <div class="success-text" id="successText"></div>
+      <div class="success-foot"><span class="success-arrow" id="successArrow">▼</span></div>
+    </div>
+  </div>
+
+  <div class="fade-overlay" id="fadeOverlay"></div>
+</div>
+
+<script>
+function setVh100() { document.documentElement.style.setProperty('--vh100', window.innerHeight + 'px'); }
+setVh100();
+window.addEventListener('resize', setVh100);
+window.addEventListener('orientationchange', setVh100);
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
+}
+</script>
+<script src="/dev/assetDb.js"></script>
+<script src="/dev/dialogueData.js"></script>
+<script src="/dev/caseFileData.js"></script>
+<script src="/dev/caseFileState.js"></script>
+<script src="/dev/vnPlayer.js"></script>
+<script>
+/* ===== 전시장 자유 조사 — week1-scene-003-minigame =====
+   1주차 대사에 있던 텍스트 선택지 루프(hotspot-menu) 대신, minigame-phone-
+   search와 같은 "그리드 핫스팟 탐색 + 증거 획득 토스트" 형태로 재구현한
+   것. 실제 업로드된 전시장 사진/핫스팟 좌표가 아직 없어서(전용 마킹
+   파이프라인 필요) phone-search가 사진 없을 때 쓰는 grid-mode를 기본
+   경험으로 삼는다 — 나중에 실제 사진이 생기면 photo-stage 모드를 추가할 수
+   있는 자리는 남겨뒀다.
+   K-01만 유일하게 여러 줄짜리 회화(발견 비트)라 vnPlayer를 재사용한 msg-
+   layer 팝업으로 처리하고, 나머지 9개는 짧은 한 줄 반응 + 토스트로 끝낸다.
+   필수 3개(K-01/접수대/출입구)는 게임을 막지 않되, 완료 후에만 "조사
+   보너스" 조건(§ 선택 3개 이상)을 확인한다. */
+const HOTSPOTS = [
+  {
+    id: 'camera', icon: '📷', name: '오래된 필름 카메라', required: false,
+    line: '접이식 빈티지 카메라. 렌즈 캡이 없어 안쪽이 살짝 뿌옇다.',
+  },
+  {
+    id: 'watch', icon: '⏱️', name: '은제 회중시계', required: false,
+    line: '은제 회중시계. 뒷면에 낯선 이니셜이 새겨져 있는데, 이 열쇠와는 다른 이니셜이다.',
+  },
+  {
+    id: 'k01', icon: '🔶', name: '황동 장치 K-01', required: true,
+    special: 'k01', // handled separately — triggers the multi-line discovery beat
+  },
+  {
+    id: 'desk', icon: '🗂️', name: '접수대', required: true,
+    line: '접수대. 안내 책자와 방명록, 작은 태그 몇 개가 놓여 있다.',
+  },
+  {
+    id: 'tag', icon: '🏷️', name: '직원용 태그', required: false,
+    line: '직원용 태그 — 접수대 오른쪽에 놓여 있다. 진열장을 정리할 때 쓰는 것 같다.',
+    evidence: {
+      id: 'evidence-staff-tag-position-before', code: 'E-H01', title: '직원용 태그 위치 (사건 전)',
+      description: '사건이 일어나기 전, 직원용 태그는 접수대 오른쪽에 놓여 있었다.',
+    },
+  },
+  {
+    id: 'staffdoor', icon: '🚪', name: '직원 전용문', required: false,
+    line: '직원 전용문. "관계자 외 출입 금지"라고 적혀 있다. 살짝 닫혀 있다.',
+  },
+  {
+    id: 'pamphlet', icon: '📄', name: '안내 팸플릿', required: false,
+    line: '안내 팸플릿. K-01 항목 옆에 "판매 불가 · 전시 전용" 표시가 있다.',
+    evidence: {
+      id: 'evidence-k01-not-for-sale', code: 'E-H02', title: 'K-01 팸플릿 표기',
+      description: '안내 팸플릿에는 K-01이 "판매 불가 · 전시 전용" 물품으로 표기되어 있다. 단순 되팔기 목적의 충동 절도라면 이상한 선택이다.',
+    },
+  },
+  {
+    id: 'guestbook', icon: '📖', name: '방문객 방명록', required: false,
+    line: '오늘 자 방명록 어디에도 "레오"로 추정되는 이름이 없다.',
+    evidence: {
+      id: 'evidence-guestbook-no-leo', code: 'E-H03', title: '방명록 — 레오 이름 없음',
+      description: '오늘 자 방명록 어디에도 "레오"로 추정되는 이름이 없다.',
+    },
+  },
+  {
+    id: 'ceiling', icon: '🎥', name: '천장 보안카메라', required: false,
+    line: '천장 보안카메라가 진열장 정면이 아니라 출입구 쪽을 향해 있다.',
+    evidence: {
+      id: 'evidence-cctv-angle', code: 'E-H04', title: '보안카메라 각도',
+      description: '천장 보안카메라가 K-01 진열장 정면이 아니라 출입구 쪽을 향해 있다. 진열장 근처는 사각지대에 가깝다.',
+    },
+  },
+  {
+    id: 'entrance', icon: '🚶', name: '출입구 주변', required: true,
+    line: '사람들이 끊임없이 들고 난다. 바로 옆 골목엔 작은 카페가 보인다.',
+  },
+];
+const REQUIRED_IDS = HOTSPOTS.filter(h => h.required).map(h => h.id);
+const OPTIONAL_TOTAL = HOTSPOTS.filter(h => !h.required).length;
+const BONUS_THRESHOLD = 3;
+
+let foundIds = new Set();
+let k01DiscoveryPlayed = false;
+
+const el = {
+  reqN: document.getElementById('reqN'),
+  reqTotal: document.getElementById('reqTotal'),
+  optN: document.getElementById('optN'),
+  optTotal: document.getElementById('optTotal'),
+  hotspotGrid: document.getElementById('hotspotGrid'),
+  exitBtn: document.getElementById('exitBtn'),
+  acquireToast: document.getElementById('acquireToast'),
+  acquireToastIcon: document.getElementById('acquireToastIcon'),
+  acquireToastText: document.getElementById('acquireToastText'),
+  msgLayer: document.getElementById('msgLayer'),
+  msgCharWrap: document.getElementById('msgCharWrap'),
+  msgCharImg: document.getElementById('msgCharImg'),
+  msgCharPlaceholder: document.getElementById('msgCharPlaceholder'),
+  msgName: document.getElementById('msgName'),
+  msgText: document.getElementById('msgText'),
+  msgArrow: document.getElementById('msgArrow'),
+  successLayer: document.getElementById('successLayer'),
+  successCharWrap: document.getElementById('successCharWrap'),
+  successCharImg: document.getElementById('successCharImg'),
+  successCharPlaceholder: document.getElementById('successCharPlaceholder'),
+  successName: document.getElementById('successName'),
+  successText: document.getElementById('successText'),
+  successArrow: document.getElementById('successArrow'),
+  fadeOverlay: document.getElementById('fadeOverlay'),
+};
+
+function requiredFoundCount() { return REQUIRED_IDS.filter(id => foundIds.has(id)).length; }
+function optionalFoundCount() { return HOTSPOTS.filter(h => !h.required && foundIds.has(h.id)).length; }
+
+function updateProgressUi() {
+  el.reqN.textContent = requiredFoundCount();
+  el.optN.textContent = optionalFoundCount();
+}
+
+function renderGrid() {
+  el.hotspotGrid.innerHTML = HOTSPOTS.map(h => `
+    <button class="hotspot-btn${foundIds.has(h.id) ? ' found' : ''}" data-id="${h.id}">
+      ${h.required ? '<span class="hs-tag">필수</span>' : ''}
+      <span class="hs-icon">${h.icon}</span>
+      <span class="hs-name">${h.name}</span>
+      <span class="hs-check">✓</span>
+    </button>
+  `).join('');
+  el.hotspotGrid.querySelectorAll('.hotspot-btn').forEach(btn => {
+    btn.addEventListener('click', () => onHotspotTap(btn.dataset.id));
+  });
+}
+
+let acquireToastTimer = null;
+function showAcquireToast(icon, text) {
+  el.acquireToastIcon.textContent = icon;
+  el.acquireToastText.textContent = text;
+  el.acquireToast.classList.add('show');
+  clearTimeout(acquireToastTimer);
+  acquireToastTimer = setTimeout(() => el.acquireToast.classList.remove('show'), 1800);
+}
+
+function onHotspotTap(id) {
+  const hotspot = HOTSPOTS.find(h => h.id === id);
+  if (hotspot.special === 'k01') { onK01Tap(); return; }
+  if (foundIds.has(id)) {
+    showAcquireToast(hotspot.icon, '다시 봐도 똑같다.');
+    return;
+  }
+  foundIds.add(id);
+  if (hotspot.evidence) CaseFileState.addEvidence(hotspot.evidence);
+  showAcquireToast(hotspot.icon, hotspot.line);
+  renderGrid();
+  updateProgressUi();
+}
+
+/* ===== K-01 — the one hotspot with a real back-and-forth, reusing vnPlayer
+   the same way minigame-phone-search's msg-layer/queueDialogue does. ===== */
+const K01_DISCOVERY_LINES = [
+  { speaker: '지수', text: '어?\n영우야, 이거 봐요.', characterId: 'jisoo', expression: 'shocked' },
+  { speaker: '영우', text: '왜?', characterId: 'youngwoo', expression: 'curious' },
+  { speaker: '지수', text: '이 작은 황동 장치.\n재질이 그때 그 열쇠랑 되게 비슷하지 않아요?', characterId: 'jisoo', expression: 'suspicious' },
+  { speaker: '영우', text: '어디...\n오, 진짜 비슷하네.', characterId: 'youngwoo', expression: 'curious' },
+  { speaker: '', text: '[ 작은 황동 장치 · 카탈로그 번호 K-01 ]', characterId: null },
+  { speaker: '지수', text: '이름표 봐요.\nK 다시 01.', characterId: 'jisoo', expression: 'curious' },
+  { speaker: '영우', text: '그냥 정리 번호 아니야?', characterId: 'youngwoo', expression: 'blank' },
+  { speaker: '지수', text: '알아요.\n근데 그냥 넘어가긴 좀 아깝잖아요.', characterId: 'jisoo', expression: 'smirk' },
+  { speaker: '', text: '지수가 폰을 꺼내 사진을 찍는다.', characterId: 'jisoo', expression: 'curious' },
+  { speaker: '영우', text: '이제 그거 취미야?', characterId: 'youngwoo', expression: 'curious' },
+  { speaker: '지수', text: '기록이죠, 기록.', characterId: 'jisoo', expression: 'smirk' },
+];
+const K01_REVISIT_LINE = ['지수', '이거 진짜 눈에 자꾸 밟히네요.'];
+
+let msgPortraitToken = 0;
+async function updateMsgPortrait(characterId, expression) {
+  const token = ++msgPortraitToken;
+  if (!characterId) { el.msgCharWrap.classList.remove('show'); return; }
+  el.msgCharWrap.classList.add('show');
+  const assetId = DevGameState.getCharacterAssetId(characterId, expression);
+  const asset = await AssetDB.getAsset(assetId).catch(() => null);
+  if (token !== msgPortraitToken) return;
+  if (asset && asset.dataUrl) {
+    el.msgCharImg.src = asset.dataUrl;
+    el.msgCharImg.style.display = '';
+    el.msgCharPlaceholder.style.display = 'none';
+  } else {
+    el.msgCharImg.removeAttribute('src');
+    el.msgCharImg.style.display = 'none';
+    el.msgCharPlaceholder.style.display = '';
+  }
+}
+
+function queueDialogue(lines, onComplete) {
+  el.msgLayer.classList.add('show');
+  const msgPlayer = createVNPlayer({
+    onLineChange: (line) => {
+      el.msgName.textContent = line.speaker || '';
+      updateMsgPortrait(line.characterId, line.expression);
+    },
+    onTextUpdate: (text) => { el.msgText.textContent = text; },
+    onArrow: (show) => el.msgArrow.classList.toggle('show', show),
+    onComplete: () => {
+      el.msgLayer.classList.remove('show');
+      el.msgLayer.removeEventListener('click', tapHandler);
+      if (onComplete) onComplete();
+    },
+  });
+  function tapHandler() { msgPlayer.tap(); }
+  el.msgLayer.addEventListener('click', tapHandler);
+  msgPlayer.load(lines);
+}
+
+function onK01Tap() {
+  if (foundIds.has('k01')) {
+    showAcquireToast('🔶', K01_REVISIT_LINE[1]);
+    return;
+  }
+  queueDialogue(K01_DISCOVERY_LINES, () => {
+    foundIds.add('k01');
+    CaseFileState.addEvidence({
+      id: 'evidence-k01-early-inscription-note', code: 'E-000', title: 'K-01 사전 관찰 메모',
+      description: '진열장 유리 너머로 봤을 때, 후면에 작은 각인 같은 게 있는 듯했다. 이 각도에서는 정확히 확인되지 않는다.',
+      discoveredLocationText: 'Pop-up Exhibition · 사전 조사',
+    });
+    renderGrid();
+    updateProgressUi();
+    showAcquireToast('🔶', '황동 장치 K-01 — 발견');
+  });
+}
+
+/* ===== Exit — always available (§20 게임오버 없음), bonus if 3+ optional found ===== */
+function startSuccessDialogue(lines) {
+  el.successLayer.classList.add('show');
+  const player = createVNPlayer({
+    onLineChange: (line) => {
+      el.successName.textContent = line.speaker || '';
+      updateSuccessAvatar(line.characterId, line.expression);
+    },
+    onTextUpdate: (text) => { el.successText.textContent = text; },
+    onArrow: (show) => el.successArrow.classList.toggle('show', show),
+    onComplete: fadeOutAndRedirect,
+  });
+  player.load(lines);
+  el.successLayer.addEventListener('click', () => player.tap());
+}
+
+let successAvatarToken = 0;
+async function updateSuccessAvatar(characterId, expression) {
+  const token = ++successAvatarToken;
+  if (!characterId) { el.successCharWrap.classList.remove('show'); return; }
+  el.successCharWrap.classList.add('show');
+  const assetId = DevGameState.getCharacterAssetId(characterId, expression);
+  const asset = await AssetDB.getAsset(assetId).catch(() => null);
+  if (token !== successAvatarToken) return;
+  if (asset && asset.dataUrl) {
+    el.successCharImg.src = asset.dataUrl;
+    el.successCharImg.style.display = '';
+    el.successCharPlaceholder.style.display = 'none';
+  } else {
+    el.successCharImg.removeAttribute('src');
+    el.successCharImg.style.display = 'none';
+    el.successCharPlaceholder.style.display = '';
+  }
+  const t = DevGameState.getCharacterTransform(characterId);
+  el.successCharImg.style.transform = `translate(${t.x}px, ${t.y}px) scale(${t.scale})`;
+}
+
+function fadeOutAndRedirect() {
+  el.fadeOverlay.classList.add('show');
+  setTimeout(() => { location.href = '/dev/game/?scene=week1-scene-004'; }, 950);
+}
+
+const EXIT_LINES_BASE = [
+  { speaker: '', text: '전시장 안쪽이 갑자기 붐비기 시작한다.\n단체 관광객 무리가 밀려들어온다.', characterId: null },
+  { speaker: '영우', text: '와, 갑자기 사람 많아졌다.', characterId: 'youngwoo', expression: 'curious' },
+  { speaker: '지수', text: '잠깐 옆으로 비켜요.', characterId: 'jisoo', expression: 'neutral' },
+];
+const BONUS_LINE = { speaker: '지수', text: '이 정도 봤으면 대충 감은 잡히네요.', characterId: 'jisoo', expression: 'smirk' };
+
+el.exitBtn.addEventListener('click', () => {
+  const lines = EXIT_LINES_BASE.slice();
+  if (optionalFoundCount() >= BONUS_THRESHOLD) {
+    CaseFileState.addEvidence({
+      id: 'evidence-observation-bonus', code: 'E-H00', title: '전시장 관찰 보너스',
+      description: '카메라, 회중시계, 태그, 전용문, 팸플릿, 방명록, 보안카메라까지 — 전시장 구석구석을 미리 살펴봤다.',
+      discoveredLocationText: 'Pop-up Exhibition · 자유 조사',
+    });
+    lines.push(BONUS_LINE);
+  }
+  startSuccessDialogue(lines);
+});
+
+/* ===== Boot ===== */
+el.reqTotal.textContent = REQUIRED_IDS.length;
+el.optTotal.textContent = OPTIONAL_TOTAL;
+renderGrid();
+updateProgressUi();
+</script>
+<script src="/dev/devPlanFab.js"></script>
+</body>
+</html>
