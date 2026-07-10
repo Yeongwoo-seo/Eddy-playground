@@ -24,7 +24,14 @@
 html,body{height:100%}
 body{background:#000;color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center}
 
-.frame{position:relative;width:100%;max-width:430px;min-height:100dvh;min-height:100vh;background:#0a0d10;display:flex;flex-direction:column;overflow-x:hidden}
+.frame{position:relative;width:100%;max-width:430px;min-height:100dvh;min-height:100vh;background:radial-gradient(ellipse 120% 60% at 50% 0%,#241a3a 0%,#150f28 42%,#0a0714 78%,#07050f 100%);display:flex;flex-direction:column;overflow-x:hidden}
+
+.sparkle-field{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.sparkle{position:absolute;color:#fff;opacity:0;animation:sparkleTwinkle 3.2s ease-in-out infinite}
+@keyframes sparkleTwinkle{0%,100%{opacity:0;transform:scale(.4)}50%{opacity:.85;transform:scale(1)}}
+.reduced-motion .sparkle{animation:none;opacity:.35}
+.sparkle-burst{position:absolute;left:50%;top:50%;pointer-events:none;z-index:9;font-size:16px;animation:sparkleBurst 900ms ease-out forwards}
+@keyframes sparkleBurst{0%{opacity:1;transform:translate(-50%,-50%) translate(0,0) scale(.6)}100%{opacity:0;transform:translate(-50%,-50%) translate(var(--dx),var(--dy)) scale(1.1)}}
 
 .topbar{position:relative;z-index:6;padding:calc(14px + env(safe-area-inset-top,0)) 16px 10px;display:flex;justify-content:space-between;align-items:center}
 .topbar-right{display:flex;gap:8px}
@@ -32,32 +39,38 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .vn-btn:active{opacity:.75}
 
 /* ===== Stage ===== */
-.stage{position:relative;padding:4px 20px 10px;display:flex;flex-direction:column;align-items:center;gap:6px}
-.mirror-bubble{max-width:280px;background:var(--surface-2);border:1px solid var(--divider);border-radius:16px;padding:10px 14px;font-size:12.5px;line-height:1.5;color:var(--text-secondary);text-align:center}
-.cauldron-area{position:relative;width:100%;height:190px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end}
+.stage{position:relative;z-index:1;padding:4px 20px 10px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.mirror-bubble{position:relative;max-width:250px;background:radial-gradient(ellipse at 50% 35%,#2a3550 0%,#161d2e 70%,#0d1220 100%);border:3px solid;border-image:linear-gradient(135deg,#E8D9A8,#B8933F,#F2E4B0,#9c7a33) 1;border-radius:50%/38%;padding:16px 20px;font-size:12px;line-height:1.5;color:#DCE4F0;text-align:center;box-shadow:0 0 0 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.5),inset 0 0 24px rgba(120,150,220,.15)}
+.mirror-bubble::before{content:'✦';position:absolute;top:-4px;left:10%;font-size:11px;color:#F2E4B0}
+.mirror-bubble::after{content:'✦';position:absolute;bottom:-2px;right:10%;font-size:11px;color:#F2E4B0}
+.cauldron-area{position:relative;z-index:1;width:100%;height:190px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end}
 
-.portrait-wrap{position:relative;z-index:2;margin-bottom:-18px;transition:transform .3s cubic-bezier(.2,.8,.2,1)}
-.portrait-shape{position:relative;width:112px;height:132px;border-radius:50%/45%;background:#2a2f36;display:flex;align-items:center;justify-content:center;border:2px solid rgba(255,255,255,.14);box-shadow:0 6px 18px rgba(0,0,0,.4);transition:width .3s,height .3s,border-radius .3s,background-color .3s,filter .3s}
-.portrait-shape.body-petite{width:92px;height:104px}
-.portrait-shape.body-slender{width:98px;height:160px;border-radius:52%/40%}
-.portrait-shape.body-sturdy{width:142px;height:126px;border-radius:46%}
-.portrait-shape.body-hourglass::after{content:'';position:absolute;left:14%;right:14%;top:48%;height:2px;background:rgba(0,0,0,.18);border-radius:2px}
-.portrait-shape.age-baby{transform:scale(.62)}
-.portrait-shape.age-adult{transform:scale(1.12)}
-.portrait-shape.age-elder{transform:scale(1.02);filter:grayscale(.35) brightness(.92)}
-.portrait-base{font-size:46px;line-height:1;filter:drop-shadow(0 3px 6px rgba(0,0,0,.35))}
-.badge{position:absolute;width:26px;height:26px;border-radius:50%;background:var(--surface-1);border:1.5px solid rgba(255,255,255,.2);display:none;align-items:center;justify-content:center;font-size:13px}
-.badge.show{display:flex}
-.badge-eye{top:2px;left:2px;font-size:0;background-color:var(--eye-color,#555)}
-.badge-face{top:2px;right:2px}
-.badge-decor{bottom:6px;left:-4px}
-.badge-gender{bottom:6px;right:-4px}
+.portrait-wrap{position:relative;z-index:2;margin-bottom:-6px;display:flex;flex-direction:column;align-items:center;transition:transform .3s cubic-bezier(.2,.8,.2,1),filter .3s ease}
+.portrait-wrap.age-baby{transform:scale(.6)}
+.portrait-wrap.age-adult{transform:scale(1.1)}
+.portrait-wrap.age-elder{transform:scale(1);filter:grayscale(.4) brightness(.9)}
 
-.cauldron{position:relative;width:170px;height:88px;z-index:1}
-.cauldron-liquid{position:absolute;left:50%;top:-6px;transform:translateX(-50%);width:96px;height:34px;border-radius:50%;background:var(--liquid-color,#2c3440);transition:background-color .4s ease,transform .5s ease;box-shadow:0 0 16px var(--liquid-color,#2c3440)}
+.char-head{position:relative;z-index:3;width:64px;height:64px;border-radius:50%;background:#2a2f36;display:flex;align-items:center;justify-content:center;border:2px solid rgba(255,255,255,.2);box-shadow:0 4px 10px rgba(0,0,0,.4);transition:background-color .3s ease}
+.char-face{font-size:32px;line-height:1;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
+.char-ears{position:absolute;top:-15px;left:50%;transform:translateX(-50%);font-size:20px;line-height:1;filter:drop-shadow(0 2px 2px rgba(0,0,0,.4))}
+.char-decor{position:absolute;top:0;right:-11px;font-size:17px;line-height:1;filter:drop-shadow(0 2px 2px rgba(0,0,0,.4))}
+.char-eye{position:absolute;top:46%;width:7px;height:7px;border-radius:50%;background:var(--eye-color,#555);box-shadow:0 0 4px rgba(255,255,255,.45)}
+.char-eye-l{left:26%}
+.char-eye-r{right:26%}
+
+.char-collar{position:relative;z-index:2;margin-top:-8px;width:22px;height:22px;border-radius:50%;background:var(--surface-1);border:1.5px solid rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff}
+
+.char-body{position:relative;z-index:1;width:104px;height:92px;margin-top:-9px;background:#2a2f36;border-radius:46% 46% 50% 50% / 40% 40% 56% 56%;box-shadow:0 6px 14px rgba(0,0,0,.4);transition:width .3s,height .3s,border-radius .3s,background-color .3s}
+.char-body.body-petite{width:86px;height:74px}
+.char-body.body-slender{width:88px;height:122px;border-radius:44% 44% 50% 50% / 34% 34% 56% 56%}
+.char-body.body-sturdy{width:132px;height:88px;border-radius:42% 42% 48% 48% / 38% 38% 56% 56%}
+.char-body.body-hourglass::after{content:'';position:absolute;left:18%;right:18%;top:42%;height:2px;background:rgba(0,0,0,.18);border-radius:2px}
+
+.cauldron{position:relative;width:184px;height:150px;z-index:1;filter:drop-shadow(0 10px 12px rgba(0,0,0,.5))}
+.cauldron-svg{width:100%;height:100%;display:block;overflow:visible}
+.cauldron-liquid{transform-box:fill-box;transform-origin:center;transition:fill .4s ease;filter:drop-shadow(0 0 8px var(--liquid-color,#2c3440))}
 .cauldron-liquid.bubble{animation:cauldronBubble .5s ease-in-out infinite}
-@keyframes cauldronBubble{0%,100%{transform:translateX(-50%) translateY(0) scale(1)}50%{transform:translateX(-50%) translateY(-4px) scale(1.04)}}
-.cauldron-body{font-size:88px;line-height:1;text-align:center;filter:drop-shadow(0 8px 10px rgba(0,0,0,.5))}
+@keyframes cauldronBubble{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-2.5px) scale(1.03)}}
 .cauldron.shake{animation:cauldronShake .12s linear infinite}
 @keyframes cauldronShake{0%{transform:translateX(0)}25%{transform:translateX(-4px) rotate(-1deg)}75%{transform:translateX(4px) rotate(1deg)}100%{transform:translateX(0)}}
 
@@ -70,7 +83,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .target-line b{color:var(--amber);font-weight:700}
 
 /* ===== Recipe slots ===== */
-.slots-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:6px 16px 12px}
+.slots-grid{position:relative;z-index:1;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:6px 16px 12px}
 .slot-btn{position:relative;background:var(--surface-1);border:1px solid var(--divider);border-radius:14px;padding:10px 4px 8px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;min-height:76px;justify-content:center}
 .slot-btn:active{transform:scale(.96)}
 .slot-btn.filled{border-color:rgba(89,184,200,.5);background:rgba(89,184,200,.08)}
@@ -80,7 +93,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .slot-label{font-size:10.5px;color:var(--text-muted);font-weight:600;text-align:center;line-height:1.25}
 .slot-picked{font-size:10.5px;color:var(--cyan);font-weight:700;text-align:center;line-height:1.2;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-.powder-btn{margin:0 16px calc(16px + env(safe-area-inset-bottom,0));font-family:var(--mono);font-size:14.5px;font-weight:700;letter-spacing:.04em;color:#08110c;background:var(--green);border:none;border-radius:16px;padding:16px;cursor:pointer;text-align:center;transition:opacity .2s,transform .15s}
+.powder-btn{position:relative;z-index:1;margin:0 16px calc(16px + env(safe-area-inset-bottom,0));font-family:var(--mono);font-size:14.5px;font-weight:700;letter-spacing:.04em;color:#08110c;background:var(--green);border:none;border-radius:16px;padding:16px;cursor:pointer;text-align:center;transition:opacity .2s,transform .15s}
 .powder-btn:active:not(:disabled){transform:scale(.98)}
 .powder-btn:disabled{background:var(--surface-2);color:var(--text-muted);cursor:not-allowed}
 .powder-btn.pulse:not(:disabled){animation:powderPulse 1.6s ease-in-out infinite}
@@ -97,7 +110,9 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .potion-row:active{transform:scale(.98)}
 .potion-row.selected{border-color:var(--cyan);background:rgba(89,184,200,.1)}
 .potion-row.hint-highlight{border-color:var(--amber);box-shadow:0 0 10px rgba(214,168,75,.4)}
-.potion-swatch{width:34px;height:34px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:16px;border:1px solid rgba(255,255,255,.18)}
+.potion-swatch{position:relative;width:30px;height:38px;flex-shrink:0}
+.potion-swatch svg{display:block;width:100%;height:100%;overflow:visible}
+.potion-charm{position:absolute;top:-4px;right:-7px;font-size:13px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
 .potion-info{flex:1;min-width:0}
 .potion-name{font-size:13.5px;font-weight:700}
 .potion-desc{font-size:11.5px;color:var(--text-muted);margin-top:2px;line-height:1.4}
@@ -116,7 +131,8 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .encyclo-group{margin-bottom:14px}
 .encyclo-title{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px}
 .encyclo-item{display:flex;gap:10px;align-items:center;padding:6px 0}
-.encyclo-swatch{width:24px;height:24px;border-radius:50%;flex-shrink:0;border:1px solid rgba(255,255,255,.18)}
+.encyclo-swatch{width:20px;height:26px;flex-shrink:0}
+.encyclo-swatch svg{display:block;width:100%;height:100%;overflow:visible}
 .encyclo-name{font-size:12.5px;font-weight:600}
 .encyclo-desc{font-size:11px;color:var(--text-muted)}
 .howto-text{font-size:13px;line-height:1.75;color:var(--text-secondary);white-space:pre-line;margin-bottom:14px}
@@ -126,6 +142,27 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .collection-item{background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:10px 4px;text-align:center}
 .collection-emoji{font-size:20px}
 .collection-count{font-family:var(--mono);font-size:10px;color:var(--text-muted);margin-top:2px}
+
+/* ===== Magic book — parchment/leather theme, deliberately distinct from
+   the dev-tool dark shell so it reads as an in-world prop. ===== */
+.book-sheet{background:linear-gradient(160deg,#3c2f1f 0%,#2a1f14 100%);border:1px solid #5a4527;box-shadow:0 -10px 32px rgba(0,0,0,.6)}
+.book-sheet .sheet-handle{background:rgba(255,255,255,.25)}
+.book-sheet .book-tabs{border-bottom-color:rgba(255,255,255,.14)}
+.book-sheet .book-tab{background:rgba(0,0,0,.22);color:#D8C7A0;border-color:rgba(255,255,255,.12)}
+.book-sheet .book-tab.active{background:linear-gradient(135deg,#EAD9A6,#B8923D);color:#3a2c18;border-color:transparent}
+.book-sheet .book-flavor{background:rgba(0,0,0,.24);color:#F0E4C8;border:1px solid rgba(255,255,255,.08)}
+.book-sheet .clue-row{border-bottom-color:rgba(255,255,255,.12)}
+.book-sheet .clue-label{color:#C9AF7C}
+.book-sheet .clue-text{color:#F3E9D2}
+.book-sheet .encyclo-title{color:#C9AF7C}
+.book-sheet .encyclo-name{color:#F3E9D2}
+.book-sheet .encyclo-desc{color:#B8A57D}
+.book-sheet .howto-text{color:#EFE3C8}
+.book-sheet .collection-empty{color:#B8A57D}
+.book-sheet .collection-item{background:rgba(0,0,0,.22);border-color:rgba(255,255,255,.12)}
+.book-sheet .collection-count{color:#C9AF7C}
+.book-sheet .sheet-close{background:rgba(0,0,0,.26);color:#D8C7A0;border-color:rgba(255,255,255,.14)}
+.book-sheet .replay-btn{background:linear-gradient(135deg,#EAD9A6,#B8923D);color:#3a2c18}
 
 /* ===== Result / intro overlays ===== */
 .overlay{position:fixed;inset:0;z-index:25;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;text-align:center;padding:32px;background:rgba(5,7,10,.82);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
@@ -163,22 +200,46 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
     </div>
   </div>
 
+  <div class="sparkle-field" id="sparkleField"></div>
   <div class="stage">
     <div class="mirror-bubble" id="mirrorBubble" style="display:none"></div>
-    <div class="cauldron-area">
+    <div class="cauldron-area" id="cauldronArea">
       <div class="portrait-wrap" id="portraitWrap" style="display:none">
-        <div class="portrait-shape" id="portraitShape">
-          <span class="portrait-base" id="portraitBase"></span>
-          <span class="badge badge-eye" id="badgeEye"></span>
-          <span class="badge badge-face" id="badgeFace"></span>
-          <span class="badge badge-decor" id="badgeDecor"></span>
-          <span class="badge badge-gender" id="badgeGender"></span>
+        <div class="char-head" id="charHead">
+          <span class="char-ears" id="charEars"></span>
+          <span class="char-face" id="charFace"></span>
+          <span class="char-eye char-eye-l" id="eyeLeft"></span>
+          <span class="char-eye char-eye-r" id="eyeRight"></span>
+          <span class="char-decor" id="charDecor"></span>
         </div>
+        <div class="char-collar" id="charCollar"></div>
+        <div class="char-body" id="charBody"></div>
       </div>
       <div class="fx-smoke" id="fxSmoke"></div>
       <div class="cauldron" id="cauldron">
-        <div class="cauldron-liquid" id="cauldronLiquid"></div>
-        <div class="cauldron-body">🫕</div>
+        <svg class="cauldron-svg" viewBox="0 0 200 150">
+          <defs>
+            <radialGradient id="potGrad" cx="35%" cy="20%" r="85%">
+              <stop offset="0%" stop-color="#4d5964"/>
+              <stop offset="55%" stop-color="#2b333c"/>
+              <stop offset="100%" stop-color="#14181c"/>
+            </radialGradient>
+            <linearGradient id="rimGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#636f7b"/>
+              <stop offset="100%" stop-color="#262d34"/>
+            </linearGradient>
+          </defs>
+          <ellipse cx="100" cy="140" rx="70" ry="9" fill="#000" opacity=".3"/>
+          <path d="M74,138 L64,148" stroke="#20262c" stroke-width="9" stroke-linecap="round"/>
+          <path d="M100,140 L100,150" stroke="#20262c" stroke-width="9" stroke-linecap="round"/>
+          <path d="M126,138 L136,148" stroke="#20262c" stroke-width="9" stroke-linecap="round"/>
+          <path d="M38,20 C28,75 34,108 100,124 C166,108 172,75 162,20 Z" fill="url(#potGrad)" stroke="#0c0f12" stroke-width="3"/>
+          <path d="M30,48 Q10,50 12,70" stroke="#20262c" stroke-width="8" fill="none" stroke-linecap="round"/>
+          <path d="M170,48 Q190,50 188,70" stroke="#20262c" stroke-width="8" fill="none" stroke-linecap="round"/>
+          <ellipse cx="100" cy="20" rx="64" ry="13" fill="url(#rimGrad)" stroke="#0c0f12" stroke-width="3"/>
+          <ellipse class="cauldron-liquid" id="cauldronLiquid" cx="100" cy="21" rx="52" ry="9" style="fill:var(--liquid-color,#2c3440)"/>
+          <ellipse cx="80" cy="16" rx="16" ry="3" fill="#fff" opacity=".2"/>
+        </svg>
       </div>
       <div class="fx-flash" id="fxFlash"></div>
     </div>
@@ -322,6 +383,14 @@ const POTIONS = {
 
 function potionById(attr, id) { return POTIONS[attr].find(p => p.id === id) || null; }
 
+/* ===== Potion bottle art — a small glass-flask SVG shared by the picker
+   sheet and the encyclopedia tab, standing in for a hand-illustrated bottle
+   (request doc §5.3's bottleShape/liquidColor) since this project has no
+   art asset pipeline. ===== */
+function bottleSvg(color) {
+  return `<svg viewBox="0 0 28 34"><rect x="11" y="1" width="6" height="6" rx="1.5" fill="#8a6a45"/><rect x="12" y="6" width="4" height="6" fill="rgba(255,255,255,.14)" stroke="rgba(255,255,255,.35)" stroke-width="1"/><path d="M9,11 C9,11 4,18 4,24 C4,29.5 8.5,32.5 14,32.5 C19.5,32.5 24,29.5 24,24 C24,18 19,11 19,11 Z" fill="rgba(255,255,255,.06)" stroke="rgba(255,255,255,.4)" stroke-width="1.2"/><path d="M4.6,21.5 C4.2,22.6 4,23.3 4,24 C4,29.5 8.5,32.5 14,32.5 C19.5,32.5 24,29.5 24,24 C24,23.3 23.8,22.6 23.4,21.5 Z" fill="${color}"/><rect x="7" y="15" width="2.4" height="13" rx="1.2" fill="#fff" opacity=".22"/></svg>`;
+}
+
 /* ===== Target recipe — 루미아, 별빛 극단의 인기 배우 ===== */
 const TARGET = {
   name: '루미아',
@@ -356,8 +425,8 @@ let failCount = 0;
 let currentPickerAttr = null;
 
 const el = {};
-['mirrorBubble', 'portraitWrap', 'portraitShape', 'portraitBase', 'badgeEye', 'badgeFace', 'badgeDecor', 'badgeGender',
- 'cauldron', 'cauldronLiquid', 'fxFlash', 'fxSmoke', 'targetLine', 'slotsGrid', 'powderBtn',
+['mirrorBubble', 'portraitWrap', 'charHead', 'charFace', 'charEars', 'charDecor', 'eyeLeft', 'eyeRight', 'charCollar', 'charBody',
+ 'cauldron', 'cauldronArea', 'cauldronLiquid', 'fxFlash', 'fxSmoke', 'sparkleField', 'targetLine', 'slotsGrid', 'powderBtn',
  'pickerOverlay', 'pickerTitle', 'potionList', 'pickerCloseBtn',
  'bookBtn', 'bookOverlay', 'bookTabs', 'bookBody', 'bookCloseBtn',
  'resultOverlay', 'resultGrade', 'resultMirror', 'resultScore', 'resultHint', 'resultBookBtn', 'resultRetryBtn',
@@ -426,7 +495,7 @@ function openPicker(attrKey) {
     const isHintTarget = showHint && TARGET.valid[attrKey].includes(p.id);
     return `
     <div class="potion-row${selections[attrKey] === p.id ? ' selected' : ''}${isHintTarget ? ' hint-highlight' : ''}" data-id="${p.id}">
-      <div class="potion-swatch" style="background:${p.color}">${p.emoji || ''}</div>
+      <div class="potion-swatch">${bottleSvg(p.color)}${p.emoji ? `<span class="potion-charm">${p.emoji}</span>` : ''}</div>
       <div class="potion-info">
         <div class="potion-name">${p.name}${isHintTarget ? ' ✨' : ''}</div>
         <div class="potion-desc">${p.desc}</div>
@@ -491,7 +560,7 @@ function renderBookBody() {
         <div class="encyclo-title">${a.icon} ${a.label}</div>
         ${POTIONS[a.key].map(p => `
           <div class="encyclo-item">
-            <div class="encyclo-swatch" style="background:${p.color}"></div>
+            <div class="encyclo-swatch">${bottleSvg(p.color)}</div>
             <div>
               <div class="encyclo-name">${p.name}</div>
               <div class="encyclo-desc">${p.desc}</div>
@@ -623,20 +692,19 @@ function composePortrait() {
   const body = potionById('body', selections.body);
   const face = potionById('face', selections.face);
 
-  el.portraitBase.textContent = character.emoji;
-  el.portraitShape.className = 'portrait-shape ' + body.shapeClass + ' ' + age.scaleClass;
-  el.portraitShape.style.backgroundColor = skin.color;
+  el.portraitWrap.className = 'portrait-wrap ' + age.scaleClass;
+  el.charHead.style.backgroundColor = skin.color;
+  el.charBody.className = 'char-body ' + body.shapeClass;
+  el.charBody.style.backgroundColor = skin.color;
 
-  el.badgeEye.classList.add('show');
-  el.badgeEye.style.setProperty('--eye-color', eyes.color);
-  el.badgeFace.textContent = face.emoji;
-  el.badgeFace.classList.add('show');
-  el.badgeDecor.textContent = decoration.emoji;
-  el.badgeDecor.classList.add('show');
-  el.badgeGender.textContent = gender.badge;
-  el.badgeGender.classList.add('show');
+  el.charFace.textContent = character.emoji;
+  el.charEars.textContent = face.emoji;
+  el.charDecor.textContent = decoration.emoji;
+  el.charCollar.textContent = gender.badge;
+  el.eyeLeft.style.setProperty('--eye-color', eyes.color);
+  el.eyeRight.style.setProperty('--eye-color', eyes.color);
 
-  el.portraitWrap.style.display = 'block';
+  el.portraitWrap.style.display = 'flex';
 }
 
 /* ===== Mirror reactions (request doc §8) ===== */
@@ -729,6 +797,8 @@ function showResult() {
   el.mirrorBubble.textContent = el.resultMirror.textContent;
   el.mirrorBubble.style.display = 'block';
 
+  if (grade === 'PERFECT' || grade === 'SPECIAL') spawnSparkleBurst();
+
   phase = 'result';
   el.resultOverlay.classList.add('show');
 }
@@ -765,9 +835,46 @@ el.introStartBtn.addEventListener('click', () => {
   el.introOverlay.classList.remove('show');
 });
 
+/* ===== Ambient sparkles + success burst — pure CSS/SVG visual flourish,
+   no external art assets (request doc §22 calls for illustrated layers;
+   this project has no art pipeline, so the "look" is built from shapes/
+   emoji instead, same convention as the fishing/watermelon minigames). ===== */
+function initSparkleField() {
+  const symbols = ['✦', '✧', '⋆', '✨'];
+  const count = REDUCED_MOTION ? 6 : 16;
+  let html = '';
+  for (let i = 0; i < count; i++) {
+    const left = Math.random() * 100;
+    const top = Math.random() * 55;
+    const size = 6 + Math.random() * 10;
+    const delay = Math.random() * 3.2;
+    const duration = 2.6 + Math.random() * 2.4;
+    const symbol = symbols[Math.floor(Math.random() * symbols.length)];
+    html += `<span class="sparkle" style="left:${left}%;top:${top}%;font-size:${size}px;animation-delay:${delay}s;animation-duration:${duration}s">${symbol}</span>`;
+  }
+  el.sparkleField.innerHTML = html;
+}
+
+function spawnSparkleBurst() {
+  if (REDUCED_MOTION) return;
+  for (let i = 0; i < 10; i++) {
+    const span = document.createElement('span');
+    span.className = 'sparkle-burst';
+    span.textContent = Math.random() < 0.5 ? '✨' : '✦';
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 50 + Math.random() * 50;
+    span.style.setProperty('--dx', (Math.cos(angle) * dist) + 'px');
+    span.style.setProperty('--dy', (Math.sin(angle) * dist - 20) + 'px');
+    span.style.fontSize = (12 + Math.random() * 10) + 'px';
+    el.cauldronArea.appendChild(span);
+    setTimeout(() => span.remove(), 950);
+  }
+}
+
 renderSlots();
 updateCauldronColor();
 updatePowderButton();
+initSparkleField();
 </script>
 <script src="/dev/devPlanFab.js"></script>
 </body>
