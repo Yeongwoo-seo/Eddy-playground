@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>OPERATION MK · TRANSFORM</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<meta name="theme-color" content="#080A0C">
+<link rel="manifest" href="/dev/manifest.json">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="OPERATION MK DEV">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+:root{
+  --bg:#080A0C;--surface-1:#101419;--surface-2:#171C22;
+  --text-primary:#EDF1F4;--text-secondary:#929BA5;--text-muted:#5F6872;
+  --cyan:#59B8C8;--amber:#D6A84B;--green:#3ECF6B;--signal-red:#D94141;--divider:rgba(255,255,255,0.08);
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sans:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
+}
+html,body{height:100%}
+body{background:#000;color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center}
+
+.frame{position:relative;width:100%;max-width:430px;min-height:100dvh;min-height:100vh;background:#0a0d10;display:flex;flex-direction:column;overflow-x:hidden}
+
+.topbar{position:relative;z-index:6;padding:calc(14px + env(safe-area-inset-top,0)) 16px 10px;display:flex;justify-content:space-between;align-items:center}
+.topbar-right{display:flex;gap:8px}
+.vn-btn{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:#fff;background:rgba(255,255,255,.06);border:1px solid var(--divider);border-radius:20px;padding:9px 13px;cursor:pointer;text-decoration:none;display:inline-block}
+.vn-btn:active{opacity:.75}
+
+/* ===== Stage ===== */
+.stage{position:relative;padding:4px 20px 10px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.mirror-bubble{max-width:280px;background:var(--surface-2);border:1px solid var(--divider);border-radius:16px;padding:10px 14px;font-size:12.5px;line-height:1.5;color:var(--text-secondary);text-align:center}
+.cauldron-area{position:relative;width:100%;height:190px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end}
+
+.portrait-wrap{position:relative;z-index:2;margin-bottom:-18px;transition:transform .3s cubic-bezier(.2,.8,.2,1)}
+.portrait-shape{position:relative;width:112px;height:132px;border-radius:50%/45%;background:#2a2f36;display:flex;align-items:center;justify-content:center;border:2px solid rgba(255,255,255,.14);box-shadow:0 6px 18px rgba(0,0,0,.4);transition:width .3s,height .3s,border-radius .3s,background-color .3s,filter .3s}
+.portrait-shape.body-petite{width:92px;height:104px}
+.portrait-shape.body-slender{width:98px;height:160px;border-radius:52%/40%}
+.portrait-shape.body-sturdy{width:142px;height:126px;border-radius:46%}
+.portrait-shape.body-hourglass::after{content:'';position:absolute;left:14%;right:14%;top:48%;height:2px;background:rgba(0,0,0,.18);border-radius:2px}
+.portrait-shape.age-baby{transform:scale(.62)}
+.portrait-shape.age-adult{transform:scale(1.12)}
+.portrait-shape.age-elder{transform:scale(1.02);filter:grayscale(.35) brightness(.92)}
+.portrait-base{font-size:46px;line-height:1;filter:drop-shadow(0 3px 6px rgba(0,0,0,.35))}
+.badge{position:absolute;width:26px;height:26px;border-radius:50%;background:var(--surface-1);border:1.5px solid rgba(255,255,255,.2);display:none;align-items:center;justify-content:center;font-size:13px}
+.badge.show{display:flex}
+.badge-eye{top:2px;left:2px;font-size:0;background-color:var(--eye-color,#555)}
+.badge-face{top:2px;right:2px}
+.badge-decor{bottom:6px;left:-4px}
+.badge-gender{bottom:6px;right:-4px}
+
+.cauldron{position:relative;width:170px;height:88px;z-index:1}
+.cauldron-liquid{position:absolute;left:50%;top:-6px;transform:translateX(-50%);width:96px;height:34px;border-radius:50%;background:var(--liquid-color,#2c3440);transition:background-color .4s ease,transform .5s ease;box-shadow:0 0 16px var(--liquid-color,#2c3440)}
+.cauldron-liquid.bubble{animation:cauldronBubble .5s ease-in-out infinite}
+@keyframes cauldronBubble{0%,100%{transform:translateX(-50%) translateY(0) scale(1)}50%{transform:translateX(-50%) translateY(-4px) scale(1.04)}}
+.cauldron-body{font-size:88px;line-height:1;text-align:center;filter:drop-shadow(0 8px 10px rgba(0,0,0,.5))}
+.cauldron.shake{animation:cauldronShake .12s linear infinite}
+@keyframes cauldronShake{0%{transform:translateX(0)}25%{transform:translateX(-4px) rotate(-1deg)}75%{transform:translateX(4px) rotate(1deg)}100%{transform:translateX(0)}}
+
+.fx-flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:5;transition:opacity .12s ease}
+.fx-flash.show{opacity:1}
+.fx-smoke{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);width:10px;height:10px;border-radius:50%;background:radial-gradient(circle,rgba(230,230,235,.9) 0%,rgba(230,230,235,0) 70%);opacity:0;pointer-events:none;z-index:4;transition:opacity .3s ease,width .5s ease,height .5s ease}
+.fx-smoke.show{opacity:1;width:220px;height:220px}
+
+.target-line{font-family:var(--mono);font-size:11.5px;color:var(--text-muted);text-align:center;letter-spacing:.02em}
+.target-line b{color:var(--amber);font-weight:700}
+
+/* ===== Recipe slots ===== */
+.slots-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:6px 16px 12px}
+.slot-btn{position:relative;background:var(--surface-1);border:1px solid var(--divider);border-radius:14px;padding:10px 4px 8px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;min-height:76px;justify-content:center}
+.slot-btn:active{transform:scale(.96)}
+.slot-btn.filled{border-color:rgba(89,184,200,.5);background:rgba(89,184,200,.08)}
+.slot-btn.hint-glow{animation:hintGlow 1.1s ease-in-out infinite}
+@keyframes hintGlow{0%,100%{box-shadow:0 0 0 rgba(214,168,75,0)}50%{box-shadow:0 0 12px rgba(214,168,75,.55)}}
+.slot-icon{font-size:18px}
+.slot-label{font-size:10.5px;color:var(--text-muted);font-weight:600;text-align:center;line-height:1.25}
+.slot-picked{font-size:10.5px;color:var(--cyan);font-weight:700;text-align:center;line-height:1.2;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.powder-btn{margin:0 16px calc(16px + env(safe-area-inset-bottom,0));font-family:var(--mono);font-size:14.5px;font-weight:700;letter-spacing:.04em;color:#08110c;background:var(--green);border:none;border-radius:16px;padding:16px;cursor:pointer;text-align:center;transition:opacity .2s,transform .15s}
+.powder-btn:active:not(:disabled){transform:scale(.98)}
+.powder-btn:disabled{background:var(--surface-2);color:var(--text-muted);cursor:not-allowed}
+.powder-btn.pulse:not(:disabled){animation:powderPulse 1.6s ease-in-out infinite}
+@keyframes powderPulse{0%,100%{box-shadow:0 0 0 rgba(62,207,107,0)}50%{box-shadow:0 0 16px rgba(62,207,107,.5)}}
+
+/* ===== Sheets (potion picker / magic book) ===== */
+.sheet-overlay{position:fixed;inset:0;z-index:20;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.6)}
+.sheet-overlay.show{display:flex}
+.sheet{width:100%;max-width:430px;max-height:78vh;background:var(--surface-2);border:1px solid var(--divider);border-bottom:none;border-radius:24px 24px 0 0;padding:10px 18px calc(16px + env(safe-area-inset-bottom,0));display:flex;flex-direction:column;overflow:hidden}
+.sheet-handle{width:36px;height:4px;border-radius:2px;background:var(--divider);margin:2px auto 12px}
+.sheet-title{font-size:15px;font-weight:700;margin-bottom:10px}
+.potion-list{overflow-y:auto;display:flex;flex-direction:column;gap:8px;flex:1}
+.potion-row{display:flex;align-items:center;gap:12px;background:var(--surface-1);border:1px solid var(--divider);border-radius:14px;padding:10px 12px;cursor:pointer}
+.potion-row:active{transform:scale(.98)}
+.potion-row.selected{border-color:var(--cyan);background:rgba(89,184,200,.1)}
+.potion-row.hint-highlight{border-color:var(--amber);box-shadow:0 0 10px rgba(214,168,75,.4)}
+.potion-swatch{width:34px;height:34px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:16px;border:1px solid rgba(255,255,255,.18)}
+.potion-info{flex:1;min-width:0}
+.potion-name{font-size:13.5px;font-weight:700}
+.potion-desc{font-size:11.5px;color:var(--text-muted);margin-top:2px;line-height:1.4}
+.sheet-close{margin-top:12px;font-family:var(--mono);font-size:12.5px;color:var(--text-secondary);background:var(--surface-1);border:1px solid var(--divider);border-radius:14px;padding:12px;cursor:pointer}
+
+.book-sheet{max-height:82vh}
+.book-tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:10px;margin-bottom:8px;border-bottom:1px solid var(--divider)}
+.book-tab{flex-shrink:0;font-family:var(--mono);font-size:11.5px;font-weight:600;color:var(--text-secondary);background:var(--surface-1);border:1px solid var(--divider);border-radius:14px;padding:8px 12px;cursor:pointer;white-space:nowrap}
+.book-tab.active{color:#04181c;background:var(--cyan);border-color:var(--cyan)}
+.book-body{overflow-y:auto;flex:1}
+.clue-row{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--divider)}
+.clue-icon{font-size:16px;flex-shrink:0;width:22px;text-align:center}
+.clue-label{font-size:11.5px;color:var(--text-muted);font-weight:600;margin-bottom:2px}
+.clue-text{font-size:13px;line-height:1.5}
+.book-flavor{font-size:12.5px;color:var(--text-secondary);line-height:1.6;margin-bottom:12px;background:var(--surface-1);border-radius:12px;padding:10px 12px}
+.encyclo-group{margin-bottom:14px}
+.encyclo-title{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px}
+.encyclo-item{display:flex;gap:10px;align-items:center;padding:6px 0}
+.encyclo-swatch{width:24px;height:24px;border-radius:50%;flex-shrink:0;border:1px solid rgba(255,255,255,.18)}
+.encyclo-name{font-size:12.5px;font-weight:600}
+.encyclo-desc{font-size:11px;color:var(--text-muted)}
+.howto-text{font-size:13px;line-height:1.75;color:var(--text-secondary);white-space:pre-line;margin-bottom:14px}
+.replay-btn{font-family:var(--mono);font-size:12px;color:#04181c;background:var(--amber);border:none;border-radius:12px;padding:10px 14px;cursor:pointer}
+.collection-empty{font-size:12.5px;color:var(--text-muted);padding:20px 0;text-align:center}
+.collection-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.collection-item{background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:10px 4px;text-align:center}
+.collection-emoji{font-size:20px}
+.collection-count{font-family:var(--mono);font-size:10px;color:var(--text-muted);margin-top:2px}
+
+/* ===== Result / intro overlays ===== */
+.overlay{position:fixed;inset:0;z-index:25;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px;text-align:center;padding:32px;background:rgba(5,7,10,.82);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.overlay.show{display:flex}
+.result-grade{font-size:26px;font-weight:800}
+.result-grade.PERFECT{color:var(--green)}
+.result-grade.NEAR_SUCCESS{color:var(--cyan)}
+.result-grade.MIXED{color:var(--amber)}
+.result-grade.FAIL{color:var(--signal-red)}
+.result-grade.SPECIAL{color:#C9A6FF}
+.result-grade.FREE{color:var(--cyan)}
+.result-mirror{font-size:13.5px;color:var(--text-secondary);max-width:280px;line-height:1.6}
+.result-score{font-family:var(--mono);font-size:12px;color:var(--text-muted)}
+.result-hint{font-size:12px;color:var(--amber);max-width:260px;line-height:1.5}
+.result-actions{display:flex;gap:10px;margin-top:8px}
+.result-btn{font-family:var(--mono);font-size:13px;font-weight:700;border:none;border-radius:14px;padding:12px 18px;cursor:pointer}
+.result-btn.primary{background:var(--green);color:#08110c}
+.result-btn.secondary{background:var(--surface-2);color:var(--text-secondary);border:1px solid var(--divider)}
+.intro-title{font-size:20px;font-weight:700}
+.intro-text{font-size:13.5px;color:var(--text-secondary);line-height:1.7;max-width:290px;white-space:pre-line}
+.reduced-motion .cauldron.shake{animation:none}
+.reduced-motion .cauldron-liquid.bubble{animation:none}
+.reduced-motion .slot-btn.hint-glow{animation:none}
+.reduced-motion .powder-btn.pulse{animation:none}
+</style>
+</head>
+<body>
+<div class="frame" id="frame">
+
+  <div class="topbar">
+    <a class="vn-btn" href="/dev/">← DEV</a>
+    <div class="topbar-right">
+      <button class="vn-btn" id="bookBtn" type="button">📖 마법책</button>
+      <a class="vn-btn" href="/dev/minigame-transform/">설정</a>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="mirror-bubble" id="mirrorBubble" style="display:none"></div>
+    <div class="cauldron-area">
+      <div class="portrait-wrap" id="portraitWrap" style="display:none">
+        <div class="portrait-shape" id="portraitShape">
+          <span class="portrait-base" id="portraitBase"></span>
+          <span class="badge badge-eye" id="badgeEye"></span>
+          <span class="badge badge-face" id="badgeFace"></span>
+          <span class="badge badge-decor" id="badgeDecor"></span>
+          <span class="badge badge-gender" id="badgeGender"></span>
+        </div>
+      </div>
+      <div class="fx-smoke" id="fxSmoke"></div>
+      <div class="cauldron" id="cauldron">
+        <div class="cauldron-liquid" id="cauldronLiquid"></div>
+        <div class="cauldron-body">🫕</div>
+      </div>
+      <div class="fx-flash" id="fxFlash"></div>
+    </div>
+    <div class="target-line" id="targetLine"></div>
+  </div>
+
+  <div class="slots-grid" id="slotsGrid"></div>
+
+  <button class="powder-btn" id="powderBtn" type="button" disabled>마법가루 뿌리기</button>
+</div>
+
+<div class="sheet-overlay" id="pickerOverlay">
+  <div class="sheet" id="pickerSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="pickerTitle"></div>
+    <div class="potion-list" id="potionList"></div>
+    <button class="sheet-close" id="pickerCloseBtn" type="button">닫기</button>
+  </div>
+</div>
+
+<div class="sheet-overlay" id="bookOverlay">
+  <div class="sheet book-sheet" id="bookSheet">
+    <div class="sheet-handle"></div>
+    <div class="book-tabs" id="bookTabs"></div>
+    <div class="book-body" id="bookBody"></div>
+    <button class="sheet-close" id="bookCloseBtn" type="button">닫기</button>
+  </div>
+</div>
+
+<div class="overlay" id="resultOverlay">
+  <div class="result-grade" id="resultGrade"></div>
+  <div class="result-mirror" id="resultMirror"></div>
+  <div class="result-score" id="resultScore"></div>
+  <div class="result-hint" id="resultHint" style="display:none"></div>
+  <div class="result-actions">
+    <button class="result-btn secondary" id="resultBookBtn" type="button">마법책 보기</button>
+    <button class="result-btn primary" id="resultRetryBtn" type="button">다시 조합하기</button>
+  </div>
+</div>
+
+<div class="overlay show" id="introOverlay">
+  <div class="intro-title">🪄 변신 마법</div>
+  <div class="intro-text" id="introText"></div>
+  <div class="result-actions">
+    <button class="result-btn primary" id="introStartBtn" type="button">시작하기</button>
+  </div>
+</div>
+
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
+}
+</script>
+<script>
+/* =========================================================================
+   변신 마법 — 조합 퍼즐 미니게임.
+   목표 인물(루미아)의 특징을 마법책에서 확인하고, 8개 속성의 마법약을 골라
+   솥에 넣은 뒤 마법가루로 결과를 확정하는 실험형 조합 게임. 정답을 몰라도
+   변신은 항상 일어나며, 오답 속성은 결과 초상에 그대로 반영된다.
+
+   Reached via /dev/minigame-transform/'s 설정 screen (or its own ▶ 플레이
+   shortcut from /dev/minigames) — settings travel as query params
+   (?diff=&mode=&fx=&motion=), same convention as minigame-fishing/play/.
+   ========================================================================= */
+
+const settingsParams = new URLSearchParams(location.search);
+const DIFFICULTY = ['easy', 'hard'].includes(settingsParams.get('diff')) ? settingsParams.get('diff') : 'normal';
+const MODE = settingsParams.get('mode') === 'free' ? 'free' : 'mission';
+const FX = settingsParams.get('fx') === 'fast' ? 'fast' : 'full';
+const REDUCED_MOTION = settingsParams.get('motion') === 'reduced';
+if (REDUCED_MOTION) document.getElementById('frame').classList.add('reduced-motion');
+
+function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+function vibrate(ms) { if (navigator.vibrate) navigator.vibrate(ms); }
+
+/* ===== Attribute + potion data ===== */
+const ATTRIBUTES = [
+  { key: 'eyes', label: '눈동자약', icon: '👁️' },
+  { key: 'skin', label: '피부색약', icon: '🎨' },
+  { key: 'age', label: '나이약', icon: '⏳' },
+  { key: 'gender', label: '남녀구분약', icon: '⚧' },
+  { key: 'character', label: '캐릭터약', icon: '🧬' },
+  { key: 'decoration', label: '꾸미기약', icon: '🎀' },
+  { key: 'body', label: '몸매약', icon: '🫧' },
+  { key: 'face', label: '얼굴약', icon: '😊' },
+];
+const ATTRIBUTE_WEIGHTS = { eyes: 1, skin: 1, age: 1.2, gender: 1.2, character: 2.5, decoration: 0.8, body: 1.4, face: 1.4 };
+
+const POTIONS = {
+  eyes: [
+    { id: 'eyes_amethyst', name: '자수정 눈동자약', desc: '눈동자를 짙은 보라색으로 물들인다.', color: '#8A5AC2' },
+    { id: 'eyes_dawn', name: '새벽 눈동자약', desc: '눈동자를 맑은 푸른색으로 물들인다.', color: '#3E8EDE' },
+    { id: 'eyes_emerald', name: '에메랄드 눈동자약', desc: '눈동자를 짙은 초록색으로 물들인다.', color: '#2FA66B' },
+    { id: 'eyes_ruby', name: '루비 눈동자약', desc: '눈동자를 선명한 붉은색으로 물들인다.', color: '#D9455B' },
+  ],
+  skin: [
+    { id: 'skin_apricot', name: '살구빛 피부약', desc: '피부를 따뜻한 살구색으로 바꾼다.', color: '#F4B183' },
+    { id: 'skin_snow', name: '눈꽃 피부약', desc: '피부를 창백한 흰색으로 바꾼다.', color: '#F3E9DD' },
+    { id: 'skin_gold', name: '황금빛 피부약', desc: '피부를 반짝이는 금색으로 바꾼다.', color: '#D8B23A' },
+    { id: 'skin_obsidian', name: '흑요석 피부약', desc: '피부를 짙은 먹빛으로 바꾼다.', color: '#4A4550' },
+  ],
+  age: [
+    { id: 'age_baby', name: '아기약', desc: '갓난아기 모습으로 되돌린다.', color: '#F7E7CE', scaleClass: 'age-baby' },
+    { id: 'age_child', name: '어린이약', desc: '어린이 모습으로 만든다.', color: '#F2C879', scaleClass: '' },
+    { id: 'age_adult', name: '성인약', desc: '성인 모습으로 만든다.', color: '#D6A84B', scaleClass: 'age-adult' },
+    { id: 'age_elder', name: '노년약', desc: '나이 든 모습으로 만든다.', color: '#8B95A1', scaleClass: 'age-elder' },
+  ],
+  gender: [
+    { id: 'gender_feminine', name: '여성형약', desc: '여성형 모습으로 만든다.', color: '#E88BC5', badge: '♀' },
+    { id: 'gender_masculine', name: '남성형약', desc: '남성형 모습으로 만든다.', color: '#59B8C8', badge: '♂' },
+    { id: 'gender_neutral', name: '정령형약', desc: '성별이 없는 정령형 모습으로 만든다.', color: '#A78BFA', badge: '✦' },
+  ],
+  character: [
+    { id: 'character_lumia', name: '루미아 계열약', desc: '별빛 극단의 요정, 루미아 계열로 기본 골격을 잡는다.', color: '#C9A6FF', emoji: '🧚' },
+    { id: 'character_shadow', name: '그림자정령약', desc: '그림자 정령 계열로 기본 골격을 잡는다.', color: '#6B5B95', emoji: '👻' },
+    { id: 'character_robot', name: '로봇약', desc: '기계 인형 계열로 기본 골격을 잡는다.', color: '#8FA6B0', emoji: '🤖' },
+    { id: 'character_werewolf', name: '늑대인간약', desc: '늑대인간 계열로 기본 골격을 잡는다.', color: '#7A6A58', emoji: '🐺' },
+    { id: 'character_mermaid', name: '인어약', desc: '인어 계열로 기본 골격을 잡는다.', color: '#4FB6C9', emoji: '🧜' },
+  ],
+  decoration: [
+    { id: 'decor_rose', name: '장미 장식약', desc: '장미 장식을 더한다.', color: '#E0507A', emoji: '🌹' },
+    { id: 'decor_strawberry', name: '딸기 장식약', desc: '딸기 장식을 더한다.', color: '#E2445C', emoji: '🍓' },
+    { id: 'decor_star', name: '별빛 장식약', desc: '별빛 장식을 더한다.', color: '#F2D06B', emoji: '✨' },
+    { id: 'decor_feather', name: '깃털 장식약', desc: '깃털 장식을 더한다.', color: '#B7C9D6', emoji: '🪶' },
+    { id: 'decor_ribbon', name: '리본 장식약', desc: '리본 장식을 더한다.', color: '#E97BB0', emoji: '🎀' },
+  ],
+  body: [
+    { id: 'body_hourglass', name: '모래시계 체형약', desc: '허리가 잘록한 체형으로 만든다.', color: '#D98BD0', shapeClass: 'body-hourglass' },
+    { id: 'body_petite', name: '아담한 체형약', desc: '작고 아담한 체형으로 만든다.', color: '#8BD9C0', shapeClass: 'body-petite' },
+    { id: 'body_slender', name: '늘씬한 체형약', desc: '키가 크고 늘씬한 체형으로 만든다.', color: '#8BAFD9', shapeClass: 'body-slender' },
+    { id: 'body_sturdy', name: '우람한 체형약', desc: '다부지고 우람한 체형으로 만든다.', color: '#D9B48B', shapeClass: 'body-sturdy' },
+  ],
+  face: [
+    { id: 'face_rabbit', name: '토끼상 얼굴약', desc: '토끼를 닮은 얼굴로 만든다.', color: '#F2E1E1', emoji: '🐰' },
+    { id: 'face_cat', name: '고양이상 얼굴약', desc: '고양이를 닮은 얼굴로 만든다.', color: '#E2B6D9', emoji: '🐱' },
+    { id: 'face_bear', name: '곰상 얼굴약', desc: '곰을 닮은 얼굴로 만든다.', color: '#C9A27A', emoji: '🐻' },
+    { id: 'face_bird', name: '새상 얼굴약', desc: '새를 닮은 얼굴로 만든다.', color: '#9FD9C9', emoji: '🐦' },
+    { id: 'face_fox', name: '여우상 얼굴약', desc: '여우를 닮은 얼굴로 만든다.', color: '#E2A15E', emoji: '🦊' },
+  ],
+};
+
+function potionById(attr, id) { return POTIONS[attr].find(p => p.id === id) || null; }
+
+/* ===== Target recipe — 루미아, 별빛 극단의 인기 배우 ===== */
+const TARGET = {
+  name: '루미아',
+  flavor: '별빛 극단에서 밤마다 무대에 오르는 요정. 연금술사의 거울이 오늘 축제에서 가장 빛나는 이로 그녀를 꼽았다.',
+  valid: {
+    eyes: ['eyes_amethyst'],
+    skin: ['skin_apricot'],
+    age: ['age_child'],
+    gender: ['gender_feminine'],
+    character: ['character_lumia'],
+    decoration: ['decor_rose', 'decor_strawberry'],
+    body: ['body_hourglass'],
+    face: ['face_rabbit'],
+  },
+};
+
+const CLUES = {
+  eyes: { easy: '보랏빛 눈동자를 지녔다.', normal: '해 질 무렵 제비꽃 같은 눈동자를 지녔다.', hard: '그녀의 시선은 이슬 맺힌 보석처럼 은은히 빛난다.' },
+  skin: { easy: '따뜻한 살구빛 피부를 지녔다.', normal: '살짝 발그레한 살구빛 피부를 지녔다.', hard: '볼에는 이른 봄 과일 같은 온기가 감돈다.' },
+  age: { easy: '어린이 모습이다.', normal: '이제 막 두 자리 나이를 시작한 소녀다.', hard: '아직 앳되지만 아기라 부르기엔 훌쩍 자랐다.' },
+  gender: { easy: '여성형 모습이다.', normal: '소녀의 모습을 하고 있다.', hard: '부드러운 곡선을 지닌 모습이다.' },
+  character: { easy: '요정 계열이다.', normal: '별빛 극단에서 활동하는 요정이다.', hard: '무대 위에서 반짝이는 날개를 가진 이다.' },
+  decoration: { easy: '장미 또는 딸기 장식을 좋아한다.', normal: '정원과 과수원 중 하나를 즐겨 찾는다.', hard: '붉은 꽃이나 달콤한 열매 향을 좋아한다.' },
+  body: { easy: '잘록한 허리의 모래시계 체형이다.', normal: '허리가 잘록하게 들어간 몸매다.', hard: '굴곡이 뚜렷한 실루엣을 가졌다.' },
+  face: { easy: '토끼상 얼굴이다.', normal: '긴 귀를 가진 동물을 닮은 얼굴이다.', hard: '귀가 유난히 쫑긋하고 길다.' },
+};
+
+/* ===== Runtime state ===== */
+let selections = { eyes: null, skin: null, age: null, gender: null, character: null, decoration: null, body: null, face: null };
+let phase = 'selecting'; // selecting | ready | transforming | result
+let failCount = 0;
+let currentPickerAttr = null;
+
+const el = {};
+['mirrorBubble', 'portraitWrap', 'portraitShape', 'portraitBase', 'badgeEye', 'badgeFace', 'badgeDecor', 'badgeGender',
+ 'cauldron', 'cauldronLiquid', 'fxFlash', 'fxSmoke', 'targetLine', 'slotsGrid', 'powderBtn',
+ 'pickerOverlay', 'pickerTitle', 'potionList', 'pickerCloseBtn',
+ 'bookBtn', 'bookOverlay', 'bookTabs', 'bookBody', 'bookCloseBtn',
+ 'resultOverlay', 'resultGrade', 'resultMirror', 'resultScore', 'resultHint', 'resultBookBtn', 'resultRetryBtn',
+ 'introOverlay', 'introText', 'introStartBtn'].forEach(id => { el[id] = document.getElementById(id); });
+
+el.targetLine.innerHTML = `목표: <b>${TARGET.name}</b>로 변신하기${MODE === 'free' ? ' · 자유 실험 모드' : ''}`;
+
+/* ===== Slots ===== */
+function renderSlots() {
+  el.slotsGrid.innerHTML = ATTRIBUTES.map(a => {
+    const picked = selections[a.key] ? potionById(a.key, selections[a.key]) : null;
+    return `
+      <div class="slot-btn${picked ? ' filled' : ''}${hintRevealAttr === a.key && phase === 'selecting' ? ' hint-glow' : ''}" data-attr="${a.key}" id="slot-${a.key}">
+        <div class="slot-icon">${a.icon}</div>
+        <div class="slot-label">${a.label}</div>
+        <div class="slot-picked">${picked ? picked.name.replace(/약$/, '') : '미선택'}</div>
+      </div>
+    `;
+  }).join('');
+  ATTRIBUTES.forEach(a => {
+    document.getElementById(`slot-${a.key}`).addEventListener('click', () => openPicker(a.key));
+  });
+}
+
+function isComplete() { return ATTRIBUTES.every(a => selections[a.key] !== null); }
+
+function updatePowderButton() {
+  const ready = isComplete() && phase === 'selecting';
+  el.powderBtn.disabled = !ready;
+  el.powderBtn.classList.toggle('pulse', ready);
+  el.powderBtn.textContent = ready ? '✨ 마법가루 뿌리기' : (isComplete() ? '변신 중…' : '마법가루 뿌리기 (재료를 모두 채워주세요)');
+}
+
+/* ===== Cauldron liquid mix — reflects the whole current combo, not just
+   the last pick (request doc §11). ===== */
+function hexToRgb(hex) {
+  const m = hex.replace('#', '');
+  return [parseInt(m.slice(0, 2), 16), parseInt(m.slice(2, 4), 16), parseInt(m.slice(4, 6), 16)];
+}
+function rgbToHex([r, g, b]) { return '#' + [r, g, b].map(v => Math.round(v).toString(16).padStart(2, '0')).join(''); }
+
+function updateCauldronColor() {
+  const picked = ATTRIBUTES.map(a => selections[a.key] && potionById(a.key, selections[a.key])).filter(Boolean);
+  if (!picked.length) {
+    el.cauldronLiquid.style.setProperty('--liquid-color', '#2c3440');
+    el.cauldronLiquid.classList.remove('bubble');
+    return;
+  }
+  const sum = picked.reduce((acc, p) => {
+    const [r, g, b] = hexToRgb(p.color);
+    return [acc[0] + r, acc[1] + g, acc[2] + b];
+  }, [0, 0, 0]);
+  const avg = sum.map(v => v / picked.length);
+  el.cauldronLiquid.style.setProperty('--liquid-color', rgbToHex(avg));
+  el.cauldronLiquid.classList.toggle('bubble', picked.length > 0 && !REDUCED_MOTION);
+}
+
+/* ===== Potion picker sheet ===== */
+function openPicker(attrKey) {
+  if (phase !== 'selecting') return;
+  currentPickerAttr = attrKey;
+  const meta = ATTRIBUTES.find(a => a.key === attrKey);
+  el.pickerTitle.textContent = `${meta.icon} ${meta.label} 고르기`;
+  const showHint = MODE === 'mission' && hintRevealAttr === attrKey;
+  el.potionList.innerHTML = POTIONS[attrKey].map(p => {
+    const isHintTarget = showHint && TARGET.valid[attrKey].includes(p.id);
+    return `
+    <div class="potion-row${selections[attrKey] === p.id ? ' selected' : ''}${isHintTarget ? ' hint-highlight' : ''}" data-id="${p.id}">
+      <div class="potion-swatch" style="background:${p.color}">${p.emoji || ''}</div>
+      <div class="potion-info">
+        <div class="potion-name">${p.name}${isHintTarget ? ' ✨' : ''}</div>
+        <div class="potion-desc">${p.desc}</div>
+      </div>
+    </div>
+  `;
+  }).join('');
+  el.potionList.querySelectorAll('.potion-row').forEach(row => {
+    row.addEventListener('click', () => pickPotion(attrKey, row.dataset.id));
+  });
+  el.pickerOverlay.classList.add('show');
+}
+function closePicker() { el.pickerOverlay.classList.remove('show'); currentPickerAttr = null; }
+
+function pickPotion(attrKey, id) {
+  selections[attrKey] = id;
+  vibrate(8);
+  renderSlots();
+  updateCauldronColor();
+  updatePowderButton();
+  closePicker();
+}
+
+el.pickerCloseBtn.addEventListener('click', closePicker);
+el.pickerOverlay.addEventListener('click', (e) => { if (e.target === el.pickerOverlay) closePicker(); });
+
+/* ===== Magic book ===== */
+const BOOK_TABS = [
+  { id: 'target', label: '목표 정보' },
+  { id: 'encyclo', label: '물약 도감' },
+  { id: 'howto', label: '조작법' },
+  { id: 'found', label: '발견한 결과' },
+];
+let activeBookTab = 'target';
+
+function renderBookTabs() {
+  el.bookTabs.innerHTML = BOOK_TABS.map(t =>
+    `<button type="button" class="book-tab${t.id === activeBookTab ? ' active' : ''}" data-id="${t.id}">${t.label}</button>`
+  ).join('');
+  el.bookTabs.querySelectorAll('.book-tab').forEach(btn => {
+    btn.addEventListener('click', () => { activeBookTab = btn.dataset.id; renderBookTabs(); renderBookBody(); });
+  });
+}
+
+function renderBookBody() {
+  if (activeBookTab === 'target') {
+    el.bookBody.innerHTML = `
+      <div class="book-flavor">${TARGET.flavor}</div>
+      ${ATTRIBUTES.map(a => `
+        <div class="clue-row">
+          <div class="clue-icon">${a.icon}</div>
+          <div>
+            <div class="clue-label">${a.label}</div>
+            <div class="clue-text">${MODE === 'free' ? '자유 실험 모드에서는 정답이 없어요. 마음껏 조합해 보세요.' : CLUES[a.key][DIFFICULTY]}</div>
+          </div>
+        </div>
+      `).join('')}
+    `;
+  } else if (activeBookTab === 'encyclo') {
+    el.bookBody.innerHTML = ATTRIBUTES.map(a => `
+      <div class="encyclo-group">
+        <div class="encyclo-title">${a.icon} ${a.label}</div>
+        ${POTIONS[a.key].map(p => `
+          <div class="encyclo-item">
+            <div class="encyclo-swatch" style="background:${p.color}"></div>
+            <div>
+              <div class="encyclo-name">${p.name}</div>
+              <div class="encyclo-desc">${p.desc}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `).join('');
+  } else if (activeBookTab === 'howto') {
+    el.bookBody.innerHTML = `
+      <div class="howto-text">1. 마법책 '목표 정보' 탭에서 단서를 확인해요.
+2. 슬롯을 눌러 후보 물약 중 하나를 골라요.
+3. 8개 속성을 모두 채우면 마법가루 버튼이 켜져요.
+4. 마법가루를 뿌리면 결과가 확정돼요.
+5. 오답이어도 실패가 아니라 새로운 모습이에요. 다시 조합해 보세요.</div>
+      <button type="button" class="replay-btn" id="replayIntroBtn">오프닝 다시보기</button>
+    `;
+    document.getElementById('replayIntroBtn').addEventListener('click', () => {
+      closeBook();
+      el.introOverlay.classList.add('show');
+    });
+  } else if (activeBookTab === 'found') {
+    const collection = loadCollection();
+    const keys = Object.keys(collection);
+    if (!keys.length) {
+      el.bookBody.innerHTML = `<div class="collection-empty">아직 발견한 결과가 없어요. 마법가루를 뿌려 보세요.</div>`;
+    } else {
+      el.bookBody.innerHTML = `<div class="collection-grid">${keys.map(k => {
+        const entry = collection[k];
+        return `<div class="collection-item"><div class="collection-emoji">${GRADE_EMOJI[entry.bestGrade] || '❔'}</div><div class="collection-count">×${entry.count}</div></div>`;
+      }).join('')}</div>`;
+    }
+  }
+}
+
+function openBook() {
+  if (phase === 'transforming') return;
+  activeBookTab = 'target';
+  renderBookTabs();
+  renderBookBody();
+  el.bookOverlay.classList.add('show');
+}
+function closeBook() { el.bookOverlay.classList.remove('show'); }
+el.bookBtn.addEventListener('click', openBook);
+el.resultBookBtn.addEventListener('click', openBook);
+el.bookCloseBtn.addEventListener('click', closeBook);
+el.bookOverlay.addEventListener('click', (e) => { if (e.target === el.bookOverlay) closeBook(); });
+
+/* ===== Collection (도감) ===== */
+const COLLECTION_KEY = 'mkTransformCollection';
+const GRADE_EMOJI = { PERFECT: '👑', NEAR_SUCCESS: '💫', MIXED: '🌀', FAIL: '🫥', SPECIAL: '🌈', FREE: '🧪' };
+const GRADE_RANK = { FAIL: 0, MIXED: 1, NEAR_SUCCESS: 2, SPECIAL: 2, PERFECT: 3, FREE: 1 };
+function loadCollection() { try { return JSON.parse(localStorage.getItem(COLLECTION_KEY)) || {}; } catch (e) { return {}; } }
+function saveCollection(data) { try { localStorage.setItem(COLLECTION_KEY, JSON.stringify(data)); } catch (e) {} }
+function recordDiscovery(resultKey, grade) {
+  const collection = loadCollection();
+  const entry = collection[resultKey] || { count: 0, bestGrade: grade };
+  entry.count += 1;
+  if (GRADE_RANK[grade] > GRADE_RANK[entry.bestGrade]) entry.bestGrade = grade;
+  collection[resultKey] = entry;
+  saveCollection(collection);
+}
+
+/* ===== Evaluation (request doc §20) ===== */
+function evaluateRecipe() {
+  const details = ATTRIBUTES.map(a => {
+    const selected = selections[a.key];
+    const valid = TARGET.valid[a.key];
+    const correct = selected !== null && valid.includes(selected);
+    return { attribute: a.key, selected, correct, weight: ATTRIBUTE_WEIGHTS[a.key] };
+  });
+  const rawCorrectCount = details.filter(d => d.correct).length;
+  const totalWeight = details.reduce((s, d) => s + d.weight, 0);
+  const correctWeight = details.filter(d => d.correct).reduce((s, d) => s + d.weight, 0);
+  const weightedScore = correctWeight / totalWeight;
+  const characterCorrect = details.find(d => d.attribute === 'character').correct;
+
+  let grade;
+  if (rawCorrectCount === 8) grade = 'PERFECT';
+  else if (characterCorrect && weightedScore >= 0.8) grade = 'NEAR_SUCCESS';
+  else if (weightedScore >= 0.5) grade = 'MIXED';
+  else grade = 'FAIL';
+
+  return { grade, rawCorrectCount, weightedScore, details };
+}
+
+/* ===== Easter eggs (request doc §14.2) — checked before the normal grade
+   the way composeResult()'s special-combination lookup runs first. ===== */
+function hexToHsl(hex) {
+  let [r, g, b] = hexToRgb(hex).map(v => v / 255);
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h = 0, s = 0, l = (max + min) / 2;
+  const d = max - min;
+  if (d !== 0) {
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    if (max === r) h = ((g - b) / d + (g < b ? 6 : 0));
+    else if (max === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+    h *= 60;
+  }
+  return { h, s, l };
+}
+function findSpecialCombination() {
+  const picked = ATTRIBUTES.map(a => potionById(a.key, selections[a.key]));
+  const hues = picked.map(p => hexToHsl(p.color).h);
+  const hueSpread = Math.max(...hues) - Math.min(...hues);
+  if (hueSpread <= 28) return { name: '단색 마법 생명체', mirror: '색은 완벽히 통일했는데… 이게 누구였더라?' };
+
+  const allLast = ATTRIBUTES.every(a => {
+    const list = POTIONS[a.key];
+    return selections[a.key] === list[list.length - 1].id;
+  });
+  if (allLast) return { name: '혼돈의 대연금술사', mirror: '새로운 생명체를 만들어 낸 건 인정하지.' };
+
+  return null;
+}
+
+/* ===== Portrait composition — every attribute visibly changes the result,
+   right or wrong (request doc §7.1, §28). Only rendered at RESULT time so
+   selecting never previews the final form (request doc §3.1); the cauldron
+   liquid color is the only feedback during SELECTING. ===== */
+function composePortrait() {
+  const eyes = potionById('eyes', selections.eyes);
+  const skin = potionById('skin', selections.skin);
+  const age = potionById('age', selections.age);
+  const gender = potionById('gender', selections.gender);
+  const character = potionById('character', selections.character);
+  const decoration = potionById('decoration', selections.decoration);
+  const body = potionById('body', selections.body);
+  const face = potionById('face', selections.face);
+
+  el.portraitBase.textContent = character.emoji;
+  el.portraitShape.className = 'portrait-shape ' + body.shapeClass + ' ' + age.scaleClass;
+  el.portraitShape.style.backgroundColor = skin.color;
+
+  el.badgeEye.classList.add('show');
+  el.badgeEye.style.setProperty('--eye-color', eyes.color);
+  el.badgeFace.textContent = face.emoji;
+  el.badgeFace.classList.add('show');
+  el.badgeDecor.textContent = decoration.emoji;
+  el.badgeDecor.classList.add('show');
+  el.badgeGender.textContent = gender.badge;
+  el.badgeGender.classList.add('show');
+
+  el.portraitWrap.style.display = 'block';
+}
+
+/* ===== Mirror reactions (request doc §8) ===== */
+function mirrorLine(evaluation, special) {
+  if (MODE === 'free') return '새로운 모습이 완성되었어요.';
+  if (special) return special.mirror;
+  switch (evaluation.grade) {
+    case 'PERFECT': return `완벽해! 정말 ${TARGET.name}, 그 자체잖아!`;
+    case 'NEAR_SUCCESS': return '거의 다 왔어… 어딘가 조금 다른 것 같은데?';
+    case 'MIXED': return `${TARGET.name}를 닮긴 했지만, 어딘가 많이 섞였군.`;
+    case 'FAIL':
+    default:
+      return evaluation.details.find(d => d.attribute === 'character').correct
+        ? '…이것도 나름 개성 있네.'
+        : '잠깐, 애초에 다른 존재잖아!';
+  }
+}
+
+let hintRevealAttr = null;
+
+function hintLine(evaluation) {
+  if (evaluation.grade === 'PERFECT') { hintRevealAttr = null; return null; }
+  const wrong = evaluation.details.filter(d => !d.correct);
+  if (!wrong.length) { hintRevealAttr = null; return null; }
+  if (failCount <= 1) return '얼굴과 몸매 쪽을 다시 살펴봐.';
+  if (failCount === 2) {
+    const target = wrong.find(d => d.attribute === 'face') || wrong[0];
+    return `힌트: ${ATTRIBUTES.find(a => a.key === target.attribute).label}을(를) 다시 골라봐.`;
+  }
+  hintRevealAttr = wrong[0].attribute;
+  return `힌트: ${ATTRIBUTES.find(a => a.key === hintRevealAttr).label} 슬롯이 반짝이고 있어. 눌러서 정답 후보를 확인해봐.`;
+}
+
+/* ===== Transformation sequence (request doc §9) ===== */
+const TIMING = {
+  full: { shake: 650, smoke: 550, flash: 140, reveal: 450 },
+  fast: { shake: 180, smoke: 150, flash: 90, reveal: 220 },
+};
+async function runTransformSequence() {
+  const t = TIMING[FX];
+  el.mirrorBubble.style.display = 'none';
+  el.cauldron.classList.toggle('shake', !REDUCED_MOTION);
+  vibrate(15);
+  await wait(t.shake);
+
+  el.cauldron.classList.remove('shake');
+  el.fxSmoke.classList.add('show');
+  await wait(t.smoke);
+
+  if (!REDUCED_MOTION) {
+    el.fxFlash.classList.add('show');
+    await wait(t.flash);
+    el.fxFlash.classList.remove('show');
+  }
+
+  composePortrait();
+  el.fxSmoke.classList.remove('show');
+  await wait(t.reveal);
+}
+
+/* ===== Result flow ===== */
+function showResult() {
+  const special = MODE === 'mission' ? findSpecialCombination() : null;
+  const evaluation = MODE === 'mission' ? evaluateRecipe() : null;
+  const grade = MODE === 'free' ? 'FREE' : (special ? 'SPECIAL' : evaluation.grade);
+
+  if (MODE === 'mission' && grade !== 'PERFECT') failCount++;
+  else if (grade === 'PERFECT') failCount = 0;
+
+  const resultKey = ATTRIBUTES.map(a => selections[a.key]).join('__');
+  recordDiscovery(resultKey, grade);
+
+  el.resultGrade.className = 'result-grade ' + grade;
+  el.resultGrade.textContent = {
+    PERFECT: '완전 성공!', NEAR_SUCCESS: '거의 성공', MIXED: '혼합 변신', FAIL: '대실패',
+    SPECIAL: special ? special.name : '특수 결과', FREE: '변신 완료',
+  }[grade];
+  el.resultMirror.textContent = mirrorLine(evaluation, special);
+
+  if (MODE === 'mission') {
+    el.resultScore.textContent = `일치한 속성: ${evaluation.rawCorrectCount} / 8`;
+    const hint = hintLine(evaluation);
+    el.resultHint.style.display = hint ? 'block' : 'none';
+    el.resultHint.textContent = hint || '';
+  } else {
+    el.resultScore.textContent = '';
+    el.resultHint.style.display = 'none';
+  }
+
+  el.mirrorBubble.textContent = el.resultMirror.textContent;
+  el.mirrorBubble.style.display = 'block';
+
+  phase = 'result';
+  el.resultOverlay.classList.add('show');
+}
+
+async function onPowderClick() {
+  if (el.powderBtn.disabled || phase !== 'selecting') return;
+  phase = 'transforming';
+  updatePowderButton();
+  await runTransformSequence();
+  showResult();
+}
+el.powderBtn.addEventListener('click', onPowderClick);
+
+function retry() {
+  selections = { eyes: null, skin: null, age: null, gender: null, character: null, decoration: null, body: null, face: null };
+  phase = 'selecting';
+  el.resultOverlay.classList.remove('show');
+  el.mirrorBubble.style.display = 'none';
+  el.portraitWrap.style.display = 'none';
+  renderSlots();
+  updateCauldronColor();
+  updatePowderButton();
+}
+el.resultRetryBtn.addEventListener('click', retry);
+
+/* ===== First-play intro (request doc §2.1, §13) — shown once, replayable
+   from the magic book's 조작법 tab. ===== */
+const INTRO_KEY = 'mkTransformIntroSeen';
+el.introText.textContent =
+  `연금술사: "거울아, 오늘 축제에서 가장 빛나는 이는 누구지?"\n거울: "별빛 극단의 ${TARGET.name}입니다."\n연금술사: "좋아, 그 모습으로 변신해 주겠어!"\n\n마법책에서 단서를 확인하고, 8개의 마법약을 골라 솥에 넣은 뒤 마법가루를 뿌려보세요. 오답도 재미있는 결과가 되니 여러 조합을 시험해 보세요.`;
+if (localStorage.getItem(INTRO_KEY)) el.introOverlay.classList.remove('show');
+el.introStartBtn.addEventListener('click', () => {
+  try { localStorage.setItem(INTRO_KEY, '1'); } catch (e) {}
+  el.introOverlay.classList.remove('show');
+});
+
+renderSlots();
+updateCauldronColor();
+updatePowderButton();
+</script>
+<script src="/dev/devPlanFab.js"></script>
+</body>
+</html>

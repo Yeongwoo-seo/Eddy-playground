@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>OPERATION MK · 변신 마법 설정</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<meta name="theme-color" content="#080A0C">
+<link rel="manifest" href="/dev/manifest.json">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="OPERATION MK DEV">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#080A0C;--surface-1:#101419;--surface-2:#171C22;
+  --text-primary:#EDF1F4;--text-secondary:#929BA5;--text-muted:#5F6872;
+  --cyan:#59B8C8;--amber:#D6A84B;--green:#3ECF6B;--signal-red:#D94141;--divider:rgba(255,255,255,0.08);
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sans:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
+}
+html,body{height:100%}
+body{background:#050607;color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center;min-height:100dvh}
+.frame{width:100%;max-width:430px;min-height:100dvh;min-height:100vh;padding:calc(48px + env(safe-area-inset-top,0)) 20px calc(32px + env(safe-area-inset-bottom,0));display:flex;flex-direction:column}
+.back{font-family:var(--mono);font-size:12px;color:var(--text-muted);text-decoration:none;margin-bottom:18px;display:inline-flex;align-items:center;gap:4px;width:fit-content}
+.tag{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px}
+.title{font-size:26px;font-weight:700;letter-spacing:-.2px;margin-bottom:10px}
+.sub{font-size:14px;color:var(--text-secondary);margin-bottom:32px;line-height:1.6}
+
+.option-group{margin-bottom:28px}
+.option-label{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px}
+.option-desc{font-size:12.5px;color:var(--text-muted);margin-bottom:12px;line-height:1.5}
+.option-pills{display:flex;flex-wrap:wrap;gap:8px}
+.option-pill{font-family:var(--sans);font-size:13.5px;font-weight:600;color:var(--text-secondary);background:var(--surface-1);border:1px solid var(--divider);border-radius:20px;padding:10px 16px;cursor:pointer;transition:transform .15s,background .15s,color .15s,border-color .15s}
+.option-pill:active{transform:scale(.96)}
+.option-pill.active{color:#04181c;background:var(--cyan);border-color:var(--cyan)}
+
+.test-btn{margin-top:auto;font-family:var(--mono);font-size:14.5px;font-weight:700;letter-spacing:.04em;color:#08110c;background:var(--green);border:none;border-radius:16px;padding:16px;cursor:pointer;text-align:center;text-decoration:none;display:block}
+.test-btn:active{opacity:.8}
+</style>
+</head>
+<body>
+<div class="frame">
+  <a class="back" href="/dev/minigames/">‹ DEV</a>
+  <div class="tag">Minigame · 설정</div>
+  <div class="title">🪄 변신 마법</div>
+  <div class="sub">마법책에서 목표 인물의 단서를 확인하고, 8가지 마법약을 골라 솥에 넣은 뒤 마법가루로 결과를 확인하는 조합 퍼즐이에요. 오답도 결과 외형에 그대로 반영돼요.</div>
+
+  <div class="option-group">
+    <div class="option-label">난이도</div>
+    <div class="option-desc">마법책 단서가 얼마나 직접적인지 정해요. 어려울수록 단서가 은유적으로 바뀌어요.</div>
+    <div class="option-pills" id="diffPills"></div>
+  </div>
+
+  <div class="option-group">
+    <div class="option-label">모드</div>
+    <div class="option-desc">변신 미션은 목표 인물과 맞히기를 겨루고, 자유 실험은 정답 없이 조합만 즐기는 모드예요.</div>
+    <div class="option-pills" id="modePills"></div>
+  </div>
+
+  <div class="option-group">
+    <div class="option-label">변신 연출</div>
+    <div class="option-desc">빠른 연출은 솥 흔들림·연기 등 변신 애니메이션을 최대한 줄여요.</div>
+    <div class="option-pills" id="fxPills"></div>
+  </div>
+
+  <div class="option-group">
+    <div class="option-label">접근성</div>
+    <div class="option-desc">화면 반짝임과 움직임을 줄여요.</div>
+    <div class="option-pills" id="motionPills"></div>
+  </div>
+
+  <a class="test-btn" id="testBtn" href="/dev/minigame-transform/play/">테스트하기</a>
+</div>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
+}
+</script>
+<script>
+// Options mirror the query-string names the play screen reads directly
+// (?diff=, ?mode=, ?fx=, ?motion=) — see dev/minigame-transform/play/'s
+// settingsParams block. Defaults (first entry of each list) are omitted
+// from the query string so a bare /play/ visit still behaves the same.
+const DIFFICULTY_OPTIONS = [
+  { id: 'normal', label: '보통' },
+  { id: 'easy', label: '쉬움' },
+  { id: 'hard', label: '어려움' },
+];
+const MODE_OPTIONS = [
+  { id: 'mission', label: '변신 미션' },
+  { id: 'free', label: '자유 실험' },
+];
+const FX_OPTIONS = [
+  { id: 'full', label: '보통 연출' },
+  { id: 'fast', label: '빠른 연출' },
+];
+const MOTION_OPTIONS = [
+  { id: 'full', label: '기본' },
+  { id: 'reduced', label: '움직임 줄이기' },
+];
+
+let selected = { diff: 'normal', mode: 'mission', fx: 'full', motion: 'full' };
+
+function renderPills(container, options, key) {
+  container.innerHTML = options.map(o =>
+    `<button type="button" class="option-pill${o.id === selected[key] ? ' active' : ''}" data-id="${o.id}">${o.label}</button>`
+  ).join('');
+  container.querySelectorAll('.option-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selected[key] = btn.dataset.id;
+      renderAll();
+    });
+  });
+}
+
+const el = {
+  diffPills: document.getElementById('diffPills'),
+  modePills: document.getElementById('modePills'),
+  fxPills: document.getElementById('fxPills'),
+  motionPills: document.getElementById('motionPills'),
+  testBtn: document.getElementById('testBtn'),
+};
+
+function updateTestBtnHref() {
+  const params = new URLSearchParams();
+  if (selected.diff !== 'normal') params.set('diff', selected.diff);
+  if (selected.mode !== 'mission') params.set('mode', selected.mode);
+  if (selected.fx !== 'full') params.set('fx', selected.fx);
+  if (selected.motion !== 'full') params.set('motion', selected.motion);
+  const qs = params.toString();
+  el.testBtn.href = '/dev/minigame-transform/play/' + (qs ? '?' + qs : '');
+}
+
+function renderAll() {
+  renderPills(el.diffPills, DIFFICULTY_OPTIONS, 'diff');
+  renderPills(el.modePills, MODE_OPTIONS, 'mode');
+  renderPills(el.fxPills, FX_OPTIONS, 'fx');
+  renderPills(el.motionPills, MOTION_OPTIONS, 'motion');
+  updateTestBtnHref();
+}
+renderAll();
+</script>
+<script src="/dev/devPlanFab.js"></script>
+</body>
+</html>
