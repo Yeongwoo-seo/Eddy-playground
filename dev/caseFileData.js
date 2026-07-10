@@ -33,7 +33,7 @@ const caseMapLocations = [
       // 재배치됐다. A 재오픈(010), 최종 심문(011), 사건 재구성(012)도 모두
       // Circular Quay 권역이라 여기 포함. 엔딩(013)만 숙소라 위
       // accommodation 항목으로 옮겨졌다 — see week1Scenes in dialogueData.js.
-      'week1-scene-001', 'week1-scene-002', 'week1-scene-003',
+      'week1-scene-001', 'week1-scene-002', 'week1-scene-003', 'week1-scene-003-minigame',
       'week1-scene-004', 'week1-scene-004-minigame', 'week1-scene-004-review', 'week1-scene-005',
       'week1-scene-006', 'week1-scene-007', 'week1-scene-008', 'week1-scene-008-minigame',
       'week1-scene-009', 'week1-scene-010', 'week1-scene-011', 'week1-scene-012',

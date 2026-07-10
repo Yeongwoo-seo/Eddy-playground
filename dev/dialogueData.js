@@ -1088,158 +1088,19 @@ const week1Scene002Lines = [
    Dialogue Set: dialogue-week1-scene003
    Scene: week1-scene-003 (빈티지 팝업 전시장, 10:40)
 
-   ===== 1주차 장편 확장 v2 · §7 =====
-   순수 자유 조사 씬으로 재편 — 도난은 여기서 일어나지 않는다(다음 씬
-   week1-scene-004로 분리). 조사 포인트 5개 → 10개로 확대. 필수 3개(K-01/
-   접수대/출입구)는 각각 flag를 남기고, setFlagIfAll로 "hotspot:003:required-
-   complete" 집계 플래그를 만든다 — 이후 어떤 심문도 이 플래그를 필수로
-   요구하진 않지만(§20 "게임오버 없음"), 나가기 직전 관찰 보너스 여부를
-   가르는 데 쓴다. 선택 조사 7개는 optionalCount:003을 누적하고, 3개 이상
-   조사했으면 나갈 때 보너스 단서 한 줄이 더 붙는다. */
+   ===== 전시장 자유 조사 — 그리드 미니게임으로 전환 =====
+   원래 여기 있던 10개 핫스팟 텍스트 선택지 루프(hotspot-menu)는
+   week1-scene-003-minigame(dev/minigame-exhibition-search)으로 옮겼다 —
+   minigame-phone-search와 같은 "그리드 핫스팟 탐색 + 증거 획득 토스트"
+   방식이 대사 선택지 목록보다 "직접 둘러보며 찾는" 느낌에 더 맞기 때문.
+   이 VN 씬은 짧은 도입부만 담당하고, K-01 발견/필수·선택 조사/붐빔 전환/
+   보너스 단서는 전부 미니게임 쪽에 있다(§ minigame-exhibition-search 참고). */
 const week1Scene003Lines = [
   { id: 'line-001', speaker: '', text: '빈티지 팝업 전시장.\n오전 10시 40분.', characterId: null },
   { id: 'line-002', speaker: '', text: '작은 공간에 오래된 시계, 카메라, 금속 공예품들이\n유리 진열장 안에 나란히 놓여 있다.', characterId: null },
   { id: 'line-003', speaker: '지수', text: '오 여기 나름 알차네.', characterId: 'jisoo', expression: 'curious' },
   { id: 'line-004', speaker: '영우', text: '그치.\n생각보다 물건이 많아.\n천천히 한번 둘러볼래?', characterId: 'youngwoo', expression: 'soft' },
-  {
-    id: 'hotspot-menu', type: 'choice', speaker: '', text: '무엇을 자세히 볼까요?', characterId: null,
-    choices: [
-      { id: 'h-camera', label: '오래된 필름 카메라', goto: 'hs-camera' },
-      { id: 'h-watch', label: '은제 회중시계', goto: 'hs-watch' },
-      { id: 'h-k01', label: '황동 장치 K-01', condition: { flagBelow: { key: 'hotspot:003:k01-visits', lessThan: 1 } }, goto: 'hs-k01-first' },
-      { id: 'h-k01-again', label: '황동 장치 K-01 (다시 보기)', condition: { flags: ['hotspot:003:k01'] }, goto: 'hs-k01-again' },
-      { id: 'h-desk', label: '접수대', goto: 'hs-desk' },
-      { id: 'h-tag', label: '직원용 태그', goto: 'hs-tag' },
-      { id: 'h-staffdoor', label: '직원 전용문', goto: 'hs-staffdoor' },
-      { id: 'h-pamphlet', label: '전시장 안내 팸플릿', goto: 'hs-pamphlet' },
-      { id: 'h-guestbook', label: '방문객 방명록', goto: 'hs-guestbook' },
-      { id: 'h-camera-ceiling', label: '천장 보안카메라', goto: 'hs-ceiling' },
-      { id: 'h-entrance', label: '출입구 주변', goto: 'hs-entrance' },
-      { id: 'h-leave', label: '이제 안쪽 구경은 이 정도로', goto: 'exit-check' },
-    ],
-  },
-  { id: 'hs-camera', speaker: '', text: '접이식 빈티지 카메라. 렌즈 캡이 없어 안쪽이 살짝 뿌옇다.', characterId: null, effects: [{ type: 'incrementFlag', key: 'optionalCount:003' }], goto: 'hotspot-menu' },
-  { id: 'hs-watch', speaker: '', text: '은제 회중시계. 뒷면에 낯선 이니셜이 새겨져 있는데, 이 열쇠와는 다른 이니셜이다.', characterId: null, effects: [{ type: 'incrementFlag', key: 'optionalCount:003' }], goto: 'hotspot-menu' },
-  { id: 'hs-k01-first', speaker: '지수', text: '어?\n영우야, 이거 봐요.', characterId: 'jisoo', expression: 'shocked', goto: 'hs-k01-first-2' },
-  { id: 'hs-k01-first-2', speaker: '영우', text: '왜?', characterId: 'youngwoo', expression: 'curious', goto: 'hs-k01-first-3' },
-  { id: 'hs-k01-first-3', speaker: '지수', text: '이 작은 황동 장치.\n재질이 그때 그 열쇠랑 되게 비슷하지 않아요?', characterId: 'jisoo', expression: 'suspicious', goto: 'hs-k01-first-4' },
-  { id: 'hs-k01-first-4', speaker: '영우', text: '어디...', characterId: 'youngwoo', expression: 'curious', goto: 'hs-k01-first-5' },
-  { id: 'hs-k01-first-5', speaker: '', text: '[ 작은 황동 장치 · 카탈로그 번호 K-01 ]', characterId: null, goto: 'hs-k01-first-6' },
-  { id: 'hs-k01-first-6', speaker: '영우', text: '오, 진짜 비슷하네.', characterId: 'youngwoo', expression: 'curious', goto: 'hs-k01-first-7' },
-  { id: 'hs-k01-first-7', speaker: '지수', text: '이름표 봐요.\nK 다시 01.', characterId: 'jisoo', expression: 'curious', goto: 'hs-k01-first-8' },
-  { id: 'hs-k01-first-8', speaker: '영우', text: '그냥 정리 번호 아니야?', characterId: 'youngwoo', expression: 'blank', goto: 'hs-k01-first-9' },
-  { id: 'hs-k01-first-9', speaker: '지수', text: '알아요.\n근데 그냥 넘어가긴 좀 아깝잖아요.', characterId: 'jisoo', expression: 'smirk', goto: 'hs-k01-first-10' },
-  { id: 'hs-k01-first-10', speaker: '', text: '지수가 폰을 꺼내 사진을 찍는다.', characterId: 'jisoo', expression: 'curious', goto: 'hs-k01-first-11' },
-  { id: 'hs-k01-first-11', speaker: '영우', text: '이제 그거 취미야?', characterId: 'youngwoo', expression: 'curious', goto: 'hs-k01-first-12' },
-  {
-    id: 'hs-k01-first-12', speaker: '지수', text: '기록이죠, 기록.', characterId: 'jisoo', expression: 'smirk', goto: 'hotspot-menu',
-    effects: [
-      { type: 'setFlag', key: 'hotspot:003:k01', value: true },
-      { type: 'incrementFlag', key: 'hotspot:003:k01-visits' },
-      { type: 'setFlagIfAll', flags: ['hotspot:003:k01', 'hotspot:003:desk', 'hotspot:003:entrance'], key: 'hotspot:003:required-complete' },
-    ],
-  },
-  { id: 'hs-k01-again', speaker: '지수', text: '이거 진짜 눈에 자꾸 밟히네요.', characterId: 'jisoo', expression: 'suspicious', goto: 'hotspot-menu' },
-  {
-    id: 'hs-desk', speaker: '', text: '접수대. 안내 책자와 방명록, 작은 태그 몇 개가 놓여 있다.', characterId: null, goto: 'hotspot-menu',
-    effects: [
-      { type: 'setFlag', key: 'hotspot:003:desk', value: true },
-      { type: 'setFlagIfAll', flags: ['hotspot:003:k01', 'hotspot:003:desk', 'hotspot:003:entrance'], key: 'hotspot:003:required-complete' },
-    ],
-  },
-  {
-    id: 'hs-tag', speaker: '', text: '직원용 태그 — 접수대 오른쪽에 놓여 있다. 진열장을 정리할 때 쓰는 것 같다.', characterId: null,
-    effects: [
-      { type: 'incrementFlag', key: 'optionalCount:003' },
-      {
-        type: 'addEvidence',
-        evidence: {
-          id: 'evidence-staff-tag-position-before', code: 'E-H01', title: '직원용 태그 위치 (사건 전)',
-          description: '사건이 일어나기 전, 직원용 태그는 접수대 오른쪽에 놓여 있었다.',
-          discoveredLocationText: 'Pop-up Exhibition · 접수대',
-        },
-      },
-    ],
-    goto: 'hotspot-menu',
-  },
-  { id: 'hs-staffdoor', speaker: '', text: '직원 전용문. "관계자 외 출입 금지"라고 적혀 있다. 살짝 닫혀 있다.', characterId: null, effects: [{ type: 'incrementFlag', key: 'optionalCount:003' }], goto: 'hotspot-menu' },
-  {
-    id: 'hs-pamphlet', speaker: '', text: '안내 팸플릿. K-01 항목 옆에 작은 표시가 있다.\n[ 판매 불가 · 전시 전용 ]', characterId: null,
-    effects: [
-      { type: 'incrementFlag', key: 'optionalCount:003' },
-      {
-        type: 'addEvidence',
-        evidence: {
-          id: 'evidence-k01-not-for-sale', code: 'E-H02', title: 'K-01 팸플릿 표기',
-          description: '안내 팸플릿에는 K-01이 "판매 불가 · 전시 전용" 물품으로 표기되어 있다. 단순 되팔기 목적의 충동 절도라면 이상한 선택이다.',
-          discoveredLocationText: 'Pop-up Exhibition · 안내 팸플릿',
-        },
-      },
-    ],
-    goto: 'hotspot-menu',
-  },
-  {
-    id: 'hs-guestbook', speaker: '', text: '방문객 방명록을 넘겨본다. 오늘 날짜 칸에 이름이 몇 개 적혀 있다.\n...레오라는 이름은 없다.', characterId: null,
-    effects: [
-      { type: 'incrementFlag', key: 'optionalCount:003' },
-      {
-        type: 'addEvidence',
-        evidence: {
-          id: 'evidence-guestbook-no-leo', code: 'E-H03', title: '방명록 — 레오 이름 없음',
-          description: '오늘 자 방명록 어디에도 "레오"로 추정되는 이름이 없다.',
-          discoveredLocationText: 'Pop-up Exhibition · 방문객 방명록',
-        },
-      },
-    ],
-    goto: 'hotspot-menu',
-  },
-  {
-    id: 'hs-ceiling', speaker: '', text: '천장 보안카메라. 각도를 가만히 보니, 진열장 정면이 아니라 출입구 쪽을 향해 있다.', characterId: null,
-    effects: [
-      { type: 'incrementFlag', key: 'optionalCount:003' },
-      {
-        type: 'addEvidence',
-        evidence: {
-          id: 'evidence-cctv-angle', code: 'E-H04', title: '보안카메라 각도',
-          description: '천장 보안카메라가 K-01 진열장 정면이 아니라 출입구 쪽을 향해 있다. 진열장 근처는 사각지대에 가깝다.',
-          discoveredLocationText: 'Pop-up Exhibition · 천장',
-        },
-      },
-    ],
-    goto: 'hotspot-menu',
-  },
-  {
-    id: 'hs-entrance', speaker: '', text: '출입구 주변. 사람들이 끊임없이 들고 난다. 바로 옆 골목엔 작은 카페가 보인다.', characterId: null,
-    effects: [
-      { type: 'setFlag', key: 'hotspot:003:entrance', value: true },
-      { type: 'setFlagIfAll', flags: ['hotspot:003:k01', 'hotspot:003:desk', 'hotspot:003:entrance'], key: 'hotspot:003:required-complete' },
-    ],
-    goto: 'hotspot-menu',
-  },
-  {
-    id: 'exit-check', type: 'choice', speaker: '', text: '전시장 안쪽으로 더 들어가 볼까요?', characterId: null,
-    choices: [
-      { id: 'bonus', label: '(꽤 꼼꼼히 둘러봤다)', condition: { flagAtLeast: { key: 'optionalCount:003', min: 3 } }, goto: 'exit-bonus' },
-      { id: 'plain', label: '안쪽으로', condition: { flagBelow: { key: 'optionalCount:003', lessThan: 3 } }, goto: 'exit-plain' },
-    ],
-  },
-  {
-    id: 'exit-bonus', speaker: '지수', text: '이 정도 봤으면 대충 감은 잡히네요.', characterId: 'jisoo', expression: 'smirk',
-    effects: [{
-      type: 'addEvidence',
-      evidence: {
-        id: 'evidence-observation-bonus', code: 'E-H00', title: '전시장 관찰 보너스',
-        description: '카메라, 회중시계, 태그, 전용문, 팸플릿, 방명록, 보안카메라까지 — 전시장 구석구석을 미리 살펴봤다.',
-        discoveredLocationText: 'Pop-up Exhibition · 자유 조사',
-      },
-    }],
-    goto: 'line-005',
-  },
-  { id: 'exit-plain', speaker: '영우', text: '이 정도면 대충 다 본 것 같다.', characterId: 'youngwoo', expression: 'soft', goto: 'line-005' },
-  { id: 'line-005', speaker: '', text: '지수가 진열장들을 지나 안쪽으로 걸음을 옮긴다.', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-006', speaker: '', text: '전시장 안쪽이 갑자기 붐비기 시작한다.\n단체 관광객 무리가 밀려들어온다.', characterId: null },
-  { id: 'line-007', speaker: '영우', text: '와, 갑자기 사람 많아졌다.', characterId: 'youngwoo', expression: 'curious' },
-  { id: 'line-008', speaker: '지수', text: '잠깐 옆으로 비켜요.', characterId: 'jisoo', expression: 'neutral' },
+  { id: 'line-005', speaker: '지수', text: '웅웅, 하나씩 다 볼래요.', characterId: 'jisoo', expression: 'happy' },
 ];
 
 /* OPERATION MK — WEEK 1 · SCENE 04 「도난 발생 및 사진 분석」
@@ -2562,11 +2423,22 @@ const week1Scenes = [
     location: 'Pop-up Exhibition',
     introLabel: 'CIRCULAR QUAY',
     time: '10:40',
+    // Hands off into the exhibition hotspot-search minigame — see
+    // MINIGAME_ROUTES in game/index.html.
     lines: week1Scene003Lines,
+    nextSceneId: 'week1-scene-003-minigame',
+  },
+  {
+    id: 'week1-scene-003-minigame',
+    order: 4,
+    name: '전시장 둘러보기 (미니게임)',
+    location: 'Pop-up Exhibition',
+    time: '10:44',
+    route: '/dev/minigame-exhibition-search/',
   },
   {
     id: 'week1-scene-004',
-    order: 4,
+    order: 5,
     name: '도난 발생',
     location: 'Pop-up Exhibition',
     introLabel: 'CIRCULAR QUAY',
@@ -2578,7 +2450,7 @@ const week1Scenes = [
   },
   {
     id: 'week1-scene-004-minigame',
-    order: 5,
+    order: 6,
     name: '사진 속 인물 찾기 (미니게임)',
     location: 'Pop-up Exhibition',
     time: '10:52',
@@ -2586,7 +2458,7 @@ const week1Scenes = [
   },
   {
     id: 'week1-scene-004-review',
-    order: 6,
+    order: 7,
     name: '사진 분석 마무리',
     location: 'Pop-up Exhibition',
     introLabel: 'CIRCULAR QUAY',
@@ -2595,7 +2467,7 @@ const week1Scenes = [
   },
   {
     id: 'week1-scene-005',
-    order: 7,
+    order: 8,
     name: '용의자 선별 및 현장 재조사',
     location: 'Pop-up Exhibition',
     introLabel: 'CIRCULAR QUAY',
@@ -2604,7 +2476,7 @@ const week1Scenes = [
   },
   {
     id: 'week1-scene-006',
-    order: 8,
+    order: 9,
     name: '윤민아 1차 심문',
     location: 'Pop-up Exhibition',
     introLabel: 'CIRCULAR QUAY',
@@ -2613,7 +2485,7 @@ const week1Scenes = [
   },
   {
     id: 'week1-scene-007',
-    order: 9,
+    order: 10,
     name: '애드리언 1차 심문',
     location: 'Pop-up Exhibition',
     introLabel: 'CIRCULAR QUAY',
@@ -2622,7 +2494,7 @@ const week1Scenes = [
   },
   {
     id: 'week1-scene-008',
-    order: 10,
+    order: 11,
     name: '레오 1차 심문 및 타임라인',
     location: 'Café near Circular Quay',
     introLabel: 'CIRCULAR QUAY',
@@ -2634,7 +2506,7 @@ const week1Scenes = [
   },
   {
     id: 'week1-scene-008-minigame',
-    order: 11,
+    order: 12,
     name: '시간대 정리 (미니게임)',
     location: 'Café near Circular Quay',
     time: '11:55',
@@ -2642,7 +2514,7 @@ const week1Scenes = [
   },
   {
     id: 'week1-scene-009',
-    order: 12,
+    order: 13,
     name: '레오 집중 심문',
     location: 'Pop-up Exhibition',
     introLabel: 'CIRCULAR QUAY',
@@ -2651,7 +2523,7 @@ const week1Scenes = [
   },
   {
     id: 'week1-scene-010',
-    order: 13,
+    order: 14,
     name: '중간 추리 및 윤민아 재오픈',
     location: 'Pop-up Exhibition',
     introLabel: 'CIRCULAR QUAY',
@@ -2660,7 +2532,7 @@ const week1Scenes = [
   },
   {
     id: 'week1-scene-011',
-    order: 14,
+    order: 15,
     name: '윤민아 최종 심문',
     location: 'Circular Quay 편집숍',
     introLabel: 'CIRCULAR QUAY',
@@ -2669,7 +2541,7 @@ const week1Scenes = [
   },
   {
     id: 'week1-scene-012',
-    order: 15,
+    order: 16,
     name: '사건 재구성',
     location: 'Café near Circular Quay',
     introLabel: 'CIRCULAR QUAY',
@@ -2678,7 +2550,7 @@ const week1Scenes = [
   },
   {
     id: 'week1-scene-013',
-    order: 16,
+    order: 17,
     name: '1주차 엔딩 · M.K.라는 이름',
     location: 'Sydney Accommodation',
     introLabel: 'ACCOMMODATION',
@@ -3098,6 +2970,17 @@ const minigames = [
     location: '독립형 미니게임 (스토리 미연동)',
     route: '/dev/minigame-transform/play/',
     setupUrl: '/dev/minigame-transform/',
+  },
+  {
+    // Standalone (no dev-marked background/hotspots to set up — see
+    // minigame-item-scan's comment above for the same reasoning) grid-mode
+    // hotspot search, same idiom as minigame-phone-search's no-photo-yet
+    // fallback. setupUrl === route since there's no separate settings screen.
+    id: 'week1-scene-003-minigame',
+    name: '전시장 둘러보기',
+    location: 'Pop-up Exhibition',
+    route: '/dev/minigame-exhibition-search/',
+    setupUrl: '/dev/minigame-exhibition-search/',
   },
   {
     // Standalone (no dev-marked background/hotspots to set up — see
