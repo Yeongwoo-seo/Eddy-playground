@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>OPERATION MK · 영우 테스트</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<meta name="theme-color" content="#080A0C">
+<link rel="manifest" href="/dev/manifest.json">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="OPERATION MK DEV">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#080A0C;--surface-1:#101419;--surface-2:#171C22;--surface-3:#20262D;
+  --text-primary:#EDF1F4;--text-secondary:#929BA5;--text-muted:#5F6872;
+  --cyan:#59B8C8;--amber:#D6A84B;--divider:rgba(255,255,255,0.08);
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sans:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
+}
+html,body{height:100%}
+body{background:#050607;color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center}
+.frame{width:100%;max-width:430px;min-height:100dvh;min-height:100vh;padding:calc(20px + env(safe-area-inset-top,0)) 20px calc(40px + env(safe-area-inset-bottom,0))}
+
+.topbar{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.back-btn{width:36px;height:36px;border-radius:50%;background:var(--surface-1);border:1px solid var(--divider);color:var(--text-primary);display:flex;align-items:center;justify-content:center;text-decoration:none;flex-shrink:0}
+.page-title{font-size:19px;font-weight:700}
+
+.intro-card{background:var(--surface-1);border:1px solid var(--divider);border-radius:14px;padding:16px;margin-bottom:18px;font-size:13px;line-height:1.65;color:var(--text-secondary)}
+.intro-card b{color:var(--amber);font-weight:700}
+
+.progress-row{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.progress-label{font-family:var(--mono);font-size:11px;color:var(--text-secondary);white-space:nowrap}
+.progress-track{flex:1;height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden}
+.progress-fill{height:100%;background:var(--cyan);border-radius:3px;width:0%;transition:width .3s cubic-bezier(.2,.8,.2,1)}
+
+.scenario-card{background:var(--surface-1);border:1px solid var(--divider);border-radius:14px;padding:16px;margin-bottom:14px}
+.scenario-num{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px}
+.scenario-text{font-size:14.5px;font-weight:500;line-height:1.6;margin-bottom:14px}
+.option-btn{display:block;width:100%;text-align:left;background:var(--surface-2);border:1px solid var(--divider);border-radius:10px;padding:12px 14px;margin-bottom:8px;color:var(--text-primary);font-size:13.5px;line-height:1.5;cursor:pointer;font-family:var(--sans);transition:background .15s,border-color .15s}
+.option-btn:last-of-type{margin-bottom:0}
+.option-btn.selected{background:rgba(89,184,200,.14);border-color:rgba(89,184,200,.5);color:var(--text-primary)}
+.option-btn:active{opacity:.85}
+
+.note-input{width:100%;margin-top:12px;background:var(--surface-2);border:1px solid var(--divider);border-radius:10px;padding:10px 12px;color:var(--text-primary);font-size:13px;font-family:var(--sans);resize:vertical;min-height:44px}
+.note-input:focus{outline:none;border-color:rgba(89,184,200,.4)}
+.note-input::placeholder{color:var(--text-muted)}
+
+.scenario-status{font-family:var(--mono);font-size:10.5px;color:var(--cyan);margin-top:8px;height:14px;opacity:0;transition:opacity .2s}
+.scenario-status.show{opacity:1}
+
+.loading-note{font-size:13px;color:var(--text-muted);padding:14px 0;text-align:center}
+</style>
+</head>
+<body>
+<div class="frame" id="frame">
+  <div class="topbar">
+    <a class="back-btn" id="backBtn" href="/dev/">←</a>
+    <div class="page-title">영우 테스트</div>
+  </div>
+
+  <div class="intro-card">
+    나중에 <b>영우</b> 캐릭터의 호감도/선택지 반응을 설계할 때 참고할 성향 데이터를 모으는 테스트예요.
+    아래 상황마다 실제로 어떻게 반응할 것 같은지 하나씩 골라주세요 — <b>정답은 없어요</b>, 고른
+    선택지와 메모는 고를 때마다 자동 저장됩니다.
+  </div>
+
+  <div class="progress-row">
+    <div class="progress-label" id="progressLabel">0 / 0 완료</div>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+  </div>
+
+  <div id="scenarioList"><div class="loading-note">불러오는 중…</div></div>
+</div>
+
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
+}
+</script>
+<script src="/dev/assetDb.js"></script>
+<script src="/dev/youngwooTestData.js"></script>
+<script>
+const el = {
+  scenarioList: document.getElementById('scenarioList'),
+  progressLabel: document.getElementById('progressLabel'),
+  progressFill: document.getElementById('progressFill'),
+};
+
+// In-memory mirror of saved answers, keyed by scenario id — kept in sync
+// with AssetDB so re-renders (progress bar) don't need a round-trip.
+let answers = {};
+const noteSaveTimers = new Map(); // scenarioId -> debounce timer, so every keystroke doesn't fire a save
+
+function updateProgress() {
+  const done = youngwooTestScenarios.filter(s => answers[s.id] && answers[s.id].choiceId).length;
+  const total = youngwooTestScenarios.length;
+  el.progressLabel.textContent = `${done} / ${total} 완료`;
+  el.progressFill.style.width = `${total ? (done / total) * 100 : 0}%`;
+}
+
+function showStatus(card) {
+  const status = card.querySelector('.scenario-status');
+  status.textContent = '저장됨';
+  status.classList.add('show');
+  clearTimeout(status._hideTimer);
+  status._hideTimer = setTimeout(() => status.classList.remove('show'), 1500);
+}
+
+async function saveAnswer(scenarioId, patch, card) {
+  const current = answers[scenarioId] || {};
+  const next = Object.assign({}, current, patch, { answeredAt: Date.now() });
+  answers[scenarioId] = next;
+  try {
+    await AssetDB.setYoungwooTestAnswer(scenarioId, next);
+    showStatus(card);
+  } catch (e) {
+    DevDiag.show('답변 저장 실패: ' + (e && e.message ? e.message : e));
+  }
+  updateProgress();
+}
+
+function renderScenario(scenario, index) {
+  const saved = answers[scenario.id] || {};
+  const card = document.createElement('div');
+  card.className = 'scenario-card';
+  card.innerHTML = `
+    <div class="scenario-num">SITUATION ${String(index + 1).padStart(2, '0')}</div>
+    <div class="scenario-text">${escapeHtml(scenario.situation)}</div>
+    <div class="options"></div>
+    <textarea class="note-input" placeholder="왜 그렇게 반응할 것 같은지 짧게 적어줘도 좋아요 (선택)"></textarea>
+    <div class="scenario-status"></div>
+  `;
+  const optionsEl = card.querySelector('.options');
+  scenario.options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn' + (saved.choiceId === opt.id ? ' selected' : '');
+    btn.textContent = opt.label;
+    btn.addEventListener('click', () => {
+      optionsEl.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      saveAnswer(scenario.id, { choiceId: opt.id }, card);
+    });
+    optionsEl.appendChild(btn);
+  });
+  const noteInput = card.querySelector('.note-input');
+  noteInput.value = saved.note || '';
+  noteInput.addEventListener('input', () => {
+    clearTimeout(noteSaveTimers.get(scenario.id));
+    noteSaveTimers.set(scenario.id, setTimeout(() => {
+      saveAnswer(scenario.id, { note: noteInput.value }, card);
+    }, 600));
+  });
+  return card;
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+async function init() {
+  try {
+    answers = await AssetDB.getYoungwooTestAnswers();
+  } catch (e) {
+    DevDiag.show('답변 불러오기 실패: ' + (e && e.message ? e.message : e));
+    answers = {};
+  }
+  el.scenarioList.innerHTML = '';
+  youngwooTestScenarios.forEach((scenario, i) => {
+    el.scenarioList.appendChild(renderScenario(scenario, i));
+  });
+  updateProgress();
+}
+init();
+</script>
+</body>
+</html>

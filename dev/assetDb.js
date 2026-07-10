@@ -526,6 +526,48 @@ const AssetDB = (() => {
     return setSound(soundId, null);
   }
 
+  // 영우 테스트 answers — { [scenarioId]: { choiceId, note, answeredAt } }, one
+  // JSON blob for the whole test (scenario bank lives in youngwooTestData.js,
+  // this only stores the real answers picked on /dev/youngwoo-test). Same
+  // single-blob-keyed-'answers' pattern as the sound catalog above — this
+  // data isn't per-scene, there's just one test.
+  const youngwooTestCache = new Map(); // single entry keyed 'answers'
+  const YOUNGWOO_TEST_PATH = 'youngwoo-test/answers.json';
+
+  async function getYoungwooTestAnswers() {
+    if (youngwooTestCache.has('answers')) return youngwooTestCache.get('answers');
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${YOUNGWOO_TEST_PATH}?t=${Date.now()}`;
+    try {
+      const map = (await fetchJsonBlob(url)) || {};
+      youngwooTestCache.set('answers', map);
+      return map;
+    } catch (e) {
+      return youngwooTestCache.get('answers') || {};
+    }
+  }
+
+  async function setYoungwooTestAnswer(scenarioId, answer) {
+    if (!scenarioId) return {};
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${YOUNGWOO_TEST_PATH}?t=${Date.now()}`;
+    const current = await readCurrentForWrite(youngwooTestCache, 'answers', url, {});
+    const map = Object.assign({}, current);
+    if (answer) map[scenarioId] = answer; else delete map[scenarioId];
+    const blob = new Blob([JSON.stringify(map)], { type: 'application/json' });
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${DEV_ASSETS_BUCKET}/${YOUNGWOO_TEST_PATH}`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'x-upsert': 'true',
+      },
+      body: blob,
+    });
+    if (!res.ok) throw new Error(`답변 저장 실패 (${res.status}): ${await res.text()}`);
+    youngwooTestCache.set('answers', map);
+    return map;
+  }
+
   return {
     addAsset, getAssetsByType, getAsset, deleteAsset, preloadImage,
     getRoomHotspots, setRoomHotspot,
@@ -533,6 +575,7 @@ const AssetDB = (() => {
     getItems, setItem, getRecipes, setRecipes,
     getDialogueOverrides, setDialogueOverrides,
     getSounds, setSound, deleteSound,
+    getYoungwooTestAnswers, setYoungwooTestAnswer,
   };
 })();
 
