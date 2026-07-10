@@ -489,7 +489,7 @@ function playEndingSequence() {
 const MINIGAME_ROUTES = {
   'week0-scene-001-2-minigame': '/dev/minigame-eastwood/',
   'week0-scene-002-2': '/dev/minigame-phone-search/',
-  'week1-scene-005-minigame': '/dev/minigame-photo-zoom/',
+  'week1-scene-004-minigame': '/dev/minigame-photo-zoom/',
   'week1-scene-008-minigame': '/dev/minigame-timeline/',
 };
 
@@ -545,7 +545,55 @@ function applyEffect(effect) {
     case 'unlockMapLocation':
       CaseFileState.unlockMapLocation(effect.id);
       break;
+    case 'setFlag':
+      CaseFileState.setFlag(effect.key, effect.value);
+      break;
+    case 'incrementFlag':
+      CaseFileState.incrementFlag(effect.key);
+      break;
+    // setFlagIfAll — derives an aggregate flag (e.g. "every required hotspot
+    // in this scene visited") from several independent ones, since a scene's
+    // required hotspots can be visited in any order and no single visit
+    // "knows" it was the last one needed. Safe to re-run on every visit.
+    case 'setFlagIfAll':
+      if (effect.flags.every(f => CaseFileState.hasFlag(f))) CaseFileState.setFlag(effect.key, true);
+      break;
   }
+}
+
+// 1주차 장편 확장 v2 §22 — a choice's optional `condition` gates whether it's
+// even offered: { hasEvidence: [...] } requires every id already in the case
+// file, { flags: [...] } requires every flag truthy (see CaseFileState.flags),
+// { personStatus: { personId: status } } requires an exact status match.
+// Undecorated choices (no `condition`) always show — this is purely additive,
+// existing scenes with plain choices behave exactly as before.
+function evaluateCondition(cond) {
+  if (!cond) return true;
+  if (cond.hasEvidence) {
+    const ids = new Set(CaseFileState.getEvidence().map(e => e.id));
+    if (!cond.hasEvidence.every(id => ids.has(id))) return false;
+  }
+  if (cond.flags && !cond.flags.every(f => CaseFileState.hasFlag(f))) return false;
+  // flagAtLeast — numeric threshold on a counter flag (e.g. an
+  // incrementFlag'd optional-hotspot count), since plain `flags` only checks
+  // truthiness and can't distinguish "visited once" from "visited 3+ times".
+  // A never-incremented counter flag is `undefined`, and Number(undefined)
+  // is NaN — which fails *every* comparison (>=, <), silently hiding a
+  // choice gated on flagAtLeast/flagBelow that should have been visible.
+  // `|| 0` makes an untouched counter read as a real zero.
+  if (cond.flagAtLeast && !((Number(CaseFileState.getFlag(cond.flagAtLeast.key)) || 0) >= cond.flagAtLeast.min)) return false;
+  // flagBelow — exact complement of flagAtLeast, so an author can offer two
+  // choices that are always mutually exclusive (exactly one visible) instead
+  // of both showing whenever the threshold is met.
+  if (cond.flagBelow && !((Number(CaseFileState.getFlag(cond.flagBelow.key)) || 0) < cond.flagBelow.lessThan)) return false;
+  if (cond.personStatus) {
+    const persons = CaseFileState.getPersons();
+    for (const personId in cond.personStatus) {
+      const p = persons.find(p => p.id === personId);
+      if (!p || p.status !== cond.personStatus[personId]) return false;
+    }
+  }
+  return true;
 }
 
 function clearInteractiveLayers() {
@@ -555,7 +603,8 @@ function clearInteractiveLayers() {
   el.evidenceCta.classList.add('hidden');
 }
 
-function showChoices(choices) {
+function showChoices(allChoices) {
+  const choices = allChoices.filter(c => evaluateCondition(c.condition));
   el.choiceLayer.innerHTML = '';
   choices.forEach(choice => {
     const btn = document.createElement('button');
@@ -644,7 +693,13 @@ const player = createVNPlayer({
       el.evidenceCta.classList.add('hidden');
       showEvidenceToast('✓ 제시했습니다.', true);
     } else {
-      showEvidenceToast(line.wrongText || '그건 아닌 것 같아요...', false);
+      // §20 힌트 단계 — wrongText may be a single string (unchanged behavior)
+      // or an array of escalating hints; each wrong attempt on this exact
+      // line (tracked by id, so retrying a *different* prompt doesn't share
+      // the same counter) advances one step, capped at the array's last entry.
+      const attempt = CaseFileState.incrementFlag('wrong:' + line.id);
+      const texts = Array.isArray(line.wrongText) ? line.wrongText : [line.wrongText || '그건 아닌 것 같아요...'];
+      showEvidenceToast(texts[Math.min(attempt - 1, texts.length - 1)], false);
     }
   },
   onSceneTransition: (transition) => playSceneTransition(transition),
