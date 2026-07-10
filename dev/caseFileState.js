@@ -111,6 +111,19 @@ const CaseFileState = {
     return true;
   },
   getPersons() { return caseState.persons.slice(); },
+  // Unlike addPerson (add-once, no-ops on an existing id), this is how a
+  // person's status/knownFacts/lies/unknowns actually change over the story
+  // (e.g. 1주차 §10-11: suspect -> cleared -> reopened -> involved). `patch`
+  // fields replace the matching arrays wholesale rather than merging, since
+  // each interrogation stage re-states the full current picture rather than
+  // appending to a stale one.
+  setPersonStatus(id, status, patch) {
+    const p = caseState.persons.find(p => p.id === id);
+    if (!p) return;
+    if (status) p.status = status;
+    if (patch) Object.assign(p, patch);
+    saveCaseState();
+  },
 
   /* ===== 소지품 ===== */
   addInventoryItem(id) {

@@ -277,6 +277,11 @@ function initCaseMenu(options) {
   function renderPersonDetail() {
     const p = CaseFileState.getPersons().find(p => p.id === ctx.id);
     if (!p) return renderInvestigation();
+    // knownFacts/lies/unknowns (§14.3) are optional — older/sample person
+    // rows only ever had `summary`, so those still render exactly as before.
+    const factBlock = (label, items, cls) => (items && items.length)
+      ? `<div class="cm-detail-field-block"><span class="cm-detail-label">${label}</span>${items.map(t => `<div class="cm-linked-item${cls ? ' ' + cls : ''}">• ${escapeHtml(t)}</div>`).join('')}</div>`
+      : '';
     return {
       title: '인물',
       html: `
@@ -284,6 +289,9 @@ function initCaseMenu(options) {
           <div class="cm-detail-title">${escapeHtml(p.name)}</div>
           <div class="cm-detail-desc">${escapeHtml(p.summary || '')}</div>
           <div class="cm-detail-field"><span class="cm-detail-label">상태</span><span class="cm-detail-value">${escapeHtml(personStatusLabel(p.status))}</span></div>
+          ${factBlock('확인된 사실', p.knownFacts)}
+          ${factBlock('거짓말', p.lies, 'cm-lie-item')}
+          ${factBlock('미확인', p.unknowns)}
         </div>
       `,
     };
@@ -449,7 +457,7 @@ function escapeHtml(s) {
 function emptyNote(text) { return `<div class="cm-empty">${escapeHtml(text)}</div>`; }
 function questionStatusLabel(status) { return { unresolved: '미해결', partial: '부분 해결', resolved: '해결됨' }[status] || status; }
 function evidenceStatusLabel(status) { return { new: '용도 불명', reviewed: '확인함', linked: '연결됨', resolved: '해결됨' }[status] || status; }
-function personStatusLabel(status) { return { unknown: '미상', witness: '목격자', suspect: '용의자', cleared: '혐의 없음', culprit: '범인' }[status] || status; }
+function personStatusLabel(status) { return { unknown: '미상', witness: '목격자', suspect: '용의자', cleared: '혐의 없음', reopened: '재조사 중', involved: '연루됨', culprit: '범인' }[status] || status; }
 function mapStatusLabel(status) { return { locked: '미방문', unlocked: '해금됨', visited: '방문함', current: '현재 위치' }[status] || status; }
 function mapStatusIcon(status) { return { locked: '🔒', unlocked: '○', visited: '●', current: '●' }[status] || '○'; }
 function formatSaveTime(ms) {
@@ -556,6 +564,7 @@ function injectCaseMenuStyles() {
     .cm-detail-field-block{padding:10px 0;border-top:1px solid rgba(255,255,255,.08)}
     .cm-linked-item{font-size:13px;color:#F1F3F5;margin-top:6px}
     .cm-linked-empty{color:#7E8791}
+    .cm-lie-item{color:#C55353}
     .cm-status-pill{display:inline-block;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;font-weight:700;letter-spacing:.04em;border-radius:12px;padding:4px 10px;margin-bottom:12px}
     .cm-status-unresolved{color:#C55353;background:rgba(197,83,83,.12)}
     .cm-status-partial{color:#D8A93D;background:rgba(216,169,61,.12)}
