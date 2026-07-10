@@ -40,10 +40,17 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .scenario-card{background:var(--surface-1);border:1px solid var(--divider);border-radius:14px;padding:16px;margin-bottom:14px}
 .scenario-num{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px}
 .scenario-text{font-size:14.5px;font-weight:500;line-height:1.6;margin-bottom:14px}
-.option-btn{display:block;width:100%;text-align:left;background:var(--surface-2);border:1px solid var(--divider);border-radius:10px;padding:12px 14px;margin-bottom:8px;color:var(--text-primary);font-size:13.5px;line-height:1.5;cursor:pointer;font-family:var(--sans);transition:background .15s,border-color .15s}
+.rank-hint{font-family:var(--mono);font-size:10px;letter-spacing:.05em;color:var(--text-muted);margin-bottom:10px}
+.option-btn{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--surface-2);border:1px solid var(--divider);border-radius:10px;padding:11px 14px;margin-bottom:8px;color:var(--text-primary);font-size:13.5px;line-height:1.5;cursor:pointer;font-family:var(--sans);transition:background .15s,border-color .15s}
 .option-btn:last-of-type{margin-bottom:0}
-.option-btn.selected{background:rgba(89,184,200,.14);border-color:rgba(89,184,200,.5);color:var(--text-primary)}
+.option-btn.ranked{background:rgba(89,184,200,.14);border-color:rgba(89,184,200,.5);color:var(--text-primary)}
 .option-btn:active{opacity:.85}
+.option-rank{flex-shrink:0;width:22px;height:22px;border-radius:50%;border:1.5px solid var(--divider);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11.5px;font-weight:600;color:var(--text-muted)}
+.option-btn.ranked .option-rank{background:var(--cyan);border-color:var(--cyan);color:#06181c}
+.option-label{flex:1}
+.rank-reset-row{display:flex;justify-content:flex-end;margin-top:2px}
+.rank-reset-btn{font-family:var(--mono);font-size:10.5px;letter-spacing:.03em;color:var(--text-muted);background:none;border:none;cursor:pointer;padding:4px 2px}
+.rank-reset-btn:active{opacity:.7}
 
 .note-input{width:100%;margin-top:12px;background:var(--surface-2);border:1px solid var(--divider);border-radius:10px;padding:10px 12px;color:var(--text-primary);font-size:13px;font-family:var(--sans);resize:vertical;min-height:44px}
 .note-input:focus{outline:none;border-color:rgba(89,184,200,.4)}
@@ -64,8 +71,8 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 
   <div class="intro-card">
     나중에 <b>영우</b> 캐릭터의 호감도/선택지 반응을 설계할 때 참고할 성향 데이터를 모으는 테스트예요.
-    아래 상황마다 실제로 어떻게 반응할 것 같은지 하나씩 골라주세요 — <b>정답은 없어요</b>, 고른
-    선택지와 메모는 고를 때마다 자동 저장됩니다.
+    각 상황의 보기 4개를 <b>마음에 드는 순서대로</b> 눌러주세요 — 처음 누른 보기가 1순위, 마지막이
+    4순위가 돼요. 정답은 없고, 누를 때마다 자동 저장됩니다.
   </div>
 
   <div class="progress-row">
@@ -91,12 +98,18 @@ const el = {
 };
 
 // In-memory mirror of saved answers, keyed by scenario id — kept in sync
-// with AssetDB so re-renders (progress bar) don't need a round-trip.
+// with AssetDB so re-renders (progress bar) don't need a round-trip. Each
+// answer's `ranking` is an array of option ids in the order they were
+// tapped (ranking[0] = 1순위 ... ranking[3] = 4순위); it can be shorter than
+// 4 while a scenario is only partway ranked.
 let answers = {};
 const noteSaveTimers = new Map(); // scenarioId -> debounce timer, so every keystroke doesn't fire a save
 
 function updateProgress() {
-  const done = youngwooTestScenarios.filter(s => answers[s.id] && answers[s.id].choiceId).length;
+  const done = youngwooTestScenarios.filter(s => {
+    const a = answers[s.id];
+    return a && a.ranking && a.ranking.length === s.options.length;
+  }).length;
   const total = youngwooTestScenarios.length;
   el.progressLabel.textContent = `${done} / ${total} 완료`;
   el.progressFill.style.width = `${total ? (done / total) * 100 : 0}%`;
@@ -125,27 +138,60 @@ async function saveAnswer(scenarioId, patch, card) {
 
 function renderScenario(scenario, index) {
   const saved = answers[scenario.id] || {};
+  let ranking = (saved.ranking || []).filter(id => scenario.options.some(o => o.id === id));
+
   const card = document.createElement('div');
   card.className = 'scenario-card';
   card.innerHTML = `
     <div class="scenario-num">SITUATION ${String(index + 1).padStart(2, '0')}</div>
     <div class="scenario-text">${escapeHtml(scenario.situation)}</div>
+    <div class="rank-hint">누른 순서대로 1 → ${scenario.options.length}순위가 매겨져요</div>
     <div class="options"></div>
-    <textarea class="note-input" placeholder="왜 그렇게 반응할 것 같은지 짧게 적어줘도 좋아요 (선택)"></textarea>
+    <div class="rank-reset-row"><button class="rank-reset-btn" type="button">순위 초기화</button></div>
+    <textarea class="note-input" placeholder="왜 그런 순서로 매겼는지 짧게 적어줘도 좋아요 (선택)"></textarea>
     <div class="scenario-status"></div>
   `;
   const optionsEl = card.querySelector('.options');
+  const optionButtons = new Map(); // optionId -> button element
+
+  function renderRanks() {
+    scenario.options.forEach(opt => {
+      const btn = optionButtons.get(opt.id);
+      const rank = ranking.indexOf(opt.id);
+      btn.classList.toggle('ranked', rank !== -1);
+      btn.querySelector('.option-rank').textContent = rank === -1 ? '' : String(rank + 1);
+    });
+  }
+
   scenario.options.forEach(opt => {
     const btn = document.createElement('button');
-    btn.className = 'option-btn' + (saved.choiceId === opt.id ? ' selected' : '');
-    btn.textContent = opt.label;
+    btn.type = 'button';
+    btn.className = 'option-btn';
+    btn.innerHTML = `<span class="option-rank"></span><span class="option-label">${escapeHtml(opt.label)}</span>`;
     btn.addEventListener('click', () => {
-      optionsEl.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
-      btn.classList.add('selected');
-      saveAnswer(scenario.id, { choiceId: opt.id }, card);
+      // Tapping an already-ranked option un-ranks it (and everything after
+      // it shifts down to fill the gap); tapping an unranked one appends it
+      // as the next-highest rank, up to all 4 options.
+      const existingIndex = ranking.indexOf(opt.id);
+      if (existingIndex !== -1) {
+        ranking.splice(existingIndex, 1);
+      } else if (ranking.length < scenario.options.length) {
+        ranking.push(opt.id);
+      }
+      renderRanks();
+      saveAnswer(scenario.id, { ranking: ranking.slice() }, card);
     });
+    optionButtons.set(opt.id, btn);
     optionsEl.appendChild(btn);
   });
+  renderRanks();
+
+  card.querySelector('.rank-reset-btn').addEventListener('click', () => {
+    ranking = [];
+    renderRanks();
+    saveAnswer(scenario.id, { ranking: [] }, card);
+  });
+
   const noteInput = card.querySelector('.note-input');
   noteInput.value = saved.note || '';
   noteInput.addEventListener('input', () => {
