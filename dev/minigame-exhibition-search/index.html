@@ -33,10 +33,24 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .progress-pill .n{color:var(--amber);font-weight:600}
 .progress-pill .req{color:var(--cyan);font-weight:600}
 
-/* ===== Room grid (grid-mode, same idiom as minigame-phone-search's
-   no-photo-yet fallback — this exhibition has no uploaded room photo, so
-   grid mode is the primary experience here, not a fallback) ===== */
+/* ===== Photo mode — same dual-mode idiom as minigame-phone-search: once a
+   dev marks a real exhibition photo + hotspots from /dev/upload
+   (scene.minigameId/roomHotspots on week1-scene-003, see dialogueData.js),
+   this pan/zoom stage with invisible tap zones replaces the grid below.
+   Ported from minigame-phone-search's own photo-stage/photo-canvas. ===== */
+.photo-stage{position:absolute;inset:0;overflow:hidden;background:#05070a;touch-action:none}
+.photo-stage.hidden{display:none}
+.photo-canvas{position:absolute;top:0;left:0;transform-origin:0 0;will-change:transform}
+.photo-canvas img{position:absolute;top:0;left:0;-webkit-user-drag:none;user-select:none;display:block}
+.tap-ring{position:absolute;border-radius:50%;border:3px solid var(--cyan);opacity:.9;pointer-events:none;animation:tapRingFade 420ms ease forwards}
+@keyframes tapRingFade{0%{transform:scale(.5);opacity:.9}100%{transform:scale(1.6);opacity:0}}
+.debug-hotspot-box{position:absolute;border:1px dashed var(--cyan);background:rgba(89,184,200,.12);color:var(--cyan);font-family:var(--mono);font-size:9px;line-height:1.3;padding:1px 3px;pointer-events:none;overflow:hidden;white-space:nowrap}
+
+/* ===== Room grid (grid-mode fallback — used until a dev marks a real
+   exhibition photo from /dev/upload, same idiom as minigame-phone-search's
+   own no-photo-yet fallback) ===== */
 .grid-scroll{position:absolute;inset:0;overflow-y:auto;touch-action:pan-y;padding:calc(96px + env(safe-area-inset-top,0)) 16px calc(110px + env(safe-area-inset-bottom,0))}
+.grid-scroll.hidden{display:none}
 .grid-tag{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px}
 .grid-title{font-size:22px;font-weight:700;margin-bottom:8px}
 .grid-desc{font-size:13.5px;color:var(--text-secondary);line-height:1.6;margin-bottom:18px}
@@ -97,6 +111,17 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 
 .fade-overlay{position:absolute;inset:0;z-index:10;background:#000;opacity:0;pointer-events:none;transition:opacity .9s ease}
 .fade-overlay.show{opacity:1}
+
+/* ===== Dev debug sheet — mirrors minigame-phone-search's own, trimmed down
+   to what actually applies here (no item/inventory system in this game). ===== */
+.sheet-overlay{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center}
+.sheet-overlay.hidden{display:none}
+.sheet{width:100%;max-width:430px;background:var(--surface-1);border-radius:20px 20px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom,0));border-top:1px solid var(--divider)}
+.sheet-title{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--text-muted);margin-bottom:14px;text-transform:uppercase}
+.sheet-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.sheet-btn{background:var(--surface-2);color:var(--text-primary);border:1px solid var(--divider);border-radius:10px;padding:12px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:var(--mono)}
+.sheet-btn.danger{color:var(--signal-red);border-color:rgba(217,65,65,.4)}
+.sheet-close{width:100%;margin-top:4px;background:var(--surface-2);color:var(--text-primary);border:1px solid var(--divider);border-radius:10px;padding:13px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--mono);letter-spacing:.06em}
 </style>
 </head>
 <body>
@@ -104,11 +129,16 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
   <div class="topbar">
     <a class="vn-btn" href="/dev/">← DEV</a>
     <div class="progress-pill">필수 <span class="req" id="reqN">0</span>/<span id="reqTotal">3</span> · 선택 <span class="n" id="optN">0</span>/<span id="optTotal">7</span></div>
+    <button class="vn-btn" id="devBtn">DEV</button>
+  </div>
+
+  <div class="photo-stage hidden" id="photoStage">
+    <div class="photo-canvas" id="photoCanvas"></div>
   </div>
 
   <div class="grid-scroll" id="gridScroll">
     <div class="grid-tag">Operation MK · Pop-up Exhibition</div>
-    <div class="grid-title">전시장 자유 조사</div>
+    <div class="grid-title">증거 수집 · 전시장</div>
     <div class="grid-desc">진열장을 하나씩 눌러서 살펴보세요. 표시 없는 항목까지 다 둘러보면 조사 보너스가 있어요. 언제든 아래 버튼으로 안쪽으로 들어갈 수 있어요.</div>
     <div class="hotspot-grid" id="hotspotGrid"></div>
   </div>
@@ -149,6 +179,17 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
   <div class="fade-overlay" id="fadeOverlay"></div>
 </div>
 
+<div class="sheet-overlay hidden" id="sheetOverlay">
+  <div class="sheet">
+    <div class="sheet-title">Dev · Evidence Collection Debug</div>
+    <div class="sheet-grid">
+      <button class="sheet-btn" id="btnShowHotspots">SHOW HOTSPOTS</button>
+      <button class="sheet-btn danger" id="btnResetMinigame">RESET GAME</button>
+    </div>
+    <button class="sheet-close" id="sheetCloseBtn">CLOSE</button>
+  </div>
+</div>
+
 <script>
 function setVh100() { document.documentElement.style.setProperty('--vh100', window.innerHeight + 'px'); }
 setVh100();
@@ -165,17 +206,26 @@ if ('serviceWorker' in navigator) {
 <script src="/dev/caseFileState.js"></script>
 <script src="/dev/vnPlayer.js"></script>
 <script>
-/* ===== 전시장 자유 조사 — week1-scene-003-minigame =====
-   1주차 대사에 있던 텍스트 선택지 루프(hotspot-menu) 대신, minigame-phone-
-   search와 같은 "그리드 핫스팟 탐색 + 증거 획득 토스트" 형태로 재구현한
-   것. 실제 업로드된 전시장 사진/핫스팟 좌표가 아직 없어서(전용 마킹
-   파이프라인 필요) phone-search가 사진 없을 때 쓰는 grid-mode를 기본
-   경험으로 삼는다 — 나중에 실제 사진이 생기면 photo-stage 모드를 추가할 수
-   있는 자리는 남겨뒀다.
+/* ===== 증거 수집 · 전시장 — week1-scene-003-minigame =====
+   원래 텍스트 선택지 루프(hotspot-menu) 대신, minigame-phone-search(핸드폰을
+   찾아라)와 같은 "핫스팟 탐색 + 증거 획득 토스트" 형태로 재구현했고, 이후
+   `evidenceCollections`(§ 증거 수집, /dev/evidence)로 재분류하며 phone-
+   search와 똑같은 dual-mode 탐색 UX까지 마저 맞췄다:
+   - 사진 모드 — 실제 전시장 사진(dev/dialogueData.js의 week1-scene-003
+     minigameId/roomHotspots로 /dev/upload에 연결됨)이 업로드되면, 그 위에
+     핀치줌/팬 가능한 photo-stage + 보이지 않는 핫스팟 폴리곤을 탭하는 방식.
+   - 그리드 모드 — 사진이 아직 없으면(초기 상태) 카드 그리드로 폴백. 두 모드
+     모두 결과는 hotspotId 하나로 수렴해 onHotspotTap()이 그대로 처리한다.
+   상태는 minigame-phone-search와 같은 패턴으로 localStorage(STATE_KEY)에
+   저장하되, 재입장/새로고침마다 항상 새로 시작한다(과거 플레이 재개 없음).
    K-01만 유일하게 여러 줄짜리 회화(발견 비트)라 vnPlayer를 재사용한 msg-
    layer 팝업으로 처리하고, 나머지 9개는 짧은 한 줄 반응 + 토스트로 끝낸다.
    필수 3개(K-01/접수대/출입구)는 게임을 막지 않되, 완료 후에만 "조사
    보너스" 조건(§ 선택 3개 이상)을 확인한다. */
+const EXHIBITION_MINIGAME_ID = 'week1-scene-003-minigame';
+const STATE_KEY = 'mkExhibitionSearchState_v1';
+const HOTSPOT_MIN_FR = 0.045; // floor radius (around a shape's centroid) for a carelessly tiny/thin drawn shape, same rationale as minigame-phone-search's own
+
 const HOTSPOTS = [
   {
     id: 'camera', icon: '📷', name: '오래된 필름 카메라', required: false,
@@ -238,14 +288,26 @@ const REQUIRED_IDS = HOTSPOTS.filter(h => h.required).map(h => h.id);
 const OPTIONAL_TOTAL = HOTSPOTS.filter(h => !h.required).length;
 const BONUS_THRESHOLD = 3;
 
+// Every entry into this page is a fresh run (same rule as minigame-phone-
+// search's own defaultState/saveState) — saveState() still writes to
+// STATE_KEY so within-session helpers (the DEV sheet) stay in sync, but
+// nothing reads it back in on boot.
+function defaultState() { return { foundIds: [], k01DiscoveryPlayed: false }; }
+let state = defaultState();
+function saveState() { localStorage.setItem(STATE_KEY, JSON.stringify(state)); }
+saveState();
+
 let foundIds = new Set();
-let k01DiscoveryPlayed = false;
 
 const el = {
   reqN: document.getElementById('reqN'),
   reqTotal: document.getElementById('reqTotal'),
   optN: document.getElementById('optN'),
   optTotal: document.getElementById('optTotal'),
+  devBtn: document.getElementById('devBtn'),
+  photoStage: document.getElementById('photoStage'),
+  photoCanvas: document.getElementById('photoCanvas'),
+  gridScroll: document.getElementById('gridScroll'),
   hotspotGrid: document.getElementById('hotspotGrid'),
   exitBtn: document.getElementById('exitBtn'),
   acquireToast: document.getElementById('acquireToast'),
@@ -266,6 +328,8 @@ const el = {
   successText: document.getElementById('successText'),
   successArrow: document.getElementById('successArrow'),
   fadeOverlay: document.getElementById('fadeOverlay'),
+  sheetOverlay: document.getElementById('sheetOverlay'),
+  sheetCloseBtn: document.getElementById('sheetCloseBtn'),
 };
 
 function requiredFoundCount() { return REQUIRED_IDS.filter(id => foundIds.has(id)).length; }
@@ -274,6 +338,19 @@ function optionalFoundCount() { return HOTSPOTS.filter(h => !h.required && found
 function updateProgressUi() {
   el.reqN.textContent = requiredFoundCount();
   el.optN.textContent = optionalFoundCount();
+}
+
+// Mirrors state.foundIds/state.k01DiscoveryPlayed into localStorage after
+// every change to `foundIds`/`k01DiscoveryPlayed` (the working Set stays the
+// convenient in-memory shape; STATE_KEY just needs the JSON-safe version).
+function markFound(id) {
+  foundIds.add(id);
+  state.foundIds = Array.from(foundIds);
+  saveState();
+}
+function markK01DiscoveryPlayed() {
+  state.k01DiscoveryPlayed = true;
+  saveState();
 }
 
 function renderGrid() {
@@ -306,7 +383,7 @@ function onHotspotTap(id) {
     showAcquireToast(hotspot.icon, '다시 봐도 똑같다.');
     return;
   }
-  foundIds.add(id);
+  markFound(id);
   if (hotspot.evidence) CaseFileState.addEvidence(hotspot.evidence);
   showAcquireToast(hotspot.icon, hotspot.line);
   renderGrid();
@@ -375,7 +452,8 @@ function onK01Tap() {
     return;
   }
   queueDialogue(K01_DISCOVERY_LINES, () => {
-    foundIds.add('k01');
+    markFound('k01');
+    markK01DiscoveryPlayed();
     CaseFileState.addEvidence({
       id: 'evidence-k01-early-inscription-note', code: 'E-000', title: 'K-01 사전 관찰 메모',
       description: '진열장 유리 너머로 봤을 때, 후면에 작은 각인 같은 게 있는 듯했다. 이 각도에서는 정확히 확인되지 않는다.',
@@ -385,6 +463,216 @@ function onK01Tap() {
     updateProgressUi();
     showAcquireToast('🔶', '황동 장치 K-01 — 발견');
   });
+}
+
+/* ===== Photo-mode pan/zoom stage (ported from minigame-phone-search — same
+   pinch/pan/wheel handling and polygon hit-test, just against a single
+   exhibition photo instead of 4 room areas). Only engages once a dev has
+   uploaded a photo + marked at least one hotspot from /dev/upload (see
+   week1-scene-003's minigameId/roomHotspots in dialogueData.js); otherwise
+   loadExhibition() below falls back to the existing grid mode. ===== */
+let currentMode = 'grid'; // 'grid' | 'photo'
+let scale = 1, baseScale = 1, tx = 0, ty = 0;
+let CANVAS_W = 1, CANVAS_H = 1;
+let currentHotspots = {}; // hotspotId -> [{x,y}, ...] normalized polygon points, only populated in photo mode
+const pointers = new Map();
+let panStart = null;
+let pinchStartDist = 0, pinchStartScale = 1;
+let didPan = false;
+let pressedPoint = null;
+
+function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+function mid(a, b) { return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; }
+function clampScale(s) { return Math.min(Math.max(s, baseScale), baseScale * 3); }
+function clampPan() {
+  const rect = el.photoStage.getBoundingClientRect();
+  const scaledW = CANVAS_W * scale, scaledH = CANVAS_H * scale;
+  tx = scaledW <= rect.width ? (rect.width - scaledW) / 2 : Math.min(0, Math.max(rect.width - scaledW, tx));
+  ty = scaledH <= rect.height ? (rect.height - scaledH) / 2 : Math.min(0, Math.max(rect.height - scaledH, ty));
+}
+function applyCanvasTransform() { clampPan(); el.photoCanvas.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`; }
+
+function fitToStage() {
+  const rect = el.photoStage.getBoundingClientRect();
+  if (!rect.width || !rect.height) return;
+  baseScale = rect.height / CANVAS_H;
+  scale = baseScale;
+  tx = (rect.width - CANVAS_W * scale) / 2;
+  ty = (rect.height - CANVAS_H * scale) / 2;
+  applyCanvasTransform();
+}
+function refitStageOnResize() { if (!el.photoStage.classList.contains('hidden')) fitToStage(); }
+window.addEventListener('resize', refitStageOnResize);
+window.addEventListener('orientationchange', refitStageOnResize);
+if (window.visualViewport) window.visualViewport.addEventListener('resize', refitStageOnResize);
+
+function screenToCanvas(clientX, clientY) {
+  const rect = el.photoStage.getBoundingClientRect();
+  return { x: (clientX - rect.left - tx) / scale, y: (clientY - rect.top - ty) / scale };
+}
+
+function buildPhotoCanvas(url) {
+  el.photoCanvas.innerHTML = '';
+  const img = document.createElement('img');
+  img.src = url;
+  img.alt = '';
+  img.draggable = false;
+  Object.assign(img.style, { width: CANVAS_W + 'px', height: CANVAS_H + 'px' });
+  el.photoCanvas.appendChild(img);
+}
+
+// Off by default — devs flip it on via the DEV sheet's SHOW HOTSPOTS button.
+let debugShowHotspots = false;
+function renderDebugHotspotOverlay() {
+  el.photoCanvas.querySelectorAll('.debug-hotspot-box').forEach(n => n.remove());
+  if (!debugShowHotspots || currentMode !== 'photo') return;
+  Object.keys(currentHotspots).forEach(id => {
+    const pts = currentHotspots[id].map(p => ({ x: p.x * CANVAS_W, y: p.y * CANVAS_H }));
+    const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
+    const x1 = Math.min(...xs), y1 = Math.min(...ys), x2 = Math.max(...xs), y2 = Math.max(...ys);
+    const box = document.createElement('div');
+    box.className = 'debug-hotspot-box';
+    Object.assign(box.style, { left: x1 + 'px', top: y1 + 'px', width: (x2 - x1) + 'px', height: (y2 - y1) + 'px' });
+    const hotspot = HOTSPOTS.find(h => h.id === id);
+    box.textContent = hotspot ? `${hotspot.icon} ${hotspot.name}` : id;
+    el.photoCanvas.appendChild(box);
+  });
+}
+
+function flashTapRing(point) {
+  const r = 36;
+  const ring = document.createElement('div');
+  ring.className = 'tap-ring';
+  Object.assign(ring.style, { left: (point.x - r) + 'px', top: (point.y - r) + 'px', width: r * 2 + 'px', height: r * 2 + 'px' });
+  el.photoCanvas.appendChild(ring);
+  setTimeout(() => ring.remove(), 450);
+}
+
+// Accepts either the current free-form { points } shape or an older saved
+// { x1, y1, x2, y2 } rectangle, always returning a normalized points array.
+function hotspotToPoints(h) {
+  if (!h) return null;
+  if (h.points && h.points.length >= 3) return h.points;
+  if (h.x1 !== undefined) return [{ x: h.x1, y: h.y1 }, { x: h.x2, y: h.y1 }, { x: h.x2, y: h.y2 }, { x: h.x1, y: h.y2 }];
+  return null;
+}
+
+function isPointInPolygon(px, py, points) {
+  let inside = false;
+  for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+    const xi = points[i].x, yi = points[i].y, xj = points[j].x, yj = points[j].y;
+    if (((yi > py) !== (yj > py)) && (px < (xj - xi) * (py - yi) / (yj - yi) + xi)) inside = !inside;
+  }
+  return inside;
+}
+
+function hotspotIdAtPoint(point) {
+  const ids = Object.keys(currentHotspots).reverse();
+  for (const id of ids) {
+    const pts = currentHotspots[id].map(p => ({ x: p.x * CANVAS_W, y: p.y * CANVAS_H }));
+    if (isPointInPolygon(point.x, point.y, pts)) return id;
+    const cx = pts.reduce((s, p) => s + p.x, 0) / pts.length, cy = pts.reduce((s, p) => s + p.y, 0) / pts.length;
+    const minR = HOTSPOT_MIN_FR * CANVAS_W;
+    if (Math.hypot(point.x - cx, point.y - cy) <= minR) return id;
+  }
+  return null;
+}
+
+function onPhotoTap(point) {
+  flashTapRing(point);
+  const hotspotId = hotspotIdAtPoint(point);
+  if (hotspotId) onHotspotTap(hotspotId);
+}
+
+el.photoStage.addEventListener('pointerdown', (e) => {
+  el.photoStage.setPointerCapture(e.pointerId);
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  didPan = false;
+  if (pointers.size === 1) {
+    panStart = { x: e.clientX, y: e.clientY, tx, ty };
+    pressedPoint = screenToCanvas(e.clientX, e.clientY);
+  } else if (pointers.size === 2) {
+    pressedPoint = null;
+    const pts = [...pointers.values()];
+    pinchStartDist = dist(pts[0], pts[1]);
+    pinchStartScale = scale;
+  }
+});
+el.photoStage.addEventListener('pointermove', (e) => {
+  if (!pointers.has(e.pointerId)) return;
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (pointers.size === 1 && panStart) {
+    const dx = e.clientX - panStart.x, dy = e.clientY - panStart.y;
+    if (Math.abs(dx) + Math.abs(dy) > 6) didPan = true;
+    tx = panStart.tx + dx;
+    ty = panStart.ty + dy;
+    applyCanvasTransform();
+  } else if (pointers.size === 2) {
+    const pts = [...pointers.values()];
+    const d = dist(pts[0], pts[1]);
+    const newScale = clampScale(pinchStartScale * (d / pinchStartDist));
+    const rect = el.photoStage.getBoundingClientRect();
+    const midNow = mid(pts[0], pts[1]);
+    const stageX = midNow.x - rect.left, stageY = midNow.y - rect.top;
+    const ratio = newScale / scale;
+    tx = stageX - (stageX - tx) * ratio;
+    ty = stageY - (stageY - ty) * ratio;
+    scale = newScale;
+    didPan = true;
+    applyCanvasTransform();
+  }
+});
+['pointerup', 'pointercancel'].forEach(evt => el.photoStage.addEventListener(evt, (e) => {
+  pointers.delete(e.pointerId);
+  if (pointers.size < 2) pinchStartDist = 0;
+  if (pointers.size === 0) {
+    panStart = null;
+    if (evt === 'pointerup' && !didPan && pressedPoint) onPhotoTap(pressedPoint);
+    pressedPoint = null;
+  }
+}));
+el.photoStage.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const rect = el.photoStage.getBoundingClientRect();
+  const stageX = e.clientX - rect.left, stageY = e.clientY - rect.top;
+  const newScale = clampScale(scale * (e.deltaY < 0 ? 1.1 : 0.9));
+  const ratio = newScale / scale;
+  tx = stageX - (stageX - tx) * ratio;
+  ty = stageY - (stageY - ty) * ratio;
+  scale = newScale;
+  applyCanvasTransform();
+}, { passive: false });
+
+// Decides grid vs. photo mode from whatever a dev has configured in
+// /dev/upload for EXHIBITION_MINIGAME_ID, then renders it. Falls back to the
+// existing grid cards whenever no photo (or no marked hotspot) exists yet.
+async function loadExhibition() {
+  const assetId = DevGameState.getBackgroundId(EXHIBITION_MINIGAME_ID);
+  const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
+  const hotspots = await DevGameState.getRoomHotspots(EXHIBITION_MINIGAME_ID).catch(() => ({}));
+  if (asset && asset.dataUrl && Object.keys(hotspots).length) {
+    currentMode = 'photo';
+    currentHotspots = {};
+    Object.keys(hotspots).forEach(id => {
+      const pts = hotspotToPoints(hotspots[id]);
+      if (pts) currentHotspots[id] = pts;
+    });
+    CANVAS_W = asset.width;
+    CANVAS_H = asset.height;
+    await AssetDB.preloadImage(asset.dataUrl);
+    buildPhotoCanvas(asset.dataUrl);
+  } else {
+    currentMode = 'grid';
+    currentHotspots = {};
+  }
+  el.photoStage.classList.toggle('hidden', currentMode !== 'photo');
+  el.gridScroll.classList.toggle('hidden', currentMode === 'photo');
+  if (currentMode === 'photo') {
+    fitToStage();
+    renderDebugHotspotOverlay();
+  } else {
+    renderGrid();
+  }
 }
 
 /* ===== Exit — always available (§20 게임오버 없음), bonus if 3+ optional found ===== */
@@ -449,11 +737,26 @@ el.exitBtn.addEventListener('click', () => {
   startSuccessDialogue(lines);
 });
 
+/* ===== Dev debug sheet ===== */
+el.devBtn.addEventListener('click', () => el.sheetOverlay.classList.remove('hidden'));
+el.sheetCloseBtn.addEventListener('click', () => el.sheetOverlay.classList.add('hidden'));
+el.sheetOverlay.addEventListener('click', (e) => { if (e.target === el.sheetOverlay) el.sheetOverlay.classList.add('hidden'); });
+document.getElementById('btnShowHotspots').addEventListener('click', (e) => {
+  debugShowHotspots = !debugShowHotspots;
+  e.target.textContent = debugShowHotspots ? 'HIDE HOTSPOTS' : 'SHOW HOTSPOTS';
+  renderDebugHotspotOverlay();
+});
+document.getElementById('btnResetMinigame').addEventListener('click', () => {
+  localStorage.removeItem(STATE_KEY);
+  location.reload();
+});
+
 /* ===== Boot ===== */
+CaseFileState.recordSceneVisit('week1-scene-003-minigame');
 el.reqTotal.textContent = REQUIRED_IDS.length;
 el.optTotal.textContent = OPTIONAL_TOTAL;
-renderGrid();
 updateProgressUi();
+loadExhibition();
 </script>
 <script src="/dev/devPlanFab.js"></script>
 </body>
