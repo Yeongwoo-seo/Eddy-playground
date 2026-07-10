@@ -28,13 +28,13 @@ const caseMapLocations = [
   {
     id: 'circular-quay', name: 'Circular Quay', mapX: 62, mapY: 30,
     relatedSceneIds: [
-      // 1주차 추리 개편 v2 — week1-scene-004/005는 week1-scene-003에 합쳐졌고,
-      // 애드리언 콜 조사는 자기 씬(week1-scene-007)으로 분리됐다. A 재오픈(010),
-      // 최종 심문(011), 사건 재구성(012)도 모두 Circular Quay 권역이라 여기 포함.
-      // 엔딩(013)만 숙소라 위 accommodation 항목으로 옮겨졌다 — see week1Scenes
-      // in dialogueData.js.
+      // 1주차 장편 확장 v2 — 003(순수 자유조사)/004(도난+사진분석,
+      // 004-minigame/004-review)/005(신규: 용의자 선별+현장 재조사)로
+      // 재배치됐다. A 재오픈(010), 최종 심문(011), 사건 재구성(012)도 모두
+      // Circular Quay 권역이라 여기 포함. 엔딩(013)만 숙소라 위
+      // accommodation 항목으로 옮겨졌다 — see week1Scenes in dialogueData.js.
       'week1-scene-001', 'week1-scene-002', 'week1-scene-003',
-      'week1-scene-005-minigame',
+      'week1-scene-004', 'week1-scene-004-minigame', 'week1-scene-004-review', 'week1-scene-005',
       'week1-scene-006', 'week1-scene-007', 'week1-scene-008', 'week1-scene-008-minigame',
       'week1-scene-009', 'week1-scene-010', 'week1-scene-011', 'week1-scene-012',
     ],

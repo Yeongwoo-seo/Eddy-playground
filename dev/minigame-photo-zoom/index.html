@@ -58,6 +58,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .photo-bg{position:absolute;top:0;left:0;background:linear-gradient(180deg,#8f8873 0%,#8f8873 46%,#6f6a58 46%,#6f6a58 100%)}
 .photo-vignette{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 40%,rgba(0,0,0,0) 45%,rgba(0,0,0,.35) 100%);pointer-events:none}
 .case-box{position:absolute;background:rgba(200,220,225,.16);border:2px dashed rgba(230,240,245,.55);border-radius:6px}
+.case-box.complete{border-style:solid;border-color:var(--amber);background:rgba(214,168,75,.14)}
 .case-glyph{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:translate(-50%,-50%);background:var(--amber);border-radius:3px;box-shadow:0 0 10px rgba(214,168,75,.6)}
 .case-label{position:absolute;left:6px;top:-22px;font-family:var(--mono);font-size:12px;letter-spacing:.08em;color:rgba(230,240,245,.75)}
 
@@ -114,7 +115,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
     </div>
     <div class="grid-tag">Operation MK · Pop-up Exhibition</div>
     <div class="grid-title">사진 속 인물 찾기</div>
-    <div class="grid-desc">직원이 건네준 사진 여섯 장. 하나씩 확대해서, K-01 진열장 근처에 있던 사람을 찾아 눌러보세요.</div>
+    <div class="grid-desc">직원이 건네준 사진 일곱 장. 하나씩 확대해서, K-01 진열장 근처에 있던 사람과 케이스 자체의 변화를 찾아 눌러보세요.</div>
     <div class="photo-grid" id="photoGrid"></div>
   </div>
 
@@ -170,7 +171,7 @@ if ('serviceWorker' in navigator) {
 <script src="/dev/caseFileState.js"></script>
 <script src="/dev/vnPlayer.js"></script>
 <script>
-/* ===== 사진 속 인물 찾기 — week1-scene-005-minigame =====
+/* ===== 사진 속 인물 찾기 — week1-scene-004-minigame =====
    전시장 직원이 건넨 사진 6장. 각 사진은 K-01 진열장(고정 위치)과 그 주변의
    인물 몇 명으로 구성된 순수 CSS/DOM 씬(이미지 파일 없음 — char-placeholder류
    추상 인물 아이콘과 같은 방식). 사진마다 실제로 케이스 근처에 있던 인물
@@ -180,9 +181,12 @@ if ('serviceWorker' in navigator) {
    6장에 걸쳐 반복 등장하는 세 사람(윤민아/애드리언 콜/레오 박에 해당하는
    베이지 코트·네이비 수트·그레이 후드) + 인파 속에 딱 한 번 나오는 얼굴 없는
    인물, 총 8회 목격을 다 찾으면 완료. 이름은 아직 밝히지 않는다 —
-   week1-scene-006/007/008에서 실제로 만나기 전이라 서술만 색/옷차림으로 한다. */
+   week1-scene-006/007/008에서 실제로 만나기 전이라(아래 redirect는 이제 사진 분석 마무리 씬 week1-scene-004-review로 간다) 서술만 색/옷차림으로 한다. */
 const CANVAS_W = 640, CANVAS_H = 860;
-const REQUIRED_TOTAL = 9; // 8 people sightings + 1 required K-01 empty-case tap
+// 8 people sightings + 4 required specialTargets (명찰 사진 / 렌즈 반사 /
+// 진열장 문 열림 / 빈 받침대) — §22 장편 확장 v2: "K-01 상태 변화" 발견이
+// 인물 태그처럼 단일 종류가 아니라 여러 단계로 나뉘어야 한다는 요구에 맞췄다.
+const REQUIRED_TOTAL = 12;
 
 // 모든 사진에서 고정된 K-01 진열장 위치 (같은 방, 같은 케이스).
 const CASE_BOX = { cx: 320, cy: 344, w: 150, h: 110 };
@@ -217,6 +221,18 @@ const PHOTOS = [
       { personKey: 'minah', cx: 280, cy: 460, w: 70, h: 150, correct: true },
       { tag: '관광객', cx: 520, cy: 660, w: 60, h: 130, correct: false },
     ],
+    // specialTargets — §22 장편 확장 v2: K-01 상태 변화는 인물처럼 한 종류가
+    // 아니라 존재/부분 가림/문 열림/빈 받침대 여러 단계로 나뉜다. 명찰
+    // 클로즈업은 나중에 week1-scene-009(레오 집중 심문)의 진입 조건으로도
+    // 쓰이는 evidence-k01-nameplate-photo를 준다.
+    specialTargets: [
+      {
+        id: 'nameplate', box: { cx: 395, cy: 344, w: 40, h: 30 },
+        evidenceId: 'evidence-k01-nameplate-photo', evidenceCode: 'E-K01',
+        evidenceTitle: 'K-01 명찰 사진', evidenceDesc: '진열장 명찰을 가까이서 찍은 사진. 카탈로그 번호 "K-01"과 작은 각인이 선명하게 보인다.',
+        sayLine: ['지수', '어, 이 명찰 되게 가깝게 찍혔네요.'],
+      },
+    ],
   },
   {
     time: '10:43', caption: '케이스 앞에 두 사람이 멈춰 선다', hasItem: true,
@@ -233,9 +249,19 @@ const PHOTOS = [
       { tag: '관광객', cx: 540, cy: 260, w: 50, h: 108, correct: false },
       { tag: '관광객', cx: 130, cy: 720, w: 56, h: 120, correct: false },
     ],
+    // 1주차 장편 확장 v2 §10 Round 2 — 윤민아의 "사진은 안 찍었어요" 진술을
+    // 깨는 증거. 그녀 자신의 손에 들린 카메라 렌즈에 무언가 반사되어 있다.
+    specialTargets: [
+      {
+        id: 'lens-reflection', box: { cx: 355, cy: 400, w: 36, h: 26 },
+        evidenceId: 'evidence-mina-lens-reflection', evidenceCode: 'E-M00',
+        evidenceTitle: '카메라 렌즈 반사', evidenceDesc: '베이지 코트 여성의 카메라 렌즈를 확대해보니, K-01 진열장이 또렷하게 반사되어 있다. 촬영 중이었다는 뜻이다.',
+        sayLine: ['지수', '어, 이 렌즈에 뭔가 비치는데요?'],
+      },
+    ],
   },
   {
-    time: '10:47', caption: '단체 관광객이 밀려들어오는 순간', hasItem: true,
+    time: '10:47', caption: '단체 관광객이 밀려들어오는 순간 — 케이스 절반이 사람들 등에 가려진다', hasItem: true,
     figures: [
       { personKey: 'leo', cx: 390, cy: 460, w: 66, h: 146, correct: true },
       { personKey: 'unknown', cx: 480, cy: 380, w: 60, h: 136, correct: true },
@@ -243,6 +269,21 @@ const PHOTOS = [
       { tag: '관광객', cx: 210, cy: 610, w: 54, h: 118, correct: false },
       { tag: '관광객', cx: 530, cy: 660, w: 56, h: 122, correct: false },
       { tag: '관광객', cx: 80, cy: 510, w: 48, h: 104, correct: false },
+    ],
+  },
+  {
+    time: '10:48', caption: '인파 틈으로, 진열장 문이 살짝 열려 있다', hasItem: true,
+    figures: [
+      { tag: '관광객', cx: 160, cy: 640, w: 52, h: 112, correct: false },
+      { tag: '관광객', cx: 540, cy: 300, w: 50, h: 108, correct: false },
+    ],
+    specialTargets: [
+      {
+        id: 'door-ajar', box: { cx: 320, cy: 300, w: 150, h: 60 },
+        evidenceId: 'evidence-k01-case-door-ajar', evidenceCode: 'E-K01',
+        evidenceTitle: '진열장 문 열림', evidenceDesc: '인파가 몰린 틈에, K-01 진열장 문이 살짝 열려 있는 것이 사진에 찍혔다.',
+        sayLine: ['영우', '어? 이 진열장, 문이 열려 있는데?'],
+      },
     ],
   },
   {
@@ -256,13 +297,20 @@ const PHOTOS = [
     ],
   },
   {
-    // caseTappable — 1주차 추리 개편 v2: K-01 자체의 "상태 변화"(§5.3)도 발견
-    // 대상이어야 한다는 요구에 맞춰, 빈 케이스 자체를 눌러서 찾는 필수 단서로
-    // 만들었다. 사진 분석 미니게임을 완주해야만 나올 수 있는 흐름이라
-    // (REQUIRED_TOTAL에 포함) week1-scene-009의 C-3 게이트가 항상 통과 가능하다.
-    time: '10:53', caption: '인파가 빠져나간 뒤, 케이스는 비어 있다', hasItem: false, caseTappable: true,
+    // 빈 받침대 — K-01 상태 변화의 마지막 단계. 사진 분석 미니게임을 완주해야만
+    // 나올 수 있는 필수 흐름이라(REQUIRED_TOTAL에 포함) week1-scene-009의
+    // C-3 게이트가 항상 통과 가능하다.
+    time: '10:53', caption: '인파가 빠져나간 뒤, 케이스는 비어 있다', hasItem: false,
     figures: [
       { tag: '관광객', cx: 500, cy: 700, w: 56, h: 120, correct: false },
+    ],
+    specialTargets: [
+      {
+        id: 'empty-case', box: { cx: 320, cy: 344, w: 150, h: 110 },
+        evidenceId: 'evidence-k01-empty-case', evidenceCode: 'E-K01',
+        evidenceTitle: 'K-01 상태 변화 사진', evidenceDesc: '인파가 빠져나간 직후 사진 — K-01이 있어야 할 자리가 비어 있다.',
+        sayLine: ['영우', '어? 이 사진, 케이스가 비어 있는데?'],
+      },
     ],
   },
 ];
@@ -305,11 +353,12 @@ function totalFound() { return foundIds.size; }
 function foundInPhoto(photoIdx) {
   const photo = PHOTOS[photoIdx];
   const figuresFound = photo.figures.filter((f, i) => f.correct && foundIds.has(`${photoIdx}-${i}`)).length;
-  return figuresFound + (photo.caseTappable && foundIds.has(`${photoIdx}-case`) ? 1 : 0);
+  const specialFound = (photo.specialTargets || []).filter(t => foundIds.has(`${photoIdx}-${t.id}`)).length;
+  return figuresFound + specialFound;
 }
 function correctInPhoto(photoIdx) {
   const photo = PHOTOS[photoIdx];
-  return photo.figures.filter(f => f.correct).length + (photo.caseTappable ? 1 : 0);
+  return photo.figures.filter(f => f.correct).length + (photo.specialTargets || []).length;
 }
 
 function updateProgressUi() {
@@ -471,6 +520,20 @@ function buildPhoto(photoIdx) {
   }
   el.mapCanvas.appendChild(caseBox);
 
+  // Extra specialTargets besides the always-drawn case box itself (empty-case
+  // coincides with CASE_BOX's own coordinates, so it needs no separate
+  // marker) — nameplate/door-ajar get their own small dashed hint region.
+  (photo.specialTargets || []).filter(t => t.id !== 'empty-case').forEach(t => {
+    const box = document.createElement('div');
+    box.className = 'case-box';
+    Object.assign(box.style, {
+      left: (t.box.cx - t.box.w / 2) + 'px', top: (t.box.cy - t.box.h / 2) + 'px',
+      width: t.box.w + 'px', height: t.box.h + 'px',
+    });
+    if (foundIds.has(`${photoIdx}-${t.id}`)) box.classList.add('complete');
+    el.mapCanvas.appendChild(box);
+  });
+
   figureEls = photo.figures.map((fig, figIdx) => {
     const wrap = document.createElement('div');
     wrap.className = 'figure';
@@ -565,19 +628,28 @@ function unlockRepeatQuestionIfNeeded(personKey, count) {
   if (added && typeof caseMenu !== 'undefined' && caseMenu.notifyNewQuestion) caseMenu.notifyNewQuestion('왜 이 사람은 계속 K-01 근처에 있었지?');
 }
 
-function onCaseTap() {
-  const caseId = `${activePhotoIdx}-case`;
-  if (foundIds.has(caseId)) return;
-  foundIds.add(caseId);
-  if (!evidenceGranted.has('case')) {
-    evidenceGranted.add('case');
+// 인물(figures)과 달리 specialTargets는 사진마다 개수/위치가 다른 임의의
+// "상태 변화" 단서(명찰 클로즈업/문 열림/빈 받침대)라, 고정 좌표 hit-test
+// 하나로 통일했다 — §22 장편 확장 v2가 요구하는 "K-01 상태 변화" 다단계
+// 발견을 새 미니게임 없이 기존 photo-zoom 위에서 처리하기 위함.
+function findTappedSpecialTarget(photo, point) {
+  return (photo.specialTargets || []).find(t =>
+    point.x >= t.box.cx - t.box.w / 2 && point.x <= t.box.cx + t.box.w / 2 &&
+    point.y >= t.box.cy - t.box.h / 2 && point.y <= t.box.cy + t.box.h / 2);
+}
+
+function onSpecialTargetTap(target) {
+  const foundId = `${activePhotoIdx}-${target.id}`;
+  if (foundIds.has(foundId)) return;
+  foundIds.add(foundId);
+  if (!evidenceGranted.has(target.id)) {
+    evidenceGranted.add(target.id);
     CaseFileState.addEvidence({
-      id: 'evidence-k01-empty-case', code: 'E-K01', title: 'K-01 상태 변화 사진',
-      description: '인파가 빠져나간 직후 사진 — K-01이 있어야 할 자리가 비어 있다.',
-      discoveredLocationText: 'Pop-up Exhibition · 사건 직전 사진',
+      id: target.evidenceId, code: target.evidenceCode || 'E-K01', title: target.evidenceTitle,
+      description: target.evidenceDesc, discoveredLocationText: 'Pop-up Exhibition · 사건 직전 사진',
     });
   }
-  say('영우', '어? 이 사진, 케이스가 비어 있는데?');
+  say(target.sayLine[0], target.sayLine[1]);
   updateProgressUi();
   if (totalFound() >= REQUIRED_TOTAL) setTimeout(startSuccessDialogue, 1400);
 }
@@ -585,12 +657,8 @@ function onCaseTap() {
 function onCanvasTap(point) {
   if (activePhotoIdx < 0) return;
   const photo = PHOTOS[activePhotoIdx];
-  if (photo.caseTappable && !foundIds.has(`${activePhotoIdx}-case`)
-    && point.x >= CASE_BOX.cx - CASE_BOX.w / 2 && point.x <= CASE_BOX.cx + CASE_BOX.w / 2
-    && point.y >= CASE_BOX.cy - CASE_BOX.h / 2 && point.y <= CASE_BOX.cy + CASE_BOX.h / 2) {
-    onCaseTap();
-    return;
-  }
+  const target = findTappedSpecialTarget(photo, point);
+  if (target) { onSpecialTargetTap(target); return; }
   let bestIdx = -1, bestDist = Infinity;
   photo.figures.forEach((fig, i) => {
     const d = Math.hypot(point.x - fig.cx, point.y - (fig.cy - fig.h / 2));
@@ -695,7 +763,7 @@ function startSuccessDialogue() {
 
 function fadeOutAndRedirect() {
   el.fadeOverlay.classList.add('show');
-  setTimeout(() => { location.href = '/dev/game/?scene=week1-scene-006'; }, 950);
+  setTimeout(() => { location.href = '/dev/game/?scene=week1-scene-004-review'; }, 950);
 }
 
 /* ===== Boot ===== */

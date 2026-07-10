@@ -18,6 +18,12 @@ function defaultCaseState() {
     visitedSceneIds: [],
     forceUnlockedLocationIds: [],
     inventoryItemIds: [],
+    // 1주차 장편 확장 v2 §22 — generic string-keyed bag backing both
+    // interrogationState (e.g. 'wrong:leo-c1', 'round:leo') and
+    // investigationState (e.g. 'hotspot:003:k01', 'optionalCount:003') so
+    // authors don't need a bespoke schema per scene; see setFlag/getFlag/
+    // hasFlag/incrementFlag below and the 'setFlag' effect in game/index.html.
+    flags: {},
     settings: { textSpeed: 'normal', sfx: true, bgm: true, vibration: true },
   };
 }
@@ -28,6 +34,7 @@ function loadCaseState() {
     if (!raw || typeof raw !== 'object') return defaultCaseState();
     return Object.assign(defaultCaseState(), raw, {
       settings: Object.assign(defaultCaseState().settings, raw.settings || {}),
+      flags: Object.assign({}, raw.flags || {}),
     });
   } catch (e) { return defaultCaseState(); }
 }
@@ -175,6 +182,7 @@ const CaseFileState = {
     if (!slot) return null;
     caseState = Object.assign(defaultCaseState(), slot.caseState, {
       settings: Object.assign(defaultCaseState().settings, (slot.caseState && slot.caseState.settings) || {}),
+      flags: Object.assign({}, (slot.caseState && slot.caseState.flags) || {}),
     });
     saveCaseState();
     return slot;
@@ -191,6 +199,16 @@ const CaseFileState = {
   setSetting(key, value) {
     caseState.settings[key] = value;
     saveCaseState();
+  },
+
+  /* ===== 플래그 (interrogationState / investigationState 겸용, §22) ===== */
+  setFlag(key, value) { caseState.flags[key] = value === undefined ? true : value; saveCaseState(); },
+  getFlag(key) { return caseState.flags[key]; },
+  hasFlag(key) { return !!caseState.flags[key]; },
+  incrementFlag(key) {
+    caseState.flags[key] = (Number(caseState.flags[key]) || 0) + 1;
+    saveCaseState();
+    return caseState.flags[key];
   },
 
   /* ===== 배지 카운트 (섹션 37 — 단일 숫자) ===== */
