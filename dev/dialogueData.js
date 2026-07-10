@@ -1277,15 +1277,26 @@ const week1Scenes = [
     introLabel: 'CIRCULAR QUAY',
     time: '10:40',
     // Merged week1-scene-003 + 004 + 005 (all Pop-up Exhibition, back to
-    // back). Hands off into the (not yet built) photo zoom-in investigation
-    // minigame — see MINIGAME_ROUTES in game/index.html. Falls back to a
-    // "MINIGAME START" placeholder overlay until that route exists.
+    // back). Hands off into the photo zoom-in investigation minigame — see
+    // MINIGAME_ROUTES in game/index.html.
     lines: mergeLines(week1Scene003Lines, week1Scene004Lines, week1Scene005Lines),
     nextSceneId: 'week1-scene-005-minigame',
   },
   {
-    id: 'week1-scene-006',
+    id: 'week1-scene-005-minigame',
     order: 4,
+    name: '사진 속 인물 찾기 (미니게임)',
+    location: 'Pop-up Exhibition',
+    time: '10:52',
+    // No `lines` — this is the minigame itself, not a VN scene. `route`
+    // overrides /dev/week1's default /dev/game/?scene=<id> link so this
+    // entry opens the minigame page directly, letting it be tested
+    // standalone instead of only via week1-scene-003's VN handoff.
+    route: '/dev/minigame-photo-zoom/',
+  },
+  {
+    id: 'week1-scene-006',
+    order: 5,
     name: '윤민아 · 애드리언 콜 조사',
     location: 'Pop-up Exhibition',
     introLabel: 'CIRCULAR QUAY',
@@ -1295,19 +1306,27 @@ const week1Scenes = [
   },
   {
     id: 'week1-scene-008',
-    order: 5,
+    order: 6,
     name: '레오 박 조사',
     location: 'Café near Circular Quay',
     introLabel: 'CIRCULAR QUAY',
     time: '11:40',
     lines: week1Scene008Lines,
-    // Hands off into the (not yet built) timeline-arrangement minigame that
-    // surfaces 레오's 11-minute gap — same placeholder fallback as above.
+    // Hands off into the timeline-arrangement minigame that surfaces 레오's
+    // 11-minute gap — see MINIGAME_ROUTES in game/index.html.
     nextSceneId: 'week1-scene-008-minigame',
   },
   {
+    id: 'week1-scene-008-minigame',
+    order: 7,
+    name: '시간대 정리 (미니게임)',
+    location: 'Café near Circular Quay',
+    time: '11:55',
+    route: '/dev/minigame-timeline/',
+  },
+  {
     id: 'week1-scene-009',
-    order: 6,
+    order: 8,
     name: '첫 추리',
     location: 'Pop-up Exhibition',
     introLabel: 'CIRCULAR QUAY',
@@ -1316,7 +1335,7 @@ const week1Scenes = [
   },
   {
     id: 'week1-scene-010',
-    order: 7,
+    order: 9,
     name: '탐정님과 조수',
     location: 'Circular Quay Harbour Walk',
     introLabel: 'CIRCULAR QUAY',
@@ -1325,7 +1344,7 @@ const week1Scenes = [
   },
   {
     id: 'week1-scene-011',
-    order: 8,
+    order: 10,
     name: '첫 용의자 카드',
     location: 'Sydney Accommodation',
     introLabel: 'ACCOMMODATION',
@@ -1736,6 +1755,26 @@ const minigames = [
     location: '독립형 미니게임 (스토리 미연동)',
     route: '/dev/minigame-transform/play/',
     setupUrl: '/dev/minigame-transform/',
+  },
+  {
+    // Standalone (no dev-marked background/hotspots to set up — see
+    // minigame-item-scan's comment above for the same reasoning) photo
+    // zoom-and-tap investigation. setupUrl === route since there's no
+    // separate settings screen.
+    id: 'week1-scene-005-minigame',
+    name: '사진 속 인물 찾기',
+    location: 'Pop-up Exhibition',
+    route: '/dev/minigame-photo-zoom/',
+    setupUrl: '/dev/minigame-photo-zoom/',
+  },
+  {
+    // Standalone tap-to-order timeline puzzle — same no-setup-screen
+    // reasoning as above.
+    id: 'week1-scene-008-minigame',
+    name: '시간대 정리',
+    location: 'Café near Circular Quay',
+    route: '/dev/minigame-timeline/',
+    setupUrl: '/dev/minigame-timeline/',
   },
 ];
 

@@ -28,7 +28,8 @@ const caseMapLocations = [
       // merged into week1-scene-006 (all Pop-up Exhibition) — see
       // week1Scenes in dialogueData.js.
       'week1-scene-001', 'week1-scene-002', 'week1-scene-003',
-      'week1-scene-006', 'week1-scene-008',
+      'week1-scene-005-minigame',
+      'week1-scene-006', 'week1-scene-008', 'week1-scene-008-minigame',
       'week1-scene-009', 'week1-scene-010',
     ],
   },
