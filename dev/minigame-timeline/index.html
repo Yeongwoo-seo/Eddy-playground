@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>OPERATION MK · 시간대 정리</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<meta name="theme-color" content="#080A0C">
+<link rel="manifest" href="/dev/manifest.json">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="OPERATION MK DEV">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+:root{
+  --bg:#080A0C;--surface-1:#101419;--surface-2:#171C22;--surface-3:#1E252D;
+  --text-primary:#EDF1F4;--text-secondary:#929BA5;--text-muted:#5F6872;
+  --cyan:#59B8C8;--amber:#D6A84B;--signal-red:#D94141;--divider:rgba(255,255,255,0.08);
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sans:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
+}
+html,body{height:100%}
+body{background:#050607;color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center}
+.frame{position:relative;width:100%;max-width:430px;height:100dvh;height:100vh;height:var(--vh100, 100vh);overflow:hidden;background:var(--bg);display:flex;flex-direction:column}
+
+.topbar{position:relative;z-index:6;padding:calc(14px + env(safe-area-inset-top,0)) 16px 10px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-shrink:0}
+.vn-btn{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:#fff;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:9px 14px;cursor:pointer;text-decoration:none;display:inline-block;flex-shrink:0}
+.vn-btn:active{transform:scale(.96)}
+.progress-pill{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;color:#fff;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:9px 14px;white-space:nowrap}
+.progress-pill .n{color:var(--amber);font-weight:600}
+
+.main{flex:1;min-height:0;overflow-y:auto;padding:4px 16px calc(16px + env(safe-area-inset-bottom,0));display:flex;flex-direction:column;gap:18px}
+.intro-tag{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--text-muted);text-transform:uppercase}
+.intro-title{font-size:20px;font-weight:700}
+.intro-desc{font-size:13px;color:var(--text-secondary);line-height:1.6}
+
+/* ===== Timeline slots ===== */
+.timeline-wrap{position:relative}
+.timeline-rail{position:absolute;left:9px;top:0;bottom:0;width:2px;background:linear-gradient(180deg,rgba(89,184,200,.05),rgba(89,184,200,.35));display:none}
+.timeline-wrap.revealed .timeline-rail{display:block}
+.slot{border:1.5px dashed rgba(255,255,255,.14);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;min-height:38px;background:rgba(255,255,255,.02);transition:background .2s,border-color .2s}
+.timeline-wrap:not(.revealed) .slot{margin-bottom:8px}
+.slot.filled{border-style:solid;border-color:rgba(89,184,200,.35);background:var(--surface-1)}
+.slot-num{font-family:var(--mono);font-size:12px;color:var(--text-muted);flex-shrink:0;width:18px;text-align:center}
+.slot.filled .slot-num{color:var(--cyan)}
+.slot-body{flex:1;min-width:0}
+.slot-text{font-size:13.5px;line-height:1.5;color:var(--text-primary);opacity:0;transition:opacity .25s}
+.slot.filled .slot-text{opacity:1}
+.slot-time{font-family:var(--mono);font-size:11.5px;color:var(--amber);opacity:0;margin-top:4px;transition:opacity .4s}
+.slot-time.show{opacity:1}
+.timeline-wrap.revealed .slot{position:absolute;left:0;right:0;transition:top .7s cubic-bezier(.2,.8,.2,1)}
+
+.gap-bracket{position:absolute;left:0;right:0;border-left:3px solid var(--signal-red);border-top:2px solid var(--signal-red);border-bottom:2px solid var(--signal-red);border-radius:4px 0 0 4px;opacity:0;pointer-events:none;transition:opacity .4s ease}
+.gap-bracket.show{opacity:1}
+.gap-label{position:absolute;left:8px;top:50%;transform:translateY(-50%);font-family:var(--mono);font-size:11.5px;font-weight:600;color:var(--signal-red);background:rgba(5,7,10,.9);border:1px solid rgba(217,65,65,.4);border-radius:10px;padding:4px 10px;white-space:nowrap}
+
+/* ===== Chip pool ===== */
+.pool-label{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase;margin-top:2px}
+.pool{display:flex;flex-direction:column;gap:8px}
+.chip{border:1px solid var(--divider);background:var(--surface-2);border-radius:12px;padding:12px 14px;font-size:13.5px;line-height:1.5;color:var(--text-primary);cursor:pointer;transition:transform .12s,background .12s,border-color .12s}
+.chip:active{transform:scale(.98)}
+.chip.wrong{animation:chipShake .35s ease}
+@keyframes chipShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.chip-type{display:inline-block;font-family:var(--mono);font-size:10.5px;color:var(--cyan);border:1px solid rgba(89,184,200,.35);border-radius:8px;padding:1px 6px;margin-right:8px;vertical-align:middle}
+
+/* ===== Bottom reaction strip ===== */
+.dlg-strip{position:relative;flex-shrink:0;background:rgba(5,7,10,.86);border:1px solid rgba(255,255,255,.1);border-radius:18px;box-shadow:0 8px 28px rgba(0,0,0,.25);padding:14px 16px;display:flex;align-items:flex-end;gap:14px;opacity:0;max-height:0;overflow:hidden;transition:opacity .2s ease,max-height .2s ease}
+.dlg-strip.show{opacity:1;max-height:140px}
+.portrait-wrap{width:48px;height:64px;border-radius:10px;overflow:hidden;background:var(--surface-2);flex-shrink:0;display:flex;align-items:flex-end;justify-content:center}
+.portrait-wrap img{width:100%;height:100%;object-fit:cover;object-position:top;display:none}
+.portrait-placeholder{width:60%;height:80%;opacity:.35;color:var(--text-secondary)}
+.dlg-body-wrap{flex:1;min-width:0}
+.dlg-name{font-size:13px;font-weight:700;color:var(--cyan);margin-bottom:3px}
+.dlg-name:empty{display:none}
+.dlg-text{font-size:14px;line-height:1.5;color:#fff;white-space:pre-wrap;word-break:keep-all}
+
+/* ===== Success dialogue overlay ===== */
+.success-layer{position:absolute;inset:0;z-index:9;display:none;flex-direction:column;justify-content:flex-end;cursor:pointer;background:rgba(0,0,0,.55)}
+.success-layer.show{display:flex}
+.success-char-wrap{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;pointer-events:none;opacity:0;transition:opacity .2s ease}
+.success-char-wrap.show{opacity:1}
+.success-char-img{max-height:74%;max-width:88%;object-fit:contain;object-position:bottom}
+.success-char-placeholder{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:40%;height:58%;opacity:.35;display:flex;align-items:flex-end;justify-content:center;color:var(--text-secondary)}
+.success-char-placeholder svg{width:100%;height:100%}
+.success-dlg{position:relative;margin:0 16px calc(16px + env(safe-area-inset-bottom,0));background:rgba(5,7,10,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.1);border-radius:18px;box-shadow:0 8px 28px rgba(0,0,0,.35);padding:18px 20px;min-height:22vh;display:flex;flex-direction:column}
+.success-name{font-size:15px;font-weight:700;color:var(--cyan);margin-bottom:8px}
+.success-name:empty{display:none}
+.success-text{flex:1;font-size:16px;line-height:1.65;color:#fff;white-space:pre-wrap;word-break:keep-all}
+.success-foot{display:flex;justify-content:flex-end;padding-top:6px}
+.success-arrow{font-size:13px;color:var(--text-secondary);visibility:hidden}
+@keyframes arrowBob{0%,100%{transform:translateY(0)}50%{transform:translateY(4px)}}
+.success-arrow.show{visibility:visible;animation:arrowBob 1.1s ease-in-out infinite}
+
+.fade-overlay{position:absolute;inset:0;z-index:10;background:#000;opacity:0;pointer-events:none;transition:opacity .9s ease}
+.fade-overlay.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="frame" id="frame">
+  <div class="topbar">
+    <a class="vn-btn" href="/dev/">← DEV</a>
+    <div class="progress-pill">정리됨 <span class="n" id="progressN">0</span>/<span id="progressTotal">7</span></div>
+  </div>
+
+  <div class="main" id="main">
+    <div>
+      <div class="intro-tag">Operation MK · Café near Circular Quay</div>
+      <div class="intro-title">시간대 정리</div>
+      <div class="intro-desc">사진 속 시간과 레오 박의 진술을 시간 순서대로 하나씩 정리해보세요. 아래 카드 중 가장 이른 순간이라고 생각되는 것부터 눌러 배치합니다.</div>
+    </div>
+
+    <div class="timeline-wrap" id="timelineWrap"></div>
+
+    <div>
+      <div class="pool-label">정리할 카드</div>
+      <div class="pool" id="pool"></div>
+    </div>
+
+    <div class="dlg-strip" id="dlgStrip">
+      <div class="portrait-wrap" id="portraitWrap">
+        <img id="portraitImg" alt="">
+        <svg class="portrait-placeholder" id="portraitPlaceholder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>
+      </div>
+      <div class="dlg-body-wrap">
+        <div class="dlg-name" id="dlgName"></div>
+        <div class="dlg-text" id="dlgText"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="success-layer" id="successLayer">
+    <div class="success-char-wrap" id="successCharWrap">
+      <img class="success-char-img" id="successCharImg" style="display:none" alt="">
+      <svg class="success-char-placeholder" id="successCharPlaceholder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>
+    </div>
+    <div class="success-dlg">
+      <div class="success-name" id="successName"></div>
+      <div class="success-text" id="successText"></div>
+      <div class="success-foot"><span class="success-arrow" id="successArrow">▼</span></div>
+    </div>
+  </div>
+
+  <div class="fade-overlay" id="fadeOverlay"></div>
+</div>
+
+<script>
+function setVh100() { document.documentElement.style.setProperty('--vh100', window.innerHeight + 'px'); }
+setVh100();
+window.addEventListener('resize', setVh100);
+window.addEventListener('orientationchange', setVh100);
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
+}
+</script>
+<script src="/dev/assetDb.js"></script>
+<script src="/dev/dialogueData.js"></script>
+<script src="/dev/caseFileData.js"></script>
+<script src="/dev/caseFileState.js"></script>
+<script src="/dev/vnPlayer.js"></script>
+<script>
+/* ===== 시간대 정리 — week1-scene-008-minigame =====
+   레오 박의 진술과 사진 기록을 시간 순서대로 배치하는 탭 기반 정렬 퍼즐.
+   카드에는 일부러 시각을 적지 않는다 — 지금까지 대사로만 접한 내용(인파가
+   몰리기 전/후, 레오의 진술)을 근거로 순서를 추론해야 한다. 7장을 전부
+   올바른 순서로 배치하면(단순히 "다음으로 이른 카드"를 순서대로 탭) 그제야
+   각 슬롯에 실제 시각이 드러나고, 슬롯들이 실제 경과 시간에 비례한 위치로
+   다시 배치되면서 레오 박(그레이 후드)의 마지막 목격(10:47)과 본인 진술
+   상 퇴장 시각(10:58) 사이 11분의 공백이 시각적으로 드러난다. */
+const PX_PER_MIN = 22;
+const SLOT_HEIGHT = 64;
+
+// True chronological order == array order (pool below is shuffled for display).
+const CARDS = [
+  { id: 'c1', timeMinutes: 41, timeLabel: '10:41', type: '사진', text: '아직 한산한 전시장. 베이지 코트를 입은 여성이 K-01 앞에 서 있다.' },
+  { id: 'c2', timeMinutes: 42, timeLabel: '10:42', type: '진술', text: '레오 박 — "이 시간쯤 전시장에 들어갔어요."' },
+  { id: 'c3', timeMinutes: 43, timeLabel: '10:43', type: '사진', text: '정장 입은 남성과 그레이 후드를 입은 남성이 나란히 K-01 앞에 있다.' },
+  { id: 'c4', timeMinutes: 45, timeLabel: '10:45', type: '사진', text: '베이지 코트 여성이 K-01 앞에 다시 등장한다.' },
+  { id: 'c5', timeMinutes: 47, timeLabel: '10:47', type: '사진', text: '단체 관광객이 밀려들고, 그레이 후드 남성이 마지막으로 보인다.' },
+  { id: 'c6', timeMinutes: 48, timeLabel: '10:48', type: '증언', text: '직원 — 인파가 빠진 뒤 K-01이 사라진 것을 알아챈다.' },
+  { id: 'c7', timeMinutes: 58, timeLabel: '10:58', type: '진술', text: '레오 박 — "이 시간쯤 나왔어요."' },
+];
+// 그레이 후드 남성의 마지막 실제 목격(c5, index 4)과 본인 퇴장 진술(c7, index 6)
+// 사이가 이 미니게임이 드러내려는 공백 구간이다.
+const GAP_FROM_IDX = 4, GAP_TO_IDX = 6;
+
+let placedCount = 0;
+let wrongClickCount = 0;
+let poolOrder = shuffle(CARDS.map((c, i) => i));
+let revealed = false;
+
+const el = {
+  progressN: document.getElementById('progressN'),
+  progressTotal: document.getElementById('progressTotal'),
+  timelineWrap: document.getElementById('timelineWrap'),
+  pool: document.getElementById('pool'),
+  dlgStrip: document.getElementById('dlgStrip'),
+  portraitWrap: document.getElementById('portraitWrap'),
+  portraitImg: document.getElementById('portraitImg'),
+  portraitPlaceholder: document.getElementById('portraitPlaceholder'),
+  dlgName: document.getElementById('dlgName'),
+  dlgText: document.getElementById('dlgText'),
+  successLayer: document.getElementById('successLayer'),
+  successCharWrap: document.getElementById('successCharWrap'),
+  successCharImg: document.getElementById('successCharImg'),
+  successCharPlaceholder: document.getElementById('successCharPlaceholder'),
+  successName: document.getElementById('successName'),
+  successText: document.getElementById('successText'),
+  successArrow: document.getElementById('successArrow'),
+  fadeOverlay: document.getElementById('fadeOverlay'),
+};
+
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/* ===== Render timeline slots (empty placeholders, filled as solved) ===== */
+function renderTimeline() {
+  el.timelineWrap.innerHTML = CARDS.map((c, i) => `
+    <div class="slot${i < placedCount ? ' filled' : ''}" data-idx="${i}">
+      <div class="slot-num">${i + 1}</div>
+      <div class="slot-body">
+        <div class="slot-text">${i < placedCount ? c.text : ''}</div>
+        <div class="slot-time" id="slotTime-${i}">${c.timeLabel}</div>
+      </div>
+    </div>`).join('');
+}
+
+/* ===== Render pool of remaining chips (shuffled, minus already-placed) ===== */
+function renderPool() {
+  const remaining = poolOrder.filter(i => i >= placedCount);
+  el.pool.innerHTML = remaining.map(i => `
+    <div class="chip" data-idx="${i}"><span class="chip-type">${CARDS[i].type}</span>${CARDS[i].text}</div>
+  `).join('');
+  el.pool.querySelectorAll('.chip').forEach(chipEl => {
+    chipEl.addEventListener('click', () => onChipTap(parseInt(chipEl.dataset.idx, 10), chipEl));
+  });
+}
+
+function updateProgressUi() { el.progressN.textContent = placedCount; }
+
+/* ===== Portrait + dialogue strip (same idiom as every other minigame) ===== */
+async function updatePortrait(characterKey) {
+  const assetId = DevGameState.getCharacterAssetId(characterKey, MINIGAME_FACE_EXPRESSION);
+  const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
+  if (asset && asset.dataUrl) {
+    el.portraitImg.src = asset.dataUrl;
+    el.portraitImg.style.display = '';
+    el.portraitPlaceholder.style.display = 'none';
+  } else {
+    el.portraitImg.removeAttribute('src');
+    el.portraitImg.style.display = 'none';
+    el.portraitPlaceholder.style.display = '';
+  }
+}
+const SPEAKER_TO_CHARACTER_KEY = { '지수': 'jisoo', '영우': 'youngwoo' };
+let reactionHideTimer = null;
+function say(speakerName, text) {
+  clearTimeout(reactionHideTimer);
+  el.dlgName.textContent = speakerName;
+  el.dlgText.textContent = text;
+  updatePortrait(SPEAKER_TO_CHARACTER_KEY[speakerName] || null);
+  el.dlgStrip.classList.add('show');
+  reactionHideTimer = setTimeout(() => el.dlgStrip.classList.remove('show'), 3400);
+}
+
+/* ===== Tap logic — the "next" card in CARDS array order is always the
+   only correct answer, since CARDS is already authored in true time order. ===== */
+const WRONG_LINES = [
+  ['지수', '음... 이건 아직 이르지 않아요?'],
+  ['영우', '시간 순서를 다시 한번 생각해봐.'],
+  ['지수', '차근차근이요, 차근차근.'],
+];
+
+function onChipTap(idx, chipEl) {
+  if (idx !== placedCount) {
+    wrongClickCount++;
+    chipEl.classList.add('wrong');
+    setTimeout(() => chipEl.classList.remove('wrong'), 350);
+    const line = WRONG_LINES[Math.min(wrongClickCount, WRONG_LINES.length) - 1];
+    say(line[0], line[1]);
+    return;
+  }
+  placedCount++;
+  renderTimeline();
+  renderPool();
+  updateProgressUi();
+  if (placedCount >= CARDS.length) {
+    setTimeout(revealTimeline, 500);
+  }
+}
+
+/* ===== Reveal — FLIP-style transition from the flow-laid-out slot list
+   into a position:relative track where each slot's top is proportional to
+   its real elapsed time, so the 11-minute gap becomes a visible gap. ===== */
+function revealTimeline() {
+  if (revealed) return;
+  revealed = true;
+  say('영우', '다 맞춘 것 같은데?');
+
+  const slots = Array.from(el.timelineWrap.querySelectorAll('.slot'));
+  const startTops = slots.map(s => s.offsetTop);
+  const containerRect = el.timelineWrap.getBoundingClientRect();
+
+  const minMinute = CARDS[0].timeMinutes;
+  const targetTops = CARDS.map(c => (c.timeMinutes - minMinute) * PX_PER_MIN);
+  const timelineHeight = Math.max(...targetTops) + SLOT_HEIGHT;
+
+  slots.forEach((s, i) => {
+    s.style.top = startTops[i] + 'px';
+    s.style.left = '0';
+    s.style.right = '0';
+  });
+  el.timelineWrap.style.height = containerRect.height + 'px';
+  el.timelineWrap.classList.add('revealed');
+
+  // Force reflow so the transition on `top` actually animates from the
+  // flow-position snapshot above, instead of jumping straight to target.
+  void el.timelineWrap.offsetHeight;
+
+  requestAnimationFrame(() => {
+    el.timelineWrap.style.height = timelineHeight + 'px';
+    slots.forEach((s, i) => { s.style.top = targetTops[i] + 'px'; });
+    slots.forEach((s, i) => {
+      const timeEl = document.getElementById('slotTime-' + i);
+      setTimeout(() => timeEl.classList.add('show'), 500 + i * 60);
+    });
+  });
+
+  setTimeout(() => {
+    say('지수', '레오씨 얘기랑 사진 사이에\n뭔가 비어 있어요.');
+    drawGapBracket(targetTops, minMinute);
+  }, 1500);
+
+  setTimeout(grantGapEvidence, 1600);
+  setTimeout(startSuccessDialogue, 3400);
+}
+
+function drawGapBracket(targetTops, minMinute) {
+  const top = targetTops[GAP_FROM_IDX] + SLOT_HEIGHT * 0.55;
+  const bottom = targetTops[GAP_TO_IDX] + SLOT_HEIGHT * 0.45;
+  const bracket = document.createElement('div');
+  bracket.className = 'gap-bracket';
+  Object.assign(bracket.style, { top: top + 'px', height: (bottom - top) + 'px' });
+  const label = document.createElement('div');
+  label.className = 'gap-label';
+  label.textContent = `${CARDS[GAP_FROM_IDX].timeLabel} → ${CARDS[GAP_TO_IDX].timeLabel} · 11분 공백`;
+  bracket.appendChild(label);
+  el.timelineWrap.appendChild(bracket);
+  requestAnimationFrame(() => bracket.classList.add('show'));
+}
+
+let gapEvidenceGranted = false;
+function grantGapEvidence() {
+  if (gapEvidenceGranted) return;
+  gapEvidenceGranted = true;
+  CaseFileState.addEvidence({
+    id: 'evidence-leo-timeline-gap', code: 'E-TL1', title: '레오 박 진술-사진 대조 기록',
+    description: '레오 박의 진술(10:42~10:58)과 실제 사진 기록을 대조한 결과, 10:47~10:58 사이 11분 동안 어떤 사진에도 나오지 않는다.',
+    discoveredLocationText: 'Café near Circular Quay · 시간대 정리',
+  });
+  const added = CaseFileState.addQuestion({ id: 'question-leo-gap', title: '레오 박의 11분 공백은 무엇인가?', linkedEvidenceIds: ['evidence-leo-timeline-gap'] });
+  if (added && typeof caseMenu !== 'undefined' && caseMenu.notifyNewQuestion) caseMenu.notifyNewQuestion('레오 박의 11분 공백은 무엇인가?');
+}
+
+/* ===== Success sequence ===== */
+async function updateSuccessAvatar(characterId, expression) {
+  if (!characterId) { el.successCharWrap.classList.remove('show'); return; }
+  el.successCharWrap.classList.add('show');
+  const assetId = DevGameState.getCharacterAssetId(characterId, expression);
+  const asset = await AssetDB.getAsset(assetId).catch(() => null);
+  if (asset && asset.dataUrl) {
+    el.successCharImg.src = asset.dataUrl;
+    el.successCharImg.style.display = '';
+    el.successCharPlaceholder.style.display = 'none';
+  } else {
+    el.successCharImg.removeAttribute('src');
+    el.successCharImg.style.display = 'none';
+    el.successCharPlaceholder.style.display = '';
+  }
+  const t = DevGameState.getCharacterTransform(characterId);
+  el.successCharImg.style.transform = `translate(${t.x}px, ${t.y}px) scale(${t.scale})`;
+}
+
+const successLines = [
+  { speaker: '영우', text: '어디?', characterId: 'youngwoo', expression: 'curious' },
+  { speaker: '지수', text: '레오씨 진술로는 10시 42분부터 58분까지\n계속 안에 있었다는 건데.', characterId: 'jisoo', expression: 'serious' },
+  { speaker: '영우', text: '근데 사진엔 47분 이후로 안 나온다는 거지.', characterId: 'youngwoo', expression: 'blank' },
+  { speaker: '지수', text: '...\n네. 11분 동안, 어디에도 없어요.', characterId: 'jisoo', pauseBeforeMs: 300, expression: 'suspicious' },
+  { speaker: '영우', text: '다시 가서 물어봐야겠다.', characterId: 'youngwoo', expression: 'serious' },
+];
+
+function startSuccessDialogue() {
+  el.successLayer.classList.add('show');
+  const player = createVNPlayer({
+    onLineChange: (line) => {
+      el.successName.textContent = line.speaker || '';
+      updateSuccessAvatar(line.characterId, line.expression);
+    },
+    onTextUpdate: (text) => { el.successText.textContent = text; },
+    onArrow: (show) => el.successArrow.classList.toggle('show', show),
+    onComplete: fadeOutAndRedirect,
+  });
+  player.load(successLines);
+  el.successLayer.addEventListener('click', () => player.tap());
+}
+
+function fadeOutAndRedirect() {
+  el.fadeOverlay.classList.add('show');
+  setTimeout(() => { location.href = '/dev/game/?scene=week1-scene-009'; }, 950);
+}
+
+/* ===== Boot ===== */
+el.progressTotal.textContent = CARDS.length;
+renderTimeline();
+renderPool();
+updateProgressUi();
+</script>
+<script src="/dev/devPlanFab.js"></script>
+</body>
+</html>
