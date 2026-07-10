@@ -1094,12 +1094,29 @@ const week1Scene002Lines = [
    minigame-phone-search와 같은 "그리드 핫스팟 탐색 + 증거 획득 토스트"
    방식이 대사 선택지 목록보다 "직접 둘러보며 찾는" 느낌에 더 맞기 때문.
    이 VN 씬은 짧은 도입부만 담당하고, K-01 발견/필수·선택 조사/붐빔 전환/
-   보너스 단서는 전부 미니게임 쪽에 있다(§ minigame-exhibition-search 참고). */
+   보너스 단서는 전부 미니게임 쪽에 있다(§ minigame-exhibition-search 참고).
+
+   미니게임으로 넘어가기 직전, 입장 직후에 전시장 직원과 짧게 안내를 주고받고
+   영우/지수 티키타카 한 소절을 끼워 넣는다(staff-greet-1~4, banter-1~9).
+   flag/effect 없는 순수 텍스트 비트로, 미니게임 핸드오프에는 영향을 주지 않는다. */
 const week1Scene003Lines = [
   { id: 'line-001', speaker: '', text: '빈티지 팝업 전시장.\n오전 10시 40분.', characterId: null },
   { id: 'line-002', speaker: '', text: '작은 공간에 오래된 시계, 카메라, 금속 공예품들이\n유리 진열장 안에 나란히 놓여 있다.', characterId: null },
   { id: 'line-003', speaker: '지수', text: '오 여기 나름 알차네.', characterId: 'jisoo', expression: 'curious' },
   { id: 'line-004', speaker: '영우', text: '그치.\n생각보다 물건이 많아.\n천천히 한번 둘러볼래?', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'staff-greet-1', speaker: '전시장 직원', text: '어서 오세요.\n편하게 둘러보시면 됩니다.', characterId: null },
+  { id: 'staff-greet-2', speaker: '지수', text: '감사합니다!', characterId: 'jisoo', expression: 'happy' },
+  { id: 'staff-greet-3', speaker: '전시장 직원', text: '사진은 자유롭게 찍으셔도 되는데,\n진열장 안쪽은 손대지 말아주세요.', characterId: null },
+  { id: 'staff-greet-4', speaker: '영우', text: '네, 조심할게요.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'banter-1', speaker: '지수', text: '근데 여기 입장료도 없던데,\n이런 덴 어떻게 운영되는 거예요?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'banter-2', speaker: '영우', text: '팝업이라 그런 걸걸.\n짧게 열고 닫는 대신 홍보 목적이 크니까.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'banter-3', speaker: '지수', text: '오, 의외로 좀 아네요?', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'banter-4', speaker: '영우', text: '가이드북에 다 나와 있던데.', characterId: 'youngwoo', expression: 'blank' },
+  { id: 'banter-5', speaker: '지수', text: '역시 우리 인간 가이드북.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'banter-6', speaker: '영우', text: '그 별명 진짜 별로다.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'banter-7', speaker: '지수', text: '그래도 마음엔 들죠?', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'banter-8', speaker: '영우', text: '...\n조금.', characterId: 'youngwoo', pauseBeforeMs: 300, expression: 'blank' },
+  { id: 'banter-9', speaker: '지수', text: 'ㅋㅋㅋ\n자, 그럼 슬슬 구경해볼까요?', characterId: 'jisoo', expression: 'happy' },
   { id: 'line-005', speaker: '지수', text: '웅웅, 하나씩 다 볼래요.', characterId: 'jisoo', expression: 'happy' },
 ];
 
