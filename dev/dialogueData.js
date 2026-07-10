@@ -1726,6 +1726,17 @@ const minigames = [
     route: '/dev/minigame-watermelon/play/',
     setupUrl: '/dev/minigame-watermelon/',
   },
+  {
+    // Standalone combination-puzzle minigame — same setupUrl/route split as
+    // fishing/watermelon above. Settings screen picks difficulty/mode/fx/
+    // motion instead of a photo; play screen reads them back off the query
+    // string (see dev/minigame-transform/play/'s settingsParams block).
+    id: 'transform-minigame',
+    name: '변신 마법',
+    location: '독립형 미니게임 (스토리 미연동)',
+    route: '/dev/minigame-transform/play/',
+    setupUrl: '/dev/minigame-transform/',
+  },
 ];
 
 // Registry of standalone-testable 증거 수집 (evidence-collection) scenes —
