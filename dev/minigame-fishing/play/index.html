@@ -33,11 +33,8 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .bg-layer{position:absolute;inset:0;z-index:0;background-size:cover;background-position:center;display:none}
 .bg-layer.show{display:block}
 .bg-layer::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(5,7,10,.4) 0%,rgba(5,7,10,.6) 100%)}
-.character-sprite{position:absolute;left:14px;bottom:calc(64px + env(safe-area-inset-bottom,0));max-width:96px;max-height:150px;z-index:1;display:none;filter:drop-shadow(0 4px 10px rgba(0,0,0,.5))}
-.character-sprite.show{display:block}
 
 .topbar{position:absolute;top:0;left:0;right:0;z-index:6;padding:calc(14px + env(safe-area-inset-top,0)) 16px 14px;display:flex;justify-content:space-between;align-items:center;pointer-events:none}
-.topbar-right{display:flex;gap:8px;pointer-events:none}
 .vn-btn{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:#fff;background:rgba(8,10,12,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:9px 14px;cursor:pointer;text-decoration:none;display:inline-block;pointer-events:auto;border-width:1px}
 
 /* ===== Game stage ===== */
@@ -57,14 +54,22 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .progress-fill.danger{background:linear-gradient(180deg,#E88686 0%,var(--signal-red) 100%)}
 .progress-mid-mark{position:absolute;left:0;right:0;top:50%;height:1px;background:rgba(255,255,255,.25)}
 
-/* ===== Press zone (full stage minus topbar) ===== */
+/* ===== Press zone (full stage minus topbar/dialogue strip) ===== */
 .press-zone{position:absolute;inset:0;z-index:5;touch-action:none}
-.press-hint{position:absolute;left:0;right:0;bottom:calc(14px + env(safe-area-inset-bottom,0));z-index:6;text-align:center;font-family:var(--mono);font-size:11.5px;color:var(--text-muted);letter-spacing:.02em;pointer-events:none;transition:opacity .2s ease}
+.press-hint{position:absolute;left:0;right:0;bottom:calc(130px + env(safe-area-inset-bottom,0));z-index:6;text-align:center;font-family:var(--mono);font-size:11.5px;color:var(--text-muted);letter-spacing:.02em;pointer-events:none;transition:opacity .2s ease}
 .press-hint.hold{color:var(--green)}
 
-/* ===== Debug panel ===== */
-.debug-panel{position:absolute;top:calc(50px + env(safe-area-inset-top,0));left:12px;z-index:6;font-family:var(--mono);font-size:10.5px;line-height:1.55;color:rgba(146,155,165,.9);background:rgba(5,7,10,.7);border:1px solid var(--divider);border-radius:10px;padding:8px 10px;pointer-events:none;white-space:pre;display:none}
-.debug-panel.show{display:block}
+/* ===== Bottom dialogue strip — 지수/영우 banter, same shape as
+   minigame-eastwood's .dlg-strip so a caught/missed fish reads like a real
+   scenario beat instead of a bare test-harness result banner. ===== */
+.dlg-strip{position:absolute;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0));z-index:6;background:rgba(5,7,10,.86);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.1);border-radius:18px;box-shadow:0 8px 28px rgba(0,0,0,.35);padding:14px 16px;display:flex;align-items:flex-end;gap:14px}
+.portrait-wrap{width:56px;height:76px;border-radius:10px;overflow:hidden;background:var(--surface-2);flex-shrink:0;display:flex;align-items:flex-end;justify-content:center}
+.portrait-wrap img{width:100%;height:100%;object-fit:cover;object-position:top;display:none}
+.portrait-placeholder{width:60%;height:80%;opacity:.35;color:var(--text-secondary)}
+.dlg-body-wrap{flex:1;min-width:0}
+.dlg-name{font-size:14px;font-weight:700;color:var(--cyan);margin-bottom:4px}
+.dlg-name:empty{display:none}
+.dlg-text{font-size:15px;line-height:1.55;color:#fff;white-space:pre-wrap;word-break:keep-all}
 
 /* ===== Overlays ===== */
 .overlay{position:absolute;inset:0;z-index:8;display:none;align-items:center;justify-content:center;flex-direction:column;gap:18px;text-align:center;padding:32px;background:rgba(5,7,10,.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
@@ -80,17 +85,11 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 <div class="frame" id="frame">
 
   <div class="bg-layer" id="bgLayer"></div>
-  <img class="character-sprite" id="characterSprite" alt="">
 
   <div class="topbar">
     <a class="vn-btn" href="/dev/">← DEV</a>
-    <div class="topbar-right">
-      <a class="vn-btn" href="/dev/minigame-fishing/">설정</a>
-      <button class="vn-btn" id="debugToggle" type="button">DEBUG</button>
-    </div>
+    <a class="vn-btn" href="/dev/minigame-fishing/">설정</a>
   </div>
-
-  <div class="debug-panel" id="debugPanel"></div>
 
   <div class="game-stage">
     <div class="track-wrap">
@@ -107,6 +106,17 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 
   <div class="press-zone" id="pressZone"></div>
   <div class="press-hint" id="pressHint">누르면 위로 떠오르고 · 떼면 가라앉아요</div>
+
+  <div class="dlg-strip" id="dlgStrip">
+    <div class="portrait-wrap" id="portraitWrap">
+      <img id="portraitImg" alt="">
+      <svg class="portrait-placeholder" id="portraitPlaceholder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>
+    </div>
+    <div class="dlg-body-wrap">
+      <div class="dlg-name" id="dlgName"></div>
+      <div class="dlg-text" id="dlgText"></div>
+    </div>
+  </div>
 
   <div class="overlay" id="resultOverlay">
     <div class="result-banner" id="resultBanner"></div>
@@ -125,6 +135,8 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
 }
 </script>
+<script src="/dev/assetDb.js"></script>
+<script src="/dev/dialogueData.js"></script>
 <script>
 /* =========================================================================
    Stardew-style vertical fishing minigame.
@@ -243,9 +255,9 @@ const state = {
   currentFish: generateFishProfile(),
 };
 
-/* ===== Background/character dressing chosen on the 설정 screen — see that
-   page's CUSTOMIZATION_KEY comment. Missing/unparsable data just leaves the
-   layers hidden, same as never having set them. ===== */
+/* ===== Background dressing chosen on the 설정 screen — see that page's
+   CUSTOMIZATION_KEY comment. Missing/unparsable data just leaves the layer
+   hidden, same as never having set it. ===== */
 const CUSTOMIZATION_KEY = 'mkFishingCustomization';
 let customization = {};
 try { customization = JSON.parse(localStorage.getItem(CUSTOMIZATION_KEY)) || {}; }
@@ -253,19 +265,87 @@ catch (e) { customization = {}; }
 
 const el = {
   bgLayer: document.getElementById('bgLayer'),
-  characterSprite: document.getElementById('characterSprite'),
   track: document.getElementById('track'),
   catchBar: document.getElementById('catchBar'),
   fish: document.getElementById('fish'),
   progressFill: document.getElementById('progressFill'),
   pressZone: document.getElementById('pressZone'),
   pressHint: document.getElementById('pressHint'),
-  debugPanel: document.getElementById('debugPanel'),
-  debugToggle: document.getElementById('debugToggle'),
+  dlgStrip: document.getElementById('dlgStrip'),
+  portraitImg: document.getElementById('portraitImg'),
+  portraitPlaceholder: document.getElementById('portraitPlaceholder'),
+  dlgName: document.getElementById('dlgName'),
+  dlgText: document.getElementById('dlgText'),
   resultOverlay: document.getElementById('resultOverlay'),
   resultBanner: document.getElementById('resultBanner'),
   perfectTag: document.getElementById('perfectTag'),
 };
+
+/* ===== 지수/영우 dialogue strip — same portrait-lookup pattern as
+   minigame-eastwood's say()/updatePortrait(): a shared 인물 DB "미니게임 얼굴"
+   crop per (character, expression), uploaded once via /dev/upload and reused
+   across every minigame, not something fishing manages on its own. ===== */
+let portraitRequestToken = 0;
+async function updatePortrait(characterKey, expression) {
+  const requestToken = ++portraitRequestToken;
+  const assetId = DevGameState.getCharacterAssetId(characterKey, MINIGAME_FACE_EXPRESSION);
+  const asset = await AssetDB.getAsset(assetId).catch(() => null);
+  if (requestToken !== portraitRequestToken) return;
+  if (asset && asset.dataUrl) {
+    el.portraitImg.src = asset.dataUrl;
+    el.portraitImg.style.display = '';
+    el.portraitPlaceholder.style.display = 'none';
+  } else {
+    el.portraitImg.removeAttribute('src');
+    el.portraitImg.style.display = 'none';
+    el.portraitPlaceholder.style.display = '';
+  }
+}
+function say(characterKey, expression, speakerName, text) {
+  el.dlgName.textContent = speakerName;
+  el.dlgText.textContent = text;
+  updatePortrait(characterKey, expression);
+}
+
+/* ===== Catch/miss banter — picked without immediate repeats so a loop of
+   casts (there's no story hookup yet to advance past, see dialogueData.js's
+   fishing-minigame comment) doesn't feel like the same two lines on repeat. ===== */
+let catchCount = 0;
+let lastSuccessLine = -1, lastFailLine = -1;
+const SUCCESS_LINES = [
+  ['jisoo', 'happy', '지수', '잡았다!! ㅎㅎㅎ'],
+  ['jisoo', 'smirk', '지수', '거봐, 내가 낚시왕이랬잖아.'],
+  ['jisoo', 'happy', '지수', '한 마리 더 잡아야지!'],
+  ['youngwoo', 'soft', '영우', '오, 잘하네.'],
+  ['jisoo', 'smirk', '지수', '흐흐, 손맛 좋은데?'],
+];
+const FAIL_LINES = [
+  ['jisoo', 'annoyed', '지수', '아 놓쳤다 ㅠㅠ'],
+  ['jisoo', 'annoyed', '지수', '아깝다!!'],
+  ['youngwoo', 'soft', '영우', '괜찮아, 다시 해보자.'],
+  ['jisoo', 'suspicious', '지수', '이 물고기 좀 얍삽한데?'],
+  ['jisoo', 'annoyed', '지수', '아니 왜 자꾸 도망가!'],
+];
+function pickLine(lines, lastIndex, setLast) {
+  if (lines.length === 1) return lines[0];
+  let i;
+  do { i = randomInt(0, lines.length - 1); } while (i === lastIndex);
+  setLast(i);
+  return lines[i];
+}
+function reactSuccess() {
+  catchCount++;
+  if (catchCount > 0 && catchCount % 5 === 0) {
+    say('jisoo', 'smirk', '지수', `${catchCount}마리째! 이 정도면 능숙하지 않아?`);
+    return;
+  }
+  const [char, expr, name, text] = pickLine(SUCCESS_LINES, lastSuccessLine, (i) => { lastSuccessLine = i; });
+  say(char, expr, name, text);
+}
+function reactFail() {
+  const [char, expr, name, text] = pickLine(FAIL_LINES, lastFailLine, (i) => { lastFailLine = i; });
+  say(char, expr, name, text);
+}
 
 /* ===== Track measurement — cached on resize, never read per-frame ===== */
 let trackHeight = 0;
@@ -444,6 +524,7 @@ function success() {
   el.resultBanner.className = 'result-banner success';
   el.perfectTag.style.display = state.isPerfect ? '' : 'none';
   el.resultOverlay.classList.add('show');
+  reactSuccess();
   setTimeout(resetRound, randomBetween(800, 1200));
 }
 
@@ -454,6 +535,7 @@ function fail() {
   el.resultBanner.className = 'result-banner fail';
   el.perfectTag.style.display = 'none';
   el.resultOverlay.classList.add('show');
+  reactFail();
   setTimeout(resetRound, randomBetween(800, 1200));
 }
 
@@ -491,12 +573,7 @@ window.addEventListener('keyup', (e) => {
 window.addEventListener('blur', () => endPress());
 document.addEventListener('visibilitychange', () => { if (document.hidden) endPress(); });
 
-el.debugToggle.addEventListener('click', () => {
-  el.debugPanel.classList.toggle('show');
-});
-
 /* ===== Render — reads state only, never mutates it ===== */
-let fps = 0, fpsFrames = 0, fpsAccum = 0;
 function render() {
   el.catchBar.style.height = state.barHeight + 'px';
   el.catchBar.style.transform = `translateY(${state.barY}px)`;
@@ -510,23 +587,6 @@ function render() {
 
   el.pressHint.classList.toggle('hold', state.isPressing);
   el.pressHint.style.opacity = state.gameState === 'playing' ? '1' : '0';
-
-  if (el.debugPanel.classList.contains('show')) {
-    const f = state.currentFish;
-    el.debugPanel.textContent =
-`State: ${state.gameState}
-FPS: ${fps}
-Difficulty: ${f.difficulty} (${difficultyLabel(f.difficulty)})
-Motion: ${f.motionType}
-FishY: ${state.fishY.toFixed(1)}
-FishVel: ${state.fishVelocity.toFixed(2)}
-FishTarget: ${state.fishTargetY === null ? '-' : state.fishTargetY.toFixed(1)}
-BarY: ${state.barY.toFixed(1)}
-BarVel: ${state.barVelocity.toFixed(2)}
-Progress: ${(state.catchProgress * 100).toFixed(1)}%
-Inside: ${state.fishInsideBar}
-Perfect: ${state.isPerfect}`;
-  }
 }
 
 /* ===== Fixed-timestep main loop (request doc §5) ===== */
@@ -539,10 +599,6 @@ function frame(now) {
   lastTime = now;
   dt = Math.min(dt, 0.1);
   accumulator += dt;
-
-  fpsAccum += dt;
-  fpsFrames++;
-  if (fpsAccum >= 1) { fps = fpsFrames; fpsFrames = 0; fpsAccum = 0; }
 
   while (accumulator >= FIXED_STEP) {
     fixedUpdate(FIXED_STEP);
@@ -558,15 +614,13 @@ function applyCustomization() {
     el.bgLayer.style.backgroundImage = `url("${customization.background}")`;
     el.bgLayer.classList.add('show');
   }
-  if (customization.character) {
-    el.characterSprite.src = customization.character;
-    el.characterSprite.classList.add('show');
-  }
 }
 
 applyCustomization();
 resetRound();
 requestAnimationFrame(frame);
+say('youngwoo', 'soft', '영우', '살살 눌러서 띄우고, 놓으면 가라앉아. 초록 막대 안에 물고기를 가둬봐.');
+setTimeout(() => say('jisoo', 'happy', '지수', '오케이! 나 낚시왕이거든?'), 1800);
 </script>
 <script src="/dev/devPlanFab.js"></script>
 </body>
