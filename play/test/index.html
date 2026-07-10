@@ -72,7 +72,10 @@ el.startBtn.style.top = startPos.y + '%';
 el.startBtn.style.width = startPos.w + '%';
 el.startBtn.style.height = startPos.h + '%';
 
-function goToRealStart() { location.href = '/dev/week0/'; }
+// Straight into 0주차's first scene, not the /dev/week0 scene picker — a
+// real player taps 시작하기 to play through the story from the top, not to
+// browse individual scenes for testing.
+function goToRealStart() { location.href = '/dev/game/?scene=week0-scene-flight'; }
 
 // Same tap-feedback sequence as /dev/start/: hold the darken 0.2s, clear it,
 // pause 0.1s, then navigate — otherwise navigation fires before the darken
