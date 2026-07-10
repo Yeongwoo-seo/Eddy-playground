@@ -21,9 +21,9 @@
   --mono:'IBM Plex Mono',ui-monospace,monospace;
   --sans:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
 }
-html,body{height:100%}
+html,body{height:100%;overflow:hidden}
 body{background:#000;color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center;align-items:center}
-.frame{position:relative;width:100%;max-width:430px;height:100dvh;height:100vh;height:var(--vh100, 100vh);max-height:932px;overflow:hidden;background:var(--bg)}
+.frame{position:relative;width:100%;max-width:430px;height:100dvh;height:100vh;height:var(--vh100, 100vh);max-height:932px;overflow:hidden;background:var(--bg);touch-action:none}
 
 .topbar{position:absolute;top:0;left:0;right:0;z-index:6;padding:calc(14px + env(safe-area-inset-top,0)) 16px 10px;display:flex;justify-content:space-between;align-items:center;pointer-events:none}
 .vn-btn{pointer-events:auto;font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:#fff;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:9px 14px;cursor:pointer;text-decoration:none;display:inline-block}

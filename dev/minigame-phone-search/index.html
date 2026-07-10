@@ -31,7 +31,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
    below, rather than stretching the room photo/hotspots taller than any
    real phone. Everything inside is already positioned relative to .frame,
    so capping its height is enough; no JS changes needed. */
-.frame{position:relative;width:100%;max-width:430px;height:100dvh;height:100vh;height:var(--vh100, 100vh);max-height:932px;overflow:hidden;background:var(--bg)}
+.frame{position:relative;width:100%;max-width:430px;height:100dvh;height:100vh;height:var(--vh100, 100vh);max-height:932px;overflow:hidden;background:var(--bg);touch-action:none}
 
 /* ===== Top bar — floats over the full-bleed room view below, same
    pattern as minigame-eastwood's map ===== */
@@ -60,7 +60,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
    /dev/upload, so the puzzle stays fully playable before real photos exist.
    Padded top/bottom to clear the floating topbar/FAB row since it's a
    static scrollable list, unlike the pannable photo stage. */
-.grid-scroll{position:absolute;inset:0;overflow-y:auto;padding:calc(104px + env(safe-area-inset-top,0)) 16px calc(140px + env(safe-area-inset-bottom,0))}
+.grid-scroll{position:absolute;inset:0;overflow-y:auto;touch-action:pan-y;padding:calc(104px + env(safe-area-inset-top,0)) 16px calc(140px + env(safe-area-inset-bottom,0))}
 .grid-scroll.hidden{display:none}
 .hotspot-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .hotspot-btn{min-height:52px;background:var(--surface-1);border:1px solid var(--divider);border-radius:14px;padding:12px 14px;color:var(--text-primary);font-family:var(--sans);font-size:14px;font-weight:600;text-align:left;cursor:pointer;transition:background .15s,transform .15s}
