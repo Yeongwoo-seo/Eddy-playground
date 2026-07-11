@@ -35,6 +35,10 @@ body{background:linear-gradient(180deg,var(--sky-top) 0%,var(--sky-bottom) 55%,v
    the whole time (brief §3.1) — the minigame panel only ever overlays this
    as a HUD, it never replaces it. ===== */
 .scene{position:absolute;inset:0;z-index:0}
+.bg-layer{position:absolute;inset:0;background-size:cover;background-position:center;display:none}
+.bg-layer.show{display:block}
+.bg-layer::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(5,7,10,.15) 0%,rgba(5,7,10,.35) 100%)}
+.scene.custom-bg .water-texture,.scene.custom-bg .shore-band{display:none}
 .water-texture{position:absolute;left:0;right:0;top:6%;height:78%;background:repeating-linear-gradient(180deg,rgba(255,255,255,.10) 0 2px,transparent 2px 34px);pointer-events:none}
 .shore-band{position:absolute;left:0;right:0;bottom:0;height:16%;background:linear-gradient(180deg,var(--shore) 0%,var(--shore-dark) 100%);pointer-events:none}
 
@@ -54,6 +58,9 @@ body{background:linear-gradient(180deg,var(--sky-top) 0%,var(--sky-bottom) 55%,v
 .char-head{position:absolute;left:50%;top:0;width:22px;height:22px;margin-left:-11px;border-radius:50%;background:#F0C29A;border:1px solid rgba(0,0,0,.12)}
 .char-torso{position:absolute;left:50%;top:19px;width:26px;height:38px;margin-left:-13px;border-radius:11px 11px 6px 6px;background:#3A5A78;border:1px solid rgba(0,0,0,.15)}
 .char-leg{position:absolute;left:50%;top:55px;width:22px;height:24px;margin-left:-11px;border-radius:0 0 6px 6px;background:#2B3A4A}
+.char-sprite-img{position:absolute;left:50%;bottom:0;max-width:64px;max-height:92px;transform:translateX(-50%);display:none;object-fit:contain;filter:drop-shadow(0 2px 4px rgba(0,0,0,.3))}
+.char-sprite-img.show{display:block}
+.character-pose.custom-character .char-head,.character-pose.custom-character .char-torso,.character-pose.custom-character .char-leg{display:none}
 
 svg#fxSvg{position:absolute;inset:0;z-index:4;pointer-events:none;overflow:visible}
 #rodLine{stroke:#6B441E;stroke-width:3;stroke-linecap:round}
@@ -141,6 +148,7 @@ svg#fxSvg{position:absolute;inset:0;z-index:4;pointer-events:none;overflow:visib
 <div class="frame" id="frame">
 
   <div class="scene" id="scene">
+    <div class="bg-layer" id="bgLayer"></div>
     <div class="water-texture"></div>
     <div class="shore-band"></div>
     <div class="ripple-layer" id="rippleLayer"></div>
@@ -151,6 +159,7 @@ svg#fxSvg{position:absolute;inset:0;z-index:4;pointer-events:none;overflow:visib
         <div class="char-head"></div>
         <div class="char-torso"></div>
         <div class="char-leg"></div>
+        <img class="char-sprite-img" id="charSpriteImg" alt="">
       </div>
     </div>
 
@@ -319,10 +328,21 @@ const progressState = { value: PROGRESS.initial, outsideAccum: 0, isPerfect: tru
 
 let lastResultSuccess = false;
 
+/* ===== Background/character dressing chosen on the 설정 screen — see that
+   page's CUSTOMIZATION_KEY comment. Missing/unparsable data just leaves the
+   defaults (gradient scene + vector character) in place. ===== */
+const CUSTOMIZATION_KEY = 'mkFishingCustomization';
+let customization = {};
+try { customization = JSON.parse(localStorage.getItem(CUSTOMIZATION_KEY)) || {}; }
+catch (e) { customization = {}; }
+
 /* ===== DOM refs ===== */
 const el = {
+  scene: document.getElementById('scene'),
+  bgLayer: document.getElementById('bgLayer'),
   characterAnchor: document.getElementById('characterAnchor'),
   characterPose: document.getElementById('characterPose'),
+  charSpriteImg: document.getElementById('charSpriteImg'),
   rippleLayer: document.getElementById('rippleLayer'),
   rodLine: document.getElementById('rodLine'),
   lineGroup: document.getElementById('lineGroup'),
@@ -852,7 +872,21 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
+function applyCustomization() {
+  if (customization.background) {
+    el.bgLayer.style.backgroundImage = `url("${customization.background}")`;
+    el.bgLayer.classList.add('show');
+    el.scene.classList.add('custom-bg');
+  }
+  if (customization.character) {
+    el.charSpriteImg.src = customization.character;
+    el.charSpriteImg.classList.add('show');
+    el.characterPose.classList.add('custom-character');
+  }
+}
+
 measure();
+applyCustomization();
 setState('IDLE');
 requestAnimationFrame(frame);
 </script>
