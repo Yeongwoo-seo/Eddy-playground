@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>OPERATION MK · 낚시 설정</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<meta name="theme-color" content="#080A0C">
+<link rel="manifest" href="/dev/manifest.json">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="OPERATION MK DEV">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#080A0C;--surface-1:#101419;--surface-2:#171C22;
+  --text-primary:#EDF1F4;--text-secondary:#929BA5;--text-muted:#5F6872;
+  --cyan:#59B8C8;--amber:#D6A84B;--green:#3ECF6B;--signal-red:#D94141;--divider:rgba(255,255,255,0.08);
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sans:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
+}
+html,body{height:100%}
+body{background:#050607;color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center;min-height:100dvh}
+.frame{width:100%;max-width:430px;min-height:100dvh;min-height:100vh;padding:calc(48px + env(safe-area-inset-top,0)) 20px calc(32px + env(safe-area-inset-bottom,0));display:flex;flex-direction:column}
+.back{font-family:var(--mono);font-size:12px;color:var(--text-muted);text-decoration:none;margin-bottom:18px;display:inline-flex;align-items:center;gap:4px;width:fit-content}
+.tag{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px}
+.title{font-size:26px;font-weight:700;letter-spacing:-.2px;margin-bottom:10px}
+.sub{font-size:14px;color:var(--text-secondary);margin-bottom:28px;line-height:1.6}
+
+.flow-list{list-style:none;margin-bottom:auto;display:flex;flex-direction:column;gap:12px}
+.flow-item{display:flex;gap:12px;align-items:flex-start;font-size:13.5px;color:var(--text-secondary);line-height:1.5}
+.flow-num{flex-shrink:0;width:22px;height:22px;border-radius:50%;background:var(--surface-1);border:1px solid var(--divider);color:var(--amber);font-family:var(--mono);font-size:11px;display:flex;align-items:center;justify-content:center}
+
+.test-btn{margin-top:28px;font-family:var(--mono);font-size:14.5px;font-weight:700;letter-spacing:.04em;color:#08110c;background:var(--green);border:none;border-radius:16px;padding:16px;cursor:pointer;text-align:center;text-decoration:none;display:block}
+.test-btn:active{opacity:.8}
+</style>
+</head>
+<body>
+<div class="frame">
+  <a class="back" href="/dev/minigames/">‹ DEV</a>
+  <div class="tag">Minigame · 설정</div>
+  <div class="title">🎣 낚시</div>
+  <div class="sub">배경·캐릭터·낚싯대·줄·찌가 화면에 계속 보이는 상태로 캐스팅부터 포획까지 이어지는 낚시 미니게임입니다.</div>
+
+  <ul class="flow-list">
+    <li class="flow-item"><span class="flow-num">1</span>버튼을 누르고 있으면 캐스팅 파워가 왕복하며 차오릅니다. 손을 떼면 그 세기로 찌를 던집니다.</li>
+    <li class="flow-item"><span class="flow-num">2</span>찌가 물에 잠긴 채 입질을 기다립니다. 머리 위에 <b>!</b>가 뜨면 빠르게 눌러 훅을 겁니다.</li>
+    <li class="flow-item"><span class="flow-num">3</span>오른쪽에 세로형 포획 패널이 열립니다. 누르면 초록 바가 떠오르고 떼면 가라앉습니다 — 물고기를 바 안에 가둔 채 게이지를 채우세요.</li>
+    <li class="flow-item"><span class="flow-num">4</span>게이지가 100%면 성공, 0%면 물고기를 놓칩니다.</li>
+  </ul>
+
+  <a class="test-btn" id="testBtn" href="/dev/minigame-fishing/play/">테스트하기</a>
+</div>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
+}
+</script>
+<script src="/dev/devPlanFab.js"></script>
+</body>
+</html>
