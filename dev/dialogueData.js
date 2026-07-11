@@ -24,6 +24,17 @@ const dialogueCharacters = [
   { id: 'daniel', name: '다니엘 우', role: 'other', expressions: ['neutral', 'shocked', 'annoyed'] },
   { id: 'noah', name: '노아 리', role: 'other', expressions: ['neutral', 'curious', 'serious'] },
   { id: 'evelyn', name: '에블린 쇼', role: 'other', expressions: ['neutral', 'suspicious', 'shocked', 'serious'] },
+  // The Missing Key v4 §9 — 1주차 보조 증인 3명. 'daniel-guide'는 이미 쓰이는
+  // 'daniel'(다니엘 우, 다른 인물)과 겹치지 않도록 별도 id를 쓴다. 마틴
+  // 베일(§9.4)은 전화/음성으로만 등장하는 인물이라 이번 패스에서는 아직
+  // 등록하지 않는다 — 해당 씬을 실제로 쓸 때 추가한다.
+  { id: 'claire', name: '클레어 모건', role: 'other', expressions: ['neutral', 'annoyed', 'shocked', 'suspicious'] },
+  { id: 'sophie', name: '소피 첸', role: 'other', expressions: ['neutral', 'curious', 'shocked'] },
+  { id: 'daniel-guide', name: '다니엘 리드', role: 'other', expressions: ['neutral', 'curious', 'serious'] },
+  // §9.4 — 마틴 베일은 전화로만 등장해 얼굴이 없다. 인물 DB에 초상이
+  // 없으면 /dev/game이 자동으로 실루엣 placeholder를 보여주므로
+  // expressions는 'neutral' 하나만 등록해도 문제없다.
+  { id: 'martin', name: '마틴 베일', role: 'other', expressions: ['neutral'] },
 ];
 
 // Every dialogue line's `expression` field is one of these ids — 인물 DB
@@ -998,11 +1009,15 @@ const week1Scene001Lines = [
   { id: 'plan-bridge', speaker: '영우', text: '오, 오늘은 걷는 쪽이야?', characterId: 'youngwoo', expression: 'curious', goto: 'choice-pose' },
   { id: 'plan-cafe', speaker: '영우', text: '역시 카페부터. 지수답다.', characterId: 'youngwoo', expression: 'soft', goto: 'choice-pose' },
   {
+    // v4 §13.1 — this choice's flag (w1-photo-style) never had a downstream
+    // read; each option already branches to its own goto with distinct
+    // flavor text, so dropping the flag isn't a narrative loss, just dead
+    // bookkeeping removed.
     id: 'choice-pose', type: 'choice', speaker: '영우', text: '지수 사진, 오늘은 어떻게 찍어줄까?', characterId: 'youngwoo', expression: 'curious',
     choices: [
-      { id: 'classic', label: '정석 구도로', goto: 'pose-classic', effects: [{ type: 'setFlag', key: 'w1-photo-style', value: 'classic' }] },
-      { id: 'burst', label: '장난스럽게 연사로', goto: 'pose-burst', effects: [{ type: 'setFlag', key: 'w1-photo-style', value: 'burst' }] },
-      { id: 'candid', label: '몰래 자연스러운 걸로', goto: 'pose-candid', effects: [{ type: 'setFlag', key: 'w1-photo-style', value: 'candid' }] },
+      { id: 'classic', label: '정석 구도로', goto: 'pose-classic' },
+      { id: 'burst', label: '장난스럽게 연사로', goto: 'pose-burst' },
+      { id: 'candid', label: '몰래 자연스러운 걸로', goto: 'pose-candid' },
     ],
   },
   { id: 'pose-classic', speaker: '지수', text: '역시 기본이 최고죠.', characterId: 'jisoo', expression: 'smirk', goto: 'choice-jinx' },
@@ -1011,9 +1026,9 @@ const week1Scene001Lines = [
   {
     id: 'choice-jinx', type: 'choice', speaker: '영우', text: '오늘 사건 같은 건 없겠지?', characterId: 'youngwoo', expression: 'curious',
     choices: [
-      { id: 'never', label: '절대 없다', goto: 'jinx-never', effects: [{ type: 'setFlag', key: 'w1-jinx-pick', value: 'never' }] },
-      { id: 'flag', label: '그런 말 하면 꼭 생긴다', goto: 'jinx-flag', effects: [{ type: 'setFlag', key: 'w1-jinx-pick', value: 'flag' }] },
-      { id: 'key-only', label: '열쇠만 아니면 된다', goto: 'jinx-key', effects: [{ type: 'setFlag', key: 'w1-jinx-pick', value: 'key' }] },
+      { id: 'never', label: '절대 없다', goto: 'jinx-never' },
+      { id: 'flag', label: '그런 말 하면 꼭 생긴다', goto: 'jinx-flag' },
+      { id: 'key-only', label: '열쇠만 아니면 된다', goto: 'jinx-key' },
     ],
   },
   { id: 'jinx-never', speaker: '지수', text: '절대 없어요. 오늘은 진짜.', characterId: 'jisoo', expression: 'smirk', goto: 'line-017' },
@@ -1028,9 +1043,9 @@ const week1Scene001Lines = [
    Scene: week1-scene-002 (Circular Quay, 10:15)
 
    ===== 1주차 장편 확장 v2 · §6 =====
-   사진 포즈 루프(선택지 3회 반복) + 각도 미니 선택. 마지막으로 고른 포즈/각도는
-   flag로 남아 week1-scene-004(사건 직후 사진 분석)에서 "그 사진도 섞여
-   들어왔다"는 한 줄 콜백에 쓰인다. */
+   사진 포즈 루프(선택지 3회 반복) + 각도 미니 선택. (v4 §13.1 — 각 선택이
+   남기던 w1-last-pose/w1-angle-pick flag는 실제 다운스트림 참조가 없어
+   제거했다; 포즈/각도 자체의 goto 분기는 그대로 유지된다.) */
 const week1Scene002Lines = [
   { id: 'line-001', speaker: '', text: 'Circular Quay.\n오전 10시 15분.', characterId: null },
   { id: 'line-002', speaker: '', text: '오페라하우스와 하버브리지가 한눈에 들어온다.', characterId: null },
@@ -1046,11 +1061,11 @@ const week1Scene002Lines = [
       { id: 'together', label: '영우와 같이 찍기', goto: 'pose-together' },
     ],
   },
-  { id: 'pose-v', speaker: '지수', text: '브이!', characterId: 'jisoo', expression: 'happy', effects: [{ type: 'incrementFlag', key: 'w2-pose-count' }, { type: 'setFlag', key: 'w1-last-pose', value: '브이' }], goto: 'pose-loop-check' },
-  { id: 'pose-heart', speaker: '지수', text: '이렇게, 손가락 하트.', characterId: 'jisoo', expression: 'smirk', effects: [{ type: 'incrementFlag', key: 'w2-pose-count' }, { type: 'setFlag', key: 'w1-last-pose', value: '손가락 하트' }], goto: 'pose-loop-check' },
-  { id: 'pose-turn', speaker: '', text: '지수가 살짝 뒤돌아보는 포즈를 취한다.', characterId: 'jisoo', expression: 'curious', effects: [{ type: 'incrementFlag', key: 'w2-pose-count' }, { type: 'setFlag', key: 'w1-last-pose', value: '뒤돌아보기' }], goto: 'pose-loop-check' },
-  { id: 'pose-smile', speaker: '지수', text: '그냥 웃을게요.', characterId: 'jisoo', expression: 'happy', effects: [{ type: 'incrementFlag', key: 'w2-pose-count' }, { type: 'setFlag', key: 'w1-last-pose', value: '그냥 웃기' }], goto: 'pose-loop-check' },
-  { id: 'pose-together', speaker: '영우', text: '나도? 그럼 셀프타이머로.', characterId: 'youngwoo', expression: 'soft', effects: [{ type: 'incrementFlag', key: 'w2-pose-count' }, { type: 'setFlag', key: 'w1-last-pose', value: '같이 찍기' }], goto: 'pose-loop-check' },
+  { id: 'pose-v', speaker: '지수', text: '브이!', characterId: 'jisoo', expression: 'happy', effects: [{ type: 'incrementFlag', key: 'w2-pose-count' }], goto: 'pose-loop-check' },
+  { id: 'pose-heart', speaker: '지수', text: '이렇게, 손가락 하트.', characterId: 'jisoo', expression: 'smirk', effects: [{ type: 'incrementFlag', key: 'w2-pose-count' }], goto: 'pose-loop-check' },
+  { id: 'pose-turn', speaker: '', text: '지수가 살짝 뒤돌아보는 포즈를 취한다.', characterId: 'jisoo', expression: 'curious', effects: [{ type: 'incrementFlag', key: 'w2-pose-count' }], goto: 'pose-loop-check' },
+  { id: 'pose-smile', speaker: '지수', text: '그냥 웃을게요.', characterId: 'jisoo', expression: 'happy', effects: [{ type: 'incrementFlag', key: 'w2-pose-count' }], goto: 'pose-loop-check' },
+  { id: 'pose-together', speaker: '영우', text: '나도? 그럼 셀프타이머로.', characterId: 'youngwoo', expression: 'soft', effects: [{ type: 'incrementFlag', key: 'w2-pose-count' }], goto: 'pose-loop-check' },
   {
     id: 'pose-loop-check', type: 'choice', speaker: '', text: '더 찍어볼까요?', characterId: null,
     choices: [
@@ -1068,9 +1083,9 @@ const week1Scene002Lines = [
   {
     id: 'angle-choice', type: 'choice', speaker: '지수', text: '음, 어떤 각도로 찍을까요?', characterId: 'jisoo', expression: 'curious',
     choices: [
-      { id: 'opera-center', label: '오페라하우스 중심', goto: 'angle-opera', effects: [{ type: 'setFlag', key: 'w1-angle-pick', value: 'opera' }] },
-      { id: 'bridge-center', label: '하버브리지 중심', goto: 'angle-bridge', effects: [{ type: 'setFlag', key: 'w1-angle-pick', value: 'bridge' }] },
-      { id: 'face-center', label: '영우 얼굴 중심', goto: 'angle-face', effects: [{ type: 'setFlag', key: 'w1-angle-pick', value: 'face' }] },
+      { id: 'opera-center', label: '오페라하우스 중심', goto: 'angle-opera' },
+      { id: 'bridge-center', label: '하버브리지 중심', goto: 'angle-bridge' },
+      { id: 'face-center', label: '영우 얼굴 중심', goto: 'angle-face' },
     ],
   },
   { id: 'angle-opera', speaker: '지수', text: '오페라하우스 딱 걸리게.', characterId: 'jisoo', expression: 'curious', goto: 'line-012' },
@@ -1387,18 +1402,163 @@ const week1Scene005Lines = [
       },
     }],
   },
-  { id: 'hypothesis-intro', speaker: '지수', text: '자, 정리해볼게요.', characterId: 'jisoo', expression: 'serious' },
   {
-    id: 'hypothesis-choice', type: 'choice', speaker: '', text: '현재 가장 가능성 높은 것은?', characterId: null,
+    // v4 §6/§7.1 — 두 개의 실제 의문점을 등록하고, 아래 두 선택은 정답/오답을
+    // 즉시 밝히지 않는 진짜 "가설"이 된다 (구 w1-first-hypothesis flag는
+    // 아무 데서도 읽히지 않는 죽은 값이었다 — §13.1). 한 번만 등록하면 되므로
+    // addQuestion은 이 소개 대사에 붙인다.
+    id: 'hypothesis-intro', speaker: '지수', text: '자, 정리해볼게요.', characterId: 'jisoo', expression: 'serious',
+    effects: [
+      { type: 'addQuestion', question: { id: 'q-w1-who-removed-k01', title: 'K-01을 직접 꺼낸 사람은 누구인가?', linkedEvidenceIds: ['evidence-staff-tag-position-after', 'evidence-case-dust-mark'] } },
+      { type: 'addQuestion', question: { id: 'q-w1-case-nature', title: '현재 사건의 성격은 무엇에 가까운가?', linkedEvidenceIds: [] } },
+    ],
+  },
+  {
+    id: 'who-removed-choice', type: 'choice', mode: 'hypothesis', speaker: '', text: '현재 K-01을 직접 꺼낸 것으로 가장 의심되는 사람은?', characterId: null,
+    revealCorrectness: false,
     choices: [
-      { id: 'impulse', label: '외부 방문객의 충동 절도', goto: 'hyp-any', effects: [{ type: 'setFlag', key: 'w1-first-hypothesis', value: '충동 절도' }] },
-      { id: 'insider', label: '내부 직원의 계획적 절도', goto: 'hyp-any', effects: [{ type: 'setFlag', key: 'w1-first-hypothesis', value: '내부 계획' }] },
-      { id: 'commission', label: '누군가 특정 물건만 노린 의뢰형 사건', goto: 'hyp-any', effects: [{ type: 'setFlag', key: 'w1-first-hypothesis', value: '의뢰형' }] },
-      { id: 'unsure', label: '아직 판단 불가', goto: 'hyp-any', effects: [{ type: 'setFlag', key: 'w1-first-hypothesis', value: '판단 불가' }] },
+      { id: 'mina', label: '윤민아', goto: 'who-removed-any', effects: [
+        { type: 'setQuestionStatus', id: 'q-w1-who-removed-k01', status: 'investigating' },
+        { type: 'setHypothesis', questionId: 'q-w1-who-removed-k01', hypothesis: { id: 'hyp-mina-removed', questionId: 'q-w1-who-removed-k01', text: '윤민아가 K-01을 직접 꺼냈다.' } },
+      ] },
+      { id: 'adrian', label: '애드리언 콜', goto: 'who-removed-any', effects: [
+        { type: 'setQuestionStatus', id: 'q-w1-who-removed-k01', status: 'investigating' },
+        { type: 'setHypothesis', questionId: 'q-w1-who-removed-k01', hypothesis: { id: 'hyp-adrian-removed', questionId: 'q-w1-who-removed-k01', text: '애드리언이 K-01을 직접 꺼냈다.' } },
+      ] },
+      { id: 'leo', label: '레오 박', goto: 'who-removed-any', effects: [
+        { type: 'setQuestionStatus', id: 'q-w1-who-removed-k01', status: 'investigating' },
+        { type: 'setHypothesis', questionId: 'q-w1-who-removed-k01', hypothesis: { id: 'hyp-leo-removed', questionId: 'q-w1-who-removed-k01', text: '레오가 K-01을 직접 꺼냈다.' } },
+      ] },
+      { id: 'unsure', label: '아직 모름', goto: 'who-removed-any', effects: [
+        { type: 'setQuestionStatus', id: 'q-w1-who-removed-k01', status: 'open' },
+        { type: 'setHypothesis', questionId: 'q-w1-who-removed-k01', hypothesis: { id: 'hyp-unknown-remover', questionId: 'q-w1-who-removed-k01', text: '아직 누구인지 확실하지 않다.' } },
+      ] },
+    ],
+  },
+  { id: 'who-removed-any', speaker: '영우', text: '음, 아직은 심증일 뿐이지만.', characterId: 'youngwoo', expression: 'blank' },
+  {
+    id: 'hypothesis-choice', type: 'choice', mode: 'hypothesis', speaker: '', text: '현재 사건의 성격은 무엇에 가까운가?', characterId: null,
+    revealCorrectness: false,
+    choices: [
+      { id: 'impulse', label: '외부 방문객의 충동 절도', goto: 'hyp-any', effects: [{ type: 'setHypothesis', questionId: 'q-w1-case-nature', hypothesis: { id: 'hyp-case-impulse', questionId: 'q-w1-case-nature', text: '외부 방문객의 충동 절도다.' } }] },
+      { id: 'insider', label: '내부 직원의 계획적 절도', goto: 'hyp-any', effects: [{ type: 'setHypothesis', questionId: 'q-w1-case-nature', hypothesis: { id: 'hyp-case-insider', questionId: 'q-w1-case-nature', text: '내부 직원의 계획적 절도다.' } }] },
+      { id: 'commission', label: '누군가 특정 물건만 노린 의뢰형 사건', goto: 'hyp-any', effects: [{ type: 'setHypothesis', questionId: 'q-w1-case-nature', hypothesis: { id: 'hyp-case-commission', questionId: 'q-w1-case-nature', text: '누군가 특정 물건만 노린 의뢰형 사건이다.' } }] },
+      { id: 'unsure', label: '아직 판단 불가', goto: 'hyp-any', effects: [{ type: 'setHypothesis', questionId: 'q-w1-case-nature', hypothesis: { id: 'hyp-case-unsure', questionId: 'q-w1-case-nature', text: '아직 판단할 수 없다.' } }] },
     ],
   },
   { id: 'hyp-any', speaker: '영우', text: '그럴듯한데, 아직은 뭐가 맞는지 모르겠다.', characterId: 'youngwoo', expression: 'blank' },
   { id: 'line-003', speaker: '지수', text: '맞아요.\n일단 한 명씩 직접 만나서 물어보죠.', characterId: 'jisoo', expression: 'serious' },
+];
+
+/* OPERATION MK — WEEK 1 · SCENE 05a 「클레어 최초 진술」
+   Dialogue Set: dialogue-week1-scene005a
+   Scene: week1-scene-005a (Pop-up Exhibition 접수대, 11:05)
+
+   The Missing Key v4 §9.1 — 지금까지 scene005의 re-staff-ask에서만 익명
+   "전시장 직원"으로 등장하던 인물에 이름과 얼굴을 준다. 여기서 밝히는
+   알리바이("사건 시간대 내내 접수대에 있었다")는 거짓이며, 이 씬에서는
+   깨지지 않는다 — evidence-claire-alibi-statement로 증언만 등록해 두고,
+   실제 반박은 week1-scene-008a(재심문)에서 다니엘의 목격담과 충돌시켜
+   이뤄진다. */
+const week1Scene005aLines = [
+  { id: 'line-001', speaker: '', text: '전시장 접수대.\n오전 11시 5분.', characterId: null },
+  { id: 'line-002', speaker: '지수', text: '저희가 몇 가지만 여쭤봐도 될까요?', characterId: 'jisoo', expression: 'neutral' },
+  {
+    id: 'line-003', speaker: '클레어', text: '아, 네. 저는 여기 담당인 클레어예요.', characterId: 'claire', expression: 'neutral',
+    effects: [{
+      type: 'addPerson',
+      person: { id: 'claire', name: '클레어 모건', role: '전시장 직원', status: 'witness', summary: '전시장 접수대를 담당하는 직원. 보안 태그와 진열장 관리를 맡고 있다.' },
+    }],
+  },
+  { id: 'line-004', speaker: '영우', text: '태그 같은 거 있잖아요, 그건 정확히 어떻게 쓰는 거예요?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'claire-tag-explain', speaker: '클레어', text: '직원용 태그요? 그건 저희가 진열장 정리할 때만 써요.\n평소엔 그냥 서랍에 넣어둬요.', characterId: 'claire', expression: 'neutral' },
+  { id: 'line-005', speaker: '지수', text: '사건 시간대에는 계속 접수대에 계셨어요?', characterId: 'jisoo', expression: 'curious' },
+  {
+    id: 'claire-alibi', speaker: '클레어', text: '네, 그럼요. 저 계속 여기 있었어요. 자리 비운 적 없어요.', characterId: 'claire', expression: 'neutral',
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-claire-alibi-statement', code: 'E-CL1', title: '클레어의 최초 진술 — 접수대 상주',
+        description: '클레어 모건 — "사건 시간대 내내 접수대에 있었고, 자리를 비운 적 없다"는 진술.',
+        discoveredLocationText: 'Pop-up Exhibition 접수대 · 클레어 최초 진술',
+      },
+    }],
+  },
+  { id: 'line-006', speaker: '영우', text: '그럼 그 시간 동안 이상한 건 못 보셨어요?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-007', speaker: '클레어', text: '음... 딱히요. 평소랑 똑같았어요.', characterId: 'claire', expression: 'neutral' },
+  { id: 'line-008', speaker: '지수', text: '...\n(계속 여기 있었다는 것치고는, 뭔가 좀 뻣뻣한데.)', characterId: 'jisoo', expression: 'suspicious' },
+  { id: 'line-009', speaker: '지수', text: '네, 감사합니다. 혹시 더 여쭤볼 게 있으면 다시 올게요.', characterId: 'jisoo', expression: 'neutral' },
+];
+
+/* OPERATION MK — WEEK 1 · SCENE 05b 「다니엘 최초 진술」
+   Dialogue Set: dialogue-week1-scene005b
+   Scene: week1-scene-005b (Pop-up Exhibition 앞, 11:07)
+
+   The Missing Key v4 §9.3 — 관광 가이드 다니엘이 "회색 모자 관광객"이라는
+   잘못된 네 번째 용의자를 만든다. 여기서 플레이어가 그 정체에 대한 가설을
+   고르지만(§7.1과 같은 mode:'hypothesis' — 즉시 정답을 밝히지 않는다),
+   실제 해소는 week1-scene-008a에서 실루엣과 레오의 가방 끈을 연결해야
+   이뤄진다. */
+const week1Scene005bLines = [
+  { id: 'line-001', speaker: '', text: '전시장 앞 광장.\n오전 11시 7분.', characterId: null },
+  { id: 'line-002', speaker: '', text: '깃발을 든 남자가 단체 관광객을 인솔하고 있었다.', characterId: null },
+  { id: 'line-003', speaker: '영우', text: '저기, 잠시만요. 가이드분이세요?', characterId: 'youngwoo', expression: 'curious' },
+  {
+    id: 'line-004', speaker: '다니엘', text: '네, 다니엘이라고 해요. 오늘 단체 손님들 안내 중이에요.', characterId: 'daniel-guide', expression: 'neutral',
+    effects: [{
+      type: 'addPerson',
+      person: { id: 'daniel-guide', name: '다니엘 리드', role: '관광 가이드', status: 'witness', summary: '오전에 단체 관광객을 이끌고 전시장에 들렀던 가이드.' },
+    }],
+  },
+  { id: 'line-005', speaker: '지수', text: '아까 전시장 안에서 물건이 하나 없어져서요. 혹시 뭔가 보신 거 있으세요?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-006', speaker: '다니엘', text: '어, 그래요? 저희가 그 시간대에 안에 있긴 했는데.', characterId: 'daniel-guide', expression: 'curious' },
+  { id: 'line-007', speaker: '다니엘', text: '단체로 쭉 같이 움직였어요. 입장하고, 한 바퀴 돌고, 다시 모여서 나갔고.', characterId: 'daniel-guide', expression: 'neutral' },
+  {
+    id: 'line-008', speaker: '다니엘', text: '아, 근데 그중에 회색 모자 쓴 남자 한 명이 잠깐 대열에서 빠졌었어요.', characterId: 'daniel-guide', expression: 'curious',
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-daniel-graycap-sighting', code: 'E-DN1', title: '다니엘의 목격담 — 회색 모자 관광객 이탈',
+        description: '다니엘 리드 — 인솔하던 단체 관광객 중 회색 모자를 쓴 남성 한 명이 잠깐 대열에서 이탈했었다.',
+        discoveredLocationText: 'Pop-up Exhibition 앞 · 다니엘 최초 진술',
+      },
+    }],
+  },
+  { id: 'line-009', speaker: '영우', text: '그 사람, 어디로 갔는지 보셨어요?', characterId: 'youngwoo', expression: 'curious' },
+  {
+    id: 'line-010', speaker: '다니엘', text: '정확히는 못 봤는데... 직원 전용문 쪽에서 누가 서 있는 걸 본 것 같기도 하고.', characterId: 'daniel-guide', expression: 'curious',
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-daniel-silhouette-report', code: 'E-DN2', title: '다니엘의 목격담 — 직원 전용문 근처 실루엣',
+        description: '다니엘 리드 — 직원 전용문 근처에서 후드나 모자를 쓴 듯한 사람의 실루엣을 본 것 같다는 진술. 확신은 없다.',
+        discoveredLocationText: 'Pop-up Exhibition 앞 · 다니엘 최초 진술',
+      },
+    }],
+  },
+  { id: 'line-011', speaker: '다니엘', text: '근데 확실친 않아요. 저도 단체 챙기느라 정신없었거든요.', characterId: 'daniel-guide', expression: 'neutral' },
+  { id: 'line-012', speaker: '지수', text: '그렇군요. 그 회색 모자 쓴 분, 지금 생각하면 누구였을 것 같아요?', characterId: 'jisoo', expression: 'curious' },
+  {
+    id: 'graycap-hypothesis', type: 'choice', mode: 'hypothesis', speaker: '', text: '현재 그 회색 모자 관광객의 정체로 가장 가능성 높은 것은?', characterId: null,
+    revealCorrectness: false,
+    effects: [{ type: 'addQuestion', question: { id: 'q-w1-graycap-identity', title: '회색 모자를 쓴 관광객은 누구인가?', linkedEvidenceIds: ['evidence-daniel-graycap-sighting', 'evidence-daniel-silhouette-report'] } }],
+    choices: [
+      { id: 'fourth-suspect', label: '단체 관광객 중 제4의 용의자', goto: 'graycap-any', effects: [
+        { type: 'setQuestionStatus', id: 'q-w1-graycap-identity', status: 'investigating' },
+        { type: 'setHypothesis', questionId: 'q-w1-graycap-identity', hypothesis: { id: 'hyp-graycap-fourth-suspect', questionId: 'q-w1-graycap-identity', text: '회색 모자 관광객은 단체와 무관한 제4의 용의자다.' } },
+      ] },
+      { id: 'is-leo', label: '레오 박이었을 것이다', goto: 'graycap-any', effects: [
+        { type: 'setQuestionStatus', id: 'q-w1-graycap-identity', status: 'investigating' },
+        { type: 'setHypothesis', questionId: 'q-w1-graycap-identity', hypothesis: { id: 'hyp-graycap-is-leo', questionId: 'q-w1-graycap-identity', text: '회색 모자 관광객은 레오 박이었다.' } },
+      ] },
+      { id: 'unsure', label: '아직 모름', goto: 'graycap-any', effects: [
+        { type: 'setQuestionStatus', id: 'q-w1-graycap-identity', status: 'open' },
+        { type: 'setHypothesis', questionId: 'q-w1-graycap-identity', hypothesis: { id: 'hyp-graycap-unsure', questionId: 'q-w1-graycap-identity', text: '아직 누구인지 확실하지 않다.' } },
+      ] },
+    ],
+  },
+  { id: 'graycap-any', speaker: '영우', text: '음, 아직은 뭐라고 확정하기엔 이른 것 같은데.', characterId: 'youngwoo', expression: 'blank' },
+  { id: 'line-013', speaker: '지수', text: '감사합니다. 혹시 몰라서 여쭤봤어요.', characterId: 'jisoo', expression: 'soft' },
 ];
 
 /* OPERATION MK — WEEK 1 · SCENE 06 「윤민아 1차 심문」
@@ -1429,7 +1589,15 @@ const week1Scene006Lines = [
     wrongText: ['윤민아가 눈을 피하며 말끝을 흐린다. 아직 결정적인 게 아닌 듯하다.', '그건 이미 보여드린 거예요 — 다른 걸 찾아보세요.'],
     correctGoto: 'mina-r1-break',
   },
-  { id: 'mina-r1-break', speaker: '영우', text: '사진에는 세 번이나 나오시던데요. "잠깐"치고는 좀 길지 않아요?', characterId: 'youngwoo', expression: 'neutral' },
+  {
+    // v4 §13.1 — question-mina-repeat was referenced by mina-end-6's
+    // setQuestionStatus below but never actually registered anywhere, so
+    // that status update was silently a no-op. Registering it here, right
+    // where the repeat sighting is first confirmed, is the earliest honest
+    // point to raise it.
+    id: 'mina-r1-break', speaker: '영우', text: '사진에는 세 번이나 나오시던데요. "잠깐"치고는 좀 길지 않아요?', characterId: 'youngwoo', expression: 'neutral',
+    effects: [{ type: 'addQuestion', question: { id: 'question-mina-repeat', title: '윤민아는 왜 K-01 진열장 앞에 세 번이나 나타났는가?', linkedEvidenceIds: ['evidence-photo-minah'] } }],
+  },
   { id: 'mina-r1-2', speaker: '윤민아', text: '...', characterId: 'minah', pauseBeforeMs: 400, expression: 'neutral' },
   { id: 'mina-r1-3', speaker: '윤민아', text: '그, 그건... 물건이 예뻐서 계속 눈이 갔을 뿐이에요.', characterId: 'minah', expression: 'annoyed' },
 
@@ -1511,6 +1679,77 @@ const week1Scene006Lines = [
       { type: 'setQuestionStatus', id: 'question-mina-repeat', status: 'partial', resolutionText: '촬영 금지 규정 위반은 시인했다. 다만 도난 자체와의 직접적 연관은 아직 확인되지 않았다.' },
     ],
   },
+
+  // v4 §6.14/§7.3 — pair-evidence connection using the "두 번 연속 evidence"
+  // fallback (no vnPlayer.js changes needed): mina-connect-1 accepts only the
+  // photo confession, mina-connect-2 (reached via its correctGoto) accepts
+  // only the timestamp record, and the createFact payoff lives on the line
+  // reached after *that* correct answer — same idiom as every other
+  // evidence-type node's reward effects in this file.
+  {
+    id: 'mina-connect-intro', speaker: '지수', text: '잠깐만요.\n이 사진들이 언제 찍힌 건지도 같이 봐야겠어요.', characterId: 'jisoo', expression: 'suspicious',
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-mina-photo-timestamps', code: 'E-M03', title: '윤민아 촬영 시각 기록',
+        description: '세 장의 사진 모두 사건 추정 발생 시간대(10:47~10:58) 안에서 촬영된 것으로 타임스탬프가 남아 있다.',
+        discoveredLocationText: 'Pop-up Exhibition · 윤민아 1차 조사',
+      },
+    }],
+  },
+  {
+    id: 'mina-connect-1', type: 'evidence', speaker: '', text: '윤민아가 사건 시간대 내내 무엇을 하고 있었는지 보여주는 자료는?', characterId: null,
+    evidenceIds: ['evidence-mina-illegal-photo'],
+    wrongText: ['사건과 직접 관련된 자료를 다시 골라보자.', '윤민아 본인이 인정한 행동에 관한 자료다.'],
+    correctGoto: 'mina-connect-2',
+  },
+  {
+    id: 'mina-connect-2', type: 'evidence', speaker: '', text: '그 행동이 정확히 언제 이뤄졌는지 보여주는 자료는?', characterId: null,
+    evidenceIds: ['evidence-mina-photo-timestamps'],
+    wrongText: ['시간을 보여주는 기록을 찾아보자.'],
+    correctGoto: 'mina-connect-result',
+  },
+  {
+    id: 'mina-connect-result', speaker: '', text: '[ 추론 사실 생성 ]\n윤민아는 사건 발생 추정 시간대 내내 촬영에 몰두하고 있었다.', characterId: null,
+    effects: [{
+      type: 'addFact',
+      fact: {
+        id: 'fact-mina-continuous-photo-sequence', title: '윤민아는 사건 시간대 내내 촬영 중이었다.',
+        sourceEvidenceIds: ['evidence-mina-illegal-photo', 'evidence-mina-photo-timestamps'],
+        relatedQuestionIds: ['q-w1-who-removed-k01'],
+        confidence: 'confirmed',
+      },
+    }],
+  },
+  {
+    // The extra "그럼 지금까지의 판단은?" option only appears when the player's
+    // *current* hypothesis on q-w1-who-removed-k01 is actually hyp-mina-removed
+    // (via flagEquals on 'hyp:q-w1-who-removed-k01' — see caseFileState.js's
+    // setHypothesis). A player who guessed someone else, or "아직 모름", just
+    // sees the plain continue option — nothing forces a reaction to a
+    // contradiction that doesn't apply to them (§14.1).
+    id: 'mina-contradiction-gate', type: 'choice', speaker: '영우', text: '이걸 보니까 다시 한번 생각해볼 필요가 있겠다.', characterId: 'youngwoo', expression: 'blank',
+    choices: [
+      { id: 'confront', label: '그럼 지금까지의 판단은?', condition: { flagEquals: { key: 'hyp:q-w1-who-removed-k01', value: 'hyp-mina-removed' } }, goto: 'mina-hyp-collapse' },
+      { id: 'continue-plain', label: '일단 다음으로 넘어가기', goto: 'mina-end-7' },
+    ],
+  },
+  { id: 'mina-hyp-collapse', speaker: '', text: '[ 현재 가설과 충돌하는 사실이 발견되었습니다 ]\n현재 가설 — 윤민아가 K-01을 직접 꺼냈다.\n새 사실 — 윤민아는 사건 시간대 내내 촬영 중이었다.', characterId: null },
+  {
+    id: 'mina-hyp-keep-discard', type: 'choice', speaker: '', text: '현재 가설을 어떻게 할까요?', characterId: null,
+    choices: [
+      { id: 'keep', label: '그래도 윤민아 가설을 유지한다', goto: 'mina-end-7' },
+      {
+        id: 'discard', label: '윤민아 가설을 폐기한다', goto: 'mina-end-7',
+        effects: [
+          { type: 'invalidateHypothesis', questionId: 'q-w1-who-removed-k01', factId: 'fact-mina-continuous-photo-sequence' },
+          { type: 'setQuestionStatus', id: 'q-w1-who-removed-k01', status: 'contradicted' },
+        ],
+      },
+      { id: 'reserve', label: '판단을 보류한다', goto: 'mina-end-7' },
+    ],
+  },
+
   { id: 'mina-end-7', speaker: '', text: '[ 현재 판단: 윤민아 — 일부 해명 · 직접 절도 혐의 낮음 · 사진 유출 가능성 미확인 ]', characterId: null },
 ];
 
@@ -1711,7 +1950,215 @@ const week1Scene008Lines = [
   { id: 'line-025', speaker: '지수', text: '웅.\n이분 말이랑 실제 사진 시간이 맞는지 한번 맞춰보죠.', characterId: 'jisoo', expression: 'serious' },
   { id: 'line-026', speaker: '레오 박', text: '...\n그러세요.\n전 딱히 숨길 거 없으니까.', characterId: 'leo', expression: 'blank' },
   { id: 'line-027', speaker: '', text: '지수와 영우가 사진 속 시간과 레오의 진술을\n하나씩 시간축 위에 배치하기 시작했다.', characterId: 'jisoo', expression: 'serious' },
-  { id: 'line-028', speaker: '', text: 'MINIGAME START', characterId: null },
+  {
+    // The Missing Key v4 §9.2 — 소피는 처음엔 레오의 알리바이를 강화한다.
+    // 이 목격은 나중에 week1-scene-008a에서 모바일 선주문 기록과 함께
+    // 뒤집힌다 — "거짓말과 착각이 다르다"는 것을 보여주는 지점이라, 소피
+    // 본인은 거짓말을 하는 게 아니라 그냥 사람을 착각했을 뿐이다.
+    id: 'line-028', speaker: '', text: '주문을 받으러 온 카페 직원이 옆에서 듣고 있었다.', characterId: null,
+    effects: [{
+      type: 'addPerson',
+      person: { id: 'sophie', name: '소피 첸', role: '카페 직원', status: 'witness', summary: '전시장 근처 카페에서 일하는 바리스타.' },
+    }],
+  },
+  { id: 'line-029', speaker: '소피', text: '어, 그 얘기예요? 저 그 손님 기억나요.', characterId: 'sophie', expression: 'curious' },
+  {
+    id: 'line-030', speaker: '소피', text: '10시 52분쯤 들어오셔서 창가 자리에 바로 앉으셨는데요.', characterId: 'sophie', expression: 'neutral',
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-sophie-initial-sighting', code: 'E-SP1', title: '소피의 최초 목격담 — 10시 52분 창가 자리',
+        description: '소피 첸(카페 직원) — 그레이 후드 남성이 10시 52분쯤 카페에 들어와 바로 창가 자리에 앉았다는 목격담.',
+        discoveredLocationText: 'Café near Circular Quay · 소피 최초 진술',
+      },
+    }],
+  },
+  { id: 'line-031', speaker: '영우', text: '오, 그럼 시간이 거의 맞네요.', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-032', speaker: '지수', text: '그러네요... 일단 정리는 계속 해봐요.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-033', speaker: '', text: 'MINIGAME START', characterId: null },
+];
+
+/* OPERATION MK — WEEK 1 · SCENE 08a 「재심문 — 클레어·다니엘·소피」
+   Dialogue Set: dialogue-week1-scene008a
+   Scene: week1-scene-008a (Pop-up Exhibition, 12:00)
+
+   The Missing Key v4 §10 ACT 3 (증언 충돌) — 세 보조 증인을 한 씬에서
+   차례로 재확인한다.
+   1) 클레어: §7.4의 "증언 충돌" 패턴을 이 게임에서 처음 실제로 쓰는
+      자리 — 두 진술을 먼저 고르고(mode:'statement-pair'), 그걸 반박할
+      증거를 제시한다.
+   2) 다니엘: §7.3의 "두 번 연속 evidence" 페어 연결 패턴 — 회색 모자
+      가설을 폐기하거나(플레이어가 그 가설을 실제로 갖고 있었을 때만
+      "그럼 지금까지의 판단은?" 선택지가 뜬다), 처음부터 아니었으면
+      그냥 확인만 하고 넘어간다.
+   3) 소피: 같은 페어 연결 패턴 — "거짓말과 착각은 다르다"는 것을
+      보여주며, 레오의 카페 알리바이를 붕괴시킨다. */
+const week1Scene008aLines = [
+  { id: 'line-001', speaker: '', text: '전시장 앞.\n낮 12시.', characterId: null },
+  { id: 'line-002', speaker: '영우', text: '레오씨 다시 만나기 전에, 아까 들은 얘기들부터 한번 맞춰볼까.', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-003', speaker: '지수', text: '네. 하나씩 짚어봐요.', characterId: 'jisoo', expression: 'serious' },
+
+  /* ===== 1. 클레어 재심문 — 증언 충돌(statement-pair) ===== */
+  {
+    id: 'claire-conflict-select', type: 'choice', mode: 'statement-pair', speaker: '', text: '동시에 참일 수 없는 두 진술은?', characterId: null,
+    choices: [
+      { id: 'claire-daniel', label: '클레어의 접수대 진술 ↔ 다니엘의 실루엣 목격', goto: 'claire-conflict-evidence-intro' },
+      { id: 'claire-sophie', label: '클레어의 태그 설명 ↔ 소피의 목격담', goto: 'claire-conflict-wrong' },
+    ],
+  },
+  { id: 'claire-conflict-wrong', speaker: '영우', text: '음, 그 둘은 서로 다른 얘기라 굳이 충돌할 이유가 없는데.', characterId: 'youngwoo', expression: 'curious', goto: 'claire-conflict-select' },
+  {
+    id: 'claire-conflict-evidence-intro', speaker: '지수', text: '클레어씨는 "계속 접수대에 있었다"고 했고, 다니엘씨는 "직원 전용문 근처에서 누군가를 봤다"고 했어요.\n이 둘, 동시에 참일 수는 없어요.', characterId: 'jisoo', expression: 'suspicious',
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-empty-reception-photo', code: 'E-CL2', title: '접수대가 비어 있는 사진',
+        description: '관광객이 찍은 사진 중 하나에, 접수대가 잠깐 비어 있는 순간이 찍혀 있다.',
+        discoveredLocationText: 'Pop-up Exhibition · 재조사',
+      },
+    }],
+  },
+  {
+    id: 'claire-conflict-evidence', type: 'evidence', speaker: '', text: '이 두 진술이 충돌한다는 것을 입증할 기록은?', characterId: null,
+    evidenceIds: ['evidence-empty-reception-photo'],
+    wrongText: ['접수대 쪽 상황을 보여주는 자료를 다시 찾아보자.'],
+    correctGoto: 'claire-conflict-result',
+  },
+  {
+    id: 'claire-conflict-result', speaker: '클레어', text: '...\n네, 사실은 잠깐 자리를 비웠어요. 팸플릿 가지러 직원 구역에 갔었어요.', characterId: 'claire', expression: 'shocked',
+    effects: [
+      {
+        type: 'setPersonStatus', id: 'claire', status: 'involved',
+        patch: {
+          knownFacts: ['보안 태그와 진열장 관리를 담당함', '팸플릿을 가지러 직원 구역으로 이동하며 접수대를 비움'],
+          lies: ['"계속 접수대에 있었다, 자리 비운 적 없다" (최초 진술)'],
+          unknowns: ['그 사이 태그가 정확히 어떻게 옮겨졌는지'],
+        },
+      },
+      {
+        type: 'addFact',
+        fact: {
+          id: 'fact-claire-desk-unattended', title: '클레어는 사건 시간대에 접수대를 비웠다.',
+          sourceEvidenceIds: ['evidence-claire-alibi-statement', 'evidence-empty-reception-photo'],
+          relatedQuestionIds: ['q-w1-who-removed-k01'],
+          confidence: 'confirmed',
+        },
+      },
+    ],
+  },
+  { id: 'claire-conflict-end', speaker: '영우', text: '그러니까, 그 사이에 태그도 관리가 안 되고 있었다는 거네.', characterId: 'youngwoo', expression: 'suspicious' },
+
+  /* ===== 2. 다니엘 재심문 — 회색 모자 가설 폐기(evidence pair) ===== */
+  { id: 'line-004', speaker: '지수', text: '그럼 이제 그 회색 모자 관광객 쪽도 다시 봐요.', characterId: 'jisoo', expression: 'serious' },
+  {
+    id: 'daniel-connect-intro', speaker: '영우', text: '레오씨 가방이랑 비교해보면 뭔가 나오지 않을까?', characterId: 'youngwoo', expression: 'curious',
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-leo-bag-strap-shape', code: 'E-DN3', title: '레오의 가방 끈 형태',
+        description: '레오가 매고 있던 가방의 끈 모양과 매는 방식을 정리한 자료.',
+        discoveredLocationText: 'Pop-up Exhibition · 재조사',
+      },
+    }],
+  },
+  {
+    id: 'daniel-connect-1', type: 'evidence', speaker: '', text: '직원 전용문 근처 실루엣이 누구였는지를 보여주는 자료는?', characterId: null,
+    evidenceIds: ['evidence-daniel-silhouette-report'],
+    wrongText: ['다니엘이 직접 목격한 자료를 다시 골라보자.'],
+    correctGoto: 'daniel-connect-2',
+  },
+  {
+    id: 'daniel-connect-2', type: 'evidence', speaker: '', text: '그 실루엣과 비교할 수 있는 자료는?', characterId: null,
+    evidenceIds: ['evidence-leo-bag-strap-shape'],
+    wrongText: ['비교할 만한 자료를 찾아보자.'],
+    correctGoto: 'daniel-connect-result',
+  },
+  {
+    id: 'daniel-connect-result', speaker: '', text: '[ 추론 사실 생성 ]\n직원 전용문 실루엣의 가방 끈 모양이 레오의 가방과 일치한다.', characterId: null,
+    effects: [{
+      type: 'addFact',
+      fact: {
+        id: 'fact-silhouette-matches-leo', title: '직원 전용문 근처 실루엣은 레오와 일치할 가능성이 높다.',
+        sourceEvidenceIds: ['evidence-daniel-silhouette-report', 'evidence-leo-bag-strap-shape'],
+        relatedQuestionIds: ['q-w1-graycap-identity', 'q-w1-who-removed-k01'],
+        confidence: 'confirmed',
+      },
+    }],
+  },
+  {
+    // "그럼 지금까지의 판단은?"은 플레이어가 실제로 hyp-graycap-fourth-suspect를
+    // 갖고 있을 때만 뜬다 — week1-scene-005b에서 레오나 아직 모름을 골랐다면
+    // 애초에 무너뜨릴 가설이 없으므로 바로 확인만 하고 넘어간다.
+    id: 'daniel-contradiction-gate', type: 'choice', speaker: '지수', text: '그럼 그 회색 모자 관광객은...', characterId: 'jisoo', expression: 'suspicious',
+    choices: [
+      { id: 'confront', label: '그럼 제4의 용의자 가설은?', condition: { flagEquals: { key: 'hyp:q-w1-graycap-identity', value: 'hyp-graycap-fourth-suspect' } }, goto: 'daniel-hyp-collapse' },
+      { id: 'continue-plain', label: '레오였다는 쪽으로 정리한다', goto: 'daniel-resolve' },
+    ],
+  },
+  {
+    id: 'daniel-hyp-collapse', speaker: '', text: '[ 현재 가설과 충돌하는 사실이 발견되었습니다 ]\n현재 가설 — 제4의 용의자다.\n새 사실 — 실루엣은 레오와 일치한다.', characterId: null,
+    effects: [{ type: 'invalidateHypothesis', questionId: 'q-w1-graycap-identity', factId: 'fact-silhouette-matches-leo' }],
+    goto: 'daniel-resolve',
+  },
+  {
+    id: 'daniel-resolve', speaker: '영우', text: '그 회색 모자, 레오씨였나 보다.', characterId: 'youngwoo', expression: 'serious',
+    effects: [
+      { type: 'setHypothesis', questionId: 'q-w1-graycap-identity', hypothesis: { id: 'hyp-graycap-is-leo', questionId: 'q-w1-graycap-identity', text: '회색 모자 관광객은 레오 박이었다.' } },
+      { type: 'setQuestionStatus', id: 'q-w1-graycap-identity', status: 'resolved', resolutionText: '실루엣의 가방 끈 모양이 레오와 일치해, 회색 모자 관광객은 레오 박이었던 것으로 확인됐다.' },
+    ],
+  },
+
+  /* ===== 3. 소피 재심문 — 레오 알리바이 붕괴(evidence pair) ===== */
+  { id: 'line-005', speaker: '지수', text: '마지막으로, 소피씨가 봤다는 그 손님도 다시 확인해봐야겠어요.', characterId: 'jisoo', expression: 'suspicious' },
+  {
+    id: 'sophie-conflict-intro', speaker: '영우', text: '레오씨, 카페 주문을 어떻게 했는지부터 다시 볼까.', characterId: 'youngwoo', expression: 'curious',
+    effects: [
+      {
+        type: 'addEvidence',
+        evidence: {
+          id: 'evidence-leo-mobile-preorder', code: 'E-SP2', title: '레오의 모바일 선주문 기록',
+          description: '레오는 카페 도착 전 모바일 앱으로 미리 주문을 넣어뒀다 — 직접 줄을 서거나 자리를 잡을 필요가 없었다.',
+          discoveredLocationText: 'Café near Circular Quay · 주문 앱 기록',
+        },
+      },
+      {
+        type: 'addEvidence',
+        evidence: {
+          id: 'evidence-cctv-reversed-strap-direction', code: 'E-SP3', title: 'CCTV 스틸 — 반대 방향 가방끈',
+          description: '10시 52분 카페 CCTV 속 인물의 가방끈은 레오와 반대 방향으로 매어져 있다.',
+          discoveredLocationText: 'Café near Circular Quay · CCTV',
+        },
+      },
+    ],
+  },
+  {
+    id: 'sophie-connect-1', type: 'evidence', speaker: '', text: '레오가 굳이 줄을 서거나 자리를 잡을 필요가 없었다는 것을 보여주는 자료는?', characterId: null,
+    evidenceIds: ['evidence-leo-mobile-preorder'],
+    wrongText: ['주문 방식과 관련된 자료를 찾아보자.'],
+    correctGoto: 'sophie-connect-2',
+  },
+  {
+    id: 'sophie-connect-2', type: 'evidence', speaker: '', text: '10시 52분에 들어온 사람이 레오가 아니라는 것을 보여주는 자료는?', characterId: null,
+    evidenceIds: ['evidence-cctv-reversed-strap-direction'],
+    wrongText: ['그 시각 CCTV 자체를 다시 봐야 한다.'],
+    correctGoto: 'sophie-connect-result',
+  },
+  {
+    id: 'sophie-connect-result', speaker: '', text: '[ 추론 사실 생성 ]\n소피가 10시 52분에 본 사람은 레오가 아니다.', characterId: null,
+    effects: [{
+      type: 'addFact',
+      fact: {
+        id: 'fact-sophie-witness-was-not-leo', title: '소피가 10시 52분에 본 사람은 레오가 아니다.',
+        sourceEvidenceIds: ['evidence-leo-mobile-preorder', 'evidence-cctv-reversed-strap-direction'],
+        relatedQuestionIds: ['question-leo-gap', 'q-w1-who-removed-k01'],
+        confidence: 'confirmed',
+      },
+    }],
+  },
+  { id: 'sophie-resolve', speaker: '소피', text: '어... 그럼 제가 착각한 거예요? 확실하다고 생각했는데.', characterId: 'sophie', expression: 'shocked' },
+  { id: 'sophie-resolve-2', speaker: '지수', text: '아니에요, 착각하신 거예요. 오히려 큰 도움 됐어요.', characterId: 'jisoo', expression: 'soft' },
+  { id: 'sophie-resolve-3', speaker: '영우', text: '그러니까 레오씨 알리바이, 사실상 없는 거였네.', characterId: 'youngwoo', expression: 'suspicious' },
+  { id: 'line-006', speaker: '지수', text: '네. 이제 진짜로 다시 만나봐야겠어요.', characterId: 'jisoo', expression: 'serious' },
 ];
 
 /* OPERATION MK — WEEK 1 · SCENE 09 「레오 집중 심문」
@@ -1768,7 +2215,14 @@ const week1Scene009Lines = [
       },
     ],
   },
-  { id: 'line-002', speaker: '', text: '시간축을 다 맞춰보니,\n레오의 진술과 사진 사이에 공백이 있었다.', characterId: null },
+  {
+    // v4 §13.1 — question-leo-gap was referenced by this scene's own
+    // setQuestionStatus (near the end) but never registered, so that update
+    // was a silent no-op. Registering it here, right where the 공백 itself
+    // is first framed as a mystery, is the earliest honest point to raise it.
+    id: 'line-002', speaker: '', text: '시간축을 다 맞춰보니,\n레오의 진술과 사진 사이에 공백이 있었다.', characterId: null,
+    effects: [{ type: 'addQuestion', question: { id: 'question-leo-gap', title: '레오의 11분 공백 동안 무슨 일이 있었는가?', linkedEvidenceIds: ['evidence-leo-first-statement', 'evidence-leo-bag-volume-change'] } }],
+  },
   { id: 'line-003', speaker: '영우', text: '10시 47분부터 10시 58분까지.', characterId: 'youngwoo', expression: 'serious' },
   { id: 'line-004', speaker: '지수', text: '레오가 말한 시간이랑 안 맞아요.\n그 사이 사진에서 레오가 사라져요.', characterId: 'jisoo', expression: 'serious' },
   { id: 'line-005', speaker: '영우', text: '11분이면 뭘 하기엔 짧은 시간 아니야?', characterId: 'youngwoo', expression: 'curious' },
@@ -1970,14 +2424,195 @@ const week1Scene009Lines = [
   { id: 'leo-end-4', speaker: '영우', text: '그냥 몰래 찍은 게 아니었나 보네.', characterId: 'youngwoo', expression: 'blank' },
 ];
 
+/* OPERATION MK — WEEK 1 · SCENE 09a 「현장 재검증 — 진열장은 어떻게 열렸는가」
+   Dialogue Set: dialogue-week1-scene009a
+   Scene: week1-scene-009a (Pop-up Exhibition, 12:15)
+
+   The Missing Key v4 §10 ACT 5 / §21-9 — 이 게임의 대표적인 "가설 붕괴"
+   장면. 새 대형 화면 대신 scene005의 reexam-menu와 같은 선택 조사 루프를
+   재사용한다. 핵심 반전: 직원용 태그는 직원 전용문만 열 수 있고, 진열장은
+   직원 구역의 서비스 자석으로 열렸다 — 플레이어가 여기서 "태그로 열었다"를
+   골랐다면 그 가설이 실제 증거로 무너지는 걸 직접 본다. 최종 확정은
+   scene012 blank-4에서 이뤄진다(§6.14와 같은 2단계 패턴: 여기서는
+   investigating/contradicted로만 남긴다). */
+const week1Scene009aLines = [
+  { id: 'line-001', speaker: '', text: '전시장 안쪽.\n낮 12시 15분.', characterId: null },
+  { id: 'line-002', speaker: '영우', text: '레오씨가 직접 꺼낸 건 이제 확실한데.', characterId: 'youngwoo', expression: 'serious' },
+  {
+    id: 'line-003', speaker: '지수', text: '근데 진열장 자체는 어떻게 열렸을까요? 그건 아직 확실하지 않아요.', characterId: 'jisoo', expression: 'serious',
+    effects: [{ type: 'addQuestion', question: { id: 'q-w1-case-opening-method', title: '진열장은 어떻게 열렸는가?', linkedEvidenceIds: ['evidence-staff-lock-check-time', 'evidence-staff-tag-position-after'] } }],
+  },
+  {
+    id: 'opening-hypothesis', type: 'choice', mode: 'hypothesis', speaker: '', text: '현재 진열장이 열린 방법으로 가장 가능성 높은 것은?', characterId: null,
+    revealCorrectness: false,
+    choices: [
+      { id: 'tag', label: '직원용 태그로 열었다 (관리 공백을 틈타)', goto: 'opening-any', effects: [
+        { type: 'setQuestionStatus', id: 'q-w1-case-opening-method', status: 'investigating' },
+        { type: 'setHypothesis', questionId: 'q-w1-case-opening-method', hypothesis: { id: 'hyp-opening-tag', questionId: 'q-w1-case-opening-method', text: '직원용 태그로 진열장을 열었다.' } },
+      ] },
+      { id: 'already-open', label: '진열장이 원래 열려 있었다', goto: 'opening-any', effects: [
+        { type: 'setQuestionStatus', id: 'q-w1-case-opening-method', status: 'investigating' },
+        { type: 'setHypothesis', questionId: 'q-w1-case-opening-method', hypothesis: { id: 'hyp-opening-already-open', questionId: 'q-w1-case-opening-method', text: '진열장이 원래 열려 있었다.' } },
+      ] },
+      { id: 'other-tool', label: '다른 도구를 직원 구역에서 가져왔다', goto: 'opening-any', effects: [
+        { type: 'setQuestionStatus', id: 'q-w1-case-opening-method', status: 'investigating' },
+        { type: 'setHypothesis', questionId: 'q-w1-case-opening-method', hypothesis: { id: 'hyp-opening-other-tool', questionId: 'q-w1-case-opening-method', text: '다른 도구를 직원 구역에서 가져와 열었다.' } },
+      ] },
+      { id: 'unsure', label: '아직 모름', goto: 'opening-any', effects: [
+        { type: 'setQuestionStatus', id: 'q-w1-case-opening-method', status: 'open' },
+        { type: 'setHypothesis', questionId: 'q-w1-case-opening-method', hypothesis: { id: 'hyp-opening-unsure', questionId: 'q-w1-case-opening-method', text: '아직 확실하지 않다.' } },
+      ] },
+    ],
+  },
+  { id: 'opening-any', speaker: '영우', text: '직원 구역 쪽을 다시 한번 뒤져보자.', characterId: 'youngwoo', expression: 'curious' },
+
+  /* ===== 현장 재검증 — 필수 2건은 자동 확보, 나머지는 선택 조사 ===== */
+  {
+    id: 'line-004', speaker: '지수', text: '태그 리더기부터 확인해볼게요.', characterId: 'jisoo', expression: 'serious',
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-tag-scope-limited', code: 'E-H08', title: '태그 리더기 — 직원 전용문 전용',
+        description: '직원용 태그를 리더기에 대보니 직원 전용문만 열린다. 진열장 잠금부는 아예 다른 방식이라, 태그로는 열 수 없다.',
+        discoveredLocationText: 'Pop-up Exhibition · 현장 재검증',
+      },
+    }],
+  },
+  {
+    id: 'line-005', speaker: '영우', text: '어? 근데 이 자석, 원래 여기 있던 거 맞아?', characterId: 'youngwoo', expression: 'curious',
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-service-magnet-missing', code: 'E-H09', title: '서비스 자석 — 위치 이동',
+        description: '직원 구역 작업대에 두는 강한 서비스 자석이 원래 자리에서 벗어나, 진열장 쪽 선반 위에 놓여 있다.',
+        discoveredLocationText: 'Pop-up Exhibition 직원 구역 · 현장 재검증',
+      },
+    }],
+  },
+  {
+    id: 'reexam2-menu', type: 'choice', speaker: '', text: '그 밖에 더 살펴볼까요? (선택)', characterId: null,
+    choices: [
+      { id: 'lock', label: '진열장 잠금부', goto: 're2-lock' },
+      { id: 'shelf', label: '직원 구역 선반', goto: 're2-shelf' },
+      { id: 'fiber', label: '진열장 모서리 섬유', goto: 're2-fiber' },
+      { id: 'dust', label: '직원 구역 작업대의 황동 가루', goto: 're2-dust' },
+      { id: 'reexam2-done', label: '이 정도면 됐다', goto: 'opening-connect-intro' },
+    ],
+  },
+  {
+    id: 're2-lock', speaker: '지수', text: '잠금부 자체에는 강제로 열린 흔적이 없어요. 자연스럽게 열린 것 같아요.', characterId: 'jisoo', expression: 'curious', goto: 'reexam2-menu',
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-case-lock-mechanism', code: 'E-H10', title: '진열장 잠금부 — 강제 개방 흔적 없음',
+        description: '진열장 잠금부 자체에는 파손이나 강제로 딴 흔적이 없다. 정상적인 방식으로 열린 것으로 보인다.',
+        discoveredLocationText: 'Pop-up Exhibition · 현장 재검증',
+      },
+    }],
+  },
+  {
+    id: 're2-shelf', speaker: '영우', text: '선반에 있던 물건들이 최근에 정리된 것처럼 흐트러져 있어.', characterId: 'youngwoo', expression: 'curious', goto: 'reexam2-menu',
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-shelf-arrangement', code: 'E-H11', title: '직원 구역 선반 — 흐트러진 정리',
+        description: '직원 구역 선반의 물건 배치가 평소와 다르게 흐트러져 있다. 누군가 최근에 무언가를 찾거나 옮긴 것 같다.',
+        discoveredLocationText: 'Pop-up Exhibition 직원 구역 · 현장 재검증',
+      },
+    }],
+  },
+  {
+    id: 're2-fiber', speaker: '지수', text: '진열장 모서리에도 검은 섬유가 조금 걸려 있네요.', characterId: 'jisoo', expression: 'curious', goto: 'reexam2-menu',
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-case-edge-fiber', code: 'E-H12', title: '진열장 모서리 검은 섬유',
+        description: '진열장 모서리에 걸린 검은 섬유 조각. 레오의 옷 소매와 같은 색이다.',
+        discoveredLocationText: 'Pop-up Exhibition · 현장 재검증',
+      },
+    }],
+  },
+  {
+    id: 're2-dust', speaker: '영우', text: '작업대에 노란 가루 같은 게 묻어 있어. 황동 가루인가?', characterId: 'youngwoo', expression: 'curious', goto: 'reexam2-menu',
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-workbench-brass-dust', code: 'E-H13', title: '작업대의 황동 가루',
+        description: '직원 구역 작업대에 묻은 미세한 황동 가루. 자석이나 금속 도구를 다루다 남은 흔적으로 보인다.',
+        discoveredLocationText: 'Pop-up Exhibition 직원 구역 · 현장 재검증',
+      },
+    }],
+  },
+
+  /* ===== 반전 — 태그 vs 자석 연결(evidence pair) ===== */
+  { id: 'opening-connect-intro', speaker: '지수', text: '태그랑 자석, 이 둘을 같이 놓고 봐야겠어요.', characterId: 'jisoo', expression: 'suspicious' },
+  {
+    id: 'opening-connect-1', type: 'evidence', speaker: '', text: '직원용 태그가 진열장까지는 열 수 없다는 것을 보여주는 자료는?', characterId: null,
+    evidenceIds: ['evidence-tag-scope-limited'],
+    wrongText: ['태그 리더기 자체를 확인한 자료를 다시 찾아보자.'],
+    correctGoto: 'opening-connect-2',
+  },
+  {
+    id: 'opening-connect-2', type: 'evidence', speaker: '', text: '그럼 실제로 진열장을 연 수단으로 보이는 자료는?', characterId: null,
+    evidenceIds: ['evidence-service-magnet-missing'],
+    wrongText: ['위치가 옮겨진 물건을 다시 찾아보자.'],
+    correctGoto: 'opening-connect-result',
+  },
+  {
+    id: 'opening-connect-result', speaker: '', text: '[ 추론 사실 생성 ]\n직원용 태그는 진열장을 열 수 없다 — 진열장은 서비스 자석으로 열렸다.', characterId: null,
+    effects: [{
+      type: 'addFact',
+      fact: {
+        id: 'fact-tag-cannot-open-case', title: '진열장은 태그가 아니라 서비스 자석으로 열렸다.',
+        sourceEvidenceIds: ['evidence-tag-scope-limited', 'evidence-service-magnet-missing'],
+        relatedQuestionIds: ['q-w1-case-opening-method'],
+        confidence: 'confirmed',
+      },
+    }],
+  },
+  {
+    // 다니엘/윤민아 재심문과 같은 패턴 — 실제로 hyp-opening-tag를 갖고
+    // 있었을 때만 "그럼 지금까지의 판단은?"이 뜬다.
+    id: 'opening-contradiction-gate', type: 'choice', speaker: '영우', text: '...\n어, 이거 우리가 생각했던 거랑 다른데.', characterId: 'youngwoo', expression: 'shocked',
+    choices: [
+      { id: 'confront', label: '그럼 지금까지의 판단은?', condition: { flagEquals: { key: 'hyp:q-w1-case-opening-method', value: 'hyp-opening-tag' } }, goto: 'opening-hyp-collapse' },
+      { id: 'continue-plain', label: '그럼 자석 쪽으로 다시 정리해보자', goto: 'opening-resolve' },
+    ],
+  },
+  { id: 'opening-hyp-collapse', speaker: '', text: '[ 현재 가설과 충돌하는 사실이 발견되었습니다 ]\n현재 가설 — 직원용 태그로 열었다.\n새 사실 — 태그는 진열장을 열 수 없다.', characterId: null },
+  {
+    id: 'opening-hyp-keep-discard', type: 'choice', speaker: '', text: '현재 가설을 어떻게 할까요?', characterId: null,
+    choices: [
+      { id: 'keep', label: '그래도 태그 가설을 유지한다', goto: 'opening-resolve' },
+      {
+        id: 'discard', label: '태그 가설을 폐기한다', goto: 'opening-resolve',
+        effects: [{ type: 'invalidateHypothesis', questionId: 'q-w1-case-opening-method', factId: 'fact-tag-cannot-open-case' }],
+      },
+      { id: 'reserve', label: '판단을 보류한다', goto: 'opening-resolve' },
+    ],
+  },
+  {
+    id: 'opening-resolve', speaker: '지수', text: '태그는 직원 전용문만 열어요. 진열장을 연 건 이 서비스 자석이에요.', characterId: 'jisoo', expression: 'serious',
+    effects: [
+      { type: 'setHypothesis', questionId: 'q-w1-case-opening-method', hypothesis: { id: 'hyp-opening-magnet', questionId: 'q-w1-case-opening-method', text: '직원 구역의 서비스 자석으로 진열장을 열었다.' } },
+      { type: 'setQuestionStatus', id: 'q-w1-case-opening-method', status: 'investigating' },
+    ],
+  },
+  { id: 'line-006', speaker: '영우', text: '그럼 태그는... 그냥 클레어씨가 자리를 비운 틈에 옮겨진 거였네.', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-007', speaker: '지수', text: '네. 태그는 미끼였던 거예요. 진짜는 이 자석이었고요.', characterId: 'jisoo', expression: 'serious' },
+];
+
 /* OPERATION MK — WEEK 1 · SCENE 10 「중간 추리 및 윤민아 재오픈」
    Dialogue Set: dialogue-week1-scene010
    Scene: week1-scene-010 (Pop-up Exhibition 앞, 12:20)
 
    ===== 1주차 장편 확장 v2 · §14 =====
    4개 질문을 choice 체인으로 재구성(오답은 짧은 반응 후 같은 질문으로).
-   질문4의 정답은 "아직 판단 불가" — 확정하지 않는다. scene005에서 고른
-   첫 가설(w1-first-hypothesis)이 있으면 짧은 콜백 한 줄을 덧붙인다. */
+   질문4의 정답은 "아직 판단 불가" — 확정하지 않는다. (이 씬 위쪽의 "scene005
+   에서 고른 첫 가설이 있으면 콜백을 덧붙인다"는 기존 주석은 실제로 구현된
+   적 없는 죽은 계획이었다 — v4 §13.1 정리 대상. scene005의 가설은 이제
+   q-w1-who-removed-k01/q-w1-case-nature 실제 의문점으로 추적되며, q1의
+   정답 확정 자체가 그 가설을 검증하는 역할을 한다.) */
 const week1Scene010Lines = [
   { id: 'line-001', speaker: '', text: '전시장 앞.\n낮 12시 20분.', characterId: null },
   { id: 'line-002', speaker: '지수', text: '지금까지 나온 거, 한번 임시로 정리해볼까요.', characterId: 'jisoo', expression: 'serious' },
@@ -1990,7 +2625,17 @@ const week1Scene010Lines = [
     ],
   },
   { id: 'q1-wrong', speaker: '영우', text: '아니, 그 11분 공백 있던 사람이 누구였지?', characterId: 'youngwoo', expression: 'curious', goto: 'q1' },
-  { id: 'q1-correct', speaker: '영우', text: '레오. 본인이 직접 인정했으니까.', characterId: 'youngwoo', expression: 'serious' },
+  {
+    // 5장/6장에서 player가 무엇을 가설로 잡았든, 여기서 다시 레오로
+    // 좁혀진다 — 아직 'investigating'일 뿐 확정은 아니다(정식 확정은
+    // scene012 blank-3-correct). 이 장면 자체가 §11 "가설 변화 시나리오"의
+    // 중간 단계를 보여준다.
+    id: 'q1-correct', speaker: '영우', text: '레오. 본인이 직접 인정했으니까.', characterId: 'youngwoo', expression: 'serious',
+    effects: [
+      { type: 'setHypothesis', questionId: 'q-w1-who-removed-k01', hypothesis: { id: 'hyp-leo-removed', questionId: 'q-w1-who-removed-k01', text: '레오가 K-01을 직접 꺼냈다.' } },
+      { type: 'setQuestionStatus', id: 'q-w1-who-removed-k01', status: 'investigating' },
+    ],
+  },
   {
     id: 'q2', type: 'choice', speaker: '', text: 'Q2. 레오가 K-01을 정확히 특정할 수 있었던 이유는?', characterId: null,
     choices: [
@@ -2219,6 +2864,228 @@ const week1Scene011Lines = [
   { id: 'mina-f8-11', speaker: '', text: '[ 현재 판단: 윤민아 — 사진 유출 확인 · 직접 절도는 부정 · 공모 여부 미확인 ]', characterId: null },
 ];
 
+/* OPERATION MK — WEEK 1 · SCENE 11a 「애드리언 재심문」
+   Dialogue Set: dialogue-week1-scene011a
+   Scene: week1-scene-011a (Pop-up Exhibition 접수대, 18:20)
+
+   The Missing Key v4 §10 ACT 7 — 현재 구조에서 애드리언이 007 이후로
+   사라지는 문제를 해결한다. 윤민아 링크를 본 적 없다/레오를 모른다는
+   두 진술은 깨지 않는다(실제로 사실이다) — 딱 하나, "M.K.와는 이번이
+   처음이자 마지막 연락"이라는 부분만 증거 연결로 무너뜨린다. 애드리언의
+   역할은 주범이 아니라 반복적으로 정보를 노출한 인물로 재정의된다. */
+const week1Scene011aLines = [
+  { id: 'line-001', speaker: '', text: '전시장 접수대.\n오후 6시 20분.', characterId: null },
+  { id: 'line-002', speaker: '지수', text: '애드리언씨, 몇 가지만 다시 여쭤볼게요.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-003', speaker: '애드리언 콜', text: '네, 말씀하세요.', characterId: 'adrian', expression: 'neutral' },
+  { id: 'line-004', speaker: '영우', text: '윤민아씨 사진 링크, 혹시 보신 적 있으세요?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-005', speaker: '애드리언 콜', text: '아니요, 그런 건 본 적도 없어요.', characterId: 'adrian', expression: 'neutral' },
+  { id: 'line-006', speaker: '지수', text: '레오씨는요?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-007', speaker: '애드리언 콜', text: '레오요? 모르는 이름인데요.', characterId: 'adrian', expression: 'neutral' },
+  { id: 'line-008', speaker: '영우', text: 'M.K.라는 계정이랑은요? 딱 이번 한 번뿐이었어요?', characterId: 'youngwoo', expression: 'curious' },
+  {
+    id: 'line-009', speaker: '애드리언 콜', text: '네, 이번이 처음이자 마지막이었어요.', characterId: 'adrian', expression: 'neutral',
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-adrian-once-only-claim', code: 'E-B09', title: '애드리언의 재진술 — 단 한 번뿐인 연락',
+        description: '애드리언 콜 — "M.K. 계정과는 이번이 처음이자 마지막 연락"이라는 진술.',
+        discoveredLocationText: 'Pop-up Exhibition 접수대 · 애드리언 재심문',
+      },
+    }],
+  },
+  { id: 'line-010', speaker: '지수', text: '...\n(정말 처음이었을까.)', characterId: 'jisoo', expression: 'suspicious' },
+  {
+    id: 'adrian-connect-intro', speaker: '영우', text: '태블릿 기록도 한번 다시 볼 수 있을까요?', characterId: 'youngwoo', expression: 'curious',
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-adrian-tablet-history', code: 'E-B10', title: '애드리언 태블릿 — 과거 문의 기록',
+        description: '애드리언의 태블릿 브라우저 기록. 몇 달 전에도 비슷한 이니셜의 계정에서 K-01 관련 문의가 몇 차례 왔었지만, 스팸으로 보고 무시한 흔적이 남아 있다.',
+        discoveredLocationText: 'Pop-up Exhibition 접수대 · 애드리언 재심문',
+      },
+    }],
+  },
+  {
+    id: 'adrian-connect-1', type: 'evidence', speaker: '', text: '"이번이 처음이자 마지막"이라는 진술을 반박할 자료는?', characterId: null,
+    evidenceIds: ['evidence-adrian-tablet-history'],
+    wrongText: ['애드리언의 태블릿 자체에서 찾을 수 있는 자료를 다시 보자.'],
+    correctGoto: 'adrian-connect-2',
+  },
+  {
+    id: 'adrian-connect-2', type: 'evidence', speaker: '', text: '그 과거 문의가 이번 건과 같은 계열이라는 것을 보여주는 자료는?', characterId: null,
+    evidenceIds: ['evidence-adrian-sender'],
+    wrongText: ['이번에 온 문의 발신 계정 자료를 다시 찾아보자.'],
+    correctGoto: 'adrian-connect-result',
+  },
+  {
+    id: 'adrian-connect-result', speaker: '', text: '[ 추론 사실 생성 ]\n애드리언은 과거에도 같은 계열 계정의 문의를 받은 적이 있다.', characterId: null,
+    effects: [{
+      type: 'addFact',
+      fact: {
+        id: 'fact-adrian-repeat-contact', title: '애드리언은 예전에도 M.K. 계열 계정의 문의를 받은 적이 있다.',
+        sourceEvidenceIds: ['evidence-adrian-tablet-history', 'evidence-adrian-sender'],
+        relatedQuestionIds: ['question-adrian-sender', 'q-w1-who-planned-event'],
+        confidence: 'confirmed',
+      },
+    }],
+  },
+  {
+    id: 'line-011', speaker: '애드리언 콜', text: '...', characterId: 'adrian', pauseBeforeMs: 400, expression: 'suspicious',
+    effects: [{
+      type: 'setPersonStatus', id: 'adrian', status: 'witness',
+      patch: {
+        knownFacts: ['판매 불가 답장에 전시 일정을 함께 적어 정보를 유출함 (007)', '몇 달 전부터 같은 계열 계정에서 반복적으로 문의를 받아왔음'],
+        lies: ['"M.K.와는 이번이 처음이자 마지막 연락이었다" (재진술)'],
+        unknowns: ['그 계정이 왜 K-01에 이렇게까지 집착하는지'],
+      },
+    }],
+  },
+  { id: 'line-012', speaker: '애드리언 콜', text: '...\n사실, 예전에도 몇 번 비슷한 문의가 오긴 했어요.', characterId: 'adrian', expression: 'suspicious' },
+  { id: 'line-013', speaker: '애드리언 콜', text: '그땐 그냥 스팸인 줄 알고 무시했었는데.', characterId: 'adrian', expression: 'neutral' },
+  { id: 'line-014', speaker: '지수', text: '그러니까, 이번이 처음이 아니었던 거네요.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-015', speaker: '애드리언 콜', text: '...\n네. 근데 저는 정말 그냥 답장 한 번 한 것뿐이에요. 다른 건 몰라요.', characterId: 'adrian', expression: 'neutral' },
+  { id: 'line-016', speaker: '영우', text: '그니까 애드리언씨는 뭘 계획한 사람이 아니라, 그냥 여러 번 정보가 새어나간 통로였던 거네.', characterId: 'youngwoo', expression: 'suspicious' },
+  { id: 'line-017', speaker: '지수', text: '네. 본인도 모르게 계속 이용당하고 있었던 거예요.', characterId: 'jisoo', expression: 'serious' },
+];
+
+/* OPERATION MK — WEEK 1 · SCENE 11b 「마틴 베일 통화」
+   Dialogue Set: dialogue-week1-scene011b
+   Scene: week1-scene-011b (전화 통화, 18:40)
+
+   The Missing Key v4 §9.4/§10 ACT 8 — K-01 출품자를 별도 캐릭터 일러스트
+   없이 전화로만 등장시킨다. 카탈로그 제작연도 불일치·각인 선명도 변화는
+   자동으로 지급하고(놓치면 안 되는 핵심 반전이라 §18과 같은 원칙), 판매
+   가능 여부/출품 당시 사진은 선택 조사로 남긴다. q-w1-request-purpose는
+   원래 week1-scene-012 blank-5에서 등록했지만, 실제로 이 미스터리가 처음
+   드러나는 곳은 여기라서 addQuestion을 이 씬으로 옮겼다 — scene012는 이제
+   상태 갱신만 한다. */
+const week1Scene011bLines = [
+  { id: 'line-001', speaker: '', text: '숙소로 돌아가는 길.\n오후 6시 40분.', characterId: null },
+  { id: 'line-002', speaker: '영우', text: 'K-01 원래 주인, 아직 연락 안 해봤지?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-003', speaker: '지수', text: '맞다. 출품자 연락처가 팸플릿에 있었어요.', characterId: 'jisoo', expression: 'curious' },
+  {
+    id: 'line-004', speaker: '', text: '[ 발신: 마틴 베일 (K-01 출품자) ]', characterId: null,
+    effects: [{
+      type: 'addPerson',
+      person: { id: 'martin', name: '마틴 베일', role: 'K-01 출품자', status: 'witness', summary: 'K-01을 이번 팝업 전시에 출품한 원래 소유자. 전화로만 연락이 닿았다.' },
+    }],
+  },
+  { id: 'line-005', speaker: '마틴 베일', text: '여보세요.', characterId: 'martin', expression: 'neutral' },
+  { id: 'line-006', speaker: '지수', text: '안녕하세요, K-01 관련해서 몇 가지 여쭤보려고 연락드렸어요.', characterId: 'jisoo', expression: 'neutral' },
+  { id: 'line-007', speaker: '마틴 베일', text: '아, 그 도난 사건이요. 얘기 들었습니다. 뭐가 궁금하신가요?', characterId: 'martin', expression: 'neutral' },
+  {
+    id: 'martin-menu', type: 'choice', speaker: '', text: '무엇을 물어볼까요? (필요한 만큼 골라보세요)', characterId: null,
+    choices: [
+      { id: 'sale', label: '판매 가능 여부', goto: 'martin-sale' },
+      { id: 'photo', label: '출품 당시 사진', goto: 'martin-photo' },
+      { id: 'done', label: '이 정도면 됐다', goto: 'martin-core-1' },
+    ],
+  },
+  {
+    id: 'martin-sale', speaker: '마틴 베일', text: '아니요, 판매용은 아니었어요. 그냥 좋아하는 사람들한테 보여주고 싶어서 잠깐 빌려준 거예요.', characterId: 'martin', expression: 'neutral', goto: 'martin-menu',
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-k01-not-for-sale', code: 'E-MV1', title: '마틴의 진술 — 판매 목적 아님',
+        description: '마틴 베일 — K-01은 판매용이 아니라 전시 목적으로만 빌려준 것이라는 진술.',
+        discoveredLocationText: '전화 통화 · 마틴 베일',
+      },
+    }],
+  },
+  {
+    id: 'martin-photo', speaker: '마틴 베일', text: '출품할 때 찍어둔 사진은 있어요. 보내드릴게요.', characterId: 'martin', expression: 'neutral', goto: 'martin-menu',
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-k01-submission-photo', code: 'E-MV2', title: 'K-01 출품 당시 사진',
+        description: '마틴이 K-01을 전시에 내놓을 때 찍어둔 사진. 지금과 비교할 수 있는 유일한 "출품 당시" 기록이다.',
+        discoveredLocationText: '전화 통화 · 마틴 베일',
+      },
+    }],
+  },
+  {
+    id: 'martin-core-1', speaker: '영우', text: '이거 제작 연도가 정확히 언제예요?', characterId: 'youngwoo', expression: 'curious',
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-k01-catalog-year-mismatch', code: 'E-MV3', title: '카탈로그 제작 연도 — 출품 기록과 불일치',
+        description: '마틴이 알고 있는 K-01의 제작 연도가, 전시 카탈로그에 적힌 연도와 다르다. 둘 중 하나는 틀렸다.',
+        discoveredLocationText: '전화 통화 · 마틴 베일',
+      },
+    }],
+  },
+  { id: 'martin-core-2', speaker: '마틴 베일', text: '음... 이상하네요. 제가 알던 연도랑 카탈로그가 다르게 적혀 있다고요?', characterId: 'martin', expression: 'neutral' },
+  { id: 'martin-core-3', speaker: '마틴 베일', text: '그거 말고도 이상한 게 있긴 했어요.', characterId: 'martin', expression: 'neutral' },
+  {
+    id: 'martin-core-4', speaker: '마틴 베일', text: '하단 각인 부분이요. 요즘 사진으로 보니까 제가 기억하던 것보다 훨씬 선명하더라고요.', characterId: 'martin', expression: 'neutral',
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-k01-inscription-sharper', code: 'E-MV4', title: '하단 각인 — 선명도 변화',
+        description: '마틴이 기억하는 K-01의 하단 각인은 흐릿했는데, 최근 사진 속 각인은 눈에 띄게 선명하다.',
+        discoveredLocationText: '전화 통화 · 마틴 베일',
+      },
+    }],
+  },
+  { id: 'martin-core-5', speaker: '지수', text: '...\n그리고 M.K.라는 계정에서 문의가 왔었다고 하셨죠?', characterId: 'jisoo', expression: 'suspicious' },
+  {
+    id: 'martin-core-6', speaker: '마틴 베일', text: '네, 몇 번 왔었어요. 근데 신기하게 매번 딱 그 각인 부분만 물어봤어요.', characterId: 'martin', expression: 'neutral',
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-mk-inscription-focused-inquiries', code: 'E-MV5', title: 'M.K.의 문의 — 각인에만 집중',
+        description: 'M.K. 계열 계정이 마틴에게 보낸 과거 문의들. 전체 물건이 아니라 매번 하단 각인 부분만 반복해서 물었다.',
+        discoveredLocationText: '전화 통화 · 마틴 베일',
+      },
+    }],
+  },
+  {
+    id: 'martin-connect-1', type: 'evidence', speaker: '', text: 'K-01 자체에 뭔가 이상이 있다는 걸 보여주는 자료는?', characterId: null,
+    evidenceIds: ['evidence-k01-catalog-year-mismatch'],
+    wrongText: ['물건 자체의 기록과 관련된 자료를 다시 찾아보자.'],
+    correctGoto: 'martin-connect-2',
+  },
+  {
+    id: 'martin-connect-2', type: 'evidence', speaker: '', text: 'M.K.가 정확히 무엇을 원했는지 보여주는 자료는?', characterId: null,
+    evidenceIds: ['evidence-mk-inscription-focused-inquiries'],
+    wrongText: ['M.K.의 문의 자체를 다시 살펴보자.'],
+    correctGoto: 'martin-connect-result',
+  },
+  {
+    id: 'martin-connect-result', speaker: '', text: '[ 추론 사실 생성 ]\n의뢰인이 원한 건 K-01 전체가 아니라, 하단 각인 그 자체였다.', characterId: null,
+    effects: [
+      {
+        type: 'addQuestion',
+        question: { id: 'q-w1-request-purpose', title: '의뢰인은 왜 K-01의 하단 각인을 원했는가?', linkedEvidenceIds: ['evidence-k01-catalog-year-mismatch', 'evidence-k01-inscription-sharper', 'evidence-mk-inscription-focused-inquiries'] },
+      },
+      {
+        type: 'setQuestionStatus', id: 'q-w1-request-purpose', status: 'provisional',
+        resolutionText: '제작 연도가 기록과 어긋나고, 각인이 예전보다 선명해졌으며, M.K.는 매번 각인만 물었다 — 각인 자체가 목적이었던 것 같지만, 왜인지는 아직 모른다.',
+      },
+      {
+        type: 'addQuestion',
+        question: { id: 'q-w1-k01-authenticity', title: 'K-01은 정말 진품인가?', linkedEvidenceIds: ['evidence-k01-catalog-year-mismatch', 'evidence-k01-inscription-sharper'] },
+      },
+      { type: 'setQuestionStatus', id: 'q-w1-k01-authenticity', status: 'carried_over', resolutionText: '제작 연도 불일치와 각인 선명도 변화는 확인했지만, 진품 여부 자체를 가릴 방법은 아직 없다.' },
+      {
+        type: 'addFact',
+        fact: {
+          id: 'fact-inscription-is-target', title: '의뢰의 진짜 목적은 K-01 전체가 아니라 하단 각인이다.',
+          sourceEvidenceIds: ['evidence-k01-catalog-year-mismatch', 'evidence-mk-inscription-focused-inquiries'],
+          relatedQuestionIds: ['q-w1-request-purpose', 'q-w1-k01-authenticity'],
+          confidence: 'confirmed',
+        },
+      },
+    ],
+  },
+  { id: 'martin-end-1', speaker: '마틴 베일', text: '...\n이거, 생각보다 더 이상한 일인 것 같네요.', characterId: 'martin', expression: 'neutral' },
+  { id: 'martin-end-2', speaker: '지수', text: '저희도 그렇게 느끼고 있어요. 알려주셔서 감사합니다.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'martin-end-3', speaker: '마틴 베일', text: '뭔가 더 알게 되면 꼭 연락 주세요.', characterId: 'martin', expression: 'neutral' },
+  { id: 'line-008', speaker: '', text: '전화를 끊고도, 두 사람은 한동안 말이 없었다.', characterId: null },
+  { id: 'line-009', speaker: '영우', text: '이거 그냥 절도 사건이 아니었네.', characterId: 'youngwoo', expression: 'blank' },
+  { id: 'line-010', speaker: '지수', text: '네.\n일단 정리부터 해봐요.', characterId: 'jisoo', expression: 'serious' },
+];
+
 /* OPERATION MK — WEEK 1 · SCENE 12 「사건 재구성」
    Dialogue Set: dialogue-week1-scene012
    Scene: week1-scene-012 (전시장 근처 카페, 19:00)
@@ -2265,18 +3132,38 @@ const week1Scene012Lines = [
     ],
   },
   { id: 'blank-3-wrong', speaker: '지수', text: '아니에요. 그 11분의 공백, 누구 거였죠?', characterId: 'jisoo', expression: 'suspicious', goto: 'blank-3' },
-  { id: 'blank-3-correct', speaker: '영우', text: '맞아, 레오씨가 직접 만지고 카페까지 들고 나왔어.', characterId: 'youngwoo', expression: 'serious' },
+  {
+    // v4 §11 "최종 잠정 결론" — 이 재구성이 q-w1-who-removed-k01을 공식적으로
+    // 확정한다. 5장/6장에서 플레이어가 무엇을 가설로 골랐든(윤민아든, 아직
+    // 모름이든) 상관없이 여기서 진짜 정답으로 덮어써, 잘못된 믿음을 계속
+    // 고집한 플레이어도 엔딩에서는 올바른 결론을 보게 된다.
+    id: 'blank-3-correct', speaker: '영우', text: '맞아, 레오씨가 직접 만지고 카페까지 들고 나왔어.', characterId: 'youngwoo', expression: 'serious',
+    effects: [
+      { type: 'setHypothesis', questionId: 'q-w1-who-removed-k01', hypothesis: { id: 'hyp-leo-removed', questionId: 'q-w1-who-removed-k01', text: '레오가 K-01을 직접 꺼냈다.' } },
+      { type: 'setQuestionStatus', id: 'q-w1-who-removed-k01', status: 'resolved', resolutionText: '레오 박이 직접 K-01을 꺼내 반출했다.' },
+    ],
+  },
 
   {
+    // v4 §10 ACT5 / §21-9 — week1-scene-009a의 현장 재검증에서 태그 가설이
+    // 이미 뒤집혔다. "직원용 태그"는 이제 그럴듯해 보이지만 틀린 선택지고,
+    // 정답은 서비스 자석이다 — 완료 기준 #9 "직원용 태그 가설이 한 번
+    // 뒤집힌다"를 최종 재구성에도 반영한다.
     id: 'blank-4', type: 'choice', speaker: '', text: '[진열장 개방 수단]은?', characterId: null,
     choices: [
-      { id: 'staff-tag', label: '직원용 태그(관리 공백을 틈타)', goto: 'blank-4-correct' },
-      { id: 'broken-lock', label: '자물쇠가 부서짐', goto: 'blank-4-wrong' },
+      { id: 'service-magnet', label: '직원 구역의 서비스 자석', goto: 'blank-4-correct' },
+      { id: 'staff-tag', label: '직원용 태그(관리 공백을 틈타)', goto: 'blank-4-wrong' },
       { id: 'spare-key', label: '여분 열쇠 사용', goto: 'blank-4-wrong' },
     ],
   },
-  { id: 'blank-4-wrong', speaker: '영우', text: '아니, 그런 흔적은 없었어. 잠금 확인이 몇 시였는지 다시 생각해봐.', characterId: 'youngwoo', expression: 'curious', goto: 'blank-4' },
-  { id: 'blank-4-correct', speaker: '지수', text: '맞아요. 아침 9시 확인 이후로 아무도 다시 잠그지 않았어요.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'blank-4-wrong', speaker: '영우', text: '아니, 태그는 직원 전용문만 열어. 진열장 잠금부는 아예 다른 방식이었잖아.', characterId: 'youngwoo', expression: 'curious', goto: 'blank-4' },
+  {
+    id: 'blank-4-correct', speaker: '지수', text: '맞아요. 태그는 미끼였고, 진열장을 연 건 직원 구역의 서비스 자석이었어요.', characterId: 'jisoo', expression: 'serious',
+    effects: [
+      { type: 'setHypothesis', questionId: 'q-w1-case-opening-method', hypothesis: { id: 'hyp-opening-magnet', questionId: 'q-w1-case-opening-method', text: '직원 구역의 서비스 자석으로 진열장을 열었다.' } },
+      { type: 'setQuestionStatus', id: 'q-w1-case-opening-method', status: 'resolved', resolutionText: '진열장은 직원용 태그가 아니라, 직원 구역의 서비스 자석으로 열렸다.' },
+    ],
+  },
 
   {
     id: 'blank-5', type: 'choice', speaker: '', text: '[행동 목적]은?', characterId: null,
@@ -2287,7 +3174,16 @@ const week1Scene012Lines = [
     ],
   },
   { id: 'blank-5-wrong', speaker: '지수', text: '아니에요. 팸플릿에도 판매 불가라고 적혀 있었잖아요.', characterId: 'jisoo', expression: 'suspicious', goto: 'blank-5' },
-  { id: 'blank-5-correct', speaker: '영우', text: '맞아. 레오도, 윤민아씨도 결국 "의뢰받은 일"이었다고 했어.', characterId: 'youngwoo', expression: 'serious' },
+  {
+    // q-w1-request-purpose는 week1-scene-011b(마틴 베일 통화)에서 이미
+    // 등록됐다 — 여기서는 레오/윤민아 양쪽 진술까지 더해 상태 텍스트만
+    // 갱신한다.
+    id: 'blank-5-correct', speaker: '영우', text: '맞아. 레오도, 윤민아씨도 결국 "의뢰받은 일"이었다고 했어.', characterId: 'youngwoo', expression: 'serious',
+    effects: [{
+      type: 'setQuestionStatus', id: 'q-w1-request-purpose', status: 'provisional',
+      resolutionText: '레오도, 윤민아도 "의뢰받은 일"이었다고 인정했고, 마틴의 통화로 그 의뢰가 각인 자체를 노렸다는 것까지는 확인했다. 다만 왜 하필 각인인지는 아직 짐작뿐이다.',
+    }],
+  },
 
   {
     id: 'blank-6', type: 'choice', speaker: '', text: '[미해결 연결점]은?', characterId: null,
@@ -2319,9 +3215,21 @@ const week1Scene012Lines = [
     ],
   },
   { id: 'rebuttal-wrong', speaker: '지수', text: '아니에요. 그건 이미 사실이 아니라고 확인됐잖아요.', characterId: 'jisoo', expression: 'suspicious', goto: 'rebuttal' },
-  { id: 'rebuttal-correct', speaker: '지수', text: '맞아요.\n레오는 손을 댄 사람이지, 이 계획을 짠 사람은 아니에요.', characterId: 'jisoo', expression: 'serious' },
+  {
+    // v4 §13.3 — question-case-solution(K-01이 어떻게 사라졌는가)이 통째로
+    // resolved인 것과 별개로, "이 계획을 설계한 사람"은 1주차 안에서
+    // 풀리지 않는다는 것을 별도 의문점으로 명시해 다음 주차로 이월한다.
+    id: 'rebuttal-correct', speaker: '지수', text: '맞아요.\n레오는 손을 댄 사람이지, 이 계획을 짠 사람은 아니에요.', characterId: 'jisoo', expression: 'serious',
+    effects: [{
+      type: 'addQuestion',
+      question: { id: 'q-w1-who-planned-event', title: '이 사건을 설계한 사람은 누구인가?', linkedEvidenceIds: [] },
+    }, {
+      type: 'setQuestionStatus', id: 'q-w1-who-planned-event', status: 'carried_over',
+      resolutionText: '레오는 손을 댄 실행자일 뿐, 정보를 모으고 계획을 짠 사람은 아니다. 설계자는 아직 밝혀지지 않았다.',
+    }],
+  },
 
-  { id: 'line-005', speaker: '', text: '[ 사건 재구성 완료 ]\n정보 유출 — 애드리언의 답장\n참고사진 출처 — 윤민아의 공개 링크\n실제 이동자 — 레오 박\n개방 수단 — 직원용 태그\n행동 목적 — 의뢰 수행\n미해결 연결점 — M.K. 계열 계정', characterId: null },
+  { id: 'line-005', speaker: '', text: '[ 사건 재구성 완료 ]\n정보 유출 — 애드리언의 답장\n참고사진 출처 — 윤민아의 공개 링크\n실제 이동자 — 레오 박\n개방 수단 — 직원 구역의 서비스 자석\n행동 목적 — 의뢰 수행\n미해결 연결점 — M.K. 계열 계정', characterId: null },
   { id: 'line-006', speaker: '영우', text: '근데 이걸로 끝은 아니지?', characterId: 'youngwoo', expression: 'curious' },
   { id: 'line-007', speaker: '지수', text: '...\n네.\n레오는 손을 댄 사람, 애드리언과 윤민아는 정보가 샌 경로.', characterId: 'jisoo', expression: 'serious' },
   { id: 'line-008', speaker: '지수', text: '근데 이 셋을 하나로 묶은 사람은 아직 안 잡혔어요.', characterId: 'jisoo', expression: 'serious' },
@@ -2388,7 +3296,14 @@ const week1Scene013Lines = [
           unknowns: ['정체 불명', '목적 불명', '사람인지 조직인지 불명'],
         },
       },
-      { type: 'setQuestionStatus', id: 'question-mk-identity', status: 'unresolved', resolutionText: 'K-01 문의, 레오에게의 의뢰, 윤민아 링크 접근 모두 M.K. 계열의 이름이 등장했지만, 정체는 전혀 밝혀지지 않았다.' },
+      // v4 §8 1주차 종료 상태 — M.K. 정체는 "미해결"이 아니라 명시적으로
+      // 다음 주차로 이월되는 상태다.
+      { type: 'setQuestionStatus', id: 'question-mk-identity', status: 'carried_over', resolutionText: 'K-01 문의, 레오에게의 의뢰, 윤민아 링크 접근 모두 M.K. 계열의 이름이 등장했지만, 정체는 전혀 밝혀지지 않았다.' },
+      {
+        type: 'addQuestion',
+        question: { id: 'q-w1-where-is-k01', title: 'K-01은 지금 어디에 있는가?', linkedEvidenceIds: ['evidence-cafe-cctv-bag-thicker'] },
+      },
+      { type: 'setQuestionStatus', id: 'q-w1-where-is-k01', status: 'carried_over', resolutionText: '레오가 반출한 이후의 행방은 아직 쫓지 못했다.' },
     ],
   },
   { id: 'line-037', speaker: '', text: '[ 미해결 연결점 ]\nM.K.\n— 정체 불명\n— K-01 문의와 연관\n— 사진 전달·의뢰 계정과 연관\n— 목적 불명', characterId: null },
@@ -2442,6 +3357,16 @@ const exhibitionSearchHotspots = [
 // 8라운드) → 012(사건 재구성 6칸) → 013(엔딩). VN→VN 전환은 기존 관례대로
 // nextSceneId를 쓰지 않고 /dev/week1의 순서 목록(order)으로만 안내하며,
 // nextSceneId는 미니게임 핸드오프(사진 분석/시간대 정리) 두 곳에만 남아있다.
+//
+// ===== The Missing Key v4 §9/§10 보조 증인 패스 =====
+// 위 v2 골격에 보조 증인 3명(클레어/다니엘/소피)과 그들의 재심문, 현장
+// 재검증을 끼워 넣었다: 005(첫 가설) 뒤에 005a(클레어 최초 진술)/005b(다니엘
+// 최초 진술+회색 모자 가설)를 추가, 008(레오 1차) 끝에 소피의 최초 목격담을
+// 덧붙이고, 008-minigame 뒤에 008a(클레어·다니엘·소피 재심문 — 증언 충돌 3건)
+// 를 추가, 009(레오 집중 심문) 뒤에 009a(현장 재검증 — 태그→서비스 자석
+// 반전)를 추가했다. 새 캐릭터는 dialogueCharacters의 claire/sophie/
+// daniel-guide. 마틴 베일(전화 통화, §9.4)과 애드리언 재심문(§ACT7)은 아직
+// 이 패스에 없다 — 다음 작업으로 남는다.
 const week1Scenes = [
   {
     id: 'week1-scene-001',
@@ -2530,8 +3455,26 @@ const week1Scenes = [
     lines: week1Scene005Lines,
   },
   {
-    id: 'week1-scene-006',
+    id: 'week1-scene-005a',
     order: 9,
+    name: '클레어 최초 진술',
+    location: 'Pop-up Exhibition',
+    introLabel: 'CIRCULAR QUAY',
+    time: '11:05',
+    lines: week1Scene005aLines,
+  },
+  {
+    id: 'week1-scene-005b',
+    order: 10,
+    name: '다니엘 최초 진술',
+    location: 'Pop-up Exhibition',
+    introLabel: 'CIRCULAR QUAY',
+    time: '11:07',
+    lines: week1Scene005bLines,
+  },
+  {
+    id: 'week1-scene-006',
+    order: 11,
     name: '윤민아 1차 심문',
     location: 'Pop-up Exhibition',
     introLabel: 'CIRCULAR QUAY',
@@ -2540,7 +3483,7 @@ const week1Scenes = [
   },
   {
     id: 'week1-scene-007',
-    order: 10,
+    order: 12,
     name: '애드리언 1차 심문',
     location: 'Pop-up Exhibition',
     introLabel: 'CIRCULAR QUAY',
@@ -2549,7 +3492,7 @@ const week1Scenes = [
   },
   {
     id: 'week1-scene-008',
-    order: 11,
+    order: 13,
     name: '레오 1차 심문 및 타임라인',
     location: 'Café near Circular Quay',
     introLabel: 'CIRCULAR QUAY',
@@ -2561,15 +3504,24 @@ const week1Scenes = [
   },
   {
     id: 'week1-scene-008-minigame',
-    order: 12,
+    order: 14,
     name: '시간대 정리 (미니게임)',
     location: 'Café near Circular Quay',
     time: '11:55',
     route: '/dev/minigame-timeline/',
   },
   {
+    id: 'week1-scene-008a',
+    order: 15,
+    name: '재심문 — 클레어·다니엘·소피',
+    location: 'Pop-up Exhibition',
+    introLabel: 'CIRCULAR QUAY',
+    time: '12:00',
+    lines: week1Scene008aLines,
+  },
+  {
     id: 'week1-scene-009',
-    order: 13,
+    order: 16,
     name: '레오 집중 심문',
     location: 'Pop-up Exhibition',
     introLabel: 'CIRCULAR QUAY',
@@ -2577,8 +3529,17 @@ const week1Scenes = [
     lines: week1Scene009Lines,
   },
   {
+    id: 'week1-scene-009a',
+    order: 17,
+    name: '현장 재검증 — 진열장은 어떻게 열렸는가',
+    location: 'Pop-up Exhibition',
+    introLabel: 'CIRCULAR QUAY',
+    time: '12:15',
+    lines: week1Scene009aLines,
+  },
+  {
     id: 'week1-scene-010',
-    order: 14,
+    order: 18,
     name: '중간 추리 및 윤민아 재오픈',
     location: 'Pop-up Exhibition',
     introLabel: 'CIRCULAR QUAY',
@@ -2587,7 +3548,7 @@ const week1Scenes = [
   },
   {
     id: 'week1-scene-011',
-    order: 15,
+    order: 19,
     name: '윤민아 최종 심문',
     location: 'Circular Quay 편집숍',
     introLabel: 'CIRCULAR QUAY',
@@ -2595,8 +3556,26 @@ const week1Scenes = [
     lines: week1Scene011Lines,
   },
   {
+    id: 'week1-scene-011a',
+    order: 20,
+    name: '애드리언 재심문',
+    location: 'Pop-up Exhibition',
+    introLabel: 'CIRCULAR QUAY',
+    time: '18:20',
+    lines: week1Scene011aLines,
+  },
+  {
+    id: 'week1-scene-011b',
+    order: 21,
+    name: '마틴 베일 통화',
+    location: 'Circular Quay 이동 중',
+    introLabel: 'CIRCULAR QUAY',
+    time: '18:40',
+    lines: week1Scene011bLines,
+  },
+  {
     id: 'week1-scene-012',
-    order: 16,
+    order: 22,
     name: '사건 재구성',
     location: 'Café near Circular Quay',
     introLabel: 'CIRCULAR QUAY',
@@ -2605,7 +3584,7 @@ const week1Scenes = [
   },
   {
     id: 'week1-scene-013',
-    order: 17,
+    order: 23,
     name: '1주차 엔딩 · M.K.라는 이름',
     location: 'Sydney Accommodation',
     introLabel: 'ACCOMMODATION',
