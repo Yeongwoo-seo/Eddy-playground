@@ -3067,11 +3067,11 @@ const minigames = [
     setupUrl: '/dev/upload/?scene=week0-scene-001-2&kind=minigame&minigame=week0-scene-001-2-minigame',
   },
   {
-    // Standalone physics/AI minigame — no background image or hand-marked
-    // hotspots to set up, so setupUrl is its own difficulty/motion-type
-    // picker (dev/minigame-fishing/index.html) instead of an /dev/upload
-    // editor screen; route is the actual play page, which reads those
-    // choices back off the query string.
+    // Standalone cast->bite->hook->capture minigame — no background image or
+    // hand-marked hotspots to set up, so setupUrl is its own species-picker/
+    // background-upload screen (dev/minigame-fishing/index.html) instead of
+    // an /dev/upload editor screen; route is the actual play page, which
+    // reads the forced species (if any) back off the query string.
     id: 'fishing-minigame',
     name: '낚시',
     location: '독립형 미니게임 (스토리 미연동)',

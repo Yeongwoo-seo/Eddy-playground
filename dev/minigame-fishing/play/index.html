@@ -26,43 +26,80 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 
 .frame{position:relative;width:100%;max-width:430px;height:100dvh;height:100vh;height:var(--vh100, 100vh);overflow:hidden;background:#0a0d10;display:flex;flex-direction:column;touch-action:none}
 
-/* ===== Optional Stardew-style dressing from /dev/minigame-fishing/'s 설정
-   screen (localStorage, not query string — see that page's comment). Both
-   sit below the game-stage/press-zone/topbar in DOM order so they never
-   intercept input. ===== */
+/* ===== Background — same Stardew-style dressing (localStorage picker) as
+   before. The whole point of this rewrite is that the world (background +
+   character + rod + line + bobber) stays on screen the entire time, so this
+   layer is never hidden/dimmed by more than the 12% cap in #dimLayer. ===== */
 .bg-layer{position:absolute;inset:0;z-index:0;background-size:cover;background-position:center;display:none}
 .bg-layer.show{display:block}
 .bg-layer::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(5,7,10,.4) 0%,rgba(5,7,10,.6) 100%)}
 
+/* ===== World canvas — character silhouette, rod, line, bobber, ripples,
+   the mid-flight fish arc. Sits above the background, below every HUD/DOM
+   layer, and is never cleared/hidden while a round is in progress (request
+   doc §30: never hide the world just because the capture panel opened). ===== */
+#worldCanvas{position:absolute;inset:0;z-index:1;pointer-events:none}
+
+.dim-layer{position:absolute;inset:0;z-index:2;background:#000;opacity:0;pointer-events:none;transition:opacity .25s ease}
+.dim-layer.show{opacity:.12}
+
 .topbar{position:absolute;top:0;left:0;right:0;z-index:6;padding:calc(14px + env(safe-area-inset-top,0)) 16px 14px;display:flex;justify-content:space-between;align-items:center;pointer-events:none}
 .vn-btn{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:#fff;background:rgba(8,10,12,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:9px 14px;cursor:pointer;text-decoration:none;display:inline-block;pointer-events:auto;border-width:1px}
 
-/* ===== Game stage ===== */
-.game-stage{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:14px;padding:calc(64px + env(safe-area-inset-top,0)) 20px calc(28px + env(safe-area-inset-bottom,0))}
+/* ===== Cast power meter — only shown while charging, docked where the
+   capture panel will later appear so the right-side HUD slot isn't reused
+   for two different layouts fighting for space. ===== */
+.cast-meter-wrap{position:absolute;top:calc(70px + env(safe-area-inset-top,0));right:20px;z-index:4;width:26px;height:38%;display:none;flex-direction:column;align-items:center;gap:6px;pointer-events:none}
+.cast-meter-wrap.show{display:flex}
+.cast-meter{position:relative;width:100%;flex:1;border-radius:13px;overflow:hidden;background:linear-gradient(180deg,#9C6530 0%,#6B4226 100%);border:1px solid rgba(0,0,0,.3);box-shadow:inset 0 0 8px rgba(0,0,0,.4),0 3px 8px rgba(0,0,0,.3)}
+.cast-meter-fill{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(180deg,#8FE0F2 0%,#3FA7C8 100%);border-radius:0 0 12px 12px}
+.cast-meter-label{font-family:var(--mono);font-size:10.5px;font-weight:700;color:var(--cyan);letter-spacing:.06em;text-align:center;opacity:0;transition:opacity .12s ease}
+.cast-meter-label.show{opacity:1}
+
+/* ===== Bite alert "!" above the character's head — position is set from
+   JS every frame (characterHeadPoint) since the character isn't a fixed DOM
+   element, it's drawn on the world canvas. ===== */
+.bite-alert{position:absolute;z-index:5;font-family:var(--mono);font-weight:800;font-size:30px;color:var(--amber);text-shadow:0 0 14px rgba(214,168,75,.7);transform:translate(-50%,-100%) scale(.2);opacity:0;pointer-events:none;transition:transform .16s cubic-bezier(.34,1.4,.64,1),opacity .12s ease}
+.bite-alert.show{transform:translate(-50%,-100%) scale(1);opacity:1}
+
+.hit-flash{position:absolute;z-index:5;font-family:var(--mono);font-weight:800;font-size:22px;letter-spacing:.04em;color:var(--green);text-shadow:0 0 14px rgba(62,207,107,.6);transform:translate(-50%,-100%) scale(.4);opacity:0;pointer-events:none}
+.hit-flash.show{animation:hitPop .7s ease-out forwards}
+@keyframes hitPop{0%{transform:translate(-50%,-100%) scale(.4);opacity:0}25%{transform:translate(-50%,-120%) scale(1.05);opacity:1}75%{opacity:1}100%{transform:translate(-50%,-150%) scale(1);opacity:0}}
+
+/* ===== Vertical capture panel — unchanged wood/water/catch-bar look, now
+   toggled on/off only for the FISHING_MINIGAME phase instead of being the
+   whole screen. ===== */
+.game-stage{position:absolute;top:0;right:0;bottom:0;z-index:4;display:none;align-items:center;justify-content:center;gap:14px;padding:calc(64px + env(safe-area-inset-top,0)) 20px calc(28px + env(safe-area-inset-bottom,0));transform:scale(.85);opacity:0;transition:transform .22s cubic-bezier(.2,.8,.2,1),opacity .18s ease;pointer-events:none}
+.game-stage.show{display:flex;transform:scale(1);opacity:1}
 
 .track-wrap{position:relative;width:140px;height:100%;max-height:100%}
 .track{position:relative;width:100%;height:100%;border-radius:26px;overflow:hidden;background:linear-gradient(180deg,#CFEBF8 0%,#9CD3EA 45%,#6FB4D6 100%);border:6px solid #8B5A2B;border-image:linear-gradient(180deg,#D9A066 0%,#9C6530 50%,#6B4226 100%) 1;box-shadow:inset 0 0 18px rgba(20,60,80,.35),0 4px 14px rgba(0,0,0,.35)}
 .track::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(180deg,rgba(255,255,255,.35) 0 2px,transparent 2px 26px);pointer-events:none}
 
-.catch-bar{position:absolute;left:0;right:0;top:0;border-radius:12px;background:rgba(196,229,56,.35);border:2px solid rgba(139,175,20,.85);box-shadow:0 0 0 rgba(196,229,56,0);transition:background .15s ease,border-color .15s ease,box-shadow .15s ease;will-change:transform}
+.catch-bar{position:absolute;left:0;right:0;border-radius:12px;background:rgba(196,229,56,.35);border:2px solid rgba(139,175,20,.85);box-shadow:0 0 0 rgba(196,229,56,0);transition:background .15s ease,border-color .15s ease,box-shadow .15s ease;will-change:transform}
 .catch-bar.hooked{background:rgba(196,229,56,.55);border-color:#C4E538;box-shadow:0 0 18px rgba(196,229,56,.55)}
+.catch-bar.danger{background:rgba(217,65,65,.4);border-color:var(--signal-red)}
 
-.fish{position:absolute;left:50%;top:0;font-size:28px;line-height:1;width:36px;height:36px;margin-left:-18px;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 2px 5px rgba(0,30,45,.55));will-change:transform;transition:filter .15s ease}
+.fish-icon{position:absolute;left:50%;top:0;font-size:26px;line-height:1;width:34px;height:34px;margin-left:-17px;margin-top:-17px;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 2px 5px rgba(0,30,45,.55));will-change:transform;transition:filter .15s ease}
 
 .progress-rail{position:relative;width:26px;height:100%;border-radius:14px;overflow:hidden;flex-shrink:0;background:linear-gradient(180deg,#9C6530 0%,#6B4226 100%);border:1px solid rgba(0,0,0,.3);box-shadow:inset 0 0 8px rgba(0,0,0,.4),0 3px 8px rgba(0,0,0,.3)}
 .progress-fill{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(180deg,#E8F27A 0%,#B9DE43 55%,#8FAF1E 100%);border-radius:0 0 12px 12px;transition:background .2s ease}
+.progress-fill.shine{box-shadow:0 0 16px 2px rgba(232,242,122,.7) inset}
 .progress-fill.danger{background:linear-gradient(180deg,#E88686 0%,var(--signal-red) 100%)}
 .progress-mid-mark{position:absolute;left:0;right:0;top:50%;height:1px;background:rgba(255,255,255,.25)}
+.species-tag{position:absolute;top:-30px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:11px;color:var(--text-secondary);white-space:nowrap}
 
-/* ===== Press zone (full stage minus topbar/dialogue strip) ===== */
-.press-zone{position:absolute;inset:0;z-index:5;touch-action:none}
-.press-hint{position:absolute;left:0;right:0;bottom:calc(130px + env(safe-area-inset-bottom,0));z-index:6;text-align:center;font-family:var(--mono);font-size:11.5px;color:var(--text-muted);letter-spacing:.02em;pointer-events:none;transition:opacity .2s ease}
+/* ===== Press zone (full stage minus topbar) — a single PRIMARY_ACTION
+   covers every state (charge/release, hook, raise/lower), never a
+   panel-only tap target (request doc §5.1, §30). ===== */
+.press-zone{position:absolute;inset:0;z-index:3;touch-action:none}
+.press-hint{position:absolute;left:0;right:0;bottom:calc(130px + env(safe-area-inset-bottom,0));z-index:5;text-align:center;font-family:var(--mono);font-size:11.5px;color:var(--text-muted);letter-spacing:.02em;pointer-events:none;transition:opacity .2s ease}
 .press-hint.hold{color:var(--green)}
 
-/* ===== Bottom dialogue strip — 지수/영우 banter, same shape as
-   minigame-eastwood's .dlg-strip so a caught/missed fish reads like a real
-   scenario beat instead of a bare test-harness result banner. ===== */
-.dlg-strip{position:absolute;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0));z-index:6;background:rgba(5,7,10,.86);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.1);border-radius:18px;box-shadow:0 8px 28px rgba(0,0,0,.35);padding:14px 16px;display:flex;align-items:flex-end;gap:14px}
+/* ===== Bottom dialogue strip — 지수/영우 banter keyed to the fishing event
+   list (BITE_STARTED / HOOK_SUCCEEDED / HOOK_MISSED / FISH_CAUGHT /
+   FISH_ESCAPED), same shape as minigame-eastwood's .dlg-strip. ===== */
+.dlg-strip{position:absolute;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0));z-index:5;background:rgba(5,7,10,.86);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.1);border-radius:18px;box-shadow:0 8px 28px rgba(0,0,0,.35);padding:14px 16px;display:flex;align-items:flex-end;gap:14px;pointer-events:none}
 .portrait-wrap{width:56px;height:76px;border-radius:10px;overflow:hidden;background:var(--surface-2);flex-shrink:0;display:flex;align-items:flex-end;justify-content:center}
 .portrait-wrap img{width:100%;height:100%;object-fit:cover;object-position:top;display:none}
 .portrait-placeholder{width:60%;height:80%;opacity:.35;color:var(--text-secondary)}
@@ -71,31 +108,44 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .dlg-name:empty{display:none}
 .dlg-text{font-size:15px;line-height:1.55;color:#fff;white-space:pre-wrap;word-break:keep-all}
 
-/* ===== Overlays ===== */
-.overlay{position:absolute;inset:0;z-index:8;display:none;align-items:center;justify-content:center;flex-direction:column;gap:18px;text-align:center;padding:32px;background:rgba(5,7,10,.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+/* ===== Result overlay — catch/escape summary ===== */
+.overlay{position:absolute;inset:0;z-index:8;display:none;align-items:center;justify-content:center;flex-direction:column;gap:10px;text-align:center;padding:32px;background:rgba(5,7,10,.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);pointer-events:none}
 .overlay.show{display:flex}
-
-.result-banner{font-size:30px;font-weight:800}
+.result-banner{font-size:28px;font-weight:800}
 .result-banner.success{color:var(--green)}
 .result-banner.fail{color:var(--signal-red)}
-.perfect-tag{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.1em;color:var(--amber);background:rgba(214,168,75,.14);border:1px solid rgba(214,168,75,.4);border-radius:20px;padding:5px 12px}
+.result-fish-name{font-size:16px;font-weight:700;color:var(--text-primary)}
+.result-fish-meta{font-family:var(--mono);font-size:12.5px;color:var(--text-secondary)}
+.perfect-tag{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.1em;color:var(--amber);background:rgba(214,168,75,.14);border:1px solid rgba(214,168,75,.4);border-radius:20px;padding:5px 12px;margin-top:6px}
+.result-hint{margin-top:14px;font-family:var(--mono);font-size:11.5px;color:var(--text-muted)}
 </style>
 </head>
 <body>
 <div class="frame" id="frame">
 
   <div class="bg-layer" id="bgLayer"></div>
+  <canvas id="worldCanvas"></canvas>
+  <div class="dim-layer" id="dimLayer"></div>
 
   <div class="topbar">
     <a class="vn-btn" href="/dev/">← DEV</a>
     <a class="vn-btn" href="/dev/minigame-fishing/">설정</a>
   </div>
 
-  <div class="game-stage">
+  <div class="cast-meter-wrap" id="castMeterWrap">
+    <div class="cast-meter-label" id="castMeterLabel">MAX</div>
+    <div class="cast-meter"><div class="cast-meter-fill" id="castMeterFill"></div></div>
+  </div>
+
+  <div class="bite-alert" id="biteAlert">!</div>
+  <div class="hit-flash" id="hitFlash">HIT!</div>
+
+  <div class="game-stage" id="gameStage">
     <div class="track-wrap">
+      <div class="species-tag" id="speciesTag"></div>
       <div class="track" id="track">
         <div class="catch-bar" id="catchBar"></div>
-        <div class="fish" id="fish">🐟</div>
+        <div class="fish-icon" id="fishIcon">🐟</div>
       </div>
     </div>
     <div class="progress-rail" id="progressRail">
@@ -105,7 +155,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
   </div>
 
   <div class="press-zone" id="pressZone"></div>
-  <div class="press-hint" id="pressHint">누르면 위로 떠오르고 · 떼면 가라앉아요</div>
+  <div class="press-hint" id="pressHint">눌러서 캐스팅 파워를 조절하세요</div>
 
   <div class="dlg-strip" id="dlgStrip">
     <div class="portrait-wrap" id="portraitWrap">
@@ -120,7 +170,10 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 
   <div class="overlay" id="resultOverlay">
     <div class="result-banner" id="resultBanner"></div>
-    <div class="perfect-tag" id="perfectTag" style="display:none"></div>
+    <div class="result-fish-name" id="resultFishName"></div>
+    <div class="result-fish-meta" id="resultFishMeta"></div>
+    <div class="perfect-tag" id="perfectTag" style="display:none">PERFECT</div>
+    <div class="result-hint">탭하면 다시 캐스팅</div>
   </div>
 
 </div>
@@ -139,50 +192,26 @@ if ('serviceWorker' in navigator) {
 <script src="/dev/dialogueData.js"></script>
 <script>
 /* =========================================================================
-   Stardew-style vertical fishing minigame.
-   Simulation is entirely state-driven (barY/fishY/catchProgress are the real
-   truth) and stepped on a fixed 60Hz timestep, independent of rAF's dt — see
-   FISHING_CONFIG.fixedStep and the accumulator loop at the bottom. Rendering
-   only ever reads state and never feeds back into it.
+   Fishing minigame v2 — rebuilt from fishing_minigame_development_brief_v1
+   as a continuous cast -> bite -> hook -> capture flow (brief §0, §4), not
+   a standalone capture-bar-only test harness. Background/character/rod/
+   line/bobber stay on screen through every phase (brief §3.1, §30) — the
+   capture panel is an overlay on top of the world, not a scene swap.
 
-   Reached only via /dev/minigame-fishing/'s 설정 screen (or its own ▶
-   플레이 shortcut from /dev/minigames) — this page starts playing
-   immediately, same as the other minigames' play routes.
+   No build tooling exists in this repo (plain static HTML/JS everywhere
+   under /dev), so this is vanilla Canvas2D + DOM instead of the brief's
+   suggested Phaser 3 + TypeScript stack — same state machine and tuning
+   model, adapted to fit how every other dev/minigame-* page is built.
+   Character art doesn't exist yet either, so the player is a procedural
+   silhouette (body/head/rod arm-angle tweened per pose) instead of sprite
+   frames — swapping in real art later only means replacing drawCharacter().
    ========================================================================= */
 
-const FISHING_CONFIG = {
-  fixedStep: 1 / 60,
-
-  bar: {
-    upAccel: 0.25,
-    downAccel: 0.25,
-    insideAccelMultiplier: 0.6,
-    bounce: 2 / 3,
-    heightRatio: 0.30,
-  },
-
-  progress: {
-    start: 0.5,
-    gainPerSecond: 0.20,
-    lossPerSecond: 0.085,
-  },
-
-  fish: {
-    difficultyMin: 15,
-    difficultyMax: 95,
-    targetDistanceThreshold: 3,
-    velocityLerpDivisor: 5,
-    biasStep: 0.01,
-    biasMax: 1.5,
-  },
-};
-
-const FISH_HITBOX_INSET = 2; // shrinks the hitbox slightly inside the 36px sprite so the visual and the judgement don't feel mismatched
-const FISH_SIZE = 36;
-
 function clamp(v, min, max) { return Math.min(Math.max(v, min), max); }
-function randomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+function lerp(a, b, t) { return a + (b - a) * t; }
 function randomBetween(min, max) { return Math.random() * (max - min) + min; }
+function randomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
 function weightedRandom(pairs) {
   const total = pairs.reduce((s, [, w]) => s + w, 0);
   let r = Math.random() * total;
@@ -193,81 +222,109 @@ function weightedRandom(pairs) {
   return pairs[pairs.length - 1][0];
 }
 
-/* ===== Settings from /dev/minigame-fishing/'s 설정 screen — ?diff= picks a
-   difficulty band (falls back to the full random range) and ?motion= pins
-   every round to one motion type (falls back to the usual weighted mix).
-   Bands mirror difficultyLabel()'s cutoffs below. ===== */
+/* ===== §4 State machine ===== */
+const STATES = {
+  IDLE: 'IDLE',
+  CAST_CHARGING: 'CAST_CHARGING',
+  BOBBER_FLYING: 'BOBBER_FLYING',
+  WAITING_BITE: 'WAITING_BITE',
+  BITE_ALERT: 'BITE_ALERT',
+  HOOK_RESOLVE: 'HOOK_RESOLVE',
+  FISHING_MINIGAME: 'FISHING_MINIGAME',
+  SHOW_RESULT: 'SHOW_RESULT',
+};
+
+/* ===== §6 Casting ===== */
+const CAST = {
+  minCharge: 0.08,
+  pingPongCycleSeconds: 1.45,
+  maxLabelThreshold: 0.98,
+  flightMinSeconds: 0.38,
+  flightMaxSeconds: 0.78,
+  arcHeightPx: 46,
+};
+
+/* ===== §7 Bite ===== */
+const BITE = {
+  minWaitSeconds: 1.4,
+  maxWaitSeconds: 5.2,
+  reactionWindowSeconds: 0.9,
+};
+
+/* ===== §9 Capture control bar (normalized 0..1, y grows downward) ===== */
+const CONTROL_BAR = {
+  baseHeight: 0.22,
+  upwardAcceleration: -1.75,
+  gravityAcceleration: 1.45,
+  maxUpSpeed: -0.92,
+  maxDownSpeed: 0.98,
+  velocityDamping: 0.992,
+  topBounce: 0.12,
+  bottomBounce: 0.34,
+};
+
+/* ===== §11 Capture progress ===== */
+const PROGRESS = {
+  initial: 0.50,
+  gainPerSecond: 0.17,
+  lossPerSecond: 0.21,
+  perfectGraceSeconds: 0.08,
+};
+
+const FISH_HALF_HEIGHT = 0.032; // fraction of track height
+
+/* ===== §12 Fish table — the brief's own 3 example species, which already
+   cover 3 of the 5 behavior types (SMOOTH/MIXED/DART) and satisfy the
+   "최소 3종류" completion criterion (§28.8) without inventing new numbers. ===== */
+const FISH_TABLE = [
+  {
+    id: 'silver_bream', displayName: '은빛 도미', icon: '🐟', behavior: 'SMOOTH', difficulty: 1,
+    maxSpeedUp: 0.28, maxSpeedDown: 0.30, acceleration: 0.62, damping: 0.94,
+    retargetMin: 0.9, retargetMax: 1.8, targetRangeMin: 0.08, targetRangeMax: 0.25,
+    catchGainMultiplier: 1.10, escapeLossMultiplier: 0.85,
+    minLengthCm: 12, maxLengthCm: 28, rarity: 'COMMON', weight: 55,
+  },
+  {
+    id: 'river_perch', displayName: '강농어', icon: '🐠', behavior: 'MIXED', difficulty: 4,
+    maxSpeedUp: 0.52, maxSpeedDown: 0.56, acceleration: 0.96, damping: 0.95,
+    retargetMin: 0.42, retargetMax: 1.15, targetRangeMin: 0.15, targetRangeMax: 0.52,
+    catchGainMultiplier: 1.0, escapeLossMultiplier: 1.0,
+    minLengthCm: 20, maxLengthCm: 48, rarity: 'UNCOMMON', weight: 32,
+  },
+  {
+    id: 'storm_eel', displayName: '폭풍 장어', icon: '🐡', behavior: 'DART', difficulty: 9,
+    maxSpeedUp: 1.02, maxSpeedDown: 1.08, acceleration: 1.72, damping: 0.97,
+    retargetMin: 0.18, retargetMax: 0.62, targetRangeMin: 0.32, targetRangeMax: 0.92,
+    burstChance: 0.38, catchGainMultiplier: 0.82, escapeLossMultiplier: 1.25,
+    minLengthCm: 58, maxLengthCm: 110, rarity: 'LEGENDARY', weight: 13,
+  },
+];
+const RARITY_LABEL = { COMMON: '일반', UNCOMMON: '고급', LEGENDARY: '전설' };
+
+/* ===== ?fish= query override — dev/minigame-fishing/'s 설정 screen pins one
+   species for QA instead of the usual weighted random pick. ===== */
 const settingsParams = new URLSearchParams(location.search);
-const DIFFICULTY_BANDS = {
-  'very-easy': [15, 30],
-  'easy': [31, 45],
-  'normal': [46, 60],
-  'hard': [61, 78],
-  'very-hard': [79, 95],
-};
-const MOTION_TYPES = ['mixed', 'smooth', 'dart', 'sinker', 'floater'];
-const difficultyRange = DIFFICULTY_BANDS[settingsParams.get('diff')] || [FISHING_CONFIG.fish.difficultyMin, FISHING_CONFIG.fish.difficultyMax];
-const fixedMotionType = MOTION_TYPES.includes(settingsParams.get('motion')) ? settingsParams.get('motion') : null;
-
-/* ===== Fish profile: difficulty scalar + motion type, generated fresh
-   every round instead of picking from a handful of easy/normal/hard/crazy
-   presets — see request doc §11, §40. ===== */
-function generateFishProfile() {
-  return {
-    difficulty: randomInt(difficultyRange[0], difficultyRange[1]),
-    motionType: fixedMotionType || weightedRandom([
-      ['mixed', 30],
-      ['smooth', 20],
-      ['dart', 20],
-      ['sinker', 15],
-      ['floater', 15],
-    ]),
-  };
+const forcedFishId = FISH_TABLE.some(f => f.id === settingsParams.get('fish')) ? settingsParams.get('fish') : null;
+function pickFishDefinition() {
+  if (forcedFishId) return FISH_TABLE.find(f => f.id === forcedFishId);
+  return weightedRandom(FISH_TABLE.map(f => [f, f.weight]));
 }
-
-function difficultyLabel(d) {
-  if (d <= 30) return '매우 쉬움';
-  if (d <= 45) return '쉬움';
-  if (d <= 60) return '보통';
-  if (d <= 78) return '어려움';
-  return '매우 어려움';
-}
-
-/* ===== Runtime state ===== */
-const state = {
-  gameState: 'playing', // 'playing' | 'success' | 'fail'
-  isPressing: false,
-
-  barY: 0,
-  barVelocity: 0,
-  barHeight: 0,
-
-  fishY: 0,
-  fishVelocity: 0,
-  fishTargetY: null,
-  verticalBias: 0,
-  targetCooldownFrames: 0,
-
-  catchProgress: FISHING_CONFIG.progress.start,
-  isPerfect: true,
-  fishInsideBar: false,
-
-  currentFish: generateFishProfile(),
-};
-
-/* ===== Background dressing chosen on the 설정 screen — see that page's
-   CUSTOMIZATION_KEY comment. Missing/unparsable data just leaves the layer
-   hidden, same as never having set it. ===== */
-const CUSTOMIZATION_KEY = 'mkFishingCustomization';
-let customization = {};
-try { customization = JSON.parse(localStorage.getItem(CUSTOMIZATION_KEY)) || {}; }
-catch (e) { customization = {}; }
 
 const el = {
+  frame: document.getElementById('frame'),
   bgLayer: document.getElementById('bgLayer'),
+  canvas: document.getElementById('worldCanvas'),
+  dimLayer: document.getElementById('dimLayer'),
+  castMeterWrap: document.getElementById('castMeterWrap'),
+  castMeterFill: document.getElementById('castMeterFill'),
+  castMeterLabel: document.getElementById('castMeterLabel'),
+  biteAlert: document.getElementById('biteAlert'),
+  hitFlash: document.getElementById('hitFlash'),
+  gameStage: document.getElementById('gameStage'),
+  speciesTag: document.getElementById('speciesTag'),
   track: document.getElementById('track'),
   catchBar: document.getElementById('catchBar'),
-  fish: document.getElementById('fish'),
+  fishIcon: document.getElementById('fishIcon'),
   progressFill: document.getElementById('progressFill'),
   pressZone: document.getElementById('pressZone'),
   pressHint: document.getElementById('pressHint'),
@@ -278,13 +335,191 @@ const el = {
   dlgText: document.getElementById('dlgText'),
   resultOverlay: document.getElementById('resultOverlay'),
   resultBanner: document.getElementById('resultBanner'),
+  resultFishName: document.getElementById('resultFishName'),
+  resultFishMeta: document.getElementById('resultFishMeta'),
   perfectTag: document.getElementById('perfectTag'),
 };
 
-/* ===== 지수/영우 dialogue strip — same portrait-lookup pattern as
-   minigame-eastwood's say()/updatePortrait(): a shared 인물 DB "미니게임 얼굴"
-   crop per (character, expression), uploaded once via /dev/upload and reused
-   across every minigame, not something fishing manages on its own. ===== */
+/* ===== Background dressing — unchanged from the previous build, see
+   dev/minigame-fishing/'s CUSTOMIZATION_KEY comment. ===== */
+const CUSTOMIZATION_KEY = 'mkFishingCustomization';
+let customization = {};
+try { customization = JSON.parse(localStorage.getItem(CUSTOMIZATION_KEY)) || {}; }
+catch (e) { customization = {}; }
+if (customization.background) {
+  el.bgLayer.style.backgroundImage = `url("${customization.background}")`;
+  el.bgLayer.classList.add('show');
+}
+
+/* =========================================================================
+   World geometry — everything is stored as a fraction of the frame's CSS
+   size (xf/yf in [0,1]) and converted to pixels only at draw time, so a
+   resize mid-round doesn't require re-deriving any in-flight position.
+   ========================================================================= */
+let W = 0, H = 0;
+const ctx = el.canvas.getContext('2d');
+const WORLD = {
+  shorelineYf: 0.80,
+  charXf: 0.24, charYf: 0.80,
+  waterTopYf: 0.12, waterBottomYf: 0.74,
+  shoulderYf: -0.135, // relative to charYf, in H fractions (negative = up)
+  rodLength: 0.145, // fraction of H
+};
+function measureWorld() {
+  const rect = el.frame.getBoundingClientRect();
+  W = rect.width; H = rect.height;
+  const dpr = window.devicePixelRatio || 1;
+  el.canvas.width = Math.round(W * dpr);
+  el.canvas.height = Math.round(H * dpr);
+  el.canvas.style.width = W + 'px';
+  el.canvas.style.height = H + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+window.addEventListener('resize', measureWorld);
+window.addEventListener('orientationchange', measureWorld);
+if (window.visualViewport) window.visualViewport.addEventListener('resize', measureWorld);
+
+function px(xf, yf) { return { x: xf * W, y: yf * H }; }
+function castTargetFrac(distanceFrac) {
+  return {
+    xf: clamp(WORLD.charXf + 0.12 + 0.34 * distanceFrac, 0, 0.94),
+    yf: WORLD.waterBottomYf - (WORLD.waterBottomYf - WORLD.waterTopYf) * distanceFrac,
+  };
+}
+
+/* =========================================================================
+   PlayerFishingAnimator — procedural pose instead of sprite frames (brief
+   §13, adapted per this session's placeholder-shape decision). Each pose
+   change tweens the rod angle from wherever it currently is to a target
+   angle over a fixed duration, eased — not a hard cut — so the transition
+   between e.g. CAST_CHARGING and BOBBER_FLYING still reads as motion.
+   ========================================================================= */
+const POSE_ANGLES = { // degrees, 0 = rod pointing straight up from shoulder
+  idle: -18, charge: -55, cast: 35, wait: 10, bite: -35, hook: 15, reel: 8, pull: -70, flinch: 40,
+};
+const animator = {
+  angle: POSE_ANGLES.idle,
+  fromAngle: POSE_ANGLES.idle,
+  toAngle: POSE_ANGLES.idle,
+  poseStart: 0,
+  poseDuration: 0.3,
+  reelWobble: 0,
+};
+function setPose(pose, duration) {
+  animator.fromAngle = animator.angle;
+  animator.toAngle = POSE_ANGLES[pose];
+  animator.poseStart = performance.now();
+  animator.poseDuration = duration || 0.3;
+}
+function updateAnimator(now, dt) {
+  const t = clamp((now - animator.poseStart) / 1000 / animator.poseDuration, 0, 1);
+  animator.angle = lerp(animator.fromAngle, animator.toAngle, easeOutCubic(t));
+  if (fishing.state === STATES.FISHING_MINIGAME || fishing.state === STATES.HOOK_RESOLVE) {
+    animator.reelWobble += dt * 9;
+  }
+}
+function rodSockets() {
+  const shoulder = px(WORLD.charXf, WORLD.charYf + WORLD.shoulderYf);
+  const wobble = (fishing.state === STATES.FISHING_MINIGAME) ? Math.sin(animator.reelWobble) * 4 : 0;
+  const rad = (animator.angle + wobble) * Math.PI / 180;
+  const rodLenPx = WORLD.rodLength * H;
+  const tip = { x: shoulder.x + Math.sin(rad) * rodLenPx, y: shoulder.y - Math.cos(rad) * rodLenPx };
+  return { shoulder, tip };
+}
+
+/* =========================================================================
+   FishingLineRenderer + ripples
+   ========================================================================= */
+let ripples = []; // {xf, yf, start, duration, maxR}
+// `now` is the caller's own timestamp (always the fixedUpdate/frame() rAF
+// time), not a fresh performance.now() — a fresh call here can land a hair
+// after the render pass's `now` for the same frame (fixedUpdate runs before
+// renderWorld but the accumulator loop can call it multiple times), which
+// made `t` briefly negative and threw on ctx.arc's radius.
+function spawnRipple(now, xf, yf, maxR, duration) {
+  ripples.push({ xf, yf, start: now, duration: duration || 1100, maxR: maxR || 26 });
+  if (ripples.length > 12) ripples.shift();
+}
+function drawRipples(now) {
+  ripples = ripples.filter(r => now - r.start < r.duration);
+  ripples.forEach(r => {
+    const t = clamp((now - r.start) / r.duration, 0, 1);
+    const p = px(r.xf, r.yf);
+    ctx.beginPath();
+    ctx.strokeStyle = `rgba(255,255,255,${(1 - t) * 0.35})`;
+    ctx.lineWidth = 1.5;
+    ctx.arc(p.x, p.y, r.maxR * t, 0, Math.PI * 2);
+    ctx.stroke();
+  });
+}
+
+function drawLineAndBobber(tipPx, bobberPx, sag) {
+  ctx.beginPath();
+  ctx.moveTo(tipPx.x, tipPx.y);
+  const midX = (tipPx.x + bobberPx.x) / 2;
+  const midY = (tipPx.y + bobberPx.y) / 2 + sag;
+  ctx.quadraticCurveTo(midX, midY, bobberPx.x, bobberPx.y);
+  ctx.strokeStyle = 'rgba(240,240,245,.75)';
+  ctx.lineWidth = 1.4;
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.fillStyle = '#D94141';
+  ctx.arc(bobberPx.x, bobberPx.y - 3, 5, Math.PI, 0);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.fillStyle = '#F5F5F5';
+  ctx.arc(bobberPx.x, bobberPx.y + 2, 5, 0, Math.PI);
+  ctx.fill();
+}
+
+/* ===== Character silhouette — placeholder shape per this session's plan;
+   swap this function for real sprite frames later without touching the
+   state machine. ===== */
+function drawCharacter(sockets) {
+  const feet = px(WORLD.charXf, WORLD.charYf);
+  const shoulder = sockets.shoulder;
+  ctx.fillStyle = 'rgba(10,14,18,.4)';
+  ctx.beginPath();
+  ctx.ellipse(feet.x, feet.y + 4, 22, 6, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#20303A';
+  ctx.beginPath();
+  ctx.moveTo(feet.x - 13, feet.y);
+  ctx.quadraticCurveTo(feet.x - 16, shoulder.y + 6, feet.x - 9, shoulder.y);
+  ctx.lineTo(feet.x + 9, shoulder.y);
+  ctx.quadraticCurveTo(feet.x + 16, shoulder.y + 6, feet.x + 13, feet.y);
+  ctx.closePath();
+  ctx.fill();
+
+  const headR = (shoulder.y - (shoulder.y - (feet.y - shoulder.y) * 0.34)) * 0 + 11;
+  const headCenter = { x: shoulder.x, y: shoulder.y - 16 };
+  ctx.beginPath();
+  ctx.arc(headCenter.x, headCenter.y, headR, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = '#3B2A18';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(shoulder.x, shoulder.y);
+  ctx.lineTo(sockets.tip.x, sockets.tip.y);
+  ctx.stroke();
+
+  return headCenter;
+}
+
+/* ===== Bite alert / hit-flash DOM positioning ===== */
+function positionAboveHead(elRef, headCenterPx, offsetY) {
+  elRef.style.left = headCenterPx.x + 'px';
+  elRef.style.top = (headCenterPx.y - (offsetY || 8)) + 'px';
+}
+
+/* =========================================================================
+   Dialogue strip — 지수/영우 banter, keyed to the fishing event list
+   (brief §19): BITE_STARTED / HOOK_SUCCEEDED / HOOK_MISSED / FISH_CAUGHT /
+   FISH_ESCAPED. Same portrait-lookup pattern as minigame-eastwood.
+   ========================================================================= */
 let portraitRequestToken = 0;
 async function updatePortrait(characterKey, expression) {
   const requestToken = ++portraitRequestToken;
@@ -307,320 +542,474 @@ function say(characterKey, expression, speakerName, text) {
   updatePortrait(characterKey, expression);
 }
 
-/* ===== Catch/miss banter — picked without immediate repeats so a loop of
-   casts (there's no story hookup yet to advance past, see dialogueData.js's
-   fishing-minigame comment) doesn't feel like the same two lines on repeat. ===== */
-let catchCount = 0;
-let lastSuccessLine = -1, lastFailLine = -1;
-const SUCCESS_LINES = [
+let lastLineIndex = { bite: -1, hookMiss: -1, catchSuccess: -1, catchFail: -1 };
+function pickLine(pool, key) {
+  let i;
+  do { i = randomInt(0, pool.length - 1); } while (pool.length > 1 && i === lastLineIndex[key]);
+  lastLineIndex[key] = i;
+  return pool[i];
+}
+const BITE_LINES = [
+  ['jisoo', 'suspicious', '지수', '어? 뭐 물었나?'],
+  ['youngwoo', 'soft', '영우', '왔다, 지금이야!'],
+];
+const HOOK_MISS_LINES = [
+  ['jisoo', 'annoyed', '지수', '아 놓쳤다 늦었어!'],
+  ['youngwoo', 'soft', '영우', '괜찮아, 다음 입질 기다리자.'],
+];
+const CATCH_SUCCESS_LINES = [
   ['jisoo', 'happy', '지수', '잡았다!! ㅎㅎㅎ'],
   ['jisoo', 'smirk', '지수', '거봐, 내가 낚시왕이랬잖아.'],
-  ['jisoo', 'happy', '지수', '한 마리 더 잡아야지!'],
   ['youngwoo', 'soft', '영우', '오, 잘하네.'],
-  ['jisoo', 'smirk', '지수', '흐흐, 손맛 좋은데?'],
 ];
-const FAIL_LINES = [
-  ['jisoo', 'annoyed', '지수', '아 놓쳤다 ㅠㅠ'],
-  ['jisoo', 'annoyed', '지수', '아깝다!!'],
-  ['youngwoo', 'soft', '영우', '괜찮아, 다시 해보자.'],
+const CATCH_FAIL_LINES = [
+  ['jisoo', 'annoyed', '지수', '아깝다!! 놓쳤어 ㅠㅠ'],
   ['jisoo', 'suspicious', '지수', '이 물고기 좀 얍삽한데?'],
-  ['jisoo', 'annoyed', '지수', '아니 왜 자꾸 도망가!'],
 ];
-function pickLine(lines, lastIndex, setLast) {
-  if (lines.length === 1) return lines[0];
-  let i;
-  do { i = randomInt(0, lines.length - 1); } while (i === lastIndex);
-  setLast(i);
-  return lines[i];
+
+/* ===== Simple procedural beeps — no audio assets exist, this stands in
+   for §16.1's cue list at the key beats only (bite/hook/success/fail),
+   same oscillator approach minigame-eastwood already uses. ===== */
+function beep(freqFrom, freqTo, durationSec, gainPeak) {
+  try {
+    const ctx2 = new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctx2.createOscillator();
+    const g = ctx2.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(freqFrom, ctx2.currentTime);
+    o.frequency.exponentialRampToValueAtTime(freqTo, ctx2.currentTime + durationSec);
+    g.gain.setValueAtTime(0.0001, ctx2.currentTime);
+    g.gain.exponentialRampToValueAtTime(gainPeak || 0.3, ctx2.currentTime + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, ctx2.currentTime + durationSec);
+    o.connect(g); g.connect(ctx2.destination);
+    o.start(); o.stop(ctx2.currentTime + durationSec);
+  } catch (e) { /* audio unavailable — not critical to gameplay */ }
 }
-function reactSuccess() {
-  catchCount++;
-  if (catchCount > 0 && catchCount % 5 === 0) {
-    say('jisoo', 'smirk', '지수', `${catchCount}마리째! 이 정도면 능숙하지 않아?`);
-    return;
-  }
-  const [char, expr, name, text] = pickLine(SUCCESS_LINES, lastSuccessLine, (i) => { lastSuccessLine = i; });
-  say(char, expr, name, text);
-}
-function reactFail() {
-  const [char, expr, name, text] = pickLine(FAIL_LINES, lastFailLine, (i) => { lastFailLine = i; });
-  say(char, expr, name, text);
-}
+function vibrate(ms) { if (navigator.vibrate) navigator.vibrate(ms); }
 
-/* ===== Track measurement — cached on resize, never read per-frame ===== */
-let trackHeight = 0;
-function measure() {
-  trackHeight = el.track.clientHeight;
-  state.barHeight = trackHeight * FISHING_CONFIG.bar.heightRatio;
-}
-function maxBarY() { return trackHeight - state.barHeight; }
-function maxFishY() { return trackHeight - FISH_SIZE; }
-window.addEventListener('resize', () => { measure(); });
-window.addEventListener('orientationchange', () => { measure(); });
-if (window.visualViewport) window.visualViewport.addEventListener('resize', () => measure());
+/* =========================================================================
+   Fishing state machine + runtime
+   ========================================================================= */
+const fishing = {
+  state: STATES.IDLE,
+  isPressing: false,
+  inputLockUntil: 0,
 
-/* ===== Fish AI — target-seeking, not sine waves or per-frame random jumps
-   (request doc §9-§23, and explicitly forbidden in §50). ===== */
-function chooseMainTarget() {
-  const mfy = maxFishY();
-  const spaceAbove = state.fishY;
-  const spaceBelow = mfy - state.fishY;
-  const movePercent = Math.min(99, state.currentFish.difficulty + randomInt(10, 44)) / 100;
-  const target = Math.random() < 0.5
-    ? state.fishY - spaceAbove * movePercent
-    : state.fishY + spaceBelow * movePercent;
-  state.fishTargetY = clamp(target, 0, mfy);
-}
+  chargeStart: 0,
+  chargeValue: 0,
+  maxLabelShown: false,
 
-function maybeChooseMainTarget() {
-  if (state.targetCooldownFrames > 0) { state.targetCooldownFrames--; return; }
-  const difficulty = state.currentFish.difficulty;
-  const isSmooth = state.currentFish.motionType === 'smooth';
-  const baseChance = difficulty * (isSmooth ? 20 : 1) / 4000;
-  if (Math.random() < baseChance && (!isSmooth || state.fishTargetY === null)) {
-    chooseMainTarget();
-  }
-}
+  flightStart: 0,
+  flightDuration: 0,
+  flightFrom: null,
+  flightTo: null,
+  bobberXf: 0, bobberYf: 0,
 
-function updateMotionBias() {
-  const { biasStep, biasMax } = FISHING_CONFIG.fish;
-  if (state.currentFish.motionType === 'floater') {
-    state.verticalBias = Math.max(state.verticalBias - biasStep, -biasMax);
-  } else if (state.currentFish.motionType === 'sinker') {
-    state.verticalBias = Math.min(state.verticalBias + biasStep, biasMax);
-  }
-}
+  biteTimerEnd: 0,
+  biteAlertEnd: 0,
+  bobDipUntil: 0,
 
-function followTarget() {
-  if (state.fishTargetY === null) return;
-  const dist = state.fishTargetY - state.fishY;
-  const divisor = FISHING_CONFIG.fish.velocityLerpDivisor;
-  if (Math.abs(dist) <= FISHING_CONFIG.fish.targetDistanceThreshold) {
-    // Target reached — release it so the base reselection logic above (and
-    // Smooth's "only pick when there's no target" rule) can kick in again.
-    state.fishTargetY = null;
-    state.fishVelocity += (0 - state.fishVelocity) / divisor;
-    return;
-  }
-  const denominator = randomInt(10, 29) + (100 - Math.min(100, state.currentFish.difficulty));
-  const desiredVelocity = dist / denominator;
-  state.fishVelocity += (desiredVelocity - state.fishVelocity) / divisor;
-}
+  hookResolveUntil: 0,
+  hookedSuccessfully: false,
 
-function maybeApplyMixedJump() {
-  if (state.currentFish.motionType !== 'mixed') return;
-  if (Math.random() < state.currentFish.difficulty / 2000) {
-    const goUp = Math.random() < 0.5;
-    const offset = goUp ? -randomBetween(50, 100) : randomBetween(50, 100);
-    state.fishTargetY = clamp(state.fishY + offset, 0, maxFishY());
-  }
-}
+  currentFish: null,
+  fishRuntime: null,
+  barY: 0.72, barVelocity: 0, barHeight: CONTROL_BAR.baseHeight,
+  captureProgress: PROGRESS.initial,
+  outsideAccumulated: 0,
+  isPerfect: true,
 
-function maybeApplyDartJump() {
-  if (state.currentFish.motionType !== 'dart') return;
-  if (Math.random() < state.currentFish.difficulty / 1000) {
-    const jumpSize = randomBetween(50, 100 + state.currentFish.difficulty * 2);
-    const offset = Math.random() < 0.5 ? -jumpSize : jumpSize;
-    state.fishTargetY = clamp(state.fishY + offset, 0, maxFishY());
-  }
-}
+  resultShownAt: 0,
+  lastRippleAt: 0,
+};
 
-function updateFish() {
-  maybeChooseMainTarget();
-  updateMotionBias();
-  followTarget();
-  maybeApplyMixedJump();
-  maybeApplyDartJump();
-  state.fishY = clamp(state.fishY + state.fishVelocity + state.verticalBias, 0, maxFishY());
-}
-
-/* ===== Catch-bar physics — acceleration only, never a direct position
-   write, and velocity is never zeroed on release (request doc §6, §50). ===== */
-function updateBar() {
-  const cfg = FISHING_CONFIG.bar;
-  let accel = state.isPressing ? -cfg.upAccel : cfg.downAccel;
-  if (state.fishInsideBar) accel *= cfg.insideAccelMultiplier;
-  state.barVelocity += accel;
-  state.barY += state.barVelocity;
-
-  if (state.barY < 0) {
-    state.barY = 0;
-    state.barVelocity = -state.barVelocity * cfg.bounce;
-  }
-  const maxY = maxBarY();
-  if (state.barY > maxY) {
-    state.barY = maxY;
-    state.barVelocity = -state.barVelocity * cfg.bounce;
-  }
-}
-
-/* ===== Collision — full hitbox containment, not a center-point check
-   (request doc §24), plus a bottom-edge compensation (§25) so pixel-rounding
-   near the floor doesn't make an otherwise-caught fish flicker outside. ===== */
-function computeInside() {
-  const fishTop = state.fishY + FISH_HITBOX_INSET;
-  const fishBottom = state.fishY + FISH_SIZE - FISH_HITBOX_INSET;
-  const barTop = state.barY;
-  const barBottom = state.barY + state.barHeight;
-  let inside = fishTop >= barTop && fishBottom <= barBottom;
-
-  const atBottom = state.barY >= maxBarY() - 4;
-  const fishNearBottom = state.fishY >= maxFishY() - state.barHeight;
-  if (atBottom && fishNearBottom) inside = true;
-
-  return inside;
-}
-
-function updateProgress(inside, dt) {
-  const cfg = FISHING_CONFIG.progress;
-  state.catchProgress = clamp(
-    state.catchProgress + (inside ? cfg.gainPerSecond : -cfg.lossPerSecond) * dt,
-    0, 1
-  );
-  if (!inside) state.isPerfect = false;
-  if (state.catchProgress >= 1) success();
-  else if (state.catchProgress <= 0) fail();
-}
-
-/* ===== Fixed update ===== */
-function fixedUpdate(dt) {
-  if (state.gameState !== 'playing') return;
-  updateBar();
-  updateFish();
-  const inside = computeInside();
-  state.fishInsideBar = inside;
-  updateProgress(inside, dt);
-}
-
-/* ===== Round lifecycle ===== */
-function resetRound() {
-  measure();
-  state.barY = maxBarY();
-  state.barVelocity = 0;
-
-  state.fishY = maxFishY();
-  state.fishVelocity = 0;
-  state.fishTargetY = null;
-  state.verticalBias = 0;
-  // Round-start grace period so the fish doesn't snap toward a target the
-  // instant the round begins (request doc §37).
-  state.targetCooldownFrames = Math.round(randomBetween(0.3, 0.8) / FISHING_CONFIG.fixedStep);
-
-  state.catchProgress = FISHING_CONFIG.progress.start;
-  state.currentFish = generateFishProfile();
-  state.isPerfect = true;
-  state.isPressing = false;
-  state.fishInsideBar = false;
-
-  el.resultOverlay.classList.remove('show');
+function enterIdle() {
+  fishing.state = STATES.IDLE;
+  el.pressHint.textContent = '눌러서 캐스팅 파워를 조절하세요';
   el.pressHint.style.opacity = '1';
-  state.gameState = 'playing';
+  el.castMeterWrap.classList.remove('show');
+  el.gameStage.classList.remove('show');
+  el.dimLayer.classList.remove('show');
+  el.resultOverlay.classList.remove('show');
+  setPose('idle', 0.4);
 }
 
-function success() {
-  state.gameState = 'success';
-  state.isPressing = false;
-  el.resultBanner.textContent = '잡았다! 🐟';
+/* ===== §6 Cast charging ===== */
+function startCastCharge() {
+  fishing.state = STATES.CAST_CHARGING;
+  fishing.chargeStart = performance.now();
+  fishing.maxLabelShown = false;
+  el.castMeterWrap.classList.add('show');
+  el.pressHint.textContent = '떼면 그 힘으로 캐스팅!';
+  setPose('charge', 0.35);
+}
+function updateCastCharge() {
+  const t = (performance.now() - fishing.chargeStart) / 1000;
+  const phase = (t / CAST.pingPongCycleSeconds) % 2;
+  const raw = phase <= 1 ? phase : 2 - phase;
+  const smooth = raw * raw * (3 - 2 * raw);
+  fishing.chargeValue = Math.max(CAST.minCharge, smooth);
+  el.castMeterFill.style.height = (fishing.chargeValue * 100) + '%';
+  const isMax = fishing.chargeValue >= CAST.maxLabelThreshold;
+  el.castMeterLabel.classList.toggle('show', isMax);
+  if (isMax && !fishing.maxLabelShown) { fishing.maxLabelShown = true; vibrate(10); }
+}
+function releaseCast() {
+  const distanceFrac = fishing.chargeValue;
+  const from = px(WORLD.charXf + 0.02, WORLD.charYf - 0.02);
+  const target = castTargetFrac(distanceFrac);
+  fishing.flightFrom = from;
+  fishing.flightTo = px(target.xf, target.yf);
+  fishing.flightStart = performance.now();
+  fishing.flightDuration = lerp(CAST.flightMinSeconds, CAST.flightMaxSeconds, distanceFrac) * 1000;
+  fishing.bobberXf = target.xf; fishing.bobberYf = target.yf;
+  fishing.state = STATES.BOBBER_FLYING;
+  el.castMeterWrap.classList.remove('show');
+  el.pressHint.style.opacity = '0';
+  setPose('cast', 0.25);
+}
+function updateBobberFlight(now) {
+  const t = clamp((now - fishing.flightStart) / fishing.flightDuration, 0, 1);
+  const x = lerp(fishing.flightFrom.x, fishing.flightTo.x, t);
+  const baseY = lerp(fishing.flightFrom.y, fishing.flightTo.y, t);
+  const arcY = -Math.sin(Math.PI * t) * CAST.arcHeightPx;
+  fishing._flightPoint = { x, y: baseY + arcY };
+  if (t >= 1) landBobber(now);
+}
+function landBobber(now) {
+  spawnRipple(now, fishing.bobberXf, fishing.bobberYf, 34, 900);
+  beep(320, 220, 0.14, 0.18);
+  fishing.state = STATES.WAITING_BITE;
+  fishing.biteTimerEnd = now + lerp(BITE.minWaitSeconds, BITE.maxWaitSeconds, Math.pow(Math.random(), 2)) * 1000;
+  fishing.lastRippleAt = now;
+  el.pressHint.textContent = '입질을 기다리는 중…';
+  el.pressHint.style.opacity = '1';
+  setPose('wait', 0.3);
+}
+function updateWaitingBite(now) {
+  if (now - fishing.lastRippleAt > randomBetween(1200, 2200)) {
+    spawnRipple(now, fishing.bobberXf, fishing.bobberYf, 16, 1000);
+    fishing.lastRippleAt = now;
+  }
+  if (now >= fishing.biteTimerEnd) triggerBiteAlert(now);
+}
+function triggerBiteAlert(now) {
+  fishing.state = STATES.BITE_ALERT;
+  fishing.biteAlertEnd = now + BITE.reactionWindowSeconds * 1000;
+  fishing.bobDipUntil = now + 220;
+  spawnRipple(now, fishing.bobberXf, fishing.bobberYf, 30, 500);
+  el.biteAlert.classList.add('show');
+  el.pressHint.textContent = '지금 눌러서 훅 세팅!';
+  setPose('bite', 0.12);
+  beep(880, 1320, 0.18, 0.3);
+  vibrate(25);
+  const [c, e, n, t] = pickLine(BITE_LINES, 'bite');
+  say(c, e, n, t);
+}
+function updateBiteAlert(now) {
+  if (now >= fishing.biteAlertEnd) hookMissed(now);
+}
+function hookMissed(now) {
+  el.biteAlert.classList.remove('show');
+  el.pressHint.textContent = '놓쳤다…';
+  setPose('flinch', 0.3);
+  const [c, e, n, t] = pickLine(HOOK_MISS_LINES, 'hookMiss');
+  say(c, e, n, t);
+  lockInputThen(now, 900, enterIdle);
+}
+function hookSucceeded(now) {
+  el.biteAlert.classList.remove('show');
+  el.hitFlash.classList.remove('show'); void el.hitFlash.offsetWidth; el.hitFlash.classList.add('show');
+  fishing.state = STATES.HOOK_RESOLVE;
+  fishing.hookResolveUntil = now + randomBetween(250, 450);
+  setPose('hook', 0.15);
+  beep(440, 660, 0.12, 0.25);
+  vibrate(15);
+  el.pressHint.style.opacity = '0';
+}
+function updateHookResolve(now) {
+  if (now >= fishing.hookResolveUntil) startMinigame(now);
+}
+
+/* ===== §8-11 Vertical capture minigame ===== */
+function startMinigame(now) {
+  fishing.currentFish = pickFishDefinition();
+  const variance = randomBetween(0.92, 1.10);
+  fishing.fishRuntime = {
+    y: 0.5, velocity: 0, targetY: 0.5, retargetTimer: 0.3,
+    maxSpeedUp: fishing.currentFish.maxSpeedUp * variance,
+    maxSpeedDown: fishing.currentFish.maxSpeedDown * variance,
+    acceleration: fishing.currentFish.acceleration * variance,
+  };
+  fishing.barY = 0.72; fishing.barVelocity = 0; fishing.barHeight = CONTROL_BAR.baseHeight;
+  fishing.captureProgress = PROGRESS.initial;
+  fishing.outsideAccumulated = 0;
+  fishing.isPerfect = true;
+  fishing.state = STATES.FISHING_MINIGAME;
+  el.speciesTag.textContent = `${fishing.currentFish.icon} ${fishing.currentFish.displayName}`;
+  el.gameStage.classList.add('show');
+  el.dimLayer.classList.add('show');
+  el.pressHint.textContent = '누르면 위로 · 떼면 아래로';
+  el.pressHint.style.opacity = '1';
+  setPose('reel', 0.2);
+}
+
+function chooseFishTarget(cfg, def) {
+  const mag = randomBetween(def.targetRangeMin, def.targetRangeMax);
+  let dir = Math.random() < 0.5 ? -1 : 1;
+  if (def.behavior === 'FLOATER') dir = Math.random() < (def.upwardBias || 0.65) ? -1 : 1;
+  if (def.behavior === 'SINKER') dir = Math.random() < (def.downwardBias || 0.65) ? 1 : -1;
+  const target = cfg.y + dir * mag;
+  return clamp(target, FISH_HALF_HEIGHT, 1 - FISH_HALF_HEIGHT);
+}
+function updateFishAI(dt) {
+  const def = fishing.currentFish, fr = fishing.fishRuntime;
+  fr.retargetTimer -= dt;
+  if (fr.retargetTimer <= 0) {
+    fr.targetY = chooseFishTarget(fr, def);
+    fr.retargetTimer = randomBetween(def.retargetMin, def.retargetMax);
+    if (def.behavior === 'DART' && Math.random() < (def.burstChance || 0)) {
+      fr.velocity += (fr.targetY > fr.y ? 1 : -1) * fr.acceleration * 6 * dt;
+    }
+  }
+  const direction = Math.sign(fr.targetY - fr.y);
+  fr.velocity += direction * fr.acceleration * dt;
+  fr.velocity *= Math.pow(def.damping, dt * 60);
+  fr.velocity = clamp(fr.velocity, -fr.maxSpeedUp, fr.maxSpeedDown);
+  fr.y += fr.velocity * dt;
+  fr.y = clamp(fr.y, FISH_HALF_HEIGHT, 1 - FISH_HALF_HEIGHT);
+}
+function updateControlBar(dt) {
+  const cfg = CONTROL_BAR;
+  const accel = fishing.isPressing ? cfg.upwardAcceleration : cfg.gravityAcceleration;
+  fishing.barVelocity += accel * dt;
+  fishing.barVelocity *= Math.pow(cfg.velocityDamping, dt * 60);
+  fishing.barVelocity = clamp(fishing.barVelocity, cfg.maxUpSpeed, cfg.maxDownSpeed);
+  fishing.barY += fishing.barVelocity * dt;
+
+  const half = fishing.barHeight / 2;
+  const minY = half, maxY = 1 - half;
+  if (fishing.barY < minY) {
+    fishing.barY = minY;
+    fishing.barVelocity = Math.abs(fishing.barVelocity) * cfg.topBounce;
+  }
+  if (fishing.barY > maxY) {
+    fishing.barY = maxY;
+    fishing.barVelocity = -Math.abs(fishing.barVelocity) * cfg.bottomBounce;
+  }
+}
+function updateCapture(dt) {
+  const barTop = fishing.barY - fishing.barHeight / 2;
+  const barBottom = fishing.barY + fishing.barHeight / 2;
+  const fishTop = fishing.fishRuntime.y - FISH_HALF_HEIGHT;
+  const fishBottom = fishing.fishRuntime.y + FISH_HALF_HEIGHT;
+  const overlap = Math.max(0, Math.min(barBottom, fishBottom) - Math.max(barTop, fishTop));
+  const overlapRatio = overlap / (FISH_HALF_HEIGHT * 2);
+  const def = fishing.currentFish;
+
+  if (overlapRatio >= 0.5) {
+    fishing.captureProgress += PROGRESS.gainPerSecond * def.catchGainMultiplier * lerp(0.70, 1.15, overlapRatio) * dt;
+    fishing.outsideAccumulated = 0;
+  } else {
+    fishing.captureProgress -= PROGRESS.lossPerSecond * def.escapeLossMultiplier * dt;
+    fishing.outsideAccumulated += dt;
+    if (fishing.outsideAccumulated > PROGRESS.perfectGraceSeconds) fishing.isPerfect = false;
+  }
+  fishing.captureProgress = clamp(fishing.captureProgress, 0, 1);
+  fishing._fishInsideForRender = overlapRatio >= 0.5;
+
+  if (fishing.captureProgress >= 1) catchSuccess();
+  else if (fishing.captureProgress <= 0) fishEscape();
+}
+
+function catchSuccess(now) {
+  now = now || performance.now();
+  fishing.state = STATES.SHOW_RESULT;
+  beep(660, 990, 0.22, 0.3);
+  vibrate(40);
+  setPose('pull', 0.3);
+  el.gameStage.classList.remove('show');
+  el.dimLayer.classList.remove('show');
+  el.pressHint.style.opacity = '0';
+  const def = fishing.currentFish;
+  const lengthCm = Math.round(randomBetween(def.minLengthCm, def.maxLengthCm));
+  el.resultBanner.textContent = '잡았다!';
   el.resultBanner.className = 'result-banner success';
-  el.perfectTag.style.display = state.isPerfect ? '' : 'none';
-  el.resultOverlay.classList.add('show');
-  reactSuccess();
-  setTimeout(resetRound, randomBetween(800, 1200));
+  el.resultFishName.textContent = `${def.icon} ${def.displayName}`;
+  el.resultFishMeta.textContent = `길이 ${lengthCm}cm · ${RARITY_LABEL[def.rarity]}`;
+  el.perfectTag.style.display = fishing.isPerfect ? '' : 'none';
+  showResultOverlay(now);
+  const [c, e, n, t] = pickLine(CATCH_SUCCESS_LINES, 'catchSuccess');
+  say(c, e, n, t);
 }
-
-function fail() {
-  state.gameState = 'fail';
-  state.isPressing = false;
-  el.resultBanner.textContent = '놓쳤다! 💦';
+function fishEscape(now) {
+  now = now || performance.now();
+  fishing.state = STATES.SHOW_RESULT;
+  beep(300, 140, 0.28, 0.25);
+  vibrate(60);
+  setPose('flinch', 0.25);
+  el.catchBar.classList.add('danger');
+  el.gameStage.classList.remove('show');
+  el.dimLayer.classList.remove('show');
+  el.pressHint.style.opacity = '0';
+  el.resultBanner.textContent = '놓쳤다…';
   el.resultBanner.className = 'result-banner fail';
+  el.resultFishName.textContent = '';
+  el.resultFishMeta.textContent = '';
   el.perfectTag.style.display = 'none';
+  showResultOverlay(now);
+  const [c, e, n, t] = pickLine(CATCH_FAIL_LINES, 'catchFail');
+  say(c, e, n, t);
+  setTimeout(() => el.catchBar.classList.remove('danger'), 400);
+}
+function showResultOverlay(now) {
+  fishing.resultShownAt = now;
+  fishing.inputLockUntil = now + 350;
   el.resultOverlay.classList.add('show');
-  reactFail();
-  setTimeout(resetRound, randomBetween(800, 1200));
 }
 
-/* ===== Input — hold-based only (a single tap must never move the bar),
-   with pointer capture so a dragging finger doesn't drop the hold, plus
-   touch/mouse/keyboard fallbacks and app-backgrounding safety (§8, §50). ===== */
-function startPress(e) {
+/* ===== §5 Input — single PRIMARY_ACTION handled centrally so world taps
+   and the capture panel never compete for the same press. ===== */
+function onPrimaryDown(e) {
   if (e && e.preventDefault) e.preventDefault();
-  if (state.gameState !== 'playing') return;
-  state.isPressing = true;
+  const now = performance.now();
+  if (now < fishing.inputLockUntil) return;
+  fishing.isPressing = true;
+  switch (fishing.state) {
+    case STATES.IDLE:
+      startCastCharge();
+      break;
+    case STATES.WAITING_BITE:
+      // Early input behavior: REEL_IN (brief §5.2/§7 earlyInputBehavior).
+      el.pressHint.textContent = '너무 일렀다…';
+      setPose('idle', 0.3);
+      lockInputThen(now, 400, enterIdle);
+      break;
+    case STATES.BITE_ALERT:
+      hookSucceeded(now);
+      break;
+    case STATES.SHOW_RESULT:
+      if (now - fishing.resultShownAt > 350) enterIdle();
+      break;
+    default:
+      break; // CAST_CHARGING/BOBBER_FLYING/HOOK_RESOLVE/FISHING_MINIGAME just read isPressing
+  }
 }
-function endPress(e) {
+function onPrimaryUp(e) {
   if (e && e.preventDefault) e.preventDefault();
-  state.isPressing = false;
+  fishing.isPressing = false;
+  if (fishing.state === STATES.CAST_CHARGING) releaseCast();
+}
+function lockInputThen(now, ms, fn) {
+  fishing.inputLockUntil = now + ms;
+  setTimeout(fn, ms);
 }
 
 el.pressZone.addEventListener('pointerdown', (e) => {
   el.pressZone.setPointerCapture(e.pointerId);
-  startPress(e);
+  onPrimaryDown(e);
 });
-el.pressZone.addEventListener('pointerup', endPress);
-el.pressZone.addEventListener('pointercancel', endPress);
-el.pressZone.addEventListener('lostpointercapture', endPress);
-el.pressZone.addEventListener('touchstart', startPress, { passive: false });
-el.pressZone.addEventListener('touchend', endPress, { passive: false });
-el.pressZone.addEventListener('touchcancel', endPress, { passive: false });
-el.pressZone.addEventListener('mousedown', startPress);
-window.addEventListener('mouseup', endPress);
+el.pressZone.addEventListener('pointerup', onPrimaryUp);
+el.pressZone.addEventListener('pointercancel', onPrimaryUp);
+el.pressZone.addEventListener('lostpointercapture', onPrimaryUp);
+el.pressZone.addEventListener('touchstart', onPrimaryDown, { passive: false });
+el.pressZone.addEventListener('touchend', onPrimaryUp, { passive: false });
+el.pressZone.addEventListener('touchcancel', onPrimaryUp, { passive: false });
+el.pressZone.addEventListener('mousedown', onPrimaryDown);
+window.addEventListener('mouseup', onPrimaryUp);
 window.addEventListener('keydown', (e) => {
-  if (e.code === 'Space' || e.code === 'ArrowUp') startPress(e);
+  if (e.code === 'Space' || e.code === 'ArrowUp') onPrimaryDown(e);
 });
 window.addEventListener('keyup', (e) => {
-  if (e.code === 'Space' || e.code === 'ArrowUp') endPress(e);
+  if (e.code === 'Space' || e.code === 'ArrowUp') onPrimaryUp(e);
 });
-window.addEventListener('blur', () => endPress());
-document.addEventListener('visibilitychange', () => { if (document.hidden) endPress(); });
+window.addEventListener('blur', () => onPrimaryUp());
+document.addEventListener('visibilitychange', () => { if (document.hidden) onPrimaryUp(); });
 
-/* ===== Render — reads state only, never mutates it ===== */
-function render() {
-  el.catchBar.style.height = state.barHeight + 'px';
-  el.catchBar.style.transform = `translateY(${state.barY}px)`;
-  el.catchBar.classList.toggle('hooked', state.fishInsideBar);
+/* ===== Render (world canvas + DOM panel), driven purely by state ===== */
+let trackHeight = 0;
+function measureTrack() { trackHeight = el.track.clientHeight; }
+window.addEventListener('resize', measureTrack);
 
-  const tilt = clamp(state.fishVelocity * 3, -22, 22);
-  el.fish.style.transform = `translateY(${state.fishY}px) rotate(${tilt}deg)`;
+function renderWorld(now) {
+  ctx.clearRect(0, 0, W, H);
+  drawRipples(now);
 
-  el.progressFill.style.height = (state.catchProgress * 100) + '%';
-  el.progressFill.classList.toggle('danger', state.catchProgress < 0.25);
+  const sockets = rodSockets();
+  let bobberPx;
+  if (fishing.state === STATES.IDLE || fishing.state === STATES.CAST_CHARGING) {
+    bobberPx = { x: sockets.tip.x, y: sockets.tip.y + 14 };
+  } else if (fishing.state === STATES.BOBBER_FLYING) {
+    bobberPx = fishing._flightPoint || sockets.tip;
+  } else {
+    const bob = (fishing.state === STATES.WAITING_BITE) ? Math.sin(now / 260) * 2 : 0;
+    const dip = (fishing.state === STATES.BITE_ALERT && now < fishing.bobDipUntil) ? 9 : 0;
+    bobberPx = px(fishing.bobberXf, fishing.bobberYf + dip / H + bob / H);
+  }
+  drawLineAndBobber(sockets.tip, bobberPx, 10);
+  const headCenter = drawCharacter(sockets);
 
-  el.pressHint.classList.toggle('hold', state.isPressing);
-  el.pressHint.style.opacity = state.gameState === 'playing' ? '1' : '0';
+  if (fishing.state === STATES.BITE_ALERT) positionAboveHead(el.biteAlert, headCenter, 6);
+  if (el.hitFlash.classList.contains('show')) positionAboveHead(el.hitFlash, headCenter, 6);
 }
 
-/* ===== Fixed-timestep main loop (request doc §5) ===== */
-const FIXED_STEP = FISHING_CONFIG.fixedStep;
+function renderCapturePanel() {
+  if (fishing.state !== STATES.FISHING_MINIGAME) return;
+  const barTopPx = (fishing.barY - fishing.barHeight / 2) * trackHeight;
+  el.catchBar.style.top = barTopPx + 'px';
+  el.catchBar.style.height = (fishing.barHeight * trackHeight) + 'px';
+  el.catchBar.classList.toggle('hooked', !!fishing._fishInsideForRender);
+
+  el.fishIcon.style.transform = `translateY(${fishing.fishRuntime.y * trackHeight}px)`;
+
+  el.progressFill.style.height = (fishing.captureProgress * 100) + '%';
+  el.progressFill.classList.toggle('danger', fishing.captureProgress < 0.25);
+  el.progressFill.classList.toggle('shine', fishing.captureProgress > 0.8);
+}
+
+/* ===== Fixed-timestep loop (brief §25: frame-rate independent physics) ===== */
+const FIXED_STEP = 1 / 60;
 let accumulator = 0;
 let lastTime = performance.now();
+
+function fixedUpdate(dt, now) {
+  updateAnimator(now, dt);
+  switch (fishing.state) {
+    case STATES.CAST_CHARGING: updateCastCharge(); break;
+    case STATES.BOBBER_FLYING: updateBobberFlight(now); break;
+    case STATES.WAITING_BITE: updateWaitingBite(now); break;
+    case STATES.BITE_ALERT: updateBiteAlert(now); break;
+    case STATES.HOOK_RESOLVE: updateHookResolve(now); break;
+    case STATES.FISHING_MINIGAME:
+      updateControlBar(dt);
+      updateFishAI(dt);
+      updateCapture(dt);
+      break;
+    default: break;
+  }
+}
 
 function frame(now) {
   let dt = (now - lastTime) / 1000;
   lastTime = now;
   dt = Math.min(dt, 0.1);
   accumulator += dt;
-
   while (accumulator >= FIXED_STEP) {
-    fixedUpdate(FIXED_STEP);
+    fixedUpdate(FIXED_STEP, now);
     accumulator -= FIXED_STEP;
   }
-
-  render();
+  renderWorld(now);
+  renderCapturePanel();
   requestAnimationFrame(frame);
 }
 
-function applyCustomization() {
-  if (customization.background) {
-    el.bgLayer.style.backgroundImage = `url("${customization.background}")`;
-    el.bgLayer.classList.add('show');
-  }
-}
-
-applyCustomization();
-resetRound();
-requestAnimationFrame(frame);
-say('youngwoo', 'soft', '영우', '살살 눌러서 띄우고, 놓으면 가라앉아. 초록 막대 안에 물고기를 가둬봐.');
+/* ===== Boot ===== */
+measureWorld();
+measureTrack();
+enterIdle();
+say('youngwoo', 'soft', '영우', '눌러서 캐스팅 파워를 조절하고, 놓으면 던져져.');
 setTimeout(() => say('jisoo', 'happy', '지수', '오케이! 나 낚시왕이거든?'), 1800);
+requestAnimationFrame(frame);
 </script>
 <script src="/dev/devPlanFab.js"></script>
 </body>

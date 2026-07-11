@@ -55,16 +55,11 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
   <a class="back" href="/dev/minigames/">‹ DEV</a>
   <div class="tag">Minigame · 설정</div>
   <div class="title">🎣 낚시</div>
-  <div class="sub">화면을 꾹 누르고 있으면 초록 바가 위로 떠오릅니다. 손을 떼면 서서히 가라앉아요.<br>물고기를 초록 바 안에 가둔 채로 게이지를 100%까지 채우세요.</div>
+  <div class="sub">눌러서 캐스팅 파워를 조절하고 놓으면 던져요. 입질이 오면 재빨리 눌러 훅을 걸고, 세로 패널에서 초록 바로 물고기를 가둔 채 게이지를 100%까지 채우세요.</div>
 
   <div class="option-group">
-    <div class="option-label">난이도</div>
-    <div class="option-pills" id="diffPills"></div>
-  </div>
-
-  <div class="option-group">
-    <div class="option-label">물고기 움직임</div>
-    <div class="option-pills" id="motionPills"></div>
+    <div class="option-label">어종 (테스트용)</div>
+    <div class="option-pills" id="fishPills"></div>
   </div>
 
   <div class="option-group">
@@ -87,27 +82,18 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 <script>
-// Bands mirror difficultyLabel()'s cutoffs in play/index.html so "쉬움" here
-// picks from the same range the play screen would label "쉬움".
-const DIFFICULTY_OPTIONS = [
+// Species/behavior now live in play/index.html's FISH_TABLE (development
+// brief §12) — a round picks one at random by rarity weight once the player
+// hooks a bite, so there's no separate difficulty/motion band to configure
+// here anymore. This picker just pins one species for QA via ?fish=.
+const FISH_OPTIONS = [
   { id: 'random', label: '랜덤' },
-  { id: 'very-easy', label: '매우 쉬움' },
-  { id: 'easy', label: '쉬움' },
-  { id: 'normal', label: '보통' },
-  { id: 'hard', label: '어려움' },
-  { id: 'very-hard', label: '매우 어려움' },
-];
-const MOTION_OPTIONS = [
-  { id: 'random', label: '랜덤' },
-  { id: 'mixed', label: '뒤섞임' },
-  { id: 'smooth', label: '매끄러움' },
-  { id: 'dart', label: '돌진' },
-  { id: 'sinker', label: '가라앉음' },
-  { id: 'floater', label: '떠오름' },
+  { id: 'silver_bream', label: '🐟 은빛 도미 (Smooth)' },
+  { id: 'river_perch', label: '🐠 강농어 (Mixed)' },
+  { id: 'storm_eel', label: '🐡 폭풍 장어 (Dart)' },
 ];
 
-let selectedDifficulty = 'random';
-let selectedMotion = 'random';
+let selectedFish = 'random';
 
 function renderPills(container, options, selected, onPick) {
   container.innerHTML = options.map(o =>
@@ -119,8 +105,7 @@ function renderPills(container, options, selected, onPick) {
 }
 
 const el = {
-  diffPills: document.getElementById('diffPills'),
-  motionPills: document.getElementById('motionPills'),
+  fishPills: document.getElementById('fishPills'),
   testBtn: document.getElementById('testBtn'),
   bgInput: document.getElementById('bgInput'),
   bgPreview: document.getElementById('bgPreview'),
@@ -130,19 +115,14 @@ const el = {
 
 function updateTestBtnHref() {
   const params = new URLSearchParams();
-  if (selectedDifficulty !== 'random') params.set('diff', selectedDifficulty);
-  if (selectedMotion !== 'random') params.set('motion', selectedMotion);
+  if (selectedFish !== 'random') params.set('fish', selectedFish);
   const qs = params.toString();
   el.testBtn.href = '/dev/minigame-fishing/play/' + (qs ? '?' + qs : '');
 }
 
 function renderAll() {
-  renderPills(el.diffPills, DIFFICULTY_OPTIONS, selectedDifficulty, (id) => {
-    selectedDifficulty = id;
-    renderAll();
-  });
-  renderPills(el.motionPills, MOTION_OPTIONS, selectedMotion, (id) => {
-    selectedMotion = id;
+  renderPills(el.fishPills, FISH_OPTIONS, selectedFish, (id) => {
+    selectedFish = id;
     renderAll();
   });
   updateTestBtnHref();
