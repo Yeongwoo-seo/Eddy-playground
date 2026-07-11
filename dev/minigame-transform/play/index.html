@@ -6,7 +6,7 @@
 <title>OPERATION MK · TRANSFORM</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
-<meta name="theme-color" content="#080A0C">
+<meta name="theme-color" content="#241442">
 <link rel="manifest" href="/dev/manifest.json">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -24,7 +24,7 @@
 html,body{height:100%}
 body{background:#000;color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center}
 
-.frame{position:relative;width:100%;max-width:430px;min-height:100dvh;min-height:100vh;background:radial-gradient(ellipse 120% 60% at 50% 0%,#241a3a 0%,#150f28 42%,#0a0714 78%,#07050f 100%);display:flex;flex-direction:column;overflow-x:hidden}
+.frame{position:relative;width:100%;max-width:430px;min-height:100dvh;min-height:100vh;background:radial-gradient(ellipse 130% 70% at 50% 8%,#3a2465 0%,#241442 45%,#170c2d 80%,#0e0820 100%);display:flex;flex-direction:column;overflow-x:hidden}
 
 .sparkle-field{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}
 .sparkle{position:absolute;color:#fff;opacity:0;animation:sparkleTwinkle 3.2s ease-in-out infinite}
@@ -33,17 +33,53 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .sparkle-burst{position:absolute;left:50%;top:50%;pointer-events:none;z-index:9;font-size:16px;animation:sparkleBurst 900ms ease-out forwards}
 @keyframes sparkleBurst{0%{opacity:1;transform:translate(-50%,-50%) translate(0,0) scale(.6)}100%{opacity:0;transform:translate(-50%,-50%) translate(var(--dx),var(--dy)) scale(1.1)}}
 
-.topbar{position:relative;z-index:6;padding:calc(14px + env(safe-area-inset-top,0)) 16px 10px;display:flex;justify-content:space-between;align-items:center}
-.topbar-right{display:flex;gap:8px}
-.vn-btn{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:#fff;background:rgba(255,255,255,.06);border:1px solid var(--divider);border-radius:20px;padding:9px 13px;cursor:pointer;text-decoration:none;display:inline-block}
+.topbar{position:relative;z-index:6;padding:calc(14px + env(safe-area-inset-top,0)) 16px 8px;display:flex;justify-content:space-between;align-items:center}
+.vn-btn{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:#fff;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:20px;padding:9px 13px;cursor:pointer;text-decoration:none;display:inline-block}
 .vn-btn:active{opacity:.75}
 
-/* ===== Stage ===== */
-.stage{position:relative;z-index:1;padding:4px 20px 10px;display:flex;flex-direction:column;align-items:center;gap:6px}
-.mirror-bubble{position:relative;max-width:250px;background:radial-gradient(ellipse at 50% 35%,#2a3550 0%,#161d2e 70%,#0d1220 100%);border:3px solid;border-image:linear-gradient(135deg,#E8D9A8,#B8933F,#F2E4B0,#9c7a33) 1;border-radius:50%/38%;padding:16px 20px;font-size:12px;line-height:1.5;color:#DCE4F0;text-align:center;box-shadow:0 0 0 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.5),inset 0 0 24px rgba(120,150,220,.15)}
-.mirror-bubble::before{content:'✦';position:absolute;top:-4px;left:10%;font-size:11px;color:#F2E4B0}
-.mirror-bubble::after{content:'✦';position:absolute;bottom:-2px;right:10%;font-size:11px;color:#F2E4B0}
-.cauldron-area{position:relative;z-index:1;width:100%;height:190px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end}
+/* ===== Mirror + target caption ===== */
+.mirror-bubble{position:relative;z-index:3;margin:0 20px 6px;max-width:290px;align-self:center;background:radial-gradient(ellipse at 50% 35%,#2a3550 0%,#161d2e 70%,#0d1220 100%);border:3px solid;border-image:linear-gradient(135deg,#E8D9A8,#B8933F,#F2E4B0,#9c7a33) 1;border-radius:50%/38%;padding:14px 18px;font-size:12px;line-height:1.5;color:#DCE4F0;text-align:center;box-shadow:0 0 0 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.5),inset 0 0 24px rgba(120,150,220,.15)}
+.target-line{position:relative;z-index:3;font-family:var(--mono);font-size:11px;color:#C7B1F1;text-align:center;letter-spacing:.02em;padding:0 16px 6px}
+.target-line b{color:#FFD12E;font-weight:700}
+
+/* ===== Potion room stage ===== */
+.stage{position:relative;z-index:1;display:flex;flex-direction:column}
+.potion-room{position:relative;padding:0 8px}
+.shelf-row{position:relative;z-index:1;display:flex;gap:4px;align-items:stretch}
+.shelf-col{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}
+.shelf-col.shelf-center{flex:1.25}
+
+.shelf-compartment{position:relative;background:linear-gradient(160deg,#9a5940 0%,#8E4E38 40%,#70402F 100%);border:3px solid #4A2A24;border-radius:10px;padding:7px 3px 20px;box-shadow:inset 0 -8px 12px rgba(0,0,0,.28),inset 0 3px 0 rgba(255,255,255,.08),0 3px 6px rgba(0,0,0,.35);transition:box-shadow .2s}
+.shelf-compartment.small{padding:6px 3px 6px}
+.shelf-compartment.flash{box-shadow:0 0 0 3px #FFD12E,inset 0 -8px 12px rgba(0,0,0,.28)}
+
+.cat-plaque{position:absolute;left:50%;bottom:2px;transform:translateX(-50%) rotate(-2deg);background:linear-gradient(160deg,#FF9D1F,#D85A16);border:2px solid #FFD12E;border-radius:14px;padding:2px 9px 3px;font-size:9px;font-weight:800;color:#FFF3EB;text-shadow:0 1px 0 #A52B19;white-space:nowrap;box-shadow:0 2px 3px rgba(0,0,0,.35);z-index:2;letter-spacing:-.2px}
+
+.bottle-rack{display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-end;gap:0 1px}
+
+.potion-bottle{position:relative;touch-action:none;background:none;border:none;padding:4px;width:36px;display:flex;flex-direction:column;align-items:center;cursor:grab;filter:drop-shadow(0 2px 3px rgba(0,0,0,.45));transition:transform .15s ease}
+.potion-bottle:active{cursor:grabbing}
+.potion-bottle svg{display:block}
+.potion-bottle.icon-bottle svg{width:22px;height:28px}
+.potion-bottle.icon-orb svg{width:24px;height:24px}
+.potion-bottle.icon-jar svg{width:23px;height:25px}
+.potion-bottle.icon-face svg{width:26px;height:26px}
+.potion-bottle.selected{transform:scale(1.12);filter:drop-shadow(0 0 6px #FFD12E) drop-shadow(0 2px 3px rgba(0,0,0,.45))}
+.potion-charm{position:absolute;top:-2px;right:1px;font-size:11px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
+.jar-emoji{position:absolute;top:42%;left:50%;transform:translate(-50%,-50%);font-size:9.5px;filter:drop-shadow(0 1px 1px rgba(0,0,0,.4))}
+.face-emoji{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:13px;filter:drop-shadow(0 1px 1px rgba(0,0,0,.4))}
+
+.drag-ghost{z-index:60;pointer-events:none}
+
+/* ===== Floor / cauldron / props ===== */
+.floor-area{position:relative;z-index:1;display:flex;align-items:flex-end;justify-content:space-between;gap:2px;padding:8px 6px 4px;margin-top:2px;background:radial-gradient(ellipse 90% 100% at 50% 100%,rgba(116,91,155,.55) 0%,rgba(91,70,127,.4) 55%,transparent 100%);border-radius:0 0 14px 14px;min-height:186px}
+
+.magic-book-prop{flex-shrink:0;background:linear-gradient(160deg,#E8639B 0%,#C23F7A 55%,#8E2B5A 100%);border:2px solid #6E1C42;border-radius:7px 15px 15px 7px;padding:9px 7px 8px;color:#fff;display:flex;flex-direction:column;align-items:center;gap:1px;box-shadow:0 4px 10px rgba(0,0,0,.45);transform:rotate(-5deg);min-width:42px;cursor:pointer;margin-bottom:14px}
+.magic-book-prop:active{transform:rotate(-5deg) scale(.94)}
+.magic-book-prop .prop-icon{font-size:19px;filter:drop-shadow(0 2px 2px rgba(0,0,0,.4))}
+.magic-book-prop .prop-label{font-family:var(--mono);font-size:8px;font-weight:700;letter-spacing:.02em}
+
+.cauldron-area{position:relative;z-index:1;flex:1;height:190px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end}
 
 .portrait-wrap{position:relative;z-index:2;margin-bottom:-6px;display:flex;flex-direction:column;align-items:center;transition:transform .3s cubic-bezier(.2,.8,.2,1),filter .3s ease}
 .portrait-wrap.age-baby{transform:scale(.6)}
@@ -66,56 +102,51 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .char-body.body-sturdy{width:132px;height:88px;border-radius:42% 42% 48% 48% / 38% 38% 56% 56%}
 .char-body.body-hourglass::after{content:'';position:absolute;left:18%;right:18%;top:42%;height:2px;background:rgba(0,0,0,.18);border-radius:2px}
 
-.cauldron{position:relative;width:184px;height:150px;z-index:1;filter:drop-shadow(0 10px 12px rgba(0,0,0,.5))}
+.cauldron{position:relative;width:210px;height:170px;z-index:1;filter:drop-shadow(0 10px 12px rgba(0,0,0,.5));transition:filter .15s ease}
+.cauldron.drop-hover{filter:drop-shadow(0 10px 12px rgba(0,0,0,.5)) drop-shadow(0 0 16px #FFD12E)}
 .cauldron-svg{width:100%;height:100%;display:block;overflow:visible}
 .cauldron-liquid{transform-box:fill-box;transform-origin:center;transition:fill .4s ease;filter:drop-shadow(0 0 8px var(--liquid-color,#2c3440))}
 .cauldron-liquid.bubble{animation:cauldronBubble .5s ease-in-out infinite}
 @keyframes cauldronBubble{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-2.5px) scale(1.03)}}
 .cauldron.shake{animation:cauldronShake .12s linear infinite}
 @keyframes cauldronShake{0%{transform:translateX(0)}25%{transform:translateX(-4px) rotate(-1deg)}75%{transform:translateX(4px) rotate(1deg)}100%{transform:translateX(0)}}
+.cauldron.pour-bounce{animation:pourBounce .32s ease}
+@keyframes pourBounce{0%,100%{transform:scale(1) translateY(0)}40%{transform:scale(1.035) translateY(-3px)}}
+
+.droplet{position:absolute;width:6px;height:6px;border-radius:50%;top:14%;opacity:.9;pointer-events:none;z-index:4;animation:dropletFall .5s ease-in forwards}
+@keyframes dropletFall{0%{transform:translateY(0) scale(1);opacity:.9}100%{transform:translateY(64px) scale(.35);opacity:0}}
 
 .fx-flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:5;transition:opacity .12s ease}
 .fx-flash.show{opacity:1}
 .fx-smoke{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);width:10px;height:10px;border-radius:50%;background:radial-gradient(circle,rgba(230,230,235,.9) 0%,rgba(230,230,235,0) 70%);opacity:0;pointer-events:none;z-index:4;transition:opacity .3s ease,width .5s ease,height .5s ease}
 .fx-smoke.show{opacity:1;width:220px;height:220px}
 
-.target-line{font-family:var(--mono);font-size:11.5px;color:var(--text-muted);text-align:center;letter-spacing:.02em}
-.target-line b{color:var(--amber);font-weight:700}
+.powder-pouch-prop{flex-shrink:0;background:linear-gradient(160deg,#D65FC0 0%,#B23F9E 55%,#7A1F6A 100%);border:2px solid #5A1050;border-radius:44% 44% 48% 48% / 55% 55% 45% 45%;padding:9px 9px 10px;color:#fff;display:flex;flex-direction:column;align-items:center;gap:1px;box-shadow:0 4px 10px rgba(0,0,0,.45);min-width:52px;cursor:pointer;margin-bottom:10px;transition:opacity .2s,filter .2s}
+.powder-pouch-prop .prop-icon{font-size:19px;filter:drop-shadow(0 2px 2px rgba(0,0,0,.4))}
+.powder-pouch-prop .prop-label{font-family:var(--mono);font-size:8.5px;font-weight:800;letter-spacing:.02em;text-align:center;line-height:1.35}
+.powder-pouch-prop:disabled{opacity:.5;filter:saturate(.4);cursor:not-allowed}
+.powder-pouch-prop:active:not(:disabled){transform:scale(.94)}
+.powder-pouch-prop.pulse:not(:disabled){animation:powderPulse 1.6s ease-in-out infinite}
+@keyframes powderPulse{0%,100%{box-shadow:0 4px 10px rgba(0,0,0,.45),0 0 0 rgba(255,209,46,0)}50%{box-shadow:0 4px 10px rgba(0,0,0,.45),0 0 16px rgba(255,209,46,.65)}}
 
-/* ===== Recipe slots ===== */
-.slots-grid{position:relative;z-index:1;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:6px 16px 12px}
-.slot-btn{position:relative;background:var(--surface-1);border:1px solid var(--divider);border-radius:14px;padding:10px 4px 8px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;min-height:76px;justify-content:center}
-.slot-btn:active{transform:scale(.96)}
-.slot-btn.filled{border-color:rgba(89,184,200,.5);background:rgba(89,184,200,.08)}
-.slot-btn.hint-glow{animation:hintGlow 1.1s ease-in-out infinite}
-@keyframes hintGlow{0%,100%{box-shadow:0 0 0 rgba(214,168,75,0)}50%{box-shadow:0 0 12px rgba(214,168,75,.55)}}
-.slot-icon{font-size:18px}
-.slot-label{font-size:10.5px;color:var(--text-muted);font-weight:600;text-align:center;line-height:1.25}
-.slot-picked{font-size:10.5px;color:var(--cyan);font-weight:700;text-align:center;line-height:1.2;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* ===== Reagent table ===== */
+.reagent-table{position:relative;z-index:1;margin:10px 14px calc(14px + env(safe-area-inset-bottom,0));background:linear-gradient(180deg,#C7B1F1 0%,#EFE7FF 100%);border:2px solid #7650B4;border-radius:16px;padding:9px 8px 7px;box-shadow:0 4px 12px rgba(0,0,0,.3)}
+.reagent-title{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:800;color:#3A145A;background:linear-gradient(180deg,#fff,#E3D6FF);padding:3px 10px;border-radius:10px 10px 10px 0;margin:-9px 0 6px -8px;box-shadow:0 2px 3px rgba(0,0,0,.15)}
+.reagent-progress{font-family:var(--mono);font-size:9.5px;color:#7650B4;font-weight:700}
+.reagent-slots{display:flex;gap:5px;overflow-x:auto;padding-bottom:2px}
+.reagent-slot{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer}
+.reagent-slot-box{position:relative;width:38px;height:42px;background:#3A145A;border:2px solid #F7F0FF;border-radius:9px;display:flex;align-items:center;justify-content:center}
+.reagent-slot-box svg{width:22px;height:26px}
+.reagent-slot-box.filled{box-shadow:0 0 0 2px #FFD12E inset}
+.reagent-slot-box.hint-glow{animation:hintGlow 1.1s ease-in-out infinite}
+@keyframes hintGlow{0%,100%{box-shadow:0 0 0 rgba(255,209,46,0)}50%{box-shadow:0 0 12px rgba(255,209,46,.7)}}
+.reagent-slot-label{writing-mode:vertical-rl;font-size:9px;font-weight:700;color:#3A145A;letter-spacing:0}
 
-.powder-btn{position:relative;z-index:1;margin:0 16px calc(16px + env(safe-area-inset-bottom,0));font-family:var(--mono);font-size:14.5px;font-weight:700;letter-spacing:.04em;color:#08110c;background:var(--green);border:none;border-radius:16px;padding:16px;cursor:pointer;text-align:center;transition:opacity .2s,transform .15s}
-.powder-btn:active:not(:disabled){transform:scale(.98)}
-.powder-btn:disabled{background:var(--surface-2);color:var(--text-muted);cursor:not-allowed}
-.powder-btn.pulse:not(:disabled){animation:powderPulse 1.6s ease-in-out infinite}
-@keyframes powderPulse{0%,100%{box-shadow:0 0 0 rgba(62,207,107,0)}50%{box-shadow:0 0 16px rgba(62,207,107,.5)}}
-
-/* ===== Sheets (potion picker / magic book) ===== */
+/* ===== Sheets (magic book) ===== */
 .sheet-overlay{position:fixed;inset:0;z-index:20;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.6)}
 .sheet-overlay.show{display:flex}
 .sheet{width:100%;max-width:430px;max-height:78vh;background:var(--surface-2);border:1px solid var(--divider);border-bottom:none;border-radius:24px 24px 0 0;padding:10px 18px calc(16px + env(safe-area-inset-bottom,0));display:flex;flex-direction:column;overflow:hidden}
 .sheet-handle{width:36px;height:4px;border-radius:2px;background:var(--divider);margin:2px auto 12px}
-.sheet-title{font-size:15px;font-weight:700;margin-bottom:10px}
-.potion-list{overflow-y:auto;display:flex;flex-direction:column;gap:8px;flex:1}
-.potion-row{display:flex;align-items:center;gap:12px;background:var(--surface-1);border:1px solid var(--divider);border-radius:14px;padding:10px 12px;cursor:pointer}
-.potion-row:active{transform:scale(.98)}
-.potion-row.selected{border-color:var(--cyan);background:rgba(89,184,200,.1)}
-.potion-row.hint-highlight{border-color:var(--amber);box-shadow:0 0 10px rgba(214,168,75,.4)}
-.potion-swatch{position:relative;width:30px;height:38px;flex-shrink:0}
-.potion-swatch svg{display:block;width:100%;height:100%;overflow:visible}
-.potion-charm{position:absolute;top:-4px;right:-7px;font-size:13px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
-.potion-info{flex:1;min-width:0}
-.potion-name{font-size:13.5px;font-weight:700}
-.potion-desc{font-size:11.5px;color:var(--text-muted);margin-top:2px;line-height:1.4}
 .sheet-close{margin-top:12px;font-family:var(--mono);font-size:12.5px;color:var(--text-secondary);background:var(--surface-1);border:1px solid var(--divider);border-radius:14px;padding:12px;cursor:pointer}
 
 .book-sheet{max-height:82vh}
@@ -131,7 +162,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .encyclo-group{margin-bottom:14px}
 .encyclo-title{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px}
 .encyclo-item{display:flex;gap:10px;align-items:center;padding:6px 0}
-.encyclo-swatch{width:20px;height:26px;flex-shrink:0}
+.encyclo-swatch{position:relative;width:20px;height:26px;flex-shrink:0}
 .encyclo-swatch svg{display:block;width:100%;height:100%;overflow:visible}
 .encyclo-name{font-size:12.5px;font-weight:600}
 .encyclo-desc{font-size:11px;color:var(--text-muted)}
@@ -185,8 +216,8 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .intro-text{font-size:13.5px;color:var(--text-secondary);line-height:1.7;max-width:290px;white-space:pre-line}
 .reduced-motion .cauldron.shake{animation:none}
 .reduced-motion .cauldron-liquid.bubble{animation:none}
-.reduced-motion .slot-btn.hint-glow{animation:none}
-.reduced-motion .powder-btn.pulse{animation:none}
+.reduced-motion .reagent-slot-box.hint-glow{animation:none}
+.reduced-motion .powder-pouch-prop.pulse{animation:none}
 </style>
 </head>
 <body>
@@ -194,69 +225,89 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 
   <div class="topbar">
     <a class="vn-btn" href="/dev/">← DEV</a>
-    <div class="topbar-right">
-      <button class="vn-btn" id="bookBtn" type="button">📖 마법책</button>
-      <a class="vn-btn" href="/dev/minigame-transform/">설정</a>
-    </div>
+    <a class="vn-btn" href="/dev/minigame-transform/">설정</a>
   </div>
 
   <div class="sparkle-field" id="sparkleField"></div>
+
+  <div class="mirror-bubble" id="mirrorBubble" style="display:none"></div>
+  <div class="target-line" id="targetLine"></div>
+
   <div class="stage">
-    <div class="mirror-bubble" id="mirrorBubble" style="display:none"></div>
-    <div class="cauldron-area" id="cauldronArea">
-      <div class="portrait-wrap" id="portraitWrap" style="display:none">
-        <div class="char-head" id="charHead">
-          <span class="char-ears" id="charEars"></span>
-          <span class="char-face" id="charFace"></span>
-          <span class="char-eye char-eye-l" id="eyeLeft"></span>
-          <span class="char-eye char-eye-r" id="eyeRight"></span>
-          <span class="char-decor" id="charDecor"></span>
+    <div class="potion-room">
+      <div class="shelf-row">
+        <div class="shelf-col shelf-left">
+          <div class="shelf-compartment" data-cat="eyes"><div class="bottle-rack" id="rack-eyes"></div><div class="cat-plaque">눈동자약</div></div>
+          <div class="shelf-compartment" data-cat="skin"><div class="bottle-rack" id="rack-skin"></div><div class="cat-plaque">피부색약</div></div>
+          <div class="shelf-compartment" data-cat="age"><div class="bottle-rack" id="rack-age"></div><div class="cat-plaque">나이약</div></div>
         </div>
-        <div class="char-collar" id="charCollar"></div>
-        <div class="char-body" id="charBody"></div>
+        <div class="shelf-col shelf-center">
+          <div class="shelf-compartment small" data-cat="gender"><div class="bottle-rack" id="rack-gender"></div></div>
+          <div class="shelf-compartment" data-cat="character"><div class="bottle-rack" id="rack-character"></div><div class="cat-plaque">캐릭터약</div></div>
+          <div class="shelf-compartment" data-cat="decoration"><div class="bottle-rack" id="rack-decoration"></div><div class="cat-plaque">꾸미기약</div></div>
+        </div>
+        <div class="shelf-col shelf-right">
+          <div class="shelf-compartment" data-cat="body"><div class="bottle-rack" id="rack-body"></div><div class="cat-plaque">몸매약</div></div>
+          <div class="shelf-compartment" data-cat="face"><div class="bottle-rack" id="rack-face"></div><div class="cat-plaque">얼굴약</div></div>
+        </div>
       </div>
-      <div class="fx-smoke" id="fxSmoke"></div>
-      <div class="cauldron" id="cauldron">
-        <svg class="cauldron-svg" viewBox="0 0 200 150">
-          <defs>
-            <radialGradient id="potGrad" cx="35%" cy="20%" r="85%">
-              <stop offset="0%" stop-color="#4d5964"/>
-              <stop offset="55%" stop-color="#2b333c"/>
-              <stop offset="100%" stop-color="#14181c"/>
-            </radialGradient>
-            <linearGradient id="rimGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#636f7b"/>
-              <stop offset="100%" stop-color="#262d34"/>
-            </linearGradient>
-          </defs>
-          <ellipse cx="100" cy="140" rx="70" ry="9" fill="#000" opacity=".3"/>
-          <path d="M74,138 L64,148" stroke="#20262c" stroke-width="9" stroke-linecap="round"/>
-          <path d="M100,140 L100,150" stroke="#20262c" stroke-width="9" stroke-linecap="round"/>
-          <path d="M126,138 L136,148" stroke="#20262c" stroke-width="9" stroke-linecap="round"/>
-          <path d="M38,20 C28,75 34,108 100,124 C166,108 172,75 162,20 Z" fill="url(#potGrad)" stroke="#0c0f12" stroke-width="3"/>
-          <path d="M30,48 Q10,50 12,70" stroke="#20262c" stroke-width="8" fill="none" stroke-linecap="round"/>
-          <path d="M170,48 Q190,50 188,70" stroke="#20262c" stroke-width="8" fill="none" stroke-linecap="round"/>
-          <ellipse cx="100" cy="20" rx="64" ry="13" fill="url(#rimGrad)" stroke="#0c0f12" stroke-width="3"/>
-          <ellipse class="cauldron-liquid" id="cauldronLiquid" cx="100" cy="21" rx="52" ry="9" style="fill:var(--liquid-color,#2c3440)"/>
-          <ellipse cx="80" cy="16" rx="16" ry="3" fill="#fff" opacity=".2"/>
-        </svg>
+
+      <div class="floor-area">
+        <button type="button" class="magic-book-prop" id="bookBtn">
+          <span class="prop-icon">📖</span><span class="prop-label">마법책</span>
+        </button>
+
+        <div class="cauldron-area" id="cauldronArea">
+          <div class="portrait-wrap" id="portraitWrap" style="display:none">
+            <div class="char-head" id="charHead">
+              <span class="char-ears" id="charEars"></span>
+              <span class="char-face" id="charFace"></span>
+              <span class="char-eye char-eye-l" id="eyeLeft"></span>
+              <span class="char-eye char-eye-r" id="eyeRight"></span>
+              <span class="char-decor" id="charDecor"></span>
+            </div>
+            <div class="char-collar" id="charCollar"></div>
+            <div class="char-body" id="charBody"></div>
+          </div>
+          <div class="fx-smoke" id="fxSmoke"></div>
+          <div class="cauldron" id="cauldron">
+            <svg class="cauldron-svg" viewBox="0 0 200 150">
+              <defs>
+                <radialGradient id="potGrad" cx="35%" cy="20%" r="85%">
+                  <stop offset="0%" stop-color="#4d5964"/>
+                  <stop offset="55%" stop-color="#2b333c"/>
+                  <stop offset="100%" stop-color="#14181c"/>
+                </radialGradient>
+                <linearGradient id="rimGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#636f7b"/>
+                  <stop offset="100%" stop-color="#262d34"/>
+                </linearGradient>
+              </defs>
+              <ellipse cx="100" cy="140" rx="70" ry="9" fill="#000" opacity=".3"/>
+              <path d="M74,138 L64,148" stroke="#20262c" stroke-width="9" stroke-linecap="round"/>
+              <path d="M100,140 L100,150" stroke="#20262c" stroke-width="9" stroke-linecap="round"/>
+              <path d="M126,138 L136,148" stroke="#20262c" stroke-width="9" stroke-linecap="round"/>
+              <path d="M38,20 C28,75 34,108 100,124 C166,108 172,75 162,20 Z" fill="url(#potGrad)" stroke="#0c0f12" stroke-width="3"/>
+              <path d="M30,48 Q10,50 12,70" stroke="#20262c" stroke-width="8" fill="none" stroke-linecap="round"/>
+              <path d="M170,48 Q190,50 188,70" stroke="#20262c" stroke-width="8" fill="none" stroke-linecap="round"/>
+              <ellipse cx="100" cy="20" rx="64" ry="13" fill="url(#rimGrad)" stroke="#0c0f12" stroke-width="3"/>
+              <ellipse class="cauldron-liquid" id="cauldronLiquid" cx="100" cy="21" rx="52" ry="9" style="fill:var(--liquid-color,#2c3440)"/>
+              <ellipse cx="80" cy="16" rx="16" ry="3" fill="#fff" opacity=".2"/>
+            </svg>
+          </div>
+          <div class="fx-flash" id="fxFlash"></div>
+        </div>
+
+        <button type="button" class="powder-pouch-prop" id="powderBtn" disabled>
+          <span class="prop-icon">🪄</span><span class="prop-label">마법가루<br>END</span>
+        </button>
       </div>
-      <div class="fx-flash" id="fxFlash"></div>
     </div>
-    <div class="target-line" id="targetLine"></div>
   </div>
 
-  <div class="slots-grid" id="slotsGrid"></div>
-
-  <button class="powder-btn" id="powderBtn" type="button" disabled>마법가루 뿌리기</button>
-</div>
-
-<div class="sheet-overlay" id="pickerOverlay">
-  <div class="sheet" id="pickerSheet">
-    <div class="sheet-handle"></div>
-    <div class="sheet-title" id="pickerTitle"></div>
-    <div class="potion-list" id="potionList"></div>
-    <button class="sheet-close" id="pickerCloseBtn" type="button">닫기</button>
+  <div class="reagent-table" id="reagentTable">
+    <div class="reagent-title">마법 시약표 <span class="reagent-progress" id="reagentProgress">0/8</span></div>
+    <div class="reagent-slots" id="slotsGrid"></div>
   </div>
 </div>
 
@@ -299,6 +350,11 @@ if ('serviceWorker' in navigator) {
    목표 인물(루미아)의 특징을 마법책에서 확인하고, 8개 속성의 마법약을 골라
    솥에 넣은 뒤 마법가루로 결과를 확정하는 실험형 조합 게임. 정답을 몰라도
    변신은 항상 일어나며, 오답 속성은 결과 초상에 그대로 반영된다.
+
+   화면은 「슈 변신 마법」 원작 스크린샷을 참고해 나무 진열장 3개 + 중앙
+   가마솥 + 좌우 마법책/마법가루 소품 + 하단 마법 시약표 구성으로 재현했다.
+   진열장의 물약은 탭 또는 드래그로 가마솥에 넣을 수 있고, 두 방식 모두
+   물약이 가마솥으로 날아가 쏟아지는 동일한 연출로 이어진다.
 
    Reached via /dev/minigame-transform/'s 설정 screen (or its own ▶ 플레이
    shortcut from /dev/minigames) — settings travel as query params
@@ -383,12 +439,33 @@ const POTIONS = {
 
 function potionById(attr, id) { return POTIONS[attr].find(p => p.id === id) || null; }
 
-/* ===== Potion bottle art — a small glass-flask SVG shared by the picker
-   sheet and the encyclopedia tab, standing in for a hand-illustrated bottle
-   (request doc §5.3's bottleShape/liquidColor) since this project has no
-   art asset pipeline. ===== */
+/* ===== Potion art — small SVG icons shared by shelves, the reagent table
+   and the encyclopedia tab, standing in for hand-illustrated bottles/jars/
+   orbs (this project has no art asset pipeline). Shape varies by category
+   to echo the reference screenshot's mix of glass bottles, eye-orbs,
+   decoration jars and animal-face cards. ===== */
 function bottleSvg(color) {
   return `<svg viewBox="0 0 28 34"><rect x="11" y="1" width="6" height="6" rx="1.5" fill="#8a6a45"/><rect x="12" y="6" width="4" height="6" fill="rgba(255,255,255,.14)" stroke="rgba(255,255,255,.35)" stroke-width="1"/><path d="M9,11 C9,11 4,18 4,24 C4,29.5 8.5,32.5 14,32.5 C19.5,32.5 24,29.5 24,24 C24,18 19,11 19,11 Z" fill="rgba(255,255,255,.06)" stroke="rgba(255,255,255,.4)" stroke-width="1.2"/><path d="M4.6,21.5 C4.2,22.6 4,23.3 4,24 C4,29.5 8.5,32.5 14,32.5 C19.5,32.5 24,29.5 24,24 C24,23.3 23.8,22.6 23.4,21.5 Z" fill="${color}"/><rect x="7" y="15" width="2.4" height="13" rx="1.2" fill="#fff" opacity=".22"/></svg>`;
+}
+function orbSvg(color) {
+  return `<svg viewBox="0 0 28 28"><circle cx="14" cy="14" r="12" fill="${color}" stroke="rgba(255,255,255,.55)" stroke-width="1.5"/><path d="M14 7.5 L15.3 11.4 L19.3 11.4 L16.1 13.9 L17.3 17.8 L14 15.4 L10.7 17.8 L11.9 13.9 L8.7 11.4 L12.7 11.4 Z" fill="rgba(255,255,255,.5)"/><ellipse cx="9.8" cy="8.6" rx="2.6" ry="1.8" fill="#fff" opacity=".85"/></svg>`;
+}
+function jarSvg(color) {
+  return `<svg viewBox="0 0 28 30"><ellipse cx="14" cy="6" rx="8" ry="3" fill="#4FBEC2" stroke="#2C8A8E" stroke-width="1"/><rect x="6" y="6" width="16" height="4" rx="2" fill="#3AA6AA"/><path d="M5,11 C5,9.5 6,9 8,9 L20,9 C22,9 23,9.5 23,11 L23,23 C23,26.5 19,28.5 14,28.5 C9,28.5 5,26.5 5,23 Z" fill="${color}" stroke="rgba(120,60,40,.5)" stroke-width="1.3"/><rect x="8.5" y="13" width="2" height="12" rx="1" fill="#fff" opacity=".3"/></svg>`;
+}
+function faceCardSvg(color) {
+  return `<svg viewBox="0 0 30 30"><circle cx="15" cy="15" r="13.5" fill="${color}" stroke="rgba(255,255,255,.6)" stroke-width="1.5"/></svg>`;
+}
+function kindForCat(cat) { return cat === 'eyes' ? 'orb' : cat === 'decoration' ? 'jar' : cat === 'face' ? 'face' : 'bottle'; }
+function iconFor(cat, p) {
+  switch (cat) {
+    case 'eyes': return orbSvg(p.color);
+    case 'decoration': return jarSvg(p.color) + `<span class="jar-emoji">${p.emoji}</span>`;
+    case 'face': return faceCardSvg(p.color) + `<span class="face-emoji">${p.emoji}</span>`;
+    case 'gender': return bottleSvg(p.color) + `<span class="potion-charm">${p.badge}</span>`;
+    case 'character': return bottleSvg(p.color) + `<span class="potion-charm">${p.emoji}</span>`;
+    default: return bottleSvg(p.color);
+  }
 }
 
 /* ===== Target recipe — 루미아, 별빛 극단의 인기 배우 ===== */
@@ -422,33 +499,29 @@ const CLUES = {
 let selections = { eyes: null, skin: null, age: null, gender: null, character: null, decoration: null, body: null, face: null };
 let phase = 'selecting'; // selecting | ready | transforming | result
 let failCount = 0;
-let currentPickerAttr = null;
 
 const el = {};
 ['mirrorBubble', 'portraitWrap', 'charHead', 'charFace', 'charEars', 'charDecor', 'eyeLeft', 'eyeRight', 'charCollar', 'charBody',
- 'cauldron', 'cauldronArea', 'cauldronLiquid', 'fxFlash', 'fxSmoke', 'sparkleField', 'targetLine', 'slotsGrid', 'powderBtn',
- 'pickerOverlay', 'pickerTitle', 'potionList', 'pickerCloseBtn',
+ 'cauldron', 'cauldronArea', 'cauldronLiquid', 'fxFlash', 'fxSmoke', 'sparkleField', 'targetLine', 'slotsGrid', 'reagentProgress', 'powderBtn',
  'bookBtn', 'bookOverlay', 'bookTabs', 'bookBody', 'bookCloseBtn',
  'resultOverlay', 'resultGrade', 'resultMirror', 'resultScore', 'resultHint', 'resultBookBtn', 'resultRetryBtn',
  'introOverlay', 'introText', 'introStartBtn'].forEach(id => { el[id] = document.getElementById(id); });
 
 el.targetLine.innerHTML = `목표: <b>${TARGET.name}</b>로 변신하기${MODE === 'free' ? ' · 자유 실험 모드' : ''}`;
 
-/* ===== Slots ===== */
-function renderSlots() {
-  el.slotsGrid.innerHTML = ATTRIBUTES.map(a => {
-    const picked = selections[a.key] ? potionById(a.key, selections[a.key]) : null;
-    return `
-      <div class="slot-btn${picked ? ' filled' : ''}${hintRevealAttr === a.key && phase === 'selecting' ? ' hint-glow' : ''}" data-attr="${a.key}" id="slot-${a.key}">
-        <div class="slot-icon">${a.icon}</div>
-        <div class="slot-label">${a.label}</div>
-        <div class="slot-picked">${picked ? picked.name.replace(/약$/, '') : '미선택'}</div>
-      </div>
-    `;
-  }).join('');
+/* ===== Shelves — potions live directly on the shelf and are tapped or
+   dragged into the cauldron (request doc §15.1/§15.2). ===== */
+let hintRevealAttr = null;
+
+function renderShelves() {
   ATTRIBUTES.forEach(a => {
-    document.getElementById(`slot-${a.key}`).addEventListener('click', () => openPicker(a.key));
+    const rack = document.getElementById('rack-' + a.key);
+    if (!rack) return;
+    rack.innerHTML = POTIONS[a.key].map(p => `
+      <button type="button" class="potion-bottle icon-${kindForCat(a.key)}${selections[a.key] === p.id ? ' selected' : ''}" data-cat="${a.key}" data-id="${p.id}" title="${p.name}">${iconFor(a.key, p)}</button>
+    `).join('');
   });
+  document.querySelectorAll('.potion-bottle').forEach(btn => btn.addEventListener('pointerdown', onBottlePointerDown));
 }
 
 function isComplete() { return ATTRIBUTES.every(a => selections[a.key] !== null); }
@@ -457,7 +530,6 @@ function updatePowderButton() {
   const ready = isComplete() && phase === 'selecting';
   el.powderBtn.disabled = !ready;
   el.powderBtn.classList.toggle('pulse', ready);
-  el.powderBtn.textContent = ready ? '✨ 마법가루 뿌리기' : (isComplete() ? '변신 중…' : '마법가루 뿌리기 (재료를 모두 채워주세요)');
 }
 
 /* ===== Cauldron liquid mix — reflects the whole current combo, not just
@@ -484,43 +556,123 @@ function updateCauldronColor() {
   el.cauldronLiquid.classList.toggle('bubble', picked.length > 0 && !REDUCED_MOTION);
 }
 
-/* ===== Potion picker sheet ===== */
-function openPicker(attrKey) {
+/* ===== Drag + tap → pour into cauldron. Both interaction styles end in the
+   same flight-and-splash animation (request doc §8.5/§15.2's "물약이
+   가마솥으로 날아가 쏟아지는" flow); a tap is just a zero-distance drag. ===== */
+function onBottlePointerDown(e) {
   if (phase !== 'selecting') return;
-  currentPickerAttr = attrKey;
-  const meta = ATTRIBUTES.find(a => a.key === attrKey);
-  el.pickerTitle.textContent = `${meta.icon} ${meta.label} 고르기`;
-  const showHint = MODE === 'mission' && hintRevealAttr === attrKey;
-  el.potionList.innerHTML = POTIONS[attrKey].map(p => {
-    const isHintTarget = showHint && TARGET.valid[attrKey].includes(p.id);
-    return `
-    <div class="potion-row${selections[attrKey] === p.id ? ' selected' : ''}${isHintTarget ? ' hint-highlight' : ''}" data-id="${p.id}">
-      <div class="potion-swatch">${bottleSvg(p.color)}${p.emoji ? `<span class="potion-charm">${p.emoji}</span>` : ''}</div>
-      <div class="potion-info">
-        <div class="potion-name">${p.name}${isHintTarget ? ' ✨' : ''}</div>
-        <div class="potion-desc">${p.desc}</div>
-      </div>
-    </div>
-  `;
-  }).join('');
-  el.potionList.querySelectorAll('.potion-row').forEach(row => {
-    row.addEventListener('click', () => pickPotion(attrKey, row.dataset.id));
-  });
-  el.pickerOverlay.classList.add('show');
-}
-function closePicker() { el.pickerOverlay.classList.remove('show'); currentPickerAttr = null; }
+  if (e.button !== undefined && e.button !== 0) return;
+  const btn = e.currentTarget;
+  const cat = btn.dataset.cat, id = btn.dataset.id;
+  const rect = btn.getBoundingClientRect();
+  const startX = e.clientX, startY = e.clientY;
+  let moved = false;
 
-function pickPotion(attrKey, id) {
-  selections[attrKey] = id;
+  const ghost = btn.cloneNode(true);
+  ghost.classList.add('drag-ghost');
+  ghost.style.position = 'fixed';
+  ghost.style.left = rect.left + 'px';
+  ghost.style.top = rect.top + 'px';
+  ghost.style.width = rect.width + 'px';
+  ghost.style.height = rect.height + 'px';
+  ghost.style.margin = '0';
+  document.body.appendChild(ghost);
+
+  function withinCauldron(ev) {
+    const c = el.cauldron.getBoundingClientRect();
+    return ev.clientX > c.left - 24 && ev.clientX < c.right + 24 && ev.clientY > c.top - 24 && ev.clientY < c.bottom + 30;
+  }
+
+  function onMove(ev) {
+    const dx = ev.clientX - startX, dy = ev.clientY - startY;
+    if (Math.abs(dx) > 6 || Math.abs(dy) > 6) moved = true;
+    ghost.style.transition = 'none';
+    ghost.style.transform = `translate(${dx}px,${dy}px) scale(1.15)`;
+    el.cauldron.classList.toggle('drop-hover', withinCauldron(ev));
+  }
+  function onUp(ev) {
+    document.removeEventListener('pointermove', onMove);
+    const overCauldron = withinCauldron(ev);
+    el.cauldron.classList.remove('drop-hover');
+    if (!moved || overCauldron) {
+      animateGhostToCauldron(ghost, () => { ghost.remove(); commitSelection(cat, id); });
+    } else {
+      ghost.style.transition = 'transform .25s cubic-bezier(.34,1.4,.64,1)';
+      requestAnimationFrame(() => { ghost.style.transform = 'translate(0px,0px) scale(1)'; });
+      setTimeout(() => ghost.remove(), 260);
+    }
+  }
+  document.addEventListener('pointermove', onMove);
+  document.addEventListener('pointerup', onUp, { once: true });
+}
+
+function animateGhostToCauldron(ghost, onDone) {
+  const gRect = ghost.getBoundingClientRect();
+  const cRect = el.cauldron.getBoundingClientRect();
+  const targetX = cRect.left + cRect.width * 0.5 - gRect.width / 2;
+  const targetY = cRect.top + cRect.height * 0.22 - gRect.height / 2;
+  const dx = targetX - gRect.left, dy = targetY - gRect.top;
+  ghost.style.transition = 'transform .36s cubic-bezier(.32,.6,.34,1), opacity .36s ease .16s';
+  requestAnimationFrame(() => {
+    ghost.style.transform = `translate(${dx}px,${dy}px) scale(.55) rotate(75deg)`;
+    ghost.style.opacity = '0.15';
+  });
+  setTimeout(onDone, 370);
+}
+
+function pourEffect(color) {
+  if (REDUCED_MOTION) return;
+  el.cauldron.classList.add('pour-bounce');
+  setTimeout(() => el.cauldron.classList.remove('pour-bounce'), 320);
+  for (let i = 0; i < 6; i++) {
+    const d = document.createElement('span');
+    d.className = 'droplet';
+    d.style.background = color;
+    d.style.left = (44 + Math.random() * 12) + '%';
+    d.style.animationDelay = (Math.random() * 0.08) + 's';
+    el.cauldronArea.appendChild(d);
+    setTimeout(() => d.remove(), 560);
+  }
+}
+
+function commitSelection(cat, id) {
+  selections[cat] = id;
+  const p = potionById(cat, id);
   vibrate(8);
+  renderShelves();
   renderSlots();
   updateCauldronColor();
   updatePowderButton();
-  closePicker();
+  pourEffect(p.color);
 }
 
-el.pickerCloseBtn.addEventListener('click', closePicker);
-el.pickerOverlay.addEventListener('click', (e) => { if (e.target === el.pickerOverlay) closePicker(); });
+function scrollToShelf(cat) {
+  const comp = document.querySelector(`.shelf-compartment[data-cat="${cat}"]`);
+  if (!comp) return;
+  comp.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  comp.classList.add('flash');
+  setTimeout(() => comp.classList.remove('flash'), 700);
+}
+
+/* ===== Reagent table (bottom slot bar) ===== */
+function renderSlots() {
+  const filledCount = ATTRIBUTES.filter(a => selections[a.key]).length;
+  el.reagentProgress.textContent = `${filledCount}/${ATTRIBUTES.length}`;
+  el.slotsGrid.innerHTML = ATTRIBUTES.map(a => {
+    const picked = selections[a.key] ? potionById(a.key, selections[a.key]) : null;
+    return `
+      <div class="reagent-slot" data-attr="${a.key}">
+        <div class="reagent-slot-box${picked ? ' filled' : ''}${hintRevealAttr === a.key && phase === 'selecting' ? ' hint-glow' : ''}" id="slot-${a.key}">
+          ${picked ? iconFor(a.key, picked) : ''}
+        </div>
+        <div class="reagent-slot-label">${a.label.replace(/약$/, '')}</div>
+      </div>
+    `;
+  }).join('');
+  el.slotsGrid.querySelectorAll('.reagent-slot').forEach(row => {
+    row.addEventListener('click', () => { if (phase === 'selecting') scrollToShelf(row.dataset.attr); });
+  });
+}
 
 /* ===== Magic book ===== */
 const BOOK_TABS = [
@@ -560,7 +712,7 @@ function renderBookBody() {
         <div class="encyclo-title">${a.icon} ${a.label}</div>
         ${POTIONS[a.key].map(p => `
           <div class="encyclo-item">
-            <div class="encyclo-swatch">${bottleSvg(p.color)}</div>
+            <div class="encyclo-swatch">${iconFor(a.key, p)}</div>
             <div>
               <div class="encyclo-name">${p.name}</div>
               <div class="encyclo-desc">${p.desc}</div>
@@ -572,9 +724,9 @@ function renderBookBody() {
   } else if (activeBookTab === 'howto') {
     el.bookBody.innerHTML = `
       <div class="howto-text">1. 마법책 '목표 정보' 탭에서 단서를 확인해요.
-2. 슬롯을 눌러 후보 물약 중 하나를 골라요.
-3. 8개 속성을 모두 채우면 마법가루 버튼이 켜져요.
-4. 마법가루를 뿌리면 결과가 확정돼요.
+2. 진열장의 물약을 눌러 담거나, 손가락으로 끌어 가마솥에 떨어뜨려요.
+3. 8개 속성을 모두 채우면 마법가루 주머니가 반짝여요.
+4. 마법가루 주머니를 누르면 결과가 확정돼요.
 5. 오답이어도 실패가 아니라 새로운 모습이에요. 다시 조합해 보세요.</div>
       <button type="button" class="replay-btn" id="replayIntroBtn">오프닝 다시보기</button>
     `;
@@ -723,8 +875,6 @@ function mirrorLine(evaluation, special) {
   }
 }
 
-let hintRevealAttr = null;
-
 function hintLine(evaluation) {
   if (evaluation.grade === 'PERFECT') { hintRevealAttr = null; return null; }
   const wrong = evaluation.details.filter(d => !d.correct);
@@ -735,7 +885,7 @@ function hintLine(evaluation) {
     return `힌트: ${ATTRIBUTES.find(a => a.key === target.attribute).label}을(를) 다시 골라봐.`;
   }
   hintRevealAttr = wrong[0].attribute;
-  return `힌트: ${ATTRIBUTES.find(a => a.key === hintRevealAttr).label} 슬롯이 반짝이고 있어. 눌러서 정답 후보를 확인해봐.`;
+  return `힌트: ${ATTRIBUTES.find(a => a.key === hintRevealAttr).label} 슬롯이 반짝이고 있어. 진열장에서 반짝이는 물약을 찾아봐.`;
 }
 
 /* ===== Transformation sequence (request doc §9) ===== */
@@ -818,6 +968,7 @@ function retry() {
   el.resultOverlay.classList.remove('show');
   el.mirrorBubble.style.display = 'none';
   el.portraitWrap.style.display = 'none';
+  renderShelves();
   renderSlots();
   updateCauldronColor();
   updatePowderButton();
@@ -828,24 +979,23 @@ el.resultRetryBtn.addEventListener('click', retry);
    from the magic book's 조작법 tab. ===== */
 const INTRO_KEY = 'mkTransformIntroSeen';
 el.introText.textContent =
-  `연금술사: "거울아, 오늘 축제에서 가장 빛나는 이는 누구지?"\n거울: "별빛 극단의 ${TARGET.name}입니다."\n연금술사: "좋아, 그 모습으로 변신해 주겠어!"\n\n마법책에서 단서를 확인하고, 8개의 마법약을 골라 솥에 넣은 뒤 마법가루를 뿌려보세요. 오답도 재미있는 결과가 되니 여러 조합을 시험해 보세요.`;
+  `연금술사: "거울아, 오늘 축제에서 가장 빛나는 이는 누구지?"\n거울: "별빛 극단의 ${TARGET.name}입니다."\n연금술사: "좋아, 그 모습으로 변신해 주겠어!"\n\n마법책에서 단서를 확인하고, 진열장의 물약을 눌러 담거나 가마솥으로 끌어 넣은 뒤 마법가루를 뿌려보세요. 오답도 재미있는 결과가 되니 여러 조합을 시험해 보세요.`;
 if (localStorage.getItem(INTRO_KEY)) el.introOverlay.classList.remove('show');
 el.introStartBtn.addEventListener('click', () => {
   try { localStorage.setItem(INTRO_KEY, '1'); } catch (e) {}
   el.introOverlay.classList.remove('show');
 });
 
-/* ===== Ambient sparkles + success burst — pure CSS/SVG visual flourish,
-   no external art assets (request doc §22 calls for illustrated layers;
-   this project has no art pipeline, so the "look" is built from shapes/
-   emoji instead, same convention as the fishing/watermelon minigames). ===== */
+/* ===== Ambient sparkles + success burst — doubles as the purple wall's
+   star pattern (request doc §4.1) since the frame background already
+   supplies the deep-purple wall color; no separate wall-star layer needed. ===== */
 function initSparkleField() {
   const symbols = ['✦', '✧', '⋆', '✨'];
-  const count = REDUCED_MOTION ? 6 : 16;
+  const count = REDUCED_MOTION ? 8 : 20;
   let html = '';
   for (let i = 0; i < count; i++) {
     const left = Math.random() * 100;
-    const top = Math.random() * 55;
+    const top = Math.random() * 60;
     const size = 6 + Math.random() * 10;
     const delay = Math.random() * 3.2;
     const duration = 2.6 + Math.random() * 2.4;
@@ -871,6 +1021,7 @@ function spawnSparkleBurst() {
   }
 }
 
+renderShelves();
 renderSlots();
 updateCauldronColor();
 updatePowderButton();
