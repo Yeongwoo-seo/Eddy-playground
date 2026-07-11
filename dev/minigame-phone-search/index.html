@@ -651,7 +651,7 @@ function scheduleForcedPhoneUnlock(delayMs) {
     queueDialogue(KEY_FORCED_LINES, () => {
       state.flags.phoneUnlocked = true;
       saveState();
-      setMessage('[ 어디선가 진동 소리가 들린다 ]');
+      setMessage('[ 부엌 쪽에서 진동 소리가 들린다 ]');
     });
   }, delayMs);
 }
@@ -710,9 +710,14 @@ function handleKitchenPots() {
 function handleKitchenFridgeGap(hotspotId) {
   if (state.flags.phoneFound) { setMessage('더 이상 아무것도 없다.'); return; }
   if (!canRevealPhone()) {
+    // A flat "nothing special here" would contradict INTRO_HINT_LINES'
+    // "부엌 쪽에서 무슨 소리 나는 거 같은데" boot hint — this hotspot IS where
+    // the phone actually is (see this function's header comment), so even
+    // before the key/flashlight/hook chain is done, tapping it should nudge
+    // the player toward it instead of reading as a dead end.
     setMessage(hasSearched(hotspotId)
-      ? '여전히 좁은 틈이다.\n특별한 것은 보이지 않는다.'
-      : '좁은 틈이다.\n특별한 것은 보이지 않는다.');
+      ? '여전히 좁은 틈이다.\n안쪽에 뭔가 있는 것 같은데 손이 닿지 않는다.'
+      : '좁은 틈이다.\n안쪽에 뭔가 있는 것 같기도 한데,\n너무 어두워서 확실하지 않다.');
     markSearched(hotspotId);
     return;
   }
