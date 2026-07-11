@@ -66,6 +66,21 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .debug-panel{position:absolute;top:calc(50px + env(safe-area-inset-top,0));left:12px;z-index:6;font-family:var(--mono);font-size:10.5px;line-height:1.55;color:rgba(146,155,165,.9);background:rgba(5,7,10,.7);border:1px solid var(--divider);border-radius:10px;padding:8px 10px;pointer-events:none;white-space:pre;display:none}
 .debug-panel.show{display:block}
 
+/* ===== Tune panel — live sliders over FISHING_CONFIG, plus a copy-pasteable
+   code block so a value dialed in on-device can go straight back into the
+   source's FISHING_CONFIG literal. ===== */
+.tune-panel{position:absolute;top:calc(50px + env(safe-area-inset-top,0));right:12px;z-index:7;width:216px;max-height:calc(100% - 90px);overflow-y:auto;touch-action:pan-y;font-family:var(--mono);color:var(--text-secondary);background:rgba(5,7,10,.9);border:1px solid var(--divider);border-radius:12px;padding:12px;display:none}
+.tune-panel.show{display:block}
+.tune-panel h4{font-size:10px;letter-spacing:.08em;color:var(--text-muted);text-transform:uppercase;margin:12px 0 6px;font-weight:600}
+.tune-panel h4:first-child{margin-top:0}
+.tune-row{margin-bottom:9px}
+.tune-row-label{display:flex;justify-content:space-between;margin-bottom:3px;font-size:10.5px;color:var(--text-secondary)}
+.tune-row-label span:last-child{color:var(--amber)}
+.tune-row input[type="range"]{width:100%;accent-color:var(--cyan);touch-action:pan-x}
+.tune-copy-btn{width:100%;margin-top:4px;font-family:var(--mono);font-size:11px;font-weight:700;color:#04181c;background:var(--green);border:none;border-radius:10px;padding:9px;cursor:pointer}
+.tune-copy-btn:active{opacity:.8}
+.tune-code{width:100%;margin-top:8px;height:160px;background:var(--surface-1);color:var(--text-primary);border:1px solid var(--divider);border-radius:8px;padding:8px;font-family:var(--mono);font-size:9px;line-height:1.4;resize:none;white-space:pre;-webkit-user-select:text;user-select:text}
+
 /* ===== Overlays ===== */
 .overlay{position:absolute;inset:0;z-index:8;display:none;align-items:center;justify-content:center;flex-direction:column;gap:18px;text-align:center;padding:32px;background:rgba(5,7,10,.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 .overlay.show{display:flex}
@@ -87,10 +102,16 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
     <div class="topbar-right">
       <a class="vn-btn" href="/dev/minigame-fishing/">설정</a>
       <button class="vn-btn" id="debugToggle" type="button">DEBUG</button>
+      <button class="vn-btn" id="tuneToggle" type="button">TUNE</button>
     </div>
   </div>
 
   <div class="debug-panel" id="debugPanel"></div>
+  <div class="tune-panel" id="tunePanel">
+    <div id="tuneFields"></div>
+    <button class="tune-copy-btn" id="tuneCopyBtn" type="button">코드 복사</button>
+    <textarea class="tune-code" id="tuneCode" readonly spellcheck="false"></textarea>
+  </div>
 
   <div class="game-stage">
     <div class="track-wrap">
@@ -262,6 +283,11 @@ const el = {
   pressHint: document.getElementById('pressHint'),
   debugPanel: document.getElementById('debugPanel'),
   debugToggle: document.getElementById('debugToggle'),
+  tunePanel: document.getElementById('tunePanel'),
+  tuneToggle: document.getElementById('tuneToggle'),
+  tuneFields: document.getElementById('tuneFields'),
+  tuneCopyBtn: document.getElementById('tuneCopyBtn'),
+  tuneCode: document.getElementById('tuneCode'),
   resultOverlay: document.getElementById('resultOverlay'),
   resultBanner: document.getElementById('resultBanner'),
   perfectTag: document.getElementById('perfectTag'),
@@ -493,6 +519,116 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) endPr
 
 el.debugToggle.addEventListener('click', () => {
   el.debugPanel.classList.toggle('show');
+});
+
+/* ===== Tune panel — sliders bound directly to FISHING_CONFIG so gameplay
+   updates live, plus a "코드 복사" button that copies a ready-to-paste
+   FISHING_CONFIG literal (same shape as the one at the top of this file)
+   with the dialed-in values baked in. ===== */
+const TUNE_FIELDS = [
+  { group: 'Bar', key: 'bar.upAccel', label: 'Up Accel', min: 0.05, max: 1, step: 0.01 },
+  { group: 'Bar', key: 'bar.downAccel', label: 'Down Accel', min: 0.05, max: 1, step: 0.01 },
+  { group: 'Bar', key: 'bar.insideAccelMultiplier', label: 'Inside Accel ×', min: 0.1, max: 1, step: 0.01 },
+  { group: 'Bar', key: 'bar.bounce', label: 'Bounce', min: 0, max: 1, step: 0.01 },
+  { group: 'Bar', key: 'bar.heightRatio', label: 'Height Ratio', min: 0.1, max: 0.6, step: 0.01 },
+  { group: 'Progress', key: 'progress.start', label: 'Start', min: 0, max: 1, step: 0.01 },
+  { group: 'Progress', key: 'progress.gainPerSecond', label: 'Gain / sec', min: 0.05, max: 1, step: 0.01 },
+  { group: 'Progress', key: 'progress.lossPerSecond', label: 'Loss / sec', min: 0.02, max: 0.5, step: 0.005 },
+  { group: 'Fish', key: 'fish.difficultyMin', label: 'Difficulty Min', min: 0, max: 100, step: 1 },
+  { group: 'Fish', key: 'fish.difficultyMax', label: 'Difficulty Max', min: 0, max: 100, step: 1 },
+  { group: 'Fish', key: 'fish.targetDistanceThreshold', label: 'Target Dist Threshold', min: 1, max: 20, step: 1 },
+  { group: 'Fish', key: 'fish.velocityLerpDivisor', label: 'Velocity Lerp Divisor', min: 1, max: 20, step: 1 },
+  { group: 'Fish', key: 'fish.biasStep', label: 'Bias Step', min: 0, max: 0.1, step: 0.001 },
+  { group: 'Fish', key: 'fish.biasMax', label: 'Bias Max', min: 0, max: 5, step: 0.1 },
+];
+
+function getByPath(obj, path) { return path.split('.').reduce((o, k) => o[k], obj); }
+function setByPath(obj, path, value) {
+  const keys = path.split('.');
+  const last = keys.pop();
+  keys.reduce((o, k) => o[k], obj)[last] = value;
+}
+
+function formatConfigCode() {
+  const c = FISHING_CONFIG;
+  return `const FISHING_CONFIG = {
+  fixedStep: 1 / 60,
+
+  bar: {
+    upAccel: ${c.bar.upAccel},
+    downAccel: ${c.bar.downAccel},
+    insideAccelMultiplier: ${c.bar.insideAccelMultiplier},
+    bounce: ${c.bar.bounce},
+    heightRatio: ${c.bar.heightRatio},
+  },
+
+  progress: {
+    start: ${c.progress.start},
+    gainPerSecond: ${c.progress.gainPerSecond},
+    lossPerSecond: ${c.progress.lossPerSecond},
+  },
+
+  fish: {
+    difficultyMin: ${c.fish.difficultyMin},
+    difficultyMax: ${c.fish.difficultyMax},
+    targetDistanceThreshold: ${c.fish.targetDistanceThreshold},
+    velocityLerpDivisor: ${c.fish.velocityLerpDivisor},
+    biasStep: ${c.fish.biasStep},
+    biasMax: ${c.fish.biasMax},
+  },
+};`;
+}
+
+function refreshTuneCode() {
+  el.tuneCode.value = formatConfigCode();
+}
+
+function buildTunePanel() {
+  let currentGroup = null;
+  TUNE_FIELDS.forEach((f) => {
+    if (f.group !== currentGroup) {
+      currentGroup = f.group;
+      const h = document.createElement('h4');
+      h.textContent = f.group;
+      el.tuneFields.appendChild(h);
+    }
+    const value = getByPath(FISHING_CONFIG, f.key);
+    const row = document.createElement('div');
+    row.className = 'tune-row';
+    row.innerHTML =
+      `<div class="tune-row-label"><span>${f.label}</span><span data-val>${value}</span></div>` +
+      `<input type="range" min="${f.min}" max="${f.max}" step="${f.step}" value="${value}">`;
+    const input = row.querySelector('input');
+    const valSpan = row.querySelector('[data-val]');
+    input.addEventListener('input', () => {
+      const v = parseFloat(input.value);
+      setByPath(FISHING_CONFIG, f.key, v);
+      valSpan.textContent = v;
+      if (f.key === 'bar.heightRatio') measure();
+      refreshTuneCode();
+    });
+    el.tuneFields.appendChild(row);
+  });
+  refreshTuneCode();
+}
+buildTunePanel();
+
+el.tuneToggle.addEventListener('click', () => {
+  el.tunePanel.classList.toggle('show');
+});
+
+el.tuneCopyBtn.addEventListener('click', async () => {
+  const text = formatConfigCode();
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch (e) {
+    el.tuneCode.focus();
+    el.tuneCode.select();
+    document.execCommand('copy');
+  }
+  const original = el.tuneCopyBtn.textContent;
+  el.tuneCopyBtn.textContent = '복사됨!';
+  setTimeout(() => { el.tuneCopyBtn.textContent = original; }, 1200);
 });
 
 /* ===== Render — reads state only, never mutates it ===== */
