@@ -25,6 +25,17 @@ function defaultCaseState() {
     // hasFlag/incrementFlag below and the 'setFlag' effect in game/index.html.
     flags: {},
     settings: { textSpeed: 'normal', sfx: true, bgm: true, vibration: true },
+    // The Missing Key v4 §6/§17 — 추론(가설/추론 사실) 시스템. hypothesisDefs
+    // is a write-once catalog (id -> {id, questionId, text}) populated the
+    // first time a scene's `setHypothesis` effect references it, mirroring
+    // how addEvidence/addQuestion take their full content inline rather than
+    // pointing at a second static catalog. currentHypotheses/hypothesisHistory
+    // are keyed by questionId; a question can go through several hypotheses
+    // over the story (§6.4) without losing the earlier, since-invalidated ones.
+    hypothesisDefs: {},
+    currentHypotheses: {},
+    hypothesisHistory: {},
+    facts: [],
   };
 }
 
@@ -35,6 +46,9 @@ function loadCaseState() {
     return Object.assign(defaultCaseState(), raw, {
       settings: Object.assign(defaultCaseState().settings, raw.settings || {}),
       flags: Object.assign({}, raw.flags || {}),
+      hypothesisDefs: Object.assign({}, raw.hypothesisDefs || {}),
+      currentHypotheses: Object.assign({}, raw.currentHypotheses || {}),
+      hypothesisHistory: Object.assign({}, raw.hypothesisHistory || {}),
     });
   } catch (e) { return defaultCaseState(); }
 }
@@ -132,6 +146,57 @@ const CaseFileState = {
     saveCaseState();
   },
 
+  /* ===== 추론 (가설 / 추론 사실) — The Missing Key v4 §6/§17 =====
+     "게임이 강제로 바꾸지 않는다" (§14.1): setHypothesis never marks a prior
+     entry invalidated on its own — a scene only does that explicitly via
+     invalidateCurrentHypothesis, typically from a player's own "폐기한다"
+     choice, so a wrong belief can survive right up to the ending if the
+     player insists on it. */
+  setHypothesis(questionId, hypothesis) {
+    if (!caseState.hypothesisDefs[hypothesis.id]) caseState.hypothesisDefs[hypothesis.id] = hypothesis;
+    caseState.currentHypotheses[questionId] = hypothesis.id;
+    // Also mirrored into the generic flags bag (§22 idiom) as 'hyp:<questionId>'
+    // so dialogue authors can gate a choice on the exact current hypothesis
+    // via the `flagEquals` condition (see evaluateCondition in game/index.html)
+    // without vnPlayer.js or caseFileState needing a bespoke condition type.
+    caseState.flags['hyp:' + questionId] = hypothesis.id;
+    if (!caseState.hypothesisHistory[questionId]) caseState.hypothesisHistory[questionId] = [];
+    caseState.hypothesisHistory[questionId].push({
+      hypothesisId: hypothesis.id, selectedAt: Date.now(), invalidatedAt: null, invalidatedBy: null, status: 'current',
+    });
+    saveCaseState();
+  },
+  getCurrentHypothesis(questionId) {
+    const id = caseState.currentHypotheses[questionId];
+    return id ? caseState.hypothesisDefs[id] : null;
+  },
+  getHypothesisHistory(questionId) {
+    return (caseState.hypothesisHistory[questionId] || []).map(h => Object.assign({}, h, { hypothesis: caseState.hypothesisDefs[h.hypothesisId] || null }));
+  },
+  // Marks the *current* (latest, still-"current"-status) history entry for
+  // this question as invalidated by the given fact — a no-op if there's no
+  // current entry (e.g. the effect fired before any hypothesis was ever set).
+  invalidateCurrentHypothesis(questionId, factId) {
+    const hist = caseState.hypothesisHistory[questionId];
+    if (!hist || !hist.length) return;
+    const last = hist[hist.length - 1];
+    if (last.status !== 'current') return;
+    last.status = 'invalidated';
+    last.invalidatedAt = Date.now();
+    last.invalidatedBy = factId || null;
+    saveCaseState();
+  },
+
+  /* ===== 추론 사실 (증거 연결로 생성됨) ===== */
+  addFact(fact) {
+    if (caseState.facts.some(f => f.id === fact.id)) return false;
+    caseState.facts.push(Object.assign({ sourceEvidenceIds: [], relatedQuestionIds: [], createdAt: Date.now() }, fact));
+    saveCaseState();
+    return true;
+  },
+  getFacts() { return caseState.facts.slice(); },
+  getFactsForQuestion(questionId) { return caseState.facts.filter(f => (f.relatedQuestionIds || []).includes(questionId)); },
+
   /* ===== 소지품 ===== */
   addInventoryItem(id) {
     if (caseState.inventoryItemIds.includes(id)) return false;
@@ -183,6 +248,9 @@ const CaseFileState = {
     caseState = Object.assign(defaultCaseState(), slot.caseState, {
       settings: Object.assign(defaultCaseState().settings, (slot.caseState && slot.caseState.settings) || {}),
       flags: Object.assign({}, (slot.caseState && slot.caseState.flags) || {}),
+      hypothesisDefs: Object.assign({}, (slot.caseState && slot.caseState.hypothesisDefs) || {}),
+      currentHypotheses: Object.assign({}, (slot.caseState && slot.caseState.currentHypotheses) || {}),
+      hypothesisHistory: Object.assign({}, (slot.caseState && slot.caseState.hypothesisHistory) || {}),
     });
     saveCaseState();
     return slot;

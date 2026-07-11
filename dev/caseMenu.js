@@ -120,6 +120,7 @@ function initCaseMenu(options) {
     const renderers = {
       main: renderMain, investigation: renderInvestigation,
       evidenceDetail: renderEvidenceDetail, questionDetail: renderQuestionDetail, personDetail: renderPersonDetail,
+      deductionDetail: renderDeductionDetail, factDetail: renderFactDetail,
       map: renderMap, mapDetail: renderMapDetail,
       inventory: renderInventory, inventoryDetail: renderInventoryDetail,
       system: renderSystem, save: renderSave, load: renderLoad, settings: renderSettings,
@@ -172,6 +173,7 @@ function initCaseMenu(options) {
       { id: 'evidence', label: '증거' },
       { id: 'questions', label: '의문점' },
       { id: 'persons', label: '인물' },
+      { id: 'deduction', label: '추론' },
     ];
     const tabBar = tabs.map(t => `<button class="cm-tab${t.id === tab ? ' cm-tab-active' : ''}" data-tab-switch="${t.id}">${t.label}</button>`).join('');
     let listHtml = '';
@@ -197,6 +199,8 @@ function initCaseMenu(options) {
           <div class="cm-row-arrow">›</div>
         </button>
       `).join('') : emptyNote('아직 등록된 의문점이 없습니다.');
+    } else if (tab === 'deduction') {
+      listHtml = renderDeductionTabBody();
     } else {
       const persons = CaseFileState.getPersons();
       listHtml = persons.length ? persons.map(p => `
@@ -211,6 +215,101 @@ function initCaseMenu(options) {
     }
     // Re-bind the tab bar's own nav (it reuses data-nav="investigation" with a tab id).
     return { title: '수사 노트', html: `<div class="cm-tabbar">${tabBar}</div><div class="cm-list">${listHtml}</div>` };
+  }
+
+  // 추론 탭 (The Missing Key v4 §5) — two groups: questions that currently
+  // carry a hypothesis (or did, even if since invalidated), then every
+  // generated 추론 사실 regardless of which question it's attached to (a fact
+  // can relate to more than one question, so it doesn't belong to just one
+  // question's row).
+  function renderDeductionTabBody() {
+    const questionsWithHypotheses = CaseFileState.getQuestions().filter(q => CaseFileState.getCurrentHypothesis(q.id) || CaseFileState.getHypothesisHistory(q.id).length);
+    const facts = CaseFileState.getFacts();
+    const hypothesisRows = questionsWithHypotheses.length ? questionsWithHypotheses.map(q => {
+      const current = CaseFileState.getCurrentHypothesis(q.id);
+      return `
+        <button class="cm-row" data-nav="deductionDetail" data-id="${q.id}">
+          <div class="cm-row-main">
+            <div class="cm-row-title cm-q-accent">${escapeHtml(q.title)}</div>
+            <div class="cm-row-sub">${current ? escapeHtml(current.text) : '가설 없음'} · ${questionStatusLabel(q.status)}</div>
+          </div>
+          <div class="cm-row-arrow">›</div>
+        </button>
+      `;
+    }).join('') : emptyNote('아직 세운 가설이 없습니다.');
+    const factRows = facts.length ? facts.map(f => `
+      <button class="cm-row" data-nav="factDetail" data-id="${f.id}">
+        <div class="cm-row-main">
+          <div class="cm-row-title">${escapeHtml(f.title)}</div>
+          <div class="cm-row-sub">추론 사실 · ${escapeHtml(f.confidence || '')}</div>
+        </div>
+        <div class="cm-row-arrow">›</div>
+      </button>
+    `).join('') : emptyNote('아직 생성된 추론 사실이 없습니다.');
+    return `
+      <div class="cm-section-label">현재 가설</div>
+      <div class="cm-list">${hypothesisRows}</div>
+      <div class="cm-section-label cm-section-label-spaced">생성된 사실</div>
+      <div class="cm-list">${factRows}</div>
+    `;
+  }
+
+  function renderDeductionDetail() {
+    const q = CaseFileState.getQuestions().find(q => q.id === ctx.id);
+    if (!q) return renderInvestigation();
+    const current = CaseFileState.getCurrentHypothesis(q.id);
+    const history = CaseFileState.getHypothesisHistory(q.id);
+    const relatedFacts = CaseFileState.getFactsForQuestion(q.id);
+    const historyHtml = history.length ? history.slice().reverse().map(h => `
+      <div class="cm-linked-item${h.status === 'invalidated' ? ' cm-hyp-invalidated' : ''}">
+        • ${escapeHtml(h.hypothesis ? h.hypothesis.text : h.hypothesisId)}
+        ${h.status === 'invalidated' ? ' <span class="cm-hyp-tag">폐기됨</span>' : ' <span class="cm-hyp-tag cm-hyp-tag-current">현재</span>'}
+      </div>
+    `).join('') : '';
+    return {
+      title: '추론',
+      html: `
+        <div class="cm-detail-card">
+          <div class="cm-detail-title cm-q-accent">${escapeHtml(q.title)}</div>
+          <div class="cm-status-pill cm-status-${q.status}">${questionStatusLabel(q.status)}</div>
+          <div class="cm-detail-field-block">
+            <span class="cm-detail-label">현재 가설</span>
+            <div class="cm-linked-item">${current ? escapeHtml(current.text) : '아직 가설을 세우지 않았습니다.'}</div>
+          </div>
+          <div class="cm-detail-field-block">
+            <span class="cm-detail-label">가설 변화 이력</span>
+            ${historyHtml || '<div class="cm-linked-item cm-linked-empty">없음</div>'}
+          </div>
+          <div class="cm-detail-field-block">
+            <span class="cm-detail-label">관련 추론 사실</span>
+            ${relatedFacts.length ? relatedFacts.map(f => `<div class="cm-linked-item">• ${escapeHtml(f.title)}</div>`).join('') : '<div class="cm-linked-item cm-linked-empty">없음</div>'}
+          </div>
+        </div>
+      `,
+    };
+  }
+
+  function renderFactDetail() {
+    const f = CaseFileState.getFacts().find(f => f.id === ctx.id);
+    if (!f) return renderInvestigation();
+    const sourceEvidence = (f.sourceEvidenceIds || []).map(id => CaseFileState.getEvidence().find(e => e.id === id)).filter(Boolean);
+    const relatedQuestions = (f.relatedQuestionIds || []).map(id => CaseFileState.getQuestions().find(q => q.id === id)).filter(Boolean);
+    return {
+      title: '추론 사실',
+      html: `
+        <div class="cm-detail-card">
+          <div class="cm-detail-title">${escapeHtml(f.title)}</div>
+          <div class="cm-detail-field-block">
+            <span class="cm-detail-label">근거 증거</span>
+            ${sourceEvidence.length ? sourceEvidence.map(e => `<div class="cm-linked-item">• ${escapeHtml(e.title)}</div>`).join('') : '<div class="cm-linked-item cm-linked-empty">없음</div>'}
+          </div>
+          <div class="cm-detail-field-block">
+            <span class="cm-detail-label">관련 의문점</span>
+            ${relatedQuestions.length ? relatedQuestions.map(q => `<div class="cm-linked-item">• ${escapeHtml(q.title)}</div>`).join('') : '<div class="cm-linked-item cm-linked-empty">없음</div>'}
+          </div>
+        </div>
+      `,
+    };
   }
 
   function renderEvidenceDetail() {
@@ -436,8 +535,8 @@ function initCaseMenu(options) {
   toastEl.className = 'cm-toast cm-hidden';
   document.body.appendChild(toastEl);
   let toastTimer = null;
-  function notifyNewQuestion(title) {
-    toastEl.innerHTML = `<div class="cm-toast-label">NEW QUESTION</div><div class="cm-toast-title">${escapeHtml(title)}</div>`;
+  function notifyToast(label, title) {
+    toastEl.innerHTML = `<div class="cm-toast-label">${escapeHtml(label)}</div><div class="cm-toast-title">${escapeHtml(title)}</div>`;
     toastEl.classList.remove('cm-hidden');
     requestAnimationFrame(() => toastEl.classList.add('cm-toast-show'));
     clearTimeout(toastTimer);
@@ -446,8 +545,15 @@ function initCaseMenu(options) {
       setTimeout(() => toastEl.classList.add('cm-hidden'), 300);
     }, 1700);
   }
+  function notifyNewQuestion(title) { notifyToast('NEW QUESTION', title); }
+  // The Missing Key v4 §15 — 증거 연결 성공 시 "새 사실 카드 생성 / 수사노트
+  // 등록 알림", 가설 선택 시 "현재 가설로 저장" 피드백. Reuses the same toast
+  // element/timer as notifyNewQuestion (only one of these fires per beat in
+  // practice — a choice's effects array runs synchronously per line).
+  function notifyHypothesis(text) { notifyToast('가설 저장됨', text); }
+  function notifyFact(title) { notifyToast('추론 사실 생성', title); }
 
-  return { open, close, isOpen, notifyNewQuestion, destroy: () => { root.remove(); toastEl.remove(); } };
+  return { open, close, isOpen, notifyNewQuestion, notifyHypothesis, notifyFact, destroy: () => { root.remove(); toastEl.remove(); } };
 }
 
 /* ===== helpers ===== */
@@ -455,7 +561,18 @@ function escapeHtml(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 function emptyNote(text) { return `<div class="cm-empty">${escapeHtml(text)}</div>`; }
-function questionStatusLabel(status) { return { unresolved: '미해결', partial: '부분 해결', resolved: '해결됨' }[status] || status; }
+// unresolved/partial/resolved are the original three-state vocab still used
+// by weeks 0-3's existing content; locked/open/investigating/provisional/
+// contradicted/carried_over are the wider vocab The Missing Key v4 §5.1 adds
+// for hypothesis-tracked questions. Both coexist — a question only ever uses
+// one vocab or the other depending on which scenes set its status.
+function questionStatusLabel(status) {
+  return {
+    unresolved: '미해결', partial: '부분 해결', resolved: '해결됨',
+    locked: '아직 조사할 수 없음', open: '미해결', investigating: '조사 중',
+    provisional: '잠정 결론', contradicted: '기존 결론 폐기', carried_over: '다음 주차로 이월',
+  }[status] || status;
+}
 function evidenceStatusLabel(status) { return { new: '용도 불명', reviewed: '확인함', linked: '연결됨', resolved: '해결됨' }[status] || status; }
 function personStatusLabel(status) { return { unknown: '미상', witness: '목격자', suspect: '용의자', cleared: '혐의 없음', reopened: '재조사 중', involved: '연루됨', culprit: '범인' }[status] || status; }
 function mapStatusLabel(status) { return { locked: '미방문', unlocked: '해금됨', visited: '방문함', current: '현재 위치' }[status] || status; }
@@ -566,9 +683,16 @@ function injectCaseMenuStyles() {
     .cm-linked-empty{color:#7E8791}
     .cm-lie-item{color:#C55353}
     .cm-status-pill{display:inline-block;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;font-weight:700;letter-spacing:.04em;border-radius:12px;padding:4px 10px;margin-bottom:12px}
-    .cm-status-unresolved{color:#C55353;background:rgba(197,83,83,.12)}
-    .cm-status-partial{color:#D8A93D;background:rgba(216,169,61,.12)}
-    .cm-status-resolved{color:#4CB8D4;background:rgba(76,184,212,.12)}
+    .cm-status-unresolved,.cm-status-open,.cm-status-contradicted{color:#C55353;background:rgba(197,83,83,.12)}
+    .cm-status-partial,.cm-status-provisional{color:#D8A93D;background:rgba(216,169,61,.12)}
+    .cm-status-resolved,.cm-status-investigating{color:#4CB8D4;background:rgba(76,184,212,.12)}
+    .cm-status-locked,.cm-status-carried_over{color:#7E8791;background:rgba(255,255,255,.08)}
+
+    .cm-section-label{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;letter-spacing:.1em;color:#7E8791;text-transform:uppercase;margin-bottom:8px}
+    .cm-section-label-spaced{margin-top:18px}
+    .cm-hyp-invalidated{color:#7E8791;text-decoration:line-through}
+    .cm-hyp-tag{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;font-weight:700;text-decoration:none;display:inline-block;color:#7E8791}
+    .cm-hyp-tag-current{color:#4CB8D4}
 
     .cm-secondary-btn{background:rgba(255,255,255,.08);color:#F1F3F5;border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:12px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
     .cm-secondary-btn.cm-full{width:100%;margin-top:4px}

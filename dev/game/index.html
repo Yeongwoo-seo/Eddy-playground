@@ -221,6 +221,14 @@ window.addEventListener('orientationchange', setVh100);
       <button class="sheet-btn danger" id="btnClearCaseData">CLEAR CASE DATA</button>
     </div>
 
+    <div class="sheet-title">Dev · 추론 (The Missing Key v4 §18)</div>
+    <div class="sheet-grid">
+      <button class="sheet-btn" id="btnForceHypothesis">FORCE SAMPLE HYPOTHESIS</button>
+      <button class="sheet-btn" id="btnForceFact">FORCE SAMPLE FACT</button>
+      <button class="sheet-btn" id="btnDumpBoard">DUMP CASE BOARD</button>
+      <button class="sheet-btn" id="btnDumpHypothesisHistory">DUMP HYPOTHESIS HISTORY</button>
+    </div>
+
     <button class="sheet-close" id="sheetCloseBtn">CLOSE</button>
     <a class="sheet-link" id="uploadLink" href="/dev/upload/">+ 새 이미지 업로드</a>
   </div>
@@ -552,6 +560,24 @@ function applyEffect(effect) {
     case 'incrementFlag':
       CaseFileState.incrementFlag(effect.key);
       break;
+    // The Missing Key v4 §6/§7 추론 시스템 — a `choice`'s effects sets the
+    // player's current hypothesis for a question without revealing whether
+    // it's right (mode:'hypothesis' choices never carry a correctGoto-style
+    // reveal; see caseMenu's questionStatusLabel for the "잠정 결론" framing).
+    case 'setHypothesis':
+      CaseFileState.setHypothesis(effect.questionId, effect.hypothesis);
+      caseMenu.notifyHypothesis(effect.hypothesis.text);
+      break;
+    // A pair-evidence connection's payoff (§7.3's "두 번 연속 evidence" pattern)
+    // — attached to the line reached after the *second* correct presentEvidence.
+    case 'addFact': {
+      const added = CaseFileState.addFact(effect.fact);
+      if (added) caseMenu.notifyFact(effect.fact.title);
+      break;
+    }
+    case 'invalidateHypothesis':
+      CaseFileState.invalidateCurrentHypothesis(effect.questionId, effect.factId);
+      break;
     // setFlagIfAll — derives an aggregate flag (e.g. "every required hotspot
     // in this scene visited") from several independent ones, since a scene's
     // required hotspots can be visited in any order and no single visit
@@ -587,6 +613,13 @@ function evaluateCondition(cond) {
   // choices that are always mutually exclusive (exactly one visible) instead
   // of both showing whenever the threshold is met.
   if (cond.flagBelow && !((Number(CaseFileState.getFlag(cond.flagBelow.key)) || 0) < cond.flagBelow.lessThan)) return false;
+  // flagEquals — exact-value match on a string flag (setHypothesis effects
+  // also mirror the chosen hypothesis id into flags['hyp:<questionId>'], see
+  // caseFileState.js), so a later scene can offer an extra choice only when
+  // the player's *current* hypothesis on some question is a specific one —
+  // e.g. only surface a "그럼 지금까지의 판단은?" contradiction beat when the
+  // player actually holds the hypothesis that fact is about to contradict.
+  if (cond.flagEquals && CaseFileState.getFlag(cond.flagEquals.key) !== cond.flagEquals.value) return false;
   if (cond.personStatus) {
     const persons = CaseFileState.getPersons();
     for (const personId in cond.personStatus) {
@@ -877,6 +910,33 @@ document.getElementById('btnAddInventoryItem').addEventListener('click', () => {
 });
 document.getElementById('btnClearCaseData').addEventListener('click', () => {
   if (confirm('CASE FILE 데이터를 초기화할까요? (저장 슬롯은 유지됩니다)')) CaseFileState.resetAll();
+});
+document.getElementById('btnForceHypothesis').addEventListener('click', () => {
+  const qs = CaseFileState.getQuestions();
+  if (!qs.length) { alert('먼저 의문점을 하나 등록하세요 (ADD SAMPLE QUESTION).'); return; }
+  const q = qs[qs.length - 1];
+  CaseFileState.setHypothesis(q.id, { id: 'hyp-sample-' + Date.now(), questionId: q.id, text: '테스트용 샘플 가설입니다.' });
+  CaseFileState.setQuestionStatus(q.id, 'investigating');
+});
+document.getElementById('btnForceFact').addEventListener('click', () => {
+  const ev = CaseFileState.getEvidence();
+  CaseFileState.addFact({
+    id: 'fact-sample-' + Date.now(),
+    title: '테스트용 샘플 추론 사실입니다.',
+    sourceEvidenceIds: ev.slice(0, 2).map(e => e.id),
+    relatedQuestionIds: CaseFileState.getQuestions().slice(-1).map(q => q.id),
+    confidence: 'confirmed',
+  });
+});
+document.getElementById('btnDumpBoard').addEventListener('click', () => {
+  console.log('[CASE BOARD] questions:', CaseFileState.getQuestions());
+  console.log('[CASE BOARD] facts:', CaseFileState.getFacts());
+});
+document.getElementById('btnDumpHypothesisHistory').addEventListener('click', () => {
+  CaseFileState.getQuestions().forEach(q => {
+    const hist = CaseFileState.getHypothesisHistory(q.id);
+    if (hist.length) console.log('[HYPOTHESIS HISTORY]', q.id, hist);
+  });
 });
 
 el.transformBtn.addEventListener('click', (e) => {
