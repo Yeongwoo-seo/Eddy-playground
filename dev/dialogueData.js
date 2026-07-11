@@ -1084,15 +1084,19 @@ const week1Scene002Lines = [
   { id: 'line-017', speaker: '지수', text: '웅웅 잠깐만 보고 가요.', characterId: 'jisoo', expression: 'happy' },
 ];
 
-/* OPERATION MK — WEEK 1 · SCENE 03 「전시장 자유 조사」
+/* OPERATION MK — WEEK 1 · SCENE 03 「증거 수집 · 전시장」
    Dialogue Set: dialogue-week1-scene003
    Scene: week1-scene-003 (빈티지 팝업 전시장, 10:40)
 
-   ===== 전시장 자유 조사 — 그리드 미니게임으로 전환 =====
+   ===== 전시장 자유 조사 -> 증거 수집으로 전환 =====
    원래 여기 있던 10개 핫스팟 텍스트 선택지 루프(hotspot-menu)는
-   week1-scene-003-minigame(dev/minigame-exhibition-search)으로 옮겼다 —
-   minigame-phone-search와 같은 "그리드 핫스팟 탐색 + 증거 획득 토스트"
-   방식이 대사 선택지 목록보다 "직접 둘러보며 찾는" 느낌에 더 맞기 때문.
+   week1-scene-003-minigame(dev/minigame-exhibition-search)으로 옮겼고, 이후
+   `minigames`가 아니라 `evidenceCollections`(/dev/evidence, § 증거 수집)로
+   재분류됐다 — minigame-phone-search(핸드폰을 찾아라)와 같은 "핫스팟 탐색 +
+   증거 획득 토스트" 방식에, /dev/upload로 실제 전시장 사진을 업로드하고
+   핫스팟 위치를 지정할 수 있는 room-hotspot 파이프라인까지 동일하게
+   붙였다(§ minigameId/roomHotspots 참고). 사진이 아직 없으면 기존 그리드
+   카드 모드로 그대로 동작한다.
    이 VN 씬은 짧은 도입부만 담당하고, K-01 발견/필수·선택 조사/붐빔 전환/
    보너스 단서는 전부 미니게임 쪽에 있다(§ minigame-exhibition-search 참고).
 
@@ -2402,6 +2406,30 @@ const week1Scene013Lines = [
   { id: 'line-048', speaker: '', text: '아직, 그 이름의 실체는 아무도 몰랐다.', characterId: null },
 ];
 
+// week1-scene-003-minigame's (전시장 증거 수집) hotspot registry — same role
+// as roomSearchAreas plays for minigame-phone-search, just a single "area"
+// (one exhibition floor, one photo) instead of four. Lets /dev/upload's
+// "정답 영역 지정" room-hotspot editor (scene.roomHotspots) offer these 10 named
+// spots for a dev to mark on a real uploaded exhibition photo — see
+// week1-scene-003's own `minigameId`/`roomHotspots` fields below, which wire
+// this in exactly the way scene.minigameId + scene.roomHotspots are read by
+// upload/index.html's renderHotspotSection/backgroundKinds. Only IDs +
+// display labels live here; per-hotspot flavor text, evidence records, and
+// the K-01 discovery beat live in minigame-exhibition-search/index.html,
+// mirroring how roomSearchAreas keeps gating logic out of dialogueData.js.
+const exhibitionSearchHotspots = [
+  { id: 'k01', label: '황동 장치 K-01' },
+  { id: 'desk', label: '접수대' },
+  { id: 'entrance', label: '출입구 주변' },
+  { id: 'camera', label: '오래된 필름 카메라' },
+  { id: 'watch', label: '은제 회중시계' },
+  { id: 'tag', label: '직원용 태그' },
+  { id: 'staffdoor', label: '직원 전용문' },
+  { id: 'pamphlet', label: '안내 팸플릿' },
+  { id: 'guestbook', label: '방문객 방명록' },
+  { id: 'ceiling', label: '천장 보안카메라' },
+];
+
 // Registry of testable Week 1 scenes — /dev/week1 lists these, each linking
 // to /dev/game/?scene=<id>. Covers only the 1주차 main weekend arc
 // ("사라진 K-01") — 평일 미니씬(W1-D1~D5)은 아직 미구현.
@@ -2444,6 +2472,16 @@ const week1Scenes = [
     // MINIGAME_ROUTES in game/index.html.
     lines: week1Scene003Lines,
     nextSceneId: 'week1-scene-003-minigame',
+    // Wires this scene into /dev/upload's room-hotspot editor the same way
+    // week0-scene-001-2 wires in the Eastwood map (scene.minigameId) — picking
+    // the "미니게임" background kind there stores a real exhibition photo
+    // under the week1-scene-003-minigame sceneId, and scene.roomHotspots
+    // (exhibitionSearchHotspots) offers all 10 named spots to mark on it, via
+    // DevGameState.getRoomHotspots/setRoomHotspot exactly like minigame-
+    // phone-search's rooms. Until a dev marks a photo, the minigame falls
+    // back to its existing grid-card mode.
+    minigameId: 'week1-scene-003-minigame',
+    roomHotspots: exhibitionSearchHotspots,
   },
   {
     id: 'week1-scene-003-minigame',
@@ -2990,17 +3028,6 @@ const minigames = [
   },
   {
     // Standalone (no dev-marked background/hotspots to set up — see
-    // minigame-item-scan's comment above for the same reasoning) grid-mode
-    // hotspot search, same idiom as minigame-phone-search's no-photo-yet
-    // fallback. setupUrl === route since there's no separate settings screen.
-    id: 'week1-scene-003-minigame',
-    name: '전시장 둘러보기',
-    location: 'Pop-up Exhibition',
-    route: '/dev/minigame-exhibition-search/',
-    setupUrl: '/dev/minigame-exhibition-search/',
-  },
-  {
-    // Standalone (no dev-marked background/hotspots to set up — see
     // minigame-item-scan's comment above for the same reasoning) photo
     // zoom-and-tap investigation. setupUrl === route since there's no
     // separate settings screen.
@@ -3036,6 +3063,20 @@ const evidenceCollections = [
     location: 'Sydney Accommodation',
     route: '/dev/minigame-phone-search/',
     setupUrl: `/dev/upload/?scene=${roomSearchAreaSceneId(roomSearchAreas[0].id)}&minigame=week0-scene-002-2`,
+  },
+  {
+    // Moved out of `minigames` — same reasoning as 핸드폰을 찾아라 above, now
+    // that this has a real dev-configurable background/room-hotspot editor
+    // (see week1-scene-003's minigameId/roomHotspots fields) instead of being
+    // a fixed grid-only card list. setupUrl points at the VN scene's own id
+    // (week1-scene-003), not the minigame's — see backgroundKinds() in
+    // upload/index.html for why the "미니게임" background kind resolves to
+    // scene.minigameId regardless of which scene id is in the URL.
+    id: 'week1-scene-003-minigame',
+    name: '전시장 둘러보기',
+    location: 'Pop-up Exhibition',
+    route: '/dev/minigame-exhibition-search/',
+    setupUrl: '/dev/upload/?scene=week1-scene-003&minigame=week1-scene-003-minigame',
   },
   {
     // Standalone/self-contained like fishing-minigame — the player's own
