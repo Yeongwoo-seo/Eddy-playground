@@ -31,6 +31,10 @@ const dialogueCharacters = [
   { id: 'claire', name: '클레어 모건', role: 'other', expressions: ['neutral', 'annoyed', 'shocked', 'suspicious'] },
   { id: 'sophie', name: '소피 첸', role: 'other', expressions: ['neutral', 'curious', 'shocked'] },
   { id: 'daniel-guide', name: '다니엘 리드', role: 'other', expressions: ['neutral', 'curious', 'serious'] },
+  // §9.4 — 마틴 베일은 전화로만 등장해 얼굴이 없다. 인물 DB에 초상이
+  // 없으면 /dev/game이 자동으로 실루엣 placeholder를 보여주므로
+  // expressions는 'neutral' 하나만 등록해도 문제없다.
+  { id: 'martin', name: '마틴 베일', role: 'other', expressions: ['neutral'] },
 ];
 
 // Every dialogue line's `expression` field is one of these ids — 인물 DB
@@ -2860,6 +2864,228 @@ const week1Scene011Lines = [
   { id: 'mina-f8-11', speaker: '', text: '[ 현재 판단: 윤민아 — 사진 유출 확인 · 직접 절도는 부정 · 공모 여부 미확인 ]', characterId: null },
 ];
 
+/* OPERATION MK — WEEK 1 · SCENE 11a 「애드리언 재심문」
+   Dialogue Set: dialogue-week1-scene011a
+   Scene: week1-scene-011a (Pop-up Exhibition 접수대, 18:20)
+
+   The Missing Key v4 §10 ACT 7 — 현재 구조에서 애드리언이 007 이후로
+   사라지는 문제를 해결한다. 윤민아 링크를 본 적 없다/레오를 모른다는
+   두 진술은 깨지 않는다(실제로 사실이다) — 딱 하나, "M.K.와는 이번이
+   처음이자 마지막 연락"이라는 부분만 증거 연결로 무너뜨린다. 애드리언의
+   역할은 주범이 아니라 반복적으로 정보를 노출한 인물로 재정의된다. */
+const week1Scene011aLines = [
+  { id: 'line-001', speaker: '', text: '전시장 접수대.\n오후 6시 20분.', characterId: null },
+  { id: 'line-002', speaker: '지수', text: '애드리언씨, 몇 가지만 다시 여쭤볼게요.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-003', speaker: '애드리언 콜', text: '네, 말씀하세요.', characterId: 'adrian', expression: 'neutral' },
+  { id: 'line-004', speaker: '영우', text: '윤민아씨 사진 링크, 혹시 보신 적 있으세요?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-005', speaker: '애드리언 콜', text: '아니요, 그런 건 본 적도 없어요.', characterId: 'adrian', expression: 'neutral' },
+  { id: 'line-006', speaker: '지수', text: '레오씨는요?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-007', speaker: '애드리언 콜', text: '레오요? 모르는 이름인데요.', characterId: 'adrian', expression: 'neutral' },
+  { id: 'line-008', speaker: '영우', text: 'M.K.라는 계정이랑은요? 딱 이번 한 번뿐이었어요?', characterId: 'youngwoo', expression: 'curious' },
+  {
+    id: 'line-009', speaker: '애드리언 콜', text: '네, 이번이 처음이자 마지막이었어요.', characterId: 'adrian', expression: 'neutral',
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-adrian-once-only-claim', code: 'E-B09', title: '애드리언의 재진술 — 단 한 번뿐인 연락',
+        description: '애드리언 콜 — "M.K. 계정과는 이번이 처음이자 마지막 연락"이라는 진술.',
+        discoveredLocationText: 'Pop-up Exhibition 접수대 · 애드리언 재심문',
+      },
+    }],
+  },
+  { id: 'line-010', speaker: '지수', text: '...\n(정말 처음이었을까.)', characterId: 'jisoo', expression: 'suspicious' },
+  {
+    id: 'adrian-connect-intro', speaker: '영우', text: '태블릿 기록도 한번 다시 볼 수 있을까요?', characterId: 'youngwoo', expression: 'curious',
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-adrian-tablet-history', code: 'E-B10', title: '애드리언 태블릿 — 과거 문의 기록',
+        description: '애드리언의 태블릿 브라우저 기록. 몇 달 전에도 비슷한 이니셜의 계정에서 K-01 관련 문의가 몇 차례 왔었지만, 스팸으로 보고 무시한 흔적이 남아 있다.',
+        discoveredLocationText: 'Pop-up Exhibition 접수대 · 애드리언 재심문',
+      },
+    }],
+  },
+  {
+    id: 'adrian-connect-1', type: 'evidence', speaker: '', text: '"이번이 처음이자 마지막"이라는 진술을 반박할 자료는?', characterId: null,
+    evidenceIds: ['evidence-adrian-tablet-history'],
+    wrongText: ['애드리언의 태블릿 자체에서 찾을 수 있는 자료를 다시 보자.'],
+    correctGoto: 'adrian-connect-2',
+  },
+  {
+    id: 'adrian-connect-2', type: 'evidence', speaker: '', text: '그 과거 문의가 이번 건과 같은 계열이라는 것을 보여주는 자료는?', characterId: null,
+    evidenceIds: ['evidence-adrian-sender'],
+    wrongText: ['이번에 온 문의 발신 계정 자료를 다시 찾아보자.'],
+    correctGoto: 'adrian-connect-result',
+  },
+  {
+    id: 'adrian-connect-result', speaker: '', text: '[ 추론 사실 생성 ]\n애드리언은 과거에도 같은 계열 계정의 문의를 받은 적이 있다.', characterId: null,
+    effects: [{
+      type: 'addFact',
+      fact: {
+        id: 'fact-adrian-repeat-contact', title: '애드리언은 예전에도 M.K. 계열 계정의 문의를 받은 적이 있다.',
+        sourceEvidenceIds: ['evidence-adrian-tablet-history', 'evidence-adrian-sender'],
+        relatedQuestionIds: ['question-adrian-sender', 'q-w1-who-planned-event'],
+        confidence: 'confirmed',
+      },
+    }],
+  },
+  {
+    id: 'line-011', speaker: '애드리언 콜', text: '...', characterId: 'adrian', pauseBeforeMs: 400, expression: 'suspicious',
+    effects: [{
+      type: 'setPersonStatus', id: 'adrian', status: 'witness',
+      patch: {
+        knownFacts: ['판매 불가 답장에 전시 일정을 함께 적어 정보를 유출함 (007)', '몇 달 전부터 같은 계열 계정에서 반복적으로 문의를 받아왔음'],
+        lies: ['"M.K.와는 이번이 처음이자 마지막 연락이었다" (재진술)'],
+        unknowns: ['그 계정이 왜 K-01에 이렇게까지 집착하는지'],
+      },
+    }],
+  },
+  { id: 'line-012', speaker: '애드리언 콜', text: '...\n사실, 예전에도 몇 번 비슷한 문의가 오긴 했어요.', characterId: 'adrian', expression: 'suspicious' },
+  { id: 'line-013', speaker: '애드리언 콜', text: '그땐 그냥 스팸인 줄 알고 무시했었는데.', characterId: 'adrian', expression: 'neutral' },
+  { id: 'line-014', speaker: '지수', text: '그러니까, 이번이 처음이 아니었던 거네요.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-015', speaker: '애드리언 콜', text: '...\n네. 근데 저는 정말 그냥 답장 한 번 한 것뿐이에요. 다른 건 몰라요.', characterId: 'adrian', expression: 'neutral' },
+  { id: 'line-016', speaker: '영우', text: '그니까 애드리언씨는 뭘 계획한 사람이 아니라, 그냥 여러 번 정보가 새어나간 통로였던 거네.', characterId: 'youngwoo', expression: 'suspicious' },
+  { id: 'line-017', speaker: '지수', text: '네. 본인도 모르게 계속 이용당하고 있었던 거예요.', characterId: 'jisoo', expression: 'serious' },
+];
+
+/* OPERATION MK — WEEK 1 · SCENE 11b 「마틴 베일 통화」
+   Dialogue Set: dialogue-week1-scene011b
+   Scene: week1-scene-011b (전화 통화, 18:40)
+
+   The Missing Key v4 §9.4/§10 ACT 8 — K-01 출품자를 별도 캐릭터 일러스트
+   없이 전화로만 등장시킨다. 카탈로그 제작연도 불일치·각인 선명도 변화는
+   자동으로 지급하고(놓치면 안 되는 핵심 반전이라 §18과 같은 원칙), 판매
+   가능 여부/출품 당시 사진은 선택 조사로 남긴다. q-w1-request-purpose는
+   원래 week1-scene-012 blank-5에서 등록했지만, 실제로 이 미스터리가 처음
+   드러나는 곳은 여기라서 addQuestion을 이 씬으로 옮겼다 — scene012는 이제
+   상태 갱신만 한다. */
+const week1Scene011bLines = [
+  { id: 'line-001', speaker: '', text: '숙소로 돌아가는 길.\n오후 6시 40분.', characterId: null },
+  { id: 'line-002', speaker: '영우', text: 'K-01 원래 주인, 아직 연락 안 해봤지?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-003', speaker: '지수', text: '맞다. 출품자 연락처가 팸플릿에 있었어요.', characterId: 'jisoo', expression: 'curious' },
+  {
+    id: 'line-004', speaker: '', text: '[ 발신: 마틴 베일 (K-01 출품자) ]', characterId: null,
+    effects: [{
+      type: 'addPerson',
+      person: { id: 'martin', name: '마틴 베일', role: 'K-01 출품자', status: 'witness', summary: 'K-01을 이번 팝업 전시에 출품한 원래 소유자. 전화로만 연락이 닿았다.' },
+    }],
+  },
+  { id: 'line-005', speaker: '마틴 베일', text: '여보세요.', characterId: 'martin', expression: 'neutral' },
+  { id: 'line-006', speaker: '지수', text: '안녕하세요, K-01 관련해서 몇 가지 여쭤보려고 연락드렸어요.', characterId: 'jisoo', expression: 'neutral' },
+  { id: 'line-007', speaker: '마틴 베일', text: '아, 그 도난 사건이요. 얘기 들었습니다. 뭐가 궁금하신가요?', characterId: 'martin', expression: 'neutral' },
+  {
+    id: 'martin-menu', type: 'choice', speaker: '', text: '무엇을 물어볼까요? (필요한 만큼 골라보세요)', characterId: null,
+    choices: [
+      { id: 'sale', label: '판매 가능 여부', goto: 'martin-sale' },
+      { id: 'photo', label: '출품 당시 사진', goto: 'martin-photo' },
+      { id: 'done', label: '이 정도면 됐다', goto: 'martin-core-1' },
+    ],
+  },
+  {
+    id: 'martin-sale', speaker: '마틴 베일', text: '아니요, 판매용은 아니었어요. 그냥 좋아하는 사람들한테 보여주고 싶어서 잠깐 빌려준 거예요.', characterId: 'martin', expression: 'neutral', goto: 'martin-menu',
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-k01-not-for-sale', code: 'E-MV1', title: '마틴의 진술 — 판매 목적 아님',
+        description: '마틴 베일 — K-01은 판매용이 아니라 전시 목적으로만 빌려준 것이라는 진술.',
+        discoveredLocationText: '전화 통화 · 마틴 베일',
+      },
+    }],
+  },
+  {
+    id: 'martin-photo', speaker: '마틴 베일', text: '출품할 때 찍어둔 사진은 있어요. 보내드릴게요.', characterId: 'martin', expression: 'neutral', goto: 'martin-menu',
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-k01-submission-photo', code: 'E-MV2', title: 'K-01 출품 당시 사진',
+        description: '마틴이 K-01을 전시에 내놓을 때 찍어둔 사진. 지금과 비교할 수 있는 유일한 "출품 당시" 기록이다.',
+        discoveredLocationText: '전화 통화 · 마틴 베일',
+      },
+    }],
+  },
+  {
+    id: 'martin-core-1', speaker: '영우', text: '이거 제작 연도가 정확히 언제예요?', characterId: 'youngwoo', expression: 'curious',
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-k01-catalog-year-mismatch', code: 'E-MV3', title: '카탈로그 제작 연도 — 출품 기록과 불일치',
+        description: '마틴이 알고 있는 K-01의 제작 연도가, 전시 카탈로그에 적힌 연도와 다르다. 둘 중 하나는 틀렸다.',
+        discoveredLocationText: '전화 통화 · 마틴 베일',
+      },
+    }],
+  },
+  { id: 'martin-core-2', speaker: '마틴 베일', text: '음... 이상하네요. 제가 알던 연도랑 카탈로그가 다르게 적혀 있다고요?', characterId: 'martin', expression: 'neutral' },
+  { id: 'martin-core-3', speaker: '마틴 베일', text: '그거 말고도 이상한 게 있긴 했어요.', characterId: 'martin', expression: 'neutral' },
+  {
+    id: 'martin-core-4', speaker: '마틴 베일', text: '하단 각인 부분이요. 요즘 사진으로 보니까 제가 기억하던 것보다 훨씬 선명하더라고요.', characterId: 'martin', expression: 'neutral',
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-k01-inscription-sharper', code: 'E-MV4', title: '하단 각인 — 선명도 변화',
+        description: '마틴이 기억하는 K-01의 하단 각인은 흐릿했는데, 최근 사진 속 각인은 눈에 띄게 선명하다.',
+        discoveredLocationText: '전화 통화 · 마틴 베일',
+      },
+    }],
+  },
+  { id: 'martin-core-5', speaker: '지수', text: '...\n그리고 M.K.라는 계정에서 문의가 왔었다고 하셨죠?', characterId: 'jisoo', expression: 'suspicious' },
+  {
+    id: 'martin-core-6', speaker: '마틴 베일', text: '네, 몇 번 왔었어요. 근데 신기하게 매번 딱 그 각인 부분만 물어봤어요.', characterId: 'martin', expression: 'neutral',
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-mk-inscription-focused-inquiries', code: 'E-MV5', title: 'M.K.의 문의 — 각인에만 집중',
+        description: 'M.K. 계열 계정이 마틴에게 보낸 과거 문의들. 전체 물건이 아니라 매번 하단 각인 부분만 반복해서 물었다.',
+        discoveredLocationText: '전화 통화 · 마틴 베일',
+      },
+    }],
+  },
+  {
+    id: 'martin-connect-1', type: 'evidence', speaker: '', text: 'K-01 자체에 뭔가 이상이 있다는 걸 보여주는 자료는?', characterId: null,
+    evidenceIds: ['evidence-k01-catalog-year-mismatch'],
+    wrongText: ['물건 자체의 기록과 관련된 자료를 다시 찾아보자.'],
+    correctGoto: 'martin-connect-2',
+  },
+  {
+    id: 'martin-connect-2', type: 'evidence', speaker: '', text: 'M.K.가 정확히 무엇을 원했는지 보여주는 자료는?', characterId: null,
+    evidenceIds: ['evidence-mk-inscription-focused-inquiries'],
+    wrongText: ['M.K.의 문의 자체를 다시 살펴보자.'],
+    correctGoto: 'martin-connect-result',
+  },
+  {
+    id: 'martin-connect-result', speaker: '', text: '[ 추론 사실 생성 ]\n의뢰인이 원한 건 K-01 전체가 아니라, 하단 각인 그 자체였다.', characterId: null,
+    effects: [
+      {
+        type: 'addQuestion',
+        question: { id: 'q-w1-request-purpose', title: '의뢰인은 왜 K-01의 하단 각인을 원했는가?', linkedEvidenceIds: ['evidence-k01-catalog-year-mismatch', 'evidence-k01-inscription-sharper', 'evidence-mk-inscription-focused-inquiries'] },
+      },
+      {
+        type: 'setQuestionStatus', id: 'q-w1-request-purpose', status: 'provisional',
+        resolutionText: '제작 연도가 기록과 어긋나고, 각인이 예전보다 선명해졌으며, M.K.는 매번 각인만 물었다 — 각인 자체가 목적이었던 것 같지만, 왜인지는 아직 모른다.',
+      },
+      {
+        type: 'addQuestion',
+        question: { id: 'q-w1-k01-authenticity', title: 'K-01은 정말 진품인가?', linkedEvidenceIds: ['evidence-k01-catalog-year-mismatch', 'evidence-k01-inscription-sharper'] },
+      },
+      { type: 'setQuestionStatus', id: 'q-w1-k01-authenticity', status: 'carried_over', resolutionText: '제작 연도 불일치와 각인 선명도 변화는 확인했지만, 진품 여부 자체를 가릴 방법은 아직 없다.' },
+      {
+        type: 'addFact',
+        fact: {
+          id: 'fact-inscription-is-target', title: '의뢰의 진짜 목적은 K-01 전체가 아니라 하단 각인이다.',
+          sourceEvidenceIds: ['evidence-k01-catalog-year-mismatch', 'evidence-mk-inscription-focused-inquiries'],
+          relatedQuestionIds: ['q-w1-request-purpose', 'q-w1-k01-authenticity'],
+          confidence: 'confirmed',
+        },
+      },
+    ],
+  },
+  { id: 'martin-end-1', speaker: '마틴 베일', text: '...\n이거, 생각보다 더 이상한 일인 것 같네요.', characterId: 'martin', expression: 'neutral' },
+  { id: 'martin-end-2', speaker: '지수', text: '저희도 그렇게 느끼고 있어요. 알려주셔서 감사합니다.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'martin-end-3', speaker: '마틴 베일', text: '뭔가 더 알게 되면 꼭 연락 주세요.', characterId: 'martin', expression: 'neutral' },
+  { id: 'line-008', speaker: '', text: '전화를 끊고도, 두 사람은 한동안 말이 없었다.', characterId: null },
+  { id: 'line-009', speaker: '영우', text: '이거 그냥 절도 사건이 아니었네.', characterId: 'youngwoo', expression: 'blank' },
+  { id: 'line-010', speaker: '지수', text: '네.\n일단 정리부터 해봐요.', characterId: 'jisoo', expression: 'serious' },
+];
+
 /* OPERATION MK — WEEK 1 · SCENE 12 「사건 재구성」
    Dialogue Set: dialogue-week1-scene012
    Scene: week1-scene-012 (전시장 근처 카페, 19:00)
@@ -2949,13 +3175,13 @@ const week1Scene012Lines = [
   },
   { id: 'blank-5-wrong', speaker: '지수', text: '아니에요. 팸플릿에도 판매 불가라고 적혀 있었잖아요.', characterId: 'jisoo', expression: 'suspicious', goto: 'blank-5' },
   {
+    // q-w1-request-purpose는 week1-scene-011b(마틴 베일 통화)에서 이미
+    // 등록됐다 — 여기서는 레오/윤민아 양쪽 진술까지 더해 상태 텍스트만
+    // 갱신한다.
     id: 'blank-5-correct', speaker: '영우', text: '맞아. 레오도, 윤민아씨도 결국 "의뢰받은 일"이었다고 했어.', characterId: 'youngwoo', expression: 'serious',
     effects: [{
-      type: 'addQuestion',
-      question: { id: 'q-w1-request-purpose', title: '의뢰인은 왜 K-01의 하단 각인을 원했는가?', linkedEvidenceIds: ['evidence-leo-reference-image'] },
-    }, {
       type: 'setQuestionStatus', id: 'q-w1-request-purpose', status: 'provisional',
-      resolutionText: '레오도, 윤민아도 "의뢰받은 일"이었다고 인정했지만, 왜 하필 하단 각인만 원했는지는 아직 짐작뿐이다.',
+      resolutionText: '레오도, 윤민아도 "의뢰받은 일"이었다고 인정했고, 마틴의 통화로 그 의뢰가 각인 자체를 노렸다는 것까지는 확인했다. 다만 왜 하필 각인인지는 아직 짐작뿐이다.',
     }],
   },
 
@@ -3330,8 +3556,26 @@ const week1Scenes = [
     lines: week1Scene011Lines,
   },
   {
-    id: 'week1-scene-012',
+    id: 'week1-scene-011a',
     order: 20,
+    name: '애드리언 재심문',
+    location: 'Pop-up Exhibition',
+    introLabel: 'CIRCULAR QUAY',
+    time: '18:20',
+    lines: week1Scene011aLines,
+  },
+  {
+    id: 'week1-scene-011b',
+    order: 21,
+    name: '마틴 베일 통화',
+    location: 'Circular Quay 이동 중',
+    introLabel: 'CIRCULAR QUAY',
+    time: '18:40',
+    lines: week1Scene011bLines,
+  },
+  {
+    id: 'week1-scene-012',
+    order: 22,
     name: '사건 재구성',
     location: 'Café near Circular Quay',
     introLabel: 'CIRCULAR QUAY',
@@ -3340,7 +3584,7 @@ const week1Scenes = [
   },
   {
     id: 'week1-scene-013',
-    order: 21,
+    order: 23,
     name: '1주차 엔딩 · M.K.라는 이름',
     location: 'Sydney Accommodation',
     introLabel: 'ACCOMMODATION',

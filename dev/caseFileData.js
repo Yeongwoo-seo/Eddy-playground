@@ -34,12 +34,14 @@ const caseMapLocations = [
       // Circular Quay 권역이라 여기 포함. 엔딩(013)만 숙소라 위
       // accommodation 항목으로 옮겨졌다 — see week1Scenes in dialogueData.js.
       // v4 §9/§10 — 클레어/다니엘 최초 진술(005a/005b), 재심문(008a), 현장
-      // 재검증(009a)도 전부 같은 권역이라 여기 추가.
+      // 재검증(009a), 애드리언 재심문(011a), 마틴 베일 통화(011b)도 전부
+      // 같은 권역이라 여기 추가.
       'week1-scene-001', 'week1-scene-002', 'week1-scene-003', 'week1-scene-003-minigame',
       'week1-scene-004', 'week1-scene-004-minigame', 'week1-scene-004-review', 'week1-scene-005',
       'week1-scene-005a', 'week1-scene-005b',
       'week1-scene-006', 'week1-scene-007', 'week1-scene-008', 'week1-scene-008-minigame',
-      'week1-scene-008a', 'week1-scene-009', 'week1-scene-009a', 'week1-scene-010', 'week1-scene-011', 'week1-scene-012',
+      'week1-scene-008a', 'week1-scene-009', 'week1-scene-009a', 'week1-scene-010', 'week1-scene-011',
+      'week1-scene-011a', 'week1-scene-011b', 'week1-scene-012',
     ],
   },
   { id: 'opera-house', name: 'Opera House', mapX: 70, mapY: 22, relatedSceneIds: [] },
