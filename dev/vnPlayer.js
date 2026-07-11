@@ -99,6 +99,14 @@ function createVNPlayer({ onLineChange, onTextUpdate, onArrow, onComplete, onEff
     if (line.sceneTransition && onSceneTransition) {
       isPausing = true;
       onArrow(false);
+      // Clear the previous line's text right away instead of leaving it on
+      // screen until typeText() runs after the transition resolves — the
+      // black overlay fades in over ~0.5s (not an instant cut), so stale
+      // text stayed visibly readable through it while the speaker name (set
+      // by onLineChange above) had already switched to the new line's, and
+      // then the whole dialogue box would jump/reset only once the overlay
+      // finished. See dev/game/index.html's playSceneTransition.
+      onTextUpdate('');
       // A failed background/asset fetch inside onSceneTransition must not
       // leave isPausing stuck true forever — that permanently disables tap()
       // (see its guard above) with no visible error, indistinguishable from
