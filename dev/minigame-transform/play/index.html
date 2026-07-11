@@ -66,13 +66,19 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .char-body.body-sturdy{width:132px;height:88px;border-radius:42% 42% 48% 48% / 38% 38% 56% 56%}
 .char-body.body-hourglass::after{content:'';position:absolute;left:18%;right:18%;top:42%;height:2px;background:rgba(0,0,0,.18);border-radius:2px}
 
-.cauldron{position:relative;width:184px;height:150px;z-index:1;filter:drop-shadow(0 10px 12px rgba(0,0,0,.5))}
+.cauldron{position:relative;width:184px;height:150px;z-index:1;filter:drop-shadow(0 10px 12px rgba(0,0,0,.5));transition:transform .18s cubic-bezier(.2,.8,.2,1)}
 .cauldron-svg{width:100%;height:100%;display:block;overflow:visible}
-.cauldron-liquid{transform-box:fill-box;transform-origin:center;transition:fill .4s ease;filter:drop-shadow(0 0 8px var(--liquid-color,#2c3440))}
-.cauldron-liquid.bubble{animation:cauldronBubble .5s ease-in-out infinite}
+.cauldron-liquid-group{transform-box:fill-box;transform-origin:center;filter:drop-shadow(0 0 8px var(--liquid-color,#2c3440))}
+.cauldron-liquid-group.bubble{animation:cauldronBubble .5s ease-in-out infinite}
 @keyframes cauldronBubble{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-2.5px) scale(1.03)}}
+#cauldronFillRect{fill:var(--liquid-color,#2c3440);transition:y .5s cubic-bezier(.2,.8,.2,1),height .5s cubic-bezier(.2,.8,.2,1)}
+#cauldronLiquid{fill:var(--liquid-color,#2c3440);transition:cy .5s cubic-bezier(.2,.8,.2,1),opacity .3s ease;opacity:0}
 .cauldron.shake{animation:cauldronShake .12s linear infinite}
 @keyframes cauldronShake{0%{transform:translateX(0)}25%{transform:translateX(-4px) rotate(-1deg)}75%{transform:translateX(4px) rotate(1deg)}100%{transform:translateX(0)}}
+.cauldron.gulp{animation:cauldronGulp .32s ease}
+@keyframes cauldronGulp{0%,100%{transform:scale(1,1)}35%{transform:scale(1.05,.94)}}
+.cauldron.drop-active{transform:scale(1.05)}
+.cauldron.drop-active .cauldron-svg{filter:drop-shadow(0 0 16px rgba(214,168,75,.75))}
 
 .fx-flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:5;transition:opacity .12s ease}
 .fx-flash.show{opacity:1}
@@ -82,16 +88,40 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .target-line{font-family:var(--mono);font-size:11.5px;color:var(--text-muted);text-align:center;letter-spacing:.02em}
 .target-line b{color:var(--amber);font-weight:700}
 
-/* ===== Recipe slots ===== */
-.slots-grid{position:relative;z-index:1;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:6px 16px 12px}
-.slot-btn{position:relative;background:var(--surface-1);border:1px solid var(--divider);border-radius:14px;padding:10px 4px 8px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;min-height:76px;justify-content:center}
-.slot-btn:active{transform:scale(.96)}
-.slot-btn.filled{border-color:rgba(89,184,200,.5);background:rgba(89,184,200,.08)}
-.slot-btn.hint-glow{animation:hintGlow 1.1s ease-in-out infinite}
 @keyframes hintGlow{0%,100%{box-shadow:0 0 0 rgba(214,168,75,0)}50%{box-shadow:0 0 12px rgba(214,168,75,.55)}}
-.slot-icon{font-size:18px}
-.slot-label{font-size:10.5px;color:var(--text-muted);font-weight:600;text-align:center;line-height:1.25}
-.slot-picked{font-size:10.5px;color:var(--cyan);font-weight:700;text-align:center;line-height:1.2;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ===== Potion shelf — wooden compartments you drag bottles out of ===== */
+.shelf-wall{position:relative;z-index:1;margin:2px 14px 4px;padding:12px 10px 16px;max-height:266px;overflow-y:auto;overflow-x:hidden;border-radius:20px;background:radial-gradient(ellipse at 50% 0%,#2c1d42 0%,#1c1330 60%,#150e26 100%);box-shadow:inset 0 2px 10px rgba(0,0,0,.5),inset 0 -2px 14px rgba(0,0,0,.6),0 6px 16px rgba(0,0,0,.35);scrollbar-width:none}
+.shelf-wall::-webkit-scrollbar{display:none}
+
+.shelf-plank{position:relative;margin:0 2px 20px;padding:18px 10px 12px;background:linear-gradient(180deg,#8a5a34 0%,#6b4226 55%,#4f2f1a 100%);border-radius:10px;box-shadow:0 5px 0 rgba(0,0,0,.28),0 8px 10px rgba(0,0,0,.4),inset 0 2px 0 rgba(255,255,255,.16),inset 0 -3px 4px rgba(0,0,0,.35)}
+.shelf-plank::before{content:'';position:absolute;inset:0;border-radius:10px;background:repeating-linear-gradient(90deg,rgba(0,0,0,.08) 0px,rgba(0,0,0,.08) 1px,transparent 1px,transparent 7px);opacity:.5;pointer-events:none}
+.shelf-plank:last-child{margin-bottom:2px}
+
+.shelf-tag{position:relative;z-index:2;display:inline-block;top:-11px;left:-2px;font-family:var(--sans);font-size:12px;font-weight:700;color:#3a2408;background:linear-gradient(135deg,#F2E0A0,#D6A84B 60%,#B8862F);padding:5px 13px;border-radius:20px;box-shadow:0 3px 6px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.5);letter-spacing:-.1px;white-space:nowrap}
+.shelf-tag.hint-glow{animation:hintGlow 1.1s ease-in-out infinite;border-radius:20px}
+
+.shelf-bottles{position:relative;z-index:1;display:flex;gap:9px;justify-content:center;flex-wrap:wrap;padding-top:6px}
+
+.shelf-bottle{position:relative;width:38px;touch-action:none;cursor:grab}
+.shelf-bottle svg{width:100%;display:block;filter:drop-shadow(0 4px 5px rgba(0,0,0,.5))}
+.shelf-bottle:active{cursor:grabbing}
+.shelf-bottle.dragging{opacity:.28}
+.shelf-bottle.selected svg{filter:drop-shadow(0 4px 5px rgba(0,0,0,.5)) drop-shadow(0 0 6px rgba(62,207,107,.75))}
+.shelf-bottle.selected::after{content:'✓';position:absolute;top:-6px;right:-5px;width:16px;height:16px;border-radius:50%;background:var(--green);color:#08110c;font-size:9.5px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 4px rgba(0,0,0,.4);z-index:2}
+.shelf-bottle.hint-glow{animation:hintGlow 1.1s ease-in-out infinite;border-radius:50%}
+
+.drag-ghost{position:fixed;z-index:45;pointer-events:none;filter:drop-shadow(0 6px 10px rgba(0,0,0,.5));will-change:left,top,transform}
+.pour-stream{position:fixed;width:5px;height:0;border-radius:3px;background:linear-gradient(180deg,var(--pour-color,#fff),transparent);opacity:0;transition:height .22s ease,opacity .18s ease;pointer-events:none;z-index:40;box-shadow:0 0 6px var(--pour-color,#fff)}
+.splash-drop{position:fixed;font-size:10px;color:#cfe8ff;opacity:.9;pointer-events:none;z-index:41;animation:splashPop .45s ease-out forwards}
+@keyframes splashPop{0%{transform:translate(0,0) scale(1);opacity:.9}100%{transform:translate(var(--dx),var(--dy)) scale(.4);opacity:0}}
+
+/* ===== Cauldron contents strip — compact readout of the current recipe;
+   tap a filled slot to clear that ingredient. ===== */
+.contents-strip{position:relative;z-index:1;display:flex;gap:6px;justify-content:center;flex-wrap:wrap;padding:2px 16px 12px}
+.content-slot{width:32px;height:32px;border-radius:50%;background:var(--surface-1);border:1.5px dashed var(--divider);display:flex;align-items:center;justify-content:center;font-size:14px;transition:transform .15s,border-color .15s}
+.content-slot.filled{border-style:solid;border-color:rgba(255,255,255,.4);cursor:pointer}
+.content-slot.filled:active{transform:scale(.88)}
 
 .powder-btn{position:relative;z-index:1;margin:0 16px calc(16px + env(safe-area-inset-bottom,0));font-family:var(--mono);font-size:14.5px;font-weight:700;letter-spacing:.04em;color:#08110c;background:var(--green);border:none;border-radius:16px;padding:16px;cursor:pointer;text-align:center;transition:opacity .2s,transform .15s}
 .powder-btn:active:not(:disabled){transform:scale(.98)}
@@ -104,18 +134,6 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .sheet-overlay.show{display:flex}
 .sheet{width:100%;max-width:430px;max-height:78vh;background:var(--surface-2);border:1px solid var(--divider);border-bottom:none;border-radius:24px 24px 0 0;padding:10px 18px calc(16px + env(safe-area-inset-bottom,0));display:flex;flex-direction:column;overflow:hidden}
 .sheet-handle{width:36px;height:4px;border-radius:2px;background:var(--divider);margin:2px auto 12px}
-.sheet-title{font-size:15px;font-weight:700;margin-bottom:10px}
-.potion-list{overflow-y:auto;display:flex;flex-direction:column;gap:8px;flex:1}
-.potion-row{display:flex;align-items:center;gap:12px;background:var(--surface-1);border:1px solid var(--divider);border-radius:14px;padding:10px 12px;cursor:pointer}
-.potion-row:active{transform:scale(.98)}
-.potion-row.selected{border-color:var(--cyan);background:rgba(89,184,200,.1)}
-.potion-row.hint-highlight{border-color:var(--amber);box-shadow:0 0 10px rgba(214,168,75,.4)}
-.potion-swatch{position:relative;width:30px;height:38px;flex-shrink:0}
-.potion-swatch svg{display:block;width:100%;height:100%;overflow:visible}
-.potion-charm{position:absolute;top:-4px;right:-7px;font-size:13px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
-.potion-info{flex:1;min-width:0}
-.potion-name{font-size:13.5px;font-weight:700}
-.potion-desc{font-size:11.5px;color:var(--text-muted);margin-top:2px;line-height:1.4}
 .sheet-close{margin-top:12px;font-family:var(--mono);font-size:12.5px;color:var(--text-secondary);background:var(--surface-1);border:1px solid var(--divider);border-radius:14px;padding:12px;cursor:pointer}
 
 .book-sheet{max-height:82vh}
@@ -203,6 +221,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
   <div class="sparkle-field" id="sparkleField"></div>
   <div class="stage">
     <div class="mirror-bubble" id="mirrorBubble" style="display:none"></div>
+    <div class="shelf-wall" id="shelfWall"></div>
     <div class="cauldron-area" id="cauldronArea">
       <div class="portrait-wrap" id="portraitWrap" style="display:none">
         <div class="char-head" id="charHead">
@@ -228,6 +247,9 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
               <stop offset="0%" stop-color="#636f7b"/>
               <stop offset="100%" stop-color="#262d34"/>
             </linearGradient>
+            <clipPath id="cauldronClip">
+              <path d="M40,22 C31,74 37,105 100,120 C163,105 169,74 160,22 Z"/>
+            </clipPath>
           </defs>
           <ellipse cx="100" cy="140" rx="70" ry="9" fill="#000" opacity=".3"/>
           <path d="M74,138 L64,148" stroke="#20262c" stroke-width="9" stroke-linecap="round"/>
@@ -236,8 +258,13 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
           <path d="M38,20 C28,75 34,108 100,124 C166,108 172,75 162,20 Z" fill="url(#potGrad)" stroke="#0c0f12" stroke-width="3"/>
           <path d="M30,48 Q10,50 12,70" stroke="#20262c" stroke-width="8" fill="none" stroke-linecap="round"/>
           <path d="M170,48 Q190,50 188,70" stroke="#20262c" stroke-width="8" fill="none" stroke-linecap="round"/>
+          <g class="cauldron-liquid-group" id="cauldronLiquidGroup">
+            <g clip-path="url(#cauldronClip)">
+              <rect id="cauldronFillRect" x="20" y="120" width="160" height="0"/>
+            </g>
+            <ellipse id="cauldronLiquid" cx="100" cy="120" rx="52" ry="9"/>
+          </g>
           <ellipse cx="100" cy="20" rx="64" ry="13" fill="url(#rimGrad)" stroke="#0c0f12" stroke-width="3"/>
-          <ellipse class="cauldron-liquid" id="cauldronLiquid" cx="100" cy="21" rx="52" ry="9" style="fill:var(--liquid-color,#2c3440)"/>
           <ellipse cx="80" cy="16" rx="16" ry="3" fill="#fff" opacity=".2"/>
         </svg>
       </div>
@@ -246,18 +273,9 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
     <div class="target-line" id="targetLine"></div>
   </div>
 
-  <div class="slots-grid" id="slotsGrid"></div>
+  <div class="contents-strip" id="contentsStrip"></div>
 
   <button class="powder-btn" id="powderBtn" type="button" disabled>마법가루 뿌리기</button>
-</div>
-
-<div class="sheet-overlay" id="pickerOverlay">
-  <div class="sheet" id="pickerSheet">
-    <div class="sheet-handle"></div>
-    <div class="sheet-title" id="pickerTitle"></div>
-    <div class="potion-list" id="potionList"></div>
-    <button class="sheet-close" id="pickerCloseBtn" type="button">닫기</button>
-  </div>
 </div>
 
 <div class="sheet-overlay" id="bookOverlay">
@@ -317,14 +335,14 @@ function vibrate(ms) { if (navigator.vibrate) navigator.vibrate(ms); }
 
 /* ===== Attribute + potion data ===== */
 const ATTRIBUTES = [
-  { key: 'eyes', label: '눈동자약', icon: '👁️' },
-  { key: 'skin', label: '피부색약', icon: '🎨' },
-  { key: 'age', label: '나이약', icon: '⏳' },
-  { key: 'gender', label: '남녀구분약', icon: '⚧' },
-  { key: 'character', label: '캐릭터약', icon: '🧬' },
-  { key: 'decoration', label: '꾸미기약', icon: '🎀' },
-  { key: 'body', label: '몸매약', icon: '🫧' },
-  { key: 'face', label: '얼굴약', icon: '😊' },
+  { key: 'eyes', label: '눈동자약', icon: '👁️', shape: 'orb' },
+  { key: 'skin', label: '피부색약', icon: '🎨', shape: 'flask' },
+  { key: 'age', label: '나이약', icon: '⏳', shape: 'flask' },
+  { key: 'gender', label: '남녀구분약', icon: '⚧', shape: 'flask' },
+  { key: 'character', label: '캐릭터약', icon: '🧬', shape: 'flask' },
+  { key: 'decoration', label: '꾸미기약', icon: '🎀', shape: 'jar' },
+  { key: 'body', label: '몸매약', icon: '🫧', shape: 'flask' },
+  { key: 'face', label: '얼굴약', icon: '😊', shape: 'flask' },
 ];
 const ATTRIBUTE_WEIGHTS = { eyes: 1, skin: 1, age: 1.2, gender: 1.2, character: 2.5, decoration: 0.8, body: 1.4, face: 1.4 };
 
@@ -383,12 +401,59 @@ const POTIONS = {
 
 function potionById(attr, id) { return POTIONS[attr].find(p => p.id === id) || null; }
 
-/* ===== Potion bottle art — a small glass-flask SVG shared by the picker
-   sheet and the encyclopedia tab, standing in for a hand-illustrated bottle
-   (request doc §5.3's bottleShape/liquidColor) since this project has no
-   art asset pipeline. ===== */
-function bottleSvg(color) {
-  return `<svg viewBox="0 0 28 34"><rect x="11" y="1" width="6" height="6" rx="1.5" fill="#8a6a45"/><rect x="12" y="6" width="4" height="6" fill="rgba(255,255,255,.14)" stroke="rgba(255,255,255,.35)" stroke-width="1"/><path d="M9,11 C9,11 4,18 4,24 C4,29.5 8.5,32.5 14,32.5 C19.5,32.5 24,29.5 24,24 C24,18 19,11 19,11 Z" fill="rgba(255,255,255,.06)" stroke="rgba(255,255,255,.4)" stroke-width="1.2"/><path d="M4.6,21.5 C4.2,22.6 4,23.3 4,24 C4,29.5 8.5,32.5 14,32.5 C19.5,32.5 24,29.5 24,24 C24,23.3 23.8,22.6 23.4,21.5 Z" fill="${color}"/><rect x="7" y="15" width="2.4" height="13" rx="1.2" fill="#fff" opacity=".22"/></svg>`;
+/* ===== Potion bottle art — glossy hand-illustrated-style glass vessels
+   (three shapes: round orb / lab flask / lidded jar) shared by the shelf,
+   the drag ghost and the encyclopedia tab. Each call gets fresh gradient
+   ids so many instances can render side by side on the shelf without
+   fill="url(#...)" collisions. ===== */
+let svgUid = 0;
+function lighten(hex, pct) {
+  const [r, g, b] = hexToRgb(hex);
+  return rgbToHex([r + (255 - r) * pct / 100, g + (255 - g) * pct / 100, b + (255 - b) * pct / 100]);
+}
+function darken(hex, pct) {
+  const [r, g, b] = hexToRgb(hex);
+  return rgbToHex([r * (1 - pct / 100), g * (1 - pct / 100), b * (1 - pct / 100)]);
+}
+function bottleSvg(color, shape) {
+  const gg = 'bg' + (svgUid++) + '_';
+  const liq = `<radialGradient id="${gg}liq" cx="35%" cy="22%" r="80%">
+      <stop offset="0%" stop-color="${lighten(color, 32)}"/>
+      <stop offset="55%" stop-color="${color}"/>
+      <stop offset="100%" stop-color="${darken(color, 20)}"/>
+    </radialGradient>`;
+  if (shape === 'orb') {
+    return `<svg viewBox="0 0 32 34" overflow="visible"><defs>${liq}</defs>
+      <ellipse cx="16" cy="30.5" rx="9" ry="2.2" fill="#000" opacity=".22"/>
+      <rect x="13.4" y="1.5" width="5.2" height="5.5" rx="1.4" fill="#8a6a45"/>
+      <circle cx="16" cy="19" r="12.5" fill="url(#${gg}liq)" stroke="rgba(255,255,255,.45)" stroke-width="1.2"/>
+      <ellipse cx="11.2" cy="13" rx="4" ry="2.8" fill="#fff" opacity=".4"/>
+      <circle cx="16" cy="19" r="12.5" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="3"/>
+    </svg>`;
+  }
+  if (shape === 'jar') {
+    return `<svg viewBox="0 0 30 32" overflow="visible"><defs>${liq}</defs>
+      <ellipse cx="15" cy="29.5" rx="9" ry="2" fill="#000" opacity=".22"/>
+      <rect x="7" y="1.5" width="16" height="5.5" rx="2.6" fill="#8a6a45"/>
+      <rect x="7" y="5.5" width="16" height="2.5" fill="#6b4f30"/>
+      <rect x="5" y="8" width="20" height="20.5" rx="6" fill="url(#${gg}liq)" stroke="rgba(255,255,255,.45)" stroke-width="1.2"/>
+      <rect x="7.2" y="10.5" width="3" height="14" rx="1.5" fill="#fff" opacity=".32"/>
+    </svg>`;
+  }
+  return `<svg viewBox="0 0 32 40" overflow="visible"><defs>${liq}
+      <linearGradient id="${gg}glass" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#ffffff" stop-opacity=".3"/>
+        <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    <ellipse cx="16" cy="37.5" rx="10.5" ry="2.2" fill="#000" opacity=".22"/>
+    <rect x="13" y="1" width="6" height="7" rx="1.5" fill="#8a6a45"/>
+    <rect x="14" y="7" width="4" height="6" fill="rgba(255,255,255,.15)" stroke="rgba(255,255,255,.4)" stroke-width="1"/>
+    <path d="M10,12 C10,12 4,20 4,27 C4,34 9.5,38.5 16,38.5 C22.5,38.5 28,34 28,27 C28,20 22,12 22,12 Z" fill="rgba(255,255,255,.05)" stroke="rgba(255,255,255,.45)" stroke-width="1.3"/>
+    <path d="M4.7,24 C4.3,25.2 4,26.1 4,27 C4,34 9.5,38.5 16,38.5 C22.5,38.5 28,34 28,27 C28,26.1 27.7,25.2 27.3,24 Z" fill="url(#${gg}liq)"/>
+    <path d="M10,12 C10,12 4,20 4,27 C4,34 9.5,38.5 16,38.5 C22.5,38.5 28,34 28,27 C28,20 22,12 22,12 Z" fill="url(#${gg}glass)"/>
+    <rect x="8" y="17" width="2.6" height="15" rx="1.3" fill="#fff" opacity=".28"/>
+  </svg>`;
 }
 
 /* ===== Target recipe — 루미아, 별빛 극단의 인기 배우 ===== */
@@ -422,33 +487,61 @@ const CLUES = {
 let selections = { eyes: null, skin: null, age: null, gender: null, character: null, decoration: null, body: null, face: null };
 let phase = 'selecting'; // selecting | ready | transforming | result
 let failCount = 0;
-let currentPickerAttr = null;
 
 const el = {};
 ['mirrorBubble', 'portraitWrap', 'charHead', 'charFace', 'charEars', 'charDecor', 'eyeLeft', 'eyeRight', 'charCollar', 'charBody',
- 'cauldron', 'cauldronArea', 'cauldronLiquid', 'fxFlash', 'fxSmoke', 'sparkleField', 'targetLine', 'slotsGrid', 'powderBtn',
- 'pickerOverlay', 'pickerTitle', 'potionList', 'pickerCloseBtn',
+ 'cauldron', 'cauldronArea', 'cauldronLiquidGroup', 'cauldronFillRect', 'cauldronLiquid', 'fxFlash', 'fxSmoke', 'sparkleField',
+ 'targetLine', 'shelfWall', 'contentsStrip', 'powderBtn',
  'bookBtn', 'bookOverlay', 'bookTabs', 'bookBody', 'bookCloseBtn',
  'resultOverlay', 'resultGrade', 'resultMirror', 'resultScore', 'resultHint', 'resultBookBtn', 'resultRetryBtn',
  'introOverlay', 'introText', 'introStartBtn'].forEach(id => { el[id] = document.getElementById(id); });
 
 el.targetLine.innerHTML = `목표: <b>${TARGET.name}</b>로 변신하기${MODE === 'free' ? ' · 자유 실험 모드' : ''}`;
 
-/* ===== Slots ===== */
-function renderSlots() {
-  el.slotsGrid.innerHTML = ATTRIBUTES.map(a => {
-    const picked = selections[a.key] ? potionById(a.key, selections[a.key]) : null;
+/* ===== Potion shelf — draggable source bottles ===== */
+function renderShelf() {
+  el.shelfWall.innerHTML = ATTRIBUTES.map(a => {
+    const tagGlow = phase === 'selecting' && (hintRevealTag === a.key || hintRevealAttr === a.key);
     return `
-      <div class="slot-btn${picked ? ' filled' : ''}${hintRevealAttr === a.key && phase === 'selecting' ? ' hint-glow' : ''}" data-attr="${a.key}" id="slot-${a.key}">
-        <div class="slot-icon">${a.icon}</div>
-        <div class="slot-label">${a.label}</div>
-        <div class="slot-picked">${picked ? picked.name.replace(/약$/, '') : '미선택'}</div>
+      <div class="shelf-plank">
+        <div class="shelf-tag${tagGlow ? ' hint-glow' : ''}">${a.icon} ${a.label}</div>
+        <div class="shelf-bottles" id="shelfRow-${a.key}"></div>
       </div>
     `;
   }).join('');
   ATTRIBUTES.forEach(a => {
-    document.getElementById(`slot-${a.key}`).addEventListener('click', () => openPicker(a.key));
+    const row = document.getElementById(`shelfRow-${a.key}`);
+    row.innerHTML = POTIONS[a.key].map(p => {
+      const isSelected = selections[a.key] === p.id;
+      const isHint = phase === 'selecting' && MODE === 'mission' && hintRevealAttr === a.key && TARGET.valid[a.key].includes(p.id);
+      return `<div class="shelf-bottle${isSelected ? ' selected' : ''}${isHint ? ' hint-glow' : ''}" data-attr="${a.key}" data-id="${p.id}" title="${p.name}">${bottleSvg(p.color, a.shape)}</div>`;
+    }).join('');
+    row.querySelectorAll('.shelf-bottle').forEach(node => {
+      node.addEventListener('pointerdown', (e) => startDrag(e, node, node.dataset.attr, node.dataset.id));
+    });
   });
+}
+
+/* ===== Cauldron contents strip — compact recipe readout, tap-to-clear ===== */
+function renderContentsStrip() {
+  el.contentsStrip.innerHTML = ATTRIBUTES.map(a => {
+    const picked = selections[a.key] ? potionById(a.key, selections[a.key]) : null;
+    const style = picked ? `background:${picked.color};border-color:rgba(255,255,255,.5)` : '';
+    return `<div class="content-slot${picked ? ' filled' : ''}" data-attr="${a.key}" style="${style}" title="${a.label}">${picked ? '' : a.icon}</div>`;
+  }).join('');
+  el.contentsStrip.querySelectorAll('.content-slot.filled').forEach(node => {
+    node.addEventListener('click', () => clearSelection(node.dataset.attr));
+  });
+}
+
+function clearSelection(attrKey) {
+  if (phase !== 'selecting') return;
+  selections[attrKey] = null;
+  vibrate(6);
+  renderShelf();
+  updateCauldronLiquid();
+  renderContentsStrip();
+  updatePowderButton();
 }
 
 function isComplete() { return ATTRIBUTES.every(a => selections[a.key] !== null); }
@@ -468,11 +561,20 @@ function hexToRgb(hex) {
 }
 function rgbToHex([r, g, b]) { return '#' + [r, g, b].map(v => Math.round(v).toString(16).padStart(2, '0')).join(''); }
 
-function updateCauldronColor() {
+function setLiquidLevel(level) {
+  const topY = 120 - level * 94;
+  el.cauldronFillRect.setAttribute('y', topY.toFixed(1));
+  el.cauldronFillRect.setAttribute('height', (120 - topY).toFixed(1));
+  el.cauldronLiquid.setAttribute('cy', topY.toFixed(1));
+  el.cauldronLiquid.style.opacity = level > 0 ? 1 : 0;
+}
+
+function updateCauldronLiquid() {
   const picked = ATTRIBUTES.map(a => selections[a.key] && potionById(a.key, selections[a.key])).filter(Boolean);
   if (!picked.length) {
-    el.cauldronLiquid.style.setProperty('--liquid-color', '#2c3440');
-    el.cauldronLiquid.classList.remove('bubble');
+    el.cauldron.style.setProperty('--liquid-color', '#2c3440');
+    el.cauldronLiquidGroup.classList.remove('bubble');
+    setLiquidLevel(0);
     return;
   }
   const sum = picked.reduce((acc, p) => {
@@ -480,47 +582,134 @@ function updateCauldronColor() {
     return [acc[0] + r, acc[1] + g, acc[2] + b];
   }, [0, 0, 0]);
   const avg = sum.map(v => v / picked.length);
-  el.cauldronLiquid.style.setProperty('--liquid-color', rgbToHex(avg));
-  el.cauldronLiquid.classList.toggle('bubble', picked.length > 0 && !REDUCED_MOTION);
+  el.cauldron.style.setProperty('--liquid-color', rgbToHex(avg));
+  el.cauldronLiquidGroup.classList.toggle('bubble', !REDUCED_MOTION);
+  setLiquidLevel(picked.length / 8);
 }
 
-/* ===== Potion picker sheet ===== */
-function openPicker(attrKey) {
+/* ===== Drag-to-pour — pick a bottle up off the shelf, drop it on the
+   cauldron to pour it in. Pointer Events cover touch + mouse; the shelf
+   itself scrolls (touch-action:pan-y) while individual bottles opt out
+   (touch-action:none) so a drag never fights the shelf's own scroll. ===== */
+function isOverCauldron(x, y) {
+  const r = el.cauldron.getBoundingClientRect();
+  const pad = 26;
+  return x > r.left - pad && x < r.right + pad && y > r.top - pad && y < r.bottom + pad;
+}
+
+function startDrag(e, bottleEl, attrKey, potionId) {
   if (phase !== 'selecting') return;
-  currentPickerAttr = attrKey;
-  const meta = ATTRIBUTES.find(a => a.key === attrKey);
-  el.pickerTitle.textContent = `${meta.icon} ${meta.label} 고르기`;
-  const showHint = MODE === 'mission' && hintRevealAttr === attrKey;
-  el.potionList.innerHTML = POTIONS[attrKey].map(p => {
-    const isHintTarget = showHint && TARGET.valid[attrKey].includes(p.id);
-    return `
-    <div class="potion-row${selections[attrKey] === p.id ? ' selected' : ''}${isHintTarget ? ' hint-highlight' : ''}" data-id="${p.id}">
-      <div class="potion-swatch">${bottleSvg(p.color)}${p.emoji ? `<span class="potion-charm">${p.emoji}</span>` : ''}</div>
-      <div class="potion-info">
-        <div class="potion-name">${p.name}${isHintTarget ? ' ✨' : ''}</div>
-        <div class="potion-desc">${p.desc}</div>
-      </div>
-    </div>
-  `;
-  }).join('');
-  el.potionList.querySelectorAll('.potion-row').forEach(row => {
-    row.addEventListener('click', () => pickPotion(attrKey, row.dataset.id));
-  });
-  el.pickerOverlay.classList.add('show');
-}
-function closePicker() { el.pickerOverlay.classList.remove('show'); currentPickerAttr = null; }
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
+  e.preventDefault();
+  const rect = bottleEl.getBoundingClientRect();
+  const ghost = bottleEl.cloneNode(true);
+  ghost.className = 'drag-ghost';
+  ghost.style.width = rect.width + 'px';
+  ghost.style.left = rect.left + 'px';
+  ghost.style.top = rect.top + 'px';
+  document.body.appendChild(ghost);
+  bottleEl.classList.add('dragging');
+  const offsetX = e.clientX - rect.left;
+  const offsetY = e.clientY - rect.top;
 
-function pickPotion(attrKey, id) {
-  selections[attrKey] = id;
-  vibrate(8);
-  renderSlots();
-  updateCauldronColor();
+  function onMove(ev) {
+    ghost.style.left = (ev.clientX - offsetX) + 'px';
+    ghost.style.top = (ev.clientY - offsetY) + 'px';
+    el.cauldron.classList.toggle('drop-active', isOverCauldron(ev.clientX, ev.clientY));
+  }
+  function onUp(ev) {
+    document.removeEventListener('pointermove', onMove);
+    document.removeEventListener('pointerup', onUp);
+    document.removeEventListener('pointercancel', onUp);
+    const hit = isOverCauldron(ev.clientX, ev.clientY);
+    el.cauldron.classList.remove('drop-active');
+    bottleEl.classList.remove('dragging');
+    if (hit) pourIntoCauldron(ghost, attrKey, potionId);
+    else cancelDrag(ghost, rect);
+  }
+  document.addEventListener('pointermove', onMove);
+  document.addEventListener('pointerup', onUp);
+  document.addEventListener('pointercancel', onUp);
+}
+
+function cancelDrag(ghost, originRect) {
+  ghost.style.transition = 'left .22s cubic-bezier(.2,.8,.2,1), top .22s cubic-bezier(.2,.8,.2,1), opacity .2s ease .1s';
+  ghost.style.left = originRect.left + 'px';
+  ghost.style.top = originRect.top + 'px';
+  ghost.style.opacity = '0';
+  setTimeout(() => ghost.remove(), 260);
+}
+
+function spawnPourStream(x, y, color) {
+  const s = document.createElement('div');
+  s.className = 'pour-stream';
+  s.style.left = x + 'px';
+  s.style.top = y + 'px';
+  s.style.setProperty('--pour-color', color);
+  document.body.appendChild(s);
+  requestAnimationFrame(() => { s.style.height = '46px'; s.style.opacity = '1'; });
+  setTimeout(() => { s.style.opacity = '0'; }, 260);
+  setTimeout(() => s.remove(), 460);
+}
+
+function bounceCauldron() {
+  el.cauldron.classList.remove('gulp');
+  void el.cauldron.offsetWidth;
+  el.cauldron.classList.add('gulp');
+}
+
+function spawnSplash(x, y) {
+  if (REDUCED_MOTION) return;
+  for (let i = 0; i < 5; i++) {
+    const s = document.createElement('span');
+    s.className = 'splash-drop';
+    s.textContent = '•';
+    const angle = Math.PI + Math.random() * Math.PI;
+    const dist = 14 + Math.random() * 18;
+    s.style.left = x + 'px';
+    s.style.top = y + 'px';
+    s.style.setProperty('--dx', (Math.cos(angle) * dist) + 'px');
+    s.style.setProperty('--dy', (Math.sin(angle) * dist - 6) + 'px');
+    document.body.appendChild(s);
+    setTimeout(() => s.remove(), 500);
+  }
+}
+
+async function pourIntoCauldron(ghost, attrKey, potionId) {
+  vibrate(10);
+  const t = TIMING[FX];
+  const cr = el.cauldron.getBoundingClientRect();
+  const gw = ghost.offsetWidth, gh = ghost.offsetHeight;
+  const targetLeft = cr.left + cr.width / 2 - gw / 2;
+  const targetTop = cr.top - gh * 0.3;
+  ghost.style.transition = `left ${t.pourMove}ms cubic-bezier(.2,.8,.2,1), top ${t.pourMove}ms cubic-bezier(.2,.8,.2,1)`;
+  ghost.style.left = targetLeft + 'px';
+  ghost.style.top = targetTop + 'px';
+  await wait(t.pourMove);
+
+  ghost.style.transformOrigin = '70% 85%';
+  ghost.style.transition = `transform ${t.pourTilt}ms cubic-bezier(.3,.7,.3,1)`;
+  ghost.style.transform = 'rotate(120deg)';
+  const color = potionById(attrKey, potionId).color;
+  spawnPourStream(targetLeft + gw * 0.78, targetTop + gh * 0.65, color);
+  await wait(t.pourTilt);
+
+  selections[attrKey] = potionId;
+  renderShelf();
+  updateCauldronLiquid();
+  renderContentsStrip();
   updatePowderButton();
-  closePicker();
-}
+  bounceCauldron();
+  spawnSplash(cr.left + cr.width / 2, cr.top + 18);
+  vibrate(14);
 
-el.pickerCloseBtn.addEventListener('click', closePicker);
-el.pickerOverlay.addEventListener('click', (e) => { if (e.target === el.pickerOverlay) closePicker(); });
+  await wait(t.pourHold);
+  ghost.style.transition = `opacity ${t.pourFade}ms ease, transform ${t.pourFade}ms ease`;
+  ghost.style.opacity = '0';
+  ghost.style.transform = 'rotate(120deg) scale(.6)';
+  await wait(t.pourFade);
+  ghost.remove();
+}
 
 /* ===== Magic book ===== */
 const BOOK_TABS = [
@@ -560,7 +749,7 @@ function renderBookBody() {
         <div class="encyclo-title">${a.icon} ${a.label}</div>
         ${POTIONS[a.key].map(p => `
           <div class="encyclo-item">
-            <div class="encyclo-swatch">${bottleSvg(p.color)}</div>
+            <div class="encyclo-swatch">${bottleSvg(p.color, a.shape)}</div>
             <div>
               <div class="encyclo-name">${p.name}</div>
               <div class="encyclo-desc">${p.desc}</div>
@@ -572,10 +761,11 @@ function renderBookBody() {
   } else if (activeBookTab === 'howto') {
     el.bookBody.innerHTML = `
       <div class="howto-text">1. 마법책 '목표 정보' 탭에서 단서를 확인해요.
-2. 슬롯을 눌러 후보 물약 중 하나를 골라요.
-3. 8개 속성을 모두 채우면 마법가루 버튼이 켜져요.
-4. 마법가루를 뿌리면 결과가 확정돼요.
-5. 오답이어도 실패가 아니라 새로운 모습이에요. 다시 조합해 보세요.</div>
+2. 선반의 물약을 손가락으로 눌러 솥까지 끌어다 놓아요.
+3. 물약이 솥에 부어지면서 그 속성이 채워지고, 솥의 색도 바뀌어요.
+4. 8개 속성을 모두 채우면 마법가루 버튼이 켜져요.
+5. 마법가루를 뿌리면 결과가 확정돼요.
+6. 오답이어도 실패가 아니라 새로운 모습이에요. 다시 조합해 보세요.</div>
       <button type="button" class="replay-btn" id="replayIntroBtn">오프닝 다시보기</button>
     `;
     document.getElementById('replayIntroBtn').addEventListener('click', () => {
@@ -724,24 +914,28 @@ function mirrorLine(evaluation, special) {
 }
 
 let hintRevealAttr = null;
+let hintRevealTag = null;
 
 function hintLine(evaluation) {
+  hintRevealTag = null;
   if (evaluation.grade === 'PERFECT') { hintRevealAttr = null; return null; }
   const wrong = evaluation.details.filter(d => !d.correct);
   if (!wrong.length) { hintRevealAttr = null; return null; }
-  if (failCount <= 1) return '얼굴과 몸매 쪽을 다시 살펴봐.';
+  if (failCount <= 1) { hintRevealAttr = null; return '얼굴과 몸매 쪽을 다시 살펴봐.'; }
   if (failCount === 2) {
     const target = wrong.find(d => d.attribute === 'face') || wrong[0];
-    return `힌트: ${ATTRIBUTES.find(a => a.key === target.attribute).label}을(를) 다시 골라봐.`;
+    hintRevealAttr = null;
+    hintRevealTag = target.attribute;
+    return `힌트: ${ATTRIBUTES.find(a => a.key === target.attribute).label} 선반을 다시 살펴봐.`;
   }
   hintRevealAttr = wrong[0].attribute;
-  return `힌트: ${ATTRIBUTES.find(a => a.key === hintRevealAttr).label} 슬롯이 반짝이고 있어. 눌러서 정답 후보를 확인해봐.`;
+  return `힌트: ${ATTRIBUTES.find(a => a.key === hintRevealAttr).label} 선반에서 반짝이는 물약을 솥에 부어봐.`;
 }
 
 /* ===== Transformation sequence (request doc §9) ===== */
 const TIMING = {
-  full: { shake: 650, smoke: 550, flash: 140, reveal: 450 },
-  fast: { shake: 180, smoke: 150, flash: 90, reveal: 220 },
+  full: { shake: 650, smoke: 550, flash: 140, reveal: 450, pourMove: 180, pourTilt: 220, pourHold: 180, pourFade: 200 },
+  fast: { shake: 180, smoke: 150, flash: 90, reveal: 220, pourMove: 90, pourTilt: 110, pourHold: 80, pourFade: 120 },
 };
 async function runTransformSequence() {
   const t = TIMING[FX];
@@ -818,8 +1012,9 @@ function retry() {
   el.resultOverlay.classList.remove('show');
   el.mirrorBubble.style.display = 'none';
   el.portraitWrap.style.display = 'none';
-  renderSlots();
-  updateCauldronColor();
+  renderShelf();
+  updateCauldronLiquid();
+  renderContentsStrip();
   updatePowderButton();
 }
 el.resultRetryBtn.addEventListener('click', retry);
@@ -871,8 +1066,9 @@ function spawnSparkleBurst() {
   }
 }
 
-renderSlots();
-updateCauldronColor();
+renderShelf();
+updateCauldronLiquid();
+renderContentsStrip();
 updatePowderButton();
 initSparkleField();
 </script>
