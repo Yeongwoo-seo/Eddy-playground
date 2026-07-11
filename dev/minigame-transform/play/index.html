@@ -665,7 +665,7 @@ function renderSlots() {
         <div class="reagent-slot-box${picked ? ' filled' : ''}${hintRevealAttr === a.key && phase === 'selecting' ? ' hint-glow' : ''}" id="slot-${a.key}">
           ${picked ? iconFor(a.key, picked) : ''}
         </div>
-        <div class="reagent-slot-label">${a.label.replace(/약$/, '')}</div>
+        <div class="reagent-slot-label">${a.label.replace(/약$/, '').slice(0, 2)}</div>
       </div>
     `;
   }).join('');
