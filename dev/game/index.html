@@ -46,10 +46,19 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .char-placeholder svg{width:100%;height:100%}
 
 /* ===== Layer 3: Dialogue ===== */
-.dlg-layer{position:absolute;left:0;right:0;bottom:0;z-index:3;min-height:26vh;max-height:34vh;background:rgba(5,7,10,.82);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-top:1px solid rgba(255,255,255,.08);padding:18px 20px calc(18px + env(safe-area-inset-bottom,0));display:flex;flex-direction:column;cursor:pointer}
+/* .bottom-stack owns the bottom-anchored positioning that .dlg-layer used to
+   have on its own — .choice-layer now lives beside it (as a normal-flow
+   sibling placed before it) so a choice prompt stacks directly above the
+   dialogue box instead of inside it, over a dimmed scene (see .scene-dim)
+   like an Ace Attorney ("역전재판") choice/evidence popup. */
+.bottom-stack{position:absolute;left:0;right:0;bottom:0;z-index:3;display:flex;flex-direction:column}
+.dlg-layer{min-height:26vh;max-height:34vh;background:rgba(5,7,10,.82);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-top:1px solid rgba(255,255,255,.08);padding:18px 20px calc(18px + env(safe-area-inset-bottom,0));display:flex;flex-direction:column;flex-shrink:0;cursor:pointer}
 .dlg-name{font-size:15px;font-weight:700;color:var(--cyan);margin-bottom:8px;flex-shrink:0}
 .dlg-name:empty{display:none}
-.dlg-body{flex:1;font-size:16px;line-height:1.65;color:#fff;overflow-y:auto;white-space:pre-wrap;word-break:keep-all;touch-action:pan-y}
+.dlg-body{flex:1;font-size:16px;line-height:1.65;color:#fff;overflow-y:auto;white-space:pre-wrap;word-break:keep-all;touch-action:pan-y;transition:color .2s ease}
+/* Applied while a choice prompt is up (see showChoices) so the question
+   itself reads as "this line has a decision attached", per the brief. */
+.dlg-body.is-question{color:var(--cyan)}
 .dlg-foot{display:flex;justify-content:flex-end;padding-top:6px;flex-shrink:0}
 .dlg-arrow{font-size:13px;color:var(--text-secondary);visibility:hidden}
 @keyframes arrowBob{0%,100%{transform:translateY(0)}50%{transform:translateY(4px)}}
@@ -57,11 +66,18 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .dlg-end{font-family:var(--mono);font-size:10.5px;color:var(--text-muted);letter-spacing:.08em;text-align:center;padding-top:8px}
 .dlg-layer.has-interactive{max-height:48vh}
 
-/* ===== Layer 3b: dialogue choices (appear once a choice line finishes typing) ===== */
-.choice-layer{display:flex;flex-direction:column;gap:8px;padding-top:10px;flex-shrink:0}
+/* ===== Layer 2b: scene dim — darkens the background/character behind a
+   choice prompt (z-index 2, between bg/char and .bottom-stack's 3) so the
+   floating choice buttons and the dialogue box below them stay legible. ===== */
+.scene-dim{position:absolute;inset:0;z-index:2;background:rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .25s ease}
+.scene-dim.show{opacity:1}
+
+/* ===== Layer 3b: dialogue choices — a floating panel over the dimmed scene,
+   directly above the dialogue box, instead of a list appended inside it. ===== */
+.choice-layer{display:flex;flex-direction:column;gap:10px;padding:16px 16px 14px;flex-shrink:0}
 .choice-layer.hidden{display:none}
-.choice-btn{background:rgba(255,255,255,.06);border:1px solid rgba(89,184,200,.4);color:var(--text-primary);border-radius:14px;padding:12px 15px;font-size:14px;font-weight:600;font-family:var(--sans);text-align:left;cursor:pointer}
-.choice-btn:active{opacity:.7;background:rgba(89,184,200,.16)}
+.choice-btn{background:rgba(8,10,12,.88);border:1px solid rgba(89,184,200,.5);color:var(--text-primary);border-radius:14px;padding:14px 16px;font-size:14.5px;font-weight:600;font-family:var(--sans);text-align:left;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.35)}
+.choice-btn:active{opacity:.7;background:rgba(89,184,200,.2)}
 
 /* ===== Layer 3c: "present evidence" call-to-action, appears above the dialogue box ===== */
 .evidence-cta{padding-top:10px;flex-shrink:0}
@@ -149,6 +165,8 @@ window.addEventListener('orientationchange', setVh100);
     </div>
   </div>
 
+  <div class="scene-dim" id="sceneDim"></div>
+
   <div class="vn-topbar">
     <div style="display:flex;gap:8px;align-items:center">
       <span id="caseMenuMount"></span>
@@ -178,12 +196,14 @@ window.addEventListener('orientationchange', setVh100);
     <pre class="transform-output hidden" id="transformOutput"></pre>
   </div>
 
-  <div class="dlg-layer" id="dlgLayer">
-    <div class="dlg-name" id="speakerName"></div>
-    <div class="dlg-body" id="dialogueText"></div>
-    <div class="dlg-foot"><span class="dlg-arrow" id="tapArrow">▼</span></div>
+  <div class="bottom-stack" id="bottomStack">
     <div class="choice-layer hidden" id="choiceLayer"></div>
-    <div class="evidence-cta hidden" id="evidenceCta"><button id="evidenceCtaBtn">🔍 증거 제시하기</button></div>
+    <div class="dlg-layer" id="dlgLayer">
+      <div class="dlg-name" id="speakerName"></div>
+      <div class="dlg-body" id="dialogueText"></div>
+      <div class="dlg-foot"><span class="dlg-arrow" id="tapArrow">▼</span></div>
+      <div class="evidence-cta hidden" id="evidenceCta"><button id="evidenceCtaBtn">🔍 증거 제시하기</button></div>
+    </div>
   </div>
 
   <span class="evidence-toast" id="evidenceToast"></span>
@@ -297,6 +317,7 @@ const el = {
   introCard: document.getElementById('introCard'),
   unknownSignal: document.getElementById('unknownSignal'),
   choiceLayer: document.getElementById('choiceLayer'),
+  sceneDim: document.getElementById('sceneDim'),
   evidenceCta: document.getElementById('evidenceCta'),
   evidenceCtaBtn: document.getElementById('evidenceCtaBtn'),
   evidenceToast: document.getElementById('evidenceToast'),
@@ -645,9 +666,15 @@ function clearInteractiveLayers() {
   el.dlgLayer.classList.remove('has-interactive');
   el.choiceLayer.classList.add('hidden');
   el.choiceLayer.innerHTML = '';
+  el.sceneDim.classList.remove('show');
+  el.dialogueText.classList.remove('is-question');
   el.evidenceCta.classList.add('hidden');
 }
 
+// Choices render as a floating panel over a dimmed scene, directly above the
+// dialogue box (see .bottom-stack/.scene-dim) — not appended inside the box
+// itself — and the question line in the box is recolored via is-question so
+// it visibly reads as a decision point. Ace Attorney-style, per the brief.
 function showChoices(allChoices) {
   const choices = allChoices.filter(c => evaluateCondition(c.condition));
   el.choiceLayer.innerHTML = '';
@@ -662,8 +689,9 @@ function showChoices(allChoices) {
     });
     el.choiceLayer.appendChild(btn);
   });
-  el.dlgLayer.classList.add('has-interactive');
   el.choiceLayer.classList.remove('hidden');
+  el.sceneDim.classList.add('show');
+  el.dialogueText.classList.add('is-question');
 }
 
 function showEvidenceCta() {
