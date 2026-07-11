@@ -6,7 +6,7 @@
 <title>OPERATION MK · FISHING</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
-<meta name="theme-color" content="#080A0C">
+<meta name="theme-color" content="#0B2A3A">
 <link rel="manifest" href="/dev/manifest.json">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -15,16 +15,22 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
 :root{
-  --bg:#080A0C;--surface-1:#101419;--surface-2:#171C22;
-  --text-primary:#EDF1F4;--text-secondary:#929BA5;--text-muted:#5F6872;
-  --cyan:#59B8C8;--amber:#D6A84B;--green:#3ECF6B;--signal-red:#D94141;--divider:rgba(255,255,255,0.08);
+  --sky-top:#BFE6F2;--sky-bottom:#8FCDE0;--shore:#6FAE58;
+  --wood-light:#C99A5B;--wood:#9C6A34;--wood-dark:#6B441E;--wood-shadow:#4A2C13;
+  --water-top:#BFE9F5;--water-mid:#4FA6C7;--water-bottom:#1D5C78;
+  --catch-fill:rgba(224,225,120,.55);--catch-border:#C7C23A;--catch-glow:rgba(224,225,120,.6);
+  --meter-top:#F6DE8E;--meter-bottom:#D19A34;--meter-danger-top:#F0A38C;--meter-danger-bottom:#C24B36;
+  --ink:#2B1A0D;--ink-soft:rgba(43,26,13,.68);
+  --panel:rgba(8,10,12,.55);--panel-border:rgba(255,255,255,.16);
+  --green:#3ECF6B;--signal-red:#C24B36;--amber:#D6A84B;--cyan:#59B8C8;
+  --text-primary:#EDF1F4;--text-secondary:#929BA5;--text-muted:#5F6872;--divider:rgba(255,255,255,0.08);
   --mono:'IBM Plex Mono',ui-monospace,monospace;
   --sans:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
 }
 html,body{height:100%;overflow:hidden}
-body{background:#000;color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center}
+body{background:linear-gradient(180deg,var(--sky-top) 0%,var(--sky-bottom) 55%,var(--shore) 100%);color:var(--ink);font-family:var(--sans);display:flex;justify-content:center}
 
-.frame{position:relative;width:100%;max-width:430px;height:100dvh;height:100vh;height:var(--vh100, 100vh);overflow:hidden;background:#0a0d10;display:flex;flex-direction:column;touch-action:none}
+.frame{position:relative;width:100%;max-width:430px;height:100dvh;height:100vh;height:var(--vh100, 100vh);overflow:hidden;background:linear-gradient(180deg,var(--sky-top) 0%,var(--sky-bottom) 55%,var(--shore) 100%);display:flex;flex-direction:column;touch-action:none}
 
 /* ===== Optional Stardew-style dressing from /dev/minigame-fishing/'s 설정
    screen (localStorage, not query string — see that page's comment). Both
@@ -32,35 +38,43 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
    intercept input. ===== */
 .bg-layer{position:absolute;inset:0;z-index:0;background-size:cover;background-position:center;display:none}
 .bg-layer.show{display:block}
-.bg-layer::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(5,7,10,.4) 0%,rgba(5,7,10,.6) 100%)}
-.character-sprite{position:absolute;left:14px;bottom:calc(64px + env(safe-area-inset-bottom,0));max-width:96px;max-height:150px;z-index:1;display:none;filter:drop-shadow(0 4px 10px rgba(0,0,0,.5))}
+.bg-layer::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(5,7,10,.25) 0%,rgba(5,7,10,.45) 100%)}
+.character-sprite{position:absolute;left:14px;bottom:calc(64px + env(safe-area-inset-bottom,0));max-width:96px;max-height:150px;z-index:1;display:none;filter:drop-shadow(0 4px 10px rgba(0,0,0,.4))}
 .character-sprite.show{display:block}
 
 .topbar{position:absolute;top:0;left:0;right:0;z-index:6;padding:calc(14px + env(safe-area-inset-top,0)) 16px 14px;display:flex;justify-content:space-between;align-items:center;pointer-events:none}
 .topbar-right{display:flex;gap:8px;pointer-events:none}
-.vn-btn{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:#fff;background:rgba(8,10,12,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:9px 14px;cursor:pointer;text-decoration:none;display:inline-block;pointer-events:auto;border-width:1px}
+.vn-btn{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--ink);background:rgba(255,255,255,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(43,26,13,.18);border-radius:20px;padding:9px 14px;cursor:pointer;text-decoration:none;display:inline-block;pointer-events:auto}
+.vn-btn:active{transform:scale(.95)}
 
 /* ===== Game stage ===== */
-.game-stage{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:14px;padding:calc(64px + env(safe-area-inset-top,0)) 20px calc(28px + env(safe-area-inset-bottom,0))}
+.game-stage{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:calc(64px + env(safe-area-inset-top,0)) 20px calc(28px + env(safe-area-inset-bottom,0))}
 
-.track-wrap{position:relative;width:132px;height:100%;max-height:100%}
-.track{position:relative;width:100%;height:100%;border-radius:20px;overflow:hidden;background:linear-gradient(180deg,#0f2a33 0%,#0a1b21 55%,#081318 100%);border:1px solid rgba(255,255,255,.08);box-shadow:inset 0 0 24px rgba(0,0,0,.5)}
-.track::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(180deg,rgba(255,255,255,.03) 0 2px,transparent 2px 26px);pointer-events:none}
+/* Wooden rod-reel frame holding both the fish tube and the catch meter,
+   mirroring the reference screenshot's single tan panel with a carved
+   border rather than two loose bars floating on the stage. */
+.gauge-frame{position:relative;height:100%;max-height:100%;display:flex;gap:10px;padding:10px;border-radius:16px;background:linear-gradient(180deg,var(--wood-light) 0%,var(--wood) 55%,var(--wood-dark) 100%);border:2px solid var(--wood-shadow);box-shadow:0 6px 18px rgba(0,0,0,.28),inset 0 2px 0 rgba(255,255,255,.25)}
 
-.catch-bar{position:absolute;left:6px;right:6px;top:0;border-radius:12px;background:rgba(62,207,107,.22);border:2px solid rgba(62,207,107,.65);box-shadow:0 0 0 rgba(62,207,107,0);transition:background .15s ease,border-color .15s ease,box-shadow .15s ease;will-change:transform}
-.catch-bar.hooked{background:rgba(62,207,107,.38);border-color:var(--green);box-shadow:0 0 18px rgba(62,207,107,.45)}
+.track-wrap{position:relative;width:130px;height:100%}
+.track{position:relative;width:100%;height:100%;border-radius:10px;overflow:hidden;background:linear-gradient(180deg,var(--water-top) 0%,var(--water-mid) 45%,var(--water-bottom) 100%);border:1px solid rgba(0,0,0,.25);box-shadow:inset 0 0 20px rgba(0,0,0,.35)}
+.track::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(180deg,rgba(255,255,255,.10) 0 2px,transparent 2px 30px);pointer-events:none}
 
-.fish{position:absolute;left:50%;top:0;font-size:28px;line-height:1;width:36px;height:36px;margin-left:-18px;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5));will-change:transform;transition:filter .15s ease}
+.catch-bar{position:absolute;left:5px;right:5px;top:0;border-radius:8px;background:var(--catch-fill);border:2px solid var(--catch-border);box-shadow:0 0 0 rgba(224,225,120,0);transition:background .15s ease,border-color .15s ease,box-shadow .15s ease;will-change:transform}
+.catch-bar::after{content:'';position:absolute;left:2px;right:2px;top:2px;height:35%;border-radius:6px;background:linear-gradient(180deg,rgba(255,255,255,.45) 0%,rgba(255,255,255,0) 100%);pointer-events:none}
+.catch-bar.hooked{background:rgba(224,225,120,.75);box-shadow:0 0 16px var(--catch-glow)}
 
-.progress-rail{position:relative;width:22px;height:100%;border-radius:11px;background:var(--surface-1);border:1px solid var(--divider);overflow:hidden;flex-shrink:0}
-.progress-fill{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(180deg,#F2C879 0%,var(--amber) 100%);border-radius:0 0 10px 10px;transition:background .2s ease}
-.progress-fill.danger{background:linear-gradient(180deg,#E88686 0%,var(--signal-red) 100%)}
-.progress-mid-mark{position:absolute;left:0;right:0;top:50%;height:1px;background:rgba(255,255,255,.18)}
+.fish{position:absolute;left:50%;top:0;width:42px;height:26px;margin-left:-21px;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 2px 4px rgba(0,0,0,.35));will-change:transform}
+.fish svg{width:100%;height:100%;overflow:visible}
+
+.progress-rail{position:relative;width:20px;height:100%;border-radius:8px;background:var(--wood-dark);border:1px solid rgba(0,0,0,.3);overflow:hidden;flex-shrink:0;box-shadow:inset 0 0 8px rgba(0,0,0,.4)}
+.progress-fill{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(180deg,var(--meter-top) 0%,var(--meter-bottom) 100%);border-radius:0 0 6px 6px;transition:background .2s ease}
+.progress-fill.danger{background:linear-gradient(180deg,var(--meter-danger-top) 0%,var(--meter-danger-bottom) 100%)}
+.progress-mid-mark{position:absolute;left:0;right:0;top:50%;height:1px;background:rgba(0,0,0,.25)}
 
 /* ===== Press zone (full stage minus topbar) ===== */
 .press-zone{position:absolute;inset:0;z-index:5;touch-action:none}
-.press-hint{position:absolute;left:0;right:0;bottom:calc(14px + env(safe-area-inset-bottom,0));z-index:6;text-align:center;font-family:var(--mono);font-size:11.5px;color:var(--text-muted);letter-spacing:.02em;pointer-events:none;transition:opacity .2s ease}
-.press-hint.hold{color:var(--green)}
+.press-hint{position:absolute;left:0;right:0;bottom:calc(14px + env(safe-area-inset-bottom,0));z-index:6;text-align:center;font-family:var(--mono);font-size:11.5px;color:var(--ink-soft);letter-spacing:.02em;pointer-events:none;transition:opacity .2s ease;text-shadow:0 1px 2px rgba(255,255,255,.4)}
+.press-hint.hold{color:#1D5C2A}
 
 /* ===== Debug panel ===== */
 .debug-panel{position:absolute;top:calc(50px + env(safe-area-inset-top,0));left:12px;z-index:6;font-family:var(--mono);font-size:10.5px;line-height:1.55;color:rgba(146,155,165,.9);background:rgba(5,7,10,.7);border:1px solid var(--divider);border-radius:10px;padding:8px 10px;pointer-events:none;white-space:pre;display:none}
@@ -79,16 +93,16 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .tune-row input[type="range"]{width:100%;accent-color:var(--cyan);touch-action:pan-x}
 .tune-copy-btn{width:100%;margin-top:4px;font-family:var(--mono);font-size:11px;font-weight:700;color:#04181c;background:var(--green);border:none;border-radius:10px;padding:9px;cursor:pointer}
 .tune-copy-btn:active{opacity:.8}
-.tune-code{width:100%;margin-top:8px;height:160px;background:var(--surface-1);color:var(--text-primary);border:1px solid var(--divider);border-radius:8px;padding:8px;font-family:var(--mono);font-size:9px;line-height:1.4;resize:none;white-space:pre;-webkit-user-select:text;user-select:text}
+.tune-code{width:100%;margin-top:8px;height:160px;background:#101419;color:var(--text-primary);border:1px solid var(--divider);border-radius:8px;padding:8px;font-family:var(--mono);font-size:9px;line-height:1.4;resize:none;white-space:pre;-webkit-user-select:text;user-select:text}
 
 /* ===== Overlays ===== */
-.overlay{position:absolute;inset:0;z-index:8;display:none;align-items:center;justify-content:center;flex-direction:column;gap:18px;text-align:center;padding:32px;background:rgba(5,7,10,.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.overlay{position:absolute;inset:0;z-index:8;display:none;align-items:center;justify-content:center;flex-direction:column;gap:18px;text-align:center;padding:32px;background:rgba(5,7,10,.6);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 .overlay.show{display:flex}
 
-.result-banner{font-size:30px;font-weight:800}
-.result-banner.success{color:var(--green)}
-.result-banner.fail{color:var(--signal-red)}
-.perfect-tag{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.1em;color:var(--amber);background:rgba(214,168,75,.14);border:1px solid rgba(214,168,75,.4);border-radius:20px;padding:5px 12px}
+.result-banner{font-size:30px;font-weight:800;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.5)}
+.result-banner.success{color:#FBEAB8}
+.result-banner.fail{color:#F0A38C}
+.perfect-tag{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.1em;color:var(--wood-light);background:rgba(214,168,75,.16);border:1px solid rgba(214,168,75,.5);border-radius:20px;padding:5px 12px}
 </style>
 </head>
 <body>
@@ -114,15 +128,24 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
   </div>
 
   <div class="game-stage">
-    <div class="track-wrap">
-      <div class="track" id="track">
-        <div class="catch-bar" id="catchBar"></div>
-        <div class="fish" id="fish">🐟</div>
+    <div class="gauge-frame">
+      <div class="track-wrap">
+        <div class="track" id="track">
+          <div class="catch-bar" id="catchBar"></div>
+          <div class="fish" id="fish">
+            <svg viewBox="0 0 44 26">
+              <path d="M4 13 C4 6 12 2 23 2 C31 2 37 6 40 13 C37 20 31 24 23 24 C12 24 4 20 4 13 Z" fill="#4FA8D8"/>
+              <path d="M2 13 L11 5 L11 21 Z" fill="#3A85B3"/>
+              <path d="M14 20 C18 23 27 23 31 20" fill="none" stroke="#EAF6FF" stroke-width="2.5" stroke-linecap="round" opacity=".55"/>
+              <circle cx="31" cy="10.5" r="2" fill="#0C2A3D"/>
+            </svg>
+          </div>
+        </div>
       </div>
-    </div>
-    <div class="progress-rail" id="progressRail">
-      <div class="progress-mid-mark"></div>
-      <div class="progress-fill" id="progressFill"></div>
+      <div class="progress-rail" id="progressRail">
+        <div class="progress-mid-mark"></div>
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
     </div>
   </div>
 
@@ -186,14 +209,14 @@ const FISHING_CONFIG = {
   },
 };
 
-const FISH_HITBOX_INSET = 2; // shrinks the hitbox slightly inside the 36px sprite so the visual and the judgement don't feel mismatched
-const FISH_SIZE = 36;
+const FISH_SIZE = 26; // vertical hitbox extent — the sprite is wider than it is tall, but only height matters for the vertical track
+const FISH_HITBOX_INSET = 2; // shrinks the hitbox slightly inside the sprite so the visual and the judgement don't feel mismatched
 
 function clamp(v, min, max) { return Math.min(Math.max(v, min), max); }
 function randomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 function randomBetween(min, max) { return Math.random() * (max - min) + min; }
 function weightedRandom(pairs) {
-  const total = pairs.reduce((s, [, w]) => s + w, 0);
+  const total = pairs.reduce((sum, [, weight]) => sum + weight, 0);
   let r = Math.random() * total;
   for (const [value, weight] of pairs) {
     r -= weight;
@@ -639,7 +662,8 @@ function render() {
   el.catchBar.classList.toggle('hooked', state.fishInsideBar);
 
   const tilt = clamp(state.fishVelocity * 3, -22, 22);
-  el.fish.style.transform = `translateY(${state.fishY}px) rotate(${tilt}deg)`;
+  const flip = state.fishVelocity < -0.05 ? -1 : 1; // face the direction it's swimming
+  el.fish.style.transform = `translateY(${state.fishY}px) scaleX(${flip}) rotate(${tilt * flip}deg)`;
 
   el.progressFill.style.height = (state.catchProgress * 100) + '%';
   el.progressFill.classList.toggle('danger', state.catchProgress < 0.25);
