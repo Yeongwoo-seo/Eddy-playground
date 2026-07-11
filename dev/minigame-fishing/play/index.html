@@ -68,9 +68,13 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 
 /* ===== Vertical capture panel — unchanged wood/water/catch-bar look, now
    toggled on/off only for the FISHING_MINIGAME phase instead of being the
-   whole screen. ===== */
-.game-stage{position:absolute;top:0;right:0;bottom:0;z-index:4;display:none;align-items:center;justify-content:center;gap:14px;padding:calc(64px + env(safe-area-inset-top,0)) 20px calc(28px + env(safe-area-inset-bottom,0));transform:scale(.85);opacity:0;transition:transform .22s cubic-bezier(.2,.8,.2,1),opacity .18s ease;pointer-events:none}
+   whole screen. .game-stage owns the show/hide pop (CSS-driven); the nested
+   #gaugeContent owns the calibration translate/scale (JS-driven, from the
+   calibration panel below) — two independent transforms on nested elements
+   so neither stomps the other. ===== */
+.game-stage{position:absolute;top:0;right:0;bottom:0;z-index:4;display:none;align-items:center;justify-content:center;padding:calc(64px + env(safe-area-inset-top,0)) 20px calc(28px + env(safe-area-inset-bottom,0));transform:scale(.85);opacity:0;transition:transform .22s cubic-bezier(.2,.8,.2,1),opacity .18s ease;pointer-events:none}
 .game-stage.show{display:flex;transform:scale(1);opacity:1}
+.gauge-content{display:flex;align-items:center;justify-content:center;gap:14px;height:100%}
 
 .track-wrap{position:relative;width:140px;height:100%;max-height:100%}
 .track{position:relative;width:100%;height:100%;border-radius:26px;overflow:hidden;background:linear-gradient(180deg,#CFEBF8 0%,#9CD3EA 45%,#6FB4D6 100%);border:6px solid #8B5A2B;border-image:linear-gradient(180deg,#D9A066 0%,#9C6530 50%,#6B4226 100%) 1;box-shadow:inset 0 0 18px rgba(20,60,80,.35),0 4px 14px rgba(0,0,0,.35)}
@@ -118,6 +122,21 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .result-fish-meta{font-family:var(--mono);font-size:12.5px;color:var(--text-secondary)}
 .perfect-tag{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.1em;color:var(--amber);background:rgba(214,168,75,.14);border:1px solid rgba(214,168,75,.4);border-radius:20px;padding:5px 12px;margin-top:6px}
 .result-hint{margin-top:14px;font-family:var(--mono);font-size:11.5px;color:var(--text-muted)}
+
+/* ===== Calibration panel — dev-only sliders for the gauge panel's
+   position/scale and the world character's position/scale, since neither
+   has real reference art yet to line up against by eye alone. Forces the
+   gauge panel visible while open (calibrationOpen) so a dragged slider is
+   seen immediately instead of only during an actual catch. ===== */
+.calib-panel{position:absolute;left:12px;right:12px;bottom:calc(16px + env(safe-area-inset-bottom,0));z-index:7;display:none;flex-direction:column;gap:10px;background:rgba(5,7,10,.9);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:14px 16px;max-height:60vh;overflow-y:auto}
+.calib-panel.show{display:flex}
+.calib-title{font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--text-muted);text-transform:uppercase;margin-bottom:2px}
+.calib-row{display:flex;align-items:center;gap:10px}
+.calib-row label{font-family:var(--mono);font-size:11px;color:var(--text-secondary);width:64px;flex-shrink:0}
+.calib-row input[type=range]{flex:1;accent-color:var(--cyan)}
+.calib-row .calib-val{font-family:var(--mono);font-size:10.5px;color:var(--text-muted);width:38px;text-align:right;flex-shrink:0}
+.calib-reset{align-self:flex-end;font-family:var(--mono);font-size:11px;color:var(--text-muted);background:none;border:1px solid var(--divider);border-radius:10px;padding:6px 12px;cursor:pointer}
+.calib-reset:active{opacity:.7}
 </style>
 </head>
 <body>
@@ -129,7 +148,10 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 
   <div class="topbar">
     <a class="vn-btn" href="/dev/">← DEV</a>
-    <a class="vn-btn" href="/dev/minigame-fishing/">설정</a>
+    <div style="display:flex;gap:8px;pointer-events:none">
+      <a class="vn-btn" href="/dev/minigame-fishing/">설정</a>
+      <button class="vn-btn" id="calibToggle" type="button">조정</button>
+    </div>
   </div>
 
   <div class="cast-meter-wrap" id="castMeterWrap">
@@ -141,21 +163,35 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
   <div class="hit-flash" id="hitFlash">HIT!</div>
 
   <div class="game-stage" id="gameStage">
-    <div class="track-wrap">
-      <div class="species-tag" id="speciesTag"></div>
-      <div class="track" id="track">
-        <div class="catch-bar" id="catchBar"></div>
-        <div class="fish-icon" id="fishIcon">🐟</div>
+    <div class="gauge-content" id="gaugeContent">
+      <div class="track-wrap">
+        <div class="species-tag" id="speciesTag"></div>
+        <div class="track" id="track">
+          <div class="catch-bar" id="catchBar"></div>
+          <div class="fish-icon" id="fishIcon">🐟</div>
+        </div>
       </div>
-    </div>
-    <div class="progress-rail" id="progressRail">
-      <div class="progress-mid-mark"></div>
-      <div class="progress-fill" id="progressFill"></div>
+      <div class="progress-rail" id="progressRail">
+        <div class="progress-mid-mark"></div>
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
     </div>
   </div>
 
   <div class="press-zone" id="pressZone"></div>
   <div class="press-hint" id="pressHint">눌러서 캐스팅 파워를 조절하세요</div>
+
+  <div class="calib-panel" id="calibPanel">
+    <div class="calib-title">게이지</div>
+    <div class="calib-row"><label>크기</label><input type="range" id="calibGaugeScale" min="0.6" max="1.5" step="0.02"><span class="calib-val" id="calibGaugeScaleVal"></span></div>
+    <div class="calib-row"><label>X 위치</label><input type="range" id="calibGaugeX" min="-80" max="80" step="1"><span class="calib-val" id="calibGaugeXVal"></span></div>
+    <div class="calib-row"><label>Y 위치</label><input type="range" id="calibGaugeY" min="-150" max="150" step="1"><span class="calib-val" id="calibGaugeYVal"></span></div>
+    <div class="calib-title">인물</div>
+    <div class="calib-row"><label>크기</label><input type="range" id="calibCharScale" min="0.6" max="1.8" step="0.02"><span class="calib-val" id="calibCharScaleVal"></span></div>
+    <div class="calib-row"><label>X 위치</label><input type="range" id="calibCharX" min="0.05" max="0.85" step="0.01"><span class="calib-val" id="calibCharXVal"></span></div>
+    <div class="calib-row"><label>Y 위치</label><input type="range" id="calibCharY" min="0.5" max="0.95" step="0.01"><span class="calib-val" id="calibCharYVal"></span></div>
+    <button class="calib-reset" id="calibReset" type="button">기본값으로</button>
+  </div>
 
   <div class="dlg-strip" id="dlgStrip">
     <div class="portrait-wrap" id="portraitWrap">
@@ -321,6 +357,7 @@ const el = {
   biteAlert: document.getElementById('biteAlert'),
   hitFlash: document.getElementById('hitFlash'),
   gameStage: document.getElementById('gameStage'),
+  gaugeContent: document.getElementById('gaugeContent'),
   speciesTag: document.getElementById('speciesTag'),
   track: document.getElementById('track'),
   catchBar: document.getElementById('catchBar'),
@@ -338,6 +375,15 @@ const el = {
   resultFishName: document.getElementById('resultFishName'),
   resultFishMeta: document.getElementById('resultFishMeta'),
   perfectTag: document.getElementById('perfectTag'),
+  calibToggle: document.getElementById('calibToggle'),
+  calibPanel: document.getElementById('calibPanel'),
+  calibReset: document.getElementById('calibReset'),
+  calibGaugeScale: document.getElementById('calibGaugeScale'),
+  calibGaugeX: document.getElementById('calibGaugeX'),
+  calibGaugeY: document.getElementById('calibGaugeY'),
+  calibCharScale: document.getElementById('calibCharScale'),
+  calibCharX: document.getElementById('calibCharX'),
+  calibCharY: document.getElementById('calibCharY'),
 };
 
 /* ===== Background dressing — unchanged from the previous build, see
@@ -360,7 +406,7 @@ let W = 0, H = 0;
 const ctx = el.canvas.getContext('2d');
 const WORLD = {
   shorelineYf: 0.80,
-  charXf: 0.24, charYf: 0.80,
+  charXf: 0.24, charYf: 0.80, charScale: 1,
   waterTopYf: 0.12, waterBottomYf: 0.74,
   shoulderYf: -0.135, // relative to charYf, in H fractions (negative = up)
   rodLength: 0.145, // fraction of H
@@ -386,6 +432,75 @@ function castTargetFrac(distanceFrac) {
     yf: WORLD.waterBottomYf - (WORLD.waterBottomYf - WORLD.waterTopYf) * distanceFrac,
   };
 }
+
+/* =========================================================================
+   Calibration panel — persisted gauge-panel and character position/scale,
+   since neither has reference art yet to line up against by eye. Shares
+   localStorage with the background picker (CUSTOMIZATION_KEY) so
+   dev/minigame-fishing/'s "this browser only" storage story stays in one
+   place instead of a second key.
+   ========================================================================= */
+const CALIB_DEFAULTS = { gaugeScale: 1, gaugeX: 0, gaugeY: 0, charScale: 1, charXf: 0.24, charYf: 0.80 };
+let calib = Object.assign({}, CALIB_DEFAULTS, customization.calibration || {});
+
+function applyGaugeTransform() {
+  el.gaugeContent.style.transform = `translate(${calib.gaugeX}px, ${calib.gaugeY}px) scale(${calib.gaugeScale})`;
+}
+function applyCharCalibration() {
+  WORLD.charXf = calib.charXf;
+  WORLD.charYf = calib.charYf;
+  WORLD.charScale = calib.charScale;
+}
+function saveCalibration() {
+  customization.calibration = calib;
+  try { localStorage.setItem(CUSTOMIZATION_KEY, JSON.stringify(customization)); } catch (e) { /* best-effort — a full quota just means this session's tweak doesn't persist */ }
+}
+
+// calibrationOpen forces the gauge panel visible regardless of game state so
+// a dragged slider is seen immediately, instead of only during a real catch.
+let calibrationOpen = false;
+function updateGaugeVisibility() {
+  el.gameStage.classList.toggle('show', calibrationOpen || fishing.state === STATES.FISHING_MINIGAME);
+}
+
+const CALIB_FIELDS = [
+  { key: 'gaugeScale', input: el.calibGaugeScale, val: document.getElementById('calibGaugeScaleVal'), fmt: v => v.toFixed(2) + 'x', onChange: applyGaugeTransform },
+  { key: 'gaugeX', input: el.calibGaugeX, val: document.getElementById('calibGaugeXVal'), fmt: v => Math.round(v) + 'px', onChange: applyGaugeTransform },
+  { key: 'gaugeY', input: el.calibGaugeY, val: document.getElementById('calibGaugeYVal'), fmt: v => Math.round(v) + 'px', onChange: applyGaugeTransform },
+  { key: 'charScale', input: el.calibCharScale, val: document.getElementById('calibCharScaleVal'), fmt: v => v.toFixed(2) + 'x', onChange: applyCharCalibration },
+  { key: 'charXf', input: el.calibCharX, val: document.getElementById('calibCharXVal'), fmt: v => Math.round(v * 100) + '%', onChange: applyCharCalibration },
+  { key: 'charYf', input: el.calibCharY, val: document.getElementById('calibCharYVal'), fmt: v => Math.round(v * 100) + '%', onChange: applyCharCalibration },
+];
+function renderCalibInputs() {
+  CALIB_FIELDS.forEach(f => {
+    f.input.value = calib[f.key];
+    f.val.textContent = f.fmt(calib[f.key]);
+  });
+}
+CALIB_FIELDS.forEach(f => {
+  f.input.addEventListener('input', () => {
+    calib[f.key] = parseFloat(f.input.value);
+    f.val.textContent = f.fmt(calib[f.key]);
+    f.onChange();
+    saveCalibration();
+  });
+});
+el.calibToggle.addEventListener('click', () => {
+  calibrationOpen = !calibrationOpen;
+  el.calibPanel.classList.toggle('show', calibrationOpen);
+  updateGaugeVisibility();
+});
+el.calibReset.addEventListener('click', () => {
+  calib = Object.assign({}, CALIB_DEFAULTS);
+  applyGaugeTransform();
+  applyCharCalibration();
+  renderCalibInputs();
+  saveCalibration();
+});
+
+applyCharCalibration();
+applyGaugeTransform();
+renderCalibInputs();
 
 /* =========================================================================
    PlayerFishingAnimator — procedural pose instead of sprite frames (brief
@@ -419,10 +534,10 @@ function updateAnimator(now, dt) {
   }
 }
 function rodSockets() {
-  const shoulder = px(WORLD.charXf, WORLD.charYf + WORLD.shoulderYf);
+  const shoulder = px(WORLD.charXf, WORLD.charYf + WORLD.shoulderYf * WORLD.charScale);
   const wobble = (fishing.state === STATES.FISHING_MINIGAME) ? Math.sin(animator.reelWobble) * 4 : 0;
   const rad = (animator.angle + wobble) * Math.PI / 180;
-  const rodLenPx = WORLD.rodLength * H;
+  const rodLenPx = WORLD.rodLength * H * WORLD.charScale;
   const tip = { x: shoulder.x + Math.sin(rad) * rodLenPx, y: shoulder.y - Math.cos(rad) * rodLenPx };
   return { shoulder, tip };
 }
@@ -477,24 +592,25 @@ function drawLineAndBobber(tipPx, bobberPx, sag) {
    swap this function for real sprite frames later without touching the
    state machine. ===== */
 function drawCharacter(sockets) {
+  const s = WORLD.charScale;
   const feet = px(WORLD.charXf, WORLD.charYf);
   const shoulder = sockets.shoulder;
   ctx.fillStyle = 'rgba(10,14,18,.4)';
   ctx.beginPath();
-  ctx.ellipse(feet.x, feet.y + 4, 22, 6, 0, 0, Math.PI * 2);
+  ctx.ellipse(feet.x, feet.y + 4 * s, 22 * s, 6 * s, 0, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.fillStyle = '#20303A';
   ctx.beginPath();
-  ctx.moveTo(feet.x - 13, feet.y);
-  ctx.quadraticCurveTo(feet.x - 16, shoulder.y + 6, feet.x - 9, shoulder.y);
-  ctx.lineTo(feet.x + 9, shoulder.y);
-  ctx.quadraticCurveTo(feet.x + 16, shoulder.y + 6, feet.x + 13, feet.y);
+  ctx.moveTo(feet.x - 13 * s, feet.y);
+  ctx.quadraticCurveTo(feet.x - 16 * s, shoulder.y + 6 * s, feet.x - 9 * s, shoulder.y);
+  ctx.lineTo(feet.x + 9 * s, shoulder.y);
+  ctx.quadraticCurveTo(feet.x + 16 * s, shoulder.y + 6 * s, feet.x + 13 * s, feet.y);
   ctx.closePath();
   ctx.fill();
 
-  const headR = (shoulder.y - (shoulder.y - (feet.y - shoulder.y) * 0.34)) * 0 + 11;
-  const headCenter = { x: shoulder.x, y: shoulder.y - 16 };
+  const headR = 11 * s;
+  const headCenter = { x: shoulder.x, y: shoulder.y - 16 * s };
   ctx.beginPath();
   ctx.arc(headCenter.x, headCenter.y, headR, 0, Math.PI * 2);
   ctx.fill();
@@ -628,9 +744,9 @@ function enterIdle() {
   el.pressHint.textContent = '눌러서 캐스팅 파워를 조절하세요';
   el.pressHint.style.opacity = '1';
   el.castMeterWrap.classList.remove('show');
-  el.gameStage.classList.remove('show');
   el.dimLayer.classList.remove('show');
   el.resultOverlay.classList.remove('show');
+  updateGaugeVisibility();
   setPose('idle', 0.4);
 }
 
@@ -747,7 +863,7 @@ function startMinigame(now) {
   fishing.isPerfect = true;
   fishing.state = STATES.FISHING_MINIGAME;
   el.speciesTag.textContent = `${fishing.currentFish.icon} ${fishing.currentFish.displayName}`;
-  el.gameStage.classList.add('show');
+  updateGaugeVisibility();
   el.dimLayer.classList.add('show');
   el.pressHint.textContent = '누르면 위로 · 떼면 아래로';
   el.pressHint.style.opacity = '1';
@@ -828,7 +944,7 @@ function catchSuccess(now) {
   beep(660, 990, 0.22, 0.3);
   vibrate(40);
   setPose('pull', 0.3);
-  el.gameStage.classList.remove('show');
+  updateGaugeVisibility();
   el.dimLayer.classList.remove('show');
   el.pressHint.style.opacity = '0';
   const def = fishing.currentFish;
@@ -849,7 +965,7 @@ function fishEscape(now) {
   vibrate(60);
   setPose('flinch', 0.25);
   el.catchBar.classList.add('danger');
-  el.gameStage.classList.remove('show');
+  updateGaugeVisibility();
   el.dimLayer.classList.remove('show');
   el.pressHint.style.opacity = '0';
   el.resultBanner.textContent = '놓쳤다…';
