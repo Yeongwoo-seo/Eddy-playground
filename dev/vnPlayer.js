@@ -99,7 +99,14 @@ function createVNPlayer({ onLineChange, onTextUpdate, onArrow, onComplete, onEff
     if (line.sceneTransition && onSceneTransition) {
       isPausing = true;
       onArrow(false);
-      Promise.resolve(onSceneTransition(line.sceneTransition, line)).then(() => {
+      // A failed background/asset fetch inside onSceneTransition must not
+      // leave isPausing stuck true forever — that permanently disables tap()
+      // (see its guard above) with no visible error, indistinguishable from
+      // infinite loading. Always resume the scene even if the transition
+      // visual itself couldn't load.
+      Promise.resolve(onSceneTransition(line.sceneTransition, line)).catch((err) => {
+        console.error('sceneTransition failed, continuing scene anyway', err);
+      }).then(() => {
         isPausing = false;
         typeText(line.text || '', line.typingSpeedMs, line);
       });

@@ -332,8 +332,19 @@ function setCharacterAsset(asset) {
 // (e.g. a location-segment key from scene.locations) to swap in a
 // different background without leaving the scene, for playSceneTransition.
 async function applyBackground(backgroundKey) {
-  const bgAsset = await AssetDB.getAsset(DevGameState.getBackgroundId(backgroundKey || activeSceneData.id));
-  if (bgAsset) await AssetDB.preloadImage(bgAsset.dataUrl);
+  // A failed asset fetch (network hiccup, missing upload) must degrade to
+  // the placeholder background instead of throwing — callers await this
+  // ahead of LoadingOverlay.hide() and vnPlayer's scene-transition resume,
+  // so an uncaught rejection here would leave the player permanently stuck
+  // (loading spinner forever, or tap() disabled forever — see vnPlayer.js).
+  let bgAsset = null;
+  try {
+    bgAsset = await AssetDB.getAsset(DevGameState.getBackgroundId(backgroundKey || activeSceneData.id));
+    if (bgAsset) await AssetDB.preloadImage(bgAsset.dataUrl);
+  } catch (err) {
+    console.error('applyBackground failed, falling back to placeholder', err);
+    bgAsset = null;
+  }
   setBackground(bgAsset);
 }
 
