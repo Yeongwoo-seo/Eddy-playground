@@ -36,20 +36,64 @@ function defaultCaseState() {
     currentHypotheses: {},
     hypothesisHistory: {},
     facts: [],
+    // The Missing Key v5 §5 — 여행 코인. 미니게임/챕터 보상으로 얻어 상점에서
+    // 쓰는 메타 재화이며 실제 호주 달러와 동일시하지 않는다(§5.1).
+    playerEconomy: { tripCoin: 0, totalEarned: 0, totalSpent: 0, rewardHistory: [], purchaseHistory: [] },
+    // v5 §6 — 옷장·아바타. 구매한 의상은 영구 보유되고, 착용 중인 의상은
+    // 대사 엔진이 감정과 조합해 자동으로 스프라이트 키를 고른다(§6.5).
+    avatarState: {
+      jisoo: { currentOutfitId: 'jisoo-outfit-default', ownedOutfitIds: ['jisoo-outfit-default'], ownedAccessoryIds: [], outfitHistory: [] },
+      youngwoo: { currentOutfitId: 'youngwoo-outfit-default', ownedOutfitIds: ['youngwoo-outfit-default'] },
+    },
+    // v5 §8 — 데이트 추억. memoryDefs는 hypothesisDefs와 같은 write-once
+    // 카탈로그(id -> 전체 내용)이고, memoryAlbum은 그중 해금된 id만 추적한다.
+    memoryAlbum: { unlockedMemoryIds: [], selectedPhotoIds: [], favoriteMemoryId: null },
+    memoryDefs: {},
+    // v5 §9 — 관계성. 숫자는 화면에 노출하지 않고(§9.1) 이후 분기 조건으로만 쓴다.
+    relationshipState: { affection: 0, trust: 0, playfulness: 0, sharedMemories: 0 },
+    // v5 §26 — 전시장 자유 관람 기록. 사건 전 무엇을 봤는지로 사건 후 조사
+    // 대사를 분기시킨다.
+    galleryVisitState: {
+      visitedSections: [],
+      inspectedItemIds: [],
+      talkedToAdrian: false,
+      sawStaffTag: false,
+      sawStaffDoor: false,
+      inspectedK01Features: [],
+      completedAllOptionalSections: false,
+    },
   };
+}
+
+// Shared by loadCaseState (localStorage) and loadSlot (save slots) — both
+// need the same defensive Object.assign-onto-defaults so a field added
+// after a save was written can't crash loading it back (see file header).
+function mergeCaseState(raw) {
+  raw = raw || {};
+  const d = defaultCaseState();
+  return Object.assign(d, raw, {
+    settings: Object.assign(d.settings, raw.settings || {}),
+    flags: Object.assign({}, raw.flags || {}),
+    hypothesisDefs: Object.assign({}, raw.hypothesisDefs || {}),
+    currentHypotheses: Object.assign({}, raw.currentHypotheses || {}),
+    hypothesisHistory: Object.assign({}, raw.hypothesisHistory || {}),
+    playerEconomy: Object.assign(d.playerEconomy, raw.playerEconomy || {}),
+    avatarState: {
+      jisoo: Object.assign(d.avatarState.jisoo, (raw.avatarState && raw.avatarState.jisoo) || {}),
+      youngwoo: Object.assign(d.avatarState.youngwoo, (raw.avatarState && raw.avatarState.youngwoo) || {}),
+    },
+    memoryAlbum: Object.assign(d.memoryAlbum, raw.memoryAlbum || {}),
+    memoryDefs: Object.assign({}, raw.memoryDefs || {}),
+    relationshipState: Object.assign(d.relationshipState, raw.relationshipState || {}),
+    galleryVisitState: Object.assign(d.galleryVisitState, raw.galleryVisitState || {}),
+  });
 }
 
 function loadCaseState() {
   try {
     const raw = JSON.parse(localStorage.getItem(CASE_STATE_KEY));
     if (!raw || typeof raw !== 'object') return defaultCaseState();
-    return Object.assign(defaultCaseState(), raw, {
-      settings: Object.assign(defaultCaseState().settings, raw.settings || {}),
-      flags: Object.assign({}, raw.flags || {}),
-      hypothesisDefs: Object.assign({}, raw.hypothesisDefs || {}),
-      currentHypotheses: Object.assign({}, raw.currentHypotheses || {}),
-      hypothesisHistory: Object.assign({}, raw.hypothesisHistory || {}),
-    });
+    return mergeCaseState(raw);
   } catch (e) { return defaultCaseState(); }
 }
 
@@ -197,6 +241,127 @@ const CaseFileState = {
   getFacts() { return caseState.facts.slice(); },
   getFactsForQuestion(questionId) { return caseState.facts.filter(f => (f.relatedQuestionIds || []).includes(questionId)); },
 
+  /* ===== 여행 재화 (v5 §5) ===== */
+  addCurrency(amount, reason) {
+    caseState.playerEconomy.tripCoin += amount;
+    caseState.playerEconomy.totalEarned += amount;
+    caseState.playerEconomy.rewardHistory.push({ amount, reason: reason || null, at: Date.now() });
+    saveCaseState();
+  },
+  // Returns false rather than throwing when short — a choice's own
+  // `currencyAtLeast` condition (evaluateCondition in game/index.html) is
+  // what should keep an unaffordable purchase from being offered at all;
+  // this is just the second guard in case an effect fires without one.
+  spendCurrency(amount, itemId) {
+    if (caseState.playerEconomy.tripCoin < amount) return false;
+    caseState.playerEconomy.tripCoin -= amount;
+    caseState.playerEconomy.totalSpent += amount;
+    caseState.playerEconomy.purchaseHistory.push({ amount, itemId: itemId || null, at: Date.now() });
+    saveCaseState();
+    return true;
+  },
+  getCurrency() { return caseState.playerEconomy.tripCoin; },
+  hasCurrency(amount) { return caseState.playerEconomy.tripCoin >= amount; },
+
+  /* ===== 옷장 · 아바타 (v5 §6) ===== */
+  unlockOutfit(characterId, outfitId) {
+    const c = caseState.avatarState[characterId];
+    if (!c || c.ownedOutfitIds.includes(outfitId)) return false;
+    c.ownedOutfitIds.push(outfitId);
+    c.outfitHistory = c.outfitHistory || [];
+    c.outfitHistory.push({ outfitId, unlockedAt: Date.now() });
+    saveCaseState();
+    return true;
+  },
+  equipOutfit(characterId, outfitId) {
+    const c = caseState.avatarState[characterId];
+    if (!c || !c.ownedOutfitIds.includes(outfitId)) return false;
+    c.currentOutfitId = outfitId;
+    saveCaseState();
+    return true;
+  },
+  unlockAccessory(characterId, accessoryId) {
+    const c = caseState.avatarState[characterId];
+    if (!c) return false;
+    c.ownedAccessoryIds = c.ownedAccessoryIds || [];
+    if (c.ownedAccessoryIds.includes(accessoryId)) return false;
+    c.ownedAccessoryIds.push(accessoryId);
+    saveCaseState();
+    return true;
+  },
+  getCurrentOutfit(characterId) {
+    const c = caseState.avatarState[characterId];
+    return c ? c.currentOutfitId : null;
+  },
+  // Outfit ids are globally unique (e.g. 'jisoo-outfit-...') so a shop
+  // choice's `notOwned` condition (§7.2's shop-blue-preview example) doesn't
+  // need to also name the character — just check every wardrobe.
+  ownsOutfit(outfitId) {
+    return Object.keys(caseState.avatarState).some(cid => caseState.avatarState[cid].ownedOutfitIds.includes(outfitId));
+  },
+  getAvatarState(characterId) { return Object.assign({}, caseState.avatarState[characterId]); },
+
+  /* ===== 데이트 추억 (v5 §8) — memoryDefs는 hypothesisDefs와 같은
+     write-once 카탈로그(defaultCaseState의 hypothesisDefs 주석 참고): 씬이
+     매번 전체 추억 데이터를 effect에 인라인으로 담아 보낸다. ===== */
+  unlockMemory(memory) {
+    if (caseState.memoryAlbum.unlockedMemoryIds.includes(memory.id)) return false;
+    caseState.memoryDefs[memory.id] = memory;
+    caseState.memoryAlbum.unlockedMemoryIds.push(memory.id);
+    saveCaseState();
+    return true;
+  },
+  getMemories() {
+    return caseState.memoryAlbum.unlockedMemoryIds.map(id => caseState.memoryDefs[id]).filter(Boolean);
+  },
+  hasMemory(id) { return caseState.memoryAlbum.unlockedMemoryIds.includes(id); },
+  selectMemoryPhoto(id) {
+    if (caseState.memoryAlbum.selectedPhotoIds.includes(id)) return;
+    caseState.memoryAlbum.selectedPhotoIds.push(id);
+    saveCaseState();
+  },
+  setFavoriteMemory(id) {
+    caseState.memoryAlbum.favoriteMemoryId = id;
+    saveCaseState();
+  },
+
+  /* ===== 관계성 (v5 §9) — 숫자는 화면에 노출하지 않는다(§9.1). ===== */
+  adjustRelationship(stat, amount) {
+    if (!(stat in caseState.relationshipState)) return;
+    caseState.relationshipState[stat] += amount;
+    saveCaseState();
+  },
+  getRelationshipState() { return Object.assign({}, caseState.relationshipState); },
+
+  /* ===== 전시장 관람 기록 (v5 §26) ===== */
+  visitGallerySection(id) {
+    if (caseState.galleryVisitState.visitedSections.includes(id)) return false;
+    caseState.galleryVisitState.visitedSections.push(id);
+    saveCaseState();
+    return true;
+  },
+  inspectGalleryItem(id) {
+    if (caseState.galleryVisitState.inspectedItemIds.includes(id)) return false;
+    caseState.galleryVisitState.inspectedItemIds.push(id);
+    saveCaseState();
+    return true;
+  },
+  inspectK01Feature(id) {
+    if (caseState.galleryVisitState.inspectedK01Features.includes(id)) return false;
+    caseState.galleryVisitState.inspectedK01Features.push(id);
+    saveCaseState();
+    return true;
+  },
+  // Generic boolean setter for the flat flags in §26's schema
+  // (talkedToAdrian/sawStaffTag/sawStaffDoor/completedAllOptionalSections)
+  // instead of one bespoke method per flag.
+  setGalleryFlag(key) {
+    if (!(key in caseState.galleryVisitState)) return;
+    caseState.galleryVisitState[key] = true;
+    saveCaseState();
+  },
+  getGalleryVisitState() { return Object.assign({}, caseState.galleryVisitState); },
+
   /* ===== 소지품 ===== */
   addInventoryItem(id) {
     if (caseState.inventoryItemIds.includes(id)) return false;
@@ -245,13 +410,7 @@ const CaseFileState = {
   loadSlot(slotNum) {
     const slot = loadSaveSlots()[slotNum];
     if (!slot) return null;
-    caseState = Object.assign(defaultCaseState(), slot.caseState, {
-      settings: Object.assign(defaultCaseState().settings, (slot.caseState && slot.caseState.settings) || {}),
-      flags: Object.assign({}, (slot.caseState && slot.caseState.flags) || {}),
-      hypothesisDefs: Object.assign({}, (slot.caseState && slot.caseState.hypothesisDefs) || {}),
-      currentHypotheses: Object.assign({}, (slot.caseState && slot.caseState.currentHypotheses) || {}),
-      hypothesisHistory: Object.assign({}, (slot.caseState && slot.caseState.hypothesisHistory) || {}),
-    });
+    caseState = mergeCaseState(slot.caseState);
     saveCaseState();
     return slot;
   },

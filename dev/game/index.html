@@ -229,6 +229,17 @@ window.addEventListener('orientationchange', setVh100);
       <button class="sheet-btn" id="btnDumpHypothesisHistory">DUMP HYPOTHESIS HISTORY</button>
     </div>
 
+    <div class="sheet-title">Dev · 데이트·쇼핑 (The Missing Key v5)</div>
+    <div class="sheet-grid">
+      <button class="sheet-btn" id="btnAddTripCoin">+100 TRIP COIN</button>
+      <button class="sheet-btn" id="btnSpendTripCoin">-100 TRIP COIN</button>
+      <button class="sheet-btn" id="btnUnlockSampleOutfit">UNLOCK+EQUIP SAMPLE OUTFIT (지수)</button>
+      <button class="sheet-btn" id="btnUnlockSampleMemory">UNLOCK SAMPLE MEMORY</button>
+      <button class="sheet-btn" id="btnAdjustRelationship">+1 AFFECTION</button>
+      <button class="sheet-btn" id="btnVisitGallerySection">VISIT SAMPLE GALLERY SECTION</button>
+      <button class="sheet-btn" id="btnDumpTripState">DUMP TRIP/SHOP STATE</button>
+    </div>
+
     <button class="sheet-close" id="sheetCloseBtn">CLOSE</button>
     <a class="sheet-link" id="uploadLink" href="/dev/upload/">+ 새 이미지 업로드</a>
   </div>
@@ -596,6 +607,42 @@ function applyEffect(effect) {
     case 'setFlagIfAll':
       if (effect.flags.every(f => CaseFileState.hasFlag(f))) CaseFileState.setFlag(effect.key, true);
       break;
+    // The Missing Key v5 §5-9/§26 — 데이트·쇼핑 확장 시스템. 여러 currency
+    // 종류를 위한 범용 구조는 아직 두지 않는다 — tripCoin이 현재 유일한
+    // 재화라 effect.currency는 받되 무시한다(§5.1).
+    case 'addCurrency':
+      CaseFileState.addCurrency(effect.amount, effect.reason);
+      break;
+    case 'spendCurrency':
+      CaseFileState.spendCurrency(effect.amount, effect.itemId);
+      break;
+    case 'unlockOutfit':
+      CaseFileState.unlockOutfit(effect.characterId, effect.outfitId);
+      break;
+    case 'equipOutfit':
+      CaseFileState.equipOutfit(effect.characterId, effect.outfitId);
+      break;
+    case 'unlockAccessory':
+      CaseFileState.unlockAccessory(effect.characterId, effect.accessoryId);
+      break;
+    case 'unlockMemory':
+      CaseFileState.unlockMemory(effect.memory);
+      break;
+    case 'adjustRelationship':
+      CaseFileState.adjustRelationship(effect.stat, effect.amount);
+      break;
+    case 'visitGallerySection':
+      CaseFileState.visitGallerySection(effect.id);
+      break;
+    case 'inspectGalleryItem':
+      CaseFileState.inspectGalleryItem(effect.id);
+      break;
+    case 'inspectK01Feature':
+      CaseFileState.inspectK01Feature(effect.id);
+      break;
+    case 'setGalleryFlag':
+      CaseFileState.setGalleryFlag(effect.key);
+      break;
   }
 }
 
@@ -638,6 +685,13 @@ function evaluateCondition(cond) {
       if (!p || p.status !== cond.personStatus[personId]) return false;
     }
   }
+  // v5 §7.4 — a shop choice's price gate, e.g. { currencyAtLeast: { tripCoin: 400 } }.
+  // Only tripCoin exists today; the key is kept so a future second currency
+  // doesn't need a schema change.
+  if (cond.currencyAtLeast && !CaseFileState.hasCurrency(cond.currencyAtLeast.tripCoin)) return false;
+  // v5 §7.2 — { notOwned: 'jisoo-outfit-...' } hides a shop's "구매" choice
+  // once the player already owns that outfit.
+  if (cond.notOwned && CaseFileState.ownsOutfit(cond.notOwned)) return false;
   return true;
 }
 
@@ -948,6 +1002,39 @@ document.getElementById('btnDumpHypothesisHistory').addEventListener('click', ()
     const hist = CaseFileState.getHypothesisHistory(q.id);
     if (hist.length) console.log('[HYPOTHESIS HISTORY]', q.id, hist);
   });
+});
+
+/* ===== Dev · 데이트·쇼핑 debug shortcuts (The Missing Key v5) ===== */
+document.getElementById('btnAddTripCoin').addEventListener('click', () => {
+  CaseFileState.addCurrency(100, 'dev-shortcut');
+});
+document.getElementById('btnSpendTripCoin').addEventListener('click', () => {
+  if (!CaseFileState.spendCurrency(100, 'dev-shortcut')) alert('여행 코인이 부족합니다.');
+});
+document.getElementById('btnUnlockSampleOutfit').addEventListener('click', () => {
+  const outfitId = 'jisoo-outfit-sample-' + Date.now();
+  CaseFileState.unlockOutfit('jisoo', outfitId);
+  CaseFileState.equipOutfit('jisoo', outfitId);
+});
+document.getElementById('btnUnlockSampleMemory').addEventListener('click', () => {
+  CaseFileState.unlockMemory({
+    id: 'memory-sample-' + Date.now(),
+    title: '테스트용 샘플 추억입니다.',
+  });
+});
+document.getElementById('btnAdjustRelationship').addEventListener('click', () => {
+  CaseFileState.adjustRelationship('affection', 1);
+});
+document.getElementById('btnVisitGallerySection').addEventListener('click', () => {
+  CaseFileState.visitGallerySection('gallery-section-sample-' + Date.now());
+});
+document.getElementById('btnDumpTripState').addEventListener('click', () => {
+  console.log('[TRIP ECONOMY]', CaseFileState.getCurrency());
+  console.log('[AVATAR STATE] jisoo:', CaseFileState.getAvatarState('jisoo'));
+  console.log('[AVATAR STATE] youngwoo:', CaseFileState.getAvatarState('youngwoo'));
+  console.log('[MEMORY ALBUM]', CaseFileState.getMemories());
+  console.log('[RELATIONSHIP STATE]', CaseFileState.getRelationshipState());
+  console.log('[GALLERY VISIT STATE]', CaseFileState.getGalleryVisitState());
 });
 
 el.transformBtn.addEventListener('click', (e) => {
