@@ -156,6 +156,7 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .picker-label-row .picker-label{margin-bottom:0}
 .week-dialogue-all-btn{font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--cyan);background:rgba(89,184,200,.12);border:1px solid rgba(89,184,200,.4);border-radius:14px;padding:6px 12px;cursor:pointer}
 .week-dialogue-all-btn.hidden{display:none}
+.week-dialogue-all-btn:disabled{opacity:.6;cursor:default}
 
 /* Full-week combined 대사 modal — every scene in the current week's script,
    one big textarea, saved back out per-scene via the same
@@ -246,10 +247,16 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
     <div class="hint" style="margin-top:8px">미니게임 지도/사진은 반드시 "미니게임"을 선택한 상태에서 올려야 게임에 반영돼요.</div>
   </div>
 
-  <!-- 인물 DB: character -> expression picker -->
+  <!-- 인물 DB: character -> outfit -> expression picker. 옷 picker는 outfits
+       목록이 있는 캐릭터(현재는 지수)에서만 보인다 — see allowedOutfits(). -->
   <div class="picker hidden" id="charPicker">
     <div class="picker-label">등장인물</div>
     <div class="picker-pills" id="charPickerPills"></div>
+  </div>
+  <div class="picker hidden" id="outfitPicker">
+    <div class="picker-label">옷</div>
+    <div class="picker-pills" id="outfitPickerPills"></div>
+    <button class="week-dialogue-all-btn" id="outfitApplyBtn" style="margin-top:8px;width:100%;padding:9px;border-radius:10px"></button>
   </div>
   <div class="picker hidden" id="exprPicker">
     <div class="picker-label">감정표현</div>
@@ -511,6 +518,8 @@ let currentSceneId = weeks[0].scenes[0] && weeks[0].scenes[0].id;
 let currentBgKind = 'scene'; // 'scene' | 'loc:N' | 'minigame' — see backgroundKinds()
 let currentCharacterKey = dialogueCharacters[0].id;
 let currentExpression = dialogueExpressions[0].id;
+// null for characters with no `outfits` list — see allowedOutfits()/characterHasOutfits().
+let currentOutfit = null;
 let pendingFile = null;
 
 // Deep link from /dev/game's "+ 새 이미지 업로드" and from /dev/weekN's
@@ -632,6 +641,9 @@ const el = {
   bgKindPickerPills: document.getElementById('bgKindPickerPills'),
   charPicker: document.getElementById('charPicker'),
   charPickerPills: document.getElementById('charPickerPills'),
+  outfitPicker: document.getElementById('outfitPicker'),
+  outfitPickerPills: document.getElementById('outfitPickerPills'),
+  outfitApplyBtn: document.getElementById('outfitApplyBtn'),
   exprPicker: document.getElementById('exprPicker'),
   exprPickerPills: document.getElementById('exprPickerPills'),
   dropzone: document.getElementById('dropzone'),
@@ -693,6 +705,24 @@ function currentCharacter() { return dialogueCharacters.find(c => c.id === curre
 function allowedExpressions() {
   const list = currentCharacter().expressions;
   return list && list.length ? dialogueExpressions.filter(x => list.includes(x.id)) : dialogueExpressions;
+}
+
+// A character's own `outfits` list (see dialogueData.js) — currently only
+// 지수 has one. Unlike allowedExpressions, an empty/missing list means "no
+// outfit versions at all" (not "show everything"), since most characters
+// never need this dimension.
+function characterHasOutfits(c) {
+  return !!(c && c.outfits && c.outfits.length);
+}
+function allowedOutfits() {
+  const list = currentCharacter().outfits;
+  return list && list.length ? dialogueOutfits.filter(o => list.includes(o.id)) : [];
+}
+// The outfit segment to filter/save asset-list entries against — only
+// meaningful in 인물 DB mode (미니게임 얼굴 shares the 'character' asset type
+// but never varies by outfit) for a character that actually has outfits.
+function activeOutfitForFilter() {
+  return (currentType === 'character' && characterHasOutfits(currentCharacter())) ? currentOutfit : null;
 }
 
 // Every background slot the current scene has, as { id, label, sceneId } —
@@ -764,6 +794,11 @@ function selectType(type) {
   // switching to 인물 DB left it showing whatever it was left at.
   el.bgKindPicker.classList.toggle('hidden', type !== 'background');
   el.charPicker.classList.toggle('hidden', type !== 'character' && type !== 'minigameFace');
+  // outfitPicker's own visibility (also gated on the current character
+  // actually having outfits) is recomputed by renderOutfitPicker() below,
+  // which only runs for type 'character' — force it hidden here too so a
+  // stale-visible picker doesn't linger when switching to 미니게임 얼굴/배경 DB.
+  if (type !== 'character') el.outfitPicker.classList.add('hidden');
   el.exprPicker.classList.toggle('hidden', type !== 'character');
   el.minigameFaceHint.classList.toggle('hidden', type !== 'minigameFace');
   el.fileInput.accept = type === 'background' ? 'image/jpeg,image/png,image/webp' : 'image/png,image/webp';
@@ -780,7 +815,7 @@ function selectType(type) {
   if (type === 'background' || type === 'dialogue') { renderWeekPicker(); renderScenePicker(); }
   if (type === 'background') renderBgKindPicker();
   if (type === 'character' || type === 'minigameFace') renderCharPicker();
-  if (type === 'character') renderExprPicker();
+  if (type === 'character') { renderOutfitPicker(); renderExprPicker(); }
   if (type === 'dialogue') renderDialoguePanel();
   if (type === 'sound') renderSoundPanel();
   clearPending();
@@ -1095,13 +1130,47 @@ function renderCharPicker() {
         const allowed = allowedExpressions();
         if (!allowed.some(x => x.id === currentExpression)) currentExpression = allowed[0].id;
       }
+      // New character may not have outfits at all, or may not have the one
+      // that was selected for the previous character (outfit ids aren't
+      // shared across characters) — reset to that character's first outfit,
+      // or null if it has none.
+      const outfits = allowedOutfits();
+      currentOutfit = outfits.length ? (outfits.some(o => o.id === currentOutfit) ? currentOutfit : outfits[0].id) : null;
       renderCharPicker();
-      if (currentType === 'character') renderExprPicker();
+      if (currentType === 'character') { renderOutfitPicker(); renderExprPicker(); }
       clearPending();
       refreshList();
     });
   });
 }
+
+function renderOutfitPicker() {
+  const outfits = allowedOutfits();
+  const show = currentType === 'character' && outfits.length > 0;
+  el.outfitPicker.classList.toggle('hidden', !show);
+  if (!show) return;
+  if (!outfits.some(o => o.id === currentOutfit)) currentOutfit = outfits[0].id;
+  const activeOutfit = DevGameState.getSelectedOutfit(currentCharacterKey);
+  el.outfitPickerPills.innerHTML = outfits.map(o =>
+    `<button class="pill${o.id === currentOutfit ? ' active' : ''}" data-key="${o.id}">${escapeHtml(o.label)}${o.id === activeOutfit ? ' 👗' : ''}</button>`
+  ).join('');
+  el.outfitPickerPills.querySelectorAll('.pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentOutfit = btn.dataset.key;
+      renderOutfitPicker();
+      clearPending();
+      refreshList();
+    });
+  });
+  const isActiveOutfit = activeOutfit === currentOutfit;
+  el.outfitApplyBtn.textContent = isActiveOutfit ? '✓ 게임에 적용됨' : '이 옷 게임에 적용';
+  el.outfitApplyBtn.disabled = isActiveOutfit;
+}
+
+el.outfitApplyBtn.addEventListener('click', () => {
+  DevGameState.setSelectedOutfit(currentCharacterKey, currentOutfit);
+  renderOutfitPicker();
+});
 
 function renderExprPicker() {
   el.exprPickerPills.innerHTML = allowedExpressions().map(x =>
@@ -1334,11 +1403,14 @@ async function autoRegisterCharacterPhoto(file, url, img) {
 
     el.bgRemoveBtn.textContent = '자동 처리 중: 등록...';
     const exprLabel = dialogueExpressions.find(x => x.id === currentExpression).label;
-    const name = `${sourceFileBaseName} (${exprLabel}).png`;
-    const record = await AssetDB.addAsset({ type: 'character', name, blob: cropBlob, width: croppedImg.naturalWidth, height: croppedImg.naturalHeight, characterKey: currentCharacterKey, expression: currentExpression });
-    // Only one photo per (character, expression) is actually rendered — the
-    // newest upload for this pair becomes the active one automatically.
-    DevGameState.setCharacterAssetId(currentCharacterKey, currentExpression, record.id);
+    const outfit = activeOutfitForFilter();
+    const outfitLabel = outfit ? dialogueOutfits.find(o => o.id === outfit).label + ' ' : '';
+    const name = `${sourceFileBaseName} (${outfitLabel}${exprLabel}).png`;
+    const record = await AssetDB.addAsset({ type: 'character', name, blob: cropBlob, width: croppedImg.naturalWidth, height: croppedImg.naturalHeight, characterKey: currentCharacterKey, expression: currentExpression, outfit });
+    // Only one photo per (character, [outfit,] expression) is actually
+    // rendered — the newest upload for this slot becomes the active one
+    // automatically.
+    DevGameState.setCharacterAssetId(currentCharacterKey, currentExpression, record.id, outfit);
   } catch (err) {
     // Nothing was registered yet at this point, so it's safe to send the
     // user back to the manual editor to retry with the same photo.
@@ -1510,9 +1582,11 @@ async function confirmBatchSave() {
       const croppedImg = await loadImageFromBlob(cropBlob);
       lastCropSettingsByType.character = { zoom: box.zoom, fracX: box.fracX, fracY: box.fracY };
       const exprLabel = dialogueExpressions.find(x => x.id === item.expression).label;
-      const name = `${item.fileName} (${exprLabel}).png`;
-      const record = await AssetDB.addAsset({ type: 'character', name, blob: cropBlob, width: croppedImg.naturalWidth, height: croppedImg.naturalHeight, characterKey: currentCharacterKey, expression: item.expression });
-      DevGameState.setCharacterAssetId(currentCharacterKey, item.expression, record.id);
+      const outfit = activeOutfitForFilter();
+      const outfitLabel = outfit ? dialogueOutfits.find(o => o.id === outfit).label + ' ' : '';
+      const name = `${item.fileName} (${outfitLabel}${exprLabel}).png`;
+      const record = await AssetDB.addAsset({ type: 'character', name, blob: cropBlob, width: croppedImg.naturalWidth, height: croppedImg.naturalHeight, characterKey: currentCharacterKey, expression: item.expression, outfit });
+      DevGameState.setCharacterAssetId(currentCharacterKey, item.expression, record.id, outfit);
       item.saved = true;
     } catch (err) {
       DevDiag.show(`저장 실패 (${item.fileName}): ` + (err && err.message ? err.message : err));
@@ -1681,12 +1755,15 @@ el.cropSaveBtn.addEventListener('click', async () => {
     if (imageEditorTarget === 'item') {
       await saveCroppedItemImage(cropBlob, croppedImg);
     } else {
+      const outfit = imageEditorTarget === 'character' ? activeOutfitForFilter() : null;
+      const outfitLabel = outfit ? dialogueOutfits.find(o => o.id === outfit).label + ' ' : '';
       const exprLabel = imageEditorTarget === 'minigameFace' ? '미니게임 얼굴' : dialogueExpressions.find(x => x.id === currentExpression).label;
-      const name = `${sourceFileBaseName} (${exprLabel}).png`;
-      const record = await AssetDB.addAsset({ type: 'character', name, blob: cropBlob, width: croppedImg.naturalWidth, height: croppedImg.naturalHeight, characterKey: currentCharacterKey, expression: currentExpression });
-      // Only one photo per (character, expression) is actually rendered — the
-      // newest upload for this pair becomes the active one automatically.
-      DevGameState.setCharacterAssetId(currentCharacterKey, currentExpression, record.id);
+      const name = `${sourceFileBaseName} (${outfitLabel}${exprLabel}).png`;
+      const record = await AssetDB.addAsset({ type: 'character', name, blob: cropBlob, width: croppedImg.naturalWidth, height: croppedImg.naturalHeight, characterKey: currentCharacterKey, expression: currentExpression, outfit });
+      // Only one photo per (character, [outfit,] expression) is actually
+      // rendered — the newest upload for this slot becomes the active one
+      // automatically.
+      DevGameState.setCharacterAssetId(currentCharacterKey, currentExpression, record.id, outfit);
       await refreshList();
     }
     clearPending();
@@ -2114,9 +2191,10 @@ async function refreshList() {
   // 미니게임 얼굴은 실제 저장은 'character' 타입을 공유하고 expression
   // sentinel(MINIGAME_FACE_EXPRESSION)로만 구분되므로 조회도 'character'로.
   const all = await AssetDB.getAssetsByType(currentType === 'minigameFace' ? 'character' : currentType);
+  const outfitFilter = activeOutfitForFilter();
   const filtered = currentType === 'background'
     ? all.filter(a => a.sceneId === activeBackgroundSceneId())
-    : all.filter(a => a.characterKey === currentCharacterKey && a.expression === currentExpression);
+    : all.filter(a => a.characterKey === currentCharacterKey && a.expression === currentExpression && (a.outfit || null) === outfitFilter);
   renderList(filtered);
 }
 
@@ -2129,7 +2207,7 @@ function renderList(assets) {
     const url = a.dataUrl;
     const isActive = a.type === 'background'
       ? DevGameState.getBackgroundId(a.sceneId) === a.id
-      : DevGameState.getCharacterAssetId(a.characterKey, a.expression) === a.id;
+      : DevGameState.getCharacterAssetIdForOutfit(a.characterKey, a.outfit || null, a.expression) === a.id;
     const tag = isActive ? '<span class="asset-tag">사용 중</span><br>' : '';
     const useAction = a.type === 'background'
       ? `useAsBackground('${a.id}')`
@@ -2162,7 +2240,7 @@ function useAsBackground(id) {
 }
 
 function useAsCharacter(id) {
-  DevGameState.setCharacterAssetId(currentCharacterKey, currentExpression, id);
+  DevGameState.setCharacterAssetId(currentCharacterKey, currentExpression, id, activeOutfitForFilter());
   refreshList();
 }
 
