@@ -39,6 +39,15 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .vn-btn{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:#fff;background:rgba(8,10,12,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:9px 14px;cursor:pointer;text-decoration:none;display:inline-block}
 .vn-btn.dev{color:var(--amber);border-color:rgba(214,168,75,.4)}
 
+/* ===== Point balance (The Missing Key v1 §4.1/§6.1) — small badge next to
+   the CASE FILE ☰ button. Hidden until the player has ever earned points
+   (pointsUiIntroduced flag) and on any scene that opts to hide it (e.g. an
+   interrogation scene setting hidePoints: true, per §6.1's "심문 화면에서는
+   포인트를 숨겨 추리에 집중시켜도 된다") so a fresh 0주차 save doesn't show a
+   meaningless "P 0" before the map minigame even explains what it is. */
+.point-balance{font-family:var(--mono);font-size:11.5px;font-weight:700;letter-spacing:.02em;color:var(--amber);background:rgba(214,168,75,.14);border:1px solid rgba(214,168,75,.4);border-radius:20px;padding:8px 12px;white-space:nowrap}
+.point-balance.hidden{display:none}
+
 /* ===== Layer 2: Character ===== */
 .char-wrap{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;pointer-events:none;opacity:0;transition:opacity .2s ease}
 .char-img{max-height:78%;max-width:88%;object-fit:contain;object-position:bottom;transform:translateY(0)}
@@ -170,6 +179,7 @@ window.addEventListener('orientationchange', setVh100);
   <div class="vn-topbar">
     <div style="display:flex;gap:8px;align-items:center">
       <span id="caseMenuMount"></span>
+      <span class="point-balance hidden" id="pointBalance">P 0</span>
       <a class="vn-btn" href="/dev/">← DEV</a>
     </div>
     <div style="display:flex;gap:8px">
@@ -249,6 +259,26 @@ window.addEventListener('orientationchange', setVh100);
       <button class="sheet-btn" id="btnDumpHypothesisHistory">DUMP HYPOTHESIS HISTORY</button>
     </div>
 
+    <div class="sheet-title">Dev · 포인트·상점·옷장 (The Missing Key v1 §24)</div>
+    <div class="sheet-grid">
+      <button class="sheet-btn" id="btnAddPoints100">POINTS +100</button>
+      <button class="sheet-btn" id="btnSubPoints100">POINTS −100</button>
+      <button class="sheet-btn" id="btnForceUnlockShop">FORCE UNLOCK SHOP</button>
+      <button class="sheet-btn" id="btnUnlockAllShopItems">UNLOCK ALL ITEMS</button>
+      <button class="sheet-btn" id="btnOwnAllOutfits">OWN ALL OUTFITS</button>
+      <button class="sheet-btn" id="btnOpenShop">OPEN SHOP</button>
+      <button class="sheet-btn" id="btnOpenWardrobe">OPEN WARDROBE</button>
+      <button class="sheet-btn danger" id="btnResetEconomy">RESET ECONOMY/SHOP/WARDROBE</button>
+    </div>
+
+    <div class="sheet-title">Dev · 탐색 허브 (The Missing Key v1 §24)</div>
+    <div class="sheet-grid">
+      <button class="sheet-btn" id="btnOpenExplore">OPEN EXPLORE HUB</button>
+      <button class="sheet-btn" id="btnUnlockAllLocations">UNLOCK ALL LOCATIONS</button>
+      <button class="sheet-btn" id="btnMarkAllInteractionsNew">MARK ALL INTERACTIONS NEW</button>
+      <button class="sheet-btn danger" id="btnResetExploration">RESET EXPLORATION STATE</button>
+    </div>
+
     <button class="sheet-close" id="sheetCloseBtn">CLOSE</button>
     <a class="sheet-link" id="uploadLink" href="/dev/upload/">+ 새 이미지 업로드</a>
   </div>
@@ -273,6 +303,13 @@ if ('serviceWorker' in navigator) {
 <script src="/dev/dialogueData.js"></script>
 <script src="/dev/caseFileData.js"></script>
 <script src="/dev/caseFileState.js"></script>
+<script src="/dev/data/shopItems.js"></script>
+<script src="/dev/state/economyState.js"></script>
+<script src="/dev/state/wardrobeState.js"></script>
+<script src="/dev/state/shopState.js"></script>
+<script src="/dev/data/locationDefs.js"></script>
+<script src="/dev/data/interactionDefs.js"></script>
+<script src="/dev/state/explorationState.js"></script>
 <script src="/dev/vnPlayer.js"></script>
 <script src="/dev/caseMenu.js"></script>
 <script>
@@ -325,7 +362,14 @@ const el = {
   evidenceSheetList: document.getElementById('evidenceSheetList'),
   evidenceSheetCloseBtn: document.getElementById('evidenceSheetCloseBtn'),
   bgmMount: document.getElementById('bgmMount'),
+  pointBalance: document.getElementById('pointBalance'),
 };
+
+function updatePointBalance() {
+  const introduced = CaseFileState.hasFlag('pointsUiIntroduced');
+  el.pointBalance.classList.toggle('hidden', !introduced || !!activeSceneData.hidePoints);
+  if (introduced) el.pointBalance.textContent = 'P ' + EconomyState.getPoints();
+}
 
 function setBackground(asset) {
   if (asset && asset.dataUrl) {
@@ -436,17 +480,44 @@ function applyTransformToImage(transform) {
 // makes each call check, once its awaits resolve, whether it's still the
 // most recent request before touching the DOM.
 let charRequestToken = 0;
+// The Missing Key v1 §5.5 — a scene can carry outfitMode: 'equipped' (default,
+// whatever's currently equipped in WardrobeState) | 'story_locked' (force
+// scene.storyOutfitId regardless of equip state) | 'hidden' (no portrait at
+// all). WardrobeState.resolveOutfitForScene maps that + characterId to the
+// *asset lookup key* to try first (an outfit's own characterAssetKey, e.g.
+// 'jisoo_w0_soft_cardigan' — just another uploadable "character" in the same
+// AssetDB pipeline every base character portrait already uses). If nothing's
+// been uploaded yet for that key, this falls back to the base characterId's
+// own portrait so a scene never goes blank just because an outfit's art
+// hasn't been drawn/uploaded (spec §19.2's "의상이 갑자기 기본 의상으로
+// 돌아가는 현상은 피해야 한다" is about *mid-scene* swaps, not "no art yet").
 async function applyCharacterForLine(characterId, expression) {
   const requestToken = ++charRequestToken;
   if (!characterId) {
     el.charWrap.style.opacity = '0';
     return;
   }
+  const outfitResolution = (typeof WardrobeState !== 'undefined')
+    ? WardrobeState.resolveOutfitForScene(characterId, { outfitMode: activeSceneData.outfitMode, storyOutfitId: activeSceneData.storyOutfitId })
+    : { characterId, hidden: false };
+  if (outfitResolution.hidden) {
+    el.charWrap.style.opacity = '0';
+    return;
+  }
   el.charWrap.style.opacity = '1';
-  const assetId = DevGameState.getCharacterAssetId(characterId, expression);
-  const asset = await AssetDB.getAsset(assetId);
+  let asset = null;
+  const outfitAssetId = DevGameState.getCharacterAssetId(outfitResolution.characterId, expression);
+  if (outfitAssetId) asset = await AssetDB.getAsset(outfitAssetId);
+  if (!asset && outfitResolution.characterId !== characterId) {
+    const baseAssetId = DevGameState.getCharacterAssetId(characterId, expression);
+    asset = baseAssetId ? await AssetDB.getAsset(baseAssetId) : null;
+  }
   if (requestToken !== charRequestToken) return; // superseded by a later line change
   setCharacterAsset(asset);
+  // Transform is always keyed by the *base* characterId (see
+  // DevGameState._transformKeyFor) — an outfit variant isn't a registered
+  // dialogue character, so it has no transform entry of its own and isn't
+  // meant to (position/scale is a per-character tune, not per-outfit).
   applyTransformToImage(DevGameState.getCharacterTransform(characterId));
 }
 
@@ -529,10 +600,27 @@ function playEndingSequence() {
 const MINIGAME_ROUTES = {
   'week0-scene-001-2-minigame': '/dev/minigame-eastwood/',
   'week0-scene-002-2': '/dev/minigame-phone-search/',
+  'week0-scene-shop-visit': '/dev/shop/',
   'week1-scene-003-minigame': '/dev/minigame-exhibition-search/',
   'week1-scene-004-minigame': '/dev/minigame-photo-zoom/',
   'week1-scene-008-minigame': '/dev/minigame-timeline/',
+  // The Missing Key v1 §12.6 — 세 용의자 자유 순서 탐문. Both virtual ids
+  // land on the same shared hub-center location; individual suspect spots
+  // are reached from there (see dev/data/locationDefs.js's
+  // w1-suspect-*-spot entries).
+  'week1-suspect-hub-entry': '/dev/explore/?phase=W1_SUSPECT_INTERVIEWS&location=w1-suspect-hub',
+  'week1-suspect-interview-return': '/dev/explore/?phase=W1_SUSPECT_INTERVIEWS&location=w1-suspect-hub',
 };
+
+// The Missing Key v1 §5.2/§11.3 — week0-scene-shop-intro's own nextSceneId
+// hands off into the real shop screen (a routed page, see MINIGAME_ROUTES
+// above) rather than another VN scene. /dev/shop/'s own "← 돌아가기" button
+// reads sessionStorage's mkShopReturnUrl (same contract the CASE FILE menu's
+// 옷가게/옷장 cards use, see storeShopReturnUrl below) — this scripted
+// handoff sets it explicitly to the scene *after* the shop visit
+// (week0-scene-002-1) instead of back into the intro dialogue, so leaving
+// the shop continues the story instead of replaying the boutique chat.
+const SHOP_TUTORIAL_RETURN_SCENE = { 'week0-scene-shop-visit': 'week0-scene-002-1' };
 
 // Most nextSceneId handoffs are into a minigame (MINIGAME_ROUTES above), but
 // a plain location change with no minigame in between — e.g.
@@ -542,6 +630,9 @@ const MINIGAME_ROUTES = {
 function playMinigameTransition(nextSceneId) {
   const route = MINIGAME_ROUTES[nextSceneId];
   if (route) {
+    if (SHOP_TUTORIAL_RETURN_SCENE[nextSceneId]) {
+      sessionStorage.setItem('mkShopReturnUrl', `/dev/game/?scene=${encodeURIComponent(SHOP_TUTORIAL_RETURN_SCENE[nextSceneId])}`);
+    }
     location.href = route;
     return;
   }
@@ -617,6 +708,85 @@ function applyEffect(effect) {
     case 'setFlagIfAll':
       if (effect.flags.every(f => CaseFileState.hasFlag(f))) CaseFileState.setFlag(effect.key, true);
       break;
+
+    /* ===== The Missing Key v1 §4/§5/§15 — 포인트·상점·옷장 이펙트 =====
+       비수사 미니게임 보상은 각 미니게임 페이지 자신이 EconomyState를 직접
+       호출한다 (별도 페이지라 이 switch를 안 거침) — 여기 addPoints는 VN
+       씬(대사) 안에서 직접 포인트를 지급/차감하는 경우, 그리고 스토리 흐름에서
+       상점을 해금하는 경우를 위한 것이다. §4.1 판정 기준: 수사 진행에 쓰이는
+       scene의 effects에는 이 타입을 절대 넣지 않는다. */
+    case 'addPoints': {
+      const meta = { source: effect.source || effect.rewardId || activeSceneData.id };
+      let paid;
+      if (effect.policy === 'chapter_capped') {
+        paid = EconomyState.claimChapterCappedReward(effect.chapterId || activeSceneData.id, effect.sourceType || effect.rewardId || 'reward', effect.amount, effect.weeklyCap || effect.amount, meta);
+      } else if (effect.rewardId) {
+        paid = EconomyState.claimReward(effect.rewardId, effect.amount, meta);
+      } else {
+        EconomyState.addPoints(effect.amount, meta);
+        paid = effect.amount;
+      }
+      if (paid > 0) {
+        CaseFileState.setFlag('pointsUiIntroduced', true);
+        caseMenu.notifyPoints(paid);
+      }
+      updatePointBalance();
+      break;
+    }
+    case 'spendPoints':
+      EconomyState.spendPoints(effect.amount, { source: effect.source || activeSceneData.id });
+      updatePointBalance();
+      break;
+    case 'unlockShop':
+      ShopState.unlockShop();
+      updatePointBalance();
+      break;
+    case 'unlockShopItem':
+      ShopState.unlockShopItem(effect.itemId);
+      break;
+    case 'unlockShopItems':
+      ShopState.unlockShopItems(effect.itemIds);
+      break;
+    case 'unlockWardrobe':
+      WardrobeState.unlockWardrobe();
+      break;
+    case 'purchaseOutfit':
+      ShopState.purchaseShopItem(effect.itemId);
+      updatePointBalance();
+      break;
+    case 'equipOutfit':
+      WardrobeState.equipOutfit(effect.itemId);
+      break;
+
+    /* ===== The Missing Key v1 §15 — 탐색 허브 이펙트 =====
+       These only update ExplorationState (persisted, read by /dev/explore/)
+       — they don't navigate there themselves. A scene that wants to actually
+       hand off into the hub after setting these still needs its line's
+       nextSceneId to resolve through MINIGAME_ROUTES to '/dev/explore/',
+       same pattern the shop hand-off already uses. */
+    case 'enterExplorationPhase':
+      ExplorationState.enterExplorationPhase(effect.phaseId, effect.startLocationId);
+      break;
+    case 'unlockLocation':
+      ExplorationState.unlockLocation(effect.locationId);
+      break;
+    case 'moveToLocation':
+      ExplorationState.moveToLocation(effect.locationId);
+      break;
+    case 'setInteractionState':
+      ExplorationState.setInteractionState(effect.interactionId, effect.state);
+      break;
+    case 'refreshInteraction':
+      ExplorationState.refreshInteractionsByFact(effect.factId);
+      break;
+    case 'returnToExploration': {
+      const qs = new URLSearchParams();
+      if (effect.phaseId) qs.set('phase', effect.phaseId);
+      if (effect.locationId) qs.set('location', effect.locationId);
+      const query = qs.toString();
+      location.href = '/dev/explore/' + (query ? '?' + query : '');
+      break;
+    }
   }
 }
 
@@ -812,7 +982,12 @@ const caseMenu = initCaseMenu({
     });
   },
   onResumeToScene: (sceneId, lineIndex) => {
-    if (sceneId === activeSceneData.id) {
+    // A save made from the 탐색 허브 (dev/explore/) has no VN sceneId —
+    // CaseFileState.loadSlot already restored ExplorationState by the time
+    // this fires, so route back there with the now-current phase/location.
+    if (sceneId === '__EXPLORE_HUB__') {
+      location.href = `/dev/explore/?phase=${encodeURIComponent(ExplorationState.getCurrentPhase() || '')}&location=${encodeURIComponent(ExplorationState.getCurrentLocationId() || '')}`;
+    } else if (sceneId === activeSceneData.id) {
       player.load(applyTextSpeedSetting(activeLines), lineIndex);
     } else {
       location.href = `/dev/game/?scene=${encodeURIComponent(sceneId)}&line=${lineIndex}`;
@@ -824,15 +999,45 @@ const caseMenu = initCaseMenu({
     if (!bgmPlayer) return;
     if (value) { if (bgmUnlocked) bgmPlayer.unMute(); } else { bgmPlayer.mute(); }
   },
+  onOpenShop: () => { storeShopReturnUrl(); location.href = '/dev/shop/'; },
+  onOpenWardrobe: () => { storeShopReturnUrl(); location.href = '/dev/wardrobe/'; },
 });
 
 el.uploadLink.href = `/dev/upload/?scene=${encodeURIComponent(activeSceneData.id)}`;
+
+// The Missing Key v1 §16.2 — 기존 세이브 마이그레이션. "이미 0주차를 완료한
+// 세이브"는 hasVisitedScene('week0-scene-002-3')로 판별하되(그 씬을 실제로
+// 클리어해야만 CaseFileState.recordSceneVisit로 기록되므로 신뢰 가능),
+// 지도 미니게임의 진짜 500P 보상(reward-week0-map-first-clear)을 이미 받은
+// 플레이어는 대상에서 제외한다 — 이번 업데이트 이후에 0주차를 정상적으로
+// 플레이한 신규 세이브는 그 보상을 먼저 받으므로 절대 이 조건에 걸리지
+// 않는다. 별도 rewardId로 관리해 중복 보정 지급도 막는다.
+function applyMigrationCompensation() {
+  const alreadyEarnedRealReward = EconomyState.hasClaimedReward('reward-week0-map-first-clear');
+  if (!CaseFileState.hasVisitedScene('week0-scene-002-3') || alreadyEarnedRealReward) return;
+  const paid = EconomyState.claimReward('migration-v2-week0-map-compensation', 500, { source: 'migration-v2' });
+  if (paid > 0) {
+    CaseFileState.setFlag('pointsUiIntroduced', true);
+    updatePointBalance();
+    caseMenu.notifyPoints(paid);
+  }
+}
+applyMigrationCompensation();
 
 // Character portraits are driven entirely by each line's (characterId,
 // expression) pair looked up in 인물 DB (/dev/upload) — this sheet only
 // needs a manual override for the background, scoped to the active scene.
 async function renderAssetSelectors() {
-  const bgs = (await AssetDB.getAssetsByType('background')).filter(a => a.sceneId === activeSceneData.id);
+  // A network hiccup on this fetch must not block the whole DEV sheet from
+  // opening — every other button on it (case-file shortcuts, economy/
+  // exploration debug tools) has nothing to do with backgrounds and should
+  // still work. Degrades to an empty background dropdown instead.
+  let bgs = [];
+  try {
+    bgs = (await AssetDB.getAssetsByType('background')).filter(a => a.sceneId === activeSceneData.id);
+  } catch (err) {
+    console.error('renderAssetSelectors: background list fetch failed, sheet still opens', err);
+  }
   fillSelect(el.bgSelect, bgs, DevGameState.getBackgroundId(activeSceneData.id));
 }
 
@@ -978,6 +1183,60 @@ document.getElementById('btnDumpHypothesisHistory').addEventListener('click', ()
   });
 });
 
+/* ===== Dev · 포인트·상점·옷장 (The Missing Key v1 §24) ===== */
+// Shop/wardrobe are separate routed pages (spec §5.3), not a modal — they
+// read this same sessionStorage key on close to return to exactly this
+// scene/line, matching how caseMenu's own save/load already round-trips
+// through /dev/game/?scene=<id>&line=<n>.
+function storeShopReturnUrl() {
+  sessionStorage.setItem('mkShopReturnUrl', `/dev/game/?scene=${encodeURIComponent(activeSceneData.id)}&line=${player.getState().index}`);
+}
+document.getElementById('btnAddPoints100').addEventListener('click', () => {
+  EconomyState.addPoints(100, { source: 'debug' });
+  CaseFileState.setFlag('pointsUiIntroduced', true);
+  updatePointBalance();
+});
+document.getElementById('btnSubPoints100').addEventListener('click', () => {
+  EconomyState.spendPoints(100, { source: 'debug' });
+  updatePointBalance();
+});
+document.getElementById('btnForceUnlockShop').addEventListener('click', () => {
+  ShopState.unlockShop();
+  WardrobeState.unlockWardrobe();
+  CaseFileState.setFlag('shopUnlocked', true);
+});
+document.getElementById('btnUnlockAllShopItems').addEventListener('click', () => ShopState.debugUnlockAll());
+document.getElementById('btnOwnAllOutfits').addEventListener('click', () => WardrobeState.debugOwnAll());
+document.getElementById('btnOpenShop').addEventListener('click', () => {
+  storeShopReturnUrl();
+  location.href = '/dev/shop/';
+});
+document.getElementById('btnOpenWardrobe').addEventListener('click', () => {
+  storeShopReturnUrl();
+  location.href = '/dev/wardrobe/';
+});
+document.getElementById('btnResetEconomy').addEventListener('click', () => {
+  if (confirm('포인트·상점·옷장 데이터를 초기화할까요?')) {
+    EconomyState.resetAll();
+    ShopState.resetAll();
+    WardrobeState.resetAll();
+    updatePointBalance();
+  }
+});
+
+/* ===== Dev · 탐색 허브 (The Missing Key v1 §24) ===== */
+document.getElementById('btnOpenExplore').addEventListener('click', () => {
+  storeShopReturnUrl();
+  location.href = ExplorationState.getCurrentLocationId()
+    ? `/dev/explore/?phase=${encodeURIComponent(ExplorationState.getCurrentPhase() || '')}&location=${encodeURIComponent(ExplorationState.getCurrentLocationId())}`
+    : '/dev/explore/?phase=W1_TOURISM&location=w1-circular-quay';
+});
+document.getElementById('btnUnlockAllLocations').addEventListener('click', () => ExplorationState.debugUnlockAllLocations());
+document.getElementById('btnMarkAllInteractionsNew').addEventListener('click', () => ExplorationState.debugMarkAllInteractionsNew());
+document.getElementById('btnResetExploration').addEventListener('click', () => {
+  if (confirm('탐색 허브 상태(장소·상호작용 진행도)를 초기화할까요?')) ExplorationState.resetAll();
+});
+
 el.transformBtn.addEventListener('click', (e) => {
   e.stopPropagation();
   const willShow = el.transformPopup.classList.contains('hidden');
@@ -1014,6 +1273,7 @@ async function applyDialogueOverrides() {
 
 (async function init() {
   LoadingOverlay.show('장면 불러오는 중');
+  updatePointBalance();
   await applyDialogueOverrides();
   await applyBackground();
   applyBgm();

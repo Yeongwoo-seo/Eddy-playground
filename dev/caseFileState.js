@@ -214,6 +214,11 @@ const CaseFileState = {
     caseState.visitedSceneIds.push(sceneId);
     saveCaseState();
   },
+  // The Missing Key v1 §16.2 — migration compensation reads this to detect
+  // "already finished 0주차 before the economy system existed" (see
+  // game/index.html's applyMigrationCompensation) without needing a new flag
+  // that old saves could never have set.
+  hasVisitedScene(sceneId) { return caseState.visitedSceneIds.includes(sceneId); },
   unlockMapLocation(id) {
     if (caseState.forceUnlockedLocationIds.includes(id)) return;
     caseState.forceUnlockedLocationIds.push(id);
@@ -233,11 +238,22 @@ const CaseFileState = {
     });
   },
 
-  /* ===== 저장 / 불러오기 ===== */
+  /* ===== 저장 / 불러오기 =====
+     economy/shop/wardrobe state (The Missing Key v1 §16.1) live in their own
+     localStorage keys (see economyState.js/shopState.js/wardrobeState.js),
+     but a save *slot* still needs to snapshot them alongside caseState so
+     "불러오기" restores points/purchases/equipped outfit too, not just the
+     investigation board. Guarded with typeof checks since pages that don't
+     load those three scripts (most minigames, /dev/week0, etc.) still load
+     this file and must not throw on save/load. */
   saveSlot(slotNum, extra) {
     const slots = loadSaveSlots();
     slots[slotNum] = Object.assign({
       caseState: JSON.parse(JSON.stringify(caseState)),
+      economyState: (typeof EconomyState !== 'undefined') ? EconomyState.snapshot() : undefined,
+      shopState: (typeof ShopState !== 'undefined') ? ShopState.snapshot() : undefined,
+      wardrobeState: (typeof WardrobeState !== 'undefined') ? WardrobeState.snapshot() : undefined,
+      explorationState: (typeof ExplorationState !== 'undefined') ? ExplorationState.snapshot() : undefined,
       updatedAt: Date.now(),
     }, extra);
     localStorage.setItem(CASE_SAVE_SLOTS_KEY, JSON.stringify(slots));
@@ -253,6 +269,10 @@ const CaseFileState = {
       hypothesisHistory: Object.assign({}, (slot.caseState && slot.caseState.hypothesisHistory) || {}),
     });
     saveCaseState();
+    if (typeof EconomyState !== 'undefined' && slot.economyState) EconomyState.restore(slot.economyState);
+    if (typeof ShopState !== 'undefined' && slot.shopState) ShopState.restore(slot.shopState);
+    if (typeof WardrobeState !== 'undefined' && slot.wardrobeState) WardrobeState.restore(slot.wardrobeState);
+    if (typeof ExplorationState !== 'undefined' && slot.explorationState) ExplorationState.restore(slot.explorationState);
     return slot;
   },
   listSlots() {
