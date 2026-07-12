@@ -214,6 +214,11 @@ const CaseFileState = {
     caseState.visitedSceneIds.push(sceneId);
     saveCaseState();
   },
+  // The Missing Key v1 §16.2 — migration compensation reads this to detect
+  // "already finished 0주차 before the economy system existed" (see
+  // game/index.html's applyMigrationCompensation) without needing a new flag
+  // that old saves could never have set.
+  hasVisitedScene(sceneId) { return caseState.visitedSceneIds.includes(sceneId); },
   unlockMapLocation(id) {
     if (caseState.forceUnlockedLocationIds.includes(id)) return;
     caseState.forceUnlockedLocationIds.push(id);
