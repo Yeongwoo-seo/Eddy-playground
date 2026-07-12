@@ -111,6 +111,10 @@ function initCaseMenu(options) {
       render();
     } else if (action === 'replayLocation') {
       location.href = `/dev/game/?scene=${encodeURIComponent(actionTarget.dataset.scene)}`;
+    } else if (action === 'openShop') {
+      if (options.onOpenShop) options.onOpenShop();
+    } else if (action === 'openWardrobe') {
+      if (options.onOpenWardrobe) options.onOpenWardrobe();
     }
   }
 
@@ -132,17 +136,24 @@ function initCaseMenu(options) {
   }
 
   /* ===== 메인 ===== */
+  // 옷가게/옷장 (The Missing Key v1 §6.1) only ever show once unlocked — the
+  // menu doesn't hide them entirely so much as never render the cards, same
+  // as §6.1's "노출 규칙" for 지도/케이스 파일/추론.
   function renderMain() {
     const invBadge = CaseFileState.getInvestigationBadgeCount();
     const items = CaseFileState.getInventoryItems();
     const locations = CaseFileState.getMapLocations(currentSceneId);
     const unlockedCount = locations.filter(l => l.status !== 'locked').length;
+    const pointsIntroduced = CaseFileState.hasFlag('pointsUiIntroduced');
+    const shopUnlocked = typeof ShopState !== 'undefined' && ShopState.isUnlocked();
+    const wardrobeUnlocked = typeof WardrobeState !== 'undefined' && WardrobeState.isUnlocked();
     return {
       title: 'CASE FILE',
       html: `
         <div class="cm-mission">
           <div class="cm-mission-label">현재 미션</div>
           <div class="cm-mission-title">${escapeHtml(missionTitle)}</div>
+          ${pointsIntroduced ? `<div class="cm-mission-points">P ${EconomyState.getPoints()}</div>` : ''}
         </div>
         <div class="cm-grid">
           <button class="cm-card" data-nav="investigation">
@@ -160,6 +171,8 @@ function initCaseMenu(options) {
           <button class="cm-card" data-nav="system">
             <div class="cm-card-name">시스템</div>
           </button>
+          ${shopUnlocked ? shopEntryCard('옷가게', 'openShop') : ''}
+          ${wardrobeUnlocked ? shopEntryCard('옷장', 'openWardrobe') : ''}
         </div>
         <button class="cm-continue" data-action="close">계속하기</button>
       `,
@@ -546,6 +559,10 @@ function initCaseMenu(options) {
     }, 1700);
   }
   function notifyNewQuestion(title) { notifyToast('NEW QUESTION', title); }
+  // The Missing Key v1 §4.5 — a short toast for points earned mid-scene
+  // (e.g. a scene's own addPoints effect), distinct from the fuller CLEAR!
+  // breakdown screen a standalone minigame page shows on its own results screen.
+  function notifyPoints(amount) { notifyToast('포인트 획득', `+${amount}P`); }
   // The Missing Key v4 §15 — 증거 연결 성공 시 "새 사실 카드 생성 / 수사노트
   // 등록 알림", 가설 선택 시 "현재 가설로 저장" 피드백. Reuses the same toast
   // element/timer as notifyNewQuestion (only one of these fires per beat in
@@ -553,7 +570,21 @@ function initCaseMenu(options) {
   function notifyHypothesis(text) { notifyToast('가설 저장됨', text); }
   function notifyFact(title) { notifyToast('추론 사실 생성', title); }
 
-  return { open, close, isOpen, notifyNewQuestion, notifyHypothesis, notifyFact, destroy: () => { root.remove(); toastEl.remove(); } };
+  return { open, close, isOpen, notifyNewQuestion, notifyHypothesis, notifyFact, notifyPoints, destroy: () => { root.remove(); toastEl.remove(); } };
+}
+
+// The Missing Key v1 §5.3 — "비활성 상태에서는 메뉴를 숨기지 말고 잠금 또는
+// 회색 처리하며 사유를 표시한다". A future interrogation/minigame beat sets
+// 'shopAccessBlocked' (+ 'shopAccessBlockedReason') via the existing setFlag
+// effect; this card just reads it generically rather than hardcoding which
+// scenes count as "busy".
+function shopEntryCard(label, action) {
+  const blocked = CaseFileState.hasFlag('shopAccessBlocked');
+  if (blocked) {
+    const reason = CaseFileState.getFlag('shopAccessBlockedReason') || '지금은 이용할 수 없습니다.';
+    return `<button class="cm-card cm-card-locked" disabled><div class="cm-card-name">${escapeHtml(label)}</div><div class="cm-card-lock-reason">${escapeHtml(reason)}</div></button>`;
+  }
+  return `<button class="cm-card" data-action="${action}"><div class="cm-card-name">${escapeHtml(label)}</div></button>`;
 }
 
 /* ===== helpers ===== */
@@ -643,6 +674,7 @@ function injectCaseMenuStyles() {
     .cm-mission{background:#171F29;border:1px solid rgba(255,255,255,.10);border-radius:14px;padding:14px 16px;margin-bottom:18px}
     .cm-mission-label{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;letter-spacing:.1em;color:#7E8791;text-transform:uppercase;margin-bottom:6px}
     .cm-mission-title{font-size:15px;font-weight:700;color:#F1F3F5}
+    .cm-mission-points{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12px;font-weight:700;color:#D8A93D;margin-top:8px}
 
     .cm-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
     .cm-card{position:relative;background:#171F29;border:1px solid rgba(255,255,255,.10);border-radius:14px;padding:20px 14px;text-align:left;cursor:pointer;color:#F1F3F5;font-family:inherit}
@@ -650,6 +682,8 @@ function injectCaseMenuStyles() {
     .cm-card-name{font-size:14.5px;font-weight:700}
     .cm-card-badge{position:absolute;top:12px;right:12px;background:#C55353;color:#fff;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;font-weight:700;border-radius:10px;padding:2px 7px;min-width:18px;text-align:center}
     .cm-card-badge-muted{background:rgba(255,255,255,.10);color:#7E8791}
+    .cm-card-locked{opacity:.55;cursor:default}
+    .cm-card-lock-reason{font-size:10.5px;color:#7E8791;margin-top:6px;line-height:1.4}
 
     .cm-continue{width:100%;background:#D8A93D;color:#191206;border:none;border-radius:14px;padding:16px;font-size:15px;font-weight:700;cursor:pointer;font-family:'IBM Plex Mono',ui-monospace,monospace;letter-spacing:.04em}
     .cm-continue:active{opacity:.85}

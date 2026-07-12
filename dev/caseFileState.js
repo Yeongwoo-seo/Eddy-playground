@@ -233,11 +233,21 @@ const CaseFileState = {
     });
   },
 
-  /* ===== 저장 / 불러오기 ===== */
+  /* ===== 저장 / 불러오기 =====
+     economy/shop/wardrobe state (The Missing Key v1 §16.1) live in their own
+     localStorage keys (see economyState.js/shopState.js/wardrobeState.js),
+     but a save *slot* still needs to snapshot them alongside caseState so
+     "불러오기" restores points/purchases/equipped outfit too, not just the
+     investigation board. Guarded with typeof checks since pages that don't
+     load those three scripts (most minigames, /dev/week0, etc.) still load
+     this file and must not throw on save/load. */
   saveSlot(slotNum, extra) {
     const slots = loadSaveSlots();
     slots[slotNum] = Object.assign({
       caseState: JSON.parse(JSON.stringify(caseState)),
+      economyState: (typeof EconomyState !== 'undefined') ? EconomyState.snapshot() : undefined,
+      shopState: (typeof ShopState !== 'undefined') ? ShopState.snapshot() : undefined,
+      wardrobeState: (typeof WardrobeState !== 'undefined') ? WardrobeState.snapshot() : undefined,
       updatedAt: Date.now(),
     }, extra);
     localStorage.setItem(CASE_SAVE_SLOTS_KEY, JSON.stringify(slots));
@@ -253,6 +263,9 @@ const CaseFileState = {
       hypothesisHistory: Object.assign({}, (slot.caseState && slot.caseState.hypothesisHistory) || {}),
     });
     saveCaseState();
+    if (typeof EconomyState !== 'undefined' && slot.economyState) EconomyState.restore(slot.economyState);
+    if (typeof ShopState !== 'undefined' && slot.shopState) ShopState.restore(slot.shopState);
+    if (typeof WardrobeState !== 'undefined' && slot.wardrobeState) WardrobeState.restore(slot.wardrobeState);
     return slot;
   },
   listSlots() {

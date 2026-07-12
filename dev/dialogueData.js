@@ -516,7 +516,11 @@ const week0SceneFirstNightLines = [
   { id: 'line-039', speaker: '', text: '얼마 지나지 않아\n두 사람의 대화도 천천히 잦아들었다.', characterId: null },
   { id: 'line-040', speaker: '', text: '협탁 위,\n작은 황동 열쇠만이 조용히 남아 있었다.', characterId: null },
   { id: 'line-041', speaker: '', text: '[ M.K. ]', characterId: null },
-  { id: 'line-042', speaker: '', text: '0주차 종료.', characterId: null },
+  {
+    id: 'line-042', speaker: '', text: '0주차 종료.', characterId: null,
+    // The Missing Key v1 §5.6 — outfit-w0-night-walk 해금 조건.
+    effects: [{ type: 'setFlag', key: 'week0Completed', value: true }],
+  },
 ];
 
 /* OPERATION MK — WEEK 0 · SCENE 1-2 「시드니 지리 파악」 v4
@@ -666,6 +670,85 @@ const week0SceneTrainLines = [
   { id: 'line-064', speaker: '', text: '지수는 대답 대신\n영우의 소매 끝을 살짝 잡았다.', characterId: null },
   { id: 'line-065', speaker: '', text: '지도 속 낯선 지명들은\n창밖의 실제 풍경으로 하나씩 바뀌고 있었다.', characterId: null },
 ];
+
+/* OPERATION MK — WEEK 0 · SCENE 「작은 편집숍」 (The Missing Key v1 §5.2/§11.3)
+   Dialogue Set: dialogue-week0-scene-shop-intro
+   Scene: week0-scene-shop-intro (Eastwood Street, 20:05)
+   Inserted between week0-scene-train and week0-scene-002-1 — 지도 미니게임
+   에서 얻은 500P를 실제로 써 보는 첫 경험. 강제 구매는 없다 (§5.2 "강제 구매
+   여부"): 어느 쪽을 골라도 같은 상점 화면으로 이어지고, 튜토리얼은 구매 여부와
+   무관하게 완료된다. 실제 미리보기·구매는 대사가 아니라 /dev/shop/ 화면에서
+   일어난다 — hand-off는 기존 미니게임 라우팅과 같은 nextSceneId 패턴
+   (week0-scene-shop-visit, MINIGAME_ROUTES in game/index.html) 을 쓴다. */
+const week0SceneShopIntroLines = [
+  { id: 'line-001', speaker: '', text: 'Eastwood 역 출구.\n저녁 8시 05분.', characterId: null },
+  { id: 'line-002', speaker: '', text: '역에서 나온 두 사람은\n숙소 쪽으로 천천히 걸었다.', characterId: null },
+  { id: 'line-003', speaker: '지수', text: '어? 저기 봐요.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-004', speaker: '', text: '지수가 걸음을 멈추고\n작은 편집숍 쇼윈도를 가리켰다.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-005', speaker: '영우', text: '아, 여기.\n출퇴근할 때 맨날 지나가는 덴데.', characterId: 'youngwoo', expression: 'neutral' },
+  { id: 'line-006', speaker: '영우', text: '한 번도 안 들어가봤어.', characterId: 'youngwoo', expression: 'neutral' },
+  { id: 'line-007', speaker: '지수', text: '저 원피스 예쁘다.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-008', speaker: '지수', text: '이런 데 옷 진짜 내 스타일인데.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-009', speaker: '영우', text: '그러고 보니까.', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-010', speaker: '영우', text: '지수야, 아까 지도 게임 클리어했을 때\n뭐 떴는지 기억나?', characterId: 'youngwoo', expression: 'smirk' },
+  { id: 'line-011', speaker: '지수', text: '음?\n뭐 반짝하고 지나간 것 같긴 한데.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-012', speaker: '영우', text: '포인트 500P 받았잖아.', characterId: 'youngwoo', expression: 'neutral' },
+  { id: 'line-013', speaker: '지수', text: '오!! 맞다.', characterId: 'jisoo', expression: 'shocked' },
+  { id: 'line-014', speaker: '지수', text: '근데 그거 어디다 써요?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-015', speaker: '영우', text: '몰라.\n근데 딱 마침 옷가게가 있잖아.', characterId: 'youngwoo', expression: 'smirk' },
+  { id: 'line-016', speaker: '영우', text: '한번 들어가서 확인해볼까?', characterId: 'youngwoo', expression: 'smirk' },
+  { id: 'line-017', speaker: '지수', text: '오오오 콜.', characterId: 'jisoo', expression: 'happy' },
+  {
+    id: 'line-017-transition',
+    speaker: '', text: '두 사람은 편집숍 안으로 들어갔다.', characterId: null,
+    sceneTransition: { backgroundKey: 'week0-scene-shop-intro--interior', introLabel: 'EASTWOOD BOUTIQUE', time: '20:09' },
+  },
+  { id: 'line-018', speaker: '', text: '작은 가게 안,\n행거에 코디 몇 벌이 세트로 걸려 있었다.', characterId: null },
+  { id: 'line-019', speaker: '지수', text: '와, 낱개로 안 팔고\n통으로 코디해서 걸어놨네.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-020', speaker: '영우', text: '고르기 편하겠다.', characterId: 'youngwoo', expression: 'neutral' },
+  { id: 'line-021', speaker: '지수', text: '진짜 그러네.', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-022', speaker: '영우', text: '점원 말로는\n태그에 붙은 가격이 그 포인트로 살 수 있는 거래.', characterId: 'youngwoo', expression: 'neutral' },
+  { id: 'line-023', speaker: '영우', text: '입어보고 마음에 들면 사면 되고,\n아니면 그냥 구경만 하고 나가도 되고.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-024', speaker: '지수', text: '오케이.', characterId: 'jisoo', expression: 'happy' },
+  {
+    id: 'line-024-choice', type: 'choice', speaker: '', text: '지수가 행거 앞에서 잠시 고민한다.', characterId: 'jisoo', expression: 'curious',
+    choices: [
+      {
+        id: 'shop-eager', label: '“일단 다 입어볼래요.”',
+        effects: [{ type: 'setFlag', key: 'shopIntroChoice', value: 'eager' }],
+      },
+      {
+        id: 'shop-cautious', label: '“오늘은 구경만 하고 나중에 살게요.”',
+        effects: [{ type: 'setFlag', key: 'shopIntroChoice', value: 'cautious' }],
+      },
+    ],
+  },
+  { id: 'line-025', speaker: '영우', text: '천천히 봐.\n나 여기서 기다릴게.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-026', speaker: '', text: '[ 잠시 후 — 옷가게 화면으로 이동합니다 ]', characterId: null },
+  {
+    id: 'line-027', speaker: '', text: '지수는 행거를 하나씩 넘겨보기 시작했다.', characterId: null,
+    // The Missing Key v1 §5.2 "강제 구매 여부" / §11.3 필수 상태 변경 —
+    // 구매 여부와 무관하게 상점·옷장 메뉴는 여기서 확정 해금된다. 초기 재고
+    // 2벌(§5.6)도 함께 열어, 다음 줄에서 넘어가는 실제 /dev/shop/ 화면에
+    // 바로 상품이 채워져 있도록 한다.
+    effects: [
+      { type: 'unlockShop' },
+      { type: 'unlockWardrobe' },
+      { type: 'unlockShopItems', itemIds: ['outfit-w0-soft-cardigan', 'outfit-w0-city-denim'] },
+      { type: 'setFlag', key: 'shopUnlocked', value: true },
+      { type: 'setFlag', key: 'wardrobeUnlocked', value: true },
+      { type: 'setFlag', key: 'shopTutorialCompleted', value: true },
+    ],
+  },
+];
+
+// week0-scene-shop-intro의 마무리 대사 — 상점 화면에서 돌아온 뒤 이어지는
+// 짧은 클로징. 실제 옷가게 UI(/dev/shop/)는 week0-scene-shop-visit이 라우팅해
+// 처리하므로, 이 배열은 그 방문 *이후* 장면으로 별도 등록하지 않고
+// week0-scene-002-1(숙소 도착)이 자연스럽게 이어받는다 — 왼쪽 상단 메뉴
+// 설명은 옷가게 화면 자체의 최초 진입 안내로 대체한다(§11.3의 "왼쪽 상단
+// 메뉴 설명" 비트는 실제 메뉴에 옷가게/옷장 카드가 새로 뜨는 것 자체가 그
+// 역할을 한다 — 별도 대사 없이도 CASE FILE 메뉴를 열면 바로 확인된다).
 
 // OPERATION MK — Week 0 Scene 2-2 room-search minigame's area/hotspot
 // registry (v3 — "실제 4개 장소 이미지 기반" brief). Single source of truth
@@ -876,12 +959,9 @@ const week0Scenes = [
     // hotspot slot per location on the shared map image. Eastwood is the
     // accommodation and Marayong is 영우's workplace (see this scene's
     // lines' header comment for why that's the reverse of the v3 draft).
-    // NOTE: the actual /dev/minigame-eastwood/ page still runs the older
-    // 3-stop "station in order" tap game (its own STAGES const) and hasn't
-    // been rebuilt for the label-placement/relationship-connect/route-trace
-    // design this scene's dialogue now describes — a follow-up
-    // implementation pass is needed before this array reflects real
-    // in-game hotspots.
+    // /dev/minigame-eastwood/ now implements the documented 3-stage design
+    // (라벨 배치 → 관계 연결 → 경로 확인, The Missing Key v1 §11.2) over these
+    // same 4 hotspots, in this array's order.
     minigameStages: ['공항 (Sydney International Airport)', '시티 (Sydney CBD)', '숙소 (Eastwood)', '영우 근무지 (Marayong)'],
   },
   {
@@ -900,13 +980,40 @@ const week0Scenes = [
     introLabel: 'SYDNEY TRAINS',
     time: '10:05',
     lines: week0SceneTrainLines,
-    // Hands off into 진짜 같이 있네 (숙소 도착) — see week0-scene-flight's own
-    // nextSceneId comment above for why this chain matters now.
-    nextSceneId: 'week0-scene-002-1',
+    // The Missing Key v1 §5.2/§11.1 — hands off into the new shop-unlock
+    // scene instead of straight to the accommodation now (was
+    // 'week0-scene-002-1'; that scene still follows right after).
+    nextSceneId: 'week0-scene-shop-intro',
+  },
+  {
+    id: 'week0-scene-shop-intro',
+    order: 5,
+    name: '작은 편집숍 · 옷가게 오픈',
+    location: 'Eastwood Street',
+    introLabel: 'EASTWOOD',
+    time: '20:05',
+    locations: [
+      { key: 'week0-scene-shop-intro', label: 'Eastwood Street' },
+      { key: 'week0-scene-shop-intro--interior', label: 'Eastwood Boutique Interior' },
+    ],
+    lines: week0SceneShopIntroLines,
+    // Hands off to the actual shop screen (a separate routed page, not a VN
+    // scene — spec §5.3 "상점은 모달이 아니라 별도 씬으로 처리") via the same
+    // MINIGAME_ROUTES handoff every other minigame uses. See game/index.html
+    // for the sessionStorage return-url wiring back to week0-scene-002-1.
+    nextSceneId: 'week0-scene-shop-visit',
+  },
+  {
+    id: 'week0-scene-shop-visit',
+    order: 6,
+    name: '옷가게 튜토리얼',
+    location: 'Eastwood Boutique',
+    time: '20:10',
+    route: '/dev/shop/',
   },
   {
     id: 'week0-scene-002-1',
-    order: 5,
+    order: 7,
     name: '진짜 같이 있네 · 첫날 저녁 · 떨어진 충전기',
     location: 'Eastwood Accommodation',
     introLabel: 'EASTWOOD',
@@ -928,7 +1035,7 @@ const week0Scenes = [
   },
   {
     id: 'week0-scene-002-2',
-    order: 6,
+    order: 8,
     name: '핸드폰을 찾아라',
     location: 'Eastwood Accommodation',
     time: '22:35',
@@ -940,7 +1047,7 @@ const week0Scenes = [
   },
   {
     id: 'week0-scene-002-3',
-    order: 7,
+    order: 9,
     name: '근데 이 열쇠 뭐지? · 집주인과의 통화 · 첫날 밤',
     location: 'Eastwood Accommodation',
     introLabel: 'EASTWOOD',
@@ -967,6 +1074,9 @@ const week0Scenes = [
 const week0SceneGroups = [
   { range: '#1-2', label: '공항 도착', sceneIds: ['week0-scene-flight'] },
   { range: '#3-5', label: '지하철 · 열차', sceneIds: ['week0-scene-001-2', 'week0-scene-001-2-minigame', 'week0-scene-train'] },
+  // The Missing Key v1 §5.2 — new shop-unlock beat, inserted between the
+  // train and the accommodation arrival.
+  { range: 'NEW', label: '옷가게 오픈', sceneIds: ['week0-scene-shop-intro', 'week0-scene-shop-visit'] },
   { range: '#6-12', label: '숙소 첫날', sceneIds: ['week0-scene-002-1', 'week0-scene-002-2', 'week0-scene-002-3'] },
 ];
 
