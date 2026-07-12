@@ -67,6 +67,7 @@ const interactionDefs = {
     phases: ['W1_TOURISM'],
     type: 'minigame',
     label: '사진 찍기 (하버 포토)',
+    icon: '📷',
     route: '/dev/minigame-harbour-photo/?bg=opera',
   },
   'w1bv-topic-bridge': {
@@ -104,6 +105,7 @@ const interactionDefs = {
     phases: ['W1_TOURISM'],
     type: 'minigame',
     label: '사진 찍기 (하버 포토)',
+    icon: '📷',
     route: '/dev/minigame-harbour-photo/?bg=bridge',
   },
   'w1rl-topic-vintage': {
@@ -145,6 +147,47 @@ const interactionDefs = {
       { speaker: '지수', text: 'K-01... 뭘까요?', characterId: 'jisoo', expression: 'curious' },
       { speaker: '영우', text: '들어가보면 알겠지.', characterId: 'youngwoo', expression: 'neutral' },
     ],
+  },
+
+  /* ===== Phase 4 — 용의자 탐문 (§12.6) =====
+     Each suspect's *entire* existing interrogation scene (already scripted,
+     multi-round, choice-heavy — see dev/dialogueData.js week1Scene006/007/
+     008Lines) is treated as one atomic hub interaction rather than being
+     decomposed into topics. Decomposing a real interrogation's internal
+     round/hint/hypothesis structure into hub topic-state nodes would risk
+     breaking flag dependencies inside content this careful; a coarse
+     "visit = launch the whole scene" hand-off (type:'minigame', same
+     mechanism as the 하버 포토 hand-off) gets the free-order benefit
+     spec §12.6 asks for with zero risk to the existing script. */
+  'w1suspect-mina-interview': {
+    id: 'w1suspect-mina-interview',
+    characterId: 'minah',
+    locationIds: ['w1-suspect-mina-spot'],
+    phases: ['W1_SUSPECT_INTERVIEWS'],
+    type: 'minigame',
+    label: '심문하기',
+    icon: '🔍',
+    route: '/dev/game/?scene=week1-scene-006',
+  },
+  'w1suspect-adrian-interview': {
+    id: 'w1suspect-adrian-interview',
+    characterId: 'adrian',
+    locationIds: ['w1-suspect-adrian-spot'],
+    phases: ['W1_SUSPECT_INTERVIEWS'],
+    type: 'minigame',
+    label: '심문하기',
+    icon: '🔍',
+    route: '/dev/game/?scene=week1-scene-007',
+  },
+  'w1suspect-leo-interview': {
+    id: 'w1suspect-leo-interview',
+    characterId: 'leo',
+    locationIds: ['w1-suspect-leo-spot'],
+    phases: ['W1_SUSPECT_INTERVIEWS'],
+    type: 'minigame',
+    label: '심문하기',
+    icon: '🔍',
+    route: '/dev/game/?scene=week1-scene-008',
   },
 };
 

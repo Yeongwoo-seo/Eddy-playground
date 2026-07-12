@@ -77,4 +77,45 @@ const locationDefs = {
     enterSceneId: 'week1-scene-003',
     enterSceneLabel: '전시장에 들어간다',
   },
+
+  /* ===== Phase 4 — 용의자 탐문 (The Missing Key v1 §12.6) =====
+     Reached from week1-scene-005b's nextSceneId (다니엘 최초 진술 종료 후).
+     Each suspect spot has exactly one interaction: a full hand-off into
+     that suspect's existing, untouched interrogation scene (week1-scene-006/
+     007/008) — see dev/data/interactionDefs.js. Visiting 레오 (008) is the
+     one that already had its own downstream chain (timeline minigame ->
+     008a -> 009); the other two return here via 'week1-suspect-interview-
+     return' (see MINIGAME_ROUTES in game/index.html). */
+  'w1-suspect-hub': {
+    id: 'w1-suspect-hub',
+    week: 1,
+    name: '전시장 앞 광장 (탐문 거점)',
+    phases: ['W1_SUSPECT_INTERVIEWS'],
+    characters: [],
+    exits: ['w1-suspect-mina-spot', 'w1-suspect-adrian-spot', 'w1-suspect-leo-spot'],
+  },
+  'w1-suspect-mina-spot': {
+    id: 'w1-suspect-mina-spot',
+    week: 1,
+    name: '더 록스 골목',
+    phases: ['W1_SUSPECT_INTERVIEWS'],
+    characters: ['minah'],
+    exits: ['w1-suspect-hub'],
+  },
+  'w1-suspect-adrian-spot': {
+    id: 'w1-suspect-adrian-spot',
+    week: 1,
+    name: '전시장 보조 진열 구역',
+    phases: ['W1_SUSPECT_INTERVIEWS'],
+    characters: ['adrian'],
+    exits: ['w1-suspect-hub'],
+  },
+  'w1-suspect-leo-spot': {
+    id: 'w1-suspect-leo-spot',
+    week: 1,
+    name: '접수대·직원 구역',
+    phases: ['W1_SUSPECT_INTERVIEWS'],
+    characters: ['leo'],
+    exits: ['w1-suspect-hub'],
+  },
 };

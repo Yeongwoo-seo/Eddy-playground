@@ -596,6 +596,12 @@ const MINIGAME_ROUTES = {
   'week1-scene-003-minigame': '/dev/minigame-exhibition-search/',
   'week1-scene-004-minigame': '/dev/minigame-photo-zoom/',
   'week1-scene-008-minigame': '/dev/minigame-timeline/',
+  // The Missing Key v1 §12.6 — 세 용의자 자유 순서 탐문. Both virtual ids
+  // land on the same shared hub-center location; individual suspect spots
+  // are reached from there (see dev/data/locationDefs.js's
+  // w1-suspect-*-spot entries).
+  'week1-suspect-hub-entry': '/dev/explore/?phase=W1_SUSPECT_INTERVIEWS&location=w1-suspect-hub',
+  'week1-suspect-interview-return': '/dev/explore/?phase=W1_SUSPECT_INTERVIEWS&location=w1-suspect-hub',
 };
 
 // The Missing Key v1 §5.2/§11.3 — week0-scene-shop-intro's own nextSceneId

@@ -3596,6 +3596,12 @@ const week1Scenes = [
     introLabel: 'CIRCULAR QUAY',
     time: '11:07',
     lines: week1Scene005bLines,
+    // The Missing Key v1 §12.6 — 여기서부터 세 용의자를 자유 순서로 방문하는
+    // 탐색 허브로 넘어간다. week1-scene-006/007/008 자체(대사·라운드·choice
+    // 구조)는 전혀 건드리지 않았다 — hasn 확인해 보니 서로 조건 의존이 없어
+    // (006의 유일한 내부 condition은 앞서 005에서 세운 가설을 참조할 뿐,
+    // 007/008 완료 여부와는 무관) 그대로 병렬로 열어도 안전했다.
+    nextSceneId: 'week1-suspect-hub-entry',
   },
   {
     id: 'week1-scene-006',
@@ -3605,6 +3611,11 @@ const week1Scenes = [
     introLabel: 'CIRCULAR QUAY',
     time: '11:10',
     lines: week1Scene006Lines,
+    // 완료 후 탐문 허브로 복귀 — 006/007은 그 자체로 다음 단계를 자동으로
+    // 잠그지 않으므로(§ 위 주석) 안전하게 추가 가능. 레오(008)는 이미
+    // 타임라인 미니게임으로 이어지는 기존 nextSceneId가 있어 손대지 않았다
+    // (아래 008 항목 참고).
+    nextSceneId: 'week1-suspect-interview-return',
   },
   {
     id: 'week1-scene-007',
@@ -3614,6 +3625,7 @@ const week1Scenes = [
     introLabel: 'CIRCULAR QUAY',
     time: '11:25',
     lines: week1Scene007Lines,
+    nextSceneId: 'week1-suspect-interview-return',
   },
   {
     id: 'week1-scene-008',
@@ -3624,7 +3636,15 @@ const week1Scenes = [
     time: '11:40',
     lines: week1Scene008Lines,
     // Hands off into the expanded 5단계 timeline minigame — see
-    // MINIGAME_ROUTES in game/index.html.
+    // MINIGAME_ROUTES in game/index.html. Deliberately left unchanged even
+    // after wiring 006/007 back to the 탐문 허브 (§12.6): visiting 레오 is
+    // the one suspect visit that already had a real "next step" wired up
+    // (timeline minigame -> 008a -> 009, all pre-existing and untouched), so
+    // reaching him — in whatever order the player picks him — is the natural
+    // point the free-roam 탐문 phase ends and the existing linear
+    // 재검증 체인 takes back over. The timeline minigame's own CARDS data is
+    // static (doesn't read prior evidence from 윤민아/애드리언), so this is
+    // safe regardless of visit order.
     nextSceneId: 'week1-scene-008-minigame',
   },
   {

@@ -388,7 +388,7 @@ function openTopicList(characterId) {
   el.listSheetTitle.textContent = '질문하기';
   el.listSheetBody.innerHTML = topics.length ? topics.map(t => `
     <button class="topic-row" data-topic="${t.id}"${t.state === 'locked' ? ' disabled' : ''}>
-      <div class="topic-row-main">${t.type === 'minigame' ? '📷 ' : ''}${escapeHtml(t.label || t.id)}</div>
+      <div class="topic-row-main">${t.icon ? t.icon + ' ' : ''}${escapeHtml(t.label || t.id)}</div>
       <span class="topic-state state-${t.state}">${STATE_LABEL[t.state] || t.state}</span>
     </button>
   `).join('') : '<div class="empty-note">아직 물어볼 수 있는 주제가 없습니다.</div>';
