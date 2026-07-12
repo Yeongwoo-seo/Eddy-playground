@@ -13,7 +13,13 @@
 // 감정표현 picker in /dev/upload only offers these, so NPCs can't be uploaded
 // under an emotion the story never uses for them.
 const dialogueCharacters = [
-  { id: 'jisoo', name: '지수', role: 'protagonist', expressions: ['neutral', 'happy', 'annoyed', 'shocked', 'smirk', 'suspicious', 'serious'] },
+  // `outfits` (jisoo only, for now) lists which of the 10 dialogueOutfits
+  // below this character has separate portrait sets for — see
+  // DevGameState.getSelectedOutfit/setSelectedOutfit in assetDb.js. 인물 DB's
+  // 옷 picker in /dev/upload only shows for characters with a non-empty
+  // `outfits` list; every other character keeps the old (character,
+  // expression) asset lookup untouched.
+  { id: 'jisoo', name: '지수', role: 'protagonist', expressions: ['neutral', 'happy', 'annoyed', 'shocked', 'smirk', 'suspicious', 'serious'], outfits: ['outfit-01', 'outfit-02', 'outfit-03', 'outfit-04', 'outfit-05', 'outfit-06', 'outfit-07', 'outfit-08', 'outfit-09', 'outfit-10'] },
   { id: 'youngwoo', name: '영우', role: 'other', expressions: ['neutral', 'happy', 'soft', 'smirk', 'shocked', 'serious'] },
   { id: 'mika', name: '미카 코바치', role: 'other', expressions: ['neutral', 'annoyed', 'shocked', 'suspicious', 'serious'] },
   { id: 'minah', name: '윤민아', role: 'other', expressions: ['neutral', 'annoyed', 'shocked'] },
@@ -51,6 +57,26 @@ const dialogueExpressions = [
   { id: 'blank', label: '멍함' },
   { id: 'curious', label: '호기심' },
   { id: 'serious', label: '진지' },
+];
+
+// Outfit versions a character's `outfits` list (above) references by id —
+// each (character, outfit) pair gets its own full set of 감정표현 portraits,
+// registered the same way as the base (character, expression) pairs. Which
+// outfit is currently "worn" is set per-character in /dev/upload's 인물 DB
+// tab (DevGameState.getSelectedOutfit/setSelectedOutfit) and applies
+// globally — /dev/game just keeps asking for (characterId, expression) like
+// before, and AssetDB resolves that against whichever outfit is selected.
+const dialogueOutfits = [
+  { id: 'outfit-01', label: '의상 1' },
+  { id: 'outfit-02', label: '의상 2' },
+  { id: 'outfit-03', label: '의상 3' },
+  { id: 'outfit-04', label: '의상 4' },
+  { id: 'outfit-05', label: '의상 5' },
+  { id: 'outfit-06', label: '의상 6' },
+  { id: 'outfit-07', label: '의상 7' },
+  { id: 'outfit-08', label: '의상 8' },
+  { id: 'outfit-09', label: '의상 9' },
+  { id: 'outfit-10', label: '의상 10' },
 ];
 
 // Sentinel "expression" a minigame face photo is stored/looked up under in

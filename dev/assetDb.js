@@ -72,11 +72,17 @@ const AssetDB = (() => {
   // background belongs to; which character+expression a portrait belongs
   // to) rides along in the Storage path instead of new dev_assets columns —
   // avoids a schema migration against the shared Supabase project for a
-  // dev-only sandbox.
+  // dev-only sandbox. A character portrait's path grows one extra segment
+  // (the outfit id) for characters that have outfit versions — distinguished
+  // by part count so pre-existing, no-outfit paths keep parsing exactly as
+  // before (outfit: null).
   function parsePathMeta(type, path) {
     const parts = (path || '').split('/');
     if (type === 'background') return { sceneId: parts[1] || null };
-    if (type === 'character') return { characterKey: parts[1] || null, expression: parts[2] || null };
+    if (type === 'character') {
+      if (parts.length >= 5) return { characterKey: parts[1] || null, outfit: parts[2] || null, expression: parts[3] || null };
+      return { characterKey: parts[1] || null, outfit: null, expression: parts[2] || null };
+    }
     return {};
   }
 
@@ -89,13 +95,15 @@ const AssetDB = (() => {
     );
   }
 
-  async function addAsset({ type, name, blob, width, height, sceneId, characterKey, expression }) {
+  async function addAsset({ type, name, blob, width, height, sceneId, characterKey, expression, outfit }) {
     const id = `${type}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const ext = (name.split('.').pop() || 'png').toLowerCase().replace(/[^a-z0-9]/g, '') || 'png';
     const path = type === 'background'
       ? `background/${sceneId || 'unassigned'}/${id}.${ext}`
       : type === 'character'
-        ? `character/${characterKey || 'unassigned'}/${expression || 'unassigned'}/${id}.${ext}`
+        ? (outfit
+            ? `character/${characterKey || 'unassigned'}/${outfit}/${expression || 'unassigned'}/${id}.${ext}`
+            : `character/${characterKey || 'unassigned'}/${expression || 'unassigned'}/${id}.${ext}`)
         : `${type}/${id}.${ext}`;
 
     const uploadRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${DEV_ASSETS_BUCKET}/${path}`, {
@@ -583,6 +591,7 @@ const DevGameState = {
   _keys: {
     background: 'mkDevSelectedBackgrounds', characters: 'mkDevSelectedCharacters',
     transforms: 'mkDevCharacterTransforms', sceneBgm: 'mkDevSceneBgm',
+    outfits: 'mkDevSelectedOutfits',
   },
 
   // Each scene (or minigame — a minigame's own background is just another
@@ -663,20 +672,51 @@ const DevGameState = {
     try { return JSON.parse(localStorage.getItem(this._keys.characters)) || {}; }
     catch (e) { return {}; }
   },
+  // Storage key for a (character, outfit, expression) portrait slot. `outfit`
+  // is null for every character without outfit versions, which reproduces
+  // the original `${characterKey}::${expression}` key exactly (no migration
+  // needed for anything uploaded before outfits existed).
+  _assetKey(characterKey, outfit, expression) {
+    return outfit ? `${characterKey}::${outfit}::${expression || 'neutral'}` : `${characterKey}::${expression || 'neutral'}`;
+  },
   // characterKey is a dialogue character id (e.g. 'jisoo' / 'youngwoo'); each
-  // (characterKey, expression) pair gets its own uploaded asset, driven by the
-  // `expression` field on the active dialogue line. Falls back to that
-  // character's 'neutral' portrait when the exact expression isn't registered
-  // yet, so a scene doesn't go blank just because one expression is missing.
+  // (characterKey, [outfit,] expression) pair gets its own uploaded asset,
+  // driven by the `expression` field on the active dialogue line and (for
+  // characters with outfit versions — see dialogueCharacters' `outfits`)
+  // whichever outfit is currently selected via getSelectedOutfit. Falls back
+  // first to that outfit's 'neutral' portrait, then to the no-outfit/legacy
+  // slot, so a scene doesn't go blank just because one expression — or a
+  // newly added outfit — isn't fully registered yet.
   getCharacterAssetId(characterKey, expression) {
     if (!characterKey) return null;
     const map = this._loadCharacterMap();
-    return map[`${characterKey}::${expression || 'neutral'}`] || map[`${characterKey}::neutral`] || null;
+    const outfit = this.getSelectedOutfit(characterKey);
+    if (outfit) {
+      return map[this._assetKey(characterKey, outfit, expression)]
+        || map[this._assetKey(characterKey, outfit, 'neutral')]
+        || map[this._assetKey(characterKey, null, expression)]
+        || map[this._assetKey(characterKey, null, 'neutral')]
+        || null;
+    }
+    return map[this._assetKey(characterKey, null, expression)] || map[this._assetKey(characterKey, null, 'neutral')] || null;
   },
-  setCharacterAssetId(characterKey, expression, assetId) {
+  // Outfit-explicit variant of getCharacterAssetId — used by /dev/upload to
+  // check which asset is active for a specific outfit's slot regardless of
+  // which outfit is currently selected for gameplay (getCharacterAssetId
+  // above always resolves against the *selected* outfit, which is the right
+  // behavior for /dev/game but wrong for browsing a different outfit's
+  // uploads in the editor).
+  getCharacterAssetIdForOutfit(characterKey, outfit, expression) {
+    if (!characterKey) return null;
+    const map = this._loadCharacterMap();
+    return map[this._assetKey(characterKey, outfit, expression)]
+      || (outfit ? map[this._assetKey(characterKey, outfit, 'neutral')] : null)
+      || null;
+  },
+  setCharacterAssetId(characterKey, expression, assetId, outfit) {
     if (!characterKey) return;
     const map = this._loadCharacterMap();
-    const key = `${characterKey}::${expression || 'neutral'}`;
+    const key = this._assetKey(characterKey, outfit, expression);
     if (assetId) map[key] = assetId; else delete map[key];
     localStorage.setItem(this._keys.characters, JSON.stringify(map));
   },
@@ -685,6 +725,33 @@ const DevGameState = {
     let changed = false;
     Object.keys(map).forEach(key => { if (map[key] === assetId) { delete map[key]; changed = true; } });
     if (changed) localStorage.setItem(this._keys.characters, JSON.stringify(map));
+  },
+
+  // Which outfit id (from that character's `outfits` list in
+  // dialogueData.js) is currently "worn" — set explicitly per-character from
+  // /dev/upload's 인물 DB tab (an explicit "이 옷 게임에 적용" action, not just
+  // browsing that outfit's uploads), same localStorage-backed pattern as
+  // background/character selection. Defaults to the character's first listed
+  // outfit so a fresh install still resolves portraits instead of finding
+  // nothing. Returns null for a character with no `outfits` list at all —
+  // that's the "no outfit dimension" case getCharacterAssetId above treats
+  // the same as before this feature existed.
+  _loadOutfitMap() {
+    try { return JSON.parse(localStorage.getItem(this._keys.outfits)) || {}; }
+    catch (e) { return {}; }
+  },
+  getSelectedOutfit(characterKey) {
+    if (!characterKey) return null;
+    const def = (typeof dialogueCharacters !== 'undefined') ? dialogueCharacters.find(c => c.id === characterKey) : null;
+    if (!def || !def.outfits || !def.outfits.length) return null;
+    const saved = this._loadOutfitMap()[characterKey];
+    return (saved && def.outfits.includes(saved)) ? saved : def.outfits[0];
+  },
+  setSelectedOutfit(characterKey, outfitId) {
+    if (!characterKey) return;
+    const map = this._loadOutfitMap();
+    if (outfitId) map[characterKey] = outfitId; else delete map[characterKey];
+    localStorage.setItem(this._keys.outfits, JSON.stringify(map));
   },
 
   _loadTransformMap() {
