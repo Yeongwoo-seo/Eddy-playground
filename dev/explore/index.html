@@ -511,16 +511,51 @@ function playInteractionLines(lines, onComplete) {
   currentDialoguePlayer.load(lines);
 }
 
+// Every routed page this hub hands off to (shop/wardrobe, and the save-slot
+// hub sentinel below) needs the *live* location/phase, never location.search
+// — this is a single-page app that never touches the address bar after
+// boot, so location.search is permanently stuck on whatever ?phase=/&location=
+// the player originally deep-linked in with (same class of bug fixed in
+// moveTo()'s routeOnEnter handling above).
+function currentHubUrl() {
+  return `/dev/explore/?phase=${encodeURIComponent(ExplorationState.getCurrentPhase() || '')}&location=${encodeURIComponent(ExplorationState.getCurrentLocationId() || '')}`;
+}
+
+// A hub save has no real VN sceneId to resume into, so it's stored under
+// this sentinel — game/index.html's own onResumeToScene checks for it too
+// (see that file) and routes back here with the restored phase/location
+// instead of trying to treat it as a scene id.
+const EXPLORE_HUB_SAVE_SENTINEL = '__EXPLORE_HUB__';
+
 /* ===== CASE FILE menu (shared component, spec §6) ===== */
 const caseMenu = initCaseMenu({
   missionTitle: () => (locationDefs[ExplorationState.getCurrentLocationId()] || {}).name || '탐색',
   currentSceneId: null,
   mountSelector: '#caseMenuMount',
-  onSaveRequested: () => {},
-  onResumeToScene: () => {},
+  onSaveRequested: (slot) => {
+    CaseFileState.saveSlot(slot, {
+      sceneId: EXPLORE_HUB_SAVE_SENTINEL,
+      lineIndex: 0,
+      missionTitle: (locationDefs[ExplorationState.getCurrentLocationId()] || {}).name || '탐색',
+    });
+  },
+  // CaseFileState.loadSlot already restored ExplorationState (and every
+  // other state module) *before* this fires — for a hub save there's
+  // nothing to navigate to, just re-render this same page against the
+  // now-restored location/phase. A save made from a VN scene instead sends
+  // the player there, matching what game/index.html's own resume does.
+  onResumeToScene: (sceneId, lineIndex) => {
+    if (sceneId && sceneId !== EXPLORE_HUB_SAVE_SENTINEL) {
+      location.href = `/dev/game/?scene=${encodeURIComponent(sceneId)}&line=${lineIndex || 0}`;
+      return;
+    }
+    updatePointBalance();
+    if (ExplorationState.getCurrentLocationId()) { renderLocation(); showView('location'); }
+    else { renderMap(); showView('map'); }
+  },
   onSettingChange: () => {},
-  onOpenShop: () => { sessionStorage.setItem('mkShopReturnUrl', location.pathname + location.search); location.href = '/dev/shop/'; },
-  onOpenWardrobe: () => { sessionStorage.setItem('mkShopReturnUrl', location.pathname + location.search); location.href = '/dev/wardrobe/'; },
+  onOpenShop: () => { sessionStorage.setItem('mkShopReturnUrl', currentHubUrl()); location.href = '/dev/shop/'; },
+  onOpenWardrobe: () => { sessionStorage.setItem('mkShopReturnUrl', currentHubUrl()); location.href = '/dev/wardrobe/'; },
 });
 
 el.frame.addEventListener('click', (e) => {

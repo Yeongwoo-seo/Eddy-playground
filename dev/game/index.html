@@ -982,7 +982,12 @@ const caseMenu = initCaseMenu({
     });
   },
   onResumeToScene: (sceneId, lineIndex) => {
-    if (sceneId === activeSceneData.id) {
+    // A save made from the 탐색 허브 (dev/explore/) has no VN sceneId —
+    // CaseFileState.loadSlot already restored ExplorationState by the time
+    // this fires, so route back there with the now-current phase/location.
+    if (sceneId === '__EXPLORE_HUB__') {
+      location.href = `/dev/explore/?phase=${encodeURIComponent(ExplorationState.getCurrentPhase() || '')}&location=${encodeURIComponent(ExplorationState.getCurrentLocationId() || '')}`;
+    } else if (sceneId === activeSceneData.id) {
       player.load(applyTextSpeedSetting(activeLines), lineIndex);
     } else {
       location.href = `/dev/game/?scene=${encodeURIComponent(sceneId)}&line=${lineIndex}`;
