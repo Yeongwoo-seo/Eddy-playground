@@ -323,6 +323,17 @@ function moveTo(locationId) {
   if (!def) return;
   const firstVisit = !ExplorationState.isLocationVisited(locationId);
   if (firstVisit && def.firstVisitFlag) CaseFileState.setFlag(def.firstVisitFlag, true);
+  // firstVisitSceneId (§12.2) — an existing, untouched VN scene that plays
+  // automatically the *first* time this location is actually entered (e.g.
+  // week1-scene-002's photo-pose loop at 서큘러키), then never again — later
+  // visits behave like a normal hub location. Marking it visited/current
+  // *before* navigating away is what makes that "never again" stick.
+  if (firstVisit && def.firstVisitSceneId) {
+    ExplorationState.unlockLocation(locationId);
+    ExplorationState.moveToLocation(locationId);
+    location.href = `/dev/game/?scene=${encodeURIComponent(def.firstVisitSceneId)}`;
+    return;
+  }
   if (def.routeOnEnter) {
     // A routeOnEnter location (e.g. the boutique) has no hub content of its
     // own — it's a pure hand-off, so it never becomes "current". The return
@@ -399,16 +410,12 @@ function openTopicList(characterId) {
   el.listSheet.classList.remove('hidden');
 }
 
-// 증거 제시 (spec §8) — this Phase 1 tourism slice has no presentEvidenceRules
-// authored yet (no theft has happened, nothing to present against), so every
-// presentation falls through to defaultPresentReaction. The picker/flow
-// itself is real and reusable once a later phase adds real rules.
-// No presentEvidenceRules (spec §14.8) exist yet for this Phase 1 tourism
-// slice — nothing to present evidence against before the theft happens.
-// Kept as its own array so a later phase's data file can populate it
-// without changing this lookup code.
-const presentEvidenceRules = [];
-const defaultPresentReaction = '음... 이게 지금 왜 필요한지는 잘 모르겠는데.';
+// 증거 제시 (spec §8) — presentEvidenceRules/defaultPresentReaction now live
+// in dev/data/interactionDefs.js (real content for Phase 5 재검증, see that
+// file) so both the hub and any future page can share the same rule table.
+// A matched rule's `result` (correct/partial/interesting/wrong/blocked, §8.2)
+// never costs points or blocks progress either way (§8.4) — it only changes
+// the reaction text and, for correct/partial, may carry effects (addFact 등).
 function openEvidenceSheet(characterId) {
   const items = CaseFileState.getEvidence();
   el.listSheetTitle.textContent = '증거 제시';
@@ -418,7 +425,9 @@ function openEvidenceSheet(characterId) {
   el.listSheetBody.querySelectorAll('[data-evidence]').forEach(btn => btn.addEventListener('click', () => {
     el.listSheet.classList.add('hidden');
     const rule = presentEvidenceRules.find(r => r.characterId === characterId && r.evidenceId === btn.dataset.evidence && (!r.phase || r.phase === ExplorationState.getCurrentPhase()));
-    showToastLine(characterId, rule ? rule.reactionText || defaultPresentReaction : defaultPresentReaction);
+    const outcome = rule || defaultPresentReaction;
+    if (rule && (rule.result === 'correct' || rule.result === 'partial')) (rule.effects || []).forEach(applyLocalEffect);
+    showToastLine(characterId, outcome.reactionText);
   }));
   el.listSheet.classList.remove('hidden');
 }
@@ -569,10 +578,18 @@ el.frame.addEventListener('click', (e) => {
   const params = new URLSearchParams(location.search);
   const bootPhase = params.get('phase');
   const bootLocation = params.get('location');
-  if (bootPhase && ExplorationState.getCurrentPhase() !== bootPhase) {
-    ExplorationState.enterExplorationPhase(bootPhase);
-  }
-  if (bootLocation && !ExplorationState.getCurrentLocationId()) {
+  const phaseChanged = !!bootPhase && ExplorationState.getCurrentPhase() !== bootPhase;
+  if (bootPhase) ExplorationState.enterExplorationPhase(bootPhase);
+  // The `|| phaseChanged` half of this guard matters as soon as there's more
+  // than one phase in play: a returning player already has *some*
+  // currentLocationId left over from an earlier phase (e.g. still parked at
+  // a Phase 1 tourism spot), so the original "only if nothing set yet" check
+  // silently no-oped every phase handoff (week1-scene-005b -> 탐문 허브,
+  // week1-scene-010 -> 재검증 허브, ...) past the very first one — it just
+  // re-rendered the stale old location instead of moving into the new phase.
+  // Only ever hit in real continuous play, not the fresh-profile Playwright
+  // runs used to test each phase in isolation, which is how it went unnoticed.
+  if (bootLocation && (phaseChanged || !ExplorationState.getCurrentLocationId())) {
     moveTo(bootLocation); // handles firstVisitFlag/unlock/render/routeOnEnter itself
     return;
   }
