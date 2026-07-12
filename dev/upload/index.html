@@ -218,6 +218,7 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 
   <div class="tabs" id="tabsRow">
     <button class="tab-btn active" id="tabBackground">배경 DB</button>
+    <button class="tab-btn" id="tabLocation">장소 DB</button>
     <button class="tab-btn" id="tabDialogue">대사</button>
     <button class="tab-btn" id="tabCharacter">인물 DB</button>
     <button class="tab-btn" id="tabMinigameFace">미니게임 얼굴</button>
@@ -245,6 +246,56 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
     <div class="picker-label">배경 종류</div>
     <div class="picker-pills" id="bgKindPickerPills"></div>
     <div class="hint" style="margin-top:8px">미니게임 지도/사진은 반드시 "미니게임"을 선택한 상태에서 올려야 게임에 반영돼요.</div>
+  </div>
+
+  <!-- 배경 DB, 일반 씬 배경 슬롯(미니게임 아님) 전용 — location-background-system
+       설계안: 이 슬롯이 어느 장소인지만 고르고, 실제 사진 업로드/배정은 장소 DB
+       탭에서 한다(같은 장소를 쓰는 다른 씬과 사진을 공유하기 위함). 미니게임
+       kind일 때는 이 패널이 숨고 기존 직접 업로드 방식 그대로 동작한다. See
+       renderBgLocationAssign()/updateBackgroundModeChrome(). -->
+  <div class="picker hidden" id="bgLocationAssignPanel">
+    <div class="picker-label">배정된 장소</div>
+    <div class="hint" id="bgLocationAssignedLabel" style="margin:0 0 10px;text-align:left"></div>
+    <div class="picker-pills" id="bgLocationAssignPills"></div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <input type="text" class="text-input" id="bgNewLocationInput" placeholder="새 장소 이름">
+      <button class="select-btn" id="bgNewLocationBtn" style="flex-shrink:0">+ 새 장소</button>
+    </div>
+    <div class="picker hidden" id="bgVariantAssignPicker" style="margin-top:14px">
+      <div class="picker-label">variant</div>
+      <div class="picker-pills" id="bgVariantAssignPills"></div>
+    </div>
+    <button class="week-dialogue-all-btn hidden" id="bgUnassignBtn" style="margin-top:10px;width:100%;padding:9px;border-radius:10px;color:var(--signal-red);border-color:rgba(217,65,65,.35);background:rgba(217,65,65,.08)">장소 배정 해제</button>
+    <div class="preview-panel hidden" id="bgLocationPreviewPanel" style="margin-top:14px">
+      <div class="preview-img-wrap"><img id="bgLocationPreviewImg" alt="preview"></div>
+      <div class="hint" style="margin:6px 0 0">이 장소에 배정된 사진 미리보기 — 업로드/변경은 장소 DB 탭에서.</div>
+    </div>
+  </div>
+
+  <!-- 장소 DB: 전역 장소 카탈로그 관리 + variant별 사진 업로드/배정
+       (location-background-system 설계안). Supabase Storage의
+       locations/catalog.json 하나로 관리되며, 코드(dialogueData.js) 수정 없이
+       여기서 추가/수정된다. -->
+  <div class="picker hidden" id="locationPicker">
+    <div class="picker-label">장소</div>
+    <div class="picker-pills" id="locationPickerPills"></div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <input type="text" class="text-input" id="newLocationInput" placeholder="새 장소 이름">
+      <button class="select-btn" id="newLocationBtn" style="flex-shrink:0">+ 추가</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="hotspot-secondary-btn" id="renameLocationBtn" style="flex:1;border-radius:10px;padding:10px;font-family:var(--mono);font-weight:700">이름 변경</button>
+      <button class="hotspot-secondary-btn" id="deleteLocationBtn" style="flex:1;border-radius:10px;padding:10px;font-family:var(--mono);font-weight:700;color:var(--signal-red);border-color:rgba(217,65,65,.35)">삭제</button>
+    </div>
+  </div>
+  <div class="picker hidden" id="variantPicker">
+    <div class="picker-label">variant (예: 낮/밤)</div>
+    <div class="picker-pills" id="variantPickerPills"></div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <input type="text" class="text-input" id="newVariantInput" placeholder="새 variant 이름">
+      <button class="select-btn" id="newVariantBtn" style="flex-shrink:0">+ 추가</button>
+    </div>
+    <button class="hotspot-secondary-btn hidden" id="deleteVariantBtn" style="width:100%;margin-top:8px;border-radius:10px;padding:10px;font-family:var(--mono);font-weight:700;color:var(--signal-red);border-color:rgba(217,65,65,.35)">이 variant 삭제</button>
   </div>
 
   <!-- 인물 DB: character -> outfit -> expression picker. 옷 picker는 outfits
@@ -520,6 +571,14 @@ let currentCharacterKey = dialogueCharacters[0].id;
 let currentExpression = dialogueExpressions[0].id;
 // null for characters with no `outfits` list — see allowedOutfits()/characterHasOutfits().
 let currentOutfit = null;
+// 장소 DB tab state (location-background-system 설계안) — currentLocationId
+// is which catalog entry (AssetDB.getLocations()) is selected, currentVariantId
+// which of its variants (e.g. 낮/밤); locationsCatalog is a page-session cache
+// of the whole catalog, refreshed by loadLocationsCatalog() whenever it may
+// have changed (fresh render, or right after a create/rename/delete).
+let currentLocationId = null;
+let currentVariantId = 'default';
+let locationsCatalog = {};
 let pendingFile = null;
 
 // Deep link from /dev/game's "+ 새 이미지 업로드" and from /dev/weekN's
@@ -639,6 +698,28 @@ const el = {
   scenePickerPills: document.getElementById('scenePickerPills'),
   bgKindPicker: document.getElementById('bgKindPicker'),
   bgKindPickerPills: document.getElementById('bgKindPickerPills'),
+  tabLocation: document.getElementById('tabLocation'),
+  bgLocationAssignPanel: document.getElementById('bgLocationAssignPanel'),
+  bgLocationAssignedLabel: document.getElementById('bgLocationAssignedLabel'),
+  bgLocationAssignPills: document.getElementById('bgLocationAssignPills'),
+  bgNewLocationInput: document.getElementById('bgNewLocationInput'),
+  bgNewLocationBtn: document.getElementById('bgNewLocationBtn'),
+  bgVariantAssignPicker: document.getElementById('bgVariantAssignPicker'),
+  bgVariantAssignPills: document.getElementById('bgVariantAssignPills'),
+  bgUnassignBtn: document.getElementById('bgUnassignBtn'),
+  bgLocationPreviewPanel: document.getElementById('bgLocationPreviewPanel'),
+  bgLocationPreviewImg: document.getElementById('bgLocationPreviewImg'),
+  locationPicker: document.getElementById('locationPicker'),
+  locationPickerPills: document.getElementById('locationPickerPills'),
+  newLocationInput: document.getElementById('newLocationInput'),
+  newLocationBtn: document.getElementById('newLocationBtn'),
+  renameLocationBtn: document.getElementById('renameLocationBtn'),
+  deleteLocationBtn: document.getElementById('deleteLocationBtn'),
+  variantPicker: document.getElementById('variantPicker'),
+  variantPickerPills: document.getElementById('variantPickerPills'),
+  newVariantInput: document.getElementById('newVariantInput'),
+  newVariantBtn: document.getElementById('newVariantBtn'),
+  deleteVariantBtn: document.getElementById('deleteVariantBtn'),
   charPicker: document.getElementById('charPicker'),
   charPickerPills: document.getElementById('charPickerPills'),
   outfitPicker: document.getElementById('outfitPicker'),
@@ -748,6 +829,261 @@ function activeBackgroundSceneId() {
   return match ? match.sceneId : scene.id;
 }
 
+/* ===== 장소 DB (location-background-system 설계안) — 전역 장소 카탈로그
+   (AssetDB.getLocations/setLocation, Storage의 locations/catalog.json 하나)
+   관리 + variant별 사진 업로드/배정. 배경 DB 탭은 "이 씬 슬롯이 어느 장소인지"
+   만 고르고(renderBgLocationAssign 아래), 실제 사진은 여기서 관리한다 —
+   같은 장소를 쓰는 씬이 여럿이어도 사진은 한 번만 올리면 된다. ===== */
+async function loadLocationsCatalog() {
+  try { locationsCatalog = await AssetDB.getLocations(); }
+  catch (err) { DevDiag.show('장소 목록을 불러오지 못했습니다: ' + (err && err.message ? err.message : err)); }
+  return locationsCatalog;
+}
+
+function slugify(label) {
+  return String(label).trim().toLowerCase()
+    .replace(/[^a-z0-9가-힣]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'x';
+}
+function uniqueLocationId(label) {
+  const base = 'loc-' + slugify(label);
+  let id = base, n = 2;
+  while (locationsCatalog[id]) { id = `${base}-${n}`; n++; }
+  return id;
+}
+function uniqueVariantId(loc, label) {
+  const base = slugify(label);
+  const existing = new Set(((loc && loc.variants) || []).map(v => v.id));
+  let id = base, n = 2;
+  while (existing.has(id)) { id = `${base}-${n}`; n++; }
+  return id;
+}
+
+async function renderLocationPicker() {
+  await loadLocationsCatalog();
+  const ids = Object.keys(locationsCatalog).sort((a, b) => locationsCatalog[a].label.localeCompare(locationsCatalog[b].label, 'ko'));
+  if (!currentLocationId || !locationsCatalog[currentLocationId]) currentLocationId = ids[0] || null;
+  el.locationPickerPills.innerHTML = ids.length
+    ? ids.map(id => `<button class="pill${id === currentLocationId ? ' active' : ''}" data-id="${id}">${escapeHtml(locationsCatalog[id].label)}</button>`).join('')
+    : '<div class="empty-note">등록된 장소가 없습니다. 아래에서 새로 만드세요.</div>';
+  el.locationPickerPills.querySelectorAll('.pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentLocationId = btn.dataset.id;
+      currentVariantId = 'default';
+      renderVariantPicker();
+      clearPending();
+      refreshList();
+    });
+  });
+  renderVariantPicker();
+}
+
+function renderVariantPicker() {
+  const loc = currentLocationId ? locationsCatalog[currentLocationId] : null;
+  if (!loc) { el.variantPickerPills.innerHTML = ''; el.deleteVariantBtn.classList.add('hidden'); return; }
+  const variants = (loc.variants && loc.variants.length) ? loc.variants : [{ id: 'default', label: '기본' }];
+  if (!variants.some(v => v.id === currentVariantId)) currentVariantId = variants[0].id;
+  el.variantPickerPills.innerHTML = variants.map(v =>
+    `<button class="pill${v.id === currentVariantId ? ' active' : ''}" data-id="${v.id}">${escapeHtml(v.label)}</button>`
+  ).join('');
+  el.variantPickerPills.querySelectorAll('.pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentVariantId = btn.dataset.id;
+      renderVariantPicker();
+      clearPending();
+      refreshList();
+    });
+  });
+  el.deleteVariantBtn.classList.toggle('hidden', variants.length <= 1);
+}
+
+el.newLocationBtn.addEventListener('click', async () => {
+  const label = el.newLocationInput.value.trim();
+  if (!label) return;
+  const id = uniqueLocationId(label);
+  try {
+    await AssetDB.setLocation(id, { id, label, variants: [{ id: 'default', label: '기본' }] });
+    el.newLocationInput.value = '';
+    currentLocationId = id;
+    currentVariantId = 'default';
+    await renderLocationPicker();
+    refreshList();
+  } catch (err) {
+    DevDiag.show('장소 추가 실패: ' + (err && err.message ? err.message : err));
+  }
+});
+
+el.renameLocationBtn.addEventListener('click', async () => {
+  if (!currentLocationId) return;
+  const loc = locationsCatalog[currentLocationId];
+  const label = prompt('새 이름', loc.label);
+  if (!label || !label.trim()) return;
+  try {
+    await AssetDB.setLocation(currentLocationId, Object.assign({}, loc, { label: label.trim() }));
+    await renderLocationPicker();
+  } catch (err) {
+    DevDiag.show('이름 변경 실패: ' + (err && err.message ? err.message : err));
+  }
+});
+
+el.deleteLocationBtn.addEventListener('click', async () => {
+  if (!currentLocationId) return;
+  if (!confirm('이 장소를 삭제할까요? 이미 배정된 씬 슬롯은 미지정 상태가 됩니다 (사진 파일 자체는 지워지지 않습니다).')) return;
+  try {
+    await AssetDB.setLocation(currentLocationId, null);
+    currentLocationId = null;
+    currentVariantId = 'default';
+    await renderLocationPicker();
+    refreshList();
+  } catch (err) {
+    DevDiag.show('장소 삭제 실패: ' + (err && err.message ? err.message : err));
+  }
+});
+
+el.newVariantBtn.addEventListener('click', async () => {
+  if (!currentLocationId) return;
+  const label = el.newVariantInput.value.trim();
+  if (!label) return;
+  const loc = locationsCatalog[currentLocationId];
+  const id = uniqueVariantId(loc, label);
+  const variants = (loc.variants || []).concat([{ id, label }]);
+  try {
+    await AssetDB.setLocation(currentLocationId, Object.assign({}, loc, { variants }));
+    el.newVariantInput.value = '';
+    currentVariantId = id;
+    await renderLocationPicker();
+  } catch (err) {
+    DevDiag.show('variant 추가 실패: ' + (err && err.message ? err.message : err));
+  }
+});
+
+el.deleteVariantBtn.addEventListener('click', async () => {
+  if (!currentLocationId) return;
+  const loc = locationsCatalog[currentLocationId];
+  const variants = (loc.variants || []).filter(v => v.id !== currentVariantId);
+  if (!variants.length || !confirm('이 variant를 삭제할까요?')) return;
+  try {
+    await AssetDB.setLocation(currentLocationId, Object.assign({}, loc, { variants }));
+    currentVariantId = variants[0].id;
+    await renderLocationPicker();
+    refreshList();
+  } catch (err) {
+    DevDiag.show('variant 삭제 실패: ' + (err && err.message ? err.message : err));
+  }
+});
+
+/* ===== 배경 DB tab: 일반 씬 배경 슬롯의 장소 배정 (미니게임 kind는 기존
+   방식 그대로 — see updateBackgroundModeChrome). ===== */
+function isOrdinaryBackgroundSlot() {
+  return currentType === 'background' && currentBgKind !== 'minigame';
+}
+
+// 미니게임 kind가 아닌 일반 배경 슬롯은 더 이상 여기서 직접 업로드하지 않고
+// (장소 DB 탭에서 하므로) 드롭존/저장 버튼/목록을 숨기고 장소 배정 패널만
+// 보여준다. 미니게임 kind는 예전 그대로 직접 업로드 UI를 쓴다.
+function updateBackgroundModeChrome() {
+  if (currentType !== 'background') return;
+  const ordinary = isOrdinaryBackgroundSlot();
+  el.bgLocationAssignPanel.classList.toggle('hidden', !ordinary);
+  el.dropzone.classList.toggle('hidden', ordinary);
+  el.typeHint.classList.toggle('hidden', ordinary);
+  el.listTitle.classList.toggle('hidden', ordinary);
+  el.assetList.classList.toggle('hidden', ordinary);
+}
+
+async function renderBgLocationAssign() {
+  if (!isOrdinaryBackgroundSlot() || !currentScene()) return;
+  const sceneId = activeBackgroundSceneId();
+  await loadLocationsCatalog();
+  let sceneLocMap = {};
+  try { sceneLocMap = await AssetDB.getSceneLocationMap(); }
+  catch (err) { DevDiag.show('장소 배정 정보를 불러오지 못했습니다: ' + (err && err.message ? err.message : err)); }
+  const assigned = sceneLocMap[sceneId] || null;
+  const loc = assigned && assigned.locationId ? locationsCatalog[assigned.locationId] : null;
+  const variantLabel = loc && assigned.variantId && assigned.variantId !== 'default'
+    ? ((loc.variants || []).find(v => v.id === assigned.variantId) || {}).label : null;
+  el.bgLocationAssignedLabel.textContent = loc
+    ? `현재 배정: ${loc.label}${variantLabel ? ' · ' + variantLabel : ''}`
+    : '아직 장소가 배정되지 않았습니다.';
+
+  const ids = Object.keys(locationsCatalog).sort((a, b) => locationsCatalog[a].label.localeCompare(locationsCatalog[b].label, 'ko'));
+  el.bgLocationAssignPills.innerHTML = ids.length
+    ? ids.map(id => `<button class="pill${loc && id === loc.id ? ' active' : ''}" data-id="${id}">${escapeHtml(locationsCatalog[id].label)}</button>`).join('')
+    : '<div class="empty-note">등록된 장소가 없습니다. 장소 DB 탭에서 먼저 만들거나, 아래에서 바로 새로 만드세요.</div>';
+  el.bgLocationAssignPills.querySelectorAll('.pill').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const locationId = btn.dataset.id;
+      const targetLoc = locationsCatalog[locationId];
+      const variantId = (targetLoc.variants && targetLoc.variants[0] && targetLoc.variants[0].id) || 'default';
+      try {
+        await DevGameState.assignSlotLocation(sceneId, locationId, variantId);
+        await renderBgLocationAssign();
+        renderBgKindPicker();
+      } catch (err) {
+        DevDiag.show('장소 배정 실패: ' + (err && err.message ? err.message : err));
+      }
+    });
+  });
+
+  el.bgUnassignBtn.classList.toggle('hidden', !loc);
+  const variants = loc && loc.variants && loc.variants.length > 1 ? loc.variants : null;
+  el.bgVariantAssignPicker.classList.toggle('hidden', !variants);
+  if (variants) {
+    el.bgVariantAssignPills.innerHTML = variants.map(v =>
+      `<button class="pill${assigned.variantId === v.id ? ' active' : ''}" data-id="${v.id}">${escapeHtml(v.label)}</button>`
+    ).join('');
+    el.bgVariantAssignPills.querySelectorAll('.pill').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        try {
+          await DevGameState.assignSlotLocation(sceneId, loc.id, btn.dataset.id);
+          await renderBgLocationAssign();
+        } catch (err) {
+          DevDiag.show('variant 배정 실패: ' + (err && err.message ? err.message : err));
+        }
+      });
+    });
+  }
+
+  const previewAssetId = loc ? DevGameState.getLocationAssetId(loc.id, assigned.variantId) : null;
+  if (previewAssetId) {
+    try {
+      const asset = await AssetDB.getAsset(previewAssetId);
+      if (asset) { el.bgLocationPreviewImg.src = asset.dataUrl; el.bgLocationPreviewPanel.classList.remove('hidden'); }
+      else el.bgLocationPreviewPanel.classList.add('hidden');
+    } catch (err) { el.bgLocationPreviewPanel.classList.add('hidden'); }
+  } else {
+    el.bgLocationPreviewPanel.classList.add('hidden');
+  }
+}
+
+el.bgNewLocationBtn.addEventListener('click', async () => {
+  const label = el.bgNewLocationInput.value.trim();
+  if (!label || !currentScene()) return;
+  const sceneId = activeBackgroundSceneId();
+  const id = uniqueLocationId(label);
+  try {
+    await AssetDB.setLocation(id, { id, label, variants: [{ id: 'default', label: '기본' }] });
+    await DevGameState.assignSlotLocation(sceneId, id, 'default');
+    el.bgNewLocationInput.value = '';
+    await renderBgLocationAssign();
+    renderBgKindPicker();
+  } catch (err) {
+    DevDiag.show('새 장소 배정 실패: ' + (err && err.message ? err.message : err));
+  }
+});
+
+el.bgUnassignBtn.addEventListener('click', async () => {
+  if (!currentScene()) return;
+  const sceneId = activeBackgroundSceneId();
+  try {
+    await DevGameState.assignSlotLocation(sceneId, null, null);
+    await renderBgLocationAssign();
+    renderBgKindPicker();
+  } catch (err) {
+    DevDiag.show('배정 해제 실패: ' + (err && err.message ? err.message : err));
+  }
+});
+
 function selectType(type) {
   // Focus mode is background-only setup for one specific minigame — the
   // 대사 / 인물 DB / 미니게임 얼굴 tabs have nothing to do with that, so
@@ -766,6 +1102,7 @@ function selectType(type) {
   el.listTitle.classList.remove('hidden');
   el.assetList.classList.remove('hidden');
   el.tabBackground.classList.toggle('active', type === 'background');
+  el.tabLocation.classList.toggle('active', type === 'location');
   el.tabDialogue.classList.toggle('active', type === 'dialogue');
   el.tabCharacter.classList.toggle('active', type === 'character');
   el.tabMinigameFace.classList.toggle('active', type === 'minigameFace');
@@ -793,6 +1130,12 @@ function selectType(type) {
   // only runs for type 'background' — force it hidden here too, otherwise
   // switching to 인물 DB left it showing whatever it was left at.
   el.bgKindPicker.classList.toggle('hidden', type !== 'background');
+  // bgLocationAssignPanel's actual visibility (also gated on the current
+  // slot not being the 미니게임 kind) is recomputed by renderBgKindPicker()
+  // below, same reasoning as bgKindPicker just above.
+  el.bgLocationAssignPanel.classList.toggle('hidden', type !== 'background');
+  el.locationPicker.classList.toggle('hidden', type !== 'location');
+  el.variantPicker.classList.toggle('hidden', type !== 'location');
   el.charPicker.classList.toggle('hidden', type !== 'character' && type !== 'minigameFace');
   // outfitPicker's own visibility (also gated on the current character
   // actually having outfits) is recomputed by renderOutfitPicker() below,
@@ -801,12 +1144,12 @@ function selectType(type) {
   if (type !== 'character') el.outfitPicker.classList.add('hidden');
   el.exprPicker.classList.toggle('hidden', type !== 'character');
   el.minigameFaceHint.classList.toggle('hidden', type !== 'minigameFace');
-  el.fileInput.accept = type === 'background' ? 'image/jpeg,image/png,image/webp' : 'image/png,image/webp';
+  el.fileInput.accept = (type === 'background' || type === 'location') ? 'image/jpeg,image/png,image/webp' : 'image/png,image/webp';
   // Only 인물 DB supports picking several photos at once (see
   // startBatchUpload) — other tabs stay single-file so a stray multi-select
   // there doesn't quietly drop everything past files[0].
   el.fileInput.multiple = type === 'character';
-  el.typeHint.textContent = type === 'background' ? '.jpg · .jpeg · .png · .webp' : '.png · .webp (투명 배경 권장)';
+  el.typeHint.textContent = (type === 'background' || type === 'location') ? '.jpg · .jpeg · .png · .webp' : '.png · .webp (투명 배경 권장)';
   // 미니게임 얼굴은 표정별이 아니라 캐릭터당 사진 한 장 — 감정표현 피커 대신
   // 고정 sentinel 키를 씀. 이 sentinel에 있다가 다른 탭으로 넘어가는 경우에만
   // 되돌려서, 인물 DB에서 고르고 있던 표정(예: 기쁨)은 탭을 왔다갔다해도 유지된다.
@@ -814,6 +1157,7 @@ function selectType(type) {
   else if (currentExpression === MINIGAME_FACE_EXPRESSION) currentExpression = dialogueExpressions[0].id;
   if (type === 'background' || type === 'dialogue') { renderWeekPicker(); renderScenePicker(); }
   if (type === 'background') renderBgKindPicker();
+  if (type === 'location') renderLocationPicker();
   if (type === 'character' || type === 'minigameFace') renderCharPicker();
   if (type === 'character') { renderOutfitPicker(); renderExprPicker(); }
   if (type === 'dialogue') renderDialoguePanel();
@@ -1082,7 +1426,7 @@ el.weekDialogueSaveBtn.addEventListener('click', async () => {
   }
 });
 
-function renderBgKindPicker() {
+async function renderBgKindPicker() {
   const scene = currentScene();
   // Focus mode forces currentBgKind itself — nothing to toggle, so the
   // picker stays hidden even if the scene has multiple slots.
@@ -1091,25 +1435,34 @@ function renderBgKindPicker() {
   // location, no-minigame scene has exactly one kind ('scene').
   const showPicker = kinds.length > 1;
   el.bgKindPicker.classList.toggle('hidden', !showPicker);
-  if (!showPicker) return;
-  // Uploading while the wrong kind is selected here silently saves the photo
-  // under the wrong bucket — the minigame/other location then looks
-  // "missing" even though a photo really was uploaded, just to a different
-  // slot instead. Marking which bucket already has something (✓) vs. is
-  // empty makes that mistake much harder to make unnoticed.
-  el.bgKindPickerPills.innerHTML = kinds.map(k => {
-    const has = !!DevGameState.getBackgroundId(k.sceneId);
-    return `<button class="pill${k.id === currentBgKind ? ' active' : ''}" data-key="${k.id}">${escapeHtml(k.label)} ${has ? '✓' : '(사진 없음)'}</button>`;
-  }).join('');
-  el.bgKindPickerPills.querySelectorAll('.pill').forEach(btn => {
-    btn.addEventListener('click', () => {
-      currentBgKind = btn.dataset.key;
-      renderBgKindPicker();
-      clearPending();
-      refreshList();
-      renderHotspotSection();
+  if (showPicker) {
+    // Uploading while the wrong kind is selected here silently saves the photo
+    // under the wrong bucket — the minigame/other location then looks
+    // "missing" even though a photo really was uploaded, just to a different
+    // slot instead. Marking which bucket already has something (✓) vs. is
+    // empty makes that mistake much harder to make unnoticed. getBackgroundId
+    // now resolves through a location assignment for ordinary slots (§
+    // location-background-system), so this has to await it per kind.
+    const withHas = await Promise.all(kinds.map(async k => ({ kind: k, has: !!(await DevGameState.getBackgroundId(k.sceneId)) })));
+    el.bgKindPickerPills.innerHTML = withHas.map(({ kind: k, has }) =>
+      `<button class="pill${k.id === currentBgKind ? ' active' : ''}" data-key="${k.id}">${escapeHtml(k.label)} ${has ? '✓' : '(사진 없음)'}</button>`
+    ).join('');
+    el.bgKindPickerPills.querySelectorAll('.pill').forEach(btn => {
+      btn.addEventListener('click', () => {
+        currentBgKind = btn.dataset.key;
+        renderBgKindPicker();
+        clearPending();
+        refreshList();
+        renderHotspotSection();
+      });
     });
-  });
+  }
+  // Ordinary (non-미니게임) slots point at a catalog location instead of
+  // taking a direct upload — see updateBackgroundModeChrome/
+  // renderBgLocationAssign. Runs regardless of showPicker, since even a
+  // single-slot scene needs its own location assignment.
+  updateBackgroundModeChrome();
+  await renderBgLocationAssign();
 }
 
 function renderCharPicker() {
@@ -1232,7 +1585,7 @@ function onFilesSelected(files) {
   const url = URL.createObjectURL(file);
   const img = new Image();
   img.onload = async () => {
-    if (currentType === 'background') {
+    if (currentType === 'background' || currentType === 'location') {
       if (Math.max(img.naturalWidth, img.naturalHeight) > BG_MAX_DIMENSION) {
         const resizedBlob = await resizeImageToBlob(img, BG_MAX_DIMENSION, BG_JPEG_QUALITY);
         const resizedImg = await loadImageFromBlob(resizedBlob);
@@ -1258,27 +1611,51 @@ function onFilesSelected(files) {
 function renderPreview(url) {
   el.previewPanel.classList.remove('hidden');
   el.previewImg.src = url;
-  const scene = currentScene();
-  const kind = scene ? backgroundKinds(scene).find(k => k.id === currentBgKind) : null;
-  el.previewType.textContent = scene ? scene.name + (kind && kind.id !== 'scene' ? ' · ' + kind.label : '') : '';
+  if (currentType === 'location') {
+    const loc = currentLocationId ? locationsCatalog[currentLocationId] : null;
+    const variant = loc && loc.variants && loc.variants.find(v => v.id === currentVariantId);
+    el.previewType.textContent = loc ? loc.label + (variant && variant.id !== 'default' ? ' · ' + variant.label : '') : '';
+  } else {
+    const scene = currentScene();
+    const kind = scene ? backgroundKinds(scene).find(k => k.id === currentBgKind) : null;
+    el.previewType.textContent = scene ? scene.name + (kind && kind.id !== 'scene' ? ' · ' + kind.label : '') : '';
+  }
   el.previewFile.textContent = pendingFile.name;
   el.previewSize.textContent = `${pendingFile.width} × ${pendingFile.height}`;
 }
 
-// Only reachable for backgrounds now — 미니게임 얼굴/아이템 uploads go
-// through the crop editor below, which saves the framing itself, and 인물 DB
-// uploads register themselves via autoRegisterCharacterPhoto without ever
-// showing a save button.
+// Only reachable for backgrounds (미니게임 kind — an ordinary scene slot's
+// dropzone is hidden, see updateBackgroundModeChrome) and 장소 DB uploads now —
+// 미니게임 얼굴/아이템 uploads go through the crop editor below, which saves
+// the framing itself, and 인물 DB uploads register themselves via
+// autoRegisterCharacterPhoto without ever showing a save button.
 async function saveAsset() {
-  if (!pendingFile || !currentScene()) return;
+  if (!pendingFile) return;
+  if (currentType === 'location') {
+    if (!currentLocationId) return;
+    try {
+      const record = await AssetDB.addAsset({ type: 'background', name: pendingFile.name, blob: pendingFile.blob, width: pendingFile.width, height: pendingFile.height, locationId: currentLocationId, variantId: currentVariantId });
+      // Same "newest upload becomes active" convenience as the legacy
+      // per-scene flow below and character uploads already have.
+      DevGameState.setLocationAssetId(currentLocationId, currentVariantId, record.id);
+      clearPending();
+      await refreshList();
+    } catch (err) {
+      DevDiag.show('이미지 저장 실패: ' + (err && err.message ? err.message : err));
+    }
+    return;
+  }
+  if (!currentScene()) return;
   try {
     const record = await AssetDB.addAsset({ type: 'background', name: pendingFile.name, blob: pendingFile.blob, width: pendingFile.width, height: pendingFile.height, sceneId: activeBackgroundSceneId() });
     // The newest upload becomes the active background automatically — same
     // as character uploads already do below. Without this, "uploaded" and
     // "the game actually shows it" were two separate steps (upload, then a
     // second "사용" tap in the list below), and skipping the second step
-    // looked exactly like the upload had silently failed.
-    DevGameState.setBackgroundId(activeBackgroundSceneId(), record.id);
+    // looked exactly like the upload had silently failed. Only reachable for
+    // 미니게임 kind now, which never has a location assignment, so the
+    // legacy sync setter is the right one here.
+    DevGameState.setLegacyBackgroundId(activeBackgroundSceneId(), record.id);
     clearPending();
     await refreshList();
     renderHotspotSection();
@@ -1920,7 +2297,10 @@ async function loadHotspotEditor() {
   if (hotspotState) {
     savedHotspotView = { sceneId: hotspotState.sceneId, scale: hotspotState.scale, tx: hotspotState.tx, ty: hotspotState.ty };
   }
-  const assetId = DevGameState.getBackgroundId(sceneId);
+  // Room-search/minigame hotspot backgrounds stay scene-owned (out of scope
+  // for the location-background-system change), so the legacy sync lookup
+  // is the correct one here.
+  const assetId = DevGameState.getLegacyBackgroundId(sceneId);
   const asset = assetId ? await AssetDB.getAsset(assetId) : null;
   if (!asset) {
     hotspotState = null;
@@ -2195,14 +2575,18 @@ function escapeHtml(s) {
 }
 
 async function refreshList() {
-  el.listTitle.textContent = currentType === 'background' ? 'Uploaded Backgrounds' : currentType === 'minigameFace' ? 'Uploaded Minigame Faces' : 'Uploaded Portraits';
+  el.listTitle.textContent = currentType === 'background' ? 'Uploaded Backgrounds' : currentType === 'location' ? 'Uploaded Photos' : currentType === 'minigameFace' ? 'Uploaded Minigame Faces' : 'Uploaded Portraits';
   // 미니게임 얼굴은 실제 저장은 'character' 타입을 공유하고 expression
   // sentinel(MINIGAME_FACE_EXPRESSION)로만 구분되므로 조회도 'character'로.
-  const all = await AssetDB.getAssetsByType(currentType === 'minigameFace' ? 'character' : currentType);
+  // 장소 DB도 실제 저장은 'background' 타입을 공유하고 locationId/variantId로만
+  // 구분된다 — parsePathMeta 참고.
+  const all = await AssetDB.getAssetsByType(currentType === 'minigameFace' ? 'character' : currentType === 'location' ? 'background' : currentType);
   const outfitFilter = activeOutfitForFilter();
-  const filtered = currentType === 'background'
-    ? all.filter(a => a.sceneId === activeBackgroundSceneId())
-    : all.filter(a => a.characterKey === currentCharacterKey && a.expression === currentExpression && (a.outfit || null) === outfitFilter);
+  const filtered = currentType === 'location'
+    ? all.filter(a => a.locationId === currentLocationId && (a.variantId || 'default') === (currentVariantId || 'default'))
+    : currentType === 'background'
+      ? all.filter(a => a.sceneId === activeBackgroundSceneId())
+      : all.filter(a => a.characterKey === currentCharacterKey && a.expression === currentExpression && (a.outfit || null) === outfitFilter);
   renderList(filtered);
 }
 
@@ -2213,13 +2597,20 @@ function renderList(assets) {
   }
   el.assetList.innerHTML = assets.map(a => {
     const url = a.dataUrl;
-    const isActive = a.type === 'background'
-      ? DevGameState.getBackgroundId(a.sceneId) === a.id
-      : DevGameState.getCharacterAssetIdForOutfit(a.characterKey, a.outfit || null, a.expression) === a.id;
+    // 미니게임 kind 배경만 이 목록에 뜨므로(일반 슬롯은 dropzone/목록 자체가
+    // 숨겨진다 — updateBackgroundModeChrome) a.type === 'background'일 때는
+    // 항상 레거시 sceneId 기준 동기 조회로 충분하다.
+    const isActive = currentType === 'location'
+      ? DevGameState.getLocationAssetId(a.locationId, a.variantId) === a.id
+      : a.type === 'background'
+        ? DevGameState.getLegacyBackgroundId(a.sceneId) === a.id
+        : DevGameState.getCharacterAssetIdForOutfit(a.characterKey, a.outfit || null, a.expression) === a.id;
     const tag = isActive ? '<span class="asset-tag">사용 중</span><br>' : '';
-    const useAction = a.type === 'background'
-      ? `useAsBackground('${a.id}')`
-      : `useAsCharacter('${a.id}')`;
+    const useAction = currentType === 'location'
+      ? `useAsLocationPhoto('${a.id}')`
+      : a.type === 'background'
+        ? `useAsBackground('${a.id}')`
+        : `useAsCharacter('${a.id}')`;
     return `<div class="asset-card">
       <img class="asset-thumb" src="${url}" data-url="${url}" onclick="previewAsset(this.dataset.url)">
       <div class="asset-info">
@@ -2240,11 +2631,19 @@ function previewAsset(url) {
   el.lightbox.classList.remove('hidden');
 }
 
+// Only reachable for 미니게임 kind now (ordinary slots hide this list — see
+// updateBackgroundModeChrome), which never carries a location assignment, so
+// the legacy sync setter is the correct one here.
 function useAsBackground(id) {
-  DevGameState.setBackgroundId(activeBackgroundSceneId(), id);
+  DevGameState.setLegacyBackgroundId(activeBackgroundSceneId(), id);
   refreshList();
   renderBgKindPicker();
   renderHotspotSection();
+}
+
+function useAsLocationPhoto(id) {
+  DevGameState.setLocationAssetId(currentLocationId, currentVariantId, id);
+  refreshList();
 }
 
 function useAsCharacter(id) {
@@ -2491,6 +2890,7 @@ el.soundSaveBtn.addEventListener('click', async () => {
 el.soundNewBtn.addEventListener('click', resetSoundForm);
 
 el.tabBackground.addEventListener('click', () => selectType('background'));
+el.tabLocation.addEventListener('click', () => selectType('location'));
 el.tabDialogue.addEventListener('click', () => selectType('dialogue'));
 el.tabCharacter.addEventListener('click', () => selectType('character'));
 el.tabMinigameFace.addEventListener('click', () => selectType('minigameFace'));
@@ -2929,7 +3329,10 @@ function applyFocusModeChrome() {
     el.testFab.classList.add('test-fab-top');
     // 대사/인물 DB/미니게임 얼굴/사운드 don't apply to an evidence collection —
     // swap them out for 아이템/상호작용 instead of hiding the whole tab row.
+    // 장소 DB is also out — evidence-collection backgrounds are minigame
+    // (room-search) backgrounds, which stay scene-owned, not location-owned.
     el.tabDialogue.classList.add('hidden');
+    el.tabLocation.classList.add('hidden');
     el.tabCharacter.classList.add('hidden');
     el.tabMinigameFace.classList.add('hidden');
     el.tabSound.classList.add('hidden');

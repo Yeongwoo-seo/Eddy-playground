@@ -76,9 +76,20 @@ const AssetDB = (() => {
   // (the outfit id) for characters that have outfit versions — distinguished
   // by part count so pre-existing, no-outfit paths keep parsing exactly as
   // before (outfit: null).
+  //
+  // Backgrounds have two coexisting shapes, also distinguished by part
+  // count (location-background-system §2/§3 design): ordinary VN scene
+  // backgrounds now live under `background/<locationId>/<variantId>/<id>.ext`
+  // (4 parts) so photos are shared by every scene slot pointing at the same
+  // physical location; minigame/room-search backgrounds are explicitly out
+  // of scope for that change and keep the original
+  // `background/<sceneId>/<id>.ext` (3 parts) scene-owned shape.
   function parsePathMeta(type, path) {
     const parts = (path || '').split('/');
-    if (type === 'background') return { sceneId: parts[1] || null };
+    if (type === 'background') {
+      if (parts.length >= 4) return { locationId: parts[1] || null, variantId: parts[2] || null };
+      return { sceneId: parts[1] || null };
+    }
     if (type === 'character') {
       if (parts.length >= 5) return { characterKey: parts[1] || null, outfit: parts[2] || null, expression: parts[3] || null };
       return { characterKey: parts[1] || null, outfit: null, expression: parts[2] || null };
@@ -95,11 +106,16 @@ const AssetDB = (() => {
     );
   }
 
-  async function addAsset({ type, name, blob, width, height, sceneId, characterKey, expression, outfit }) {
+  async function addAsset({ type, name, blob, width, height, sceneId, locationId, variantId, characterKey, expression, outfit }) {
     const id = `${type}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const ext = (name.split('.').pop() || 'png').toLowerCase().replace(/[^a-z0-9]/g, '') || 'png';
+    // Callers pass either (locationId[, variantId]) for an ordinary VN scene
+    // background (장소 DB tab) or sceneId for a minigame/room-search
+    // background (배경 DB tab, 미니게임 kind) — see parsePathMeta above.
     const path = type === 'background'
-      ? `background/${sceneId || 'unassigned'}/${id}.${ext}`
+      ? (locationId
+          ? `background/${locationId}/${variantId || 'default'}/${id}.${ext}`
+          : `background/${sceneId || 'unassigned'}/${id}.${ext}`)
       : type === 'character'
         ? (outfit
             ? `character/${characterKey || 'unassigned'}/${outfit}/${expression || 'unassigned'}/${id}.${ext}`
@@ -534,6 +550,95 @@ const AssetDB = (() => {
     return setSound(soundId, null);
   }
 
+  // 전역 장소 카탈로그 (location-background-system 설계안) — { [locationId]:
+  // { id, label, variants: [{id, label}, ...] } }, one JSON blob for the
+  // whole catalog, same single-blob pattern as the sound catalog above.
+  // Photos are assigned per (locationId, variantId) — see
+  // DevGameState.getLocationAssetId/setLocationAssetId — so scenes sharing
+  // the same physical location (e.g. two different beats both at "Eastwood
+  // Accommodation") automatically share the same photo once it's uploaded
+  // once, instead of each scene slot needing its own separate upload.
+  const locationsCache = new Map(); // single entry keyed 'catalog'
+  const LOCATIONS_PATH = 'locations/catalog.json';
+
+  async function getLocations() {
+    if (locationsCache.has('catalog')) return locationsCache.get('catalog');
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${LOCATIONS_PATH}?t=${Date.now()}`;
+    try {
+      const map = (await fetchJsonBlob(url)) || {};
+      locationsCache.set('catalog', map);
+      return map;
+    } catch (e) {
+      return locationsCache.get('catalog') || {};
+    }
+  }
+
+  async function setLocation(locationId, def) {
+    if (!locationId) return {};
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${LOCATIONS_PATH}?t=${Date.now()}`;
+    const current = await readCurrentForWrite(locationsCache, 'catalog', url, {});
+    const map = Object.assign({}, current);
+    if (def) map[locationId] = def; else delete map[locationId];
+    const blob = new Blob([JSON.stringify(map)], { type: 'application/json' });
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${DEV_ASSETS_BUCKET}/${LOCATIONS_PATH}`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'x-upsert': 'true',
+      },
+      body: blob,
+    });
+    if (!res.ok) throw new Error(`장소 저장 실패 (${res.status}): ${await res.text()}`);
+    locationsCache.set('catalog', map);
+    return map;
+  }
+
+  // 씬 배경 슬롯(위 backgroundKinds()의 sceneId key, 예: 'week0-scene-002-1')
+  // → { locationId, variantId } 배정. dialogueData.js는 정적 스크립트 파일이라
+  // /dev/upload에서 직접 고쳐 쓸 수 없으므로, "이 슬롯이 어느 장소인지"는 코드가
+  // 아니라 이 blob에 저장된다 — 장소 카탈로그 자체와 같은 이유(§확정된 결정
+  // 사항: 코드 수정 없이 추가/수정). 미니게임/방탈출 배경 슬롯은 이번 변경
+  // 범위 밖이라 여기 등록되지 않고, 기존 sceneId 직접 배정 방식을 그대로 쓴다
+  // (DevGameState.getBackgroundId의 폴백 참고).
+  const sceneLocationsCache = new Map(); // single entry keyed 'map'
+  const SCENE_LOCATIONS_PATH = 'scene-locations/map.json';
+
+  async function getSceneLocationMap() {
+    if (sceneLocationsCache.has('map')) return sceneLocationsCache.get('map');
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${SCENE_LOCATIONS_PATH}?t=${Date.now()}`;
+    try {
+      const map = (await fetchJsonBlob(url)) || {};
+      sceneLocationsCache.set('map', map);
+      return map;
+    } catch (e) {
+      return sceneLocationsCache.get('map') || {};
+    }
+  }
+
+  async function setSceneLocation(sceneKey, locationId, variantId) {
+    if (!sceneKey) return {};
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${SCENE_LOCATIONS_PATH}?t=${Date.now()}`;
+    const current = await readCurrentForWrite(sceneLocationsCache, 'map', url, {});
+    const map = Object.assign({}, current);
+    if (locationId) map[sceneKey] = { locationId, variantId: variantId || 'default' }; else delete map[sceneKey];
+    const blob = new Blob([JSON.stringify(map)], { type: 'application/json' });
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${DEV_ASSETS_BUCKET}/${SCENE_LOCATIONS_PATH}`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'x-upsert': 'true',
+      },
+      body: blob,
+    });
+    if (!res.ok) throw new Error(`장소 배정 저장 실패 (${res.status}): ${await res.text()}`);
+    sceneLocationsCache.set('map', map);
+    return map;
+  }
+
   // 영우 테스트 answers — { [scenarioId]: { choiceId, note, answeredAt } }, one
   // JSON blob for the whole test (scenario bank lives in youngwooTestData.js,
   // this only stores the real answers picked on /dev/youngwoo-test). Same
@@ -584,6 +689,8 @@ const AssetDB = (() => {
     getDialogueOverrides, setDialogueOverrides,
     getSounds, setSound, deleteSound,
     getYoungwooTestAnswers, setYoungwooTestAnswer,
+    getLocations, setLocation,
+    getSceneLocationMap, setSceneLocation,
   };
 })();
 
@@ -591,31 +698,101 @@ const DevGameState = {
   _keys: {
     background: 'mkDevSelectedBackgrounds', characters: 'mkDevSelectedCharacters',
     transforms: 'mkDevCharacterTransforms', sceneBgm: 'mkDevSceneBgm',
-    outfits: 'mkDevSelectedOutfits',
+    outfits: 'mkDevSelectedOutfits', locationBackgrounds: 'mkDevLocationBackgrounds',
   },
 
-  // Each scene (or minigame — a minigame's own background is just another
-  // sceneId string, e.g. 'week0-scene-001-2-minigame') gets its own
-  // background slot.
+  // Legacy scene-owned background slot map (sceneId -> assetId) — minigame
+  // and room-search backgrounds stay on this exactly as before
+  // (location-background-system §applies-to: "미니게임 배경은 이번 변경
+  // 대상 아님"). An ordinary VN scene slot also lands here until it's been
+  // assigned a location via /dev/upload's 배경 DB tab, so nothing goes blank
+  // mid-migration.
   _loadBackgroundMap() {
     try { return JSON.parse(localStorage.getItem(this._keys.background)) || {}; }
     catch (e) { return {}; }
   },
-  getBackgroundId(sceneId) {
+  getLegacyBackgroundId(sceneId) {
     if (!sceneId) return null;
     return this._loadBackgroundMap()[sceneId] || null;
   },
-  setBackgroundId(sceneId, assetId) {
+  setLegacyBackgroundId(sceneId, assetId) {
     if (!sceneId) return;
     const map = this._loadBackgroundMap();
     if (assetId) map[sceneId] = assetId; else delete map[sceneId];
     localStorage.setItem(this._keys.background, JSON.stringify(map));
+  },
+
+  // New location-owned assignment map (`${locationId}::${variantId}` ->
+  // assetId) — every ordinary VN scene slot that's been pointed at a
+  // catalog location (AssetDB.getSceneLocationMap/setSceneLocation) resolves
+  // its photo through here instead, so scenes sharing one physical location
+  // share one upload.
+  _loadLocationBackgroundMap() {
+    try { return JSON.parse(localStorage.getItem(this._keys.locationBackgrounds)) || {}; }
+    catch (e) { return {}; }
+  },
+  _locationSlotKey(locationId, variantId) { return `${locationId}::${variantId || 'default'}`; },
+  getLocationAssetId(locationId, variantId) {
+    if (!locationId) return null;
+    return this._loadLocationBackgroundMap()[this._locationSlotKey(locationId, variantId)] || null;
+  },
+  setLocationAssetId(locationId, variantId, assetId) {
+    if (!locationId) return;
+    const map = this._loadLocationBackgroundMap();
+    const key = this._locationSlotKey(locationId, variantId);
+    if (assetId) map[key] = assetId; else delete map[key];
+    localStorage.setItem(this._keys.locationBackgrounds, JSON.stringify(map));
+  },
+
+  // Which location (+variant) a scene background slot (backgroundKinds()'s
+  // sceneId key) has been pointed at — see AssetDB.getSceneLocationMap for
+  // why this lives in Storage rather than as a literal field in
+  // dialogueData.js. Returns null for a slot that's never been assigned
+  // (fresh migration state, or a minigame/room-search slot that
+  // intentionally never gets one).
+  async resolveSlotLocation(sceneId) {
+    if (!sceneId) return null;
+    const map = await AssetDB.getSceneLocationMap();
+    return map[sceneId] || null;
+  },
+  assignSlotLocation(sceneId, locationId, variantId) {
+    return AssetDB.setSceneLocation(sceneId, locationId, variantId);
+  },
+
+  // 2-stage resolution (location-background-system §5): sceneId -> the
+  // location it's been assigned -> the photo assigned to that location. A
+  // slot with no location assignment (minigame/room-search, or an
+  // unmigrated ordinary scene) falls back to the legacy direct sceneId
+  // lookup, so nothing regresses before a dev has re-assigned it.
+  async getBackgroundId(sceneId) {
+    if (!sceneId) return null;
+    const locRef = await this.resolveSlotLocation(sceneId);
+    if (locRef && locRef.locationId) return this.getLocationAssetId(locRef.locationId, locRef.variantId);
+    return this.getLegacyBackgroundId(sceneId);
+  },
+  // Mirrors getBackgroundId's resolution: if the slot already points at a
+  // location, the asset is assigned to that location (so every other scene
+  // sharing it updates too); otherwise it falls back to the legacy
+  // direct-per-scene assignment.
+  async setBackgroundId(sceneId, assetId) {
+    if (!sceneId) return;
+    const locRef = await this.resolveSlotLocation(sceneId);
+    if (locRef && locRef.locationId) {
+      this.setLocationAssetId(locRef.locationId, locRef.variantId, assetId);
+      return;
+    }
+    this.setLegacyBackgroundId(sceneId, assetId);
   },
   removeAllBackgroundAssetRefs(assetId) {
     const map = this._loadBackgroundMap();
     let changed = false;
     Object.keys(map).forEach(sceneId => { if (map[sceneId] === assetId) { delete map[sceneId]; changed = true; } });
     if (changed) localStorage.setItem(this._keys.background, JSON.stringify(map));
+
+    const locMap = this._loadLocationBackgroundMap();
+    let locChanged = false;
+    Object.keys(locMap).forEach(key => { if (locMap[key] === assetId) { delete locMap[key]; locChanged = true; } });
+    if (locChanged) localStorage.setItem(this._keys.locationBackgrounds, JSON.stringify(locMap));
   },
 
   // Which AssetDB sound-catalog entry (a 'bgm'-kind one) plays as a scene's
