@@ -513,7 +513,7 @@ function playInteractionLines(lines, onComplete) {
 
 /* ===== CASE FILE menu (shared component, spec §6) ===== */
 const caseMenu = initCaseMenu({
-  missionTitle: (locationDefs[ExplorationState.getCurrentLocationId()] || {}).name || '탐색',
+  missionTitle: () => (locationDefs[ExplorationState.getCurrentLocationId()] || {}).name || '탐색',
   currentSceneId: null,
   mountSelector: '#caseMenuMount',
   onSaveRequested: () => {},

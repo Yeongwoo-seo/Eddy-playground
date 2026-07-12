@@ -13,7 +13,13 @@
 
 function initCaseMenu(options) {
   options = options || {};
-  const missionTitle = options.missionTitle || '';
+  // missionTitle may be a plain string (dev/game's own scene name never
+  // changes mid-scene) or a function returning the current title (dev/
+  // explore's hub moves between locations without ever re-initializing this
+  // menu, so it needs to read the *current* one each time the menu opens —
+  // see resolveMissionTitle below).
+  const missionTitleOption = options.missionTitle || '';
+  const resolveMissionTitle = () => (typeof missionTitleOption === 'function' ? missionTitleOption() : missionTitleOption) || '';
   const currentSceneId = options.currentSceneId || null;
   const mountSelector = options.mountSelector || null;
 
@@ -152,7 +158,7 @@ function initCaseMenu(options) {
       html: `
         <div class="cm-mission">
           <div class="cm-mission-label">현재 미션</div>
-          <div class="cm-mission-title">${escapeHtml(missionTitle)}</div>
+          <div class="cm-mission-title">${escapeHtml(resolveMissionTitle())}</div>
           ${pointsIntroduced ? `<div class="cm-mission-points">P ${EconomyState.getPoints()}</div>` : ''}
         </div>
         <div class="cm-grid">
