@@ -56,18 +56,18 @@ const interactionDefs = {
       { speaker: '지수', text: '오, 그러네.', characterId: 'jisoo', expression: 'curious' },
     ],
   },
-  'w1ov-topic-photo': {
-    id: 'w1ov-topic-photo',
+  // §12.3 하버 포토 미니게임 — a 'minigame'-type interaction hands off to a
+  // routed page instead of playing inline lines (see dev/explore/index.html's
+  // playInteraction). Points-bearing and reusable any number of times, but
+  // only pays out once (EconomyState.claimReward inside the minigame itself).
+  'w1ov-minigame-photo': {
+    id: 'w1ov-minigame-photo',
     characterId: 'youngwoo',
     locationIds: ['w1-opera-view'],
     phases: ['W1_TOURISM'],
-    type: 'topic',
-    label: '사진 찍기',
-    lines: [
-      { speaker: '영우', text: '여기서 사진 한 장 찍을까?', characterId: 'youngwoo', expression: 'smirk' },
-      { speaker: '지수', text: '좋아요!', characterId: 'jisoo', expression: 'happy' },
-      { speaker: '', text: '영우가 오페라하우스를 배경으로 지수 사진을 몇 장 찍었다.', characterId: null },
-    ],
+    type: 'minigame',
+    label: '사진 찍기 (하버 포토)',
+    route: '/dev/minigame-harbour-photo/?bg=opera',
   },
   'w1bv-topic-bridge': {
     id: 'w1bv-topic-bridge',
@@ -96,6 +96,15 @@ const interactionDefs = {
       { speaker: '영우', text: '그때 생각했어.\n다음엔 꼭 같이 와야지.', characterId: 'youngwoo', expression: 'soft' },
       { speaker: '지수', text: '...\n지금 진짜 반칙이에요.', characterId: 'jisoo', expression: 'blank', pauseBeforeMs: 400 },
     ],
+  },
+  'w1bv-minigame-photo': {
+    id: 'w1bv-minigame-photo',
+    characterId: 'youngwoo',
+    locationIds: ['w1-bridge-view'],
+    phases: ['W1_TOURISM'],
+    type: 'minigame',
+    label: '사진 찍기 (하버 포토)',
+    route: '/dev/minigame-harbour-photo/?bg=bridge',
   },
   'w1rl-topic-vintage': {
     id: 'w1rl-topic-vintage',

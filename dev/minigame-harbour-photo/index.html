@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>OPERATION MK · 하버 포토</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<meta name="theme-color" content="#080A0C">
+<link rel="manifest" href="/dev/manifest.json">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+:root{
+  --bg:#080A0C;--surface-1:#101419;--surface-2:#171C22;
+  --text-primary:#EDF1F4;--text-secondary:#929BA5;--text-muted:#5F6872;
+  --cyan:#59B8C8;--amber:#D6A84B;--signal-red:#D94141;--divider:rgba(255,255,255,0.08);
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sans:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
+}
+html,body{height:100%;overflow:hidden}
+body{background:#000;color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center}
+.frame{position:relative;width:100%;max-width:430px;height:100dvh;height:100vh;height:var(--vh100,100vh);overflow:hidden;background:#0d1114;display:flex;flex-direction:column}
+
+.topbar{position:absolute;top:0;left:0;right:0;z-index:6;padding:calc(14px + env(safe-area-inset-top,0)) 16px 14px;display:flex;justify-content:space-between;align-items:center}
+.vn-btn{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:#fff;background:rgba(8,10,12,.55);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:9px 14px;cursor:pointer;text-decoration:none;display:inline-block}
+
+.step{position:absolute;inset:0;display:none;flex-direction:column;padding:calc(80px + env(safe-area-inset-top,0)) 20px calc(24px + env(safe-area-inset-bottom,0))}
+.step.active{display:flex}
+.step-title{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px}
+.step-heading{font-size:19px;font-weight:800;margin-bottom:18px;line-height:1.4}
+.pick-grid{display:flex;flex-direction:column;gap:10px}
+.pick-card{background:var(--surface-1);border:1px solid var(--divider);border-radius:14px;padding:16px 18px;text-align:left;cursor:pointer;color:var(--text-primary);font-family:inherit}
+.pick-card:active{background:var(--surface-2)}
+.pick-name{font-size:15px;font-weight:700}
+.pick-desc{font-size:12.5px;color:var(--text-secondary);margin-top:4px}
+
+/* ===== Timing round ===== */
+.round-stage{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center}
+.round-label{font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--cyan);text-transform:uppercase;margin-bottom:6px}
+.round-prompt{font-size:16px;font-weight:700;margin-bottom:28px;text-align:center}
+.timing-track{position:relative;width:100%;height:14px;background:var(--surface-2);border-radius:8px;overflow:hidden;margin-bottom:26px}
+.timing-zone{position:absolute;top:0;bottom:0;background:rgba(89,184,200,.35);border-left:2px solid var(--cyan);border-right:2px solid var(--cyan)}
+.timing-marker{position:absolute;top:-5px;width:4px;height:24px;background:var(--amber);border-radius:2px;box-shadow:0 0 8px rgba(214,168,75,.7)}
+.shutter-btn{width:88px;height:88px;border-radius:50%;background:var(--amber);border:6px solid rgba(255,255,255,.25);cursor:pointer}
+.shutter-btn:active{transform:scale(.95)}
+.round-score{font-family:var(--mono);font-size:13px;color:var(--text-secondary);margin-top:18px;min-height:18px}
+
+/* ===== Reward screen (shared pattern with minigame-eastwood) ===== */
+.reward-card{margin:auto;width:calc(100% - 8px);max-width:320px;background:var(--surface-1);border:1px solid rgba(214,168,75,.35);border-radius:20px;padding:26px 24px;text-align:center}
+.reward-clear{font-family:var(--mono);font-size:22px;font-weight:700;letter-spacing:.08em;color:var(--amber);margin-bottom:14px}
+.reward-grade{font-family:var(--mono);font-size:15px;font-weight:700;color:var(--cyan);margin-bottom:14px}
+.reward-row{display:flex;justify-content:space-between;font-family:var(--mono);font-size:13px;color:var(--text-secondary);padding:7px 0}
+.reward-row.total{border-top:1px solid var(--divider);margin-top:6px;padding-top:12px;color:var(--text-primary);font-weight:700}
+.reward-balance{font-size:12px;color:var(--text-muted);margin-top:4px}
+.reward-continue{margin-top:20px;width:100%;background:var(--amber);color:#191206;border:none;border-radius:12px;padding:13px;font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit}
+.photo-preview{width:100%;aspect-ratio:4/3;border-radius:14px;background:linear-gradient(160deg,#171c22 0%,#0d1114 60%,#080a0c 100%);margin-bottom:16px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-family:var(--mono);font-size:11px;overflow:hidden}
+.photo-preview img{width:100%;height:100%;object-fit:cover}
+</style>
+</head>
+<body>
+<div class="frame" id="frame">
+  <div class="topbar">
+    <a class="vn-btn" href="/dev/">← DEV</a>
+  </div>
+
+  <div class="step" id="stepBg">
+    <div class="step-title">하버 포토</div>
+    <div class="step-heading">오늘은 어디를 배경으로 찍을까?</div>
+    <div class="pick-grid" id="bgPickGrid"></div>
+  </div>
+
+  <div class="step" id="stepPose">
+    <div class="step-title">STEP 2</div>
+    <div class="step-heading">어떤 포즈로 찍을까?</div>
+    <div class="pick-grid" id="posePickGrid"></div>
+  </div>
+
+  <div class="step" id="stepRound">
+    <div class="round-stage">
+      <div class="round-label" id="roundLabel"></div>
+      <div class="round-prompt" id="roundPrompt"></div>
+      <div class="timing-track" id="timingTrack">
+        <div class="timing-zone" id="timingZone"></div>
+        <div class="timing-marker" id="timingMarker"></div>
+      </div>
+      <button class="shutter-btn" id="shutterBtn" aria-label="촬영"></button>
+      <div class="round-score" id="roundScore"></div>
+    </div>
+  </div>
+
+  <div class="step" id="stepReward">
+    <div class="reward-card">
+      <div class="reward-clear">CLEAR!</div>
+      <div class="photo-preview" id="photoPreview">사진 미리보기<br>(업로드 전)</div>
+      <div class="reward-grade" id="rewardGrade"></div>
+      <div class="reward-row"><span>기본 보상</span><span id="rewardBase">+250P</span></div>
+      <div class="reward-row"><span>등급 보너스</span><span id="rewardBonus">+0P</span></div>
+      <div class="reward-row total"><span>총 획득</span><span id="rewardTotal">+0P</span></div>
+      <div class="reward-balance" id="rewardBalance"></div>
+      <button class="reward-continue" id="rewardContinueBtn">계속하기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function setVh100() { document.documentElement.style.setProperty('--vh100', window.innerHeight + 'px'); }
+setVh100();
+window.addEventListener('resize', setVh100);
+window.addEventListener('orientationchange', setVh100);
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
+</script>
+<script src="/dev/assetDb.js"></script>
+<script src="/dev/dialogueData.js"></script>
+<script src="/dev/caseFileData.js"></script>
+<script src="/dev/caseFileState.js"></script>
+<script src="/dev/data/shopItems.js"></script>
+<script src="/dev/state/economyState.js"></script>
+<script src="/dev/state/wardrobeState.js"></script>
+<script src="/dev/state/shopState.js"></script>
+<script>
+/* ===== 하버 포토 미니게임 (The Missing Key v1 §12.3) — 비수사 미니게임,
+   포인트 지급 가능. 촬영 결과 사진은 수사 증거로 쓰지 않으며, 전시장 사진
+   분석(week1-scene-004 계열, evidence-*)과 데이터 ID를 완전히 분리한다
+   (별도 페이지·별도 rewardId·CaseFileState 증거 등록 없음). */
+const BACKGROUNDS = [
+  { id: 'opera', name: '오페라하우스', desc: '흰 돛 지붕을 배경으로.' },
+  { id: 'bridge', name: '하버브리지', desc: '다리 전체가 걸리게.' },
+];
+const POSES = [
+  { id: 'v', name: '브이', desc: '기본으로 가는 브이 포즈.' },
+  { id: 'candid', name: '자연스럽게', desc: '몰래 찍는 느낌으로.' },
+  { id: 'jump', name: '점프샷', desc: '타이밍이 중요한 점프컷.' },
+];
+const ROUNDS = [
+  { id: 'composition', label: 'ROUND 1 · 구도', prompt: '마커가 초록 구간에 왔을 때 셔터를 눌러요.' },
+  { id: 'timing', label: 'ROUND 2 · 타이밍', prompt: '이번엔 조금 더 빨라요. 타이밍을 노려보세요.' },
+  { id: 'expression', label: 'ROUND 3 · 표정', prompt: '마지막 한 장. 가장 좋은 표정 타이밍을 골라보세요.' },
+];
+const ROUND_SPEED_MS = [1900, 1500, 1300]; // full sweep duration — gets faster each round
+
+const el = {
+  stepBg: document.getElementById('stepBg'),
+  stepPose: document.getElementById('stepPose'),
+  stepRound: document.getElementById('stepRound'),
+  stepReward: document.getElementById('stepReward'),
+  bgPickGrid: document.getElementById('bgPickGrid'),
+  posePickGrid: document.getElementById('posePickGrid'),
+  roundLabel: document.getElementById('roundLabel'),
+  roundPrompt: document.getElementById('roundPrompt'),
+  timingTrack: document.getElementById('timingTrack'),
+  timingZone: document.getElementById('timingZone'),
+  timingMarker: document.getElementById('timingMarker'),
+  shutterBtn: document.getElementById('shutterBtn'),
+  roundScore: document.getElementById('roundScore'),
+  rewardGrade: document.getElementById('rewardGrade'),
+  rewardBase: document.getElementById('rewardBase'),
+  rewardBonus: document.getElementById('rewardBonus'),
+  rewardTotal: document.getElementById('rewardTotal'),
+  rewardBalance: document.getElementById('rewardBalance'),
+  rewardContinueBtn: document.getElementById('rewardContinueBtn'),
+};
+
+function showStep(stepEl) {
+  [el.stepBg, el.stepPose, el.stepRound, el.stepReward].forEach(s => s.classList.toggle('active', s === stepEl));
+}
+
+let pickedBg = null;
+let pickedPose = null;
+let roundIndex = 0;
+let roundScores = [];
+
+function renderBgPick() {
+  const preselect = new URLSearchParams(location.search).get('bg');
+  const preset = BACKGROUNDS.find(b => b.id === preselect);
+  if (preset) { pickedBg = preset.id; startPoseStep(); return; }
+  el.bgPickGrid.innerHTML = BACKGROUNDS.map(b => `
+    <button class="pick-card" data-bg="${b.id}"><div class="pick-name">${b.name}</div><div class="pick-desc">${b.desc}</div></button>
+  `).join('');
+  el.bgPickGrid.querySelectorAll('[data-bg]').forEach(btn => btn.addEventListener('click', () => { pickedBg = btn.dataset.bg; startPoseStep(); }));
+  showStep(el.stepBg);
+}
+
+function startPoseStep() {
+  el.posePickGrid.innerHTML = POSES.map(p => `
+    <button class="pick-card" data-pose="${p.id}"><div class="pick-name">${p.name}</div><div class="pick-desc">${p.desc}</div></button>
+  `).join('');
+  el.posePickGrid.querySelectorAll('[data-pose]').forEach(btn => btn.addEventListener('click', () => { pickedPose = btn.dataset.pose; startRounds(); }));
+  showStep(el.stepPose);
+}
+
+function startRounds() {
+  roundIndex = 0;
+  roundScores = [];
+  playRound();
+}
+
+let sweepStart = 0;
+let sweepDuration = 0;
+let zoneCenter = 50;
+let zoneHalfWidth = 8;
+let rafId = null;
+let roundLocked = false;
+
+function playRound() {
+  showStep(el.stepRound);
+  const round = ROUNDS[roundIndex];
+  el.roundLabel.textContent = round.label;
+  el.roundPrompt.textContent = round.prompt;
+  el.roundScore.textContent = '';
+  roundLocked = false;
+  el.shutterBtn.disabled = false;
+
+  zoneCenter = 20 + Math.random() * 60; // 20%~80%, never right at the edges
+  zoneHalfWidth = 8;
+  el.timingZone.style.left = (zoneCenter - zoneHalfWidth) + '%';
+  el.timingZone.style.width = (zoneHalfWidth * 2) + '%';
+
+  sweepDuration = ROUND_SPEED_MS[roundIndex] || 1500;
+  sweepStart = performance.now();
+  cancelAnimationFrame(rafId);
+  tickMarker();
+}
+
+function markerPositionAt(elapsedMs) {
+  // Bounces 0 <-> 100 in a triangle wave, so the marker never "teleports"
+  // at the ends — a smoother, more readable sweep than a sawtooth reset.
+  const t = (elapsedMs % (sweepDuration * 2)) / sweepDuration;
+  return t <= 1 ? t * 100 : (2 - t) * 100;
+}
+
+function tickMarker() {
+  const elapsed = performance.now() - sweepStart;
+  const pos = markerPositionAt(elapsed);
+  el.timingMarker.style.left = `calc(${pos}% - 2px)`;
+  if (!roundLocked) rafId = requestAnimationFrame(tickMarker);
+}
+
+function scoreForPosition(pos) {
+  const diff = Math.abs(pos - zoneCenter);
+  if (diff <= zoneHalfWidth) return Math.round(100 - (diff / zoneHalfWidth) * 30);
+  return Math.max(0, Math.round(70 - (diff - zoneHalfWidth) * 3));
+}
+
+el.shutterBtn.addEventListener('click', () => {
+  if (roundLocked) return;
+  roundLocked = true;
+  el.shutterBtn.disabled = true;
+  cancelAnimationFrame(rafId);
+  const elapsed = performance.now() - sweepStart;
+  const pos = markerPositionAt(elapsed);
+  const score = scoreForPosition(pos);
+  roundScores.push(score);
+  el.roundScore.textContent = `이번 컷 점수: ${score}`;
+  setTimeout(() => {
+    roundIndex++;
+    if (roundIndex < ROUNDS.length) playRound();
+    else finishRounds();
+  }, 900);
+});
+
+function gradeFor(avg) {
+  if (avg >= 90) return 'S';
+  if (avg >= 75) return 'A';
+  if (avg >= 55) return 'B';
+  return 'C';
+}
+const GRADE_BONUS = { S: 150, A: 100, B: 50, C: 0 };
+const HARBOUR_PHOTO_REWARD_ID = 'reward-week1-harbour-photo-first-clear';
+
+function finishRounds() {
+  const avg = roundScores.reduce((a, b) => a + b, 0) / roundScores.length;
+  const grade = gradeFor(avg);
+  if (grade === 'S') CaseFileState.setFlag('harbourPhotoGradeS', true);
+
+  const base = 250;
+  const bonus = GRADE_BONUS[grade];
+  const wanted = base + bonus;
+  const paid = EconomyState.claimReward(HARBOUR_PHOTO_REWARD_ID, wanted, { source: 'week1-harbour-photo', grade });
+  if (paid > 0) CaseFileState.setFlag('pointsUiIntroduced', true);
+
+  el.rewardGrade.textContent = `등급 ${grade} · 평균 ${Math.round(avg)}점`;
+  el.rewardBase.textContent = `+${base}P`;
+  el.rewardBonus.textContent = `+${bonus}P`;
+  el.rewardTotal.textContent = (paid > 0 ? `+${paid}P` : '+0P (이미 받은 보상)');
+  el.rewardBalance.textContent = `보유 포인트 ${EconomyState.getPoints()}P`;
+  showStep(el.stepReward);
+}
+
+el.rewardContinueBtn.addEventListener('click', () => {
+  const returnUrl = sessionStorage.getItem('mkShopReturnUrl');
+  location.href = returnUrl || '/dev/explore/?phase=W1_TOURISM';
+});
+
+renderBgPick();
+</script>
+<script src="/dev/devPlanFab.js"></script>
+</body>
+</html>

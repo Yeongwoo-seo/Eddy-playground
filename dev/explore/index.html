@@ -379,13 +379,16 @@ function talkCasually(characterId) {
   playInteraction(pick.id);
 }
 
+// 'minigame'-type interactions (e.g. 하버 포토, §12.3) show up in this same
+// list — they're still "a thing you can do with this character here", just
+// one that hands off to a routed page instead of playing inline lines.
 function openTopicList(characterId) {
   const locationId = ExplorationState.getCurrentLocationId();
-  const topics = ExplorationState.getInteractionsForCharacter(characterId, locationId).filter(i => i.type === 'topic');
+  const topics = ExplorationState.getInteractionsForCharacter(characterId, locationId).filter(i => i.type === 'topic' || i.type === 'minigame');
   el.listSheetTitle.textContent = '질문하기';
   el.listSheetBody.innerHTML = topics.length ? topics.map(t => `
     <button class="topic-row" data-topic="${t.id}"${t.state === 'locked' ? ' disabled' : ''}>
-      <div class="topic-row-main">${escapeHtml(t.label || t.id)}</div>
+      <div class="topic-row-main">${t.type === 'minigame' ? '📷 ' : ''}${escapeHtml(t.label || t.id)}</div>
       <span class="topic-state state-${t.state}">${STATE_LABEL[t.state] || t.state}</span>
     </button>
   `).join('') : '<div class="empty-note">아직 물어볼 수 있는 주제가 없습니다.</div>';
@@ -463,6 +466,14 @@ async function applyDialogueCharacter(characterId, expression) {
 function playInteraction(interactionId) {
   const def = interactionDefs[interactionId];
   if (!def) return;
+  if (def.type === 'minigame' && def.route) {
+    // Same hand-off contract routeOnEnter locations use — the minigame's own
+    // "계속하기" reads this to come straight back to this exact hub spot.
+    ExplorationState.completeInteraction(interactionId);
+    sessionStorage.setItem('mkShopReturnUrl', `/dev/explore/?phase=${encodeURIComponent(ExplorationState.getCurrentPhase())}&location=${encodeURIComponent(ExplorationState.getCurrentLocationId())}`);
+    location.href = def.route;
+    return;
+  }
   playInteractionLines(def.lines || [], () => {
     ExplorationState.completeInteraction(interactionId);
     (def.effects || []).forEach(applyLocalEffect);
