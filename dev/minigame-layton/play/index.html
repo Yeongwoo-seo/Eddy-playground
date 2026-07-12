@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>OPERATION MK · 레이튼 퀴즈</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<meta name="theme-color" content="#080A0C">
+<link rel="manifest" href="/dev/manifest.json">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="OPERATION MK DEV">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#080A0C;--surface-1:#101419;--surface-2:#171C22;
+  --text-primary:#EDF1F4;--text-secondary:#929BA5;--text-muted:#5F6872;
+  --cyan:#59B8C8;--amber:#D6A84B;--green:#3ECF6B;--signal-red:#D94141;--divider:rgba(255,255,255,0.08);
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sans:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
+}
+html,body{height:100%}
+body{background:#050607;color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center;min-height:100dvh}
+.frame{width:100%;max-width:430px;min-height:100dvh;min-height:100vh;padding:calc(48px + env(safe-area-inset-top,0)) 20px calc(32px + env(safe-area-inset-bottom,0));display:flex;flex-direction:column}
+.back{font-family:var(--mono);font-size:12px;color:var(--text-muted);text-decoration:none;margin-bottom:18px;display:inline-flex;align-items:center;gap:4px;width:fit-content}
+.tag{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px}
+.title{font-size:22px;font-weight:700;letter-spacing:-.2px;margin-bottom:8px;line-height:1.35}
+.meta{font-family:var(--mono);font-size:11.5px;color:var(--text-secondary);margin-bottom:22px}
+
+.card{background:var(--surface-1);border:1px solid var(--divider);border-radius:16px;padding:18px 18px;margin-bottom:16px}
+.card-label{font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--text-muted);text-transform:uppercase;margin-bottom:10px}
+.statement{font-size:14.5px;line-height:1.75;color:var(--text-primary);white-space:pre-line}
+
+.rec-table{width:100%;border-collapse:collapse;margin-top:14px;font-family:var(--mono);font-size:12.5px}
+.rec-table th,.rec-table td{border:1px solid var(--divider);padding:8px 6px;text-align:center}
+.rec-table th{color:var(--text-muted);font-weight:600;background:var(--surface-2)}
+
+.dot-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:16px;margin-top:16px;padding:8px 4px}
+.dot-grid span{width:8px;height:8px;border-radius:50%;background:var(--text-secondary);justify-self:center}
+
+.answer-row{display:flex;gap:10px}
+.answer-input{flex:1;min-width:0;font-family:var(--mono);font-size:16px;letter-spacing:.06em;background:var(--surface-2);border:1px solid var(--divider);border-radius:12px;padding:13px 14px;color:var(--text-primary)}
+.answer-input:focus{outline:none;border-color:var(--cyan)}
+.submit-btn{flex-shrink:0;font-family:var(--mono);font-size:13.5px;font-weight:700;color:#04181c;background:var(--cyan);border:none;border-radius:12px;padding:0 18px;cursor:pointer}
+.submit-btn:active{transform:scale(.96)}
+
+.feedback{margin-top:12px;font-family:var(--mono);font-size:12.5px;font-weight:600;display:none}
+.feedback.show{display:block}
+.feedback.correct{color:var(--green)}
+.feedback.wrong{color:var(--signal-red)}
+
+.hint-list{display:flex;flex-direction:column;gap:8px}
+.hint-btn{text-align:left;font-family:var(--mono);font-size:12px;color:var(--text-secondary);background:var(--surface-2);border:1px solid var(--divider);border-radius:10px;padding:11px 13px;cursor:pointer}
+.hint-btn:active{opacity:.75}
+.hint-text{font-size:13px;line-height:1.6;color:var(--text-primary);padding:11px 13px;background:var(--surface-2);border:1px solid var(--divider);border-radius:10px}
+
+.reveal-btn{width:100%;margin-top:4px;font-family:var(--mono);font-size:12px;color:var(--text-muted);background:none;border:1px dashed var(--divider);border-radius:10px;padding:11px;cursor:pointer}
+.reveal-btn:active{opacity:.7}
+
+.solution{display:none;font-size:13.5px;line-height:1.75;color:var(--text-secondary);white-space:pre-line}
+.solution.show{display:block}
+.solution-answer{font-family:var(--mono);font-size:14px;font-weight:700;color:var(--green);margin-bottom:10px}
+
+.reset-btn{margin-top:4px;font-family:var(--mono);font-size:12.5px;color:var(--text-muted);background:none;border:1px solid var(--divider);border-radius:12px;padding:12px;cursor:pointer;text-align:center}
+.reset-btn:active{opacity:.7}
+
+.next-link{margin-top:8px;text-align:center;font-family:var(--mono);font-size:12.5px;color:var(--cyan);text-decoration:none;padding:12px}
+
+.not-found{font-size:14px;color:var(--text-secondary);line-height:1.7}
+</style>
+</head>
+<body>
+<div class="frame" id="frame"></div>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
+}
+</script>
+<script>
+/* ===== 레이튼 퀴즈 플레이 화면 — 3문제(PZ-H01/H17/H18) 모두 "한 줄
+   입력값이 정답 문자열과 정확히 일치하는가"로 채점 가능해, 퍼즐마다
+   전용 인터랙션(드래그/배치/경로 그리기)을 만드는 대신 하나의 범용
+   엔진으로 처리한다. answer는 숫자만 비교하도록 정규화한다 — 목록
+   화면(dev/minigame-layton/)의 developed:true 3문제와 id가 대응된다. ===== */
+function normalizeDigits(raw) {
+  return (raw || '').replace(/[^0-9]/g, '');
+}
+
+function dotGridHtml() {
+  return '<div class="dot-grid">' + '<span></span>'.repeat(36) + '</div>';
+}
+
+const PUZZLES = {
+  'pz-h01': {
+    name: '세 기록으로 찾는 네 자리 암호',
+    type: '숫자 암호 · 조건 소거',
+    difficulty: 7,
+    estTime: '5~10분',
+    statementHtml:
+      '서로 다른 숫자로 이루어진 네 자리 암호가 있다. 첫 번째 숫자는 0이 아니다.\n\n' +
+      '각 기록의 「포함된 숫자」는 위치와 관계없이 암호에 들어 있는 숫자의 개수이며, 「자리까지 정확」은 숫자와 위치가 모두 맞는 개수다.' +
+      '<table class="rec-table"><thead><tr><th>입력 기록</th><th>포함된 숫자</th><th>자리까지 정확</th></tr></thead><tbody>' +
+      '<tr><td>1792</td><td>3개</td><td>1개</td></tr>' +
+      '<tr><td>9726</td><td>3개</td><td>1개</td></tr>' +
+      '<tr><td>9230</td><td>3개</td><td>0개</td></tr>' +
+      '</tbody></table>',
+    inputPlaceholder: '네 자리 암호',
+    inputMode: 'numeric',
+    maxLength: 4,
+    normalize: normalizeDigits,
+    answer: '2709',
+    hints: [
+      '세 번째 기록의 숫자 9, 2, 3, 0 중 세 개는 암호에 있지만, 네 숫자 모두 현재 자리에는 올 수 없어요.',
+      '첫 번째와 두 번째 기록에 공통으로 등장하는 9, 7, 2를 먼저 비교해 보세요.',
+      '암호에 들어가는 숫자는 2, 7, 0, 9이며, 세 번째 기록 때문에 각각의 위치가 크게 제한돼요.',
+    ],
+    solutionHtml:
+      '세 조건을 모두 만족하는 네 자리 순열을 소거하면 사용 숫자는 2, 7, 0, 9로 확정된다.\n\n' +
+      '세 번째 기록 9230은 포함 숫자가 세 개지만 자리까지 맞는 숫자는 하나도 없다.\n' +
+      '- 9는 첫 번째 자리에 올 수 없다.\n' +
+      '- 2는 두 번째 자리에 올 수 없다.\n' +
+      '- 0은 네 번째 자리에 올 수 없다.\n' +
+      '- 3은 암호에 없다.\n\n' +
+      '나머지 두 기록까지 함께 대조하면 가능한 순서는 오직 2709만 남는다.\n\n' +
+      '검산 — 1792 → 1,7,2 포함, 7만 자리까지 정확 / 9726 → 9,7,2 포함, 2만 자리까지 정확 / 9230 → 9,2,0 포함, 정확한 자리 없음.',
+  },
+  'pz-h17': {
+    name: '6×6 점으로 만들 수 있는 정사각형',
+    type: '도형 개수 세기 · 기하 조합',
+    difficulty: 8,
+    estTime: '10~15분',
+    statementHtml:
+      '가로 6개, 세로 6개의 점이 일정한 간격으로 놓여 있다.' +
+      dotGridHtml() +
+      '\n네 꼭짓점이 모두 점 위에 놓이는 정사각형은 총 몇 개인가? 기울어진 정사각형도 모두 포함한다.',
+    inputPlaceholder: '정사각형 개수',
+    inputMode: 'numeric',
+    maxLength: 4,
+    normalize: normalizeDigits,
+    answer: '105',
+    hints: [
+      '먼저 변이 가로·세로와 평행한 정사각형을 센다.',
+      '평행한 정사각형은 25+16+9+4+1개다.',
+      '기울어진 정사각형은 한 변의 가로 이동량 a와 세로 이동량 b를 이용해 분류한다. a+b≤5다.',
+    ],
+    solutionHtml:
+      '[1] 수평·수직 정사각형 — 변 길이가 1~5일 때 배치 수는 5²+4²+3²+2²+1² = 25+16+9+4+1 = 55개.\n\n' +
+      '[2] 기울어진 정사각형 — 한 변의 이동량을 (a,b)라 하면 a,b는 양의 정수이고 a+b≤5다. 각 경우 배치 수는 (6-a-b)².\n' +
+      '- a+b=2: 1×16=16\n- a+b=3: 2×9=18\n- a+b=4: 3×4=12\n- a+b=5: 4×1=4\n합계 16+18+12+4=50개.\n\n' +
+      '전체: 55+50=105개.',
+  },
+  'pz-h18': {
+    name: '세 방향으로 뚫린 정육면체',
+    type: '3차원 공간 · 노출 면 계산',
+    difficulty: 7,
+    estTime: '5~15분',
+    statementHtml:
+      '5×5×5개의 작은 정육면체로 만든 큰 정육면체가 있다.\n\n' +
+      '큰 정육면체의 중심을 지나도록, 앞뒤·좌우·위아래 세 방향으로 폭 1칸짜리 직선 터널을 완전히 뚫었다. 즉 세 터널은 정중앙에서 서로 교차한다.\n\n' +
+      '터널을 뚫고 남은 입체에서 공기와 맞닿는 1×1 정사각형 면은 총 몇 개인가? 바깥 표면과 터널 안쪽 면을 모두 센다.',
+    inputPlaceholder: '노출 면 개수',
+    inputMode: 'numeric',
+    maxLength: 4,
+    normalize: normalizeDigits,
+    answer: '192',
+    hints: [
+      '원래 바깥 표면은 6×25=150면이다.',
+      '여섯 방향의 면 중앙 블록이 제거되므로 원래 바깥 표면 여섯 면이 사라진다.',
+      '제거된 블록과 남은 블록 사이의 새 경계면은 총 48면이다.',
+    ],
+    solutionHtml:
+      '원래 바깥 표면: 6×5×5 = 150.\n\n' +
+      '터널의 여섯 입구에서 면 중앙 블록이 제거되므로 바깥 표면 6개가 사라진다 → 150-6 = 144.\n\n' +
+      '세 중심선에서 제거되는 블록 수는 5+5+5-2 = 13. 중앙 블록은 주변 여섯 칸도 모두 터널이므로 남은 블록과 맞닿지 않는다.\n' +
+      '중앙을 제외한 12개의 터널 블록은 각각 옆 방향의 남은 블록 네 개와 맞닿는다 → 새로 생기는 터널 안쪽 면 12×4 = 48.\n\n' +
+      '전체 노출 면: 144+48 = 192.',
+  },
+};
+
+const params = new URLSearchParams(location.search);
+const puzzle = PUZZLES[params.get('puzzle')];
+const frame = document.getElementById('frame');
+
+if (!puzzle) {
+  frame.innerHTML = `
+    <a class="back" href="/dev/minigame-layton/">‹ 레이튼 퀴즈</a>
+    <div class="tag">Minigame · 레이튼 퀴즈</div>
+    <div class="title">문제를 찾을 수 없어요</div>
+    <div class="not-found">주소의 puzzle 값이 올바르지 않거나 아직 미개발인 문제예요. 목록으로 돌아가 플레이 가능한 문제를 선택해 주세요.</div>
+  `;
+} else {
+  frame.innerHTML = `
+    <a class="back" href="/dev/minigame-layton/">‹ 레이튼 퀴즈</a>
+    <div class="tag">Minigame · 레이튼 퀴즈</div>
+    <div class="title">${puzzle.name}</div>
+    <div class="meta">${puzzle.type} · 난이도 ${puzzle.difficulty} · 예상 ${puzzle.estTime}</div>
+
+    <div class="card">
+      <div class="card-label">문제</div>
+      <div class="statement">${puzzle.statementHtml}</div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">정답 입력</div>
+      <div class="answer-row">
+        <input class="answer-input" id="answerInput" type="text" inputmode="${puzzle.inputMode}" maxlength="${puzzle.maxLength}" placeholder="${puzzle.inputPlaceholder}">
+        <button class="submit-btn" id="submitBtn">확인</button>
+      </div>
+      <div class="feedback" id="feedback"></div>
+    </div>
+
+    <div class="card" id="hintCard">
+      <div class="card-label">힌트</div>
+      <div class="hint-list" id="hintList"></div>
+    </div>
+
+    <button class="reveal-btn" id="revealBtn">정답과 풀이 바로 보기</button>
+
+    <div class="card" id="solutionCard" style="display:none">
+      <div class="card-label">상세 풀이</div>
+      <div class="solution-answer" id="solutionAnswer"></div>
+      <div class="solution" id="solutionText"></div>
+      <button class="reset-btn" id="resetBtn">다시 풀어보기</button>
+      <a class="next-link" href="/dev/minigame-layton/">‹ 다른 퀴즈 보기</a>
+    </div>
+  `;
+
+  const answerInput = document.getElementById('answerInput');
+  const submitBtn = document.getElementById('submitBtn');
+  const feedback = document.getElementById('feedback');
+  const hintList = document.getElementById('hintList');
+  const hintCard = document.getElementById('hintCard');
+  const revealBtn = document.getElementById('revealBtn');
+  const solutionCard = document.getElementById('solutionCard');
+  const solutionAnswer = document.getElementById('solutionAnswer');
+  const solutionText = document.getElementById('solutionText');
+  const resetBtn = document.getElementById('resetBtn');
+
+  let hintsShown = 0;
+  function renderHints() {
+    hintList.innerHTML = puzzle.hints.map((h, i) => {
+      if (i < hintsShown) return `<div class="hint-text">힌트 ${i + 1}. ${h}</div>`;
+      if (i === hintsShown) return `<button class="hint-btn" data-hint="${i}">힌트 ${i + 1} 보기</button>`;
+      return '';
+    }).join('');
+    hintList.querySelectorAll('.hint-btn').forEach(btn => {
+      btn.addEventListener('click', () => { hintsShown++; renderHints(); });
+    });
+  }
+  renderHints();
+
+  function showSolution() {
+    solutionAnswer.textContent = `정답: ${puzzle.answer}`;
+    solutionText.textContent = puzzle.solutionHtml;
+    solutionCard.style.display = 'block';
+    hintCard.style.display = 'none';
+    revealBtn.style.display = 'none';
+  }
+
+  function checkAnswer() {
+    const raw = puzzle.normalize(answerInput.value);
+    feedback.classList.remove('correct', 'wrong');
+    feedback.classList.add('show');
+    if (raw && raw === puzzle.answer) {
+      feedback.classList.add('correct');
+      feedback.textContent = '정답이에요! 아래에서 풀이를 확인해 보세요.';
+      showSolution();
+    } else {
+      feedback.classList.add('wrong');
+      feedback.textContent = '아직 정답이 아니에요. 힌트를 참고해 보세요.';
+    }
+  }
+
+  submitBtn.addEventListener('click', checkAnswer);
+  answerInput.addEventListener('keydown', e => { if (e.key === 'Enter') checkAnswer(); });
+  revealBtn.addEventListener('click', showSolution);
+  resetBtn.addEventListener('click', () => {
+    answerInput.value = '';
+    hintsShown = 0;
+    renderHints();
+    feedback.classList.remove('show', 'correct', 'wrong');
+    solutionCard.style.display = 'none';
+    hintCard.style.display = 'block';
+    revealBtn.style.display = 'block';
+  });
+}
+</script>
+<script src="/dev/devPlanFab.js"></script>
+</body>
+</html>
