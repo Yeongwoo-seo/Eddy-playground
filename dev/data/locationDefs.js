@@ -68,5 +68,13 @@ const locationDefs = {
     phases: ['W1_TOURISM'],
     characters: ['youngwoo'],
     exits: ['w1-the-rocks-lane'],
+    // A location can also hand off *back into the VN* instead of only to
+    // another routed page (routeOnEnter) or hub location (exits) — the hub
+    // screen shows this as a distinct "들어간다" action, not a normal exit
+    // chip, since it leaves the hub for good (spec §12.2's soft-gate: the
+    // player chose "조금 더 둘러본다" earlier from week1-scene-002, wandered
+    // the hub, and this is where they finally commit to going in).
+    enterSceneId: 'week1-scene-003',
+    enterSceneLabel: '전시장에 들어간다',
   },
 };

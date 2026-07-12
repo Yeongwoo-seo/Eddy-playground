@@ -765,9 +765,14 @@ function applyEffect(effect) {
     case 'refreshInteraction':
       ExplorationState.refreshInteractionsByFact(effect.factId);
       break;
-    case 'returnToExploration':
-      location.href = '/dev/explore/';
+    case 'returnToExploration': {
+      const qs = new URLSearchParams();
+      if (effect.phaseId) qs.set('phase', effect.phaseId);
+      if (effect.locationId) qs.set('location', effect.locationId);
+      const query = qs.toString();
+      location.href = '/dev/explore/' + (query ? '?' + query : '');
       break;
+    }
   }
 }
 

@@ -1204,7 +1204,23 @@ const week1Scene002Lines = [
   { id: 'line-013', speaker: '지수', text: '어?\n저기 저거 뭐예요?', characterId: 'jisoo', expression: 'curious' },
   { id: 'line-014', speaker: '영우', text: '어디?', characterId: 'youngwoo', expression: 'curious' },
   { id: 'line-015', speaker: '지수', text: '저 골목 안쪽.\n뭔가 전시하나 본데.', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-016', speaker: '영우', text: '오, 팝업 전시네.\n한번 볼래?', characterId: 'youngwoo', expression: 'soft' },
+  {
+    // The Missing Key v1 §12.2 "전시장 진입 강제 시점" — 즉시 강제 진입시키지
+    // 않고 선택지를 제공한다. "조금 더 둘러보다" 쪽은 신규 탐색 허브
+    // (/dev/explore/, §7)로 보내며, 허브 쪽에서 이 발견을 다시 반복하지
+    // 않도록 discoveredPopupExhibition 플래그를 여기서 미리 세워 둔다.
+    id: 'line-016', type: 'choice', speaker: '영우', text: '오, 팝업 전시네.\n지금 들어가 볼까, 조금 더 둘러보다 갈까?', characterId: 'youngwoo', expression: 'soft',
+    choices: [
+      { id: 'enter-now', label: '“지금 들어가요.”', goto: 'line-017' },
+      {
+        id: 'wander-more', label: '“조금 더 둘러보다 갈래요.”',
+        effects: [
+          { type: 'setFlag', key: 'discoveredPopupExhibition', value: true },
+          { type: 'returnToExploration', phaseId: 'W1_TOURISM', locationId: 'w1-circular-quay' },
+        ],
+      },
+    ],
+  },
   { id: 'line-017', speaker: '지수', text: '웅웅 잠깐만 보고 가요.', characterId: 'jisoo', expression: 'happy' },
 ];
 

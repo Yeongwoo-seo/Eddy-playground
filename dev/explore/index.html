@@ -54,6 +54,8 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .goal-line b{color:var(--cyan)}
 .bottom-actions{display:flex;gap:8px}
 .bottom-actions .vn-btn{flex:1;text-align:center}
+.enter-scene-btn{background:var(--amber);color:#191206;font-weight:700;text-align:center;border:none}
+.enter-scene-btn.hidden{display:none}
 /* margin-top:auto (not just padding) — .location-view's other non-absolute
    children (.loc-bg/.loc-chips are position:absolute, out of flow) leave
    .exit-row as the first in-flow flex child, which without this sits at
@@ -120,6 +122,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
     <div class="exit-row" id="exitRow"></div>
     <div class="bottom-bar">
       <div class="goal-line" id="goalLine"></div>
+      <button class="vn-btn enter-scene-btn hidden" id="enterSceneBtn" style="width:100%;margin-bottom:8px"></button>
       <div class="bottom-actions">
         <button class="vn-btn" id="toMapBtn">🗺 지도</button>
         <button class="vn-btn" id="toCaseBtn">📁 케이스</button>
@@ -203,6 +206,7 @@ const el = {
   locChips: document.getElementById('locChips'),
   exitRow: document.getElementById('exitRow'),
   goalLine: document.getElementById('goalLine'),
+  enterSceneBtn: document.getElementById('enterSceneBtn'),
   toMapBtn: document.getElementById('toMapBtn'),
   toCaseBtn: document.getElementById('toCaseBtn'),
   actionSheet: document.getElementById('actionSheet'),
@@ -295,6 +299,15 @@ function renderLocation() {
     return `<button class="exit-chip" data-exit="${exitId}"${unlocked ? '' : ' disabled'}>→ ${escapeHtml(exitDef.name)}</button>`;
   }).join('');
   el.exitRow.querySelectorAll('[data-exit]').forEach(btn => btn.addEventListener('click', () => moveTo(btn.dataset.exit)));
+
+  // A location can hand off back into the VN (spec §12.2's soft-gate) — e.g.
+  // 빈티지 전시장 입구's enterSceneId leaves the hub for good and resumes
+  // week1-scene-003, unlike an `exits` chip which just moves within the hub.
+  el.enterSceneBtn.classList.toggle('hidden', !def.enterSceneId);
+  if (def.enterSceneId) {
+    el.enterSceneBtn.textContent = def.enterSceneLabel || '들어간다';
+    el.enterSceneBtn.onclick = () => { location.href = `/dev/game/?scene=${encodeURIComponent(def.enterSceneId)}`; };
+  }
 
   const goal = phaseGoals[ExplorationState.getCurrentPhase()];
   if (goal && goal.requiredFactIds && goal.requiredFactIds.length) {
