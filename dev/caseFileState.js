@@ -239,13 +239,14 @@ const CaseFileState = {
   },
 
   /* ===== 저장 / 불러오기 =====
-     economy/shop/wardrobe state (The Missing Key v1 §16.1) live in their own
-     localStorage keys (see economyState.js/shopState.js/wardrobeState.js),
-     but a save *slot* still needs to snapshot them alongside caseState so
-     "불러오기" restores points/purchases/equipped outfit too, not just the
-     investigation board. Guarded with typeof checks since pages that don't
-     load those three scripts (most minigames, /dev/week0, etc.) still load
-     this file and must not throw on save/load. */
+     economy/shop/wardrobe/affinity state (The Missing Key v1 §16.1) live in
+     their own localStorage keys (see economyState.js/shopState.js/
+     wardrobeState.js/affinityState.js), but a save *slot* still needs to
+     snapshot them alongside caseState so "불러오기" restores points/
+     purchases/equipped outfit/호감도 too, not just the investigation board.
+     Guarded with typeof checks since pages that don't load those scripts
+     (most minigames, /dev/week0, etc.) still load this file and must not
+     throw on save/load. */
   saveSlot(slotNum, extra) {
     const slots = loadSaveSlots();
     slots[slotNum] = Object.assign({
@@ -254,6 +255,7 @@ const CaseFileState = {
       shopState: (typeof ShopState !== 'undefined') ? ShopState.snapshot() : undefined,
       wardrobeState: (typeof WardrobeState !== 'undefined') ? WardrobeState.snapshot() : undefined,
       explorationState: (typeof ExplorationState !== 'undefined') ? ExplorationState.snapshot() : undefined,
+      affinityState: (typeof AffinityState !== 'undefined') ? AffinityState.snapshot() : undefined,
       updatedAt: Date.now(),
     }, extra);
     localStorage.setItem(CASE_SAVE_SLOTS_KEY, JSON.stringify(slots));
@@ -273,6 +275,7 @@ const CaseFileState = {
     if (typeof ShopState !== 'undefined' && slot.shopState) ShopState.restore(slot.shopState);
     if (typeof WardrobeState !== 'undefined' && slot.wardrobeState) WardrobeState.restore(slot.wardrobeState);
     if (typeof ExplorationState !== 'undefined' && slot.explorationState) ExplorationState.restore(slot.explorationState);
+    if (typeof AffinityState !== 'undefined' && slot.affinityState) AffinityState.restore(slot.affinityState);
     return slot;
   },
   listSlots() {

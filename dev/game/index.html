@@ -48,6 +48,16 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .point-balance{font-family:var(--mono);font-size:11.5px;font-weight:700;letter-spacing:.02em;color:var(--amber);background:rgba(214,168,75,.14);border:1px solid rgba(214,168,75,.4);border-radius:20px;padding:8px 12px;white-space:nowrap}
 .point-balance.hidden{display:none}
 
+/* ===== Affinity badge — always visible top-right once a trackable
+   character has appeared, unlike .point-balance's opt-in "introduced" flag
+   (see updateAffinityBadge). Sits in .vn-topbar's right-hand group so it's
+   pinned to the top-right corner throughout the VN, not just while a
+   character's portrait happens to be up. */
+.affinity-badge{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11.5px;font-weight:700;letter-spacing:.02em;color:#FF6FA5;background:rgba(255,111,165,.14);border:1px solid rgba(255,111,165,.4);border-radius:20px;padding:8px 12px;white-space:nowrap}
+.affinity-badge.hidden{display:none}
+.affinity-badge .ab-heart{font-size:11px}
+.affinity-badge .ab-name{color:var(--text-primary);font-weight:600;max-width:64px;overflow:hidden;text-overflow:ellipsis}
+
 /* ===== Layer 2: Character ===== */
 .char-wrap{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;pointer-events:none;opacity:0;transition:opacity .2s ease}
 .char-img{max-height:78%;max-width:88%;object-fit:contain;object-position:bottom;transform:translateY(0)}
@@ -182,7 +192,10 @@ window.addEventListener('orientationchange', setVh100);
       <span class="point-balance hidden" id="pointBalance">P 0</span>
       <a class="vn-btn" href="/dev/">← DEV</a>
     </div>
-    <div style="display:flex;gap:8px">
+    <div style="display:flex;gap:8px;align-items:center">
+      <span class="affinity-badge hidden" id="affinityBadge">
+        <span class="ab-heart">♥</span><span class="ab-name" id="affinityName"></span><span id="affinityLevel"></span>
+      </span>
       <button class="vn-btn dev" id="transformBtn">POS</button>
       <button class="vn-btn dev" id="devBtn">DEV</button>
     </div>
@@ -271,6 +284,13 @@ window.addEventListener('orientationchange', setVh100);
       <button class="sheet-btn danger" id="btnResetEconomy">RESET ECONOMY/SHOP/WARDROBE</button>
     </div>
 
+    <div class="sheet-title">Dev · 호감도</div>
+    <div class="sheet-grid">
+      <button class="sheet-btn" id="btnAddAffinity10">영우 AFFINITY +10</button>
+      <button class="sheet-btn" id="btnSubAffinity10">영우 AFFINITY −10</button>
+      <button class="sheet-btn danger" id="btnResetAffinity">RESET AFFINITY</button>
+    </div>
+
     <div class="sheet-title">Dev · 탐색 허브 (The Missing Key v1 §24)</div>
     <div class="sheet-grid">
       <button class="sheet-btn" id="btnOpenExplore">OPEN EXPLORE HUB</button>
@@ -307,6 +327,7 @@ if ('serviceWorker' in navigator) {
 <script src="/dev/state/economyState.js"></script>
 <script src="/dev/state/wardrobeState.js"></script>
 <script src="/dev/state/shopState.js"></script>
+<script src="/dev/state/affinityState.js"></script>
 <script src="/dev/data/locationDefs.js"></script>
 <script src="/dev/data/interactionDefs.js"></script>
 <script src="/dev/state/explorationState.js"></script>
@@ -363,12 +384,36 @@ const el = {
   evidenceSheetCloseBtn: document.getElementById('evidenceSheetCloseBtn'),
   bgmMount: document.getElementById('bgmMount'),
   pointBalance: document.getElementById('pointBalance'),
+  affinityBadge: document.getElementById('affinityBadge'),
+  affinityName: document.getElementById('affinityName'),
+  affinityLevel: document.getElementById('affinityLevel'),
 };
 
 function updatePointBalance() {
   const introduced = CaseFileState.hasFlag('pointsUiIntroduced');
   el.pointBalance.classList.toggle('hidden', !introduced || !!activeSceneData.hidePoints);
   if (introduced) el.pointBalance.textContent = 'P ' + EconomyState.getPoints();
+}
+
+// Affinity badge (top-right, see .affinity-badge) — tracks whichever
+// non-protagonist character last had a portrait/speaker line on screen, and
+// stays up across narration lines in between instead of flickering per
+// line, so it reads as "always visible during the VN" rather than a
+// per-character popup. Only starts showing once such a character has
+// actually appeared in this playthrough (nothing to show before then).
+let lastAffinityCharacterId = null;
+function updateAffinityBadge(characterId) {
+  const char = characterId && dialogueCharacters.find(c => c.id === characterId);
+  if (char && char.role !== 'protagonist') lastAffinityCharacterId = characterId;
+  if (!lastAffinityCharacterId || activeSceneData.hideAffinity) {
+    el.affinityBadge.classList.add('hidden');
+    return;
+  }
+  const trackedChar = dialogueCharacters.find(c => c.id === lastAffinityCharacterId);
+  const level = AffinityState.getLevel(lastAffinityCharacterId);
+  el.affinityName.textContent = trackedChar ? trackedChar.name : '';
+  el.affinityLevel.textContent = level.label;
+  el.affinityBadge.classList.remove('hidden');
 }
 
 function setBackground(asset) {
@@ -758,6 +803,19 @@ function applyEffect(effect) {
       WardrobeState.equipOutfit(effect.itemId);
       break;
 
+    /* ===== 호감도 이펙트 — a choice's effects can nudge a character's
+       affinity (relative) or pin it to a value (absolute, mostly for
+       scripted beats/dev tools). Refreshes the top-right badge immediately
+       so a choice's payoff shows without waiting for the next line. */
+    case 'addAffinity':
+      AffinityState.addAffinity(effect.characterId, effect.amount, { source: effect.source || activeSceneData.id });
+      updateAffinityBadge(effect.characterId);
+      break;
+    case 'setAffinity':
+      AffinityState.setAffinity(effect.characterId, effect.value, { source: effect.source || activeSceneData.id });
+      updateAffinityBadge(effect.characterId);
+      break;
+
     /* ===== The Missing Key v1 §15 — 탐색 허브 이펙트 =====
        These only update ExplorationState (persisted, read by /dev/explore/)
        — they don't navigate there themselves. A scene that wants to actually
@@ -913,6 +971,7 @@ const player = createVNPlayer({
     clearInteractiveLayers();
     el.speakerName.textContent = line.speaker || '';
     applyCharacterForLine(line.characterId, line.expression);
+    updateAffinityBadge(line.characterId);
     if (index === total - 1 && !activeSceneData.nextSceneId) {
       playEndingSequence();
     } else {
@@ -1221,6 +1280,23 @@ document.getElementById('btnResetEconomy').addEventListener('click', () => {
     ShopState.resetAll();
     WardrobeState.resetAll();
     updatePointBalance();
+  }
+});
+
+/* ===== Dev · 호감도 ===== */
+document.getElementById('btnAddAffinity10').addEventListener('click', () => {
+  AffinityState.addAffinity('youngwoo', 10, { source: 'debug' });
+  updateAffinityBadge('youngwoo');
+});
+document.getElementById('btnSubAffinity10').addEventListener('click', () => {
+  AffinityState.addAffinity('youngwoo', -10, { source: 'debug' });
+  updateAffinityBadge('youngwoo');
+});
+document.getElementById('btnResetAffinity').addEventListener('click', () => {
+  if (confirm('호감도 데이터를 초기화할까요?')) {
+    AffinityState.resetAll();
+    lastAffinityCharacterId = null;
+    updateAffinityBadge(null);
   }
 });
 
