@@ -309,7 +309,7 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
       <div class="batch-progress-text" id="batchProgressText">배경 제거 중...</div>
       <div class="batch-progress-bar"><div class="batch-progress-fill" id="batchProgressFill"></div></div>
     </div>
-    <div class="batch-hint hidden" id="batchHint">배경 제거가 끝났어요. 사진을 보면서 표정을 하나씩 눌러 지정하세요.<br>표정을 지정하지 않은 사진은 저장되지 않아요.</div>
+    <div class="batch-hint hidden" id="batchHint">배경 제거가 끝났어요. 순서대로 1번째 표정, 2번째 표정...으로 기본 지정되어 있어요 — 다르면 눌러서 바꿔주세요.<br>표정을 지정하지 않은 사진은 저장되지 않아요.</div>
     <div class="batch-grid hidden" id="batchGrid"></div>
     <button class="crop-enter-btn hidden" id="batchSaveBtn">지정한 표정 모두 저장</button>
     <button class="batch-cancel-btn hidden" id="batchCancelBtn">취소</button>
@@ -1500,6 +1500,14 @@ async function startBatchUpload(files) {
   el.batchProgress.classList.add('hidden');
   if (failCount) DevDiag.show(`${failCount}장은 배경 제거에 실패해 제외됐습니다.`);
   if (!batchItems.length) { cancelBatch(); return; }
+
+  // Default each photo to the expression at its own position — 1st photo ->
+  // 1st allowed expression, 2nd -> 2nd, etc. — so the common case (사진들을
+  // 이미 표정 순서대로 골라 올림) needs no manual tapping at all; a batch
+  // longer than this character's expression list just leaves the extra
+  // photos unassigned for the dev to pick by hand.
+  const allowed = allowedExpressions();
+  batchItems.forEach((item, i) => { if (allowed[i]) item.expression = allowed[i].id; });
 
   el.batchHint.classList.remove('hidden');
   el.batchGrid.classList.remove('hidden');
