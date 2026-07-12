@@ -60,7 +60,8 @@
 - 신규 이펙트 타입: `addPoints`(rewardId/policy 지원)·`spendPoints`·`unlockShop`·`unlockShopItem(s)`·`unlockWardrobe`·`purchaseOutfit`·`equipOutfit`.
 - 상단바에 포인트 잔액 표시(`pointsUiIntroduced` 플래그로 첫 지급 전에는 숨김, 씬별 `hidePoints`로도 숨김 가능).
 - CASE FILE 메뉴(`caseMenu.js`)에 옷가게/옷장 카드 추가(해금 후에만 노출), 미션 카드에 포인트 잔액 표시, `shopAccessBlocked` 플래그로 잠금·사유 표시(§5.3 — 아직 실제로 이 플래그를 세우는 심문/미니게임 콘텐츠는 없음, 훅만 마련).
-- DEV 패널에 포인트/상점/옷장 디버그 버튼 추가(§24 일부: +100/-100P, 강제 해금, 전체 해금/소유, 초기화).
+- DEV 패널에 포인트/상점/옷장 디버그 버튼 추가(§24 일부: +100/-100P, 강제 해금, 전체 해금/소유, 초기화), 이어서 탐색 허브 디버그 버튼도 추가(OPEN EXPLORE HUB / UNLOCK ALL LOCATIONS / MARK ALL INTERACTIONS NEW / RESET EXPLORATION STATE — `explorationState.js`에는 이미 있던 메서드에 UI만 연결).
+- (부수 발견·수정) DEV 시트를 여는 `renderAssetSelectors()`가 배경 이미지 목록 fetch 실패 시 예외를 안 잡아서 시트 자체가 영영 안 열리는 버그가 있었다 — try/catch로 감싸 네트워크 실패해도 시트는 열리게 수정(빈 배경 드롭다운으로 저하). 기존 케이스파일 단축 버튼들도 같이 영향받던 문제라 디버그 버튼 전체의 견고성 개선.
 
 ### Playwright 스모크 테스트로 확인된 플로우
 로컬 정적 서버 + Chromium으로 다음을 실제 클릭/평가로 검증: 잠긴 상품의 사유 표시 → 해금 조건 충족 시 상품 노출 → 구매 확인창(부족 시 경고) → 구매 → 옷장 반영 → 착용 → CASE FILE 메뉴에 포인트/옷가게/옷장 노출. `week0-scene-shop-intro` 로드, 재구현된 `/dev/minigame-eastwood/`의 지도 미배치 시 안전한 폴백도 확인. (Supabase 자산 네트워크 요청은 이 샌드박스에서 프록시 제약으로 실패하지만 플레이스홀더로 정상 대체됨 — 실제 배포 환경에서는 해당되지 않음.)

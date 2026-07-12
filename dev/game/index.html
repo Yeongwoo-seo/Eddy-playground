@@ -271,6 +271,14 @@ window.addEventListener('orientationchange', setVh100);
       <button class="sheet-btn danger" id="btnResetEconomy">RESET ECONOMY/SHOP/WARDROBE</button>
     </div>
 
+    <div class="sheet-title">Dev · 탐색 허브 (The Missing Key v1 §24)</div>
+    <div class="sheet-grid">
+      <button class="sheet-btn" id="btnOpenExplore">OPEN EXPLORE HUB</button>
+      <button class="sheet-btn" id="btnUnlockAllLocations">UNLOCK ALL LOCATIONS</button>
+      <button class="sheet-btn" id="btnMarkAllInteractionsNew">MARK ALL INTERACTIONS NEW</button>
+      <button class="sheet-btn danger" id="btnResetExploration">RESET EXPLORATION STATE</button>
+    </div>
+
     <button class="sheet-close" id="sheetCloseBtn">CLOSE</button>
     <a class="sheet-link" id="uploadLink" href="/dev/upload/">+ 새 이미지 업로드</a>
   </div>
@@ -1015,7 +1023,16 @@ applyMigrationCompensation();
 // expression) pair looked up in 인물 DB (/dev/upload) — this sheet only
 // needs a manual override for the background, scoped to the active scene.
 async function renderAssetSelectors() {
-  const bgs = (await AssetDB.getAssetsByType('background')).filter(a => a.sceneId === activeSceneData.id);
+  // A network hiccup on this fetch must not block the whole DEV sheet from
+  // opening — every other button on it (case-file shortcuts, economy/
+  // exploration debug tools) has nothing to do with backgrounds and should
+  // still work. Degrades to an empty background dropdown instead.
+  let bgs = [];
+  try {
+    bgs = (await AssetDB.getAssetsByType('background')).filter(a => a.sceneId === activeSceneData.id);
+  } catch (err) {
+    console.error('renderAssetSelectors: background list fetch failed, sheet still opens', err);
+  }
   fillSelect(el.bgSelect, bgs, DevGameState.getBackgroundId(activeSceneData.id));
 }
 
@@ -1200,6 +1217,19 @@ document.getElementById('btnResetEconomy').addEventListener('click', () => {
     WardrobeState.resetAll();
     updatePointBalance();
   }
+});
+
+/* ===== Dev · 탐색 허브 (The Missing Key v1 §24) ===== */
+document.getElementById('btnOpenExplore').addEventListener('click', () => {
+  storeShopReturnUrl();
+  location.href = ExplorationState.getCurrentLocationId()
+    ? `/dev/explore/?phase=${encodeURIComponent(ExplorationState.getCurrentPhase() || '')}&location=${encodeURIComponent(ExplorationState.getCurrentLocationId())}`
+    : '/dev/explore/?phase=W1_TOURISM&location=w1-circular-quay';
+});
+document.getElementById('btnUnlockAllLocations').addEventListener('click', () => ExplorationState.debugUnlockAllLocations());
+document.getElementById('btnMarkAllInteractionsNew').addEventListener('click', () => ExplorationState.debugMarkAllInteractionsNew());
+document.getElementById('btnResetExploration').addEventListener('click', () => {
+  if (confirm('탐색 허브 상태(장소·상호작용 진행도)를 초기화할까요?')) ExplorationState.resetAll();
 });
 
 el.transformBtn.addEventListener('click', (e) => {
