@@ -299,6 +299,9 @@ if ('serviceWorker' in navigator) {
 <script src="/dev/state/economyState.js"></script>
 <script src="/dev/state/wardrobeState.js"></script>
 <script src="/dev/state/shopState.js"></script>
+<script src="/dev/data/locationDefs.js"></script>
+<script src="/dev/data/interactionDefs.js"></script>
+<script src="/dev/state/explorationState.js"></script>
 <script src="/dev/vnPlayer.js"></script>
 <script src="/dev/caseMenu.js"></script>
 <script>
@@ -739,6 +742,31 @@ function applyEffect(effect) {
       break;
     case 'equipOutfit':
       WardrobeState.equipOutfit(effect.itemId);
+      break;
+
+    /* ===== The Missing Key v1 §15 — 탐색 허브 이펙트 =====
+       These only update ExplorationState (persisted, read by /dev/explore/)
+       — they don't navigate there themselves. A scene that wants to actually
+       hand off into the hub after setting these still needs its line's
+       nextSceneId to resolve through MINIGAME_ROUTES to '/dev/explore/',
+       same pattern the shop hand-off already uses. */
+    case 'enterExplorationPhase':
+      ExplorationState.enterExplorationPhase(effect.phaseId, effect.startLocationId);
+      break;
+    case 'unlockLocation':
+      ExplorationState.unlockLocation(effect.locationId);
+      break;
+    case 'moveToLocation':
+      ExplorationState.moveToLocation(effect.locationId);
+      break;
+    case 'setInteractionState':
+      ExplorationState.setInteractionState(effect.interactionId, effect.state);
+      break;
+    case 'refreshInteraction':
+      ExplorationState.refreshInteractionsByFact(effect.factId);
+      break;
+    case 'returnToExploration':
+      location.href = '/dev/explore/';
       break;
   }
 }

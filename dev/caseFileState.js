@@ -248,6 +248,7 @@ const CaseFileState = {
       economyState: (typeof EconomyState !== 'undefined') ? EconomyState.snapshot() : undefined,
       shopState: (typeof ShopState !== 'undefined') ? ShopState.snapshot() : undefined,
       wardrobeState: (typeof WardrobeState !== 'undefined') ? WardrobeState.snapshot() : undefined,
+      explorationState: (typeof ExplorationState !== 'undefined') ? ExplorationState.snapshot() : undefined,
       updatedAt: Date.now(),
     }, extra);
     localStorage.setItem(CASE_SAVE_SLOTS_KEY, JSON.stringify(slots));
@@ -266,6 +267,7 @@ const CaseFileState = {
     if (typeof EconomyState !== 'undefined' && slot.economyState) EconomyState.restore(slot.economyState);
     if (typeof ShopState !== 'undefined' && slot.shopState) ShopState.restore(slot.shopState);
     if (typeof WardrobeState !== 'undefined' && slot.wardrobeState) WardrobeState.restore(slot.wardrobeState);
+    if (typeof ExplorationState !== 'undefined' && slot.explorationState) ExplorationState.restore(slot.explorationState);
     return slot;
   },
   listSlots() {
