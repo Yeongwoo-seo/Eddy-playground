@@ -580,6 +580,11 @@ let currentLocationId = null;
 let currentVariantId = 'default';
 let locationsCatalog = {};
 let pendingFile = null;
+// characterKey -> Set of expression ids that have at least one uploaded asset
+// (any outfit) — drives the ✓ badge in renderCharPicker() below. Rebuilt from
+// refreshList()'s own 'character' asset fetch whenever that tab is active, so
+// it never needs a separate IndexedDB round-trip.
+let characterExpressionIndex = new Map();
 
 // Deep link from /dev/game's "+ 새 이미지 업로드" and from /dev/weekN's
 // per-scene 설정 button — jump straight to that scene's background list
@@ -782,10 +787,22 @@ function currentScene() { return currentWeek().scenes.find(s => s.id === current
 function currentCharacter() { return dialogueCharacters.find(c => c.id === currentCharacterKey) || dialogueCharacters[0]; }
 // A character's own `expressions` list (see dialogueData.js) — falls back to
 // every expression if a character somehow has none listed, so a missing list
-// shows everything rather than silently hiding the whole picker.
-function allowedExpressions() {
-  const list = currentCharacter().expressions;
+// shows everything rather than silently hiding the whole picker. Takes an
+// explicit character so isCharacterComplete() below can check characters
+// other than whichever one is currently selected.
+function allowedExpressions(character) {
+  const list = (character || currentCharacter()).expressions;
   return list && list.length ? dialogueExpressions.filter(x => list.includes(x.id)) : dialogueExpressions;
+}
+
+// True once every expression a character needs (allowedExpressions above) has
+// at least one uploaded asset, regardless of outfit — outfits are a wardrobe
+// variant, not a separate "still missing art" state, so a character with
+// every expression covered under just one outfit already reads as done.
+function isCharacterComplete(character) {
+  const have = characterExpressionIndex.get(character.id);
+  if (!have || !have.size) return false;
+  return allowedExpressions(character).every(x => have.has(x.id));
 }
 
 // A character's own `outfits` list (see dialogueData.js) — currently only
@@ -1467,7 +1484,7 @@ async function renderBgKindPicker() {
 
 function renderCharPicker() {
   el.charPickerPills.innerHTML = dialogueCharacters.map(c =>
-    `<button class="pill${c.id === currentCharacterKey ? ' active' : ''}" data-key="${c.id}">${escapeHtml(c.name)}</button>`
+    `<button class="pill${c.id === currentCharacterKey ? ' active' : ''}" data-key="${c.id}">${escapeHtml(c.name)}${isCharacterComplete(c) ? ' ✓' : ''}</button>`
   ).join('');
   el.charPickerPills.querySelectorAll('.pill').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -2581,6 +2598,14 @@ async function refreshList() {
   // 장소 DB도 실제 저장은 'background' 타입을 공유하고 locationId/variantId로만
   // 구분된다 — parsePathMeta 참고.
   const all = await AssetDB.getAssetsByType(currentType === 'minigameFace' ? 'character' : currentType === 'location' ? 'background' : currentType);
+  if (currentType === 'character' || currentType === 'minigameFace') {
+    characterExpressionIndex = new Map();
+    all.forEach(a => {
+      if (!characterExpressionIndex.has(a.characterKey)) characterExpressionIndex.set(a.characterKey, new Set());
+      characterExpressionIndex.get(a.characterKey).add(a.expression);
+    });
+    renderCharPicker();
+  }
   const outfitFilter = activeOutfitForFilter();
   const filtered = currentType === 'location'
     ? all.filter(a => a.locationId === currentLocationId && (a.variantId || 'default') === (currentVariantId || 'default'))
