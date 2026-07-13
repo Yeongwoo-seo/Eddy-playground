@@ -3541,6 +3541,11 @@ function applyFocusModeChrome() {
       el.tabCharacter.classList.add('hidden');
       el.tabMinigameFace.classList.add('hidden');
     }
+    // /dev/data's menu already commits to one specific tab per visit — the
+    // in-page tab row just duplicates that choice, and switching tabs here
+    // is redundant with the "‹" back button (which returns to /dev/data's
+    // own menu to pick a different one). See fromDataMenu's own comment.
+    if (fromDataMenu) el.tabsRow.classList.add('hidden');
     return;
   }
   el.backBtn.href = focusMinigame.backHref;
