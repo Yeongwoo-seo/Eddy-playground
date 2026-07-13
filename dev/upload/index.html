@@ -629,6 +629,11 @@ let characterExpressionIndex = new Map();
 // pre-selects the 미니게임 background sub-category, and ?kind=photo&index=N
 // pre-selects one of scene.photoSlots (see dev/minigame-photo-zoom/setup/).
 const deepLinkedSceneId = new URLSearchParams(location.search).get('scene');
+// ?tab=hub&phase=<id> — from /dev/phases's 설정 button, jump straight into
+// the 탐색허브 tab pre-filtered to that phase instead of landing on 배경 DB
+// and making the tester click through tabs + phase pills by hand.
+const deepLinkedHubTab = new URLSearchParams(location.search).get('tab') === 'hub';
+const deepLinkedHubPhase = new URLSearchParams(location.search).get('phase');
 (function applyDeepLink() {
   const params = new URLSearchParams(location.search);
   if (deepLinkedSceneId) {
@@ -640,6 +645,7 @@ const deepLinkedSceneId = new URLSearchParams(location.search).get('scene');
       }
     }
   }
+  if (deepLinkedHubPhase) currentHubPhase = deepLinkedHubPhase;
   if (params.get('kind') === 'minigame') currentBgKind = 'minigame';
   else if (params.get('kind') === 'photo') currentBgKind = 'photo:' + (params.get('index') || '0');
 })();
@@ -3535,7 +3541,7 @@ function applyFocusModeChrome() {
 }
 
 applyFocusModeChrome();
-selectType('background');
+selectType(deepLinkedHubTab && !focusMinigame && !focusScene ? 'hub' : 'background');
 </script>
 <script src="/dev/devPlanFab.js"></script>
 </body>

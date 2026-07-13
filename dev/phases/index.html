@@ -41,6 +41,11 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .phase-mode.scene{color:var(--text-muted);background:rgba(255,255,255,.08)}
 .phase-desc{font-size:12px;color:var(--text-secondary);margin-top:4px;line-height:1.5}
 .phase-arrow{color:var(--text-muted);font-size:18px;flex-shrink:0;align-self:center}
+/* Setup(phase-btn) opens /dev/upload's 탐색허브/배경 tab pre-filtered to this
+   phase — this is the shortcut past it, straight into a live playthrough of
+   whatever's already configured, same split as /dev/week1's scene rows. */
+.play-btn{flex-shrink:0;width:56px;display:flex;align-items:center;justify-content:center;background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;color:var(--cyan);font-size:19px;text-decoration:none;transition:transform .15s,background .15s}
+.play-btn:active{transform:scale(.94);background:var(--surface-2)}
 .legend{margin-top:24px;font-size:11.5px;color:var(--text-muted);line-height:1.6;padding:14px 16px;background:var(--surface-1);border:1px solid var(--divider);border-radius:12px}
 .legend b{color:var(--text-secondary)}
 </style>
@@ -50,9 +55,9 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
   <a class="back" href="/dev/">‹ DEV</a>
   <div class="tag">Operation MK</div>
   <div class="title">탐색 허브</div>
-  <div class="sub">주차와 페이즈를 선택하면 그 구간부터 바로 플레이합니다.</div>
+  <div class="sub">페이즈를 탭하면 배경·설정 화면으로, ▶을 누르면 그 구간을 바로 플레이합니다.</div>
   <div id="weekList"></div>
-  <div class="legend"><b>허브</b> 페이즈는 장소를 자유롭게 오가며 탐색하고, <b>씬</b> 페이즈는 기존 순차 대사·미니게임으로 이어집니다. 진행 상태(증거·가설·플래그)는 그대로 이어받으므로, 이전 페이즈를 건너뛰고 들어가면 일부 대사가 맥락 없이 보일 수 있습니다.</div>
+  <div class="legend"><b>허브</b> 페이즈는 장소를 자유롭게 오가며 탐색하고, <b>씬</b> 페이즈는 기존 순차 대사·미니게임으로 이어집니다. 설정은 허브 페이즈는 <b>/dev/upload</b>의 탐색허브 탭(장소별 배경)으로, 씬 페이즈는 해당 씬의 배경·대사 편집기로 이동합니다. 진행 상태(증거·가설·플래그)는 그대로 이어받으므로, 이전 페이즈를 건너뛰고 들어가면 일부 대사가 맥락 없이 보일 수 있습니다.</div>
 </div>
 <script>
 if ('serviceWorker' in navigator) {
@@ -85,7 +90,20 @@ const WEEK_BLOCKS = [
   { weekNum: '1주차', weekTitle: '사라진 K-01', groups: (typeof week1SceneGroups !== 'undefined') ? week1SceneGroups : [] },
 ];
 
-function hrefFor(meta) {
+// 설정 — hub-mode phases jump into /dev/upload's 탐색허브 tab pre-filtered
+// to this phase (per-location backgrounds, see that tab's own picker);
+// scene-mode phases jump into the ordinary per-scene 배경/대사 editor, same
+// as /dev/week1's own setupHref.
+function setupHref(meta) {
+  if (!meta) return '/dev/upload/';
+  if (meta.mode === 'hub') return `/dev/upload/?tab=hub&phase=${encodeURIComponent(meta.phaseId)}`;
+  return `/dev/upload/?scene=${encodeURIComponent(meta.sceneId)}`;
+}
+
+// 플레이 — hub-mode phases boot straight into the exploration hub at that
+// phase's entry location; scene-mode phases boot the VN player at that
+// phase's first scene.
+function playHref(meta) {
   if (!meta) return '#';
   if (meta.mode === 'hub') return `/dev/explore/?phase=${encodeURIComponent(meta.phaseId)}&location=${encodeURIComponent(meta.startLocationId)}`;
   return `/dev/game/?scene=${encodeURIComponent(meta.sceneId)}`;
@@ -103,7 +121,7 @@ weekListEl.innerHTML = WEEK_BLOCKS.map(week => `
         const meta = PHASE_HUB_META[g.range];
         return `
           <div class="phase-row">
-            <a class="phase-btn" href="${hrefFor(meta)}">
+            <a class="phase-btn" href="${setupHref(meta)}">
               <div class="phase-num">${g.range}</div>
               <div class="phase-txt">
                 <div class="phase-name-row">
@@ -114,6 +132,7 @@ weekListEl.innerHTML = WEEK_BLOCKS.map(week => `
               </div>
               <div class="phase-arrow">›</div>
             </a>
+            <a class="play-btn" href="${playHref(meta)}" aria-label="바로 플레이">▶</a>
           </div>
         `;
       }).join('')}
