@@ -328,7 +328,9 @@ function buildImageMap(url) {
 
 async function initMap() {
   LoadingOverlay.show('지도 불러오는 중');
-  const assetId = DevGameState.getBackgroundId(MINIGAME_ID);
+  // 지도형 미니게임 배경은 location-background-system 설계안 범위 밖 — 기존
+  // 레거시 sceneId 직접 배정 방식 그대로.
+  const assetId = DevGameState.getLegacyBackgroundId(MINIGAME_ID);
   const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
   const savedHotspots = await Promise.all(LOCATIONS.map((_, i) => DevGameState.getMinigameHotspot(MINIGAME_ID, i)))
     .then(hs => hs.map(hotspotToPoints));

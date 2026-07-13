@@ -647,7 +647,9 @@ el.photoStage.addEventListener('wheel', (e) => {
 // /dev/upload for EXHIBITION_MINIGAME_ID, then renders it. Falls back to the
 // existing grid cards whenever no photo (or no marked hotspot) exists yet.
 async function loadExhibition() {
-  const assetId = DevGameState.getBackgroundId(EXHIBITION_MINIGAME_ID);
+  // 방탈출류 room-search 배경은 location-background-system 설계안 범위 밖 —
+  // 기존 레거시 sceneId 직접 배정 방식 그대로.
+  const assetId = DevGameState.getLegacyBackgroundId(EXHIBITION_MINIGAME_ID);
   const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
   const hotspots = await DevGameState.getRoomHotspots(EXHIBITION_MINIGAME_ID).catch(() => ({}));
   if (asset && asset.dataUrl && Object.keys(hotspots).length) {

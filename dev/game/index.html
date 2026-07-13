@@ -404,7 +404,8 @@ async function applyBackground(backgroundKey) {
   // (loading spinner forever, or tap() disabled forever — see vnPlayer.js).
   let bgAsset = null;
   try {
-    bgAsset = await AssetDB.getAsset(DevGameState.getBackgroundId(backgroundKey || activeSceneData.id));
+    const bgId = await DevGameState.getBackgroundId(backgroundKey || activeSceneData.id);
+    bgAsset = await AssetDB.getAsset(bgId);
     if (bgAsset) await AssetDB.preloadImage(bgAsset.dataUrl);
   } catch (err) {
     console.error('applyBackground failed, falling back to placeholder', err);
@@ -1034,11 +1035,19 @@ async function renderAssetSelectors() {
   // still work. Degrades to an empty background dropdown instead.
   let bgs = [];
   try {
-    bgs = (await AssetDB.getAssetsByType('background')).filter(a => a.sceneId === activeSceneData.id);
+    // A slot pointed at a catalog location lists that location's own photos
+    // (shared across every scene using it); an unassigned/minigame slot
+    // falls back to the legacy per-scene list — see
+    // DevGameState.getBackgroundId's own 2-stage resolution.
+    const locRef = await DevGameState.resolveSlotLocation(activeSceneData.id);
+    const all = await AssetDB.getAssetsByType('background');
+    bgs = (locRef && locRef.locationId)
+      ? all.filter(a => a.locationId === locRef.locationId && (a.variantId || 'default') === (locRef.variantId || 'default'))
+      : all.filter(a => a.sceneId === activeSceneData.id);
   } catch (err) {
     console.error('renderAssetSelectors: background list fetch failed, sheet still opens', err);
   }
-  fillSelect(el.bgSelect, bgs, DevGameState.getBackgroundId(activeSceneData.id));
+  fillSelect(el.bgSelect, bgs, await DevGameState.getBackgroundId(activeSceneData.id));
 }
 
 function fillSelect(selectEl, assets, selectedId) {
@@ -1101,7 +1110,7 @@ el.sheetOverlay.addEventListener('click', (e) => {
   if (e.target === el.sheetOverlay) el.sheetOverlay.classList.add('hidden');
 });
 el.bgSelect.addEventListener('change', async (e) => {
-  DevGameState.setBackgroundId(activeSceneData.id, e.target.value || null);
+  await DevGameState.setBackgroundId(activeSceneData.id, e.target.value || null);
   await applyBackground();
 });
 
