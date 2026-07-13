@@ -98,8 +98,8 @@ input,textarea{-webkit-user-select:text;user-select:text}
   <div class="section">
     <div class="section-title">입금자 <span class="count-badge" id="depositorCount">0</span></div>
     <label class="upload-btn" for="depositFile">📷 입금 캡쳐본 업로드</label>
-    <input type="file" id="depositFile" accept="image/*" hidden>
-    <div class="hint-text">캡쳐본을 올리면 이름을 자동 인식해요. 인식이 틀리면 직접 수정할 수 있어요.</div>
+    <input type="file" id="depositFile" accept="image/*" multiple hidden>
+    <div class="hint-text">캡쳐본을 올리면 이름을 자동 인식해요. 여러 장을 한 번에 선택할 수 있어요. 인식이 틀리면 직접 수정할 수 있어요.</div>
     <div class="block-list" id="depositorList"></div>
   </div>
 
@@ -127,7 +127,7 @@ input,textarea{-webkit-user-select:text;user-select:text}
 <div id="toast" class="toast"></div>
 <div id="ocrOverlay" class="ocr-overlay">
   <div class="ocr-spinner"></div>
-  <div class="ocr-text">이름 인식 중이에요...<br>처음 실행 시 조금 걸릴 수 있어요</div>
+  <div class="ocr-text" id="ocrText">이름 인식 중이에요...<br>처음 실행 시 조금 걸릴 수 있어요</div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.4/dist/tesseract.min.js"></script>
