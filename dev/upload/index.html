@@ -1152,6 +1152,18 @@ function buildHubLocationPrompt(locationId, phase) {
   const elementsBlock = interactions.length
     ? interactions.map(def => `- ${def.label || def.id}: ${interactionVisualCue(def)}`).join('\n')
     : '- (이 장소/단계에 걸린 상호작용 없음 — 특별히 필요한 요소 없음)';
+  // 배경에서 빼야 하는 건 "이름 있는 주연"뿐이다 — 이 사람들은 표정별 누끼
+  // PNG가 따로 있어 게임이 그 위에 겹쳐 그린다(dev/game/index.html의
+  // char-img transform 합성 참고). 위 요소 목록에 나오는 이름 없는 배경
+  // 인물(예: "옆 건물 직원이 태그를 문에 갖다 댔다")은 반대로 별도 자산이
+  // 전혀 없으므로 이 사진에 직접 그려 넣어야만 플레이어가 볼 수 있다 —
+  // 그래서 "사람 자체를 빼라"가 아니라 "이 명단만 빼라"로 정확히 짚어준다.
+  const castNames = Array.from(new Set(
+    ['지수'].concat((loc.characters || []).map(id => {
+      const c = (typeof dialogueCharacters !== 'undefined') ? dialogueCharacters.find(d => d.id === id) : null;
+      return c ? c.name : id;
+    }))
+  ));
   return [
     `[장소] ${loc.name} (${loc.week}주차 · ${HUB_PHASE_LABELS[phase] || phase})`,
     '',
@@ -1166,7 +1178,8 @@ function buildHubLocationPrompt(locationId, phase) {
     '',
     '[스타일 가이드]',
     '- 모바일 세로 화면(9:16) 배경 이미지 한 장',
-    '- 인물(지수/영우/용의자 등)은 게임에서 별도로 렌더링되므로 배경에는 사람을 그려 넣지 않는다',
+    `- ${castNames.join('/')}는 게임에서 별도 이미지로 렌더링되어 이 배경 위에 겹쳐지므로 그려 넣지 않는다`,
+    '- 단, 위 "화면에 꼭 있어야 하는 요소"에 등장하는 이름 없는 인물(예: 직원, 낯선 사람)은 별도 자산이 없으므로 반드시 이 사진 안에 직접 그려 넣는다',
     '- 사실적인 사진풍, 시드니 현지 분위기, 텍스트나 워터마크 없이',
   ].join('\n');
 }
