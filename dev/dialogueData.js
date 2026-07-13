@@ -1336,58 +1336,17 @@ const week1Scene004Lines = [
    Scene: week1-scene-004-review (빈티지 팝업 전시장, 10:56)
 
    ===== 1주차 장편 확장 v2 · §8 =====
-   photo-zoom 미니게임(2~3단계: 상태 변화/인물 태그) 완료 직후 이어지는
-   VN 파트 — 1단계(시간순 배열)와 5단계(사건 발생 시간 선택)를 choice
-   체인으로 마무리한다. 1단계는 5장을 시간순으로 하나씩 골라야 하고(순서
-   틀리면 짧은 반응 후 같은 단계로), 5단계는 "정답은 넓은 구간으로 먼저
-   제시" 원칙대로 10:44~10:48 하나만 정답으로 두고 나머지는 오답 처리한다. */
+   photo-zoom 미니게임이 이제 2~4단계를 전부 담당한다 — 상태 변화/인물
+   태그 찾기(기존)에 이어, 완료 즉시 미니게임 안에서 사진 7장을 뒤섞어
+   시간순으로 다시 배치하는 실제 게임(order phase, PHOTOS 배열 순서가
+   정답)까지 마치고 나서야 이 씬으로 넘어온다. 그래서 1단계(시간순 배열)
+   choice 체인은 더 이상 여기 없다 — 같은 걸 두 번 시키는 셈이었다. 이
+   씬에는 5단계(사건 발생 시간 선택)만 남는다 — "정답은 넓은 구간으로
+   먼저 제시" 원칙대로 10:44~10:48 하나만 정답으로 두고 나머지는 오답
+   처리한다. */
 const week1Scene004ReviewLines = [
   { id: 'line-001', speaker: '', text: '전시장 한쪽.\n오전 10시 56분.', characterId: null },
-  { id: 'line-002', speaker: '지수', text: '이제 이 사진들, 시간 순서대로 한번 놓아볼까요.', characterId: 'jisoo', expression: 'serious' },
-  { id: 'line-003', speaker: '영우', text: '그래, 하나씩 짚어보자.', characterId: 'youngwoo', expression: 'soft' },
-  {
-    id: 'order-1', type: 'choice', speaker: '', text: '가장 이른 사진은?', characterId: null,
-    choices: [
-      { id: 'a', label: '10:41 — 한산한 전시장', goto: 'order-2' },
-      { id: 'b', label: '10:47 — 인파가 몰리는 순간', goto: 'order-wrong' },
-      { id: 'c', label: '10:53 — 텅 빈 케이스', goto: 'order-wrong' },
-    ],
-  },
-  { id: 'order-wrong', speaker: '영우', text: '음... 그건 아직 이르지 않아?', characterId: 'youngwoo', expression: 'curious', goto: 'order-1' },
-  {
-    id: 'order-2', type: 'choice', speaker: '', text: '그다음은?', characterId: null,
-    choices: [
-      { id: 'a', label: '10:43 — 케이스 앞에 두 사람', goto: 'order-3' },
-      { id: 'b', label: '10:48 — 진열장 문이 열려 있다', goto: 'order-wrong-2' },
-      { id: 'c', label: '10:53 — 텅 빈 케이스', goto: 'order-wrong-2' },
-    ],
-  },
-  { id: 'order-wrong-2', speaker: '지수', text: '아직 순서가 안 맞아요.', characterId: 'jisoo', expression: 'suspicious', goto: 'order-2' },
-  {
-    id: 'order-3', type: 'choice', speaker: '', text: '그다음은?', characterId: null,
-    choices: [
-      { id: 'a', label: '10:45 — 다시 케이스 앞', goto: 'order-4' },
-      { id: 'b', label: '10:53 — 텅 빈 케이스', goto: 'order-wrong-3' },
-    ],
-  },
-  { id: 'order-wrong-3', speaker: '영우', text: '아니, 그건 한참 뒤 얘기야.', characterId: 'youngwoo', expression: 'blank', goto: 'order-3' },
-  {
-    id: 'order-4', type: 'choice', speaker: '', text: '그다음은?', characterId: null,
-    choices: [
-      { id: 'a', label: '10:47/10:48 — 인파와 진열장 문', goto: 'order-5' },
-      { id: 'b', label: '10:53 — 텅 빈 케이스', goto: 'order-wrong-4' },
-    ],
-  },
-  { id: 'order-wrong-4', speaker: '지수', text: '그건 마지막이에요.', characterId: 'jisoo', expression: 'suspicious', goto: 'order-4' },
-  {
-    id: 'order-5', type: 'choice', speaker: '', text: '마지막은?', characterId: null,
-    choices: [
-      { id: 'a', label: '10:53 — 텅 빈 케이스', goto: 'order-done' },
-      { id: 'b', label: '10:41 — 한산한 전시장', goto: 'order-wrong-5' },
-    ],
-  },
-  { id: 'order-wrong-5', speaker: '영우', text: '그건 이미 아까 지나갔잖아.', characterId: 'youngwoo', expression: 'curious', goto: 'order-5' },
-  { id: 'order-done', speaker: '지수', text: '좋아요, 순서 맞췄어요.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-002', speaker: '지수', text: '사진 순서는 방금 맞춰봤고.', characterId: 'jisoo', expression: 'serious' },
   { id: 'line-004', speaker: '영우', text: '그럼 이제, 실제로 없어진 시간대는 언제쯤일까?', characterId: 'youngwoo', expression: 'curious' },
   {
     id: 'range-choice', type: 'choice', speaker: '', text: '사건 발생 시간대를 골라보세요. (넓게 잡아도 괜찮아요)', characterId: null,
