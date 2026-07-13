@@ -70,6 +70,38 @@ const interactionDefs = {
     icon: '📷',
     route: '/dev/minigame-harbour-photo/?bg=opera',
   },
+  // ===== 1주차 장편 확장 v3 — Phase 1 사전 복선 (§신규) =====
+  // 도난(week1-scene-004)이 아직 일어나지 않은 시점에, 관광 장소 4곳에 하나씩
+  // "왜?"로 끝나는 의문점을 심어 둔다. 이 시점엔 사건 자체가 없어서 addFact/
+  // addEvidence가 아니라 addQuestion만 쓴다(§22 idiom) — 나중에 실제 증거로
+  // 바뀌는 연결은 후속 작업(별도 씬의 setQuestionStatus+addEvidence+
+  // linkEvidenceToQuestion)에서 다룬다. 지수/영우 둘 다 "이상한데?" 선에서
+  // 멈추고 결론을 내리지 않는다 — 아직 뭘 의심해야 할지도 모르는 시점이므로.
+  'w1ov-topic-lookout': {
+    id: 'w1ov-topic-lookout',
+    characterId: 'youngwoo',
+    locationIds: ['w1-opera-view'],
+    phases: ['W1_TOURISM'],
+    type: 'topic',
+    label: '이상한 사진사 발견하기',
+    lines: [
+      { speaker: '지수', text: '어? 저 사람 좀 이상하지 않아요?', characterId: 'jisoo', expression: 'curious' },
+      { speaker: '영우', text: '누구?', characterId: 'youngwoo', expression: 'neutral' },
+      { speaker: '지수', text: '저기, 오페라하우스는 안 찍고 계속 반대쪽만 찍고 있어요.', characterId: 'jisoo', expression: 'curious' },
+      { speaker: '', text: '남자는 카메라를 든 채, 더 록스 방향을 향해 셔터를 몇 번이고 눌렀다.', characterId: null },
+      { speaker: '영우', text: '관광객 아니야? 근데 좀... 유난히 오래 서 있긴 하네.', characterId: 'youngwoo', expression: 'curious' },
+      { speaker: '지수', text: '그러게요. 뭘 저렇게 열심히 찍는 거지?', characterId: 'jisoo', expression: 'suspicious' },
+    ],
+    effects: [{
+      type: 'addQuestion',
+      question: {
+        id: 'question-w1-opera-lookout',
+        title: '그 사람은 왜 계속 반대쪽만 찍고 있었을까?',
+        description: '오페라하우스 전망 구역에서, 낯선 남자가 오페라하우스가 아니라 더 록스 방향을 계속 촬영하고 있었다.',
+        linkedEvidenceIds: [],
+      },
+    }],
+  },
   'w1bv-topic-bridge': {
     id: 'w1bv-topic-bridge',
     characterId: 'youngwoo',
@@ -108,6 +140,32 @@ const interactionDefs = {
     icon: '📷',
     route: '/dev/minigame-harbour-photo/?bg=bridge',
   },
+  // §신규 Phase 1 사전 복선 — w1ov-topic-lookout 참고.
+  'w1bv-topic-van': {
+    id: 'w1bv-topic-van',
+    characterId: 'youngwoo',
+    locationIds: ['w1-bridge-view'],
+    phases: ['W1_TOURISM'],
+    type: 'topic',
+    label: '수상한 밴 발견하기',
+    lines: [
+      { speaker: '영우', text: '어, 저 차 좀 봐봐.', characterId: 'youngwoo', expression: 'curious' },
+      { speaker: '지수', text: '차요?', characterId: 'jisoo', expression: 'neutral' },
+      { speaker: '', text: '인도 옆에 시동을 켠 채 오래 서 있는 검은색 밴 한 대. 창문에는 짙은 선팅이 되어 있다.', characterId: null },
+      { speaker: '지수', text: '주차한 것도 아니고... 계속 저러고 있네요.', characterId: 'jisoo', expression: 'suspicious' },
+      { speaker: '영우', text: '택배 차 아니야?', characterId: 'youngwoo', expression: 'neutral' },
+      { speaker: '지수', text: '글쎄요... 그럼 왜 계속 시동을 켜 놓고 있을까요?', characterId: 'jisoo', expression: 'curious' },
+    ],
+    effects: [{
+      type: 'addQuestion',
+      question: {
+        id: 'question-w1-bridge-van',
+        title: '그 검은 밴은 왜 계속 시동을 켠 채 서 있었을까?',
+        description: '하버브리지 전망 구역 인도 옆에, 짙게 선팅된 검은색 밴이 시동을 켠 채 오래 정차해 있었다.',
+        linkedEvidenceIds: [],
+      },
+    }],
+  },
   'w1rl-topic-vintage': {
     id: 'w1rl-topic-vintage',
     characterId: 'youngwoo',
@@ -135,6 +193,32 @@ const interactionDefs = {
     ],
     effects: [{ type: 'setFlag', key: 'discoveredPopupExhibition', value: true }],
   },
+  // §신규 Phase 1 사전 복선 — w1ov-topic-lookout 참고.
+  'w1rl-topic-backdoor': {
+    id: 'w1rl-topic-backdoor',
+    characterId: 'youngwoo',
+    locationIds: ['w1-the-rocks-lane'],
+    phases: ['W1_TOURISM'],
+    type: 'topic',
+    label: '뒷문 앞 남자 발견하기',
+    lines: [
+      { speaker: '지수', text: '어? 저기 저 문, 팝업 전시장 건물 뒤쪽 아니에요?', characterId: 'jisoo', expression: 'curious' },
+      { speaker: '영우', text: '어, 맞는 것 같은데.', characterId: 'youngwoo', expression: 'neutral' },
+      { speaker: '', text: '살짝 열린 뒷문 앞에, 낯선 남자가 담배를 피우며 서 있다. 직원처럼 보이지는 않는다.', characterId: null },
+      { speaker: '영우', text: '저 사람은 뭐지? 직원인가?', characterId: 'youngwoo', expression: 'curious' },
+      { speaker: '지수', text: '글쎄요, 그런 것치곤 옷차림이 좀...', characterId: 'jisoo', expression: 'suspicious' },
+      { speaker: '', text: '두 사람의 시선을 느꼈는지, 남자는 슬쩍 뒷문 안쪽으로 들어가 버렸다.', characterId: null },
+    ],
+    effects: [{
+      type: 'addQuestion',
+      question: {
+        id: 'question-w1-rocks-backdoor',
+        title: '그 남자는 왜 전시장 뒷문 앞에 서 있었을까?',
+        description: '더 록스 골목, 팝업 전시장 건물의 뒷문이 살짝 열려 있었고 그 앞에 직원처럼 보이지 않는 남자가 서 있었다.',
+        linkedEvidenceIds: [],
+      },
+    }],
+  },
   'w1ee-topic-outside': {
     id: 'w1ee-topic-outside',
     characterId: 'youngwoo',
@@ -147,6 +231,32 @@ const interactionDefs = {
       { speaker: '지수', text: 'K-01... 뭘까요?', characterId: 'jisoo', expression: 'curious' },
       { speaker: '영우', text: '들어가보면 알겠지.', characterId: 'youngwoo', expression: 'neutral' },
     ],
+  },
+  // §신규 Phase 1 사전 복선 — w1ov-topic-lookout 참고.
+  'w1ee-topic-whisper': {
+    id: 'w1ee-topic-whisper',
+    characterId: 'youngwoo',
+    locationIds: ['w1-exhibition-entrance'],
+    phases: ['W1_TOURISM'],
+    type: 'topic',
+    label: '입구에서 들은 대화',
+    lines: [
+      { speaker: '', text: '입구 앞에서, 직원처럼 보이는 사람이 낯선 사람과 낮은 목소리로 이야기하고 있다.', characterId: null },
+      { speaker: '지수', text: '저 두 분, 뭔가 심각해 보이는데요?', characterId: 'jisoo', expression: 'curious' },
+      { speaker: '영우', text: '그러게. 무슨 얘기지?', characterId: 'youngwoo', expression: 'curious' },
+      { speaker: '', text: '두 사람의 시선을 느낀 순간, 대화가 뚝 끊겼다. 낯선 쪽은 곧장 자리를 떴다.', characterId: null },
+      { speaker: '영우', text: '...\n그냥 지나가자.', characterId: 'youngwoo', expression: 'blank', pauseBeforeMs: 300 },
+      { speaker: '지수', text: '네... 근데 좀 이상하긴 했어요.', characterId: 'jisoo', expression: 'suspicious' },
+    ],
+    effects: [{
+      type: 'addQuestion',
+      question: {
+        id: 'question-w1-entrance-whisper',
+        title: '직원과 낯선 사람은 무슨 얘기를 하고 있었을까?',
+        description: '전시장 입구에서, 직원으로 보이는 사람이 낯선 사람과 낮은 목소리로 이야기하다가 갑자기 대화를 멈추는 모습을 목격했다.',
+        linkedEvidenceIds: [],
+      },
+    }],
   },
 
   /* ===== Phase 4 — 용의자 탐문 (§12.6) =====
