@@ -33,7 +33,6 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .scene-num{font-family:var(--mono);font-size:13px;color:var(--cyan);flex-shrink:0}
 .scene-txt{flex:1;min-width:0}
 .scene-name{font-size:16px;font-weight:700}
-.scene-meta{font-size:12.5px;color:var(--text-secondary);margin-top:3px;line-height:1.5;font-family:var(--mono)}
 .scene-arrow{color:var(--text-muted);font-size:18px;flex-shrink:0}
 /* Setup(scene-btn) opens the 배경/캐릭터/대사 에디터 — this is the shortcut
    past it, straight into the live scene, for when a dev just wants to play
@@ -81,7 +80,6 @@ if (!week4Scenes.length) {
         <div class="scene-num">#${String(s.order).padStart(2, '0')}</div>
         <div class="scene-txt">
           <div class="scene-name">${s.name}</div>
-          <div class="scene-meta">${s.location} · ${s.time}</div>
         </div>
         <div class="scene-arrow">›</div>
       </a>
