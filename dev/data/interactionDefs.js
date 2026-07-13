@@ -152,7 +152,9 @@ const interactionDefs = {
     icon: '📷',
     route: '/dev/minigame-harbour-photo/?bg=bridge',
   },
-  // §신규 Phase 1 사전 복선 — w1ov-topic-lookout 참고.
+  // §신규 Phase 1 사전 복선 — w1ov-topic-lookout 참고. 이 클루는 이미 실제
+  // 증거로 바뀌는 회수 지점까지 만들어져 있다 — 아래 discoveredBridgeVan
+  // 플래그가 Phase 4(w1sh-topic-van-recall)에서 그 회수를 잠그는 조건이다.
   'w1bv-topic-van': {
     id: 'w1bv-topic-van',
     characterId: 'youngwoo',
@@ -168,15 +170,18 @@ const interactionDefs = {
       { speaker: '영우', text: '택배 차 아니야?', characterId: 'youngwoo', expression: 'neutral' },
       { speaker: '지수', text: '글쎄요... 그럼 왜 계속 시동을 켜 놓고 있을까요?', characterId: 'jisoo', expression: 'curious' },
     ],
-    effects: [{
-      type: 'addQuestion',
-      question: {
-        id: 'question-w1-bridge-van',
-        title: '그 검은 밴은 왜 계속 시동을 켠 채 서 있었을까?',
-        description: '하버브리지 전망 구역 인도 옆에, 짙게 선팅된 검은색 밴이 시동을 켠 채 오래 정차해 있었다.',
-        linkedEvidenceIds: [],
+    effects: [
+      {
+        type: 'addQuestion',
+        question: {
+          id: 'question-w1-bridge-van',
+          title: '그 검은 밴은 왜 계속 시동을 켠 채 서 있었을까?',
+          description: '하버브리지 전망 구역 인도 옆에, 짙게 선팅된 검은색 밴이 시동을 켠 채 오래 정차해 있었다.',
+          linkedEvidenceIds: [],
+        },
       },
-    }],
+      { type: 'setFlag', key: 'discoveredBridgeVan', value: true },
+    ],
   },
   'w1rl-topic-vintage': {
     id: 'w1rl-topic-vintage',
@@ -281,6 +286,47 @@ const interactionDefs = {
      "visit = launch the whole scene" hand-off (type:'minigame', same
      mechanism as the 하버 포토 hand-off) gets the free-order benefit
      spec §12.6 asks for with zero risk to the existing script. */
+  // "사전 복선" 패턴의 첫 회수 사례 — w1bv-topic-van(Phase 1, 하버브리지)에서
+  // 심어둔 의문점(question-w1-bridge-van)이 도난 사건이 알려진 뒤 실제
+  // 증거로 바뀐다. unlockConditions로 그 topic을 먼저 완료해야만
+  // (discoveredBridgeVan 플래그) 보이게 막아서, 밴을 못 보고 지나친 회차는
+  // 여기서 아무 일도 없다 — 광장에 영우 chip을 새로 연 이유(locationDefs.js
+  // 참고)가 이 topic 하나 때문이다. addQuestion만 있던 나머지 3개(오페라뷰
+  // 사진사/록스골목 뒷문/전시장입구 소곤거림)는 아직 이런 회수 지점이 없다.
+  'w1sh-topic-van-recall': {
+    id: 'w1sh-topic-van-recall',
+    characterId: 'youngwoo',
+    locationIds: ['w1-suspect-hub'],
+    phases: ['W1_SUSPECT_INTERVIEWS'],
+    type: 'topic',
+    label: '그 밴, 다시 생각해보기',
+    unlockConditions: [{ type: 'flags', keys: ['discoveredBridgeVan'] }],
+    lines: [
+      { speaker: '영우', text: '아 맞다, 그때 하버브리지에서 봤던 그 검은 밴...', characterId: 'youngwoo', expression: 'curious' },
+      { speaker: '지수', text: '시동 켜놓고 계속 서 있던 그 차요?', characterId: 'jisoo', expression: 'curious' },
+      { speaker: '영우', text: '그거 지금 생각해보니까 좀 이상하지 않아?', characterId: 'youngwoo', expression: 'suspicious' },
+      { speaker: '지수', text: '그러네요... 그때 사진이라도 찍어둘걸.', characterId: 'jisoo', expression: 'curious' },
+      { speaker: '영우', text: '어? 잠깐, 찍어놨었어. 와이퍼에 뭐 끼워져 있길래 그냥 찍어뒀거든.', characterId: 'youngwoo', expression: 'shocked' },
+      { speaker: '', text: '[ 밴에 남아있던 배송 의뢰서 ]\n발신인: (공란)\n수거 시각: 사건 당일 오전\n물품: 소형 공예품 1점', characterId: null },
+      { speaker: '지수', text: '...발신인이 비어 있어요. 수거 시각도 딱 그날 오전이고.', characterId: 'jisoo', expression: 'shocked' },
+      { speaker: '영우', text: '소형 공예품 1점... 설마.', characterId: 'youngwoo', expression: 'blank', pauseBeforeMs: 300 },
+    ],
+    effects: [
+      {
+        type: 'addEvidence',
+        evidence: {
+          id: 'evidence-bridge-van-request-form', code: 'E-C05', title: '밴에 남아있던 배송 의뢰서',
+          description: '발신인이 비어 있는 익명 배송 의뢰서. 수거 시각이 K-01 도난 당일 오전으로 적혀 있고, 물품 칸에는 "소형 공예품 1점"이라고만 적혀 있다.',
+          discoveredLocationText: 'Circular Quay · 하버브리지 전망 구역 (촬영해둔 사진 회수)',
+        },
+      },
+      {
+        type: 'setQuestionStatus', id: 'question-w1-bridge-van', status: 'resolved',
+        resolutionText: '그 밴은 단순히 서 있던 게 아니라, 사건 당일 오전 무언가를 수거하려고 대기 중이었다 — 발신인이 비어 있는 배송 의뢰서가 그 증거다.',
+      },
+      { type: 'linkEvidenceToQuestion', questionId: 'question-w1-bridge-van', evidenceId: 'evidence-bridge-van-request-form' },
+    ],
+  },
   'w1suspect-mina-interview': {
     id: 'w1suspect-mina-interview',
     characterId: 'minah',

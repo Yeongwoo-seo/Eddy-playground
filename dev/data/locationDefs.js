@@ -99,7 +99,11 @@ const locationDefs = {
     week: 1,
     name: '전시장 앞 광장 (탐문 거점)',
     phases: ['W1_SUSPECT_INTERVIEWS'],
-    characters: [],
+    // 영우는 이 광장에 지수와 계속 같이 있다 — Phase 1 사전 복선(§신규)이
+    // 실제 증거로 바뀌는 회상 topic(w1sh-topic-van-recall, see
+    // interactionDefs.js)을 걸 chip이 필요해서 추가했다. 용의자 3인은 각자의
+    // spot(mina/adrian/leo-spot)에만 있으므로 여기 목록엔 안 넣는다.
+    characters: ['youngwoo'],
     exits: ['w1-suspect-mina-spot', 'w1-suspect-adrian-spot', 'w1-suspect-leo-spot'],
   },
   'w1-suspect-mina-spot': {
