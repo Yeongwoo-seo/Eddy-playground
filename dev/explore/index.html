@@ -268,9 +268,10 @@ function renderMap() {
 /* ===== Location view (spec §7.1) ===== */
 async function applyLocationBackground(locationId) {
   let asset = null;
-  // 탐색 허브 위치는 location-background-system 설계안의 범위 밖(그 카탈로그와
-  // 이름만 같을 뿐 다른 개념) — 기존 레거시 sceneId 직접 배정 방식 그대로.
-  const assetId = DevGameState.getLegacyBackgroundId(locationId);
+  // 탐색허브 위치도 장소 DB 카탈로그에 배정할 수 있다(/dev/upload의 탐색허브
+  // 탭이 배경 DB 탭과 같은 장소-배정 UI를 씀) — getBackgroundId가 배정 여부를
+  // 먼저 확인하고, 아직 배정 전이면 기존 레거시 sceneId 직접 조회로 폴백한다.
+  const assetId = await DevGameState.getBackgroundId(locationId);
   if (assetId) asset = await AssetDB.getAsset(assetId).catch(() => null);
   if (asset && asset.dataUrl) {
     el.locBg.style.backgroundImage = `url(${asset.dataUrl})`;

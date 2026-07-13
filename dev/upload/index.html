@@ -249,30 +249,6 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
     <div class="hint" style="margin-top:8px">미니게임 지도/사진은 반드시 "미니게임"을 선택한 상태에서 올려야 게임에 반영돼요.</div>
   </div>
 
-  <!-- 배경 DB, 일반 씬 배경 슬롯(미니게임 아님) 전용 — location-background-system
-       설계안: 이 슬롯이 어느 장소인지만 고르고, 실제 사진 업로드/배정은 장소 DB
-       탭에서 한다(같은 장소를 쓰는 다른 씬과 사진을 공유하기 위함). 미니게임
-       kind일 때는 이 패널이 숨고 기존 직접 업로드 방식 그대로 동작한다. See
-       renderBgLocationAssign()/updateBackgroundModeChrome(). -->
-  <div class="picker hidden" id="bgLocationAssignPanel">
-    <div class="picker-label">배정된 장소</div>
-    <div class="hint" id="bgLocationAssignedLabel" style="margin:0 0 10px;text-align:left"></div>
-    <div class="picker-pills" id="bgLocationAssignPills"></div>
-    <div style="display:flex;gap:8px;margin-top:10px">
-      <input type="text" class="text-input" id="bgNewLocationInput" placeholder="새 장소 이름">
-      <button class="select-btn" id="bgNewLocationBtn" style="flex-shrink:0">+ 새 장소</button>
-    </div>
-    <div class="picker hidden" id="bgVariantAssignPicker" style="margin-top:14px">
-      <div class="picker-label">variant</div>
-      <div class="picker-pills" id="bgVariantAssignPills"></div>
-    </div>
-    <button class="week-dialogue-all-btn hidden" id="bgUnassignBtn" style="margin-top:10px;width:100%;padding:9px;border-radius:10px;color:var(--signal-red);border-color:rgba(217,65,65,.35);background:rgba(217,65,65,.08)">장소 배정 해제</button>
-    <div class="preview-panel hidden" id="bgLocationPreviewPanel" style="margin-top:14px">
-      <div class="preview-img-wrap"><img id="bgLocationPreviewImg" alt="preview"></div>
-      <div class="hint" style="margin:6px 0 0">이 장소에 배정된 사진 미리보기 — 업로드/변경은 장소 DB 탭에서.</div>
-    </div>
-  </div>
-
   <!-- 장소 DB: 전역 장소 카탈로그 관리 + variant별 사진 업로드/배정
        (location-background-system 설계안). Supabase Storage의
        locations/catalog.json 하나로 관리되며, 코드(dialogueData.js) 수정 없이
@@ -299,13 +275,11 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
     <button class="hotspot-secondary-btn hidden" id="deleteVariantBtn" style="width:100%;margin-top:8px;border-radius:10px;padding:10px;font-family:var(--mono);font-weight:700;color:var(--signal-red);border-color:rgba(217,65,65,.35)">이 variant 삭제</button>
   </div>
 
-  <!-- 탐색허브: dev/data/locationDefs.js에 정의된 허브 장소마다 배경 사진을 직접
-       등록. 장소 DB(위)의 전역 카탈로그와 달리, 여기 id는 phase까지 포함된
-       허브 자체의 location id라 phase별로 다른 사진을 따로 올릴 수 있다 —
-       Phase 피커로 먼저 좁힌 다음 그 안의 장소를 고른다. 저장은 기존 미니게임
-       배경과 같은 레거시 sceneId 방식(AssetDB.addAsset({sceneId}) +
-       DevGameState.setLegacyBackgroundId) — dev/explore/index.html의
-       applyLocationBackground()가 바로 이 키로 조회한다. -->
+  <!-- 탐색허브: dev/data/locationDefs.js에 정의된 허브 장소마다 어느 배경을
+       쓸지 고른다. Phase 피커로 먼저 좁힌 다음 그 안의 장소를 고르면, 아래
+       bgLocationAssignPanel(배경 DB의 일반 슬롯과 완전히 같은 패널)에서 전역
+       장소 카탈로그(장소 DB) 항목에 배정한다 — 같은 물리적 장소를 가리키는
+       VN 씬과 허브 위치가 있으면 사진이 자동으로 공유된다. -->
   <div class="picker hidden" id="hubPhasePicker">
     <div class="picker-label">단계 (Phase)</div>
     <div class="picker-pills" id="hubPhasePickerPills"></div>
@@ -313,6 +287,31 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
   <div class="picker hidden" id="hubLocationPicker">
     <div class="picker-label">장소</div>
     <div class="picker-pills" id="hubLocationPickerPills"></div>
+  </div>
+
+  <!-- 배경 DB의 일반 씬 배경 슬롯(미니게임 아님) + 탐색허브 위치가 공유하는
+       장소 배정 패널 — location-background-system 설계안: 이 슬롯이 어느
+       장소인지만 고르고, 실제 사진 업로드/배정은 장소 DB 탭에서 한다(같은
+       장소를 쓰는 다른 슬롯과 사진을 공유하기 위함). 미니게임 kind일 때는 이
+       패널이 숨고 기존 직접 업로드 방식 그대로 동작한다. See
+       renderBgLocationAssign()/updateBackgroundModeChrome(). -->
+  <div class="picker hidden" id="bgLocationAssignPanel">
+    <div class="picker-label">배정된 장소</div>
+    <div class="hint" id="bgLocationAssignedLabel" style="margin:0 0 10px;text-align:left"></div>
+    <div class="picker-pills" id="bgLocationAssignPills"></div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <input type="text" class="text-input" id="bgNewLocationInput" placeholder="새 장소 이름">
+      <button class="select-btn" id="bgNewLocationBtn" style="flex-shrink:0">+ 새 장소</button>
+    </div>
+    <div class="picker hidden" id="bgVariantAssignPicker" style="margin-top:14px">
+      <div class="picker-label">variant</div>
+      <div class="picker-pills" id="bgVariantAssignPills"></div>
+    </div>
+    <button class="week-dialogue-all-btn hidden" id="bgUnassignBtn" style="margin-top:10px;width:100%;padding:9px;border-radius:10px;color:var(--signal-red);border-color:rgba(217,65,65,.35);background:rgba(217,65,65,.08)">장소 배정 해제</button>
+    <div class="preview-panel hidden" id="bgLocationPreviewPanel" style="margin-top:14px">
+      <div class="preview-img-wrap"><img id="bgLocationPreviewImg" alt="preview"></div>
+      <div class="hint" style="margin:6px 0 0">이 장소에 배정된 사진 미리보기 — 업로드/변경은 장소 DB 탭에서.</div>
+    </div>
   </div>
 
   <!-- 인물 DB: character -> outfit -> expression picker. 옷 picker는 outfits
@@ -1133,19 +1132,33 @@ function renderHubLocationPicker() {
       refreshList();
     });
   });
+  // 탐색허브 위치도 배경 DB의 일반 슬롯과 같은 장소 배정 패널을 쓴다 (see
+  // isOrdinaryBackgroundSlot/updateBackgroundModeChrome) — renderBgKindPicker's
+  // 배경 tab tail call과 같은 이유로, 위치가 바뀔 때마다 다시 그려야 한다.
+  updateBackgroundModeChrome();
+  renderBgLocationAssign();
 }
 
 /* ===== 배경 DB tab: 일반 씬 배경 슬롯의 장소 배정 (미니게임 kind는 기존
-   방식 그대로 — see updateBackgroundModeChrome). ===== */
+   방식 그대로 — see updateBackgroundModeChrome). 탐색허브 탭도 같은 장소 배정
+   UI를 쓴다 — 허브 위치와 VN 씬이 같은 물리적 장소를 가리키는 경우(예: 둘 다
+   "전시장 앞") 사진을 한 번만 올리면 공유되도록, 더 이상 별도의 레거시 직접
+   업로드로 취급하지 않는다. ===== */
 function isOrdinaryBackgroundSlot() {
+  if (currentType === 'hub') return true;
   return currentType === 'background' && currentBgKind !== 'minigame' && !currentBgKind.startsWith('photo:');
 }
+// isOrdinaryBackgroundSlot()가 true를 낼 수 있는 상태인지 — 배경 DB는 씬이,
+// 탐색허브는 위치가 실제로 선택돼 있어야 장소를 배정할 대상이 있는 것.
+function currentOrdinarySlotReady() {
+  return currentType === 'hub' ? !!currentHubLocation() : !!currentScene();
+}
 
-// 미니게임 kind가 아닌 일반 배경 슬롯은 더 이상 여기서 직접 업로드하지 않고
-// (장소 DB 탭에서 하므로) 드롭존/저장 버튼/목록을 숨기고 장소 배정 패널만
-// 보여준다. 미니게임 kind는 예전 그대로 직접 업로드 UI를 쓴다.
+// 미니게임 kind가 아닌 일반 배경 슬롯(+ 탐색허브 위치)은 더 이상 여기서 직접
+// 업로드하지 않고(장소 DB 탭에서 하므로) 드롭존/저장 버튼/목록을 숨기고 장소
+// 배정 패널만 보여준다. 미니게임 kind는 예전 그대로 직접 업로드 UI를 쓴다.
 function updateBackgroundModeChrome() {
-  if (currentType !== 'background') return;
+  if (currentType !== 'background' && currentType !== 'hub') return;
   const ordinary = isOrdinaryBackgroundSlot();
   el.bgLocationAssignPanel.classList.toggle('hidden', !ordinary);
   el.dropzone.classList.toggle('hidden', ordinary);
@@ -1155,7 +1168,7 @@ function updateBackgroundModeChrome() {
 }
 
 async function renderBgLocationAssign() {
-  if (!isOrdinaryBackgroundSlot() || !currentScene()) return;
+  if (!isOrdinaryBackgroundSlot() || !currentOrdinarySlotReady()) return;
   const sceneId = activeBackgroundSceneId();
   await loadLocationsCatalog();
   let sceneLocMap = {};
@@ -1181,7 +1194,7 @@ async function renderBgLocationAssign() {
       try {
         await DevGameState.assignSlotLocation(sceneId, locationId, variantId);
         await renderBgLocationAssign();
-        renderBgKindPicker();
+        refreshOrdinarySlotPicker();
       } catch (err) {
         DevDiag.show('장소 배정 실패: ' + (err && err.message ? err.message : err));
       }
@@ -1219,9 +1232,17 @@ async function renderBgLocationAssign() {
   }
 }
 
+// 배경 DB의 배경 슬롯 kind 피커(✓/사진 없음 표시)와 탐색허브의 위치 피커는
+// 서로 다른 함수라, 장소 배정이 바뀐 뒤 어느 쪽을 다시 그릴지는 현재 탭에
+// 따라 갈린다.
+function refreshOrdinarySlotPicker() {
+  if (currentType === 'hub') renderHubLocationPicker();
+  else renderBgKindPicker();
+}
+
 el.bgNewLocationBtn.addEventListener('click', async () => {
   const label = el.bgNewLocationInput.value.trim();
-  if (!label || !currentScene()) return;
+  if (!label || !currentOrdinarySlotReady()) return;
   const sceneId = activeBackgroundSceneId();
   const id = uniqueLocationId(label);
   try {
@@ -1229,19 +1250,19 @@ el.bgNewLocationBtn.addEventListener('click', async () => {
     await DevGameState.assignSlotLocation(sceneId, id, 'default');
     el.bgNewLocationInput.value = '';
     await renderBgLocationAssign();
-    renderBgKindPicker();
+    refreshOrdinarySlotPicker();
   } catch (err) {
     DevDiag.show('새 장소 배정 실패: ' + (err && err.message ? err.message : err));
   }
 });
 
 el.bgUnassignBtn.addEventListener('click', async () => {
-  if (!currentScene()) return;
+  if (!currentOrdinarySlotReady()) return;
   const sceneId = activeBackgroundSceneId();
   try {
     await DevGameState.assignSlotLocation(sceneId, null, null);
     await renderBgLocationAssign();
-    renderBgKindPicker();
+    refreshOrdinarySlotPicker();
   } catch (err) {
     DevDiag.show('배정 해제 실패: ' + (err && err.message ? err.message : err));
   }
@@ -1295,9 +1316,10 @@ function selectType(type) {
   // switching to 인물 DB left it showing whatever it was left at.
   el.bgKindPicker.classList.toggle('hidden', type !== 'background');
   // bgLocationAssignPanel's actual visibility (also gated on the current
-  // slot not being the 미니게임 kind) is recomputed by renderBgKindPicker()
-  // below, same reasoning as bgKindPicker just above.
-  el.bgLocationAssignPanel.classList.toggle('hidden', type !== 'background');
+  // slot not being the 미니게임 kind) is recomputed by renderBgKindPicker()/
+  // renderHubLocationPicker() below, same reasoning as bgKindPicker just
+  // above — 탐색허브 위치도 같은 장소 배정 패널을 쓴다.
+  el.bgLocationAssignPanel.classList.toggle('hidden', type !== 'background' && type !== 'hub');
   el.locationPicker.classList.toggle('hidden', type !== 'location');
   el.variantPicker.classList.toggle('hidden', type !== 'location');
   el.hubPhasePicker.classList.toggle('hidden', type !== 'hub');
@@ -3541,11 +3563,13 @@ function applyFocusModeChrome() {
       el.tabCharacter.classList.add('hidden');
       el.tabMinigameFace.classList.add('hidden');
     }
-    // /dev/data's menu already commits to one specific tab per visit — the
-    // in-page tab row just duplicates that choice, and switching tabs here
-    // is redundant with the "‹" back button (which returns to /dev/data's
-    // own menu to pick a different one). See fromDataMenu's own comment.
-    if (fromDataMenu) el.tabsRow.classList.add('hidden');
+    // /dev/data's menu (?type=) and /dev/phases's 설정 button (?tab=hub)
+    // both already commit to one specific tab per visit — the in-page tab
+    // row just duplicates that choice, and switching tabs here is redundant
+    // with the "‹" back button (which returns to wherever the tester came
+    // from to pick something else). See fromDataMenu/deepLinkedHubTab's own
+    // comments.
+    if (fromDataMenu || deepLinkedHubTab) el.tabsRow.classList.add('hidden');
     return;
   }
   el.backBtn.href = focusMinigame.backHref;
@@ -3583,6 +3607,9 @@ applyFocusModeChrome();
 // arrow should return there instead of the top-level /dev/ menu — same
 // reasoning as focusMinigame.backHref above, just for a different origin.
 if (fromDataMenu && !focusMinigame && !focusScene) el.backBtn.href = '/dev/data/';
+// Same idea for /dev/phases's per-phase 설정 button (?tab=hub&phase=<id>) —
+// its own dedicated single-purpose entry, so back returns there instead.
+if (deepLinkedHubTab && !focusMinigame && !focusScene) el.backBtn.href = '/dev/phases/';
 selectType(deepLinkedHubTab && !focusMinigame && !focusScene ? 'hub'
   : (fromDataMenu && !focusMinigame && !focusScene) ? deepLinkedType
   : 'background');
