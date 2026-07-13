@@ -60,18 +60,11 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .enter-scene-btn.hidden{display:none}
 
 /* ===== Hub action bar — 조사/대화/제시/이동, replaces the old map/케이스
-   buttons. 이동하기 sits as a raised center FAB (스포트라이트 대상) rather
-   than a plain 4th pill, so "화면 중간에 이동 버튼" reads as a deliberate
-   destination picker, not just another peer action. ===== */
-.hub-actions{position:relative;display:flex;align-items:flex-end;justify-content:space-between;gap:8px}
-.hub-act-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:10px 6px 9px;color:var(--text-primary);font-family:var(--sans);cursor:pointer}
-.hub-act-btn:active{transform:scale(.96);background:#1c2530}
-.hub-act-icon{font-size:18px;line-height:1}
-.hub-act-label{font-size:11px;font-weight:700}
-.hub-act-fab{flex:0 0 66px;height:66px;margin:0 2px -24px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:var(--amber);color:#191206;border:4px solid #05070a;border-radius:50%;box-shadow:0 6px 18px rgba(0,0,0,.45);cursor:pointer;font-family:var(--sans)}
-.hub-act-fab:active{transform:scale(.95)}
-.hub-act-fab .hub-act-icon{font-size:20px}
-.hub-act-fab .hub-act-label{font-size:10px;font-weight:700}
+   buttons. Plain 2x2 text-only grid (no icons/emoji, no raised FAB) — every
+   action reads as an equal peer. ===== */
+.hub-actions{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.hub-act-btn{display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:14px 6px;color:var(--text-primary);font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer}
+.hub-act-btn:active{transform:scale(.97);background:#1c2530}
 
 /* ===== Move (다크→라이트) transition — plays while performMove() swaps the
    background/goal line underneath, so the cut never shows mid-render. ===== */
@@ -94,6 +87,16 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 @keyframes investigateHotspotPulse{0%,100%{box-shadow:0 0 0 0 rgba(89,184,200,.35)}50%{box-shadow:0 0 0 8px rgba(89,184,200,0)}}
 .investigate-hint{position:absolute;left:16px;right:16px;top:calc(96px + env(safe-area-inset-top,0));z-index:2;text-align:center;font-size:13px;color:var(--text-secondary);background:rgba(8,10,12,.65);border-radius:14px;padding:10px 14px;pointer-events:none;opacity:0;transition:opacity .2s ease}
 .investigate-hint.show{opacity:1}
+
+/* ===== Location character chips — who's actually standing here, shown
+   above the goal line so presence isn't hidden behind the 대화 sheet. ===== */
+.loc-characters{display:flex;gap:8px;margin-bottom:10px;overflow-x:auto}
+.loc-characters:empty{display:none;margin-bottom:0}
+.loc-char-chip{flex-shrink:0;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:5px 12px 5px 5px;color:var(--text-primary);font-family:inherit;cursor:pointer}
+.loc-char-chip:active{background:#1c2530}
+.loc-char-portrait{width:30px;height:30px;border-radius:50%;overflow:hidden;background:var(--surface-2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--text-secondary)}
+.loc-char-portrait img{width:100%;height:100%;object-fit:cover;object-position:top}
+.loc-char-name{font-size:12.5px;font-weight:700}
 
 /* ===== Bottom-sheet family (character menu / topic list / evidence / persons) ===== */
 .sheet-overlay{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center}
@@ -152,13 +155,14 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
     <div class="investigate-hint" id="investigateHint"></div>
     <div class="move-fade" id="moveFade"></div>
     <div class="bottom-bar">
+      <div class="loc-characters" id="locCharacters"></div>
       <div class="goal-line" id="goalLine"></div>
       <button class="vn-btn enter-scene-btn hidden" id="enterSceneBtn" style="width:100%;margin-bottom:8px"></button>
       <div class="hub-actions">
-        <button class="hub-act-btn" id="investigateBtn"><span class="hub-act-icon">🔍</span><span class="hub-act-label">조사</span></button>
-        <button class="hub-act-btn" id="talkBtn"><span class="hub-act-icon">💬</span><span class="hub-act-label">대화</span></button>
-        <button class="hub-act-fab" id="moveBtn"><span class="hub-act-icon">🚶</span><span class="hub-act-label">이동</span></button>
-        <button class="hub-act-btn" id="presentBtn"><span class="hub-act-icon">📎</span><span class="hub-act-label">제시</span></button>
+        <button class="hub-act-btn" id="investigateBtn">조사하기</button>
+        <button class="hub-act-btn" id="talkBtn">대화하기</button>
+        <button class="hub-act-btn" id="moveBtn">이동하기</button>
+        <button class="hub-act-btn" id="presentBtn">증거 제시</button>
       </div>
     </div>
   </div>
@@ -235,6 +239,7 @@ const el = {
   locCanvas: document.getElementById('locCanvas'),
   locImg: document.getElementById('locImg'),
   moveFade: document.getElementById('moveFade'),
+  locCharacters: document.getElementById('locCharacters'),
   goalLine: document.getElementById('goalLine'),
   enterSceneBtn: document.getElementById('enterSceneBtn'),
   investigateBtn: document.getElementById('investigateBtn'),
@@ -311,6 +316,11 @@ let locCanvasW = 0, locCanvasH = 0;
 let locScale = 1, locBaseScale = 1, locTx = 0, locTy = 0;
 const locPointers = new Map();
 let locPanStart = null;
+// 조사하기(핫스팟 모드)일 때만 배경을 밀거나 확대할 수 있다 — 평소엔 화면이
+// 고정되어 있고, 조사하기를 켜야 화면 이동 잠금이 풀리는 식 (아래 pointerdown/
+// pointermove/wheel 핸들러들이 이 값을 확인). 실제 선언은 §조사하기 섹션에
+// 있지만, 여기 있는 핸들러들이 참조하므로 위치만 앞당겨 선언한다.
+let investigateMode = false;
 let locPinchStartDist = 0, locPinchStartScale = 1;
 const LOC_MAX_SCALE_MULT = 3;
 
@@ -337,7 +347,7 @@ window.addEventListener('resize', () => { if (locCanvasW) fitLocStage(); });
 window.addEventListener('orientationchange', () => { if (locCanvasW) fitLocStage(); });
 
 el.locStage.addEventListener('pointerdown', (e) => {
-  if (!locCanvasW) return;
+  if (!locCanvasW || !investigateMode) return; // 조사하기가 켜져 있을 때만 화면 이동(팬/줌) 허용 — 그 전엔 화면 잠금
   if (e.target.closest('.investigate-hotspot')) return; // let the marker's own click fire instead of starting a pan under it
   el.locStage.setPointerCapture(e.pointerId);
   locPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -351,7 +361,7 @@ el.locStage.addEventListener('pointerdown', (e) => {
   }
 });
 el.locStage.addEventListener('pointermove', (e) => {
-  if (!locCanvasW || !locPointers.has(e.pointerId)) return;
+  if (!locCanvasW || !investigateMode || !locPointers.has(e.pointerId)) return;
   locPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
   if (locPointers.size === 1 && locPanStart) {
     locTx = locPanStart.tx + (e.clientX - locPanStart.x);
@@ -377,7 +387,7 @@ el.locStage.addEventListener('pointermove', (e) => {
   if (locPointers.size === 0) locPanStart = null;
 }));
 el.locStage.addEventListener('wheel', (e) => {
-  if (!locCanvasW) return;
+  if (!locCanvasW || !investigateMode) return;
   e.preventDefault();
   const rect = el.locStage.getBoundingClientRect();
   const stageX = e.clientX - rect.left, stageY = e.clientY - rect.top;
@@ -424,6 +434,7 @@ function renderLocation() {
   if (!def) return;
   setInvestigateMode(false); // a new location's canvas/hotspots start clean, not mid-투어 from wherever the player last toggled 조사 on
   applyLocationBackground(id);
+  renderLocationCharacters();
 
   // A location can hand off back into the VN (spec §12.2's soft-gate) — e.g.
   // 빈티지 전시장 입구's enterSceneId leaves the hub for good and resumes
@@ -506,6 +517,31 @@ function performMove(locationId) {
 function locationCharacters() {
   const def = locationDefs[ExplorationState.getCurrentLocationId()];
   return (def && def.characters) || [];
+}
+
+// ===== 장소에 있는 사람 캐릭터 표시 (§신규) — 대화/제시 버튼 뒤에 숨어있는
+// 대신, 지금 이 장소에 누가 있는지 초상화 chip으로 바로 보여준다. chip을
+// 누르면 그 인물과 바로 대화 목록을 연다(누구에게? 피커 없이 직행).
+async function renderLocationCharacters() {
+  const chars = locationCharacters();
+  el.locCharacters.innerHTML = chars.map(charId => {
+    const person = dialogueCharacters.find(d => d.id === charId) || { name: charId };
+    return `
+      <button class="loc-char-chip" data-char="${charId}">
+        <span class="loc-char-portrait" id="locCharPortrait-${charId}">${escapeHtml((person.name || '?')[0])}</span>
+        <span class="loc-char-name">${escapeHtml(person.name)}</span>
+      </button>
+    `;
+  }).join('');
+  el.locCharacters.querySelectorAll('[data-char]').forEach(chip => {
+    chip.addEventListener('click', () => openTopicList(chip.dataset.char));
+  });
+  chars.forEach(async (charId) => {
+    const assetId = DevGameState.getCharacterAssetId(charId, 'neutral');
+    const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
+    const host = document.getElementById(`locCharPortrait-${charId}`);
+    if (host && asset && asset.dataUrl) host.innerHTML = `<img src="${asset.dataUrl}" alt="">`;
+  });
 }
 function resolveCharacterThen(onPick, emptyMessage) {
   const chars = locationCharacters();
@@ -625,8 +661,9 @@ function openAskAboutSheet(characterId) {
    yet still toggles the mode on, it just has nothing to mark, and the hint
    line says so instead. locStage's own pointerdown (a few lines up) is
    patched to ignore taps on `.investigate-hotspot` so tapping a marker
-   doesn't also start a pan-drag underneath it. */
-let investigateMode = false;
+   doesn't also start a pan-drag underneath it. investigateMode itself is
+   declared up with the pan/zoom state above, since that stage's own
+   handlers gate on it too (조사하기 off = 화면 이동 잠금). */
 function clearInvestigateHotspots() { el.locCanvas.querySelectorAll('.investigate-hotspot').forEach(n => n.remove()); }
 function renderInvestigateHotspots() {
   clearInvestigateHotspots();
@@ -654,7 +691,12 @@ function setInvestigateMode(on) {
   investigateMode = on;
   el.investigateBtn.classList.toggle('active', on);
   el.investigateHint.classList.toggle('show', on);
-  if (on) renderInvestigateHotspots(); else clearInvestigateHotspots();
+  if (on) {
+    renderInvestigateHotspots();
+  } else {
+    clearInvestigateHotspots();
+    if (locCanvasW) fitLocStage(); // 화면 이동 잠금으로 돌아갈 때 팬/줌 위치도 기본 프레임으로 리셋
+  }
 }
 el.investigateBtn.addEventListener('click', () => setInvestigateMode(!investigateMode));
 
