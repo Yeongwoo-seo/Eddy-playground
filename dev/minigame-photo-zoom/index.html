@@ -135,6 +135,20 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .order-submit-btn{font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:.04em;color:#04181c;background:var(--cyan);border:none;border-radius:14px;padding:14px;cursor:pointer;flex-shrink:0}
 .order-submit-btn:active{opacity:.85}
 .order-submit-btn:disabled{background:var(--surface-2);color:var(--text-muted);cursor:default}
+
+/* ===== Order-phase lightbox — tapping a tile anywhere except its badge
+   grows that photo into a bigger popup (FLIP transform-transition from the
+   tapped tile's own on-screen rect), so the player can look closer without
+   it counting as an order pick. Tapping the badge itself still only toggles
+   the order number (its own click handler stops propagation). ===== */
+.order-lightbox{position:fixed;inset:0;z-index:20;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0);transition:background .28s ease}
+.order-lightbox.show{display:flex;background:rgba(0,0,0,.8)}
+.order-lightbox-card{position:fixed;overflow:hidden;background:var(--surface-2);box-shadow:0 12px 40px rgba(0,0,0,.5);transition:top .32s cubic-bezier(.2,.8,.2,1),left .32s cubic-bezier(.2,.8,.2,1),width .32s cubic-bezier(.2,.8,.2,1),height .32s cubic-bezier(.2,.8,.2,1),border-radius .32s cubic-bezier(.2,.8,.2,1)}
+.order-lightbox-card img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.order-lightbox-card .order-chip-icon{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:42px;opacity:.5}
+.order-lightbox-caption{position:absolute;left:0;right:0;bottom:0;padding:14px 16px;background:linear-gradient(180deg,rgba(5,7,10,0) 0%,rgba(5,7,10,.85) 100%);font-size:13px;color:#fff;line-height:1.5}
+.order-lightbox-close{position:fixed;top:calc(14px + env(safe-area-inset-top,0));right:16px;z-index:21;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;pointer-events:none;transition:opacity .2s ease}
+.order-lightbox.show .order-lightbox-close{opacity:1;pointer-events:auto}
 </style>
 </head>
 <body>
@@ -177,7 +191,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
       <a class="vn-btn" href="/dev/">← DEV</a>
     </div>
     <div class="order-title">먼저, 사진 순서부터</div>
-    <div class="order-desc">직원이 건네준 사진 일곱 장이에요. 무작위로 뒤섞여 있고 시간 같은 힌트는 없어요. 순서대로라고 생각하는 사진을 차례로 눌러 우상단 동그라미에 번호를 매기세요(다시 누르면 번호가 취소돼요). 다 매겼으면 제출해서 확인하세요.</div>
+    <div class="order-desc">직원이 건네준 사진 일곱 장이에요. 무작위로 뒤섞여 있고 시간 같은 힌트는 없어요. 순서대로라고 생각하는 사진을 차례로 눌러 우상단 동그라미에 번호를 매기세요(다시 누르면 번호가 취소돼요). 사진의 다른 부분을 누르면 크게 볼 수 있어요. 다 매겼으면 제출해서 확인하세요.</div>
     <div class="order-pool" id="orderPool"></div>
     <button class="order-submit-btn" id="orderSubmitBtn" disabled>제출</button>
     <div class="dlg-strip" id="orderDlgStrip">
@@ -185,6 +199,10 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
         <div class="dlg-name" id="orderDlgName"></div>
         <div class="dlg-text" id="orderDlgText"></div>
       </div>
+    </div>
+    <div class="order-lightbox" id="orderLightbox">
+      <div class="order-lightbox-card" id="orderLightboxCard"></div>
+      <button class="order-lightbox-close" id="orderLightboxClose">✕</button>
     </div>
   </div>
 
@@ -401,6 +419,9 @@ const el = {
   orderDlgStrip: document.getElementById('orderDlgStrip'),
   orderDlgName: document.getElementById('orderDlgName'),
   orderDlgText: document.getElementById('orderDlgText'),
+  orderLightbox: document.getElementById('orderLightbox'),
+  orderLightboxCard: document.getElementById('orderLightboxCard'),
+  orderLightboxClose: document.getElementById('orderLightboxClose'),
 };
 
 function totalFound() { return foundIds.size; }
@@ -862,8 +883,18 @@ function renderOrderGrid() {
         <div class="order-badge${num ? ' filled' : ''}">${num || ''}</div>
       </div>`;
   }).join('');
-  el.orderPool.querySelectorAll('.order-tile:not(.locked)').forEach(tileEl => {
-    tileEl.addEventListener('click', () => onTileTap(parseInt(tileEl.dataset.idx, 10)));
+  // The badge has its own click handler (stopPropagation) so only it toggles
+  // the order number; tapping anywhere else on the tile grows it into the
+  // lightbox instead — a plain look, not another way to pick an order.
+  el.orderPool.querySelectorAll('.order-tile').forEach(tileEl => {
+    const idx = parseInt(tileEl.dataset.idx, 10);
+    tileEl.addEventListener('click', () => openOrderLightbox(idx, tileEl));
+    if (!tileEl.classList.contains('locked')) {
+      tileEl.querySelector('.order-badge').addEventListener('click', (e) => {
+        e.stopPropagation();
+        onTileTap(idx);
+      });
+    }
   });
   el.orderSubmitBtn.disabled = PHOTOS.some((_, i) => orderPositions[i] === null);
 }
@@ -876,6 +907,63 @@ function sayInOrder(speakerName, text) {
   el.orderDlgStrip.classList.add('show');
   orderReactionHideTimer = setTimeout(() => el.orderDlgStrip.classList.remove('show'), 3200);
 }
+
+/* ===== Order-phase lightbox — FLIP transform-transition: snapshot the
+   tapped tile's own on-screen rect, paint the card there, then (after a
+   forced reflow so the browser has something to transition from) animate it
+   to a big centered rect. Closing reverses the same animation back into the
+   tile it came from. Plain photo only — no case box / figures — so it can't
+   leak the person-finding phase's tap targets early. ===== */
+let lightboxOpenIdx = -1;
+let lightboxStartRect = null;
+
+function lightboxTargetRect() {
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const maxW = Math.min(vw - 48, 380);
+  const maxH = vh - 96;
+  let w = maxW, h = w * (CANVAS_H / CANVAS_W);
+  if (h > maxH) { h = maxH; w = h * (CANVAS_W / CANVAS_H); }
+  return { top: (vh - h) / 2, left: (vw - w) / 2, width: w, height: h };
+}
+
+function openOrderLightbox(photoIdx, tileEl) {
+  const photo = PHOTOS[photoIdx];
+  lightboxOpenIdx = photoIdx;
+  lightboxStartRect = tileEl.getBoundingClientRect();
+  el.orderLightboxCard.innerHTML = `
+    ${orderThumbs[photoIdx] ? `<img src="${orderThumbs[photoIdx]}" alt="">` : `<div class="order-chip-icon">📷</div>`}
+    <div class="order-lightbox-caption">${photo.caption || ''}</div>`;
+  Object.assign(el.orderLightboxCard.style, {
+    top: lightboxStartRect.top + 'px', left: lightboxStartRect.left + 'px',
+    width: lightboxStartRect.width + 'px', height: lightboxStartRect.height + 'px',
+    borderRadius: '12px',
+  });
+  el.orderLightbox.classList.add('show');
+  void el.orderLightboxCard.offsetHeight; // force reflow so the grow below actually animates
+  requestAnimationFrame(() => {
+    const target = lightboxTargetRect();
+    Object.assign(el.orderLightboxCard.style, {
+      top: target.top + 'px', left: target.left + 'px',
+      width: target.width + 'px', height: target.height + 'px',
+      borderRadius: '16px',
+    });
+  });
+}
+
+function closeOrderLightbox() {
+  if (lightboxOpenIdx < 0) return;
+  lightboxOpenIdx = -1;
+  const rect = lightboxStartRect;
+  Object.assign(el.orderLightboxCard.style, {
+    top: rect.top + 'px', left: rect.left + 'px',
+    width: rect.width + 'px', height: rect.height + 'px',
+    borderRadius: '12px',
+  });
+  el.orderLightbox.classList.remove('show');
+}
+el.orderLightbox.addEventListener('click', (e) => { if (e.target === el.orderLightbox) closeOrderLightbox(); });
+el.orderLightboxCard.addEventListener('click', closeOrderLightbox);
+el.orderLightboxClose.addEventListener('click', closeOrderLightbox);
 
 // Tapping an unnumbered photo gives it the next free badge number; tapping
 // an already-numbered (and not yet locked) photo clears its number again.
