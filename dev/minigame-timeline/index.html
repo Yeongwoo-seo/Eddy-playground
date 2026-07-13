@@ -375,7 +375,7 @@ function grantGapEvidence() {
   if (gapEvidenceGranted) return;
   gapEvidenceGranted = true;
   CaseFileState.addEvidence({
-    id: 'evidence-leo-timeline-gap', code: 'E-TL1', title: '레오 박 진술-사진 대조 기록',
+    id: 'evidence-leo-timeline-gap', code: 'E-TL1', category: 'record', title: '레오 박 진술-사진 대조 기록',
     description: '레오 박의 진술(10:42~10:58)과 실제 사진 기록을 대조한 결과, 10:47~10:58 사이 11분 동안 어떤 사진에도 나오지 않는다.',
     discoveredLocationText: 'Café near Circular Quay · 시간대 정리',
   });
@@ -383,7 +383,7 @@ function grantGapEvidence() {
   // "카페 주문과 결제 분리"의 보조 단서. 어떤 심문도 이 증거를 필수로
   // 요구하지 않아(선택 조사 성격) 건너뛰어도 진행을 막지 않는다.
   CaseFileState.addEvidence({
-    id: 'evidence-leo-cafe-receipt', code: 'E-TL2', title: '카페 주문·결제 기록',
+    id: 'evidence-leo-cafe-receipt', code: 'E-TL2', category: 'record', title: '카페 주문·결제 기록',
     description: '레오 박으로 추정되는 손님의 커피 주문(10:59)과 카드 결제(11:02) 시각. 주문과 결제 사이 3분의 텀이 있다.',
     discoveredLocationText: 'Café near Circular Quay · 시간대 정리',
   });

@@ -297,7 +297,7 @@ const interactionDefs = {
     effects: [{
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-bridge-van-collection-note', code: 'E-P01', title: '밴에서 찾은 현장 수거 메모',
+        id: 'evidence-bridge-van-collection-note', code: 'E-P01', category: 'physical', title: '밴에서 찾은 현장 수거 메모',
         description: '"FIELD COLLECTION / Window: 11:10-11:30 / Zone: TR-2 / Ref: SR-184 / HOLD UNTIL CONFIRMATION" — 사건 당일 오전, 전시장 인근 구역(TR-2)에서 무언가를 수거할 예정이었다는 메모. 레오 사건과 정확히 어떻게 연결되는지는 아직 확정되지 않았다.',
         discoveredLocationText: 'Circular Quay · 하버브리지 전망 구역 (촬영해둔 사진 확대)',
       },

@@ -247,7 +247,7 @@ const HOTSPOTS = [
     id: 'tag', icon: '🏷️', name: '직원용 태그', required: false,
     line: '직원용 태그 — 접수대 오른쪽에 놓여 있다. 진열장을 정리할 때 쓰는 것 같다.',
     evidence: {
-      id: 'evidence-staff-tag-position-before', code: 'E-H01', title: '직원용 태그 위치 (사건 전)',
+      id: 'evidence-staff-tag-position-before', code: 'E-H01', category: 'physical', title: '직원용 태그 위치 (사건 전)',
       description: '사건이 일어나기 전, 직원용 태그는 접수대 오른쪽에 놓여 있었다.',
     },
   },
@@ -259,7 +259,7 @@ const HOTSPOTS = [
     id: 'pamphlet', icon: '📄', name: '안내 팸플릿', required: false,
     line: '안내 팸플릿. K-01 항목 옆에 "판매 불가 · 전시 전용" 표시가 있다.',
     evidence: {
-      id: 'evidence-k01-not-for-sale', code: 'E-H02', title: 'K-01 팸플릿 표기',
+      id: 'evidence-k01-not-for-sale', code: 'E-H02', category: 'record', title: 'K-01 팸플릿 표기',
       description: '안내 팸플릿에는 K-01이 "판매 불가 · 전시 전용" 물품으로 표기되어 있다. 단순 되팔기 목적의 충동 절도라면 이상한 선택이다.',
     },
   },
@@ -267,7 +267,7 @@ const HOTSPOTS = [
     id: 'guestbook', icon: '📖', name: '방문객 방명록', required: false,
     line: '오늘 자 방명록 어디에도 "레오"로 추정되는 이름이 없다.',
     evidence: {
-      id: 'evidence-guestbook-no-leo', code: 'E-H03', title: '방명록 — 레오 이름 없음',
+      id: 'evidence-guestbook-no-leo', code: 'E-H03', category: 'record', title: '방명록 — 레오 이름 없음',
       description: '오늘 자 방명록 어디에도 "레오"로 추정되는 이름이 없다.',
     },
   },
@@ -275,7 +275,7 @@ const HOTSPOTS = [
     id: 'ceiling', icon: '🎥', name: '천장 보안카메라', required: false,
     line: '천장 보안카메라가 진열장 정면이 아니라 출입구 쪽을 향해 있다.',
     evidence: {
-      id: 'evidence-cctv-angle', code: 'E-H04', title: '보안카메라 각도',
+      id: 'evidence-cctv-angle', code: 'E-H04', category: 'photo', title: '보안카메라 각도',
       description: '천장 보안카메라가 K-01 진열장 정면이 아니라 출입구 쪽을 향해 있다. 진열장 근처는 사각지대에 가깝다.',
     },
   },
@@ -455,7 +455,7 @@ function onK01Tap() {
     markFound('k01');
     markK01DiscoveryPlayed();
     CaseFileState.addEvidence({
-      id: 'evidence-k01-early-inscription-note', code: 'E-000', title: 'K-01 사전 관찰 메모',
+      id: 'evidence-k01-early-inscription-note', code: 'E-000', category: 'record', title: 'K-01 사전 관찰 메모',
       description: '진열장 유리 너머로 봤을 때, 후면에 작은 각인 같은 게 있는 듯했다. 이 각도에서는 정확히 확인되지 않는다.',
       discoveredLocationText: 'Pop-up Exhibition · 사전 조사',
     });
@@ -730,7 +730,7 @@ el.exitBtn.addEventListener('click', () => {
   const lines = EXIT_LINES_BASE.slice();
   if (optionalFoundCount() >= BONUS_THRESHOLD) {
     CaseFileState.addEvidence({
-      id: 'evidence-observation-bonus', code: 'E-H00', title: '전시장 관찰 보너스',
+      id: 'evidence-observation-bonus', code: 'E-H00', category: 'record', title: '전시장 관찰 보너스',
       description: '카메라, 회중시계, 태그, 전용문, 팸플릿, 방명록, 보안카메라까지 — 전시장 구석구석을 미리 살펴봤다.',
       discoveredLocationText: 'Pop-up Exhibition · 자유 조사',
     });
