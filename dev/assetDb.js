@@ -56,9 +56,29 @@ const AssetDB = (() => {
   // /dev/game re-requests the active character/background asset on every
   // single dialogue line change, even when it's the same asset as before —
   // without a cache that's a Supabase round-trip per tap, which is exactly
-  // why lines were visibly slow to appear. Cached per page session (a fresh
-  // page load starts empty, so edits made elsewhere are always picked up).
+  // why lines were visibly slow to appear. Every /dev/game scene is its own
+  // full page navigation (see game/index.html's nextSceneId handoff), so an
+  // in-memory-only Map would restart empty on every single scene change —
+  // re-paying that round trip for the *same* background/portrait dozens of
+  // times over one week's playthrough. Mirrored into sessionStorage (below)
+  // so it survives navigation within one browser tab/session; asset rows are
+  // effectively immutable once uploaded (addAsset always mints a fresh id —
+  // see addAsset below), so a session-old entry doesn't go stale the way a
+  // live-edited value would.
   const cache = new Map();
+  const ASSET_CACHE_SESSION_KEY = 'mkAssetDbCache';
+  function hydrateAssetCache() {
+    try {
+      const raw = sessionStorage.getItem(ASSET_CACHE_SESSION_KEY);
+      if (!raw) return;
+      JSON.parse(raw).forEach(row => cache.set(row.id, row));
+    } catch (e) { /* corrupt/unavailable storage — start with an empty cache */ }
+  }
+  function persistAssetCache() {
+    try { sessionStorage.setItem(ASSET_CACHE_SESSION_KEY, JSON.stringify([...cache.values()])); }
+    catch (e) { /* storage full/unavailable — cache still works in-memory for this page */ }
+  }
+  hydrateAssetCache();
 
   function restHeaders(extra) {
     return Object.assign({
@@ -143,6 +163,7 @@ const AssetDB = (() => {
     if (!insertRes.ok) throw new Error(`이미지 정보 저장 실패 (${insertRes.status}): ${await insertRes.text()}`);
     const asset = toAsset(row);
     cache.set(asset.id, asset);
+    persistAssetCache();
     return asset;
   }
 
@@ -154,6 +175,7 @@ const AssetDB = (() => {
     const rows = await res.json();
     const assets = rows.map(toAsset);
     assets.forEach(a => cache.set(a.id, a));
+    persistAssetCache();
     return assets;
   }
 
@@ -166,8 +188,28 @@ const AssetDB = (() => {
     if (!res.ok) throw new Error(`이미지를 불러오지 못했습니다 (${res.status})`);
     const rows = await res.json();
     const asset = rows.length ? toAsset(rows[0]) : null;
-    if (asset) cache.set(id, asset);
+    if (asset) { cache.set(id, asset); persistAssetCache(); }
     return asset;
+  }
+
+  // Batched counterpart to getAsset — a whole week's worth of scenes shares
+  // a small pool of backgrounds/portraits, so fetching each one's metadata
+  // with its own round trip (WeekPreloader's original approach) was itself
+  // the slow part. One `id=in.(...)` request covers everything still
+  // missing from cache; already-cached ids resolve for free.
+  async function getAssetsByIds(ids) {
+    const unique = [...new Set((ids || []).filter(Boolean))];
+    const missing = unique.filter(id => !cache.has(id));
+    if (missing.length) {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/${DEV_ASSETS_TABLE}?id=in.(${missing.map(encodeURIComponent).join(',')})&select=*`, {
+        headers: restHeaders(),
+      });
+      if (!res.ok) throw new Error(`이미지 목록을 불러오지 못했습니다 (${res.status})`);
+      const rows = await res.json();
+      rows.map(toAsset).forEach(a => cache.set(a.id, a));
+      persistAssetCache();
+    }
+    return unique.map(id => cache.get(id)).filter(Boolean);
   }
 
   async function deleteAsset(id) {
@@ -187,6 +229,7 @@ const AssetDB = (() => {
       headers: restHeaders(),
     });
     cache.delete(id);
+    persistAssetCache();
   }
 
   // Caching the metadata/URL above isn't enough on its own — setting an
@@ -199,10 +242,27 @@ const AssetDB = (() => {
   // img.decode() forces that decode to happen now, off-DOM, during the
   // loading screen, so every switch afterward is a plain paint of an
   // already-decoded bitmap.
+  // Mirrored into sessionStorage for the same reason as `cache` above — a
+  // decode warmed on one scene's page load would otherwise be forgotten the
+  // instant the next scene's full navigation recreates this module, paying
+  // the decode cost again for an image the browser's HTTP cache may not
+  // even round-trip to the network for.
   const warmedImages = new Set();
+  const WARMED_IMAGES_SESSION_KEY = 'mkAssetDbWarmedImages';
+  function hydrateWarmedImages() {
+    try { JSON.parse(sessionStorage.getItem(WARMED_IMAGES_SESSION_KEY) || '[]').forEach(u => warmedImages.add(u)); }
+    catch (e) { /* corrupt/unavailable storage — start with nothing warmed */ }
+  }
+  function persistWarmedImages() {
+    try { sessionStorage.setItem(WARMED_IMAGES_SESSION_KEY, JSON.stringify([...warmedImages])); }
+    catch (e) { /* storage full/unavailable — warming still works in-memory for this page */ }
+  }
+  hydrateWarmedImages();
+
   function preloadImage(url) {
     if (!url || warmedImages.has(url)) return Promise.resolve();
     warmedImages.add(url);
+    persistWarmedImages();
     const img = new Image();
     img.src = url;
     const ready = img.decode ? img.decode() : new Promise((resolve) => {
@@ -524,6 +584,33 @@ const AssetDB = (() => {
     }
   }
 
+  // Seeds dialogueOverridesCache/soundsCache directly (no network, no
+  // sessionStorage of their own) — used exclusively by WeekPreloader to
+  // replay its one bulk fetch's results into a fresh /dev/game page load, so
+  // getDialogueOverrides/getSounds see a warm cache instead of re-fetching
+  // per scene. Deliberately *not* auto-persisted/hydrated the way `cache`
+  // and `warmedImages` are above: dialogue overrides and the sound catalog
+  // are cache-busted (`?t=${Date.now()}`) on purpose because /dev/upload's
+  // editors expect every read there to reflect the latest save, and blanket
+  // sessionStorage hydration would silently defeat that for any page, not
+  // just /dev/game.
+  function primeDialogueOverrides(sceneId, map) {
+    if (!sceneId || dialogueOverridesCache.has(sceneId)) return;
+    dialogueOverridesCache.set(sceneId, normalizeDialogueOverrides(map || {}));
+  }
+  function primeSounds(map) {
+    if (soundsCache.has('catalog')) return;
+    soundsCache.set('catalog', map || {});
+  }
+  // Same idea for the scene->location assignment map (getSceneLocationMap
+  // below) — DevGameState.getBackgroundId reads it on every single
+  // applyBackground call, so without priming it WeekPreloader's batching
+  // wouldn't actually stop that one from re-fetching per scene.
+  function primeSceneLocationMap(map) {
+    if (sceneLocationsCache.has('map')) return;
+    sceneLocationsCache.set('map', map || {});
+  }
+
   async function setSound(soundId, def) {
     if (!soundId) return {};
     const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${SOUNDS_PATH}?t=${Date.now()}`;
@@ -682,15 +769,15 @@ const AssetDB = (() => {
   }
 
   return {
-    addAsset, getAssetsByType, getAsset, deleteAsset, preloadImage,
+    addAsset, getAssetsByType, getAsset, getAssetsByIds, deleteAsset, preloadImage,
     getRoomHotspots, setRoomHotspot,
     getMinigameHotspot, setMinigameHotspot,
     getItems, setItem, getRecipes, setRecipes,
-    getDialogueOverrides, setDialogueOverrides,
-    getSounds, setSound, deleteSound,
+    getDialogueOverrides, setDialogueOverrides, primeDialogueOverrides,
+    getSounds, setSound, deleteSound, primeSounds,
     getYoungwooTestAnswers, setYoungwooTestAnswer,
     getLocations, setLocation,
-    getSceneLocationMap, setSceneLocation,
+    getSceneLocationMap, setSceneLocation, primeSceneLocationMap,
   };
 })();
 
