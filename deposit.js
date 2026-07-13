@@ -86,10 +86,9 @@ function resizeImageToDataURL(file, maxDim, quality) {
 }
 
 // --- OCR 결과에서 이름/금액 추측 ---
-function guessNameFromText(text) {
+function findKoreanName(lines) {
     const stopWords = ['입금', '출금', '계좌', '조회', '잔액', '거래', '내역', '확인', '이체', '은행',
         '통장', '국민', '신한', '우리', '하나', '농협', '카카오', '토스', '뱅크', '송금', '적요'];
-    const lines = (text || '').split('\n').map(l => l.trim()).filter(Boolean);
     const nameRegex = /[가-힣]{2,4}/g;
     for (const line of lines) {
         const matches = line.match(nameRegex) || [];
@@ -98,6 +97,37 @@ function guessNameFromText(text) {
         }
     }
     return '';
+}
+
+function findEnglishName(lines) {
+    const stopWords = ['BANK', 'DEPOSIT', 'WITHDRAW', 'WITHDRAWAL', 'ACCOUNT', 'BALANCE', 'TRANSFER',
+        'TOTAL', 'INQUIRY', 'HISTORY', 'TRANSACTION', 'STATEMENT', 'AMOUNT', 'DATE', 'TIME',
+        'FROM', 'TO', 'SENDER', 'RECEIVER', 'PAYER', 'PAYEE', 'NAME', 'MEMO', 'NOTE', 'REF', 'KRW', 'WON'];
+    const nameRegex = /[A-Za-z]{2,}(?:[ '\-][A-Za-z]{2,}){0,2}/g;
+    let singleWordFallback = '';
+    for (const line of lines) {
+        const matches = line.match(nameRegex) || [];
+        for (const m of matches) {
+            const tokens = m.split(/\s+/);
+            if (tokens.some(t => stopWords.includes(t.toUpperCase()))) continue;
+            if (m.includes(' ')) return m; // 두 단어 이상이면 사람 이름일 가능성이 높음
+            if (!singleWordFallback) singleWordFallback = m;
+        }
+    }
+    return singleWordFallback;
+}
+
+function guessNameFromText(text) {
+    const clean = text || '';
+    const lines = clean.split('\n').map(l => l.trim()).filter(Boolean);
+    const hangulCount = (clean.match(/[가-힣]/g) || []).length;
+    const latinCount = (clean.match(/[A-Za-z]/g) || []).length;
+
+    // 캡쳐본이 영문 위주면 OCR이 만들어낸 엉뚱한 한글 조각보다 영문 이름을 우선한다
+    if (latinCount > hangulCount) {
+        return findEnglishName(lines) || findKoreanName(lines);
+    }
+    return findKoreanName(lines) || findEnglishName(lines);
 }
 
 function guessAmountFromText(text) {
