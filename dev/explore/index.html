@@ -44,8 +44,15 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 /* ===== LOCATION VIEW (spec §7.1) ===== */
 .location-view{position:absolute;inset:0;display:none;flex-direction:column}
 .location-view.active{display:flex}
-.loc-bg{position:absolute;inset:0;background-size:cover;background-position:center;background-color:#0d1114}
-.loc-bg.placeholder{background-image:linear-gradient(160deg,#171c22 0%,#0d1114 60%,#080a0c 100%)}
+/* 배경 사진을 그냥 CSS background-image로 꽉 채우던 것 대신, 팬/핀치줌
+   가능한 스테이지+캔버스로 바꿨다 — minigame-phone-search와 같은 방식(§패닝
+   탐색 요청). 18:16처럼 세로 화면보다 가로로 넓게 만든 배경을 좌우로
+   둘러볼 수 있게 하기 위함. 사진이 없을 때(placeholder)는 그냥 그라데이션만
+   보여주고 팬/줌은 비활성. */
+.loc-stage{position:absolute;inset:0;overflow:hidden;touch-action:none;background-color:#0d1114}
+.loc-stage.placeholder{background-image:linear-gradient(160deg,#171c22 0%,#0d1114 60%,#080a0c 100%)}
+.loc-canvas{position:absolute;top:0;left:0;transform-origin:0 0;will-change:transform}
+.loc-canvas img{display:block;-webkit-user-drag:none;user-select:none}
 .loc-chips{position:absolute;left:16px;right:16px;top:calc(96px + env(safe-area-inset-top,0));display:flex;flex-wrap:wrap;gap:10px;z-index:2}
 .chip{position:relative;font-family:var(--sans);font-size:13px;font-weight:700;color:var(--text-primary);background:rgba(8,10,12,.8);border:1px solid rgba(255,255,255,.18);border-radius:20px;padding:10px 16px;cursor:pointer}
 .chip-badge{position:absolute;top:-6px;right:-6px;font-family:var(--mono);font-size:9px;font-weight:700;color:#06181c;background:var(--cyan);border-radius:8px;padding:2px 5px}
@@ -117,7 +124,9 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
   </div>
 
   <div class="location-view" id="locationView">
-    <div class="loc-bg placeholder" id="locBg"></div>
+    <div class="loc-stage placeholder" id="locStage">
+      <div class="loc-canvas" id="locCanvas"><img id="locImg" alt=""></div>
+    </div>
     <div class="loc-chips" id="locChips"></div>
     <div class="exit-row" id="exitRow"></div>
     <div class="bottom-bar">
@@ -202,7 +211,9 @@ const el = {
   mapView: document.getElementById('mapView'),
   mapList: document.getElementById('mapList'),
   locationView: document.getElementById('locationView'),
-  locBg: document.getElementById('locBg'),
+  locStage: document.getElementById('locStage'),
+  locCanvas: document.getElementById('locCanvas'),
+  locImg: document.getElementById('locImg'),
   locChips: document.getElementById('locChips'),
   exitRow: document.getElementById('exitRow'),
   goalLine: document.getElementById('goalLine'),
@@ -265,6 +276,95 @@ function renderMap() {
   }));
 }
 
+/* ===== Location photo pan/zoom — same pan+pinch+wheel math as
+   minigame-phone-search's photo stage, just without hotspot hit-testing
+   (탐색허브 위치는 캐릭터 chip으로만 상호작용하지, 사진 위 특정 지점을
+   탭하는 구조가 아니다). Lets a wide 18:16 background actually be explored
+   by panning/zooming instead of a static full-bleed CSS crop. baseScale is
+   the "cover" fit (same starting view as the old CSS background-size:cover),
+   so a wide photo already overflows horizontally at rest and can be panned
+   left/right immediately, or pinch/wheel-zoomed in further. ===== */
+let locCanvasW = 0, locCanvasH = 0;
+let locScale = 1, locBaseScale = 1, locTx = 0, locTy = 0;
+const locPointers = new Map();
+let locPanStart = null;
+let locPinchStartDist = 0, locPinchStartScale = 1;
+const LOC_MAX_SCALE_MULT = 3;
+
+function locDist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+function locMid(a, b) { return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; }
+function clampLocScale(s) { return Math.min(Math.max(s, locBaseScale), locBaseScale * LOC_MAX_SCALE_MULT); }
+function clampLocPan() {
+  const rect = el.locStage.getBoundingClientRect();
+  const scaledW = locCanvasW * locScale, scaledH = locCanvasH * locScale;
+  locTx = scaledW <= rect.width ? (rect.width - scaledW) / 2 : Math.min(0, Math.max(rect.width - scaledW, locTx));
+  locTy = scaledH <= rect.height ? (rect.height - scaledH) / 2 : Math.min(0, Math.max(rect.height - scaledH, locTy));
+}
+function applyLocTransform() { clampLocPan(); el.locCanvas.style.transform = `translate(${locTx}px, ${locTy}px) scale(${locScale})`; }
+function fitLocStage() {
+  const rect = el.locStage.getBoundingClientRect();
+  if (!rect.width || !rect.height || !locCanvasW || !locCanvasH) return;
+  locBaseScale = Math.max(rect.width / locCanvasW, rect.height / locCanvasH);
+  locScale = locBaseScale;
+  locTx = (rect.width - locCanvasW * locScale) / 2;
+  locTy = (rect.height - locCanvasH * locScale) / 2;
+  applyLocTransform();
+}
+window.addEventListener('resize', () => { if (locCanvasW) fitLocStage(); });
+window.addEventListener('orientationchange', () => { if (locCanvasW) fitLocStage(); });
+
+el.locStage.addEventListener('pointerdown', (e) => {
+  if (!locCanvasW) return;
+  el.locStage.setPointerCapture(e.pointerId);
+  locPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (locPointers.size === 1) {
+    locPanStart = { x: e.clientX, y: e.clientY, tx: locTx, ty: locTy };
+  } else if (locPointers.size === 2) {
+    locPanStart = null;
+    const pts = [...locPointers.values()];
+    locPinchStartDist = locDist(pts[0], pts[1]);
+    locPinchStartScale = locScale;
+  }
+});
+el.locStage.addEventListener('pointermove', (e) => {
+  if (!locCanvasW || !locPointers.has(e.pointerId)) return;
+  locPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (locPointers.size === 1 && locPanStart) {
+    locTx = locPanStart.tx + (e.clientX - locPanStart.x);
+    locTy = locPanStart.ty + (e.clientY - locPanStart.y);
+    applyLocTransform();
+  } else if (locPointers.size === 2) {
+    const pts = [...locPointers.values()];
+    const d = locDist(pts[0], pts[1]);
+    const newScale = clampLocScale(locPinchStartScale * (d / locPinchStartDist));
+    const rect = el.locStage.getBoundingClientRect();
+    const midNow = locMid(pts[0], pts[1]);
+    const stageX = midNow.x - rect.left, stageY = midNow.y - rect.top;
+    const ratio = newScale / locScale;
+    locTx = stageX - (stageX - locTx) * ratio;
+    locTy = stageY - (stageY - locTy) * ratio;
+    locScale = newScale;
+    applyLocTransform();
+  }
+});
+['pointerup', 'pointercancel'].forEach(evt => el.locStage.addEventListener(evt, (e) => {
+  locPointers.delete(e.pointerId);
+  if (locPointers.size < 2) locPinchStartDist = 0;
+  if (locPointers.size === 0) locPanStart = null;
+}));
+el.locStage.addEventListener('wheel', (e) => {
+  if (!locCanvasW) return;
+  e.preventDefault();
+  const rect = el.locStage.getBoundingClientRect();
+  const stageX = e.clientX - rect.left, stageY = e.clientY - rect.top;
+  const newScale = clampLocScale(locScale * (e.deltaY < 0 ? 1.1 : 0.9));
+  const ratio = newScale / locScale;
+  locTx = stageX - (stageX - locTx) * ratio;
+  locTy = stageY - (stageY - locTy) * ratio;
+  locScale = newScale;
+  applyLocTransform();
+}, { passive: false });
+
 /* ===== Location view (spec §7.1) ===== */
 async function applyLocationBackground(locationId) {
   let asset = null;
@@ -273,12 +373,24 @@ async function applyLocationBackground(locationId) {
   // 먼저 확인하고, 아직 배정 전이면 기존 레거시 sceneId 직접 조회로 폴백한다.
   const assetId = await DevGameState.getBackgroundId(locationId);
   if (assetId) asset = await AssetDB.getAsset(assetId).catch(() => null);
+  locPointers.clear();
+  locPanStart = null;
   if (asset && asset.dataUrl) {
-    el.locBg.style.backgroundImage = `url(${asset.dataUrl})`;
-    el.locBg.classList.remove('placeholder');
+    el.locStage.classList.remove('placeholder');
+    await AssetDB.preloadImage(asset.dataUrl).catch(() => {});
+    el.locImg.src = asset.dataUrl;
+    locCanvasW = asset.width;
+    locCanvasH = asset.height;
+    Object.assign(el.locImg.style, { width: locCanvasW + 'px', height: locCanvasH + 'px' });
+    fitLocStage();
   } else {
-    el.locBg.style.backgroundImage = 'none';
-    el.locBg.classList.add('placeholder');
+    el.locStage.classList.add('placeholder');
+    el.locImg.removeAttribute('src');
+    el.locImg.style.width = '';
+    el.locImg.style.height = '';
+    locCanvasW = 0;
+    locCanvasH = 0;
+    el.locCanvas.style.transform = 'none';
   }
 }
 
