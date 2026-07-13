@@ -318,6 +318,8 @@ if ('serviceWorker' in navigator) {
 <script src="/dev/state/explorationState.js"></script>
 <script src="/dev/vnPlayer.js"></script>
 <script src="/dev/caseMenu.js"></script>
+<script src="/dev/travelTips.js"></script>
+<script src="/dev/weekPreloader.js"></script>
 <script>
 // /dev/week0 and /dev/week1 link here as /dev/game/?scene=<id> — resolve
 // against allScenes (every week's scenes combined) so a scene from any week
@@ -415,9 +417,9 @@ function setCharacterAsset(asset) {
 async function applyBackground(backgroundKey) {
   // A failed asset fetch (network hiccup, missing upload) must degrade to
   // the placeholder background instead of throwing — callers await this
-  // ahead of LoadingOverlay.hide() and vnPlayer's scene-transition resume,
-  // so an uncaught rejection here would leave the player permanently stuck
-  // (loading spinner forever, or tap() disabled forever — see vnPlayer.js).
+  // ahead of vnPlayer's scene-transition resume, so an uncaught rejection
+  // here would leave the player permanently stuck (tap() disabled forever —
+  // see vnPlayer.js).
   let bgAsset = null;
   try {
     const bgId = await DevGameState.getBackgroundId(backgroundKey || activeSceneData.id);
@@ -1421,13 +1423,22 @@ async function applyDialogueOverrides() {
 }
 
 (async function init() {
-  LoadingOverlay.show('장면 불러오는 중');
+  // A whole week's backgrounds/portraits/dialogue-overrides/BGM are warmed
+  // in one batch the moment that week is first entered (see
+  // weekPreloader.js) — behind its own progress-bar/tip screen, shown only
+  // on that first scene. Every scene after that (including this one, once
+  // the week is warm) finds everything already cached, so no per-scene
+  // loading screen is needed here anymore.
+  const currentWeekId = WeekPreloader.weekIdOf(activeSceneData.id);
+  if (currentWeekId) {
+    const weekScenes = allScenes.filter(s => s.id.startsWith(currentWeekId + '-'));
+    await WeekPreloader.ensureWeekLoaded(currentWeekId, weekScenes);
+  }
   updatePointBalance();
   await applyDialogueOverrides();
   await applyBackground();
   applyBgm();
   await preloadCharacterAssetsForLines(activeLines);
-  LoadingOverlay.hide();
   if (resumeLineIndex === null) {
     await playIntro();
   } else {
