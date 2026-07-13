@@ -29,8 +29,6 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .topbar{position:relative;z-index:6;padding:calc(14px + env(safe-area-inset-top,0)) 16px 12px;display:flex;justify-content:space-between;align-items:center;gap:8px}
 .vn-btn{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:#fff;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:9px 14px;cursor:pointer;text-decoration:none;display:inline-block;flex-shrink:0}
 .vn-btn:active{transform:scale(.96)}
-.progress-pill{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;color:#fff;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:9px 14px;white-space:nowrap}
-.progress-pill .n{color:var(--amber);font-weight:600}
 
 /* ===== Filmstrip grid (default view) ===== */
 .grid-view{flex:1;min-height:0;overflow-y:auto;touch-action:pan-y;padding:4px 16px calc(20px + env(safe-area-inset-bottom,0))}
@@ -42,8 +40,6 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .photo-card:active{transform:scale(.96);background:var(--surface-2)}
 .photo-card .cam-icon{font-size:26px;opacity:.5;position:relative;z-index:1}
 .photo-card .time-label{font-family:var(--mono);font-size:12.5px;color:var(--cyan);font-weight:600;position:relative;z-index:1}
-.photo-card .found-label{font-family:var(--mono);font-size:11px;color:var(--text-muted);position:relative;z-index:1}
-.photo-card .found-label .n{color:var(--amber)}
 .photo-card.complete{border-color:rgba(214,168,75,.5)}
 .photo-card .check-badge{position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;background:var(--amber);color:#211703;font-size:13px;font-weight:700;display:none;align-items:center;justify-content:center;z-index:2}
 .photo-card.complete .check-badge{display:flex}
@@ -58,13 +54,15 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .viewer-layer{position:absolute;inset:0;z-index:8;background:#05070a;display:none;flex-direction:column}
 .viewer-layer.show{display:flex}
 .viewer-topbar{position:absolute;top:0;left:0;right:0;z-index:6;padding:calc(14px + env(safe-area-inset-top,0)) 16px 12px;display:flex;justify-content:space-between;align-items:center;pointer-events:none}
-.viewer-topbar .vn-btn,.viewer-topbar .progress-pill{pointer-events:auto}
+.viewer-topbar .vn-btn{pointer-events:auto}
 .map-stage{position:absolute;inset:0;overflow:hidden;touch-action:none;background:#05070a}
 .map-canvas{position:absolute;top:0;left:0;transform-origin:0 0;will-change:transform}
 .photo-bg{position:absolute;top:0;left:0;background:linear-gradient(180deg,#8f8873 0%,#8f8873 46%,#6f6a58 46%,#6f6a58 100%)}
 .photo-vignette{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 40%,rgba(0,0,0,0) 45%,rgba(0,0,0,.35) 100%);pointer-events:none}
 .case-box{position:absolute;background:rgba(200,220,225,.16);border:2px dashed rgba(230,240,245,.55);border-radius:6px}
-.case-box.complete{border-style:solid;border-color:var(--amber);background:rgba(214,168,75,.14)}
+.case-box.complete{border-style:solid;border-color:var(--amber)}
+.case-box.hotspot-overridden{background:transparent;border-color:transparent}
+.case-box.hotspot-overridden .case-label,.case-box.hotspot-overridden .case-glyph{display:none}
 .case-glyph{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:translate(-50%,-50%);background:var(--amber);border-radius:3px;box-shadow:0 0 10px rgba(214,168,75,.6)}
 .case-label{position:absolute;left:6px;top:-22px;font-family:var(--mono);font-size:12px;letter-spacing:.08em;color:rgba(230,240,245,.75)}
 
@@ -75,9 +73,6 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
    the placeholder silhouette with an invisible tap zone over the real photo
    — the uploaded photo already shows the actual person there. */
 .figure.hotspot-overridden .fig-head,.figure.hotspot-overridden .fig-body{display:none}
-.figure .found-ring{position:absolute;left:-14%;top:-10%;width:128%;height:120%;border-radius:50%;border:3px solid var(--amber);opacity:0;box-shadow:0 0 0 3px rgba(214,168,75,.18)}
-.figure.found .found-ring{opacity:1;animation:ringPop .5s cubic-bezier(.2,.8,.2,1)}
-@keyframes ringPop{0%{transform:scale(.5);opacity:0}60%{opacity:1}100%{transform:scale(1);opacity:1}}
 .tap-wrong-ring{position:absolute;border-radius:50%;border:3px solid var(--signal-red);opacity:.9;pointer-events:none;animation:tapWrongFade 420ms ease forwards}
 @keyframes tapWrongFade{0%{transform:scale(.6);opacity:.9}100%{transform:scale(1.4);opacity:0}}
 
@@ -161,7 +156,6 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
   <div class="grid-view" id="gridView">
     <div class="topbar" style="padding-left:0;padding-right:0">
       <a class="vn-btn" href="/dev/">← DEV</a>
-      <div class="progress-pill">발견 <span class="n" id="gridProgressN">0</span>/<span id="gridProgressTotal">8</span></div>
     </div>
     <div class="grid-tag">Operation MK · Pop-up Exhibition</div>
     <div class="grid-title">사진 속 인물 찾기</div>
@@ -176,7 +170,6 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
     <div class="photo-caption" id="photoCaption"></div>
     <div class="viewer-topbar">
       <button class="vn-btn" id="closeViewerBtn">✕ 목록으로</button>
-      <div class="progress-pill">발견 <span class="n" id="viewerProgressN">0</span>/<span id="viewerProgressTotal">8</span></div>
     </div>
     <div class="dlg-strip" id="dlgStrip">
       <div class="portrait-wrap" id="portraitWrap">
@@ -402,10 +395,8 @@ let wrongClickCount = 0;
 let currentPhotoHotspots = {};
 
 const el = {
-  gridProgressN: document.getElementById('gridProgressN'),
   photoGrid: document.getElementById('photoGrid'),
   viewerLayer: document.getElementById('viewerLayer'),
-  viewerProgressN: document.getElementById('viewerProgressN'),
   mapStage: document.getElementById('mapStage'),
   mapCanvas: document.getElementById('mapCanvas'),
   photoCaption: document.getElementById('photoCaption'),
@@ -447,11 +438,6 @@ function correctInPhoto(photoIdx) {
   return photo.figures.filter(f => f.correct).length + (photo.specialTargets || []).length;
 }
 
-function updateProgressUi() {
-  el.gridProgressN.textContent = totalFound();
-  el.viewerProgressN.textContent = totalFound();
-}
-
 /* ===== Grid (filmstrip) ===== */
 // Thumbnails are best-effort — a fetch failure just leaves that card on the
 // plain camera-icon placeholder instead of blocking the whole grid.
@@ -478,13 +464,11 @@ async function renderGrid() {
         ${thumbUrl ? `<img class="photo-card-thumb" src="${thumbUrl}" alt=""><div class="photo-card-scrim"></div>` : `<div class="cam-icon">📷</div>`}
         <div class="check-badge">✓</div>
         <div class="time-label">${p.time}</div>
-        <div class="found-label">${need ? `발견 <span class="n">${have}</span>/${need}` : '단서 없음'}</div>
       </div>`;
   }).join('');
   el.photoGrid.querySelectorAll('.photo-card').forEach(card => {
     card.addEventListener('click', () => openPhoto(parseInt(card.dataset.idx, 10)));
   });
-  updateProgressUi();
 }
 
 /* ===== Pan + pinch/wheel zoom (same math as minigame-eastwood) ===== */
@@ -721,6 +705,7 @@ function applyPhotoHotspotOverrides(photoIdx) {
       left: (box.cx - box.w / 2) + 'px', top: (box.cy - box.h / 2) + 'px',
       width: box.w + 'px', height: box.h + 'px',
     });
+    targetEl.classList.toggle('hotspot-overridden', box.overridden);
   });
 }
 
@@ -785,18 +770,14 @@ function buildPhoto(photoIdx) {
       width: fig.w + 'px', height: fig.h + 'px',
     });
     const color = fig.personKey ? PERSON_DEFS[fig.personKey].fill : '#8A93A6';
-    const ring = document.createElement('div');
-    ring.className = 'found-ring';
     const body = document.createElement('div');
     body.className = 'fig-body';
     body.style.background = color;
     const head = document.createElement('div');
     head.className = 'fig-head';
     head.style.background = color;
-    wrap.appendChild(ring);
     wrap.appendChild(body);
     wrap.appendChild(head);
-    if (fig.correct && foundIds.has(`${photoIdx}-${figIdx}`)) wrap.classList.add('found');
     el.mapCanvas.appendChild(wrap);
     return wrap;
   });
@@ -896,7 +877,6 @@ function onSpecialTargetTap(target) {
     });
   }
   say(target.sayLine[0], target.sayLine[1]);
-  updateProgressUi();
   if (totalFound() >= REQUIRED_TOTAL) setTimeout(startSuccessDialogue, 1400);
 }
 
@@ -929,9 +909,8 @@ function onCanvasTap(point) {
     return;
   }
   const figId = `${activePhotoIdx}-${bestIdx}`;
-  if (foundIds.has(figId)) return; // already logged — just no-op, ring already shown
+  if (foundIds.has(figId)) return; // already logged — just no-op
   foundIds.add(figId);
-  figureEls[bestIdx].classList.add('found');
   sightingCounts[fig.personKey] = (sightingCounts[fig.personKey] || 0) + 1;
   const count = sightingCounts[fig.personKey];
 
@@ -946,7 +925,6 @@ function onCanvasTap(point) {
   unlockRepeatQuestionIfNeeded(fig.personKey, count);
   const line = (REPEAT_FIND_LINES[fig.personKey] && REPEAT_FIND_LINES[fig.personKey][count]) || FIRST_FIND_LINES[fig.personKey];
   say(line[0], line[1]);
-  updateProgressUi();
 
   if (totalFound() >= REQUIRED_TOTAL) {
     setTimeout(startSuccessDialogue, 1400);
@@ -1224,8 +1202,6 @@ function fadeOutAndRedirect() {
 }
 
 /* ===== Boot ===== */
-document.getElementById('gridProgressTotal').textContent = REQUIRED_TOTAL;
-document.getElementById('viewerProgressTotal').textContent = REQUIRED_TOTAL;
 startOrderPhase();
 </script>
 <script src="/dev/devPlanFab.js"></script>
