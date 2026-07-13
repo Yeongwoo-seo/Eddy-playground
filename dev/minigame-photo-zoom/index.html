@@ -71,6 +71,10 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .figure{position:absolute;cursor:pointer}
 .figure .fig-head{position:absolute;left:50%;top:0;width:46%;padding-top:46%;transform:translateX(-50%);border-radius:50%}
 .figure .fig-body{position:absolute;left:12%;top:36%;width:76%;height:64%;border-radius:45% 45% 16% 16%/32% 32% 12% 12%}
+/* A dev-marked "정답 영역" (see /dev/upload's 상호작용 영역 editor) replaces
+   the placeholder silhouette with an invisible tap zone over the real photo
+   — the uploaded photo already shows the actual person there. */
+.figure.hotspot-overridden .fig-head,.figure.hotspot-overridden .fig-body{display:none}
 .figure .found-ring{position:absolute;left:-14%;top:-10%;width:128%;height:120%;border-radius:50%;border:3px solid var(--amber);opacity:0;box-shadow:0 0 0 3px rgba(214,168,75,.18)}
 .figure.found .found-ring{opacity:1;animation:ringPop .5s cubic-bezier(.2,.8,.2,1)}
 @keyframes ringPop{0%{transform:scale(.5);opacity:0}60%{opacity:1}100%{transform:scale(1);opacity:1}}
@@ -328,7 +332,14 @@ let sightingCounts = {}; // personKey -> how many correct sightings found so far
 let evidenceGranted = new Set(); // personKey (or 'case') already registered as CaseFileState evidence
 let activePhotoIdx = -1;
 let figureEls = []; // DOM refs for the currently-open photo's figures, index-aligned to PHOTOS[activePhotoIdx].figures
+let specialTargetEls = {}; // t.id -> DOM ref, for the currently-open photo's non-empty-case specialTargets
+let caseBoxEl = null; // the always-drawn K-01 case box (doubles as the empty-case specialTarget's hit region)
 let wrongClickCount = 0;
+// targetId ('fig-<personKey>' or a specialTarget id) -> canvas-space points,
+// for whichever photo is currently open — a dev-marked "정답 영역" from
+// /dev/upload (see resolvedFigureBox/resolvedSpecialBox below), only present
+// once a real photo has been uploaded AND marked for that photo slot.
+let currentPhotoHotspots = {};
 
 const el = {
   gridProgressN: document.getElementById('gridProgressN'),
@@ -537,11 +548,119 @@ async function loadPhotoBackground(photoIdx, bgEl) {
   });
 }
 
+// ===== 정답 영역 (interaction area) overrides — mirrors the polygon-based
+// room-hotspot system minigame-exhibition-search/minigame-phone-search use,
+// via /dev/upload's "정답 영역 지정" editor keyed by photoBackgroundKey().
+// Only correct figures + specialTargets are markable there (see
+// week1-scene-004-minigame.photoSlots[i].hotspots in dialogueData.js) — this
+// minigame only needs their *tap area*, not full polygon hit-testing, so a
+// marked shape's bounding box is what actually drives layout/hit-testing
+// below; the free-form polygon points themselves are only used to derive it.
+function figureTargetId(fig) { return fig.personKey ? `fig-${fig.personKey}` : null; }
+
+// Accepts either the current { points } shape or an older saved
+// { x1, y1, x2, y2 } rectangle (same fallback minigame-exhibition-search and
+// minigame-phone-search use for the same reason — old-format hotspots saved
+// before free-form shapes shipped must keep loading).
+function hotspotToPoints(h) {
+  if (!h) return null;
+  if (h.points && h.points.length >= 3) return h.points;
+  if (h.x1 !== undefined) return [{ x: h.x1, y: h.y1 }, { x: h.x2, y: h.y1 }, { x: h.x2, y: h.y2 }, { x: h.x1, y: h.y2 }];
+  return null;
+}
+function pointsToBox(points) {
+  const xs = points.map(p => p.x), ys = points.map(p => p.y);
+  const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+  return { cx: (minX + maxX) / 2, cy: (minY + maxY) / 2, w: Math.max(maxX - minX, 1), h: Math.max(maxY - minY, 1) };
+}
+// Returns { cx, cy, w, h, overridden } for a correct figure — the dev-marked
+// box (top-left origin, not the "feet at cy" convention fig.cx/cy/w/h use)
+// when one exists for this photo, else the hardcoded placeholder box.
+function resolvedFigureBox(fig) {
+  const id = figureTargetId(fig);
+  const override = fig.correct && id && currentPhotoHotspots[id];
+  if (!override) return { cx: fig.cx, cy: fig.cy - fig.h / 2, w: fig.w, h: fig.h, overridden: false };
+  return Object.assign(pointsToBox(override), { overridden: true });
+}
+function resolvedSpecialBox(target) {
+  const override = currentPhotoHotspots[target.id];
+  if (!override) return Object.assign({ overridden: false }, target.box);
+  return Object.assign(pointsToBox(override), { overridden: true });
+}
+
+// Fetches this photo's marked hotspots (if any) and re-lays-out whatever
+// buildPhoto() already drew synchronously with the hardcoded placeholder
+// boxes — same fire-and-forget + re-check-activePhotoIdx pattern as
+// loadPhotoBackground, since this is also a network round-trip.
+async function loadPhotoHotspots(photoIdx) {
+  let all = {};
+  let asset = null;
+  try {
+    all = await DevGameState.getRoomHotspots(photoBackgroundKey(photoIdx));
+    // Points are saved as fractions of the uploaded image's own natural
+    // width/height (see /dev/upload's hotspot editor), but the background
+    // fills this fixed CANVAS_W x CANVAS_H stage via `background-size:cover`
+    // (loadPhotoBackground above) — cropped-and-centered, not stretched. A
+    // naive `fraction * CANVAS_W/H` only lines up when the photo happens to
+    // share the canvas's aspect ratio, so the asset's real dimensions are
+    // needed here to replicate that same cover crop before converting.
+    const assetId = await DevGameState.getBackgroundId(photoBackgroundKey(photoIdx));
+    if (assetId) asset = await AssetDB.getAsset(assetId);
+  } catch (err) {
+    console.error('loadPhotoHotspots failed, keeping placeholder positions', err);
+  }
+  if (activePhotoIdx !== photoIdx) return;
+  currentPhotoHotspots = {};
+  if (asset && asset.width && asset.height) {
+    const coverScale = Math.max(CANVAS_W / asset.width, CANVAS_H / asset.height);
+    const offX = (CANVAS_W - asset.width * coverScale) / 2;
+    const offY = (CANVAS_H - asset.height * coverScale) / 2;
+    Object.keys(all).forEach(id => {
+      const pts = hotspotToPoints(all[id]);
+      if (pts) currentPhotoHotspots[id] = pts.map(p => ({
+        x: offX + p.x * asset.width * coverScale,
+        y: offY + p.y * asset.height * coverScale,
+      }));
+    });
+  }
+  applyPhotoHotspotOverrides(photoIdx);
+}
+
+// Repositions whatever buildPhoto() already drew to match any marked
+// overrides now in currentPhotoHotspots — separate from buildPhoto() itself
+// since it has to re-run after the async fetch above resolves.
+function applyPhotoHotspotOverrides(photoIdx) {
+  if (activePhotoIdx !== photoIdx) return;
+  const photo = PHOTOS[photoIdx];
+  photo.figures.forEach((fig, figIdx) => {
+    const wrap = figureEls[figIdx];
+    if (!wrap) return;
+    const box = resolvedFigureBox(fig);
+    Object.assign(wrap.style, {
+      left: (box.cx - box.w / 2) + 'px', top: (box.cy - box.h / 2) + 'px',
+      width: box.w + 'px', height: box.h + 'px',
+    });
+    wrap.classList.toggle('hotspot-overridden', box.overridden);
+  });
+  (photo.specialTargets || []).forEach(t => {
+    const box = resolvedSpecialBox(t);
+    // 'empty-case' shares the always-drawn caseBoxEl instead of its own
+    // element — see the comment above caseBoxEl's declaration.
+    const targetEl = t.id === 'empty-case' ? caseBoxEl : specialTargetEls[t.id];
+    if (!targetEl) return;
+    Object.assign(targetEl.style, {
+      left: (box.cx - box.w / 2) + 'px', top: (box.cy - box.h / 2) + 'px',
+      width: box.w + 'px', height: box.h + 'px',
+    });
+  });
+}
+
 function buildPhoto(photoIdx) {
   el.mapCanvas.innerHTML = '';
   el.mapCanvas.style.width = CANVAS_W + 'px';
   el.mapCanvas.style.height = CANVAS_H + 'px';
   const photo = PHOTOS[photoIdx];
+  specialTargetEls = {};
 
   const bg = document.createElement('div');
   bg.className = 'photo-bg';
@@ -570,10 +689,13 @@ function buildPhoto(photoIdx) {
     caseBox.appendChild(glyph);
   }
   el.mapCanvas.appendChild(caseBox);
+  caseBoxEl = caseBox;
 
   // Extra specialTargets besides the always-drawn case box itself (empty-case
-  // coincides with CASE_BOX's own coordinates, so it needs no separate
-  // marker) — nameplate/door-ajar get their own small dashed hint region.
+  // coincides with CASE_BOX's own coordinates by default, so it shares
+  // caseBoxEl above instead of getting a separate marker — see
+  // applyPhotoHotspotOverrides) — nameplate/door-ajar get their own small
+  // dashed hint region.
   (photo.specialTargets || []).filter(t => t.id !== 'empty-case').forEach(t => {
     const box = document.createElement('div');
     box.className = 'case-box';
@@ -583,6 +705,7 @@ function buildPhoto(photoIdx) {
     });
     if (foundIds.has(`${photoIdx}-${t.id}`)) box.classList.add('complete');
     el.mapCanvas.appendChild(box);
+    specialTargetEls[t.id] = box;
   });
 
   figureEls = photo.figures.map((fig, figIdx) => {
@@ -610,6 +733,7 @@ function buildPhoto(photoIdx) {
   });
 
   el.photoCaption.textContent = `${photo.time} · ${photo.caption}`;
+  applyPhotoHotspotOverrides(photoIdx);
 }
 
 function flashWrongAtPoint(point) {
@@ -684,9 +808,11 @@ function unlockRepeatQuestionIfNeeded(personKey, count) {
 // 하나로 통일했다 — §22 장편 확장 v2가 요구하는 "K-01 상태 변화" 다단계
 // 발견을 새 미니게임 없이 기존 photo-zoom 위에서 처리하기 위함.
 function findTappedSpecialTarget(photo, point) {
-  return (photo.specialTargets || []).find(t =>
-    point.x >= t.box.cx - t.box.w / 2 && point.x <= t.box.cx + t.box.w / 2 &&
-    point.y >= t.box.cy - t.box.h / 2 && point.y <= t.box.cy + t.box.h / 2);
+  return (photo.specialTargets || []).find(t => {
+    const box = resolvedSpecialBox(t);
+    return point.x >= box.cx - box.w / 2 && point.x <= box.cx + box.w / 2 &&
+      point.y >= box.cy - box.h / 2 && point.y <= box.cy + box.h / 2;
+  });
 }
 
 function onSpecialTargetTap(target) {
@@ -712,8 +838,17 @@ function onCanvasTap(point) {
   if (target) { onSpecialTargetTap(target); return; }
   let bestIdx = -1, bestDist = Infinity;
   photo.figures.forEach((fig, i) => {
-    const d = Math.hypot(point.x - fig.cx, point.y - (fig.cy - fig.h / 2));
-    if (d <= TAP_RADIUS && d < bestDist) { bestDist = d; bestIdx = i; }
+    const box = resolvedFigureBox(fig);
+    let d;
+    if (box.overridden) {
+      const inBox = point.x >= box.cx - box.w / 2 && point.x <= box.cx + box.w / 2 &&
+        point.y >= box.cy - box.h / 2 && point.y <= box.cy + box.h / 2;
+      d = inBox ? Math.hypot(point.x - box.cx, point.y - box.cy) : Infinity;
+    } else {
+      d = Math.hypot(point.x - fig.cx, point.y - (fig.cy - fig.h / 2));
+      if (d > TAP_RADIUS) d = Infinity;
+    }
+    if (d < bestDist) { bestDist = d; bestIdx = i; }
   });
   if (bestIdx === -1) { flashWrongAtPoint(point); return; }
   const fig = photo.figures[bestIdx];
@@ -753,7 +888,9 @@ function onCanvasTap(point) {
 function openPhoto(idx) {
   activePhotoIdx = idx;
   wrongClickCount = 0;
+  currentPhotoHotspots = {}; // previous photo's overrides don't apply here — reset before the fresh fetch below resolves
   buildPhoto(idx);
+  loadPhotoHotspots(idx);
   el.viewerLayer.classList.add('show');
   fitToStage();
   el.dlgStrip.classList.remove('show');

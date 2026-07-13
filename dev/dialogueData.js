@@ -3594,14 +3594,69 @@ const week1Scenes = [
     // /dev/upload/?scene=week1-scene-004-minigame lets a dev pick between all
     // 7 and upload/replace each one; dev/minigame-photo-zoom/index.html reads
     // them back via DevGameState.getBackgroundId(key).
+    //
+    // Each slot's own `hotspots` (id+label only — same split as
+    // exhibitionSearchHotspots/roomSearchAreas: flavor text and the actual
+    // PERSON_DEFS/PHOTOS fixture data stay in minigame-photo-zoom/index.html)
+    // reuses the exact same room-hotspot mechanism as the 전시장/핸드폰찾기
+    // minigames: DevGameState.getRoomHotspots/setRoomHotspot keyed by the
+    // slot's own `key`. Once a dev uploads a real photo for a slot AND marks
+    // these, /dev/upload's "정답 영역 지정" editor becomes available for that
+    // slot (see backgroundKinds() 'photo:N' kind + renderHotspotSection() in
+    // dev/upload), and the minigame prefers the marked position over its
+    // hardcoded placeholder cx/cy/w/h — see resolvedFigureBox/
+    // resolvedSpecialBox in minigame-photo-zoom/index.html. Only the figures
+    // that are actually findable (correct:true) and the specialTargets get an
+    // entry — passer-by distractors stay fixed-placeholder-only, same as
+    // exhibitionSearchHotspots only lists real answer spots.
     photoSlots: [
-      { key: 'week1-scene-004-minigame-photo-1', label: '① 10:41 · 한산한 전시장' },
-      { key: 'week1-scene-004-minigame-photo-2', label: '② 10:43 · 두 사람이 멈춰 선다' },
-      { key: 'week1-scene-004-minigame-photo-3', label: '③ 10:45 · 사진 찍는 손님' },
-      { key: 'week1-scene-004-minigame-photo-4', label: '④ 10:47 · 단체 관광객 밀려듦' },
-      { key: 'week1-scene-004-minigame-photo-5', label: '⑤ 10:48 · 진열장 문이 열려 있다' },
-      { key: 'week1-scene-004-minigame-photo-6', label: '⑥ 10:50 · 인파 절정' },
-      { key: 'week1-scene-004-minigame-photo-7', label: '⑦ 10:53 · 케이스가 비어 있다' },
+      {
+        key: 'week1-scene-004-minigame-photo-1', label: '① 10:41 · 한산한 전시장',
+        hotspots: [
+          { id: 'fig-minah', label: '베이지 코트 여성' },
+          { id: 'nameplate', label: 'K-01 명찰 사진' },
+        ],
+      },
+      {
+        key: 'week1-scene-004-minigame-photo-2', label: '② 10:43 · 두 사람이 멈춰 선다',
+        hotspots: [
+          { id: 'fig-adrian', label: '네이비 수트 남성' },
+          { id: 'fig-leo', label: '그레이 후드 남성' },
+        ],
+      },
+      {
+        key: 'week1-scene-004-minigame-photo-3', label: '③ 10:45 · 사진 찍는 손님',
+        hotspots: [
+          { id: 'fig-minah', label: '베이지 코트 여성' },
+          { id: 'lens-reflection', label: '카메라 렌즈 반사' },
+        ],
+      },
+      {
+        key: 'week1-scene-004-minigame-photo-4', label: '④ 10:47 · 단체 관광객 밀려듦',
+        hotspots: [
+          { id: 'fig-leo', label: '그레이 후드 남성' },
+          { id: 'fig-unknown', label: '얼굴이 안 보이는 인물' },
+        ],
+      },
+      {
+        key: 'week1-scene-004-minigame-photo-5', label: '⑤ 10:48 · 진열장 문이 열려 있다',
+        hotspots: [
+          { id: 'door-ajar', label: '진열장 문 열림' },
+        ],
+      },
+      {
+        key: 'week1-scene-004-minigame-photo-6', label: '⑥ 10:50 · 인파 절정',
+        hotspots: [
+          { id: 'fig-adrian', label: '네이비 수트 남성' },
+          { id: 'fig-minah', label: '베이지 코트 여성' },
+        ],
+      },
+      {
+        key: 'week1-scene-004-minigame-photo-7', label: '⑦ 10:53 · 케이스가 비어 있다',
+        hotspots: [
+          { id: 'empty-case', label: 'K-01 상태 변화 (빈 받침대)' },
+        ],
+      },
     ],
   },
   {
