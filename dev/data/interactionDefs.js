@@ -12,7 +12,13 @@
    evaluateInteractionCondition understands (hasEvidence/hasFact/flags/
    flagEquals) — every interaction here has none (always available once its
    location is reached), since Phase 1 tourism has no investigation gating
-   yet by design (§12.2 — sightseeing is free-form). */
+   yet by design (§12.2 — sightseeing is free-form).
+
+   "사전 복선" 패턴 (아래 w1ov-topic-lookout 근처 주석 참고) — 사건이 아직
+   일어나지 않은 자유 탐색 구간에서 addQuestion만으로 의문점을 미리 심어
+   두는 재사용 가능한 관례. 1주차 전용이 아니라 이 파일/explorationState.js
+   구조 자체가 범용이므로, 다음 주차에서 같은 성격의 구간을 쓸 때도 그대로
+   따라 쓰면 된다. */
 
 const interactionDefs = {
   'w1cq-topic-ferries': {
@@ -70,13 +76,19 @@ const interactionDefs = {
     icon: '📷',
     route: '/dev/minigame-harbour-photo/?bg=opera',
   },
-  // ===== 1주차 장편 확장 v3 — Phase 1 사전 복선 (§신규) =====
-  // 도난(week1-scene-004)이 아직 일어나지 않은 시점에, 관광 장소 4곳에 하나씩
-  // "왜?"로 끝나는 의문점을 심어 둔다. 이 시점엔 사건 자체가 없어서 addFact/
-  // addEvidence가 아니라 addQuestion만 쓴다(§22 idiom) — 나중에 실제 증거로
-  // 바뀌는 연결은 후속 작업(별도 씬의 setQuestionStatus+addEvidence+
-  // linkEvidenceToQuestion)에서 다룬다. 지수/영우 둘 다 "이상한데?" 선에서
-  // 멈추고 결론을 내리지 않는다 — 아직 뭘 의심해야 할지도 모르는 시점이므로.
+  // ===== "사전 복선" 패턴 (1주차 장편 확장 v3에서 처음 도입, §신규) =====
+  // 재사용 가능한 일반 패턴 — 특정 사건이 아직 일어나지 않은 자유 탐색
+  // 단계(Phase)의 관광/탐색 장소마다 "왜?"로 끝나는 의문점을 하나씩 심어
+  // 둔다. 이 시점엔 사건 자체가 없어서 addFact/addEvidence가 아니라
+  // addQuestion만 쓴다(§22 idiom) — 나중에 실제 증거로 바뀌는 연결은 별도
+  // 씬의 setQuestionStatus+addEvidence+linkEvidenceToQuestion으로 다룬다
+  // (아래 4개는 아직 그 연결까지는 없음 — 후속 작업). 지수/영우 둘 다
+  // "이상한데?" 선에서 멈추고 결론을 내리지 않는다 — 아직 뭘 의심해야 할지도
+  // 모르는 시점이므로. 다음 주차들도 사건 발생 전 자유 탐색 구간이 있다면
+  // 이 패턴(topic 상호작용 + addQuestion 효과, id는 'w2-'/'w3-'/'w4-' 등
+  // 해당 주차 프리픽스)을 그대로 따라 쓰면 된다 — 1주차 전용 메커니즘이
+  // 아니라 interactionDefs.js/explorationState.js 어디에도 주차 하드코딩이
+  // 없는 범용 구조다.
   'w1ov-topic-lookout': {
     id: 'w1ov-topic-lookout',
     characterId: 'youngwoo',
