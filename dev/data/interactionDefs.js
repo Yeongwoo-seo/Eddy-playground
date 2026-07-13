@@ -14,11 +14,16 @@
    location is reached), since Phase 1 tourism has no investigation gating
    yet by design (§12.2 — sightseeing is free-form).
 
-   "사전 복선" 패턴 (아래 w1ov-topic-lookout 근처 주석 참고) — 사건이 아직
-   일어나지 않은 자유 탐색 구간에서 addQuestion만으로 의문점을 미리 심어
-   두는 재사용 가능한 관례. 1주차 전용이 아니라 이 파일/explorationState.js
-   구조 자체가 범용이므로, 다음 주차에서 같은 성격의 구간을 쓸 때도 그대로
-   따라 쓰면 된다. */
+   "사전 복선" 패턴 (아래 w1ov-topic-crop 근처 주석 참고, 검토 답변서 반영판
+   — 최초 버전은 "수상한 사람 4명"이었으나 실제 사건 타임라인과 안 맞는
+   레드헤링이라 폐기됨) — 사건이 아직 일어나지 않은 자유 탐색 구간에서
+   setFlag만으로 "봤다는 기억"만 남기는 재사용 가능한 관례. addQuestion은
+   쓰지 않는다 — 넷 다 같은 무게의 CASE FILE 의문점으로 등록되면 플레이어가
+   "이번 주차 안에 넷 다 풀리겠구나"라고 오해하게 된다. 대신 각 장소가 실제
+   사건 구조(관계자 진술서 참고)의 서로 다른 한 조각을 조용히 미리 보여주고,
+   회수는 나중에(있다면) 그 조각이 이미 의미를 가진 시점에 일어난다. 1주차
+   전용이 아니라 이 파일/explorationState.js 구조 자체가 범용이므로, 다음
+   주차에서 같은 성격의 구간을 쓸 때도 그대로 따라 쓰면 된다. */
 
 const interactionDefs = {
   'w1cq-topic-ferries': {
@@ -76,43 +81,36 @@ const interactionDefs = {
     icon: '📷',
     route: '/dev/minigame-harbour-photo/?bg=opera',
   },
-  // ===== "사전 복선" 패턴 (1주차 장편 확장 v3에서 처음 도입, §신규) =====
+  // ===== "사전 복선" 패턴 (1주차 장편 확장 v3, 검토 답변서 반영판) =====
   // 재사용 가능한 일반 패턴 — 특정 사건이 아직 일어나지 않은 자유 탐색
-  // 단계(Phase)의 관광/탐색 장소마다 "왜?"로 끝나는 의문점을 하나씩 심어
-  // 둔다. 이 시점엔 사건 자체가 없어서 addFact/addEvidence가 아니라
-  // addQuestion만 쓴다(§22 idiom) — 나중에 실제 증거로 바뀌는 연결은 별도
-  // 씬의 setQuestionStatus+addEvidence+linkEvidenceToQuestion으로 다룬다
-  // (아래 4개는 아직 그 연결까지는 없음 — 후속 작업). 지수/영우 둘 다
-  // "이상한데?" 선에서 멈추고 결론을 내리지 않는다 — 아직 뭘 의심해야 할지도
-  // 모르는 시점이므로. 다음 주차들도 사건 발생 전 자유 탐색 구간이 있다면
-  // 이 패턴(topic 상호작용 + addQuestion 효과, id는 'w2-'/'w3-'/'w4-' 등
-  // 해당 주차 프리픽스)을 그대로 따라 쓰면 된다 — 1주차 전용 메커니즘이
-  // 아니라 interactionDefs.js/explorationState.js 어디에도 주차 하드코딩이
-  // 없는 범용 구조다.
-  'w1ov-topic-lookout': {
-    id: 'w1ov-topic-lookout',
+  // 단계(Phase)의 관광/탐색 장소마다 실제 사건 구조의 한 조각을 조용히
+  // 미리 보여준다. addQuestion은 쓰지 않고 setFlag만 쓴다(§22 idiom) — "이건
+  // 정답이다"라는 게임의 확언 없이, 그냥 지나가는 관광 디테일처럼 보이는 게
+  // 핵심이다. 지수/영우 둘 다 결론을 내리지 않는다. 다음 주차들도 사건 발생
+  // 전 자유 탐색 구간이 있다면 이 패턴(topic 상호작용 + setFlag 효과, id는
+  // 'w2-'/'w3-'/'w4-' 등 해당 주차 프리픽스)을 그대로 따라 쓰면 된다 — 1주차
+  // 전용 메커니즘이 아니라 이 파일/explorationState.js 어디에도 주차
+  // 하드코딩이 없는 범용 구조다.
+  //
+  // 오페라하우스 — 사진 크롭 튜토리얼. 레오가 나중에 공개하는 "크롭된 참고
+  // 이미지"(evidence-leo-reference-image, week1-scene-008)가 윤민아의 원본
+  // 사진에서 맥락(주변 인물·간판)만 잘려나간 것이었다는 걸, 플레이어가 여기서
+  // 미리 "크롭하면 원본의 맥락이 사라진다"는 걸 직접 해봐서 체감하게 한다.
+  // 사건 단서로 표시하면 안 되므로 flag만 남기고 question/evidence는 없다.
+  'w1ov-topic-crop': {
+    id: 'w1ov-topic-crop',
     characterId: 'youngwoo',
     locationIds: ['w1-opera-view'],
     phases: ['W1_TOURISM'],
     type: 'topic',
-    label: '이상한 사진사 발견하기',
+    label: '사진 잘라보기',
     lines: [
-      { speaker: '지수', text: '어? 저 사람 좀 이상하지 않아요?', characterId: 'jisoo', expression: 'curious' },
-      { speaker: '영우', text: '누구?', characterId: 'youngwoo', expression: 'neutral' },
-      { speaker: '지수', text: '저기, 오페라하우스는 안 찍고 계속 반대쪽만 찍고 있어요.', characterId: 'jisoo', expression: 'curious' },
-      { speaker: '', text: '남자는 카메라를 든 채, 더 록스 방향을 향해 셔터를 몇 번이고 눌렀다.', characterId: null },
-      { speaker: '영우', text: '관광객 아니야? 근데 좀... 유난히 오래 서 있긴 하네.', characterId: 'youngwoo', expression: 'curious' },
-      { speaker: '지수', text: '그러게요. 뭘 저렇게 열심히 찍는 거지?', characterId: 'jisoo', expression: 'suspicious' },
+      { speaker: '지수', text: '여보, 오른쪽 사람만 좀 잘라내줘요.', characterId: 'jisoo', expression: 'curious' },
+      { speaker: '영우', text: '이 정도?', characterId: 'youngwoo', expression: 'neutral' },
+      { speaker: '지수', text: '오. 이렇게 자르니까 아예 다른 사진 같네.', characterId: 'jisoo', expression: 'happy' },
+      { speaker: '영우', text: '원본은 남겨두자.\n잘라놓으면 원래 옆에 뭐 있었는지 모르잖아.', characterId: 'youngwoo', expression: 'soft' },
     ],
-    effects: [{
-      type: 'addQuestion',
-      question: {
-        id: 'question-w1-opera-lookout',
-        title: '그 사람은 왜 계속 반대쪽만 찍고 있었을까?',
-        description: '오페라하우스 전망 구역에서, 낯선 남자가 오페라하우스가 아니라 더 록스 방향을 계속 촬영하고 있었다.',
-        linkedEvidenceIds: [],
-      },
-    }],
+    effects: [{ type: 'setFlag', key: 'completedW1CropTutorial', value: true }],
   },
   'w1bv-topic-bridge': {
     id: 'w1bv-topic-bridge',
@@ -152,36 +150,24 @@ const interactionDefs = {
     icon: '📷',
     route: '/dev/minigame-harbour-photo/?bg=bridge',
   },
-  // §신규 Phase 1 사전 복선 — w1ov-topic-lookout 참고. 이 클루는 이미 실제
-  // 증거로 바뀌는 회수 지점까지 만들어져 있다 — 아래 discoveredBridgeVan
-  // 플래그가 Phase 4(w1sh-topic-van-recall)에서 그 회수를 잠그는 조건이다.
+  // 하버브리지 — 대기 중인 서비스 밴. 범죄 영화처럼 강조하지 않고, 그냥
+  // 배경에 있는 밴으로 지나간다 — Phase 4의 w1sh-topic-van-recall(unlockCond:
+  // 이 flag + evidence-service-magnet-missing)에서만 선택적으로 회수되는
+  // "선택형 보강 증거"로 취급한다(필수 아님).
   'w1bv-topic-van': {
     id: 'w1bv-topic-van',
     characterId: 'youngwoo',
     locationIds: ['w1-bridge-view'],
     phases: ['W1_TOURISM'],
     type: 'topic',
-    label: '수상한 밴 발견하기',
+    label: '서비스 밴 발견하기',
     lines: [
-      { speaker: '영우', text: '어, 저 차 좀 봐봐.', characterId: 'youngwoo', expression: 'curious' },
-      { speaker: '지수', text: '차요?', characterId: 'jisoo', expression: 'neutral' },
-      { speaker: '', text: '인도 옆에 시동을 켠 채 오래 서 있는 검은색 밴 한 대. 창문에는 짙은 선팅이 되어 있다.', characterId: null },
-      { speaker: '지수', text: '주차한 것도 아니고... 계속 저러고 있네요.', characterId: 'jisoo', expression: 'suspicious' },
-      { speaker: '영우', text: '택배 차 아니야?', characterId: 'youngwoo', expression: 'neutral' },
-      { speaker: '지수', text: '글쎄요... 그럼 왜 계속 시동을 켜 놓고 있을까요?', characterId: 'jisoo', expression: 'curious' },
+      { speaker: '지수', text: '저 차 아까부터 계속 있네.', characterId: 'jisoo', expression: 'curious' },
+      { speaker: '영우', text: '기사님 쉬는 중인가 보지.', characterId: 'youngwoo', expression: 'neutral' },
+      { speaker: '지수', text: '시동은 켜져 있는 것 같은데.', characterId: 'jisoo', expression: 'curious' },
+      { speaker: '영우', text: '그러네. 춥나 보다.', characterId: 'youngwoo', expression: 'neutral' },
     ],
-    effects: [
-      {
-        type: 'addQuestion',
-        question: {
-          id: 'question-w1-bridge-van',
-          title: '그 검은 밴은 왜 계속 시동을 켠 채 서 있었을까?',
-          description: '하버브리지 전망 구역 인도 옆에, 짙게 선팅된 검은색 밴이 시동을 켠 채 오래 정차해 있었다.',
-          linkedEvidenceIds: [],
-        },
-      },
-      { type: 'setFlag', key: 'discoveredBridgeVan', value: true },
-    ],
+    effects: [{ type: 'setFlag', key: 'discoveredBridgeVan', value: true }],
   },
   'w1rl-topic-vintage': {
     id: 'w1rl-topic-vintage',
@@ -210,31 +196,27 @@ const interactionDefs = {
     ],
     effects: [{ type: 'setFlag', key: 'discoveredPopupExhibition', value: true }],
   },
-  // §신규 Phase 1 사전 복선 — w1ov-topic-lookout 참고.
-  'w1rl-topic-backdoor': {
-    id: 'w1rl-topic-backdoor',
+  // 더 록스 골목 — 서비스 자석으로 열리는 직원 통용문을 목격. 새 용의자를
+  // 만들지 않고, 정상적인 직원의 평범한 출입 장면으로 처리한다. 레오가 실제로
+  // 쓴 개방 수단(서비스 자석, evidence-service-magnet-missing —
+  // week1-scene-008/009a에서 이미 스크립트된 반전)을 사건 전에 미리 눈에
+  // 익혀두는 역할 — 별도 회수 지점은 없다(그 반전 자체가 이미 존재하는
+  // 스토리이므로 이 파일에서 추가로 연결할 게 없음).
+  'w1rl-topic-magnet': {
+    id: 'w1rl-topic-magnet',
     characterId: 'youngwoo',
     locationIds: ['w1-the-rocks-lane'],
     phases: ['W1_TOURISM'],
     type: 'topic',
-    label: '뒷문 앞 남자 발견하기',
+    label: '직원 통용문 여는 모습 보기',
     lines: [
-      { speaker: '지수', text: '어? 저기 저 문, 팝업 전시장 건물 뒤쪽 아니에요?', characterId: 'jisoo', expression: 'curious' },
-      { speaker: '영우', text: '어, 맞는 것 같은데.', characterId: 'youngwoo', expression: 'neutral' },
-      { speaker: '', text: '살짝 열린 뒷문 앞에, 낯선 남자가 담배를 피우며 서 있다. 직원처럼 보이지는 않는다.', characterId: null },
-      { speaker: '영우', text: '저 사람은 뭐지? 직원인가?', characterId: 'youngwoo', expression: 'curious' },
-      { speaker: '지수', text: '글쎄요, 그런 것치곤 옷차림이 좀...', characterId: 'jisoo', expression: 'suspicious' },
-      { speaker: '', text: '두 사람의 시선을 느꼈는지, 남자는 슬쩍 뒷문 안쪽으로 들어가 버렸다.', characterId: null },
+      { speaker: '', text: '옆 건물 직원이 얇고 납작한 회색 태그를 문 옆에 갖다 댔다.', characterId: null },
+      { speaker: '', text: '짧은 전자음과 함께 서비스 문이 열렸다.', characterId: null },
+      { speaker: '', text: '문 안쪽에는 B-1, B-2, B-3이라고 적힌 작은 보관함이 보였다.', characterId: null },
+      { speaker: '지수', text: '저거 열쇠 아니고 자석인가?', characterId: 'jisoo', expression: 'curious' },
+      { speaker: '영우', text: '응. 서비스 문 잠금장치 같은데.', characterId: 'youngwoo', expression: 'neutral' },
     ],
-    effects: [{
-      type: 'addQuestion',
-      question: {
-        id: 'question-w1-rocks-backdoor',
-        title: '그 남자는 왜 전시장 뒷문 앞에 서 있었을까?',
-        description: '더 록스 골목, 팝업 전시장 건물의 뒷문이 살짝 열려 있었고 그 앞에 직원처럼 보이지 않는 남자가 서 있었다.',
-        linkedEvidenceIds: [],
-      },
-    }],
+    effects: [{ type: 'setFlag', key: 'noticedServiceMagnet', value: true }],
   },
   'w1ee-topic-outside': {
     id: 'w1ee-topic-outside',
@@ -249,31 +231,27 @@ const interactionDefs = {
       { speaker: '영우', text: '들어가보면 알겠지.', characterId: 'youngwoo', expression: 'neutral' },
     ],
   },
-  // §신규 Phase 1 사전 복선 — w1ov-topic-lookout 참고.
-  'w1ee-topic-whisper': {
-    id: 'w1ee-topic-whisper',
+  // 전시장 입구 — Maker's Mark 안내문. 특정 인물을 등장시키지 않고 전시장
+  // 자체의 일반 교육용 패널로 처리한다. 마틴 베일 통화(week1-scene-011b)의
+  // "의뢰인은 물건 전체보다 하단 각인을 원했다" 반전과, 이미 존재하는
+  // evidence-k01-inscription-request(E-C03)/evidence-mk-inscription-focused
+  // -inquiries(E-MV5)의 밑밥. 그 반전과 질문(q-w1-request-purpose)은 이미
+  // week1-scene-011b에 스크립트돼 있으므로 여기서 새 question은 만들지
+  // 않는다 — 순수하게 플레이어가 나중에 스스로 연결짓는 조용한 밑밥.
+  'w1ee-topic-provenance': {
+    id: 'w1ee-topic-provenance',
     characterId: 'youngwoo',
     locationIds: ['w1-exhibition-entrance'],
     phases: ['W1_TOURISM'],
     type: 'topic',
-    label: '입구에서 들은 대화',
+    label: "Maker's Mark 안내문 읽기",
     lines: [
-      { speaker: '', text: '입구 앞에서, 직원처럼 보이는 사람이 낯선 사람과 낮은 목소리로 이야기하고 있다.', characterId: null },
-      { speaker: '지수', text: '저 두 분, 뭔가 심각해 보이는데요?', characterId: 'jisoo', expression: 'curious' },
-      { speaker: '영우', text: '그러게. 무슨 얘기지?', characterId: 'youngwoo', expression: 'curious' },
-      { speaker: '', text: '두 사람의 시선을 느낀 순간, 대화가 뚝 끊겼다. 낯선 쪽은 곧장 자리를 떴다.', characterId: null },
-      { speaker: '영우', text: '...\n그냥 지나가자.', characterId: 'youngwoo', expression: 'blank', pauseBeforeMs: 300 },
-      { speaker: '지수', text: '네... 근데 좀 이상하긴 했어요.', characterId: 'jisoo', expression: 'suspicious' },
+      { speaker: '', text: '입구 옆, 작은 안내 패널이 붙어 있다.', characterId: null },
+      { speaker: '', text: '[ MAKER\'S MARKS & PROVENANCE ]\n오래된 금속 공예품의 하단 각인은 제작자와 소유 이력을 확인하는 중요한 단서입니다.\n세척, 보수, 재각인으로 표시가 이전보다 선명해질 수 있으므로, 현재 사진만으로 진위를 판단하지 않고 과거 기록과 함께 비교합니다.', characterId: null },
+      { speaker: '지수', text: '물건 밑바닥 사진도 따로 보는구나.', characterId: 'jisoo', expression: 'curious' },
+      { speaker: '영우', text: '누가 만들었는지 확인하려면 그런가 봐.', characterId: 'youngwoo', expression: 'neutral' },
     ],
-    effects: [{
-      type: 'addQuestion',
-      question: {
-        id: 'question-w1-entrance-whisper',
-        title: '직원과 낯선 사람은 무슨 얘기를 하고 있었을까?',
-        description: '전시장 입구에서, 직원으로 보이는 사람이 낯선 사람과 낮은 목소리로 이야기하다가 갑자기 대화를 멈추는 모습을 목격했다.',
-        linkedEvidenceIds: [],
-      },
-    }],
+    effects: [{ type: 'setFlag', key: 'sawMakersMarkPlacard', value: true }],
   },
 
   /* ===== Phase 4 — 용의자 탐문 (§12.6) =====
@@ -286,46 +264,44 @@ const interactionDefs = {
      "visit = launch the whole scene" hand-off (type:'minigame', same
      mechanism as the 하버 포토 hand-off) gets the free-order benefit
      spec §12.6 asks for with zero risk to the existing script. */
-  // "사전 복선" 패턴의 첫 회수 사례 — w1bv-topic-van(Phase 1, 하버브리지)에서
-  // 심어둔 의문점(question-w1-bridge-van)이 도난 사건이 알려진 뒤 실제
-  // 증거로 바뀐다. unlockConditions로 그 topic을 먼저 완료해야만
-  // (discoveredBridgeVan 플래그) 보이게 막아서, 밴을 못 보고 지나친 회차는
-  // 여기서 아무 일도 없다 — 광장에 영우 chip을 새로 연 이유(locationDefs.js
-  // 참고)가 이 topic 하나 때문이다. addQuestion만 있던 나머지 3개(오페라뷰
-  // 사진사/록스골목 뒷문/전시장입구 소곤거림)는 아직 이런 회수 지점이 없다.
+  // "사전 복선" 패턴의 유일한 회수 사례(선택형) — w1bv-topic-van(Phase 1,
+  // 하버브리지)에서 심어둔 flag(discoveredBridgeVan)를 여기서 실제 증거로
+  // 바꾼다. 다만 검토 답변서 §2.4 방침대로 "필수 증거"가 아니라 순수 보강
+  // 증거로 — unlockConditions에 evidence-service-magnet-missing(레오 사건이
+  // 실질적으로 풀린 뒤라는 대용 조건, "E11 레오 업무 채팅 획득 이후"의 대체)
+  // 까지 요구해서, 이미 사건 구조를 어느 정도 파악한 뒤에만 이 조각이
+  // 맞춰지도록 한다. 광장에 영우 chip을 새로 연 이유(locationDefs.js 참고)가
+  // 이 topic 하나 때문이다. 나머지 3개(오페라뷰 크롭/록스골목 자석/전시장입구
+  // 안내문)는 순수 flag만 남기고 회수 지점이 없다 — §신규 원칙대로 넷 다 같은
+  // 무게로 취급하지 않는다.
   'w1sh-topic-van-recall': {
     id: 'w1sh-topic-van-recall',
     characterId: 'youngwoo',
     locationIds: ['w1-suspect-hub'],
     phases: ['W1_SUSPECT_INTERVIEWS'],
     type: 'topic',
-    label: '그 밴, 다시 생각해보기',
-    unlockConditions: [{ type: 'flags', keys: ['discoveredBridgeVan'] }],
+    label: '그 서비스 밴, 다시 생각해보기',
+    unlockConditions: [
+      { type: 'flags', keys: ['discoveredBridgeVan'] },
+      { type: 'hasEvidence', ids: ['evidence-service-magnet-missing'] },
+    ],
     lines: [
-      { speaker: '영우', text: '아 맞다, 그때 하버브리지에서 봤던 그 검은 밴...', characterId: 'youngwoo', expression: 'curious' },
+      { speaker: '영우', text: '아 맞다, 하버브리지에서 봤던 그 밴...', characterId: 'youngwoo', expression: 'curious' },
       { speaker: '지수', text: '시동 켜놓고 계속 서 있던 그 차요?', characterId: 'jisoo', expression: 'curious' },
-      { speaker: '영우', text: '그거 지금 생각해보니까 좀 이상하지 않아?', characterId: 'youngwoo', expression: 'suspicious' },
-      { speaker: '지수', text: '그러네요... 그때 사진이라도 찍어둘걸.', characterId: 'jisoo', expression: 'curious' },
-      { speaker: '영우', text: '어? 잠깐, 찍어놨었어. 와이퍼에 뭐 끼워져 있길래 그냥 찍어뒀거든.', characterId: 'youngwoo', expression: 'shocked' },
-      { speaker: '', text: '[ 밴에 남아있던 배송 의뢰서 ]\n발신인: (공란)\n수거 시각: 사건 당일 오전\n물품: 소형 공예품 1점', characterId: null },
-      { speaker: '지수', text: '...발신인이 비어 있어요. 수거 시각도 딱 그날 오전이고.', characterId: 'jisoo', expression: 'shocked' },
-      { speaker: '영우', text: '소형 공예품 1점... 설마.', characterId: 'youngwoo', expression: 'blank', pauseBeforeMs: 300 },
+      { speaker: '영우', text: '그때 와이퍼에 종이 한 장 끼워져 있길래 그냥 찍어뒀거든. 그땐 흐려서 안 읽혔는데.', characterId: 'youngwoo', expression: 'curious' },
+      { speaker: '', text: '사진을 확대해보니 이제야 글자가 읽힌다.', characterId: null },
+      { speaker: '', text: '[ FIELD COLLECTION ]\nWindow: 11:10–11:30\nZone: TR-2\nRef: SR-184\nHOLD UNTIL CONFIRMATION', characterId: null },
+      { speaker: '지수', text: '...TR-2면 이 근처잖아요. 시간대도 딱 그때고.', characterId: 'jisoo', expression: 'shocked' },
+      { speaker: '영우', text: '그 서비스 자석 얘기랑도 얼추 맞물리는 것 같은데.', characterId: 'youngwoo', expression: 'suspicious' },
     ],
-    effects: [
-      {
-        type: 'addEvidence',
-        evidence: {
-          id: 'evidence-bridge-van-request-form', code: 'E-C05', title: '밴에 남아있던 배송 의뢰서',
-          description: '발신인이 비어 있는 익명 배송 의뢰서. 수거 시각이 K-01 도난 당일 오전으로 적혀 있고, 물품 칸에는 "소형 공예품 1점"이라고만 적혀 있다.',
-          discoveredLocationText: 'Circular Quay · 하버브리지 전망 구역 (촬영해둔 사진 회수)',
-        },
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-bridge-van-collection-note', code: 'E-P01', title: '밴에서 찾은 현장 수거 메모',
+        description: '"FIELD COLLECTION / Window: 11:10-11:30 / Zone: TR-2 / Ref: SR-184 / HOLD UNTIL CONFIRMATION" — 사건 당일 오전, 전시장 인근 구역(TR-2)에서 무언가를 수거할 예정이었다는 메모. 레오 사건과 정확히 어떻게 연결되는지는 아직 확정되지 않았다.',
+        discoveredLocationText: 'Circular Quay · 하버브리지 전망 구역 (촬영해둔 사진 확대)',
       },
-      {
-        type: 'setQuestionStatus', id: 'question-w1-bridge-van', status: 'resolved',
-        resolutionText: '그 밴은 단순히 서 있던 게 아니라, 사건 당일 오전 무언가를 수거하려고 대기 중이었다 — 발신인이 비어 있는 배송 의뢰서가 그 증거다.',
-      },
-      { type: 'linkEvidenceToQuestion', questionId: 'question-w1-bridge-van', evidenceId: 'evidence-bridge-van-request-form' },
-    ],
+    }],
   },
   'w1suspect-mina-interview': {
     id: 'w1suspect-mina-interview',
