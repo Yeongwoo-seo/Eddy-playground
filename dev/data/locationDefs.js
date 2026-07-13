@@ -17,7 +17,18 @@
    `visualBrief` (optional) — a short real-world description of what the
    location physically looks like, used by /dev/upload's 탐색허브 탭 to build
    an AI-image-generation prompt for whichever location a dev has selected
-   (see buildHubLocationPrompt() there). Not read by the actual game. */
+   (see buildHubLocationPrompt() there). Not read by the actual game.
+
+   `investigateHotspots` (optional) — array of { x, y, interactionId, icon },
+   x/y in % of the background image, read by 조사하기's toggle (see
+   renderInvestigateHotspots() in dev/explore/index.html) to place tappable
+   markers directly on the location's own pannable/zoomable #locCanvas.
+   interactionId can point at any existing interactionDefs entry (topic/
+   minigame/etc.) — same playInteraction() hand-off 대화하기 uses, just
+   reached by tapping a spot in the photo instead of picking from a list.
+   No location defines any yet (needs a dev looking at the actual generated
+   background to place them sensibly); 조사하기 still toggles on and works
+   with zero hotspots, it just has nothing to mark. */
 
 const locationDefs = {
   'w1-circular-quay': {

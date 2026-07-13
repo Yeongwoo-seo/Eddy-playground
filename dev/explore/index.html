@@ -53,25 +53,47 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .loc-stage.placeholder{background-image:linear-gradient(160deg,#171c22 0%,#0d1114 60%,#080a0c 100%)}
 .loc-canvas{position:absolute;top:0;left:0;transform-origin:0 0;will-change:transform}
 .loc-canvas img{display:block;-webkit-user-drag:none;user-select:none}
-.loc-chips{position:absolute;left:16px;right:16px;top:calc(96px + env(safe-area-inset-top,0));display:flex;flex-wrap:wrap;gap:10px;z-index:2}
-.chip{position:relative;font-family:var(--sans);font-size:13px;font-weight:700;color:var(--text-primary);background:rgba(8,10,12,.8);border:1px solid rgba(255,255,255,.18);border-radius:20px;padding:10px 16px;cursor:pointer}
-.chip-badge{position:absolute;top:-6px;right:-6px;font-family:var(--mono);font-size:9px;font-weight:700;color:#06181c;background:var(--cyan);border-radius:8px;padding:2px 5px}
 .bottom-bar{position:relative;z-index:2;margin-top:auto;background:rgba(5,7,10,.86);backdrop-filter:blur(10px);border-top:1px solid rgba(255,255,255,.1);padding:14px 16px calc(14px + env(safe-area-inset-bottom,0))}
 .goal-line{font-size:13px;color:var(--text-secondary);line-height:1.5;margin-bottom:10px;word-break:keep-all}
 .goal-line b{color:var(--cyan)}
-.bottom-actions{display:flex;gap:8px}
-.bottom-actions .vn-btn{flex:1;text-align:center}
 .enter-scene-btn{background:var(--amber);color:#191206;font-weight:700;text-align:center;border:none}
 .enter-scene-btn.hidden{display:none}
-/* margin-top:auto (not just padding) — .location-view's other non-absolute
-   children (.loc-bg/.loc-chips are position:absolute, out of flow) leave
-   .exit-row as the first in-flow flex child, which without this sits at
-   y:0 and renders directly underneath the fixed .topbar (z-index:6 over
-   its z-index:2) — visible but physically unclickable there. Pushing it
-   down next to .bottom-bar (which already uses margin-top:auto) both
-   fixes the click-through and reads better next to the goal/actions bar. */
-.exit-row{position:relative;z-index:2;margin-top:auto;padding:0 16px 10px;display:flex;flex-wrap:wrap;gap:8px}
-.exit-chip{font-family:var(--mono);font-size:11px;color:var(--text-secondary);background:rgba(8,10,12,.7);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:7px 12px;cursor:pointer}
+
+/* ===== Hub action bar — 조사/대화/제시/이동, replaces the old map/케이스
+   buttons. 이동하기 sits as a raised center FAB (스포트라이트 대상) rather
+   than a plain 4th pill, so "화면 중간에 이동 버튼" reads as a deliberate
+   destination picker, not just another peer action. ===== */
+.hub-actions{position:relative;display:flex;align-items:flex-end;justify-content:space-between;gap:8px}
+.hub-act-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:10px 6px 9px;color:var(--text-primary);font-family:var(--sans);cursor:pointer}
+.hub-act-btn:active{transform:scale(.96);background:#1c2530}
+.hub-act-icon{font-size:18px;line-height:1}
+.hub-act-label{font-size:11px;font-weight:700}
+.hub-act-fab{flex:0 0 66px;height:66px;margin:0 2px -24px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:var(--amber);color:#191206;border:4px solid #05070a;border-radius:50%;box-shadow:0 6px 18px rgba(0,0,0,.45);cursor:pointer;font-family:var(--sans)}
+.hub-act-fab:active{transform:scale(.95)}
+.hub-act-fab .hub-act-icon{font-size:20px}
+.hub-act-fab .hub-act-label{font-size:10px;font-weight:700}
+
+/* ===== Move (다크→라이트) transition — plays while performMove() swaps the
+   background/goal line underneath, so the cut never shows mid-render. ===== */
+.move-fade{position:absolute;inset:0;z-index:12;background:#000;opacity:0;pointer-events:none;transition:opacity .28s ease}
+.move-fade.show{opacity:1;pointer-events:auto}
+
+/* ===== 조사하기 — toggles hotspot markers over the location's own loc-
+   canvas instead of opening a second, duplicate pan/zoom stage: the
+   background is already pannable/zoomable at all times (§263's ambient
+   loc-stage above), so 조사하기 only needs to add the "here's what's
+   actually tappable" layer on top of it. Hotspots come from locationDefs[id]
+   .investigateHotspots (optional, {x,y,interactionId,icon} in %, see that
+   file); a location with none defined still toggles investigate mode on
+   (so the button always does *something*), it just shows the roam hint
+   text instead of any marker. Markers are appended as children of
+   #locCanvas so they inherit its pan/zoom transform for free. ===== */
+.hub-act-btn.active{background:rgba(89,184,200,.22);border-color:rgba(89,184,200,.5)}
+.investigate-hotspot{position:absolute;width:40px;height:40px;margin:-20px 0 0 -20px;border-radius:50%;border:2px solid var(--cyan);background:rgba(89,184,200,.22);display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;padding:0;animation:investigateHotspotPulse 1.8s ease-in-out infinite}
+.investigate-hotspot.done{border-color:var(--amber);background:rgba(214,168,75,.2);animation:none}
+@keyframes investigateHotspotPulse{0%,100%{box-shadow:0 0 0 0 rgba(89,184,200,.35)}50%{box-shadow:0 0 0 8px rgba(89,184,200,0)}}
+.investigate-hint{position:absolute;left:16px;right:16px;top:calc(96px + env(safe-area-inset-top,0));z-index:2;text-align:center;font-size:13px;color:var(--text-secondary);background:rgba(8,10,12,.65);border-radius:14px;padding:10px 14px;pointer-events:none;opacity:0;transition:opacity .2s ease}
+.investigate-hint.show{opacity:1}
 
 /* ===== Bottom-sheet family (character menu / topic list / evidence / persons) ===== */
 .sheet-overlay{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center}
@@ -127,14 +149,16 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
     <div class="loc-stage placeholder" id="locStage">
       <div class="loc-canvas" id="locCanvas"><img id="locImg" alt=""></div>
     </div>
-    <div class="loc-chips" id="locChips"></div>
-    <div class="exit-row" id="exitRow"></div>
+    <div class="investigate-hint" id="investigateHint"></div>
+    <div class="move-fade" id="moveFade"></div>
     <div class="bottom-bar">
       <div class="goal-line" id="goalLine"></div>
       <button class="vn-btn enter-scene-btn hidden" id="enterSceneBtn" style="width:100%;margin-bottom:8px"></button>
-      <div class="bottom-actions">
-        <button class="vn-btn" id="toMapBtn">🗺 지도</button>
-        <button class="vn-btn" id="toCaseBtn">📁 케이스</button>
+      <div class="hub-actions">
+        <button class="hub-act-btn" id="investigateBtn"><span class="hub-act-icon">🔍</span><span class="hub-act-label">조사</span></button>
+        <button class="hub-act-btn" id="talkBtn"><span class="hub-act-icon">💬</span><span class="hub-act-label">대화</span></button>
+        <button class="hub-act-fab" id="moveBtn"><span class="hub-act-icon">🚶</span><span class="hub-act-label">이동</span></button>
+        <button class="hub-act-btn" id="presentBtn"><span class="hub-act-icon">📎</span><span class="hub-act-label">제시</span></button>
       </div>
     </div>
   </div>
@@ -149,15 +173,11 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
   </div>
 </div>
 
-<div class="sheet-overlay hidden" id="actionSheet">
+<div class="sheet-overlay hidden" id="pickerSheet">
   <div class="sheet">
-    <div class="sheet-title" id="actionSheetTitle">인물</div>
-    <button class="action-btn" data-act="talk">말 걸기</button>
-    <button class="action-btn" data-act="ask">질문하기</button>
-    <button class="action-btn" data-act="evidence">증거 제시</button>
-    <button class="action-btn" data-act="askAbout">인물에 대해 묻기</button>
-    <button class="action-btn" data-act="observe">관찰하기</button>
-    <button class="action-btn cancel" data-act="cancel">그만두기</button>
+    <div class="sheet-title" id="pickerSheetTitle">누구에게?</div>
+    <div id="pickerSheetBody"></div>
+    <button class="action-btn cancel" id="pickerSheetCloseBtn">그만두기</button>
   </div>
 </div>
 
@@ -214,14 +234,18 @@ const el = {
   locStage: document.getElementById('locStage'),
   locCanvas: document.getElementById('locCanvas'),
   locImg: document.getElementById('locImg'),
-  locChips: document.getElementById('locChips'),
-  exitRow: document.getElementById('exitRow'),
+  moveFade: document.getElementById('moveFade'),
   goalLine: document.getElementById('goalLine'),
   enterSceneBtn: document.getElementById('enterSceneBtn'),
-  toMapBtn: document.getElementById('toMapBtn'),
-  toCaseBtn: document.getElementById('toCaseBtn'),
-  actionSheet: document.getElementById('actionSheet'),
-  actionSheetTitle: document.getElementById('actionSheetTitle'),
+  investigateBtn: document.getElementById('investigateBtn'),
+  talkBtn: document.getElementById('talkBtn'),
+  moveBtn: document.getElementById('moveBtn'),
+  presentBtn: document.getElementById('presentBtn'),
+  investigateHint: document.getElementById('investigateHint'),
+  pickerSheet: document.getElementById('pickerSheet'),
+  pickerSheetTitle: document.getElementById('pickerSheetTitle'),
+  pickerSheetBody: document.getElementById('pickerSheetBody'),
+  pickerSheetCloseBtn: document.getElementById('pickerSheetCloseBtn'),
   listSheet: document.getElementById('listSheet'),
   listSheetTitle: document.getElementById('listSheetTitle'),
   listSheetBody: document.getElementById('listSheetBody'),
@@ -246,7 +270,6 @@ const STATE_LABEL = { locked: '잠김', new: 'NEW', available: '가능', in_prog
 
 /* ===== View switching ===== */
 let currentView = 'map';
-let activeCharacterId = null;
 function showView(name) {
   currentView = name;
   el.mapView.classList.toggle('active', name === 'map');
@@ -315,6 +338,7 @@ window.addEventListener('orientationchange', () => { if (locCanvasW) fitLocStage
 
 el.locStage.addEventListener('pointerdown', (e) => {
   if (!locCanvasW) return;
+  if (e.target.closest('.investigate-hotspot')) return; // let the marker's own click fire instead of starting a pan under it
   el.locStage.setPointerCapture(e.pointerId);
   locPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
   if (locPointers.size === 1) {
@@ -398,22 +422,8 @@ function renderLocation() {
   const id = ExplorationState.getCurrentLocationId();
   const def = locationDefs[id];
   if (!def) return;
+  setInvestigateMode(false); // a new location's canvas/hotspots start clean, not mid-투어 from wherever the player last toggled 조사 on
   applyLocationBackground(id);
-  el.locChips.innerHTML = (def.characters || []).map(charId => {
-    const person = dialogueCharacters.find(d => d.id === charId) || { name: charId };
-    const interactions = ExplorationState.getInteractionsForCharacter(charId, id);
-    const badge = interactions.some(i => i.state === 'new' || i.state === 'updated');
-    return `<button class="chip" data-char="${charId}">${escapeHtml(person.name)}${badge ? '<span class="chip-badge">●</span>' : ''}</button>`;
-  }).join('');
-  el.locChips.querySelectorAll('[data-char]').forEach(chip => chip.addEventListener('click', () => openCharacterMenu(chip.dataset.char)));
-
-  el.exitRow.innerHTML = (def.exits || []).map(exitId => {
-    const exitDef = locationDefs[exitId];
-    if (!exitDef) return '';
-    const unlocked = ExplorationState.isLocationUnlocked(exitId) || (exitDef.phases || []).includes(ExplorationState.getCurrentPhase());
-    return `<button class="exit-chip" data-exit="${exitId}"${unlocked ? '' : ' disabled'}>→ ${escapeHtml(exitDef.name)}</button>`;
-  }).join('');
-  el.exitRow.querySelectorAll('[data-exit]').forEach(btn => btn.addEventListener('click', () => moveTo(btn.dataset.exit)));
 
   // A location can hand off back into the VN (spec §12.2's soft-gate) — e.g.
   // 빈티지 전시장 입구's enterSceneId leaves the hub for good and resumes
@@ -433,7 +443,23 @@ function renderLocation() {
   }
 }
 
-function moveTo(locationId) {
+// opts.animate (§신규 이동 트랜지션) — plays the dark→light .move-fade cover
+// around the state swap below, but only for an in-hub move a player actually
+// picked from openMoveSheet(); boot-time/first-visit/routeOnEnter calls stay
+// instant since those either render nothing yet or navigate away entirely.
+function moveTo(locationId, opts) {
+  if (opts && opts.animate) {
+    el.moveFade.classList.add('show');
+    setTimeout(() => {
+      performMove(locationId);
+      requestAnimationFrame(() => el.moveFade.classList.remove('show'));
+    }, 260);
+    return;
+  }
+  performMove(locationId);
+}
+
+function performMove(locationId) {
   const def = locationDefs[locationId];
   if (!def) return;
   const firstVisit = !ExplorationState.isLocationVisited(locationId);
@@ -470,58 +496,86 @@ function moveTo(locationId) {
   showView('location');
 }
 
-el.toMapBtn.addEventListener('click', () => { renderMap(); showView('map'); });
-el.toCaseBtn.addEventListener('click', () => caseMenu.open());
-
-/* ===== Character action menu (spec §7.3) ===== */
-function openCharacterMenu(characterId) {
-  activeCharacterId = characterId;
-  const person = dialogueCharacters.find(d => d.id === characterId) || { name: characterId };
-  el.actionSheetTitle.textContent = person.name;
-  el.actionSheet.classList.remove('hidden');
+/* ===== Hub action bar (조사/대화/제시/이동) =====
+   Replaces the old per-character chip + action-sheet flow: each location
+   carries at most one person in practice (§14.6 locationDefs), so 대화/제시
+   resolve straight to that person instead of making the player tap a chip
+   first. resolveCharacterThen() only falls back to a picker sheet if a
+   location ever does list more than one — kept for robustness, not because
+   any current locationDef needs it. */
+function locationCharacters() {
+  const def = locationDefs[ExplorationState.getCurrentLocationId()];
+  return (def && def.characters) || [];
 }
-el.actionSheet.addEventListener('click', (e) => {
-  const btn = e.target.closest('[data-act]');
-  if (!btn) return;
-  el.actionSheet.classList.add('hidden');
-  const act = btn.dataset.act;
-  if (act === 'cancel') return;
-  if (act === 'talk') talkCasually(activeCharacterId);
-  else if (act === 'ask') openTopicList(activeCharacterId);
-  else if (act === 'evidence') openEvidenceSheet(activeCharacterId);
-  else if (act === 'askAbout') openAskAboutSheet(activeCharacterId);
-  else if (act === 'observe') observeCharacter(activeCharacterId);
-});
+function resolveCharacterThen(onPick, emptyMessage) {
+  const chars = locationCharacters();
+  if (!chars.length) { showToastLine(null, emptyMessage); return; }
+  if (chars.length === 1) { onPick(chars[0]); return; }
+  el.pickerSheetTitle.textContent = '누구에게?';
+  el.pickerSheetBody.innerHTML = chars.map(charId => {
+    const person = dialogueCharacters.find(d => d.id === charId) || { name: charId };
+    return `<button class="action-btn" data-person="${charId}">${escapeHtml(person.name)}</button>`;
+  }).join('');
+  el.pickerSheetBody.querySelectorAll('[data-person]').forEach(btn => btn.addEventListener('click', () => {
+    el.pickerSheet.classList.add('hidden');
+    onPick(btn.dataset.person);
+  }));
+  el.pickerSheet.classList.remove('hidden');
+}
+el.pickerSheetCloseBtn.addEventListener('click', () => el.pickerSheet.classList.add('hidden'));
+// Pre-existing gap: listSheet's own 닫기 button had no handler at all (every
+// caller only ever closed it indirectly, by picking a row) — now that 이동/
+// 대화/제시 all funnel through this same sheet, backing out without picking
+// anything has to work too.
+el.listSheetCloseBtn.addEventListener('click', () => el.listSheet.classList.add('hidden'));
 
-// 말 걸기 — plays whichever topic is currently most "worth" seeing (updated >
-// new > anything not yet exhausted) without making the player pick from a
-// list first; 질문하기 (openTopicList) is the deliberate, browse-everything
-// version of the same content.
-function talkCasually(characterId) {
-  const locationId = ExplorationState.getCurrentLocationId();
-  const topics = ExplorationState.getInteractionsForCharacter(characterId, locationId).filter(i => i.type === 'topic');
-  const pick = topics.find(t => t.state === 'updated') || topics.find(t => t.state === 'new') || topics.find(t => t.state !== 'locked' && t.state !== 'exhausted');
-  if (!pick) { showToastLine(characterId, '지금은 딱히 할 말이 없어 보인다.'); return; }
-  playInteraction(pick.id);
+el.talkBtn.addEventListener('click', () => resolveCharacterThen(
+  (charId) => openTopicList(charId), '지금은 대화할 사람이 없어 보인다.'
+));
+el.presentBtn.addEventListener('click', () => resolveCharacterThen(
+  (charId) => openEvidenceSheet(charId), '지금 이 자리에는 증거를 보여줄 사람이 없다.'
+));
+el.moveBtn.addEventListener('click', openMoveSheet);
+
+function openMoveSheet() {
+  const def = locationDefs[ExplorationState.getCurrentLocationId()];
+  if (!def) return;
+  const exits = (def.exits || []).map(exitId => locationDefs[exitId]).filter(Boolean);
+  el.listSheetTitle.textContent = '이동하기';
+  el.listSheetBody.innerHTML = exits.length ? exits.map(exitDef => {
+    const unlocked = ExplorationState.isLocationUnlocked(exitDef.id) || (exitDef.phases || []).includes(ExplorationState.getCurrentPhase());
+    return `<button class="topic-row" data-exit="${exitDef.id}"${unlocked ? '' : ' disabled'}><div class="topic-row-main">→ ${escapeHtml(exitDef.name)}</div></button>`;
+  }).join('') : '<div class="empty-note">지금은 이동할 곳이 없습니다.</div>';
+  el.listSheetBody.querySelectorAll('[data-exit]').forEach(btn => btn.addEventListener('click', () => {
+    el.listSheet.classList.add('hidden');
+    moveTo(btn.dataset.exit, { animate: true });
+  }));
+  el.listSheet.classList.remove('hidden');
 }
 
-// 'minigame'-type interactions (e.g. 하버 포토, §12.3) show up in this same
-// list — they're still "a thing you can do with this character here", just
-// one that hands off to a routed page instead of playing inline lines.
+// 대화하기 — casual topics and 'minigame'-type hand-offs (하버 포토, §12.3;
+// suspect 심문하기, §12.6) share one list instead of a separate "말 걸기"
+// quick-pick step, so an interrogation scene is reachable the same way a
+// throwaway topic is.
 function openTopicList(characterId) {
   const locationId = ExplorationState.getCurrentLocationId();
   const topics = ExplorationState.getInteractionsForCharacter(characterId, locationId).filter(i => i.type === 'topic' || i.type === 'minigame');
-  el.listSheetTitle.textContent = '질문하기';
-  el.listSheetBody.innerHTML = topics.length ? topics.map(t => `
+  el.listSheetTitle.textContent = '대화하기';
+  el.listSheetBody.innerHTML = (topics.length ? topics.map(t => `
     <button class="topic-row" data-topic="${t.id}"${t.state === 'locked' ? ' disabled' : ''}>
       <div class="topic-row-main">${t.icon ? t.icon + ' ' : ''}${escapeHtml(t.label || t.id)}</div>
       <span class="topic-state state-${t.state}">${STATE_LABEL[t.state] || t.state}</span>
     </button>
-  `).join('') : '<div class="empty-note">아직 물어볼 수 있는 주제가 없습니다.</div>';
+  `).join('') : '<div class="empty-note">아직 나눌 이야기가 없습니다.</div>')
+    + `<button class="action-btn" id="askAboutRowBtn">다른 사람에 대해 묻기</button>`;
   el.listSheetBody.querySelectorAll('[data-topic]').forEach(btn => btn.addEventListener('click', () => {
     el.listSheet.classList.add('hidden');
     playInteraction(btn.dataset.topic);
   }));
+  el.listSheetBody.querySelector('#askAboutRowBtn').addEventListener('click', () => {
+    el.listSheet.classList.add('hidden');
+    openAskAboutSheet(characterId);
+  });
   el.listSheet.classList.remove('hidden');
 }
 
@@ -560,12 +614,49 @@ function openAskAboutSheet(characterId) {
   el.listSheet.classList.remove('hidden');
 }
 
-function observeCharacter(characterId) {
-  const locationId = ExplorationState.getCurrentLocationId();
-  const observations = ExplorationState.getInteractionsForCharacter(characterId, locationId).filter(i => i.type === 'observe' && i.state !== 'locked');
-  if (observations.length) { playInteraction(observations[0].id); return; }
-  showToastLine(null, '특별히 눈에 띄는 건 없어 보인다.');
+/* ===== 조사하기 (§신규) =====
+   The background is already pannable/zoomable at all times (§263's ambient
+   loc-stage/loc-canvas above) — 조사하기 doesn't need a second, duplicate
+   pan/zoom stage on top of it, just a toggle that surfaces "here's what's
+   actually tappable" as marker buttons layered into the *same* #locCanvas,
+   so they inherit its live pan/zoom transform for free. Hotspots come from
+   locationDefs[id].investigateHotspots (optional {x,y,interactionId,icon}
+   in %, see that file's header comment) — a location with none authored
+   yet still toggles the mode on, it just has nothing to mark, and the hint
+   line says so instead. locStage's own pointerdown (a few lines up) is
+   patched to ignore taps on `.investigate-hotspot` so tapping a marker
+   doesn't also start a pan-drag underneath it. */
+let investigateMode = false;
+function clearInvestigateHotspots() { el.locCanvas.querySelectorAll('.investigate-hotspot').forEach(n => n.remove()); }
+function renderInvestigateHotspots() {
+  clearInvestigateHotspots();
+  const def = locationDefs[ExplorationState.getCurrentLocationId()];
+  const hotspots = (!locCanvasW || !locCanvasH) ? [] : ((def && def.investigateHotspots) || []).filter(h => ExplorationState.getInteractionState(h.interactionId) !== 'locked');
+  hotspots.forEach(h => {
+    const state = ExplorationState.getInteractionState(h.interactionId);
+    const btn = document.createElement('button');
+    btn.className = 'investigate-hotspot' + (state === 'exhausted' || state === 'resolved' ? ' done' : '');
+    btn.style.left = ((h.x / 100) * locCanvasW) + 'px';
+    btn.style.top = ((h.y / 100) * locCanvasH) + 'px';
+    btn.textContent = h.icon || '🔍';
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setInvestigateMode(false);
+      playInteraction(h.interactionId);
+    });
+    el.locCanvas.appendChild(btn);
+  });
+  el.investigateHint.textContent = hotspots.length
+    ? '반짝이는 지점을 눌러 살펴보세요.'
+    : '밀거나 확대해서 둘러보는 중... 특별히 눈에 띄는 건 없어 보인다.';
 }
+function setInvestigateMode(on) {
+  investigateMode = on;
+  el.investigateBtn.classList.toggle('active', on);
+  el.investigateHint.classList.toggle('show', on);
+  if (on) renderInvestigateHotspots(); else clearInvestigateHotspots();
+}
+el.investigateBtn.addEventListener('click', () => setInvestigateMode(!investigateMode));
 
 // Lightweight single-line reaction (증거 제시/인물에 대해 묻기의 기본 반응처럼
 // 대화 재생기까지 띄울 필요는 없는 짧은 피드백) — the dialogue layer with a
@@ -687,14 +778,40 @@ el.frame.addEventListener('click', (e) => {
   // pattern in case a future beat needs a frame-level tap guard.
 });
 
+// Phase-wide preload (§신규) — a phase's locations share one small pool of
+// background art, so warming all of them up front (one batched metadata
+// fetch + parallel decodes, same AssetDB.preloadImage the per-week VN
+// preloader already uses — see weekPreloader.js) means 이동하기 never shows
+// a bare placeholder flash while a location the player hasn't visited yet
+// fetches its own background for the first time. sessionStorage-gated like
+// WeekPreloader's own readiness flag, so re-entering an already-warm phase
+// this session skips straight past it.
+const PHASE_PRELOAD_SESSION_KEY = 'mkPhasePreloadReadyPhase';
+async function preloadPhaseBackgrounds(phaseId) {
+  if (!phaseId) return;
+  try { if (sessionStorage.getItem(PHASE_PRELOAD_SESSION_KEY) === phaseId) return; } catch (e) { /* fall through and preload anyway */ }
+  const locationIds = Object.keys(locationDefs).filter(id => (locationDefs[id].phases || []).includes(phaseId));
+  if (!locationIds.length) return;
+  LoadingOverlay.show('장소를 준비하는 중');
+  try {
+    const assetIds = (await Promise.all(locationIds.map(id => DevGameState.getBackgroundId(id).catch(() => null)))).filter(Boolean);
+    const assets = assetIds.length ? await AssetDB.getAssetsByIds(assetIds) : [];
+    await Promise.all(assets.map(a => (a && a.dataUrl) ? AssetDB.preloadImage(a.dataUrl) : Promise.resolve()));
+    try { sessionStorage.setItem(PHASE_PRELOAD_SESSION_KEY, phaseId); } catch (e) { /* best-effort */ }
+  } finally {
+    LoadingOverlay.hide();
+  }
+}
+
 /* ===== Boot ===== */
-(function init() {
+(async function init() {
   updatePointBalance();
   const params = new URLSearchParams(location.search);
   const bootPhase = params.get('phase');
   const bootLocation = params.get('location');
   const phaseChanged = !!bootPhase && ExplorationState.getCurrentPhase() !== bootPhase;
   if (bootPhase) ExplorationState.enterExplorationPhase(bootPhase);
+  await preloadPhaseBackgrounds(ExplorationState.getCurrentPhase());
   // The `|| phaseChanged` half of this guard matters as soon as there's more
   // than one phase in play: a returning player already has *some*
   // currentLocationId left over from an earlier phase (e.g. still parked at
