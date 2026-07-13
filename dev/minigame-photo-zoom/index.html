@@ -109,6 +109,32 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 
 .fade-overlay{position:absolute;inset:0;z-index:10;background:#000;opacity:0;pointer-events:none;transition:opacity .9s ease}
 .fade-overlay.show{opacity:1}
+
+/* ===== Order phase — after every photo's evidence is found, tap the
+   (randomly shuffled) photos below into their real time order. Same
+   tap-the-next-correct-chip idiom as dev/minigame-timeline. ===== */
+.order-view{position:absolute;inset:0;z-index:8;background:var(--bg);display:none;flex-direction:column;overflow-y:auto;touch-action:pan-y;padding:calc(14px + env(safe-area-inset-top,0)) 16px calc(20px + env(safe-area-inset-bottom,0))}
+.order-view.show{display:flex}
+.order-title{font-size:20px;font-weight:700;margin:10px 0 6px}
+.order-desc{font-size:13px;color:var(--text-secondary);line-height:1.6;margin-bottom:16px}
+.order-timeline{display:flex;flex-direction:column;gap:6px;margin-bottom:18px}
+.order-slot{border:1.5px dashed rgba(255,255,255,.14);border-radius:12px;padding:8px 12px;display:flex;align-items:center;gap:10px;min-height:44px;background:rgba(255,255,255,.02);transition:background .2s,border-color .2s}
+.order-slot.filled{border-style:solid;border-color:rgba(89,184,200,.35);background:var(--surface-1)}
+.order-slot-num{font-family:var(--mono);font-size:12px;color:var(--text-muted);flex-shrink:0;width:16px;text-align:center}
+.order-slot.filled .order-slot-num{color:var(--cyan)}
+.order-slot-thumb{width:34px;height:46px;border-radius:6px;overflow:hidden;background:var(--surface-2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;opacity:.5}
+.order-slot-thumb img{width:100%;height:100%;object-fit:cover}
+.order-slot-time{font-family:var(--mono);font-size:12.5px;color:var(--amber);opacity:0;transition:opacity .3s}
+.order-slot.filled .order-slot-time{opacity:1}
+.order-pool-label{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px}
+.order-pool{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.order-chip{position:relative;aspect-ratio:640/860;border:1px solid var(--divider);background:var(--surface-2);border-radius:12px;overflow:hidden;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .12s}
+.order-chip:active{transform:scale(.95)}
+.order-chip.wrong{animation:chipShake .35s ease}
+@keyframes chipShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.order-chip-thumb{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.order-chip-icon{font-size:20px;opacity:.5}
+.order-chip-time{position:absolute;left:6px;bottom:6px;font-family:var(--mono);font-size:10.5px;color:#fff;background:rgba(5,7,10,.6);border-radius:8px;padding:3px 6px;z-index:1}
 </style>
 </head>
 <body>
@@ -121,7 +147,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
     </div>
     <div class="grid-tag">Operation MK · Pop-up Exhibition</div>
     <div class="grid-title">사진 속 인물 찾기</div>
-    <div class="grid-desc">직원이 건네준 사진 일곱 장. 하나씩 확대해서, K-01 진열장 근처에 있던 사람과 케이스 자체의 변화를 찾아 눌러보세요.</div>
+    <div class="grid-desc">직원이 건네준 사진 일곱 장. 하나씩 확대해서, K-01 진열장 근처에 있던 사람과 케이스 자체의 변화를 찾아 눌러보세요. 다 찾으면 사진을 시간 순서대로 다시 정리합니다.</div>
     <div class="photo-grid" id="photoGrid"></div>
   </div>
 
@@ -142,6 +168,20 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
       <div class="dlg-body-wrap">
         <div class="dlg-name" id="dlgName"></div>
         <div class="dlg-text" id="dlgText"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="order-view" id="orderView">
+    <div class="order-title">사진을 시간 순서대로</div>
+    <div class="order-desc">일곱 장이 뒤섞였어요. 촬영된 순서대로, 아래에서 다음 사진을 하나씩 눌러 배치해보세요.</div>
+    <div class="order-timeline" id="orderTimeline"></div>
+    <div class="order-pool-label">사진 (뒤섞임)</div>
+    <div class="order-pool" id="orderPool"></div>
+    <div class="dlg-strip" id="orderDlgStrip">
+      <div class="dlg-body-wrap">
+        <div class="dlg-name" id="orderDlgName"></div>
+        <div class="dlg-text" id="orderDlgText"></div>
       </div>
     </div>
   </div>
@@ -353,6 +393,12 @@ const el = {
   successText: document.getElementById('successText'),
   successArrow: document.getElementById('successArrow'),
   fadeOverlay: document.getElementById('fadeOverlay'),
+  orderView: document.getElementById('orderView'),
+  orderTimeline: document.getElementById('orderTimeline'),
+  orderPool: document.getElementById('orderPool'),
+  orderDlgStrip: document.getElementById('orderDlgStrip'),
+  orderDlgName: document.getElementById('orderDlgName'),
+  orderDlgText: document.getElementById('orderDlgText'),
 };
 
 function totalFound() { return foundIds.size; }
@@ -702,7 +748,7 @@ function onSpecialTargetTap(target) {
   }
   say(target.sayLine[0], target.sayLine[1]);
   updateProgressUi();
-  if (totalFound() >= REQUIRED_TOTAL) setTimeout(startSuccessDialogue, 1400);
+  if (totalFound() >= REQUIRED_TOTAL) setTimeout(startOrderPhase, 1400);
 }
 
 function onCanvasTap(point) {
@@ -745,7 +791,7 @@ function onCanvasTap(point) {
   updateProgressUi();
 
   if (totalFound() >= REQUIRED_TOTAL) {
-    setTimeout(startSuccessDialogue, 1400);
+    setTimeout(startOrderPhase, 1400);
   }
 }
 
@@ -764,6 +810,109 @@ function closePhoto() {
   renderGrid();
 }
 el.closeViewerBtn.addEventListener('click', closePhoto);
+
+/* ===== Order phase — once every photo's evidence is found, the 7 photos
+   (shuffled) get tapped back into their real time order (PHOTOS is already
+   authored in true chronological order, so array order === correct order,
+   same idiom as dev/minigame-timeline's CARDS/onChipTap). Runs inside this
+   same minigame instead of a separate page/scene since it's still working
+   with the exact same 7 photos the player just finished investigating. ===== */
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+let orderPlacedCount = 0;
+let orderWrongCount = 0;
+let orderPoolSequence = [];
+let orderThumbs = []; // dataUrl or null, index-aligned to PHOTOS — fetched once when the phase starts
+
+const ORDER_WRONG_LINES = [
+  ['영우', '음... 이건 아직 이르지 않아?'],
+  ['지수', '순서를 다시 한번 짚어봐요.'],
+  ['영우', '차근차근, 하나씩.'],
+];
+
+function orderSlotThumbHtml(photoIdx) {
+  const url = orderThumbs[photoIdx];
+  return url ? `<img src="${url}" alt="">` : '📷';
+}
+
+function renderOrderTimeline() {
+  el.orderTimeline.innerHTML = PHOTOS.map((p, i) => `
+    <div class="order-slot${i < orderPlacedCount ? ' filled' : ''}" data-idx="${i}">
+      <div class="order-slot-num">${i + 1}</div>
+      <div class="order-slot-thumb">${i < orderPlacedCount ? orderSlotThumbHtml(i) : ''}</div>
+      <div class="order-slot-time">${i < orderPlacedCount ? p.time : ''}</div>
+    </div>`).join('');
+}
+
+function renderOrderPool() {
+  const remaining = orderPoolSequence.filter(i => i >= orderPlacedCount);
+  el.orderPool.innerHTML = remaining.map(i => {
+    const url = orderThumbs[i];
+    return `
+      <div class="order-chip" data-idx="${i}">
+        ${url ? `<img class="order-chip-thumb" src="${url}" alt="">` : `<div class="order-chip-icon">📷</div>`}
+        <div class="order-chip-time">${PHOTOS[i].time}</div>
+      </div>`;
+  }).join('');
+  el.orderPool.querySelectorAll('.order-chip').forEach(chipEl => {
+    chipEl.addEventListener('click', () => onOrderChipTap(parseInt(chipEl.dataset.idx, 10), chipEl));
+  });
+}
+
+let orderReactionHideTimer = null;
+function sayInOrder(speakerName, text) {
+  clearTimeout(orderReactionHideTimer);
+  el.orderDlgName.textContent = speakerName;
+  el.orderDlgText.textContent = text;
+  el.orderDlgStrip.classList.add('show');
+  orderReactionHideTimer = setTimeout(() => el.orderDlgStrip.classList.remove('show'), 3200);
+}
+
+function onOrderChipTap(idx, chipEl) {
+  if (idx !== orderPlacedCount) {
+    orderWrongCount++;
+    chipEl.classList.add('wrong');
+    setTimeout(() => chipEl.classList.remove('wrong'), 350);
+    const line = ORDER_WRONG_LINES[Math.min(orderWrongCount, ORDER_WRONG_LINES.length) - 1];
+    sayInOrder(line[0], line[1]);
+    return;
+  }
+  orderPlacedCount++;
+  renderOrderTimeline();
+  renderOrderPool();
+  if (orderPlacedCount >= PHOTOS.length) {
+    el.orderDlgStrip.classList.remove('show');
+    setTimeout(startSuccessDialogue, 900);
+  }
+}
+
+async function startOrderPhase() {
+  el.viewerLayer.classList.remove('show');
+  el.dlgStrip.classList.remove('show');
+  orderPlacedCount = 0;
+  orderWrongCount = 0;
+  orderPoolSequence = shuffle(PHOTOS.map((_, i) => i));
+  el.orderView.classList.add('show');
+  renderOrderTimeline();
+  renderOrderPool();
+  const thumbs = await fetchPhotoThumbnails();
+  orderThumbs = thumbs.map(t => t && t.dataUrl);
+  // Only worth a re-render if the phase is still showing — a very slow
+  // fetch resolving after the player has somehow already finished (they
+  // can't without thumbs, but a stray double-open shouldn't repaint a
+  // hidden view either) is a no-op.
+  if (el.orderView.classList.contains('show')) {
+    renderOrderTimeline();
+    renderOrderPool();
+  }
+}
 
 /* ===== Success sequence ===== */
 let successAvatarRequestToken = 0;
@@ -798,6 +947,7 @@ const successLines = [
 
 function startSuccessDialogue() {
   el.viewerLayer.classList.remove('show');
+  el.orderView.classList.remove('show');
   el.successLayer.classList.add('show');
   const player = createVNPlayer({
     onLineChange: (line) => {
