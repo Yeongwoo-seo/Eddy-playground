@@ -1274,9 +1274,9 @@ const week1Scene003Lines = [
   { id: 'line-002', speaker: '', text: '작은 공간에 오래된 시계, 카메라, 금속 공예품들이\n유리 진열장 안에 나란히 놓여 있다.', characterId: null },
   { id: 'line-003', speaker: '지수', text: '오 여기 나름 알차네.', characterId: 'jisoo', expression: 'curious' },
   { id: 'line-004', speaker: '영우', text: '그치.\n생각보다 물건이 많아.\n천천히 한번 둘러볼래?', characterId: 'youngwoo', expression: 'soft' },
-  { id: 'staff-greet-1', speaker: '전시장 직원', text: '어서 오세요.\n편하게 둘러보시면 됩니다.', characterId: null },
+  { id: 'staff-greet-1', speaker: '클레어', text: '어서 오세요.\n편하게 둘러보시면 됩니다.', characterId: 'claire', expression: 'neutral' },
   { id: 'staff-greet-2', speaker: '지수', text: '감사합니다!', characterId: 'jisoo', expression: 'happy' },
-  { id: 'staff-greet-3', speaker: '전시장 직원', text: '사진은 자유롭게 찍으셔도 되는데,\n진열장 안쪽은 손대지 말아주세요.', characterId: null },
+  { id: 'staff-greet-3', speaker: '클레어', text: '사진은 자유롭게 찍으셔도 되는데,\n진열장 안쪽은 손대지 말아주세요.', characterId: 'claire', expression: 'neutral' },
   { id: 'staff-greet-4', speaker: '영우', text: '네, 조심할게요.', characterId: 'youngwoo', expression: 'soft' },
   { id: 'banter-1', speaker: '지수', text: '근데 여기 입장료도 없던데,\n이런 덴 어떻게 운영되는 거예요?', characterId: 'jisoo', expression: 'curious' },
   { id: 'banter-2', speaker: '영우', text: '팝업이라 그런 걸걸.\n짧게 열고 닫는 대신 홍보 목적이 크니까.', characterId: 'youngwoo', expression: 'soft' },
@@ -1300,29 +1300,29 @@ const week1Scene003Lines = [
 const week1Scene004Lines = [
   { id: 'line-001', speaker: '', text: '같은 전시장.\n오전 10시 47분.', characterId: null },
   { id: 'line-002', speaker: '', text: '단체 관광객 무리가 빠져나가고 나서야\n전시장이 다시 조용해졌다.', characterId: null },
-  { id: 'line-003', speaker: '전시장 직원', text: '어...\n잠깐만요.', characterId: null },
+  { id: 'line-003', speaker: '클레어', text: '어...\n잠깐만요.', characterId: 'claire', expression: 'shocked' },
   { id: 'line-004', speaker: '', text: '직원이 진열장 하나를 붙잡고 당황한 얼굴을 하고 있다.', characterId: null },
   { id: 'line-005', speaker: '지수', text: '무슨 일이에요?', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-006', speaker: '전시장 직원', text: '여기 있던 물건이 없어졌어요.', characterId: null },
+  { id: 'line-006', speaker: '클레어', text: '여기 있던 물건이 없어졌어요.', characterId: 'claire', expression: 'shocked' },
   { id: 'line-007', speaker: '영우', text: '없어지다니요?', characterId: 'youngwoo', expression: 'curious' },
-  { id: 'line-008', speaker: '전시장 직원', text: 'K-01이요.\n분명 아까까지 여기 있었는데.', characterId: null },
+  { id: 'line-008', speaker: '클레어', text: 'K-01이요.\n분명 아까까지 여기 있었는데.', characterId: 'claire', expression: 'shocked' },
   { id: 'line-009', speaker: '지수', text: '...', characterId: 'jisoo', pauseBeforeMs: 300, expression: 'shocked' },
   { id: 'line-010', speaker: '지수', text: '아까 그 황동 장치요?', characterId: 'jisoo', expression: 'shocked' },
-  { id: 'line-011', speaker: '전시장 직원', text: '네, 그거요.\n혹시 방금 사진 찍으셨죠?', characterId: null },
+  { id: 'line-011', speaker: '클레어', text: '네, 그거요.\n혹시 방금 사진 찍으셨죠?', characterId: 'claire', expression: 'neutral' },
   { id: 'line-012', speaker: '지수', text: '아, 네.\n찍긴 했는데요.', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-013', speaker: '전시장 직원', text: '그거 저희한테 잠깐 좀 보여주실 수 있어요?\n마지막으로 있던 게 언제인지 확인해야 해서요.', characterId: null },
+  { id: 'line-013', speaker: '클레어', text: '그거 저희한테 잠깐 좀 보여주실 수 있어요?\n마지막으로 있던 게 언제인지 확인해야 해서요.', characterId: 'claire', expression: 'neutral' },
   { id: 'line-014', speaker: '영우', text: '보안 카메라는 없어요?', characterId: 'youngwoo', expression: 'curious' },
-  { id: 'line-015', speaker: '전시장 직원', text: '있긴 한데, 방금 그 인파 때문에 화면이 거의 안 보여요.', characterId: null },
-  { id: 'line-016', speaker: '전시장 직원', text: '손님 사진이 그나마 제일 선명할 것 같아서요.', characterId: null },
+  { id: 'line-015', speaker: '클레어', text: '있긴 한데, 방금 그 인파 때문에 화면이 거의 안 보여요.', characterId: 'claire', expression: 'annoyed' },
+  { id: 'line-016', speaker: '클레어', text: '손님 사진이 그나마 제일 선명할 것 같아서요.', characterId: 'claire', expression: 'neutral' },
   { id: 'line-017', speaker: '지수', text: '...', characterId: 'jisoo', pauseBeforeMs: 300, expression: 'blank' },
   { id: 'line-018', speaker: '영우', text: '지수야.', characterId: 'youngwoo', expression: 'curious' },
   { id: 'line-019', speaker: '지수', text: '왜요.', characterId: 'jisoo', expression: 'blank' },
   { id: 'line-020', speaker: '영우', text: '이거 진짜 아무 일도 없는 하루 맞아?', characterId: 'youngwoo', expression: 'blank' },
   { id: 'line-021', speaker: '지수', text: '...', characterId: 'jisoo', pauseBeforeMs: 300, expression: 'blank' },
   { id: 'line-022', speaker: '지수', text: '일단 보여드릴게요.', characterId: 'jisoo', expression: 'serious' },
-  { id: 'line-023', speaker: '전시장 직원', text: '여기, 사진들이요.\n확대해서 한 명씩 보시면 도움이 될 것 같아요.', characterId: null },
+  { id: 'line-023', speaker: '클레어', text: '여기, 사진들이요.\n확대해서 한 명씩 보시면 도움이 될 것 같아요.', characterId: 'claire', expression: 'neutral' },
   { id: 'line-024', speaker: '지수', text: '몇 장이나 있어요?', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-025', speaker: '전시장 직원', text: '일곱 장 정도요.\n사람들이 겹쳐 나와서 좀 헷갈리실 수도 있어요.', characterId: null },
+  { id: 'line-025', speaker: '클레어', text: '일곱 장 정도요.\n사람들이 겹쳐 나와서 좀 헷갈리실 수도 있어요.', characterId: 'claire', expression: 'neutral' },
   { id: 'line-026', speaker: '영우', text: '그럼 하나씩 확대해서 보자.', characterId: 'youngwoo', expression: 'neutral' },
   { id: 'line-027', speaker: '지수', text: '웅.\n누가 K-01 근처에 계속 있었는지, 그리고 케이스 자체가 어떻게 바뀌었는지가 중요하겠죠.', characterId: 'jisoo', expression: 'serious' },
   { id: 'line-028', speaker: '영우', text: '진짜 탐정 같네.', characterId: 'youngwoo', expression: 'soft' },
@@ -1492,7 +1492,7 @@ const week1Scene005Lines = [
     choices: [
       { id: 'staffdoor', label: '직원 전용문', goto: 're-staffdoor' },
       { id: 'guestbook', label: '방명록 페이지', goto: 're-guestbook' },
-      { id: 'staff-ask', label: '전시장 직원에게 더 물어보기', goto: 're-staff-ask' },
+      { id: 'staff-ask', label: '클레어에게 더 물어보기', goto: 're-staff-ask' },
       { id: 'cafe-ask', label: '카페 직원에게 물어보기', goto: 're-cafe-ask' },
       { id: 'tourist-ask', label: '관광객에게 사진 요청하기', goto: 're-tourist-ask' },
       { id: 'reexam-done', label: '이 정도면 됐다', goto: 'hypothesis-intro' },
@@ -1521,7 +1521,7 @@ const week1Scene005Lines = [
     }],
   },
   {
-    id: 're-staff-ask', speaker: '전시장 직원', text: '아, 태그요? 그건 저희가 진열장 정리할 때만 써요.\n잠금 확인은 오늘 아침 9시에 한 번 했고요.', characterId: null, goto: 'reexam-menu',
+    id: 're-staff-ask', speaker: '클레어', text: '아, 태그요? 그건 저희가 진열장 정리할 때만 써요.\n잠금 확인은 오늘 아침 9시에 한 번 했고요.', characterId: 'claire', expression: 'neutral', goto: 'reexam-menu',
     effects: [{
       type: 'addEvidence',
       evidence: {
@@ -1605,9 +1605,10 @@ const week1Scene005Lines = [
    Dialogue Set: dialogue-week1-scene005a
    Scene: week1-scene-005a (Pop-up Exhibition 접수대, 11:05)
 
-   The Missing Key v4 §9.1 — 지금까지 scene005의 re-staff-ask에서만 익명
-   "전시장 직원"으로 등장하던 인물에 이름과 얼굴을 준다. 여기서 밝히는
-   알리바이("사건 시간대 내내 접수대에 있었다")는 거짓이며, 이 씬에서는
+   The Missing Key v4 §9.1 — 클레어는 이제 처음 등장(week1-scene-003의
+   staff-greet)부터 이름·초상으로 나오지만, 플레이어가 "클레어"라는 이름을
+   실제로 듣는 건 이 씬이 처음이다 — line-003에서 자기소개를 받는다. 여기서
+   밝히는 알리바이("사건 시간대 내내 접수대에 있었다")는 거짓이며, 이 씬에서는
    깨지지 않는다 — evidence-claire-alibi-statement로 증언만 등록해 두고,
    실제 반박은 week1-scene-008a(재심문)에서 다니엘의 목격담과 충돌시켜
    이뤄진다. */
@@ -3399,10 +3400,10 @@ const week1Scene012Lines = [
    여전히 등장하지 않는다(§1.5/§13.3 원칙 유지). */
 const week1Scene013Lines = [
   { id: 'line-001', speaker: '', text: '전시장.\n오후 8시.', characterId: null },
-  { id: 'line-002', speaker: '지수', text: '직원분, 저희가 파악한 건 이 정도예요.', characterId: 'jisoo', expression: 'serious' },
-  { id: 'line-003', speaker: '전시장 직원', text: '레오라는 분이... 정말요?', characterId: null },
+  { id: 'line-002', speaker: '지수', text: '클레어씨, 저희가 파악한 건 이 정도예요.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-003', speaker: '클레어', text: '레오라는 분이... 정말요?', characterId: 'claire', expression: 'shocked' },
   { id: 'line-004', speaker: '영우', text: '본인이 직접 인정했어요. 되돌려받는 건 저희 쪽에서 연락드릴게요.', characterId: 'youngwoo', expression: 'soft' },
-  { id: 'line-005', speaker: '전시장 직원', text: '감사합니다, 정말로.', characterId: null },
+  { id: 'line-005', speaker: '클레어', text: '감사합니다, 정말로.', characterId: 'claire', expression: 'neutral' },
   { id: 'line-006', speaker: '', text: '전시장 사건을 정리하고 나오니 어느새 밤이었다.', characterId: null },
 
   { id: 'line-007', speaker: '', text: '숙소.\n밤 9시 40분.', characterId: null },
