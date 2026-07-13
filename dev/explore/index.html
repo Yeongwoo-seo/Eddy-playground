@@ -100,6 +100,22 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .sheet-overlay.hidden{display:none}
 .sheet{width:100%;max-width:430px;background:var(--surface-1);border-radius:20px 20px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom,0));border-top:1px solid var(--divider);max-height:78vh;overflow-y:auto}
 .sheet-title{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--text-muted);margin-bottom:14px;text-transform:uppercase}
+
+/* ===== 이동하기 지도 — phaseMaps(dev/data/locationDefs.js)가 정의된 phase는
+   exit 목록을 리스트 대신 지도 그림 위 원형 핀으로 보여준다(openMoveMapSheet).
+   loc-canvas처럼 픽셀 단위 팬/줌은 필요 없는 정적 오버뷰라, 고정 aspect-ratio
+   박스에 %로 위치만 잡으면 된다 — 사진이 아직 배정 전이면 placeholder 그라데이션
+   위에도 핀은 그대로 뜬다(좌표는 이미지가 아니라 박스 기준 %이므로). ===== */
+.move-map-wrap{position:relative;width:100%;aspect-ratio:4/5;border-radius:16px;overflow:hidden;margin-bottom:12px;background-color:#171c22;background-image:linear-gradient(160deg,#171c22 0%,#0d1114 60%,#080a0c 100%);background-size:cover;background-position:center}
+.move-map-pins{position:absolute;inset:0}
+.move-pin{position:absolute;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;border:3px solid var(--amber);background:rgba(214,168,75,.3);display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.move-pin::after{content:'';width:10px;height:10px;border-radius:50%;background:var(--amber)}
+.move-pin:active{transform:scale(.92)}
+.move-pin.current{border-color:var(--cyan);background:rgba(89,184,200,.3);cursor:default}
+.move-pin.current::after{background:var(--cyan)}
+.move-pin.locked{opacity:.4;filter:grayscale(.6);cursor:default}
+.move-pin-label{position:absolute;top:100%;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:10.5px;font-weight:700;margin-top:4px;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.9),0 0 2px rgba(0,0,0,.9)}
+.move-map-listnote{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--text-muted);text-transform:uppercase;margin:2px 0 8px}
 .action-btn{width:100%;text-align:left;background:var(--surface-2);color:var(--text-primary);border:1px solid var(--divider);border-radius:12px;padding:14px 16px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:8px}
 .action-btn:active{background:#1c2530}
 .action-btn.cancel{color:var(--text-muted);background:none;border:none;text-align:center;margin-top:4px}
@@ -189,6 +205,17 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
   </div>
 </div>
 
+<div class="sheet-overlay hidden" id="moveMapSheet">
+  <div class="sheet" style="max-height:88vh">
+    <div class="sheet-title">이동하기</div>
+    <div class="move-map-wrap" id="moveMapWrap">
+      <div class="move-map-pins" id="moveMapPins"></div>
+    </div>
+    <div id="moveMapListWrap"></div>
+    <button class="action-btn cancel" id="moveMapCloseBtn">그만두기</button>
+  </div>
+</div>
+
 <script>
 function setVh100() { document.documentElement.style.setProperty('--vh100', window.innerHeight + 'px'); }
 setVh100();
@@ -250,6 +277,11 @@ const el = {
   listSheetTitle: document.getElementById('listSheetTitle'),
   listSheetBody: document.getElementById('listSheetBody'),
   listSheetCloseBtn: document.getElementById('listSheetCloseBtn'),
+  moveMapSheet: document.getElementById('moveMapSheet'),
+  moveMapWrap: document.getElementById('moveMapWrap'),
+  moveMapPins: document.getElementById('moveMapPins'),
+  moveMapListWrap: document.getElementById('moveMapListWrap'),
+  moveMapCloseBtn: document.getElementById('moveMapCloseBtn'),
   dialogueLayer: document.getElementById('dialogueLayer'),
   dlgCharWrap: document.getElementById('dlgCharWrap'),
   dlgCharImg: document.getElementById('dlgCharImg'),
@@ -537,21 +569,90 @@ el.presentBtn.addEventListener('click', () => resolveCharacterThen(
 ));
 el.moveBtn.addEventListener('click', openMoveSheet);
 
-function openMoveSheet() {
-  const def = locationDefs[ExplorationState.getCurrentLocationId()];
-  if (!def) return;
-  const exits = (def.exits || []).map(exitId => locationDefs[exitId]).filter(Boolean);
-  el.listSheetTitle.textContent = '이동하기';
-  el.listSheetBody.innerHTML = exits.length ? exits.map(exitDef => {
-    const unlocked = ExplorationState.isLocationUnlocked(exitDef.id) || (exitDef.phases || []).includes(ExplorationState.getCurrentPhase());
+// exitUnlocked() — shared by both the map pins and the plain-list fallback
+// below, same unlock check openMoveSheet always used.
+function exitUnlocked(exitDef) {
+  return ExplorationState.isLocationUnlocked(exitDef.id) || (exitDef.phases || []).includes(ExplorationState.getCurrentPhase());
+}
+
+function renderExitListRows(container, exitDefs, emptyText) {
+  container.innerHTML = exitDefs.length ? exitDefs.map(exitDef => {
+    const unlocked = exitUnlocked(exitDef);
     return `<button class="topic-row" data-exit="${exitDef.id}"${unlocked ? '' : ' disabled'}><div class="topic-row-main">→ ${escapeHtml(exitDef.name)}</div></button>`;
-  }).join('') : '<div class="empty-note">지금은 이동할 곳이 없습니다.</div>';
-  el.listSheetBody.querySelectorAll('[data-exit]').forEach(btn => btn.addEventListener('click', () => {
+  }).join('') : (emptyText ? `<div class="empty-note">${emptyText}</div>` : '');
+  container.querySelectorAll('[data-exit]').forEach(btn => btn.addEventListener('click', () => {
     el.listSheet.classList.add('hidden');
+    el.moveMapSheet.classList.add('hidden');
     moveTo(btn.dataset.exit, { animate: true });
   }));
-  el.listSheet.classList.remove('hidden');
 }
+
+// 이동하기 — 현재 phase에 phaseMaps(dev/data/locationDefs.js) 정의가 있고,
+// exit 중 mapPosition을 가진 "지도급" 장소가 하나라도 있으면 지도+핀으로,
+// 그렇지 않은 phase(용의자 탐문/재검증처럼 좁은 구역을 도는 phase)는 기존
+// 리스트 시트 그대로 보여준다.
+function openMoveSheet() {
+  const currentId = ExplorationState.getCurrentLocationId();
+  const def = locationDefs[currentId];
+  if (!def) return;
+  const exitDefs = (def.exits || []).map(exitId => locationDefs[exitId]).filter(Boolean);
+  const phaseMap = (typeof phaseMaps !== 'undefined') ? phaseMaps[ExplorationState.getCurrentPhase()] : null;
+  const mapExits = phaseMap ? exitDefs.filter(d => d.mapPosition) : [];
+  if (phaseMap && mapExits.length) {
+    openMoveMapSheet(phaseMap, mapExits, exitDefs.filter(d => !d.mapPosition));
+  } else {
+    el.listSheetTitle.textContent = '이동하기';
+    renderExitListRows(el.listSheetBody, exitDefs, '지금은 이동할 곳이 없습니다.');
+    el.listSheet.classList.remove('hidden');
+  }
+}
+
+async function openMoveMapSheet(phaseMap, mapExits, listExits) {
+  const currentId = ExplorationState.getCurrentLocationId();
+  const currentDef = locationDefs[currentId];
+  el.moveMapPins.innerHTML = '';
+  el.moveMapWrap.style.backgroundImage = '';
+  el.moveMapSheet.classList.remove('hidden');
+
+  // 현재 위치도 그 phase 지도에 자기 mapPosition이 있으면 (cyan) 핀으로 같이
+  // 찍어 방향 감각을 준다 — exit 목록엔 없으니 mapExits와 분리해서 그린다.
+  if (currentDef && currentDef.mapPosition) {
+    const cur = document.createElement('div');
+    cur.className = 'move-pin current';
+    cur.style.left = currentDef.mapPosition.x + '%';
+    cur.style.top = currentDef.mapPosition.y + '%';
+    cur.innerHTML = `<span class="move-pin-label">현재 위치</span>`;
+    el.moveMapPins.appendChild(cur);
+  }
+  mapExits.forEach(exitDef => {
+    const unlocked = exitUnlocked(exitDef);
+    const btn = document.createElement('button');
+    btn.className = 'move-pin' + (unlocked ? '' : ' locked');
+    btn.style.left = exitDef.mapPosition.x + '%';
+    btn.style.top = exitDef.mapPosition.y + '%';
+    btn.disabled = !unlocked;
+    btn.innerHTML = `<span class="move-pin-label">${escapeHtml(exitDef.name)}</span>`;
+    btn.addEventListener('click', () => {
+      el.moveMapSheet.classList.add('hidden');
+      moveTo(exitDef.id, { animate: true });
+    });
+    el.moveMapPins.appendChild(btn);
+  });
+
+  if (listExits.length) {
+    el.moveMapListWrap.innerHTML = '<div class="move-map-listnote">그 밖의 이동 가능한 곳</div>';
+    const rows = document.createElement('div');
+    el.moveMapListWrap.appendChild(rows);
+    renderExitListRows(rows, listExits);
+  } else {
+    el.moveMapListWrap.innerHTML = '';
+  }
+
+  const assetId = await DevGameState.getBackgroundId(phaseMap.id).catch(() => null);
+  const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
+  if (asset && asset.dataUrl) el.moveMapWrap.style.backgroundImage = `url(${asset.dataUrl})`;
+}
+el.moveMapCloseBtn.addEventListener('click', () => el.moveMapSheet.classList.add('hidden'));
 
 // 대화하기 — casual topics and 'minigame'-type hand-offs (하버 포토, §12.3;
 // suspect 심문하기, §12.6) share one list instead of a separate "말 걸기"

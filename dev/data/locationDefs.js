@@ -28,7 +28,15 @@
    reached by tapping a spot in the photo instead of picking from a list.
    No location defines any yet (needs a dev looking at the actual generated
    background to place them sensibly); 조사하기 still toggles on and works
-   with zero hotspots, it just has nothing to mark. */
+   with zero hotspots, it just has nothing to mark.
+
+   `mapPosition` (optional) — { x, y } in % over that phase's overview map
+   image (phaseMaps below), for locations landmark-level enough to get their
+   own pin on a city map (서큘러키/오페라/하버브리지/더 록스처럼 지도에서
+   서로 다른 지점). A location reached only *within* another spot (가게/전시장
+   입구 등, 골목 안쪽이라 지도에 따로 찍기 애매한 곳)는 이 필드를 생략한다 —
+   이동하기 시트(openMoveSheet, dev/explore/index.html)가 그런 exit는 지도
+   대신 그 아래 보통 리스트 줄로 보여준다. */
 
 const locationDefs = {
   'w1-circular-quay': {
@@ -39,6 +47,7 @@ const locationDefs = {
     visualBrief: '시드니 서큘러키(Circular Quay) 페리 선착장 옆 워터프론트 산책로. 여러 척의 페리가 정박해 있고, 버스커들이 공연하는 넓은 야외 데크. 오페라하우스와 하버브리지가 양쪽 먼 배경에 살짝 보이는 확 트인 구도.',
     characters: ['youngwoo'],
     exits: ['w1-opera-view', 'w1-bridge-view', 'w1-the-rocks-lane'],
+    mapPosition: { x: 52, y: 66 },
     firstVisitFlag: 'visitedCircularQuay',
     // §12.2 — week1-scene-001 hands off straight into this hub now (see
     // dialogueData.js) instead of chaining into week1-scene-002 directly.
@@ -57,6 +66,7 @@ const locationDefs = {
     visualBrief: '서큘러키 건너편에서 시드니 오페라하우스의 흰색 조개껍데기(돛) 모양 지붕이 정면으로 보이는 야외 전망 데크. 관광객들이 난간에 기대 사진을 찍는 밝은 한낮의 워터프론트.',
     characters: ['youngwoo'],
     exits: ['w1-circular-quay', 'w1-bridge-view'],
+    mapPosition: { x: 80, y: 45 },
   },
   'w1-bridge-view': {
     id: 'w1-bridge-view',
@@ -66,6 +76,7 @@ const locationDefs = {
     visualBrief: '시드니 하버브리지의 거대한 아치형 철제 구조물이 가까이 보이는 워터프론트 인도. 다리 아래로 페리와 요트가 지나다니는 항구, 길가에 정차된 차량 한두 대가 있는 도로변.',
     characters: ['youngwoo'],
     exits: ['w1-circular-quay', 'w1-opera-view', 'w1-the-rocks-lane'],
+    mapPosition: { x: 18, y: 28 },
   },
   'w1-the-rocks-lane': {
     id: 'w1-the-rocks-lane',
@@ -75,6 +86,7 @@ const locationDefs = {
     visualBrief: '더 록스(The Rocks) 지구의 오래된 사암 건물과 좁은 자갈길 골목. 빈티지 부티크 상점 간판들이 늘어서 있고, 19세기풍 건물 사이로 좁은 통로와 옆문들이 보이는 아기자기한 관광 골목.',
     characters: ['youngwoo'],
     exits: ['w1-circular-quay', 'w1-bridge-view', 'w1-the-rocks-boutique', 'w1-exhibition-entrance'],
+    mapPosition: { x: 24, y: 55 },
   },
   'w1-the-rocks-boutique': {
     id: 'w1-the-rocks-boutique',
@@ -201,5 +213,25 @@ const locationDefs = {
     visualBrief: '서큘러키 워터프론트 산책로를 걸으며 휴대폰으로 통화하는 구도 — 항구와 페리가 배경에 보이는 야외 산책로.',
     characters: ['martin'],
     exits: ['w1-reverify-hub'],
+  },
+};
+
+/* ===== 지도 화면 (phase별 오버뷰) =====
+   이동하기 시트(openMoveSheet, dev/explore/index.html)가 exit 목록을 보여줄 때,
+   그 phase에 여기 정의가 있으면 리스트 대신 지도 그림 위에 원형 핀 버튼을
+   얹는다 — 위 locationDefs 항목들의 mapPosition이 핀 좌표. 지도 자체의 배경
+   사진은 각 위치 사진과 같은 방식(DevGameState.getBackgroundId)으로 조회하며,
+   `id`가 바로 그 조회 키(/dev/upload 탐색허브 탭이 이 phaseMaps도 위치처럼
+   노출해 사진을 배정한다). 정의가 없는 phase(용의자 탐문/재검증처럼 좁은
+   구역을 도는 phase)는 기존 리스트 방식 그대로 동작한다.
+
+   `visualBrief`는 buildHubLocationPrompt와 같은 조합 방식을 지도용으로 쓸 때
+   참고할 실제 지리 설명 — 지도 이미지 자체는 사진이 아니라 일러스트 스타일로
+   생성하므로 그 프롬프트는 buildHubLocationPrompt가 아니라 별도로 짠다. */
+const phaseMaps = {
+  W1_TOURISM: {
+    id: 'map-w1-tourism',
+    name: '시드니 지도 (1주차 · 관광)',
+    visualBrief: '시드니 서큘러키를 중심으로 왼쪽 위엔 하버브리지, 왼쪽 중간엔 더 록스 지구, 오른쪽엔 오페라하우스가 있는 워터프론트 일대. 실제 지리 그대로가 아니라 관광 안내 지도 수준으로 단순화된 구도.',
   },
 };
