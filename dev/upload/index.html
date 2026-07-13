@@ -631,15 +631,14 @@ const deepLinkedSceneId = new URLSearchParams(location.search).get('scene');
   else if (params.get('kind') === 'photo') currentBgKind = 'photo:' + (params.get('index') || '0');
 })();
 
-// ?minigame=<id> deep link from /dev/minigames or /dev/evidence — locks this
-// page down to just that one entry's own scene(s), hiding the week/type
-// pickers that don't apply here, and reveals the floating 테스트하기 button
-// (the only way to actually launch the live game from this setup screen).
+// ?minigame=<id> deep link from /dev/minigames — locks this page down to
+// just that one entry's own scene(s), hiding the week/type pickers that
+// don't apply here, and reveals the floating 테스트하기 button (the only way
+// to actually launch the live game from this setup screen).
 const focusMinigame = (function () {
   const minigameId = new URLSearchParams(location.search).get('minigame');
   if (!minigameId) return null;
-  const fromMinigames = minigames.find(m => m.id === minigameId);
-  const entry = fromMinigames || evidenceCollections.find(m => m.id === minigameId);
+  const entry = minigames.find(m => m.id === minigameId);
   if (!entry) return null;
   const sceneIds = minigameId === ROOM_SEARCH_MINIGAME_ID
     ? roomSearchAreas.map(a => roomSearchAreaSceneId(a.id))
@@ -650,7 +649,7 @@ const focusMinigame = (function () {
   currentBgKind = 'minigame';
   // Evidence collections (not plain arcade minigames) get the 아이템/조합법
   // tabs instead of 인물 DB/미니게임 얼굴 — see applyFocusModeChrome.
-  return { entry, sceneIds, backHref: fromMinigames ? '/dev/minigames/' : '/dev/evidence/', isEvidence: !fromMinigames };
+  return { entry, sceneIds, backHref: '/dev/minigames/', isEvidence: !!entry.isEvidence };
 })();
 
 // Plain ?scene=<id> deep link (from /dev/game's 업로드 link or a /dev/weekN

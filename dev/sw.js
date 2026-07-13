@@ -17,7 +17,6 @@ const APP_SHELL = [
   '/dev/start/',
   '/dev/minigames/',
   '/dev/minigame-eastwood/',
-  '/dev/evidence/',
   '/dev/minigame-phone-search/',
   '/dev/minigame-fishing/',
   '/dev/minigame-fishing/play/',

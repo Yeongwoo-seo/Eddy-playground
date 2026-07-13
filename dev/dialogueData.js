@@ -1257,8 +1257,8 @@ const week1Scene002Lines = [
    ===== 전시장 자유 조사 -> 증거 수집으로 전환 =====
    원래 여기 있던 10개 핫스팟 텍스트 선택지 루프(hotspot-menu)는
    week1-scene-003-minigame(dev/minigame-exhibition-search)으로 옮겼고, 이후
-   `minigames`가 아니라 `evidenceCollections`(/dev/evidence, § 증거 수집)로
-   재분류됐다 — minigame-phone-search(핸드폰을 찾아라)와 같은 "핫스팟 탐색 +
+   `minigames`(§ 미니게임, isEvidence: true)로 재분류됐다 —
+   minigame-phone-search(핸드폰을 찾아라)와 같은 "핫스팟 탐색 +
    증거 획득 토스트" 방식에, /dev/upload로 실제 전시장 사진을 업로드하고
    핫스팟 위치를 지정할 수 있는 room-hotspot 파이프라인까지 동일하게
    붙였다(§ minigameId/roomHotspots 참고). 사진이 아직 없으면 기존 그리드
@@ -4230,42 +4230,37 @@ const minigames = [
     route: '/dev/minigame-layton/',
     setupUrl: '/dev/minigame-layton/',
   },
-];
-
-// Registry of standalone-testable 증거 수집 (evidence-collection) scenes —
-// /dev/evidence lists these. Same shape/flow as `minigames` above (tap opens
-// `setupUrl`'s 배경/핫스팟 에디터 first, only its 테스트하기 button actually
-// starts the game) — 핸드폰을 찾아라 was the first of these and moved out of
-// `minigames` since it's item/inventory-driven investigation, not an
-// arcade-style minigame. Use this entry as the template for any future
-// addition.
-// Keep `route` in sync with MINIGAME_ROUTES in game/index.html.
-const evidenceCollections = [
+  // 증거 수집(item/inventory-driven investigation) 3종 — 예전엔 별도
+  // `evidenceCollections`/`/dev/evidence`로 분리돼 있었으나, 탐색허브 Phase
+  // 개념과 나란히 두기 위해 이 레지스트리 하나로 합쳤다. `isEvidence: true`만
+  // 남기고 배열/페이지 구분은 없앰 — /dev/upload의 focusMinigame이 이 플래그로
+  // 아이템/상호작용 탭(§ applyFocusModeChrome)을 보여줄지 판단한다.
   {
     id: 'week0-scene-002-2',
     name: '핸드폰을 찾아라',
     location: 'Sydney Accommodation',
     route: '/dev/minigame-phone-search/',
     setupUrl: `/dev/upload/?scene=${roomSearchAreaSceneId(roomSearchAreas[0].id)}&minigame=week0-scene-002-2`,
+    isEvidence: true,
   },
   {
-    // Moved out of `minigames` — same reasoning as 핸드폰을 찾아라 above, now
-    // that this has a real dev-configurable background/room-hotspot editor
-    // (see week1-scene-003's minigameId/roomHotspots fields) instead of being
-    // a fixed grid-only card list. setupUrl points at the VN scene's own id
-    // (week1-scene-003), not the minigame's — see backgroundKinds() in
-    // upload/index.html for why the "미니게임" background kind resolves to
-    // scene.minigameId regardless of which scene id is in the URL.
+    // setupUrl points at the VN scene's own id (week1-scene-003), not the
+    // minigame's — see backgroundKinds() in upload/index.html for why the
+    // "미니게임" background kind resolves to scene.minigameId regardless of
+    // which scene id is in the URL.
     id: 'week1-scene-003-minigame',
     name: '전시장 둘러보기',
     location: 'Pop-up Exhibition',
     route: '/dev/minigame-exhibition-search/',
     setupUrl: '/dev/upload/?scene=week1-scene-003&minigame=week1-scene-003-minigame',
+    isEvidence: true,
   },
   {
     // Standalone/self-contained like fishing-minigame — the player's own
     // uploaded photo IS the background, so there's no dev-marked
-    // background/hotspot pair to set up in /dev/upload first.
+    // background/hotspot pair to set up in /dev/upload first. Not
+    // `isEvidence` — setupUrl === route, so it never even goes through
+    // /dev/upload's focusMinigame.
     id: 'special-ability-test',
     name: '특수 능력 테스트',
     location: '독립형 테스트 (스토리 미연동)',
