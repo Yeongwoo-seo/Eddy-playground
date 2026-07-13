@@ -114,6 +114,9 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .hotspot-svg .hs-polygon{fill:rgba(89,184,200,.24);stroke:var(--cyan);stroke-width:2;pointer-events:auto;cursor:move}
 .hotspot-svg .hs-polygon.hidden{display:none}
 .hotspot-svg .hs-other-polygon{fill:rgba(214,168,75,.08);stroke:rgba(214,168,75,.75);stroke-width:1.5;stroke-dasharray:5 4}
+.hotspot-svg .hs-ai-box{fill:rgba(232,116,30,.10);stroke:#E8741E;stroke-width:2;stroke-dasharray:6 4;cursor:pointer;pointer-events:auto}
+.hotspot-svg .hs-ai-box:hover{fill:rgba(232,116,30,.24)}
+.hotspot-svg .hs-ai-label{fill:#E8741E;font-size:22px;font-weight:700;font-family:var(--mono);pointer-events:none;paint-order:stroke;stroke:#1c1204;stroke-width:4}
 .hotspot-zoom-hint{font-family:var(--mono);font-size:10px;color:var(--text-muted);text-align:center;margin-top:8px}
 .hotspot-actions{display:flex;gap:8px;margin-top:12px}
 .hotspot-actions button{flex:1;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--mono);letter-spacing:.04em;border:none}
@@ -335,11 +338,18 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
       <div class="picker-label">항목</div>
       <div class="picker-pills" id="hotspotPickerPills"></div>
     </div>
+    <button class="select-btn" id="hotspotAiBtn" style="width:100%;margin-bottom:8px">AI로 탐지</button>
+    <div class="interaction-error" id="hotspotAiError"></div>
+    <div class="picker hidden" id="hotspotAiPicker">
+      <div class="picker-label">AI가 찾은 구성요소 (탭하면 지금 항목에 적용)</div>
+      <div class="picker-pills" id="hotspotAiPickerPills"></div>
+    </div>
     <div class="hotspot-stage" id="hotspotStage">
       <div class="hotspot-canvas" id="hotspotCanvas">
         <img id="hotspotImg" alt="">
         <svg class="hotspot-svg" id="hotspotSvg">
           <g id="hotspotOtherPolygons"></g>
+          <g id="hotspotAiGroup"></g>
           <polygon class="hs-polygon hidden" id="hotspotPolygon"></polygon>
           <g id="hotspotPickingGroup"></g>
         </svg>
@@ -694,11 +704,16 @@ const el = {
   hotspotStagePickerPills: document.getElementById('hotspotStagePickerPills'),
   hotspotPicker: document.getElementById('hotspotPicker'),
   hotspotPickerPills: document.getElementById('hotspotPickerPills'),
+  hotspotAiBtn: document.getElementById('hotspotAiBtn'),
+  hotspotAiError: document.getElementById('hotspotAiError'),
+  hotspotAiPicker: document.getElementById('hotspotAiPicker'),
+  hotspotAiPickerPills: document.getElementById('hotspotAiPickerPills'),
   hotspotStage: document.getElementById('hotspotStage'),
   hotspotCanvas: document.getElementById('hotspotCanvas'),
   hotspotImg: document.getElementById('hotspotImg'),
   hotspotSvg: document.getElementById('hotspotSvg'),
   hotspotOtherPolygons: document.getElementById('hotspotOtherPolygons'),
+  hotspotAiGroup: document.getElementById('hotspotAiGroup'),
   hotspotPolygon: document.getElementById('hotspotPolygon'),
   hotspotPickingGroup: document.getElementById('hotspotPickingGroup'),
   hotspotLeftBtn: document.getElementById('hotspotLeftBtn'),
@@ -2001,7 +2016,7 @@ async function loadHotspotEditor() {
     el.hotspotSvg.setAttribute('height', nh);
     el.hotspotSvg.setAttribute('viewBox', `0 0 ${nw} ${nh}`);
 
-    hotspotState = { sceneId, naturalW: nw, naturalH: nh, scale: 1, baseScale: 1, tx: 0, ty: 0 };
+    hotspotState = { sceneId, naturalW: nw, naturalH: nh, scale: 1, baseScale: 1, tx: 0, ty: 0, assetUrl: asset.dataUrl };
     fitHotspotStage();
     // Re-apply the last zoom/pan instead of the fresh fit-to-view above,
     // but only when it was captured on this same photo — a different photo
@@ -2035,8 +2050,100 @@ async function loadHotspotEditor() {
     } else {
       el.hotspotOtherPolygons.innerHTML = '';
     }
+
+    // AI 탐지 결과는 sceneId 기준으로 별도 보관돼 있어서(aiHotspotSuggestions),
+    // 같은 사진에서 항목 pill만 바꿔 눌러도(=이 loadHotspotEditor가 다시
+    // 실행돼도) 다시 탐지할 필요 없이 그대로 이어서 쓸 수 있다.
+    renderAiHotspotSuggestions();
   };
   el.hotspotImg.src = asset.dataUrl;
+}
+
+// AI 구성요소 탐지 — 지금 배경 사진을 detect-hotspots Edge Function에 보내면
+// 그 함수가 Gemini Vision으로 사진 속 만질 수 있는 물체들을 찾아 바운딩박스로
+// 돌려준다. 각 제안은 좌표만 있을 뿐 게임의 항목(hotspotId)과는 무관한 자유
+// 텍스트 라벨이라 자동 배정은 하지 않는다 — 대신 화면에 후보로 띄워 두고,
+// 개발자가 지금 선택된 항목에 맞는 후보를 탭하면 startHotspotWithPoints로
+// 넘겨서 기존 "정답 영역 저장" 흐름을 그대로 타게 한다. sceneId로 보관해
+// 항목 pill을 바꿔도(=loadHotspotEditor 재실행) 유지되고, 사진 자체가
+// 바뀌거나 "AI로 탐지"를 다시 누르면 새로 교체된다.
+let aiHotspotSuggestions = null; // { sceneId, detections: [{label, points}] }
+
+function renderAiHotspotSuggestions() {
+  const s = hotspotState;
+  const hasMatch = s && aiHotspotSuggestions && aiHotspotSuggestions.sceneId === s.sceneId;
+  el.hotspotAiPicker.classList.toggle('hidden', !hasMatch);
+  if (!hasMatch) {
+    el.hotspotAiGroup.innerHTML = '';
+    return;
+  }
+  const detections = aiHotspotSuggestions.detections;
+  el.hotspotAiGroup.innerHTML = detections.map((d, i) => {
+    const xs = d.points.map(p => p.x), ys = d.points.map(p => p.y);
+    const x = Math.min(...xs), y = Math.min(...ys);
+    const w = Math.max(...xs) - x, h = Math.max(...ys) - y;
+    return `<rect class="hs-ai-box" data-index="${i}" x="${x}" y="${y}" width="${w}" height="${h}"></rect>`
+      + `<text class="hs-ai-label" x="${x + 6}" y="${y + 26}">${escapeHtml(d.label)}</text>`;
+  }).join('');
+  el.hotspotAiGroup.querySelectorAll('.hs-ai-box').forEach(box => {
+    box.addEventListener('click', () => pickAiSuggestion(Number(box.dataset.index)));
+  });
+  el.hotspotAiPickerPills.innerHTML = detections.map((d, i) =>
+    `<button class="pill" data-index="${i}">${escapeHtml(d.label)}</button>`
+  ).join('');
+  el.hotspotAiPickerPills.querySelectorAll('.pill').forEach(btn => {
+    btn.addEventListener('click', () => pickAiSuggestion(Number(btn.dataset.index)));
+  });
+}
+
+function pickAiSuggestion(index) {
+  const d = aiHotspotSuggestions && aiHotspotSuggestions.detections[index];
+  if (!d || !hotspotState) return;
+  startHotspotWithPoints(d.points.map(p => ({ x: p.x, y: p.y })));
+  el.hotspotHint.textContent = `"${d.label}" 후보를 적용했어요. 필요하면 도형을 드래그로 다듬고 "정답 영역 저장"을 누르세요.`;
+}
+
+async function detectHotspotsAi() {
+  if (!hotspotState || !hotspotState.assetUrl) {
+    el.hotspotAiError.textContent = '먼저 이 항목의 배경 이미지를 업로드하고 "사용"으로 선택하세요.';
+    el.hotspotAiError.style.display = 'block';
+    return;
+  }
+  el.hotspotAiError.style.display = 'none';
+  el.hotspotAiBtn.disabled = true;
+  const originalLabel = el.hotspotAiBtn.textContent;
+  el.hotspotAiBtn.textContent = '탐지 중...';
+  const sceneId = hotspotState.sceneId;
+  const nw = hotspotState.naturalW, nh = hotspotState.naturalH;
+  try {
+    const detections = await AssetDB.detectHotspots(hotspotState.assetUrl);
+    aiHotspotSuggestions = {
+      sceneId,
+      // box_2d는 Gemini 관례대로 [ymin, xmin, ymax, xmax], 0~1000 스케일 —
+      // 자연 픽셀 좌표의 사각형 4점으로 변환해서 startHotspotWithPoints가
+      // 기대하는 모양(다른 핫스팟들과 동일)으로 맞춘다.
+      detections: detections.map(d => {
+        const [ymin, xmin, ymax, xmax] = d.box_2d;
+        const x1 = (xmin / 1000) * nw, x2 = (xmax / 1000) * nw;
+        const y1 = (ymin / 1000) * nh, y2 = (ymax / 1000) * nh;
+        return {
+          label: d.label || '구성요소',
+          points: [{ x: x1, y: y1 }, { x: x2, y: y1 }, { x: x2, y: y2 }, { x: x1, y: y2 }],
+        };
+      }),
+    };
+    renderAiHotspotSuggestions();
+    if (!aiHotspotSuggestions.detections.length) {
+      el.hotspotAiError.textContent = '사진에서 구성요소를 찾지 못했어요.';
+      el.hotspotAiError.style.display = 'block';
+    }
+  } catch (err) {
+    el.hotspotAiError.textContent = 'AI 탐지 실패: ' + (err && err.message ? err.message : err);
+    el.hotspotAiError.style.display = 'block';
+  } finally {
+    el.hotspotAiBtn.disabled = false;
+    el.hotspotAiBtn.textContent = originalLabel;
+  }
 }
 window.addEventListener('resize', () => { if (hotspotState) fitHotspotStage(); });
 
@@ -2555,6 +2662,7 @@ el.selectBtn.addEventListener('click', () => el.fileInput.click());
 el.dropzone.addEventListener('click', (e) => { if (e.target === el.selectBtn) return; el.fileInput.click(); });
 el.fileInput.addEventListener('change', (e) => onFilesSelected(e.target.files));
 el.aiGenBtn.addEventListener('click', generateAiBackground);
+el.hotspotAiBtn.addEventListener('click', detectHotspotsAi);
 el.saveBtn.addEventListener('click', saveAsset);
 el.lightbox.addEventListener('click', () => el.lightbox.classList.add('hidden'));
 

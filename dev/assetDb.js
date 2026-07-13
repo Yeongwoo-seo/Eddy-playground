@@ -596,8 +596,24 @@ const AssetDB = (() => {
     return new Blob([bytes], { type: 'image/png' });
   }
 
+  // AI 구성요소 탐지 — 배경 사진의 공개 Storage URL을 Edge Function
+  // (detect-hotspots)에 넘기면 그 함수가 Gemini Vision으로 사진 속 물체들을
+  // 찾아 [{label, box_2d}] 목록으로 돌려준다 (Gemini 키도 OpenAI 키와 같은
+  // 이유로 서버 쪽에서만 쓰임). 좌표를 게임 핫스팟 형식으로 바꾸는 건 호출부
+  // (dev/upload/index.html의 detectHotspotsAi) 몫 — 여기선 원본 그대로 넘긴다.
+  async function detectHotspots(imageUrl) {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/detect-hotspots`, {
+      method: 'POST',
+      headers: restHeaders(),
+      body: JSON.stringify({ imageUrl }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.error || `탐지 실패 (${res.status})`);
+    return body.detections || [];
+  }
+
   return {
-    addAsset, getAssetsByType, getAsset, deleteAsset, preloadImage, generateBackgroundImage,
+    addAsset, getAssetsByType, getAsset, deleteAsset, preloadImage, generateBackgroundImage, detectHotspots,
     getRoomHotspots, setRoomHotspot,
     getMinigameHotspot, setMinigameHotspot,
     getItems, setItem, getRecipes, setRecipes,
