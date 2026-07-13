@@ -110,31 +110,38 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .fade-overlay{position:absolute;inset:0;z-index:10;background:#000;opacity:0;pointer-events:none;transition:opacity .9s ease}
 .fade-overlay.show{opacity:1}
 
-/* ===== Order phase — after every photo's evidence is found, tap the
-   (randomly shuffled) photos below into their real time order. Same
-   tap-the-next-correct-chip idiom as dev/minigame-timeline. ===== */
+/* ===== Order phase — after every photo's evidence is found, freely arrange
+   the (shuffled) photos below into the 7 slots above, then 제출 to check the
+   whole arrangement at once. A correct slot locks; a wrong one shakes and
+   bounces back to the pool for another go. ===== */
 .order-view{position:absolute;inset:0;z-index:8;background:var(--bg);display:none;flex-direction:column;overflow-y:auto;touch-action:pan-y;padding:calc(14px + env(safe-area-inset-top,0)) 16px calc(20px + env(safe-area-inset-bottom,0))}
 .order-view.show{display:flex}
 .order-title{font-size:20px;font-weight:700;margin:10px 0 6px}
 .order-desc{font-size:13px;color:var(--text-secondary);line-height:1.6;margin-bottom:16px}
 .order-timeline{display:flex;flex-direction:column;gap:6px;margin-bottom:18px}
 .order-slot{border:1.5px dashed rgba(255,255,255,.14);border-radius:12px;padding:8px 12px;display:flex;align-items:center;gap:10px;min-height:44px;background:rgba(255,255,255,.02);transition:background .2s,border-color .2s}
-.order-slot.filled{border-style:solid;border-color:rgba(89,184,200,.35);background:var(--surface-1)}
+.order-slot.filled{border-style:solid;border-color:rgba(89,184,200,.35);background:var(--surface-1);cursor:pointer}
+.order-slot.filled:active{transform:scale(.99)}
+.order-slot.locked{border-color:rgba(214,168,75,.55);background:rgba(214,168,75,.1);cursor:default}
+.order-slot.wrong{animation:chipShake .35s ease}
 .order-slot-num{font-family:var(--mono);font-size:12px;color:var(--text-muted);flex-shrink:0;width:16px;text-align:center}
 .order-slot.filled .order-slot-num{color:var(--cyan)}
+.order-slot.locked .order-slot-num{color:var(--amber)}
 .order-slot-thumb{width:34px;height:46px;border-radius:6px;overflow:hidden;background:var(--surface-2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;opacity:.5}
 .order-slot-thumb img{width:100%;height:100%;object-fit:cover}
 .order-slot-time{font-family:var(--mono);font-size:12.5px;color:var(--amber);opacity:0;transition:opacity .3s}
 .order-slot.filled .order-slot-time{opacity:1}
 .order-pool-label{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px}
-.order-pool{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.order-pool{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px}
 .order-chip{position:relative;aspect-ratio:640/860;border:1px solid var(--divider);background:var(--surface-2);border-radius:12px;overflow:hidden;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .12s}
 .order-chip:active{transform:scale(.95)}
-.order-chip.wrong{animation:chipShake .35s ease}
 @keyframes chipShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
 .order-chip-thumb{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .order-chip-icon{font-size:20px;opacity:.5}
 .order-chip-time{position:absolute;left:6px;bottom:6px;font-family:var(--mono);font-size:10.5px;color:#fff;background:rgba(5,7,10,.6);border-radius:8px;padding:3px 6px;z-index:1}
+.order-submit-btn{font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:.04em;color:#04181c;background:var(--cyan);border:none;border-radius:14px;padding:14px;cursor:pointer;flex-shrink:0}
+.order-submit-btn:active{opacity:.85}
+.order-submit-btn:disabled{background:var(--surface-2);color:var(--text-muted);cursor:default}
 </style>
 </head>
 <body>
@@ -174,10 +181,11 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 
   <div class="order-view" id="orderView">
     <div class="order-title">사진을 시간 순서대로</div>
-    <div class="order-desc">일곱 장이 뒤섞였어요. 촬영된 순서대로, 아래에서 다음 사진을 하나씩 눌러 배치해보세요.</div>
+    <div class="order-desc">일곱 장이 뒤섞였어요. 아래 사진을 눌러 위 칸에 순서대로 채운 다음(잘못 놓았으면 다시 눌러 빼올 수 있어요), 다 채웠으면 제출해서 확인하세요.</div>
     <div class="order-timeline" id="orderTimeline"></div>
     <div class="order-pool-label">사진 (뒤섞임)</div>
     <div class="order-pool" id="orderPool"></div>
+    <button class="order-submit-btn" id="orderSubmitBtn" disabled>제출</button>
     <div class="dlg-strip" id="orderDlgStrip">
       <div class="dlg-body-wrap">
         <div class="dlg-name" id="orderDlgName"></div>
@@ -396,6 +404,7 @@ const el = {
   orderView: document.getElementById('orderView'),
   orderTimeline: document.getElementById('orderTimeline'),
   orderPool: document.getElementById('orderPool'),
+  orderSubmitBtn: document.getElementById('orderSubmitBtn'),
   orderDlgStrip: document.getElementById('orderDlgStrip'),
   orderDlgName: document.getElementById('orderDlgName'),
   orderDlgText: document.getElementById('orderDlgText'),
@@ -812,11 +821,13 @@ function closePhoto() {
 el.closeViewerBtn.addEventListener('click', closePhoto);
 
 /* ===== Order phase — once every photo's evidence is found, the 7 photos
-   (shuffled) get tapped back into their real time order (PHOTOS is already
-   authored in true chronological order, so array order === correct order,
-   same idiom as dev/minigame-timeline's CARDS/onChipTap). Runs inside this
-   same minigame instead of a separate page/scene since it's still working
-   with the exact same 7 photos the player just finished investigating. ===== */
+   (shuffled) get freely arranged into 7 slots and checked all at once via a
+   제출 button, instead of being validated tap-by-tap. PHOTOS is already
+   authored in true chronological order, so "correct" means slot i holds
+   photo index i. A correct slot locks in place; a wrong one bounces back to
+   the pool so only the wrong subset needs redoing on the next 제출. Runs
+   inside this same minigame instead of a separate page/scene since it's
+   still working with the exact same 7 photos the player just investigated. ===== */
 function shuffle(arr) {
   const a = arr.slice();
   for (let i = a.length - 1; i > 0; i--) {
@@ -826,43 +837,49 @@ function shuffle(arr) {
   return a;
 }
 
-let orderPlacedCount = 0;
-let orderWrongCount = 0;
-let orderPoolSequence = [];
+let orderSlotPhoto = []; // length PHOTOS.length — photo index placed in each slot, or null if empty
+let orderSlotLocked = []; // true once a 제출 confirms that slot is correct (no longer removable)
+let orderPool = []; // photo indices not currently in any slot, in display order
 let orderThumbs = []; // dataUrl or null, index-aligned to PHOTOS — fetched once when the phase starts
 
 const ORDER_WRONG_LINES = [
-  ['영우', '음... 이건 아직 이르지 않아?'],
-  ['지수', '순서를 다시 한번 짚어봐요.'],
+  ['영우', '음, 몇 개는 아직 순서가 안 맞는 것 같은데.'],
+  ['지수', '틀린 것만 다시 놓아볼게요.'],
   ['영우', '차근차근, 하나씩.'],
 ];
 
-function orderSlotThumbHtml(photoIdx) {
+function orderThumbHtml(photoIdx) {
   const url = orderThumbs[photoIdx];
   return url ? `<img src="${url}" alt="">` : '📷';
 }
 
 function renderOrderTimeline() {
-  el.orderTimeline.innerHTML = PHOTOS.map((p, i) => `
-    <div class="order-slot${i < orderPlacedCount ? ' filled' : ''}" data-idx="${i}">
+  el.orderTimeline.innerHTML = PHOTOS.map((p, i) => {
+    const photoIdx = orderSlotPhoto[i];
+    const filled = photoIdx !== null;
+    const locked = orderSlotLocked[i];
+    return `
+    <div class="order-slot${filled ? ' filled' : ''}${locked ? ' locked' : ''}" data-idx="${i}">
       <div class="order-slot-num">${i + 1}</div>
-      <div class="order-slot-thumb">${i < orderPlacedCount ? orderSlotThumbHtml(i) : ''}</div>
-      <div class="order-slot-time">${i < orderPlacedCount ? p.time : ''}</div>
-    </div>`).join('');
+      <div class="order-slot-thumb">${filled ? orderThumbHtml(photoIdx) : ''}</div>
+      <div class="order-slot-time">${filled ? PHOTOS[photoIdx].time : ''}</div>
+    </div>`;
+  }).join('');
+  el.orderTimeline.querySelectorAll('.order-slot.filled:not(.locked)').forEach(slotEl => {
+    slotEl.addEventListener('click', () => onSlotTap(parseInt(slotEl.dataset.idx, 10)));
+  });
+  const emptyCount = orderSlotPhoto.filter(v => v === null).length;
+  el.orderSubmitBtn.disabled = emptyCount > 0;
 }
 
 function renderOrderPool() {
-  const remaining = orderPoolSequence.filter(i => i >= orderPlacedCount);
-  el.orderPool.innerHTML = remaining.map(i => {
-    const url = orderThumbs[i];
-    return `
+  el.orderPool.innerHTML = orderPool.map(i => `
       <div class="order-chip" data-idx="${i}">
-        ${url ? `<img class="order-chip-thumb" src="${url}" alt="">` : `<div class="order-chip-icon">📷</div>`}
+        ${orderThumbs[i] ? `<img class="order-chip-thumb" src="${orderThumbs[i]}" alt="">` : `<div class="order-chip-icon">📷</div>`}
         <div class="order-chip-time">${PHOTOS[i].time}</div>
-      </div>`;
-  }).join('');
+      </div>`).join('');
   el.orderPool.querySelectorAll('.order-chip').forEach(chipEl => {
-    chipEl.addEventListener('click', () => onOrderChipTap(parseInt(chipEl.dataset.idx, 10), chipEl));
+    chipEl.addEventListener('click', () => onPoolChipTap(parseInt(chipEl.dataset.idx, 10)));
   });
 }
 
@@ -875,30 +892,73 @@ function sayInOrder(speakerName, text) {
   orderReactionHideTimer = setTimeout(() => el.orderDlgStrip.classList.remove('show'), 3200);
 }
 
-function onOrderChipTap(idx, chipEl) {
-  if (idx !== orderPlacedCount) {
-    orderWrongCount++;
-    chipEl.classList.add('wrong');
-    setTimeout(() => chipEl.classList.remove('wrong'), 350);
-    const line = ORDER_WRONG_LINES[Math.min(orderWrongCount, ORDER_WRONG_LINES.length) - 1];
-    sayInOrder(line[0], line[1]);
-    return;
-  }
-  orderPlacedCount++;
+// Tapping a pool photo drops it into the next empty slot, left to right —
+// which slot it lands in is entirely the player's own arrangement, not
+// validated until 제출.
+function onPoolChipTap(photoIdx) {
+  const slotIdx = orderSlotPhoto.findIndex(v => v === null);
+  if (slotIdx === -1) return; // no empty slot — shouldn't happen while the pool still has anything in it
+  orderSlotPhoto[slotIdx] = photoIdx;
+  orderPool = orderPool.filter(i => i !== photoIdx);
   renderOrderTimeline();
   renderOrderPool();
-  if (orderPlacedCount >= PHOTOS.length) {
+}
+
+// Tapping a filled, not-yet-locked slot pulls that photo back out to the
+// pool — lets the player fix an obvious mistake before spending a 제출.
+function onSlotTap(slotIdx) {
+  if (orderSlotLocked[slotIdx] || orderSlotPhoto[slotIdx] === null) return;
+  orderPool.push(orderSlotPhoto[slotIdx]);
+  orderSlotPhoto[slotIdx] = null;
+  renderOrderTimeline();
+  renderOrderPool();
+}
+
+let orderWrongSubmitCount = 0;
+function onOrderSubmit() {
+  if (el.orderSubmitBtn.disabled) return;
+  const wrongIdxs = [];
+  for (let i = 0; i < orderSlotPhoto.length; i++) {
+    if (orderSlotLocked[i]) continue;
+    if (orderSlotPhoto[i] === i) orderSlotLocked[i] = true;
+    else wrongIdxs.push(i);
+  }
+  renderOrderTimeline();
+  renderOrderPool();
+  if (!wrongIdxs.length) {
     el.orderDlgStrip.classList.remove('show');
     setTimeout(startSuccessDialogue, 900);
+    return;
   }
+  orderWrongSubmitCount++;
+  const line = ORDER_WRONG_LINES[Math.min(orderWrongSubmitCount, ORDER_WRONG_LINES.length) - 1];
+  sayInOrder(line[0], line[1]);
+  // Shake the wrong slots in place for a beat before bouncing them back to
+  // the pool, so the player sees exactly which guesses were wrong instead of
+  // them silently vanishing.
+  wrongIdxs.forEach(i => {
+    const slotEl = el.orderTimeline.querySelector(`.order-slot[data-idx="${i}"]`);
+    if (slotEl) slotEl.classList.add('wrong');
+  });
+  el.orderSubmitBtn.disabled = true;
+  setTimeout(() => {
+    wrongIdxs.forEach(i => {
+      orderPool.push(orderSlotPhoto[i]);
+      orderSlotPhoto[i] = null;
+    });
+    renderOrderTimeline();
+    renderOrderPool();
+  }, 380);
 }
+el.orderSubmitBtn.addEventListener('click', onOrderSubmit);
 
 async function startOrderPhase() {
   el.viewerLayer.classList.remove('show');
   el.dlgStrip.classList.remove('show');
-  orderPlacedCount = 0;
-  orderWrongCount = 0;
-  orderPoolSequence = shuffle(PHOTOS.map((_, i) => i));
+  orderSlotPhoto = PHOTOS.map(() => null);
+  orderSlotLocked = PHOTOS.map(() => false);
+  orderPool = shuffle(PHOTOS.map((_, i) => i));
+  orderWrongSubmitCount = 0;
   el.orderView.classList.add('show');
   renderOrderTimeline();
   renderOrderPool();
