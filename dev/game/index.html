@@ -38,6 +38,11 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .vn-topbar{position:absolute;top:0;left:0;right:0;z-index:5;padding:calc(14px + env(safe-area-inset-top,0)) 16px 14px;display:flex;justify-content:space-between;align-items:center}
 .vn-btn{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:#fff;background:rgba(8,10,12,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:9px 14px;cursor:pointer;text-decoration:none;display:inline-block}
 .vn-btn.dev{color:var(--amber);border-color:rgba(214,168,75,.4)}
+/* Auto-play badge (see ?autoplay=1) — tapping it stops the auto-advance and
+   drops back to normal tap-to-continue play, same look family as .vn-btn.dev
+   but cyan to read as "this is the player-facing preview", not a dev tool. */
+.vn-btn.auto{color:var(--cyan);border-color:rgba(89,184,200,.45);background:rgba(89,184,200,.16)}
+.vn-btn.auto.hidden{display:none}
 
 /* ===== Point balance (The Missing Key v1 §4.1/§6.1) — small badge next to
    the CASE FILE ☰ button. Hidden until the player has ever earned points
@@ -183,6 +188,7 @@ window.addEventListener('orientationchange', setVh100);
       <a class="vn-btn" href="/dev/">← DEV</a>
     </div>
     <div style="display:flex;gap:8px">
+      <button class="vn-btn auto hidden" id="autoplayBtn">AUTO ⏸ 정지</button>
       <button class="vn-btn dev" id="transformBtn">POS</button>
       <button class="vn-btn dev" id="devBtn">DEV</button>
     </div>
@@ -317,8 +323,17 @@ if ('serviceWorker' in navigator) {
 // against allScenes (every week's scenes combined) so a scene from any week
 // can be requested, falling back to the very first scene so a bare
 // /dev/game/ link still works.
-const requestedSceneId = new URLSearchParams(location.search).get('scene');
+const gameParams = new URLSearchParams(location.search);
+const requestedSceneId = gameParams.get('scene');
 const activeSceneData = allScenes.find(s => s.id === requestedSceneId) || allScenes[0];
+// ?autoplay=1 (set by each week's "플레이하기" button, see /dev/week1) — taps
+// itself through every line instead of waiting for the player, so a dev can
+// watch a whole week's dialogue cascade the way it actually plays out
+// instead of tapping through it line by line. ?week= carries the originating
+// week id through the nextSceneId chain purely so the completion card knows
+// which week list to link back to.
+const isAutoplay = gameParams.get('autoplay') === '1';
+const autoplayWeek = gameParams.get('week') || 'week1';
 // Clones every field (not a fixed whitelist) so interactive fields — id,
 // type, choices, effects, goto, evidenceIds, correctGoto, wrongText — reach
 // the player. A whitelist here previously dropped exactly those fields,
@@ -336,6 +351,7 @@ const el = {
   dialogueText: document.getElementById('dialogueText'),
   tapArrow: document.getElementById('tapArrow'),
   devBtn: document.getElementById('devBtn'),
+  autoplayBtn: document.getElementById('autoplayBtn'),
   sheetOverlay: document.getElementById('sheetOverlay'),
   sheetCloseBtn: document.getElementById('sheetCloseBtn'),
   bgSelect: document.getElementById('bgSelect'),
@@ -637,7 +653,13 @@ function playMinigameTransition(nextSceneId) {
     return;
   }
   if (allScenes.some(s => s.id === nextSceneId)) {
-    location.href = `/dev/game/?scene=${encodeURIComponent(nextSceneId)}`;
+    // Carry autoplay through the chain as long as the next stop is another
+    // plain VN scene — the moment nextSceneId resolves to a minigame/hub
+    // route above instead, autoplay has nothing left to script (those need
+    // real input), so this suffix is simply omitted and that navigation
+    // lands there in normal manual mode.
+    const suffix = autoplayOn ? `&autoplay=1&week=${encodeURIComponent(autoplayWeek)}` : '';
+    location.href = `/dev/game/?scene=${encodeURIComponent(nextSceneId)}${suffix}`;
     return;
   }
   el.introCard.textContent = 'MINIGAME START';
@@ -924,12 +946,38 @@ const player = createVNPlayer({
     if (!el.transformPopup.classList.contains('hidden')) loadTransformIntoSliders();
   },
   onTextUpdate: (text) => { el.dialogueText.textContent = text; },
-  onArrow: updateArrow,
+  onArrow: (show) => {
+    updateArrow(show);
+    if (!autoplayOn) return;
+    // true = this line finished typing and is waiting on a tap; schedule the
+    // auto-tap after a reading pause. false = a new line just started typing
+    // (or a scene transition is holding) — drop any stale pending auto-tap.
+    if (show) scheduleAutoTap(autoReadDelay(el.dialogueText.textContent));
+    else clearAutoplayTimer();
+  },
   onEffect: (effects) => {
     (Array.isArray(effects) ? effects : [effects]).forEach(applyEffect);
   },
-  onChoicePrompt: (choices) => { showChoices(choices); },
-  onEvidencePrompt: () => { showEvidenceCta(); },
+  onChoicePrompt: (choices) => {
+    showChoices(choices);
+    if (!autoplayOn) return;
+    clearAutoplayTimer();
+    autoplayTimer = setTimeout(() => {
+      if (!autoplayOn) return;
+      const firstBtn = el.choiceLayer.querySelector('.choice-btn');
+      if (firstBtn) firstBtn.click();
+    }, 900);
+  },
+  onEvidencePrompt: (line) => {
+    showEvidenceCta();
+    if (!autoplayOn) return;
+    clearAutoplayTimer();
+    autoplayTimer = setTimeout(() => {
+      if (!autoplayOn) return;
+      const evidenceId = line.evidenceIds && line.evidenceIds[0];
+      if (evidenceId) player.presentEvidence(evidenceId);
+    }, 900);
+  },
   onEvidenceResult: (correct, evidenceId, line) => {
     if (correct) {
       CaseFileState.markEvidenceReviewed(evidenceId);
@@ -949,9 +997,18 @@ const player = createVNPlayer({
   onComplete: () => {
     if (activeSceneData.nextSceneId) {
       playMinigameTransition(activeSceneData.nextSceneId);
-    } else {
-      player.restart();
+      return;
     }
+    if (autoplayOn) {
+      const fallback = findAutoplayFallbackNextScene();
+      if (fallback) {
+        location.href = `/dev/game/?scene=${encodeURIComponent(fallback.id)}&autoplay=1&week=${encodeURIComponent(autoplayWeek)}`;
+      } else {
+        showAutoplayComplete();
+      }
+      return;
+    }
+    player.restart();
   },
 });
 
@@ -959,6 +1016,83 @@ function onTap() {
   unlockBgmOnFirstTap();
   if (caseMenu.isOpen()) return;
   player.tap();
+}
+
+/* ===== Auto-play (?autoplay=1) — taps/chooses/presents-evidence on a timer
+   instead of waiting for the player, so "플레이하기" on /dev/week1 can show
+   the whole week cascading the way it actually plays out. Any real tap on
+   the frame (onTap above) still works mid-autoplay and just advances early;
+   the AUTO badge lets a dev drop back to manual play without navigating
+   away. ===== */
+let autoplayOn = isAutoplay;
+let autoplayTimer = null;
+
+function clearAutoplayTimer() {
+  if (autoplayTimer) { clearTimeout(autoplayTimer); autoplayTimer = null; }
+}
+
+function stopAutoplay() {
+  autoplayOn = false;
+  clearAutoplayTimer();
+  el.autoplayBtn.classList.add('hidden');
+}
+
+// Waits out a natural reading pace (base pause + a per-character amount,
+// capped so a long line doesn't stall the cascade) before tapping onward.
+// Re-checks caseMenu/sheets right before tapping — a dev can pop one of
+// those open mid-autoplay to poke around without a stray auto-tap racing past it.
+function scheduleAutoTap(delayMs) {
+  clearAutoplayTimer();
+  autoplayTimer = setTimeout(() => {
+    if (!autoplayOn) return;
+    if (caseMenu.isOpen() || !el.sheetOverlay.classList.contains('hidden') || !el.evidenceSheetOverlay.classList.contains('hidden')) {
+      scheduleAutoTap(400);
+      return;
+    }
+    unlockBgmOnFirstTap();
+    player.tap();
+  }, delayMs);
+}
+
+function autoReadDelay(text) {
+  return 550 + Math.min(1600, (text || '').length * 16);
+}
+
+if (isAutoplay) el.autoplayBtn.classList.remove('hidden');
+el.autoplayBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  stopAutoplay();
+});
+
+// Only a handful of week1 scenes carry an authored nextSceneId today (the
+// ones handing off into a minigame/탐문 허브 — see dialogueData.js); most
+// plain VN scenes don't chain to the next one yet, so the base engine just
+// loops in place once their last line is tapped through (see onComplete's
+// player.restart() below). Autoplay still wants to cascade through the rest
+// of the week in its authored order — the same #01..#NN order /dev/week1
+// itself lists — so when a scene has no nextSceneId it falls back to "the
+// next scene in this week with the next-higher .order", instead of stopping
+// (or looping forever) at every one of those un-wired boundaries. Route-only
+// entries (minigames/hubs, no .lines) are skipped here since a real
+// nextSceneId hand-off (above) already owns navigating to those.
+function findAutoplayFallbackNextScene() {
+  const week = weeks.find(w => w.id === autoplayWeek);
+  if (!week) return null;
+  const candidates = week.scenes
+    .filter(s => s.lines && s.lines.length && s.order > activeSceneData.order)
+    .sort((a, b) => a.order - b.order);
+  return candidates[0] || null;
+}
+
+// 다음 씬을 못 찾으면(주차의 마지막 씬) dev/game 기본 동작은 restart()로
+// 무한 루프하지만, autoplay는 대신 완료 카드를 잠깐 띄우고 그 주차 목록으로
+// 돌아간다 — 같은 씬을 계속 재생하는 대신 "다 봤다"는 신호를 준다.
+function showAutoplayComplete() {
+  stopAutoplay();
+  el.frame.classList.add('ending-fade');
+  el.introCard.textContent = '자동 재생 완료';
+  el.introOverlay.classList.remove('hidden');
+  setTimeout(() => { location.href = `/dev/${autoplayWeek}/`; }, 2200);
 }
 
 // Text speed is applied by filling in each line's typingSpeedMs where the
