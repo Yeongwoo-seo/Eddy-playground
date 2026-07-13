@@ -40,13 +40,19 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .photo-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .photo-card{position:relative;aspect-ratio:640/860;background:var(--surface-1);border:1px solid var(--divider);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:transform .15s,background .15s}
 .photo-card:active{transform:scale(.96);background:var(--surface-2)}
-.photo-card .cam-icon{font-size:26px;opacity:.5}
-.photo-card .time-label{font-family:var(--mono);font-size:12.5px;color:var(--cyan);font-weight:600}
-.photo-card .found-label{font-family:var(--mono);font-size:11px;color:var(--text-muted)}
+.photo-card .cam-icon{font-size:26px;opacity:.5;position:relative;z-index:1}
+.photo-card .time-label{font-family:var(--mono);font-size:12.5px;color:var(--cyan);font-weight:600;position:relative;z-index:1}
+.photo-card .found-label{font-family:var(--mono);font-size:11px;color:var(--text-muted);position:relative;z-index:1}
 .photo-card .found-label .n{color:var(--amber)}
 .photo-card.complete{border-color:rgba(214,168,75,.5)}
-.photo-card .check-badge{position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;background:var(--amber);color:#211703;font-size:13px;font-weight:700;display:none;align-items:center;justify-content:center}
+.photo-card .check-badge{position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;background:var(--amber);color:#211703;font-size:13px;font-weight:700;display:none;align-items:center;justify-content:center;z-index:2}
 .photo-card.complete .check-badge{display:flex}
+/* A dev-uploaded photo (see /dev/upload/?scene=week1-scene-004-minigame)
+   fills the card behind the existing time/found-count overlay instead of the
+   plain camera-icon placeholder — the scrim keeps that text legible on top
+   of a busy photo. */
+.photo-card-thumb{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.photo-card-scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(5,7,10,.1) 0%,rgba(5,7,10,.7) 100%)}
 
 /* ===== Full-screen photo viewer ===== */
 .viewer-layer{position:absolute;inset:0;z-index:8;background:#05070a;display:none;flex-direction:column}
@@ -367,15 +373,30 @@ function updateProgressUi() {
 }
 
 /* ===== Grid (filmstrip) ===== */
-function renderGrid() {
+// Thumbnails are best-effort — a fetch failure just leaves that card on the
+// plain camera-icon placeholder instead of blocking the whole grid.
+async function fetchPhotoThumbnails() {
+  return Promise.all(PHOTOS.map(async (_, i) => {
+    try {
+      const assetId = await DevGameState.getBackgroundId(photoBackgroundKey(i));
+      return assetId ? await AssetDB.getAsset(assetId) : null;
+    } catch (err) {
+      return null;
+    }
+  }));
+}
+
+async function renderGrid() {
+  const thumbs = await fetchPhotoThumbnails();
   el.photoGrid.innerHTML = PHOTOS.map((p, i) => {
     const need = correctInPhoto(i);
     const have = foundInPhoto(i);
     const complete = need > 0 && have === need;
+    const thumbUrl = thumbs[i] && thumbs[i].dataUrl;
     return `
       <div class="photo-card${complete ? ' complete' : ''}" data-idx="${i}">
+        ${thumbUrl ? `<img class="photo-card-thumb" src="${thumbUrl}" alt=""><div class="photo-card-scrim"></div>` : `<div class="cam-icon">📷</div>`}
         <div class="check-badge">✓</div>
-        <div class="cam-icon">📷</div>
         <div class="time-label">${p.time}</div>
         <div class="found-label">${need ? `발견 <span class="n">${have}</span>/${need}` : '단서 없음'}</div>
       </div>`;
@@ -487,6 +508,35 @@ el.mapStage.addEventListener('wheel', (e) => {
 }, { passive: false });
 
 /* ===== Build a photo scene (background + case + figures) ===== */
+// Same key pattern as dialogueData.js's week1-scene-004-minigame.photoSlots
+// (see /dev/upload/?scene=week1-scene-004-minigame) — computed rather than
+// stored per-PHOTOS-entry so the two never drift out of sync.
+function photoBackgroundKey(photoIdx) {
+  return `week1-scene-004-minigame-photo-${photoIdx + 1}`;
+}
+
+// A dev-uploaded photo (via the setup screen above) replaces the flat
+// .photo-bg gradient placeholder once it loads. Fire-and-forget from
+// buildPhoto() below — the synchronous figure/case-box layout must not wait
+// on this network round-trip — but has to re-check activePhotoIdx before
+// painting, since a slower fetch could still resolve after the player has
+// already closed this photo or opened a different one.
+async function loadPhotoBackground(photoIdx, bgEl) {
+  let asset = null;
+  try {
+    const assetId = await DevGameState.getBackgroundId(photoBackgroundKey(photoIdx));
+    if (assetId) asset = await AssetDB.getAsset(assetId);
+  } catch (err) {
+    console.error('loadPhotoBackground failed, keeping placeholder gradient', err);
+  }
+  if (activePhotoIdx !== photoIdx || !asset || !asset.dataUrl) return;
+  Object.assign(bgEl.style, {
+    backgroundImage: `url(${asset.dataUrl})`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+  });
+}
+
 function buildPhoto(photoIdx) {
   el.mapCanvas.innerHTML = '';
   el.mapCanvas.style.width = CANVAS_W + 'px';
@@ -497,6 +547,7 @@ function buildPhoto(photoIdx) {
   bg.className = 'photo-bg';
   Object.assign(bg.style, { width: CANVAS_W + 'px', height: CANVAS_H + 'px' });
   el.mapCanvas.appendChild(bg);
+  loadPhotoBackground(photoIdx, bg);
 
   const vignette = document.createElement('div');
   vignette.className = 'photo-vignette';
