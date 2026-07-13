@@ -147,7 +147,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
     </div>
     <div class="grid-tag">Operation MK · Pop-up Exhibition</div>
     <div class="grid-title">사진 속 인물 찾기</div>
-    <div class="grid-desc">직원이 건네준 사진 일곱 장. 하나씩 확대해서, K-01 진열장 근처에 있던 사람과 케이스 자체의 변화를 찾아 눌러보세요. 다 찾으면 사진을 시간 순서대로 다시 정리합니다.</div>
+    <div class="grid-desc">사진 순서는 방금 맞췄어요. 이제 하나씩 확대해서, K-01 진열장 근처에 있던 사람과 케이스 자체의 변화를 찾아 눌러보세요.</div>
     <div class="photo-grid" id="photoGrid"></div>
   </div>
 
@@ -173,8 +173,11 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
   </div>
 
   <div class="order-view" id="orderView">
-    <div class="order-title">사진을 순서대로</div>
-    <div class="order-desc">사진은 무작위로 뒤섞여 있고 시간 같은 힌트는 없어요. 순서대로라고 생각하는 사진을 차례로 눌러 우상단 동그라미에 번호를 매기세요(다시 누르면 번호가 취소돼요). 다 매겼으면 제출해서 확인하세요.</div>
+    <div class="topbar" style="padding-left:0;padding-right:0">
+      <a class="vn-btn" href="/dev/">← DEV</a>
+    </div>
+    <div class="order-title">먼저, 사진 순서부터</div>
+    <div class="order-desc">직원이 건네준 사진 일곱 장이에요. 무작위로 뒤섞여 있고 시간 같은 힌트는 없어요. 순서대로라고 생각하는 사진을 차례로 눌러 우상단 동그라미에 번호를 매기세요(다시 누르면 번호가 취소돼요). 다 매겼으면 제출해서 확인하세요.</div>
     <div class="order-pool" id="orderPool"></div>
     <button class="order-submit-btn" id="orderSubmitBtn" disabled>제출</button>
     <div class="dlg-strip" id="orderDlgStrip">
@@ -747,7 +750,7 @@ function onSpecialTargetTap(target) {
   }
   say(target.sayLine[0], target.sayLine[1]);
   updateProgressUi();
-  if (totalFound() >= REQUIRED_TOTAL) setTimeout(startOrderPhase, 1400);
+  if (totalFound() >= REQUIRED_TOTAL) setTimeout(startSuccessDialogue, 1400);
 }
 
 function onCanvasTap(point) {
@@ -790,7 +793,7 @@ function onCanvasTap(point) {
   updateProgressUi();
 
   if (totalFound() >= REQUIRED_TOTAL) {
-    setTimeout(startOrderPhase, 1400);
+    setTimeout(startSuccessDialogue, 1400);
   }
 }
 
@@ -810,16 +813,17 @@ function closePhoto() {
 }
 el.closeViewerBtn.addEventListener('click', closePhoto);
 
-/* ===== Order phase — once every photo's evidence is found, the 7 photos
-   are laid out once (shuffled) in a single grid and never move; PHOTOS is
+/* ===== Order phase — this is the FIRST thing the player does, before any
+   evidence hunting: the 7 photos come with no time/caption hints and are
+   laid out once (shuffled) in a single grid that never moves. PHOTOS is
    already authored in true chronological order, so "correct" means photo i
    carries the number i+1. Tapping a photo assigns it the next free order
    number into its own top-right badge; tapping a numbered photo again frees
    that number. 제출 checks the whole arrangement at once — a correct badge
    locks in place (gold, no longer tappable); wrong ones shake and clear so
-   only that subset needs redoing on the next 제출. Runs inside this same
-   minigame instead of a separate page/scene since it's still working with
-   the exact same 7 photos the player just investigated. ===== */
+   only that subset needs redoing on the next 제출. Only once every photo is
+   locked does finishOrderPhase() reveal the person-finding grid (with time
+   labels now legitimately visible, since the order mystery is solved). ===== */
 function shuffle(arr) {
   const a = arr.slice();
   for (let i = a.length - 1; i > 0; i--) {
@@ -893,7 +897,7 @@ function onOrderSubmit() {
   renderOrderGrid();
   if (!wrongIdxs.length) {
     el.orderDlgStrip.classList.remove('show');
-    setTimeout(startSuccessDialogue, 900);
+    setTimeout(finishOrderPhase, 900);
     return;
   }
   orderWrongSubmitCount++;
@@ -931,6 +935,14 @@ async function startOrderPhase() {
   // can't without thumbs, but a stray double-open shouldn't repaint a
   // hidden view either) is a no-op.
   if (el.orderView.classList.contains('show')) renderOrderGrid();
+}
+
+// Order phase solved — hand off to the person-finding grid, which is only
+// rendered now (its photo-card time labels are the payoff for having just
+// solved the order, not a hint available beforehand).
+function finishOrderPhase() {
+  el.orderView.classList.remove('show');
+  renderGrid();
 }
 
 /* ===== Success sequence ===== */
@@ -989,7 +1001,7 @@ function fadeOutAndRedirect() {
 /* ===== Boot ===== */
 document.getElementById('gridProgressTotal').textContent = REQUIRED_TOTAL;
 document.getElementById('viewerProgressTotal').textContent = REQUIRED_TOTAL;
-renderGrid();
+startOrderPhase();
 </script>
 <script src="/dev/devPlanFab.js"></script>
 </body>
