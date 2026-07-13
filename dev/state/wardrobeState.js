@@ -57,6 +57,18 @@ const WardrobeState = {
     wardrobeState.equippedOutfitId = outfitId;
     wardrobeState.lastEquippedOutfitId = outfitId;
     saveWardrobeState();
+    // vnOutfitId items reuse art already uploaded under 지수's VN outfit
+    // slots (see shopItems.js) instead of a dedicated characterAssetKey —
+    // syncing the same selection every other screen already reads via
+    // DevGameState.getCharacterAssetId('jisoo', expression) means dialogue,
+    // minigames, and the explore hub all pick up the equipped look with no
+    // changes needed there. Only affects story_locked scenes that force a
+    // *different* vnOutfitId-based outfit mid-scene — none exist yet (see
+    // resolveOutfitForScene below).
+    const def = shopItems[outfitId];
+    if (def && def.vnOutfitId && typeof DevGameState !== 'undefined') {
+      DevGameState.setSelectedOutfit('jisoo', def.vnOutfitId);
+    }
     return true;
   },
   getEquippedOutfitId() { return wardrobeState.equippedOutfitId; },
