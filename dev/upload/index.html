@@ -969,7 +969,10 @@ async function renderLocationPicker() {
     btn.addEventListener('click', () => {
       currentLocationId = btn.dataset.id;
       currentVariantId = 'default';
-      renderVariantPicker();
+      // Re-render the location pills too (not just variants) — otherwise
+      // the `active` class stays on whichever location was picked last,
+      // same bug as 탐색허브's phase picker.
+      renderLocationPicker();
       clearPending();
       refreshList();
     });
@@ -1104,7 +1107,10 @@ function renderHubPicker() {
     btn.addEventListener('click', () => {
       currentHubPhase = btn.dataset.id;
       currentHubLocationId = null;
-      renderHubLocationPicker();
+      // Re-render the phase pills too (not just locations) — otherwise the
+      // `active` class stays on whichever phase was picked last, since
+      // nothing else updates the pill markup after this click.
+      renderHubPicker();
       clearPending();
       refreshList();
     });
@@ -1121,6 +1127,8 @@ function renderHubLocationPicker() {
   el.hubLocationPickerPills.querySelectorAll('.pill').forEach(btn => {
     btn.addEventListener('click', () => {
       currentHubLocationId = btn.dataset.id;
+      // Re-render so the `active` class actually moves to the clicked pill.
+      renderHubLocationPicker();
       clearPending();
       refreshList();
     });
