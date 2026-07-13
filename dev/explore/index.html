@@ -495,18 +495,13 @@ function playInteraction(interactionId) {
 
 // Small effect vocabulary — deliberately narrower than game/index.html's
 // applyEffect (this hub content only ever needs setFlag/addFact/addEvidence/
-// addQuestion/setQuestionStatus/linkEvidenceToQuestion so far); extend in
-// lockstep with what interactionDefs.js actually authors. setQuestionStatus/
-// linkEvidenceToQuestion added for the "사전 복선" pattern's evidence payoff
-// (see w1sh-topic-van-recall) — a Phase 1 addQuestion resolving into real
-// case evidence once the crime is known.
+// addQuestion so far); extend in lockstep with what interactionDefs.js
+// actually authors.
 function applyLocalEffect(effect) {
   if (effect.type === 'setFlag') CaseFileState.setFlag(effect.key, effect.value);
   else if (effect.type === 'addFact') { if (CaseFileState.addFact(effect.fact)) ExplorationState.refreshInteractionsByFact(effect.fact.id); }
   else if (effect.type === 'addEvidence') CaseFileState.addEvidence(effect.evidence);
   else if (effect.type === 'addQuestion') CaseFileState.addQuestion(effect.question);
-  else if (effect.type === 'setQuestionStatus') CaseFileState.setQuestionStatus(effect.id, effect.status, effect.resolutionText);
-  else if (effect.type === 'linkEvidenceToQuestion') CaseFileState.linkEvidenceToQuestion(effect.questionId, effect.evidenceId);
 }
 
 // One persistent click listener delegating to whichever player is currently

@@ -289,6 +289,19 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
     <div class="picker-pills" id="hubLocationPickerPills"></div>
   </div>
 
+  <!-- 선택된 허브 장소의 실제 모습·스토리·인터랙티브 요소를 반영한 AI
+       이미지 생성 프롬프트 — locationDefs.js의 visualBrief +
+       interactionDefs.js의 해당 장소/단계 상호작용을 조합해 만든다. 실제
+       사진은 여전히 아래 bgLocationAssignPanel에서 장소 DB에 배정해
+       올린다 — 이건 그 사진을 만들 때 참고할 텍스트일 뿐. See
+       buildHubLocationPrompt()/renderHubPromptPanel(). -->
+  <div class="picker hidden" id="hubPromptPanel">
+    <div class="picker-label">AI 배경 생성 프롬프트</div>
+    <textarea class="interaction-textarea" id="hubPromptText" readonly spellcheck="false" style="min-height:220px"></textarea>
+    <button class="select-btn" id="hubPromptCopyBtn" style="width:100%;margin-top:8px">📋 프롬프트 복사</button>
+    <div class="hint" id="hubPromptCopyStatus" style="margin-top:6px"></div>
+  </div>
+
   <!-- 배경 DB의 일반 씬 배경 슬롯(미니게임 아님) + 탐색허브 위치가 공유하는
        장소 배정 패널 — location-background-system 설계안: 이 슬롯이 어느
        장소인지만 고르고, 실제 사진 업로드/배정은 장소 DB 탭에서 한다(같은
@@ -578,6 +591,7 @@ window.__removeBackgroundReady = import('https://cdn.jsdelivr.net/npm/@imgly/bac
 <script src="/dev/youtubeSound.js"></script>
 <script src="/dev/dialogueData.js"></script>
 <script src="/dev/data/locationDefs.js"></script>
+<script src="/dev/data/interactionDefs.js"></script>
 <script src="/dev/data/shopItems.js"></script>
 <script src="/dev/dialoguePanel.js"></script>
 <script>
@@ -758,6 +772,10 @@ const el = {
   hubPhasePickerPills: document.getElementById('hubPhasePickerPills'),
   hubLocationPicker: document.getElementById('hubLocationPicker'),
   hubLocationPickerPills: document.getElementById('hubLocationPickerPills'),
+  hubPromptPanel: document.getElementById('hubPromptPanel'),
+  hubPromptText: document.getElementById('hubPromptText'),
+  hubPromptCopyBtn: document.getElementById('hubPromptCopyBtn'),
+  hubPromptCopyStatus: document.getElementById('hubPromptCopyStatus'),
   bgLocationAssignPanel: document.getElementById('bgLocationAssignPanel'),
   bgLocationAssignedLabel: document.getElementById('bgLocationAssignedLabel'),
   bgLocationAssignPills: document.getElementById('bgLocationAssignPills'),
@@ -1082,6 +1100,14 @@ const HUB_PHASE_LABELS = {
   W1_SUSPECT_INTERVIEWS: '1주차 · 용의자 탐문',
   W1_REVERIFICATION: '1주차 · 모순 재검증',
 };
+// AI 배경 생성 프롬프트(buildHubLocationPrompt)용 — 단계별 전반적인 분위기.
+// HUB_PHASE_LABELS 바로 옆에 두는 이유는 둘 다 "phase id -> 사람이 읽을 텍스트"
+// 매핑이라 새 phase 추가 시 항상 같이 고쳐야 하기 때문.
+const HUB_PHASE_MOOD = {
+  W1_TOURISM: '사건이 일어나기 전 — 평화롭고 여유로운 관광객 시점의 밝은 한낮 분위기.',
+  W1_SUSPECT_INTERVIEWS: 'K-01 도난 사건이 알려진 뒤 — 살짝 긴장되고 차분해진 분위기.',
+  W1_REVERIFICATION: '사건을 다시 짚어보는 재검증 단계 — 처음보다 신중하고 가라앉은 분위기.',
+};
 function hubPhases() {
   const seen = [];
   Object.values(locationDefs).forEach(loc => {
@@ -1095,6 +1121,75 @@ function hubLocationsForPhase(phase) {
 function currentHubLocation() {
   return currentHubLocationId ? locationDefs[currentHubLocationId] : null;
 }
+
+// interactionDefs.js 전체에서 이 장소+단계에 걸린 상호작용만 골라, 배경
+// 이미지에 실제로 그려 넣어야 할 요소를 뽑아낸다. 대사 첫 줄 중
+// characterId:null(내레이션)인 줄을 "이 상호작용이 뭘 보여주는 장면인지"의
+// 시각적 단서로 쓰고, 없으면 그냥 label을 쓴다 — dev/explore/index.html의
+// getInteractionsForLocation과 같은 필터 논리(단, 여긴 순수 조회용이라
+// ExplorationState의 상태(완료 여부 등)는 필요 없다).
+function hubLocationInteractions(locationId, phase) {
+  return Object.values(interactionDefs).filter(def =>
+    (def.locationIds || []).includes(locationId) && (!def.phases || !def.phases.length || def.phases.includes(phase))
+  );
+}
+function interactionVisualCue(def) {
+  const narrLine = (def.lines || []).find(l => l.characterId === null && l.text);
+  return narrLine ? narrLine.text.replace(/\n/g, ' ') : (def.label || def.id);
+}
+
+// 선택된 허브 장소의 실제 모습(locationDefs.js visualBrief) + 현재 단계의
+// 분위기(HUB_PHASE_MOOD) + 그 장소/단계에 걸린 상호작용들이 요구하는 시각
+// 요소를 조합해, 그대로 복붙해서 이미지 생성 AI에 넣을 수 있는 프롬프트
+// 문단을 만든다. 실제 사진 업로드는 여전히 bgLocationAssignPanel의 장소 DB
+// 배정 몫 — 이건 그 사진을 만들 때 참고할 텍스트만 준비해 줄 뿐이다.
+function buildHubLocationPrompt(locationId, phase) {
+  const loc = locationDefs[locationId];
+  if (!loc) return '';
+  const visual = loc.visualBrief || `${loc.name} — 실제 모습에 대한 설명이 아직 등록되지 않았습니다(locationDefs.js에 visualBrief를 추가하세요).`;
+  const mood = HUB_PHASE_MOOD[phase] || '';
+  const interactions = hubLocationInteractions(locationId, phase);
+  const elementsBlock = interactions.length
+    ? interactions.map(def => `- ${def.label || def.id}: ${interactionVisualCue(def)}`).join('\n')
+    : '- (이 장소/단계에 걸린 상호작용 없음 — 특별히 필요한 요소 없음)';
+  return [
+    `[장소] ${loc.name} (${loc.week}주차 · ${HUB_PHASE_LABELS[phase] || phase})`,
+    '',
+    '[실제 모습]',
+    visual,
+    '',
+    '[분위기]',
+    mood,
+    '',
+    '[화면에 꼭 있어야 하는 요소]',
+    elementsBlock,
+    '',
+    '[스타일 가이드]',
+    '- 모바일 세로 화면(9:16) 배경 이미지 한 장',
+    '- 인물(지수/영우/용의자 등)은 게임에서 별도로 렌더링되므로 배경에는 사람을 그려 넣지 않는다',
+    '- 사실적인 사진풍, 시드니 현지 분위기, 텍스트나 워터마크 없이',
+  ].join('\n');
+}
+
+function renderHubPromptPanel() {
+  if (!currentHubLocationId || !currentHubPhase) { el.hubPromptText.value = ''; return; }
+  el.hubPromptText.value = buildHubLocationPrompt(currentHubLocationId, currentHubPhase);
+  el.hubPromptCopyStatus.textContent = '';
+}
+
+el.hubPromptCopyBtn.addEventListener('click', async () => {
+  if (!el.hubPromptText.value) return;
+  try {
+    await navigator.clipboard.writeText(el.hubPromptText.value);
+  } catch (err) {
+    // Clipboard API can be unavailable/denied (older WebView, missing
+    // permission) — select the text so the tester can still copy it by hand
+    // instead of leaving them with a silent failure.
+    el.hubPromptText.select();
+    document.execCommand('copy');
+  }
+  el.hubPromptCopyStatus.textContent = '복사됐어요.';
+});
 
 function renderHubPicker() {
   const phases = hubPhases();
@@ -1137,6 +1232,7 @@ function renderHubLocationPicker() {
   // 배경 tab tail call과 같은 이유로, 위치가 바뀔 때마다 다시 그려야 한다.
   updateBackgroundModeChrome();
   renderBgLocationAssign();
+  renderHubPromptPanel();
 }
 
 /* ===== 배경 DB tab: 일반 씬 배경 슬롯의 장소 배정 (미니게임 kind는 기존
@@ -1324,6 +1420,7 @@ function selectType(type) {
   el.variantPicker.classList.toggle('hidden', type !== 'location');
   el.hubPhasePicker.classList.toggle('hidden', type !== 'hub');
   el.hubLocationPicker.classList.toggle('hidden', type !== 'hub');
+  el.hubPromptPanel.classList.toggle('hidden', type !== 'hub');
   el.charPicker.classList.toggle('hidden', type !== 'character' && type !== 'minigameFace');
   // outfitPicker's own visibility (also gated on the current character
   // actually having outfits) is recomputed by renderOutfitPicker() below,
