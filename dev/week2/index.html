@@ -62,11 +62,12 @@ if ('serviceWorker' in navigator) {
 <script src="/dev/dialogueData.js"></script>
 <script>
 // Setup href: plain VN scenes go to /dev/upload's 배경/캐릭터/대사 editor for
-// that scene id; entries that are themselves a minigame/evidence-collection
-// route (no `lines`) go to that entry's own setupUrl instead.
+// that scene id; entries that are themselves a minigame route (no `lines`,
+// evidence-collection minigames included — see isEvidence in dialogueData.js)
+// go to that entry's own setupUrl instead.
 function setupHref(s) {
   if (!s.route) return '/dev/upload/?scene=' + encodeURIComponent(s.id);
-  const entry = minigames.find(m => m.id === s.id) || evidenceCollections.find(m => m.id === s.id);
+  const entry = minigames.find(m => m.id === s.id);
   return entry ? entry.setupUrl : '/dev/upload/?scene=' + encodeURIComponent(s.id);
 }
 
