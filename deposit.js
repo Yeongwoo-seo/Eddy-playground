@@ -53,8 +53,9 @@ function showToast(msg) {
     toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
 }
 
-function showOcrOverlay(show) {
+function showOcrOverlay(show, text) {
     document.getElementById('ocrOverlay').classList.toggle('active', show);
+    if (text) document.getElementById('ocrText').innerHTML = text;
 }
 
 // --- 이미지 리사이즈 ---
@@ -286,18 +287,28 @@ function renderApplicants() {
 
 function renderHistory() {
     const list = document.getElementById('historyList');
+    list.innerHTML = '';
     if (!state.history.length) {
         list.innerHTML = '<div class="empty-hint">아직 확인된 입금이 없어요</div>';
     } else {
-        list.innerHTML = state.history.map(h => `
-            <div class="history-item">
+        state.history.forEach(h => {
+            const el = document.createElement('div');
+            el.className = 'history-item';
+            el.innerHTML = `
                 ${h.thumb ? `<img class="history-thumb" src="${h.thumb}" alt="">` : '<div class="history-thumb-placeholder">🧾</div>'}
                 <div class="history-body">
                     <div class="history-names"><b>${escapeHtml(h.applicantName)}</b> &harr; ${escapeHtml(h.depositorName)}</div>
                     <div class="history-meta">${h.amount ? escapeHtml(h.amount) + '원 · ' : ''}${formatTime(h.timestamp)}${h.auto ? ' · 자동매칭' : ''}</div>
                 </div>
-            </div>
-        `).join('');
+                <button class="block-remove" aria-label="삭제">&times;</button>
+            `;
+            el.querySelector('.block-remove').addEventListener('click', () => {
+                state.history = state.history.filter(x => x.id !== h.id);
+                saveState();
+                renderAll();
+            });
+            list.appendChild(el);
+        });
     }
     document.getElementById('historyCount').textContent = state.history.length;
 }
@@ -308,13 +319,8 @@ function renderAll() {
     renderHistory();
 }
 
-// --- 입금자 등록 (이미지 업로드 + OCR) ---
-document.getElementById('depositFile').addEventListener('change', async (e) => {
-    const file = e.target.files[0];
-    e.target.value = '';
-    if (!file) return;
-
-    showOcrOverlay(true);
+// --- 입금자 등록 (이미지 업로드 + OCR, 여러 장 동시 선택 가능) ---
+async function processDepositFile(file) {
     let thumb = '';
     try {
         thumb = await resizeImageToDataURL(file, 480, 0.75);
@@ -342,9 +348,27 @@ document.getElementById('depositFile').addEventListener('change', async (e) => {
         saveState();
         renderAll();
         showToast('자동 인식에 실패했어요 - 이름을 입력해주세요');
-    } finally {
-        showOcrOverlay(false);
     }
+}
+
+document.getElementById('depositFile').addEventListener('change', async (e) => {
+    const files = Array.from(e.target.files || []);
+    e.target.value = '';
+    if (!files.length) return;
+
+    showOcrOverlay(true, files.length > 1
+        ? `이름 인식 중이에요... (1/${files.length})`
+        : '이름 인식 중이에요...<br>처음 실행 시 조금 걸릴 수 있어요');
+
+    for (let i = 0; i < files.length; i++) {
+        if (files.length > 1) {
+            showOcrOverlay(true, `이름 인식 중이에요... (${i + 1}/${files.length})`);
+        }
+        await processDepositFile(files[i]);
+    }
+
+    showOcrOverlay(false);
+    if (files.length > 1) showToast(`캡쳐본 ${files.length}장 등록 완료`);
 });
 
 // --- 신청자 등록 ---
