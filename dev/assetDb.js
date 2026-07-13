@@ -577,11 +577,12 @@ const AssetDB = (() => {
   }
 
   // AI 배경 생성 — 장소 설명 텍스트를 Edge Function(generate-background)에
-  // 넘기면 그 함수가 OpenAI 이미지 생성 API를 대신 호출해 이미지를 돌려준다
-  // (OpenAI 키는 과금되는 비공개 키라 SUPABASE_ANON_KEY처럼 클라이언트에 둘 수
-  // 없음 — 배포/키 설정은 supabase/functions/generate-background 참고). 반환된
-  // base64를 그대로 addAsset()에 넘길 수 있는 Blob으로 바꿔서 돌려주므로,
-  // 호출부는 기존 파일 업로드와 같은 저장 경로를 그대로 탄다.
+  // 넘기면 그 함수가 Gemini 이미지 생성 모델을 대신 호출해 이미지를 돌려준다
+  // (detectHotspots와 같은 GEMINI_API_KEY를 서버 쪽에서 재사용 — 쿼터가 걸린
+  // 비공개 키라 SUPABASE_ANON_KEY처럼 클라이언트에 둘 수 없음. 배포/키 설정은
+  // supabase/functions/generate-background 참고). 반환된 base64를 그대로
+  // addAsset()에 넘길 수 있는 Blob으로 바꿔서 돌려주므로, 호출부는 기존 파일
+  // 업로드와 같은 저장 경로를 그대로 탄다.
   async function generateBackgroundImage(description) {
     const res = await fetch(`${SUPABASE_URL}/functions/v1/generate-background`, {
       method: 'POST',
@@ -598,8 +599,9 @@ const AssetDB = (() => {
 
   // AI 구성요소 탐지 — 배경 사진의 공개 Storage URL을 Edge Function
   // (detect-hotspots)에 넘기면 그 함수가 Gemini Vision으로 사진 속 물체들을
-  // 찾아 [{label, box_2d}] 목록으로 돌려준다 (Gemini 키도 OpenAI 키와 같은
-  // 이유로 서버 쪽에서만 쓰임). 좌표를 게임 핫스팟 형식으로 바꾸는 건 호출부
+  // 찾아 [{label, box_2d}] 목록으로 돌려준다 (GEMINI_API_KEY는 쿼터가 걸린
+  // 비공개 키라 서버 쪽에서만 쓰임 — generateBackgroundImage와 같은 키를
+  // 재사용). 좌표를 게임 핫스팟 형식으로 바꾸는 건 호출부
   // (dev/upload/index.html의 detectHotspotsAi) 몫 — 여기선 원본 그대로 넘긴다.
   async function detectHotspots(imageUrl) {
     const res = await fetch(`${SUPABASE_URL}/functions/v1/detect-hotspots`, {
