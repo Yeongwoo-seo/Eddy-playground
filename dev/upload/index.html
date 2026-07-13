@@ -875,9 +875,16 @@ async function loadLocationsCatalog() {
   return locationsCatalog;
 }
 
+// Storage object keys (Supabase Storage) only accept ASCII, so Korean (and
+// any other non-ASCII) characters must NOT survive into the id — only the
+// `label` field is shown in the UI (renderLocationPicker/renderVariantPicker),
+// the id here is purely an internal Storage path segment. A label with no
+// ASCII/digit characters at all (e.g. purely Korean, "팝업스토어") collapses to
+// 'x'; uniqueLocationId/uniqueVariantId's -2/-3 suffixing still keeps such
+// ids distinct from each other.
 function slugify(label) {
   return String(label).trim().toLowerCase()
-    .replace(/[^a-z0-9가-힣]+/g, '-')
+    .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '') || 'x';
 }
 function uniqueLocationId(label) {
