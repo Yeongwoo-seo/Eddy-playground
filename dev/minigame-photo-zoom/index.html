@@ -872,7 +872,7 @@ function onSpecialTargetTap(target) {
   if (!evidenceGranted.has(target.id)) {
     evidenceGranted.add(target.id);
     CaseFileState.addEvidence({
-      id: target.evidenceId, code: target.evidenceCode || 'E-K01', title: target.evidenceTitle,
+      id: target.evidenceId, code: target.evidenceCode || 'E-K01', category: 'photo', title: target.evidenceTitle,
       description: target.evidenceDesc, discoveredLocationText: 'Pop-up Exhibition · 사건 직전 사진',
     });
   }
@@ -918,7 +918,7 @@ function onCanvasTap(point) {
     evidenceGranted.add(fig.personKey);
     const def = PERSON_DEFS[fig.personKey];
     CaseFileState.addEvidence({
-      id: `evidence-photo-${fig.personKey}`, code: 'E-K01', title: def.evidenceTitle,
+      id: `evidence-photo-${fig.personKey}`, code: 'E-K01', category: 'photo', title: def.evidenceTitle,
       description: def.evidenceDesc, discoveredLocationText: 'Pop-up Exhibition · 사건 직전 사진',
     });
   }

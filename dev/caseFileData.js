@@ -71,6 +71,7 @@ const inventoryItemDefs = {
 const EVIDENCE_UNKNOWN_KEY = {
   id: 'evidence-unknown-key',
   code: 'E-001',
+  category: 'physical',
   title: 'UNKNOWN KEY',
   description: '정체불명의 낡은 열쇠.',
   discoveredLocationText: '숙소 침실 환기구',

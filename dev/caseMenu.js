@@ -73,6 +73,8 @@ function initCaseMenu(options) {
   function onBodyClick(e) {
     const tabSwitch = e.target.closest('[data-tab-switch]');
     if (tabSwitch) { ctx.tab = tabSwitch.dataset.tabSwitch; render(); return; }
+    const evidenceFilter = e.target.closest('[data-evidence-filter]');
+    if (evidenceFilter) { ctx.evidenceFilter = evidenceFilter.dataset.evidenceFilter; render(); return; }
     const navTarget = e.target.closest('[data-nav]');
     if (navTarget) { pushView(navTarget.dataset.nav, { id: navTarget.dataset.id }); return; }
     const actionTarget = e.target.closest('[data-action]');
@@ -197,16 +199,7 @@ function initCaseMenu(options) {
     const tabBar = tabs.map(t => `<button class="cm-tab${t.id === tab ? ' cm-tab-active' : ''}" data-tab-switch="${t.id}">${t.label}</button>`).join('');
     let listHtml = '';
     if (tab === 'evidence') {
-      const evidence = CaseFileState.getEvidence();
-      listHtml = evidence.length ? evidence.map(ev => `
-        <button class="cm-row" data-nav="evidenceDetail" data-id="${ev.id}">
-          <div class="cm-row-main">
-            <div class="cm-row-title">${escapeHtml(ev.title)}${ev.status === 'new' ? '<span class="cm-new-dot"></span>' : ''}</div>
-            <div class="cm-row-sub">${escapeHtml(ev.code || '')}</div>
-          </div>
-          <div class="cm-row-arrow">›</div>
-        </button>
-      `).join('') : emptyNote('아직 확보한 증거가 없습니다.');
+      listHtml = renderEvidenceTabBody();
     } else if (tab === 'questions') {
       const questions = CaseFileState.getQuestions();
       listHtml = questions.length ? questions.map(q => `
@@ -234,6 +227,53 @@ function initCaseMenu(options) {
     }
     // Re-bind the tab bar's own nav (it reuses data-nav="investigation" with a tab id).
     return { title: '수사 노트', html: `<div class="cm-tabbar">${tabBar}</div><div class="cm-list">${listHtml}</div>` };
+  }
+
+  // 증거 탭 — 종류(물증/사진·영상/진술/기록)별 필터 칩 + 그룹 리스트. 필터가
+  // '전체'일 때는 카테고리 섹션으로 나눠서 보여주고, 특정 종류를 고르면 그
+  // 종류만 평평한 리스트로 보여준다. ctx.evidenceFilter는 tab 전환처럼
+  // pushView 없이 유지되는 값이라 (onBodyClick 참고) 증거 탭을 벗어났다
+  // 돌아와도 마지막으로 고른 필터가 살아있다.
+  const EVIDENCE_CATEGORY_ORDER = ['physical', 'photo', 'testimony', 'record', 'etc'];
+  function renderEvidenceTabBody() {
+    const evidence = CaseFileState.getEvidence();
+    if (!evidence.length) return emptyNote('아직 확보한 증거가 없습니다.');
+    const filter = ctx.evidenceFilter || 'all';
+    const presentCats = EVIDENCE_CATEGORY_ORDER.filter(c => evidence.some(ev => (ev.category || 'etc') === c));
+    const filterBar = `
+      <div class="cm-filter-row">
+        <button class="cm-filter-chip${filter === 'all' ? ' cm-filter-chip-active' : ''}" data-evidence-filter="all">전체 ${evidence.length}</button>
+        ${presentCats.map(c => {
+          const count = evidence.filter(ev => (ev.category || 'etc') === c).length;
+          return `<button class="cm-filter-chip${filter === c ? ' cm-filter-chip-active' : ''}" data-evidence-filter="${c}">${evidenceCategoryLabel(c)} ${count}</button>`;
+        }).join('')}
+      </div>
+    `;
+    let bodyHtml;
+    if (filter !== 'all') {
+      const items = evidence.filter(ev => (ev.category || 'etc') === filter);
+      bodyHtml = `<div class="cm-list">${items.map(evidenceRow).join('')}</div>`;
+    } else {
+      bodyHtml = presentCats.map(c => {
+        const items = evidence.filter(ev => (ev.category || 'etc') === c);
+        return `
+          <div class="cm-section-label cm-section-label-spaced">${evidenceCategoryLabel(c)}</div>
+          <div class="cm-list">${items.map(evidenceRow).join('')}</div>
+        `;
+      }).join('');
+    }
+    return filterBar + bodyHtml;
+  }
+  function evidenceRow(ev) {
+    return `
+      <button class="cm-row" data-nav="evidenceDetail" data-id="${ev.id}">
+        <div class="cm-row-main">
+          <div class="cm-row-title">${escapeHtml(ev.title)}${ev.status === 'new' ? '<span class="cm-new-dot"></span>' : ''}</div>
+          <div class="cm-row-sub">${escapeHtml(ev.code || '')}</div>
+        </div>
+        <div class="cm-row-arrow">›</div>
+      </button>
+    `;
   }
 
   // 추론 탭 (The Missing Key v4 §5) — two groups: questions that currently
@@ -611,6 +651,7 @@ function questionStatusLabel(status) {
   }[status] || status;
 }
 function evidenceStatusLabel(status) { return { new: '용도 불명', reviewed: '확인함', linked: '연결됨', resolved: '해결됨' }[status] || status; }
+function evidenceCategoryLabel(cat) { return { physical: '물증', photo: '사진·영상', testimony: '진술', record: '기록', etc: '기타' }[cat] || '기타'; }
 function personStatusLabel(status) { return { unknown: '미상', witness: '목격자', suspect: '용의자', cleared: '혐의 없음', reopened: '재조사 중', involved: '연루됨', culprit: '범인' }[status] || status; }
 function mapStatusLabel(status) { return { locked: '미방문', unlocked: '해금됨', visited: '방문함', current: '현재 위치' }[status] || status; }
 function mapStatusIcon(status) { return { locked: '🔒', unlocked: '○', visited: '●', current: '●' }[status] || '○'; }
@@ -697,6 +738,10 @@ function injectCaseMenuStyles() {
     .cm-tabbar{display:flex;gap:6px;margin-bottom:14px}
     .cm-tab{flex:1;background:#171F29;border:1px solid rgba(255,255,255,.10);color:#7E8791;border-radius:10px;padding:10px 4px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
     .cm-tab-active{color:#D8A93D;border-color:rgba(216,169,61,.5);background:rgba(216,169,61,.08)}
+
+    .cm-filter-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+    .cm-filter-chip{background:#171F29;border:1px solid rgba(255,255,255,.10);color:#7E8791;border-radius:20px;padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
+    .cm-filter-chip-active{color:#4CB8D4;border-color:rgba(76,184,212,.5);background:rgba(76,184,212,.1)}
 
     .cm-list{display:flex;flex-direction:column;gap:8px}
     .cm-row{display:flex;align-items:center;gap:12px;background:#171F29;border:1px solid rgba(255,255,255,.10);border-radius:12px;padding:13px 14px;text-align:left;cursor:pointer;color:#F1F3F5;font-family:inherit;text-decoration:none}

@@ -72,6 +72,7 @@ const CaseFileState = {
       status: 'new',
       relatedQuestionIds: [],
       tags: [],
+      category: 'etc',
     }, item));
     saveCaseState();
     return true;

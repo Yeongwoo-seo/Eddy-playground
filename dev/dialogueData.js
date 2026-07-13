@@ -391,7 +391,7 @@ const week0Scene002_3Lines = [
     effects: [{
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-accommodation-keycard', code: 'E-000', title: '숙소 카드키',
+        id: 'evidence-accommodation-keycard', code: 'E-000', category: 'physical', title: '숙소 카드키',
         description: '두 사람이 묵고 있는 숙소의 정식 카드키. 낡은 열쇠와는 다른 물건이다.',
         discoveredLocationText: '숙소 객실',
       },
@@ -1362,7 +1362,7 @@ const week1Scene004ReviewLines = [
     effects: [{
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-theft-time-range', code: 'E-TR1', title: '사건 발생 추정 시간대',
+        id: 'evidence-theft-time-range', code: 'E-TR1', category: 'record', title: '사건 발생 추정 시간대',
         description: '사진 분석 결과, K-01이 사라진 시점은 10시 44분에서 10시 48분 사이로 추정된다. 정확한 순간은 아직 좁혀지지 않았다.',
         discoveredLocationText: 'Pop-up Exhibition · 사진 분석',
       },
@@ -1429,7 +1429,7 @@ const week1Scene005Lines = [
     effects: [{
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-staff-tag-position-after', code: 'E-H01B', title: '직원용 태그 위치 (사건 후)',
+        id: 'evidence-staff-tag-position-after', code: 'E-H01B', category: 'physical', title: '직원용 태그 위치 (사건 후)',
         description: '사건 전 접수대 오른쪽에 있던 직원용 태그가, 지금은 왼쪽으로 옮겨져 있다.',
         discoveredLocationText: 'Pop-up Exhibition · 현장 재조사',
       },
@@ -1440,7 +1440,7 @@ const week1Scene005Lines = [
     effects: [{
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-case-dust-mark', code: 'E-H05', title: '진열장 먼지 자국',
+        id: 'evidence-case-dust-mark', code: 'E-H05', category: 'physical', title: '진열장 먼지 자국',
         description: '진열장 유리 안쪽, K-01이 있던 자리 주변에 누군가 손을 짚은 듯한 자국이 남아 있다.',
         discoveredLocationText: 'Pop-up Exhibition · 현장 재조사',
       },
@@ -1462,7 +1462,7 @@ const week1Scene005Lines = [
     effects: [{
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-staffdoor-ajar', code: 'E-H06', title: '직원 전용문 반쯤 열림',
+        id: 'evidence-staffdoor-ajar', code: 'E-H06', category: 'physical', title: '직원 전용문 반쯤 열림',
         description: '자유 조사 때는 닫혀 있던 직원 전용문이, 지금은 반쯤 열려 있다.',
         discoveredLocationText: 'Pop-up Exhibition · 현장 재조사',
       },
@@ -1473,7 +1473,7 @@ const week1Scene005Lines = [
     effects: [{
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-guestbook-folded-page', code: 'E-H07', title: '방명록 페이지 접힘',
+        id: 'evidence-guestbook-folded-page', code: 'E-H07', category: 'physical', title: '방명록 페이지 접힘',
         description: '방명록 한 페이지 모서리가 접혀 있다. 급하게 넘기다 그런 것처럼 보인다.',
         discoveredLocationText: 'Pop-up Exhibition · 현장 재조사',
       },
@@ -1484,7 +1484,7 @@ const week1Scene005Lines = [
     effects: [{
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-staff-lock-check-time', code: 'E-SEL1', title: '진열장 잠금 확인 시각',
+        id: 'evidence-staff-lock-check-time', code: 'E-SEL1', category: 'testimony', title: '진열장 잠금 확인 시각',
         description: '직원 — 진열장 잠금은 오늘 아침 9시에 한 번 확인했다. 그 이후로는 따로 확인하지 않았다.',
         discoveredLocationText: 'Pop-up Exhibition · 선택 조사(직원)',
       },
@@ -1495,7 +1495,7 @@ const week1Scene005Lines = [
     effects: [{
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-cafe-staff-tip', code: 'E-SEL2', title: '카페 직원 증언',
+        id: 'evidence-cafe-staff-tip', code: 'E-SEL2', category: 'testimony', title: '카페 직원 증언',
         description: '카페 직원 — 그레이 후드 남성은 주문 후 바로 앉지 않았고, 가방을 의자 아래 뒀으며, 누군가와 통화를 했다.',
         discoveredLocationText: 'Café near Circular Quay · 선택 조사(카페)',
       },
@@ -1506,7 +1506,7 @@ const week1Scene005Lines = [
     effects: [{
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-tourist-extra-photo', code: 'E-SEL3', title: '관광객 추가 사진 — 직원 전용문 근처 실루엣',
+        id: 'evidence-tourist-extra-photo', code: 'E-SEL3', category: 'photo', title: '관광객 추가 사진 — 직원 전용문 근처 실루엣',
         description: '관광객이 추가로 건네준 사진. 직원 전용문 근처를 지나가는 그레이 후드 남성의 실루엣이 찍혀 있다.',
         discoveredLocationText: 'Pop-up Exhibition · 선택 조사(관광객)',
       },
@@ -1589,7 +1589,7 @@ const week1Scene005aLines = [
     effects: [{
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-claire-alibi-statement', code: 'E-CL1', title: '클레어의 최초 진술 — 접수대 상주',
+        id: 'evidence-claire-alibi-statement', code: 'E-CL1', category: 'testimony', title: '클레어의 최초 진술 — 접수대 상주',
         description: '클레어 모건 — "사건 시간대 내내 접수대에 있었고, 자리를 비운 적 없다"는 진술.',
         discoveredLocationText: 'Pop-up Exhibition 접수대 · 클레어 최초 진술',
       },
@@ -1629,7 +1629,7 @@ const week1Scene005bLines = [
     effects: [{
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-daniel-graycap-sighting', code: 'E-DN1', title: '다니엘의 목격담 — 회색 모자 관광객 이탈',
+        id: 'evidence-daniel-graycap-sighting', code: 'E-DN1', category: 'testimony', title: '다니엘의 목격담 — 회색 모자 관광객 이탈',
         description: '다니엘 리드 — 인솔하던 단체 관광객 중 회색 모자를 쓴 남성 한 명이 잠깐 대열에서 이탈했었다.',
         discoveredLocationText: 'Pop-up Exhibition 앞 · 다니엘 최초 진술',
       },
@@ -1641,7 +1641,7 @@ const week1Scene005bLines = [
     effects: [{
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-daniel-silhouette-report', code: 'E-DN2', title: '다니엘의 목격담 — 직원 전용문 근처 실루엣',
+        id: 'evidence-daniel-silhouette-report', code: 'E-DN2', category: 'testimony', title: '다니엘의 목격담 — 직원 전용문 근처 실루엣',
         description: '다니엘 리드 — 직원 전용문 근처에서 후드나 모자를 쓴 듯한 사람의 실루엣을 본 것 같다는 진술. 확신은 없다.',
         discoveredLocationText: 'Pop-up Exhibition 앞 · 다니엘 최초 진술',
       },
@@ -1736,7 +1736,7 @@ const week1Scene006Lines = [
     effects: [{
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-mina-illegal-photo', code: 'E-M01', title: '윤민아의 비공식 촬영 자백',
+        id: 'evidence-mina-illegal-photo', code: 'E-M01', category: 'testimony', title: '윤민아의 비공식 촬영 자백',
         description: '전시품을 촬영 금지 규정을 어기고 몰래 찍었다고 시인했다. 이유는 "편집숍 무드보드 참고용".',
         discoveredLocationText: 'Pop-up Exhibition · 윤민아 1차 조사',
       },
@@ -1759,7 +1759,7 @@ const week1Scene006Lines = [
     effects: [{
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-mina-recovered-photo-fragment', code: 'E-M02', title: '복구된 삭제 사진 일부',
+        id: 'evidence-mina-recovered-photo-fragment', code: 'E-M02', category: 'photo', title: '복구된 삭제 사진 일부',
         description: '완전히 복구되진 않았지만, K-01 뒷면 각인 부분을 확대 촬영한 흔적이 남아 있다.',
         discoveredLocationText: 'Pop-up Exhibition · 윤민아 1차 조사',
       },
@@ -1802,7 +1802,7 @@ const week1Scene006Lines = [
     effects: [{
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-mina-photo-timestamps', code: 'E-M03', title: '윤민아 촬영 시각 기록',
+        id: 'evidence-mina-photo-timestamps', code: 'E-M03', category: 'record', title: '윤민아 촬영 시각 기록',
         description: '세 장의 사진 모두 사건 추정 발생 시간대(10:47~10:58) 안에서 촬영된 것으로 타임스탬프가 남아 있다.',
         discoveredLocationText: 'Pop-up Exhibition · 윤민아 1차 조사',
       },
@@ -1898,7 +1898,7 @@ const week1Scene007Lines = [
     effects: [{
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-adrian-inquiry', code: 'E-B01', title: 'K-01 외부 문의 기록',
+        id: 'evidence-adrian-inquiry', code: 'E-B01', category: 'record', title: 'K-01 외부 문의 기록',
         description: '최근 K-01과 비슷한 황동 물건에 대한 외부 문의가 있었다. 제작 시기, 재질, 세부 각인까지 비정상적으로 구체적이었다.',
         discoveredLocationText: 'Pop-up Exhibition · 접수대',
       },
@@ -1913,14 +1913,14 @@ const week1Scene007Lines = [
     effects: [{
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-adrian-sender', code: 'E-B02', title: '문의 발신 계정 — M.K.',
+        id: 'evidence-adrian-sender', code: 'E-B02', category: 'record', title: '문의 발신 계정 — M.K.',
         description: '문의 메일의 발신 계정명은 "M.K."뿐이었다. 회신 주소나 소속 표기가 전혀 없었다.',
         discoveredLocationText: 'Pop-up Exhibition · 접수대',
       },
     }, {
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-adrian-email-re-prefix', code: 'E-B02B', title: '메일 제목의 "Re:"',
+        id: 'evidence-adrian-email-re-prefix', code: 'E-B02B', category: 'record', title: '메일 제목의 "Re:"',
         description: '문의 메일 제목이 "Re: 문의드립니다"로 시작한다. Re:는 보통 답장에 붙는 접두사다 — 애초에 누군가 먼저 답장을 보낸 적 있다는 뜻일 수 있다.',
         discoveredLocationText: 'Pop-up Exhibition · 접수대',
       },
@@ -1960,7 +1960,7 @@ const week1Scene007Lines = [
     effects: [{
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-adrian-sent-mail-cache', code: 'E-B08', title: '애드리언 보낸메일 캐시',
+        id: 'evidence-adrian-sent-mail-cache', code: 'E-B08', category: 'record', title: '애드리언 보낸메일 캐시',
         description: '애드리언이 M.K. 계정에 보낸 답장 캐시. "판매 불가"뿐 아니라 이번 전시 일정(요일별 개방 시간)까지 함께 적혀 있다.',
         discoveredLocationText: 'Pop-up Exhibition · 접수대',
       },
@@ -2078,7 +2078,7 @@ const week1Scene008Lines = [
     effects: [{
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-sophie-initial-sighting', code: 'E-SP1', title: '소피의 최초 목격담 — 10시 52분 창가 자리',
+        id: 'evidence-sophie-initial-sighting', code: 'E-SP1', category: 'testimony', title: '소피의 최초 목격담 — 10시 52분 창가 자리',
         description: '소피 첸(카페 직원) — 그레이 후드 남성이 10시 52분쯤 카페에 들어와 바로 창가 자리에 앉았다는 목격담.',
         discoveredLocationText: 'Café near Circular Quay · 소피 최초 진술',
       },
@@ -2123,7 +2123,7 @@ const week1Scene008aLines = [
     effects: [{
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-empty-reception-photo', code: 'E-CL2', title: '접수대가 비어 있는 사진',
+        id: 'evidence-empty-reception-photo', code: 'E-CL2', category: 'photo', title: '접수대가 비어 있는 사진',
         description: '관광객이 찍은 사진 중 하나에, 접수대가 잠깐 비어 있는 순간이 찍혀 있다.',
         discoveredLocationText: 'Pop-up Exhibition · 재조사',
       },
@@ -2166,7 +2166,7 @@ const week1Scene008aLines = [
     effects: [{
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-leo-bag-strap-shape', code: 'E-DN3', title: '레오의 가방 끈 형태',
+        id: 'evidence-leo-bag-strap-shape', code: 'E-DN3', category: 'physical', title: '레오의 가방 끈 형태',
         description: '레오가 매고 있던 가방의 끈 모양과 매는 방식을 정리한 자료.',
         discoveredLocationText: 'Pop-up Exhibition · 재조사',
       },
@@ -2227,7 +2227,7 @@ const week1Scene008aLines = [
       {
         type: 'addEvidence',
         evidence: {
-          id: 'evidence-leo-mobile-preorder', code: 'E-SP2', title: '레오의 모바일 선주문 기록',
+          id: 'evidence-leo-mobile-preorder', code: 'E-SP2', category: 'record', title: '레오의 모바일 선주문 기록',
           description: '레오는 카페 도착 전 모바일 앱으로 미리 주문을 넣어뒀다 — 직접 줄을 서거나 자리를 잡을 필요가 없었다.',
           discoveredLocationText: 'Café near Circular Quay · 주문 앱 기록',
         },
@@ -2235,7 +2235,7 @@ const week1Scene008aLines = [
       {
         type: 'addEvidence',
         evidence: {
-          id: 'evidence-cctv-reversed-strap-direction', code: 'E-SP3', title: 'CCTV 스틸 — 반대 방향 가방끈',
+          id: 'evidence-cctv-reversed-strap-direction', code: 'E-SP3', category: 'photo', title: 'CCTV 스틸 — 반대 방향 가방끈',
           description: '10시 52분 카페 CCTV 속 인물의 가방끈은 레오와 반대 방향으로 매어져 있다.',
           discoveredLocationText: 'Café near Circular Quay · CCTV',
         },
@@ -2303,7 +2303,7 @@ const week1Scene009Lines = [
       {
         type: 'addEvidence',
         evidence: {
-          id: 'evidence-leo-first-statement', code: 'E-TL0', title: '레오 박의 최초 진술',
+          id: 'evidence-leo-first-statement', code: 'E-TL0', category: 'testimony', title: '레오 박의 최초 진술',
           description: '"10시 42분쯤 들어가서 10시 58분쯤 나왔다"는 레오 박 본인의 진술. 시간을 정확히 체크하는 습관이 있다고 스스로 강조했었다.',
           discoveredLocationText: 'Café near Circular Quay · 레오 박 조사',
         },
@@ -2311,7 +2311,7 @@ const week1Scene009Lines = [
       {
         type: 'addEvidence',
         evidence: {
-          id: 'evidence-leo-bag-volume-change', code: 'E-TL3', title: '레오 가방 부피 변화',
+          id: 'evidence-leo-bag-volume-change', code: 'E-TL3', category: 'photo', title: '레오 가방 부피 변화',
           description: '전시장 안에서 찍힌 사진과 이후 카페 사진을 비교하면, 레오의 가방이 눈에 띄게 더 두꺼워져 있다.',
           discoveredLocationText: 'Café near Circular Quay · 사진 대조',
         },
@@ -2319,7 +2319,7 @@ const week1Scene009Lines = [
       {
         type: 'addEvidence',
         evidence: {
-          id: 'evidence-cafe-cctv-bag-thicker', code: 'E-TL4', title: '카페 CCTV 스틸 — 두꺼워진 가방',
+          id: 'evidence-cafe-cctv-bag-thicker', code: 'E-TL4', category: 'photo', title: '카페 CCTV 스틸 — 두꺼워진 가방',
           description: '카페 CCTV 스틸 화면. 레오가 자리에 앉을 때 가방이 전시장에서 나올 때보다 눈에 띄게 두꺼워 보인다.',
           discoveredLocationText: 'Café near Circular Quay · CCTV',
         },
@@ -2440,7 +2440,7 @@ const week1Scene009Lines = [
     effects: [{
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-leo-commission-message', code: 'E-C01', title: '레오가 받은 의뢰 메시지',
+        id: 'evidence-leo-commission-message', code: 'E-C01', category: 'record', title: '레오가 받은 의뢰 메시지',
         description: 'K-01 우측면, 하단 각인, 크기 비교, 배경 포함까지 — 매우 구체적인 촬영 요청 목록.',
         discoveredLocationText: 'Pop-up Exhibition · 레오 박 집중 심문',
       },
@@ -2470,14 +2470,14 @@ const week1Scene009Lines = [
     effects: [{
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-leo-reference-image', code: 'E-C02', title: '레오가 받은 참고 이미지',
+        id: 'evidence-leo-reference-image', code: 'E-C02', category: 'photo', title: '레오가 받은 참고 이미지',
         description: '레오가 의뢰받을 때 함께 전달받은 참고 이미지. 구도·조명·각도가 윤민아가 몰래 찍던 사진들과 정확히 일치한다.',
         discoveredLocationText: 'Pop-up Exhibition · 레오 박 집중 심문',
       },
     }, {
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-k01-inscription-request', code: 'E-C03', title: '각인 확대 촬영 요청',
+        id: 'evidence-k01-inscription-request', code: 'E-C03', category: 'record', title: '각인 확대 촬영 요청',
         description: '참고 이미지 요청에는 K-01 뒷면·하단 각인을 최대한 선명하게 확대해서 찍어달라는 구체적인 조건이 포함되어 있었다.',
         discoveredLocationText: 'Pop-up Exhibition · 레오 박 집중 심문',
       },
@@ -2489,7 +2489,7 @@ const week1Scene009Lines = [
     effects: [{
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-mk-consult-account', code: 'E-C04', title: '중개 계정 — MK_Consult',
+        id: 'evidence-mk-consult-account', code: 'E-C04', category: 'record', title: '중개 계정 — MK_Consult',
         description: '레오가 익명 의뢰를 받은 중개 계정명. 애드리언이 봤던 발신 계정 "M.K."와 같은 계열로 보인다.',
         discoveredLocationText: 'Pop-up Exhibition · 레오 박 집중 심문',
       },
@@ -2583,7 +2583,7 @@ const week1Scene009aLines = [
     effects: [{
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-tag-scope-limited', code: 'E-H08', title: '태그 리더기 — 직원 전용문 전용',
+        id: 'evidence-tag-scope-limited', code: 'E-H08', category: 'physical', title: '태그 리더기 — 직원 전용문 전용',
         description: '직원용 태그를 리더기에 대보니 직원 전용문만 열린다. 진열장 잠금부는 아예 다른 방식이라, 태그로는 열 수 없다.',
         discoveredLocationText: 'Pop-up Exhibition · 현장 재검증',
       },
@@ -2594,7 +2594,7 @@ const week1Scene009aLines = [
     effects: [{
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-service-magnet-missing', code: 'E-H09', title: '서비스 자석 — 위치 이동',
+        id: 'evidence-service-magnet-missing', code: 'E-H09', category: 'physical', title: '서비스 자석 — 위치 이동',
         description: '직원 구역 작업대에 두는 강한 서비스 자석이 원래 자리에서 벗어나, 진열장 쪽 선반 위에 놓여 있다.',
         discoveredLocationText: 'Pop-up Exhibition 직원 구역 · 현장 재검증',
       },
@@ -2615,7 +2615,7 @@ const week1Scene009aLines = [
     effects: [{
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-case-lock-mechanism', code: 'E-H10', title: '진열장 잠금부 — 강제 개방 흔적 없음',
+        id: 'evidence-case-lock-mechanism', code: 'E-H10', category: 'physical', title: '진열장 잠금부 — 강제 개방 흔적 없음',
         description: '진열장 잠금부 자체에는 파손이나 강제로 딴 흔적이 없다. 정상적인 방식으로 열린 것으로 보인다.',
         discoveredLocationText: 'Pop-up Exhibition · 현장 재검증',
       },
@@ -2626,7 +2626,7 @@ const week1Scene009aLines = [
     effects: [{
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-shelf-arrangement', code: 'E-H11', title: '직원 구역 선반 — 흐트러진 정리',
+        id: 'evidence-shelf-arrangement', code: 'E-H11', category: 'physical', title: '직원 구역 선반 — 흐트러진 정리',
         description: '직원 구역 선반의 물건 배치가 평소와 다르게 흐트러져 있다. 누군가 최근에 무언가를 찾거나 옮긴 것 같다.',
         discoveredLocationText: 'Pop-up Exhibition 직원 구역 · 현장 재검증',
       },
@@ -2637,7 +2637,7 @@ const week1Scene009aLines = [
     effects: [{
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-case-edge-fiber', code: 'E-H12', title: '진열장 모서리 검은 섬유',
+        id: 'evidence-case-edge-fiber', code: 'E-H12', category: 'physical', title: '진열장 모서리 검은 섬유',
         description: '진열장 모서리에 걸린 검은 섬유 조각. 레오의 옷 소매와 같은 색이다.',
         discoveredLocationText: 'Pop-up Exhibition · 현장 재검증',
       },
@@ -2648,7 +2648,7 @@ const week1Scene009aLines = [
     effects: [{
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-workbench-brass-dust', code: 'E-H13', title: '작업대의 황동 가루',
+        id: 'evidence-workbench-brass-dust', code: 'E-H13', category: 'physical', title: '작업대의 황동 가루',
         description: '직원 구역 작업대에 묻은 미세한 황동 가루. 자석이나 금속 도구를 다루다 남은 흔적으로 보인다.',
         discoveredLocationText: 'Pop-up Exhibition 직원 구역 · 현장 재검증',
       },
@@ -2817,7 +2817,7 @@ const week1Scene011Lines = [
     effects: [{
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-mina-recovered-photo-fragment', code: 'E-M02', title: '복구된 삭제 사진 일부',
+        id: 'evidence-mina-recovered-photo-fragment', code: 'E-M02', category: 'photo', title: '복구된 삭제 사진 일부',
         description: '완전히 복구되진 않았지만, K-01 뒷면 각인 부분을 확대 촬영한 흔적이 남아 있다.',
         discoveredLocationText: 'Circular Quay 편집숍 · 윤민아 최종 심문',
       },
@@ -2838,7 +2838,7 @@ const week1Scene011Lines = [
     effects: [{
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-mina-cloud-thumbnail', code: 'E-A02', title: '클라우드 썸네일 기록',
+        id: 'evidence-mina-cloud-thumbnail', code: 'E-A02', category: 'record', title: '클라우드 썸네일 기록',
         description: '윤민아의 사진 앱 클라우드 썸네일 캐시. "폰에만 있었다"는 말과 달리 클라우드에도 자동 업로드된 흔적이 있다.',
         discoveredLocationText: 'Circular Quay 편집숍 · 윤민아 최종 심문',
       },
@@ -2860,7 +2860,7 @@ const week1Scene011Lines = [
     effects: [{
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-mina-public-link', code: 'E-A03', title: '공개 링크 설정',
+        id: 'evidence-mina-public-link', code: 'E-A03', category: 'record', title: '공개 링크 설정',
         description: '윤민아의 사진 폴더가 "팀원만"이 아니라 링크를 아는 누구나 볼 수 있는 공개 설정으로 되어 있었다.',
         discoveredLocationText: 'Circular Quay 편집숍 · 윤민아 최종 심문',
       },
@@ -2904,7 +2904,7 @@ const week1Scene011Lines = [
     effects: [{
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-image-match', code: 'E-A01', title: '사진 동일 구도 대조 결과',
+        id: 'evidence-image-match', code: 'E-A01', category: 'photo', title: '사진 동일 구도 대조 결과',
         description: '윤민아의 사진과 레오가 받은 참고 이미지는 먼지 자국, 촬영 각도, 배경 관광객 손동작까지 세 가지가 정확히 일치한다.',
         discoveredLocationText: 'Circular Quay 편집숍 · 윤민아 최종 심문',
       },
@@ -2935,7 +2935,7 @@ const week1Scene011Lines = [
     effects: [{
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-mina-link-access-log', code: 'E-A04', title: '공개 링크 접근 기록',
+        id: 'evidence-mina-link-access-log', code: 'E-A04', category: 'record', title: '공개 링크 접근 기록',
         description: '윤민아의 공개 링크는 업로드 직후 짧은 시간 안에 외부 계정이 단 한 번 접근했다. 접근 계정은 신원을 감춘 익명 relay다.',
         discoveredLocationText: 'Circular Quay 편집숍 · 윤민아 최종 심문',
       },
@@ -2998,7 +2998,7 @@ const week1Scene011aLines = [
     effects: [{
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-adrian-once-only-claim', code: 'E-B09', title: '애드리언의 재진술 — 단 한 번뿐인 연락',
+        id: 'evidence-adrian-once-only-claim', code: 'E-B09', category: 'testimony', title: '애드리언의 재진술 — 단 한 번뿐인 연락',
         description: '애드리언 콜 — "M.K. 계정과는 이번이 처음이자 마지막 연락"이라는 진술.',
         discoveredLocationText: 'Pop-up Exhibition 접수대 · 애드리언 재심문',
       },
@@ -3010,7 +3010,7 @@ const week1Scene011aLines = [
     effects: [{
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-adrian-tablet-history', code: 'E-B10', title: '애드리언 태블릿 — 과거 문의 기록',
+        id: 'evidence-adrian-tablet-history', code: 'E-B10', category: 'record', title: '애드리언 태블릿 — 과거 문의 기록',
         description: '애드리언의 태블릿 브라우저 기록. 몇 달 전에도 비슷한 이니셜의 계정에서 K-01 관련 문의가 몇 차례 왔었지만, 스팸으로 보고 무시한 흔적이 남아 있다.',
         discoveredLocationText: 'Pop-up Exhibition 접수대 · 애드리언 재심문',
       },
@@ -3097,7 +3097,7 @@ const week1Scene011bLines = [
     effects: [{
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-k01-not-for-sale', code: 'E-MV1', title: '마틴의 진술 — 판매 목적 아님',
+        id: 'evidence-k01-not-for-sale', code: 'E-MV1', category: 'testimony', title: '마틴의 진술 — 판매 목적 아님',
         description: '마틴 베일 — K-01은 판매용이 아니라 전시 목적으로만 빌려준 것이라는 진술.',
         discoveredLocationText: '전화 통화 · 마틴 베일',
       },
@@ -3108,7 +3108,7 @@ const week1Scene011bLines = [
     effects: [{
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-k01-submission-photo', code: 'E-MV2', title: 'K-01 출품 당시 사진',
+        id: 'evidence-k01-submission-photo', code: 'E-MV2', category: 'photo', title: 'K-01 출품 당시 사진',
         description: '마틴이 K-01을 전시에 내놓을 때 찍어둔 사진. 지금과 비교할 수 있는 유일한 "출품 당시" 기록이다.',
         discoveredLocationText: '전화 통화 · 마틴 베일',
       },
@@ -3119,7 +3119,7 @@ const week1Scene011bLines = [
     effects: [{
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-k01-catalog-year-mismatch', code: 'E-MV3', title: '카탈로그 제작 연도 — 출품 기록과 불일치',
+        id: 'evidence-k01-catalog-year-mismatch', code: 'E-MV3', category: 'record', title: '카탈로그 제작 연도 — 출품 기록과 불일치',
         description: '마틴이 알고 있는 K-01의 제작 연도가, 전시 카탈로그에 적힌 연도와 다르다. 둘 중 하나는 틀렸다.',
         discoveredLocationText: '전화 통화 · 마틴 베일',
       },
@@ -3132,7 +3132,7 @@ const week1Scene011bLines = [
     effects: [{
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-k01-inscription-sharper', code: 'E-MV4', title: '하단 각인 — 선명도 변화',
+        id: 'evidence-k01-inscription-sharper', code: 'E-MV4', category: 'testimony', title: '하단 각인 — 선명도 변화',
         description: '마틴이 기억하는 K-01의 하단 각인은 흐릿했는데, 최근 사진 속 각인은 눈에 띄게 선명하다.',
         discoveredLocationText: '전화 통화 · 마틴 베일',
       },
@@ -3144,7 +3144,7 @@ const week1Scene011bLines = [
     effects: [{
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-mk-inscription-focused-inquiries', code: 'E-MV5', title: 'M.K.의 문의 — 각인에만 집중',
+        id: 'evidence-mk-inscription-focused-inquiries', code: 'E-MV5', category: 'record', title: 'M.K.의 문의 — 각인에만 집중',
         description: 'M.K. 계열 계정이 마틴에게 보낸 과거 문의들. 전체 물건이 아니라 매번 하단 각인 부분만 반복해서 물었다.',
         discoveredLocationText: '전화 통화 · 마틴 베일',
       },
