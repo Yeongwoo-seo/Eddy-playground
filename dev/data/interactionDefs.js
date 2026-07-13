@@ -189,7 +189,82 @@ const interactionDefs = {
     icon: '🔍',
     route: '/dev/game/?scene=week1-scene-008',
   },
+
+  /* ===== Phase 5 — 모순 재검증 (§12.8) =====
+     Same coarse "visit = launch the whole existing scene" hand-off as Phase
+     4's suspect interviews — see dev/data/locationDefs.js's w1-reverify-*
+     entries for the free-order rationale. */
+  'w1reverify-mina-interview': {
+    id: 'w1reverify-mina-interview',
+    characterId: 'minah',
+    locationIds: ['w1-reverify-mina-spot'],
+    phases: ['W1_REVERIFICATION'],
+    type: 'minigame',
+    label: '최종 심문하기',
+    icon: '🔍',
+    route: '/dev/game/?scene=week1-scene-011',
+  },
+  'w1reverify-adrian-interview': {
+    id: 'w1reverify-adrian-interview',
+    characterId: 'adrian',
+    locationIds: ['w1-reverify-adrian-spot'],
+    phases: ['W1_REVERIFICATION'],
+    type: 'minigame',
+    label: '재심문하기',
+    icon: '🔍',
+    route: '/dev/game/?scene=week1-scene-011a',
+  },
+  'w1reverify-martin-call': {
+    id: 'w1reverify-martin-call',
+    characterId: 'martin',
+    locationIds: ['w1-reverify-martin-spot'],
+    phases: ['W1_REVERIFICATION'],
+    type: 'minigame',
+    label: '전화 걸기',
+    icon: '📞',
+    route: '/dev/game/?scene=week1-scene-011b',
+  },
 };
+
+/* ===== 증거 제시 판정 규칙 (The Missing Key v1 §8/§14.8) =====
+   Real first content for the hub's own "증거 제시" action (previously always
+   fell through to a generic default) — a handful of rules against evidence
+   already established by the existing 006/007 심문 씬s, usable once the
+   player reaches the Phase 5 재검증 허브 (where they've actually had a
+   chance to collect that evidence). This is *supplementary* flavor on top
+   of the untouched scripted scenes (011/011a), not a replacement for their
+   own internal evidence gates — presenting evidence here never resolves a
+   question or advances the case on its own, it only ever reacts.
+   result 은 §8.2의 5분류(correct/partial/interesting/wrong/blocked)를
+   그대로 쓴다; wrong/blocked엔 페널티가 없다는 원칙(§8.4)도 그대로
+   따른다 — reactionText만 다를 뿐 포인트·진행 차감은 없다. */
+const presentEvidenceRules = [
+  {
+    characterId: 'minah', phase: 'W1_REVERIFICATION', evidenceId: 'evidence-mina-illegal-photo', result: 'correct',
+    reactionText: '윤민아: "...그거 이미 말씀드렸잖아요. 또 그 얘기예요?"',
+  },
+  {
+    characterId: 'minah', phase: 'W1_REVERIFICATION', evidenceId: 'evidence-mina-photo-timestamps', result: 'partial',
+    reactionText: '윤민아: "그 시간에 사진 찍고 있었던 건 맞는데... 그게 왜요?"',
+  },
+  {
+    characterId: 'minah', phase: 'W1_REVERIFICATION', evidenceId: 'evidence-staff-tag-position-after', result: 'interesting',
+    reactionText: '윤민아: "태그요? 그런 건 관심 없었는데... 직원들이나 아는 거 아니에요?"',
+  },
+  {
+    characterId: 'adrian', phase: 'W1_REVERIFICATION', evidenceId: 'evidence-adrian-sender', result: 'correct',
+    reactionText: '애드리언: "...그 계정, 어디서 찾으셨죠." (표정이 굳는다)',
+  },
+  {
+    characterId: 'adrian', phase: 'W1_REVERIFICATION', evidenceId: 'evidence-adrian-inquiry', result: 'partial',
+    reactionText: '애드리언: "문의 메일이야 저 아니어도 여러 사람이 보냈을 텐데요."',
+  },
+  {
+    characterId: 'adrian', phase: 'W1_REVERIFICATION', evidenceId: 'evidence-mina-illegal-photo', result: 'blocked',
+    reactionText: '애드리언: "그건 제가 아니라 그쪽 여성분 얘기 아닌가요? 저랑 무슨 상관이죠?"',
+  },
+];
+const defaultPresentReaction = { result: 'wrong', reactionText: '음... 이게 지금 왜 필요한지는 잘 모르겠는데.' };
 
 // 1주차 Phase 1의 "필수 조사" 체크리스트(§10.2) — 관광 파트는 조사가 아니라
 // 자유도 중심이라 필수 fact는 없지만, §12.2의 전시장 진입 제안 조건(관광

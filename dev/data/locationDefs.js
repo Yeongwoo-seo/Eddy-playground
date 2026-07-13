@@ -23,6 +23,14 @@ const locationDefs = {
     characters: ['youngwoo'],
     exits: ['w1-opera-view', 'w1-bridge-view', 'w1-the-rocks-lane'],
     firstVisitFlag: 'visitedCircularQuay',
+    // §12.2 — week1-scene-001 hands off straight into this hub now (see
+    // dialogueData.js) instead of chaining into week1-scene-002 directly.
+    // firstVisitSceneId keeps that scene's own content (사진 포즈 루프,
+    // 전시장 발견 선택지) completely intact — it just fires automatically
+    // the first time the player actually arrives here, then behaves like
+    // any other hub location on later visits (see moveTo() in
+    // dev/explore/index.html).
+    firstVisitSceneId: 'week1-scene-002',
   },
   'w1-opera-view': {
     id: 'w1-opera-view',
@@ -117,5 +125,47 @@ const locationDefs = {
     phases: ['W1_SUSPECT_INTERVIEWS'],
     characters: ['leo'],
     exits: ['w1-suspect-hub'],
+  },
+
+  /* ===== Phase 5 — 모순 재검증 (The Missing Key v1 §12.8) =====
+     Reached from week1-scene-010's nextSceneId (윤민아 재오픈 직후). 세 재검증
+     대상(윤민아 최종 심문/애드리언 재심문/마틴 베일 통화)은 서로 참조하는
+     내부 condition이 없어 자유 순서로 열어 둔다 — Phase 4와 동일한
+     "통짜 씬 단위 hand-off" 패턴. 사건 재구성(week1-scene-012)으로 넘어가는
+     조건은 일부러 강제하지 않았다(§10.4 "제안을 미뤄도 추가 탐색 가능") —
+     세 곳을 다 안 돌아도 hub-center에서 언제든 진행할 수 있다. */
+  'w1-reverify-hub': {
+    id: 'w1-reverify-hub',
+    week: 1,
+    name: '전시장 앞 광장 (재검증 거점)',
+    phases: ['W1_REVERIFICATION'],
+    characters: [],
+    exits: ['w1-reverify-mina-spot', 'w1-reverify-adrian-spot', 'w1-reverify-martin-spot'],
+    enterSceneId: 'week1-scene-012',
+    enterSceneLabel: '지금까지의 단서로 사건을 재구성한다',
+  },
+  'w1-reverify-mina-spot': {
+    id: 'w1-reverify-mina-spot',
+    week: 1,
+    name: '서큘러키 편집숍',
+    phases: ['W1_REVERIFICATION'],
+    characters: ['minah'],
+    exits: ['w1-reverify-hub'],
+  },
+  'w1-reverify-adrian-spot': {
+    id: 'w1-reverify-adrian-spot',
+    week: 1,
+    name: '전시장 보조 진열 구역',
+    phases: ['W1_REVERIFICATION'],
+    characters: ['adrian'],
+    exits: ['w1-reverify-hub'],
+  },
+  'w1-reverify-martin-spot': {
+    id: 'w1-reverify-martin-spot',
+    week: 1,
+    name: '서큘러키 이동 중 (통화)',
+    phases: ['W1_REVERIFICATION'],
+    characters: ['martin'],
+    exits: ['w1-reverify-hub'],
   },
 };

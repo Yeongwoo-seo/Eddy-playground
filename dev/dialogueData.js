@@ -3487,6 +3487,12 @@ const week1Scenes = [
     introLabel: 'SYDNEY',
     time: '09:40',
     lines: week1Scene001Lines,
+    // The Missing Key v1 §12.2 "최초 진입" — 시티 도착 후 곧장 탐색 허브로
+    // 넘긴다. week1-scene-002(관광객 모드)의 대사는 삭제하지 않고, 서큘러키
+    // 도착 첫 방문 때 자동 재생되도록 옮겼다(locationDefs.js의
+    // w1-circular-quay.firstVisitSceneId 참고) — 그 씬 자체의 사진 포즈
+    // 루프·전시장 발견 선택지는 그대로 유지된다.
+    nextSceneId: 'week1-hub-entry-tourism',
   },
   {
     id: 'week1-scene-002',
@@ -3692,6 +3698,13 @@ const week1Scenes = [
     introLabel: 'CIRCULAR QUAY',
     time: '12:20',
     lines: week1Scene010Lines,
+    // The Missing Key v1 §12.8 "재검증 단계" — 윤민아 재오픈 직후, 남은 재검증
+    // 대상(윤민아 최종 심문/애드리언 재심문/마틴 베일 통화) 세 곳을 자유
+    // 순서로 도는 허브로 넘긴다. 세 씬 모두 서로 참조하는 내부 condition이
+    // 없음을 확인했다(011의 유일한 조건은 006에서 세운 플래그를 참조할 뿐).
+    // 각 씬 자체의 대사·시각(18:00/18:20/18:40)은 그대로 유지 — 허브를
+    // 거치더라도 각 씬 진입 시 인트로 카드가 시간대를 다시 알려준다.
+    nextSceneId: 'week1-reverify-hub-entry',
   },
   {
     id: 'week1-scene-011',
@@ -3701,6 +3714,7 @@ const week1Scenes = [
     introLabel: 'CIRCULAR QUAY',
     time: '18:00',
     lines: week1Scene011Lines,
+    nextSceneId: 'week1-reverify-interview-return',
   },
   {
     id: 'week1-scene-011a',
@@ -3710,6 +3724,7 @@ const week1Scenes = [
     introLabel: 'CIRCULAR QUAY',
     time: '18:20',
     lines: week1Scene011aLines,
+    nextSceneId: 'week1-reverify-interview-return',
   },
   {
     id: 'week1-scene-011b',
@@ -3719,6 +3734,7 @@ const week1Scenes = [
     introLabel: 'CIRCULAR QUAY',
     time: '18:40',
     lines: week1Scene011bLines,
+    nextSceneId: 'week1-reverify-interview-return',
   },
   {
     id: 'week1-scene-012',
