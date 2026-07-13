@@ -3587,6 +3587,22 @@ const week1Scenes = [
     location: 'Pop-up Exhibition',
     time: '10:52',
     route: '/dev/minigame-photo-zoom/',
+    // 7 burst-shot photos (dev/minigame-photo-zoom's own PHOTOS array, same
+    // order/captions) — each is a one-off image, not a reusable 장소, so it
+    // gets its own direct-upload photoSlot instead of a 장소 DB catalog entry
+    // (see backgroundKinds()/isOrdinaryBackgroundSlot() in dev/upload).
+    // /dev/upload/?scene=week1-scene-004-minigame lets a dev pick between all
+    // 7 and upload/replace each one; dev/minigame-photo-zoom/index.html reads
+    // them back via DevGameState.getBackgroundId(key).
+    photoSlots: [
+      { key: 'week1-scene-004-minigame-photo-1', label: '① 10:41 · 한산한 전시장' },
+      { key: 'week1-scene-004-minigame-photo-2', label: '② 10:43 · 두 사람이 멈춰 선다' },
+      { key: 'week1-scene-004-minigame-photo-3', label: '③ 10:45 · 사진 찍는 손님' },
+      { key: 'week1-scene-004-minigame-photo-4', label: '④ 10:47 · 단체 관광객 밀려듦' },
+      { key: 'week1-scene-004-minigame-photo-5', label: '⑤ 10:48 · 진열장 문이 열려 있다' },
+      { key: 'week1-scene-004-minigame-photo-6', label: '⑥ 10:50 · 인파 절정' },
+      { key: 'week1-scene-004-minigame-photo-7', label: '⑦ 10:53 · 케이스가 비어 있다' },
+    ],
   },
   {
     id: 'week1-scene-004-review',
@@ -4178,15 +4194,16 @@ const minigames = [
     setupUrl: '/dev/minigame-transform/',
   },
   {
-    // Standalone (no dev-marked background/hotspots to set up — see
-    // minigame-item-scan's comment above for the same reasoning) photo
-    // zoom-and-tap investigation. setupUrl === route since there's no
-    // separate settings screen.
+    // 7 burst-shot photos, each its own direct-upload photoSlot on the
+    // week1-scene-004-minigame entry itself (see its photoSlots comment in
+    // week1Scenes above) — setupUrl deep-links straight into /dev/upload's
+    // background tab with that scene already selected, same plain ?scene=
+    // pattern a non-minigame scene's own 설정 button uses.
     id: 'week1-scene-004-minigame',
     name: '사진 속 인물 찾기',
     location: 'Pop-up Exhibition',
     route: '/dev/minigame-photo-zoom/',
-    setupUrl: '/dev/minigame-photo-zoom/',
+    setupUrl: '/dev/upload/?scene=week1-scene-004-minigame',
   },
   {
     // Standalone tap-to-order timeline puzzle — same no-setup-screen

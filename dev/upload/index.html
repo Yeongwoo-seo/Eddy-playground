@@ -589,7 +589,8 @@ let characterExpressionIndex = new Map();
 // Deep link from /dev/game's "+ 새 이미지 업로드" and from /dev/weekN's
 // per-scene 설정 button — jump straight to that scene's background list
 // instead of making the tester re-pick week/scene. ?kind=minigame also
-// pre-selects the 미니게임 background sub-category.
+// pre-selects the 미니게임 background sub-category, and ?kind=photo&index=N
+// pre-selects one of scene.photoSlots (see dev/minigame-photo-zoom/setup/).
 const deepLinkedSceneId = new URLSearchParams(location.search).get('scene');
 (function applyDeepLink() {
   const params = new URLSearchParams(location.search);
@@ -603,6 +604,7 @@ const deepLinkedSceneId = new URLSearchParams(location.search).get('scene');
     }
   }
   if (params.get('kind') === 'minigame') currentBgKind = 'minigame';
+  else if (params.get('kind') === 'photo') currentBgKind = 'photo:' + (params.get('index') || '0');
 })();
 
 // ?minigame=<id> deep link from /dev/minigames or /dev/evidence — locks this
@@ -831,11 +833,27 @@ function activeOutfitForFilter() {
 // more 'minigame' slot on top. Each is its own independent virtual sceneId
 // background storage/uploads are keyed against, same one-slot-per-id pattern
 // the old scene/minigame-only picker used, just generalized past 2 slots.
+// scene.photoSlots — several one-off images a single minigame needs (e.g.
+// week1-scene-004-minigame's 7 burst-shot photos, see dialogueData.js) that
+// each want the old-style direct upload, not the 장소 DB catalog: they're
+// never reused across scenes the way a real location is, so wrapping each in
+// its own catalog entry would just be busywork. Kind ids 'photo:0'..'photo:N'
+// keep them out of isOrdinaryBackgroundSlot() below, same as 'minigame'.
 function backgroundKinds(scene) {
   if (!scene) return [];
-  const locs = (scene.locations && scene.locations.length) ? scene.locations : [{ key: scene.id, label: '배경' }];
-  const kinds = locs.map((loc, i) => ({ id: i === 0 ? 'scene' : 'loc:' + i, label: loc.label, sceneId: loc.key }));
+  const kinds = [];
+  // A route-only pseudo-scene that exists purely to hold photoSlots (no real
+  // VN background of its own, and no explicit `.locations` either) skips the
+  // default single 'scene' slot entirely — otherwise every such scene would
+  // show a meaningless, permanently-empty "배경" pill alongside its photos.
+  if ((scene.locations && scene.locations.length) || !(scene.photoSlots && scene.photoSlots.length)) {
+    const locs = (scene.locations && scene.locations.length) ? scene.locations : [{ key: scene.id, label: '배경' }];
+    locs.forEach((loc, i) => kinds.push({ id: i === 0 ? 'scene' : 'loc:' + i, label: loc.label, sceneId: loc.key }));
+  }
   if (scene.minigameId) kinds.push({ id: 'minigame', label: '미니게임', sceneId: scene.minigameId });
+  if (scene.photoSlots && scene.photoSlots.length) {
+    scene.photoSlots.forEach((slot, i) => kinds.push({ id: 'photo:' + i, label: slot.label, sceneId: slot.key }));
+  }
   return kinds;
 }
 
@@ -992,7 +1010,7 @@ el.deleteVariantBtn.addEventListener('click', async () => {
 /* ===== 배경 DB tab: 일반 씬 배경 슬롯의 장소 배정 (미니게임 kind는 기존
    방식 그대로 — see updateBackgroundModeChrome). ===== */
 function isOrdinaryBackgroundSlot() {
-  return currentType === 'background' && currentBgKind !== 'minigame';
+  return currentType === 'background' && currentBgKind !== 'minigame' && !currentBgKind.startsWith('photo:');
 }
 
 // 미니게임 kind가 아닌 일반 배경 슬롯은 더 이상 여기서 직접 업로드하지 않고
@@ -1448,6 +1466,11 @@ async function renderBgKindPicker() {
   // Focus mode forces currentBgKind itself — nothing to toggle, so the
   // picker stays hidden even if the scene has multiple slots.
   const kinds = focusMinigame ? [] : backgroundKinds(scene);
+  // currentBgKind's hardcoded 'scene' default doesn't exist as a kind for a
+  // photoSlots-only pseudo-scene (see backgroundKinds) — falling back to
+  // whichever kind actually exists keeps a bare ?scene=<id> deep link (no
+  // &kind= param) from landing on the wrong (location-catalog) panel.
+  if (kinds.length && !kinds.some(k => k.id === currentBgKind)) currentBgKind = kinds[0].id;
   // Only worth showing when there's an actual choice — a plain single-
   // location, no-minigame scene has exactly one kind ('scene').
   const showPicker = kinds.length > 1;
@@ -3328,7 +3351,13 @@ function applyFocusModeChrome() {
     // pickers via focusScene. Still surface a quick way back into the live
     // scene without hunting for it again.
     if (deepLinkedSceneId) {
-      el.testFab.href = `/dev/game/?scene=${encodeURIComponent(deepLinkedSceneId)}`;
+      // A route-only pseudo-scene (e.g. week1-scene-004-minigame's own
+      // photoSlots entry — no `.lines`, just `route`) has no VN dialogue to
+      // resume into; /dev/game/?scene=<id> would 500 on it (activeLines
+      // reads .lines unconditionally). Send the FAB straight at its own
+      // play route instead, same target the scene list's own ▶ button uses.
+      const linkedScene = currentScene();
+      el.testFab.href = (linkedScene && linkedScene.route) ? linkedScene.route : `/dev/game/?scene=${encodeURIComponent(deepLinkedSceneId)}`;
       el.testFab.classList.remove('hidden');
       el.frame.classList.add('has-fab');
     }
