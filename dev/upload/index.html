@@ -2411,9 +2411,27 @@ function currentMinigameStages() {
 function activeHotspotStageIndex() {
   return currentMinigameStages() ? currentHotspotStageIndex : undefined;
 }
-function activeHotspotKind() {
+// scene.photoSlots (week1-scene-004-minigame's 7 burst-shot photos, see
+// dialogueData.js) each carry their own `hotspots` list — same room-hotspot
+// shape as scene.roomHotspots, just scoped to whichever 'photo:N' kind is
+// currently selected instead of the whole scene, since every slot is its own
+// independent photo with its own sceneId (slot.key). Returns null when the
+// current kind isn't a photoSlot or that slot has no hotspots defined yet.
+function currentPhotoSlotHotspots() {
   const scene = currentScene();
-  return (scene && scene.roomHotspots) ? 'room' : 'single';
+  if (!scene || !scene.photoSlots || !currentBgKind.startsWith('photo:')) return null;
+  const slot = scene.photoSlots[Number(currentBgKind.slice('photo:'.length))];
+  return (slot && slot.hotspots && slot.hotspots.length) ? slot.hotspots : null;
+}
+// The list of named hotspots to offer in the 항목 picker — either the
+// current photoSlot's own list, or the whole scene's roomHotspots (e.g. the
+// exhibition/room-search minigames, which have exactly one background).
+function activeRoomHotspotList() {
+  const scene = currentScene();
+  return currentPhotoSlotHotspots() || (scene && scene.roomHotspots) || null;
+}
+function activeHotspotKind() {
+  return activeRoomHotspotList() ? 'room' : 'single';
 }
 async function getActiveHotspot(sceneId) {
   if (activeHotspotKind() === 'room') {
@@ -2443,17 +2461,17 @@ function renderHotspotStagePicker() {
   });
 }
 
-async function renderHotspotPicker(scene) {
+async function renderHotspotPicker(list) {
   const sceneId = activeBackgroundSceneId();
   el.hotspotPicker.classList.remove('hidden');
   const saved = await DevGameState.getRoomHotspots(sceneId);
-  el.hotspotPickerPills.innerHTML = scene.roomHotspots.map(h =>
+  el.hotspotPickerPills.innerHTML = list.map(h =>
     `<button class="pill${h.id === currentRoomHotspotId ? ' active' : ''}" data-key="${h.id}">${escapeHtml(h.label)}${saved[h.id] ? ' ✓' : ''}</button>`
   ).join('');
   el.hotspotPickerPills.querySelectorAll('.pill').forEach(btn => {
     btn.addEventListener('click', () => {
       currentRoomHotspotId = btn.dataset.key;
-      renderHotspotPicker(scene);
+      renderHotspotPicker(list);
       loadHotspotEditor();
     });
   });
@@ -2462,7 +2480,8 @@ async function renderHotspotPicker(scene) {
 function renderHotspotSection() {
   const scene = currentScene();
   const isMinigame = currentType === 'background' && currentBgKind === 'minigame' && !!(scene && scene.minigameId);
-  const isRoom = currentType === 'background' && !!(scene && scene.roomHotspots);
+  const roomList = currentType === 'background' ? activeRoomHotspotList() : null;
+  const isRoom = !!roomList;
   el.hotspotPanel.classList.toggle('hidden', !(isMinigame || isRoom));
   if (!(isMinigame || isRoom)) return;
   if (isMinigame) {
@@ -2472,8 +2491,8 @@ function renderHotspotSection() {
     el.hotspotStagePicker.classList.add('hidden');
   }
   if (isRoom) {
-    if (!scene.roomHotspots.some(h => h.id === currentRoomHotspotId)) currentRoomHotspotId = scene.roomHotspots[0].id;
-    renderHotspotPicker(scene);
+    if (!roomList.some(h => h.id === currentRoomHotspotId)) currentRoomHotspotId = roomList[0].id;
+    renderHotspotPicker(roomList);
   } else {
     el.hotspotPicker.classList.add('hidden');
   }
@@ -2655,7 +2674,7 @@ el.hotspotRightBtn.addEventListener('click', async () => {
     try {
       await saveActiveHotspot(s.sceneId, { points: s.points.map(p => ({ x: p.x / s.naturalW, y: p.y / s.naturalH })) });
       el.hotspotHint.textContent = '저장됐어요. 미니게임에서 이 위치를 정답으로 인식합니다.';
-      if (activeHotspotKind() === 'room') await renderHotspotPicker(currentScene());
+      if (activeHotspotKind() === 'room') await renderHotspotPicker(activeRoomHotspotList());
     } catch (err) {
       el.hotspotHint.textContent = '저장 실패: ' + (err && err.message ? err.message : err);
     } finally {
