@@ -127,6 +127,9 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .items-panel.hidden,.interactions-panel.hidden{display:none}
 .field-label{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--text-muted);text-transform:uppercase;margin:14px 0 6px}
 .text-input,.select-input{width:100%;background:var(--surface-2);border:1px solid var(--divider);border-radius:10px;padding:11px 12px;color:var(--text-primary);font-size:13.5px;font-family:var(--sans)}
+.ai-gen-panel{background:var(--surface-1);border:1px solid var(--divider);border-radius:14px;padding:16px;margin-bottom:16px}
+.ai-gen-panel textarea.text-input{resize:vertical;min-height:64px;line-height:1.5}
+.ai-gen-panel .picker-label{margin-bottom:8px}
 .select-input{-webkit-appearance:none;appearance:none}
 .item-editor{margin-top:16px;padding-top:16px;border-top:1px solid var(--divider)}
 .item-editor.hidden{display:none}
@@ -270,6 +273,13 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
     <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp" style="display:none">
   </div>
   <div class="hint" id="typeHint">.jpg · .jpeg · .png · .webp</div>
+
+  <div class="ai-gen-panel hidden" id="aiGenPanel">
+    <div class="picker-label">AI로 배경 생성</div>
+    <textarea class="text-input" id="aiGenInput" rows="3" placeholder="장소 설명을 입력하세요 (예: 노을이 지는 시드니 하버브리지 전망대, 관광객이 오가는 산책로)"></textarea>
+    <button class="select-btn" id="aiGenBtn" style="width:100%;margin-top:8px">AI로 생성</button>
+    <div class="interaction-error" id="aiGenError"></div>
+  </div>
 
   <div class="preview-panel hidden" id="previewPanel">
     <div class="preview-img-wrap"><img id="previewImg" alt="preview"></div>
@@ -650,6 +660,10 @@ const el = {
   selectBtn: document.getElementById('selectBtn'),
   fileInput: document.getElementById('fileInput'),
   typeHint: document.getElementById('typeHint'),
+  aiGenPanel: document.getElementById('aiGenPanel'),
+  aiGenInput: document.getElementById('aiGenInput'),
+  aiGenBtn: document.getElementById('aiGenBtn'),
+  aiGenError: document.getElementById('aiGenError'),
   previewPanel: document.getElementById('previewPanel'),
   previewImg: document.getElementById('previewImg'),
   previewType: document.getElementById('previewType'),
@@ -793,6 +807,7 @@ function selectType(type) {
   // only runs for type 'background' — force it hidden here too, otherwise
   // switching to 인물 DB left it showing whatever it was left at.
   el.bgKindPicker.classList.toggle('hidden', type !== 'background');
+  el.aiGenPanel.classList.toggle('hidden', type !== 'background');
   el.charPicker.classList.toggle('hidden', type !== 'character' && type !== 'minigameFace');
   // outfitPicker's own visibility (also gated on the current character
   // actually having outfits) is recomputed by renderOutfitPicker() below,
@@ -1192,6 +1207,7 @@ function clearPending() {
   el.charEditorPanel.classList.add('hidden');
   el.cropEditor.classList.add('hidden');
   el.fileInput.value = '';
+  el.aiGenError.style.display = 'none';
   cancelBatch();
 }
 
@@ -1263,6 +1279,44 @@ function renderPreview(url) {
   el.previewType.textContent = scene ? scene.name + (kind && kind.id !== 'scene' ? ' · ' + kind.label : '') : '';
   el.previewFile.textContent = pendingFile.name;
   el.previewSize.textContent = `${pendingFile.width} × ${pendingFile.height}`;
+}
+
+// AI로 배경 생성 — 장소 설명을 AssetDB.generateBackgroundImage()로 보내
+// (실제 OpenAI 호출은 그 안에서 Edge Function을 거쳐 서버 쪽에서 일어난다)
+// 받은 이미지를, 사진을 직접 골랐을 때(onFilesSelected)와 똑같은
+// 리사이즈/재인코딩 파이프라인에 태워 pendingFile로 만든다 — 그래서 이후
+// 미리보기/저장(SAVE BACKGROUND -> saveAsset)은 수동 업로드와 완전히 같은
+// 경로를 탄다.
+async function generateAiBackground() {
+  const description = el.aiGenInput.value.trim();
+  if (!description) {
+    el.aiGenError.textContent = '장소 설명을 입력하세요.';
+    el.aiGenError.style.display = 'block';
+    return;
+  }
+  if (!currentScene()) {
+    el.aiGenError.textContent = '먼저 씬을 선택하세요.';
+    el.aiGenError.style.display = 'block';
+    return;
+  }
+  el.aiGenError.style.display = 'none';
+  el.aiGenBtn.disabled = true;
+  const originalLabel = el.aiGenBtn.textContent;
+  el.aiGenBtn.textContent = '생성 중... (최대 1분)';
+  try {
+    const rawBlob = await AssetDB.generateBackgroundImage(description);
+    const img = await loadImageFromBlob(rawBlob);
+    const resizedBlob = await resizeImageToBlob(img, BG_MAX_DIMENSION, BG_JPEG_QUALITY);
+    const resizedImg = await loadImageFromBlob(resizedBlob);
+    pendingFile = { blob: resizedBlob, name: `ai-background-${Date.now()}.jpg`, width: resizedImg.naturalWidth, height: resizedImg.naturalHeight };
+    renderPreview(URL.createObjectURL(resizedBlob));
+  } catch (err) {
+    el.aiGenError.textContent = 'AI 배경 생성 실패: ' + (err && err.message ? err.message : err);
+    el.aiGenError.style.display = 'block';
+  } finally {
+    el.aiGenBtn.disabled = false;
+    el.aiGenBtn.textContent = originalLabel;
+  }
 }
 
 // Only reachable for backgrounds now — 미니게임 얼굴/아이템 uploads go
@@ -2500,6 +2554,7 @@ el.tabInteractions.addEventListener('click', () => selectFocusTab('interaction')
 el.selectBtn.addEventListener('click', () => el.fileInput.click());
 el.dropzone.addEventListener('click', (e) => { if (e.target === el.selectBtn) return; el.fileInput.click(); });
 el.fileInput.addEventListener('change', (e) => onFilesSelected(e.target.files));
+el.aiGenBtn.addEventListener('click', generateAiBackground);
 el.saveBtn.addEventListener('click', saveAsset);
 el.lightbox.addEventListener('click', () => el.lightbox.classList.add('hidden'));
 

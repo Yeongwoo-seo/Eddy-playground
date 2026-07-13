@@ -576,8 +576,28 @@ const AssetDB = (() => {
     return map;
   }
 
+  // AI 배경 생성 — 장소 설명 텍스트를 Edge Function(generate-background)에
+  // 넘기면 그 함수가 OpenAI 이미지 생성 API를 대신 호출해 이미지를 돌려준다
+  // (OpenAI 키는 과금되는 비공개 키라 SUPABASE_ANON_KEY처럼 클라이언트에 둘 수
+  // 없음 — 배포/키 설정은 supabase/functions/generate-background 참고). 반환된
+  // base64를 그대로 addAsset()에 넘길 수 있는 Blob으로 바꿔서 돌려주므로,
+  // 호출부는 기존 파일 업로드와 같은 저장 경로를 그대로 탄다.
+  async function generateBackgroundImage(description) {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/generate-background`, {
+      method: 'POST',
+      headers: restHeaders(),
+      body: JSON.stringify({ description }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.error || `배경 생성 실패 (${res.status})`);
+    const byteChars = atob(body.image);
+    const bytes = new Uint8Array(byteChars.length);
+    for (let i = 0; i < byteChars.length; i++) bytes[i] = byteChars.charCodeAt(i);
+    return new Blob([bytes], { type: 'image/png' });
+  }
+
   return {
-    addAsset, getAssetsByType, getAsset, deleteAsset, preloadImage,
+    addAsset, getAssetsByType, getAsset, deleteAsset, preloadImage, generateBackgroundImage,
     getRoomHotspots, setRoomHotspot,
     getMinigameHotspot, setMinigameHotspot,
     getItems, setItem, getRecipes, setRecipes,
