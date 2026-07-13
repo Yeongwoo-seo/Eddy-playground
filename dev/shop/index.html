@@ -176,13 +176,38 @@ async function updatePreview(outfitId) {
   const id = outfitId || WardrobeState.getEquippedOutfitId();
   const isEquipped = id === WardrobeState.getEquippedOutfitId();
   el.previewLabel.textContent = isEquipped ? '현재 착용 중' : '미리보기';
-  const resolution = WardrobeState.resolveOutfitForScene('jisoo', outfitId && !isEquipped ? { outfitMode: 'story_locked', storyOutfitId: outfitId } : {});
   let asset = null;
-  const assetId = DevGameState.getCharacterAssetId(resolution.characterId, 'neutral');
-  if (assetId) asset = await AssetDB.getAsset(assetId).catch(() => null);
-  if (!asset && resolution.characterId !== 'jisoo') {
-    const baseId = DevGameState.getCharacterAssetId('jisoo', 'neutral');
-    asset = baseId ? await AssetDB.getAsset(baseId).catch(() => null) : null;
+  // Not-yet-equipped preview ('입어보기' before buying): try that specific
+  // item's own art first — characterAssetKey (dedicated shop upload), then
+  // vnOutfitId (reused VN art) — so the preview never falls through to
+  // whatever's currently equipped/globally selected instead of the item
+  // actually being previewed. A plain getCharacterAssetId('jisoo', ...)
+  // lookup would short-circuit on the globally-selected outfit before ever
+  // reaching either of these, which is why they're tried first and directly
+  // rather than through resolveOutfitForScene.
+  if (!isEquipped) {
+    const item = shopItems[id];
+    if (item && item.characterAssetKey) {
+      const keyAssetId = DevGameState.getCharacterAssetId(item.characterAssetKey, 'neutral');
+      asset = keyAssetId ? await AssetDB.getAsset(keyAssetId).catch(() => null) : null;
+    }
+    if (!asset && item && item.vnOutfitId) {
+      const vnAssetId = DevGameState.getCharacterAssetIdForOutfit('jisoo', item.vnOutfitId, 'neutral');
+      asset = vnAssetId ? await AssetDB.getAsset(vnAssetId).catch(() => null) : null;
+    }
+  }
+  // Currently-equipped preview (or an item with no dedicated/reused art):
+  // resolveOutfitForScene resolves the *equipped* item's characterAssetKey
+  // if any; equipOutfit() already synced DevGameState.setSelectedOutfit for
+  // vnOutfitId items, so the base 'jisoo' fallback below resolves those too.
+  if (!asset) {
+    const resolution = WardrobeState.resolveOutfitForScene('jisoo', outfitId && !isEquipped ? { outfitMode: 'story_locked', storyOutfitId: outfitId } : {});
+    const assetId = DevGameState.getCharacterAssetId(resolution.characterId, 'neutral');
+    if (assetId) asset = await AssetDB.getAsset(assetId).catch(() => null);
+    if (!asset && resolution.characterId !== 'jisoo') {
+      const baseId = DevGameState.getCharacterAssetId('jisoo', 'neutral');
+      asset = baseId ? await AssetDB.getAsset(baseId).catch(() => null) : null;
+    }
   }
   if (asset && asset.dataUrl) {
     el.previewImg.src = asset.dataUrl;
