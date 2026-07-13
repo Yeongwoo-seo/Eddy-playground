@@ -1118,8 +1118,22 @@ function hubPhases() {
 function hubLocationsForPhase(phase) {
   return Object.values(locationDefs).filter(loc => (loc.phases || []).includes(phase));
 }
+// phaseMaps(dev/data/locationDefs.js) 항목도 배경 사진이 필요한 건 마찬가지라
+// (탐색허브 이동하기 화면의 지도 그림, dev/explore/index.html의
+// openMoveMapSheet) — locationDefs와 똑같은 사진 배정/AI 프롬프트 패널을
+// 재사용하도록, 위치 하나인 것처럼 보이는 가짜 def로 감싸 hub 피커에 끼워
+// 넣는다. 실제 locationDefs에는 없으므로 이동하기/조사하기 등 게임 로직에는
+// 전혀 영향 없다 — 여기 업로드 UI에서만 쓰는 뷰용 객체.
+function mapPseudoLocation(phase) {
+  const m = (typeof phaseMaps !== 'undefined') ? phaseMaps[phase] : null;
+  if (!m) return null;
+  return { id: m.id, name: '🗺 ' + m.name, visualBrief: m.visualBrief, week: null, phases: [phase], characters: [], isMap: true };
+}
 function currentHubLocation() {
-  return currentHubLocationId ? locationDefs[currentHubLocationId] : null;
+  if (!currentHubLocationId) return null;
+  const m = mapPseudoLocation(currentHubPhase);
+  if (m && m.id === currentHubLocationId) return m;
+  return locationDefs[currentHubLocationId] || null;
 }
 
 // interactionDefs.js 전체에서 이 장소+단계에 걸린 상호작용만 골라, 배경
@@ -1161,9 +1175,33 @@ function locPromptZoneFor(index, total) {
   return LOC_PROMPT_ZONES[pos];
 }
 
+// 지도(phaseMaps) pseudo-location은 사진이 아니라 일러스트 관광 지도라 아래
+// 사진풍 프롬프트(구도/스타일 문단)를 그대로 쓰면 톤이 어긋난다 — 실제 모습
+// 설명(visualBrief)만 공유하고 나머지는 별도로 짧게 짠다.
+function buildMapPrompt(loc) {
+  return [
+    `[지도] ${loc.name}`,
+    '',
+    '[비율] 4:5 (세로로 살짝 긴 구도)',
+    '',
+    '[실제 지리]',
+    loc.visualBrief || '',
+    '',
+    '[스타일]',
+    '- 손그림 느낌의 일러스트 관광 지도(여행 안내책자 스타일), 밝고 따뜻한 색감',
+    '- 건물은 단순화된 입체 블록으로, 도로/골목은 선으로 명확히 구분',
+    '- 항구의 물은 밝은 청록색',
+    '',
+    '[피해야 할 것]',
+    '- 실사/위성지도 스타일, 텍스트 라벨, 마커·핀 아이콘 (핀은 게임이 좌표로 직접 얹으므로 지도 자체에는 넣지 않음)',
+    '- 워터마크, UI 요소, 과도한 채도',
+  ].join('\n');
+}
+
 function buildHubLocationPrompt(locationId, phase) {
-  const loc = locationDefs[locationId];
+  const loc = mapPseudoLocation(phase) && mapPseudoLocation(phase).id === locationId ? mapPseudoLocation(phase) : locationDefs[locationId];
   if (!loc) return '';
+  if (loc.isMap) return buildMapPrompt(loc);
   const visual = loc.visualBrief || `${loc.name} — 실제 모습에 대한 설명이 아직 등록되지 않았습니다(locationDefs.js에 visualBrief를 추가하세요).`;
   const mood = HUB_PHASE_MOOD[phase] || '';
   const interactions = hubLocationInteractions(locationId, phase);
@@ -1258,7 +1296,8 @@ function renderHubPicker() {
 }
 
 function renderHubLocationPicker() {
-  const locs = currentHubPhase ? hubLocationsForPhase(currentHubPhase) : [];
+  const mapPseudo = currentHubPhase ? mapPseudoLocation(currentHubPhase) : null;
+  const locs = currentHubPhase ? hubLocationsForPhase(currentHubPhase).concat(mapPseudo ? [mapPseudo] : []) : [];
   if (!currentHubLocationId || !locs.some(l => l.id === currentHubLocationId)) currentHubLocationId = locs[0] ? locs[0].id : null;
   el.hubLocationPickerPills.innerHTML = locs.length
     ? locs.map(l => `<button class="pill${l.id === currentHubLocationId ? ' active' : ''}" data-id="${l.id}">${escapeHtml(l.name)}</button>`).join('')
