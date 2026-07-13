@@ -3756,6 +3756,33 @@ const week1Scenes = [
   },
 ];
 
+// week0SceneGroups와 같은 형태 — 1주차 23개 씬을 The Missing Key 문서가 쓰는
+// Phase 구분(1주차 Phase 1/4/5는 dev/data/interactionDefs.js의
+// W1_TOURISM/W1_SUSPECT_INTERVIEWS/W1_REVERIFICATION, Phase 6은
+// docs/dev-status-week0-week1.md의 "Phase 6(최종 추궁·재구성, 012~013)"과
+// 그대로 일치)으로 묶는다. Phase 2/3 경계는 도난 발생(004) 시점을 기준으로
+// 나눴고, 006~009a(첫 심문 라운드 + 보조 증인 재확인 + 레오 집중 심문 +
+// 현장 재검증)는 별도 Phase 번호가 스펙에 없어 전부 Phase 4(용의자 탐문)에
+// 묶었다 — Phase 5는 010(재검증 도입)부터 시작한다는 dev-status 문서 원문
+// 그대로.
+const week1SceneGroups = [
+  { range: 'PHASE 1', label: '관광 자유 탐색', sceneIds: ['week1-scene-001', 'week1-scene-002'] },
+  { range: 'PHASE 2', label: '전시장 자유 관람', sceneIds: ['week1-scene-003', 'week1-scene-003-minigame'] },
+  {
+    range: 'PHASE 3', label: '도난 발생 · 초기 조사',
+    sceneIds: ['week1-scene-004', 'week1-scene-004-minigame', 'week1-scene-004-review', 'week1-scene-005', 'week1-scene-005a', 'week1-scene-005b'],
+  },
+  {
+    range: 'PHASE 4', label: '용의자 탐문',
+    sceneIds: ['week1-scene-006', 'week1-scene-007', 'week1-scene-008', 'week1-scene-008-minigame', 'week1-scene-008a', 'week1-scene-009', 'week1-scene-009a'],
+  },
+  {
+    range: 'PHASE 5', label: '모순 재검증',
+    sceneIds: ['week1-scene-010', 'week1-scene-011', 'week1-scene-011a', 'week1-scene-011b'],
+  },
+  { range: 'PHASE 6', label: '최종 추궁 · 재구성', sceneIds: ['week1-scene-012', 'week1-scene-013'] },
+];
+
 
 // [1주차 추리 개편 v2 — 연속성 이음매 주의] Week 1 was reworked so no scene
 // reveals the full name "Mika Kovac"/"미카 코바치" — it now ends knowing only
