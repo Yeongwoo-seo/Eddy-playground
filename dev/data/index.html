@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>데이터 설정 · OPERATION MK DEV</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<meta name="theme-color" content="#080A0C">
+<link rel="manifest" href="/dev/manifest.json">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#080A0C;--surface-1:#101419;--surface-2:#171C22;
+  --text-primary:#EDF1F4;--text-secondary:#929BA5;--text-muted:#5F6872;
+  --cyan:#59B8C8;--amber:#D6A84B;--divider:rgba(255,255,255,0.08);
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sans:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
+}
+html,body{height:100%}
+body{background:#050607;color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center;min-height:100dvh}
+.frame{width:100%;max-width:430px;min-height:100dvh;min-height:100vh;padding:calc(48px + env(safe-area-inset-top,0)) 20px calc(32px + env(safe-area-inset-bottom,0));display:flex;flex-direction:column}
+.back{font-family:var(--mono);font-size:12px;color:var(--text-muted);text-decoration:none;margin-bottom:18px;display:inline-flex;align-items:center;gap:4px;width:fit-content}
+.tag{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px}
+.title{font-size:26px;font-weight:700;letter-spacing:-.2px;margin-bottom:10px}
+.sub{font-size:14px;color:var(--text-secondary);margin-bottom:28px;line-height:1.6}
+.menu{display:flex;flex-direction:column;gap:12px}
+.menu-btn{display:flex;align-items:center;gap:14px;background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:18px 20px;text-decoration:none;color:inherit;transition:transform .15s,background .15s}
+.menu-btn:active{transform:scale(.98);background:var(--surface-2)}
+.menu-icon{width:40px;height:40px;border-radius:10px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.menu-txt{flex:1;min-width:0}
+.menu-name{font-size:16px;font-weight:700}
+.menu-desc{font-size:12.5px;color:var(--text-secondary);margin-top:3px;line-height:1.5}
+.menu-arrow{color:var(--text-muted);font-size:18px;flex-shrink:0}
+</style>
+</head>
+<body>
+<div class="frame">
+  <a class="back" href="/dev/">‹ DEV</a>
+  <div class="tag">Operation MK</div>
+  <div class="title">데이터 설정</div>
+  <div class="sub">예전엔 /dev/upload 한 화면 안의 탭이었던 것을, 항목별로 바로 찾아 들어갈 수 있도록 메뉴로 분리했습니다.</div>
+  <div class="menu">
+    <a class="menu-btn" href="/dev/upload/?type=background">
+      <div class="menu-icon">🖼️</div>
+      <div class="menu-txt">
+        <div class="menu-name">배경 DB</div>
+        <div class="menu-desc">주차·씬별 배경 이미지를 업로드하고 배정합니다</div>
+      </div>
+      <div class="menu-arrow">›</div>
+    </a>
+    <a class="menu-btn" href="/dev/upload/?type=location">
+      <div class="menu-icon">📍</div>
+      <div class="menu-txt">
+        <div class="menu-name">장소 DB</div>
+        <div class="menu-desc">전역 장소 카탈로그와 variant별 사진을 관리합니다</div>
+      </div>
+      <div class="menu-arrow">›</div>
+    </a>
+    <a class="menu-btn" href="/dev/upload/?type=hub">
+      <div class="menu-icon">🗺️</div>
+      <div class="menu-txt">
+        <div class="menu-name">탐색허브</div>
+        <div class="menu-desc">자유 탐색 페이즈의 장소별 배경을 설정합니다</div>
+      </div>
+      <div class="menu-arrow">›</div>
+    </a>
+    <a class="menu-btn" href="/dev/upload/?type=dialogue">
+      <div class="menu-icon">💬</div>
+      <div class="menu-txt">
+        <div class="menu-name">대사</div>
+        <div class="menu-desc">씬별 대사 스크립트를 확인하고 일괄 수정합니다</div>
+      </div>
+      <div class="menu-arrow">›</div>
+    </a>
+    <a class="menu-btn" href="/dev/upload/?type=character">
+      <div class="menu-icon">🧑</div>
+      <div class="menu-txt">
+        <div class="menu-name">인물 DB</div>
+        <div class="menu-desc">캐릭터별 의상·감정표현 사진을 업로드합니다</div>
+      </div>
+      <div class="menu-arrow">›</div>
+    </a>
+    <a class="menu-btn" href="/dev/upload/?type=minigameFace">
+      <div class="menu-icon">🙂</div>
+      <div class="menu-txt">
+        <div class="menu-name">미니게임 얼굴</div>
+        <div class="menu-desc">미니게임 대화창 초상화용 사진을 캐릭터별로 지정합니다</div>
+      </div>
+      <div class="menu-arrow">›</div>
+    </a>
+    <a class="menu-btn" href="/dev/upload/?type=sound">
+      <div class="menu-icon">🔊</div>
+      <div class="menu-txt">
+        <div class="menu-name">사운드</div>
+        <div class="menu-desc">씬별 BGM·효과음 카탈로그를 관리합니다</div>
+      </div>
+      <div class="menu-arrow">›</div>
+    </a>
+  </div>
+</div>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
+}
+</script>
+<script src="/dev/devPlanFab.js"></script>
+</body>
+</html>

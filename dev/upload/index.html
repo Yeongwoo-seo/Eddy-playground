@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>OPERATION MK · PHOTO UPLOAD</title>
+<title>OPERATION MK · 데이터 설정</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <meta name="theme-color" content="#080A0C">
@@ -213,7 +213,7 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 <div class="frame" id="frame">
   <div class="topbar">
     <a class="back-btn" id="backBtn" href="/dev/">←</a>
-    <div class="page-title" id="pageTitle">PHOTO UPLOAD</div>
+    <div class="page-title" id="pageTitle">데이터 설정</div>
   </div>
 
   <div class="tabs" id="tabsRow">
@@ -634,6 +634,12 @@ const deepLinkedSceneId = new URLSearchParams(location.search).get('scene');
 // and making the tester click through tabs + phase pills by hand.
 const deepLinkedHubTab = new URLSearchParams(location.search).get('tab') === 'hub';
 const deepLinkedHubPhase = new URLSearchParams(location.search).get('phase');
+// ?type=<tab> — from /dev/data's menu (the old 사진 업로드 page's tab row,
+// now split out into its own per-item menu) — jump straight into whichever
+// tab the tester picked instead of always landing on 배경 DB.
+const VALID_DEEP_LINK_TYPES = ['background', 'location', 'hub', 'dialogue', 'character', 'minigameFace', 'sound'];
+const deepLinkedType = new URLSearchParams(location.search).get('type');
+const fromDataMenu = VALID_DEEP_LINK_TYPES.includes(deepLinkedType);
 (function applyDeepLink() {
   const params = new URLSearchParams(location.search);
   if (deepLinkedSceneId) {
@@ -963,7 +969,10 @@ async function renderLocationPicker() {
     btn.addEventListener('click', () => {
       currentLocationId = btn.dataset.id;
       currentVariantId = 'default';
-      renderVariantPicker();
+      // Re-render the location pills too (not just variants) — otherwise
+      // the `active` class stays on whichever location was picked last,
+      // same bug as 탐색허브's phase picker.
+      renderLocationPicker();
       clearPending();
       refreshList();
     });
@@ -1098,7 +1107,10 @@ function renderHubPicker() {
     btn.addEventListener('click', () => {
       currentHubPhase = btn.dataset.id;
       currentHubLocationId = null;
-      renderHubLocationPicker();
+      // Re-render the phase pills too (not just locations) — otherwise the
+      // `active` class stays on whichever phase was picked last, since
+      // nothing else updates the pill markup after this click.
+      renderHubPicker();
       clearPending();
       refreshList();
     });
@@ -1115,6 +1127,8 @@ function renderHubLocationPicker() {
   el.hubLocationPickerPills.querySelectorAll('.pill').forEach(btn => {
     btn.addEventListener('click', () => {
       currentHubLocationId = btn.dataset.id;
+      // Re-render so the `active` class actually moves to the clicked pill.
+      renderHubLocationPicker();
       clearPending();
       refreshList();
     });
@@ -3541,7 +3555,13 @@ function applyFocusModeChrome() {
 }
 
 applyFocusModeChrome();
-selectType(deepLinkedHubTab && !focusMinigame && !focusScene ? 'hub' : 'background');
+// /dev/data's menu is the only entry point using ?type=, so a plain back
+// arrow should return there instead of the top-level /dev/ menu — same
+// reasoning as focusMinigame.backHref above, just for a different origin.
+if (fromDataMenu && !focusMinigame && !focusScene) el.backBtn.href = '/dev/data/';
+selectType(deepLinkedHubTab && !focusMinigame && !focusScene ? 'hub'
+  : (fromDataMenu && !focusMinigame && !focusScene) ? deepLinkedType
+  : 'background');
 </script>
 <script src="/dev/devPlanFab.js"></script>
 </body>
