@@ -112,13 +112,14 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 
 /* ===== Idle character stage — the currently-selected (default: first)
    character stands over the location background, between loc-stage and the
-   bottom bar (feet hidden behind its blurred panel, same idiom as the VN
-   dialogue layer's own dlg-char-wrap). Switching character (chip tap) fades
-   the old one out before swapping the image and fading the new one in —
-   see setLocCharStage — rather than a hard cut. ===== */
-.loc-char-stage{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;pointer-events:none;opacity:0;transition:opacity .25s ease;z-index:1}
-.loc-char-stage.show{opacity:1}
-.loc-char-stage img{max-height:70%;max-width:82%;object-fit:contain;object-position:bottom;display:block}
+   bottom bar. Same exact size/position spec as the dialogue layer's own
+   character display ("A") — see the shared .dlg-char-wrap/.loc-char-stage
+   and .dlg-char-img/.loc-char-stage img rules below — so there's no visual
+   jump when a conversation actually starts and takes over that spot.
+   Switching character (chip tap) fades the old one out before swapping the
+   image and fading the new one in — see setLocCharStage — rather than a
+   hard cut. z-index only, the rest of the rule lives with dlg-char-wrap. */
+.loc-char-stage{z-index:1}
 
 /* ===== Bottom-sheet family (character menu / topic list / evidence / persons) ===== */
 .sheet-overlay{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center}
@@ -159,9 +160,16 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 /* ===== Dialogue playback (reuses vnPlayer.js) ===== */
 .dialogue-layer{position:absolute;inset:0;z-index:15;display:none;flex-direction:column;justify-content:flex-end;cursor:pointer}
 .dialogue-layer.show{display:flex}
-.dlg-char-wrap{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;pointer-events:none;opacity:0;transition:opacity .2s ease}
-.dlg-char-wrap.show{opacity:1}
-.dlg-char-img{max-height:74%;max-width:88%;object-fit:contain;object-position:bottom}
+/* "A" — the one character size/position spec shared by the idle hub stage
+   (.loc-char-stage) and the dialogue layer's own character (.dlg-char-wrap):
+   same box, same fit, same object-position, so a location's standing
+   character and a conversation's speaking character never jump in size or
+   place when one hands off to the other (see playInteractionLines, which
+   hides .loc-char-stage the moment a conversation starts and restores it
+   when the line finishes). */
+.dlg-char-wrap,.loc-char-stage{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;pointer-events:none;opacity:0;transition:opacity .2s ease}
+.dlg-char-wrap.show,.loc-char-stage.show{opacity:1}
+.dlg-char-img,.loc-char-stage img{max-height:74%;max-width:88%;object-fit:contain;object-position:bottom}
 .dlg-box{position:relative;margin:0 16px calc(16px + env(safe-area-inset-bottom,0));background:rgba(5,7,10,.9);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:18px 20px;min-height:20vh;display:flex;flex-direction:column}
 .dlg-name{font-size:15px;font-weight:700;color:var(--cyan);margin-bottom:8px}
 .dlg-name:empty{display:none}
@@ -916,11 +924,21 @@ el.dialogueLayer.addEventListener('click', () => { if (currentDialoguePlayer) cu
 
 function playInteractionLines(lines, onComplete) {
   el.dialogueLayer.classList.add('show');
+  // A(캐릭터 크기·위치)는 허브 대기 상태(loc-char-stage)와 대화 레이어
+  // (dlg-char-wrap)가 공유하는 같은 자리라, 둘이 동시에 떠 있으면 겹쳐
+  // 보인다 — 대화가 시작되는 순간 대기 인물은 내리고, 대화가 끝나면 지금
+  // 선택된 인물로 다시 세운다(setLocCharStage).
+  el.locCharStage.classList.remove('show');
   currentDialoguePlayer = createVNPlayer({
     onLineChange: (line) => { el.dlgName.textContent = line.speaker || ''; applyDialogueCharacter(line.characterId, line.expression); },
     onTextUpdate: (text) => { el.dlgText.textContent = text; },
     onArrow: (show) => el.dlgArrow.classList.toggle('show', show),
-    onComplete: () => { el.dialogueLayer.classList.remove('show'); currentDialoguePlayer = null; onComplete(); },
+    onComplete: () => {
+      el.dialogueLayer.classList.remove('show');
+      currentDialoguePlayer = null;
+      setLocCharStage(currentCharacterId);
+      onComplete();
+    },
   });
   currentDialoguePlayer.load(lines);
 }
