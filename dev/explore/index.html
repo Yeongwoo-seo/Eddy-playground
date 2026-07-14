@@ -127,11 +127,12 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 
 /* ===== Move (다크→라이트) transition — a cover while performMove() swaps
    the background/goal line underneath, so a mid-load frame never shows.
-   .12s read as a hard on/off snap rather than an actual fade — this uses
+   The transition length/curve below is just the pre-DB fallback — init()
+   overwrites el.moveFade.style.transition from AssetDB.getGameSettings()
+   .moveFade (edited from /dev/settings/) once that loads, see
+   applyMoveFadeSettings. Matches AssetDB.DEFAULT_GAME_SETTINGS.moveFade and
    the design system's own default transition (CLAUDE.md: "0.3s
-   cubic-bezier(0.2, 0.8, 0.2, 1)") both to get a genuinely smooth 스르르
-   in/out and to match the motion language the rest of the app already
-   uses. ===== */
+   cubic-bezier(0.2, 0.8, 0.2, 1)"). ===== */
 .move-fade{position:absolute;inset:0;z-index:12;background:#000;opacity:0;pointer-events:none;transition:opacity .3s cubic-bezier(0.2,0.8,0.2,1)}
 .move-fade.show{opacity:1;pointer-events:auto}
 
@@ -634,7 +635,19 @@ function renderLocation() {
 // than a quick one, so MOVE_FADE_MS floors the cover's visible time at
 // (at least) its own .move-fade transition duration — long enough to
 // register as a real dark→light beat, not a hold that waits on anything.
-const MOVE_FADE_MS = 340; // keep in sync with .move-fade's transition duration (.3s) in the <style> above, plus a little slack for frame timing
+//
+// Both this and .move-fade's CSS transition used to be hardcoded here; now
+// they're read from AssetDB.getGameSettings().moveFade (edited from
+// /dev/settings/, §게임환경설정) at boot via applyMoveFadeSettings below —
+// the values below are just the pre-DB fallback (same numbers as the
+// shipped default) for the brief window before that fetch resolves, or if
+// it fails.
+let MOVE_FADE_MS = 340;
+function applyMoveFadeSettings(settings) {
+  const mf = (settings && settings.moveFade) || AssetDB.DEFAULT_GAME_SETTINGS.moveFade;
+  el.moveFade.style.transition = `opacity ${(mf.durationMs / 1000).toFixed(3)}s cubic-bezier(${mf.x1},${mf.y1},${mf.x2},${mf.y2})`;
+  MOVE_FADE_MS = mf.durationMs + mf.holdMs;
+}
 function moveTo(locationId) {
   el.moveFade.classList.add('show');
   Promise.all([performMove(locationId), new Promise(r => setTimeout(r, MOVE_FADE_MS))]).then(() => {
@@ -1803,7 +1816,11 @@ async function preloadPhaseAssets(phaseId) {
   const bootLocation = params.get('location');
   const phaseChanged = !!bootPhase && ExplorationState.getCurrentPhase() !== bootPhase;
   if (bootPhase) ExplorationState.enterExplorationPhase(bootPhase);
-  await preloadPhaseAssets(ExplorationState.getCurrentPhase());
+  const [gameSettings] = await Promise.all([
+    AssetDB.getGameSettings().catch(() => AssetDB.DEFAULT_GAME_SETTINGS),
+    preloadPhaseAssets(ExplorationState.getCurrentPhase()),
+  ]);
+  applyMoveFadeSettings(gameSettings);
   // The `|| phaseChanged` half of this guard matters as soon as there's more
   // than one phase in play: a returning player already has *some*
   // currentLocationId left over from an earlier phase (e.g. still parked at

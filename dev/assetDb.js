@@ -991,6 +991,50 @@ const AssetDB = (() => {
     return settings;
   }
 
+  // 게임환경설정(/dev/settings/) — 지금은 탐색허브 이동 페이드(.move-fade의
+  // 트랜지션 길이/이징 곡선, MOVE_FADE_MS 홀드 시간) 하나뿐이지만, 다른
+  // 게임 전반 설정도 같은 자리에 필드만 늘려서 추가할 수 있게 flat한 단일
+  // 오브젝트로 둔다 — getEvidencePromptSettings와 완전히 같은 패턴(id로
+  // 나뉜 카탈로그가 아니라 항상 같은 키 하나만 읽고 쓴다).
+  const gameSettingsCache = new Map(); // single entry keyed 'settings'
+  const GAME_SETTINGS_PATH = 'game-settings/settings.json';
+  // dev/explore/index.html에 지금 하드코딩돼 있던 값(#324 기준) — 저장된
+  // 값이 아직 없을 때(첫 사용)의 기본값이자, /dev/settings/가 "현재 값으로"
+  // 되돌릴 때 쓰는 기준값이기도 하다.
+  const DEFAULT_GAME_SETTINGS = {
+    moveFade: { durationMs: 300, holdMs: 40, x1: 0.2, y1: 0.8, x2: 0.2, y2: 1 },
+  };
+
+  async function getGameSettings() {
+    if (gameSettingsCache.has('settings')) return gameSettingsCache.get('settings');
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${GAME_SETTINGS_PATH}?t=${Date.now()}`;
+    try {
+      const settings = (await fetchJsonBlob(url)) || DEFAULT_GAME_SETTINGS;
+      gameSettingsCache.set('settings', settings);
+      return settings;
+    } catch (e) {
+      return gameSettingsCache.get('settings') || DEFAULT_GAME_SETTINGS;
+    }
+  }
+
+  async function setGameSettings(settings) {
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${GAME_SETTINGS_PATH}`;
+    const blob = new Blob([JSON.stringify(settings)], { type: 'application/json' });
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'x-upsert': 'true',
+      },
+      body: blob,
+    });
+    if (!res.ok) throw new Error(`게임 설정 저장 실패 (${res.status}): ${await res.text()}`);
+    gameSettingsCache.set('settings', settings);
+    return settings;
+  }
+
   return {
     addAsset, getAssetsByType, getAsset, getAssetsByIds, deleteAsset, preloadImage,
     getRoomHotspots, setRoomHotspot,
@@ -1006,6 +1050,7 @@ const AssetDB = (() => {
     getSpriteSheetManifests, getSpriteSheetManifest, setSpriteSheetManifest,
     getEvidencePhotos, setEvidencePhoto,
     getEvidencePromptSettings, setEvidencePromptSettings,
+    getGameSettings, setGameSettings, DEFAULT_GAME_SETTINGS,
   };
 })();
 
