@@ -121,9 +121,13 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .hub-act-btn{display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:14px 6px;color:var(--text-primary);font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer}
 .hub-act-btn:active{transform:scale(.97);background:#1c2530}
 
-/* ===== Move (다크→라이트) transition — plays while performMove() swaps the
-   background/goal line underneath, so the cut never shows mid-render. ===== */
-.move-fade{position:absolute;inset:0;z-index:12;background:#000;opacity:0;pointer-events:none;transition:opacity .28s ease}
+/* ===== Move (다크→라이트) transition — a quick cover while performMove()
+   swaps the background/goal line underneath, so a mid-load frame never
+   shows. Kept short (.12s each way, .24s round trip) instead of the earlier
+   .28s/.28s — preloadPhaseAssets already warms every location a phase can
+   move to, so the swap itself is normally ready well within that window;
+   this is just enough to smooth the cut, not a loading wait. ===== */
+.move-fade{position:absolute;inset:0;z-index:12;background:#000;opacity:0;pointer-events:none;transition:opacity .12s ease}
 .move-fade.show{opacity:1;pointer-events:auto}
 
 /* ===== 조사하기 — toggles hotspot markers over the location's own loc-
@@ -580,23 +584,20 @@ function renderLocation() {
   return bgReady;
 }
 
-// opts.animate (§신규 이동 트랜지션) — covers the state swap below with
-// .move-fade for exactly as long as performMove actually takes, instead of a
-// fixed wait — preloadPhaseAssets already warmed every location this phase
-// can move to before the player could ever tap 이동하기, so in practice this
-// resolves within a frame or two and the button feels instant; the cover
-// still protects the rare slow/uncached case from a bare mid-load pop.
-// Defaults to on for every caller — pass { animate: false } to opt out for
-// the rare case where nothing is on screen yet to fade from.
-function moveTo(locationId, opts) {
-  if (!opts || opts.animate !== false) {
-    el.moveFade.classList.add('show');
-    performMove(locationId).then(() => {
-      requestAnimationFrame(() => el.moveFade.classList.remove('show'));
-    });
-    return;
-  }
-  performMove(locationId);
+// §신규 이동 트랜지션 — covers the state swap below with a brief .move-fade
+// so a mid-load frame never shows, but doesn't wait for anything before
+// starting: performMove kicks off the instant the button is pressed, in
+// parallel with the fade-in, and the cover lifts the moment it resolves.
+// preloadPhaseAssets already warms every location a phase can move to
+// before 이동하기 is even tappable, so in practice that resolves within a
+// frame or two and the .12s fade is the only thing actually visible — no
+// artificial floor like the old 260ms setTimeout, no full .28s/.28s hold
+// like the fade's own original duration.
+function moveTo(locationId) {
+  el.moveFade.classList.add('show');
+  performMove(locationId).then(() => {
+    requestAnimationFrame(() => el.moveFade.classList.remove('show'));
+  });
 }
 
 async function performMove(locationId) {
