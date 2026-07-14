@@ -30,7 +30,7 @@
 :root{
   --primary:#E8741E;--primary-hover:#D4681A;--primary-light:#FFF3EB;
   --bg:#F5F5F5;--white:#FFFFFF;
-  --grey100:#F2F4F6;--grey300:#D1D6DB;--grey500:#8B95A1;--grey700:#4E5968;--black:#191F28;
+  --grey100:#F2F4F6;--grey200:#E5E8EB;--grey300:#D1D6DB;--grey500:#8B95A1;--grey700:#4E5968;--black:#191F28;
 }
 html,body{height:100%}
 body{background:var(--bg);color:var(--black);font-family:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;display:flex;justify-content:center}
@@ -43,7 +43,33 @@ body.sheet-open{overflow:hidden}
 .pg-hdr-main{flex:1;min-width:0}
 .pg-title{font-size:28px;font-weight:800;letter-spacing:-.3px}
 .pg-sub{font-size:14px;color:var(--grey500);font-weight:500;margin-top:8px;line-height:1.6}
-.dday{display:inline-flex;align-items:center;gap:6px;background:var(--primary-light);color:var(--primary);font-size:13px;font-weight:700;padding:6px 14px;border-radius:20px;margin-top:14px}
+.dday{display:inline-flex;align-items:center;gap:6px;background:var(--primary-light);color:var(--primary);font-size:13px;font-weight:700;padding:6px 14px;border-radius:20px;margin-top:14px;border:none;font-family:inherit;cursor:pointer;transition:opacity .3s cubic-bezier(0.2,0.8,0.2,1)}
+.dday:active{opacity:.8}
+
+/* notification settings popup */
+@keyframes notifIn{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+.notif-modal-overlay{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;padding:20px}
+.notif-modal{width:100%;max-width:420px;max-height:80vh;background:var(--white);border-radius:28px;box-shadow:0 8px 32px rgba(0,0,0,0.12);display:flex;flex-direction:column;animation:notifIn .3s cubic-bezier(0.2,0.8,0.2,1)}
+.notif-modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:22px 22px 4px}
+.notif-modal-title{font-size:18px;font-weight:700}
+.notif-modal-x{background:var(--grey100);color:var(--grey700);border:none;width:30px;height:30px;border-radius:50%;font-size:14px;cursor:pointer;font-family:inherit;flex-shrink:0}
+.notif-modal-body{padding:16px 22px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.notif-list{display:flex;flex-direction:column;gap:10px;margin-bottom:14px}
+.notif-empty{font-size:13px;color:var(--grey500);font-weight:500;text-align:center;padding:20px 0}
+.notif-row{display:flex;align-items:center;gap:8px;background:var(--grey100);border-radius:14px;padding:10px 12px}
+.notif-row-fields{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.notif-input-text{border:none;background:transparent;font-size:14px;font-weight:600;color:var(--black);font-family:inherit;padding:2px 0;width:100%}
+.notif-input-text::placeholder{color:var(--grey500);font-weight:500}
+.notif-input-text:focus{outline:none}
+.notif-input-dt{border:none;background:transparent;font-size:12.5px;font-weight:600;color:var(--primary);font-family:inherit;padding:2px 0}
+.notif-input-dt:focus{outline:none}
+.notif-del-btn{background:none;border:none;color:var(--grey500);font-size:14px;cursor:pointer;flex-shrink:0;width:28px;height:28px;border-radius:50%;font-family:inherit}
+.notif-del-btn:active{background:var(--grey200)}
+.notif-add-btn{width:100%;background:var(--primary-light);color:var(--primary);border:none;padding:12px;border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .3s cubic-bezier(0.2,0.8,0.2,1)}
+.notif-add-btn:active{opacity:.8}
+.notif-hint{font-size:11.5px;color:var(--grey500);font-weight:500;text-align:center;margin-top:12px;line-height:1.5}
+.notif-confirm-btn{margin:4px 22px 22px;background:var(--primary);color:#fff;border:none;padding:16px;border-radius:16px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .3s cubic-bezier(0.2,0.8,0.2,1)}
+.notif-confirm-btn:active{opacity:.8}
 
 .weather-widget{flex-shrink:0;background:var(--white);border:none;border-radius:18px;box-shadow:0 2px 12px rgba(0,0,0,0.06);padding:10px 14px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;font-family:inherit;margin-top:2px}
 .weather-widget:active{transform:scale(.96)}
@@ -101,7 +127,7 @@ body.sheet-open{overflow:hidden}
       <div class="pg-hdr-main">
         <div class="pg-title">우리의 <span class="hl">시드니</span> 여행</div>
         <div class="pg-sub">2026.7.22 - 8.17, 출발 전 준비부터 일정까지</div>
-        <div class="dday" id="ddayBadge">D-day 계산 중...</div>
+        <button class="dday" id="ddayBadge" onclick="openNotifModal()">D-day 계산 중...</button>
       </div>
       <button class="weather-widget" onclick="openWeatherSheet()">
         <div class="weather-ic" id="weatherIcon">⛅</div>
@@ -148,6 +174,7 @@ body.sheet-open{overflow:hidden}
   <div class="pg-ftr">우리의 시드니 여행</div>
 </div>
 <div id="weatherSheetRoot"></div>
+<div id="notifModalRoot"></div>
 <script>
 const TRIP_START=new Date(2026,6,22);
 function updateDday(){
@@ -170,6 +197,7 @@ function updateDday(){
   }
 }
 updateDday();
+setInterval(updateDday, 60000);
 
 // ??? stays locked (not enterable) until the reveal date — checked here
 // too, not just via the .locked visual, so it can't be opened by tapping
@@ -303,6 +331,130 @@ function closeWeatherSheet(){
 
 renderWidget();
 fetchWeather();
+</script>
+<script>
+// notification settings: multiple content+time rules, stored locally.
+// Fires while the app is open/foregrounded (checked on an interval and
+// on visibilitychange) — there's no push server behind this static site,
+// so a rule set for a time the app never gets opened around will just
+// fire the next time the app is opened after that time has passed.
+const NOTIF_KEY='tripNotificationsV1';
+
+function getNotifRules(){
+  try{ return JSON.parse(localStorage.getItem(NOTIF_KEY)||'[]'); }catch(e){ return []; }
+}
+function setNotifRules(rules){
+  try{ localStorage.setItem(NOTIF_KEY, JSON.stringify(rules)); }catch(e){}
+}
+function escapeHtml(s){
+  return String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function toLocalInputValue(d){
+  const pad=n=>String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function openNotifModal(){
+  document.body.classList.add('sheet-open');
+  if(typeof Notification!=='undefined' && Notification.permission==='default'){
+    Notification.requestPermission();
+  }
+  renderNotifModal();
+}
+function closeNotifModal(){
+  document.body.classList.remove('sheet-open');
+  document.getElementById('notifModalRoot').innerHTML='';
+}
+
+function addNotifRule(){
+  const rules=getNotifRules();
+  const d=new Date();
+  d.setDate(d.getDate()+1);
+  d.setHours(9,0,0,0);
+  rules.push({
+    id: Date.now()+'-'+Math.random().toString(36).slice(2,7),
+    content:'',
+    datetime: toLocalInputValue(d),
+    fired:false
+  });
+  setNotifRules(rules);
+  renderNotifModal();
+}
+function updateNotifRule(id, field, value){
+  const rules=getNotifRules();
+  const r=rules.find(x=>x.id===id);
+  if(!r) return;
+  r[field]=value;
+  if(field==='datetime') r.fired=false;
+  setNotifRules(rules);
+}
+function deleteNotifRule(id){
+  setNotifRules(getNotifRules().filter(x=>x.id!==id));
+  renderNotifModal();
+}
+
+function renderNotifModal(){
+  const rules=getNotifRules();
+  const rowsHtml = rules.length ? rules.map(r=>`
+    <div class="notif-row">
+      <div class="notif-row-fields">
+        <input type="text" class="notif-input-text" placeholder="알림 내용 (예: 여권 챙기기!)" value="${escapeHtml(r.content)}" oninput="updateNotifRule('${r.id}','content',this.value)">
+        <input type="datetime-local" class="notif-input-dt" value="${r.datetime}" onchange="updateNotifRule('${r.id}','datetime',this.value)">
+      </div>
+      <button class="notif-del-btn" onclick="deleteNotifRule('${r.id}')">✕</button>
+    </div>
+  `).join('') : `<div class="notif-empty">아직 설정된 알림이 없어요</div>`;
+
+  document.getElementById('notifModalRoot').innerHTML = `
+    <div class="notif-modal-overlay" onclick="closeNotifModal()">
+      <div class="notif-modal" onclick="event.stopPropagation()">
+        <div class="notif-modal-hdr">
+          <div class="notif-modal-title">🔔 알림 설정</div>
+          <button class="notif-modal-x" onclick="closeNotifModal()">✕</button>
+        </div>
+        <div class="notif-modal-body">
+          <div class="notif-list">${rowsHtml}</div>
+          <button class="notif-add-btn" onclick="addNotifRule()">+ 알림 추가</button>
+          <div class="notif-hint">앱을 열어둔 상태에서만 알림이 울려요</div>
+        </div>
+        <button class="notif-confirm-btn" onclick="closeNotifModal()">확인</button>
+      </div>
+    </div>
+  `;
+}
+
+function fireNotification(text){
+  if(typeof Notification==='undefined' || Notification.permission!=='granted') return;
+  const body=text || '여행 알림';
+  if(navigator.serviceWorker && navigator.serviceWorker.getRegistration){
+    navigator.serviceWorker.getRegistration().then(reg=>{
+      if(reg) reg.showNotification('강낭콩 투어', { body, icon:'icons/icon-192.png' });
+      else new Notification('강낭콩 투어', { body, icon:'icons/icon-192.png' });
+    }).catch(()=>{ try{ new Notification('강낭콩 투어', { body, icon:'icons/icon-192.png' }); }catch(e){} });
+  }else{
+    try{ new Notification('강낭콩 투어', { body, icon:'icons/icon-192.png' }); }catch(e){}
+  }
+}
+
+function checkNotifRules(){
+  const rules=getNotifRules();
+  if(!rules.length) return;
+  const now=new Date();
+  let changed=false;
+  rules.forEach(r=>{
+    if(r.fired || !r.datetime) return;
+    if(new Date(r.datetime)<=now){
+      fireNotification(r.content);
+      r.fired=true;
+      changed=true;
+    }
+  });
+  if(changed) setNotifRules(rules);
+}
+
+checkNotifRules();
+setInterval(checkNotifRules, 30000);
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) checkNotifRules(); });
 </script>
 <script>
 // scope covers the whole site so navigating between schedule.html (home),
