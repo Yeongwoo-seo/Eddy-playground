@@ -303,12 +303,18 @@ const interactionDefs = {
       },
     }],
   },
+  // isInterrogation (§신규) — the hub shows these as a floating "심문하기"
+  // button above the bottom bar instead of burying them in the normal 대화
+  // topic list (see dev/explore/index.html renderInterrogateBtn/
+  // getInterrogationInteraction) — 전화 걸기(w1reverify-martin-call 등, 아래)
+  // 처럼 route를 갖는 다른 minigame형 hand-off와 구분하기 위한 플래그.
   'w1suspect-mina-interview': {
     id: 'w1suspect-mina-interview',
     characterId: 'minah',
     locationIds: ['w1-suspect-mina-spot'],
     phases: ['W1_SUSPECT_INTERVIEWS'],
     type: 'minigame',
+    isInterrogation: true,
     label: '심문하기',
     icon: '🔍',
     route: '/dev/game/?scene=week1-scene-006',
@@ -319,6 +325,7 @@ const interactionDefs = {
     locationIds: ['w1-suspect-adrian-spot'],
     phases: ['W1_SUSPECT_INTERVIEWS'],
     type: 'minigame',
+    isInterrogation: true,
     label: '심문하기',
     icon: '🔍',
     route: '/dev/game/?scene=week1-scene-007',
@@ -329,6 +336,7 @@ const interactionDefs = {
     locationIds: ['w1-suspect-leo-spot'],
     phases: ['W1_SUSPECT_INTERVIEWS'],
     type: 'minigame',
+    isInterrogation: true,
     label: '심문하기',
     icon: '🔍',
     route: '/dev/game/?scene=week1-scene-008',
@@ -344,6 +352,7 @@ const interactionDefs = {
     locationIds: ['w1-reverify-mina-spot'],
     phases: ['W1_REVERIFICATION'],
     type: 'minigame',
+    isInterrogation: true,
     label: '최종 심문하기',
     icon: '🔍',
     route: '/dev/game/?scene=week1-scene-011',
@@ -354,6 +363,7 @@ const interactionDefs = {
     locationIds: ['w1-reverify-adrian-spot'],
     phases: ['W1_REVERIFICATION'],
     type: 'minigame',
+    isInterrogation: true,
     label: '재심문하기',
     icon: '🔍',
     route: '/dev/game/?scene=week1-scene-011a',

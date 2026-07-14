@@ -55,6 +55,15 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .loc-canvas img{display:block;-webkit-user-drag:none;user-select:none}
 .bottom-bar{position:relative;z-index:2;margin-top:auto;background:rgba(5,7,10,.86);backdrop-filter:blur(10px);border-top:1px solid rgba(255,255,255,.1);padding:14px 16px calc(14px + env(safe-area-inset-bottom,0));transition:transform .25s ease,opacity .25s ease}
 .bottom-bar.hidden{transform:translateY(100%);opacity:0;pointer-events:none}
+/* 심문하기 — bottom-bar(대화창) 바로 위에 떠 있는 버튼. 지금 선택된 인물에게
+   심문 가능한 interactionDefs 항목(isInterrogation, see interactionDefs.js)이
+   있을 때만 뜬다 — 대화 주제 목록에 묻히지 않고 바로 보이도록 별도로 뺐다
+   (renderInterrogateBtn). bottom-bar가 position:relative라 top의 음수값으로
+   그 위에 얹힌다 — bottom-bar 자체 높이(goal-line 길이 등)와 무관하게 항상
+   같은 자리. */
+.interrogate-fab{position:absolute;left:50%;top:-54px;transform:translateX(-50%);z-index:3;display:flex;align-items:center;gap:6px;background:var(--amber);color:#191206;border:none;border-radius:20px;padding:12px 22px;font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.35);white-space:nowrap}
+.interrogate-fab:active{transform:translateX(-50%) scale(.96)}
+.interrogate-fab.hidden{display:none}
 .goal-line{font-size:13px;color:var(--text-secondary);line-height:1.5;margin-bottom:10px;word-break:keep-all}
 .goal-line b{color:var(--cyan)}
 .enter-scene-btn{background:var(--amber);color:#191206;font-weight:700;text-align:center;border:none}
@@ -112,13 +121,14 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 
 /* ===== Idle character stage — the currently-selected (default: first)
    character stands over the location background, between loc-stage and the
-   bottom bar (feet hidden behind its blurred panel, same idiom as the VN
-   dialogue layer's own dlg-char-wrap). Switching character (chip tap) fades
-   the old one out before swapping the image and fading the new one in —
-   see setLocCharStage — rather than a hard cut. ===== */
-.loc-char-stage{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;pointer-events:none;opacity:0;transition:opacity .25s ease;z-index:1}
-.loc-char-stage.show{opacity:1}
-.loc-char-stage img{max-height:70%;max-width:82%;object-fit:contain;object-position:bottom;display:block}
+   bottom bar. Same exact size/position spec as the dialogue layer's own
+   character display ("A") — see the shared .dlg-char-wrap/.loc-char-stage
+   and .dlg-char-img/.loc-char-stage img rules below — so there's no visual
+   jump when a conversation actually starts and takes over that spot.
+   Switching character (chip tap) fades the old one out before swapping the
+   image and fading the new one in — see setLocCharStage — rather than a
+   hard cut. z-index only, the rest of the rule lives with dlg-char-wrap. */
+.loc-char-stage{z-index:1}
 
 /* ===== Bottom-sheet family (character menu / topic list / evidence / persons) ===== */
 .sheet-overlay{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center}
@@ -159,9 +169,16 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 /* ===== Dialogue playback (reuses vnPlayer.js) ===== */
 .dialogue-layer{position:absolute;inset:0;z-index:15;display:none;flex-direction:column;justify-content:flex-end;cursor:pointer}
 .dialogue-layer.show{display:flex}
-.dlg-char-wrap{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;pointer-events:none;opacity:0;transition:opacity .2s ease}
-.dlg-char-wrap.show{opacity:1}
-.dlg-char-img{max-height:74%;max-width:88%;object-fit:contain;object-position:bottom}
+/* "A" — the one character size/position spec shared by the idle hub stage
+   (.loc-char-stage) and the dialogue layer's own character (.dlg-char-wrap):
+   same box, same fit, same object-position, so a location's standing
+   character and a conversation's speaking character never jump in size or
+   place when one hands off to the other (see playInteractionLines, which
+   hides .loc-char-stage the moment a conversation starts and restores it
+   when the line finishes). */
+.dlg-char-wrap,.loc-char-stage{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;pointer-events:none;opacity:0;transition:opacity .2s ease}
+.dlg-char-wrap.show,.loc-char-stage.show{opacity:1}
+.dlg-char-img,.loc-char-stage img{max-height:74%;max-width:88%;object-fit:contain;object-position:bottom}
 .dlg-box{position:relative;margin:0 16px calc(16px + env(safe-area-inset-bottom,0));background:rgba(5,7,10,.9);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:18px 20px;min-height:20vh;display:flex;flex-direction:column}
 .dlg-name{font-size:15px;font-weight:700;color:var(--cyan);margin-bottom:8px}
 .dlg-name:empty{display:none}
@@ -196,6 +213,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
     <button class="investigate-close-btn hidden" id="investigateCloseBtn">조사 종료</button>
     <div class="move-fade" id="moveFade"></div>
     <div class="bottom-bar" id="bottomBar">
+      <button class="interrogate-fab hidden" id="interrogateBtn"></button>
       <div class="loc-characters" id="locCharacters"></div>
       <div class="goal-line" id="goalLine"></div>
       <button class="vn-btn enter-scene-btn hidden" id="enterSceneBtn" style="width:100%;margin-bottom:8px"></button>
@@ -295,6 +313,7 @@ const el = {
   investigateHint: document.getElementById('investigateHint'),
   investigateCloseBtn: document.getElementById('investigateCloseBtn'),
   bottomBar: document.getElementById('bottomBar'),
+  interrogateBtn: document.getElementById('interrogateBtn'),
   listSheet: document.getElementById('listSheet'),
   listSheetTitle: document.getElementById('listSheetTitle'),
   listSheetBody: document.getElementById('listSheetBody'),
@@ -595,12 +614,32 @@ async function renderLocationCharacters() {
     if (host && asset && asset.dataUrl) host.innerHTML = `<img src="${asset.dataUrl}" alt="">`;
   });
   setLocCharStage(currentCharacterId);
+  renderInterrogateBtn();
 }
 function selectLocationCharacter(charId) {
   if (charId === currentCharacterId) return;
   currentCharacterId = charId;
   el.locCharacters.querySelectorAll('[data-char]').forEach(chip => chip.classList.toggle('active', chip.dataset.char === charId));
   setLocCharStage(charId);
+  renderInterrogateBtn();
+}
+
+// 심문하기 (§신규) — bottom-bar 위에 떠 있는 버튼. 지금 선택된 인물에게
+// isInterrogation 플래그가 붙은 interactionDefs 항목(locked 아님)이 있을
+// 때만 뜨고, 눌리면 대화 목록을 거치지 않고 바로 그 항목을 재생한다
+// (playInteraction이 minigame형 route 처리를 이미 알아서 함).
+function getInterrogationInteraction(characterId) {
+  if (!characterId) return null;
+  const locationId = ExplorationState.getCurrentLocationId();
+  return ExplorationState.getInteractionsForCharacter(characterId, locationId).find(i => i.isInterrogation && i.state !== 'locked') || null;
+}
+function renderInterrogateBtn() {
+  const interrogation = getInterrogationInteraction(currentCharacterId);
+  el.interrogateBtn.classList.toggle('hidden', !interrogation);
+  if (interrogation) {
+    el.interrogateBtn.textContent = (interrogation.icon ? interrogation.icon + ' ' : '') + (interrogation.label || '심문하기');
+    el.interrogateBtn.onclick = () => playInteraction(interrogation.id);
+  }
 }
 
 // 화면 중앙의 "지금 선택된 인물" 서있는 그림 — 대화 레이어의 dlg-char-wrap과
@@ -729,13 +768,13 @@ async function openMoveMapSheet(phaseMap, mapDests, listDests) {
 }
 el.moveMapCloseBtn.addEventListener('click', () => el.moveMapSheet.classList.add('hidden'));
 
-// 대화하기 — casual topics and 'minigame'-type hand-offs (하버 포토, §12.3;
-// suspect 심문하기, §12.6) share one list instead of a separate "말 걸기"
-// quick-pick step, so an interrogation scene is reachable the same way a
-// throwaway topic is.
+// 대화하기 — casual topics and 'minigame'-type hand-offs (하버 포토, §12.3)
+// share one list instead of a separate "말 걸기" quick-pick step. 심문하기류
+// (isInterrogation)는 여기서 빠진다 — bottom-bar 위 플로팅 버튼(interrogateBtn,
+// renderInterrogateBtn)으로 따로 뜨므로 목록에 묻혀 있을 필요가 없다.
 function openTopicList(characterId) {
   const locationId = ExplorationState.getCurrentLocationId();
-  const topics = ExplorationState.getInteractionsForCharacter(characterId, locationId).filter(i => i.type === 'topic' || i.type === 'minigame');
+  const topics = ExplorationState.getInteractionsForCharacter(characterId, locationId).filter(i => (i.type === 'topic' || i.type === 'minigame') && !i.isInterrogation);
   el.listSheetTitle.textContent = '대화하기';
   el.listSheetBody.innerHTML = (topics.length ? topics.map(t => `
     <button class="topic-row" data-topic="${t.id}"${t.state === 'locked' ? ' disabled' : ''}>
@@ -916,11 +955,21 @@ el.dialogueLayer.addEventListener('click', () => { if (currentDialoguePlayer) cu
 
 function playInteractionLines(lines, onComplete) {
   el.dialogueLayer.classList.add('show');
+  // A(캐릭터 크기·위치)는 허브 대기 상태(loc-char-stage)와 대화 레이어
+  // (dlg-char-wrap)가 공유하는 같은 자리라, 둘이 동시에 떠 있으면 겹쳐
+  // 보인다 — 대화가 시작되는 순간 대기 인물은 내리고, 대화가 끝나면 지금
+  // 선택된 인물로 다시 세운다(setLocCharStage).
+  el.locCharStage.classList.remove('show');
   currentDialoguePlayer = createVNPlayer({
     onLineChange: (line) => { el.dlgName.textContent = line.speaker || ''; applyDialogueCharacter(line.characterId, line.expression); },
     onTextUpdate: (text) => { el.dlgText.textContent = text; },
     onArrow: (show) => el.dlgArrow.classList.toggle('show', show),
-    onComplete: () => { el.dialogueLayer.classList.remove('show'); currentDialoguePlayer = null; onComplete(); },
+    onComplete: () => {
+      el.dialogueLayer.classList.remove('show');
+      currentDialoguePlayer = null;
+      setLocCharStage(currentCharacterId);
+      onComplete();
+    },
   });
   currentDialoguePlayer.load(lines);
 }
