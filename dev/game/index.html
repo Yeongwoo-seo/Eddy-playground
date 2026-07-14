@@ -476,19 +476,41 @@ function unlockBgmOnFirstTap() {
 // Warms both the metadata cache and the browser's own image cache for every
 // (character, expression) pair a line might show, before the first line is
 // shown — a mid-dialogue character/expression swap then never waits on the
-// network, which is what made the character portrait visibly lag behind the text.
+// network, which is what made the character portrait visibly lag behind the
+// text. Resolution has to mirror applyCharacterForLine's exactly (outfit
+// first via WardrobeState.resolveOutfitForScene, falling back to the base
+// characterId) — this used to skip the outfit lookup and warm only the base
+// portrait, so any scene showing an equipped outfit's art still hit the
+// network the first time that (outfit, expression) pair came up, no matter
+// how early this ran. Batched through getAssetsByIds (one metadata round
+// trip) instead of one getAsset call per pair, same as WeekPreloader's own
+// collectCharacterAssetIds below.
 async function preloadCharacterAssetsForLines(lines) {
   const pairs = new Map();
   lines.forEach(l => {
     if (!l.characterId) return;
     pairs.set(`${l.characterId}::${l.expression || 'neutral'}`, l);
   });
-  await Promise.all([...pairs.values()].map(async (l) => {
-    const assetId = DevGameState.getCharacterAssetId(l.characterId, l.expression);
-    if (!assetId) return;
-    const asset = await AssetDB.getAsset(assetId).catch(() => null);
-    if (asset) await AssetDB.preloadImage(asset.dataUrl);
-  }));
+  const assetIds = new Set();
+  [...pairs.values()].forEach(l => {
+    const expression = l.expression || 'neutral';
+    let resolvedCharacterId = l.characterId;
+    if (typeof WardrobeState !== 'undefined') {
+      try {
+        const resolution = WardrobeState.resolveOutfitForScene(l.characterId, {
+          outfitMode: activeSceneData.outfitMode, storyOutfitId: activeSceneData.storyOutfitId,
+        });
+        if (resolution.hidden) return;
+        if (resolution.characterId) resolvedCharacterId = resolution.characterId;
+      } catch (e) { /* fall back to the base characterId below */ }
+    }
+    const outfitAssetId = DevGameState.getCharacterAssetId(resolvedCharacterId, expression);
+    if (outfitAssetId) assetIds.add(outfitAssetId);
+    const baseAssetId = DevGameState.getCharacterAssetId(l.characterId, expression);
+    if (baseAssetId) assetIds.add(baseAssetId);
+  });
+  const assets = assetIds.size ? await AssetDB.getAssetsByIds([...assetIds]) : [];
+  await Promise.all(assets.map(a => (a && a.dataUrl) ? AssetDB.preloadImage(a.dataUrl) : Promise.resolve()));
 }
 
 function applyTransformToImage(transform) {
