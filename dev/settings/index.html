@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>게임환경설정 · OPERATION MK DEV</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<meta name="theme-color" content="#080A0C">
+<link rel="manifest" href="/dev/manifest.json">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#080A0C;--surface-1:#101419;--surface-2:#171C22;
+  --text-primary:#EDF1F4;--text-secondary:#929BA5;--text-muted:#5F6872;
+  --cyan:#59B8C8;--amber:#D6A84B;--divider:rgba(255,255,255,0.08);
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sans:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center;min-height:100dvh}
+.frame{width:100%;max-width:460px;min-height:100dvh;padding:calc(28px + env(safe-area-inset-top,0)) 18px calc(40px + env(safe-area-inset-bottom,0));display:flex;flex-direction:column;gap:22px}
+.back{font-family:var(--mono);font-size:12px;color:var(--text-muted);text-decoration:none;display:inline-flex;align-items:center;gap:4px;width:fit-content}
+.title{font-size:22px;font-weight:700;letter-spacing:-.2px;margin-top:4px}
+.sub{font-size:13px;color:var(--text-secondary);line-height:1.6}
+.section-label{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase}
+
+/* ===== Preview stage — mirrors dev/explore/index.html's .location-view /
+   .move-fade structure exactly, just with two placeholder gradient
+   "locations" instead of real photos, so the fade is visible against a
+   changing background instead of a static one. ===== */
+.stage-wrap{position:relative;width:100%;aspect-ratio:9/14;border-radius:20px;overflow:hidden;border:1px solid var(--divider);box-shadow:0 4px 20px rgba(0,0,0,.3)}
+.stage-loc{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px}
+.stage-loc-a{background:linear-gradient(160deg,#2a3f52 0%,#16232f 60%,#0b1017 100%)}
+.stage-loc-b{background:linear-gradient(160deg,#4a2f1a 0%,#2c1c10 60%,#150d07 100%)}
+.stage-loc-name{font-family:var(--mono);font-size:13px;letter-spacing:.08em;color:rgba(255,255,255,.75);text-transform:uppercase}
+.stage-loc-icon{font-size:38px}
+.stage-fade{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none}
+.stage-hint{position:absolute;left:14px;right:14px;bottom:14px;text-align:center;font-family:var(--mono);font-size:10.5px;color:rgba(255,255,255,.5);letter-spacing:.04em}
+
+.trigger-row{display:flex;gap:10px}
+.trigger-btn{flex:1;background:var(--cyan);color:#06181c;border:none;border-radius:14px;padding:14px;font-family:var(--sans);font-size:14.5px;font-weight:700;cursor:pointer}
+.trigger-btn:active{opacity:.8}
+.reset-btn{flex-shrink:0;background:var(--surface-1);border:1px solid var(--divider);color:var(--text-secondary);border-radius:14px;padding:14px 16px;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer}
+.reset-btn:active{background:var(--surface-2)}
+.live-btn{width:100%;background:var(--amber);color:#191206;border:none;border-radius:14px;padding:14px;font-family:var(--sans);font-size:14.5px;font-weight:700;cursor:pointer}
+.live-btn:active{opacity:.85}
+
+/* ===== Controls ===== */
+.panel{background:var(--surface-1);border:1px solid var(--divider);border-radius:18px;padding:16px 18px}
+.panel-title{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase;margin-bottom:14px}
+.ctrl{margin-bottom:16px}
+.ctrl:last-child{margin-bottom:0}
+.ctrl-label-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.ctrl-label{font-size:13.5px;font-weight:600;color:var(--text-primary)}
+.ctrl-value{font-family:var(--mono);font-size:12.5px;color:var(--cyan);font-weight:700}
+.ctrl-desc{font-size:11.5px;color:var(--text-muted);margin-top:4px;line-height:1.5}
+input[type=range]{width:100%;height:4px;border-radius:2px;background:var(--surface-2);appearance:none;-webkit-appearance:none;outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--cyan);cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.4)}
+input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--cyan);border:none;cursor:pointer}
+.bezier-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px}
+
+/* ===== Code preview + save ===== */
+.code-box{background:#05070a;border:1px solid var(--divider);border-radius:14px;padding:14px 16px;font-family:var(--mono);font-size:12px;line-height:1.8;color:#9EF0B0;white-space:pre-wrap;word-break:break-all}
+.code-box .k{color:var(--amber)}
+.save-row{display:flex;gap:10px;margin-top:12px}
+.save-btn{flex:1;background:var(--cyan);color:#06181c;border:none;border-radius:12px;padding:13px;font-family:var(--sans);font-size:13.5px;font-weight:700;cursor:pointer}
+.save-btn:active{opacity:.85}
+.save-btn[disabled]{opacity:.5;cursor:default}
+.save-status{font-family:var(--mono);font-size:11px;color:var(--cyan);text-align:center;margin-top:8px;min-height:14px}
+.save-status.err{color:#ffb4b4}
+.dirty-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--amber);margin-left:6px;vertical-align:middle}
+
+/* ===== 호감도 테스트 card ===== */
+.link-card{display:flex;align-items:center;gap:14px;background:var(--surface-1);border:1px solid var(--divider);border-radius:16px;padding:16px 18px;text-decoration:none;color:inherit}
+.link-card:active{background:var(--surface-2)}
+.link-card-icon{font-size:26px;flex-shrink:0}
+.link-card-txt{flex:1;min-width:0}
+.link-card-name{font-size:15px;font-weight:700}
+.link-card-desc{font-size:12px;color:var(--text-secondary);margin-top:4px;line-height:1.5}
+.link-card-arrow{color:var(--text-muted);font-size:18px;flex-shrink:0}
+
+.note{font-size:12px;color:var(--text-secondary);line-height:1.6;background:var(--surface-1);border:1px solid var(--divider);border-radius:14px;padding:14px 16px}
+.note b{color:var(--amber)}
+</style>
+</head>
+<body>
+<div class="frame">
+  <a class="back" href="/dev/">‹ DEV</a>
+  <div class="title">게임환경설정</div>
+  <div class="sub">게임 전반의 조정값을 모아두는 곳입니다. 여기서 바꾼 값은 저장 버튼을 눌러야 실제 게임(탐색허브 등)에 반영됩니다.</div>
+
+  <div>
+    <div class="section-label" style="margin-bottom:10px">호감도 테스트</div>
+    <a class="link-card" href="/dev/youngwoo-test/">
+      <div class="link-card-icon">🧠</div>
+      <div class="link-card-txt">
+        <div class="link-card-name">영우 테스트</div>
+        <div class="link-card-desc">호감도/선택지 시스템 설계에 참고할 성향 데이터를 모으는 상황별 테스트입니다</div>
+      </div>
+      <div class="link-card-arrow">›</div>
+    </a>
+  </div>
+
+  <div>
+    <div class="section-label" style="margin-bottom:10px">이동 페이드</div>
+
+    <div class="stage-wrap" id="stageWrap" style="margin-bottom:12px">
+      <div class="stage-loc stage-loc-a" id="stageA">
+        <div class="stage-loc-icon">🏙️</div>
+        <div class="stage-loc-name">장소 A</div>
+      </div>
+      <div class="stage-loc stage-loc-b" id="stageB" style="display:none">
+        <div class="stage-loc-icon">🏯</div>
+        <div class="stage-loc-name">장소 B</div>
+      </div>
+      <div class="stage-fade" id="stageFade"></div>
+      <div class="stage-hint" id="stageHint">▶ 미리보기를 눌러보세요</div>
+    </div>
+
+    <div class="trigger-row" style="margin-bottom:10px">
+      <button class="trigger-btn" id="triggerBtn">▶ 미리보기</button>
+      <button class="reset-btn" id="resetBtn">저장된 값으로</button>
+    </div>
+    <button class="live-btn" id="liveTestBtn">🧪 탐색허브에서 실제로 테스트 시작</button>
+
+    <div class="panel" style="margin-top:14px">
+      <div class="panel-title">트랜지션</div>
+      <div class="ctrl">
+        <div class="ctrl-label-row"><span class="ctrl-label">길이</span><span class="ctrl-value" id="valDuration">300ms</span></div>
+        <input type="range" id="ctrlDuration" min="60" max="800" step="10" value="300">
+        <div class="ctrl-desc">암전이 들어오고 나가는 데 걸리는 시간. 짧으면 하드 스냅처럼, 길면 늘어지게 느껴집니다.</div>
+      </div>
+      <div class="ctrl">
+        <div class="ctrl-label-row"><span class="ctrl-label">추가로 완전히 검게 유지</span><span class="ctrl-value" id="valHold">40ms</span></div>
+        <input type="range" id="ctrlHold" min="0" max="500" step="10" value="40">
+        <div class="ctrl-desc">화면이 완전히 검어진 뒤 곧바로 밝아지지 않고 그 상태를 얼마나 더 붙잡아둘지 — 사진이 이미 로딩돼 있어도 최소한 이 시간만큼은 검은 화면이 눈에 보입니다.</div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:14px">
+      <div class="panel-title">이징 곡선 (cubic-bezier)</div>
+      <div class="bezier-grid">
+        <div class="ctrl">
+          <div class="ctrl-label-row"><span class="ctrl-label">X1</span><span class="ctrl-value" id="valX1">0.20</span></div>
+          <input type="range" id="ctrlX1" min="0" max="1" step="0.01" value="0.2">
+        </div>
+        <div class="ctrl">
+          <div class="ctrl-label-row"><span class="ctrl-label">Y1</span><span class="ctrl-value" id="valY1">0.80</span></div>
+          <input type="range" id="ctrlY1" min="-0.5" max="1.5" step="0.01" value="0.8">
+        </div>
+        <div class="ctrl">
+          <div class="ctrl-label-row"><span class="ctrl-label">X2</span><span class="ctrl-value" id="valX2">0.20</span></div>
+          <input type="range" id="ctrlX2" min="0" max="1" step="0.01" value="0.2">
+        </div>
+        <div class="ctrl">
+          <div class="ctrl-label-row"><span class="ctrl-label">Y2</span><span class="ctrl-value" id="valY2">1.00</span></div>
+          <input type="range" id="ctrlY2" min="-0.5" max="1.5" step="0.01" value="1">
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:14px">
+      <div class="panel-title">저장될 값<span class="dirty-dot" id="dirtyDot" style="display:none"></span></div>
+      <div class="code-box" id="codeBox"></div>
+      <div class="save-row">
+        <button class="save-btn" id="saveBtn">DB에 저장</button>
+      </div>
+      <div class="save-status" id="saveStatus">&nbsp;</div>
+    </div>
+  </div>
+
+  <div class="note">여기서 저장한 값은 <b>Supabase DB</b>(<code>game-settings/settings.json</code>)에 기기·브라우저 상관없이 공유됩니다 — 탐색허브(<code>/dev/explore/</code>)가 페이지를 열 때마다 이 값을 읽어 이동 페이드에 그대로 적용합니다.</div>
+</div>
+
+<script src="/dev/assetDb.js"></script>
+<script>
+const el = {
+  stageA: document.getElementById('stageA'),
+  stageB: document.getElementById('stageB'),
+  stageFade: document.getElementById('stageFade'),
+  stageHint: document.getElementById('stageHint'),
+  triggerBtn: document.getElementById('triggerBtn'),
+  resetBtn: document.getElementById('resetBtn'),
+  liveTestBtn: document.getElementById('liveTestBtn'),
+  duration: document.getElementById('ctrlDuration'),
+  hold: document.getElementById('ctrlHold'),
+  x1: document.getElementById('ctrlX1'),
+  y1: document.getElementById('ctrlY1'),
+  x2: document.getElementById('ctrlX2'),
+  y2: document.getElementById('ctrlY2'),
+  valDuration: document.getElementById('valDuration'),
+  valHold: document.getElementById('valHold'),
+  valX1: document.getElementById('valX1'),
+  valY1: document.getElementById('valY1'),
+  valX2: document.getElementById('valX2'),
+  valY2: document.getElementById('valY2'),
+  codeBox: document.getElementById('codeBox'),
+  dirtyDot: document.getElementById('dirtyDot'),
+  saveBtn: document.getElementById('saveBtn'),
+  saveStatus: document.getElementById('saveStatus'),
+};
+
+// DB에서 마지막으로 읽어온(또는 마지막으로 저장한) 값 — "저장된 값으로"
+// 버튼과 dirty 표시(지금 슬라이더 값이 DB에 저장된 값과 다른지)의 기준.
+let lastSavedSettings = AssetDB.DEFAULT_GAME_SETTINGS.moveFade;
+
+function readControls() {
+  return {
+    durationMs: Number(el.duration.value),
+    holdMs: Number(el.hold.value),
+    x1: Number(el.x1.value), y1: Number(el.y1.value),
+    x2: Number(el.x2.value), y2: Number(el.y2.value),
+  };
+}
+function applyControls(v) {
+  el.duration.value = v.durationMs; el.hold.value = v.holdMs;
+  el.x1.value = v.x1; el.y1.value = v.y1; el.x2.value = v.x2; el.y2.value = v.y2;
+  render();
+}
+function sameSettings(a, b) {
+  return a.durationMs === b.durationMs && a.holdMs === b.holdMs && a.x1 === b.x1 && a.y1 === b.y1 && a.x2 === b.x2 && a.y2 === b.y2;
+}
+
+function transitionCss(v) {
+  return `opacity ${(v.durationMs / 1000).toFixed(3)}s cubic-bezier(${v.x1},${v.y1},${v.x2},${v.y2})`;
+}
+
+function render() {
+  const v = readControls();
+  el.valDuration.textContent = v.durationMs + 'ms';
+  el.valHold.textContent = v.holdMs + 'ms';
+  el.valX1.textContent = v.x1.toFixed(2);
+  el.valY1.textContent = v.y1.toFixed(2);
+  el.valX2.textContent = v.x2.toFixed(2);
+  el.valY2.textContent = v.y2.toFixed(2);
+  el.stageFade.style.transition = transitionCss(v);
+
+  el.codeBox.innerHTML = `<span class="k">moveFade:</span> ${escapeHtml(JSON.stringify(v))}`;
+
+  const dirty = !sameSettings(v, lastSavedSettings);
+  el.dirtyDot.style.display = dirty ? '' : 'none';
+  el.saveBtn.textContent = dirty ? 'DB에 저장' : '저장됨';
+  el.saveBtn.disabled = !dirty;
+}
+function escapeHtml(s) { return s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
+
+[el.duration, el.hold, el.x1, el.y1, el.x2, el.y2].forEach(input => input.addEventListener('input', render));
+
+// ===== 미리보기 재생 — dev/explore/index.html의 moveTo()와 같은 순서:
+// 페이드 켜기 -> 트랜지션+홀드 바닥시간 -> 배경 바꾸기 -> 페이드 걷기. */
+let showingA = true;
+let playing = false;
+el.triggerBtn.addEventListener('click', () => {
+  if (playing) return;
+  playing = true;
+  el.triggerBtn.disabled = true;
+  el.stageHint.textContent = '재생 중…';
+  const v = readControls();
+  const floorMs = v.durationMs + v.holdMs;
+
+  el.stageFade.style.opacity = '1';
+  setTimeout(() => {
+    showingA = !showingA;
+    el.stageA.style.display = showingA ? '' : 'none';
+    el.stageB.style.display = showingA ? 'none' : '';
+    requestAnimationFrame(() => {
+      el.stageFade.style.opacity = '0';
+      setTimeout(() => {
+        playing = false;
+        el.triggerBtn.disabled = false;
+        el.stageHint.textContent = `이동 완료 (페이드 ${v.durationMs}ms + 홀드 ${v.holdMs}ms)`;
+      }, v.durationMs);
+    });
+  }, floorMs);
+});
+
+el.resetBtn.addEventListener('click', () => applyControls(lastSavedSettings));
+
+// 실제 탐색허브로 이동해서 지금 DB에 저장된(=실제 게임이 읽어갈) 값으로
+// 진짜 배경 이동을 시켜본다 — 이 페이지의 축소 미리보기가 아니라 진짜
+// /dev/explore/ 화면에서. 저장 안 한 슬라이더 변경은 반영되지 않으므로,
+// 먼저 저장부터 하라고 안내한다.
+el.liveTestBtn.addEventListener('click', () => {
+  const v = readControls();
+  if (!sameSettings(v, lastSavedSettings)) {
+    if (!confirm('아직 저장 안 한 변경이 있습니다. 저장 없이 실제 탐색허브로 이동할까요? (탐색허브는 DB에 저장된 값을 읽습니다)')) return;
+  }
+  location.href = '/dev/explore/?phase=W1_TOURISM&location=w1-opera-view';
+});
+
+el.saveBtn.addEventListener('click', async () => {
+  const v = readControls();
+  el.saveBtn.disabled = true;
+  el.saveStatus.classList.remove('err');
+  el.saveStatus.textContent = '저장 중…';
+  try {
+    const current = await AssetDB.getGameSettings().catch(() => AssetDB.DEFAULT_GAME_SETTINGS);
+    const next = Object.assign({}, current, { moveFade: v });
+    await AssetDB.setGameSettings(next);
+    lastSavedSettings = v;
+    el.saveStatus.textContent = '저장했습니다 — 탐색허브가 다음에 열릴 때부터 반영됩니다';
+    render();
+  } catch (e) {
+    el.saveStatus.classList.add('err');
+    el.saveStatus.textContent = '저장 실패: ' + e.message;
+    el.saveBtn.disabled = false;
+  }
+  setTimeout(() => { if (!el.saveStatus.classList.contains('err')) el.saveStatus.textContent = ' '; }, 4000);
+});
+
+(async function init() {
+  let settings = AssetDB.DEFAULT_GAME_SETTINGS;
+  try { settings = await AssetDB.getGameSettings(); } catch (e) { /* fall back to defaults, still editable/saveable */ }
+  lastSavedSettings = settings.moveFade || AssetDB.DEFAULT_GAME_SETTINGS.moveFade;
+  applyControls(lastSavedSettings);
+})();
+</script>
+</body>
+</html>
