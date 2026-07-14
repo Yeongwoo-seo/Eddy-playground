@@ -90,18 +90,17 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
    dialogue box (area A: everything above .dlg-layer), not glued to it.
    .choice-layer spans that whole area (top:0, bottom synced to the dialogue
    box's live height by syncChoiceLayerBottom) and centers its buttons inside
-   it, so the button stack's vertical center always lands on area A's
-   vertical center regardless of how many choices there are or how tall the
-   dialogue box currently is. The symmetric top/bottom padding is the
-   guaranteed minimum gap from the frame's top edge and from the dialogue
-   box — buttons never touch either, even when there's little slack. The
-   layer itself ignores taps outside the buttons (pointer-events:none) so
-   the dimmed backdrop underneath still reads as backdrop, not a hit-target;
-   only the buttons re-enable pointer-events. */
-.choice-layer{position:absolute;left:0;right:0;top:0;bottom:34vh;z-index:3;display:flex;flex-direction:column;justify-content:center;gap:14px;padding:28px 20px;pointer-events:none}
+   it, then nudges the whole stack down via translateY so it sits a bit lower
+   than dead-center in A (closer to the dialogue box it's answering, further
+   from the empty space up top) without giving up the padding's minimum-gap
+   guarantee at either edge. The layer itself ignores taps outside the
+   buttons (pointer-events:none) so the dimmed backdrop underneath still
+   reads as backdrop, not a hit-target; only the buttons re-enable
+   pointer-events. */
+.choice-layer{position:absolute;left:0;right:0;top:0;bottom:34vh;z-index:3;display:flex;flex-direction:column;justify-content:center;gap:14px;padding:28px 20px;pointer-events:none;transform:translateY(48px)}
 .choice-layer.hidden{display:none}
 @keyframes choiceIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
-.choice-btn{pointer-events:auto;flex-shrink:0;background:rgba(8,10,12,.88);border:1px solid rgba(89,184,200,.5);color:var(--text-primary);border-radius:14px;padding:14px 16px;font-size:14.5px;font-weight:600;font-family:var(--sans);text-align:center;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.35);opacity:0;animation:choiceIn .3s cubic-bezier(0.2,0.8,0.2,1) forwards}
+.choice-btn{pointer-events:auto;flex-shrink:0;background:rgba(8,10,12,.88);border:1px solid rgba(89,184,200,.5);color:var(--text-primary);border-radius:14px;padding:14px 16px;font-size:14.5px;font-weight:600;font-family:var(--sans);text-align:center;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.35);opacity:0;animation:choiceIn .7s cubic-bezier(0.2,0.8,0.2,1) forwards}
 .choice-btn:active{opacity:.7;background:rgba(89,184,200,.2)}
 
 /* ===== Layer 3c: "present evidence" call-to-action, appears above the dialogue box ===== */
@@ -840,7 +839,7 @@ function showChoices(allChoices) {
   choices.forEach((choice, i) => {
     const btn = document.createElement('button');
     btn.className = 'choice-btn';
-    btn.style.animationDelay = (i * 60) + 'ms';
+    btn.style.animationDelay = (i * 150) + 'ms';
     btn.textContent = choice.label;
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
