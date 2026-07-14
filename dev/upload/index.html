@@ -183,6 +183,13 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .modal-title{font-size:16px;font-weight:700}
 .modal-close-btn{width:32px;height:32px;border-radius:50%;background:var(--surface-2);border:1px solid var(--divider);color:var(--text-primary);font-size:14px;cursor:pointer;flex-shrink:0}
 .week-dialogue-bulk-input{flex:1;min-height:50vh}
+.modal-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.evidence-upload-row{display:flex;align-items:center;gap:10px;background:var(--surface-2);border:1px solid var(--divider);border-radius:10px;padding:10px 12px;margin-bottom:8px}
+.evidence-upload-row-main{flex:1;min-width:0}
+.evidence-upload-row-title{font-size:12.5px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.evidence-upload-row-sub{font-size:10.5px;color:var(--text-muted);margin-top:2px}
+.evidence-upload-row input[type=file]{max-width:150px;font-size:10px;color:var(--text-secondary)}
+.evidence-upload-row.done{border-color:rgba(95,217,138,.4);background:rgba(95,217,138,.06)}
 .section-title{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase;margin:24px 0 12px}
 .empty-note{font-size:13px;color:var(--text-muted);padding:14px 0}
 .asset-card{display:flex;align-items:center;gap:12px;background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:12px;margin-bottom:10px}
@@ -573,7 +580,8 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
        붙이므로(예: minigame-photo-zoom) 이 목록엔 잡히지 않는다. -->
   <div class="evidence-panel hidden" id="evidencePanel">
     <div class="section-title" style="margin-top:0">증거 DB (읽기 전용)</div>
-    <div class="hint" style="margin:-8px 0 14px;text-align:left">전체 대사·탐색허브 상호작용에 등록된 증거를 훑어 모은 목록입니다. 여기서 고쳐도 실제 스토리 콘텐츠(코드)는 바뀌지 않습니다 — ID/코드 중복 점검 용도로만 쓰세요. 일부 미니게임이 자체적으로 만들어 붙이는 증거는 포함되지 않습니다.</div>
+    <div class="hint" style="margin:-8px 0 14px;text-align:left">전체 대사·탐색허브 상호작용에 등록된 증거를 훑어 모은 목록입니다. 제목/설명 등 스토리 콘텐츠(코드)는 여기서 고쳐도 바뀌지 않습니다 — ID/코드 중복 점검 용도로만 쓰세요. 아래 "프롬프트 생성"으로 올리는 사진만 실제로 저장됩니다. 일부 미니게임이 자체적으로 만들어 붙이는 증거는 포함되지 않습니다.</div>
+    <button class="select-btn" id="evidencePromptGenBtn" style="width:100%;margin-bottom:12px">🖼️ 프롬프트 생성 (사진 미배정 증거 10개)</button>
     <input type="text" class="text-input" id="evidenceSearchInput" placeholder="제목·코드·설명 검색" style="margin-bottom:12px">
     <div class="picker-pills" id="evidenceCategoryPills" style="margin-bottom:14px"></div>
     <div class="hint" id="evidenceCountHint" style="margin:0 0 14px"></div>
@@ -610,6 +618,31 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
       <button class="crop-save-btn" id="weekDialogueSaveBtn" style="border-radius:10px;padding:12px;font-family:var(--mono);font-weight:700;border:none">저장</button>
     </div>
     <div class="hint" id="weekDialogueStatus" style="margin-top:10px"></div>
+  </div>
+</div>
+
+<!-- 증거 사진 생성 프롬프트 모달 — see openEvidencePromptModal(). 사진
+     (imageAssetId)이 아직 없는 증거 중 무작위 10개를 골라 공통 스타일 +
+     항목별 번호 프롬프트를 한 번에 만들어 챗지피티 등에 그대로 붙여넣을 수
+     있게 하고, 그 결과 이미지 10장을 바로 아래에서 각자 자리에 업로드해
+     AssetDB.setCaseEntryMeta의 imageAssetId로 연결한다 — case-entries
+     스프라이트 시트 승인과 같은 저장소·같은 우선순위(§10.14)를 쓰되, 시트를
+     나눠 자를 필요 없이 한 장 = 한 증거로 곧바로 승인한다. -->
+<div class="modal-overlay hidden" id="evidencePromptModal">
+  <div class="modal-panel">
+    <div class="modal-header">
+      <div class="modal-title">증거 사진 생성 프롬프트</div>
+      <button class="modal-close-btn" id="evidencePromptCloseBtn">✕</button>
+    </div>
+    <div class="modal-scroll">
+      <div class="hint" id="evidencePromptCountHint" style="margin:0 0 10px;text-align:left"></div>
+      <textarea class="interaction-textarea" id="evidencePromptText" readonly spellcheck="false" style="min-height:220px"></textarea>
+      <button class="select-btn" id="evidencePromptCopyBtn" style="width:100%;margin-top:8px">📋 프롬프트 복사</button>
+      <div class="hint" id="evidencePromptCopyStatus" style="margin-top:6px"></div>
+      <button class="select-btn" id="evidencePromptRerollBtn" style="width:100%;margin-top:14px">🎲 다른 10개로 다시 뽑기</button>
+      <div class="section-title">사진 업로드 (번호 순서대로)</div>
+      <div id="evidencePromptUploadRows"></div>
+    </div>
   </div>
 </div>
 
@@ -787,6 +820,15 @@ const el = {
   evidenceCategoryPills: document.getElementById('evidenceCategoryPills'),
   evidenceCountHint: document.getElementById('evidenceCountHint'),
   evidenceList: document.getElementById('evidenceList'),
+  evidencePromptGenBtn: document.getElementById('evidencePromptGenBtn'),
+  evidencePromptModal: document.getElementById('evidencePromptModal'),
+  evidencePromptCloseBtn: document.getElementById('evidencePromptCloseBtn'),
+  evidencePromptCountHint: document.getElementById('evidencePromptCountHint'),
+  evidencePromptText: document.getElementById('evidencePromptText'),
+  evidencePromptCopyBtn: document.getElementById('evidencePromptCopyBtn'),
+  evidencePromptCopyStatus: document.getElementById('evidencePromptCopyStatus'),
+  evidencePromptRerollBtn: document.getElementById('evidencePromptRerollBtn'),
+  evidencePromptUploadRows: document.getElementById('evidencePromptUploadRows'),
   tabItems: document.getElementById('tabItems'),
   tabInteractions: document.getElementById('tabInteractions'),
   itemsPanel: document.getElementById('itemsPanel'),
@@ -3403,6 +3445,152 @@ function evidenceRowHtml(r) {
 el.evidenceSearchInput.addEventListener('input', () => {
   evidenceSearchQuery = el.evidenceSearchInput.value;
   renderEvidencePanel();
+});
+
+/* ===== 증거 사진 생성 프롬프트 (§증거 프롬프트 배치) — 사진이 아직 없는
+   증거 중 무작위 10개를 골라 "공통 스타일 + 항목별 번호 프롬프트"를 한
+   텍스트로 만들어준다. 챗지피티 등에 그대로 붙여넣어 10장을 한 번에
+   부탁하고, 돌아온 이미지를 바로 아래 10개 업로드 칸에 번호 순서대로
+   올리면 case-entries 스프라이트 시트 승인과 같은 저장소(AssetDB.
+   setCaseEntryMeta의 imageAssetId)에 곧바로 연결된다 — 시트를 만들고
+   자르는 단계 없이 한 장 = 한 증거로 바로 승인되는 점만 다르다. */
+let evidenceMetaCatalog = null; // AssetDB.getCaseEntryMeta() 캐시 — 사진 배정 여부 판단용
+let evidencePromptBatch = [];
+
+async function ensureEvidenceMetaCatalog() {
+  if (evidenceMetaCatalog) return evidenceMetaCatalog;
+  try {
+    evidenceMetaCatalog = await AssetDB.getCaseEntryMeta();
+  } catch (err) {
+    evidenceMetaCatalog = {};
+    DevDiag.show('증거 사진 배정 정보를 불러오지 못했습니다: ' + (err && err.message ? err.message : err));
+  }
+  return evidenceMetaCatalog;
+}
+
+function shuffleCopy(arr) {
+  const copy = arr.slice();
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+function pickRandomUnphotographedEvidence(n) {
+  const rows = collectEvidenceCatalog();
+  const unphotographed = rows.filter(r => !(evidenceMetaCatalog[r.id] || {}).imageAssetId);
+  return shuffleCopy(unphotographed).slice(0, n);
+}
+
+function buildEvidenceBatchPrompt(items) {
+  const lines = [];
+  lines.push('모바일 추리 어드벤처 게임의 사건 파일에 쓸 증거 아이콘을 아래 순서대로 10장 만들어줘.', '한 장에 모아 그리지 말고, 완전히 별도인 정사각형 이미지 10장으로 각각 만들어줘.', '');
+  lines.push('[공통 스타일 — 모든 이미지에 동일하게 적용]');
+  [
+    '반사실적 디지털 페인팅 게임 아이콘 스타일',
+    '정면 또는 약간 위에서 내려다보는 3/4 시점',
+    '아이템 전체가 잘리지 않고 프레임 중앙에 들어오게',
+    '아이템 주위에 넉넉한 빈 여백',
+    '밝은 중성 단색 배경',
+    '모든 이미지에서 동일한 조명·렌더링 밀도·원근감',
+    '접지 그림자는 매우 약하게',
+  ].forEach(x => lines.push('- ' + x));
+  lines.push('', '[이미지별 묘사 — 번호 순서대로]');
+  items.forEach((it, i) => {
+    lines.push(`${i + 1}. [${it.code || it.id} · ${it.title}]`);
+    lines.push(it.description || it.discoveredLocationText || '(설명 없음 — 제목만 참고해서 자연스럽게 그려줘)');
+    lines.push('');
+  });
+  lines.push('[금지사항]');
+  [
+    '이미지 안에 번호, 이름, 설명문 등 텍스트나 워터마크를 쓰지 말 것',
+    '한 이미지에 두 개 이상의 증거를 넣지 말 것',
+    '사람, 얼굴, 손, 인체를 넣지 말 것',
+    '아이템을 누군가 들고 있는 장면 금지',
+    '방 전체, 거리 전체 등 복잡한 배경 장면 금지',
+    '사진처럼 지나치게 사실적인 상품 촬영 스타일 금지',
+  ].forEach(x => lines.push('- ' + x));
+  return lines.join('\n');
+}
+
+function renderEvidencePromptModalContent() {
+  const rows = collectEvidenceCatalog();
+  const totalUnphotographed = rows.filter(r => !(evidenceMetaCatalog[r.id] || {}).imageAssetId).length;
+  el.evidencePromptCountHint.textContent = evidencePromptBatch.length < 10
+    ? `사진 미배정 증거가 ${totalUnphotographed}개뿐이라 전체를 보여줍니다.`
+    : `사진 미배정 증거 ${totalUnphotographed}개 중 무작위 ${evidencePromptBatch.length}개`;
+  el.evidencePromptText.value = buildEvidenceBatchPrompt(evidencePromptBatch);
+  el.evidencePromptCopyStatus.textContent = '';
+  renderEvidencePromptUploadRows();
+}
+
+function renderEvidencePromptUploadRows() {
+  if (!evidencePromptBatch.length) {
+    el.evidencePromptUploadRows.innerHTML = '<div class="empty-note">사진 미배정 증거가 없습니다.</div>';
+    return;
+  }
+  el.evidencePromptUploadRows.innerHTML = evidencePromptBatch.map((it, i) => {
+    const done = !!(evidenceMetaCatalog[it.id] || {}).imageAssetId;
+    return `
+      <div class="evidence-upload-row${done ? ' done' : ''}" data-upload-row="${it.id}">
+        <div class="evidence-upload-row-main">
+          <div class="evidence-upload-row-title">${i + 1}. ${escapeHtml(it.title || it.id)}</div>
+          <div class="evidence-upload-row-sub">${escapeHtml(it.code || '')}${done ? ' · 업로드 완료' : ''}</div>
+        </div>
+        <input type="file" accept="image/png,image/jpeg,image/webp" data-upload-input="${it.id}">
+      </div>
+    `;
+  }).join('');
+  el.evidencePromptUploadRows.querySelectorAll('[data-upload-input]').forEach(input => {
+    input.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) handleEvidencePhotoUpload(input.dataset.uploadInput, file);
+    });
+  });
+}
+
+async function handleEvidencePhotoUpload(entryId, file) {
+  const row = el.evidencePromptUploadRows.querySelector(`[data-upload-row="${entryId}"]`);
+  const sub = row ? row.querySelector('.evidence-upload-row-sub') : null;
+  if (sub) sub.textContent = '업로드 중…';
+  try {
+    const asset = await AssetDB.addAsset({ type: 'case-entry-icon', name: file.name, blob: file });
+    const current = evidenceMetaCatalog[entryId] || {};
+    const next = Object.assign({}, current, { imageAssetId: asset.id, iconGenerationStatus: 'approved' });
+    await AssetDB.setCaseEntryMeta(entryId, next);
+    evidenceMetaCatalog[entryId] = next;
+  } catch (err) {
+    if (sub) sub.textContent = '업로드 실패: ' + (err && err.message ? err.message : err);
+    return;
+  }
+  renderEvidencePromptUploadRows();
+}
+
+async function openEvidencePromptModal() {
+  await ensureEvidenceMetaCatalog();
+  evidencePromptBatch = pickRandomUnphotographedEvidence(10);
+  renderEvidencePromptModalContent();
+  el.evidencePromptModal.classList.remove('hidden');
+}
+function closeEvidencePromptModal() {
+  el.evidencePromptModal.classList.add('hidden');
+}
+el.evidencePromptGenBtn.addEventListener('click', openEvidencePromptModal);
+el.evidencePromptCloseBtn.addEventListener('click', closeEvidencePromptModal);
+el.evidencePromptRerollBtn.addEventListener('click', () => {
+  evidencePromptBatch = pickRandomUnphotographedEvidence(10);
+  renderEvidencePromptModalContent();
+});
+el.evidencePromptCopyBtn.addEventListener('click', async () => {
+  if (!el.evidencePromptText.value) return;
+  try {
+    await navigator.clipboard.writeText(el.evidencePromptText.value);
+  } catch (err) {
+    el.evidencePromptText.select();
+    document.execCommand('copy');
+  }
+  el.evidencePromptCopyStatus.textContent = '복사됐어요.';
 });
 
 async function renderSoundPanel() {
