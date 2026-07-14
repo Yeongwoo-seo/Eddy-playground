@@ -174,6 +174,22 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .sheet-section-label{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--text-muted);text-transform:uppercase;margin:14px 0 8px}
 .sheet-section-label:first-child{margin-top:0}
 
+/* ===== 제시하기 — 인물/증거 tabs + a 3-column item-grid (same rounded-square
+   slot idiom as dev/minigame-phone-search's inventory bar), replacing the old
+   증거 제시/인물에 대해 묻기 list-row sheets. Person tiles show a round face
+   photo (same asset lookup as loc-char-portrait); evidence tiles show a
+   category icon, since evidence records don't carry their own image. ===== */
+.present-tabs{display:flex;gap:8px;margin-bottom:14px}
+.present-tab{flex:1;text-align:center;background:var(--surface-2);color:var(--text-secondary);border:1px solid var(--divider);border-radius:12px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.present-tab.active{background:rgba(89,184,200,.18);border-color:rgba(89,184,200,.5);color:var(--cyan)}
+.present-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.present-tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;aspect-ratio:1/1;background:var(--surface-2);border:1px solid var(--divider);border-radius:14px;padding:8px;cursor:pointer;font-family:inherit}
+.present-tile:active{opacity:.8}
+.present-tile-icon{width:60%;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;font-size:22px;border-radius:10px;overflow:hidden;background:rgba(255,255,255,.04);color:var(--text-secondary)}
+.present-tile-icon.round{border-radius:50%}
+.present-tile-icon img{width:100%;height:100%;object-fit:cover}
+.present-tile-label{font-size:11px;font-weight:600;color:var(--text-primary);text-align:center;line-height:1.3;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
 /* ===== Dialogue playback (reuses vnPlayer.js) ===== */
 .dialogue-layer{position:absolute;inset:0;z-index:15;display:none;flex-direction:column;justify-content:flex-end;cursor:pointer}
 .dialogue-layer.show{display:flex}
@@ -233,7 +249,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
         <button class="hub-act-btn" id="investigateBtn">조사하기</button>
         <button class="hub-act-btn" id="talkBtn">대화하기</button>
         <button class="hub-act-btn" id="moveBtn">이동하기</button>
-        <button class="hub-act-btn" id="presentBtn">증거 제시</button>
+        <button class="hub-act-btn" id="presentBtn">제시하기</button>
       </div>
     </div>
   </div>
@@ -717,8 +733,8 @@ el.talkBtn.addEventListener('click', () => {
   openTopicList(currentCharacterId);
 });
 el.presentBtn.addEventListener('click', () => {
-  if (!currentCharacterId) { showToastLine(null, '지금 이 자리에는 증거를 보여줄 사람이 없다.'); return; }
-  openEvidenceSheet(currentCharacterId);
+  if (!currentCharacterId) { showToastLine(null, '지금 이 자리에는 보여줄 사람이 없다.'); return; }
+  openPresentSheet(currentCharacterId);
 });
 el.moveBtn.addEventListener('click', openMoveSheet);
 
@@ -815,87 +831,90 @@ function openTopicList(characterId) {
   const locationId = ExplorationState.getCurrentLocationId();
   const topics = ExplorationState.getInteractionsForCharacter(characterId, locationId).filter(i => (i.type === 'topic' || i.type === 'minigame') && !i.isInterrogation);
   el.listSheetTitle.textContent = '대화하기';
-  el.listSheetBody.innerHTML = (topics.length ? topics.map(t => `
+  el.listSheetBody.innerHTML = topics.length ? topics.map(t => `
     <button class="topic-row" data-topic="${t.id}"${t.state === 'locked' ? ' disabled' : ''}>
       <div class="topic-row-main">${t.icon ? t.icon + ' ' : ''}${escapeHtml(t.label || t.id)}</div>
       <span class="topic-state state-${t.state}">${STATE_LABEL[t.state] || t.state}</span>
     </button>
-  `).join('') : '<div class="empty-note">아직 나눌 이야기가 없습니다.</div>')
-    + `<button class="action-btn" id="askAboutRowBtn">다른 사람에 대해 묻기</button>`;
+  `).join('') : '<div class="empty-note">아직 나눌 이야기가 없습니다.</div>';
   el.listSheetBody.querySelectorAll('[data-topic]').forEach(btn => btn.addEventListener('click', () => {
     el.listSheet.classList.add('hidden');
     playInteraction(btn.dataset.topic);
   }));
-  el.listSheetBody.querySelector('#askAboutRowBtn').addEventListener('click', () => {
-    el.listSheet.classList.add('hidden');
-    openAskAboutSheet(characterId);
-  });
   el.listSheet.classList.remove('hidden');
 }
 
-// 증거 제시 (spec §8) — presentEvidenceRules/defaultPresentReaction now live
-// in dev/data/interactionDefs.js (real content for Phase 5 재검증, see that
-// file) so both the hub and any future page can share the same rule table.
-// A matched rule's `result` (correct/partial/interesting/wrong/blocked, §8.2)
-// never costs points or blocks progress either way (§8.4) — it only changes
-// the reaction text and, for correct/partial, may carry effects (addFact 등).
-// 목록은 CASE FILE 메뉴의 증거 탭(dev/caseMenu.js renderEvidenceTabBody)과
-// 같은 분류(EVIDENCE_CATEGORY_ORDER/evidenceCategoryLabel)로 묶고, 같은 종류별
-// 필터 칩(cm-filter-row/cm-filter-chip — initCaseMenu가 이미 전역 <style>로
-// 주입해둔 클래스)도 그대로 쓴다 — 세 화면이 서로 다른 분류/필터 UI를 보여주면
-// 헷갈리니 하나의 소스만 쓴다.
-let evidencePresentFilter = 'all';
-function openEvidenceSheet(characterId) {
-  const items = CaseFileState.getEvidence();
-  el.listSheetTitle.textContent = '증거 제시';
-  if (!items.length) {
-    el.listSheetBody.innerHTML = '<div class="empty-note">아직 제시할 증거가 없습니다.</div>';
-    el.listSheet.classList.remove('hidden');
-    return;
-  }
-  const cats = EVIDENCE_CATEGORY_ORDER.filter(c => items.some(ev => (ev.category || 'etc') === c));
-  if (evidencePresentFilter !== 'all' && !cats.includes(evidencePresentFilter)) evidencePresentFilter = 'all';
-  const filterBar = `
-    <div class="cm-filter-row">
-      <button class="cm-filter-chip${evidencePresentFilter === 'all' ? ' cm-filter-chip-active' : ''}" data-evidence-filter="all">전체 ${items.length}</button>
-      ${cats.map(c => {
-        const count = items.filter(ev => (ev.category || 'etc') === c).length;
-        return `<button class="cm-filter-chip${evidencePresentFilter === c ? ' cm-filter-chip-active' : ''}" data-evidence-filter="${c}">${evidenceCategoryLabel(c)} ${count}</button>`;
-      }).join('')}
+// 제시하기 (spec §8, was 증거 제시 + 대화하기 안의 "다른 사람에 대해 묻기")
+// — 인물/증거 두 탭을 한 시트에 합쳐, dev/minigame-phone-search의 아이템 창과
+// 같은 3열 둥근 사각 그리드로 보여준다. presentEvidenceRules/
+// defaultPresentReaction은 dev/data/interactionDefs.js에 있고(Phase 5
+// 재검증 콘텐츠), 매칭된 rule의 result(correct/partial/interesting/wrong/
+// blocked, §8.2)는 점수나 진행을 막지 않고 반응 텍스트/effects만 바꾼다
+// (§8.4). 증거는 CASE FILE 메뉴의 증거 탭(dev/caseMenu.js
+// renderEvidenceTabBody)과 같은 분류(EVIDENCE_CATEGORY_ORDER/
+// evidenceCategoryLabel)로 묶는다 — 두 화면이 다른 분류를 보이면 헷갈린다.
+const PRESENT_EVIDENCE_CATEGORY_ICON = { physical: '📦', photo: '🖼️', testimony: '🗣️', record: '📄', etc: '❔' };
+let presentTab = 'evidence';
+function renderPresentTiles(characterId) {
+  const tabsHtml = `
+    <div class="present-tabs">
+      <button class="present-tab${presentTab === 'person' ? ' active' : ''}" data-tab="person">인물</button>
+      <button class="present-tab${presentTab === 'evidence' ? ' active' : ''}" data-tab="evidence">증거</button>
     </div>
   `;
-  const rowHtml = (ev) => `<button class="topic-row" data-evidence="${ev.id}"><div class="topic-row-main">${escapeHtml(ev.title)}</div></button>`;
-  const listHtml = evidencePresentFilter !== 'all'
-    ? items.filter(ev => (ev.category || 'etc') === evidencePresentFilter).map(rowHtml).join('')
-    : cats.map(c => `
+  if (presentTab === 'person') {
+    const persons = CaseFileState.getPersons().filter(p => p.id !== characterId);
+    el.listSheetBody.innerHTML = tabsHtml + (persons.length ? `
+      <div class="present-grid">${persons.map(p => `
+        <button class="present-tile" data-person="${p.id}">
+          <span class="present-tile-icon round" id="presentTileIcon-${p.id}">${escapeHtml((p.name || '?')[0])}</span>
+          <span class="present-tile-label">${escapeHtml(p.name)}</span>
+        </button>
+      `).join('')}</div>
+    ` : '<div class="empty-note">아직 물어볼 만한 인물이 없습니다.</div>');
+    el.listSheetBody.querySelectorAll('[data-person]').forEach(btn => btn.addEventListener('click', () => {
+      el.listSheet.classList.add('hidden');
+      showToastLine(characterId, '음, 그 사람에 대해서는 딱히 할 말이 없는데.');
+    }));
+    persons.forEach(async (p) => {
+      const assetId = DevGameState.getCharacterAssetId(p.id, 'neutral');
+      const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
+      const host = document.getElementById(`presentTileIcon-${p.id}`);
+      if (host && asset && asset.dataUrl) host.innerHTML = `<img src="${asset.dataUrl}" alt="">`;
+    });
+  } else {
+    const items = CaseFileState.getEvidence();
+    if (!items.length) {
+      el.listSheetBody.innerHTML = tabsHtml + '<div class="empty-note">아직 제시할 증거가 없습니다.</div>';
+    } else {
+      const cats = EVIDENCE_CATEGORY_ORDER.filter(c => items.some(ev => (ev.category || 'etc') === c));
+      el.listSheetBody.innerHTML = tabsHtml + cats.map(c => `
         <div class="sheet-section-label">${evidenceCategoryLabel(c)}</div>
-        ${items.filter(ev => (ev.category || 'etc') === c).map(rowHtml).join('')}
+        <div class="present-grid">${items.filter(ev => (ev.category || 'etc') === c).map(ev => `
+          <button class="present-tile" data-evidence="${ev.id}">
+            <span class="present-tile-icon">${PRESENT_EVIDENCE_CATEGORY_ICON[ev.category] || PRESENT_EVIDENCE_CATEGORY_ICON.etc}</span>
+            <span class="present-tile-label">${escapeHtml(ev.title)}</span>
+          </button>
+        `).join('')}</div>
       `).join('');
-  el.listSheetBody.innerHTML = filterBar + listHtml;
-  el.listSheetBody.querySelectorAll('[data-evidence-filter]').forEach(btn => btn.addEventListener('click', () => {
-    evidencePresentFilter = btn.dataset.evidenceFilter;
-    openEvidenceSheet(characterId);
+    }
+    el.listSheetBody.querySelectorAll('[data-evidence]').forEach(btn => btn.addEventListener('click', () => {
+      el.listSheet.classList.add('hidden');
+      const rule = presentEvidenceRules.find(r => r.characterId === characterId && r.evidenceId === btn.dataset.evidence && (!r.phase || r.phase === ExplorationState.getCurrentPhase()));
+      const outcome = rule || defaultPresentReaction;
+      if (rule && (rule.result === 'correct' || rule.result === 'partial')) (rule.effects || []).forEach(applyLocalEffect);
+      showToastLine(characterId, outcome.reactionText);
+    }));
+  }
+  el.listSheetBody.querySelectorAll('[data-tab]').forEach(btn => btn.addEventListener('click', () => {
+    presentTab = btn.dataset.tab;
+    renderPresentTiles(characterId);
   }));
-  el.listSheetBody.querySelectorAll('[data-evidence]').forEach(btn => btn.addEventListener('click', () => {
-    el.listSheet.classList.add('hidden');
-    const rule = presentEvidenceRules.find(r => r.characterId === characterId && r.evidenceId === btn.dataset.evidence && (!r.phase || r.phase === ExplorationState.getCurrentPhase()));
-    const outcome = rule || defaultPresentReaction;
-    if (rule && (rule.result === 'correct' || rule.result === 'partial')) (rule.effects || []).forEach(applyLocalEffect);
-    showToastLine(characterId, outcome.reactionText);
-  }));
-  el.listSheet.classList.remove('hidden');
 }
-
-function openAskAboutSheet(characterId) {
-  const persons = CaseFileState.getPersons().filter(p => p.id !== characterId);
-  el.listSheetTitle.textContent = '인물에 대해 묻기';
-  el.listSheetBody.innerHTML = persons.length ? persons.map(p => `
-    <button class="topic-row" data-person="${p.id}"><div class="topic-row-main">${escapeHtml(p.name)}에 대해</div></button>
-  `).join('') : '<div class="empty-note">아직 물어볼 만한 인물이 없습니다.</div>';
-  el.listSheetBody.querySelectorAll('[data-person]').forEach(btn => btn.addEventListener('click', () => {
-    el.listSheet.classList.add('hidden');
-    showToastLine(characterId, '음, 그 사람에 대해서는 딱히 할 말이 없는데.');
-  }));
+function openPresentSheet(characterId) {
+  presentTab = 'evidence';
+  el.listSheetTitle.textContent = '제시하기';
+  renderPresentTiles(characterId);
   el.listSheet.classList.remove('hidden');
 }
 
@@ -945,6 +964,9 @@ function setInvestigateMode(on) {
   // 뜨는 investigateCloseBtn으로 끌 수 있다.
   el.bottomBar.classList.toggle('hidden', on);
   el.investigateCloseBtn.classList.toggle('hidden', !on);
+  // 캐릭터가 배경 위에 서 있으면 핫스팟을 가리고 몰입도 깨므로, 조사하기 중엔
+  // 잠깐 숨겼다가 끌 때 다시 페이드인시킨다.
+  el.locCharStage.classList.toggle('show', !on && !!currentCharacterId);
   if (on) {
     renderInvestigateHotspots();
     el.charPosSlider.classList.add('hidden'); // investigate-hint와 같은 자리 — 조사 중엔 화면 조작이 우선
