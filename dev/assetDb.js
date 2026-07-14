@@ -648,6 +648,104 @@ const AssetDB = (() => {
   const locationsCache = new Map(); // single entry keyed 'catalog'
   const LOCATIONS_PATH = 'locations/catalog.json';
 
+  // CaseEntry 메타데이터 카탈로그 (증거·증언·추리메모 재설계 §7.3) —
+  // groupId/presentable/relatedNpcIds/topicTags/이미지 명세 등 화면 구성용
+  // 오버레이. 원본 증거 정의(dialogueData.js의 addEvidence 호출)는 절대
+  // 건드리지 않고, 이 카탈로그만으로 그룹 병합/제시 가능 여부/태그를 조정한다.
+  // getLocations/setLocation과 완전히 동일한 단일 JSON blob 패턴.
+  const caseEntryMetaCache = new Map(); // single entry keyed 'catalog'
+  const CASE_ENTRY_META_PATH = 'case-entries/catalog.json';
+
+  async function getCaseEntryMeta() {
+    if (caseEntryMetaCache.has('catalog')) return caseEntryMetaCache.get('catalog');
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${CASE_ENTRY_META_PATH}?t=${Date.now()}`;
+    try {
+      const map = (await fetchJsonBlob(url)) || {};
+      caseEntryMetaCache.set('catalog', map);
+      return map;
+    } catch (e) {
+      return caseEntryMetaCache.get('catalog') || {};
+    }
+  }
+
+  async function setCaseEntryMeta(entryId, def) {
+    if (!entryId) return {};
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${CASE_ENTRY_META_PATH}?t=${Date.now()}`;
+    const current = await readCurrentForWrite(caseEntryMetaCache, 'catalog', url, {});
+    const map = Object.assign({}, current);
+    if (def) map[entryId] = def; else delete map[entryId];
+    const blob = new Blob([JSON.stringify(map)], { type: 'application/json' });
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${DEV_ASSETS_BUCKET}/${CASE_ENTRY_META_PATH}`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'x-upsert': 'true',
+      },
+      body: blob,
+    });
+    if (!res.ok) throw new Error(`사건 카드 메타 저장 실패 (${res.status}): ${await res.text()}`);
+    caseEntryMetaCache.set('catalog', map);
+    return map;
+  }
+
+  // 스프라이트 시트 매니페스트 (§10.9) — 시트마다 파일 하나 대신, 다른
+  // 카탈로그들과 똑같이 시트 전체를 한 JSON blob으로 묶는다. 이유는 이
+  // 프로젝트에 "Storage 안 파일 목록 조회" API가 아예 안 쓰이고 있어서
+  // (모든 카탈로그가 단일 blob 패턴) — 시트가 늘어나도 새 리소스나 목록
+  // API 없이 이 한 파일의 키만 늘어난다.
+  const caseEntrySheetsCache = new Map(); // single entry keyed 'catalog'
+  const CASE_ENTRY_SHEETS_PATH = 'case-entry-sheets/manifests.json';
+
+  async function getSpriteSheetManifests() {
+    if (caseEntrySheetsCache.has('catalog')) return caseEntrySheetsCache.get('catalog');
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${CASE_ENTRY_SHEETS_PATH}?t=${Date.now()}`;
+    try {
+      const map = (await fetchJsonBlob(url)) || {};
+      caseEntrySheetsCache.set('catalog', map);
+      return map;
+    } catch (e) {
+      return caseEntrySheetsCache.get('catalog') || {};
+    }
+  }
+  async function getSpriteSheetManifest(sheetId) { return (await getSpriteSheetManifests())[sheetId] || null; }
+
+  async function setSpriteSheetManifest(sheetId, manifest) {
+    if (!sheetId) return {};
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${CASE_ENTRY_SHEETS_PATH}?t=${Date.now()}`;
+    const current = await readCurrentForWrite(caseEntrySheetsCache, 'catalog', url, {});
+    const map = Object.assign({}, current);
+    if (manifest) map[sheetId] = manifest; else delete map[sheetId];
+    const blob = new Blob([JSON.stringify(map)], { type: 'application/json' });
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${DEV_ASSETS_BUCKET}/${CASE_ENTRY_SHEETS_PATH}`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'x-upsert': 'true',
+      },
+      body: blob,
+    });
+    if (!res.ok) throw new Error(`스프라이트 시트 매니페스트 저장 실패 (${res.status}): ${await res.text()}`);
+    caseEntrySheetsCache.set('catalog', map);
+    return map;
+  }
+
+  // caseMenu.js/game/explore의 렌더 경로는 전부 동기 함수라 위 async 조회를
+  // 매 렌더마다 await할 수 없다 — 페이지 로드 시 한 번 프리페치해 동기
+  // 조회용 캐시에 실어두고, 이후 재조회는 이 캐시에서 즉시 반환한다(§Phase
+  // 2). 프리페치가 아직 안 끝났으면 빈 객체를 반환 — caseEntryModel.js가
+  // 코드 내장 기본 카탈로그(CASE_ENTRY_META_DEFAULTS)와 합쳐 쓰므로 화면이
+  // 비어 보이는 일은 없다.
+  let caseEntryMetaSyncCache = null;
+  async function prefetchCaseEntryMeta() {
+    caseEntryMetaSyncCache = await getCaseEntryMeta().catch(() => ({}));
+    return caseEntryMetaSyncCache;
+  }
+  function getCaseEntryMetaCached() { return caseEntryMetaSyncCache || {}; }
+
   async function getLocations() {
     if (locationsCache.has('catalog')) return locationsCache.get('catalog');
     const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${LOCATIONS_PATH}?t=${Date.now()}`;
@@ -866,6 +964,8 @@ const AssetDB = (() => {
     getSceneLocationMap, setSceneLocation, primeSceneLocationMap,
     getMapPins, setMapPin,
     getCharacterPositions, setCharacterPosition,
+    getCaseEntryMeta, setCaseEntryMeta, prefetchCaseEntryMeta, getCaseEntryMetaCached,
+    getSpriteSheetManifests, getSpriteSheetManifest, setSpriteSheetManifest,
   };
 })();
 

@@ -286,8 +286,10 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('/dev/sw.js',
 <script src="/dev/data/locationDefs.js"></script>
 <script src="/dev/data/interactionDefs.js"></script>
 <script src="/dev/state/explorationState.js"></script>
+<script src="/dev/caseEntryModel.js"></script>
 <script src="/dev/vnPlayer.js"></script>
 <script src="/dev/caseMenu.js"></script>
+<script src="/dev/caseEntryUI.js"></script>
 <script>
 /* ===== Exploration hub (The Missing Key v1 §7) — a single page that swaps
    between map/location/sheet/dialogue "views" instead of separate routed
@@ -833,57 +835,51 @@ function openTopicList(characterId) {
   el.listSheet.classList.remove('hidden');
 }
 
-// 증거 제시 (spec §8) — presentEvidenceRules/defaultPresentReaction now live
-// in dev/data/interactionDefs.js (real content for Phase 5 재검증, see that
-// file) so both the hub and any future page can share the same rule table.
-// A matched rule's `result` (correct/partial/interesting/wrong/blocked, §8.2)
-// never costs points or blocks progress either way (§8.4) — it only changes
-// the reaction text and, for correct/partial, may carry effects (addFact 등).
-// 목록은 CASE FILE 메뉴의 증거 탭(dev/caseMenu.js renderEvidenceTabBody)과
-// 같은 분류(EVIDENCE_CATEGORY_ORDER/evidenceCategoryLabel)로 묶고, 같은 종류별
-// 필터 칩(cm-filter-row/cm-filter-chip — initCaseMenu가 이미 전역 <style>로
-// 주입해둔 클래스)도 그대로 쓴다 — 세 화면이 서로 다른 분류/필터 UI를 보여주면
-// 헷갈리니 하나의 소스만 쓴다.
-let evidencePresentFilter = 'all';
+// 증거 제시 (§Phase 4 — CaseEntryUI 공용 렌더로 통합). presentEvidenceRules/
+// defaultPresentReaction은 dev/data/interactionDefs.js에 그대로 두고
+// (result 5분류·페널티 없음 원칙도 그대로, §8.2/§8.4), 여기서는 목록을
+// CASE FILE 메뉴/대화 중 시트와 같은 CaseEntryUI.renderPresentSheetHtml로
+// 그려 "관련 항목" 탭이 기본으로 열리게 한다.
+let evidencePresentTab = 'related';
+let evidencePresentSelectedId = null;
 function openEvidenceSheet(characterId) {
-  const items = CaseFileState.getEvidence();
+  evidencePresentTab = 'related'; // §9.2 매번 새로 열 때 "관련 항목"으로 초기화
+  evidencePresentSelectedId = null;
   el.listSheetTitle.textContent = '증거 제시';
-  if (!items.length) {
-    el.listSheetBody.innerHTML = '<div class="empty-note">아직 제시할 증거가 없습니다.</div>';
-    el.listSheet.classList.remove('hidden');
-    return;
-  }
-  const cats = EVIDENCE_CATEGORY_ORDER.filter(c => items.some(ev => (ev.category || 'etc') === c));
-  if (evidencePresentFilter !== 'all' && !cats.includes(evidencePresentFilter)) evidencePresentFilter = 'all';
-  const filterBar = `
-    <div class="cm-filter-row">
-      <button class="cm-filter-chip${evidencePresentFilter === 'all' ? ' cm-filter-chip-active' : ''}" data-evidence-filter="all">전체 ${items.length}</button>
-      ${cats.map(c => {
-        const count = items.filter(ev => (ev.category || 'etc') === c).length;
-        return `<button class="cm-filter-chip${evidencePresentFilter === c ? ' cm-filter-chip-active' : ''}" data-evidence-filter="${c}">${evidenceCategoryLabel(c)} ${count}</button>`;
-      }).join('')}
-    </div>
-  `;
-  const rowHtml = (ev) => `<button class="topic-row" data-evidence="${ev.id}"><div class="topic-row-main">${escapeHtml(ev.title)}</div></button>`;
-  const listHtml = evidencePresentFilter !== 'all'
-    ? items.filter(ev => (ev.category || 'etc') === evidencePresentFilter).map(rowHtml).join('')
-    : cats.map(c => `
-        <div class="sheet-section-label">${evidenceCategoryLabel(c)}</div>
-        ${items.filter(ev => (ev.category || 'etc') === c).map(rowHtml).join('')}
-      `).join('');
-  el.listSheetBody.innerHTML = filterBar + listHtml;
-  el.listSheetBody.querySelectorAll('[data-evidence-filter]').forEach(btn => btn.addEventListener('click', () => {
-    evidencePresentFilter = btn.dataset.evidenceFilter;
-    openEvidenceSheet(characterId);
+  renderPresentSheetBody(characterId);
+  el.listSheet.classList.remove('hidden');
+}
+function renderPresentSheetBody(characterId) {
+  const ctx = {
+    npcId: characterId,
+    topicTags: [],
+    week: (typeof ExplorationState !== 'undefined' && ExplorationState.getCurrentWeek) ? ExplorationState.getCurrentWeek() : null,
+    activeTab: evidencePresentTab,
+    selectedId: evidencePresentSelectedId,
+    maxSuggested: 6,
+  };
+  el.listSheetBody.innerHTML = CaseEntryUI.renderPresentSheetHtml(CaseFileState.getCaseEntries(), ctx);
+  CaseEntryUI.hydrateCaseEntryIcons(el.listSheetBody);
+  el.listSheetBody.querySelectorAll('[data-present-tab]').forEach(btn => btn.addEventListener('click', () => {
+    evidencePresentTab = btn.dataset.presentTab;
+    evidencePresentSelectedId = null;
+    renderPresentSheetBody(characterId);
   }));
-  el.listSheetBody.querySelectorAll('[data-evidence]').forEach(btn => btn.addEventListener('click', () => {
+  el.listSheetBody.querySelectorAll('[data-present-entry]').forEach(btn => btn.addEventListener('click', () => {
+    evidencePresentSelectedId = evidencePresentSelectedId === btn.dataset.presentEntry ? null : btn.dataset.presentEntry;
+    renderPresentSheetBody(characterId);
+  }));
+  el.listSheetBody.querySelectorAll('[data-present-confirm]').forEach(btn => btn.addEventListener('click', () => {
+    const entryId = btn.dataset.presentConfirm;
     el.listSheet.classList.add('hidden');
-    const rule = presentEvidenceRules.find(r => r.characterId === characterId && r.evidenceId === btn.dataset.evidence && (!r.phase || r.phase === ExplorationState.getCurrentPhase()));
+    const rule = presentEvidenceRules.find(r => r.characterId === characterId && r.evidenceId === entryId && (!r.phase || r.phase === ExplorationState.getCurrentPhase()));
     const outcome = rule || defaultPresentReaction;
     if (rule && (rule.result === 'correct' || rule.result === 'partial')) (rule.effects || []).forEach(applyLocalEffect);
+    // already_used 파생 판정용(§9.5) — scorePresentRelevance의 "이미 같은
+    // NPC에게 제시했으며 변화 없음 -3"(§9.3)이 이 플래그를 읽는다.
+    CaseFileState.setFlag('presented:' + characterId + ':' + entryId, true);
     showToastLine(characterId, outcome.reactionText);
   }));
-  el.listSheet.classList.remove('hidden');
 }
 
 function openAskAboutSheet(characterId) {
