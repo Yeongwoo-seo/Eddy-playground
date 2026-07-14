@@ -998,11 +998,10 @@ const AssetDB = (() => {
   // 나뉜 카탈로그가 아니라 항상 같은 키 하나만 읽고 쓴다).
   const gameSettingsCache = new Map(); // single entry keyed 'settings'
   const GAME_SETTINGS_PATH = 'game-settings/settings.json';
-  // dev/explore/index.html에 지금 하드코딩돼 있던 값(#324 기준) — 저장된
-  // 값이 아직 없을 때(첫 사용)의 기본값이자, /dev/settings/가 "현재 값으로"
-  // 되돌릴 때 쓰는 기준값이기도 하다.
+  // /dev/settings/에서 슬라이더로 맞춰본 뒤 최종 확정한 값 — 저장된 값이
+  // 아직 없을 때(첫 사용)의 기본값이다.
   const DEFAULT_GAME_SETTINGS = {
-    moveFade: { durationMs: 300, holdMs: 40, x1: 0.2, y1: 0.8, x2: 0.2, y2: 1 },
+    moveFade: { durationMs: 520, holdMs: 210, x1: 0.2, y1: 0.8, x2: 0.2, y2: 1 },
   };
 
   async function getGameSettings() {
