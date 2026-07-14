@@ -35,8 +35,13 @@
    own pin on a city map (서큘러키/오페라/하버브리지/더 록스처럼 지도에서
    서로 다른 지점). A location reached only *within* another spot (가게/전시장
    입구 등, 골목 안쪽이라 지도에 따로 찍기 애매한 곳)는 이 필드를 생략한다 —
-   이동하기 시트(openMoveSheet, dev/explore/index.html)가 그런 exit는 지도
-   대신 그 아래 보통 리스트 줄로 보여준다. */
+   이동하기 시트(openMoveSheet, dev/explore/index.html)가 그런 위치는 지도
+   대신 그 아래 보통 리스트 줄로 보여준다.
+
+   `exits` — 같은 phase 안에서 이동하기가 갈 수 있는 곳을 이 배열로 제한하던
+   때가 있었지만(§물리적 인접), 지금은 순전히 참고용 스토리·공간 관계
+   기록이다 — 실제 이동하기는 그 phase에 속한 모든 위치를 목적지로 보여준다
+   (openMoveSheet). 코드에서 이 필드를 더 읽는 곳은 없다. */
 
 const locationDefs = {
   'w1-circular-quay': {
