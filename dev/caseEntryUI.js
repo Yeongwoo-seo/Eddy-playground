@@ -24,12 +24,16 @@ function presentSheetEntriesForTab(presentableEntries, ctx) {
 // 오답 카드도 일부 섞여 있어야 한다는 원칙(§9.3 "정답 하나만 남도록 강하게
 // 필터링하지 않는다")은 scorePresentRelevance/getRelevantPresentEntries 쪽
 // 책임이고, 여기는 그 결과를 그대로 그린다.
-function renderPresentSheetHtml(allEntries, ctx) {
+//
+// renderPresentGridHtml은 탭 바 없이 그리드+확인바만 그린다 — 호출부가
+// 자체 탭 바(예: dev/explore/index.html처럼 인물 탭을 하나 더 붙이는 경우)를
+// 따로 그려야 할 때 재사용한다. 탭 바까지 포함한 완전한 시트가 필요하면
+// renderPresentSheetHtml을 쓴다(dev/game/index.html처럼 4탭이면 충분한 경우).
+function renderPresentGridHtml(allEntries, ctx) {
   ctx = ctx || {};
   const activeTab = ctx.activeTab || 'related';
   const presentable = allEntries.filter(e => e.presentable && e.status !== 'superseded' && e.status !== 'invalid');
   if (!presentable.length) return '<div class="cm-empty">아직 제시할 수 있는 증거나 증언이 없습니다.</div>';
-  const tabBar = `<div class="cm-tabbar ces-tabbar">${CASE_ENTRY_PRESENT_TABS.map(t => `<button class="cm-tab${t.id === activeTab ? ' cm-tab-active' : ''}" data-present-tab="${t.id}">${t.label}</button>`).join('')}</div>`;
   const list = presentSheetEntriesForTab(presentable, Object.assign({}, ctx, { activeTab }));
   const selected = ctx.selectedId ? list.find(e => e.id === ctx.selectedId) : null;
   const emptyMsg = activeTab === 'related' ? '현재 대화와 관련된 항목이 없습니다. 다른 탭에서 골라보세요.' : '표시할 항목이 없습니다.';
@@ -42,7 +46,31 @@ function renderPresentSheetHtml(allEntries, ctx) {
       <button class="ces-confirm-btn" data-present-confirm="${selected.id}">제시하기</button>
     </div>
   ` : '';
-  return tabBar + gridHtml + confirmHtml;
+  return gridHtml + confirmHtml;
+}
+function renderPresentSheetHtml(allEntries, ctx) {
+  ctx = ctx || {};
+  const activeTab = ctx.activeTab || 'related';
+  const tabBar = `<div class="cm-tabbar ces-tabbar">${CASE_ENTRY_PRESENT_TABS.map(t => `<button class="cm-tab${t.id === activeTab ? ' cm-tab-active' : ''}" data-present-tab="${t.id}">${t.label}</button>`).join('')}</div>`;
+  return tabBar + renderPresentGridHtml(allEntries, ctx);
+}
+
+// 인물 카드 — 제시하기 시트의 "인물" 탭이 증거/증언 카드와 같은 ces-card
+// 목록형으로 보이도록 공용화(§Phase 4 재조정 — 3열 타일 그리드 대신 이
+// 리스트형 카드로 통일). 얼굴 사진은 caseEntryIconHtml과 마찬가지로 비동기
+// 배치 조회 후 갈아끼우므로 data-icon-asset이 아니라 별도 data-person-icon
+// 마커를 쓴다(자산 조회 방식이 AssetDB.getCharacterAssetId를 거쳐야 해서
+// hydrateCaseEntryIcons의 dev_assets id 조회와 소스가 다름 — 호출부가 직접
+// 채운다).
+function casePersonCardHtml(person) {
+  return `
+    <button class="ces-card" data-present-person="${person.id}">
+      <span class="ces-card-icon ces-card-icon-round" data-person-icon="${person.id}">${escapeHtml((person.name || '?')[0])}</span>
+      <div class="ces-card-body">
+        <div class="ces-card-title">${escapeHtml(person.name)}</div>
+      </div>
+    </button>
+  `;
 }
 
 function caseEntryPresentCardHtml(entry, selected) {
@@ -104,8 +132,10 @@ function injectCaseEntryUIStyles() {
     .ces-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
     .ces-card{display:flex;flex-direction:column;align-items:flex-start;gap:6px;background:#171F29;border:1px solid rgba(255,255,255,.10);border-radius:14px;padding:10px 12px;text-align:left;cursor:pointer;font-family:inherit;color:inherit;-webkit-tap-highlight-color:transparent}
     .ces-card-selected{border-color:rgba(76,184,212,.7);background:rgba(76,184,212,.1)}
-    .ces-card-icon{font-size:20px;line-height:1;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;flex-shrink:0}
+    .ces-card-icon{font-size:20px;line-height:1;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;flex-shrink:0;background:rgba(255,255,255,.04);border-radius:8px}
+    .ces-card-icon-round{border-radius:50%;font-weight:700;color:#C9D1D9}
     .ces-icon-img{width:32px;height:32px;object-fit:cover;border-radius:8px}
+    .ces-card-icon-round .ces-icon-img{border-radius:50%}
     .ces-card-title{font-size:13px;font-weight:700;color:#E7ECF1}
     .ces-card-summary{font-size:11.5px;color:#7E8791;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:2px}
     .ces-card-kind{font-size:10px;color:#4CB8D4;font-weight:700;letter-spacing:.04em}
@@ -116,4 +146,4 @@ function injectCaseEntryUIStyles() {
   document.head.appendChild(style);
 }
 
-const CaseEntryUI = { renderPresentSheetHtml, caseEntryIconHtml, hydrateCaseEntryIcons, injectCaseEntryUIStyles, CASE_ENTRY_PRESENT_TABS };
+const CaseEntryUI = { renderPresentSheetHtml, renderPresentGridHtml, casePersonCardHtml, caseEntryIconHtml, hydrateCaseEntryIcons, injectCaseEntryUIStyles, CASE_ENTRY_PRESENT_TABS };
