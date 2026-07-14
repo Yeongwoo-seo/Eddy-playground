@@ -190,6 +190,17 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .sheet{width:100%;max-width:430px;background:var(--surface-1);border-radius:20px 20px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom,0));border-top:1px solid var(--divider);max-height:78vh;overflow-y:auto}
 .sheet-title{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--text-muted);margin-bottom:14px;text-transform:uppercase}
 
+/* 이동하기 지도 시트만 슬라이드업으로 뜬다(showMoveMapSheet/hideMoveMapSheet) —
+   .hidden(display:none)을 뗀 직후 바로 .show를 붙이면 브라우저가 두 스타일
+   변화를 한 프레임에 묶어버려 트랜지션이 안 보이므로, 시작 상태(opacity:0 +
+   시트 translateY(100%))가 먼저 한 번 페인트된 뒤에 .show를 붙여야 한다(더블
+   rAF). 닫을 때는 반대로 .show를 먼저 떼 애니메이션을 재생시키고, 그 트랜지션
+   길이(.3s)만큼 기다린 뒤에야 .hidden을 붙여 레이아웃에서 뺀다. */
+#moveMapSheet{opacity:0;transition:opacity .3s cubic-bezier(0.2,0.8,0.2,1)}
+#moveMapSheet .sheet{transform:translateY(100%);transition:transform .3s cubic-bezier(0.2,0.8,0.2,1)}
+#moveMapSheet.show{opacity:1}
+#moveMapSheet.show .sheet{transform:translateY(0)}
+
 /* ===== 이동하기 지도 — phaseMaps(dev/data/locationDefs.js)가 정의된 phase는
    exit 목록을 리스트 대신 지도 그림 위 원형 핀으로 보여준다(openMoveMapSheet).
    loc-canvas처럼 픽셀 단위 팬/줌은 필요 없는 정적 오버뷰라, 고정 aspect-ratio
@@ -857,9 +868,25 @@ function renderExitListRows(container, exitDefs, emptyText) {
   ).join('') : (emptyText ? `<div class="empty-note">${emptyText}</div>` : '');
   container.querySelectorAll('[data-exit]').forEach(btn => btn.addEventListener('click', () => {
     el.listSheet.classList.add('hidden');
-    el.moveMapSheet.classList.add('hidden');
+    hideMoveMapSheet();
     moveTo(btn.dataset.exit);
   }));
+}
+
+// #moveMapSheet slides up/down (see its CSS) instead of the other sheets'
+// plain hidden-class toggle — removing .hidden and adding .show in the same
+// tick would let the browser coalesce both style changes into one frame and
+// skip the transition entirely, so the opening side needs the initial
+// (hidden-just-removed) state to actually paint before .show is added
+// — hence the double rAF. Closing plays the transition first and only adds
+// .hidden back (pulling it out of layout) once that's had time to finish.
+function showMoveMapSheet() {
+  el.moveMapSheet.classList.remove('hidden');
+  requestAnimationFrame(() => requestAnimationFrame(() => el.moveMapSheet.classList.add('show')));
+}
+function hideMoveMapSheet() {
+  el.moveMapSheet.classList.remove('show');
+  setTimeout(() => el.moveMapSheet.classList.add('hidden'), 300);
 }
 
 // 이동하기 — 같은 phase 안이면 지금 있는 곳과 무관하게 어디든 바로 갈 수
@@ -888,7 +915,7 @@ async function openMoveMapSheet(phaseMap, mapDests, listDests) {
   const currentDef = locationDefs[currentId];
   el.moveMapPins.innerHTML = '';
   el.moveMapWrap.style.backgroundImage = '';
-  el.moveMapSheet.classList.remove('hidden');
+  showMoveMapSheet();
 
   // 좌표는 locationDefs.js의 정적 mapPosition이 기본값, /dev/upload 탐색허브
   // 탭의 지도 핀 편집기가 저장한 override(AssetDB.getMapPins)가 있으면 그게
@@ -915,7 +942,7 @@ async function openMoveMapSheet(phaseMap, mapDests, listDests) {
     btn.style.top = pos.y + '%';
     btn.innerHTML = `<span class="move-pin-label">${escapeHtml(destDef.name)}</span>`;
     btn.addEventListener('click', () => {
-      el.moveMapSheet.classList.add('hidden');
+      hideMoveMapSheet();
       moveTo(destDef.id);
     });
     el.moveMapPins.appendChild(btn);
@@ -946,7 +973,7 @@ async function openMoveMapSheet(phaseMap, mapDests, listDests) {
     el.moveMapWrap.style.backgroundImage = `url(${asset.dataUrl})`;
   }
 }
-el.moveMapCloseBtn.addEventListener('click', () => el.moveMapSheet.classList.add('hidden'));
+el.moveMapCloseBtn.addEventListener('click', () => hideMoveMapSheet());
 
 // 대화하기 — casual topics and 'minigame'-type hand-offs (하버 포토, §12.3)
 // share one list instead of a separate "말 걸기" quick-pick step. 심문하기류
