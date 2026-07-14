@@ -122,9 +122,10 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 
 /* ===== Location character chips — who's actually standing here, shown
    above the goal line so presence isn't hidden behind the 대화 sheet. A
-   location can list more than one character (§신규); the first one is the
-   default selection (currentCharacterId, see renderLocationCharacters) and
-   a chip switches which one 대화하기/증거 제시 act on — see selectLocationCharacter. ===== */
+   location can list more than one character (§신규); only the phase's first
+   location auto-picks the first one as the default selection
+   (currentCharacterId, see renderLocationCharacters) — a chip switches which
+   one 대화하기/증거 제시 act on — see selectLocationCharacter. ===== */
 .loc-characters{display:flex;gap:8px;margin-bottom:10px;overflow-x:auto}
 .loc-characters:empty{display:none;margin-bottom:0}
 .loc-char-chip{flex-shrink:0;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:5px 12px 5px 5px;color:var(--text-primary);font-family:inherit;cursor:pointer}
@@ -591,9 +592,8 @@ function performMove(locationId) {
 /* ===== Hub action bar (조사/대화/제시/이동) =====
    Replaces the old per-character chip + action-sheet flow: each location
    carries at most one person, but a location can list several (§신규) —
-   currentCharacterId tracks which one 대화/제시 currently act on, defaulting
-   to the first in def.characters and switchable via a chip tap
-   (selectLocationCharacter). */
+   currentCharacterId tracks which one 대화/제시 currently act on, switchable
+   via a chip tap (selectLocationCharacter). */
 let currentCharacterId = null;
 function locationCharacters() {
   const def = locationDefs[ExplorationState.getCurrentLocationId()];
@@ -601,13 +601,24 @@ function locationCharacters() {
 }
 
 // ===== 장소에 있는 사람 캐릭터 표시 (§신규) — 지금 이 장소에 누가 있는지
-// 초상화 chip으로 보여준다. 여럿이면 첫 번째가 기본 선택(currentCharacterId)
-// — chip을 누르면 선택이 그 인물로 바뀌고(active 표시), 화면 중앙의 캐릭터도
-// 페이드아웃 후 그 인물로 페이드인한다(selectLocationCharacter/setLocCharStage).
-// 대화하기/증거 제시는 지금 선택된 인물을 대상으로 한다. */
+// 초상화 chip으로 보여준다. chip을 누르면 선택이 그 인물로 바뀌고(active
+// 표시), 화면 중앙의 캐릭터도 페이드아웃 후 그 인물로 페이드인한다
+// (selectLocationCharacter/setLocCharStage). 대화하기/증거 제시는 지금
+// 선택된 인물을 대상으로 한다.
+//
+// 자동 선택은 그 phase에 들어와서 처음 보는 장소에서만 첫 번째 인물로
+// 골라준다(charAutoPickPhase로 "이 phase는 이미 한 번 자동 선택했다"를
+// 기억) — 영우처럼 여러 장소에 계속 나오는 인물이 매 장소 이동마다 다시
+// 자동 선택되는 걸 막기 위함이다. 그 이후로는 지금 선택 그대로 유지하거나
+// (새 장소에도 있으면), 없으면 선택 없음(null)으로 둔다 — 플레이어가 직접
+// chip을 눌러야 한다. */
+let charAutoPickPhase = null;
 async function renderLocationCharacters() {
   const chars = locationCharacters();
-  if (!chars.includes(currentCharacterId)) currentCharacterId = chars[0] || null;
+  const phase = ExplorationState.getCurrentPhase();
+  const isPhaseFirstLocation = phase !== charAutoPickPhase;
+  charAutoPickPhase = phase;
+  if (!chars.includes(currentCharacterId)) currentCharacterId = isPhaseFirstLocation ? (chars[0] || null) : null;
   el.locCharacters.innerHTML = chars.map(charId => {
     const person = dialogueCharacters.find(d => d.id === charId) || { name: charId };
     return `
