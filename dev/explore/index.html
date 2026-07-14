@@ -644,26 +644,30 @@ function locationCharacters() {
 // 선택된 인물을 대상으로 한다.
 //
 // 자동 선택은 기본적으로 그 장소의 첫 번째 인물이지만, 영우는 예외 —
-// 용의자/참고인과 달리 phase 내 거의 모든 장소에 계속 등장하는 인물이라
-// 그 규칙을 그대로 적용하면 장소를 옮길 때마다 매번 다시 자동 선택된다.
-// 그래서 영우는 그 phase에 들어와서 처음 보는 장소에서만 자동 선택하고
+// 용의자/참고인과 달리 phase 내 거의 모든 장소에 계속 등장하는 인물이라,
+// "지금 선택이 새 장소에도 있으면 그대로 유지"만으로는 매 장소에서 계속
+// 자동 선택된 것처럼 보인다(더 록스 골목처럼 phase의 첫 장소가 아닌 곳도
+// characters에 영우가 있으면 이전 자동 선택이 그냥 넘어가 버림). 그래서
+// 영우는 "플레이어가 직접 chip을 눌러 고른 경우"만 다음 장소로 넘어간다
+// (charIsManualPick) — 자동으로 골라진 선택은 장소를 옮기면 무효가 된다.
+// 그 phase에 들어와서 처음 보는 장소에서만 자동으로 골라주고
 // (youngwooAutoPickPhase로 "이 phase는 이미 한 번 자동 선택했다"를 기억),
-// 그 이후로는 지금 선택이 새 장소에도 있으면 그대로 유지, 없으면 선택
-// 없음(null)으로 둬서 플레이어가 직접 chip을 눌러야 한다. 영우가 아닌
-// 인물은 예전 그대로 매번 그 장소의 첫 번째 인물로 자동 선택된다. */
+// 그 이후로는 직접 고르지 않았다면 선택 없음(null)이 디폴트다. 영우가
+// 아닌 인물은 예전 그대로 매번 그 장소의 첫 번째 인물로 자동 선택된다. */
 const CHAR_ALWAYS_AUTO_PICK_ONCE_PER_PHASE = 'youngwoo';
 let youngwooAutoPickPhase = null;
+let charIsManualPick = false;
 async function renderLocationCharacters() {
   const chars = locationCharacters();
-  if (!chars.includes(currentCharacterId)) {
+  const phase = ExplorationState.getCurrentPhase();
+  const isPhaseFirstLocation = phase !== youngwooAutoPickPhase;
+  youngwooAutoPickPhase = phase;
+  if (charIsManualPick && chars.includes(currentCharacterId)) {
+    // 플레이어가 직접 고른 선택은 그 인물이 이 장소에도 있으면 유지한다.
+  } else {
+    charIsManualPick = false;
     const fallback = chars[0] || null;
-    if (fallback === CHAR_ALWAYS_AUTO_PICK_ONCE_PER_PHASE) {
-      const phase = ExplorationState.getCurrentPhase();
-      currentCharacterId = phase !== youngwooAutoPickPhase ? fallback : null;
-      youngwooAutoPickPhase = phase;
-    } else {
-      currentCharacterId = fallback;
-    }
+    currentCharacterId = (fallback === CHAR_ALWAYS_AUTO_PICK_ONCE_PER_PHASE && !isPhaseFirstLocation) ? null : fallback;
   }
   el.locCharacters.innerHTML = chars.map(charId => {
     const person = dialogueCharacters.find(d => d.id === charId) || { name: charId };
@@ -689,6 +693,7 @@ async function renderLocationCharacters() {
 function selectLocationCharacter(charId) {
   if (charId === currentCharacterId) return;
   currentCharacterId = charId;
+  charIsManualPick = true;
   el.locCharacters.querySelectorAll('[data-char]').forEach(chip => chip.classList.toggle('active', chip.dataset.char === charId));
   setLocCharStage(charId);
   renderInterrogateBtn();
