@@ -412,7 +412,7 @@ function renderMap() {
     const cls = ['loc-card'];
     if (!loc.unlocked) cls.push('locked');
     if (loc.current) cls.push('current');
-    const chars = (loc.characters || []).map(c => (dialogueCharacters.find(d => d.id === c) || { name: c }).name).join(', ');
+    const chars = (resolveByPhase(loc.characters, ExplorationState.getCurrentPhase()) || []).map(c => (dialogueCharacters.find(d => d.id === c) || { name: c }).name).join(', ');
     return `
       <div class="${cls.join(' ')}" data-goto="${loc.unlocked ? loc.id : ''}">
         ${loc.newInteractionCount ? `<div class="loc-badge">NEW ${loc.newInteractionCount}</div>` : ''}
@@ -563,10 +563,14 @@ function renderLocation() {
   // A location can hand off back into the VN (spec §12.2's soft-gate) — e.g.
   // 빈티지 전시장 입구's enterSceneId leaves the hub for good and resumes
   // week1-scene-003, unlike an `exits` chip which just moves within the hub.
-  el.enterSceneBtn.classList.toggle('hidden', !def.enterSceneId);
-  if (def.enterSceneId) {
-    el.enterSceneBtn.textContent = def.enterSceneLabel || '들어간다';
-    el.enterSceneBtn.onclick = () => { location.href = `/dev/game/?scene=${encodeURIComponent(def.enterSceneId)}`; };
+  // enterSceneId/enterSceneLabel can be phase-keyed (§신규 저작 관습) — e.g.
+  // w1-hub-plaza only offers "사건을 재구성한다" during W1_REVERIFICATION.
+  const phase = ExplorationState.getCurrentPhase();
+  const enterSceneId = resolveByPhase(def.enterSceneId, phase);
+  el.enterSceneBtn.classList.toggle('hidden', !enterSceneId);
+  if (enterSceneId) {
+    el.enterSceneBtn.textContent = resolveByPhase(def.enterSceneLabel, phase) || '들어간다';
+    el.enterSceneBtn.onclick = () => { location.href = `/dev/game/?scene=${encodeURIComponent(enterSceneId)}`; };
   }
 
   const goal = phaseGoals[ExplorationState.getCurrentPhase()];
@@ -638,10 +642,25 @@ async function performMove(locationId) {
    carries at most one person, but a location can list several (§신규) —
    currentCharacterId tracks which one 대화/제시 currently act on, switchable
    via a chip tap (selectLocationCharacter). */
+// phase-keyed 필드 (§신규 저작 관습, dev/data/locationDefs.js 상단 주석 참고) —
+// 같은 실제 장소가 phase마다 값이 달라야 할 때(characters/enterSceneId/
+// enterSceneLabel/mapPosition 등), 평범한 값 대신 `{ __byPhase: true, [phase]:
+// value }` 객체로 쓸 수 있게 한다. `__byPhase` 마커를 명시적으로 요구하는 이유 —
+// mapPosition의 "평범한" 값 자체가 이미 `{x,y}` 순수 객체라, "배열이 아닌
+// 객체면 phase-keyed"로 단순 판별하면 평범한 좌표까지 phase-keyed로 오인해
+// 엉뚱한 phase 키를 찾다가 null이 되어버린다 — 마커가 있을 때만 phase-keyed로
+// 취급해야 값 자체의 모양과 무관하게 안전하다.
+function resolveByPhase(value, phase) {
+  if (value == null) return null;
+  if (value && typeof value === 'object' && value.__byPhase) return value[phase] ?? null;
+  return value;
+}
+
 let currentCharacterId = null;
 function locationCharacters() {
   const def = locationDefs[ExplorationState.getCurrentLocationId()];
-  return (def && def.characters) || [];
+  if (!def) return [];
+  return resolveByPhase(def.characters, ExplorationState.getCurrentPhase()) || [];
 }
 
 // ===== 장소에 있는 사람 캐릭터 표시 (§신규) — 지금 이 장소에 누가 있는지
@@ -820,9 +839,9 @@ function openMoveSheet() {
   const phase = ExplorationState.getCurrentPhase();
   const destDefs = Object.values(locationDefs).filter(l => l.id !== currentId && (l.phases || []).includes(phase));
   const phaseMap = (typeof phaseMaps !== 'undefined') ? phaseMaps[phase] : null;
-  const mapDests = phaseMap ? destDefs.filter(d => d.mapPosition) : [];
+  const mapDests = phaseMap ? destDefs.filter(d => resolveByPhase(d.mapPosition, phase)) : [];
   if (phaseMap && mapDests.length) {
-    openMoveMapSheet(phaseMap, mapDests, destDefs.filter(d => !d.mapPosition));
+    openMoveMapSheet(phaseMap, mapDests, destDefs.filter(d => !resolveByPhase(d.mapPosition, phase)));
   } else {
     el.listSheetTitle.textContent = '이동하기';
     renderExitListRows(el.listSheetBody, destDefs, '지금은 이동할 곳이 없습니다.');
@@ -841,7 +860,12 @@ async function openMoveMapSheet(phaseMap, mapDests, listDests) {
   // 탭의 지도 핀 편집기가 저장한 override(AssetDB.getMapPins)가 있으면 그게
   // 우선한다 — 코드 수정 없이 실제 생성된 지도 그림 보면서 미세 조정 가능.
   const pinOverrides = await AssetDB.getMapPins().catch(() => ({}));
-  function pinPosition(locDef) { return pinOverrides[locDef.id] || locDef.mapPosition; }
+  // mapPosition can be phase-keyed (§신규 저작 관습) — e.g. w1-hub-plaza/
+  // w1-adrian-spot need different coordinates on the two different phase map
+  // images. pinOverrides itself isn't phase-aware yet (keyed by plain
+  // location id in /dev/upload's 지도 핀 편집기), so a manually-tuned override
+  // still applies to every phase that location appears in.
+  function pinPosition(locDef) { return pinOverrides[locDef.id] || resolveByPhase(locDef.mapPosition, ExplorationState.getCurrentPhase()); }
 
   // 현재 위치도 그 phase 지도에 좌표가 있으면 (cyan) 핀으로 같이 찍어 방향
   // 감각을 준다 — mapDests엔 없으니 분리해서 그린다.
@@ -1397,7 +1421,7 @@ function showEvidenceToast(text, correct) {
 // A finished interrogation scene's nextSceneId (see dev/dialogueData.js)
 // almost always resolves through MINIGAME_ROUTES (dev/data/sceneRoutes.js)
 // back to this same hub (e.g. week1-suspect-interview-return ->
-// w1-suspect-hub) — those cases move in place instead of a full page
+// w1-hub-plaza) — those cases move in place instead of a full page
 // reload, since we never actually left the hub. A route to a real
 // standalone page (e.g. the timeline minigame) still navigates away, same
 // hand-off contract playInteraction's type:'minigame' branch already uses.
@@ -1555,7 +1579,7 @@ const PHASE_PRELOAD_SESSION_KEY = 'mkPhasePreloadReadyPhase';
 function collectPhaseCharacterAssetIds(phaseId, locationIds) {
   const ids = new Set();
   locationIds.forEach(id => {
-    (locationDefs[id].characters || []).forEach(charId => {
+    (resolveByPhase(locationDefs[id].characters, phaseId) || []).forEach(charId => {
       const assetId = DevGameState.getCharacterAssetId(charId, 'neutral');
       if (assetId) ids.add(assetId);
     });

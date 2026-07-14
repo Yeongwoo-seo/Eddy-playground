@@ -17,16 +17,17 @@ const MINIGAME_ROUTES = {
   'week1-scene-008-minigame': '/dev/minigame-timeline/',
   // The Missing Key v1 §12.6 — 세 용의자 자유 순서 탐문. Both virtual ids
   // land on the same shared hub-center location; individual suspect spots
-  // are reached from there (see dev/data/locationDefs.js's
-  // w1-suspect-*-spot entries).
-  'week1-suspect-hub-entry': '/dev/explore/?phase=W1_SUSPECT_INTERVIEWS&location=w1-suspect-hub',
-  'week1-suspect-interview-return': '/dev/explore/?phase=W1_SUSPECT_INTERVIEWS&location=w1-suspect-hub',
+  // are reached from there (see dev/data/locationDefs.js's w1-hub-plaza/
+  // w1-*-spot entries — w1-hub-plaza is shared with Phase 5's re-verify
+  // hub-entry below, §신규 phase간 중복 장소 통합).
+  'week1-suspect-hub-entry': '/dev/explore/?phase=W1_SUSPECT_INTERVIEWS&location=w1-hub-plaza',
+  'week1-suspect-interview-return': '/dev/explore/?phase=W1_SUSPECT_INTERVIEWS&location=w1-hub-plaza',
   // §12.2 — 시티 도착 직후 곧장 탐색 허브로. week1-scene-002 자체는
   // w1-circular-quay의 firstVisitSceneId로 첫 방문 때 자동 재생된다.
   'week1-hub-entry-tourism': '/dev/explore/?phase=W1_TOURISM&location=w1-circular-quay',
   // §12.8 — 재검증 단계 자유 순회.
-  'week1-reverify-hub-entry': '/dev/explore/?phase=W1_REVERIFICATION&location=w1-reverify-hub',
-  'week1-reverify-interview-return': '/dev/explore/?phase=W1_REVERIFICATION&location=w1-reverify-hub',
+  'week1-reverify-hub-entry': '/dev/explore/?phase=W1_REVERIFICATION&location=w1-hub-plaza',
+  'week1-reverify-interview-return': '/dev/explore/?phase=W1_REVERIFICATION&location=w1-hub-plaza',
 };
 
 // The Missing Key v1 §5.2/§11.3 — week0-scene-shop-intro's own nextSceneId

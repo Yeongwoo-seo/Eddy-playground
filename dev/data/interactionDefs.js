@@ -280,7 +280,7 @@ const interactionDefs = {
   'w1sh-topic-van-recall': {
     id: 'w1sh-topic-van-recall',
     characterId: 'youngwoo',
-    locationIds: ['w1-suspect-hub'],
+    locationIds: ['w1-hub-plaza'],
     phases: ['W1_SUSPECT_INTERVIEWS'],
     type: 'topic',
     label: '그 서비스 밴, 다시 생각해보기',
@@ -333,7 +333,7 @@ const interactionDefs = {
   'w1suspect-adrian-interview': {
     id: 'w1suspect-adrian-interview',
     characterId: 'adrian',
-    locationIds: ['w1-suspect-adrian-spot'],
+    locationIds: ['w1-adrian-spot'],
     phases: ['W1_SUSPECT_INTERVIEWS'],
     type: 'scene',
     isInterrogation: true,
@@ -371,7 +371,7 @@ const interactionDefs = {
   'w1reverify-adrian-interview': {
     id: 'w1reverify-adrian-interview',
     characterId: 'adrian',
-    locationIds: ['w1-reverify-adrian-spot'],
+    locationIds: ['w1-adrian-spot'],
     phases: ['W1_REVERIFICATION'],
     type: 'scene',
     isInterrogation: true,
