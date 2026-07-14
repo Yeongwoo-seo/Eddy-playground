@@ -726,11 +726,14 @@ const AssetDB = (() => {
     return map;
   }
 
-  // 장소별 대기 캐릭터 가로 위치 override — { [`${locationId}::${characterId}`]:
-  // { x } } (px, .loc-char-stage 중앙 기준 좌우 이동량). 같은 물리적 자리라도
-  // 배경 사진 구도에 따라 인물이 화면 중앙보다 좌/우로 서 있는 게 자연스러운
-  // 경우가 있어, 탐색허브의 슬라이더(renderCharPosSlider, dev/explore/
-  // index.html)로 즉석에서 조정하고 여기 저장한다 — 같은 단일 JSON blob 패턴.
+  // 장소별 대기 캐릭터 위치 override — { [`${locationId}::${characterId}`]:
+  // { x, y } } (px, .loc-char-stage 중앙/바닥 기준 좌우·상하 이동량). 같은
+  // 물리적 자리라도 배경 사진 구도에 따라 인물이 화면 중앙보다 좌/우/상/하로
+  // 서 있는 게 자연스러운 경우가 있어, 탐색허브의 슬라이더(renderCharPosSlider,
+  // dev/explore/index.html)로 즉석에서 조정하고 여기 저장한다 — 같은 단일
+  // JSON blob 패턴. locationDefs.js의 charPositions가 코드 기본값이고, 여기
+  // 값이 있으면 그게 우선한다(resolveCharPos, mapPosition/pinOverrides와
+  // 같은 우선순위 관계).
   const characterPositionsCache = new Map(); // single entry keyed 'positions'
   const CHARACTER_POSITIONS_PATH = 'character-positions/positions.json';
 
