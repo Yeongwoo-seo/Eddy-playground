@@ -870,6 +870,7 @@ function showEvidenceCta() {
 let evidenceSheetTab = 'related';
 let evidenceSheetSelectedId = null;
 function renderEvidenceSheet() {
+  CaseEntryUI.injectCaseEntryUIStyles();
   const line = activeLines[player.getState().index] || {};
   const ctx = { npcId: line.characterId || null, topicTags: [], activeTab: evidenceSheetTab, selectedId: evidenceSheetSelectedId, maxSuggested: 6 };
   el.evidenceSheetList.innerHTML = CaseEntryUI.renderPresentSheetHtml(CaseFileState.getCaseEntries(), ctx);
