@@ -741,6 +741,9 @@ function renderInterrogateBtn() {
 // 늘 떠 있다. 이미 떠 있는 상태에서 다른 인물로 바뀌면 CSS transition 시간만큼
 // 기다렸다 이미지를 바꿔서, 컷 전환이 아니라 페이드아웃→페이드인처럼 보이게 한다.
 const LOC_CHAR_STAGE_FADE_MS = 250;
+// applyDialogueCharacter(아래 §Dialogue playback)도 같은 el.locCharStageImg를
+// 쓰는 만큼 이 토큰을 공유한다 — 서로 다른 카운터를 썼을 때 상대방의 요청을
+// 무효화하지 못해 느리게 도착한 쪽이 화면을 덮어써버리는 경쟁 상태가 있었다.
 let locCharStageToken = 0;
 async function setLocCharStage(charId) {
   const token = ++locCharStageToken;
@@ -1054,14 +1057,21 @@ function showToastLine(characterId, text) {
    대사에 등장하는 인물 그림은 대기 상태와 같은 loc-char-stage를 그대로 쓴다
    (별도의 대화용 캐릭터 레이어를 두지 않음) — 그래서 대화가 시작돼도 인물이
    커지거나 자리가 튀지 않고, 그 인물의 위치(resolveCharPos)도 대기 때와
-   똑같이 적용된다. */
-let charRequestToken = 0;
+   똑같이 적용된다.
+
+   locCharStageToken(setLocCharStage 선언부, §651)을 그대로 재사용한다 —
+   이 함수도 같은 el.locCharStageImg를 쓰는 만큼 같은 토큰 카운터를 공유해야,
+   대화가 끝나 대기 화면으로 돌아가며 setLocCharStage가 호출된 뒤에도 아직
+   안 끝난 이전 대사 줄의 비동기 이미지 조회가 나중에 도착해 화면을 덮어쓰는
+   일이 없다(§신규 수정 — 두 함수가 토큰을 따로 썼을 때 "대화는 지수인데
+   사진은 영우로 나온다"는 증상으로 재현됨: 서로의 요청을 무효화하지
+   못해 느린 쪽이 이기는 경쟁 상태였다). */
 async function applyDialogueCharacter(characterId, expression) {
-  const requestToken = ++charRequestToken;
+  const requestToken = ++locCharStageToken;
   if (!characterId) { el.locCharStage.classList.remove('show'); return; }
   const assetId = DevGameState.getCharacterAssetId(characterId, expression);
   const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
-  if (requestToken !== charRequestToken) return;
+  if (requestToken !== locCharStageToken) return;
   applyCharPosOffset(resolveCharPos(ExplorationState.getCurrentLocationId(), characterId));
   if (asset && asset.dataUrl) { el.locCharStageImg.src = asset.dataUrl; el.locCharStage.classList.add('show'); }
   else { el.locCharStageImg.removeAttribute('src'); el.locCharStage.classList.remove('show'); }
