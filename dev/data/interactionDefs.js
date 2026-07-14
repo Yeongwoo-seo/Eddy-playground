@@ -26,6 +26,81 @@
    주차에서 같은 성격의 구간을 쓸 때도 그대로 따라 쓰면 된다. */
 
 const interactionDefs = {
+  // Phase 진입 시 자동 재생되는 도입 대화 (§신규) — 예전엔 week1-scene-002라는
+  // 별도 VN 씬(dev/dialogueData.js, locationDefs.js의 w1-circular-quay.
+  // firstVisitSceneId로 /dev/game까지 갔다 오던 구조)이었지만, 탐색허브
+  // 진입 흐름 전체가 이미 허브 안에 있으므로 이 내용도 허브 네이티브
+  // 콘텐츠로 옮겼다 — 대사/선택지/효과는 그대로, 그릇만 옮겨졌다(사진 포즈
+  // 루프, 전시장 발견 선택지). type:'phaseIntro'는 탭으로 여는 topic/scene과
+  // 달리 그 phase에 처음 진입할 때 자동 재생되고 하단 액션바 목록엔 노출되지
+  // 않는다 — completeInteraction으로 "이미 봤음"을 기록해 두 번 다시 안
+  // 뜬다. "지금 들어가요"/"조금 더 둘러보다 갈래요" 둘 다 결국 이 허브
+  // 화면으로 이어지므로(더 이상 다른 페이지로 나가는 흐름이 아니므로),
+  // 원래 wander-more 선택지에 있던 returnToExploration 이펙트는 뺐다 — see
+  // performMove()/playSceneInline() in dev/explore/index.html.
+  'w1-phase1-intro': {
+    id: 'w1-phase1-intro',
+    type: 'phaseIntro',
+    phases: ['W1_TOURISM'],
+    lines: [
+      { id: 'line-001', speaker: '', text: 'Circular Quay.\n오전 10시 15분.', characterId: null },
+      { id: 'line-002', speaker: '', text: '오페라하우스와 하버브리지가 한눈에 들어온다.', characterId: null },
+      { id: 'line-003', speaker: '지수', text: '와아아 진짜 사진으로 보던 그대로다.', characterId: 'jisoo', expression: 'shocked' },
+      { id: 'line-004', speaker: '영우', text: '여기 서봐.\n찍어줄게.', characterId: 'youngwoo', expression: 'soft' },
+      {
+        id: 'pose-loop', type: 'choice', speaker: '', text: '이번엔 어떤 포즈로 찍을까요? (세 번 골라볼 수 있어요)', characterId: null,
+        choices: [
+          { id: 'v', label: '브이', goto: 'pose-v' },
+          { id: 'heart', label: '손가락 하트', goto: 'pose-heart' },
+          { id: 'turn', label: '뒤돌아보기', goto: 'pose-turn' },
+          { id: 'smile', label: '그냥 웃기', goto: 'pose-smile' },
+          { id: 'together', label: '영우와 같이 찍기', goto: 'pose-together' },
+        ],
+      },
+      { id: 'pose-v', speaker: '지수', text: '브이!', characterId: 'jisoo', expression: 'happy', effects: [{ type: 'incrementFlag', key: 'w2-pose-count' }], goto: 'pose-loop-check' },
+      { id: 'pose-heart', speaker: '지수', text: '이렇게, 손가락 하트.', characterId: 'jisoo', expression: 'smirk', effects: [{ type: 'incrementFlag', key: 'w2-pose-count' }], goto: 'pose-loop-check' },
+      { id: 'pose-turn', speaker: '', text: '지수가 살짝 뒤돌아보는 포즈를 취한다.', characterId: 'jisoo', expression: 'curious', effects: [{ type: 'incrementFlag', key: 'w2-pose-count' }], goto: 'pose-loop-check' },
+      { id: 'pose-smile', speaker: '지수', text: '그냥 웃을게요.', characterId: 'jisoo', expression: 'happy', effects: [{ type: 'incrementFlag', key: 'w2-pose-count' }], goto: 'pose-loop-check' },
+      { id: 'pose-together', speaker: '영우', text: '나도? 그럼 셀프타이머로.', characterId: 'youngwoo', expression: 'soft', effects: [{ type: 'incrementFlag', key: 'w2-pose-count' }], goto: 'pose-loop-check' },
+      {
+        id: 'pose-loop-check', type: 'choice', speaker: '', text: '더 찍어볼까요?', characterId: null,
+        choices: [
+          { id: 'more', label: '한 번 더', goto: 'pose-loop' },
+          { id: 'enough', label: '이 정도면 충분해요', goto: 'line-005' },
+        ],
+      },
+      { id: 'line-005', speaker: '', text: '지수가 브이를 했다가, 손가락 하트를 했다가,\n결국 그냥 웃는 얼굴로 정착한다.', characterId: 'jisoo', expression: 'happy' },
+      { id: 'line-006', speaker: '영우', text: '역시 그냥 웃는 게 제일 낫다.', characterId: 'youngwoo', expression: 'soft' },
+      { id: 'line-007', speaker: '지수', text: '그럼 나머지는 왜 찍었어요.', characterId: 'jisoo', expression: 'smirk' },
+      { id: 'line-008', speaker: '영우', text: '비교군이 있어야 알지 ㅋㅎㅋㅎㅋㅎㅋㅎ', characterId: 'youngwoo', expression: 'happy' },
+      { id: 'line-009', speaker: '지수', text: '이제 저도 하나 찍어줄게요.\n이리 와요.', characterId: 'jisoo', expression: 'smirk' },
+      { id: 'line-010', speaker: '영우', text: '나는 됐는데', characterId: 'youngwoo', expression: 'blank' },
+      { id: 'line-011', speaker: '지수', text: '안 돼요.\n기록 남겨야죠.', characterId: 'jisoo', expression: 'smirk' },
+      {
+        id: 'angle-choice', type: 'choice', speaker: '지수', text: '음, 어떤 각도로 찍을까요?', characterId: 'jisoo', expression: 'curious',
+        choices: [
+          { id: 'opera-center', label: '오페라하우스 중심', goto: 'angle-opera' },
+          { id: 'bridge-center', label: '하버브리지 중심', goto: 'angle-bridge' },
+          { id: 'face-center', label: '영우 얼굴 중심', goto: 'angle-face' },
+        ],
+      },
+      { id: 'angle-opera', speaker: '지수', text: '오페라하우스 딱 걸리게.', characterId: 'jisoo', expression: 'curious', goto: 'line-012' },
+      { id: 'angle-bridge', speaker: '지수', text: '다리도 같이 나오게.', characterId: 'jisoo', expression: 'curious', goto: 'line-012' },
+      { id: 'angle-face', speaker: '지수', text: '오늘은 그냥 얼굴 위주로.', characterId: 'jisoo', expression: 'smirk', goto: 'line-012' },
+      { id: 'line-012', speaker: '', text: '한참을 그렇게 놀던 중,\n지수의 눈에 낯선 팻말 하나가 들어왔다.', characterId: 'jisoo', expression: 'curious' },
+      { id: 'line-013', speaker: '지수', text: '어?\n저기 저거 뭐예요?', characterId: 'jisoo', expression: 'curious' },
+      { id: 'line-014', speaker: '영우', text: '어디?', characterId: 'youngwoo', expression: 'curious' },
+      { id: 'line-015', speaker: '지수', text: '저 골목 안쪽.\n뭔가 전시하나 본데.', characterId: 'jisoo', expression: 'curious' },
+      {
+        id: 'line-016', type: 'choice', speaker: '영우', text: '오, 팝업 전시네.\n지금 들어가 볼까, 조금 더 둘러보다 갈까?', characterId: 'youngwoo', expression: 'soft',
+        choices: [
+          { id: 'enter-now', label: '“지금 들어가요.”', goto: 'line-017' },
+          { id: 'wander-more', label: '“조금 더 둘러보다 갈래요.”', effects: [{ type: 'setFlag', key: 'discoveredPopupExhibition', value: true }] },
+        ],
+      },
+      { id: 'line-017', speaker: '지수', text: '웅웅 잠깐만 보고 가요.', characterId: 'jisoo', expression: 'happy' },
+    ],
+  },
   'w1cq-topic-ferries': {
     id: 'w1cq-topic-ferries',
     characterId: 'youngwoo',
