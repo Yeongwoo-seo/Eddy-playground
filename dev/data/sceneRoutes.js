@@ -22,8 +22,9 @@ const MINIGAME_ROUTES = {
   // hub-entry below, §신규 phase간 중복 장소 통합).
   'week1-suspect-hub-entry': '/dev/explore/?phase=W1_SUSPECT_INTERVIEWS&location=w1-hub-plaza',
   'week1-suspect-interview-return': '/dev/explore/?phase=W1_SUSPECT_INTERVIEWS&location=w1-hub-plaza',
-  // §12.2 — 시티 도착 직후 곧장 탐색 허브로. week1-scene-002 자체는
-  // w1-circular-quay의 firstVisitSceneId로 첫 방문 때 자동 재생된다.
+  // §12.2 — 시티 도착 직후 곧장 탐색 허브로. Phase 1(W1_TOURISM) 도입 대화는
+  // interactionDefs.js의 'w1-phase1-intro'(type:'phaseIntro')로 이 phase에
+  // 처음 진입할 때 허브 안에서 자동 재생된다.
   'week1-hub-entry-tourism': '/dev/explore/?phase=W1_TOURISM&location=w1-circular-quay',
   // §12.8 — 재검증 단계 자유 순회.
   'week1-reverify-hub-entry': '/dev/explore/?phase=W1_REVERIFICATION&location=w1-hub-plaza',

@@ -78,14 +78,6 @@ const locationDefs = {
     exits: ['w1-opera-view', 'w1-bridge-view', 'w1-the-rocks-lane'],
     mapPosition: { x: 52, y: 66 },
     firstVisitFlag: 'visitedCircularQuay',
-    // §12.2 — week1-scene-001 hands off straight into this hub now (see
-    // dialogueData.js) instead of chaining into week1-scene-002 directly.
-    // firstVisitSceneId keeps that scene's own content (사진 포즈 루프,
-    // 전시장 발견 선택지) completely intact — it just fires automatically
-    // the first time the player actually arrives here, then behaves like
-    // any other hub location on later visits (see moveTo() in
-    // dev/explore/index.html).
-    firstVisitSceneId: 'week1-scene-002',
   },
   'w1-opera-view': {
     id: 'w1-opera-view',
@@ -143,8 +135,9 @@ const locationDefs = {
     // another routed page (routeOnEnter) or hub location (exits) — the hub
     // screen shows this as a distinct "들어간다" action, not a normal exit
     // chip, since it leaves the hub for good (spec §12.2's soft-gate: the
-    // player chose "조금 더 둘러본다" earlier from week1-scene-002, wandered
-    // the hub, and this is where they finally commit to going in).
+    // player chose "조금 더 둘러본다" earlier from Phase 1's intro dialogue
+    // (w1-phase1-intro), wandered the hub, and this is where they finally
+    // commit to going in).
     enterSceneId: 'week1-scene-003',
     enterSceneLabel: '전시장에 들어간다',
   },

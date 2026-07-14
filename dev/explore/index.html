@@ -642,32 +642,19 @@ function moveTo(locationId) {
   });
 }
 
+// The one interactionDefs entry (if any) that auto-plays the moment a phase
+// is entered for the first time — see the 'w1-phase1-intro' entry's own
+// comment in dev/data/interactionDefs.js for why this replaced the old
+// firstVisitSceneId/dialogueData.js scene approach.
+function findPhaseIntro(phaseId) {
+  return Object.values(interactionDefs).find(def => def.type === 'phaseIntro' && (def.phases || []).includes(phaseId));
+}
+
 async function performMove(locationId) {
   const def = locationDefs[locationId];
   if (!def) return;
   const firstVisit = !ExplorationState.isLocationVisited(locationId);
   if (firstVisit && def.firstVisitFlag) CaseFileState.setFlag(def.firstVisitFlag, true);
-  // firstVisitSceneId (§12.2) — an existing, untouched VN scene that plays
-  // automatically the *first* time this location is actually entered (e.g.
-  // week1-scene-002's photo-pose loop at 서큘러키), then never again — later
-  // visits behave like a normal hub location. Marking it visited/current
-  // *before* playing is what makes that "never again" stick. Played inline
-  // (playSceneInline — same machinery interrogation scenes already use)
-  // instead of a full-page hand-off to /dev/game: the scene's own backdrop
-  // and this location's hub backdrop are the same photo, so bouncing to a
-  // second page just to come straight back only added a cold-cache reload
-  // in between. onInlineSceneComplete's own nextSceneId handling (falls
-  // through to a plain renderLocation() when a scene has none, as
-  // week1-scene-002 doesn't) brings the hub action bar up the moment the
-  // scene ends.
-  if (firstVisit && def.firstVisitSceneId) {
-    ExplorationState.unlockLocation(locationId);
-    ExplorationState.moveToLocation(locationId);
-    await renderLocation();
-    showView('location');
-    playSceneInline(def.firstVisitSceneId);
-    return;
-  }
   if (def.routeOnEnter) {
     // A routeOnEnter location (e.g. the boutique) has no hub content of its
     // own — it's a pure hand-off, so it never becomes "current". The return
@@ -687,6 +674,16 @@ async function performMove(locationId) {
   ExplorationState.moveToLocation(locationId);
   await renderLocation();
   showView('location');
+  // Phase 최초 진입 시 자동 재생되는 도입 대화 (§신규, 예전 firstVisitSceneId
+  // 자리를 대신함— see interactionDefs.js의 'w1-phase1-intro' 주석) —
+  // 특정 장소가 아니라 phase 단위로 "이미 봤는지"를 추적하므로
+  // completeInteraction 여부로 판별한다. 허브가 이미 렌더링된 뒤 그 위에
+  // 대화 패널을 띄우는 것이라 (playInteraction과 동일한 순서), 끝나면
+  // renderLocation()이 다시 불려 액션바가 뜬다.
+  const phaseIntro = findPhaseIntro(ExplorationState.getCurrentPhase());
+  if (phaseIntro && ExplorationState.getInteractionState(phaseIntro.id) === 'new') {
+    playSceneInline(phaseIntro, phaseIntro.id);
+  }
 }
 
 /* ===== Hub action bar (조사/대화/제시/이동) =====
@@ -861,10 +858,10 @@ el.listSheetCloseBtn.addEventListener('click', () => el.listSheet.classList.add(
 
 // Dev · 탐색 허브 debug sheet — mirrors dev/game/index.html's own DEV panel
 // (같은 ExplorationState.debug*/resetAll 호출), just reachable from inside
-// the hub itself. firstVisitSceneId 같은 "딱 한 번만" 흐름을 반복 테스트하려면
-// 이전엔 /dev/game/으로 되돌아가야 했다 — 이 페이지 전체가 ExplorationState를
-// 그대로 반영해 렌더링되므로, 초기화 뒤엔 새로 booting해야 값이 맞게
-// 반영된다 (그래서 reload).
+// the hub itself. Phase 진입 도입 대화(findPhaseIntro) 같은 "딱 한 번만"
+// 흐름을 반복 테스트하려면 이전엔 /dev/game/으로 되돌아가야 했다 — 이
+// 페이지 전체가 ExplorationState를 그대로 반영해 렌더링되므로, 초기화
+// 뒤엔 새로 booting해야 값이 맞게 반영된다 (그래서 reload).
 el.devBtn.addEventListener('click', () => el.devSheet.classList.remove('hidden'));
 el.devSheetCloseBtn.addEventListener('click', () => el.devSheet.classList.add('hidden'));
 el.btnDevUnlockAllLocations.addEventListener('click', () => { ExplorationState.debugUnlockAllLocations(); renderLocation(); if (currentView === 'map') renderMap(); });
@@ -1600,16 +1597,23 @@ function onInlineSceneComplete(sceneData) {
 // prompts/hypothesis effects, all untouched) inline inside this hub's
 // dlg-panel instead of navigating to dev/game/index.html — see
 // interactionDefs.js's isInterrogation entries (type:'scene'/sceneId).
-// interactionId is optional — a location's own firstVisitSceneId (see
-// performMove below) has no interactionDefs entry of its own to complete.
-function playSceneInline(sceneId, interactionId) {
-  const sceneData = allScenes.find(s => s.id === sceneId);
-  if (!sceneData) { console.error('[탐색허브] 알 수 없는 씬', sceneId); return; }
+// sceneIdOrData is either a dialogueData.js scene id (string, looked up via
+// allScenes) or an already-resolved { id, lines } object — a
+// type:'phaseIntro' interactionDefs entry (see performMove) has no
+// dialogueData.js scene of its own and no nextSceneId to chain into, so it's
+// passed straight through; onInlineSceneComplete's own no-nextSceneId branch
+// already does exactly what a phase intro needs (close dialogue, show hub).
+// interactionId is optional — only meaningful when it differs from
+// sceneData.id (nothing currently needs that, but keeps the two concerns
+// separate).
+function playSceneInline(sceneIdOrData, interactionId) {
+  const sceneData = typeof sceneIdOrData === 'string' ? allScenes.find(s => s.id === sceneIdOrData) : sceneIdOrData;
+  if (!sceneData) { console.error('[탐색허브] 알 수 없는 씬', sceneIdOrData); return; }
   // Matches the old type:'minigame' hand-off's timing exactly (completed
   // the moment the interaction launches, not once the scene finishes) so
   // interaction-state tracking behaves the same as before.
   if (interactionId) ExplorationState.completeInteraction(interactionId);
-  activeInlineSceneId = sceneId;
+  activeInlineSceneId = sceneData.id;
   const lines = sceneData.lines.map(l => Object.assign({}, l));
   setDialogueMode(true);
   currentDialoguePlayer = createVNPlayer({
@@ -1620,12 +1624,12 @@ function playSceneInline(sceneId, interactionId) {
       // showLine still fires this callback once more on its way out; without
       // this guard it would re-paint loc-char-stage with whatever character
       // was mid-line right as the hub view underneath becomes visible again.
-      if (activeInlineSceneId !== sceneId) return;
+      if (activeInlineSceneId !== sceneData.id) return;
       clearInteractiveLayers();
       el.dlgName.textContent = line.speaker || '';
       applyDialogueCharacter(line.characterId, line.expression);
     },
-    onTextUpdate: (text) => { if (activeInlineSceneId === sceneId) el.dlgText.textContent = text; },
+    onTextUpdate: (text) => { if (activeInlineSceneId === sceneData.id) el.dlgText.textContent = text; },
     onArrow: (show) => el.dlgArrow.classList.toggle('show', show),
     onEffect: (effects) => { (Array.isArray(effects) ? effects : [effects]).forEach(applyInlineSceneEffect); },
     onChoicePrompt: (choices) => showChoices(choices),
@@ -1734,12 +1738,12 @@ function addSceneCharacterAssetIds(ids, scene) {
 
 // Every character portrait a phase's hub content could show: each location's
 // standing character(s) (loc-char-chip/loc-char-stage, 'neutral'), every
-// expression a topic-type interactionDefs entry's lines use (대화하기), every
-// portrait a type:'scene' interactionDefs entry's inline-played dialogueData
-// scene uses (심문하기 등 — see playSceneInline), every portrait a location's
-// own firstVisitSceneId inline scene uses (예: week1-scene-002 at 서큘러키),
-// and every person already on file (제시하기's 인물 탭 isn't scoped to a
-// location, it lists CaseFileState.getPersons() as-is).
+// expression a topic-type (or phaseIntro-type — same { lines } shape)
+// interactionDefs entry's lines use (대화하기 / Phase 최초 진입 도입 대화),
+// every portrait a type:'scene' interactionDefs entry's inline-played
+// dialogueData scene uses (심문하기 등 — see playSceneInline), and every
+// person already on file (제시하기's 인물 탭 isn't scoped to a location, it
+// lists CaseFileState.getPersons() as-is).
 function collectPhaseCharacterAssetIds(phaseId, locationIds) {
   const ids = new Set();
   locationIds.forEach(id => {
@@ -1747,8 +1751,6 @@ function collectPhaseCharacterAssetIds(phaseId, locationIds) {
       const assetId = DevGameState.getCharacterAssetId(charId, 'neutral');
       if (assetId) ids.add(assetId);
     });
-    const firstVisitScene = (typeof allScenes !== 'undefined') ? allScenes.find(s => s.id === locationDefs[id].firstVisitSceneId) : null;
-    if (firstVisitScene) addSceneCharacterAssetIds(ids, firstVisitScene);
   });
   Object.values(interactionDefs).forEach(def => {
     if (!(def.phases || []).includes(phaseId)) return;

@@ -1173,82 +1173,11 @@ const week1Scene001Lines = [
   { id: 'line-018', speaker: '', text: '영우의 그 말은,\n오래가지 못했다.', characterId: 'youngwoo', expression: 'soft' },
 ];
 
-/* OPERATION MK — WEEK 1 · SCENE 02 「관광객 모드」
-   Dialogue Set: dialogue-week1-scene002
-   Scene: week1-scene-002 (Circular Quay, 10:15)
-
-   ===== 1주차 장편 확장 v2 · §6 =====
-   사진 포즈 루프(선택지 3회 반복) + 각도 미니 선택. (v4 §13.1 — 각 선택이
-   남기던 w1-last-pose/w1-angle-pick flag는 실제 다운스트림 참조가 없어
-   제거했다; 포즈/각도 자체의 goto 분기는 그대로 유지된다.) */
-const week1Scene002Lines = [
-  { id: 'line-001', speaker: '', text: 'Circular Quay.\n오전 10시 15분.', characterId: null },
-  { id: 'line-002', speaker: '', text: '오페라하우스와 하버브리지가 한눈에 들어온다.', characterId: null },
-  { id: 'line-003', speaker: '지수', text: '와아아 진짜 사진으로 보던 그대로다.', characterId: 'jisoo', expression: 'shocked' },
-  { id: 'line-004', speaker: '영우', text: '여기 서봐.\n찍어줄게.', characterId: 'youngwoo', expression: 'soft' },
-  {
-    id: 'pose-loop', type: 'choice', speaker: '', text: '이번엔 어떤 포즈로 찍을까요? (세 번 골라볼 수 있어요)', characterId: null,
-    choices: [
-      { id: 'v', label: '브이', goto: 'pose-v' },
-      { id: 'heart', label: '손가락 하트', goto: 'pose-heart' },
-      { id: 'turn', label: '뒤돌아보기', goto: 'pose-turn' },
-      { id: 'smile', label: '그냥 웃기', goto: 'pose-smile' },
-      { id: 'together', label: '영우와 같이 찍기', goto: 'pose-together' },
-    ],
-  },
-  { id: 'pose-v', speaker: '지수', text: '브이!', characterId: 'jisoo', expression: 'happy', effects: [{ type: 'incrementFlag', key: 'w2-pose-count' }], goto: 'pose-loop-check' },
-  { id: 'pose-heart', speaker: '지수', text: '이렇게, 손가락 하트.', characterId: 'jisoo', expression: 'smirk', effects: [{ type: 'incrementFlag', key: 'w2-pose-count' }], goto: 'pose-loop-check' },
-  { id: 'pose-turn', speaker: '', text: '지수가 살짝 뒤돌아보는 포즈를 취한다.', characterId: 'jisoo', expression: 'curious', effects: [{ type: 'incrementFlag', key: 'w2-pose-count' }], goto: 'pose-loop-check' },
-  { id: 'pose-smile', speaker: '지수', text: '그냥 웃을게요.', characterId: 'jisoo', expression: 'happy', effects: [{ type: 'incrementFlag', key: 'w2-pose-count' }], goto: 'pose-loop-check' },
-  { id: 'pose-together', speaker: '영우', text: '나도? 그럼 셀프타이머로.', characterId: 'youngwoo', expression: 'soft', effects: [{ type: 'incrementFlag', key: 'w2-pose-count' }], goto: 'pose-loop-check' },
-  {
-    id: 'pose-loop-check', type: 'choice', speaker: '', text: '더 찍어볼까요?', characterId: null,
-    choices: [
-      { id: 'more', label: '한 번 더', goto: 'pose-loop' },
-      { id: 'enough', label: '이 정도면 충분해요', goto: 'line-005' },
-    ],
-  },
-  { id: 'line-005', speaker: '', text: '지수가 브이를 했다가, 손가락 하트를 했다가,\n결국 그냥 웃는 얼굴로 정착한다.', characterId: 'jisoo', expression: 'happy' },
-  { id: 'line-006', speaker: '영우', text: '역시 그냥 웃는 게 제일 낫다.', characterId: 'youngwoo', expression: 'soft' },
-  { id: 'line-007', speaker: '지수', text: '그럼 나머지는 왜 찍었어요.', characterId: 'jisoo', expression: 'smirk' },
-  { id: 'line-008', speaker: '영우', text: '비교군이 있어야 알지 ㅋㅎㅋㅎㅋㅎㅋㅎ', characterId: 'youngwoo', expression: 'happy' },
-  { id: 'line-009', speaker: '지수', text: '이제 저도 하나 찍어줄게요.\n이리 와요.', characterId: 'jisoo', expression: 'smirk' },
-  { id: 'line-010', speaker: '영우', text: '나는 됐는데', characterId: 'youngwoo', expression: 'blank' },
-  { id: 'line-011', speaker: '지수', text: '안 돼요.\n기록 남겨야죠.', characterId: 'jisoo', expression: 'smirk' },
-  {
-    id: 'angle-choice', type: 'choice', speaker: '지수', text: '음, 어떤 각도로 찍을까요?', characterId: 'jisoo', expression: 'curious',
-    choices: [
-      { id: 'opera-center', label: '오페라하우스 중심', goto: 'angle-opera' },
-      { id: 'bridge-center', label: '하버브리지 중심', goto: 'angle-bridge' },
-      { id: 'face-center', label: '영우 얼굴 중심', goto: 'angle-face' },
-    ],
-  },
-  { id: 'angle-opera', speaker: '지수', text: '오페라하우스 딱 걸리게.', characterId: 'jisoo', expression: 'curious', goto: 'line-012' },
-  { id: 'angle-bridge', speaker: '지수', text: '다리도 같이 나오게.', characterId: 'jisoo', expression: 'curious', goto: 'line-012' },
-  { id: 'angle-face', speaker: '지수', text: '오늘은 그냥 얼굴 위주로.', characterId: 'jisoo', expression: 'smirk', goto: 'line-012' },
-  { id: 'line-012', speaker: '', text: '한참을 그렇게 놀던 중,\n지수의 눈에 낯선 팻말 하나가 들어왔다.', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-013', speaker: '지수', text: '어?\n저기 저거 뭐예요?', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-014', speaker: '영우', text: '어디?', characterId: 'youngwoo', expression: 'curious' },
-  { id: 'line-015', speaker: '지수', text: '저 골목 안쪽.\n뭔가 전시하나 본데.', characterId: 'jisoo', expression: 'curious' },
-  {
-    // The Missing Key v1 §12.2 "전시장 진입 강제 시점" — 즉시 강제 진입시키지
-    // 않고 선택지를 제공한다. "조금 더 둘러보다" 쪽은 신규 탐색 허브
-    // (/dev/explore/, §7)로 보내며, 허브 쪽에서 이 발견을 다시 반복하지
-    // 않도록 discoveredPopupExhibition 플래그를 여기서 미리 세워 둔다.
-    id: 'line-016', type: 'choice', speaker: '영우', text: '오, 팝업 전시네.\n지금 들어가 볼까, 조금 더 둘러보다 갈까?', characterId: 'youngwoo', expression: 'soft',
-    choices: [
-      { id: 'enter-now', label: '“지금 들어가요.”', goto: 'line-017' },
-      {
-        id: 'wander-more', label: '“조금 더 둘러보다 갈래요.”',
-        effects: [
-          { type: 'setFlag', key: 'discoveredPopupExhibition', value: true },
-          { type: 'returnToExploration', phaseId: 'W1_TOURISM', locationId: 'w1-circular-quay' },
-        ],
-      },
-    ],
-  },
-  { id: 'line-017', speaker: '지수', text: '웅웅 잠깐만 보고 가요.', characterId: 'jisoo', expression: 'happy' },
-];
+// week1-scene-002(관광객 모드)는 더 이상 별도 VN 씬이 아니다 — 사진 포즈
+// 루프/전시장 발견 선택지 대사는 그대로 dev/data/interactionDefs.js의
+// 'w1-phase1-intro'(type:'phaseIntro')로 옮겨졌고, Phase 1(W1_TOURISM)에
+// 처음 진입할 때 탐색허브 안에서 자동 재생된다 — see performMove() in
+// dev/explore/index.html.
 
 /* OPERATION MK — WEEK 1 · SCENE 03 「증거 수집 · 전시장」
    Dialogue Set: dialogue-week1-scene003
@@ -3488,20 +3417,10 @@ const week1Scenes = [
     time: '09:40',
     lines: week1Scene001Lines,
     // The Missing Key v1 §12.2 "최초 진입" — 시티 도착 후 곧장 탐색 허브로
-    // 넘긴다. week1-scene-002(관광객 모드)의 대사는 삭제하지 않고, 서큘러키
-    // 도착 첫 방문 때 자동 재생되도록 옮겼다(locationDefs.js의
-    // w1-circular-quay.firstVisitSceneId 참고) — 그 씬 자체의 사진 포즈
-    // 루프·전시장 발견 선택지는 그대로 유지된다.
+    // 넘긴다. 관광객 모드(사진 포즈 루프·전시장 발견 선택지) 대사는
+    // interactionDefs.js의 'w1-phase1-intro'로 옮겨져 Phase 1 최초 진입 시
+    // 허브 안에서 자동 재생된다 — 더 이상 이 파일의 별도 씬이 아니다.
     nextSceneId: 'week1-hub-entry-tourism',
-  },
-  {
-    id: 'week1-scene-002',
-    order: 2,
-    name: '관광객 모드',
-    location: 'Circular Quay',
-    introLabel: 'CIRCULAR QUAY',
-    time: '10:15',
-    lines: week1Scene002Lines,
   },
   {
     id: 'week1-scene-003',
@@ -3821,7 +3740,7 @@ const week1Scenes = [
 // 묶었다 — Phase 5는 010(재검증 도입)부터 시작한다는 dev-status 문서 원문
 // 그대로.
 const week1SceneGroups = [
-  { range: 'PHASE 1', label: '관광 자유 탐색', sceneIds: ['week1-scene-001', 'week1-scene-002'] },
+  { range: 'PHASE 1', label: '관광 자유 탐색', sceneIds: ['week1-scene-001'] },
   { range: 'PHASE 2', label: '전시장 자유 관람', sceneIds: ['week1-scene-003', 'week1-scene-003-minigame'] },
   {
     range: 'PHASE 3', label: '도난 발생 · 초기 조사',
