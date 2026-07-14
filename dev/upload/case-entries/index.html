@@ -60,6 +60,10 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .status-planned{color:var(--text-muted);background:rgba(255,255,255,.06)}
 pre.prompt-box{white-space:pre-wrap;font-family:var(--mono);font-size:11px;line-height:1.5;background:var(--surface-2);border:1px solid var(--divider);border-radius:10px;padding:12px;max-height:34vh;overflow-y:auto}
 .hint{font-size:11px;color:var(--text-muted);margin:6px 0}
+.preset-icon-grid{display:flex;flex-wrap:wrap;gap:6px}
+.preset-icon-chip{display:flex;align-items:center;gap:5px;background:var(--surface-2);border:1px solid var(--divider);border-radius:20px;padding:6px 11px;font-size:12px;color:var(--text-secondary);cursor:pointer;font-family:inherit}
+.preset-icon-chip .emoji{font-size:14px}
+.preset-icon-chip.active{border-color:rgba(89,184,200,.6);background:rgba(89,184,200,.14);color:var(--cyan)}
 </style>
 </head>
 <body>
@@ -134,11 +138,41 @@ function collectAllCaseDefinitions() {
   return Array.from(byId.values());
 }
 
+/* ===== 증거 프리셋 아이콘 (§증거 프리셋) — AI 스프라이트 시트 승인을
+   기다릴 필요 없이, 카드마다 카테고리 기본 아이콘보다 더 구체적인
+   이모지를 바로 골라 붙일 수 있게 하는 가벼운 대안. meta.presetIcon으로
+   저장되며 caseEntryModel.js의 fallbackIcon 계산이 이 값을 최우선으로
+   쓰므로(단, 승인된 imageAssetId보다는 낮은 우선순위) 케이스파일 탭/
+   탐색허브 제시 시트/대화 시트 세 곳에 코드 변경 없이 그대로 반영된다. */
+const EVIDENCE_ICON_PRESETS = [
+  { emoji: '🔑', label: '열쇠' },
+  { emoji: '🪪', label: '카드/신분증' },
+  { emoji: '📷', label: '사진' },
+  { emoji: '🎞️', label: '영상' },
+  { emoji: '📄', label: '문서' },
+  { emoji: '🧾', label: '영수증' },
+  { emoji: '✉️', label: '편지/메모' },
+  { emoji: '📓', label: '수첩/일기' },
+  { emoji: '🗺️', label: '지도' },
+  { emoji: '📱', label: '휴대폰' },
+  { emoji: '⌚', label: '시계' },
+  { emoji: '💍', label: '보석/장신구' },
+  { emoji: '👜', label: '가방/소지품' },
+  { emoji: '👣', label: '발자국' },
+  { emoji: '🖐️', label: '지문' },
+  { emoji: '🩸', label: '혈흔' },
+  { emoji: '🚪', label: '문/자물쇠' },
+  { emoji: '💰', label: '금전' },
+  { emoji: '🗣️', label: '진술' },
+  { emoji: '📦', label: '기타' },
+];
+
 let allDefs = [];
 let metaCatalog = {};
 let hardReferenced = new Set();
 let cardFilter = 'all';
 let selectedCardId = null;
+let editingPresetIcon = null; // 편집 중인 카드에서 고른 프리셋 이모지 — 저장 전까지는 폼 로컬 상태
 let sheetManifests = {};
 let selectedSheetId = null;
 let pendingMasterImg = null; // <img> currently loaded for slicing, per selected sheet
@@ -221,6 +255,7 @@ function renderEditForm() {
   if (!selectedCardId) { section.classList.add('hidden'); return; }
   const def = allDefs.find(d => d.id === selectedCardId);
   const meta = metaCatalog[selectedCardId] || {};
+  editingPresetIcon = meta.presetIcon || null;
   section.classList.remove('hidden');
   const arr = (v) => (v || []).join(', ');
   document.getElementById('editForm').innerHTML = `
@@ -229,6 +264,10 @@ function renderEditForm() {
       <select id="f-kind"><option value="">(자동 — category 기반)</option><option value="evidence"${meta.kind==='evidence'?' selected':''}>evidence</option><option value="testimony"${meta.kind==='testimony'?' selected':''}>testimony</option></select>
     </div>
     <div class="field field-check"><input type="checkbox" id="f-presentable" ${meta.presentable === false ? '' : 'checked'}><label for="f-presentable">제시 가능(presentable)</label></div>
+    <div class="field">
+      <label class="field-label">프리셋 아이콘 (개별 이미지 승인 전까지 카테고리 기본 아이콘 대신 쓸 이모지)</label>
+      <div class="preset-icon-grid" id="presetIconGrid"></div>
+    </div>
     <div class="field"><label class="field-label">groupId</label><input type="text" id="f-groupId" value="${escapeHtml(meta.groupId || '')}"></div>
     <div class="field field-check"><input type="checkbox" id="f-mergeAsStage" ${meta.mergeAsStage ? 'checked' : ''}><label for="f-mergeAsStage">이 카드를 대표 카드에 병합(mergeAsStage)</label></div>
     <div class="field"><label class="field-label">representativeId (병합 대상 대표 카드 id)</label><input type="text" id="f-representativeId" value="${escapeHtml(meta.representativeId || '')}"></div>
@@ -240,14 +279,33 @@ function renderEditForm() {
     <div class="field"><label class="field-label">iconComposition (시점·구도)</label><textarea id="f-iconComposition">${escapeHtml(meta.iconComposition || '')}</textarea></div>
     <div class="field"><label class="field-label">iconBackground</label><input type="text" id="f-iconBackground" value="${escapeHtml(meta.iconBackground || '')}"></div>
     <div class="hint">스프라이트 시트 배정: ${escapeHtml(meta.spriteSheetId || '미배정')}${meta.spriteSlot ? ' · 슬롯 ' + meta.spriteSlot : ''} — 배정은 아래 "스프라이트 시트" 섹션에서 한다.</div>
-    <div class="hint">이미지 상태: <span class="status-badge status-${meta.iconGenerationStatus || 'planned'}">${meta.iconGenerationStatus || 'planned'}</span>${meta.imageAssetId ? ' · 승인된 이미지 연결됨' : ' · 폴백 아이콘 사용 중'}</div>
+    <div class="hint">이미지 상태: <span class="status-badge status-${meta.iconGenerationStatus || 'planned'}">${meta.iconGenerationStatus || 'planned'}</span>${meta.imageAssetId ? ' · 승인된 이미지 연결됨' : (meta.presetIcon ? ' · 프리셋 아이콘 사용 중' : ' · 카테고리 기본 아이콘 사용 중')}</div>
     <div class="btn-row">
       <button class="btn btn-primary" id="saveCardBtn">저장</button>
       <button class="btn" id="closeCardBtn">닫기</button>
     </div>
   `;
+  renderPresetIconGrid();
   document.getElementById('closeCardBtn').addEventListener('click', () => { selectedCardId = null; renderCardList(); renderEditForm(); });
   document.getElementById('saveCardBtn').addEventListener('click', () => saveCardMeta(selectedCardId));
+}
+// 라디오처럼 하나만 고를 수 있고, 이미 고른 걸 다시 탭하면 선택 해제(=카테고리
+// 기본 아이콘으로 되돌림) — 빌드 뱃지 탭 토글과 같은 원칙(한 번 탭으로
+// 즉시 반응, 길게 누르기 없음). 폼 로컬 상태만 바꾸고 실제 저장은 다른
+// 필드들과 함께 "저장" 버튼을 눌러야 반영된다.
+function renderPresetIconGrid() {
+  const grid = document.getElementById('presetIconGrid');
+  if (!grid) return;
+  grid.innerHTML = EVIDENCE_ICON_PRESETS.map(p => `
+    <button type="button" class="preset-icon-chip${editingPresetIcon === p.emoji ? ' active' : ''}" data-preset-emoji="${p.emoji}">
+      <span class="emoji">${p.emoji}</span>${escapeHtml(p.label)}
+    </button>
+  `).join('');
+  grid.querySelectorAll('[data-preset-emoji]').forEach(btn => btn.addEventListener('click', () => {
+    const emoji = btn.dataset.presetEmoji;
+    editingPresetIcon = editingPresetIcon === emoji ? null : emoji;
+    renderPresetIconGrid();
+  }));
 }
 function splitCsv(v) { return v.split(',').map(s => s.trim()).filter(Boolean); }
 async function saveCardMeta(id) {
@@ -255,6 +313,7 @@ async function saveCardMeta(id) {
   const kindVal = document.getElementById('f-kind').value;
   const patch = {
     presentable: document.getElementById('f-presentable').checked,
+    presetIcon: editingPresetIcon,
     groupId: document.getElementById('f-groupId').value.trim() || null,
     mergeAsStage: document.getElementById('f-mergeAsStage').checked,
     representativeId: document.getElementById('f-representativeId').value.trim() || null,
