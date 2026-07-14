@@ -140,7 +140,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .transform-output{background:var(--surface-2);border:1px solid var(--divider);border-radius:8px;padding:8px 10px;font-family:var(--mono);font-size:10px;color:var(--cyan);margin-top:10px;white-space:pre-wrap;word-break:break-all}
 .transform-output.hidden{display:none}
 
-/* ===== Opening cinematic: blackout -> "SYDNEY / 09:30" -> reveal ===== */
+/* ===== Black overlay for minigame-start / autoplay-complete cards ===== */
 .intro-overlay{position:absolute;inset:0;z-index:9;background:#000;display:flex;align-items:center;justify-content:center;transition:opacity .5s ease}
 .intro-overlay.hidden{opacity:0;pointer-events:none}
 .intro-card{font-family:var(--mono);color:#fff;font-size:20px;letter-spacing:.18em;text-align:center;line-height:1.9;white-space:pre-line}
@@ -544,50 +544,14 @@ function updateArrow(show) {
   el.tapArrow.classList.toggle('show', !!show);
 }
 
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-// Typewriter effect for the intro-overlay's black card, shared by playIntro
-// (scene start) and playSceneTransition (mid-scene location change) below.
-// Resolves 0.8s after the last character lands, matching the original
-// "화면 암전 → 장소/시간 타자기 효과 → 0.8초 정지 → 배경 등장" beat.
-function typeIntroCard(text) {
-  el.introCard.textContent = '';
-  return new Promise(resolve => {
-    let i = 0;
-    const timer = setInterval(() => {
-      i++;
-      el.introCard.textContent = text.slice(0, i);
-      if (i >= text.length) {
-        clearInterval(timer);
-        setTimeout(resolve, 800);
-      }
-    }, 70);
-  });
-}
-
-// 화면 암전 → 장소/시간 타자기 효과 → 0.8초 정지 → 배경 등장.
-async function playIntro() {
-  await typeIntroCard(`${activeSceneData.introLabel}\n${activeSceneData.time}`);
-  el.introOverlay.classList.add('hidden');
-}
-
 // Mid-scene location change inside a merged, multi-location scene (see
 // dialogueData.js lines carrying a `sceneTransition` marker, e.g.
 // week0-scene-flight/week0-scene-002-1) — vnPlayer.js awaits this before
-// typing that line's text. Reuses the same black-card beat as playIntro(),
-// but the overlay starts hidden here, so it has to fade in first (matching
-// .intro-overlay's own .5s CSS transition) before the card starts typing,
-// and it swaps in the new location's background — stored under its own
-// virtual scene-id key, same one-slot-per-id pattern minigameId already
-// uses — while the screen is still black.
+// typing that line's text. Just swaps in the new location's background —
+// stored under its own virtual scene-id key, same one-slot-per-id pattern
+// minigameId already uses.
 async function playSceneTransition(transition) {
-  el.introOverlay.classList.remove('hidden');
-  await sleep(500);
-  await typeIntroCard(`${transition.introLabel}\n${transition.time}`);
   await applyBackground(transition.backgroundKey);
-  el.introOverlay.classList.add('hidden');
 }
 
 // 마지막 대사 직전: 배경이 서서히 어두워지고, 짧은 진동과 함께 화면 우측 아래에
@@ -1439,11 +1403,7 @@ async function applyDialogueOverrides() {
   await applyBackground();
   applyBgm();
   await preloadCharacterAssetsForLines(activeLines);
-  if (resumeLineIndex === null) {
-    await playIntro();
-  } else {
-    el.introOverlay.classList.add('hidden');
-  }
+  el.introOverlay.classList.add('hidden');
   player.load(applyTextSpeedSetting(activeLines), resumeLineIndex || 0);
 })();
 </script>
