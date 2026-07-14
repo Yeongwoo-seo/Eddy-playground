@@ -30,6 +30,15 @@
    background to place them sensibly); 조사하기 still toggles on and works
    with zero hotspots, it just has nothing to mark.
 
+   `charPositions` (optional) — { [characterId]: { x, y } } in px, the code
+   default for that character's standing offset in this location (same idiom
+   as mapPosition below: a static code value that AssetDB.getCharacterPositions'
+   saved override, keyed `${locationId}::${characterId}`, takes precedence
+   over when present). dev/explore/index.html's 캐릭터 위치 슬라이더 lets a
+   tester nudge this live and has a "코드 보기" button that prints the exact
+   snippet to paste in here once a position is finalized — see
+   resolveCharPos()/renderCharPosCode() there.
+
    `mapPosition` (optional) — { x, y } in % over that phase's overview map
    image (phaseMaps below), for locations landmark-level enough to get their
    own pin on a city map (서큘러키/오페라/하버브리지/더 록스처럼 지도에서
