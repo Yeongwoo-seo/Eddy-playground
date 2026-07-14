@@ -122,10 +122,11 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 
 /* ===== Location character chips — who's actually standing here, shown
    above the goal line so presence isn't hidden behind the 대화 sheet. A
-   location can list more than one character (§신규); only the phase's first
-   location auto-picks the first one as the default selection
-   (currentCharacterId, see renderLocationCharacters) — a chip switches which
-   one 대화하기/증거 제시 act on — see selectLocationCharacter. ===== */
+   location can list more than one character (§신규); the first one is the
+   default selection (currentCharacterId, see renderLocationCharacters) —
+   except 영우, who only auto-picks on the phase's first location since he
+   turns up almost everywhere. A chip switches which one 대화하기/증거 제시
+   act on — see selectLocationCharacter. ===== */
 .loc-characters{display:flex;gap:8px;margin-bottom:10px;overflow-x:auto}
 .loc-characters:empty{display:none;margin-bottom:0}
 .loc-char-chip{flex-shrink:0;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:5px 12px 5px 5px;color:var(--text-primary);font-family:inherit;cursor:pointer}
@@ -593,19 +594,28 @@ function locationCharacters() {
 // (selectLocationCharacter/setLocCharStage). 대화하기/증거 제시는 지금
 // 선택된 인물을 대상으로 한다.
 //
-// 자동 선택은 그 phase에 들어와서 처음 보는 장소에서만 첫 번째 인물로
-// 골라준다(charAutoPickPhase로 "이 phase는 이미 한 번 자동 선택했다"를
-// 기억) — 영우처럼 여러 장소에 계속 나오는 인물이 매 장소 이동마다 다시
-// 자동 선택되는 걸 막기 위함이다. 그 이후로는 지금 선택 그대로 유지하거나
-// (새 장소에도 있으면), 없으면 선택 없음(null)으로 둔다 — 플레이어가 직접
-// chip을 눌러야 한다. */
-let charAutoPickPhase = null;
+// 자동 선택은 기본적으로 그 장소의 첫 번째 인물이지만, 영우는 예외 —
+// 용의자/참고인과 달리 phase 내 거의 모든 장소에 계속 등장하는 인물이라
+// 그 규칙을 그대로 적용하면 장소를 옮길 때마다 매번 다시 자동 선택된다.
+// 그래서 영우는 그 phase에 들어와서 처음 보는 장소에서만 자동 선택하고
+// (youngwooAutoPickPhase로 "이 phase는 이미 한 번 자동 선택했다"를 기억),
+// 그 이후로는 지금 선택이 새 장소에도 있으면 그대로 유지, 없으면 선택
+// 없음(null)으로 둬서 플레이어가 직접 chip을 눌러야 한다. 영우가 아닌
+// 인물은 예전 그대로 매번 그 장소의 첫 번째 인물로 자동 선택된다. */
+const CHAR_ALWAYS_AUTO_PICK_ONCE_PER_PHASE = 'youngwoo';
+let youngwooAutoPickPhase = null;
 async function renderLocationCharacters() {
   const chars = locationCharacters();
-  const phase = ExplorationState.getCurrentPhase();
-  const isPhaseFirstLocation = phase !== charAutoPickPhase;
-  charAutoPickPhase = phase;
-  if (!chars.includes(currentCharacterId)) currentCharacterId = isPhaseFirstLocation ? (chars[0] || null) : null;
+  if (!chars.includes(currentCharacterId)) {
+    const fallback = chars[0] || null;
+    if (fallback === CHAR_ALWAYS_AUTO_PICK_ONCE_PER_PHASE) {
+      const phase = ExplorationState.getCurrentPhase();
+      currentCharacterId = phase !== youngwooAutoPickPhase ? fallback : null;
+      youngwooAutoPickPhase = phase;
+    } else {
+      currentCharacterId = fallback;
+    }
+  }
   el.locCharacters.innerHTML = chars.map(charId => {
     const person = dialogueCharacters.find(d => d.id === charId) || { name: charId };
     return `
