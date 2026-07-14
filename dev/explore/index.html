@@ -53,7 +53,8 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .loc-stage.placeholder{background-image:linear-gradient(160deg,#171c22 0%,#0d1114 60%,#080a0c 100%)}
 .loc-canvas{position:absolute;top:0;left:0;transform-origin:0 0;will-change:transform}
 .loc-canvas img{display:block;-webkit-user-drag:none;user-select:none}
-.bottom-bar{position:relative;z-index:2;margin-top:auto;background:rgba(5,7,10,.86);backdrop-filter:blur(10px);border-top:1px solid rgba(255,255,255,.1);padding:14px 16px calc(14px + env(safe-area-inset-bottom,0))}
+.bottom-bar{position:relative;z-index:2;margin-top:auto;background:rgba(5,7,10,.86);backdrop-filter:blur(10px);border-top:1px solid rgba(255,255,255,.1);padding:14px 16px calc(14px + env(safe-area-inset-bottom,0));transition:transform .25s ease,opacity .25s ease}
+.bottom-bar.hidden{transform:translateY(100%);opacity:0;pointer-events:none}
 .goal-line{font-size:13px;color:var(--text-secondary);line-height:1.5;margin-bottom:10px;word-break:keep-all}
 .goal-line b{color:var(--cyan)}
 .enter-scene-btn{background:var(--amber);color:#191206;font-weight:700;text-align:center;border:none}
@@ -88,6 +89,12 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .investigate-hint{position:absolute;left:16px;right:16px;top:calc(96px + env(safe-area-inset-top,0));z-index:2;text-align:center;font-size:13px;color:var(--text-secondary);background:rgba(8,10,12,.65);border-radius:14px;padding:10px 14px;pointer-events:none;opacity:0;transition:opacity .2s ease}
 .investigate-hint:empty{display:none}
 .investigate-hint.show{opacity:1}
+/* 조사하기가 켜지면 bottom-bar(하단 메뉴)를 통째로 치워 배경을 스와이프/줌으로
+   온전히 볼 수 있게 한다 — 그 안에 있던 조사하기 토글 버튼도 같이 사라지므로,
+   꺼서 원래 화면으로 돌아갈 별도의 떠 있는 버튼이 필요하다. */
+.investigate-close-btn{position:absolute;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0));transform:translateX(-50%);z-index:3;font-family:var(--sans);font-size:13px;font-weight:700;color:var(--text-primary);background:rgba(8,10,12,.75);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.18);border-radius:20px;padding:11px 22px;cursor:pointer}
+.investigate-close-btn:active{background:#1c2530}
+.investigate-close-btn.hidden{display:none}
 
 /* ===== Location character chips — who's actually standing here, shown
    above the goal line so presence isn't hidden behind the 대화 sheet. A
@@ -186,8 +193,9 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
     </div>
     <div class="loc-char-stage" id="locCharStage"><img id="locCharStageImg" alt=""></div>
     <div class="investigate-hint" id="investigateHint"></div>
+    <button class="investigate-close-btn hidden" id="investigateCloseBtn">조사 종료</button>
     <div class="move-fade" id="moveFade"></div>
-    <div class="bottom-bar">
+    <div class="bottom-bar" id="bottomBar">
       <div class="loc-characters" id="locCharacters"></div>
       <div class="goal-line" id="goalLine"></div>
       <button class="vn-btn enter-scene-btn hidden" id="enterSceneBtn" style="width:100%;margin-bottom:8px"></button>
@@ -285,6 +293,8 @@ const el = {
   moveBtn: document.getElementById('moveBtn'),
   presentBtn: document.getElementById('presentBtn'),
   investigateHint: document.getElementById('investigateHint'),
+  investigateCloseBtn: document.getElementById('investigateCloseBtn'),
+  bottomBar: document.getElementById('bottomBar'),
   listSheet: document.getElementById('listSheet'),
   listSheetTitle: document.getElementById('listSheetTitle'),
   listSheetBody: document.getElementById('listSheetBody'),
@@ -832,6 +842,11 @@ function setInvestigateMode(on) {
   investigateMode = on;
   el.investigateBtn.classList.toggle('active', on);
   el.investigateHint.classList.toggle('show', on);
+  // 조사하기 중엔 하단 메뉴(bottom-bar)를 통째로 치워 배경을 스와이프/줌으로
+  // 온전히 볼 수 있게 한다 — 그 안의 조사하기 토글도 같이 사라지므로, 대신
+  // 뜨는 investigateCloseBtn으로 끌 수 있다.
+  el.bottomBar.classList.toggle('hidden', on);
+  el.investigateCloseBtn.classList.toggle('hidden', !on);
   if (on) {
     renderInvestigateHotspots();
   } else {
@@ -840,6 +855,7 @@ function setInvestigateMode(on) {
   }
 }
 el.investigateBtn.addEventListener('click', () => setInvestigateMode(!investigateMode));
+el.investigateCloseBtn.addEventListener('click', () => setInvestigateMode(false));
 
 // Lightweight single-line reaction (증거 제시/인물에 대해 묻기의 기본 반응처럼
 // 대화 재생기까지 띄울 필요는 없는 짧은 피드백) — the dialogue layer with a
