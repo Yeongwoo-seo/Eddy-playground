@@ -98,6 +98,14 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .investigate-hint{position:absolute;left:16px;right:16px;top:calc(96px + env(safe-area-inset-top,0));z-index:2;text-align:center;font-size:13px;color:var(--text-secondary);background:rgba(8,10,12,.65);border-radius:14px;padding:10px 14px;pointer-events:none;opacity:0;transition:opacity .2s ease}
 .investigate-hint:empty{display:none}
 .investigate-hint.show{opacity:1}
+/* 캐릭터 위치 슬라이더 (§신규) — 지금 서 있는 인물(loc-char-stage)을 좌우로
+   옮겨서 AssetDB.setCharacterPosition에 장소+인물 조합별로 저장한다. 조사
+   하기가 켜지면 investigate-hint와 같은 자리를 놓고 다투지 않도록(둘 다 그때는
+   화면 조작이 우선) 같이 숨긴다 — renderCharPosSlider/setInvestigateMode 참고. */
+.char-pos-slider{position:absolute;left:16px;right:16px;top:calc(96px + env(safe-area-inset-top,0));z-index:2;display:flex;align-items:center;gap:10px;background:rgba(8,10,12,.65);backdrop-filter:blur(10px);border-radius:14px;padding:10px 14px}
+.char-pos-slider.hidden{display:none}
+.char-pos-label{font-family:var(--mono);font-size:11px;color:var(--text-secondary);white-space:nowrap;flex-shrink:0}
+.char-pos-slider input[type=range]{flex:1;accent-color:var(--cyan)}
 /* 조사하기가 켜지면 bottom-bar(하단 메뉴)를 통째로 치워 배경을 스와이프/줌으로
    온전히 볼 수 있게 한다 — 그 안에 있던 조사하기 토글 버튼도 같이 사라지므로,
    꺼서 원래 화면으로 돌아갈 별도의 떠 있는 버튼이 필요하다. */
@@ -209,6 +217,10 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
       <div class="loc-canvas" id="locCanvas"><img id="locImg" alt=""></div>
     </div>
     <div class="loc-char-stage" id="locCharStage"><img id="locCharStageImg" alt=""></div>
+    <div class="char-pos-slider hidden" id="charPosSlider">
+      <span class="char-pos-label">캐릭터 위치</span>
+      <input type="range" id="charPosRange" min="-150" max="150" step="1" value="0">
+    </div>
     <div class="investigate-hint" id="investigateHint"></div>
     <button class="investigate-close-btn hidden" id="investigateCloseBtn">조사 종료</button>
     <div class="move-fade" id="moveFade"></div>
@@ -311,6 +323,8 @@ const el = {
   moveBtn: document.getElementById('moveBtn'),
   presentBtn: document.getElementById('presentBtn'),
   investigateHint: document.getElementById('investigateHint'),
+  charPosSlider: document.getElementById('charPosSlider'),
+  charPosRange: document.getElementById('charPosRange'),
   investigateCloseBtn: document.getElementById('investigateCloseBtn'),
   bottomBar: document.getElementById('bottomBar'),
   interrogateBtn: document.getElementById('interrogateBtn'),
@@ -655,7 +669,7 @@ async function setLocCharStage(charId) {
     await new Promise(r => setTimeout(r, LOC_CHAR_STAGE_FADE_MS));
     if (token !== locCharStageToken) return;
   }
-  if (!charId) { el.locCharStageImg.removeAttribute('src'); return; }
+  if (!charId) { el.locCharStageImg.removeAttribute('src'); renderCharPosSlider(null); return; }
   const assetId = DevGameState.getCharacterAssetId(charId, 'neutral');
   const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
   if (token !== locCharStageToken) return;
@@ -665,7 +679,32 @@ async function setLocCharStage(charId) {
   } else {
     el.locCharStageImg.removeAttribute('src');
   }
+  renderCharPosSlider(charId);
 }
+
+// 캐릭터 위치 슬라이더 (§신규) — 지금 서 있는 인물을 좌우로 옮겨서 장소+인물
+// 조합별로 AssetDB.setCharacterPosition에 저장한다(같은 인물이라도 배경 사진
+// 구도에 따라 자연스러운 자리가 달라질 수 있어서). 조사하기 중엔 investigate-
+// hint와 같은 자리를 쓰므로(그때는 화면 조작이 우선) setInvestigateMode가
+// 같이 숨긴다.
+function charPosKey(locationId, characterId) { return `${locationId}::${characterId}`; }
+function applyCharPosOffset(x) { el.locCharStageImg.style.transform = x ? `translateX(${x}px)` : ''; }
+async function renderCharPosSlider(charId) {
+  if (!charId || investigateMode) { el.charPosSlider.classList.add('hidden'); return; }
+  const key = charPosKey(ExplorationState.getCurrentLocationId(), charId);
+  const positions = await AssetDB.getCharacterPositions().catch(() => ({}));
+  if (!charId || charId !== currentCharacterId) return; // superseded by another switch while this was loading
+  const x = (positions[key] && positions[key].x) || 0;
+  el.charPosRange.value = x;
+  applyCharPosOffset(x);
+  el.charPosSlider.dataset.key = key;
+  el.charPosSlider.classList.remove('hidden');
+}
+el.charPosRange.addEventListener('input', () => applyCharPosOffset(Number(el.charPosRange.value)));
+el.charPosRange.addEventListener('change', () => {
+  const key = el.charPosSlider.dataset.key;
+  if (key) AssetDB.setCharacterPosition(key, { x: Number(el.charPosRange.value) }).catch(() => {});
+});
 
 // Pre-existing gap: listSheet's own 닫기 button had no handler at all (every
 // caller only ever closed it indirectly, by picking a row) — now that 이동/
@@ -888,9 +927,11 @@ function setInvestigateMode(on) {
   el.investigateCloseBtn.classList.toggle('hidden', !on);
   if (on) {
     renderInvestigateHotspots();
+    el.charPosSlider.classList.add('hidden'); // investigate-hint와 같은 자리 — 조사 중엔 화면 조작이 우선
   } else {
     clearInvestigateHotspots();
     if (locCanvasW) fitLocStage(); // 화면 이동 잠금으로 돌아갈 때 팬/줌 위치도 기본 프레임으로 리셋
+    renderCharPosSlider(currentCharacterId);
   }
 }
 el.investigateBtn.addEventListener('click', () => setInvestigateMode(!investigateMode));
