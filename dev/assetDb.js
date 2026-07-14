@@ -824,51 +824,6 @@ const AssetDB = (() => {
     return map;
   }
 
-  // 장소별 대기 캐릭터 위치 override — { [`${locationId}::${characterId}`]:
-  // { x, y } } (px, .loc-char-stage 중앙/바닥 기준 좌우·상하 이동량). 같은
-  // 물리적 자리라도 배경 사진 구도에 따라 인물이 화면 중앙보다 좌/우/상/하로
-  // 서 있는 게 자연스러운 경우가 있어, 탐색허브의 슬라이더(renderCharPosSlider,
-  // dev/explore/index.html)로 즉석에서 조정하고 여기 저장한다 — 같은 단일
-  // JSON blob 패턴. locationDefs.js의 charPositions가 코드 기본값이고, 여기
-  // 값이 있으면 그게 우선한다(resolveCharPos, mapPosition/pinOverrides와
-  // 같은 우선순위 관계).
-  const characterPositionsCache = new Map(); // single entry keyed 'positions'
-  const CHARACTER_POSITIONS_PATH = 'character-positions/positions.json';
-
-  async function getCharacterPositions() {
-    if (characterPositionsCache.has('positions')) return characterPositionsCache.get('positions');
-    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${CHARACTER_POSITIONS_PATH}?t=${Date.now()}`;
-    try {
-      const map = (await fetchJsonBlob(url)) || {};
-      characterPositionsCache.set('positions', map);
-      return map;
-    } catch (e) {
-      return characterPositionsCache.get('positions') || {};
-    }
-  }
-
-  async function setCharacterPosition(key, pos) {
-    if (!key) return {};
-    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${CHARACTER_POSITIONS_PATH}?t=${Date.now()}`;
-    const current = await readCurrentForWrite(characterPositionsCache, 'positions', url, {});
-    const map = Object.assign({}, current);
-    if (pos) map[key] = pos; else delete map[key];
-    const blob = new Blob([JSON.stringify(map)], { type: 'application/json' });
-    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${DEV_ASSETS_BUCKET}/${CHARACTER_POSITIONS_PATH}`, {
-      method: 'POST',
-      headers: {
-        apikey: SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-        'Content-Type': 'application/json',
-        'x-upsert': 'true',
-      },
-      body: blob,
-    });
-    if (!res.ok) throw new Error(`캐릭터 위치 저장 실패 (${res.status}): ${await res.text()}`);
-    characterPositionsCache.set('positions', map);
-    return map;
-  }
-
   // 씬 배경 슬롯(위 backgroundKinds()의 sceneId key, 예: 'week0-scene-002-1')
   // → { locationId, variantId } 배정. dialogueData.js는 정적 스크립트 파일이라
   // /dev/upload에서 직접 고쳐 쓸 수 없으므로, "이 슬롯이 어느 장소인지"는 코드가
@@ -966,7 +921,6 @@ const AssetDB = (() => {
     getLocations, setLocation,
     getSceneLocationMap, setSceneLocation, primeSceneLocationMap,
     getMapPins, setMapPin,
-    getCharacterPositions, setCharacterPosition,
     getCaseEntryMeta, setCaseEntryMeta, prefetchCaseEntryMeta, getCaseEntryMetaCached,
     getSpriteSheetManifests, getSpriteSheetManifest, setSpriteSheetManifest,
   };

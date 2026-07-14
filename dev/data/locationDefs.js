@@ -30,18 +30,13 @@
    background to place them sensibly); 조사하기 still toggles on and works
    with zero hotspots, it just has nothing to mark.
 
-   `charPositions` (optional) — { [characterId]: { x, y } } in px, the code
-   default for that character's standing offset in *this* location only, for
-   the rare spot that needs to differ from the hub-wide default. Every hub
+   `charPositions` (optional) — { [characterId]: { x, y } } in px, this
+   location's own exception to the hub-wide standing position. Every hub
    character otherwise stands at DEFAULT_HUB_CHAR_POS (dev/explore/index.html,
-   currently { x: 0, y: -150 }) — a location doesn't need this field unless
-   it's overriding that shared default. Same idiom as mapPosition below either
-   way: a static code value that AssetDB.getCharacterPositions' saved override,
-   keyed `${locationId}::${characterId}`, takes precedence over when present.
-   dev/explore/index.html's 캐릭터 위치 슬라이더 lets a tester nudge this live
-   and has a "코드 보기" button that prints the exact snippet to paste in here
-   once a location-specific position is finalized — see resolveCharPos()/
-   renderCharPosCode() there.
+   currently { x: 0, y: -150 }) — a location only needs this field for the
+   rare spot where that shared default doesn't fit. Purely a static code
+   value now (no runtime editor/override store backs it) — see
+   resolveCharPos() in dev/explore/index.html.
 
    `mapPosition` (optional) — { x, y } in % over that phase's overview map
    image (phaseMaps below), for locations landmark-level enough to get their
