@@ -579,18 +579,20 @@ function renderLocation() {
   return bgReady;
 }
 
-// opts.animate (§신규 이동 트랜지션) — plays the dark→light .move-fade cover
-// around the state swap below. Defaults to on for every caller (map card taps,
-// inline-scene-complete hand-offs back into the hub, phase boot) so a
-// background swap never pops in bare mid-load — pass { animate: false } to
-// opt out for the rare case where nothing is on screen yet to fade from.
+// opts.animate (§신규 이동 트랜지션) — covers the state swap below with
+// .move-fade for exactly as long as performMove actually takes, instead of a
+// fixed wait — preloadPhaseAssets already warmed every location this phase
+// can move to before the player could ever tap 이동하기, so in practice this
+// resolves within a frame or two and the button feels instant; the cover
+// still protects the rare slow/uncached case from a bare mid-load pop.
+// Defaults to on for every caller — pass { animate: false } to opt out for
+// the rare case where nothing is on screen yet to fade from.
 function moveTo(locationId, opts) {
   if (!opts || opts.animate !== false) {
     el.moveFade.classList.add('show');
-    setTimeout(async () => {
-      await performMove(locationId);
+    performMove(locationId).then(() => {
       requestAnimationFrame(() => el.moveFade.classList.remove('show'));
-    }, 260);
+    });
     return;
   }
   performMove(locationId);
@@ -1575,6 +1577,12 @@ async function preloadPhaseAssets(phaseId) {
     const backgroundIds = (await Promise.all(locationIds.map(id => DevGameState.getBackgroundId(id).catch(() => null)))).filter(Boolean);
     const phaseMap = (typeof phaseMaps !== 'undefined') ? phaseMaps[phaseId] : null;
     const mapAssetId = phaseMap ? await DevGameState.getBackgroundId(phaseMap.id).catch(() => null) : null;
+    // 이동하기 지도 시트가 열릴 때 처음으로 AssetDB.getMapPins()를 부르면 그
+    // 자리에서 핀 좌표 JSON을 새로 받아오느라 지도가 한 박자 늦게 뜬다
+    // (mapPinsCache는 세션스토리지가 아니라 페이지 인스턴스 수명인 메모리
+    // 캐시라, 새 phase로 넘어오는 매 페이지 로드마다 다시 비어 있음) — 배경
+    // 사진들과 함께 여기서 미리 데워 둔다.
+    if (phaseMap) AssetDB.getMapPins().catch(() => {});
     const characterAssetIds = collectPhaseCharacterAssetIds(phaseId, locationIds);
     const assetIds = [...new Set([...backgroundIds, ...(mapAssetId ? [mapAssetId] : []), ...characterAssetIds])];
     const assets = assetIds.length ? await AssetDB.getAssetsByIds(assetIds) : [];
