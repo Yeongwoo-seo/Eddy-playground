@@ -20,7 +20,7 @@
    { id, kind: 'evidence'|'testimony'|'memo', subtype, code, title, summary,
      description, presentable, status, discoveredAt, discoveredLocationText,
      groupId, representativeId, relatedNpcIds, relatedLocationIds,
-     topicTags, week, iconKey, imageAssetId, detailImageAssetId,
+     topicTags, week, iconKey, imageAssetId, detailImageAssetId, presetIcon,
      fallbackIcon, stages[], history[], sourceIds[] } */
 
 /* ===== 타입별 폴백 아이콘 (§10.14 우선순위의 마지막 단계) ===== */
@@ -71,7 +71,13 @@ function normalizeLegacyEvidence(item, meta) {
     iconKey: meta.iconKey || null,
     imageAssetId: meta.imageAssetId || null,
     detailImageAssetId: meta.detailImageAssetId || null,
-    fallbackIcon: caseEntryFallbackIcon(kind, item.category || 'etc'),
+    // presetIcon (§증거 프리셋 아이콘) — an admin can hand-pick a more
+    // specific emoji per card (dev/upload/case-entries) without going
+    // through the AI sprite-sheet approval pipeline; it outranks the
+    // generic per-category fallback but still yields to a real approved
+    // imageAssetId above.
+    presetIcon: meta.presetIcon || null,
+    fallbackIcon: meta.presetIcon || caseEntryFallbackIcon(kind, item.category || 'etc'),
     stages: ownEvidenceStages(item),
     history: kind === 'testimony' ? testimonyHistoryFor(item) : [],
     sourceIds: [item.id],

@@ -580,11 +580,12 @@ function renderLocation() {
 }
 
 // opts.animate (§신규 이동 트랜지션) — plays the dark→light .move-fade cover
-// around the state swap below, but only for an in-hub move a player actually
-// picked from openMoveSheet(); boot-time/first-visit/routeOnEnter calls stay
-// instant since those either render nothing yet or navigate away entirely.
+// around the state swap below. Defaults to on for every caller (map card taps,
+// inline-scene-complete hand-offs back into the hub, phase boot) so a
+// background swap never pops in bare mid-load — pass { animate: false } to
+// opt out for the rare case where nothing is on screen yet to fade from.
 function moveTo(locationId, opts) {
-  if (opts && opts.animate) {
+  if (!opts || opts.animate !== false) {
     el.moveFade.classList.add('show');
     setTimeout(async () => {
       await performMove(locationId);
@@ -801,7 +802,7 @@ function renderExitListRows(container, exitDefs, emptyText) {
   container.querySelectorAll('[data-exit]').forEach(btn => btn.addEventListener('click', () => {
     el.listSheet.classList.add('hidden');
     el.moveMapSheet.classList.add('hidden');
-    moveTo(btn.dataset.exit, { animate: true });
+    moveTo(btn.dataset.exit);
   }));
 }
 
@@ -859,7 +860,7 @@ async function openMoveMapSheet(phaseMap, mapDests, listDests) {
     btn.innerHTML = `<span class="move-pin-label">${escapeHtml(destDef.name)}</span>`;
     btn.addEventListener('click', () => {
       el.moveMapSheet.classList.add('hidden');
-      moveTo(destDef.id, { animate: true });
+      moveTo(destDef.id);
     });
     el.moveMapPins.appendChild(btn);
   });
