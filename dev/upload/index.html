@@ -120,6 +120,17 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .hotspot-actions button:disabled{opacity:.4;cursor:default}
 .hotspot-secondary-btn{background:var(--surface-2) !important;color:var(--text-secondary) !important;border:1px solid var(--divider) !important}
 
+/* ===== 지도 핀 편집기 — 탐색허브 탭에서 지도(phaseMaps) pseudo-location을
+   고르면 뜬다. 폴리곤 hotspot-stage보다 훨씬 단순한 문제(위치당 점 하나)라
+   팬/줌 없이 고정 비율 박스에 탭 한 번으로 좌표를 잡는다(renderMapPinPanel).
+   ===== */
+.map-pin-panel{background:var(--surface-1);border:1px solid var(--divider);border-radius:14px;padding:16px;margin-bottom:24px}
+.map-pin-panel.hidden{display:none}
+.map-pin-stage{position:relative;width:100%;aspect-ratio:4/5;border-radius:10px;overflow:hidden;background-color:var(--surface-3);background-size:cover;background-position:center;cursor:crosshair}
+.map-pin-dot{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;border:3px solid var(--amber);background:rgba(214,168,75,.3);pointer-events:none}
+.map-pin-dot.selected{border-color:var(--cyan);background:rgba(89,184,200,.4)}
+.map-pin-dot-label{position:absolute;top:100%;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:10px;font-weight:700;margin-top:3px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9),0 0 2px rgba(0,0,0,.9)}
+
 /* ===== Evidence-collection 아이템/상호작용 tabs — see applyFocusModeChrome
    and selectFocusTab. Plain form fields styled to match the picker/panel
    look used everywhere else on this page (surface-2 fill, divider border,
@@ -300,6 +311,20 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
     <textarea class="interaction-textarea" id="hubPromptText" readonly spellcheck="false" style="min-height:220px"></textarea>
     <button class="select-btn" id="hubPromptCopyBtn" style="width:100%;margin-top:8px">📋 프롬프트 복사</button>
     <div class="hint" id="hubPromptCopyStatus" style="margin-top:6px"></div>
+  </div>
+
+  <!-- 지도 핀 편집기 — 지도(🗺) pseudo-location을 골랐을 때만 보인다. 이
+       phase에서 mapPosition을 가진(=landmark급으로 이미 지정된) 위치들만
+       고를 수 있고, 지도 그림을 탭하면 그 위치의 좌표를 저장한다(AssetDB
+       map-pins — dev/data/locationDefs.js의 정적 mapPosition보다 우선해서
+       읽힘, see dev/explore/index.html openMoveMapSheet). 어떤 위치가 지도에
+       핀을 갖는지 자체는 여전히 locationDefs.js를 고쳐야 하는 코드 결정 —
+       여기선 그 좌표만 시각적으로 조정한다. -->
+  <div class="map-pin-panel hidden" id="mapPinPanel">
+    <div class="picker-label">지도 핀 위치 — 아래 지도를 탭해서 놓기</div>
+    <div class="picker-pills" id="mapPinLocationPills" style="margin-bottom:10px"></div>
+    <div class="map-pin-stage" id="mapPinStage"><div id="mapPinDots"></div></div>
+    <div class="hint" id="mapPinHint" style="margin:10px 0 0"></div>
   </div>
 
   <!-- 배경 DB의 일반 씬 배경 슬롯(미니게임 아님) + 탐색허브 위치가 공유하는
@@ -776,6 +801,11 @@ const el = {
   hubPromptText: document.getElementById('hubPromptText'),
   hubPromptCopyBtn: document.getElementById('hubPromptCopyBtn'),
   hubPromptCopyStatus: document.getElementById('hubPromptCopyStatus'),
+  mapPinPanel: document.getElementById('mapPinPanel'),
+  mapPinLocationPills: document.getElementById('mapPinLocationPills'),
+  mapPinStage: document.getElementById('mapPinStage'),
+  mapPinDots: document.getElementById('mapPinDots'),
+  mapPinHint: document.getElementById('mapPinHint'),
   bgLocationAssignPanel: document.getElementById('bgLocationAssignPanel'),
   bgLocationAssignedLabel: document.getElementById('bgLocationAssignedLabel'),
   bgLocationAssignPills: document.getElementById('bgLocationAssignPills'),
@@ -1260,6 +1290,74 @@ function renderHubPromptPanel() {
   el.hubPromptCopyStatus.textContent = '';
 }
 
+/* ===== 지도 핀 편집기 — 지도(🗺) pseudo-location을 골랐을 때만 보인다.
+   dev/data/locationDefs.js에 mapPosition이 있는(=이미 랜드마크급으로 지정된)
+   위치만 고를 수 있고, 지도 그림을 탭하면 AssetDB.setMapPin으로 그 위치의
+   좌표 override를 저장한다 — dev/explore/index.html의 이동하기 지도가 이
+   override를 mapPosition보다 우선해서 읽는다(location-background-system과
+   같은 이유: 정적 코드를 고치지 않고 실제 그림 보면서 조정). ===== */
+let currentMapPinLocationId = null;
+async function renderMapPinPanel() {
+  const loc = currentHubLocation();
+  const isMap = !!(loc && loc.isMap);
+  el.mapPinPanel.classList.toggle('hidden', !isMap);
+  if (!isMap) return;
+  const phaseLocs = hubLocationsForPhase(currentHubPhase).filter(l => l.mapPosition);
+  if (!phaseLocs.length) {
+    el.mapPinLocationPills.innerHTML = '';
+    el.mapPinDots.innerHTML = '';
+    el.mapPinHint.textContent = '이 단계에 mapPosition을 가진 위치가 없습니다 (dev/data/locationDefs.js 참고).';
+    return;
+  }
+  if (!currentMapPinLocationId || !phaseLocs.some(l => l.id === currentMapPinLocationId)) currentMapPinLocationId = phaseLocs[0].id;
+
+  let pins = {};
+  try { pins = await AssetDB.getMapPins(); } catch (err) { DevDiag.show('지도 핀 정보를 불러오지 못했습니다: ' + (err && err.message ? err.message : err)); }
+
+  el.mapPinLocationPills.innerHTML = phaseLocs.map(l =>
+    `<button class="pill${l.id === currentMapPinLocationId ? ' active' : ''}" data-id="${l.id}">${escapeHtml(l.name)}${pins[l.id] ? ' •' : ''}</button>`
+  ).join('');
+  el.mapPinLocationPills.querySelectorAll('.pill').forEach(btn => {
+    btn.addEventListener('click', () => { currentMapPinLocationId = btn.dataset.id; renderMapPinPanel(); });
+  });
+
+  const assetId = await DevGameState.getBackgroundId(loc.id).catch(() => null);
+  const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
+  el.mapPinStage.style.backgroundImage = (asset && asset.dataUrl) ? `url(${asset.dataUrl})` : '';
+
+  el.mapPinDots.innerHTML = '';
+  phaseLocs.forEach(l => {
+    const pos = pins[l.id] || l.mapPosition;
+    const dot = document.createElement('div');
+    dot.className = 'map-pin-dot' + (l.id === currentMapPinLocationId ? ' selected' : '');
+    dot.style.left = pos.x + '%';
+    dot.style.top = pos.y + '%';
+    dot.innerHTML = `<span class="map-pin-dot-label">${escapeHtml(l.name)}</span>`;
+    el.mapPinDots.appendChild(dot);
+  });
+
+  const savedPos = pins[currentMapPinLocationId];
+  el.mapPinHint.textContent = asset
+    ? (savedPos
+      ? `저장된 위치: x ${savedPos.x}%, y ${savedPos.y}% — 지도를 다시 탭하면 옮겨집니다.`
+      : '아직 이 위치의 핀을 조정하지 않았습니다(코드 기본값 사용 중) — 지도를 탭해서 놓으세요.')
+    : '먼저 이 지도의 배경 이미지를 위 장소 배정 패널에서 업로드하세요. (이미지 없이도 탭으로 좌표는 저장할 수 있습니다)';
+}
+
+el.mapPinStage.addEventListener('click', async (e) => {
+  if (!currentMapPinLocationId) return;
+  const rect = el.mapPinStage.getBoundingClientRect();
+  const x = Math.round(Math.min(100, Math.max(0, ((e.clientX - rect.left) / rect.width) * 100)) * 10) / 10;
+  const y = Math.round(Math.min(100, Math.max(0, ((e.clientY - rect.top) / rect.height) * 100)) * 10) / 10;
+  el.mapPinHint.textContent = '저장하는 중...';
+  try {
+    await AssetDB.setMapPin(currentMapPinLocationId, { x, y });
+    await renderMapPinPanel();
+  } catch (err) {
+    el.mapPinHint.textContent = '저장 실패: ' + (err && err.message ? err.message : err);
+  }
+});
+
 el.hubPromptCopyBtn.addEventListener('click', async () => {
   if (!el.hubPromptText.value) return;
   try {
@@ -1317,6 +1415,7 @@ function renderHubLocationPicker() {
   updateBackgroundModeChrome();
   renderBgLocationAssign();
   renderHubPromptPanel();
+  renderMapPinPanel();
 }
 
 /* ===== 배경 DB tab: 일반 씬 배경 슬롯의 장소 배정 (미니게임 kind는 기존

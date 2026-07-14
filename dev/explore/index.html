@@ -116,7 +116,6 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .move-pin:active{transform:scale(.92)}
 .move-pin.current{border-color:var(--cyan);background:rgba(89,184,200,.3);cursor:default}
 .move-pin.current::after{background:var(--cyan)}
-.move-pin.locked{opacity:.4;filter:grayscale(.6);cursor:default}
 .move-pin-label{position:absolute;top:100%;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:10.5px;font-weight:700;margin-top:4px;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.9),0 0 2px rgba(0,0,0,.9)}
 .move-map-listnote{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--text-muted);text-transform:uppercase;margin:2px 0 8px}
 .action-btn{width:100%;text-align:left;background:var(--surface-2);color:var(--text-primary);border:1px solid var(--divider);border-radius:12px;padding:14px 16px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:8px}
@@ -605,17 +604,10 @@ el.presentBtn.addEventListener('click', () => resolveCharacterThen(
 ));
 el.moveBtn.addEventListener('click', openMoveSheet);
 
-// exitUnlocked() — shared by both the map pins and the plain-list fallback
-// below, same unlock check openMoveSheet always used.
-function exitUnlocked(exitDef) {
-  return ExplorationState.isLocationUnlocked(exitDef.id) || (exitDef.phases || []).includes(ExplorationState.getCurrentPhase());
-}
-
 function renderExitListRows(container, exitDefs, emptyText) {
-  container.innerHTML = exitDefs.length ? exitDefs.map(exitDef => {
-    const unlocked = exitUnlocked(exitDef);
-    return `<button class="topic-row" data-exit="${exitDef.id}"${unlocked ? '' : ' disabled'}><div class="topic-row-main">→ ${escapeHtml(exitDef.name)}</div></button>`;
-  }).join('') : (emptyText ? `<div class="empty-note">${emptyText}</div>` : '');
+  container.innerHTML = exitDefs.length ? exitDefs.map(exitDef =>
+    `<button class="topic-row" data-exit="${exitDef.id}"><div class="topic-row-main">→ ${escapeHtml(exitDef.name)}</div></button>`
+  ).join('') : (emptyText ? `<div class="empty-note">${emptyText}</div>` : '');
   container.querySelectorAll('[data-exit]').forEach(btn => btn.addEventListener('click', () => {
     el.listSheet.classList.add('hidden');
     el.moveMapSheet.classList.add('hidden');
@@ -623,63 +615,70 @@ function renderExitListRows(container, exitDefs, emptyText) {
   }));
 }
 
-// 이동하기 — 현재 phase에 phaseMaps(dev/data/locationDefs.js) 정의가 있고,
-// exit 중 mapPosition을 가진 "지도급" 장소가 하나라도 있으면 지도+핀으로,
+// 이동하기 — 같은 phase 안이면 지금 있는 곳과 무관하게 어디든 바로 갈 수
+// 있다(더 이상 locationDefs.js의 exits로 인접한 곳만 보여주지 않는다 — 그
+// 필드는 이제 참고용 기록일 뿐, see locationDefs.js 상단 주석). phaseMaps
+// 정의가 있고 mapPosition을 가진 "지도급" 장소가 하나라도 있으면 지도+핀으로,
 // 그렇지 않은 phase(용의자 탐문/재검증처럼 좁은 구역을 도는 phase)는 기존
 // 리스트 시트 그대로 보여준다.
 function openMoveSheet() {
   const currentId = ExplorationState.getCurrentLocationId();
-  const def = locationDefs[currentId];
-  if (!def) return;
-  const exitDefs = (def.exits || []).map(exitId => locationDefs[exitId]).filter(Boolean);
-  const phaseMap = (typeof phaseMaps !== 'undefined') ? phaseMaps[ExplorationState.getCurrentPhase()] : null;
-  const mapExits = phaseMap ? exitDefs.filter(d => d.mapPosition) : [];
-  if (phaseMap && mapExits.length) {
-    openMoveMapSheet(phaseMap, mapExits, exitDefs.filter(d => !d.mapPosition));
+  const phase = ExplorationState.getCurrentPhase();
+  const destDefs = Object.values(locationDefs).filter(l => l.id !== currentId && (l.phases || []).includes(phase));
+  const phaseMap = (typeof phaseMaps !== 'undefined') ? phaseMaps[phase] : null;
+  const mapDests = phaseMap ? destDefs.filter(d => d.mapPosition) : [];
+  if (phaseMap && mapDests.length) {
+    openMoveMapSheet(phaseMap, mapDests, destDefs.filter(d => !d.mapPosition));
   } else {
     el.listSheetTitle.textContent = '이동하기';
-    renderExitListRows(el.listSheetBody, exitDefs, '지금은 이동할 곳이 없습니다.');
+    renderExitListRows(el.listSheetBody, destDefs, '지금은 이동할 곳이 없습니다.');
     el.listSheet.classList.remove('hidden');
   }
 }
 
-async function openMoveMapSheet(phaseMap, mapExits, listExits) {
+async function openMoveMapSheet(phaseMap, mapDests, listDests) {
   const currentId = ExplorationState.getCurrentLocationId();
   const currentDef = locationDefs[currentId];
   el.moveMapPins.innerHTML = '';
   el.moveMapWrap.style.backgroundImage = '';
   el.moveMapSheet.classList.remove('hidden');
 
-  // 현재 위치도 그 phase 지도에 자기 mapPosition이 있으면 (cyan) 핀으로 같이
-  // 찍어 방향 감각을 준다 — exit 목록엔 없으니 mapExits와 분리해서 그린다.
-  if (currentDef && currentDef.mapPosition) {
+  // 좌표는 locationDefs.js의 정적 mapPosition이 기본값, /dev/upload 탐색허브
+  // 탭의 지도 핀 편집기가 저장한 override(AssetDB.getMapPins)가 있으면 그게
+  // 우선한다 — 코드 수정 없이 실제 생성된 지도 그림 보면서 미세 조정 가능.
+  const pinOverrides = await AssetDB.getMapPins().catch(() => ({}));
+  function pinPosition(locDef) { return pinOverrides[locDef.id] || locDef.mapPosition; }
+
+  // 현재 위치도 그 phase 지도에 좌표가 있으면 (cyan) 핀으로 같이 찍어 방향
+  // 감각을 준다 — mapDests엔 없으니 분리해서 그린다.
+  const currentPos = currentDef && pinPosition(currentDef);
+  if (currentPos) {
     const cur = document.createElement('div');
     cur.className = 'move-pin current';
-    cur.style.left = currentDef.mapPosition.x + '%';
-    cur.style.top = currentDef.mapPosition.y + '%';
+    cur.style.left = currentPos.x + '%';
+    cur.style.top = currentPos.y + '%';
     cur.innerHTML = `<span class="move-pin-label">현재 위치</span>`;
     el.moveMapPins.appendChild(cur);
   }
-  mapExits.forEach(exitDef => {
-    const unlocked = exitUnlocked(exitDef);
+  mapDests.forEach(destDef => {
+    const pos = pinPosition(destDef);
     const btn = document.createElement('button');
-    btn.className = 'move-pin' + (unlocked ? '' : ' locked');
-    btn.style.left = exitDef.mapPosition.x + '%';
-    btn.style.top = exitDef.mapPosition.y + '%';
-    btn.disabled = !unlocked;
-    btn.innerHTML = `<span class="move-pin-label">${escapeHtml(exitDef.name)}</span>`;
+    btn.className = 'move-pin';
+    btn.style.left = pos.x + '%';
+    btn.style.top = pos.y + '%';
+    btn.innerHTML = `<span class="move-pin-label">${escapeHtml(destDef.name)}</span>`;
     btn.addEventListener('click', () => {
       el.moveMapSheet.classList.add('hidden');
-      moveTo(exitDef.id, { animate: true });
+      moveTo(destDef.id, { animate: true });
     });
     el.moveMapPins.appendChild(btn);
   });
 
-  if (listExits.length) {
+  if (listDests.length) {
     el.moveMapListWrap.innerHTML = '<div class="move-map-listnote">그 밖의 이동 가능한 곳</div>';
     const rows = document.createElement('div');
     el.moveMapListWrap.appendChild(rows);
-    renderExitListRows(rows, listExits);
+    renderExitListRows(rows, listDests);
   } else {
     el.moveMapListWrap.innerHTML = '';
   }
