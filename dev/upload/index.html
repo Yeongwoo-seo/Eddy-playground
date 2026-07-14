@@ -161,6 +161,8 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .evidence-panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px}
 .gear-btn{width:34px;height:34px;border-radius:50%;background:var(--surface-2);border:1px solid var(--divider);color:var(--text-primary);font-size:15px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center}
 .evidence-thumb-empty{display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:20px}
+.evidence-kind-tag-evidence{background:rgba(89,184,200,.14);color:var(--cyan);margin-right:6px}
+.evidence-kind-tag-testimony{background:rgba(214,168,75,.14);color:var(--amber);margin-right:6px}
 
 .dialogue-panel.hidden{display:none}
 .dialogue-bulk-input{width:100%;background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:14px 16px;color:var(--text-primary);font-size:13.5px;line-height:1.7;font-family:var(--mono);resize:vertical;min-height:320px}
@@ -581,6 +583,13 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
     </div>
     <div class="hint" style="margin:8px 0 14px;text-align:left">전체 대사·탐색허브 상호작용에 등록된 증거를 훑어 모은 목록입니다. 목록 내용 자체는 읽기 전용이라 고쳐도 실제 스토리 콘텐츠(코드)는 바뀌지 않습니다 — ID/코드 중복 점검 용도로만 쓰세요. 사진은 증거별로 AI 생성 프롬프트를 뽑아 외부 도구에서 만든 뒤 여기 업로드해 배정합니다(자동으로 배경 제거·정사각형 크롭). 일부 미니게임이 자체적으로 만들어 붙이는 증거는 목록에 포함되지 않습니다.</div>
     <input type="text" class="text-input" id="evidenceSearchInput" placeholder="제목·코드·설명 검색" style="margin-bottom:12px">
+    <!-- 증거·증언·추리메모 재설계 §Phase 1 원칙 재적용 — 진술(테스티모니)을
+         물증/사진·영상/기록/기타와 같은 층위의 카테고리로 두지 않고, kind(증거/
+         증언)를 먼저 나눈 뒤 그 하위에서만 카테고리로 더 좁힌다. caseEntryModel.js의
+         inferCaseEntryKind와 완전히 같은 규칙(category==='testimony' ? 'testimony' :
+         'evidence')을 재사용해 나머지 화면(케이스 파일 탭/제시 시트)과 분류가
+         어긋나지 않게 한다. -->
+    <div class="picker-pills" id="evidenceKindPills" style="margin-bottom:10px"></div>
     <div class="picker-pills" id="evidenceCategoryPills" style="margin-bottom:14px"></div>
     <div class="hint" id="evidenceCountHint" style="margin:0 0 14px"></div>
     <div id="evidenceList"></div>
@@ -688,6 +697,7 @@ window.__removeBackgroundReady = import('https://cdn.jsdelivr.net/npm/@imgly/bac
 <script src="/dev/data/interactionDefs.js"></script>
 <script src="/dev/data/shopItems.js"></script>
 <script src="/dev/dialoguePanel.js"></script>
+<script src="/dev/caseEntryModel.js"></script>
 <script>
 let currentType = 'background';
 let currentWeekId = weeks[0].id;
@@ -826,6 +836,7 @@ const el = {
   tabEvidence: document.getElementById('tabEvidence'),
   evidencePanel: document.getElementById('evidencePanel'),
   evidenceSearchInput: document.getElementById('evidenceSearchInput'),
+  evidenceKindPills: document.getElementById('evidenceKindPills'),
   evidenceCategoryPills: document.getElementById('evidenceCategoryPills'),
   evidenceCountHint: document.getElementById('evidenceCountHint'),
   evidenceList: document.getElementById('evidenceList'),
@@ -3390,7 +3401,9 @@ function resetSoundForm() {
    charEditorPanel/cropEditor를 imageEditorTarget='evidence'로 재사용해
    배경 제거(누끼)+정사각형 크롭을 거친다(see saveCroppedEvidenceImage 위). ===== */
 const EVIDENCE_CATEGORY_LABELS = { physical: '물증', photo: '사진·영상', testimony: '진술', record: '기록', etc: '기타' };
+const EVIDENCE_KIND_LABELS = { evidence: '증거', testimony: '증언' };
 let evidenceCatalogCache = null;
+let evidenceKindFilter = 'all'; // all | evidence | testimony — §Phase 1 kind 재분류
 let evidenceCategoryFilter = 'all';
 let evidenceSearchQuery = '';
 let evidencePhotoAssets = {}; // evidenceId -> { id, dataUrl, ... } asset record, loaded by loadEvidencePhotoAssets
@@ -3428,6 +3441,9 @@ function collectEvidenceCatalog() {
   rows.forEach(r => {
     r.dupeId = idCounts[r.id] > 1;
     r.dupeCode = !!r.code && codeCounts[r.code] > 1;
+    // caseEntryModel.js의 inferCaseEntryKind와 완전히 같은 규칙 — 케이스 파일
+    // 탭/제시 시트가 쓰는 분류와 이 감사 목록의 분류가 어긋나지 않게 한다.
+    r.kind = (typeof inferCaseEntryKind === 'function') ? inferCaseEntryKind(r) : (r.category === 'testimony' ? 'testimony' : 'evidence');
   });
   evidenceCatalogCache = rows;
   return rows;
@@ -3457,27 +3473,51 @@ async function loadEvidencePhotoAssets() {
   });
 }
 
+// 사진/프롬프트 설정은 패널을 새로 열 때만 다시 불러오면 되고(loadEvidencePhotoAssets),
+// kind/카테고리 필터를 바꿀 때마다 다시 불러올 필요는 없으므로 renderEvidenceList로
+// 분리해둔다 — kind/카테고리 pill 클릭은 전부 renderEvidenceList만 다시 부른다.
 async function renderEvidencePanel() {
   await loadEvidencePhotoAssets();
   renderEvidenceList();
 }
 
+// 진술(테스티모니)을 물증/사진·영상/기록/기타와 같은 층위의 "카테고리"로
+// 두지 않는다 — kind(증거/증언)를 먼저 나눠 별도 pill로 보여주고, 카테고리
+// 세부 필터는 "증거" kind를 골랐을 때만 의미가 있으므로 그 안에서만 보여준다
+// (증언 kind는 전부 category==='testimony'라 세부 분류가 무의미).
 function renderEvidenceList() {
   const rows = collectEvidenceCatalog();
-  const categories = ['physical', 'photo', 'testimony', 'record', 'etc'];
-  el.evidenceCategoryPills.innerHTML = `<button class="pill${evidenceCategoryFilter === 'all' ? ' active' : ''}" data-cat="all">전체 ${rows.length}</button>` +
-    categories.map(c => {
-      const count = rows.filter(r => (r.category || 'etc') === c).length;
-      if (!count) return '';
-      return `<button class="pill${evidenceCategoryFilter === c ? ' active' : ''}" data-cat="${c}">${EVIDENCE_CATEGORY_LABELS[c]} ${count}</button>`;
-    }).join('');
-  el.evidenceCategoryPills.querySelectorAll('.pill').forEach(btn => {
-    btn.addEventListener('click', () => { evidenceCategoryFilter = btn.dataset.cat; renderEvidenceList(); });
+  const kindCounts = { evidence: rows.filter(r => r.kind === 'evidence').length, testimony: rows.filter(r => r.kind === 'testimony').length };
+  el.evidenceKindPills.innerHTML = `<button class="pill${evidenceKindFilter === 'all' ? ' active' : ''}" data-kind="all">전체 ${rows.length}</button>` +
+    ['evidence', 'testimony'].map(k => `<button class="pill${evidenceKindFilter === k ? ' active' : ''}" data-kind="${k}">${EVIDENCE_KIND_LABELS[k]} ${kindCounts[k]}</button>`).join('');
+  el.evidenceKindPills.querySelectorAll('.pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      evidenceKindFilter = btn.dataset.kind;
+      evidenceCategoryFilter = 'all';
+      renderEvidenceList();
+    });
   });
 
+  const kindFiltered = evidenceKindFilter === 'all' ? rows : rows.filter(r => r.kind === evidenceKindFilter);
+
+  el.evidenceCategoryPills.classList.toggle('hidden', evidenceKindFilter === 'testimony');
+  if (evidenceKindFilter !== 'testimony') {
+    const categories = ['physical', 'photo', 'record', 'etc'];
+    const categoryBase = evidenceKindFilter === 'all' ? rows.filter(r => r.kind === 'evidence') : kindFiltered;
+    el.evidenceCategoryPills.innerHTML = `<button class="pill${evidenceCategoryFilter === 'all' ? ' active' : ''}" data-cat="all">증거 전체 ${categoryBase.length}</button>` +
+      categories.map(c => {
+        const count = categoryBase.filter(r => (r.category || 'etc') === c).length;
+        if (!count) return '';
+        return `<button class="pill${evidenceCategoryFilter === c ? ' active' : ''}" data-cat="${c}">${EVIDENCE_CATEGORY_LABELS[c]} ${count}</button>`;
+      }).join('');
+    el.evidenceCategoryPills.querySelectorAll('.pill').forEach(btn => {
+      btn.addEventListener('click', () => { evidenceCategoryFilter = btn.dataset.cat; renderEvidenceList(); });
+    });
+  }
+
   const query = evidenceSearchQuery.trim().toLowerCase();
-  const filtered = rows.filter(r => {
-    if (evidenceCategoryFilter !== 'all' && (r.category || 'etc') !== evidenceCategoryFilter) return false;
+  const filtered = kindFiltered.filter(r => {
+    if (evidenceKindFilter !== 'testimony' && evidenceCategoryFilter !== 'all' && (r.category || 'etc') !== evidenceCategoryFilter) return false;
     if (!query) return true;
     const haystack = [r.title, r.code, r.id, r.description, r.discoveredLocationText].filter(Boolean).join(' ').toLowerCase();
     return haystack.includes(query);
@@ -3502,11 +3542,12 @@ function evidenceRowHtml(r) {
   const thumbHtml = photo
     ? `<img class="asset-thumb" src="${photo.dataUrl}" alt="">`
     : `<div class="asset-thumb evidence-thumb-empty">📷</div>`;
+  const kindTag = `<span class="asset-tag evidence-kind-tag-${r.kind}">${EVIDENCE_KIND_LABELS[r.kind]}</span>`;
   return `
     <div class="asset-card" style="align-items:flex-start">
       ${thumbHtml}
       <div class="asset-info">
-        <span class="asset-tag">${escapeHtml(r.code || '—')} · ${escapeHtml(EVIDENCE_CATEGORY_LABELS[r.category || 'etc'] || '기타')}</span>${warnTag}
+        ${kindTag}<span class="asset-tag">${escapeHtml(r.code || '—')} · ${escapeHtml(EVIDENCE_CATEGORY_LABELS[r.category || 'etc'] || '기타')}</span>${warnTag}
         <div class="asset-name">${escapeHtml(r.title || r.id)}</div>
         <div class="asset-meta">${escapeHtml(r.description || '')}</div>
         <div class="asset-meta">${escapeHtml(r.discoveredLocationText || '')} · ${escapeHtml(r.sceneLabel || '')}</div>
