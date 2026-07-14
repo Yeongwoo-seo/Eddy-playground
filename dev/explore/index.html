@@ -550,9 +550,9 @@ async function applyLocationBackground(locationId) {
 function renderLocation() {
   const id = ExplorationState.getCurrentLocationId();
   const def = locationDefs[id];
-  if (!def) return;
+  if (!def) return Promise.resolve();
   setInvestigateMode(false); // a new location's canvas/hotspots start clean, not mid-투어 from wherever the player last toggled 조사 on
-  applyLocationBackground(id);
+  const bgReady = applyLocationBackground(id);
   renderLocationCharacters();
 
   // A location can hand off back into the VN (spec §12.2's soft-gate) — e.g.
@@ -571,6 +571,7 @@ function renderLocation() {
   } else {
     el.goalLine.textContent = def.name;
   }
+  return bgReady;
 }
 
 // opts.animate (§신규 이동 트랜지션) — plays the dark→light .move-fade cover
@@ -580,8 +581,8 @@ function renderLocation() {
 function moveTo(locationId, opts) {
   if (opts && opts.animate) {
     el.moveFade.classList.add('show');
-    setTimeout(() => {
-      performMove(locationId);
+    setTimeout(async () => {
+      await performMove(locationId);
       requestAnimationFrame(() => el.moveFade.classList.remove('show'));
     }, 260);
     return;
@@ -589,7 +590,7 @@ function moveTo(locationId, opts) {
   performMove(locationId);
 }
 
-function performMove(locationId) {
+async function performMove(locationId) {
   const def = locationDefs[locationId];
   if (!def) return;
   const firstVisit = !ExplorationState.isLocationVisited(locationId);
@@ -622,7 +623,7 @@ function performMove(locationId) {
   }
   ExplorationState.unlockLocation(locationId);
   ExplorationState.moveToLocation(locationId);
-  renderLocation();
+  await renderLocation();
   showView('location');
 }
 
