@@ -704,13 +704,30 @@ function getInterrogationInteraction(characterId) {
   const locationId = ExplorationState.getCurrentLocationId();
   return ExplorationState.getInteractionsForCharacter(characterId, locationId).find(i => i.isInterrogation && i.state !== 'locked') || null;
 }
+// openTopicList가 실제로 재는 "나눌 잡담이 있는지"와 완전히 같은 기준 —
+// 여기서는 목록 자체가 아니라 있는지 여부만 필요해 별도 헬퍼로 뺐다.
+function hasCasualTopics(characterId) {
+  if (!characterId) return false;
+  const locationId = ExplorationState.getCurrentLocationId();
+  return ExplorationState.getInteractionsForCharacter(characterId, locationId).some(i => (i.type === 'topic' || i.type === 'minigame') && !i.isInterrogation);
+}
 function renderInterrogateBtn() {
   const interrogation = getInterrogationInteraction(currentCharacterId);
-  el.interrogateBtn.classList.toggle('hidden', !interrogation);
-  if (interrogation) {
+  const topicsAvailable = hasCasualTopics(currentCharacterId);
+  // 나눌 잡담이 없으면 "대화하기"가 이미 그 심문을 대신 재생하므로
+  // (openTopicList 참고), 같은 심문으로 이어지는 별도 심문하기 버튼을 또
+  // 띄우지 않는다 — 잡담이 있어야 심문하기가 대화하기와 구별되는 선택지다.
+  const showSeparateBtn = !!interrogation && topicsAvailable;
+  el.interrogateBtn.classList.toggle('hidden', !showSeparateBtn);
+  if (showSeparateBtn) {
     el.interrogateBtn.textContent = (interrogation.icon ? interrogation.icon + ' ' : '') + (interrogation.label || '심문하기');
     el.interrogateBtn.onclick = () => playInteraction(interrogation.id);
   }
+  // 잡담이 없고 심문만 있을 땐 "대화하기" 버튼 자체가 심문하기 역할을
+  // 대신한다는 걸 라벨로도 보여준다 — 눌렀을 때 실제로 그렇게 동작한다.
+  el.talkBtn.textContent = (interrogation && !topicsAvailable)
+    ? (interrogation.icon ? interrogation.icon + ' ' : '') + (interrogation.label || '심문하기')
+    : '대화하기';
 }
 
 // 화면 중앙의 "지금 선택된 인물" 서있는 그림 — 대화 중에도(applyDialogueCharacter)
