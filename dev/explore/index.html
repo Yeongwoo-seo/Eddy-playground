@@ -113,27 +113,6 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .investigate-hint{position:absolute;left:16px;right:16px;top:calc(96px + env(safe-area-inset-top,0));z-index:2;text-align:center;font-size:13px;color:var(--text-secondary);background:rgba(8,10,12,.65);border-radius:14px;padding:10px 14px;pointer-events:none;opacity:0;transition:opacity .2s ease}
 .investigate-hint:empty{display:none}
 .investigate-hint.show{opacity:1}
-/* 캐릭터 위치 슬라이더 (§신규) — 지금 서 있는 인물(loc-char-stage)을 좌우/
-   상하로 옮겨서 AssetDB.setCharacterPosition에 장소+인물 조합별로 저장한다
-   (charPosKey — 이 키 하나로 대기 화면과 대화 화면이 같은 값을 읽으므로 두
-   화면의 위치가 항상 통일된다, see resolveCharPos/applyDialogueCharacter).
-   조사하기가 켜지면 investigate-hint와 같은 자리를 놓고 다투지 않도록(둘 다
-   그때는 화면 조작이 우선) 같이 숨긴다 — renderCharPosSlider/setInvestigateMode
-   참고. 코드 보기(charPosCode)는 지금 값을 locationDefs.js에 붙여넣을 수 있는
-   charPositions 코드 조각으로 보여준다 — mapPosition/pinOverrides와 같은
-   "코드 기본값 + 저장된 override" 패턴을 그대로 따른 것(정식 확정 값은 코드로,
-   그 전까지의 미세조정은 저장된 override로). */
-.char-pos-slider{position:absolute;left:16px;right:16px;top:calc(96px + env(safe-area-inset-top,0));z-index:2;display:flex;flex-direction:column;gap:8px;background:rgba(8,10,12,.65);backdrop-filter:blur(10px);border-radius:14px;padding:10px 14px}
-.char-pos-slider.hidden{display:none}
-.char-pos-row{display:flex;align-items:center;gap:10px}
-.char-pos-label{font-family:var(--mono);font-size:11px;color:var(--text-secondary);white-space:nowrap;flex-shrink:0;width:14px}
-.char-pos-row input[type=range]{flex:1;accent-color:var(--cyan)}
-.char-pos-code-btn{align-self:flex-start;font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;color:var(--cyan);background:rgba(89,184,200,.14);border:1px solid rgba(89,184,200,.4);border-radius:10px;padding:5px 10px;cursor:pointer}
-.char-pos-code{display:flex;flex-direction:column;gap:6px}
-.char-pos-code.hidden{display:none}
-.char-pos-code-text{width:100%;min-height:52px;resize:none;font-family:var(--mono);font-size:11px;line-height:1.5;color:var(--text-primary);background:rgba(255,255,255,.05);border:1px solid var(--divider);border-radius:10px;padding:8px 10px}
-.char-pos-code-copy{font-family:var(--sans);font-size:12px;font-weight:700;color:var(--text-primary);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:10px;padding:7px 10px;cursor:pointer}
-.char-pos-code-status{font-family:var(--mono);font-size:10px;color:var(--cyan);min-height:12px}
 /* 조사하기가 켜지면 bottom-bar(하단 메뉴)를 통째로 치워 배경을 스와이프/줌으로
    온전히 볼 수 있게 한다 — 그 안에 있던 조사하기 토글 버튼도 같이 사라지므로,
    꺼서 원래 화면으로 돌아갈 별도의 떠 있는 버튼이 필요하다. */
@@ -244,22 +223,6 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
       <div class="loc-canvas" id="locCanvas"><img id="locImg" alt=""></div>
     </div>
     <div class="loc-char-stage" id="locCharStage"><img id="locCharStageImg" alt=""></div>
-    <div class="char-pos-slider hidden" id="charPosSlider">
-      <div class="char-pos-row">
-        <span class="char-pos-label">X</span>
-        <input type="range" id="charPosRangeX" min="-150" max="150" step="1" value="0">
-      </div>
-      <div class="char-pos-row">
-        <span class="char-pos-label">Y</span>
-        <input type="range" id="charPosRangeY" min="-150" max="150" step="1" value="0">
-      </div>
-      <button class="char-pos-code-btn" id="charPosCodeBtn" type="button">코드 보기</button>
-      <div class="char-pos-code hidden" id="charPosCode">
-        <textarea class="char-pos-code-text" id="charPosCodeText" readonly spellcheck="false"></textarea>
-        <button class="char-pos-code-copy" id="charPosCodeCopyBtn" type="button">📋 복사해서 locationDefs.js에 붙여넣기</button>
-        <div class="char-pos-code-status" id="charPosCodeStatus"></div>
-      </div>
-    </div>
     <div class="investigate-hint" id="investigateHint"></div>
     <button class="investigate-close-btn hidden" id="investigateCloseBtn">조사 종료</button>
     <div class="move-fade" id="moveFade"></div>
@@ -362,14 +325,6 @@ const el = {
   moveBtn: document.getElementById('moveBtn'),
   presentBtn: document.getElementById('presentBtn'),
   investigateHint: document.getElementById('investigateHint'),
-  charPosSlider: document.getElementById('charPosSlider'),
-  charPosRangeX: document.getElementById('charPosRangeX'),
-  charPosRangeY: document.getElementById('charPosRangeY'),
-  charPosCodeBtn: document.getElementById('charPosCodeBtn'),
-  charPosCode: document.getElementById('charPosCode'),
-  charPosCodeText: document.getElementById('charPosCodeText'),
-  charPosCodeCopyBtn: document.getElementById('charPosCodeCopyBtn'),
-  charPosCodeStatus: document.getElementById('charPosCodeStatus'),
   investigateCloseBtn: document.getElementById('investigateCloseBtn'),
   bottomBar: document.getElementById('bottomBar'),
   hubPanel: document.getElementById('hubPanel'),
@@ -713,7 +668,7 @@ async function setLocCharStage(charId) {
     await new Promise(r => setTimeout(r, LOC_CHAR_STAGE_FADE_MS));
     if (token !== locCharStageToken) return;
   }
-  if (!charId) { el.locCharStageImg.removeAttribute('src'); renderCharPosSlider(null); return; }
+  if (!charId) { el.locCharStageImg.removeAttribute('src'); return; }
   const assetId = DevGameState.getCharacterAssetId(charId, 'neutral');
   const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
   if (token !== locCharStageToken) return;
@@ -723,90 +678,25 @@ async function setLocCharStage(charId) {
   } else {
     el.locCharStageImg.removeAttribute('src');
   }
-  renderCharPosSlider(charId);
+  applyCharPosOffset(resolveCharPos(ExplorationState.getCurrentLocationId(), charId));
 }
 
-// 캐릭터 위치 슬라이더 (§신규) — 지금 서 있는 인물을 좌우/상하로 옮겨서 장소+
-// 인물 조합별로 AssetDB.setCharacterPosition에 저장한다(같은 인물이라도 배경
-// 사진 구도에 따라 자연스러운 자리가 달라질 수 있어서). 조사하기 중엔
-// investigate-hint와 같은 자리를 쓰므로(그때는 화면 조작이 우선)
-// setInvestigateMode가 같이 숨긴다.
-//
-// 이 key(locationId::characterId) 하나가 대기 화면(loc-char-stage, 아래
-// renderCharPosSlider)과 대화 화면(applyDialogueCharacter)이 공통으로 읽는
-// 유일한 좌표 소스다 — 그래서 슬라이더로 옮긴 자리는 그 장소에서 그 인물이
-// 나오는 어떤 화면에서든(대기 중이든 대화 중이든) 항상 같은 자리로 통일된다.
-function charPosKey(locationId, characterId) { return `${locationId}::${characterId}`; }
-function applyCharPosOffset(x, y) {
-  el.locCharStageImg.style.transform = (x || y) ? `translate(${x || 0}px, ${y || 0}px)` : '';
-}
-
-// 허브에서 대화하는 모든 캐릭터가 기본으로 서는 자리 — 장소/인물마다 따로
-// 정해주지 않는 한 전부 이 자리에 고정된다(더 록스 골목·영우 슬라이더로
-// 확정한 y:-150을 허브 전체 기본값으로 승격). locationDefs.js에 그 장소만의
-// charPositions가 따로 있으면 그게 이 기본값 대신 쓰이고, AssetDB에 저장된
-// override가 있으면 그게 최종적으로 우선한다(resolveCharPos).
+// 허브에서 대화하는 모든 캐릭터가 서는 자리 — 장소/인물마다 따로 정의하지
+// 않는 한 전부 이 자리로 통일된다(§신규 코드 기본값 확정: 더 록스 골목·영우
+// 슬라이더로 맞췄던 y:-150을 허브 전체 기본값으로 승격). locationDefs.js의
+// charPositions로 장소별 예외를 코드에 직접 정의할 수 있다(resolveCharPos).
+// 대기 화면(setLocCharStage)과 대화 화면(applyDialogueCharacter)이 같은
+// 함수를 공유하는 유일한 좌표 소스라, 어느 화면에서든 항상 같은 자리로
+// 통일된다.
 const DEFAULT_HUB_CHAR_POS = { x: 0, y: -150 };
-
-// locationDefs.js에 정의해 둔 charPositions(코드 기본값, mapPosition과 같은
-// 패턴)가 있으면 DEFAULT_HUB_CHAR_POS 대신 그걸 깔고, AssetDB에 저장된
-// override가 있으면 그걸로 덮어쓴다 — 슬라이더로 미세조정한 값은 override로
-// 즉시 반영되고, "코드 보기"로 복사해서 locationDefs.js에 붙여넣으면 그게 그
-// 장소만의 새 기본값이 된다.
-async function resolveCharPos(locationId, characterId) {
-  if (!locationId || !characterId) return DEFAULT_HUB_CHAR_POS;
+function resolveCharPos(locationId, characterId) {
   const def = locationDefs[locationId];
-  const base = (def && def.charPositions && def.charPositions[characterId]) || DEFAULT_HUB_CHAR_POS;
-  const key = charPosKey(locationId, characterId);
-  const positions = await AssetDB.getCharacterPositions().catch(() => ({}));
-  const override = positions[key];
-  return override ? { x: override.x || 0, y: override.y || 0 } : { x: base.x || 0, y: base.y || 0 };
+  const pos = (def && def.charPositions && def.charPositions[characterId]) || DEFAULT_HUB_CHAR_POS;
+  return { x: pos.x || 0, y: pos.y || 0 };
 }
-
-function renderCharPosCode(locationId, characterId, x, y) {
-  el.charPosCodeText.value = `charPositions: { ${characterId}: { x: ${x}, y: ${y} } }`;
-  el.charPosCodeStatus.textContent = '';
+function applyCharPosOffset(pos) {
+  el.locCharStageImg.style.transform = (pos.x || pos.y) ? `translate(${pos.x}px, ${pos.y}px)` : '';
 }
-async function renderCharPosSlider(charId) {
-  if (!charId || investigateMode) { el.charPosSlider.classList.add('hidden'); return; }
-  const locationId = ExplorationState.getCurrentLocationId();
-  const key = charPosKey(locationId, charId);
-  const pos = await resolveCharPos(locationId, charId);
-  if (!charId || charId !== currentCharacterId) return; // superseded by another switch while this was loading
-  el.charPosRangeX.value = pos.x;
-  el.charPosRangeY.value = pos.y;
-  applyCharPosOffset(pos.x, pos.y);
-  el.charPosSlider.dataset.key = key;
-  el.charPosSlider.dataset.characterId = charId;
-  renderCharPosCode(locationId, charId, pos.x, pos.y);
-  el.charPosSlider.classList.remove('hidden');
-}
-function onCharPosInput() {
-  const x = Number(el.charPosRangeX.value), y = Number(el.charPosRangeY.value);
-  applyCharPosOffset(x, y);
-  renderCharPosCode(ExplorationState.getCurrentLocationId(), el.charPosSlider.dataset.characterId, x, y);
-}
-function onCharPosChange() {
-  const key = el.charPosSlider.dataset.key;
-  if (key) AssetDB.setCharacterPosition(key, { x: Number(el.charPosRangeX.value), y: Number(el.charPosRangeY.value) }).catch(() => {});
-}
-el.charPosRangeX.addEventListener('input', onCharPosInput);
-el.charPosRangeY.addEventListener('input', onCharPosInput);
-el.charPosRangeX.addEventListener('change', onCharPosChange);
-el.charPosRangeY.addEventListener('change', onCharPosChange);
-el.charPosCodeBtn.addEventListener('click', () => el.charPosCode.classList.toggle('hidden'));
-el.charPosCodeCopyBtn.addEventListener('click', async () => {
-  if (!el.charPosCodeText.value) return;
-  try {
-    await navigator.clipboard.writeText(el.charPosCodeText.value);
-  } catch (err) {
-    // Clipboard API can be unavailable/denied (older WebView, missing
-    // permission) — select the text so the tester can still copy it by hand.
-    el.charPosCodeText.select();
-    document.execCommand('copy');
-  }
-  el.charPosCodeStatus.textContent = '복사됐어요.';
-});
 
 // Pre-existing gap: listSheet's own 닫기 button had no handler at all (every
 // caller only ever closed it indirectly, by picking a row) — now that 이동/
@@ -1096,11 +986,9 @@ function setInvestigateMode(on) {
   el.locCharStage.classList.toggle('show', !on && !!currentCharacterId);
   if (on) {
     renderInvestigateHotspots();
-    el.charPosSlider.classList.add('hidden'); // investigate-hint와 같은 자리 — 조사 중엔 화면 조작이 우선
   } else {
     clearInvestigateHotspots();
     if (locCanvasW) fitLocStage(); // 화면 이동 잠금으로 돌아갈 때 팬/줌 위치도 기본 프레임으로 리셋
-    renderCharPosSlider(currentCharacterId);
   }
 }
 el.investigateBtn.addEventListener('click', () => setInvestigateMode(!investigateMode));
@@ -1116,19 +1004,16 @@ function showToastLine(characterId, text) {
 /* ===== Dialogue playback (spec §7.3/§7.4 — reuses vnPlayer.js) =====
    대사에 등장하는 인물 그림은 대기 상태와 같은 loc-char-stage를 그대로 쓴다
    (별도의 대화용 캐릭터 레이어를 두지 않음) — 그래서 대화가 시작돼도 인물이
-   커지거나 자리가 튀지 않고, 그 인물의 charPositions/저장된 위치도(§캐릭터
-   위치 슬라이더) 대기 때와 똑같이 적용된다(resolveCharPos). */
+   커지거나 자리가 튀지 않고, 그 인물의 위치(resolveCharPos)도 대기 때와
+   똑같이 적용된다. */
 let charRequestToken = 0;
 async function applyDialogueCharacter(characterId, expression) {
   const requestToken = ++charRequestToken;
   if (!characterId) { el.locCharStage.classList.remove('show'); return; }
   const assetId = DevGameState.getCharacterAssetId(characterId, expression);
-  const [asset, pos] = await Promise.all([
-    assetId ? AssetDB.getAsset(assetId).catch(() => null) : null,
-    resolveCharPos(ExplorationState.getCurrentLocationId(), characterId),
-  ]);
+  const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
   if (requestToken !== charRequestToken) return;
-  applyCharPosOffset(pos.x, pos.y);
+  applyCharPosOffset(resolveCharPos(ExplorationState.getCurrentLocationId(), characterId));
   if (asset && asset.dataUrl) { el.locCharStageImg.src = asset.dataUrl; el.locCharStage.classList.add('show'); }
   else { el.locCharStageImg.removeAttribute('src'); el.locCharStage.classList.remove('show'); }
 }
