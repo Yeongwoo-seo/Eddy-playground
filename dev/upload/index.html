@@ -1247,6 +1247,17 @@ function hubPhases() {
 function hubLocationsForPhase(phase) {
   return Object.values(locationDefs).filter(loc => (loc.phases || []).includes(phase));
 }
+// phase-keyed 필드 (§신규 저작 관습, dev/data/locationDefs.js 상단 주석 참고) —
+// dev/explore/index.html의 resolveByPhase와 같은 로직(마커를 명시적으로
+// 요구하는 이유도 그쪽 주석 참고 — mapPosition의 평범한 `{x,y}`까지
+// phase-keyed로 오인하지 않기 위함). mapPosition 등이 `{ __byPhase: true,
+// [phase]: value }` 객체로 저장된 장소(w1-hub-plaza/w1-adrian-spot)를 이
+// 관리자 화면에서도 올바르게 읽으려면 필요하다.
+function resolveByPhase(value, phase) {
+  if (value == null) return null;
+  if (value && typeof value === 'object' && value.__byPhase) return value[phase] ?? null;
+  return value;
+}
 // phaseMaps(dev/data/locationDefs.js) 항목도 배경 사진이 필요한 건 마찬가지라
 // (탐색허브 이동하기 화면의 지도 그림, dev/explore/index.html의
 // openMoveMapSheet) — locationDefs와 똑같은 사진 배정/AI 프롬프트 패널을
@@ -1344,7 +1355,7 @@ function buildHubLocationPrompt(locationId, phase) {
   // 전혀 없으므로 이 사진에 직접 그려 넣어야만 플레이어가 볼 수 있다 —
   // 그래서 "사람 자체를 빼라"가 아니라 "이 명단만 빼라"로 정확히 짚어준다.
   const castNames = Array.from(new Set(
-    ['지수'].concat((loc.characters || []).map(id => {
+    ['지수'].concat((resolveByPhase(loc.characters, phase) || []).map(id => {
       const c = (typeof dialogueCharacters !== 'undefined') ? dialogueCharacters.find(d => d.id === id) : null;
       return c ? c.name : id;
     }))
@@ -1401,7 +1412,7 @@ async function renderMapPinPanel() {
   const isMap = !!(loc && loc.isMap);
   el.mapPinPanel.classList.toggle('hidden', !isMap);
   if (!isMap) return;
-  const phaseLocs = hubLocationsForPhase(currentHubPhase).filter(l => l.mapPosition);
+  const phaseLocs = hubLocationsForPhase(currentHubPhase).filter(l => resolveByPhase(l.mapPosition, currentHubPhase));
   if (!phaseLocs.length) {
     el.mapPinLocationPills.innerHTML = '';
     el.mapPinDots.innerHTML = '';
@@ -1426,7 +1437,7 @@ async function renderMapPinPanel() {
 
   el.mapPinDots.innerHTML = '';
   phaseLocs.forEach(l => {
-    const pos = pins[l.id] || l.mapPosition;
+    const pos = pins[l.id] || resolveByPhase(l.mapPosition, currentHubPhase);
     const dot = document.createElement('div');
     dot.className = 'map-pin-dot' + (l.id === currentMapPinLocationId ? ' selected' : '');
     dot.style.left = pos.x + '%';

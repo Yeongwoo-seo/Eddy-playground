@@ -49,7 +49,23 @@
    `exits` — 같은 phase 안에서 이동하기가 갈 수 있는 곳을 이 배열로 제한하던
    때가 있었지만(§물리적 인접), 지금은 순전히 참고용 스토리·공간 관계
    기록이다 — 실제 이동하기는 그 phase에 속한 모든 위치를 목적지로 보여준다
-   (openMoveSheet). 코드에서 이 필드를 더 읽는 곳은 없다. */
+   (openMoveSheet). 코드에서 이 필드를 더 읽는 곳은 없다.
+
+   ===== phase-keyed 필드 (§신규 저작 관습) =====
+   같은 실제 장소가 phase마다 새 id로 중복 정의되던 문제(예전 w1-suspect-hub/
+   w1-reverify-hub, w1-suspect-adrian-spot/w1-reverify-adrian-spot)를 피하려면,
+   장소는 한 번만 정의하고 `phases`에 해당하는 phase를 모두 나열한다. 상호작용
+   내용 차이는 interactionDefs.js의 각 항목이 이미 자체 `locationIds`+`phases`로
+   걸러주므로 대부분은 이것만으로 충분하다(w1-adrian-spot 참고).
+
+   그래도 `characters`/`enterSceneId`/`enterSceneLabel`/`mapPosition`처럼 장소
+   자체의 값이 phase마다 달라져야 하는 드문 경우엔, 평범한 값 대신
+   `{ __byPhase: true, [phase]: value }` 객체로 쓴다 — dev/explore/index.html의
+   resolveByPhase(value, phase)가 현재 phase 기준으로 해석한다. `__byPhase`
+   마커를 반드시 붙여야 한다 — mapPosition의 평범한 값 자체가 이미 `{x,y}`
+   순수 객체라, 마커 없이 "배열 아닌 객체=phase-keyed"로만 판별하면 평범한
+   좌표까지 잘못 phase-keyed로 오인해버린다. w1-hub-plaza가 세 필드 모두를
+   이렇게 쓰는 예시, w1-adrian-spot은 mapPosition만 이렇게 쓰는 예시다. */
 
 const locationDefs = {
   'w1-circular-quay': {
@@ -141,19 +157,32 @@ const locationDefs = {
      one that already had its own downstream chain (timeline minigame ->
      008a -> 009); the other two return here via 'week1-suspect-interview-
      return' (see MINIGAME_ROUTES in dev/data/sceneRoutes.js). */
-  'w1-suspect-hub': {
-    id: 'w1-suspect-hub',
+  // w1-hub-plaza — Phase 4(탐문)/Phase 5(재검증)가 같은 실제 장소(전시장 앞
+  // 광장)를 썼는데 예전엔 phase마다 별도 id(w1-suspect-hub/w1-reverify-hub)로
+  // 중복 정의되어 있었다(§신규 통합 — 저작 부담을 줄이려고 phase-keyed 필드로
+  // 병합). characters/enterSceneId/enterSceneLabel/mapPosition처럼 phase마다
+  // 값이 달라야 하는 필드는 파일 상단 "phase-keyed 필드" 관례대로 `{ __byPhase:
+  // true, [phase]: value }` 형태로 쓴다.
+  'w1-hub-plaza': {
+    id: 'w1-hub-plaza',
     week: 1,
-    name: '전시장 앞 광장 (탐문 거점)',
-    phases: ['W1_SUSPECT_INTERVIEWS'],
-    visualBrief: '팝업 전시장 입구 앞 작은 광장. 도난 사건 이후라 안내판이나 임시 표지판이 하나 정도 추가된 듯한, 평소보다 한산하고 차분한 분위기의 야외 공간.',
-    // 영우는 이 광장에 지수와 계속 같이 있다 — Phase 1 사전 복선(§신규)이
-    // 실제 증거로 바뀌는 회상 topic(w1sh-topic-van-recall, see
-    // interactionDefs.js)을 걸 chip이 필요해서 추가했다. 용의자 3인은 각자의
-    // spot(mina/adrian/leo-spot)에만 있으므로 여기 목록엔 안 넣는다.
-    characters: ['youngwoo'],
-    exits: ['w1-suspect-mina-spot', 'w1-suspect-adrian-spot', 'w1-suspect-leo-spot'],
-    mapPosition: { x: 50, y: 58 },
+    name: '전시장 앞 광장',
+    phases: ['W1_SUSPECT_INTERVIEWS', 'W1_REVERIFICATION'],
+    visualBrief: '팝업 전시장 입구 앞 작은 광장. 탐문 단계엔 도난 사건 직후라 안내판이나 임시 표지판이 하나 정도 추가된 듯한 한산한 분위기, 재검증 단계엔 시간이 더 지나 사건이 정리되어가는 차분하고 가라앉은 분위기.',
+    // 영우는 탐문(Phase 4) 동안만 이 광장에 지수와 같이 있다 — Phase 1 사전
+    // 복선(§신규)이 실제 증거로 바뀌는 회상 topic(w1sh-topic-van-recall, see
+    // interactionDefs.js)을 걸 chip이 필요해서였다. 재검증(Phase 5)엔 그
+    // topic이 없으므로 영우도 없다.
+    characters: { __byPhase: true, W1_SUSPECT_INTERVIEWS: ['youngwoo'] },
+    exits: ['w1-suspect-mina-spot', 'w1-adrian-spot', 'w1-suspect-leo-spot', 'w1-reverify-mina-spot', 'w1-reverify-martin-spot'],
+    // "지금까지의 단서로 사건을 재구성한다" 진행 버튼은 재검증 단계에만 뜬다
+    // (§10.4 "제안을 미뤄도 추가 탐색 가능" — 세 재검증 대상을 다 안 돌아도
+    // 언제든 진행 가능, 강제 조건 없음).
+    enterSceneId: { __byPhase: true, W1_REVERIFICATION: 'week1-scene-012' },
+    enterSceneLabel: { __byPhase: true, W1_REVERIFICATION: '지금까지의 단서로 사건을 재구성한다' },
+    // 두 phase의 지도 이미지(map-w1-suspect/map-w1-reverify)가 서로 다른
+    // 그림이라 핀 좌표도 phase마다 따로 유지해야 한다.
+    mapPosition: { __byPhase: true, W1_SUSPECT_INTERVIEWS: { x: 50, y: 58 }, W1_REVERIFICATION: { x: 68, y: 60 } },
   },
   'w1-suspect-mina-spot': {
     id: 'w1-suspect-mina-spot',
@@ -162,18 +191,24 @@ const locationDefs = {
     phases: ['W1_SUSPECT_INTERVIEWS'],
     visualBrief: '더 록스 골목의 조용한 지점 — 오래된 사암 건물 사이, 야외 카페 테이블이나 상점 앞 벤치가 있는 자리.',
     characters: ['minah'],
-    exits: ['w1-suspect-hub'],
+    exits: ['w1-hub-plaza'],
     mapPosition: { x: 18, y: 38 },
   },
-  'w1-suspect-adrian-spot': {
-    id: 'w1-suspect-adrian-spot',
+  // w1-adrian-spot — Phase 4/5가 같은 실제 장소(전시장 보조 진열 구역)와 같은
+  // 인물(애드리언)을 썼는데 예전엔 phase마다 별도 id로 중복 정의되어 있었다
+  // (§신규 통합). 상호작용 내용 차이는 interactionDefs.js의 각 항목이 이미
+  // 자체 phases로 걸러주므로 characters/enterSceneId 같은 phase-keyed 필드는
+  // 필요 없다 — 다만 mapPosition은 두 phase의 지도 이미지가 서로 다른 그림이라
+  // 여전히 phase-keyed로 유지한다.
+  'w1-adrian-spot': {
+    id: 'w1-adrian-spot',
     week: 1,
     name: '전시장 보조 진열 구역',
-    phases: ['W1_SUSPECT_INTERVIEWS'],
+    phases: ['W1_SUSPECT_INTERVIEWS', 'W1_REVERIFICATION'],
     visualBrief: '팝업 전시장 내부, 유리 진열장들이 줄지어 있는 보조 전시 구역. 조명이 은은하게 진열품을 비추는 조용한 실내 공간.',
     characters: ['adrian'],
-    exits: ['w1-suspect-hub'],
-    mapPosition: { x: 72, y: 32 },
+    exits: ['w1-hub-plaza'],
+    mapPosition: { __byPhase: true, W1_SUSPECT_INTERVIEWS: { x: 72, y: 32 }, W1_REVERIFICATION: { x: 82, y: 38 } },
   },
   'w1-suspect-leo-spot': {
     id: 'w1-suspect-leo-spot',
@@ -182,7 +217,7 @@ const locationDefs = {
     phases: ['W1_SUSPECT_INTERVIEWS'],
     visualBrief: '전시장 접수대와 그 옆 직원 전용문 경계. 태그 리더기가 붙은 서비스 문, 접수대 위 서랍과 안내 자료가 보이는 업무 공간.',
     characters: ['leo'],
-    exits: ['w1-suspect-hub'],
+    exits: ['w1-hub-plaza'],
     mapPosition: { x: 68, y: 70 },
   },
 
@@ -192,19 +227,8 @@ const locationDefs = {
      내부 condition이 없어 자유 순서로 열어 둔다 — Phase 4와 동일한
      "통짜 씬 단위 hand-off" 패턴. 사건 재구성(week1-scene-012)으로 넘어가는
      조건은 일부러 강제하지 않았다(§10.4 "제안을 미뤄도 추가 탐색 가능") —
-     세 곳을 다 안 돌아도 hub-center에서 언제든 진행할 수 있다. */
-  'w1-reverify-hub': {
-    id: 'w1-reverify-hub',
-    week: 1,
-    name: '전시장 앞 광장 (재검증 거점)',
-    phases: ['W1_REVERIFICATION'],
-    visualBrief: 'w1-suspect-hub와 같은 팝업 전시장 앞 광장이지만, 시간이 더 지나 사건이 정리되어가는 느낌의 차분하고 가라앉은 분위기.',
-    characters: [],
-    exits: ['w1-reverify-mina-spot', 'w1-reverify-adrian-spot', 'w1-reverify-martin-spot'],
-    enterSceneId: 'week1-scene-012',
-    enterSceneLabel: '지금까지의 단서로 사건을 재구성한다',
-    mapPosition: { x: 68, y: 60 },
-  },
+     세 곳을 다 안 돌아도 hub-center에서 언제든 진행할 수 있다. 애드리언은
+     w1-adrian-spot(위, Phase 4/5 공용)에서 이미 다룬다. */
   'w1-reverify-mina-spot': {
     id: 'w1-reverify-mina-spot',
     week: 1,
@@ -212,18 +236,8 @@ const locationDefs = {
     phases: ['W1_REVERIFICATION'],
     visualBrief: '서큘러키 근처의 세련된 편집숍 내부 또는 쇼윈도 앞 — 윤민아가 일하는 곳. 옷걸이와 액세서리 진열대가 보이는 밝고 정돈된 매장.',
     characters: ['minah'],
-    exits: ['w1-reverify-hub'],
+    exits: ['w1-hub-plaza'],
     mapPosition: { x: 22, y: 35 },
-  },
-  'w1-reverify-adrian-spot': {
-    id: 'w1-reverify-adrian-spot',
-    week: 1,
-    name: '전시장 보조 진열 구역',
-    phases: ['W1_REVERIFICATION'],
-    visualBrief: 'w1-suspect-adrian-spot와 같은 팝업 전시장 내부 보조 진열 구역.',
-    characters: ['adrian'],
-    exits: ['w1-reverify-hub'],
-    mapPosition: { x: 82, y: 38 },
   },
   'w1-reverify-martin-spot': {
     id: 'w1-reverify-martin-spot',
@@ -232,7 +246,7 @@ const locationDefs = {
     phases: ['W1_REVERIFICATION'],
     visualBrief: '서큘러키 워터프론트 산책로를 걸으며 휴대폰으로 통화하는 구도 — 항구와 페리가 배경에 보이는 야외 산책로.',
     characters: ['martin'],
-    exits: ['w1-reverify-hub'],
+    exits: ['w1-hub-plaza'],
     mapPosition: { x: 38, y: 72 },
   },
 };
