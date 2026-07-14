@@ -121,13 +121,14 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .hub-act-btn{display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:14px 6px;color:var(--text-primary);font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer}
 .hub-act-btn:active{transform:scale(.97);background:#1c2530}
 
-/* ===== Move (다크→라이트) transition — a quick cover while performMove()
-   swaps the background/goal line underneath, so a mid-load frame never
-   shows. Kept short (.12s each way, .24s round trip) instead of the earlier
-   .28s/.28s — preloadPhaseAssets already warms every location a phase can
-   move to, so the swap itself is normally ready well within that window;
-   this is just enough to smooth the cut, not a loading wait. ===== */
-.move-fade{position:absolute;inset:0;z-index:12;background:#000;opacity:0;pointer-events:none;transition:opacity .12s ease}
+/* ===== Move (다크→라이트) transition — a cover while performMove() swaps
+   the background/goal line underneath, so a mid-load frame never shows.
+   .12s read as a hard on/off snap rather than an actual fade — this uses
+   the design system's own default transition (CLAUDE.md: "0.3s
+   cubic-bezier(0.2, 0.8, 0.2, 1)") both to get a genuinely smooth 스르르
+   in/out and to match the motion language the rest of the app already
+   uses. ===== */
+.move-fade{position:absolute;inset:0;z-index:12;background:#000;opacity:0;pointer-events:none;transition:opacity .3s cubic-bezier(0.2,0.8,0.2,1)}
 .move-fade.show{opacity:1;pointer-events:auto}
 
 /* ===== 조사하기 — toggles hotspot markers over the location's own loc-
@@ -625,7 +626,7 @@ function renderLocation() {
 // than a quick one, so MOVE_FADE_MS floors the cover's visible time at
 // (at least) its own .move-fade transition duration — long enough to
 // register as a real dark→light beat, not a hold that waits on anything.
-const MOVE_FADE_MS = 130; // keep in sync with .move-fade's transition duration (.12s) in the <style> above
+const MOVE_FADE_MS = 340; // keep in sync with .move-fade's transition duration (.3s) in the <style> above, plus a little slack for frame timing
 function moveTo(locationId) {
   el.moveFade.classList.add('show');
   Promise.all([performMove(locationId), new Promise(r => setTimeout(r, MOVE_FADE_MS))]).then(() => {
