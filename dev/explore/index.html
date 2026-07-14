@@ -233,7 +233,10 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
       <span id="caseMenuMount"></span>
       <span class="point-balance hidden" id="pointBalance">P 0</span>
     </div>
-    <a class="vn-btn" href="/dev/">← DEV</a>
+    <div style="display:flex;gap:8px">
+      <button class="vn-btn" id="devBtn">DEV</button>
+      <a class="vn-btn" href="/dev/">← DEV</a>
+    </div>
   </div>
 
   <div class="map-view" id="mapView">
@@ -276,6 +279,16 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
     </div>
   </div>
   <span class="evidence-toast" id="evidenceToast"></span>
+</div>
+
+<div class="sheet-overlay hidden" id="devSheet">
+  <div class="sheet">
+    <div class="sheet-title">Dev · 탐색 허브</div>
+    <button class="action-btn" id="btnDevUnlockAllLocations">UNLOCK ALL LOCATIONS</button>
+    <button class="action-btn" id="btnDevMarkAllInteractionsNew">MARK ALL INTERACTIONS NEW</button>
+    <button class="action-btn" id="btnDevResetExploration" style="color:#D94141">RESET EXPLORATION STATE (장소·방문 기록 초기화)</button>
+    <button class="action-btn cancel" id="devSheetCloseBtn">닫기</button>
+  </div>
 </div>
 
 <div class="sheet-overlay hidden" id="evidenceSheet">
@@ -369,6 +382,12 @@ const el = {
   hubPanel: document.getElementById('hubPanel'),
   dlgPanel: document.getElementById('dlgPanel'),
   interrogateBtn: document.getElementById('interrogateBtn'),
+  devBtn: document.getElementById('devBtn'),
+  devSheet: document.getElementById('devSheet'),
+  devSheetCloseBtn: document.getElementById('devSheetCloseBtn'),
+  btnDevUnlockAllLocations: document.getElementById('btnDevUnlockAllLocations'),
+  btnDevMarkAllInteractionsNew: document.getElementById('btnDevMarkAllInteractionsNew'),
+  btnDevResetExploration: document.getElementById('btnDevResetExploration'),
   listSheet: document.getElementById('listSheet'),
   listSheetTitle: document.getElementById('listSheetTitle'),
   listSheetBody: document.getElementById('listSheetBody'),
@@ -804,6 +823,23 @@ function applyCharPosOffset(pos) {
 // 대화/제시 all funnel through this same sheet, backing out without picking
 // anything has to work too.
 el.listSheetCloseBtn.addEventListener('click', () => el.listSheet.classList.add('hidden'));
+
+// Dev · 탐색 허브 debug sheet — mirrors dev/game/index.html's own DEV panel
+// (같은 ExplorationState.debug*/resetAll 호출), just reachable from inside
+// the hub itself. firstVisitSceneId 같은 "딱 한 번만" 흐름을 반복 테스트하려면
+// 이전엔 /dev/game/으로 되돌아가야 했다 — 이 페이지 전체가 ExplorationState를
+// 그대로 반영해 렌더링되므로, 초기화 뒤엔 새로 booting해야 값이 맞게
+// 반영된다 (그래서 reload).
+el.devBtn.addEventListener('click', () => el.devSheet.classList.remove('hidden'));
+el.devSheetCloseBtn.addEventListener('click', () => el.devSheet.classList.add('hidden'));
+el.btnDevUnlockAllLocations.addEventListener('click', () => { ExplorationState.debugUnlockAllLocations(); renderLocation(); if (currentView === 'map') renderMap(); });
+el.btnDevMarkAllInteractionsNew.addEventListener('click', () => { ExplorationState.debugMarkAllInteractionsNew(); renderLocation(); });
+el.btnDevResetExploration.addEventListener('click', () => {
+  if (confirm('탐색 허브 상태(장소·방문·상호작용 진행도)를 초기화할까요?')) {
+    ExplorationState.resetAll();
+    location.reload();
+  }
+});
 
 el.talkBtn.addEventListener('click', () => {
   if (!currentCharacterId) { showToastLine(null, '지금은 대화할 사람이 없어 보인다.'); return; }
