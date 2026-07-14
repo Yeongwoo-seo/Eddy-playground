@@ -896,7 +896,19 @@ async function openMoveMapSheet(phaseMap, mapDests, listDests) {
 
   const assetId = await DevGameState.getBackgroundId(phaseMap.id).catch(() => null);
   const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
-  if (asset && asset.dataUrl) el.moveMapWrap.style.backgroundImage = `url(${asset.dataUrl})`;
+  if (asset && asset.dataUrl) {
+    // Same defensive preloadImage() call applyLocationBackground makes
+    // before setting el.locImg.src — preloadPhaseAssets already warms this
+    // exact URL at phase entry, so in the normal case this resolves
+    // instantly, but without it there's nothing here actually guaranteeing
+    // the decode finished before paint if that phase-wide warm ever falls
+    // short (a swallowed fetch error, a future call site that opens this
+    // sheet before preloadPhaseAssets settles, ...). Every other "show a
+    // photo" spot in this file makes this call right before setting
+    // src/background-image; this one was the one exception.
+    await AssetDB.preloadImage(asset.dataUrl).catch(() => {});
+    el.moveMapWrap.style.backgroundImage = `url(${asset.dataUrl})`;
+  }
 }
 el.moveMapCloseBtn.addEventListener('click', () => el.moveMapSheet.classList.add('hidden'));
 
