@@ -1492,12 +1492,23 @@ function renderHubPicker() {
   renderHubLocationPicker();
 }
 
-function renderHubLocationPicker() {
+// 장소별 사진 배정 완료 여부를 pill에 체크(✓)로 보여준다 — 실제 탐색허브
+// 화면(dev/explore/index.html applyLocationBackground)이 사진을 찾을 때 쓰는
+// 것과 같은 DevGameState.getBackgroundId 조회라, 여기서 체크가 뜨면 그
+// 화면에서도 실제로 사진이 나온다는 뜻이다. renderBgKindPicker의 배경 DB
+// ✓ 표시와 같은 패턴(조회가 비동기라 pill을 그리기 전에 먼저 await한다) —
+// 탭을 빠르게 오가도 지난 phase의 결과가 새 목록에 얹히지 않도록 토큰으로
+// 막는다.
+let hubLocationPickerToken = 0;
+async function renderHubLocationPicker() {
+  const token = ++hubLocationPickerToken;
   const mapPseudo = currentHubPhase ? mapPseudoLocation(currentHubPhase) : null;
   const locs = currentHubPhase ? hubLocationsForPhase(currentHubPhase).concat(mapPseudo ? [mapPseudo] : []) : [];
   if (!currentHubLocationId || !locs.some(l => l.id === currentHubLocationId)) currentHubLocationId = locs[0] ? locs[0].id : null;
-  el.hubLocationPickerPills.innerHTML = locs.length
-    ? locs.map(l => `<button class="pill${l.id === currentHubLocationId ? ' active' : ''}" data-id="${l.id}">${escapeHtml(l.name)}</button>`).join('')
+  const withHas = await Promise.all(locs.map(async l => ({ loc: l, has: !!(await DevGameState.getBackgroundId(l.id).catch(() => null)) })));
+  if (token !== hubLocationPickerToken) return;
+  el.hubLocationPickerPills.innerHTML = withHas.length
+    ? withHas.map(({ loc: l, has }) => `<button class="pill${l.id === currentHubLocationId ? ' active' : ''}" data-id="${l.id}">${escapeHtml(l.name)}${has ? ' ✓' : ''}</button>`).join('')
     : '<div class="empty-note">이 단계에 등록된 장소가 없습니다.</div>';
   el.hubLocationPickerPills.querySelectorAll('.pill').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -2234,6 +2245,7 @@ async function saveAsset() {
       DevGameState.setLegacyBackgroundId(currentHubLocationId, record.id);
       clearPending();
       await refreshList();
+      renderHubLocationPicker(); // pill의 ✓ 표시를 바로 갱신
     } catch (err) {
       DevDiag.show('이미지 저장 실패: ' + (err && err.message ? err.message : err));
     }
