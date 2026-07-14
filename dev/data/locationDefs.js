@@ -190,18 +190,56 @@ const locationDefs = {
   // w1-adrian-spot — Phase 4/5가 같은 실제 장소(전시장 보조 진열 구역)와 같은
   // 인물(애드리언)을 썼는데 예전엔 phase마다 별도 id로 중복 정의되어 있었다
   // (§신규 통합). 상호작용 내용 차이는 interactionDefs.js의 각 항목이 이미
-  // 자체 phases로 걸러주므로 characters/enterSceneId 같은 phase-keyed 필드는
-  // 필요 없다 — 다만 mapPosition은 두 phase의 지도 이미지가 서로 다른 그림이라
-  // 여전히 phase-keyed로 유지한다.
+  // 자체 phases로 걸러주므로 enterSceneId 같은 phase-keyed 필드는 필요 없다
+  // — 다만 mapPosition은 두 phase의 지도 이미지가 서로 다른 그림이라 여전히
+  // phase-keyed로 유지한다.
+  //
+  // §신규 — W1_TOURISM(사건 이전 자유 조사)도 이 같은 물리적 장소를 쓴다.
+  // 원래 이 구역의 증거 수집은 week1-scene-003 → week1-scene-003-minigame
+  // (dev/minigame-exhibition-search, 별도 전용 미니게임 페이지)이 전담했지만,
+  // 그 10개 핫스팟을 전부 이 장소의 investigateHotspots(조사하기)로 옮기고
+  // 미니게임 자체는 삭제했다 — 탐문/재검증 단계 장소를 사건 전 자유 조사에도
+  // 재사용해, 별도 미니게임 UI 없이 허브의 조사하기 하나로 통일한다(§신규
+  // 통합, 관련 interactionDefs는 w1as-topic-* 참고). W1_TOURISM 동안은
+  // 애드리언이 아직 등장하지 않으므로 `characters`를 phase-keyed로 바꿔
+  // 그 phase만 비워둔다. mapPosition은 W1_TOURISM 키를 일부러 생략했다 —
+  // w1-exhibition-entrance와 같은 이유(§파일 상단 mapPosition 주석: "안쪽이라
+  // 지도에 따로 찍기 애매한 곳")로, 관광 지도엔 핀 대신 이동하기 리스트 줄로
+  // 뜬다.
   'w1-adrian-spot': {
     id: 'w1-adrian-spot',
     week: 1,
     name: '전시장 보조 진열 구역',
-    phases: ['W1_SUSPECT_INTERVIEWS', 'W1_REVERIFICATION'],
+    phases: ['W1_TOURISM', 'W1_SUSPECT_INTERVIEWS', 'W1_REVERIFICATION'],
     visualBrief: '팝업 전시장 내부, 유리 진열장들이 줄지어 있는 보조 전시 구역. 조명이 은은하게 진열품을 비추는 조용한 실내 공간.',
-    characters: ['adrian'],
+    characters: { __byPhase: true, W1_SUSPECT_INTERVIEWS: ['adrian'], W1_REVERIFICATION: ['adrian'] },
     exits: ['w1-hub-plaza'],
     mapPosition: { __byPhase: true, W1_SUSPECT_INTERVIEWS: { x: 72, y: 32 }, W1_REVERIFICATION: { x: 82, y: 38 } },
+    // 사건 전 자유 조사 10개 핫스팟(구 minigame-exhibition-search HOTSPOTS) —
+    // x/y는 실제 사진이 아직 없어 잠정 배치한 값이라, /dev/upload로 진짜
+    // 사진을 올린 뒤 눈으로 보고 다시 잡아야 한다(§파일 상단 investigateHotspots
+    // 주석 참고). k01(황동 장치 K-01)이 이 사건의 핵심 단서 — 발견 시 여러 줄
+    // 대사가 있는 유일한 스팟(w1as-topic-k01, 구 K01_DISCOVERY_LINES 그대로
+    // 이식)이라 아이콘을 다르게 뒀다.
+    investigateHotspots: [
+      { x: 50, y: 30, icon: '🔶', interactionId: 'w1as-topic-k01' },
+      { x: 20, y: 55, icon: '🔍', interactionId: 'w1as-topic-camera' },
+      { x: 78, y: 50, icon: '🔍', interactionId: 'w1as-topic-watch' },
+      { x: 35, y: 75, icon: '🔍', interactionId: 'w1as-topic-desk' },
+      { x: 60, y: 78, icon: '🔍', interactionId: 'w1as-topic-tag' },
+      { x: 88, y: 72, icon: '🔍', interactionId: 'w1as-topic-staffdoor' },
+      { x: 30, y: 40, icon: '🔍', interactionId: 'w1as-topic-pamphlet' },
+      { x: 65, y: 35, icon: '🔍', interactionId: 'w1as-topic-guestbook' },
+      { x: 50, y: 12, icon: '🔍', interactionId: 'w1as-topic-ceiling' },
+      { x: 10, y: 85, icon: '🔍', interactionId: 'w1as-topic-entrance' },
+    ],
+    // W1_TOURISM 전용 — "이제 안쪽으로 들어가자"는 구 미니게임의 exitBtn
+    // 문구를 그대로 가져왔다. 조사 완료 여부와 무관하게 언제든 누를 수
+    // 있다(§20 게임오버 없음, 구 미니게임도 동일). week1-scene-004 자체가
+    // 이미 "단체 관광객 무리가 빠져나가고 나서야 다시 조용해졌다"로 시간
+    // 경과·붐빔 전환을 흡수하므로 별도 전환 씬을 새로 만들지 않는다.
+    enterSceneId: { __byPhase: true, W1_TOURISM: 'week1-scene-004' },
+    enterSceneLabel: { __byPhase: true, W1_TOURISM: '이제 안쪽으로 들어가자' },
   },
   'w1-suspect-leo-spot': {
     id: 'w1-suspect-leo-spot',

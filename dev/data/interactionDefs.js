@@ -329,6 +329,158 @@ const interactionDefs = {
     effects: [{ type: 'setFlag', key: 'sawMakersMarkPlacard', value: true }],
   },
 
+  /* ===== w1-adrian-spot (전시장 보조 진열 구역) — W1_TOURISM 전용 자유 조사
+     10개 핫스팟 (§신규, 구 minigame-exhibition-search/HOTSPOTS 이식). 미니게임
+     자체 UI(진행도 카운터, "다시 봐도 똑같다" 재방문 토스트, 3개 이상
+     선택 관찰 시 보너스 증거)는 폐기했다 — 조사하기 자체가 이미 완료
+     상태(state-exhausted)를 마커로 보여주고, addEvidence가 id로 중복을
+     막아주므로 재방문 시 같은 짧은 대사가 다시 보이는 정도는 문제 없다.
+     k01만 원래 대사 그대로 여러 줄(K01_DISCOVERY_LINES) 유지, 나머지 9개는
+     원래 미니게임의 단문 관찰(line) 하나만 그대로 옮겼다 — 다른 페이즈의
+     대화하기 topic들처럼 지수/영우 티키타카를 새로 지어 붙이지 않았다
+     (원본에 없던 내용이라). characterId는 이 파일의 다른 W1_TOURISM
+     topic들과 같은 관례로 'youngwoo'를 쓰지만, 이 phase의 w1-adrian-spot엔
+     `characters`가 비어 있어(locationDefs.js) 대화하기 목록엔 뜨지 않고
+     오직 조사하기 핫스팟으로만 열린다. */
+  'w1as-topic-k01': {
+    id: 'w1as-topic-k01',
+    characterId: 'youngwoo',
+    locationIds: ['w1-adrian-spot'],
+    phases: ['W1_TOURISM'],
+    type: 'topic',
+    label: '황동 장치 K-01 살펴보기',
+    lines: [
+      { speaker: '지수', text: '어?\n영우야, 이거 봐요.', characterId: 'jisoo', expression: 'shocked' },
+      { speaker: '영우', text: '왜?', characterId: 'youngwoo', expression: 'curious' },
+      { speaker: '지수', text: '이 작은 황동 장치.\n재질이 그때 그 열쇠랑 되게 비슷하지 않아요?', characterId: 'jisoo', expression: 'suspicious' },
+      { speaker: '영우', text: '어디...\n오, 진짜 비슷하네.', characterId: 'youngwoo', expression: 'curious' },
+      { speaker: '', text: '[ 작은 황동 장치 · 카탈로그 번호 K-01 ]', characterId: null },
+      { speaker: '지수', text: '이름표 봐요.\nK 다시 01.', characterId: 'jisoo', expression: 'curious' },
+      { speaker: '영우', text: '그냥 정리 번호 아니야?', characterId: 'youngwoo', expression: 'blank' },
+      { speaker: '지수', text: '알아요.\n근데 그냥 넘어가긴 좀 아깝잖아요.', characterId: 'jisoo', expression: 'smirk' },
+      { speaker: '', text: '지수가 폰을 꺼내 사진을 찍는다.', characterId: 'jisoo', expression: 'curious' },
+      { speaker: '영우', text: '이제 그거 취미야?', characterId: 'youngwoo', expression: 'curious' },
+      { speaker: '지수', text: '기록이죠, 기록.', characterId: 'jisoo', expression: 'smirk' },
+    ],
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-k01-early-inscription-note', code: 'E-000', category: 'record', title: 'K-01 사전 관찰 메모',
+        description: '진열장 유리 너머로 봤을 때, 후면에 작은 각인 같은 게 있는 듯했다. 이 각도에서는 정확히 확인되지 않는다.',
+        discoveredLocationText: 'Pop-up Exhibition · 사전 조사',
+      },
+    }],
+  },
+  'w1as-topic-camera': {
+    id: 'w1as-topic-camera',
+    characterId: 'youngwoo',
+    locationIds: ['w1-adrian-spot'],
+    phases: ['W1_TOURISM'],
+    type: 'topic',
+    label: '오래된 필름 카메라 살펴보기',
+    lines: [{ speaker: '', text: '접이식 빈티지 카메라. 렌즈 캡이 없어 안쪽이 살짝 뿌옇다.', characterId: null }],
+  },
+  'w1as-topic-watch': {
+    id: 'w1as-topic-watch',
+    characterId: 'youngwoo',
+    locationIds: ['w1-adrian-spot'],
+    phases: ['W1_TOURISM'],
+    type: 'topic',
+    label: '은제 회중시계 살펴보기',
+    lines: [{ speaker: '', text: '은제 회중시계. 뒷면에 낯선 이니셜이 새겨져 있는데, 이 열쇠와는 다른 이니셜이다.', characterId: null }],
+  },
+  'w1as-topic-desk': {
+    id: 'w1as-topic-desk',
+    characterId: 'youngwoo',
+    locationIds: ['w1-adrian-spot'],
+    phases: ['W1_TOURISM'],
+    type: 'topic',
+    label: '접수대 살펴보기',
+    lines: [{ speaker: '', text: '접수대. 안내 책자와 방명록, 작은 태그 몇 개가 놓여 있다.', characterId: null }],
+  },
+  'w1as-topic-tag': {
+    id: 'w1as-topic-tag',
+    characterId: 'youngwoo',
+    locationIds: ['w1-adrian-spot'],
+    phases: ['W1_TOURISM'],
+    type: 'topic',
+    label: '직원용 태그 살펴보기',
+    lines: [{ speaker: '', text: '직원용 태그 — 접수대 오른쪽에 놓여 있다. 진열장을 정리할 때 쓰는 것 같다.', characterId: null }],
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-staff-tag-position-before', code: 'E-H01', category: 'physical', title: '직원용 태그 위치 (사건 전)',
+        description: '사건이 일어나기 전, 직원용 태그는 접수대 오른쪽에 놓여 있었다.',
+      },
+    }],
+  },
+  'w1as-topic-staffdoor': {
+    id: 'w1as-topic-staffdoor',
+    characterId: 'youngwoo',
+    locationIds: ['w1-adrian-spot'],
+    phases: ['W1_TOURISM'],
+    type: 'topic',
+    label: '직원 전용문 살펴보기',
+    lines: [{ speaker: '', text: '직원 전용문. "관계자 외 출입 금지"라고 적혀 있다. 살짝 닫혀 있다.', characterId: null }],
+  },
+  'w1as-topic-pamphlet': {
+    id: 'w1as-topic-pamphlet',
+    characterId: 'youngwoo',
+    locationIds: ['w1-adrian-spot'],
+    phases: ['W1_TOURISM'],
+    type: 'topic',
+    label: '안내 팸플릿 살펴보기',
+    lines: [{ speaker: '', text: '안내 팸플릿. K-01 항목 옆에 "판매 불가 · 전시 전용" 표시가 있다.', characterId: null }],
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-k01-not-for-sale', code: 'E-H02', category: 'record', title: 'K-01 팸플릿 표기',
+        description: '안내 팸플릿에는 K-01이 "판매 불가 · 전시 전용" 물품으로 표기되어 있다. 단순 되팔기 목적의 충동 절도라면 이상한 선택이다.',
+      },
+    }],
+  },
+  'w1as-topic-guestbook': {
+    id: 'w1as-topic-guestbook',
+    characterId: 'youngwoo',
+    locationIds: ['w1-adrian-spot'],
+    phases: ['W1_TOURISM'],
+    type: 'topic',
+    label: '방문객 방명록 살펴보기',
+    lines: [{ speaker: '', text: '오늘 자 방명록 어디에도 "레오"로 추정되는 이름이 없다.', characterId: null }],
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-guestbook-no-leo', code: 'E-H03', category: 'record', title: '방명록 — 레오 이름 없음',
+        description: '오늘 자 방명록 어디에도 "레오"로 추정되는 이름이 없다.',
+      },
+    }],
+  },
+  'w1as-topic-ceiling': {
+    id: 'w1as-topic-ceiling',
+    characterId: 'youngwoo',
+    locationIds: ['w1-adrian-spot'],
+    phases: ['W1_TOURISM'],
+    type: 'topic',
+    label: '천장 보안카메라 살펴보기',
+    lines: [{ speaker: '', text: '천장 보안카메라가 진열장 정면이 아니라 출입구 쪽을 향해 있다.', characterId: null }],
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-cctv-angle', code: 'E-H04', category: 'photo', title: '보안카메라 각도',
+        description: '천장 보안카메라가 K-01 진열장 정면이 아니라 출입구 쪽을 향해 있다. 진열장 근처는 사각지대에 가깝다.',
+      },
+    }],
+  },
+  'w1as-topic-entrance': {
+    id: 'w1as-topic-entrance',
+    characterId: 'youngwoo',
+    locationIds: ['w1-adrian-spot'],
+    phases: ['W1_TOURISM'],
+    type: 'topic',
+    label: '출입구 주변 살펴보기',
+    lines: [{ speaker: '', text: '사람들이 끊임없이 들고 난다. 바로 옆 골목엔 작은 카페가 보인다.', characterId: null }],
+  },
+
   /* ===== Phase 4 — 용의자 탐문 (§12.6) =====
      Each suspect's *entire* existing interrogation scene (already scripted,
      multi-round, choice-heavy — see dev/dialogueData.js week1Scene006/007/

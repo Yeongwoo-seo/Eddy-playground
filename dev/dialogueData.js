@@ -1183,21 +1183,23 @@ const week1Scene001Lines = [
    Dialogue Set: dialogue-week1-scene003
    Scene: week1-scene-003 (빈티지 팝업 전시장, 10:40)
 
-   ===== 전시장 자유 조사 -> 증거 수집으로 전환 =====
-   원래 여기 있던 10개 핫스팟 텍스트 선택지 루프(hotspot-menu)는
-   week1-scene-003-minigame(dev/minigame-exhibition-search)으로 옮겼고, 이후
-   `minigames`(§ 미니게임, isEvidence: true)로 재분류됐다 —
-   minigame-phone-search(핸드폰을 찾아라)와 같은 "핫스팟 탐색 +
-   증거 획득 토스트" 방식에, /dev/upload로 실제 전시장 사진을 업로드하고
-   핫스팟 위치를 지정할 수 있는 room-hotspot 파이프라인까지 동일하게
-   붙였다(§ minigameId/roomHotspots 참고). 사진이 아직 없으면 기존 그리드
-   카드 모드로 그대로 동작한다.
-   이 VN 씬은 짧은 도입부만 담당하고, K-01 발견/필수·선택 조사/붐빔 전환/
-   보너스 단서는 전부 미니게임 쪽에 있다(§ minigame-exhibition-search 참고).
+   ===== 전시장 자유 조사 =====
+   원래 여기 있던 10개 핫스팟 텍스트 선택지 루프는 한때
+   week1-scene-003-minigame(dev/minigame-exhibition-search, 전용 미니게임
+   페이지)으로 옮겨졌다가, §신규 재편으로 그 미니게임 자체를 없애고 다시
+   장소 기반으로 되돌렸다 — 이번엔 탐색 허브의 w1-adrian-spot(전시장 보조
+   진열 구역, Phase 4/5와 같은 장소를 W1_TOURISM에도 재사용)에 조사하기
+   핫스팟 10개로 이식했다(w1as-topic-*, dev/data/interactionDefs.js). K-01
+   발견 비트만 원래처럼 여러 줄 대사로 유지되고, 나머지 9개는 짧은 관찰
+   한 줄씩이다. 이 VN 씬은 짧은 도입부만 담당하고 nextSceneId로 그 허브
+   장소에 곧장 내려준다(week1-scene-003-exhibition-return, see
+   dev/data/sceneRoutes.js) — 조사 완료 여부는 강제하지 않으며(§20 게임오버
+   없음), w1-adrian-spot 자체의 enterSceneId("이제 안쪽으로 들어가자")로
+   week1-scene-004(도난 발생)로 넘어간다.
 
-   미니게임으로 넘어가기 직전, 입장 직후에 전시장 직원과 짧게 안내를 주고받고
+   허브로 넘어가기 직전, 입장 직후에 전시장 직원과 짧게 안내를 주고받고
    영우/지수 티키타카 한 소절을 끼워 넣는다(staff-greet-1~4, banter-1~9).
-   flag/effect 없는 순수 텍스트 비트로, 미니게임 핸드오프에는 영향을 주지 않는다. */
+   flag/effect 없는 순수 텍스트 비트로, 허브 핸드오프에는 영향을 주지 않는다. */
 const week1Scene003Lines = [
   { id: 'line-001', speaker: '', text: '빈티지 팝업 전시장.\n오전 10시 40분.', characterId: null },
   { id: 'line-002', speaker: '', text: '작은 공간에 오래된 시계, 카메라, 금속 공예품들이\n유리 진열장 안에 나란히 놓여 있다.', characterId: null },
@@ -3361,30 +3363,6 @@ const week1Scene013Lines = [
   { id: 'line-048', speaker: '', text: '아직, 그 이름의 실체는 아무도 몰랐다.', characterId: null },
 ];
 
-// week1-scene-003-minigame's (전시장 증거 수집) hotspot registry — same role
-// as roomSearchAreas plays for minigame-phone-search, just a single "area"
-// (one exhibition floor, one photo) instead of four. Lets /dev/upload's
-// "정답 영역 지정" room-hotspot editor (scene.roomHotspots) offer these 10 named
-// spots for a dev to mark on a real uploaded exhibition photo — see
-// week1-scene-003's own `minigameId`/`roomHotspots` fields below, which wire
-// this in exactly the way scene.minigameId + scene.roomHotspots are read by
-// upload/index.html's renderHotspotSection/backgroundKinds. Only IDs +
-// display labels live here; per-hotspot flavor text, evidence records, and
-// the K-01 discovery beat live in minigame-exhibition-search/index.html,
-// mirroring how roomSearchAreas keeps gating logic out of dialogueData.js.
-const exhibitionSearchHotspots = [
-  { id: 'k01', label: '황동 장치 K-01' },
-  { id: 'desk', label: '접수대' },
-  { id: 'entrance', label: '출입구 주변' },
-  { id: 'camera', label: '오래된 필름 카메라' },
-  { id: 'watch', label: '은제 회중시계' },
-  { id: 'tag', label: '직원용 태그' },
-  { id: 'staffdoor', label: '직원 전용문' },
-  { id: 'pamphlet', label: '안내 팸플릿' },
-  { id: 'guestbook', label: '방문객 방명록' },
-  { id: 'ceiling', label: '천장 보안카메라' },
-];
-
 // Registry of testable Week 1 scenes — /dev/week1 lists these, each linking
 // to /dev/game/?scene=<id>. Covers only the 1주차 main weekend arc
 // ("사라진 K-01") — 평일 미니씬(W1-D1~D5)은 아직 미구현.
@@ -3429,32 +3407,17 @@ const week1Scenes = [
     location: 'Pop-up Exhibition',
     introLabel: 'CIRCULAR QUAY',
     time: '10:40',
-    // Hands off into the exhibition hotspot-search minigame — see
-    // MINIGAME_ROUTES in game/index.html.
+    // Hands off into the exploration hub at w1-adrian-spot (전시장 보조 진열
+    // 구역) — see MINIGAME_ROUTES in game/index.html / dev/data/sceneRoutes.js.
+    // The 10 evidence hotspots this used to lead into a standalone minigame
+    // for now live there as investigateHotspots (§신규 재편, see
+    // locationDefs.js/interactionDefs.js's w1as-topic-*).
     lines: week1Scene003Lines,
-    nextSceneId: 'week1-scene-003-minigame',
-    // Wires this scene into /dev/upload's room-hotspot editor the same way
-    // week0-scene-001-2 wires in the Eastwood map (scene.minigameId) — picking
-    // the "미니게임" background kind there stores a real exhibition photo
-    // under the week1-scene-003-minigame sceneId, and scene.roomHotspots
-    // (exhibitionSearchHotspots) offers all 10 named spots to mark on it, via
-    // DevGameState.getRoomHotspots/setRoomHotspot exactly like minigame-
-    // phone-search's rooms. Until a dev marks a photo, the minigame falls
-    // back to its existing grid-card mode.
-    minigameId: 'week1-scene-003-minigame',
-    roomHotspots: exhibitionSearchHotspots,
-  },
-  {
-    id: 'week1-scene-003-minigame',
-    order: 4,
-    name: '전시장 둘러보기 (미니게임)',
-    location: 'Pop-up Exhibition',
-    time: '10:44',
-    route: '/dev/minigame-exhibition-search/',
+    nextSceneId: 'week1-scene-003-exhibition-return',
   },
   {
     id: 'week1-scene-004',
-    order: 5,
+    order: 4,
     name: '도난 발생',
     location: 'Pop-up Exhibition',
     introLabel: 'CIRCULAR QUAY',
@@ -3741,7 +3704,7 @@ const week1Scenes = [
 // 그대로.
 const week1SceneGroups = [
   { range: 'PHASE 1', label: '관광 자유 탐색', sceneIds: ['week1-scene-001'] },
-  { range: 'PHASE 2', label: '전시장 자유 관람', sceneIds: ['week1-scene-003', 'week1-scene-003-minigame'] },
+  { range: 'PHASE 2', label: '전시장 자유 관람', sceneIds: ['week1-scene-003'] },
   {
     range: 'PHASE 3', label: '도난 발생 · 초기 조사',
     sceneIds: ['week1-scene-004', 'week1-scene-004-minigame', 'week1-scene-004-review', 'week1-scene-005', 'week1-scene-005a', 'week1-scene-005b'],
@@ -4215,18 +4178,6 @@ const minigames = [
     location: 'Sydney Accommodation',
     route: '/dev/minigame-phone-search/',
     setupUrl: `/dev/upload/?scene=${roomSearchAreaSceneId(roomSearchAreas[0].id)}&minigame=week0-scene-002-2`,
-    isEvidence: true,
-  },
-  {
-    // setupUrl points at the VN scene's own id (week1-scene-003), not the
-    // minigame's — see backgroundKinds() in upload/index.html for why the
-    // "미니게임" background kind resolves to scene.minigameId regardless of
-    // which scene id is in the URL.
-    id: 'week1-scene-003-minigame',
-    name: '전시장 둘러보기',
-    location: 'Pop-up Exhibition',
-    route: '/dev/minigame-exhibition-search/',
-    setupUrl: '/dev/upload/?scene=week1-scene-003&minigame=week1-scene-003-minigame',
     isEvidence: true,
   },
   {
