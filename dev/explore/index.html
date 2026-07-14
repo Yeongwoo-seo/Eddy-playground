@@ -650,22 +650,30 @@ async function openMoveMapSheet(phaseMap, mapExits, listExits) {
   el.moveMapWrap.style.backgroundImage = '';
   el.moveMapSheet.classList.remove('hidden');
 
-  // 현재 위치도 그 phase 지도에 자기 mapPosition이 있으면 (cyan) 핀으로 같이
-  // 찍어 방향 감각을 준다 — exit 목록엔 없으니 mapExits와 분리해서 그린다.
-  if (currentDef && currentDef.mapPosition) {
+  // 좌표는 locationDefs.js의 정적 mapPosition이 기본값, /dev/upload 탐색허브
+  // 탭의 지도 핀 편집기가 저장한 override(AssetDB.getMapPins)가 있으면 그게
+  // 우선한다 — 코드 수정 없이 실제 생성된 지도 그림 보면서 미세 조정 가능.
+  const pinOverrides = await AssetDB.getMapPins().catch(() => ({}));
+  function pinPosition(locDef) { return pinOverrides[locDef.id] || locDef.mapPosition; }
+
+  // 현재 위치도 그 phase 지도에 좌표가 있으면 (cyan) 핀으로 같이 찍어 방향
+  // 감각을 준다 — exit 목록엔 없으니 mapExits와 분리해서 그린다.
+  const currentPos = currentDef && pinPosition(currentDef);
+  if (currentPos) {
     const cur = document.createElement('div');
     cur.className = 'move-pin current';
-    cur.style.left = currentDef.mapPosition.x + '%';
-    cur.style.top = currentDef.mapPosition.y + '%';
+    cur.style.left = currentPos.x + '%';
+    cur.style.top = currentPos.y + '%';
     cur.innerHTML = `<span class="move-pin-label">현재 위치</span>`;
     el.moveMapPins.appendChild(cur);
   }
   mapExits.forEach(exitDef => {
+    const pos = pinPosition(exitDef);
     const unlocked = exitUnlocked(exitDef);
     const btn = document.createElement('button');
     btn.className = 'move-pin' + (unlocked ? '' : ' locked');
-    btn.style.left = exitDef.mapPosition.x + '%';
-    btn.style.top = exitDef.mapPosition.y + '%';
+    btn.style.left = pos.x + '%';
+    btn.style.top = pos.y + '%';
     btn.disabled = !unlocked;
     btn.innerHTML = `<span class="move-pin-label">${escapeHtml(exitDef.name)}</span>`;
     btn.addEventListener('click', () => {

@@ -682,6 +682,50 @@ const AssetDB = (() => {
     return map;
   }
 
+  // 지도 핀 좌표 override — { [locationId]: { x, y } }, 같은 단일 JSON blob
+  // 패턴. dev/data/locationDefs.js의 각 위치가 갖는 mapPosition은 정적 코드값
+  // (그 위치가 지도에 핀을 찍을 "랜드마크급"인지 자체를 결정 — 코드 수정
+  // 필요)이고, 이건 그 좌표를 실제 생성된 지도 그림을 보면서 미세 조정하기
+  // 위한 override다. /dev/upload 탐색허브 탭의 지도 핀 편집기(renderMapPin
+  // Editor)가 여기 쓰고, dev/explore/index.html의 openMoveMapSheet가 여기
+  // 값이 있으면 locationDefs.js의 mapPosition보다 우선해서 읽는다.
+  const mapPinsCache = new Map(); // single entry keyed 'positions'
+  const MAP_PINS_PATH = 'map-pins/positions.json';
+
+  async function getMapPins() {
+    if (mapPinsCache.has('positions')) return mapPinsCache.get('positions');
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${MAP_PINS_PATH}?t=${Date.now()}`;
+    try {
+      const map = (await fetchJsonBlob(url)) || {};
+      mapPinsCache.set('positions', map);
+      return map;
+    } catch (e) {
+      return mapPinsCache.get('positions') || {};
+    }
+  }
+
+  async function setMapPin(locationId, pos) {
+    if (!locationId) return {};
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${MAP_PINS_PATH}?t=${Date.now()}`;
+    const current = await readCurrentForWrite(mapPinsCache, 'positions', url, {});
+    const map = Object.assign({}, current);
+    if (pos) map[locationId] = pos; else delete map[locationId];
+    const blob = new Blob([JSON.stringify(map)], { type: 'application/json' });
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${DEV_ASSETS_BUCKET}/${MAP_PINS_PATH}`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'x-upsert': 'true',
+      },
+      body: blob,
+    });
+    if (!res.ok) throw new Error(`지도 핀 저장 실패 (${res.status}): ${await res.text()}`);
+    mapPinsCache.set('positions', map);
+    return map;
+  }
+
   // 씬 배경 슬롯(위 backgroundKinds()의 sceneId key, 예: 'week0-scene-002-1')
   // → { locationId, variantId } 배정. dialogueData.js는 정적 스크립트 파일이라
   // /dev/upload에서 직접 고쳐 쓸 수 없으므로, "이 슬롯이 어느 장소인지"는 코드가
@@ -778,6 +822,7 @@ const AssetDB = (() => {
     getYoungwooTestAnswers, setYoungwooTestAnswer,
     getLocations, setLocation,
     getSceneLocationMap, setSceneLocation, primeSceneLocationMap,
+    getMapPins, setMapPin,
   };
 })();
 
