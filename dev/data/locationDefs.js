@@ -99,6 +99,7 @@ const locationDefs = {
     phases: ['W1_TOURISM'],
     visualBrief: '더 록스(The Rocks) 지구의 오래된 사암 건물과 좁은 자갈길 골목. 빈티지 부티크 상점 간판들이 늘어서 있고, 19세기풍 건물 사이로 좁은 통로와 옆문들이 보이는 아기자기한 관광 골목.',
     characters: ['youngwoo'],
+    charPositions: { youngwoo: { x: 0, y: -150 } },
     exits: ['w1-circular-quay', 'w1-bridge-view', 'w1-the-rocks-boutique', 'w1-exhibition-entrance'],
     mapPosition: { x: 24, y: 55 },
   },
