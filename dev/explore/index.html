@@ -605,11 +605,21 @@ async function performMove(locationId) {
   // automatically the *first* time this location is actually entered (e.g.
   // week1-scene-002's photo-pose loop at 서큘러키), then never again — later
   // visits behave like a normal hub location. Marking it visited/current
-  // *before* navigating away is what makes that "never again" stick.
+  // *before* playing is what makes that "never again" stick. Played inline
+  // (playSceneInline — same machinery interrogation scenes already use)
+  // instead of a full-page hand-off to /dev/game: the scene's own backdrop
+  // and this location's hub backdrop are the same photo, so bouncing to a
+  // second page just to come straight back only added a cold-cache reload
+  // in between. onInlineSceneComplete's own nextSceneId handling (falls
+  // through to a plain renderLocation() when a scene has none, as
+  // week1-scene-002 doesn't) brings the hub action bar up the moment the
+  // scene ends.
   if (firstVisit && def.firstVisitSceneId) {
     ExplorationState.unlockLocation(locationId);
     ExplorationState.moveToLocation(locationId);
-    location.href = `/dev/game/?scene=${encodeURIComponent(def.firstVisitSceneId)}`;
+    await renderLocation();
+    showView('location');
+    playSceneInline(def.firstVisitSceneId);
     return;
   }
   if (def.routeOnEnter) {
@@ -1290,14 +1300,28 @@ function applyInlineSceneEffect(effect) {
     case 'refreshInteraction':
       ExplorationState.refreshInteractionsByFact(effect.factId);
       break;
-    case 'returnToExploration': {
-      const qs = new URLSearchParams();
-      if (effect.phaseId) qs.set('phase', effect.phaseId);
-      if (effect.locationId) qs.set('location', effect.locationId);
-      const query = qs.toString();
-      location.href = '/dev/explore/' + (query ? '?' + query : '');
+    // Ends the current inline scene and lands back on the hub in place
+    // (mirrors onInlineSceneComplete's own no-nextSceneId branch) — every
+    // scene using this effect now plays inline (playSceneInline) on this
+    // same page, so a full location.href reload just to come straight back
+    // to where we already are would reintroduce the reload flash inline
+    // playback exists to avoid. (dev/game/index.html keeps its own
+    // navigating version of this case for scenes that still play there.)
+    case 'returnToExploration':
+      if (effect.phaseId && effect.phaseId !== ExplorationState.getCurrentPhase()) {
+        ExplorationState.enterExplorationPhase(effect.phaseId, effect.locationId);
+      } else if (effect.locationId) {
+        ExplorationState.unlockLocation(effect.locationId);
+        ExplorationState.moveToLocation(effect.locationId);
+      }
+      currentDialoguePlayer = null;
+      activeInlineSceneId = null;
+      clearInteractiveLayers();
+      setDialogueMode(false);
+      setLocCharStage(currentCharacterId);
+      renderLocation();
+      showView('location');
       break;
-    }
   }
 }
 
@@ -1440,23 +1464,32 @@ function onInlineSceneComplete(sceneData) {
 // prompts/hypothesis effects, all untouched) inline inside this hub's
 // dlg-panel instead of navigating to dev/game/index.html — see
 // interactionDefs.js's isInterrogation entries (type:'scene'/sceneId).
+// interactionId is optional — a location's own firstVisitSceneId (see
+// performMove below) has no interactionDefs entry of its own to complete.
 function playSceneInline(sceneId, interactionId) {
   const sceneData = allScenes.find(s => s.id === sceneId);
   if (!sceneData) { console.error('[탐색허브] 알 수 없는 씬', sceneId); return; }
   // Matches the old type:'minigame' hand-off's timing exactly (completed
   // the moment the interaction launches, not once the scene finishes) so
   // interaction-state tracking behaves the same as before.
-  ExplorationState.completeInteraction(interactionId);
+  if (interactionId) ExplorationState.completeInteraction(interactionId);
   activeInlineSceneId = sceneId;
   const lines = sceneData.lines.map(l => Object.assign({}, l));
   setDialogueMode(true);
   currentDialoguePlayer = createVNPlayer({
     onLineChange: (line) => {
+      // A choice's effects (onEffect below) can end the scene outright —
+      // e.g. returnToExploration — before vnPlayer's own choose() finishes
+      // resolving where the *next* line would have been. That leftover
+      // showLine still fires this callback once more on its way out; without
+      // this guard it would re-paint loc-char-stage with whatever character
+      // was mid-line right as the hub view underneath becomes visible again.
+      if (activeInlineSceneId !== sceneId) return;
       clearInteractiveLayers();
       el.dlgName.textContent = line.speaker || '';
       applyDialogueCharacter(line.characterId, line.expression);
     },
-    onTextUpdate: (text) => { el.dlgText.textContent = text; },
+    onTextUpdate: (text) => { if (activeInlineSceneId === sceneId) el.dlgText.textContent = text; },
     onArrow: (show) => el.dlgArrow.classList.toggle('show', show),
     onEffect: (effects) => { (Array.isArray(effects) ? effects : [effects]).forEach(applyInlineSceneEffect); },
     onChoicePrompt: (choices) => showChoices(choices),
@@ -1534,14 +1567,41 @@ el.frame.addEventListener('click', (e) => {
 // skips straight past it.
 const PHASE_PRELOAD_SESSION_KEY = 'mkPhasePreloadReadyPhase';
 
+// Wardrobe-aware variant of the plain getCharacterAssetId lookup below — a
+// dev/dialogueData.js scene (unlike a topic-type interactionDefs entry) can
+// have its lines resolve to an outfit-specific portrait via WardrobeState,
+// so preloading only the bare characterId would leave the *actual* asset
+// the scene shows still cold. Mirrors weekPreloader.js's own
+// collectCharacterAssetIds exactly (same fallback-to-base-id reasoning).
+function addSceneCharacterAssetIds(ids, scene) {
+  (scene.lines || []).forEach(line => {
+    if (!line.characterId) return;
+    const expression = line.expression || 'neutral';
+    let resolvedCharacterId = line.characterId;
+    if (typeof WardrobeState !== 'undefined') {
+      try {
+        const resolution = WardrobeState.resolveOutfitForScene(line.characterId, {
+          outfitMode: scene.outfitMode, storyOutfitId: scene.storyOutfitId,
+        });
+        if (resolution.hidden) return;
+        if (resolution.characterId) resolvedCharacterId = resolution.characterId;
+      } catch (e) { /* fall back to the base characterId below */ }
+    }
+    const outfitAssetId = DevGameState.getCharacterAssetId(resolvedCharacterId, expression);
+    if (outfitAssetId) ids.add(outfitAssetId);
+    const baseAssetId = DevGameState.getCharacterAssetId(line.characterId, expression);
+    if (baseAssetId) ids.add(baseAssetId);
+  });
+}
+
 // Every character portrait a phase's hub content could show: each location's
 // standing character(s) (loc-char-chip/loc-char-stage, 'neutral'), every
-// expression a topic-type interactionDefs entry's lines use (대화하기), and
-// every person already on file (제시하기's 인물 탭 isn't scoped to a
-// location, it lists CaseFileState.getPersons() as-is). All three lookups
-// are the same synchronous localStorage-backed DevGameState.getCharacterAssetId
-// weekPreloader.js uses for scenes, just re-collected for hub content instead
-// of dialogueData.js scenes.
+// expression a topic-type interactionDefs entry's lines use (대화하기), every
+// portrait a type:'scene' interactionDefs entry's inline-played dialogueData
+// scene uses (심문하기 등 — see playSceneInline), every portrait a location's
+// own firstVisitSceneId inline scene uses (예: week1-scene-002 at 서큘러키),
+// and every person already on file (제시하기's 인물 탭 isn't scoped to a
+// location, it lists CaseFileState.getPersons() as-is).
 function collectPhaseCharacterAssetIds(phaseId, locationIds) {
   const ids = new Set();
   locationIds.forEach(id => {
@@ -1549,6 +1609,8 @@ function collectPhaseCharacterAssetIds(phaseId, locationIds) {
       const assetId = DevGameState.getCharacterAssetId(charId, 'neutral');
       if (assetId) ids.add(assetId);
     });
+    const firstVisitScene = (typeof allScenes !== 'undefined') ? allScenes.find(s => s.id === locationDefs[id].firstVisitSceneId) : null;
+    if (firstVisitScene) addSceneCharacterAssetIds(ids, firstVisitScene);
   });
   Object.values(interactionDefs).forEach(def => {
     if (!(def.phases || []).includes(phaseId)) return;
@@ -1557,6 +1619,10 @@ function collectPhaseCharacterAssetIds(phaseId, locationIds) {
       const assetId = DevGameState.getCharacterAssetId(line.characterId, line.expression || 'neutral');
       if (assetId) ids.add(assetId);
     });
+    if (def.type === 'scene' && def.sceneId && typeof allScenes !== 'undefined') {
+      const scene = allScenes.find(s => s.id === def.sceneId);
+      if (scene) addSceneCharacterAssetIds(ids, scene);
+    }
   });
   (typeof CaseFileState !== 'undefined' ? CaseFileState.getPersons() : []).forEach(p => {
     const assetId = DevGameState.getCharacterAssetId(p.id, 'neutral');
