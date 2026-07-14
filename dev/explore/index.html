@@ -89,14 +89,28 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .investigate-hint.show{opacity:1}
 
 /* ===== Location character chips — who's actually standing here, shown
-   above the goal line so presence isn't hidden behind the 대화 sheet. ===== */
+   above the goal line so presence isn't hidden behind the 대화 sheet. A
+   location can list more than one character (§신규); the first one is the
+   default selection (currentCharacterId, see renderLocationCharacters) and
+   a chip switches which one 대화하기/증거 제시 act on — see selectLocationCharacter. ===== */
 .loc-characters{display:flex;gap:8px;margin-bottom:10px;overflow-x:auto}
 .loc-characters:empty{display:none;margin-bottom:0}
 .loc-char-chip{flex-shrink:0;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:5px 12px 5px 5px;color:var(--text-primary);font-family:inherit;cursor:pointer}
 .loc-char-chip:active{background:#1c2530}
+.loc-char-chip.active{background:rgba(89,184,200,.18);border-color:rgba(89,184,200,.5)}
 .loc-char-portrait{width:30px;height:30px;border-radius:50%;overflow:hidden;background:var(--surface-2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--text-secondary)}
 .loc-char-portrait img{width:100%;height:100%;object-fit:cover;object-position:top}
 .loc-char-name{font-size:12.5px;font-weight:700}
+
+/* ===== Idle character stage — the currently-selected (default: first)
+   character stands over the location background, between loc-stage and the
+   bottom bar (feet hidden behind its blurred panel, same idiom as the VN
+   dialogue layer's own dlg-char-wrap). Switching character (chip tap) fades
+   the old one out before swapping the image and fading the new one in —
+   see setLocCharStage — rather than a hard cut. ===== */
+.loc-char-stage{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;pointer-events:none;opacity:0;transition:opacity .25s ease;z-index:1}
+.loc-char-stage.show{opacity:1}
+.loc-char-stage img{max-height:70%;max-width:82%;object-fit:contain;object-position:bottom;display:block}
 
 /* ===== Bottom-sheet family (character menu / topic list / evidence / persons) ===== */
 .sheet-overlay{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center}
@@ -131,6 +145,8 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .state-available,.state-in_progress{color:var(--cyan);background:rgba(89,184,200,.12)}
 .state-locked{color:var(--text-muted);background:rgba(255,255,255,.05)}
 .empty-note{text-align:center;color:var(--text-muted);font-size:13px;padding:24px 0}
+.sheet-section-label{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--text-muted);text-transform:uppercase;margin:14px 0 8px}
+.sheet-section-label:first-child{margin-top:0}
 
 /* ===== Dialogue playback (reuses vnPlayer.js) ===== */
 .dialogue-layer{position:absolute;inset:0;z-index:15;display:none;flex-direction:column;justify-content:flex-end;cursor:pointer}
@@ -167,6 +183,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
     <div class="loc-stage placeholder" id="locStage">
       <div class="loc-canvas" id="locCanvas"><img id="locImg" alt=""></div>
     </div>
+    <div class="loc-char-stage" id="locCharStage"><img id="locCharStageImg" alt=""></div>
     <div class="investigate-hint" id="investigateHint"></div>
     <div class="move-fade" id="moveFade"></div>
     <div class="bottom-bar">
@@ -189,14 +206,6 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
       <div class="dlg-text" id="dlgText"></div>
       <div class="dlg-foot"><span class="dlg-arrow" id="dlgArrow">▼</span></div>
     </div>
-  </div>
-</div>
-
-<div class="sheet-overlay hidden" id="pickerSheet">
-  <div class="sheet">
-    <div class="sheet-title" id="pickerSheetTitle">누구에게?</div>
-    <div id="pickerSheetBody"></div>
-    <button class="action-btn cancel" id="pickerSheetCloseBtn">그만두기</button>
   </div>
 </div>
 
@@ -266,6 +275,8 @@ const el = {
   locImg: document.getElementById('locImg'),
   moveFade: document.getElementById('moveFade'),
   locCharacters: document.getElementById('locCharacters'),
+  locCharStage: document.getElementById('locCharStage'),
+  locCharStageImg: document.getElementById('locCharStageImg'),
   goalLine: document.getElementById('goalLine'),
   enterSceneBtn: document.getElementById('enterSceneBtn'),
   investigateBtn: document.getElementById('investigateBtn'),
@@ -273,10 +284,6 @@ const el = {
   moveBtn: document.getElementById('moveBtn'),
   presentBtn: document.getElementById('presentBtn'),
   investigateHint: document.getElementById('investigateHint'),
-  pickerSheet: document.getElementById('pickerSheet'),
-  pickerSheetTitle: document.getElementById('pickerSheetTitle'),
-  pickerSheetBody: document.getElementById('pickerSheetBody'),
-  pickerSheetCloseBtn: document.getElementById('pickerSheetCloseBtn'),
   listSheet: document.getElementById('listSheet'),
   listSheetTitle: document.getElementById('listSheetTitle'),
   listSheetBody: document.getElementById('listSheetBody'),
@@ -540,32 +547,35 @@ function performMove(locationId) {
 
 /* ===== Hub action bar (조사/대화/제시/이동) =====
    Replaces the old per-character chip + action-sheet flow: each location
-   carries at most one person in practice (§14.6 locationDefs), so 대화/제시
-   resolve straight to that person instead of making the player tap a chip
-   first. resolveCharacterThen() only falls back to a picker sheet if a
-   location ever does list more than one — kept for robustness, not because
-   any current locationDef needs it. */
+   carries at most one person, but a location can list several (§신규) —
+   currentCharacterId tracks which one 대화/제시 currently act on, defaulting
+   to the first in def.characters and switchable via a chip tap
+   (selectLocationCharacter). */
+let currentCharacterId = null;
 function locationCharacters() {
   const def = locationDefs[ExplorationState.getCurrentLocationId()];
   return (def && def.characters) || [];
 }
 
-// ===== 장소에 있는 사람 캐릭터 표시 (§신규) — 대화/제시 버튼 뒤에 숨어있는
-// 대신, 지금 이 장소에 누가 있는지 초상화 chip으로 바로 보여준다. chip을
-// 누르면 그 인물과 바로 대화 목록을 연다(누구에게? 피커 없이 직행).
+// ===== 장소에 있는 사람 캐릭터 표시 (§신규) — 지금 이 장소에 누가 있는지
+// 초상화 chip으로 보여준다. 여럿이면 첫 번째가 기본 선택(currentCharacterId)
+// — chip을 누르면 선택이 그 인물로 바뀌고(active 표시), 화면 중앙의 캐릭터도
+// 페이드아웃 후 그 인물로 페이드인한다(selectLocationCharacter/setLocCharStage).
+// 대화하기/증거 제시는 지금 선택된 인물을 대상으로 한다. */
 async function renderLocationCharacters() {
   const chars = locationCharacters();
+  if (!chars.includes(currentCharacterId)) currentCharacterId = chars[0] || null;
   el.locCharacters.innerHTML = chars.map(charId => {
     const person = dialogueCharacters.find(d => d.id === charId) || { name: charId };
     return `
-      <button class="loc-char-chip" data-char="${charId}">
+      <button class="loc-char-chip${charId === currentCharacterId ? ' active' : ''}" data-char="${charId}">
         <span class="loc-char-portrait" id="locCharPortrait-${charId}">${escapeHtml((person.name || '?')[0])}</span>
         <span class="loc-char-name">${escapeHtml(person.name)}</span>
       </button>
     `;
   }).join('');
   el.locCharacters.querySelectorAll('[data-char]').forEach(chip => {
-    chip.addEventListener('click', () => openTopicList(chip.dataset.char));
+    chip.addEventListener('click', () => selectLocationCharacter(chip.dataset.char));
   });
   chars.forEach(async (charId) => {
     const assetId = DevGameState.getCharacterAssetId(charId, 'neutral');
@@ -573,35 +583,54 @@ async function renderLocationCharacters() {
     const host = document.getElementById(`locCharPortrait-${charId}`);
     if (host && asset && asset.dataUrl) host.innerHTML = `<img src="${asset.dataUrl}" alt="">`;
   });
+  setLocCharStage(currentCharacterId);
 }
-function resolveCharacterThen(onPick, emptyMessage) {
-  const chars = locationCharacters();
-  if (!chars.length) { showToastLine(null, emptyMessage); return; }
-  if (chars.length === 1) { onPick(chars[0]); return; }
-  el.pickerSheetTitle.textContent = '누구에게?';
-  el.pickerSheetBody.innerHTML = chars.map(charId => {
-    const person = dialogueCharacters.find(d => d.id === charId) || { name: charId };
-    return `<button class="action-btn" data-person="${charId}">${escapeHtml(person.name)}</button>`;
-  }).join('');
-  el.pickerSheetBody.querySelectorAll('[data-person]').forEach(btn => btn.addEventListener('click', () => {
-    el.pickerSheet.classList.add('hidden');
-    onPick(btn.dataset.person);
-  }));
-  el.pickerSheet.classList.remove('hidden');
+function selectLocationCharacter(charId) {
+  if (charId === currentCharacterId) return;
+  currentCharacterId = charId;
+  el.locCharacters.querySelectorAll('[data-char]').forEach(chip => chip.classList.toggle('active', chip.dataset.char === charId));
+  setLocCharStage(charId);
 }
-el.pickerSheetCloseBtn.addEventListener('click', () => el.pickerSheet.classList.add('hidden'));
+
+// 화면 중앙의 "지금 선택된 인물" 서있는 그림 — 대화 레이어의 dlg-char-wrap과
+// 같은 자리 개념이지만, 대화 중이 아닐 때도(허브를 둘러보는 동안) 늘 떠 있다.
+// 이미 떠 있는 상태에서 다른 인물로 바뀌면 CSS transition 시간만큼 기다렸다
+// 이미지를 바꿔서, 컷 전환이 아니라 페이드아웃→페이드인처럼 보이게 한다.
+const LOC_CHAR_STAGE_FADE_MS = 250;
+let locCharStageToken = 0;
+async function setLocCharStage(charId) {
+  const token = ++locCharStageToken;
+  if (el.locCharStage.classList.contains('show')) {
+    el.locCharStage.classList.remove('show');
+    await new Promise(r => setTimeout(r, LOC_CHAR_STAGE_FADE_MS));
+    if (token !== locCharStageToken) return;
+  }
+  if (!charId) { el.locCharStageImg.removeAttribute('src'); return; }
+  const assetId = DevGameState.getCharacterAssetId(charId, 'neutral');
+  const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
+  if (token !== locCharStageToken) return;
+  if (asset && asset.dataUrl) {
+    el.locCharStageImg.src = asset.dataUrl;
+    el.locCharStage.classList.add('show');
+  } else {
+    el.locCharStageImg.removeAttribute('src');
+  }
+}
+
 // Pre-existing gap: listSheet's own 닫기 button had no handler at all (every
 // caller only ever closed it indirectly, by picking a row) — now that 이동/
 // 대화/제시 all funnel through this same sheet, backing out without picking
 // anything has to work too.
 el.listSheetCloseBtn.addEventListener('click', () => el.listSheet.classList.add('hidden'));
 
-el.talkBtn.addEventListener('click', () => resolveCharacterThen(
-  (charId) => openTopicList(charId), '지금은 대화할 사람이 없어 보인다.'
-));
-el.presentBtn.addEventListener('click', () => resolveCharacterThen(
-  (charId) => openEvidenceSheet(charId), '지금 이 자리에는 증거를 보여줄 사람이 없다.'
-));
+el.talkBtn.addEventListener('click', () => {
+  if (!currentCharacterId) { showToastLine(null, '지금은 대화할 사람이 없어 보인다.'); return; }
+  openTopicList(currentCharacterId);
+});
+el.presentBtn.addEventListener('click', () => {
+  if (!currentCharacterId) { showToastLine(null, '지금 이 자리에는 증거를 보여줄 사람이 없다.'); return; }
+  openEvidenceSheet(currentCharacterId);
+});
 el.moveBtn.addEventListener('click', openMoveSheet);
 
 function renderExitListRows(container, exitDefs, emptyText) {
@@ -721,12 +750,23 @@ function openTopicList(characterId) {
 // A matched rule's `result` (correct/partial/interesting/wrong/blocked, §8.2)
 // never costs points or blocks progress either way (§8.4) — it only changes
 // the reaction text and, for correct/partial, may carry effects (addFact 등).
+// 목록은 CASE FILE 메뉴의 증거 탭(dev/caseMenu.js renderEvidenceTabBody)과
+// 같은 분류(EVIDENCE_CATEGORY_ORDER/evidenceCategoryLabel)로 묶어서 보여준다
+// — 두 화면이 서로 다른 분류를 보여주면 헷갈리니 하나의 소스만 쓴다.
 function openEvidenceSheet(characterId) {
   const items = CaseFileState.getEvidence();
   el.listSheetTitle.textContent = '증거 제시';
-  el.listSheetBody.innerHTML = items.length ? items.map(ev => `
-    <button class="topic-row" data-evidence="${ev.id}"><div class="topic-row-main">${escapeHtml(ev.title)}</div></button>
-  `).join('') : '<div class="empty-note">아직 제시할 증거가 없습니다.</div>';
+  if (!items.length) {
+    el.listSheetBody.innerHTML = '<div class="empty-note">아직 제시할 증거가 없습니다.</div>';
+  } else {
+    const cats = EVIDENCE_CATEGORY_ORDER.filter(c => items.some(ev => (ev.category || 'etc') === c));
+    el.listSheetBody.innerHTML = cats.map(c => `
+      <div class="sheet-section-label">${evidenceCategoryLabel(c)}</div>
+      ${items.filter(ev => (ev.category || 'etc') === c).map(ev => `
+        <button class="topic-row" data-evidence="${ev.id}"><div class="topic-row-main">${escapeHtml(ev.title)}</div></button>
+      `).join('')}
+    `).join('');
+  }
   el.listSheetBody.querySelectorAll('[data-evidence]').forEach(btn => btn.addEventListener('click', () => {
     el.listSheet.classList.add('hidden');
     const rule = presentEvidenceRules.find(r => r.characterId === characterId && r.evidenceId === btn.dataset.evidence && (!r.phase || r.phase === ExplorationState.getCurrentPhase()));
