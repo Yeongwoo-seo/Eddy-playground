@@ -31,13 +31,17 @@
    with zero hotspots, it just has nothing to mark.
 
    `charPositions` (optional) — { [characterId]: { x, y } } in px, the code
-   default for that character's standing offset in this location (same idiom
-   as mapPosition below: a static code value that AssetDB.getCharacterPositions'
-   saved override, keyed `${locationId}::${characterId}`, takes precedence
-   over when present). dev/explore/index.html's 캐릭터 위치 슬라이더 lets a
-   tester nudge this live and has a "코드 보기" button that prints the exact
-   snippet to paste in here once a position is finalized — see
-   resolveCharPos()/renderCharPosCode() there.
+   default for that character's standing offset in *this* location only, for
+   the rare spot that needs to differ from the hub-wide default. Every hub
+   character otherwise stands at DEFAULT_HUB_CHAR_POS (dev/explore/index.html,
+   currently { x: 0, y: -150 }) — a location doesn't need this field unless
+   it's overriding that shared default. Same idiom as mapPosition below either
+   way: a static code value that AssetDB.getCharacterPositions' saved override,
+   keyed `${locationId}::${characterId}`, takes precedence over when present.
+   dev/explore/index.html's 캐릭터 위치 슬라이더 lets a tester nudge this live
+   and has a "코드 보기" button that prints the exact snippet to paste in here
+   once a location-specific position is finalized — see resolveCharPos()/
+   renderCharPosCode() there.
 
    `mapPosition` (optional) — { x, y } in % over that phase's overview map
    image (phaseMaps below), for locations landmark-level enough to get their
@@ -99,7 +103,6 @@ const locationDefs = {
     phases: ['W1_TOURISM'],
     visualBrief: '더 록스(The Rocks) 지구의 오래된 사암 건물과 좁은 자갈길 골목. 빈티지 부티크 상점 간판들이 늘어서 있고, 19세기풍 건물 사이로 좁은 통로와 옆문들이 보이는 아기자기한 관광 골목.',
     characters: ['youngwoo'],
-    charPositions: { youngwoo: { x: 0, y: -150 } },
     exits: ['w1-circular-quay', 'w1-bridge-view', 'w1-the-rocks-boutique', 'w1-exhibition-entrance'],
     mapPosition: { x: 24, y: 55 },
   },
