@@ -242,27 +242,25 @@ const AssetDB = (() => {
   // img.decode() forces that decode to happen now, off-DOM, during the
   // loading screen, so every switch afterward is a plain paint of an
   // already-decoded bitmap.
-  // Mirrored into sessionStorage for the same reason as `cache` above — a
-  // decode warmed on one scene's page load would otherwise be forgotten the
-  // instant the next scene's full navigation recreates this module, paying
-  // the decode cost again for an image the browser's HTTP cache may not
-  // even round-trip to the network for.
+  // Deliberately in-memory only (unlike `cache` above) — this used to be
+  // mirrored into sessionStorage so a decode warmed on one page load wasn't
+  // "forgotten" by the next page's full navigation, but that backfired: the
+  // decoded *bitmap* itself never survives a navigation (each page gets a
+  // fresh renderer), only this bookkeeping did. A hub/scene page that opened
+  // *believing* everything was already warmed — because an earlier page in
+  // the same tab session had warmed the same URLs — skipped the real
+  // img.decode() call entirely, so the actual decode got deferred back to
+  // first paint after all: exactly the pop this exists to prevent, just
+  // moved to whichever background a player's *second* visit lands on
+  // instead of the first. Redoing decode() once per fresh page is the
+  // correct amount of "redundant" work — the bytes are still HTTP-cached,
+  // only the decode itself repeats, and that's the whole point of calling
+  // this during a loading screen instead of never.
   const warmedImages = new Set();
-  const WARMED_IMAGES_SESSION_KEY = 'mkAssetDbWarmedImages';
-  function hydrateWarmedImages() {
-    try { JSON.parse(sessionStorage.getItem(WARMED_IMAGES_SESSION_KEY) || '[]').forEach(u => warmedImages.add(u)); }
-    catch (e) { /* corrupt/unavailable storage — start with nothing warmed */ }
-  }
-  function persistWarmedImages() {
-    try { sessionStorage.setItem(WARMED_IMAGES_SESSION_KEY, JSON.stringify([...warmedImages])); }
-    catch (e) { /* storage full/unavailable — warming still works in-memory for this page */ }
-  }
-  hydrateWarmedImages();
 
   function preloadImage(url) {
     if (!url || warmedImages.has(url)) return Promise.resolve();
     warmedImages.add(url);
-    persistWarmedImages();
     const img = new Image();
     img.src = url;
     const ready = img.decode ? img.decode() : new Promise((resolve) => {
