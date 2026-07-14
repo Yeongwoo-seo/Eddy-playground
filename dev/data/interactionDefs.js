@@ -326,7 +326,7 @@ const interactionDefs = {
     phases: ['W1_SUSPECT_INTERVIEWS'],
     type: 'scene',
     isInterrogation: true,
-    label: '심문하기',
+    label: '처음 대화하기',
     icon: '🔍',
     sceneId: 'week1-scene-006',
   },
