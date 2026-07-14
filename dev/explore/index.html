@@ -65,7 +65,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .dlg-panel.hidden{display:none}
 .dlg-name{font-size:15px;font-weight:700;color:var(--cyan);margin-bottom:8px}
 .dlg-name:empty{display:none}
-.dlg-text{min-height:20vh;font-size:16px;line-height:1.65;color:#fff;white-space:pre-wrap;word-break:keep-all;cursor:pointer;transition:color .2s ease}
+.dlg-text{font-size:16px;line-height:1.65;color:#fff;white-space:pre-wrap;word-break:keep-all;cursor:pointer;transition:color .2s ease}
 .dlg-text.is-question{color:var(--cyan)}
 .dlg-foot{display:flex;justify-content:flex-end;padding-top:6px}
 .dlg-arrow{font-size:13px;color:var(--text-secondary);visibility:hidden}
@@ -1272,15 +1272,36 @@ function applyLocalEffect(effect) {
 // loaded — playInteractionLines can be called many times in a session (every
 // topic/observe/toast line), and re-adding a fresh listener on the shared
 // dlgPanel each time would stack up duplicate handlers, making later taps
-// advance multiple players' worth of state at once.
+// advance multiple players' worth of state at once. Bound on locationView
+// (not just dlgPanel) so tapping the background/character behind the dialogue
+// box also advances it, same as dev/game's own VN screen — choice/evidence
+// buttons already call stopPropagation() on their own click handlers, so
+// they never reach here and double-advance.
 let currentDialoguePlayer = null;
-el.dlgPanel.addEventListener('click', () => { if (currentDialoguePlayer) currentDialoguePlayer.tap(); });
+el.locationView.addEventListener('click', () => {
+  if (!currentDialoguePlayer || el.dlgPanel.classList.contains('hidden')) return;
+  currentDialoguePlayer.tap();
+});
 
 // 대화하기가 실제 대사를 재생할 때, 화면에 새 팝업을 띄우는 대신 하단
 // bottom-bar 자신의 내용을 조사/대화/이동/제시 그리드(#hubPanel)에서 대사창
 // (#dlgPanel)으로 바꿔친다 — 같은 박스가 그대로 유지되므로 "팝업이 떴다"가
-// 아니라 "이 판이 대화창으로 바뀌었다"로 보인다(setDialogueMode).
+// 아니라 "이 판이 대화창으로 바뀌었다"로 보인다(setDialogueMode). 그 "같은
+// 박스" 약속을 지키려면 실제 세로 크기도 같아야 한다 — dlg-text에 따로
+// min-height를 주면 짧은 대사 한 줄에도 대화창이 hub-panel보다 훌쩍 커져,
+// 그 아래로 가려지는 배경 사진의 노출 범위가 달라져 버린다("탐색허브랑
+// 대화 중 배경 위치가 달라 보인다"). 대신 대화 시작 직전(hub-panel이 아직
+// 보이는 마지막 순간) 그 실측 높이를 bottom-bar의 min-height로 고정해
+// dlg-panel이 얼마나 짧든 그 이하로 줄어들지 않게 한다 — 사진 노출 범위가
+// hub 화면과 그대로 맞아떨어진다. 대사가 그보다 길면 자연스럽게 더
+// 커지는 것까지는 막지 않는다(기존 has-interactive의 max-height 캡과 별개).
 function setDialogueMode(on) {
+  // bottomBar's own height (not hubPanel's) — hubPanel's content-box height
+  // alone is missing bottomBar's own padding, which under-measured the
+  // target by ~30px and left dlg-panel *shorter* than hub-panel instead of
+  // matching it.
+  if (on) el.bottomBar.style.minHeight = el.bottomBar.getBoundingClientRect().height + 'px';
+  else el.bottomBar.style.minHeight = '';
   el.hubPanel.classList.toggle('hidden', on);
   el.dlgPanel.classList.toggle('hidden', !on);
   el.interrogateBtn.classList.toggle('hidden', on || !getInterrogationInteraction(currentCharacterId));
