@@ -215,6 +215,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .present-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .present-tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;aspect-ratio:1/1;background:var(--surface-2);border:1px solid var(--divider);border-radius:14px;padding:8px;cursor:pointer;font-family:inherit}
 .present-tile:active{opacity:.8}
+.present-tile.selected{border-color:rgba(89,184,200,.6);background:rgba(89,184,200,.12)}
 .present-tile-icon{width:60%;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;font-size:22px;border-radius:10px;overflow:hidden;background:rgba(255,255,255,.04);color:var(--text-secondary)}
 .present-tile-icon.round{border-radius:50%}
 .present-tile-icon img{width:100%;height:100%;object-fit:cover}
@@ -321,8 +322,10 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('/dev/sw.js',
 <script src="/dev/data/locationDefs.js"></script>
 <script src="/dev/data/interactionDefs.js"></script>
 <script src="/dev/state/explorationState.js"></script>
+<script src="/dev/caseEntryModel.js"></script>
 <script src="/dev/vnPlayer.js"></script>
 <script src="/dev/caseMenu.js"></script>
+<script src="/dev/caseEntryUI.js"></script>
 <script>
 /* ===== Exploration hub (The Missing Key v1 §7) — a single page that swaps
    between map/location/sheet/dialogue "views" instead of separate routed
@@ -918,22 +921,55 @@ function openTopicList(characterId) {
   el.listSheet.classList.remove('hidden');
 }
 
-// 제시하기 (spec §8, was 증거 제시 + 대화하기 안의 "다른 사람에 대해 묻기")
-// — 인물/증거 두 탭을 한 시트에 합쳐, dev/minigame-phone-search의 아이템 창과
-// 같은 3열 둥근 사각 그리드로 보여준다. presentEvidenceRules/
-// defaultPresentReaction은 dev/data/interactionDefs.js에 있고(Phase 5
-// 재검증 콘텐츠), 매칭된 rule의 result(correct/partial/interesting/wrong/
-// blocked, §8.2)는 점수나 진행을 막지 않고 반응 텍스트/effects만 바꾼다
-// (§8.4). 증거는 CASE FILE 메뉴의 증거 탭(dev/caseMenu.js
-// renderEvidenceTabBody)과 같은 분류(EVIDENCE_CATEGORY_ORDER/
-// evidenceCategoryLabel)로 묶는다 — 두 화면이 다른 분류를 보이면 헷갈린다.
-const PRESENT_EVIDENCE_CATEGORY_ICON = { physical: '📦', photo: '🖼️', testimony: '🗣️', record: '📄', etc: '❔' };
-let presentTab = 'evidence';
+// 제시하기 (spec §8 + §Phase 4 CaseEntry 재설계, was 증거 제시 + 대화하기 안의
+// "다른 사람에 대해 묻기") — 인물 탭(이미 병합된 기능)은 그대로 두고, 증거
+// 탭을 관련 항목/증거/증언/전체로 나눠 CaseEntryModel의 kind 분리·관련도
+// 계산을 얹는다. 3열 둥근 사각 타일 그리드(present-grid/present-tile)는 이
+// 화면에 이미 정착된 시각 언어라 그대로 따르고, CaseEntryUI의 리스트형
+// ces-card 대신 이 타일 스타일로 카드를 그린다. presentEvidenceRules/
+// defaultPresentReaction은 dev/data/interactionDefs.js에 그대로 두고(result
+// 5분류·페널티 없음 원칙도 그대로, §8.2/§8.4). 인물 탭은 되돌릴 필요 없는
+// 저위험 액션이라 기존처럼 즉시 반응하고, 증거/증언 쪽만 탭-선택-확인(§9.4
+// 오탭 방지)을 적용한다.
+const CASE_ENTRY_PRESENT_TABS_EXPLORE = [
+  { id: 'related', label: '관련 항목' },
+  { id: 'evidence', label: '증거' },
+  { id: 'testimony', label: '증언' },
+  { id: 'all', label: '전체' },
+  { id: 'person', label: '인물' },
+];
+let presentTab = 'related';
+let presentSelectedEntryId = null;
+function presentSheetEntries(characterId) {
+  const ctx = {
+    npcId: characterId, topicTags: [],
+    week: (typeof ExplorationState !== 'undefined' && ExplorationState.getCurrentWeek) ? ExplorationState.getCurrentWeek() : null,
+    maxSuggested: 6,
+  };
+  const presentable = CaseFileState.getCaseEntries().filter(e => e.presentable && e.status !== 'superseded' && e.status !== 'invalid');
+  if (presentTab === 'evidence') return presentable.filter(e => e.kind === 'evidence');
+  if (presentTab === 'testimony') return presentable.filter(e => e.kind === 'testimony');
+  if (presentTab === 'all') return presentable;
+  return CaseEntryModel.getRelevantPresentEntries(presentable, ctx);
+}
+// hydrateCaseEntryIcons(§Phase 5)는 [data-icon-asset]만 보고 배치 조회 후
+// <img>로 갈아끼우므로, 클래스는 이 화면의 present-tile-icon을 그대로 써도
+// 재사용에 문제없다(caseEntryIconHtml은 ces-card-icon 클래스를 하드코딩해서
+// 여기 타일 크기 규칙과 안 맞아 직접 만든다).
+function presentTileHtml(entry, selected) {
+  const iconAttr = entry.imageAssetId ? ` data-icon-asset="${entry.imageAssetId}"` : '';
+  return `
+    <button class="present-tile${selected ? ' selected' : ''}" data-present-entry="${entry.id}">
+      <span class="present-tile-icon"${iconAttr}>${entry.fallbackIcon}</span>
+      <span class="present-tile-label">${escapeHtml(entry.title)}</span>
+    </button>
+  `;
+}
 function renderPresentTiles(characterId) {
+  if (typeof CaseEntryUI !== 'undefined') CaseEntryUI.injectCaseEntryUIStyles();
   const tabsHtml = `
     <div class="present-tabs">
-      <button class="present-tab${presentTab === 'person' ? ' active' : ''}" data-tab="person">인물</button>
-      <button class="present-tab${presentTab === 'evidence' ? ' active' : ''}" data-tab="evidence">증거</button>
+      ${CASE_ENTRY_PRESENT_TABS_EXPLORE.map(t => `<button class="present-tab${presentTab === t.id ? ' active' : ''}" data-tab="${t.id}">${t.label}</button>`).join('')}
     </div>
   `;
   if (presentTab === 'person') {
@@ -957,36 +993,44 @@ function renderPresentTiles(characterId) {
       if (host && asset && asset.dataUrl) host.innerHTML = `<img src="${asset.dataUrl}" alt="">`;
     });
   } else {
-    const items = CaseFileState.getEvidence();
-    if (!items.length) {
-      el.listSheetBody.innerHTML = tabsHtml + '<div class="empty-note">아직 제시할 증거가 없습니다.</div>';
-    } else {
-      const cats = EVIDENCE_CATEGORY_ORDER.filter(c => items.some(ev => (ev.category || 'etc') === c));
-      el.listSheetBody.innerHTML = tabsHtml + cats.map(c => `
-        <div class="sheet-section-label">${evidenceCategoryLabel(c)}</div>
-        <div class="present-grid">${items.filter(ev => (ev.category || 'etc') === c).map(ev => `
-          <button class="present-tile" data-evidence="${ev.id}">
-            <span class="present-tile-icon">${PRESENT_EVIDENCE_CATEGORY_ICON[ev.category] || PRESENT_EVIDENCE_CATEGORY_ICON.etc}</span>
-            <span class="present-tile-label">${escapeHtml(ev.title)}</span>
-          </button>
-        `).join('')}</div>
-      `).join('');
-    }
-    el.listSheetBody.querySelectorAll('[data-evidence]').forEach(btn => btn.addEventListener('click', () => {
+    const entries = presentSheetEntries(characterId);
+    const selected = presentSelectedEntryId ? entries.find(e => e.id === presentSelectedEntryId) : null;
+    const emptyMsg = presentTab === 'related' ? '현재 대화와 관련된 항목이 없습니다. 다른 탭에서 골라보세요.' : '제시할 수 있는 항목이 없습니다.';
+    const gridHtml = entries.length ? `<div class="present-grid">${entries.map(e => presentTileHtml(e, e.id === presentSelectedEntryId)).join('')}</div>` : `<div class="empty-note">${emptyMsg}</div>`;
+    const confirmHtml = selected ? `
+      <div class="ces-confirm-bar">
+        <div class="ces-confirm-summary">${escapeHtml(selected.title)}${selected.summary ? ' — ' + escapeHtml(selected.summary) : ''}</div>
+        <button class="ces-confirm-btn" data-present-confirm="${selected.id}">제시하기</button>
+      </div>
+    ` : '';
+    el.listSheetBody.innerHTML = tabsHtml + gridHtml + confirmHtml;
+    if (typeof CaseEntryUI !== 'undefined') CaseEntryUI.hydrateCaseEntryIcons(el.listSheetBody);
+    el.listSheetBody.querySelectorAll('[data-present-entry]').forEach(btn => btn.addEventListener('click', () => {
+      presentSelectedEntryId = presentSelectedEntryId === btn.dataset.presentEntry ? null : btn.dataset.presentEntry;
+      renderPresentTiles(characterId);
+    }));
+    el.listSheetBody.querySelectorAll('[data-present-confirm]').forEach(btn => btn.addEventListener('click', () => {
+      const entryId = btn.dataset.presentConfirm;
+      presentSelectedEntryId = null;
       el.listSheet.classList.add('hidden');
-      const rule = presentEvidenceRules.find(r => r.characterId === characterId && r.evidenceId === btn.dataset.evidence && (!r.phase || r.phase === ExplorationState.getCurrentPhase()));
+      const rule = presentEvidenceRules.find(r => r.characterId === characterId && r.evidenceId === entryId && (!r.phase || r.phase === ExplorationState.getCurrentPhase()));
       const outcome = rule || defaultPresentReaction;
       if (rule && (rule.result === 'correct' || rule.result === 'partial')) (rule.effects || []).forEach(applyLocalEffect);
+      // already_used 파생 판정용(§9.5) — scorePresentRelevance의 "이미 같은
+      // NPC에게 제시했으며 변화 없음 -3"(§9.3)이 이 플래그를 읽는다.
+      CaseFileState.setFlag('presented:' + characterId + ':' + entryId, true);
       showToastLine(characterId, outcome.reactionText);
     }));
   }
   el.listSheetBody.querySelectorAll('[data-tab]').forEach(btn => btn.addEventListener('click', () => {
     presentTab = btn.dataset.tab;
+    presentSelectedEntryId = null;
     renderPresentTiles(characterId);
   }));
 }
 function openPresentSheet(characterId) {
-  presentTab = 'evidence';
+  presentTab = 'related'; // §9.2 매번 새로 열 때 "관련 항목"으로 초기화
+  presentSelectedEntryId = null;
   el.listSheetTitle.textContent = '제시하기';
   renderPresentTiles(characterId);
   el.listSheet.classList.remove('hidden');
