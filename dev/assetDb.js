@@ -910,6 +910,89 @@ const AssetDB = (() => {
     return map;
   }
 
+  // 증거 DB 탭(읽기 전용 감사 목록, dev/upload/index.html renderEvidencePanel)
+  // 에 붙는 AI 생성 사진 — 증거 id 하나당 사진 하나, 장소/지도 핀과 같은
+  // 단일 JSON blob 카탈로그 패턴({ [evidenceId]: { imageAssetId } }). 실제
+  // 생성은 외부 AI 도구에서 하고(증거 DB 탭 우상단 공통 프롬프트 설정 참고)
+  // 결과 사진만 여기 업로드해 배정한다.
+  const evidencePhotosCache = new Map(); // single entry keyed 'catalog'
+  const EVIDENCE_PHOTOS_PATH = 'evidence-photos/catalog.json';
+
+  async function getEvidencePhotos() {
+    if (evidencePhotosCache.has('catalog')) return evidencePhotosCache.get('catalog');
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${EVIDENCE_PHOTOS_PATH}?t=${Date.now()}`;
+    try {
+      const map = (await fetchJsonBlob(url)) || {};
+      evidencePhotosCache.set('catalog', map);
+      return map;
+    } catch (e) {
+      return evidencePhotosCache.get('catalog') || {};
+    }
+  }
+
+  async function setEvidencePhoto(evidenceId, imageAssetId) {
+    if (!evidenceId) return {};
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${EVIDENCE_PHOTOS_PATH}?t=${Date.now()}`;
+    const current = await readCurrentForWrite(evidencePhotosCache, 'catalog', url, {});
+    const map = Object.assign({}, current);
+    if (imageAssetId) map[evidenceId] = { imageAssetId }; else delete map[evidenceId];
+    const blob = new Blob([JSON.stringify(map)], { type: 'application/json' });
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${DEV_ASSETS_BUCKET}/${EVIDENCE_PHOTOS_PATH}`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'x-upsert': 'true',
+      },
+      body: blob,
+    });
+    if (!res.ok) throw new Error(`증거 사진 저장 실패 (${res.status}): ${await res.text()}`);
+    evidencePhotosCache.set('catalog', map);
+    return map;
+  }
+
+  // 증거 DB 탭 우상단 설정 — 개별 증거의 AI 프롬프트는 이 공통 프롬프트 +
+  // 그 증거 자신의 제목/설명을 합쳐서 만든다(buildEvidencePrompt, dev/upload/
+  // index.html). 위 카탈로그들과 달리 id로 나뉜 맵이 아니라 { commonPrompt }
+  // 하나만 담는 단일 오브젝트라 늘 같은 키로 읽고 쓴다.
+  const evidencePromptSettingsCache = new Map(); // single entry keyed 'settings'
+  const EVIDENCE_PROMPT_SETTINGS_PATH = 'evidence-photos/prompt-settings.json';
+  // 아직 아무도 저장한 적 없을 때(첫 사용)의 기본값 — 저장이 한 번이라도
+  // 일어나면 그 이후로는 항상 저장된 값을 읽으므로 이 상수는 다시 쓰이지 않는다.
+  const DEFAULT_EVIDENCE_COMMON_PROMPT = '수사 자료용 증거품 사진. 정면 또는 45도 각도에서 촬영한 클로즈업, 사실적인 사진(포토리얼리스틱) 스타일, 어둡고 중립적인 배경 위에 증거품만 선명하게 놓여 있음. 라벨·텍스트·워터마크·사람 손이나 신체 일부는 나오지 않음. 약간의 그레인이 있는 다큐멘터리/포렌식 사진 느낌.';
+
+  async function getEvidencePromptSettings() {
+    if (evidencePromptSettingsCache.has('settings')) return evidencePromptSettingsCache.get('settings');
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${EVIDENCE_PROMPT_SETTINGS_PATH}?t=${Date.now()}`;
+    try {
+      const settings = (await fetchJsonBlob(url)) || { commonPrompt: DEFAULT_EVIDENCE_COMMON_PROMPT };
+      evidencePromptSettingsCache.set('settings', settings);
+      return settings;
+    } catch (e) {
+      return evidencePromptSettingsCache.get('settings') || { commonPrompt: DEFAULT_EVIDENCE_COMMON_PROMPT };
+    }
+  }
+
+  async function setEvidencePromptSettings(commonPrompt) {
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${EVIDENCE_PROMPT_SETTINGS_PATH}?t=${Date.now()}`;
+    const settings = { commonPrompt: commonPrompt || '' };
+    const blob = new Blob([JSON.stringify(settings)], { type: 'application/json' });
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${DEV_ASSETS_BUCKET}/${EVIDENCE_PROMPT_SETTINGS_PATH}`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'x-upsert': 'true',
+      },
+      body: blob,
+    });
+    if (!res.ok) throw new Error(`공통 프롬프트 저장 실패 (${res.status}): ${await res.text()}`);
+    evidencePromptSettingsCache.set('settings', settings);
+    return settings;
+  }
+
   return {
     addAsset, getAssetsByType, getAsset, getAssetsByIds, deleteAsset, preloadImage,
     getRoomHotspots, setRoomHotspot,
@@ -923,6 +1006,8 @@ const AssetDB = (() => {
     getMapPins, setMapPin,
     getCaseEntryMeta, setCaseEntryMeta, prefetchCaseEntryMeta, getCaseEntryMetaCached,
     getSpriteSheetManifests, getSpriteSheetManifest, setSpriteSheetManifest,
+    getEvidencePhotos, setEvidencePhoto,
+    getEvidencePromptSettings, setEvidencePromptSettings,
   };
 })();
 
