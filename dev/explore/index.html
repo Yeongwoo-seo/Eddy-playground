@@ -53,7 +53,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .loc-stage.placeholder{background-image:linear-gradient(160deg,#171c22 0%,#0d1114 60%,#080a0c 100%)}
 .loc-canvas{position:absolute;top:0;left:0;transform-origin:0 0;will-change:transform}
 .loc-canvas img{display:block;-webkit-user-drag:none;user-select:none}
-.bottom-bar{position:relative;z-index:2;margin-top:auto;background:rgba(5,7,10,.86);backdrop-filter:blur(10px);border-top:1px solid rgba(255,255,255,.1);padding:14px 16px calc(14px + env(safe-area-inset-bottom,0));transition:transform .25s ease,opacity .25s ease}
+.bottom-bar{position:relative;z-index:3;margin-top:auto;background:rgba(5,7,10,.86);backdrop-filter:blur(10px);border-top:1px solid rgba(255,255,255,.1);padding:14px 16px calc(14px + env(safe-area-inset-bottom,0));transition:transform .25s ease,opacity .25s ease}
 .bottom-bar.hidden{transform:translateY(100%);opacity:0;pointer-events:none}
 /* ===== 대화 패널 (§신규) — 대화하기가 실제 대사를 재생할 때, 화면 위에 새
    팝업 박스를 띄우는 대신 이 bottom-bar 자기 자신의 내용을 대사창으로
@@ -65,11 +65,39 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .dlg-panel.hidden{display:none}
 .dlg-name{font-size:15px;font-weight:700;color:var(--cyan);margin-bottom:8px}
 .dlg-name:empty{display:none}
-.dlg-text{min-height:20vh;font-size:16px;line-height:1.65;color:#fff;white-space:pre-wrap;word-break:keep-all;cursor:pointer}
+.dlg-text{min-height:20vh;font-size:16px;line-height:1.65;color:#fff;white-space:pre-wrap;word-break:keep-all;cursor:pointer;transition:color .2s ease}
+.dlg-text.is-question{color:var(--cyan)}
 .dlg-foot{display:flex;justify-content:flex-end;padding-top:6px}
 .dlg-arrow{font-size:13px;color:var(--text-secondary);visibility:hidden}
 @keyframes arrowBob{0%,100%{transform:translateY(0)}50%{transform:translateY(4px)}}
 .dlg-arrow.show{visibility:visible;animation:arrowBob 1.1s ease-in-out infinite}
+/* ===== 심문 씬 인라인 재생 (§신규) — 예전엔 심문하기가 dev/game/index.html로
+   완전히 페이지 이동했지만, 이제 그 씬의 선택지/증거 제시 기능을 하단
+   dlg-panel 위에 그대로 얹어 허브를 벗어나지 않고 재생한다(playSceneInline).
+   scene-dim/choice-layer/evidence-cta는 dev/game/index.html의 같은 이름
+   레이어와 동일한 배치(선택지 패널이 대사창 바로 위, 그 뒤 장면은 어둡게)를
+   따른다 — 두 플레이어를 같은 느낌으로 유지하기 위함. */
+.scene-dim{position:absolute;inset:0;z-index:2;background:rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .25s ease}
+.scene-dim.show{opacity:1}
+.choice-layer{display:flex;flex-direction:column;gap:10px;margin-bottom:10px}
+.choice-layer.hidden{display:none}
+.choice-btn{background:rgba(8,10,12,.88);border:1px solid rgba(89,184,200,.5);color:var(--text-primary);border-radius:14px;padding:14px 16px;font-size:14.5px;font-weight:600;font-family:var(--sans);text-align:left;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.35)}
+.choice-btn:active{opacity:.7;background:rgba(89,184,200,.2)}
+.evidence-cta{padding-top:10px}
+.evidence-cta.hidden{display:none}
+.evidence-cta button{width:100%;font-family:var(--mono);font-size:12.5px;letter-spacing:.05em;color:#06181c;background:var(--cyan);border:none;border-radius:14px;padding:12px;font-weight:700;cursor:pointer}
+.evidence-cta button:active{opacity:.8}
+.dlg-panel.has-interactive .dlg-text{max-height:22vh;overflow-y:auto}
+.evidence-sheet-list{display:flex;flex-direction:column;gap:8px;max-height:44vh;overflow-y:auto;touch-action:pan-y;margin-bottom:14px}
+.evidence-card{background:var(--surface-2);border:1px solid var(--divider);border-radius:12px;padding:12px 14px;cursor:pointer;text-align:left;font-family:inherit}
+.evidence-card:active{opacity:.7}
+.evidence-card .ec-code{font-family:var(--mono);font-size:10px;color:var(--cyan);letter-spacing:.06em}
+.evidence-card .ec-title{font-size:14px;font-weight:700;color:var(--text-primary);margin-top:2px}
+.evidence-empty{font-family:var(--mono);font-size:12px;color:var(--text-muted);text-align:center;padding:20px 0}
+.evidence-toast{position:absolute;left:50%;bottom:26vh;transform:translateX(-50%) translateY(8px);z-index:21;background:rgba(8,10,12,.94);border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:10px 16px;font-size:13px;color:#fff;opacity:0;transition:opacity .25s ease, transform .25s ease;pointer-events:none;max-width:80%;text-align:center}
+.evidence-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.evidence-toast.wrong{border-color:rgba(217,65,65,.5);color:#ffb4b4}
+.evidence-toast.correct{border-color:rgba(29,184,71,.5);color:#9EF0B0}
 /* 심문하기 — bottom-bar(대화창) 바로 위에 떠 있는 버튼. 지금 선택된 인물에게
    심문 가능한 interactionDefs 항목(isInterrogation, see interactionDefs.js)이
    있을 때만 뜬다 — 대화 주제 목록에 묻히지 않고 바로 보이도록 별도로 뺐다
@@ -214,6 +242,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
     <div class="investigate-hint" id="investigateHint"></div>
     <button class="investigate-close-btn hidden" id="investigateCloseBtn">조사 종료</button>
     <div class="move-fade" id="moveFade"></div>
+    <div class="scene-dim" id="sceneDim"></div>
     <div class="bottom-bar" id="bottomBar">
       <button class="interrogate-fab hidden" id="interrogateBtn"></button>
       <div class="hub-panel" id="hubPanel">
@@ -227,12 +256,23 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
           <button class="hub-act-btn" id="presentBtn">제시하기</button>
         </div>
       </div>
+      <div class="choice-layer hidden" id="choiceLayer"></div>
       <div class="dlg-panel hidden" id="dlgPanel">
         <div class="dlg-name" id="dlgName"></div>
         <div class="dlg-text" id="dlgText"></div>
         <div class="dlg-foot"><span class="dlg-arrow" id="dlgArrow">▼</span></div>
+        <div class="evidence-cta hidden" id="evidenceCta"><button id="evidenceCtaBtn">🔍 증거 제시하기</button></div>
       </div>
     </div>
+  </div>
+  <span class="evidence-toast" id="evidenceToast"></span>
+</div>
+
+<div class="sheet-overlay hidden" id="evidenceSheet">
+  <div class="sheet">
+    <div class="sheet-title">증거 제시</div>
+    <div class="evidence-sheet-list" id="evidenceSheetList"></div>
+    <button class="action-btn cancel" id="evidenceSheetCloseBtn">닫기</button>
   </div>
 </div>
 
@@ -273,6 +313,7 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('/dev/sw.js',
 <script src="/dev/state/shopState.js"></script>
 <script src="/dev/data/locationDefs.js"></script>
 <script src="/dev/data/interactionDefs.js"></script>
+<script src="/dev/data/sceneRoutes.js"></script>
 <script src="/dev/state/explorationState.js"></script>
 <script src="/dev/caseEntryModel.js"></script>
 <script src="/dev/vnPlayer.js"></script>
@@ -330,6 +371,14 @@ const el = {
   dlgName: document.getElementById('dlgName'),
   dlgText: document.getElementById('dlgText'),
   dlgArrow: document.getElementById('dlgArrow'),
+  sceneDim: document.getElementById('sceneDim'),
+  choiceLayer: document.getElementById('choiceLayer'),
+  evidenceCta: document.getElementById('evidenceCta'),
+  evidenceCtaBtn: document.getElementById('evidenceCtaBtn'),
+  evidenceToast: document.getElementById('evidenceToast'),
+  evidenceSheet: document.getElementById('evidenceSheet'),
+  evidenceSheetList: document.getElementById('evidenceSheetList'),
+  evidenceSheetCloseBtn: document.getElementById('evidenceSheetCloseBtn'),
 };
 
 function escapeHtml(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
@@ -976,6 +1025,13 @@ async function applyDialogueCharacter(characterId, expression) {
 function playInteraction(interactionId) {
   const def = interactionDefs[interactionId];
   if (!def) return;
+  // type:'scene' (심문 씬 허브 인라인 재생, §신규) — def.sceneId가 가리키는
+  // dev/dialogueData.js의 기존 씬(라운드·선택지·가설·미니게임 임베드 그대로)을
+  // 페이지 이동 없이 이 허브 안에서 재생한다. see playSceneInline below.
+  if (def.type === 'scene' && def.sceneId) {
+    playSceneInline(def.sceneId, interactionId);
+    return;
+  }
   if (def.type === 'minigame' && def.route) {
     // Same hand-off contract routeOnEnter locations use — the minigame's own
     // "계속하기" reads this to come straight back to this exact hub spot.
@@ -1044,6 +1100,323 @@ function playInteractionLines(lines, onComplete) {
 // moveTo()'s routeOnEnter handling above).
 function currentHubUrl() {
   return `/dev/explore/?phase=${encodeURIComponent(ExplorationState.getCurrentPhase() || '')}&location=${encodeURIComponent(ExplorationState.getCurrentLocationId() || '')}`;
+}
+
+/* =====================================================================
+   심문 씬 인라인 재생 (§신규) — 예전엔 심문하기가 dev/game/index.html로
+   완전히 이동해서 그 씬(week1-scene-006 등)을 재생했지만, 이제 같은 씬
+   데이터(dev/dialogueData.js, 손대지 않음)를 이 허브의 하단 패널 위에서
+   그대로 재생한다. 아래 evaluateCondition/applyEffect는 dev/game/index.html
+   것과 같은 로직의 사본이다 — 심문 씬이 선택지 condition과 setHypothesis/
+   addFact 같은 §6/§7 추론 이펙트를 실제로 쓰므로, 허브의 기존 좁은
+   applyLocalEffect(setFlag/addFact/addEvidence/addQuestion만 지원)로는
+   부족하다. 두 파일이 갈라질 위험은 있지만 vnPlayer.js 엔진 자체는 이미
+   공유되고 있고, 씬 재생 UI(선택지/증거 제시)를 공유 모듈로 통째로 뽑는 건
+   더 큰 리팩터라 이번 1차 구현 범위 밖으로 남겨둔다.
+   ===================================================================== */
+
+// 1주차 장편 확장 v2 §22 — a choice's optional `condition` gates whether
+// it's even offered. Mirrors dev/game/index.html's evaluateCondition exactly.
+function evaluateCondition(cond) {
+  if (!cond) return true;
+  if (cond.hasEvidence) {
+    const ids = new Set(CaseFileState.getEvidence().map(e => e.id));
+    if (!cond.hasEvidence.every(id => ids.has(id))) return false;
+  }
+  if (cond.flags && !cond.flags.every(f => CaseFileState.hasFlag(f))) return false;
+  if (cond.flagAtLeast && !((Number(CaseFileState.getFlag(cond.flagAtLeast.key)) || 0) >= cond.flagAtLeast.min)) return false;
+  if (cond.flagBelow && !((Number(CaseFileState.getFlag(cond.flagBelow.key)) || 0) < cond.flagBelow.lessThan)) return false;
+  if (cond.flagEquals && CaseFileState.getFlag(cond.flagEquals.key) !== cond.flagEquals.value) return false;
+  if (cond.personStatus) {
+    const persons = CaseFileState.getPersons();
+    for (const personId in cond.personStatus) {
+      const p = persons.find(p => p.id === personId);
+      if (!p || p.status !== cond.personStatus[personId]) return false;
+    }
+  }
+  return true;
+}
+
+// A scene author's `effects` array is the same host-defined vocabulary
+// dev/game/index.html's applyEffect understands — an interrogation scene
+// played inline here needs the full switch (setHypothesis/addFact/
+// addPerson/...), not just the hub's narrow applyLocalEffect.
+let activeInlineSceneId = null;
+function applyInlineSceneEffect(effect) {
+  switch (effect.type) {
+    case 'addEvidence':
+      CaseFileState.addEvidence(effect.evidence);
+      break;
+    case 'addQuestion': {
+      const added = CaseFileState.addQuestion(effect.question);
+      if (added) caseMenu.notifyNewQuestion(effect.question.title);
+      break;
+    }
+    case 'setQuestionStatus':
+      CaseFileState.setQuestionStatus(effect.id, effect.status, effect.resolutionText);
+      break;
+    case 'addPerson':
+      CaseFileState.addPerson(effect.person);
+      break;
+    case 'setPersonStatus':
+      CaseFileState.setPersonStatus(effect.id, effect.status, effect.patch);
+      break;
+    case 'addInventoryItem':
+      CaseFileState.addInventoryItem(effect.id);
+      break;
+    case 'unlockMapLocation':
+      CaseFileState.unlockMapLocation(effect.id);
+      break;
+    case 'setFlag':
+      CaseFileState.setFlag(effect.key, effect.value);
+      break;
+    case 'incrementFlag':
+      CaseFileState.incrementFlag(effect.key);
+      break;
+    case 'setHypothesis':
+      CaseFileState.setHypothesis(effect.questionId, effect.hypothesis);
+      caseMenu.notifyHypothesis(effect.hypothesis.text);
+      break;
+    case 'addFact': {
+      const added = CaseFileState.addFact(effect.fact);
+      if (added) caseMenu.notifyFact(effect.fact.title);
+      break;
+    }
+    case 'invalidateHypothesis':
+      CaseFileState.invalidateCurrentHypothesis(effect.questionId, effect.factId);
+      break;
+    case 'setFlagIfAll':
+      if (effect.flags.every(f => CaseFileState.hasFlag(f))) CaseFileState.setFlag(effect.key, true);
+      break;
+    case 'addPoints': {
+      const meta = { source: effect.source || effect.rewardId || activeInlineSceneId };
+      let paid;
+      if (effect.policy === 'chapter_capped') {
+        paid = EconomyState.claimChapterCappedReward(effect.chapterId || activeInlineSceneId, effect.sourceType || effect.rewardId || 'reward', effect.amount, effect.weeklyCap || effect.amount, meta);
+      } else if (effect.rewardId) {
+        paid = EconomyState.claimReward(effect.rewardId, effect.amount, meta);
+      } else {
+        EconomyState.addPoints(effect.amount, meta);
+        paid = effect.amount;
+      }
+      if (paid > 0) {
+        CaseFileState.setFlag('pointsUiIntroduced', true);
+        caseMenu.notifyPoints(paid);
+      }
+      updatePointBalance();
+      break;
+    }
+    case 'spendPoints':
+      EconomyState.spendPoints(effect.amount, { source: effect.source || activeInlineSceneId });
+      updatePointBalance();
+      break;
+    case 'unlockShop':
+      ShopState.unlockShop();
+      updatePointBalance();
+      break;
+    case 'unlockShopItem':
+      ShopState.unlockShopItem(effect.itemId);
+      break;
+    case 'unlockShopItems':
+      ShopState.unlockShopItems(effect.itemIds);
+      break;
+    case 'unlockWardrobe':
+      WardrobeState.unlockWardrobe();
+      break;
+    case 'purchaseOutfit':
+      ShopState.purchaseShopItem(effect.itemId);
+      updatePointBalance();
+      break;
+    case 'equipOutfit':
+      WardrobeState.equipOutfit(effect.itemId);
+      break;
+    case 'enterExplorationPhase':
+      ExplorationState.enterExplorationPhase(effect.phaseId, effect.startLocationId);
+      break;
+    case 'unlockLocation':
+      ExplorationState.unlockLocation(effect.locationId);
+      break;
+    case 'moveToLocation':
+      ExplorationState.moveToLocation(effect.locationId);
+      break;
+    case 'setInteractionState':
+      ExplorationState.setInteractionState(effect.interactionId, effect.state);
+      break;
+    case 'refreshInteraction':
+      ExplorationState.refreshInteractionsByFact(effect.factId);
+      break;
+    case 'returnToExploration': {
+      const qs = new URLSearchParams();
+      if (effect.phaseId) qs.set('phase', effect.phaseId);
+      if (effect.locationId) qs.set('location', effect.locationId);
+      const query = qs.toString();
+      location.href = '/dev/explore/' + (query ? '?' + query : '');
+      break;
+    }
+  }
+}
+
+function clearInteractiveLayers() {
+  el.dlgPanel.classList.remove('has-interactive');
+  el.choiceLayer.classList.add('hidden');
+  el.choiceLayer.innerHTML = '';
+  el.sceneDim.classList.remove('show');
+  el.dlgText.classList.remove('is-question');
+  el.evidenceCta.classList.add('hidden');
+}
+
+function showChoices(allChoices) {
+  const choices = allChoices.filter(c => evaluateCondition(c.condition));
+  el.choiceLayer.innerHTML = '';
+  choices.forEach(choice => {
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.textContent = choice.label;
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      clearInteractiveLayers();
+      currentDialoguePlayer.choose(choice.id);
+    });
+    el.choiceLayer.appendChild(btn);
+  });
+  el.choiceLayer.classList.remove('hidden');
+  el.sceneDim.classList.add('show');
+  el.dlgText.classList.add('is-question');
+}
+
+function showEvidenceCta() {
+  el.dlgPanel.classList.add('has-interactive');
+  el.evidenceCta.classList.remove('hidden');
+}
+
+function renderInlineEvidenceSheet() {
+  const items = CaseFileState.getEvidence();
+  if (!items.length) {
+    el.evidenceSheetList.innerHTML = '<div class="evidence-empty">아직 제시할 증거가 없습니다.</div>';
+    return;
+  }
+  const cats = EVIDENCE_CATEGORY_ORDER.filter(c => items.some(ev => (ev.category || 'etc') === c));
+  el.evidenceSheetList.innerHTML = cats.map(c => `
+    <div class="sheet-section-label">${evidenceCategoryLabel(c)}</div>
+    ${items.filter(ev => (ev.category || 'etc') === c).map(ev => `
+      <button class="evidence-card" data-evidence="${ev.id}"><div class="ec-code">${escapeHtml(ev.code || '')}</div><div class="ec-title">${escapeHtml(ev.title)}</div></button>
+    `).join('')}
+  `).join('');
+  el.evidenceSheetList.querySelectorAll('[data-evidence]').forEach(btn => btn.addEventListener('click', () => {
+    el.evidenceSheet.classList.add('hidden');
+    currentDialoguePlayer.presentEvidence(btn.dataset.evidence);
+  }));
+}
+el.evidenceCtaBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  renderInlineEvidenceSheet();
+  el.evidenceSheet.classList.remove('hidden');
+});
+el.evidenceSheetCloseBtn.addEventListener('click', () => el.evidenceSheet.classList.add('hidden'));
+el.evidenceSheet.addEventListener('click', (e) => { if (e.target === el.evidenceSheet) el.evidenceSheet.classList.add('hidden'); });
+
+let evidenceToastTimer = null;
+function showEvidenceToast(text, correct) {
+  el.evidenceToast.textContent = text;
+  el.evidenceToast.classList.toggle('correct', correct);
+  el.evidenceToast.classList.toggle('wrong', !correct);
+  el.evidenceToast.classList.add('show');
+  clearTimeout(evidenceToastTimer);
+  evidenceToastTimer = setTimeout(() => el.evidenceToast.classList.remove('show'), 1800);
+}
+
+// A finished interrogation scene's nextSceneId (see dev/dialogueData.js)
+// almost always resolves through MINIGAME_ROUTES (dev/data/sceneRoutes.js)
+// back to this same hub (e.g. week1-suspect-interview-return ->
+// w1-suspect-hub) — those cases move in place instead of a full page
+// reload, since we never actually left the hub. A route to a real
+// standalone page (e.g. the timeline minigame) still navigates away, same
+// hand-off contract playInteraction's type:'minigame' branch already uses.
+function onInlineSceneComplete(sceneData) {
+  currentDialoguePlayer = null;
+  activeInlineSceneId = null;
+  clearInteractiveLayers();
+  const nextSceneId = sceneData.nextSceneId;
+  if (!nextSceneId) {
+    setDialogueMode(false);
+    setLocCharStage(currentCharacterId);
+    renderLocation();
+    return;
+  }
+  const route = MINIGAME_ROUTES[nextSceneId];
+  if (route && route.indexOf('/dev/explore/') === 0) {
+    const target = new URL(route, location.origin).searchParams;
+    const targetPhase = target.get('phase');
+    const targetLocation = target.get('location');
+    setDialogueMode(false);
+    if (targetPhase && targetPhase !== ExplorationState.getCurrentPhase()) {
+      ExplorationState.enterExplorationPhase(targetPhase, targetLocation);
+      renderLocation();
+      showView('location');
+    } else if (targetLocation) {
+      moveTo(targetLocation);
+    } else {
+      renderLocation();
+      showView('location');
+    }
+    return;
+  }
+  if (route) {
+    sessionStorage.setItem('mkShopReturnUrl', currentHubUrl());
+    location.href = route;
+    return;
+  }
+  if (allScenes.some(s => s.id === nextSceneId)) {
+    // A nextSceneId chaining into another plain VN scene has no inline
+    // player of its own here — falls back to the standalone scene page,
+    // same as before this scene had an inline mode at all.
+    location.href = `/dev/game/?scene=${encodeURIComponent(nextSceneId)}`;
+    return;
+  }
+  setDialogueMode(false);
+  renderLocation();
+}
+
+// Plays an existing dev/dialogueData.js scene (rounds/choices/evidence
+// prompts/hypothesis effects, all untouched) inline inside this hub's
+// dlg-panel instead of navigating to dev/game/index.html — see
+// interactionDefs.js's isInterrogation entries (type:'scene'/sceneId).
+function playSceneInline(sceneId, interactionId) {
+  const sceneData = allScenes.find(s => s.id === sceneId);
+  if (!sceneData) { console.error('[탐색허브] 알 수 없는 씬', sceneId); return; }
+  // Matches the old type:'minigame' hand-off's timing exactly (completed
+  // the moment the interaction launches, not once the scene finishes) so
+  // interaction-state tracking behaves the same as before.
+  ExplorationState.completeInteraction(interactionId);
+  activeInlineSceneId = sceneId;
+  const lines = sceneData.lines.map(l => Object.assign({}, l));
+  setDialogueMode(true);
+  currentDialoguePlayer = createVNPlayer({
+    onLineChange: (line) => {
+      clearInteractiveLayers();
+      el.dlgName.textContent = line.speaker || '';
+      applyDialogueCharacter(line.characterId, line.expression);
+    },
+    onTextUpdate: (text) => { el.dlgText.textContent = text; },
+    onArrow: (show) => el.dlgArrow.classList.toggle('show', show),
+    onEffect: (effects) => { (Array.isArray(effects) ? effects : [effects]).forEach(applyInlineSceneEffect); },
+    onChoicePrompt: (choices) => showChoices(choices),
+    onEvidencePrompt: () => showEvidenceCta(),
+    onEvidenceResult: (correct, evidenceId, line) => {
+      if (correct) {
+        CaseFileState.markEvidenceReviewed(evidenceId);
+        el.evidenceCta.classList.add('hidden');
+        showEvidenceToast('✓ 제시했습니다.', true);
+      } else {
+        const attempt = CaseFileState.incrementFlag('wrong:' + line.id);
+        const texts = Array.isArray(line.wrongText) ? line.wrongText : [line.wrongText || '그건 아닌 것 같아요...'];
+        showEvidenceToast(texts[Math.min(attempt - 1, texts.length - 1)], false);
+      }
+    },
+    onSceneTransition: (transition) => applyLocationBackground(transition.backgroundKey),
+    onComplete: () => onInlineSceneComplete(sceneData),
+  });
+  currentDialoguePlayer.load(lines);
 }
 
 // A hub save has no real VN sceneId to resume into, so it's stored under
