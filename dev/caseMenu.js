@@ -25,6 +25,15 @@ function initCaseMenu(options) {
 
   CaseFileState.recordSceneVisit(currentSceneId);
 
+  // CaseEntry 메타 카탈로그(§Phase 2)는 코드 내장 기본값으로 즉시 동작하지만,
+  // 관리자가 /dev/upload에서 저장한 Supabase 오버라이드는 비동기로만 얻을 수
+  // 있다. render()는 전부 동기 함수라 매번 await할 수 없으므로, 여기서 한 번
+  // 프리페치해두고 — 열려 있는 도중 도착하면 그 자리에서 다시 그려 최신
+  // 카탈로그를 반영한다.
+  if (typeof AssetDB !== 'undefined' && AssetDB.prefetchCaseEntryMeta) {
+    AssetDB.prefetchCaseEntryMeta().then(() => { if (isOpen()) render(); }).catch(() => {});
+  }
+
   injectCaseMenuStyles();
   const root = buildCaseMenuDom();
   document.body.appendChild(root);
@@ -131,7 +140,8 @@ function initCaseMenu(options) {
     el.backBtn.classList.toggle('cm-hidden', nav.length <= 1);
     const renderers = {
       main: renderMain, investigation: renderInvestigation,
-      evidenceDetail: renderEvidenceDetail, questionDetail: renderQuestionDetail, personDetail: renderPersonDetail,
+      evidenceDetail: renderEvidenceDetail, testimonyDetail: renderTestimonyDetail,
+      questionDetail: renderQuestionDetail, personDetail: renderPersonDetail,
       deductionDetail: renderDeductionDetail, factDetail: renderFactDetail,
       map: renderMap, mapDetail: renderMapDetail,
       inventory: renderInventory, inventoryDetail: renderInventoryDetail,
@@ -141,6 +151,9 @@ function initCaseMenu(options) {
     const { title, html } = r();
     el.title.textContent = title;
     el.body.innerHTML = html;
+    // 개별 승인 이미지가 있으면 폴백 이모지를 <img>로 교체(§10.14) — 모든
+    // 뷰가 여기 한 곳을 거치므로 리스트/상세 어디든 따로 훅을 안 걸어도 된다.
+    if (typeof CaseEntryUI !== 'undefined') CaseEntryUI.hydrateCaseEntryIcons(el.body);
   }
 
   /* ===== 메인 ===== */
@@ -188,11 +201,17 @@ function initCaseMenu(options) {
   }
 
   /* ===== 수사 노트 ===== */
+  // 증거/증언/추리 메모 3분류 (§5.1) — 기존 "증거" 탭 안에 category:
+  // 'testimony'로 섞여 있던 진술을 별도 탭으로 분리하고, "의문점" 탭을
+  // "추리 메모"로 재명명한다. 인물/추론 탭은 그대로 유지(§5.1 "인물 프로필은
+  // 기존 인물 탭이 있다면 유지"). 목록 내용 자체(제목/설명 등)는 그대로,
+  // CaseFileState.getCaseEntries()가 kind로 나눠주는 것만 새로 쓴다.
   function renderInvestigation() {
     const tab = ctx.tab || 'evidence';
     const tabs = [
       { id: 'evidence', label: '증거' },
-      { id: 'questions', label: '의문점' },
+      { id: 'testimony', label: '증언' },
+      { id: 'memo', label: '추리 메모' },
       { id: 'persons', label: '인물' },
       { id: 'deduction', label: '추론' },
     ];
@@ -200,17 +219,19 @@ function initCaseMenu(options) {
     let listHtml = '';
     if (tab === 'evidence') {
       listHtml = renderEvidenceTabBody();
-    } else if (tab === 'questions') {
-      const questions = CaseFileState.getQuestions();
-      listHtml = questions.length ? questions.map(q => `
-        <button class="cm-row" data-nav="questionDetail" data-id="${q.id}">
+    } else if (tab === 'testimony') {
+      listHtml = renderTestimonyTabBody();
+    } else if (tab === 'memo') {
+      const memos = CaseFileState.getCaseEntries().filter(e => e.kind === 'memo');
+      listHtml = memos.length ? memos.map(m => `
+        <button class="cm-row" data-nav="questionDetail" data-id="${m.id}">
           <div class="cm-row-main">
-            <div class="cm-row-title cm-q-accent">${escapeHtml(q.title)}${q.isNew ? '<span class="cm-new-dot"></span>' : ''}</div>
-            <div class="cm-row-sub">${questionStatusLabel(q.status)}</div>
+            <div class="cm-row-title cm-q-accent">${escapeHtml(m.title)}${m.isNew ? '<span class="cm-new-dot"></span>' : ''}</div>
+            <div class="cm-row-sub">${questionStatusLabel(m.status)}</div>
           </div>
           <div class="cm-row-arrow">›</div>
         </button>
-      `).join('') : emptyNote('아직 등록된 의문점이 없습니다.');
+      `).join('') : emptyNote('아직 등록된 추리 메모가 없습니다.');
     } else if (tab === 'deduction') {
       listHtml = renderDeductionTabBody();
     } else {
@@ -237,26 +258,26 @@ function initCaseMenu(options) {
   // 모듈 최상단 — 탐색허브 증거 제시(dev/explore/index.html)도 같은 분류
   // 순서를 쓴다.)
   function renderEvidenceTabBody() {
-    const evidence = CaseFileState.getEvidence();
+    const evidence = CaseFileState.getCaseEntries().filter(e => e.kind === 'evidence');
     if (!evidence.length) return emptyNote('아직 확보한 증거가 없습니다.');
     const filter = ctx.evidenceFilter || 'all';
-    const presentCats = EVIDENCE_CATEGORY_ORDER.filter(c => evidence.some(ev => (ev.category || 'etc') === c));
+    const presentCats = EVIDENCE_CATEGORY_ORDER.filter(c => c !== 'testimony' && evidence.some(ev => (ev.subtype || 'etc') === c));
     const filterBar = `
       <div class="cm-filter-row">
         <button class="cm-filter-chip${filter === 'all' ? ' cm-filter-chip-active' : ''}" data-evidence-filter="all">전체 ${evidence.length}</button>
         ${presentCats.map(c => {
-          const count = evidence.filter(ev => (ev.category || 'etc') === c).length;
+          const count = evidence.filter(ev => (ev.subtype || 'etc') === c).length;
           return `<button class="cm-filter-chip${filter === c ? ' cm-filter-chip-active' : ''}" data-evidence-filter="${c}">${evidenceCategoryLabel(c)} ${count}</button>`;
         }).join('')}
       </div>
     `;
     let bodyHtml;
     if (filter !== 'all') {
-      const items = evidence.filter(ev => (ev.category || 'etc') === filter);
+      const items = evidence.filter(ev => (ev.subtype || 'etc') === filter);
       bodyHtml = `<div class="cm-list">${items.map(evidenceRow).join('')}</div>`;
     } else {
       bodyHtml = presentCats.map(c => {
-        const items = evidence.filter(ev => (ev.category || 'etc') === c);
+        const items = evidence.filter(ev => (ev.subtype || 'etc') === c);
         return `
           <div class="cm-section-label cm-section-label-spaced">${evidenceCategoryLabel(c)}</div>
           <div class="cm-list">${items.map(evidenceRow).join('')}</div>
@@ -268,9 +289,32 @@ function initCaseMenu(options) {
   function evidenceRow(ev) {
     return `
       <button class="cm-row" data-nav="evidenceDetail" data-id="${ev.id}">
+        ${rowIconHtml(ev)}
         <div class="cm-row-main">
-          <div class="cm-row-title">${escapeHtml(ev.title)}${ev.status === 'new' ? '<span class="cm-new-dot"></span>' : ''}</div>
-          <div class="cm-row-sub">${escapeHtml(ev.code || '')}</div>
+          <div class="cm-row-title">${escapeHtml(ev.title)}${ev.status === 'new' ? '<span class="cm-new-dot"></span>' : ''}${ev.status === 'updated' ? '<span class="cm-updated-tag">업데이트됨</span>' : ''}</div>
+          <div class="cm-row-sub">${escapeHtml(ev.code || '')}${ev.stages.length ? ` · 조사 단계 ${ev.stages.length}` : ''}</div>
+        </div>
+        <div class="cm-row-arrow">›</div>
+      </button>
+    `;
+  }
+
+  // 증언 탭 (§5.1/§8.3) — 증거 탭과 같은 cm-row 골격을 쓰되, 부제목에
+  // 증언자 이름 + 현재 핵심 주장을 보여준다(코드가 아니라 발언이 중요하다는
+  // 원칙, §8.3 "카드 구성"). 필터는 증언자별로 정리하기엔 인원이 적어
+  // 카테고리 칩 없이 전체 리스트만 보여준다.
+  function renderTestimonyTabBody() {
+    const testimonies = CaseFileState.getCaseEntries().filter(e => e.kind === 'testimony');
+    if (!testimonies.length) return emptyNote('아직 기록된 증언이 없습니다.');
+    return `<div class="cm-list">${testimonies.map(testimonyRow).join('')}</div>`;
+  }
+  function testimonyRow(t) {
+    return `
+      <button class="cm-row" data-nav="testimonyDetail" data-id="${t.id}">
+        ${rowIconHtml(t)}
+        <div class="cm-row-main">
+          <div class="cm-row-title">${escapeHtml(t.title)}${t.status === 'new' ? '<span class="cm-new-dot"></span>' : ''}</div>
+          <div class="cm-row-sub">${escapeHtml(t.speakerName || '')}${t.speakerName ? ' · ' : ''}${escapeHtml(t.summary || '')}</div>
         </div>
         <div class="cm-row-arrow">›</div>
       </button>
@@ -373,9 +417,14 @@ function initCaseMenu(options) {
   }
 
   function renderEvidenceDetail() {
-    const ev = CaseFileState.getEvidence().find(e => e.id === ctx.id);
+    const ev = CaseFileState.getCaseEntries().find(e => e.kind === 'evidence' && e.id === ctx.id);
     if (!ev) return renderInvestigation();
     CaseFileState.markEvidenceReviewed(ev.id);
+    // 같은 원본을 병합한 조사 단계(§6.3) — 목록에는 대표 카드 한 장만
+    // 보이고, 여기 상세 화면에서만 시간순으로 누적된 단계를 보여준다.
+    const stagesHtml = ev.stages.length ? ev.stages.map(s => `
+      <div class="cm-linked-item">✓ ${escapeHtml(s.title)}${s.detail ? ` — ${escapeHtml(s.detail)}` : ''}</div>
+    `).join('') : '';
     return {
       title: ev.code || '증거',
       html: `
@@ -384,6 +433,38 @@ function initCaseMenu(options) {
           <div class="cm-detail-desc">${escapeHtml(ev.description || '')}</div>
           <div class="cm-detail-field"><span class="cm-detail-label">발견 장소</span><span class="cm-detail-value">${escapeHtml(ev.discoveredLocationText || '알 수 없음')}</span></div>
           <div class="cm-detail-field"><span class="cm-detail-label">상태</span><span class="cm-detail-value">${evidenceStatusLabel(ev.status)}</span></div>
+          ${stagesHtml ? `<div class="cm-detail-field-block"><span class="cm-detail-label">조사 단계</span>${stagesHtml}</div>` : ''}
+        </div>
+      `,
+    };
+  }
+
+  // 증언 상세 (§6.4/§8.3) — 최신 발언은 카드 상단에, 이전 발언은 "증언 변경
+  // 이력"에서 최신이 위로 오도록 뒤집어 보여준다(§6.4 "목록에서는 최신
+  // 발언만 보여주고, 상세 화면의 증언 변경 이력에서 이전 발언을 확인").
+  function renderTestimonyDetail() {
+    const t = CaseFileState.getCaseEntries().find(e => e.kind === 'testimony' && e.id === ctx.id);
+    if (!t) return renderInvestigation();
+    CaseFileState.markEvidenceReviewed(t.id);
+    const historyHtml = t.history.length ? t.history.slice().reverse().map(h => `
+      <div class="cm-linked-item${h.active ? '' : ' cm-hyp-invalidated'}">
+        • ${escapeHtml(h.statement || '')}${h.reason ? ` <span class="cm-hyp-tag">${escapeHtml(h.reason)}</span>` : ''}
+        ${h.active ? ' <span class="cm-hyp-tag cm-hyp-tag-current">현재</span>' : ''}
+      </div>
+    `).join('') : '<div class="cm-linked-item cm-linked-empty">없음</div>';
+    return {
+      title: '증언',
+      html: `
+        <div class="cm-detail-card">
+          <div class="cm-detail-title">${escapeHtml(t.title)}</div>
+          ${t.speakerName ? `<div class="cm-detail-field"><span class="cm-detail-label">증언자</span><span class="cm-detail-value">${escapeHtml(t.speakerName)}</span></div>` : ''}
+          <div class="cm-status-pill cm-status-${t.status}">${testimonyStatusLabel(t.status)}</div>
+          <div class="cm-detail-desc">${escapeHtml(t.summary || '')}</div>
+          <div class="cm-detail-field"><span class="cm-detail-label">확보 장소</span><span class="cm-detail-value">${escapeHtml(t.discoveredLocationText || '알 수 없음')}</span></div>
+          <div class="cm-detail-field-block">
+            <span class="cm-detail-label">증언 변경 이력</span>
+            ${historyHtml}
+          </div>
         </div>
       `,
     };
@@ -639,6 +720,7 @@ function escapeHtml(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 function emptyNote(text) { return `<div class="cm-empty">${escapeHtml(text)}</div>`; }
+function rowIconHtml(entry) { return (typeof CaseEntryUI !== 'undefined') ? CaseEntryUI.caseEntryIconHtml(entry) : ''; }
 // unresolved/partial/resolved are the original three-state vocab still used
 // by weeks 0-3's existing content; locked/open/investigating/provisional/
 // contradicted/carried_over are the wider vocab The Missing Key v4 §5.1 adds
@@ -651,7 +733,11 @@ function questionStatusLabel(status) {
     provisional: '잠정 결론', contradicted: '기존 결론 폐기', carried_over: '다음 주차로 이월',
   }[status] || status;
 }
-function evidenceStatusLabel(status) { return { new: '용도 불명', reviewed: '확인함', linked: '연결됨', resolved: '해결됨' }[status] || status; }
+function evidenceStatusLabel(status) { return { new: '용도 불명', reviewed: '확인함', linked: '연결됨', resolved: '해결됨', updated: '업데이트됨', superseded: '병합됨', invalid: '오판' }[status] || status; }
+// 증언 상태(§6.2) — 레거시 증언의 초기 status는 addEvidence 기본값인
+// new/reviewed(읽음 여부)라 아직 "확인 전" 의미로 보여준다. reviseTestimony
+// 이후에만 실제 인식론적 상태(수정/철회/모순/거짓/확인)로 바뀐다.
+function testimonyStatusLabel(status) { return { new: '확인 전', reviewed: '확인 전', unverified: '확인 전', active: '유효', revised: '수정됨', withdrawn: '철회됨', contradicted: '모순 발견', false: '거짓 판명', confirmed: '사실 확인' }[status] || status; }
 // 탐색허브 증거 제시 시트(dev/explore/index.html openEvidenceSheet)도 같은
 // 분류/순서를 참조 — 둘 다 CaseFileState.getEvidence()의 category를 그룹핑
 // 하는 곳이라 여기서만 한 번 정의한다.
@@ -760,6 +846,7 @@ function injectCaseMenuStyles() {
     .cm-row-arrow{color:#7E8791;font-size:16px;flex-shrink:0}
     .cm-q-accent{color:#4CB8D4}
     .cm-new-dot{width:7px;height:7px;border-radius:50%;background:#C55353;display:inline-block}
+    .cm-updated-tag{font-size:10px;font-weight:700;color:#D8A93D;background:rgba(216,169,61,.12);border-radius:8px;padding:2px 6px;margin-left:6px;vertical-align:middle}
     .cm-empty{font-size:12.5px;color:#7E8791;padding:14px 2px}
 
     .cm-detail-card{background:#171F29;border:1px solid rgba(255,255,255,.10);border-radius:14px;padding:18px}
@@ -774,9 +861,9 @@ function injectCaseMenuStyles() {
     .cm-lie-item{color:#C55353}
     .cm-status-pill{display:inline-block;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;font-weight:700;letter-spacing:.04em;border-radius:12px;padding:4px 10px;margin-bottom:12px}
     .cm-status-unresolved,.cm-status-open,.cm-status-contradicted{color:#C55353;background:rgba(197,83,83,.12)}
-    .cm-status-partial,.cm-status-provisional{color:#D8A93D;background:rgba(216,169,61,.12)}
-    .cm-status-resolved,.cm-status-investigating{color:#4CB8D4;background:rgba(76,184,212,.12)}
-    .cm-status-locked,.cm-status-carried_over{color:#7E8791;background:rgba(255,255,255,.08)}
+    .cm-status-partial,.cm-status-provisional,.cm-status-revised,.cm-status-unverified,.cm-status-updated{color:#D8A93D;background:rgba(216,169,61,.12)}
+    .cm-status-resolved,.cm-status-investigating,.cm-status-active,.cm-status-confirmed{color:#4CB8D4;background:rgba(76,184,212,.12)}
+    .cm-status-locked,.cm-status-carried_over,.cm-status-withdrawn,.cm-status-false,.cm-status-invalid,.cm-status-superseded{color:#7E8791;background:rgba(255,255,255,.08)}
 
     .cm-section-label{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;letter-spacing:.1em;color:#7E8791;text-transform:uppercase;margin-bottom:8px}
     .cm-section-label-spaced{margin-top:18px}

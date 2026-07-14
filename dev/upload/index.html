@@ -156,6 +156,9 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
    overrides on save. Saved to AssetDB (getDialogueOverrides/
    setDialogueOverrides), not back into dialogueData.js's static source.
    See selectType('dialogue') / renderDialoguePanel. ===== */
+.evidence-panel.hidden{display:none}
+.evidence-dupe-tag{background:rgba(217,65,65,.14);color:var(--signal-red);margin-left:6px}
+
 .dialogue-panel.hidden{display:none}
 .dialogue-bulk-input{width:100%;background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:14px 16px;color:var(--text-primary);font-size:13.5px;line-height:1.7;font-family:var(--mono);resize:vertical;min-height:320px}
 .dialogue-bulk-input:focus{outline:none;border-color:rgba(89,184,200,.4)}
@@ -235,10 +238,16 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
     <button class="tab-btn" id="tabCharacter">인물 DB</button>
     <button class="tab-btn" id="tabMinigameFace">미니게임 얼굴</button>
     <button class="tab-btn" id="tabSound">사운드</button>
+    <button class="tab-btn" id="tabEvidence">증거 DB</button>
     <!-- Evidence-collection focus mode only (see applyFocusModeChrome) —
          replaces 인물 DB / 미니게임 얼굴, which don't apply there. -->
     <button class="tab-btn hidden" id="tabItems">아이템</button>
     <button class="tab-btn hidden" id="tabInteractions">상호작용</button>
+    <!-- 증거·증언·추리메모 재설계 §Phase 5 — 사건 카드/스프라이트 시트 관리는
+         이 페이지의 dropzone 기반 selectType 상태머신과 모양이 전혀 달라(폼
+         편집 + 캔버스 분할) 같은 탭 전환 로직에 끼워넣지 않고 별도 페이지로
+         분리했다. 그래도 여기서 바로 들어갈 수 있게 링크만 둔다. -->
+    <a class="tab-btn" href="/dev/upload/case-entries/">사건 카드</a>
   </div>
   <div class="hint hidden" id="minigameFaceHint" style="margin:-8px 0 14px">미니게임 대화창의 작은 초상화 칸에 쓰이는 얼굴 사진이에요. 정면 얼굴이 꽉 차게 정사각형으로 잘라주세요.</div>
 
@@ -553,6 +562,24 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
     <div id="soundList"><div class="empty-note">아직 등록한 사운드가 없습니다.</div></div>
   </div>
 
+  <!-- 증거 DB tab — see selectType('evidence') / renderEvidencePanel. 증거는
+       장소/사운드처럼 별도 카탈로그로 관리되지 않고 dialogueData.js의 각 씬
+       대사 effects(addEvidence)와 interactionDefs.js의 탐색허브 상호작용에
+       직접 박혀 있는 스토리 콘텐츠라, 이 탭은 그걸 고쳐 쓰는 편집기가 아니라
+       전체 스크립트를 훑어 모은 읽기 전용 목록이다(collectEvidenceCatalog) —
+       주차/장소 DB처럼 코드를 안 건드리고 값만 바꾸는 저장소가 없기 때문.
+       ID/코드 중복 같은 작성 실수를 찾는 점검 용도로 쓴다. 사진 확대/전화
+       찾기 같은 일부 미니게임은 증거 내용을 자기 코드 안에서 동적으로 만들어
+       붙이므로(예: minigame-photo-zoom) 이 목록엔 잡히지 않는다. -->
+  <div class="evidence-panel hidden" id="evidencePanel">
+    <div class="section-title" style="margin-top:0">증거 DB (읽기 전용)</div>
+    <div class="hint" style="margin:-8px 0 14px;text-align:left">전체 대사·탐색허브 상호작용에 등록된 증거를 훑어 모은 목록입니다. 여기서 고쳐도 실제 스토리 콘텐츠(코드)는 바뀌지 않습니다 — ID/코드 중복 점검 용도로만 쓰세요. 일부 미니게임이 자체적으로 만들어 붙이는 증거는 포함되지 않습니다.</div>
+    <input type="text" class="text-input" id="evidenceSearchInput" placeholder="제목·코드·설명 검색" style="margin-bottom:12px">
+    <div class="picker-pills" id="evidenceCategoryPills" style="margin-bottom:14px"></div>
+    <div class="hint" id="evidenceCountHint" style="margin:0 0 14px"></div>
+    <div id="evidenceList"></div>
+  </div>
+
   <div class="section-title" id="listTitle">Uploaded Backgrounds</div>
   <div id="assetList"><div class="empty-note">아직 업로드한 이미지가 없습니다.</div></div>
 </div>
@@ -675,7 +702,7 @@ const deepLinkedHubPhase = new URLSearchParams(location.search).get('phase');
 // ?type=<tab> — from /dev/data's menu (the old 사진 업로드 page's tab row,
 // now split out into its own per-item menu) — jump straight into whichever
 // tab the tester picked instead of always landing on 배경 DB.
-const VALID_DEEP_LINK_TYPES = ['background', 'location', 'hub', 'dialogue', 'character', 'minigameFace', 'sound'];
+const VALID_DEEP_LINK_TYPES = ['background', 'location', 'hub', 'dialogue', 'character', 'minigameFace', 'sound', 'evidence'];
 const deepLinkedType = new URLSearchParams(location.search).get('type');
 const fromDataMenu = VALID_DEEP_LINK_TYPES.includes(deepLinkedType);
 (function applyDeepLink() {
@@ -754,6 +781,12 @@ const el = {
   soundSaveBtn: document.getElementById('soundSaveBtn'),
   soundNewBtn: document.getElementById('soundNewBtn'),
   soundList: document.getElementById('soundList'),
+  tabEvidence: document.getElementById('tabEvidence'),
+  evidencePanel: document.getElementById('evidencePanel'),
+  evidenceSearchInput: document.getElementById('evidenceSearchInput'),
+  evidenceCategoryPills: document.getElementById('evidenceCategoryPills'),
+  evidenceCountHint: document.getElementById('evidenceCountHint'),
+  evidenceList: document.getElementById('evidenceList'),
   tabItems: document.getElementById('tabItems'),
   tabInteractions: document.getElementById('tabInteractions'),
   itemsPanel: document.getElementById('itemsPanel'),
@@ -1571,6 +1604,7 @@ function selectType(type) {
   el.tabCharacter.classList.toggle('active', type === 'character');
   el.tabMinigameFace.classList.toggle('active', type === 'minigameFace');
   el.tabSound.classList.toggle('active', type === 'sound');
+  el.tabEvidence.classList.toggle('active', type === 'evidence');
   // 배경 DB, 대사, 사운드 모두 같은 week/scene 피커로 "어느 씬인지" 고른다
   // (배경 DB는 업로드 대상, 대사는 읽을 스크립트, 사운드는 BGM을 지정할 씬) —
   // ?scene=<id> 딥링크가 이미 그걸 정해준 경우엔 focusScene이 다른 탭과 같은
@@ -1581,9 +1615,10 @@ function selectType(type) {
   el.weekDialogueAllBtn.classList.toggle('hidden', !(type === 'dialogue' && showScenePickers));
   el.dialoguePanel.classList.toggle('hidden', type !== 'dialogue');
   el.soundPanel.classList.toggle('hidden', type !== 'sound');
-  // 대사/사운드는 읽기/카탈로그 화면이지, 이미지 업로드 플로우가 아니다 —
-  // 드롭존/목록/캐릭터 UI가 하나도 필요 없다.
-  if (type === 'dialogue' || type === 'sound') {
+  el.evidencePanel.classList.toggle('hidden', type !== 'evidence');
+  // 대사/사운드/증거 DB는 읽기/카탈로그 화면이지, 이미지 업로드 플로우가
+  // 아니다 — 드롭존/목록/캐릭터 UI가 하나도 필요 없다.
+  if (type === 'dialogue' || type === 'sound' || type === 'evidence') {
     el.dropzone.classList.add('hidden');
     el.typeHint.classList.add('hidden');
     el.listTitle.classList.add('hidden');
@@ -1631,6 +1666,7 @@ function selectType(type) {
   if (type === 'character') { renderOutfitPicker(); renderExprPicker(); }
   if (type === 'dialogue') renderDialoguePanel();
   if (type === 'sound') renderSoundPanel();
+  if (type === 'evidence') renderEvidencePanel();
   clearPending();
   refreshList();
   renderHotspotSection();
@@ -3270,6 +3306,105 @@ function resetSoundForm() {
   stopSoundPreview();
 }
 
+/* ===== 증거 DB tab — read-only audit of every addEvidence effect scattered
+   across dialogueData.js's weeks and interactionDefs.js's 탐색허브
+   interactions (see the comment on #evidencePanel above for why this is a
+   scan, not a saved catalog). Cached after the first scan since the source
+   scripts never change at runtime. ===== */
+const EVIDENCE_CATEGORY_LABELS = { physical: '물증', photo: '사진·영상', testimony: '진술', record: '기록', etc: '기타' };
+let evidenceCatalogCache = null;
+let evidenceCategoryFilter = 'all';
+let evidenceSearchQuery = '';
+
+function collectEvidenceCatalog() {
+  if (evidenceCatalogCache) return evidenceCatalogCache;
+  const rows = [];
+  function pushEvidence(ev, groupLabel, sceneLabel) {
+    if (!ev || !ev.id) return;
+    rows.push(Object.assign({ groupLabel, sceneLabel }, ev));
+  }
+  weeks.forEach(week => {
+    (week.scenes || []).forEach(scene => {
+      (scene.lines || []).forEach(line => {
+        (line.effects || []).forEach(effect => {
+          if (effect.type === 'addEvidence') pushEvidence(effect.evidence, week.label, scene.name || scene.id);
+        });
+      });
+    });
+  });
+  if (typeof interactionDefs !== 'undefined') {
+    Object.values(interactionDefs).forEach(def => {
+      (def.effects || []).forEach(effect => {
+        if (effect.type === 'addEvidence') pushEvidence(effect.evidence, '탐색허브', def.label || def.id);
+      });
+    });
+  }
+  const idCounts = {}, codeCounts = {};
+  rows.forEach(r => {
+    idCounts[r.id] = (idCounts[r.id] || 0) + 1;
+    if (r.code) codeCounts[r.code] = (codeCounts[r.code] || 0) + 1;
+  });
+  rows.forEach(r => {
+    r.dupeId = idCounts[r.id] > 1;
+    r.dupeCode = !!r.code && codeCounts[r.code] > 1;
+  });
+  evidenceCatalogCache = rows;
+  return rows;
+}
+
+function renderEvidencePanel() {
+  const rows = collectEvidenceCatalog();
+  const categories = ['physical', 'photo', 'testimony', 'record', 'etc'];
+  el.evidenceCategoryPills.innerHTML = `<button class="pill${evidenceCategoryFilter === 'all' ? ' active' : ''}" data-cat="all">전체 ${rows.length}</button>` +
+    categories.map(c => {
+      const count = rows.filter(r => (r.category || 'etc') === c).length;
+      if (!count) return '';
+      return `<button class="pill${evidenceCategoryFilter === c ? ' active' : ''}" data-cat="${c}">${EVIDENCE_CATEGORY_LABELS[c]} ${count}</button>`;
+    }).join('');
+  el.evidenceCategoryPills.querySelectorAll('.pill').forEach(btn => {
+    btn.addEventListener('click', () => { evidenceCategoryFilter = btn.dataset.cat; renderEvidencePanel(); });
+  });
+
+  const query = evidenceSearchQuery.trim().toLowerCase();
+  const filtered = rows.filter(r => {
+    if (evidenceCategoryFilter !== 'all' && (r.category || 'etc') !== evidenceCategoryFilter) return false;
+    if (!query) return true;
+    const haystack = [r.title, r.code, r.id, r.description, r.discoveredLocationText].filter(Boolean).join(' ').toLowerCase();
+    return haystack.includes(query);
+  });
+
+  const groupOrder = weeks.map(w => w.label).concat(['탐색허브']);
+  const groupsHtml = groupOrder.map(g => {
+    const items = filtered.filter(r => r.groupLabel === g);
+    if (!items.length) return '';
+    return `<div class="section-title">${escapeHtml(g)} (${items.length})</div>${items.map(evidenceRowHtml).join('')}`;
+  }).join('');
+  el.evidenceList.innerHTML = groupsHtml || '<div class="empty-note">조건에 맞는 증거가 없습니다.</div>';
+  el.evidenceCountHint.textContent = `전체 ${rows.length}개 중 ${filtered.length}개 표시`;
+}
+
+function evidenceRowHtml(r) {
+  const warnings = [];
+  if (r.dupeId) warnings.push('ID 중복');
+  if (r.dupeCode) warnings.push('코드 중복');
+  const warnTag = warnings.length ? `<span class="asset-tag evidence-dupe-tag">${warnings.join(' · ')}</span>` : '';
+  return `
+    <div class="asset-card" style="align-items:flex-start">
+      <div class="asset-info">
+        <span class="asset-tag">${escapeHtml(r.code || '—')} · ${escapeHtml(EVIDENCE_CATEGORY_LABELS[r.category || 'etc'] || '기타')}</span>${warnTag}
+        <div class="asset-name">${escapeHtml(r.title || r.id)}</div>
+        <div class="asset-meta">${escapeHtml(r.description || '')}</div>
+        <div class="asset-meta">${escapeHtml(r.discoveredLocationText || '')} · ${escapeHtml(r.sceneLabel || '')}</div>
+      </div>
+    </div>
+  `;
+}
+
+el.evidenceSearchInput.addEventListener('input', () => {
+  evidenceSearchQuery = el.evidenceSearchInput.value;
+  renderEvidencePanel();
+});
+
 async function renderSoundPanel() {
   renderSoundKindPicker();
   resetSoundForm();
@@ -3416,6 +3551,7 @@ el.tabDialogue.addEventListener('click', () => selectType('dialogue'));
 el.tabCharacter.addEventListener('click', () => selectType('character'));
 el.tabMinigameFace.addEventListener('click', () => selectType('minigameFace'));
 el.tabSound.addEventListener('click', () => selectType('sound'));
+el.tabEvidence.addEventListener('click', () => selectType('evidence'));
 el.tabItems.addEventListener('click', () => selectFocusTab('item'));
 el.tabInteractions.addEventListener('click', () => selectFocusTab('interaction'));
 el.selectBtn.addEventListener('click', () => el.fileInput.click());
@@ -3871,6 +4007,7 @@ function applyFocusModeChrome() {
     el.tabCharacter.classList.add('hidden');
     el.tabMinigameFace.classList.add('hidden');
     el.tabSound.classList.add('hidden');
+    el.tabEvidence.classList.add('hidden');
     el.tabItems.classList.remove('hidden');
     el.tabInteractions.classList.remove('hidden');
   } else {

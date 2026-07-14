@@ -36,6 +36,13 @@ function defaultCaseState() {
     currentHypotheses: {},
     hypothesisHistory: {},
     facts: [],
+    // CaseEntry 재설계 (§6.4/§7.5) — 증언 수정 이력과 신규 API로 추가되는
+    // 조사 단계는 hypothesisHistory와 동일한 "id -> 버전 배열" 관용구를
+    // 그대로 쓴다. 레거시 증언/증거(§Phase 1~2 카탈로그로 병합되는 것들)는
+    // 여기 값이 비어 있어도 caseEntryModel.js가 description으로부터 버전
+    // 1을 즉석 합성하므로 상세 화면이 깨지지 않는다.
+    testimonyHistory: {},
+    evidenceStages: {},
   };
 }
 
@@ -49,6 +56,8 @@ function loadCaseState() {
       hypothesisDefs: Object.assign({}, raw.hypothesisDefs || {}),
       currentHypotheses: Object.assign({}, raw.currentHypotheses || {}),
       hypothesisHistory: Object.assign({}, raw.hypothesisHistory || {}),
+      testimonyHistory: Object.assign({}, raw.testimonyHistory || {}),
+      evidenceStages: Object.assign({}, raw.evidenceStages || {}),
     });
   } catch (e) { return defaultCaseState(); }
 }
@@ -83,6 +92,74 @@ const CaseFileState = {
     if (!item || item.status !== 'new') return;
     item.status = 'reviewed';
     saveCaseState();
+  },
+  // 같은 원본을 다시 조사해 얻은 새 정보를 새 카드 없이 기존 카드에 반영
+  // (§7.5). addStage는 caseEntryModel.js가 합성하는 stages[] 앞이 아니라
+  // 뒤에 이어 붙는다 — 카탈로그로 병합된 레거시 조사 단계(과거) 다음에
+  // 신규 API로 추가되는 단계(현재)가 오도록.
+  updateEvidence(id, { summary, status, addStage } = {}) {
+    const item = caseState.evidence.find(e => e.id === id);
+    if (!item) return false;
+    if (summary !== undefined) item.description = summary;
+    if (status !== undefined) item.status = status;
+    if (addStage) {
+      if (!caseState.evidenceStages[id]) caseState.evidenceStages[id] = [];
+      caseState.evidenceStages[id].push(Object.assign({ unlocked: true, addedAt: Date.now() }, addStage));
+    }
+    saveCaseState();
+    return true;
+  },
+  getEvidenceStages(id) { return (caseState.evidenceStages[id] || []).slice(); },
+
+  /* ===== 증언 수정 이력 (§6.4/§7.5) — hypothesisHistory와 동일한 패턴:
+     새 카드를 만들지 않고 같은 id 안에 버전을 쌓는다. 레거시 증언(이미
+     addEvidence로 들어온 category:'testimony')에도 그대로 쓸 수 있다 —
+     evidenceId만 기존 증거 id를 가리키면 된다. */
+  reviseTestimony(evidenceId, { statement, reason, status, sceneId } = {}) {
+    const item = caseState.evidence.find(e => e.id === evidenceId);
+    if (!item) return false;
+    if (!caseState.testimonyHistory[evidenceId]) {
+      // 최초 호출이면 기존 description을 버전 1로 먼저 채워, 이번 수정이
+      // 버전 2부터 시작하도록 한다 (기존 발언을 이력에서 잃지 않기 위함).
+      caseState.testimonyHistory[evidenceId] = [{
+        version: 1, statement: item.description || '', reason: '최초 진술', sceneId: null, active: false, revisedAt: item.discoveredAt || Date.now(),
+      }];
+    }
+    const hist = caseState.testimonyHistory[evidenceId];
+    hist.forEach(h => { h.active = false; });
+    hist.push({ version: hist.length + 1, statement, reason: reason || '', sceneId: sceneId || null, active: true, revisedAt: Date.now() });
+    item.description = statement;
+    item.status = status || 'revised';
+    saveCaseState();
+    return true;
+  },
+  getTestimonyHistory(evidenceId) { return (caseState.testimonyHistory[evidenceId] || []).slice(); },
+
+  /* ===== 추리 메모 해결 (§7.5) ===== */
+  resolveMemo(id, { resolution } = {}) {
+    return this.setQuestionStatus(id, 'resolved', resolution);
+  },
+
+  /* ===== CaseEntry 통합 조회 (§Phase 1) — evidence/questions를 그대로 두고
+     caseEntryModel.js에서 화면용으로 정규화한다. 신규 콘텐츠는 아래
+     addCaseEntry를 쓰되, 내부적으로는 기존 addEvidence/addQuestion을 그대로
+     호출한다 — addEvidence 자체의 동작은 바꾸지 않는다(§7.4 원칙, 기존
+     58곳 호출부에 영향 없음). */
+  getCaseEntries() {
+    return CaseEntryModel.normalizeCaseFile({ evidence: caseState.evidence, questions: caseState.questions });
+  },
+  addCaseEntry(data) {
+    if (data.kind === 'memo') {
+      return this.addQuestion({ id: data.id, title: data.title, description: data.summary || data.description });
+    }
+    return this.addEvidence({
+      id: data.id,
+      code: data.code,
+      category: data.kind === 'testimony' ? 'testimony' : (data.subtype || 'etc'),
+      title: data.title,
+      description: data.summary || data.description,
+      discoveredLocationText: data.discoveredLocationText,
+    });
   },
 
   /* ===== 의문점 ===== */
@@ -268,6 +345,8 @@ const CaseFileState = {
       hypothesisDefs: Object.assign({}, (slot.caseState && slot.caseState.hypothesisDefs) || {}),
       currentHypotheses: Object.assign({}, (slot.caseState && slot.caseState.currentHypotheses) || {}),
       hypothesisHistory: Object.assign({}, (slot.caseState && slot.caseState.hypothesisHistory) || {}),
+      testimonyHistory: Object.assign({}, (slot.caseState && slot.caseState.testimonyHistory) || {}),
+      evidenceStages: Object.assign({}, (slot.caseState && slot.caseState.evidenceStages) || {}),
     });
     saveCaseState();
     if (typeof EconomyState !== 'undefined' && slot.economyState) EconomyState.restore(slot.economyState);
