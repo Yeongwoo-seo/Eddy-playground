@@ -233,8 +233,9 @@ function initCaseMenu(options) {
   // '전체'일 때는 카테고리 섹션으로 나눠서 보여주고, 특정 종류를 고르면 그
   // 종류만 평평한 리스트로 보여준다. ctx.evidenceFilter는 tab 전환처럼
   // pushView 없이 유지되는 값이라 (onBodyClick 참고) 증거 탭을 벗어났다
-  // 돌아와도 마지막으로 고른 필터가 살아있다.
-  const EVIDENCE_CATEGORY_ORDER = ['physical', 'photo', 'testimony', 'record', 'etc'];
+  // 돌아와도 마지막으로 고른 필터가 살아있다. (EVIDENCE_CATEGORY_ORDER는
+  // 모듈 최상단 — 탐색허브 증거 제시(dev/explore/index.html)도 같은 분류
+  // 순서를 쓴다.)
   function renderEvidenceTabBody() {
     const evidence = CaseFileState.getEvidence();
     if (!evidence.length) return emptyNote('아직 확보한 증거가 없습니다.');
@@ -651,6 +652,10 @@ function questionStatusLabel(status) {
   }[status] || status;
 }
 function evidenceStatusLabel(status) { return { new: '용도 불명', reviewed: '확인함', linked: '연결됨', resolved: '해결됨' }[status] || status; }
+// 탐색허브 증거 제시 시트(dev/explore/index.html openEvidenceSheet)도 같은
+// 분류/순서를 참조 — 둘 다 CaseFileState.getEvidence()의 category를 그룹핑
+// 하는 곳이라 여기서만 한 번 정의한다.
+const EVIDENCE_CATEGORY_ORDER = ['physical', 'photo', 'testimony', 'record', 'etc'];
 function evidenceCategoryLabel(cat) { return { physical: '물증', photo: '사진·영상', testimony: '진술', record: '기록', etc: '기타' }[cat] || '기타'; }
 function personStatusLabel(status) { return { unknown: '미상', witness: '목격자', suspect: '용의자', cleared: '혐의 없음', reopened: '재조사 중', involved: '연루됨', culprit: '범인' }[status] || status; }
 function mapStatusLabel(status) { return { locked: '미방문', unlocked: '해금됨', visited: '방문함', current: '현재 위치' }[status] || status; }
