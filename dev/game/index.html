@@ -140,6 +140,14 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .intro-overlay.hidden{opacity:0;pointer-events:none}
 .intro-card{font-family:var(--mono);color:#fff;font-size:20px;letter-spacing:.18em;text-align:center;line-height:1.9;white-space:pre-line}
 
+/* ===== Scene-internal 장소 이동 (다크→라이트) transition — same 암전 후
+   밝아지는 fade dev/explore/index.html's moveTo() uses for hub moves, so a
+   씬 안에서 onSceneTransition으로 장소가 바뀔 때도(playSceneTransition) 배경이
+   바뀌는 컷이 그대로 드러나지 않는다. z-index 11 — transform-popup(10) 위,
+   sheet-overlay(20) 아래. */
+.move-fade{position:absolute;inset:0;z-index:11;background:#000;opacity:0;pointer-events:none;transition:opacity .28s ease}
+.move-fade.show{opacity:1;pointer-events:auto}
+
 /* ===== Closing beat: fade to black + a small unexplained flash ===== */
 .ending-fade .bg-layer{opacity:0}
 .unknown-signal{position:absolute;bottom:calc(26vh + 14px);right:16px;z-index:6;font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:rgba(255,255,255,.4);opacity:0;transition:opacity .3s ease}
@@ -223,6 +231,8 @@ window.addEventListener('orientationchange', setVh100);
   <div class="intro-overlay" id="introOverlay">
     <div class="intro-card" id="introCard"></div>
   </div>
+
+  <div class="move-fade" id="moveFade"></div>
 </div>
 
 <!-- Scene BGM (사운드 tab, /dev/upload) streams straight from YouTube's own
@@ -369,6 +379,7 @@ const el = {
   introOverlay: document.getElementById('introOverlay'),
   introCard: document.getElementById('introCard'),
   unknownSignal: document.getElementById('unknownSignal'),
+  moveFade: document.getElementById('moveFade'),
   choiceLayer: document.getElementById('choiceLayer'),
   sceneDim: document.getElementById('sceneDim'),
   evidenceCta: document.getElementById('evidenceCta'),
@@ -549,7 +560,10 @@ function updateArrow(show) {
 // stored under its own virtual scene-id key, same one-slot-per-id pattern
 // minigameId already uses.
 async function playSceneTransition(transition) {
+  el.moveFade.classList.add('show');
+  await new Promise(r => setTimeout(r, 260));
   await applyBackground(transition.backgroundKey);
+  requestAnimationFrame(() => el.moveFade.classList.remove('show'));
 }
 
 // 마지막 대사 직전: 배경이 서서히 어두워지고, 짧은 진동과 함께 화면 우측 아래에
