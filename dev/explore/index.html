@@ -185,22 +185,9 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .sheet-section-label{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--text-muted);text-transform:uppercase;margin:14px 0 8px}
 .sheet-section-label:first-child{margin-top:0}
 
-/* ===== 제시하기 — 인물/증거 tabs + a 3-column item-grid (same rounded-square
-   slot idiom as dev/minigame-phone-search's inventory bar), replacing the old
-   증거 제시/인물에 대해 묻기 list-row sheets. Person tiles show a round face
-   photo (same asset lookup as loc-char-portrait); evidence tiles show a
-   category icon, since evidence records don't carry their own image. ===== */
-.present-tabs{display:flex;gap:8px;margin-bottom:14px}
-.present-tab{flex:1;text-align:center;background:var(--surface-2);color:var(--text-secondary);border:1px solid var(--divider);border-radius:12px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
-.present-tab.active{background:rgba(89,184,200,.18);border-color:rgba(89,184,200,.5);color:var(--cyan)}
-.present-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.present-tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;aspect-ratio:1/1;background:var(--surface-2);border:1px solid var(--divider);border-radius:14px;padding:8px;cursor:pointer;font-family:inherit}
-.present-tile:active{opacity:.8}
-.present-tile.selected{border-color:rgba(89,184,200,.6);background:rgba(89,184,200,.12)}
-.present-tile-icon{width:60%;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;font-size:22px;border-radius:10px;overflow:hidden;background:rgba(255,255,255,.04);color:var(--text-secondary)}
-.present-tile-icon.round{border-radius:50%}
-.present-tile-icon img{width:100%;height:100%;object-fit:cover}
-.present-tile-label{font-size:11px;font-weight:600;color:var(--text-primary);text-align:center;line-height:1.3;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* ===== 제시하기 — CaseEntryUI 공용 ces-card 리스트로 통일(§Phase 4 재조정,
+   3열 타일 그리드는 철회). 스타일은 CaseEntryUI.injectCaseEntryUIStyles가
+   주입하는 ces-* 클래스를 그대로 쓴다. ===== */
 
 </style>
 </head>
@@ -832,15 +819,13 @@ function openTopicList(characterId) {
 }
 
 // 제시하기 (spec §8 + §Phase 4 CaseEntry 재설계, was 증거 제시 + 대화하기 안의
-// "다른 사람에 대해 묻기") — 인물 탭(이미 병합된 기능)은 그대로 두고, 증거
-// 탭을 관련 항목/증거/증언/전체로 나눠 CaseEntryModel의 kind 분리·관련도
-// 계산을 얹는다. 3열 둥근 사각 타일 그리드(present-grid/present-tile)는 이
-// 화면에 이미 정착된 시각 언어라 그대로 따르고, CaseEntryUI의 리스트형
-// ces-card 대신 이 타일 스타일로 카드를 그린다. presentEvidenceRules/
-// defaultPresentReaction은 dev/data/interactionDefs.js에 그대로 두고(result
-// 5분류·페널티 없음 원칙도 그대로, §8.2/§8.4). 인물 탭은 되돌릴 필요 없는
-// 저위험 액션이라 기존처럼 즉시 반응하고, 증거/증언 쪽만 탭-선택-확인(§9.4
-// 오탭 방지)을 적용한다.
+// "다른 사람에 대해 묻기") — 3열 타일 그리드는 철회하고, 대화 중 제시
+// 시트(dev/game/index.html)와 같은 CaseEntryUI 리스트형 ces-card로 통일했다.
+// 인물 탭도 같은 카드 모양(casePersonCardHtml)으로 그려 시각 언어를 하나로
+// 맞춘다. 인물 탭은 되돌릴 필요 없는 저위험 액션이라 기존처럼 즉시
+// 반응하고, 증거/증언 쪽만 탭-선택-확인(§9.4 오탭 방지)을 적용한다.
+// presentEvidenceRules/defaultPresentReaction은 dev/data/interactionDefs.js에
+// 그대로 두고(result 5분류·페널티 없음 원칙도 그대로, §8.2/§8.4).
 const CASE_ENTRY_PRESENT_TABS_EXPLORE = [
   { id: 'related', label: '관련 항목' },
   { id: 'evidence', label: '증거' },
@@ -850,71 +835,30 @@ const CASE_ENTRY_PRESENT_TABS_EXPLORE = [
 ];
 let presentTab = 'related';
 let presentSelectedEntryId = null;
-function presentSheetEntries(characterId) {
-  const ctx = {
-    npcId: characterId, topicTags: [],
-    week: (typeof ExplorationState !== 'undefined' && ExplorationState.getCurrentWeek) ? ExplorationState.getCurrentWeek() : null,
-    maxSuggested: 6,
-  };
-  const presentable = CaseFileState.getCaseEntries().filter(e => e.presentable && e.status !== 'superseded' && e.status !== 'invalid');
-  if (presentTab === 'evidence') return presentable.filter(e => e.kind === 'evidence');
-  if (presentTab === 'testimony') return presentable.filter(e => e.kind === 'testimony');
-  if (presentTab === 'all') return presentable;
-  return CaseEntryModel.getRelevantPresentEntries(presentable, ctx);
-}
-// hydrateCaseEntryIcons(§Phase 5)는 [data-icon-asset]만 보고 배치 조회 후
-// <img>로 갈아끼우므로, 클래스는 이 화면의 present-tile-icon을 그대로 써도
-// 재사용에 문제없다(caseEntryIconHtml은 ces-card-icon 클래스를 하드코딩해서
-// 여기 타일 크기 규칙과 안 맞아 직접 만든다).
-function presentTileHtml(entry, selected) {
-  const iconAttr = entry.imageAssetId ? ` data-icon-asset="${entry.imageAssetId}"` : '';
-  return `
-    <button class="present-tile${selected ? ' selected' : ''}" data-present-entry="${entry.id}">
-      <span class="present-tile-icon"${iconAttr}>${entry.fallbackIcon}</span>
-      <span class="present-tile-label">${escapeHtml(entry.title)}</span>
-    </button>
-  `;
-}
 function renderPresentTiles(characterId) {
-  if (typeof CaseEntryUI !== 'undefined') CaseEntryUI.injectCaseEntryUIStyles();
-  const tabsHtml = `
-    <div class="present-tabs">
-      ${CASE_ENTRY_PRESENT_TABS_EXPLORE.map(t => `<button class="present-tab${presentTab === t.id ? ' active' : ''}" data-tab="${t.id}">${t.label}</button>`).join('')}
-    </div>
-  `;
+  CaseEntryUI.injectCaseEntryUIStyles();
+  const tabBar = `<div class="cm-tabbar ces-tabbar">${CASE_ENTRY_PRESENT_TABS_EXPLORE.map(t => `<button class="cm-tab${presentTab === t.id ? ' cm-tab-active' : ''}" data-tab="${t.id}">${t.label}</button>`).join('')}</div>`;
   if (presentTab === 'person') {
     const persons = CaseFileState.getPersons().filter(p => p.id !== characterId);
-    el.listSheetBody.innerHTML = tabsHtml + (persons.length ? `
-      <div class="present-grid">${persons.map(p => `
-        <button class="present-tile" data-person="${p.id}">
-          <span class="present-tile-icon round" id="presentTileIcon-${p.id}">${escapeHtml((p.name || '?')[0])}</span>
-          <span class="present-tile-label">${escapeHtml(p.name)}</span>
-        </button>
-      `).join('')}</div>
-    ` : '<div class="empty-note">아직 물어볼 만한 인물이 없습니다.</div>');
-    el.listSheetBody.querySelectorAll('[data-person]').forEach(btn => btn.addEventListener('click', () => {
+    el.listSheetBody.innerHTML = tabBar + (persons.length ? `<div class="ces-grid">${persons.map(p => CaseEntryUI.casePersonCardHtml(p)).join('')}</div>` : '<div class="cm-empty">아직 물어볼 만한 인물이 없습니다.</div>');
+    el.listSheetBody.querySelectorAll('[data-present-person]').forEach(btn => btn.addEventListener('click', () => {
       el.listSheet.classList.add('hidden');
       showToastLine(characterId, '음, 그 사람에 대해서는 딱히 할 말이 없는데.');
     }));
     persons.forEach(async (p) => {
       const assetId = DevGameState.getCharacterAssetId(p.id, 'neutral');
       const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
-      const host = document.getElementById(`presentTileIcon-${p.id}`);
-      if (host && asset && asset.dataUrl) host.innerHTML = `<img src="${asset.dataUrl}" alt="">`;
+      const host = document.querySelector(`[data-person-icon="${p.id}"]`);
+      if (host && asset && asset.dataUrl) host.innerHTML = `<img src="${asset.dataUrl}" alt="" class="ces-icon-img">`;
     });
   } else {
-    const entries = presentSheetEntries(characterId);
-    const selected = presentSelectedEntryId ? entries.find(e => e.id === presentSelectedEntryId) : null;
-    const emptyMsg = presentTab === 'related' ? '현재 대화와 관련된 항목이 없습니다. 다른 탭에서 골라보세요.' : '제시할 수 있는 항목이 없습니다.';
-    const gridHtml = entries.length ? `<div class="present-grid">${entries.map(e => presentTileHtml(e, e.id === presentSelectedEntryId)).join('')}</div>` : `<div class="empty-note">${emptyMsg}</div>`;
-    const confirmHtml = selected ? `
-      <div class="ces-confirm-bar">
-        <div class="ces-confirm-summary">${escapeHtml(selected.title)}${selected.summary ? ' — ' + escapeHtml(selected.summary) : ''}</div>
-        <button class="ces-confirm-btn" data-present-confirm="${selected.id}">제시하기</button>
-      </div>
-    ` : '';
-    el.listSheetBody.innerHTML = tabsHtml + gridHtml + confirmHtml;
-    if (typeof CaseEntryUI !== 'undefined') CaseEntryUI.hydrateCaseEntryIcons(el.listSheetBody);
+    const ctx = {
+      npcId: characterId, topicTags: [],
+      week: (typeof ExplorationState !== 'undefined' && ExplorationState.getCurrentWeek) ? ExplorationState.getCurrentWeek() : null,
+      activeTab: presentTab, selectedId: presentSelectedEntryId, maxSuggested: 6,
+    };
+    el.listSheetBody.innerHTML = tabBar + CaseEntryUI.renderPresentGridHtml(CaseFileState.getCaseEntries(), ctx);
+    CaseEntryUI.hydrateCaseEntryIcons(el.listSheetBody);
     el.listSheetBody.querySelectorAll('[data-present-entry]').forEach(btn => btn.addEventListener('click', () => {
       presentSelectedEntryId = presentSelectedEntryId === btn.dataset.presentEntry ? null : btn.dataset.presentEntry;
       renderPresentTiles(characterId);
