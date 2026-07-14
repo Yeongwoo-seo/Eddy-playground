@@ -1109,23 +1109,63 @@ el.frame.addEventListener('click', (e) => {
   // pattern in case a future beat needs a frame-level tap guard.
 });
 
-// Phase-wide preload (§신규) — a phase's locations share one small pool of
-// background art, so warming all of them up front (one batched metadata
-// fetch + parallel decodes, same AssetDB.preloadImage the per-week VN
-// preloader already uses — see weekPreloader.js) means 이동하기 never shows
-// a bare placeholder flash while a location the player hasn't visited yet
-// fetches its own background for the first time. sessionStorage-gated like
-// WeekPreloader's own readiness flag, so re-entering an already-warm phase
-// this session skips straight past it.
+// Phase-wide preload (§신규, 확장판) — a phase's locations share one small
+// pool of art (backgrounds, standing characters, dialogue portraits, the
+// phase overview map), so warming all of it up front in one batched
+// metadata fetch + parallel decodes (same AssetDB.preloadImage the per-week
+// VN preloader already uses — see weekPreloader.js) means no hub action
+// (이동하기/대화하기/제시하기) ever shows a bare flash while it fetches an
+// image for the first time on tap. Originally this only warmed location
+// backgrounds (preloadPhaseBackgrounds); characters/dialogue portraits/map
+// were still lazy-loaded per button press, which is the stutter this
+// broadens the preload to close. sessionStorage-gated like WeekPreloader's
+// own readiness flag, so re-entering an already-warm phase this session
+// skips straight past it.
 const PHASE_PRELOAD_SESSION_KEY = 'mkPhasePreloadReadyPhase';
-async function preloadPhaseBackgrounds(phaseId) {
+
+// Every character portrait a phase's hub content could show: each location's
+// standing character(s) (loc-char-chip/loc-char-stage, 'neutral'), every
+// expression a topic-type interactionDefs entry's lines use (대화하기), and
+// every person already on file (제시하기's 인물 탭 isn't scoped to a
+// location, it lists CaseFileState.getPersons() as-is). All three lookups
+// are the same synchronous localStorage-backed DevGameState.getCharacterAssetId
+// weekPreloader.js uses for scenes, just re-collected for hub content instead
+// of dialogueData.js scenes.
+function collectPhaseCharacterAssetIds(phaseId, locationIds) {
+  const ids = new Set();
+  locationIds.forEach(id => {
+    (locationDefs[id].characters || []).forEach(charId => {
+      const assetId = DevGameState.getCharacterAssetId(charId, 'neutral');
+      if (assetId) ids.add(assetId);
+    });
+  });
+  Object.values(interactionDefs).forEach(def => {
+    if (!(def.phases || []).includes(phaseId)) return;
+    (def.lines || []).forEach(line => {
+      if (!line.characterId) return;
+      const assetId = DevGameState.getCharacterAssetId(line.characterId, line.expression || 'neutral');
+      if (assetId) ids.add(assetId);
+    });
+  });
+  (typeof CaseFileState !== 'undefined' ? CaseFileState.getPersons() : []).forEach(p => {
+    const assetId = DevGameState.getCharacterAssetId(p.id, 'neutral');
+    if (assetId) ids.add(assetId);
+  });
+  return [...ids];
+}
+
+async function preloadPhaseAssets(phaseId) {
   if (!phaseId) return;
   try { if (sessionStorage.getItem(PHASE_PRELOAD_SESSION_KEY) === phaseId) return; } catch (e) { /* fall through and preload anyway */ }
   const locationIds = Object.keys(locationDefs).filter(id => (locationDefs[id].phases || []).includes(phaseId));
   if (!locationIds.length) return;
   LoadingOverlay.show('장소를 준비하는 중');
   try {
-    const assetIds = (await Promise.all(locationIds.map(id => DevGameState.getBackgroundId(id).catch(() => null)))).filter(Boolean);
+    const backgroundIds = (await Promise.all(locationIds.map(id => DevGameState.getBackgroundId(id).catch(() => null)))).filter(Boolean);
+    const phaseMap = (typeof phaseMaps !== 'undefined') ? phaseMaps[phaseId] : null;
+    const mapAssetId = phaseMap ? await DevGameState.getBackgroundId(phaseMap.id).catch(() => null) : null;
+    const characterAssetIds = collectPhaseCharacterAssetIds(phaseId, locationIds);
+    const assetIds = [...new Set([...backgroundIds, ...(mapAssetId ? [mapAssetId] : []), ...characterAssetIds])];
     const assets = assetIds.length ? await AssetDB.getAssetsByIds(assetIds) : [];
     await Promise.all(assets.map(a => (a && a.dataUrl) ? AssetDB.preloadImage(a.dataUrl) : Promise.resolve()));
     try { sessionStorage.setItem(PHASE_PRELOAD_SESSION_KEY, phaseId); } catch (e) { /* best-effort */ }
@@ -1142,7 +1182,7 @@ async function preloadPhaseBackgrounds(phaseId) {
   const bootLocation = params.get('location');
   const phaseChanged = !!bootPhase && ExplorationState.getCurrentPhase() !== bootPhase;
   if (bootPhase) ExplorationState.enterExplorationPhase(bootPhase);
-  await preloadPhaseBackgrounds(ExplorationState.getCurrentPhase());
+  await preloadPhaseAssets(ExplorationState.getCurrentPhase());
   // The `|| phaseChanged` half of this guard matters as soon as there's more
   // than one phase in play: a returning player already has *some*
   // currentLocationId left over from an earlier phase (e.g. still parked at
