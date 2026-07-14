@@ -958,16 +958,19 @@ const AssetDB = (() => {
   // 하나만 담는 단일 오브젝트라 늘 같은 키로 읽고 쓴다.
   const evidencePromptSettingsCache = new Map(); // single entry keyed 'settings'
   const EVIDENCE_PROMPT_SETTINGS_PATH = 'evidence-photos/prompt-settings.json';
+  // 아직 아무도 저장한 적 없을 때(첫 사용)의 기본값 — 저장이 한 번이라도
+  // 일어나면 그 이후로는 항상 저장된 값을 읽으므로 이 상수는 다시 쓰이지 않는다.
+  const DEFAULT_EVIDENCE_COMMON_PROMPT = '수사 자료용 증거품 사진. 정면 또는 45도 각도에서 촬영한 클로즈업, 사실적인 사진(포토리얼리스틱) 스타일, 어둡고 중립적인 배경 위에 증거품만 선명하게 놓여 있음. 라벨·텍스트·워터마크·사람 손이나 신체 일부는 나오지 않음. 약간의 그레인이 있는 다큐멘터리/포렌식 사진 느낌.';
 
   async function getEvidencePromptSettings() {
     if (evidencePromptSettingsCache.has('settings')) return evidencePromptSettingsCache.get('settings');
     const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${EVIDENCE_PROMPT_SETTINGS_PATH}?t=${Date.now()}`;
     try {
-      const settings = (await fetchJsonBlob(url)) || { commonPrompt: '' };
+      const settings = (await fetchJsonBlob(url)) || { commonPrompt: DEFAULT_EVIDENCE_COMMON_PROMPT };
       evidencePromptSettingsCache.set('settings', settings);
       return settings;
     } catch (e) {
-      return evidencePromptSettingsCache.get('settings') || { commonPrompt: '' };
+      return evidencePromptSettingsCache.get('settings') || { commonPrompt: DEFAULT_EVIDENCE_COMMON_PROMPT };
     }
   }
 
