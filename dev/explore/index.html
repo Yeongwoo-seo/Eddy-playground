@@ -585,17 +585,20 @@ function renderLocation() {
 }
 
 // §신규 이동 트랜지션 — covers the state swap below with a brief .move-fade
-// so a mid-load frame never shows, but doesn't wait for anything before
-// starting: performMove kicks off the instant the button is pressed, in
-// parallel with the fade-in, and the cover lifts the moment it resolves.
-// preloadPhaseAssets already warms every location a phase can move to
-// before 이동하기 is even tappable, so in practice that resolves within a
-// frame or two and the .12s fade is the only thing actually visible — no
-// artificial floor like the old 260ms setTimeout, no full .28s/.28s hold
-// like the fade's own original duration.
+// so a mid-load frame never shows. performMove kicks off the instant the
+// button is pressed, in parallel with the fade-in — but now that
+// preloadPhaseAssets actually warms every location for real (see AssetDB.
+// preloadImage's note on the sessionStorage bug that used to fake this),
+// performMove often resolves within the same frame it started, before the
+// fade-in's own CSS transition has had a chance to actually paint a fully
+// black frame. Removing 'show' that fast reads as no fade at all rather
+// than a quick one, so MOVE_FADE_MS floors the cover's visible time at
+// (at least) its own .move-fade transition duration — long enough to
+// register as a real dark→light beat, not a hold that waits on anything.
+const MOVE_FADE_MS = 130; // keep in sync with .move-fade's transition duration (.12s) in the <style> above
 function moveTo(locationId) {
   el.moveFade.classList.add('show');
-  performMove(locationId).then(() => {
+  Promise.all([performMove(locationId), new Promise(r => setTimeout(r, MOVE_FADE_MS))]).then(() => {
     requestAnimationFrame(() => el.moveFade.classList.remove('show'));
   });
 }
