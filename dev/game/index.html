@@ -900,23 +900,46 @@ function showEvidenceCta() {
   el.evidenceCta.classList.remove('hidden');
 }
 
+// 종류별 필터 — CASE FILE 메뉴 증거 탭(dev/caseMenu.js renderEvidenceTabBody)과
+// 탐색허브 증거 제시 시트(dev/explore/index.html openEvidenceSheet)가 쓰는
+// 같은 EVIDENCE_CATEGORY_ORDER/evidenceCategoryLabel과 cm-filter-* 스타일을
+// 그대로 재사용한다(둘 다 initCaseMenu가 이미 전역 <style>로 주입해둠) — 세
+// 화면이 서로 다른 분류/스타일을 보여주면 헷갈리므로 하나만 쓴다. 시트를
+// 다시 열어도 마지막으로 고른 필터가 유지되도록 모듈 스코프에 둔다.
+let evidenceSheetFilter = 'all';
 function renderEvidenceSheet() {
   const items = CaseFileState.getEvidence();
-  el.evidenceSheetList.innerHTML = '';
   if (!items.length) {
     el.evidenceSheetList.innerHTML = '<div class="evidence-empty">아직 제시할 증거가 없습니다.</div>';
     return;
   }
-  items.forEach(item => {
-    const btn = document.createElement('button');
-    btn.className = 'evidence-card';
-    btn.innerHTML = `<div class="ec-code">${escapeHtml(item.code || '')}</div><div class="ec-title">${escapeHtml(item.title)}</div>`;
-    btn.addEventListener('click', () => {
-      el.evidenceSheetOverlay.classList.add('hidden');
-      player.presentEvidence(item.id);
-    });
-    el.evidenceSheetList.appendChild(btn);
-  });
+  const presentCats = EVIDENCE_CATEGORY_ORDER.filter(c => items.some(ev => (ev.category || 'etc') === c));
+  if (evidenceSheetFilter !== 'all' && !presentCats.includes(evidenceSheetFilter)) evidenceSheetFilter = 'all';
+  const filterBar = `
+    <div class="cm-filter-row">
+      <button class="cm-filter-chip${evidenceSheetFilter === 'all' ? ' cm-filter-chip-active' : ''}" data-evidence-filter="all">전체 ${items.length}</button>
+      ${presentCats.map(c => {
+        const count = items.filter(ev => (ev.category || 'etc') === c).length;
+        return `<button class="cm-filter-chip${evidenceSheetFilter === c ? ' cm-filter-chip-active' : ''}" data-evidence-filter="${c}">${evidenceCategoryLabel(c)} ${count}</button>`;
+      }).join('')}
+    </div>
+  `;
+  const cardHtml = (ev) => `<button class="evidence-card" data-evidence="${ev.id}"><div class="ec-code">${escapeHtml(ev.code || '')}</div><div class="ec-title">${escapeHtml(ev.title)}</div></button>`;
+  const listHtml = evidenceSheetFilter !== 'all'
+    ? items.filter(ev => (ev.category || 'etc') === evidenceSheetFilter).map(cardHtml).join('')
+    : presentCats.map(c => `
+        <div class="cm-section-label cm-section-label-spaced">${evidenceCategoryLabel(c)}</div>
+        ${items.filter(ev => (ev.category || 'etc') === c).map(cardHtml).join('')}
+      `).join('');
+  el.evidenceSheetList.innerHTML = filterBar + listHtml;
+  el.evidenceSheetList.querySelectorAll('[data-evidence-filter]').forEach(btn => btn.addEventListener('click', () => {
+    evidenceSheetFilter = btn.dataset.evidenceFilter;
+    renderEvidenceSheet();
+  }));
+  el.evidenceSheetList.querySelectorAll('[data-evidence]').forEach(btn => btn.addEventListener('click', () => {
+    el.evidenceSheetOverlay.classList.add('hidden');
+    player.presentEvidence(btn.dataset.evidence);
+  }));
 }
 
 let evidenceToastTimer = null;

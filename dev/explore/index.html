@@ -762,22 +762,42 @@ function openTopicList(characterId) {
 // never costs points or blocks progress either way (§8.4) — it only changes
 // the reaction text and, for correct/partial, may carry effects (addFact 등).
 // 목록은 CASE FILE 메뉴의 증거 탭(dev/caseMenu.js renderEvidenceTabBody)과
-// 같은 분류(EVIDENCE_CATEGORY_ORDER/evidenceCategoryLabel)로 묶어서 보여준다
-// — 두 화면이 서로 다른 분류를 보여주면 헷갈리니 하나의 소스만 쓴다.
+// 같은 분류(EVIDENCE_CATEGORY_ORDER/evidenceCategoryLabel)로 묶고, 같은 종류별
+// 필터 칩(cm-filter-row/cm-filter-chip — initCaseMenu가 이미 전역 <style>로
+// 주입해둔 클래스)도 그대로 쓴다 — 세 화면이 서로 다른 분류/필터 UI를 보여주면
+// 헷갈리니 하나의 소스만 쓴다.
+let evidencePresentFilter = 'all';
 function openEvidenceSheet(characterId) {
   const items = CaseFileState.getEvidence();
   el.listSheetTitle.textContent = '증거 제시';
   if (!items.length) {
     el.listSheetBody.innerHTML = '<div class="empty-note">아직 제시할 증거가 없습니다.</div>';
-  } else {
-    const cats = EVIDENCE_CATEGORY_ORDER.filter(c => items.some(ev => (ev.category || 'etc') === c));
-    el.listSheetBody.innerHTML = cats.map(c => `
-      <div class="sheet-section-label">${evidenceCategoryLabel(c)}</div>
-      ${items.filter(ev => (ev.category || 'etc') === c).map(ev => `
-        <button class="topic-row" data-evidence="${ev.id}"><div class="topic-row-main">${escapeHtml(ev.title)}</div></button>
-      `).join('')}
-    `).join('');
+    el.listSheet.classList.remove('hidden');
+    return;
   }
+  const cats = EVIDENCE_CATEGORY_ORDER.filter(c => items.some(ev => (ev.category || 'etc') === c));
+  if (evidencePresentFilter !== 'all' && !cats.includes(evidencePresentFilter)) evidencePresentFilter = 'all';
+  const filterBar = `
+    <div class="cm-filter-row">
+      <button class="cm-filter-chip${evidencePresentFilter === 'all' ? ' cm-filter-chip-active' : ''}" data-evidence-filter="all">전체 ${items.length}</button>
+      ${cats.map(c => {
+        const count = items.filter(ev => (ev.category || 'etc') === c).length;
+        return `<button class="cm-filter-chip${evidencePresentFilter === c ? ' cm-filter-chip-active' : ''}" data-evidence-filter="${c}">${evidenceCategoryLabel(c)} ${count}</button>`;
+      }).join('')}
+    </div>
+  `;
+  const rowHtml = (ev) => `<button class="topic-row" data-evidence="${ev.id}"><div class="topic-row-main">${escapeHtml(ev.title)}</div></button>`;
+  const listHtml = evidencePresentFilter !== 'all'
+    ? items.filter(ev => (ev.category || 'etc') === evidencePresentFilter).map(rowHtml).join('')
+    : cats.map(c => `
+        <div class="sheet-section-label">${evidenceCategoryLabel(c)}</div>
+        ${items.filter(ev => (ev.category || 'etc') === c).map(rowHtml).join('')}
+      `).join('');
+  el.listSheetBody.innerHTML = filterBar + listHtml;
+  el.listSheetBody.querySelectorAll('[data-evidence-filter]').forEach(btn => btn.addEventListener('click', () => {
+    evidencePresentFilter = btn.dataset.evidenceFilter;
+    openEvidenceSheet(characterId);
+  }));
   el.listSheetBody.querySelectorAll('[data-evidence]').forEach(btn => btn.addEventListener('click', () => {
     el.listSheet.classList.add('hidden');
     const rule = presentEvidenceRules.find(r => r.characterId === characterId && r.evidenceId === btn.dataset.evidence && (!r.phase || r.phase === ExplorationState.getCurrentPhase()));
