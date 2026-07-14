@@ -153,6 +153,7 @@ const locationDefs = {
     // spot(mina/adrian/leo-spot)에만 있으므로 여기 목록엔 안 넣는다.
     characters: ['youngwoo'],
     exits: ['w1-suspect-mina-spot', 'w1-suspect-adrian-spot', 'w1-suspect-leo-spot'],
+    mapPosition: { x: 50, y: 58 },
   },
   'w1-suspect-mina-spot': {
     id: 'w1-suspect-mina-spot',
@@ -162,6 +163,7 @@ const locationDefs = {
     visualBrief: '더 록스 골목의 조용한 지점 — 오래된 사암 건물 사이, 야외 카페 테이블이나 상점 앞 벤치가 있는 자리.',
     characters: ['minah'],
     exits: ['w1-suspect-hub'],
+    mapPosition: { x: 18, y: 38 },
   },
   'w1-suspect-adrian-spot': {
     id: 'w1-suspect-adrian-spot',
@@ -171,6 +173,7 @@ const locationDefs = {
     visualBrief: '팝업 전시장 내부, 유리 진열장들이 줄지어 있는 보조 전시 구역. 조명이 은은하게 진열품을 비추는 조용한 실내 공간.',
     characters: ['adrian'],
     exits: ['w1-suspect-hub'],
+    mapPosition: { x: 72, y: 32 },
   },
   'w1-suspect-leo-spot': {
     id: 'w1-suspect-leo-spot',
@@ -180,6 +183,7 @@ const locationDefs = {
     visualBrief: '전시장 접수대와 그 옆 직원 전용문 경계. 태그 리더기가 붙은 서비스 문, 접수대 위 서랍과 안내 자료가 보이는 업무 공간.',
     characters: ['leo'],
     exits: ['w1-suspect-hub'],
+    mapPosition: { x: 68, y: 70 },
   },
 
   /* ===== Phase 5 — 모순 재검증 (The Missing Key v1 §12.8) =====
@@ -199,6 +203,7 @@ const locationDefs = {
     exits: ['w1-reverify-mina-spot', 'w1-reverify-adrian-spot', 'w1-reverify-martin-spot'],
     enterSceneId: 'week1-scene-012',
     enterSceneLabel: '지금까지의 단서로 사건을 재구성한다',
+    mapPosition: { x: 68, y: 60 },
   },
   'w1-reverify-mina-spot': {
     id: 'w1-reverify-mina-spot',
@@ -208,6 +213,7 @@ const locationDefs = {
     visualBrief: '서큘러키 근처의 세련된 편집숍 내부 또는 쇼윈도 앞 — 윤민아가 일하는 곳. 옷걸이와 액세서리 진열대가 보이는 밝고 정돈된 매장.',
     characters: ['minah'],
     exits: ['w1-reverify-hub'],
+    mapPosition: { x: 22, y: 35 },
   },
   'w1-reverify-adrian-spot': {
     id: 'w1-reverify-adrian-spot',
@@ -217,6 +223,7 @@ const locationDefs = {
     visualBrief: 'w1-suspect-adrian-spot와 같은 팝업 전시장 내부 보조 진열 구역.',
     characters: ['adrian'],
     exits: ['w1-reverify-hub'],
+    mapPosition: { x: 82, y: 38 },
   },
   'w1-reverify-martin-spot': {
     id: 'w1-reverify-martin-spot',
@@ -226,6 +233,7 @@ const locationDefs = {
     visualBrief: '서큘러키 워터프론트 산책로를 걸으며 휴대폰으로 통화하는 구도 — 항구와 페리가 배경에 보이는 야외 산책로.',
     characters: ['martin'],
     exits: ['w1-reverify-hub'],
+    mapPosition: { x: 38, y: 72 },
   },
 };
 
@@ -235,8 +243,11 @@ const locationDefs = {
    얹는다 — 위 locationDefs 항목들의 mapPosition이 핀 좌표. 지도 자체의 배경
    사진은 각 위치 사진과 같은 방식(DevGameState.getBackgroundId)으로 조회하며,
    `id`가 바로 그 조회 키(/dev/upload 탐색허브 탭이 이 phaseMaps도 위치처럼
-   노출해 사진을 배정한다). 정의가 없는 phase(용의자 탐문/재검증처럼 좁은
-   구역을 도는 phase)는 기존 리스트 방식 그대로 동작한다.
+   노출해 사진을 배정한다). 정의가 없는 phase는 기존 리스트 방식 그대로
+   동작하지만, 지금은 세 허브 phase(관광/용의자 탐문/재검증) 모두 자기 지도를
+   갖는다 — 탐문·재검증은 구역이 좁아 mapPosition을 아예 생략하고 리스트만
+   보여주던 때가 있었으나(§초기 설계), 실제로는 phase마다 별개의 장소들이라
+   지도가 있는 편이 이동 감각에 낫다고 판단해 추가했다.
 
    `visualBrief`는 buildHubLocationPrompt와 같은 조합 방식을 지도용으로 쓸 때
    참고할 실제 지리 설명 — 지도 이미지 자체는 사진이 아니라 일러스트 스타일로
@@ -246,5 +257,15 @@ const phaseMaps = {
     id: 'map-w1-tourism',
     name: '시드니 지도 (1주차 · 관광)',
     visualBrief: '시드니 서큘러키를 중심으로 왼쪽 위엔 하버브리지, 왼쪽 중간엔 더 록스 지구, 오른쪽엔 오페라하우스가 있는 워터프론트 일대. 실제 지리 그대로가 아니라 관광 안내 지도 수준으로 단순화된 구도.',
+  },
+  W1_SUSPECT_INTERVIEWS: {
+    id: 'map-w1-suspect',
+    name: '전시장 지도 (1주차 · 용의자 탐문)',
+    visualBrief: '팝업 전시장과 그 앞 광장을 중심으로, 왼쪽에 더 록스 골목으로 이어지는 좁은 길이 붙은 구도. 오른쪽 전시장 내부엔 보조 진열 구역과 접수대가 나란히 있다. 도난 사건 이후라 안내판이 늘고 한산해진, 차분한 분위기.',
+  },
+  W1_REVERIFICATION: {
+    id: 'map-w1-reverify',
+    name: '전시장·서큘러키 지도 (1주차 · 재검증)',
+    visualBrief: '오른쪽에 팝업 전시장(광장과 보조 진열 구역), 왼쪽에 서큘러키 워터프론트(편집숍과 산책로)가 이어지는 구도. 사건이 정리되어가는 늦은 오후, 신중하고 가라앉은 분위기.',
   },
 };
