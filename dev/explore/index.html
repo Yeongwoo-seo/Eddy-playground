@@ -864,6 +864,17 @@ el.moveMapCloseBtn.addEventListener('click', () => el.moveMapSheet.classList.add
 function openTopicList(characterId) {
   const locationId = ExplorationState.getCurrentLocationId();
   const topics = ExplorationState.getInteractionsForCharacter(characterId, locationId).filter(i => (i.type === 'topic' || i.type === 'minigame') && !i.isInterrogation);
+  // 나눌 잡담(topic)은 아직 없고 심문할 거리만 있는 인물이 꽤 있다 — 이 경우
+  // "대화하기"를 눌렀는데 "아직 나눌 이야기가 없습니다"만 뜨면 막다른 골목처럼
+  // 느껴진다. 그래서 잡담 주제가 하나도 없을 때는 대화하기가 곧 심문하기를
+  // 대신하도록, 시트를 열지 않고 가능한 심문 항목을 바로 재생한다. 그 심문을
+  // 거쳐 실제 잡담 주제가 생기면 이후엔 대화하기/심문하기가 각자 정상적으로
+  // 따로 뜬다(대화하기는 잡담이 있을 때만, 심문하기는 renderInterrogateBtn이
+  // 독립적으로 계속 띄움).
+  if (!topics.length) {
+    const interrogation = getInterrogationInteraction(characterId);
+    if (interrogation) { playInteraction(interrogation.id); return; }
+  }
   el.listSheetTitle.textContent = '대화하기';
   el.listSheetBody.innerHTML = topics.length ? topics.map(t => `
     <button class="topic-row" data-topic="${t.id}"${t.state === 'locked' ? ' disabled' : ''}>
