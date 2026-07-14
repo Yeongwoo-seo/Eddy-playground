@@ -945,6 +945,9 @@ function setInvestigateMode(on) {
   // 뜨는 investigateCloseBtn으로 끌 수 있다.
   el.bottomBar.classList.toggle('hidden', on);
   el.investigateCloseBtn.classList.toggle('hidden', !on);
+  // 캐릭터가 배경 위에 서 있으면 핫스팟을 가리고 몰입도 깨므로, 조사하기 중엔
+  // 잠깐 숨겼다가 끌 때 다시 페이드인시킨다.
+  el.locCharStage.classList.toggle('show', !on && !!currentCharacterId);
   if (on) {
     renderInvestigateHotspots();
     el.charPosSlider.classList.add('hidden'); // investigate-hint와 같은 자리 — 조사 중엔 화면 조작이 우선
