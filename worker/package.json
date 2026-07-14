@@ -1,0 +1,15 @@
+{
+  "name": "gangnangkong-tour-push-worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "web-push-browser": "^1.4.2"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}

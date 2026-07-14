@@ -340,6 +340,56 @@ fetchWeather();
 // fire the next time the app is opened after that time has passed.
 const NOTIF_KEY='tripNotificationsV1';
 
+// Cloudflare Worker that delivers these notifications via Web Push even
+// when the app is fully closed — see worker/README.md for deployment.
+// Leave blank to fall back to the foreground-only local check below.
+const PUSH_API_URL='';
+const VAPID_PUBLIC_KEY='BBVVH_C7elBHMMbAYAyrrrN0eLesVlhxEhjyjc4qUHuHhEqg3G4HHic36Zp5Wq-RPs2VVuWcFmESr7eO_kcssIs';
+
+let pushActive=false;
+
+function urlBase64ToUint8Array(base64String){
+  const padding='='.repeat((4 - base64String.length % 4) % 4);
+  const base64=(base64String + padding).replace(/-/g,'+').replace(/_/g,'/');
+  const raw=atob(base64);
+  const arr=new Uint8Array(raw.length);
+  for(let i=0;i<raw.length;i++) arr[i]=raw.charCodeAt(i);
+  return arr;
+}
+
+async function ensurePushSubscription(){
+  if(!PUSH_API_URL || !('serviceWorker' in navigator) || !('PushManager' in window)) return;
+  if(typeof Notification==='undefined' || Notification.permission!=='granted') return;
+  try{
+    const reg=await navigator.serviceWorker.ready;
+    let sub=await reg.pushManager.getSubscription();
+    if(!sub){
+      sub=await reg.pushManager.subscribe({
+        userVisibleOnly:true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+      });
+    }
+    await fetch(PUSH_API_URL+'/subscribe', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(sub.toJSON())
+    });
+    pushActive=true;
+    syncRulesToServer();
+  }catch(e){
+    pushActive=false;
+  }
+}
+
+function syncRulesToServer(){
+  if(!PUSH_API_URL || !pushActive) return;
+  fetch(PUSH_API_URL+'/rules', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ rules: getNotifRules() })
+  }).catch(()=>{});
+}
+
 function getNotifRules(){
   try{ return JSON.parse(localStorage.getItem(NOTIF_KEY)||'[]'); }catch(e){ return []; }
 }
@@ -357,7 +407,9 @@ function toLocalInputValue(d){
 function openNotifModal(){
   document.body.classList.add('sheet-open');
   if(typeof Notification!=='undefined' && Notification.permission==='default'){
-    Notification.requestPermission();
+    Notification.requestPermission().then(()=>ensurePushSubscription());
+  }else{
+    ensurePushSubscription();
   }
   renderNotifModal();
 }
@@ -378,6 +430,7 @@ function addNotifRule(){
     fired:false
   });
   setNotifRules(rules);
+  syncRulesToServer();
   renderNotifModal();
 }
 function updateNotifRule(id, field, value){
@@ -387,9 +440,11 @@ function updateNotifRule(id, field, value){
   r[field]=value;
   if(field==='datetime') r.fired=false;
   setNotifRules(rules);
+  syncRulesToServer();
 }
 function deleteNotifRule(id){
   setNotifRules(getNotifRules().filter(x=>x.id!==id));
+  syncRulesToServer();
   renderNotifModal();
 }
 
@@ -415,7 +470,7 @@ function renderNotifModal(){
         <div class="notif-modal-body">
           <div class="notif-list">${rowsHtml}</div>
           <button class="notif-add-btn" onclick="addNotifRule()">+ 알림 추가</button>
-          <div class="notif-hint">앱을 열어둔 상태에서만 알림이 울려요</div>
+          <div class="notif-hint">${pushActive ? '앱이 꺼져 있어도 알림이 울려요' : '앱을 열어둔 상태에서만 알림이 울려요'}</div>
         </div>
         <button class="notif-confirm-btn" onclick="closeNotifModal()">확인</button>
       </div>
@@ -437,6 +492,7 @@ function fireNotification(text){
 }
 
 function checkNotifRules(){
+  if(pushActive) return; // the Worker's scheduled push already covers this
   const rules=getNotifRules();
   if(!rules.length) return;
   const now=new Date();
@@ -452,6 +508,7 @@ function checkNotifRules(){
   if(changed) setNotifRules(rules);
 }
 
+ensurePushSubscription();
 checkNotifRules();
 setInterval(checkNotifRules, 30000);
 document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) checkNotifRules(); });
