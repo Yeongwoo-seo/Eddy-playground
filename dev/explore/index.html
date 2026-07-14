@@ -86,6 +86,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .investigate-hotspot.done{border-color:var(--amber);background:rgba(214,168,75,.2);animation:none}
 @keyframes investigateHotspotPulse{0%,100%{box-shadow:0 0 0 0 rgba(89,184,200,.35)}50%{box-shadow:0 0 0 8px rgba(89,184,200,0)}}
 .investigate-hint{position:absolute;left:16px;right:16px;top:calc(96px + env(safe-area-inset-top,0));z-index:2;text-align:center;font-size:13px;color:var(--text-secondary);background:rgba(8,10,12,.65);border-radius:14px;padding:10px 14px;pointer-events:none;opacity:0;transition:opacity .2s ease}
+.investigate-hint:empty{display:none}
 .investigate-hint.show{opacity:1}
 
 /* ===== Location character chips — who's actually standing here, shown
@@ -798,8 +799,10 @@ function openAskAboutSheet(characterId) {
    so they inherit its live pan/zoom transform for free. Hotspots come from
    locationDefs[id].investigateHotspots (optional {x,y,interactionId,icon}
    in %, see that file's header comment) — a location with none authored
-   yet still toggles the mode on, it just has nothing to mark, and the hint
-   line says so instead. locStage's own pointerdown (a few lines up) is
+   yet still toggles the mode on, it just has nothing to mark and no hint
+   text either (조사하기 자체가 핫스팟 유무를 알려주는 게 아니라 순수히
+   핫스팟을 찾는 도구라, "여긴 특별히 없다"는 안내는 스포일러에 가깝다).
+   locStage's own pointerdown (a few lines up) is
    patched to ignore taps on `.investigate-hotspot` so tapping a marker
    doesn't also start a pan-drag underneath it. investigateMode itself is
    declared up with the pan/zoom state above, since that stage's own
@@ -823,9 +826,7 @@ function renderInvestigateHotspots() {
     });
     el.locCanvas.appendChild(btn);
   });
-  el.investigateHint.textContent = hotspots.length
-    ? '반짝이는 지점을 눌러 살펴보세요.'
-    : '밀거나 확대해서 둘러보는 중... 특별히 눈에 띄는 건 없어 보인다.';
+  el.investigateHint.textContent = hotspots.length ? '반짝이는 지점을 눌러 살펴보세요.' : '';
 }
 function setInvestigateMode(on) {
   investigateMode = on;
