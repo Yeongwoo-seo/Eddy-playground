@@ -141,7 +141,7 @@ const locationDefs = {
      007/008) — see dev/data/interactionDefs.js. Visiting 레오 (008) is the
      one that already had its own downstream chain (timeline minigame ->
      008a -> 009); the other two return here via 'week1-suspect-interview-
-     return' (see MINIGAME_ROUTES in game/index.html). */
+     return' (see MINIGAME_ROUTES in dev/data/sceneRoutes.js). */
   'w1-suspect-hub': {
     id: 'w1-suspect-hub',
     week: 1,

@@ -315,6 +315,7 @@ if ('serviceWorker' in navigator) {
 <script src="/dev/state/shopState.js"></script>
 <script src="/dev/data/locationDefs.js"></script>
 <script src="/dev/data/interactionDefs.js"></script>
+<script src="/dev/data/sceneRoutes.js"></script>
 <script src="/dev/state/explorationState.js"></script>
 <script src="/dev/vnPlayer.js"></script>
 <script src="/dev/caseMenu.js"></script>
@@ -577,39 +578,11 @@ function playEndingSequence() {
 //
 // Each built minigame gets its own standalone page (not routed through
 // /dev/game, since gameplay differs too much from tap-to-advance dialogue).
-// A nextSceneId with no route here and no matching VN scene isn't built
-// yet, so it just shows a placeholder overlay instead of navigating to a
-// dead page.
-const MINIGAME_ROUTES = {
-  'week0-scene-001-2-minigame': '/dev/minigame-eastwood/',
-  'week0-scene-002-2': '/dev/minigame-phone-search/',
-  'week0-scene-shop-visit': '/dev/shop/',
-  'week1-scene-003-minigame': '/dev/minigame-exhibition-search/',
-  'week1-scene-004-minigame': '/dev/minigame-photo-zoom/',
-  'week1-scene-008-minigame': '/dev/minigame-timeline/',
-  // The Missing Key v1 §12.6 — 세 용의자 자유 순서 탐문. Both virtual ids
-  // land on the same shared hub-center location; individual suspect spots
-  // are reached from there (see dev/data/locationDefs.js's
-  // w1-suspect-*-spot entries).
-  'week1-suspect-hub-entry': '/dev/explore/?phase=W1_SUSPECT_INTERVIEWS&location=w1-suspect-hub',
-  'week1-suspect-interview-return': '/dev/explore/?phase=W1_SUSPECT_INTERVIEWS&location=w1-suspect-hub',
-  // §12.2 — 시티 도착 직후 곧장 탐색 허브로. week1-scene-002 자체는
-  // w1-circular-quay의 firstVisitSceneId로 첫 방문 때 자동 재생된다.
-  'week1-hub-entry-tourism': '/dev/explore/?phase=W1_TOURISM&location=w1-circular-quay',
-  // §12.8 — 재검증 단계 자유 순회.
-  'week1-reverify-hub-entry': '/dev/explore/?phase=W1_REVERIFICATION&location=w1-reverify-hub',
-  'week1-reverify-interview-return': '/dev/explore/?phase=W1_REVERIFICATION&location=w1-reverify-hub',
-};
-
-// The Missing Key v1 §5.2/§11.3 — week0-scene-shop-intro's own nextSceneId
-// hands off into the real shop screen (a routed page, see MINIGAME_ROUTES
-// above) rather than another VN scene. /dev/shop/'s own "← 돌아가기" button
-// reads sessionStorage's mkShopReturnUrl (same contract the CASE FILE menu's
-// 옷가게/옷장 cards use, see storeShopReturnUrl below) — this scripted
-// handoff sets it explicitly to the scene *after* the shop visit
-// (week0-scene-002-1) instead of back into the intro dialogue, so leaving
-// the shop continues the story instead of replaying the boutique chat.
-const SHOP_TUTORIAL_RETURN_SCENE = { 'week0-scene-shop-visit': 'week0-scene-002-1' };
+// MINIGAME_ROUTES/SHOP_TUTORIAL_RETURN_SCENE now live in
+// /dev/data/sceneRoutes.js (shared with dev/explore/index.html's inline
+// scene player) — see that file. A nextSceneId with no route there and no
+// matching VN scene isn't built yet, so it just shows a placeholder overlay
+// instead of navigating to a dead page.
 
 // Most nextSceneId handoffs are into a minigame (MINIGAME_ROUTES above), but
 // a plain location change with no minigame in between — e.g.

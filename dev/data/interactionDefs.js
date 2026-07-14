@@ -261,9 +261,12 @@ const interactionDefs = {
      decomposed into topics. Decomposing a real interrogation's internal
      round/hint/hypothesis structure into hub topic-state nodes would risk
      breaking flag dependencies inside content this careful; a coarse
-     "visit = launch the whole scene" hand-off (type:'minigame', same
-     mechanism as the 하버 포토 hand-off) gets the free-order benefit
-     spec §12.6 asks for with zero risk to the existing script. */
+     "visit = launch the whole scene" hand-off gets the free-order benefit
+     spec §12.6 asks for with zero risk to the existing script.
+     type: 'scene' (§신규) — 이 hand-off은 더 이상 dev/game/index.html로
+     완전히 페이지 이동하지 않는다. sceneId가 가리키는 씬(스크립트는 그대로)을
+     허브 자신의 하단 패널 안에서 인라인 재생한다 — see dev/explore/index.html
+     playSceneInline. */
   // "사전 복선" 패턴의 유일한 회수 사례(선택형) — w1bv-topic-van(Phase 1,
   // 하버브리지)에서 심어둔 flag(discoveredBridgeVan)를 여기서 실제 증거로
   // 바꾼다. 다만 검토 답변서 §2.4 방침대로 "필수 증거"가 아니라 순수 보강
@@ -308,38 +311,46 @@ const interactionDefs = {
   // topic list (see dev/explore/index.html renderInterrogateBtn/
   // getInterrogationInteraction) — 전화 걸기(w1reverify-martin-call 등, 아래)
   // 처럼 route를 갖는 다른 minigame형 hand-off와 구분하기 위한 플래그.
+  //
+  // type: 'scene' (심문 씬 허브 인라인 재생, §신규) — 예전엔 type:'minigame'
+  // + route로 dev/game/index.html이라는 별도 페이지로 완전히 이동했지만,
+  // 지금은 sceneId가 가리키는 dev/dialogueData.js의 스크립트(라운드·선택지·
+  // 가설·미니게임 임베드 그대로)를 허브 자신의 하단 패널 안에서 재생한다
+  // (dev/explore/index.html playSceneInline) — 대화하기가 이미 인라인
+  // 전환된 것과 같은 패턴. 씬 데이터/구조 자체는 전혀 손대지 않았고 오직
+  // "어디서 재생되는가"만 바뀐 것이라, 씬이 사라지는 게 아니다.
   'w1suspect-mina-interview': {
     id: 'w1suspect-mina-interview',
     characterId: 'minah',
     locationIds: ['w1-suspect-mina-spot'],
     phases: ['W1_SUSPECT_INTERVIEWS'],
-    type: 'minigame',
+    type: 'scene',
     isInterrogation: true,
     label: '심문하기',
     icon: '🔍',
-    route: '/dev/game/?scene=week1-scene-006',
+    sceneId: 'week1-scene-006',
   },
   'w1suspect-adrian-interview': {
     id: 'w1suspect-adrian-interview',
     characterId: 'adrian',
     locationIds: ['w1-suspect-adrian-spot'],
     phases: ['W1_SUSPECT_INTERVIEWS'],
-    type: 'minigame',
+    type: 'scene',
     isInterrogation: true,
     label: '심문하기',
     icon: '🔍',
-    route: '/dev/game/?scene=week1-scene-007',
+    sceneId: 'week1-scene-007',
   },
   'w1suspect-leo-interview': {
     id: 'w1suspect-leo-interview',
     characterId: 'leo',
     locationIds: ['w1-suspect-leo-spot'],
     phases: ['W1_SUSPECT_INTERVIEWS'],
-    type: 'minigame',
+    type: 'scene',
     isInterrogation: true,
     label: '심문하기',
     icon: '🔍',
-    route: '/dev/game/?scene=week1-scene-008',
+    sceneId: 'week1-scene-008',
   },
 
   /* ===== Phase 5 — 모순 재검증 (§12.8) =====
@@ -351,22 +362,22 @@ const interactionDefs = {
     characterId: 'minah',
     locationIds: ['w1-reverify-mina-spot'],
     phases: ['W1_REVERIFICATION'],
-    type: 'minigame',
+    type: 'scene',
     isInterrogation: true,
     label: '최종 심문하기',
     icon: '🔍',
-    route: '/dev/game/?scene=week1-scene-011',
+    sceneId: 'week1-scene-011',
   },
   'w1reverify-adrian-interview': {
     id: 'w1reverify-adrian-interview',
     characterId: 'adrian',
     locationIds: ['w1-reverify-adrian-spot'],
     phases: ['W1_REVERIFICATION'],
-    type: 'minigame',
+    type: 'scene',
     isInterrogation: true,
     label: '재심문하기',
     icon: '🔍',
-    route: '/dev/game/?scene=week1-scene-011a',
+    sceneId: 'week1-scene-011a',
   },
   'w1reverify-martin-call': {
     id: 'w1reverify-martin-call',
