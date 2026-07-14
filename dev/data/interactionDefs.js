@@ -326,7 +326,7 @@ const interactionDefs = {
     phases: ['W1_SUSPECT_INTERVIEWS'],
     type: 'scene',
     isInterrogation: true,
-    label: '처음 대화하기',
+    label: '심문하기',
     icon: '🔍',
     sceneId: 'week1-scene-006',
   },
@@ -390,6 +390,17 @@ const interactionDefs = {
     route: '/dev/game/?scene=week1-scene-011b',
   },
 };
+
+// Phase 4 세 용의자 심문(mina/adrian/leo)은 자유 순서라 누가 "처음 만난
+// 사람"이 될지 고정돼 있지 않다 — dev/explore/index.html의
+// renderInterrogateBtn이 이 목록 중 아직 하나도 완료되지 않았을 때만
+// 버튼 라벨을 '심문하기' 대신 '처음 대화하기'로 덮어써서, 실제로 플레이어가
+// 맨 처음 고른 인물의 버튼에만 뜨게 한다.
+const W1_SUSPECT_INTERROGATION_IDS = [
+  'w1suspect-mina-interview',
+  'w1suspect-adrian-interview',
+  'w1suspect-leo-interview',
+];
 
 /* ===== 증거 제시 판정 규칙 (The Missing Key v1 §8/§14.8) =====
    Real first content for the hub's own "증거 제시" action (previously always

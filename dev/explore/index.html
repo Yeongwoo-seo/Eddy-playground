@@ -708,7 +708,13 @@ function renderInterrogateBtn() {
   const interrogation = getInterrogationInteraction(currentCharacterId);
   el.interrogateBtn.classList.toggle('hidden', !interrogation);
   if (interrogation) {
-    el.interrogateBtn.textContent = (interrogation.icon ? interrogation.icon + ' ' : '') + (interrogation.label || '심문하기');
+    // 세 용의자 심문은 자유 순서라, 플레이어가 실제로 맨 처음 고른 인물의
+    // 버튼에만 '처음 대화하기'가 뜨고 나머지 둘은 평소 라벨 그대로다
+    // (W1_SUSPECT_INTERROGATION_IDS, dev/data/interactionDefs.js).
+    const isFirstEverSuspectInterrogation = W1_SUSPECT_INTERROGATION_IDS.includes(interrogation.id)
+      && !ExplorationState.hasCompletedAny(W1_SUSPECT_INTERROGATION_IDS);
+    const label = isFirstEverSuspectInterrogation ? '처음 대화하기' : (interrogation.label || '심문하기');
+    el.interrogateBtn.textContent = (interrogation.icon ? interrogation.icon + ' ' : '') + label;
     el.interrogateBtn.onclick = () => playInteraction(interrogation.id);
   }
 }

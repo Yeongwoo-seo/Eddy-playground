@@ -184,6 +184,10 @@ const ExplorationState = {
     return this.getInteractionsForLocation(locationId).filter(i => i.characterId === characterId);
   },
 
+  // "이 그룹 중 하나라도 이미 끝냈는가" — 자유 순서 그룹(예: 세 용의자 심문)
+  // 에서 "아직 아무것도 안 한 상태"를 판별할 때 씀 (see W1_SUSPECT_INTERROGATION_IDS).
+  hasCompletedAny(ids) { return (ids || []).some(id => explorationState.completedInteractionIds.includes(id)); },
+
   // Required-investigation gate (spec §10.2/§10.4) — a phaseDef (locationDefs
   // or a small phaseGoals table, see interactionDefs.js) lists requiredFactIds;
   // this just checks how many are in hand so a hub screen can render
