@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>증거수첩 · OPERATION MK DEV</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<meta name="theme-color" content="#080A0C">
+<link rel="manifest" href="/dev/manifest.json">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="OPERATION MK DEV">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#080A0C;--surface-1:#101419;--surface-2:#171C22;--surface-3:#1D242C;
+  --text-primary:#EDF1F4;--text-secondary:#929BA5;--text-muted:#5F6872;
+  --cyan:#59B8C8;--amber:#D6A84B;--green:#3ECF6B;--signal-red:#D94141;--divider:rgba(255,255,255,0.08);
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sans:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
+}
+html,body{height:100%}
+body{background:#050607;color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center;min-height:100dvh}
+.frame{width:100%;max-width:430px;min-height:100dvh;min-height:100vh;padding:calc(48px + env(safe-area-inset-top,0)) 20px calc(32px + env(safe-area-inset-bottom,0));display:flex;flex-direction:column}
+.back{font-family:var(--mono);font-size:12px;color:var(--text-muted);text-decoration:none;margin-bottom:18px;display:inline-flex;align-items:center;gap:4px;width:fit-content}
+.tag{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px}
+.title{font-size:26px;font-weight:700;letter-spacing:-.2px;margin-bottom:10px}
+.sub{font-size:14px;color:var(--text-secondary);margin-bottom:24px;line-height:1.6}
+
+.dropzone{border:1px dashed var(--divider);border-radius:16px;padding:32px 16px;display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer;background:var(--surface-1)}
+.dropzone-icon{font-size:32px}
+.dropzone-text{font-family:var(--mono);font-size:12px;color:var(--text-muted);letter-spacing:.06em}
+.select-btn{font-family:var(--mono);font-size:12.5px;font-weight:700;color:var(--text-primary);background:var(--surface-2);border:1px solid var(--divider);border-radius:10px;padding:9px 16px;cursor:pointer}
+.select-btn:active{opacity:.8}
+input[type=file]{display:none}
+
+.preview-panel{margin-top:4px}
+.preview-img-wrap{width:100%;border-radius:16px;overflow:hidden;background:var(--surface-1);border:1px solid var(--divider);margin-bottom:14px}
+.preview-img-wrap img{width:100%;display:block}
+.action-row{display:flex;gap:8px;margin-bottom:26px}
+.primary-btn{flex:1;font-family:var(--mono);font-size:14px;font-weight:700;color:#04181c;background:var(--cyan);border:none;border-radius:14px;padding:14px;cursor:pointer;text-align:center}
+.primary-btn:active{opacity:.85}
+.primary-btn.disabled{opacity:.4;pointer-events:none}
+.secondary-btn{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--text-secondary);background:var(--surface-1);border:1px solid var(--divider);border-radius:14px;padding:14px 16px;cursor:pointer}
+.secondary-btn:active{opacity:.8}
+
+.section-title{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;color:var(--text-muted);text-transform:uppercase;margin-bottom:10px}
+.region-list{display:flex;flex-direction:column;gap:8px}
+.region-row{display:flex;align-items:center;justify-content:space-between;background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:12px 14px}
+.region-row-label{font-size:14px;font-weight:600}
+.region-row-status{font-family:var(--mono);font-size:11.5px}
+.region-row-status.done{color:var(--green)}
+.region-row-status.todo{color:var(--text-muted)}
+
+/* ===== 영역지정 전체화면 편집기 =====
+   화면 가로 폭에 이미지를 맞추고(폭=100%, 높이는 비율대로), 세로로 남는
+   부분은 세로 드래그로 직접 이동(pan)한다 — 라벨을 고르지 않은 채 드래그하면
+   pan, 라벨을 고른 채 드래그하면 그 자리에 사각형을 그린다. 네이티브 스크롤
+   대신 이렇게 손으로 다 구현하는 이유는 dev/upload/index.html의 정답 영역
+   지정(hotspotStage)이 이미 같은 문제(터치 스크롤과 드래그로 그리기가
+   같은 제스처를 두고 충돌)를 커스텀 pan/zoom으로 풀어둔 전례를 그대로
+   따른 것 — 여긴 확대/축소가 필요 없어 pan만 있는 더 단순한 버전이다. */
+.evn-fullscreen{position:fixed;inset:0;z-index:500;background:#050607;display:flex;flex-direction:column}
+.evn-fullscreen.hidden{display:none}
+.evn-topbar{display:flex;align-items:center;gap:10px;padding:calc(14px + env(safe-area-inset-top,0)) 16px 12px;border-bottom:1px solid var(--divider);flex-shrink:0}
+.evn-close-btn{width:32px;height:32px;border-radius:50%;background:var(--surface-1);border:1px solid var(--divider);color:var(--text-primary);font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.evn-close-btn:active{opacity:.8}
+.evn-topbar-title{flex:1;font-size:15px;font-weight:700}
+.evn-confirm-btn{font-family:var(--mono);font-size:12.5px;font-weight:700;color:#04181c;background:var(--cyan);border:none;border-radius:10px;padding:9px 14px;cursor:pointer;flex-shrink:0}
+.evn-confirm-btn:active{opacity:.85}
+
+.evn-badges{display:flex;gap:8px;overflow-x:auto;padding:12px 16px;border-bottom:1px solid var(--divider);flex-shrink:0}
+.evn-badge{font-family:var(--sans);font-size:13px;font-weight:600;white-space:nowrap;color:var(--text-secondary);background:var(--surface-1);border:1px solid var(--divider);border-radius:20px;padding:9px 14px;cursor:pointer;display:flex;align-items:center;gap:5px;flex-shrink:0}
+.evn-badge.done::before{content:'✓';color:var(--green);font-weight:700}
+.evn-badge.active{color:#04181c;background:var(--amber);border-color:var(--amber)}
+.evn-badge.active.done::before{color:#04181c}
+
+.evn-hint{padding:8px 16px;font-size:12.5px;color:var(--text-muted);line-height:1.5;flex-shrink:0}
+
+.evn-stage{position:relative;flex:1;overflow:hidden;touch-action:none;background:#020304}
+.evn-canvas{position:absolute;left:0;top:0;width:100%}
+.evn-canvas img{width:100%;display:block;pointer-events:none;user-select:none}
+.evn-region-box{position:absolute;border:2px solid var(--amber);background:rgba(214,168,75,.16);border-radius:4px;pointer-events:none;display:flex;align-items:flex-start;justify-content:flex-start}
+.evn-region-box.draft{border-color:var(--cyan);background:rgba(89,184,200,.18)}
+.evn-region-box-label{font-family:var(--mono);font-size:10.5px;font-weight:700;color:#050607;background:var(--amber);padding:2px 5px;border-radius:0 0 4px 0}
+.evn-region-box.draft .evn-region-box-label{background:var(--cyan)}
+
+.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="frame" id="frame">
+  <a class="back" id="backBtn" href="/dev/data/">‹ 데이터 설정</a>
+  <div class="tag">Operation MK</div>
+  <div class="title">증거수첩</div>
+  <div class="sub">증거 제시/증거확인 화면에 쓰일 증거수첩 이미지를 올리고, 그 위 어느 자리에 어떤 증거 데이터(코드·제목·사진·설명·발견 위치)가 들어갈지 네모 영역으로 지정합니다.</div>
+
+  <div class="dropzone" id="dropzone">
+    <div class="dropzone-icon">📓</div>
+    <div class="dropzone-text">증거수첩 이미지 올리기</div>
+    <button type="button" class="select-btn" id="selectBtn">이미지 선택</button>
+    <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp">
+  </div>
+
+  <div class="preview-panel hidden" id="previewPanel">
+    <div class="preview-img-wrap"><img id="previewImg" alt="증거수첩"></div>
+    <div class="action-row">
+      <button type="button" class="primary-btn" id="areaSelectBtn">영역지정</button>
+      <button type="button" class="secondary-btn" id="changeImageBtn">이미지 교체</button>
+    </div>
+    <div class="section-title">데이터 라벨별 지정 현황</div>
+    <div class="region-list" id="regionList"></div>
+  </div>
+</div>
+
+<div class="evn-fullscreen hidden" id="evnFullscreen">
+  <div class="evn-topbar">
+    <button type="button" class="evn-close-btn" id="evnCloseBtn">✕</button>
+    <div class="evn-topbar-title">영역지정</div>
+    <button type="button" class="evn-confirm-btn" id="evnConfirmBtn">확정</button>
+  </div>
+  <div class="evn-badges" id="evnBadges"></div>
+  <div class="evn-hint" id="evnHint"></div>
+  <div class="evn-stage" id="evnStage">
+    <div class="evn-canvas" id="evnCanvas">
+      <img id="evnImg" alt="증거수첩">
+      <div id="evnRegionBoxes"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
+}
+</script>
+<script src="/dev/assetDb.js"></script>
+<script>
+/* =========================================================================
+   증거수첩 데이터 설정 — dev/data/index.html에서 들어오는 별도 페이지
+   (dev/upload/case-entries/index.html과 같은 이유: 이미지 업로드/드래그
+   영역지정이라는 이 화면만의 상태머신이 dev/upload/index.html의 기존
+   selectType 탭 구조와 모양이 전혀 달라 거기 끼워넣지 않았다).
+
+   저장 데이터 (AssetDB.getEvidenceNotebookConfig/setEvidenceNotebookConfig):
+     { imageAssetId, regions: { [labelId]: {x,y,w,h} } }
+   x/y/w/h는 이미지 원본 크기 대비 0~1 비율 — "영역지정" 편집기가 항상
+   이미지를 화면 폭에 맞춰(가로=100%) 그리므로, 가로 비율 스케일이 곧 세로
+   비율 스케일과 같아 어느 화면 크기에서 다시 그려도 같은 비율로 맞는다.
+   ========================================================================= */
+
+const EVIDENCE_NOTEBOOK_LABELS = [
+  { id: 'code', label: '코드' },
+  { id: 'title', label: '제목' },
+  { id: 'photo', label: '사진' },
+  { id: 'description', label: '설명' },
+  { id: 'discoveredLocationText', label: '발견 위치' },
+];
+
+let notebookConfig = { imageAssetId: null, regions: {} };
+let notebookImageUrl = null;
+let draftRegions = {}; // 편집기 안에서만 쓰는 임시 상태 — 확정을 눌러야 저장됨
+let selectedLabelId = null;
+
+const el = {
+  dropzone: document.getElementById('dropzone'),
+  selectBtn: document.getElementById('selectBtn'),
+  fileInput: document.getElementById('fileInput'),
+  previewPanel: document.getElementById('previewPanel'),
+  previewImg: document.getElementById('previewImg'),
+  areaSelectBtn: document.getElementById('areaSelectBtn'),
+  changeImageBtn: document.getElementById('changeImageBtn'),
+  regionList: document.getElementById('regionList'),
+  evnFullscreen: document.getElementById('evnFullscreen'),
+  evnCloseBtn: document.getElementById('evnCloseBtn'),
+  evnConfirmBtn: document.getElementById('evnConfirmBtn'),
+  evnBadges: document.getElementById('evnBadges'),
+  evnHint: document.getElementById('evnHint'),
+  evnStage: document.getElementById('evnStage'),
+  evnCanvas: document.getElementById('evnCanvas'),
+  evnImg: document.getElementById('evnImg'),
+  evnRegionBoxes: document.getElementById('evnRegionBoxes'),
+};
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function renderMainView() {
+  const hasImage = !!notebookImageUrl;
+  el.dropzone.classList.toggle('hidden', hasImage);
+  el.previewPanel.classList.toggle('hidden', !hasImage);
+  if (hasImage) el.previewImg.src = notebookImageUrl;
+  renderRegionList();
+}
+
+function renderRegionList() {
+  el.regionList.innerHTML = EVIDENCE_NOTEBOOK_LABELS.map(l => {
+    const done = !!notebookConfig.regions[l.id];
+    return `
+      <div class="region-row">
+        <div class="region-row-label">${escapeHtml(l.label)}</div>
+        <div class="region-row-status ${done ? 'done' : 'todo'}">${done ? '지정됨' : '미지정'}</div>
+      </div>`;
+  }).join('');
+}
+
+el.selectBtn.addEventListener('click', () => el.fileInput.click());
+el.dropzone.addEventListener('click', () => el.fileInput.click());
+el.changeImageBtn.addEventListener('click', () => el.fileInput.click());
+['dragover', 'drop'].forEach(evt => el.dropzone.addEventListener(evt, (e) => e.preventDefault()));
+el.dropzone.addEventListener('drop', (e) => {
+  const file = e.dataTransfer.files && e.dataTransfer.files[0];
+  if (file) handleFileUpload(file);
+});
+el.fileInput.addEventListener('change', () => {
+  const file = el.fileInput.files[0];
+  el.fileInput.value = '';
+  if (file) handleFileUpload(file);
+});
+
+async function handleFileUpload(file) {
+  const asset = await AssetDB.addAsset({ type: 'evidence-notebook', name: file.name, blob: file });
+  notebookConfig = await AssetDB.setEvidenceNotebookConfig({ imageAssetId: asset.id });
+  notebookImageUrl = asset.dataUrl;
+  renderMainView();
+}
+
+/* ===== 영역지정 전체화면 편집기 ===== */
+let evnNaturalW = 0, evnNaturalH = 0;
+let evnScale = 1, evnRenderedH = 0;
+let evnPanY = 0;
+let evnPointerId = null;
+let evnMode = null; // 'pan' | 'draw'
+let evnPanStart = null; // { clientY, startPanY }
+let evnDrawStart = null; // { canvasX, canvasY }
+let evnDraftBox = null; // 그리는 중인 사각형 (캔버스 px 기준)
+
+el.areaSelectBtn.addEventListener('click', openAreaEditor);
+el.evnCloseBtn.addEventListener('click', closeAreaEditor);
+el.evnConfirmBtn.addEventListener('click', confirmAreaEditor);
+
+function openAreaEditor() {
+  if (!notebookImageUrl) return;
+  draftRegions = Object.assign({}, notebookConfig.regions);
+  selectedLabelId = null;
+  evnPanY = 0;
+  el.evnImg.src = notebookImageUrl;
+  el.evnFullscreen.classList.remove('hidden');
+  renderEvnBadges();
+  updateEvnHint();
+  const onLoad = () => {
+    evnNaturalW = el.evnImg.naturalWidth;
+    evnNaturalH = el.evnImg.naturalHeight;
+    fitEvnStage();
+    renderEvnRegionBoxes();
+  };
+  if (el.evnImg.complete && el.evnImg.naturalWidth) onLoad();
+  else el.evnImg.onload = onLoad;
+}
+
+function closeAreaEditor() {
+  el.evnFullscreen.classList.add('hidden');
+}
+
+async function confirmAreaEditor() {
+  notebookConfig = await AssetDB.setEvidenceNotebookConfig({ regions: draftRegions });
+  closeAreaEditor();
+  renderRegionList();
+}
+
+function fitEvnStage() {
+  const stageW = el.evnStage.clientWidth;
+  evnScale = stageW / evnNaturalW;
+  evnRenderedH = evnNaturalH * evnScale;
+  el.evnCanvas.style.height = evnRenderedH + 'px';
+  clampEvnPanY();
+  applyEvnPan();
+}
+window.addEventListener('resize', () => { if (evnNaturalW) fitEvnStage(); });
+
+function minEvnPanY() {
+  const stageH = el.evnStage.clientHeight;
+  return Math.min(0, stageH - evnRenderedH);
+}
+function clampEvnPanY() {
+  evnPanY = Math.min(0, Math.max(evnPanY, minEvnPanY()));
+}
+function applyEvnPan() {
+  el.evnCanvas.style.transform = `translateY(${evnPanY}px)`;
+}
+
+function renderEvnBadges() {
+  el.evnBadges.innerHTML = EVIDENCE_NOTEBOOK_LABELS.map(l => {
+    const done = !!draftRegions[l.id];
+    const active = selectedLabelId === l.id;
+    return `<button type="button" class="evn-badge${done ? ' done' : ''}${active ? ' active' : ''}" data-label="${l.id}">${escapeHtml(l.label)}</button>`;
+  }).join('');
+  el.evnBadges.querySelectorAll('.evn-badge').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedLabelId = selectedLabelId === btn.dataset.label ? null : btn.dataset.label;
+      renderEvnBadges();
+      updateEvnHint();
+    });
+  });
+}
+
+function updateEvnHint() {
+  el.evnHint.textContent = selectedLabelId
+    ? '이미지를 드래그해서 이 라벨이 들어갈 자리를 사각형으로 그려주세요.'
+    : '위 배지를 눌러 지정할 데이터를 고르세요. 배지를 고르지 않은 채 드래그하면 화면이 위아래로 움직여요.';
+}
+
+function labelText(id) {
+  const l = EVIDENCE_NOTEBOOK_LABELS.find(x => x.id === id);
+  return l ? l.label : id;
+}
+
+function renderEvnRegionBoxes() {
+  el.evnRegionBoxes.innerHTML = Object.keys(draftRegions).map(id => {
+    const r = draftRegions[id];
+    const isCurrent = id === selectedLabelId;
+    return `<div class="evn-region-box${isCurrent ? ' draft' : ''}" style="left:${r.x * 100}%;top:${r.y * 100}%;width:${r.w * 100}%;height:${r.h * 100}%">
+      <span class="evn-region-box-label">${escapeHtml(labelText(id))}</span>
+    </div>`;
+  }).join('');
+}
+
+function evnStageToCanvas(clientX, clientY) {
+  const rect = el.evnStage.getBoundingClientRect();
+  return { canvasX: clientX - rect.left, canvasY: clientY - rect.top - evnPanY };
+}
+
+el.evnStage.addEventListener('pointerdown', (e) => {
+  if (!evnNaturalW || evnPointerId !== null) return;
+  evnPointerId = e.pointerId;
+  el.evnStage.setPointerCapture(e.pointerId);
+  if (selectedLabelId) {
+    evnMode = 'draw';
+    evnDrawStart = evnStageToCanvas(e.clientX, e.clientY);
+    evnDraftBox = { x: evnDrawStart.canvasX, y: evnDrawStart.canvasY, w: 0, h: 0 };
+  } else {
+    evnMode = 'pan';
+    evnPanStart = { clientY: e.clientY, startPanY: evnPanY };
+  }
+});
+el.evnStage.addEventListener('pointermove', (e) => {
+  if (e.pointerId !== evnPointerId) return;
+  if (evnMode === 'pan') {
+    evnPanY = evnPanStart.startPanY + (e.clientY - evnPanStart.clientY);
+    clampEvnPanY();
+    applyEvnPan();
+  } else if (evnMode === 'draw') {
+    const cur = evnStageToCanvas(e.clientX, e.clientY);
+    const x0 = Math.min(evnDrawStart.canvasX, cur.canvasX), x1 = Math.max(evnDrawStart.canvasX, cur.canvasX);
+    const y0 = Math.min(evnDrawStart.canvasY, cur.canvasY), y1 = Math.max(evnDrawStart.canvasY, cur.canvasY);
+    evnDraftBox = { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+    renderEvnDraftBoxLive();
+  }
+});
+['pointerup', 'pointercancel'].forEach(evt => el.evnStage.addEventListener(evt, (e) => {
+  if (e.pointerId !== evnPointerId) return;
+  if (evnMode === 'draw' && evnDraftBox && evnDraftBox.w > 8 && evnDraftBox.h > 8) {
+    const stageW = el.evnStage.clientWidth;
+    draftRegions[selectedLabelId] = {
+      x: clamp01(evnDraftBox.x / stageW),
+      y: clamp01(evnDraftBox.y / evnRenderedH),
+      w: clamp01(evnDraftBox.w / stageW),
+      h: clamp01(evnDraftBox.h / evnRenderedH),
+    };
+    renderEvnBadges();
+    renderEvnRegionBoxes();
+  }
+  evnPointerId = null;
+  evnMode = null;
+  evnPanStart = null;
+  evnDrawStart = null;
+  evnDraftBox = null;
+}));
+
+function clamp01(v) { return Math.min(Math.max(v, 0), 1); }
+
+function renderEvnDraftBoxLive() {
+  // 그리는 중인 사각형은 확정된 라벨 목록과 별개로 즉시 미리보기만 그린다 —
+  // pointerup에서 draftRegions에 반영되면 renderEvnRegionBoxes가 이어받는다.
+  const existing = document.getElementById('evnLiveBox');
+  const box = existing || document.createElement('div');
+  box.id = 'evnLiveBox';
+  box.className = 'evn-region-box draft';
+  box.style.left = evnDraftBox.x + 'px';
+  box.style.top = evnDraftBox.y + 'px';
+  box.style.width = evnDraftBox.w + 'px';
+  box.style.height = evnDraftBox.h + 'px';
+  box.innerHTML = `<span class="evn-region-box-label">${escapeHtml(labelText(selectedLabelId))}</span>`;
+  if (!existing) el.evnRegionBoxes.appendChild(box);
+}
+// 드래그가 끝나면(pointerup) renderEvnRegionBoxes가 evnRegionBoxes를 통째로
+// 다시 그리며 evnLiveBox도 함께 지워진다.
+
+async function init() {
+  notebookConfig = await AssetDB.getEvidenceNotebookConfig().catch(() => notebookConfig);
+  if (notebookConfig.imageAssetId) {
+    const asset = await AssetDB.getAsset(notebookConfig.imageAssetId).catch(() => null);
+    notebookImageUrl = asset ? asset.dataUrl : null;
+  }
+  renderMainView();
+}
+init();
+</script>
+<script src="/dev/devPlanFab.js"></script>
+</body>
+</html>
