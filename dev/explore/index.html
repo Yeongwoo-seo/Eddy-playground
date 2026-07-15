@@ -223,7 +223,6 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
    setupMoveMapSheetDrag) 이 클래스가 붙어 있는 동안은 위 트랜지션을
    덮어쓴다 — 드래그가 끝나면(스냅백/닫기 모두) 다시 뗀다. */
 #moveMapSheet .sheet.dragging{transition:none}
-.sheet-drag-handle{width:36px;height:4px;border-radius:2px;background:rgba(255,255,255,.22);margin:-8px auto 14px}
 
 /* ===== 이동하기 지도 — phaseMaps(dev/data/locationDefs.js)가 정의된 phase는
    exit 목록을 리스트 대신 지도 그림 위 원형 핀으로 보여준다(openMoveMapSheet).
@@ -347,7 +346,6 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 
 <div class="sheet-overlay hidden" id="moveMapSheet">
   <div class="sheet" id="moveMapSheetBody" style="max-height:88vh">
-    <div class="sheet-drag-handle"></div>
     <div class="sheet-title">이동하기</div>
     <div class="move-map-wrap" id="moveMapWrap">
       <div class="move-map-pins" id="moveMapPins"></div>
