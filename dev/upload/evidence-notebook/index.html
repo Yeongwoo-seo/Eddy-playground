@@ -34,7 +34,13 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .dropzone-text{font-family:var(--mono);font-size:12px;color:var(--text-muted);letter-spacing:.06em}
 .select-btn{font-family:var(--mono);font-size:12.5px;font-weight:700;color:var(--text-primary);background:var(--surface-2);border:1px solid var(--divider);border-radius:10px;padding:9px 16px;cursor:pointer}
 .select-btn:active{opacity:.8}
-input[type=file]{display:none}
+/* display:none would keep the input out of the layout tree entirely — some
+   mobile WebKit builds (iOS Safari) silently refuse to open the native file
+   picker for a file input in that state, even from a synchronous click
+   handler (dev/minigame-fishing/index.html의 같은 버그 리포트/수정 참고).
+   minigame-watermelon의 .fruit-input-hidden과 같은 "보이지 않지만 렌더링은
+   되는" 스타일로 우회한다. */
+input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;overflow:hidden}
 .dropzone.busy{opacity:.6;pointer-events:none}
 
 .upload-status{margin-top:14px;padding:12px 14px;border-radius:12px;font-size:12.5px;line-height:1.5}
@@ -143,23 +149,6 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
 }
 </script>
-<script>
-// Client-side AI background removal (WASM) — dev/upload/index.html의
-// autoRegisterCharacterPhoto와 같은 모듈/로딩 방식(§675-691 참고). 증거수첩
-// 이미지를 올리는 즉시 자동으로 배경을 제거해 저장한다. 모듈 로드나 처리
-// 자체가 실패해도 업로드를 막지 않고 원본 이미지 그대로 계속 진행한다
-// (removeBackgroundOrFallback 참고).
-window.__removeBackgroundReady = import('https://cdn.jsdelivr.net/npm/@imgly/background-removal/+esm')
-  .then(mod => {
-    if (typeof mod.removeBackground !== 'function') {
-      throw new Error('모듈은 로드됐지만 removeBackground 함수를 찾지 못함 (exports: ' + Object.keys(mod).join(', ') + ')');
-    }
-    window.__removeBackground = mod.removeBackground;
-  })
-  .catch(err => {
-    window.__removeBackgroundLoadError = err;
-  });
-</script>
 <script src="/dev/assetDb.js"></script>
 <script>
 /* =========================================================================
@@ -258,28 +247,15 @@ function setUploadStatus(text, kind) {
   el.uploadStatus.classList.add(kind);
 }
 
-// 배경 제거 모듈(dev/upload/index.html의 autoRegisterCharacterPhoto와 같은
-// @imgly/background-removal, 위 상단 스크립트에서 로드) 로딩/처리 자체가
-// 실패해도 원본 파일 그대로 반환해 업로드가 막히지 않게 한다.
-async function removeBackgroundOrFallback(file) {
-  setUploadStatus('배경 제거 모듈 확인 중...', 'busy');
-  await window.__removeBackgroundReady;
-  if (!window.__removeBackground) return file;
-  setUploadStatus('자동 처리 중: 배경 제거...', 'busy');
-  try {
-    return await window.__removeBackground(file);
-  } catch (err) {
-    return file;
-  }
-}
-
+// 증거수첩 배경은 배경 DB/장소 DB 사진처럼 화면 전체를 채우는 그림이라
+// 컷아웃 대상이 아니다 — 인물/아이템/증거품 사진과 달리 자동 배경 제거를
+// 적용하지 않는다.
 async function handleFileUpload(file) {
   el.dropzone.classList.add('busy');
   el.changeImageBtn.disabled = true;
   try {
-    const blob = await removeBackgroundOrFallback(file);
     setUploadStatus('업로드 중...', 'busy');
-    const asset = await AssetDB.addAsset({ type: 'evidence-notebook', name: file.name, blob });
+    const asset = await AssetDB.addAsset({ type: 'evidence-notebook', name: file.name, blob: file });
     notebookConfig = await AssetDB.setEvidenceNotebookConfig({ imageAssetId: asset.id });
     notebookImageUrl = asset.dataUrl;
     setUploadStatus('', null);

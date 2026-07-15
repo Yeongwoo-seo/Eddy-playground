@@ -305,6 +305,22 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
 }
 </script>
+<script>
+// Client-side AI background removal (WASM) — dev/upload/index.html의
+// autoRegisterCharacterPhoto와 같은 모듈/로딩 방식. 캐스팅/올리기 프레임과
+// 물고기 아이콘을 올리는 즉시 자동으로 배경을 제거한다(removeBackgroundOrFallback
+// 참고) — 모듈 로드/처리 자체가 실패해도 원본 그대로 계속 진행한다.
+window.__removeBackgroundReady = import('https://cdn.jsdelivr.net/npm/@imgly/background-removal/+esm')
+  .then(mod => {
+    if (typeof mod.removeBackground !== 'function') {
+      throw new Error('모듈은 로드됐지만 removeBackground 함수를 찾지 못함 (exports: ' + Object.keys(mod).join(', ') + ')');
+    }
+    window.__removeBackground = mod.removeBackground;
+  })
+  .catch(err => {
+    window.__removeBackgroundLoadError = err;
+  });
+</script>
 <script src="/dev/assetDb.js"></script>
 <script src="/dev/data/fishDefs.js"></script>
 <script>
@@ -520,8 +536,31 @@ function startPreviewLoop(previewEl, labelEl, frames) {
   animTimer = setInterval(tick, 120);
 }
 
+// saveNote는 평소엔 "저장됐어요" 고정 텍스트라 배경 제거 진행 상태를 잠깐
+// 빌려 쓴 뒤 반드시 원래 텍스트로 되돌려놓는다 — showSaveNote 자체는
+// 텍스트를 건드리지 않고 보이기/사라지기 클래스만 토글하기 때문.
+const SAVE_NOTE_DEFAULT_TEXT = el.saveNote.textContent;
+async function removeBackgroundOrFallback(file) {
+  el.saveNote.textContent = '배경 제거 모듈 확인 중...';
+  el.saveNote.classList.add('show');
+  await window.__removeBackgroundReady;
+  if (!window.__removeBackground) {
+    el.saveNote.textContent = SAVE_NOTE_DEFAULT_TEXT;
+    return file;
+  }
+  el.saveNote.textContent = '자동 처리 중: 배경 제거...';
+  try {
+    return await window.__removeBackground(file);
+  } catch (err) {
+    return file;
+  } finally {
+    el.saveNote.textContent = SAVE_NOTE_DEFAULT_TEXT;
+  }
+}
+
 async function uploadFrame(file, key) {
-  const asset = await AssetDB.addAsset({ type: 'fishing-motion-frame', name: file.name, blob: file });
+  const blob = await removeBackgroundOrFallback(file);
+  const asset = await AssetDB.addAsset({ type: 'fishing-motion-frame', name: file.name, blob });
   const list = (fishingConfig[key] || []).concat(asset.id);
   fishingConfig = await AssetDB.setFishingConfig({ [key]: list });
   showSaveNote();
@@ -650,7 +689,9 @@ el.fishIconFileInput.addEventListener('change', () => {
   // local blob: URL of the picked file (same-origin, so the crop canvas
   // below never risks a cross-origin "tainted canvas" export failure). Both
   // the source photo and the cropped result only reach AssetDB once the dev
-  // hits 적용 (see cropConfirmBtn below).
+  // hits 적용 (see cropConfirmBtn below, which also runs removeBackgroundOrFallback
+  // on the cropped result — the source photo stays untouched so re-adjusting
+  // the crop later still has the full original to work from).
   openCropAdjuster(URL.createObjectURL(file), null, file);
 });
 function openFishIconCropAdjuster() {
@@ -777,6 +818,7 @@ el.cropCancelBtn.addEventListener('click', closeCropAdjuster);
 el.cropConfirmBtn.addEventListener('click', async () => {
   if (!cropSourceImg) return;
   el.cropConfirmBtn.disabled = true;
+  const cropConfirmDefaultText = el.cropConfirmBtn.textContent;
   try {
     const shortSide = Math.min(cropSourceImg.naturalWidth, cropSourceImg.naturalHeight);
     const rectSize = cropRect.size * shortSide;
@@ -787,7 +829,12 @@ el.cropConfirmBtn.addEventListener('click', async () => {
     canvas.width = EXPORT_SIZE;
     canvas.height = EXPORT_SIZE;
     canvas.getContext('2d').drawImage(cropSourceImg, srcX, srcY, rectSize, rectSize, 0, 0, EXPORT_SIZE, EXPORT_SIZE);
-    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    let blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    // 최종 아이콘(잘라낸 결과)에만 배경 제거를 적용 — 원본 소스 사진은 나중에
+    // 다시 크롭 위치를 조정할 때 온전한 전체 사진이 필요하므로 그대로 둔다.
+    el.cropConfirmBtn.textContent = '배경 제거 중...';
+    blob = await removeBackgroundOrFallback(blob);
+    el.cropConfirmBtn.textContent = cropConfirmDefaultText;
     const croppedAsset = await AssetDB.addAsset({ type: 'fishing-fish-icon', name: 'fish-icon.png', blob });
     const patch = { fishIconAssetId: croppedAsset.id, fishIconCropRect: cropRect };
     if (cropPendingSourceFile) {
@@ -800,6 +847,7 @@ el.cropConfirmBtn.addEventListener('click', async () => {
     renderFishIconSlot();
   } finally {
     el.cropConfirmBtn.disabled = false;
+    el.cropConfirmBtn.textContent = cropConfirmDefaultText;
   }
 });
 el.barColorInput.addEventListener('input', saveBarDesign);

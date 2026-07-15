@@ -228,6 +228,15 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
    their own elements at equal specificity, so this only needs to come last
    to win the cascade for everything that didn't have its own rule. */
 .hidden{display:none}
+
+/* display:none would keep a file input out of the layout tree entirely —
+   some mobile WebKit builds (iOS Safari) silently refuse to open the native
+   file picker for a file input in that state, even from a synchronous click
+   handler (dev/minigame-fishing/index.html의 같은 버그 리포트/수정 참고).
+   minigame-watermelon의 .fruit-input-hidden과 같은 "보이지 않지만 렌더링은
+   되는" 스타일로 우회한다 — 아래 각 file input의 인라인 display:none을 이
+   규칙으로 대체. */
+input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;overflow:hidden}
 </style>
 </head>
 <body>
@@ -388,7 +397,7 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
     <div class="dropzone-icon">🖼️</div>
     <div class="dropzone-text">DROP IMAGE HERE</div>
     <button class="select-btn" id="selectBtn">SELECT IMAGE</button>
-    <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp" style="display:none">
+    <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp">
   </div>
   <div class="hint" id="typeHint">.jpg · .jpeg · .png · .webp</div>
 
@@ -482,7 +491,7 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
       <div class="item-image-row">
         <div class="item-image-preview" id="itemImagePreview"></div>
         <button class="select-btn" id="itemImageBtn">이미지 업로드</button>
-        <input type="file" id="itemImageInput" style="display:none" accept="image/jpeg,image/png,image/webp">
+        <input type="file" id="itemImageInput" accept="image/jpeg,image/png,image/webp">
       </div>
       <div id="itemHotspotRow">
         <div class="field-label">발견 위치 — 씬</div>
@@ -595,7 +604,7 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
     <div class="picker-pills" id="evidenceCategoryPills" style="margin-bottom:14px"></div>
     <div class="hint" id="evidenceCountHint" style="margin:0 0 14px"></div>
     <div id="evidenceList"></div>
-    <input type="file" id="evidencePhotoInput" style="display:none" accept="image/jpeg,image/png,image/webp">
+    <input type="file" id="evidencePhotoInput" accept="image/jpeg,image/png,image/webp">
   </div>
 
   <div class="section-title" id="listTitle">Uploaded Backgrounds</div>
@@ -2308,19 +2317,24 @@ let lastCropSettingsByType = {}; // { [imageEditorTarget]: { zoom, fracX, fracY 
 
 function clamp(v, min, max) { return Math.min(Math.max(v, min), max); }
 
+// 미니게임 얼굴/아이템/증거 사진은 인물 DB(autoRegisterCharacterPhoto)처럼
+// 크롭까지 자동으로 끝내지는 않지만(칸마다 잘라야 할 위치가 다 달라 크롭은
+// 여전히 사람이 봐야 함), 배경 제거만큼은 여기서도 클릭 없이 자동으로
+// 실행한다 — runBackgroundRemoval이 끝나기 전엔 "다음: 자르기"를 숨겨,
+// 자르기 미리보기가 배경 제거 전 원본으로 열렸다가 저장 시점엔 이미
+// 바뀐 workingBlob으로 저장되는 불일치를 막는다.
 function openCharEditor(file, url, img) {
   workingBlob = file;
   workingImgNatural = { width: img.naturalWidth, height: img.naturalHeight };
   sourceFileBaseName = file.name.replace(/\.[^.]+$/, '');
   el.editorImg.src = url;
-  el.bgRemoveBtn.disabled = false;
-  el.bgRemoveBtn.textContent = '배경 제거 (누끼)';
   el.bgRemoveBtn.classList.remove('done');
   el.cropEditor.classList.add('hidden');
   el.charEditorPanel.classList.remove('hidden');
-  el.cropEnterBtn.style.display = '';
   el.cropEnterBtn.textContent = CROP_ENTER_LABELS[imageEditorTarget];
+  el.cropEnterBtn.style.display = 'none';
   if (imageEditorTarget === 'item') el.charEditorPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  runBackgroundRemoval();
 }
 
 // Natural-pixel equivalent of enterCropMode/updateCropBoxFromZoom's box math
@@ -2609,34 +2623,39 @@ async function confirmBatchSave() {
 
 el.batchSaveBtn.addEventListener('click', confirmBatchSave);
 
-el.bgRemoveBtn.addEventListener('click', async () => {
-  // Always give immediate visual feedback that the click registered, before
-  // any async work — otherwise a load/network failure can look like the
-  // button did nothing at all.
+// openCharEditor가 이미지를 열자마자 자동으로 한 번 부르고, bgRemoveBtn
+// 클릭으로도(자동 실행이 실패했거나 다시 돌리고 싶을 때) 같은 함수를 부른다.
+// 끝나면(성공/실패 무관) cropEnterBtn을 다시 보여준다 — openCharEditor가
+// 자동 실행 동안 숨겨둔 것을 여기서 되돌리는 짝.
+async function runBackgroundRemoval() {
+  // Always give immediate visual feedback that this started, before any
+  // async work — otherwise a load/network failure can look like nothing
+  // happened at all (자동 실행이든 수동 클릭이든 동일).
   el.bgRemoveBtn.disabled = true;
   el.bgRemoveBtn.textContent = '모듈 확인 중...';
-  await window.__removeBackgroundReady;
-  if (!window.__removeBackground) {
-    const reason = window.__removeBackgroundLoadError;
-    DevDiag.show('배경 제거 모듈 로드 실패: ' + (reason && reason.message ? reason.message : '네트워크 또는 CDN 문제로 모듈을 불러오지 못했습니다.'));
-    el.bgRemoveBtn.textContent = '배경 제거 (누끼)';
-    el.bgRemoveBtn.disabled = false;
-    return;
-  }
-  el.bgRemoveBtn.textContent = '처리 중... (몇 초 걸릴 수 있어요)';
   try {
+    await window.__removeBackgroundReady;
+    if (!window.__removeBackground) {
+      const reason = window.__removeBackgroundLoadError;
+      DevDiag.show('배경 제거 모듈 로드 실패: ' + (reason && reason.message ? reason.message : '네트워크 또는 CDN 문제로 모듈을 불러오지 못했습니다.') + ' — 원본 이미지로 계속 진행합니다.');
+      el.bgRemoveBtn.textContent = '배경 제거 (누끼)';
+      return;
+    }
+    el.bgRemoveBtn.textContent = '처리 중... (몇 초 걸릴 수 있어요)';
     const resultBlob = await window.__removeBackground(workingBlob);
     workingBlob = resultBlob;
     el.editorImg.src = URL.createObjectURL(resultBlob);
     el.bgRemoveBtn.textContent = '배경 제거 완료 ✓';
     el.bgRemoveBtn.classList.add('done');
   } catch (err) {
-    DevDiag.show('배경 제거 실패: ' + (err && err.message ? err.message : err));
+    DevDiag.show('배경 제거 실패: ' + (err && err.message ? err.message : err) + ' — 원본 이미지로 계속 진행합니다.');
     el.bgRemoveBtn.textContent = '배경 제거 (누끼)';
   } finally {
     el.bgRemoveBtn.disabled = false;
+    el.cropEnterBtn.style.display = '';
   }
-});
+}
+el.bgRemoveBtn.addEventListener('click', runBackgroundRemoval);
 
 function enterCropMode() {
   el.cropImg.src = URL.createObjectURL(workingBlob);
