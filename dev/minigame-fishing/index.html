@@ -377,6 +377,13 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
       <button type="button" class="frame-add-btn hidden" id="zoneImageAddBtn">+ 캐치존 이미지 업로드</button>
       <input type="file" id="zoneImageFileInput" accept="image/*">
     </div>
+    <div class="option-group">
+      <div class="option-label">낚시 추</div>
+      <div class="option-desc">캐스팅할 때 낚싯대 끝에서 날아가는 추(찌 무게추) 그림이에요. 업로드하지 않으면 기본 동그라미로 표시돼요. 업로드하면 배경이 자동으로 제거돼요(누끼).</div>
+      <div class="frame-strip" id="sinkerImageSlot"></div>
+      <button type="button" class="frame-add-btn hidden" id="sinkerImageAddBtn">+ 낚시 추 이미지 업로드</button>
+      <input type="file" id="sinkerImageFileInput" accept="image/*">
+    </div>
     <div class="option-group hidden">
       <div class="option-label">게이지</div>
       <div class="option-desc">현재 화면에는 숨겨져 있어요. 진행도(0%~100%)에 따라 빨강(0%)~연두(70% 이상)로 색이 바뀌는 낚시바 채우기 효과 코드는 남아 있어서, 나중에 다시 켤 수 있어요.</div>
@@ -580,6 +587,9 @@ const el = {
   zoneImageSlot: document.getElementById('zoneImageSlot'),
   zoneImageAddBtn: document.getElementById('zoneImageAddBtn'),
   zoneImageFileInput: document.getElementById('zoneImageFileInput'),
+  sinkerImageSlot: document.getElementById('sinkerImageSlot'),
+  sinkerImageAddBtn: document.getElementById('sinkerImageAddBtn'),
+  sinkerImageFileInput: document.getElementById('sinkerImageFileInput'),
   fbregionFullscreen: document.getElementById('fbregionFullscreen'),
   fbregionCloseBtn: document.getElementById('fbregionCloseBtn'),
   fbregionConfirmBtn: document.getElementById('fbregionConfirmBtn'),
@@ -1224,6 +1234,7 @@ async function saveBarDesign() {
     fishIconCropRect: prev.fishIconCropRect || null,
     barImageAssetId: prev.barImageAssetId || null,
     zoneImageAssetId: prev.zoneImageAssetId || null,
+    sinkerImageAssetId: prev.sinkerImageAssetId || null,
     zoneRegion: prev.zoneRegion || null,
   };
   fishingConfig = await AssetDB.setFishingConfig({ barDesign: design });
@@ -1361,6 +1372,47 @@ el.zoneImageFileInput.addEventListener('change', async () => {
     renderBarPreview();
   } finally {
     el.zoneImageAddBtn.disabled = false;
+  }
+});
+
+// 낚시 추 이미지 — 바/캐치존 이미지와 같은 단일 슬롯 업로드 패턴이지만,
+// 물리적인 소품(추)이라 배경이 남아있으면 캐스팅 중 사각형 배경이 같이
+// 날아가 보인다 — 프레임 업로드(uploadFrame)와 같은 이유로 여기도
+// removeBackgroundOrFallback을 거쳐 항상 배경을 제거한 뒤 저장한다.
+async function renderSinkerImageSlot() {
+  const design = fishingConfig.barDesign || {};
+  el.sinkerImageSlot.innerHTML = '';
+  if (design.sinkerImageAssetId) {
+    el.sinkerImageAddBtn.classList.add('hidden');
+    const asset = await AssetDB.getAsset(design.sinkerImageAssetId).catch(() => null);
+    const slot = document.createElement('div');
+    slot.className = 'frame-slot';
+    slot.innerHTML = `${asset ? `<img src="${asset.dataUrl}" alt="">` : ''}
+      <div class="frame-actions"><button type="button" class="frame-mini-btn danger" data-act="del">✕</button></div>`;
+    slot.querySelector('[data-act=del]').addEventListener('click', async () => {
+      fishingConfig = await AssetDB.setFishingConfig({ barDesign: Object.assign({}, fishingConfig.barDesign, { sinkerImageAssetId: null }) });
+      showSaveNote();
+      renderSinkerImageSlot();
+    });
+    el.sinkerImageSlot.appendChild(slot);
+  } else {
+    el.sinkerImageAddBtn.classList.remove('hidden');
+  }
+}
+el.sinkerImageAddBtn.addEventListener('click', () => el.sinkerImageFileInput.click());
+el.sinkerImageFileInput.addEventListener('change', async () => {
+  const file = el.sinkerImageFileInput.files[0];
+  el.sinkerImageFileInput.value = '';
+  if (!file) return;
+  el.sinkerImageAddBtn.disabled = true;
+  try {
+    const blob = await removeBackgroundOrFallback(file);
+    const asset = await AssetDB.addAsset({ type: 'fishing-sinker-image', name: file.name, blob });
+    fishingConfig = await AssetDB.setFishingConfig({ barDesign: Object.assign({}, fishingConfig.barDesign, { sinkerImageAssetId: asset.id }) });
+    showSaveNote();
+    renderSinkerImageSlot();
+  } finally {
+    el.sinkerImageAddBtn.disabled = false;
   }
 });
 
@@ -1860,6 +1912,7 @@ async function init() {
   renderBackgroundImageSlot();
   renderBarImageSlot();
   renderZoneImageSlot();
+  renderSinkerImageSlot();
   renderCastTab();
   renderFramesTab('reelingFrames', el.reelFrames, el.reelFileInput, el.reelPreview, el.reelPreviewLabel);
   renderFishTab();

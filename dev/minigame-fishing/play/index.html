@@ -68,6 +68,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .cast-svg.hidden{display:none}
 .cast-line{fill:none;stroke:rgba(230,230,220,.9);stroke-width:1.5}
 .cast-sinker{fill:#5a5f66;stroke:rgba(0,0,0,.4);stroke-width:1}
+.cast-sinker-img{display:none}
 
 .catch-hint{position:absolute;left:0;right:0;bottom:calc(18px + env(safe-area-inset-bottom,0));z-index:5;text-align:center;font-family:var(--mono);font-size:11px;color:rgba(255,255,255,.85);text-shadow:0 1px 4px rgba(0,0,0,.5)}
 .catch-hint.hidden{display:none}
@@ -126,6 +127,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
     <svg class="cast-svg hidden" id="castSvg">
       <path class="cast-line" id="castLinePath"></path>
       <circle class="cast-sinker" id="castSinker" r="5"></circle>
+      <image class="cast-sinker-img" id="castSinkerImg" href="" preserveAspectRatio="xMidYMid meet"></image>
     </svg>
 
     <div class="fishbar-panel hidden" id="fishbarPanel">
@@ -228,6 +230,7 @@ const el = {
   castSvg: document.getElementById('castSvg'),
   castLinePath: document.getElementById('castLinePath'),
   castSinker: document.getElementById('castSinker'),
+  castSinkerImg: document.getElementById('castSinkerImg'),
   fishbarPanel: document.getElementById('fishbarPanel'),
   fishbar: document.getElementById('fishbar'),
   fishbarZone: document.getElementById('fishbarZone'),
@@ -251,6 +254,7 @@ let castFrameUrls = [];
 let castFrameDurations = null; // per-frame ms, dev/minigame-fishing/index.html 재생 타임라인에서 설정
 let reelFrameUrls = [];
 let idleFrameUrl = null;
+let sinkerImageUrl = null;
 let fishSheetUrl = null;
 let fishSheetDims = null; // { width, height } of the *actual* loaded sheet — needed to turn a fishIconOverrides rect (normalized 0~1) into pixel background-position/size, see getFishCropStyle in fishDefs.js
 let fishIconOverrides = {};
@@ -298,6 +302,7 @@ async function loadConfig() {
   if (design.fishIconAssetId) ids.push(design.fishIconAssetId);
   if (design.barImageAssetId) ids.push(design.barImageAssetId);
   if (design.zoneImageAssetId) ids.push(design.zoneImageAssetId);
+  if (design.sinkerImageAssetId) ids.push(design.sinkerImageAssetId);
   if (cfg.fishSheetAssetId) ids.push(cfg.fishSheetAssetId);
   if (cfg.castingSheetAssetId) ids.push(cfg.castingSheetAssetId);
   if (cfg.backgroundAssetId) ids.push(cfg.backgroundAssetId);
@@ -376,6 +381,12 @@ async function loadConfig() {
 
   const fishIconAsset = design.fishIconAssetId ? byId.get(design.fishIconAssetId) : null;
   if (fishIconAsset) el.fishbarFish.innerHTML = `<img src="${fishIconAsset.dataUrl}" alt="">`;
+
+  const sinkerImageAsset = design.sinkerImageAssetId ? byId.get(design.sinkerImageAssetId) : null;
+  sinkerImageUrl = sinkerImageAsset ? sinkerImageAsset.dataUrl : null;
+  el.castSinker.style.display = sinkerImageUrl ? 'none' : '';
+  el.castSinkerImg.style.display = sinkerImageUrl ? '' : 'none';
+  if (sinkerImageUrl) el.castSinkerImg.setAttribute('href', sinkerImageUrl);
 
   idleFrameUrl = castFrameUrls[0] || null;
   if (idleFrameUrl) {
@@ -523,9 +534,16 @@ function throwSinker(power) {
 // 두 점 사이 직선거리(D)에 여유(12%)를 준 값(L)으로 정하고, L·dx·dy로부터
 // 현수선 매개변수 a를 이분법으로 구한다(전형적인 "두 점을 지나는 현수선"
 // 문제 — a>0에서 단조 함수라 이분법이 항상 수렴한다).
+const SINKER_IMG_SIZE = 22; // px, css픽셀 = svg viewBox 단위(카메라 좌표계 그대로)
 function renderCastLine(p0, p1) {
   el.castSinker.setAttribute('cx', p1.x);
   el.castSinker.setAttribute('cy', p1.y);
+  if (sinkerImageUrl) {
+    el.castSinkerImg.setAttribute('x', p1.x - SINKER_IMG_SIZE / 2);
+    el.castSinkerImg.setAttribute('y', p1.y - SINKER_IMG_SIZE / 2);
+    el.castSinkerImg.setAttribute('width', SINKER_IMG_SIZE);
+    el.castSinkerImg.setAttribute('height', SINKER_IMG_SIZE);
+  }
   const pts = catenaryPoints(p0, p1);
   el.castLinePath.setAttribute('d', 'M' + pts.map(p => `${p.x},${p.y}`).join(' L'));
 }
