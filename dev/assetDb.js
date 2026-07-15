@@ -1034,6 +1034,48 @@ const AssetDB = (() => {
     return settings;
   }
 
+  // 낚시 미니게임 설정 — 캐스팅/올리기 모션 프레임(각각 순서가 있는 AssetDB
+  // 이미지 id 배열)과 낚시바 디자인(색상·캐치존 크기·물고기 아이콘)을 한
+  // blob에 묶어 저장한다. 난이도·모션타입(물고기 움직임 패턴)처럼 플레이마다
+  // 바뀌는 값은 여기 두지 않고 기존 미니게임들의 관례대로 play 화면 쿼리스트링
+  // (?diff=&motion=)으로 넘긴다 — 여기 저장하는 건 순수 아트/디자인 자산이라
+  // map-pins/youngwoo-test와 같은 단일 JSON blob 패턴을 그대로 쓴다.
+  const fishingConfigCache = new Map(); // single entry keyed 'config'
+  const FISHING_CONFIG_PATH = 'fishing-config/config.json';
+  const FISHING_CONFIG_DEFAULT = { castingFrames: [], reelingFrames: [], barDesign: {} };
+
+  async function getFishingConfig() {
+    if (fishingConfigCache.has('config')) return fishingConfigCache.get('config');
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${FISHING_CONFIG_PATH}?t=${Date.now()}`;
+    try {
+      const cfg = Object.assign({}, FISHING_CONFIG_DEFAULT, (await fetchJsonBlob(url)) || {});
+      fishingConfigCache.set('config', cfg);
+      return cfg;
+    } catch (e) {
+      return fishingConfigCache.get('config') || FISHING_CONFIG_DEFAULT;
+    }
+  }
+
+  async function setFishingConfig(patch) {
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${FISHING_CONFIG_PATH}?t=${Date.now()}`;
+    const current = await readCurrentForWrite(fishingConfigCache, 'config', url, FISHING_CONFIG_DEFAULT);
+    const cfg = Object.assign({}, FISHING_CONFIG_DEFAULT, current, patch);
+    const blob = new Blob([JSON.stringify(cfg)], { type: 'application/json' });
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${DEV_ASSETS_BUCKET}/${FISHING_CONFIG_PATH}`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'x-upsert': 'true',
+      },
+      body: blob,
+    });
+    if (!res.ok) throw new Error(`낚시 설정 저장 실패 (${res.status}): ${await res.text()}`);
+    fishingConfigCache.set('config', cfg);
+    return cfg;
+  }
+
   return {
     addAsset, getAssetsByType, getAsset, getAssetsByIds, deleteAsset, preloadImage,
     getRoomHotspots, setRoomHotspot,
@@ -1050,6 +1092,7 @@ const AssetDB = (() => {
     getEvidencePhotos, setEvidencePhoto,
     getEvidencePromptSettings, setEvidencePromptSettings,
     getGameSettings, setGameSettings, DEFAULT_GAME_SETTINGS,
+    getFishingConfig, setFishingConfig,
   };
 })();
 
