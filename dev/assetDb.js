@@ -1061,7 +1061,17 @@ const AssetDB = (() => {
   // 규격: 196x136px, 10열x7행, 16x16px 칸, 4px 간격) 자산 id. 업로드되면
   // fishDefs.js의 각 물고기 slot 순서 그대로 아이콘이 배정된다.
   // fishIconOverrides — 물고기별 세밀영역조절 보정, { [fishId]: {cx,cy,size} }.
-  const FISHING_CONFIG_DEFAULT = { castingFrames: [], reelingFrames: [], barDesign: {}, fishSheetAssetId: null, fishIconOverrides: {}, castingSheetAssetId: null, castingFrameOverrides: {}, castingFrameDurations: [] };
+  // backgroundAssetId — 플레이 화면 전체 배경 그림 자산 id. 비어있으면
+  // 기본 하늘/바다 그라데이션(dev/minigame-fishing/play/index.html의
+  // .frame 기본 background)이 그대로 쓰인다.
+  // castingFrameRodTips — 캐스팅 프레임별 낚싯대 끝 지점, { [frameIndex]:
+  // {x,y} }(0~1, char-stage 박스 기준 정규화 좌표). 캐스팅 던지기 물리와
+  // 현수선 낚싯줄 렌더링(play/index.html의 rodTipPxForFrame)이 이 값을
+  // 쓴다 — 지정 안 한 프레임은 DEFAULT_ROD_TIP_FRAC으로 폴백.
+  // walkFrames — '이동' 탭의 방향별 걷기 프레임 자산 id 배열, { up, down,
+  // left, right }. 각 방향 배열 순서대로 재생된다(캐스팅/올리기 모션과
+  // 같은 프레임 배열 관례).
+  const FISHING_CONFIG_DEFAULT = { castingFrames: [], reelingFrames: [], barDesign: {}, fishSheetAssetId: null, fishIconOverrides: {}, castingSheetAssetId: null, castingFrameOverrides: {}, castingFrameDurations: [], backgroundAssetId: null, castingFrameRodTips: {}, walkFrames: { up: [], down: [], left: [], right: [] } };
 
   async function getFishingConfig() {
     if (fishingConfigCache.has('config')) return fishingConfigCache.get('config');
