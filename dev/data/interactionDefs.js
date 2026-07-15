@@ -494,6 +494,43 @@ const interactionDefs = {
      완전히 페이지 이동하지 않는다. sceneId가 가리키는 씬(스크립트는 그대로)을
      허브 자신의 하단 패널 안에서 인라인 재생한다 — see dev/explore/index.html
      playSceneInline. */
+  // Phase 진입 시 자동 재생되는 도입 대화 — w1-phase1-intro(위)와 같은
+  // type:'phaseIntro' 패턴. week1-scene-005b(다니엘 최초 진술)의 마지막 줄
+  // 바로 다음 순간이라, 인사/자기소개 없이 곧장 "이제 사진 속 세 사람을
+  // 만나보자"는 정리 대사로 시작한다. Phase 1의 사진놀이 같은 선택지 루프는
+  // 없다 — 관광의 들뜬 톤과 달리 탐문 phase는 차분하게 바로 자유 탐색으로
+  // 넘어가는 편이 맞다.
+  'w1-phase4-intro': {
+    id: 'w1-phase4-intro',
+    type: 'phaseIntro',
+    phases: ['W1_SUSPECT_INTERVIEWS'],
+    lines: [
+      { id: 'line-001', speaker: '', text: '전시장 앞 광장.', characterId: null },
+      { id: 'line-002', speaker: '영우', text: '자, 정리해보자.\n사진에 찍힌 사람이 세 명이었지?', characterId: 'youngwoo', expression: 'serious' },
+      { id: 'line-003', speaker: '지수', text: '네. 윤민아, 애드리언 콜, 레오 박.', characterId: 'jisoo', expression: 'serious' },
+      { id: 'line-004', speaker: '영우', text: '한 명씩 만나서 얘기 들어보자.\n순서는 상관없을 것 같은데.', characterId: 'youngwoo', expression: 'neutral' },
+      { id: 'line-005', speaker: '지수', text: '좋아요.\n누구부터 만날지는 제가 정할게요.', characterId: 'jisoo', expression: 'smirk' },
+    ],
+  },
+  // Phase 4의 "앞쪽 대화" — Phase 1(관광 자유 탐색)이 모든 장소에 가벼운
+  // 잡담용 topic을 깔아둔 것과 같은 목적으로, 탐문 거점에도 심문과 무관한
+  // ungated 플레이버 topic을 하나 둔다. w1-hub-plaza의 visualBrief(위
+  // locationDefs.js)가 이미 "안내판이나 임시 표지판이 하나 정도 추가된"이라고
+  // 적어둔 디테일을 그대로 대사로 옮긴 것 — 새 단서/플래그는 없다(순수 분위기).
+  'w1sh-topic-notice': {
+    id: 'w1sh-topic-notice',
+    characterId: 'youngwoo',
+    locationIds: ['w1-hub-plaza'],
+    phases: ['W1_SUSPECT_INTERVIEWS'],
+    type: 'topic',
+    label: '임시 안내판 읽기',
+    lines: [
+      { speaker: '', text: '전시장 입구 옆, 급하게 붙인 듯한 안내문이 보인다.', characterId: null },
+      { speaker: '', text: '[ 안내 ]\n내부 사정으로 잠시 관계자 외 출입을 제한합니다.\n양해 부탁드립니다.', characterId: null },
+      { speaker: '지수', text: '진짜 뭔가 있긴 있나 보다.', characterId: 'jisoo', expression: 'curious' },
+      { speaker: '영우', text: '그러니까 우리가 물어보러 온 거지.', characterId: 'youngwoo', expression: 'neutral' },
+    ],
+  },
   // "사전 복선" 패턴의 유일한 회수 사례(선택형) — w1bv-topic-van(Phase 1,
   // 하버브리지)에서 심어둔 flag(discoveredBridgeVan)를 여기서 실제 증거로
   // 바꾼다. 다만 검토 답변서 §2.4 방침대로 "필수 증거"가 아니라 순수 보강
@@ -546,6 +583,35 @@ const interactionDefs = {
   // (dev/explore/index.html playSceneInline) — 대화하기가 이미 인라인
   // 전환된 것과 같은 패턴. 씬 데이터/구조 자체는 전혀 손대지 않았고 오직
   // "어디서 재생되는가"만 바뀐 것이라, 씬이 사라지는 게 아니다.
+  // Phase 4 "앞쪽 대화" — 용의자 chip을 눌렀을 때 심문하기(isInterrogation)와
+  // 별개로 뜨는 가벼운 대화하기 topic. 실제 심문 씬(week1Scene006Lines)의
+  // 오프닝("저기, 잠시만요" 등)과 겹치지 않도록, 다가가서 말 걸기 전 멀리서
+  // 지켜보는 관찰 비트로만 구성한다 — Phase 1의 구경하기/관찰하기 topic들과
+  // 같은 톤. 새 단서/플래그는 없다(순수 분위기).
+  'w1suspect-mina-topic-watch': {
+    id: 'w1suspect-mina-topic-watch',
+    characterId: 'minah',
+    locationIds: ['w1-suspect-mina-spot'],
+    phases: ['W1_SUSPECT_INTERVIEWS'],
+    type: 'topic',
+    label: '윤민아 살펴보기',
+    lines: [
+      { speaker: '', text: '더 록스 골목, 벤치 근처에 한 여자가 앉아 있다.', characterId: null },
+      { speaker: '지수', text: '저 사람이 사진에 세 번이나 나온 사람 맞죠?', characterId: 'jisoo', expression: 'curious' },
+      { speaker: '영우', text: '응, 맞아.\n근데 표정이 좀 불편해 보이는데.', characterId: 'youngwoo', expression: 'neutral' },
+      { speaker: '지수', text: '뭔가 찔리는 게 있나?', characterId: 'jisoo', expression: 'suspicious' },
+      { speaker: '영우', text: '일단 가서 물어보자.', characterId: 'youngwoo', expression: 'neutral' },
+    ],
+  },
+  // autoPlayOnFirstVisit (§신규) — 처음 만나는 용의자는 심문하기 버튼을
+  // 누르지 않아도 그 장소에 처음 들어가는 순간 심문 씬이 자동 재생된다
+  // (findAutoInterrogation/performMove, dev/explore/index.html) — phaseIntro가
+  // phase 단위로 "낯선 도입부는 자동 재생"하는 것과 같은 원칙을 장소 단위로
+  // 적용한 것. 재방문(이미 state가 'new'가 아님) 이후엔 대화하기/심문하기
+  // 버튼이 그대로 남아 다시 열어볼 수 있다. Phase 5 재검증의 isInterrogation
+  // 항목들(w1reverify-*)은 이 플래그를 일부러 안 붙인다 — "이미 아는 사람을
+  // 다시 찾아가는" 재검증은 §10.4 방침대로 플레이어가 스스로 타이밍을
+  // 고르는 게 맞다("처음 보는 사람"이 아니므로).
   'w1suspect-mina-interview': {
     id: 'w1suspect-mina-interview',
     characterId: 'minah',
@@ -553,9 +619,27 @@ const interactionDefs = {
     phases: ['W1_SUSPECT_INTERVIEWS'],
     type: 'scene',
     isInterrogation: true,
+    autoPlayOnFirstVisit: true,
     label: '심문하기',
     icon: '🔍',
     sceneId: 'week1-scene-006',
+  },
+  // 위 mina-topic-watch와 같은 목적 — 애드리언의 대화하기 chip에 뜨는 순수
+  // 관찰 비트, week1Scene007Lines의 실제 오프닝과는 겹치지 않는다.
+  'w1suspect-adrian-topic-watch': {
+    id: 'w1suspect-adrian-topic-watch',
+    characterId: 'adrian',
+    locationIds: ['w1-adrian-spot'],
+    phases: ['W1_SUSPECT_INTERVIEWS'],
+    type: 'topic',
+    label: '애드리언 콜 살펴보기',
+    lines: [
+      { speaker: '', text: '보조 진열 구역, 갤러리 관계자로 보이는 남자가 태블릿을 보며 서 있다.', characterId: null },
+      { speaker: '지수', text: '저 사람이 두 번째 목격자죠?', characterId: 'jisoo', expression: 'curious' },
+      { speaker: '영우', text: '응, 여기 기획한 갤러리 쪽 사람이래.', characterId: 'youngwoo', expression: 'neutral' },
+      { speaker: '지수', text: '되게 차분해 보이네요.', characterId: 'jisoo', expression: 'neutral' },
+      { speaker: '영우', text: '협조적일 것 같은데, 가서 물어보자.', characterId: 'youngwoo', expression: 'neutral' },
+    ],
   },
   'w1suspect-adrian-interview': {
     id: 'w1suspect-adrian-interview',
@@ -564,9 +648,27 @@ const interactionDefs = {
     phases: ['W1_SUSPECT_INTERVIEWS'],
     type: 'scene',
     isInterrogation: true,
+    autoPlayOnFirstVisit: true,
     label: '심문하기',
     icon: '🔍',
     sceneId: 'week1-scene-007',
+  },
+  // 위 두 topic과 같은 목적 — 레오의 대화하기 chip에 뜨는 순수 관찰 비트,
+  // week1Scene008Lines의 실제 오프닝과는 겹치지 않는다.
+  'w1suspect-leo-topic-watch': {
+    id: 'w1suspect-leo-topic-watch',
+    characterId: 'leo',
+    locationIds: ['w1-suspect-leo-spot'],
+    phases: ['W1_SUSPECT_INTERVIEWS'],
+    type: 'topic',
+    label: '레오 박 살펴보기',
+    lines: [
+      { speaker: '', text: '접수대 옆 카페, 한 남자가 커피를 앞에 두고 앉아 있다.', characterId: null },
+      { speaker: '지수', text: '저 사람, 사진 속 세 번째 인물이죠?', characterId: 'jisoo', expression: 'curious' },
+      { speaker: '영우', text: '응.\n되게 여유로워 보이네.', characterId: 'youngwoo', expression: 'neutral' },
+      { speaker: '지수', text: '...너무 여유로운 거 아니에요?', characterId: 'jisoo', expression: 'suspicious' },
+      { speaker: '영우', text: '일단 가서 얘기 좀 해보자.', characterId: 'youngwoo', expression: 'neutral' },
+    ],
   },
   'w1suspect-leo-interview': {
     id: 'w1suspect-leo-interview',
@@ -575,6 +677,7 @@ const interactionDefs = {
     phases: ['W1_SUSPECT_INTERVIEWS'],
     type: 'scene',
     isInterrogation: true,
+    autoPlayOnFirstVisit: true,
     label: '심문하기',
     icon: '🔍',
     sceneId: 'week1-scene-008',

@@ -738,6 +738,20 @@ function findPhaseIntro(phaseId) {
   return Object.values(interactionDefs).find(def => def.type === 'phaseIntro' && (def.phases || []).includes(phaseId));
 }
 
+// 처음 만나는 용의자는 심문하기 버튼을 누르지 않아도 그 장소에 들어가는
+// 순간 심문 씬이 자동 재생된다 — phaseIntro와 같은 "낯선 도입부는 자동
+// 재생" 원칙을 phase 단위가 아니라 장소 단위로 적용한 것(§신규,
+// autoPlayOnFirstVisit — see interactionDefs.js의 w1suspect-*-interview 항목
+// 주석). 위치가 여러 phase에 걸쳐 재사용되는 경우(w1-adrian-spot 등)가 있어
+// ExplorationState.isLocationVisited(위치 단위)로는 "이번 phase에서 처음"을
+// 구분할 수 없으므로, phaseIntro와 똑같이 그 interaction 자신의 state로
+// 판별한다 — 한 번 재생되면 completeInteraction으로 'new'를 벗어나 다시는
+// 자동 재생되지 않고, 대화하기/심문하기 버튼으로만 다시 열어볼 수 있다.
+function findAutoInterrogation(locationId, phaseId) {
+  return Object.values(interactionDefs).find(def =>
+    def.autoPlayOnFirstVisit && (def.locationIds || []).includes(locationId) && (def.phases || []).includes(phaseId));
+}
+
 async function performMove(locationId) {
   const def = locationDefs[locationId];
   if (!def) return;
@@ -771,6 +785,14 @@ async function performMove(locationId) {
   const phaseIntro = findPhaseIntro(ExplorationState.getCurrentPhase());
   if (phaseIntro && ExplorationState.getInteractionState(phaseIntro.id) === 'new') {
     playSceneInline(phaseIntro, phaseIntro.id);
+    return;
+  }
+  // 처음 만나는 용의자 자동 심문 (§신규, see findAutoInterrogation 위) —
+  // 심문하기를 직접 눌렀을 때와 같은 경로(playInteraction)로 재생해, 씬
+  // 흐름(completeInteraction 시점 등)이 수동 진입과 완전히 똑같다.
+  const autoInterrogation = findAutoInterrogation(locationId, ExplorationState.getCurrentPhase());
+  if (autoInterrogation && ExplorationState.getInteractionState(autoInterrogation.id) === 'new') {
+    playInteraction(autoInterrogation.id);
   }
 }
 
