@@ -868,20 +868,26 @@ el.cropStage.addEventListener('pointerdown', (e) => { cropDragging = true; updat
 window.addEventListener('pointermove', (e) => { if (cropDragging) updateCropCenterFromEvent(e); });
 window.addEventListener('pointerup', () => { cropDragging = false; });
 
-// 방향 버튼 — 드래그로 대충 옮긴 뒤 1%(이미지 기준) 단위로 미세 조정할 때
-// 쓴다. 탭 한 번에 한 스텝, 누르고 있으면 400ms 뒤부터 80ms 간격으로
-// 반복 이동한다.
-const CROP_NUDGE_STEP = 0.01;
-function nudgeCropRect(dir) {
+// 방향 버튼 — 드래그로 대충 옮긴 뒤 미세 조정할 때 쓴다. 탭 한 번에
+// 0.2%(이미지 기준)씩만 움직이는 세밀한 스텝이고, 400ms 뒤부터는 60ms
+// 간격으로 반복 이동한다. 1.2초 넘게 누르고 있으면 그때부턴 더 큰
+// 스텝(0.8%)으로 가속 — 세밀 조정은 그대로 정밀하되, 먼 거리를 계속
+// 눌러서 옮길 때 답답하지 않게.
+const CROP_NUDGE_STEP = 0.002;
+const CROP_NUDGE_FAST_STEP = 0.008;
+const CROP_NUDGE_ACCEL_MS = 1200;
+function nudgeCropRect(dir, step) {
   if (!cropSourceImg) return;
-  if (dir === 'up') cropRect.cy = clamp01(cropRect.cy - CROP_NUDGE_STEP);
-  else if (dir === 'down') cropRect.cy = clamp01(cropRect.cy + CROP_NUDGE_STEP);
-  else if (dir === 'left') cropRect.cx = clamp01(cropRect.cx - CROP_NUDGE_STEP);
-  else if (dir === 'right') cropRect.cx = clamp01(cropRect.cx + CROP_NUDGE_STEP);
+  const s = step || CROP_NUDGE_STEP;
+  if (dir === 'up') cropRect.cy = clamp01(cropRect.cy - s);
+  else if (dir === 'down') cropRect.cy = clamp01(cropRect.cy + s);
+  else if (dir === 'left') cropRect.cx = clamp01(cropRect.cx - s);
+  else if (dir === 'right') cropRect.cx = clamp01(cropRect.cx + s);
   drawCropStage();
 }
 let cropDpadRepeatDelay = null;
 let cropDpadRepeatTimer = null;
+let cropDpadHoldStart = 0;
 function stopCropDpadRepeat() {
   clearTimeout(cropDpadRepeatDelay);
   clearInterval(cropDpadRepeatTimer);
@@ -894,8 +900,12 @@ el.cropDpad.querySelectorAll('.crop-dpad-btn').forEach(btn => {
     e.preventDefault(); // avoid the crop-stage drag/other handlers stealing this same pointer sequence
     stopCropDpadRepeat();
     nudgeCropRect(dir);
+    cropDpadHoldStart = Date.now();
     cropDpadRepeatDelay = setTimeout(() => {
-      cropDpadRepeatTimer = setInterval(() => nudgeCropRect(dir), 80);
+      cropDpadRepeatTimer = setInterval(() => {
+        const held = Date.now() - cropDpadHoldStart;
+        nudgeCropRect(dir, held > CROP_NUDGE_ACCEL_MS ? CROP_NUDGE_FAST_STEP : CROP_NUDGE_STEP);
+      }, 60);
     }, 400);
   });
   ['pointerup', 'pointerleave', 'pointercancel'].forEach(evt => btn.addEventListener(evt, stopCropDpadRepeat));
