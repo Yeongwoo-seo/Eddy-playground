@@ -120,7 +120,11 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .bar-preview{position:relative;width:44px;height:200px;border-radius:10px;overflow:hidden;border:1px solid var(--divider);background-size:cover;background-position:center}
 .bar-preview-zone{position:absolute;left:0;right:0;border-radius:4px;background-size:cover;background-position:center}
 .bar-preview-fish{position:absolute;left:50%;transform:translate(-50%,-50%);font-size:18px}
-.bar-preview-gauge{position:absolute;background:linear-gradient(to top,#D94141,#3ECF6B);border-radius:3px}
+/* 실제 플레이에서는 진행도값 기준으로 매 프레임 단색을 다시 계산하지만
+   (dev/minigame-fishing/play/index.html의 gaugeColorForProgress), 이
+   설정 화면 미리보기는 정적이라 기본 시작 게이지(30%)에 해당하는 색
+   하나로 고정해서 보여준다. */
+.bar-preview-gauge{position:absolute;background:rgb(151,126,83);border-radius:3px}
 
 /* ===== 낚시바 영역지정 전체화면 편집기 — dev/upload/evidence-notebook/index.html의
    영역지정 편집기(evn-*)와 완전히 같은 pan/draw 제스처 패턴을 재사용한다:
@@ -315,7 +319,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     </div>
     <div class="option-group">
       <div class="option-label">게이지</div>
-      <div class="option-desc">낚시 진행도(0%~100%)를 빨강→연두 그라데이션으로 자동 표시해요. 이미지 업로드는 필요 없고, 위 "영역지정"에서 낚시바 그림 위에 놓일 자리만 표시하면 돼요.</div>
+      <div class="option-desc">낚시 진행도(0%~100%)에 따라 단색이 빨강(0%)에서 연두(70% 이상)로 자연스럽게 바뀌어요(중간쯤은 노랑/주황) — 그림 안에 미리 그려진 그라데이션이 아니라 지금 값 기준으로 매번 새로 계산돼요. 이미지 업로드는 필요 없고, 위 "영역지정"에서 낚시바 그림 위에 놓일 자리만 표시하면 돼요.</div>
     </div>
 
     <div class="bar-preview-wrap">
@@ -882,8 +886,9 @@ async function renderBarPreview() {
   }
   el.barPreviewFish.style.top = '50%';
 
-  // 게이지 — gaugeRegion 자리에 빨강→연두 세로 그라데이션만 보여준다(실제
-  // 진행도 값은 플레이 중에만 의미가 있어 미리보기에선 항상 꽉 채워 보여준다).
+  // 게이지 — gaugeRegion 자리를 보여주기만 한다(실제 색은 진행도 값 기준
+  // 매 프레임 계산되고 플레이 중에만 의미가 있어, 미리보기는 CSS 기본값
+  // 색 — 기본 시작 게이지 30%에 해당하는 색 — 으로 고정해서 보여준다).
   if (design.gaugeRegion) {
     const g = design.gaugeRegion;
     el.barPreviewGauge.classList.remove('hidden');
