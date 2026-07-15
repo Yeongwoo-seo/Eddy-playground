@@ -137,17 +137,18 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .bar-preview{position:relative;width:44px;height:200px;border-radius:10px;overflow:hidden;border:1px solid var(--divider);background-size:cover;background-position:center}
 .bar-preview-zone{position:absolute;left:0;right:0;border-radius:4px;background-size:cover;background-position:center}
 .bar-preview-fish{position:absolute;left:50%;transform:translate(-50%,-50%);font-size:18px}
-/* 실제 플레이에서는 진행도값 기준으로 매 프레임 단색을 다시 계산하지만
-   (dev/minigame-fishing/play/index.html의 gaugeColorForProgress), 이
-   설정 화면 미리보기는 정적이라 기본 시작 게이지(30%)에 해당하는 색
+/* 게이지는 더 이상 별도 영역지정이 없다 — 낚시바 모듈(.bar-preview) 전체를
+   그대로 덮는다. 실제 플레이에서는 진행도값 기준으로 매 프레임 단색을 다시
+   계산하지만(dev/minigame-fishing/play/index.html의 gaugeColorForProgress),
+   이 설정 화면 미리보기는 정적이라 기본 시작 게이지(30%)에 해당하는 색
    하나로 고정해서 보여준다. */
-.bar-preview-gauge{position:absolute;background:rgb(151,126,83);border-radius:3px}
+.bar-preview-gauge{position:absolute;inset:0;background:rgb(151,126,83)}
 
 /* ===== 낚시바 영역지정 전체화면 편집기 — dev/upload/evidence-notebook/index.html의
    영역지정 편집기(evn-*)와 완전히 같은 pan/draw 제스처 패턴을 재사용한다:
    라벨(배지)을 고르지 않은 채 드래그하면 화면을 세로로 훑어보고(pan),
    배지를 고른 채 드래그하면 그 라벨의 사각형을 그린다. 여긴 라벨이
-   "캐치존"/"게이지" 2개뿐이고 대상 이미지가 낚시바 하나뿐이라는 점만 다르다. */
+   "캐치존" 1개뿐이고 대상 이미지가 낚시바 하나뿐이라는 점만 다르다. */
 .fbregion-fullscreen{position:fixed;inset:0;z-index:500;background:#050607;display:flex;flex-direction:column}
 .fbregion-fullscreen.hidden{display:none}
 .fbregion-topbar{display:flex;align-items:center;gap:10px;padding:calc(14px + env(safe-area-inset-top,0)) 16px 12px;border-bottom:1px solid var(--divider);flex-shrink:0}
@@ -303,9 +304,10 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     </div>
   </div>
 
-  <!-- ===== 낚시바 디자인 — 낚시바/캐치존 이미지 + 게이지(그라데이션) 영역지정.
+  <!-- ===== 낚시바 디자인 — 낚시바/캐치존 이미지 + 캐치존 영역지정.
        색상 피커/캐치존 크기 슬라이더/물고기 아이콘은 이 세 가지로 대체되어
-       숨겼다 — 기존 데이터·크롭 조정 코드는 그대로 두고 화면에서만 뺐다. ===== -->
+       숨겼다 — 기존 데이터·크롭 조정 코드는 그대로 두고 화면에서만 뺐다.
+       게이지는 낚시바 모듈 자체라 별도 영역지정이 없다. ===== -->
   <div class="tab-panel hidden" id="panelBar">
     <div class="option-group hidden">
       <div class="option-label">색상</div>
@@ -335,7 +337,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
 
     <div class="option-group">
       <div class="option-label">낚시바</div>
-      <div class="option-desc">낚시바 전체 배경 그림이에요. 업로드한 뒤 "영역지정"으로 이 그림 위 어디에 캐치존/게이지가 놓일지 표시하세요.</div>
+      <div class="option-desc">낚시바 전체 배경 그림이에요. 업로드한 뒤 "영역지정"으로 이 그림 위 어디에 캐치존이 놓일지 표시하세요. 게이지는 이 낚시바 전체를 그대로 채워요.</div>
       <div class="frame-strip" id="barImageSlot"></div>
       <button type="button" class="frame-add-btn hidden" id="barImageAddBtn">+ 낚시바 이미지 업로드</button>
       <input type="file" id="barImageFileInput" accept="image/*">
@@ -350,14 +352,14 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     </div>
     <div class="option-group">
       <div class="option-label">게이지</div>
-      <div class="option-desc">낚시 진행도(0%~100%)에 따라 단색이 빨강(0%)에서 연두(70% 이상)로 자연스럽게 바뀌어요(중간쯤은 노랑/주황) — 그림 안에 미리 그려진 그라데이션이 아니라 지금 값 기준으로 매번 새로 계산돼요. 이미지 업로드는 필요 없고, 위 "영역지정"에서 낚시바 그림 위에 놓일 자리만 표시하면 돼요.</div>
+      <div class="option-desc">낚시 진행도(0%~100%)에 따라 단색이 빨강(0%)에서 연두(70% 이상)로 자연스럽게 바뀌어요(중간쯤은 노랑/주황) — 그림 안에 미리 그려진 그라데이션이 아니라 지금 값 기준으로 매번 새로 계산돼요. 별도 영역지정 없이 낚시바 전체가 곧 게이지예요(낚시바보다 작게 딱 맞춰 그릴 필요 없어요) — 캐치존/물고기는 그 위에 그대로 겹쳐서 보여요.</div>
     </div>
 
     <div class="bar-preview-wrap">
       <div class="bar-preview" id="barPreview">
+        <div class="bar-preview-gauge" id="barPreviewGauge"></div>
         <div class="bar-preview-zone" id="barPreviewZone"></div>
         <div class="bar-preview-fish" id="barPreviewFish">🐟</div>
-        <div class="bar-preview-gauge hidden" id="barPreviewGauge"></div>
       </div>
     </div>
   </div>
@@ -418,9 +420,10 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   </div>
 </div>
 
-<!-- 낚시바 영역지정 — 업로드한 낚시바 이미지 위에 캐치존/게이지가 놓일 자리를
-     드래그로 지정한다. dev/upload/evidence-notebook/index.html의 영역지정
-     편집기와 같은 구조/제스처(fbregion-* = evn-*의 이름만 바꾼 재사용). -->
+<!-- 낚시바 영역지정 — 업로드한 낚시바 이미지 위에 캐치존이 놓일 자리를
+     드래그로 지정한다(게이지는 낚시바 전체를 그대로 쓰므로 지정 대상이
+     아니다). dev/upload/evidence-notebook/index.html의 영역지정 편집기와
+     같은 구조/제스처(fbregion-* = evn-*의 이름만 바꾼 재사용). -->
 <div class="fbregion-fullscreen hidden" id="fbregionFullscreen">
   <div class="fbregion-topbar">
     <button type="button" class="fbregion-close-btn" id="fbregionCloseBtn">✕</button>
@@ -1056,19 +1059,11 @@ async function renderBarPreview() {
   }
   el.barPreviewFish.style.top = '50%';
 
-  // 게이지 — gaugeRegion 자리를 보여주기만 한다(실제 색은 진행도 값 기준
-  // 매 프레임 계산되고 플레이 중에만 의미가 있어, 미리보기는 CSS 기본값
-  // 색 — 기본 시작 게이지 30%에 해당하는 색 — 으로 고정해서 보여준다).
-  if (design.gaugeRegion) {
-    const g = design.gaugeRegion;
-    el.barPreviewGauge.classList.remove('hidden');
-    el.barPreviewGauge.style.left = g.x * 100 + '%';
-    el.barPreviewGauge.style.top = g.y * 100 + '%';
-    el.barPreviewGauge.style.width = g.w * 100 + '%';
-    el.barPreviewGauge.style.height = g.h * 100 + '%';
-  } else {
-    el.barPreviewGauge.classList.add('hidden');
-  }
+  // 게이지 — 더 이상 별도 영역지정이 없다. 낚시바 모듈(barPreview) 전체가
+  // 곧 게이지라 CSS(.bar-preview-gauge{inset:0})가 항상 낚시바 전체를
+  // 덮는다(실제 색은 진행도 값 기준 매 프레임 계산되고 플레이 중에만
+  // 의미가 있어, 미리보기는 CSS 기본값 색 — 기본 시작 게이지 30%에
+  // 해당하는 색 — 으로 고정해서 보여준다).
 }
 async function renderFishIconSlot() {
   const design = fishingConfig.barDesign || {};
@@ -1172,25 +1167,25 @@ async function saveBarDesign() {
     barImageAssetId: prev.barImageAssetId || null,
     zoneImageAssetId: prev.zoneImageAssetId || null,
     zoneRegion: prev.zoneRegion || null,
-    gaugeRegion: prev.gaugeRegion || null,
   };
   fishingConfig = await AssetDB.setFishingConfig({ barDesign: design });
   showSaveNote();
   renderBarPreview();
 }
 
-/* ===== 낚시바/캐치존 이미지 업로드 + 게이지/캐치존 영역지정 =====
+/* ===== 낚시바/캐치존 이미지 업로드 + 캐치존 영역지정 =====
    낚시바 배경색/캐치존 색상/캐치존 크기 슬라이더/물고기 아이콘(위 option-group
    들, 화면에서만 숨김)을 대신한다 — 낚시바 이미지 하나, 그 위에서 움직이는
-   캐치존 이미지 하나, 그리고 게이지(0~100% 빨강→연두 그라데이션, 이미지
-   없음)가 낚시바 그림 위 어디에 놓일지 사각형으로 지정한다(fbregion 편집기,
-   dev/upload/evidence-notebook/index.html의 영역지정과 같은 패턴). 실제
-   물고기가 캐치존 안에서 움직이는 세로 위치 계산은 zoneRegion이 지정하는
-   "트랙" 안에서 기존 물리 로직 그대로 이어간다 — dev/minigame-fishing/play/
-   index.html 쪽 렌더링만 이 트랙 rect를 반영하도록 바뀐다. */
+   캐치존 이미지 하나가 낚시바 그림 위 어디에 놓일지 사각형으로 지정한다
+   (fbregion 편집기, dev/upload/evidence-notebook/index.html의 영역지정과
+   같은 패턴). 실제 물고기가 캐치존 안에서 움직이는 세로 위치 계산은
+   zoneRegion이 지정하는 "트랙" 안에서 기존 물리 로직 그대로 이어간다 —
+   dev/minigame-fishing/play/index.html 쪽 렌더링만 이 트랙 rect를 반영하도록
+   바뀐다. 게이지(0~100% 빨강→연두 단색 보간)는 더 이상 별도 영역지정이
+   없다 — 낚시바 모듈(.fishbar) 전체가 곧 게이지라 크기가 자동으로 낚시바를
+   따라간다. */
 const FB_REGION_LABELS = [
   { id: 'zoneRegion', label: '캐치존' },
-  { id: 'gaugeRegion', label: '게이지' },
 ];
 
 async function renderBarImageSlot() {
@@ -1205,7 +1200,7 @@ async function renderBarImageSlot() {
     slot.innerHTML = `${asset ? `<img src="${asset.dataUrl}" alt="">` : ''}
       <div class="frame-actions"><button type="button" class="frame-mini-btn danger" data-act="del">✕</button></div>`;
     slot.querySelector('[data-act=del]').addEventListener('click', async () => {
-      fishingConfig = await AssetDB.setFishingConfig({ barDesign: Object.assign({}, fishingConfig.barDesign, { barImageAssetId: null, zoneRegion: null, gaugeRegion: null }) });
+      fishingConfig = await AssetDB.setFishingConfig({ barDesign: Object.assign({}, fishingConfig.barDesign, { barImageAssetId: null, zoneRegion: null }) });
       showSaveNote();
       renderBarImageSlot();
       renderBarPreview();
@@ -1295,7 +1290,7 @@ function openFbRegionEditor() {
   if (!design.barImageAssetId) return;
   AssetDB.getAsset(design.barImageAssetId).then(asset => {
     if (!asset) return;
-    fbDraftRegions = { zoneRegion: design.zoneRegion || null, gaugeRegion: design.gaugeRegion || null };
+    fbDraftRegions = { zoneRegion: design.zoneRegion || null };
     fbSelectedLabelId = null;
     fbPanY = 0;
     el.fbregionImg.src = asset.dataUrl;
