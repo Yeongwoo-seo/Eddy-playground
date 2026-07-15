@@ -194,6 +194,22 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
 }
 </script>
+<script>
+// Client-side AI background removal (WASM) — dev/upload/index.html의
+// autoRegisterCharacterPhoto와 같은 모듈/로딩 방식. 캐스팅/올리기 프레임과
+// 물고기 아이콘을 올리는 즉시 자동으로 배경을 제거한다(removeBackgroundOrFallback
+// 참고) — 모듈 로드/처리 자체가 실패해도 원본 그대로 계속 진행한다.
+window.__removeBackgroundReady = import('https://cdn.jsdelivr.net/npm/@imgly/background-removal/+esm')
+  .then(mod => {
+    if (typeof mod.removeBackground !== 'function') {
+      throw new Error('모듈은 로드됐지만 removeBackground 함수를 찾지 못함 (exports: ' + Object.keys(mod).join(', ') + ')');
+    }
+    window.__removeBackground = mod.removeBackground;
+  })
+  .catch(err => {
+    window.__removeBackgroundLoadError = err;
+  });
+</script>
 <script src="/dev/assetDb.js"></script>
 <script>
 /* =========================================================================
@@ -389,8 +405,31 @@ function startPreviewLoop(previewEl, labelEl, frames) {
   animTimer = setInterval(tick, 120);
 }
 
+// saveNote는 평소엔 "저장됐어요" 고정 텍스트라 배경 제거 진행 상태를 잠깐
+// 빌려 쓴 뒤 반드시 원래 텍스트로 되돌려놓는다 — showSaveNote 자체는
+// 텍스트를 건드리지 않고 보이기/사라지기 클래스만 토글하기 때문.
+const SAVE_NOTE_DEFAULT_TEXT = el.saveNote.textContent;
+async function removeBackgroundOrFallback(file) {
+  el.saveNote.textContent = '배경 제거 모듈 확인 중...';
+  el.saveNote.classList.add('show');
+  await window.__removeBackgroundReady;
+  if (!window.__removeBackground) {
+    el.saveNote.textContent = SAVE_NOTE_DEFAULT_TEXT;
+    return file;
+  }
+  el.saveNote.textContent = '자동 처리 중: 배경 제거...';
+  try {
+    return await window.__removeBackground(file);
+  } catch (err) {
+    return file;
+  } finally {
+    el.saveNote.textContent = SAVE_NOTE_DEFAULT_TEXT;
+  }
+}
+
 async function uploadFrame(file, key) {
-  const asset = await AssetDB.addAsset({ type: 'fishing-motion-frame', name: file.name, blob: file });
+  const blob = await removeBackgroundOrFallback(file);
+  const asset = await AssetDB.addAsset({ type: 'fishing-motion-frame', name: file.name, blob });
   const list = (fishingConfig[key] || []).concat(asset.id);
   fishingConfig = await AssetDB.setFishingConfig({ [key]: list });
   showSaveNote();
@@ -495,7 +534,8 @@ el.fishIconFileInput.addEventListener('change', async () => {
   const file = el.fishIconFileInput.files[0];
   el.fishIconFileInput.value = '';
   if (!file) return;
-  const asset = await AssetDB.addAsset({ type: 'fishing-fish-icon', name: file.name, blob: file });
+  const blob = await removeBackgroundOrFallback(file);
+  const asset = await AssetDB.addAsset({ type: 'fishing-fish-icon', name: file.name, blob });
   fishingConfig = await AssetDB.setFishingConfig({ barDesign: Object.assign({}, fishingConfig.barDesign, { fishIconAssetId: asset.id }) });
   showSaveNote();
   renderFishIconSlot();
