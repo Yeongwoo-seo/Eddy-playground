@@ -52,9 +52,22 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .bite-mark.hidden{display:none}
 @keyframes biteMarkPop{0%{transform:translateX(-50%) scale(.3);opacity:0}60%{transform:translateX(-50%) scale(1.25);opacity:1}100%{transform:translateX(-50%) scale(1)}}
 
-.cast-btn{position:absolute;left:50%;bottom:calc(30px + env(safe-area-inset-bottom,0));transform:translateX(-50%);z-index:5;font-family:var(--mono);font-size:14.5px;font-weight:700;letter-spacing:.04em;color:#08110c;background:var(--green);border:none;border-radius:24px;padding:15px 30px;cursor:pointer;box-shadow:0 6px 16px rgba(0,0,0,.3)}
-.cast-btn:active{transform:translateX(-50%) scale(.95)}
-.cast-btn.hidden{display:none}
+/* 캐스팅 버튼 대신 화면을 꾹 눌러 세기(0~100, 왔다리갔다리)를 맞추고
+   손을 떼면 그 순간 값으로 던진다(startPowerCharge/releasePowerAndCast) —
+   이 바는 누르고 있는 동안만 보인다. */
+.cast-power-wrap{position:absolute;left:50%;bottom:calc(30px + env(safe-area-inset-bottom,0));transform:translateX(-50%);z-index:5;width:220px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.cast-power-wrap.hidden{display:none}
+.cast-power-track{width:100%;height:20px;border-radius:10px;background:rgba(5,20,28,.45);border:1px solid rgba(255,255,255,.35);overflow:hidden}
+.cast-power-fill{height:100%;width:0%;background:var(--green);border-radius:10px 0 0 10px}
+.cast-power-label{font-family:var(--mono);font-size:12px;font-weight:700;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.5)}
+
+/* 추(sinker) 던지기 물리 시뮬레이션 — 낚싯대 끝~추 사이는 현수선(catenary)
+   커브로 그린다(catenaryPoints/renderCastLine). 좌표계는 el.frame 픽셀
+   그대로 써서(viewBox) 물리 계산과 그리기가 같은 단위를 쓴다. */
+.cast-svg{position:absolute;inset:0;z-index:3;pointer-events:none}
+.cast-svg.hidden{display:none}
+.cast-line{fill:none;stroke:rgba(230,230,220,.9);stroke-width:1.5}
+.cast-sinker{fill:#5a5f66;stroke:rgba(0,0,0,.4);stroke-width:1}
 
 .catch-hint{position:absolute;left:0;right:0;bottom:calc(18px + env(safe-area-inset-bottom,0));z-index:5;text-align:center;font-family:var(--mono);font-size:11px;color:rgba(255,255,255,.85);text-shadow:0 1px 4px rgba(0,0,0,.5)}
 .catch-hint.hidden{display:none}
@@ -108,7 +121,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
   </div>
 
   <div class="stage" id="stage">
-    <div class="status-line" id="statusLine">탭해서 낚시하기</div>
+    <div class="status-line" id="statusLine">화면을 꾹 눌러 캐스팅 세기를 조절하세요</div>
 
     <div class="char-stage" id="charStage">
       <img id="charImg" class="hidden" alt="">
@@ -119,6 +132,11 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
       <div class="bobber-dot"></div>
       <div class="bite-mark hidden" id="biteMark">!</div>
     </div>
+
+    <svg class="cast-svg hidden" id="castSvg">
+      <path class="cast-line" id="castLinePath"></path>
+      <circle class="cast-sinker" id="castSinker" r="5"></circle>
+    </svg>
 
     <div class="fishbar-panel hidden" id="fishbarPanel">
       <div class="fishbar" id="fishbar">
@@ -137,7 +155,10 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
     </div>
   </div>
 
-  <button class="cast-btn" id="castBtn" type="button">🎣 캐스팅</button>
+  <div class="cast-power-wrap hidden" id="castPowerWrap">
+    <div class="cast-power-track"><div class="cast-power-fill" id="castPowerFill"></div></div>
+    <div class="cast-power-label" id="castPowerLabel">0%</div>
+  </div>
   <div class="catch-hint hidden" id="catchHint">누르고 있으면 캐치존이 올라가요 · 떼면 내려가요</div>
 
   <div class="overlay" id="overlay">
@@ -212,11 +233,17 @@ function gaugeColorForProgress(pct) {
 const el = {
   frame: document.getElementById('frame'),
   statusLine: document.getElementById('statusLine'),
+  charStage: document.getElementById('charStage'),
   charImg: document.getElementById('charImg'),
   charFallback: document.getElementById('charFallback'),
   bobber: document.getElementById('bobber'),
   biteMark: document.getElementById('biteMark'),
-  castBtn: document.getElementById('castBtn'),
+  castPowerWrap: document.getElementById('castPowerWrap'),
+  castPowerFill: document.getElementById('castPowerFill'),
+  castPowerLabel: document.getElementById('castPowerLabel'),
+  castSvg: document.getElementById('castSvg'),
+  castLinePath: document.getElementById('castLinePath'),
+  castSinker: document.getElementById('castSinker'),
   fishbarPanel: document.getElementById('fishbarPanel'),
   fishbar: document.getElementById('fishbar'),
   fishbarZone: document.getElementById('fishbarZone'),
@@ -252,7 +279,7 @@ let zoneSizePct = 28;
 let zoneTrack = null; // { x, y, w, h } — 낚시바 기준 %
 let gaugeTrack = null; // { x, y, w, h } — 낚시바 기준 %
 let caughtCount = 0;
-let gameState = 'idle'; // idle | casting | waiting | bite | catching | reeling | result
+let gameState = 'idle'; // idle | charging | casting | waiting | bite | catching | reeling | result
 let biteTimer = null;
 let reactionTimer = null;
 let holding = false;
@@ -261,6 +288,20 @@ let lastT = 0;
 let fish = { y: 50, vy: 0, targetY: 50, pickTimer: 0 };
 let zone = { y: 36, vel: 0 };
 let progress = 30; // 기본 시작 게이지 30%
+
+/* ===== 캐스팅 세기 — 화면을 누르고 있는 동안 0→100→0을 계속 왔다리갔다리
+   (사인파)하다가, 손을 떼는 순간의 값이 캐스팅 세기가 된다. ===== */
+let castPower = 0;
+let castChargeStartT = 0;
+let castChargeRaf = null;
+const CAST_POWER_PERIOD_MS = 1100; // 0→100→0 한 바퀴 도는 시간
+
+/* ===== 추 던지기 물리 — 낚싯대 끝에서 목표 수평거리(세기에 비례)까지
+   포물선 운동으로 날아간다. 피크 높이(H)와 중력(g)을 프레임 높이에 비례한
+   값으로 고정해두면 세기와 무관하게 항상 같은 체공 시간(T)이 나오고,
+   수평속도(vx0)만 세기에 따라 달라져 "세질수록 멀리 감"이 자연스럽게
+   나온다. ===== */
+let castFlightRaf = null;
 
 /* ===== 설정 로드 (AssetDB) — 실패해도 게임은 도형 폴백으로 계속 동작한다. ===== */
 async function loadConfig() {
@@ -378,11 +419,32 @@ function playFrameSequence(urls, frameMs) {
   });
 }
 
-/* ===== 캐스팅 → 입질 대기 → 입질 ===== */
-async function startCast() {
-  if (gameState !== 'idle') return;
+/* ===== 캐스팅 세기 조절 (누르고 있는 동안) ===== */
+function startPowerCharge() {
+  gameState = 'charging';
+  el.statusLine.textContent = '세기 조절 중... 손을 떼면 캐스팅!';
+  el.castPowerWrap.classList.remove('hidden');
+  castChargeStartT = performance.now();
+  const periodSec = CAST_POWER_PERIOD_MS / 1000;
+  function tick(ts) {
+    if (gameState !== 'charging') return;
+    const t = (ts - castChargeStartT) / 1000;
+    const phase = (t / periodSec) * (2 * Math.PI);
+    castPower = 50 - 50 * Math.cos(phase); // 0 → 100 → 0 사인파
+    el.castPowerFill.style.width = castPower + '%';
+    el.castPowerLabel.textContent = Math.round(castPower) + '%';
+    castChargeRaf = requestAnimationFrame(tick);
+  }
+  castChargeRaf = requestAnimationFrame(tick);
+}
+
+/* ===== 세기 확정 → 캐스팅 모션 → 추 던지기(물리) → 입질 대기 ===== */
+async function releasePowerAndCast() {
+  if (gameState !== 'charging') return;
+  cancelAnimationFrame(castChargeRaf);
+  const power = castPower;
+  el.castPowerWrap.classList.add('hidden');
   gameState = 'casting';
-  el.castBtn.classList.add('hidden');
   el.statusLine.textContent = '캐스팅...';
   if (castFrameUrls.length) {
     await playFrameSequence(castFrameUrls, 90);
@@ -393,17 +455,99 @@ async function startCast() {
     el.charFallback.style.transform = 'rotate(0deg)';
   }
   vibrate(15);
-  el.bobber.classList.remove('hidden');
-  el.bobber.style.transition = 'none';
-  el.bobber.style.left = '24%';
-  el.bobber.style.top = '63%';
-  void el.bobber.offsetWidth;
-  el.bobber.style.transition = 'left .5s cubic-bezier(.2,.8,.2,1), top .5s cubic-bezier(.2,.8,.2,1)';
-  el.bobber.style.left = '68%';
-  el.bobber.style.top = '47%';
   if (idleFrameUrl) el.charImg.src = idleFrameUrl;
-  await wait(520);
+  await throwSinker(power);
   waitForBite();
+}
+
+// 낚싯대 끝 위치 — 캐릭터가 낚싯대를 앞으로 들어 올린 채 서 있다고 가정한
+// 눈대중 지점(캐릭터 스테이지 박스 위쪽에서 한 번 더 위·오른쪽으로).
+// char-stage 박스 자체는 캐릭터 몸통 높이라 물 라인(47%)보다 아래일 수
+// 있어 그대로 쓰면 안 되고, 반드시 물 라인보다 위(작은 y)에 있어야 한다.
+function rodTipPx(frameRect) {
+  const charRect = el.charStage.getBoundingClientRect();
+  return { x: charRect.right - frameRect.left + 6, y: charRect.top - frameRect.top - 50 };
+}
+
+// 포물선 운동으로 추를 던진다 — 피크 높이(H)·중력(g)을 프레임 높이 비례
+// 상수로 고정해 세기와 무관하게 항상 같은 체공 시간이 나오게 하고, 세기는
+// 수평거리(dx)만 늘린다("세질수록 멀리 감"). 착수 지점에 기존 찌(bobber)를
+// 그대로 가져다 놓아 입질 대기 이후 로직은 손대지 않는다.
+function throwSinker(power) {
+  return new Promise(resolve => {
+    const frameRect = el.frame.getBoundingClientRect();
+    el.castSvg.setAttribute('viewBox', `0 0 ${frameRect.width} ${frameRect.height}`);
+    const origin = rodTipPx(frameRect);
+    const minDx = frameRect.width * 0.10, maxDx = frameRect.width * 0.68;
+    const dx = minDx + (power / 100) * (maxDx - minDx);
+    const waterY = frameRect.height * 0.47; // 기존 찌 착지 y(47%)와 동일
+    const h0 = Math.max(10, waterY - origin.y);
+    const H = frameRect.height * 0.09; // 최고점 높이(낚싯대 끝 기준)
+    const g = frameRect.height * 3.4; // 중력 — 프레임 높이 비례라 기기 크기와 무관하게 체공 시간이 일정
+    const vy0 = -Math.sqrt(2 * g * H);
+    const T = (-vy0 + Math.sqrt(vy0 * vy0 + 2 * g * h0)) / g;
+    const vx0 = dx / T;
+
+    el.bobber.classList.add('hidden');
+    el.castSvg.classList.remove('hidden');
+    let start = null;
+    function frame(ts) {
+      if (start === null) start = ts;
+      const t = (ts - start) / 1000;
+      if (t >= T) { finish(dx); return; }
+      const x = origin.x + vx0 * t;
+      const y = origin.y + vy0 * t + 0.5 * g * t * t;
+      renderCastLine(origin, { x, y });
+      castFlightRaf = requestAnimationFrame(frame);
+    }
+    function finish(finalDx) {
+      renderCastLine(origin, { x: origin.x + finalDx, y: waterY });
+      el.castSvg.classList.add('hidden');
+      const landingXPct = clamp((origin.x + finalDx) / frameRect.width * 100, 5, 95);
+      const landingYPct = waterY / frameRect.height * 100;
+      el.bobber.style.transition = 'none';
+      el.bobber.style.left = landingXPct + '%';
+      el.bobber.style.top = landingYPct + '%';
+      el.bobber.classList.remove('hidden');
+      resolve();
+    }
+    castFlightRaf = requestAnimationFrame(frame);
+  });
+}
+
+// 낚싯대 끝(p0)~추(p1) 사이를 현수선(catenary)으로 그린다. 실제 줄 길이는
+// 두 점 사이 직선거리(D)에 여유(12%)를 준 값(L)으로 정하고, L·dx·dy로부터
+// 현수선 매개변수 a를 이분법으로 구한다(전형적인 "두 점을 지나는 현수선"
+// 문제 — a>0에서 단조 함수라 이분법이 항상 수렴한다).
+function renderCastLine(p0, p1) {
+  el.castSinker.setAttribute('cx', p1.x);
+  el.castSinker.setAttribute('cy', p1.y);
+  const pts = catenaryPoints(p0, p1);
+  el.castLinePath.setAttribute('d', 'M' + pts.map(p => `${p.x},${p.y}`).join(' L'));
+}
+function catenaryPoints(p0, p1, samples) {
+  samples = samples || 16;
+  const dx = p1.x - p0.x, dy = p1.y - p0.y;
+  const D = Math.hypot(dx, dy);
+  if (D < 4 || Math.abs(dx) < 2) return [p0, p1]; // 거의 수직/한 점 — 커브 의미 없음
+  const L = D * 1.12;
+  const target = Math.sqrt(Math.max(L * L - dy * dy, 0));
+  function f(a) { return 2 * a * Math.sinh(dx / (2 * a)) - target; }
+  let lo = 1e-3, hi = Math.max(Math.abs(dx), 1) * 50;
+  for (let i = 0; i < 60; i++) {
+    const mid = (lo + hi) / 2;
+    if (f(mid) > 0) hi = mid; else lo = mid;
+  }
+  const a = (lo + hi) / 2;
+  const p = (dx - a * Math.log((L + dy) / (L - dy))) / 2;
+  const q = -a * Math.cosh(p / a);
+  const pts = [];
+  for (let i = 0; i <= samples; i++) {
+    const xl = dx * i / samples;
+    const yl = a * Math.cosh((xl - p) / a) + q;
+    pts.push({ x: p0.x + xl, y: p0.y + yl });
+  }
+  return pts;
 }
 
 function waitForBite() {
@@ -601,23 +745,31 @@ function endRun(success, message, fishCaught) {
 function resetToIdle() {
   el.overlay.classList.remove('show');
   gameState = 'idle';
-  el.statusLine.textContent = '탭해서 낚시하기';
-  el.castBtn.classList.remove('hidden');
+  el.statusLine.textContent = '화면을 꾹 눌러 캐스팅 세기를 조절하세요';
+  el.castPowerWrap.classList.add('hidden');
+  el.castSvg.classList.add('hidden');
   el.bobber.classList.add('hidden');
   el.bobber.classList.remove('bob-idle', 'bite-dip');
   if (idleFrameUrl) { el.charImg.src = idleFrameUrl; el.charImg.classList.remove('hidden'); el.charFallback.classList.add('hidden'); }
   else { el.charImg.classList.add('hidden'); el.charFallback.classList.remove('hidden'); }
 }
 
-/* ===== 입력 ===== */
-el.castBtn.addEventListener('click', startCast);
+/* ===== 입력 =====
+   캐스팅 버튼 대신 idle 상태에서 화면을 누르고 있으면 세기 게이지가
+   왔다리갔다리 돌아가다가(startPowerCharge), 손을 떼는 순간 값으로 던진다
+   (releasePowerAndCast) — 잡아채기(catching) 중 홀드와 같은 pointerdown/up
+   쌍을 gameState로 나눠 재사용한다. */
 el.retryBtn.addEventListener('click', resetToIdle);
 el.frame.addEventListener('pointerdown', () => {
   if (gameState === 'bite') { handleReactionTap(); return; }
-  if (gameState === 'catching') holding = true;
+  if (gameState === 'catching') { holding = true; return; }
+  if (gameState === 'idle') { startPowerCharge(); return; }
 });
 ['pointerup', 'pointercancel', 'pointerleave'].forEach(evt => {
-  el.frame.addEventListener(evt, () => { holding = false; });
+  el.frame.addEventListener(evt, () => {
+    holding = false;
+    if (gameState === 'charging') releasePowerAndCast();
+  });
 });
 
 loadConfig();
