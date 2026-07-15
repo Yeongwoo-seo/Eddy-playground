@@ -23,7 +23,8 @@
     .dpf-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
     .dpf-title{font-size:17px;font-weight:700;color:#EDF1F4;flex:1}
     .dpf-status{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;color:#5F6872;letter-spacing:.04em;white-space:nowrap}
-    .dpf-close{width:28px;height:28px;border-radius:50%;background:#171C22;border:1px solid rgba(255,255,255,.08);color:#EDF1F4;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+    .dpf-refresh,.dpf-close{width:28px;height:28px;border-radius:50%;background:#171C22;border:1px solid rgba(255,255,255,.08);color:#EDF1F4;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+    .dpf-refresh:active,.dpf-close:active{opacity:.7}
     .dpf-sub{font-size:12.5px;color:#929BA5;margin-bottom:12px;line-height:1.5}
     .dpf-textarea{flex:1;width:100%;resize:none;background:#101419;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px;color:#EDF1F4;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:13.5px;line-height:1.7;outline:none}
     .dpf-textarea:focus{border-color:rgba(89,184,200,.4)}
@@ -44,6 +45,7 @@
       <div class="dpf-header">
         <div class="dpf-title">개발계획</div>
         <div class="dpf-status" id="dpfStatus">&nbsp;</div>
+        <button class="dpf-refresh" aria-label="새로고침">⟳</button>
         <button class="dpf-close" aria-label="닫기">✕</button>
       </div>
       <div class="dpf-sub">이 기기에만 저장되는 메모입니다.</div>
@@ -60,6 +62,7 @@
   const textarea = modal.querySelector('#dpfText');
   const status = modal.querySelector('#dpfStatus');
   const backdrop = modal.querySelector('.dpf-backdrop');
+  const refreshBtn = modal.querySelector('.dpf-refresh');
   const closeBtn = modal.querySelector('.dpf-close');
 
   function openModal() {
@@ -71,6 +74,16 @@
 
   function closeModal() {
     modal.classList.remove('dpf-show');
+  }
+
+  // localStorage는 이 기기 안에서도 탭/창마다 따로 로드돼 있으면 서로의
+  // 변경을 실시간으로 모른다 — 예: /dev/plan/에서 메모를 고친 뒤 이
+  // 팝업이 이미 열려 있던 다른 탭으로 돌아오면 옛 내용 그대로다. 새로고침
+  // 버튼은 지금 저장된 최신 값을 다시 읽어와 텍스트영역에 반영한다.
+  function refreshFromStorage() {
+    clearTimeout(saveTimer);
+    textarea.value = localStorage.getItem(STORAGE_KEY) || '';
+    status.textContent = '새로고침됨';
   }
 
   function clamp(v, min, max) { return Math.min(Math.max(v, min), max); }
@@ -124,6 +137,7 @@
   }));
 
   backdrop.addEventListener('click', closeModal);
+  refreshBtn.addEventListener('click', refreshFromStorage);
   closeBtn.addEventListener('click', closeModal);
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && modal.classList.contains('dpf-show')) closeModal();
