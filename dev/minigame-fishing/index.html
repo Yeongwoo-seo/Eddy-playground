@@ -778,6 +778,9 @@ function selectTab(tab) {
   // 시점에 한 번 더 그려서 맞춘다.
   if (tab === 'cast') renderCastTimeline();
   if (tab === 'move') renderMoveTestStage();
+  // 이동 탭에서 방향키/dpad를 누른 채로 다른 탭으로 넘어가면 keyup/pointerup을
+  // 못 받아 홀드 타이머가 안 보이는 곳에서 계속 도는 채로 남을 수 있다.
+  else stopMoveHold();
 }
 
 /* ===== 낚시게임 로직 탭 ===== */
@@ -2279,8 +2282,29 @@ function handleMove(dir) {
     applyCharFrame(dir, 0);
   }
 }
+// 꾹 누르고 있으면 한 칸에서 멈추지 않고 MOVE_STEP_MS 간격으로 계속 다음
+// 칸으로 넘어간다 — dpad는 click이 눌림 유지 상태를 안 주므로 pointerdown~up
+// 구간을 자체 setInterval로 관리하고, 키보드는 OS/브라우저마다 다른 키반복
+// 딜레이·속도에 기대지 않도록 첫 keydown에서만 반복을 시작하고(e.repeat인
+// 이후 keydown들은 무시) 같은 타이머로 이동한다.
+let moveHoldTimer = null;
+let moveHoldDir = null;
+function startMoveHold(dir) {
+  if (moveHoldDir === dir && moveHoldTimer) return;
+  stopMoveHold();
+  moveHoldDir = dir;
+  handleMove(dir);
+  moveHoldTimer = setInterval(() => handleMove(dir), MOVE_STEP_MS);
+}
+function stopMoveHold() {
+  if (moveHoldTimer) { clearInterval(moveHoldTimer); moveHoldTimer = null; }
+  moveHoldDir = null;
+}
 el.moveDpad.querySelectorAll('[data-dir]').forEach(btn => {
-  btn.addEventListener('click', () => handleMove(btn.dataset.dir));
+  btn.addEventListener('pointerdown', (e) => { e.preventDefault(); startMoveHold(btn.dataset.dir); });
+  btn.addEventListener('pointerup', stopMoveHold);
+  btn.addEventListener('pointerleave', stopMoveHold);
+  btn.addEventListener('pointercancel', stopMoveHold);
 });
 const MOVE_KEY_DIRS = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
 document.addEventListener('keydown', (e) => {
@@ -2289,8 +2313,16 @@ document.addEventListener('keydown', (e) => {
   // 하니, 탭이 활성일 때만 가로챈다.
   if (!dir || el.panelMove.classList.contains('hidden')) return;
   e.preventDefault();
-  handleMove(dir);
+  if (e.repeat) return;
+  startMoveHold(dir);
 });
+document.addEventListener('keyup', (e) => {
+  const dir = MOVE_KEY_DIRS[e.key];
+  if (dir && moveHoldDir === dir) stopMoveHold();
+});
+// 홀드 도중 창 포커스를 잃으면(alt-tab 등) keyup을 못 받아 계속 움직이는
+// 상태로 남을 수 있어, 포커스 이탈 시 안전하게 멈춘다.
+window.addEventListener('blur', stopMoveHold);
 
 async function renderMoveTestStage() {
   const bgId = fishingConfig.backgroundAssetId;
