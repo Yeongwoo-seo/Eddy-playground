@@ -60,8 +60,18 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .frame-slot:active .frame-actions{opacity:1}
 .frame-mini-btn{width:20px;height:20px;border-radius:50%;border:none;background:rgba(255,255,255,.16);color:#fff;font-size:11px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .frame-mini-btn.danger{background:var(--signal-red)}
-.frame-add{width:64px;height:64px;border-radius:10px;background:var(--surface-1);border:1px dashed var(--divider);color:var(--text-muted);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center}
-.frame-add:active{opacity:.7}
+/* Static button already in the DOM at page load (not created on the fly
+   inside a re-render) — same proven pattern as dev/upload/index.html's
+   #selectBtn and the fish-sheet tab's #fishSheetUploadBtn, which trigger
+   the hidden file input reliably on-device. A freshly document.createElement'd
+   button re-inserted on every renderFramesTab() call turned out to not
+   reliably open the native picker on some mobile browsers even though the
+   click handler itself was wired correctly and worked fine in desktop
+   testing — this sidesteps that by never recreating the button. */
+.frame-add-btn{width:100%;font-family:var(--mono);font-size:13px;font-weight:700;color:var(--text-primary);background:var(--surface-1);border:1px dashed var(--divider);border-radius:10px;padding:12px;cursor:pointer;margin-bottom:14px}
+.frame-add-btn:active{opacity:.7}
+.frame-add-btn:disabled{opacity:.4;cursor:default}
+.frame-add-btn.hidden{display:none}
 .frame-preview-row{display:flex;align-items:center;gap:12px;margin-bottom:8px}
 .frame-preview{width:72px;height:72px;border-radius:12px;background:var(--surface-1);border:1px solid var(--divider);display:flex;align-items:center;justify-content:center;overflow:hidden}
 .frame-preview img{width:100%;height:100%;object-fit:cover}
@@ -151,6 +161,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     </div>
     <div class="frame-note">캐스팅(낚싯대를 휘두르는) 동작의 도트 프레임을 순서대로 올려요. 프레임이 하나도 없으면 플레이 화면에서 간단한 도형으로 대체돼요.</div>
     <div class="frame-strip" id="castFrames"></div>
+    <button type="button" class="frame-add-btn" id="castAddBtn">+ 프레임 추가</button>
     <input type="file" id="castFileInput" accept="image/*">
 
     <div class="prompt-block">
@@ -168,6 +179,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     </div>
     <div class="frame-note">물고기를 낚아 올리는(릴을 감는) 동작의 도트 프레임을 순서대로 올려요.</div>
     <div class="frame-strip" id="reelFrames"></div>
+    <button type="button" class="frame-add-btn" id="reelAddBtn">+ 프레임 추가</button>
     <input type="file" id="reelFileInput" accept="image/*">
 
     <div class="prompt-block">
@@ -203,6 +215,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
       <div class="option-label">물고기 아이콘</div>
       <div class="option-desc">업로드하지 않으면 기본 이모지(🐟)로 표시돼요.</div>
       <div class="frame-strip" id="fishIconSlot"></div>
+      <button type="button" class="frame-add-btn hidden" id="fishIconAddBtn">+ 아이콘 업로드</button>
       <input type="file" id="fishIconFileInput" accept="image/*">
     </div>
     <div class="bar-preview-wrap">
@@ -280,14 +293,17 @@ const el = {
   testBtn: document.getElementById('testBtn'),
   saveNote: document.getElementById('saveNote'),
   castFrames: document.getElementById('castFrames'),
+  castAddBtn: document.getElementById('castAddBtn'),
   castFileInput: document.getElementById('castFileInput'),
   castPreview: document.getElementById('castPreview'),
   castPreviewLabel: document.getElementById('castPreviewLabel'),
   reelFrames: document.getElementById('reelFrames'),
+  reelAddBtn: document.getElementById('reelAddBtn'),
   reelFileInput: document.getElementById('reelFileInput'),
   reelPreview: document.getElementById('reelPreview'),
   reelPreviewLabel: document.getElementById('reelPreviewLabel'),
   fishIconSlot: document.getElementById('fishIconSlot'),
+  fishIconAddBtn: document.getElementById('fishIconAddBtn'),
   fishIconFileInput: document.getElementById('fishIconFileInput'),
   barColorInput: document.getElementById('barColorInput'),
   zoneColorInput: document.getElementById('zoneColorInput'),
@@ -488,28 +504,42 @@ async function renderFramesTab(key, stripEl, fileInputEl, previewEl, labelEl) {
     slot.querySelector('[data-act=del]').addEventListener('click', () => removeFrame(key, index).then(() => renderFramesTab(key, stripEl, fileInputEl, previewEl, labelEl)));
     stripEl.appendChild(slot);
   });
-  const addBtn = document.createElement('button');
-  addBtn.type = 'button';
-  addBtn.className = 'frame-add';
-  addBtn.textContent = '+';
-  addBtn.addEventListener('click', () => fileInputEl.click());
-  stripEl.appendChild(addBtn);
   startPreviewLoop(previewEl, labelEl, ids.map(id => byId.get(id)).filter(Boolean));
 }
 
+// castAddBtn/reelAddBtn are static buttons already in the DOM at page load
+// (see .frame-add-btn comment above) — wired once here, not recreated by
+// renderFramesTab on every re-render.
+el.castAddBtn.addEventListener('click', () => el.castFileInput.click());
+el.reelAddBtn.addEventListener('click', () => el.reelFileInput.click());
+// Disabled for the duration of the upload — uploadFrame reads/appends to
+// fishingConfig[key] off a local snapshot, so two uploads racing (a fast
+// double-tap before the first renderFramesTab() finishes) can silently
+// drop one of the two frames (last write wins). One in-flight upload at a
+// time per tab avoids that.
 el.castFileInput.addEventListener('change', async () => {
   const file = el.castFileInput.files[0];
   el.castFileInput.value = '';
   if (!file) return;
-  await uploadFrame(file, 'castingFrames');
-  renderFramesTab('castingFrames', el.castFrames, el.castFileInput, el.castPreview, el.castPreviewLabel);
+  el.castAddBtn.disabled = true;
+  try {
+    await uploadFrame(file, 'castingFrames');
+    renderFramesTab('castingFrames', el.castFrames, el.castFileInput, el.castPreview, el.castPreviewLabel);
+  } finally {
+    el.castAddBtn.disabled = false;
+  }
 });
 el.reelFileInput.addEventListener('change', async () => {
   const file = el.reelFileInput.files[0];
   el.reelFileInput.value = '';
   if (!file) return;
-  await uploadFrame(file, 'reelingFrames');
-  renderFramesTab('reelingFrames', el.reelFrames, el.reelFileInput, el.reelPreview, el.reelPreviewLabel);
+  el.reelAddBtn.disabled = true;
+  try {
+    await uploadFrame(file, 'reelingFrames');
+    renderFramesTab('reelingFrames', el.reelFrames, el.reelFileInput, el.reelPreview, el.reelPreviewLabel);
+  } finally {
+    el.reelAddBtn.disabled = false;
+  }
 });
 
 /* ===== 낚시바 디자인 탭 ===== */
@@ -526,6 +556,7 @@ async function renderFishIconSlot() {
   const design = fishingConfig.barDesign || {};
   el.fishIconSlot.innerHTML = '';
   if (design.fishIconAssetId) {
+    el.fishIconAddBtn.classList.add('hidden');
     const asset = await AssetDB.getAsset(design.fishIconAssetId).catch(() => null);
     const slot = document.createElement('div');
     slot.className = 'frame-slot';
@@ -538,14 +569,13 @@ async function renderFishIconSlot() {
     });
     el.fishIconSlot.appendChild(slot);
   } else {
-    const addBtn = document.createElement('button');
-    addBtn.type = 'button';
-    addBtn.className = 'frame-add';
-    addBtn.textContent = '+';
-    addBtn.addEventListener('click', () => el.fishIconFileInput.click());
-    el.fishIconSlot.appendChild(addBtn);
+    el.fishIconAddBtn.classList.remove('hidden');
   }
 }
+// fishIconAddBtn is a static button already in the DOM at page load (see
+// .frame-add-btn comment above), just toggled hidden/visible depending on
+// whether an icon is already set — not recreated on every render.
+el.fishIconAddBtn.addEventListener('click', () => el.fishIconFileInput.click());
 el.fishIconFileInput.addEventListener('change', async () => {
   const file = el.fishIconFileInput.files[0];
   el.fishIconFileInput.value = '';
