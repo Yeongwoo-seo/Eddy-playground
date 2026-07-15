@@ -1042,7 +1042,10 @@ const AssetDB = (() => {
   // map-pins/youngwoo-test와 같은 단일 JSON blob 패턴을 그대로 쓴다.
   const fishingConfigCache = new Map(); // single entry keyed 'config'
   const FISHING_CONFIG_PATH = 'fishing-config/config.json';
-  const FISHING_CONFIG_DEFAULT = { castingFrames: [], reelingFrames: [], barDesign: {} };
+  // fishSheetAssetId — 물고기 종류 아이콘 스프라이트시트(dev/data/fishDefs.js의
+  // FISH_SHEET_LAYOUT 규격: 196x136px, 10열x7행, 16x16px 칸, 4px 간격) 자산 id.
+  // 업로드되면 fishDefs.js의 각 물고기 slot 순서 그대로 아이콘이 배정된다.
+  const FISHING_CONFIG_DEFAULT = { castingFrames: [], reelingFrames: [], barDesign: {}, fishSheetAssetId: null };
 
   async function getFishingConfig() {
     if (fishingConfigCache.has('config')) return fishingConfigCache.get('config');

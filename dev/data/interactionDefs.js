@@ -434,7 +434,7 @@ const interactionDefs = {
     effects: [{
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-k01-not-for-sale', code: 'E-H02', category: 'record', title: 'K-01 팸플릿 표기',
+        id: 'evidence-k01-pamphlet-not-for-sale', code: 'E-H02', category: 'record', title: 'K-01 팸플릿 표기',
         description: '안내 팸플릿에는 K-01이 "판매 불가 · 전시 전용" 물품으로 표기되어 있다. 단순 되팔기 목적의 충동 절도라면 이상한 선택이다.',
       },
     }],

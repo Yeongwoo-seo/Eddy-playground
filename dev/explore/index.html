@@ -216,9 +216,13 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
    rAF). 닫을 때는 반대로 .show를 먼저 떼 애니메이션을 재생시키고, 그 트랜지션
    길이(.3s)만큼 기다린 뒤에야 .hidden을 붙여 레이아웃에서 뺀다. */
 #moveMapSheet{opacity:0;transition:opacity .3s cubic-bezier(0.2,0.8,0.2,1)}
-#moveMapSheet .sheet{transform:translateY(100%);transition:transform .3s cubic-bezier(0.2,0.8,0.2,1)}
+#moveMapSheet .sheet{transform:translateY(100%);transition:transform .3s cubic-bezier(0.2,0.8,0.2,1);touch-action:pan-y}
 #moveMapSheet.show{opacity:1}
 #moveMapSheet.show .sheet{transform:translateY(0)}
+/* 드래그 중엔 트랜지션을 끄고 손가락을 그대로 따라가야 하므로(§신규,
+   setupMoveMapSheetDrag) 이 클래스가 붙어 있는 동안은 위 트랜지션을
+   덮어쓴다 — 드래그가 끝나면(스냅백/닫기 모두) 다시 뗀다. */
+#moveMapSheet .sheet.dragging{transition:none}
 
 /* ===== 이동하기 지도 — phaseMaps(dev/data/locationDefs.js)가 정의된 phase는
    exit 목록을 리스트 대신 지도 그림 위 원형 핀으로 보여준다(openMoveMapSheet).
@@ -238,6 +242,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .action-btn:active{background:#1c2530}
 .action-btn.cancel{color:var(--text-muted);background:none;border:none;text-align:center;margin-top:4px}
 .present-test-answer-btn{width:100%;text-align:center;background:rgba(214,168,75,.12);color:var(--amber);border:1px dashed rgba(214,168,75,.5);border-radius:12px;padding:10px 14px;font-size:12.5px;font-weight:700;font-family:var(--mono);cursor:pointer;margin-bottom:12px}
+.present-notebook-btn{background:linear-gradient(135deg,#2a3552,#1a2338);border:1px solid rgba(216,169,61,.4);border-style:solid}
 .present-test-answer-btn:active{background:rgba(214,168,75,.22)}
 .topic-row{display:flex;align-items:center;gap:10px;width:100%;background:var(--surface-2);border:1px solid var(--divider);border-radius:12px;padding:13px 14px;color:var(--text-primary);font-size:13.5px;cursor:pointer;text-align:left;font-family:inherit;margin-bottom:8px}
 .topic-row[disabled]{opacity:.4;cursor:default}
@@ -341,7 +346,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 </div>
 
 <div class="sheet-overlay hidden" id="moveMapSheet">
-  <div class="sheet" style="max-height:88vh">
+  <div class="sheet" id="moveMapSheetBody" style="max-height:88vh">
     <div class="sheet-title">이동하기</div>
     <div class="move-map-wrap" id="moveMapWrap">
       <div class="move-map-pins" id="moveMapPins"></div>
@@ -375,6 +380,7 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('/dev/sw.js',
 <script src="/dev/vnPlayer.js"></script>
 <script src="/dev/caseMenu.js"></script>
 <script src="/dev/caseEntryUI.js"></script>
+<script src="/dev/evidenceNotebook.js"></script>
 <script>
 /* ===== Exploration hub (The Missing Key v1 §7) — a single page that swaps
    between map/location/sheet/dialogue "views" instead of separate routed
@@ -427,6 +433,7 @@ const el = {
   listSheetBody: document.getElementById('listSheetBody'),
   listSheetCloseBtn: document.getElementById('listSheetCloseBtn'),
   moveMapSheet: document.getElementById('moveMapSheet'),
+  moveMapSheetBody: document.getElementById('moveMapSheetBody'),
   moveMapWrap: document.getElementById('moveMapWrap'),
   moveMapPins: document.getElementById('moveMapPins'),
   moveMapListWrap: document.getElementById('moveMapListWrap'),
@@ -1012,6 +1019,11 @@ function renderExitListRows(container, exitDefs, emptyText) {
 // — hence the double rAF. Closing plays the transition first and only adds
 // .hidden back (pulling it out of layout) once that's had time to finish.
 function showMoveMapSheet() {
+  // A stray leftover inline transform (e.g. a drag ended via a missed
+  // pointercancel) would otherwise override the CSS class-driven open
+  // transition below — always start from a clean slate.
+  el.moveMapSheetBody.classList.remove('dragging');
+  el.moveMapSheetBody.style.transform = '';
   el.moveMapSheet.classList.remove('hidden');
   requestAnimationFrame(() => requestAnimationFrame(() => el.moveMapSheet.classList.add('show')));
 }
@@ -1019,6 +1031,53 @@ function hideMoveMapSheet() {
   el.moveMapSheet.classList.remove('show');
   setTimeout(() => el.moveMapSheet.classList.add('hidden'), 300);
 }
+
+// 이동하기 지도 시트 — 아래로 스와이프해서 닫기(§신규). 핀 버튼(.move-pin)이나
+// 그만두기/목적지 리스트 버튼 위에서 시작한 제스처는 그 자체의 탭 동작이
+// 우선이라 드래그를 시작하지 않고, 시트가 (목적지가 많아) 스크롤된 상태라면
+// 위로 당기는 제스처가 그 스크롤부터 먼저 소비하게 둔다(scrollTop 가드).
+// 손가락을 따라가는 동안은 .dragging(transition:none)으로 즉시 반응하다가,
+// 놓는 순간 그 클래스를 떼 시트 자체의 .3s 트랜지션이 다시 살아나게 하고
+// 그 트랜지션 하나로 스냅백/닫기 애니메이션을 모두 처리한다 — 드래그 위치
+// 그대로에서 이어지므로 다시 위로 튀었다 사라지는 끊김이 없다.
+const MAP_DRAG_DISMISS_PX = 120;
+let mapDragStartY = null;
+let mapDragActive = false;
+let mapDragDelta = 0;
+el.moveMapSheetBody.addEventListener('pointerdown', (e) => {
+  if (e.target.closest('.move-pin, .action-btn, button')) return;
+  if (el.moveMapSheetBody.scrollTop > 0) return;
+  mapDragActive = true;
+  mapDragStartY = e.clientY;
+  mapDragDelta = 0;
+  el.moveMapSheetBody.setPointerCapture(e.pointerId);
+});
+el.moveMapSheetBody.addEventListener('pointermove', (e) => {
+  if (!mapDragActive) return;
+  const delta = e.clientY - mapDragStartY;
+  if (delta <= 0) { mapDragDelta = 0; el.moveMapSheetBody.style.transform = ''; return; }
+  mapDragDelta = delta;
+  el.moveMapSheetBody.classList.add('dragging');
+  el.moveMapSheetBody.style.transform = `translateY(${delta}px)`;
+});
+function endMoveMapDrag() {
+  if (!mapDragActive) return;
+  mapDragActive = false;
+  el.moveMapSheetBody.classList.remove('dragging');
+  if (mapDragDelta > MAP_DRAG_DISMISS_PX) {
+    el.moveMapSheetBody.style.transform = 'translateY(100%)';
+    el.moveMapSheet.classList.remove('show');
+    setTimeout(() => {
+      el.moveMapSheet.classList.add('hidden');
+      el.moveMapSheetBody.style.transform = '';
+    }, 300);
+  } else {
+    el.moveMapSheetBody.style.transform = '';
+  }
+  mapDragDelta = 0;
+}
+el.moveMapSheetBody.addEventListener('pointerup', endMoveMapDrag);
+el.moveMapSheetBody.addEventListener('pointercancel', endMoveMapDrag);
 
 // 이동하기 — 같은 phase 안이면 지금 있는 곳과 무관하게 어디든 바로 갈 수
 // 있다(더 이상 locationDefs.js의 exits로 인접한 곳만 보여주지 않는다 — 그
@@ -1189,10 +1248,15 @@ function presentTestCorrectAnswer(characterId) {
 function renderPresentTiles(characterId) {
   CaseEntryUI.injectCaseEntryUIStyles();
   const testBtn = `<button class="present-test-answer-btn" id="presentTestAnswerBtn" type="button">🧪 정답 제시 (테스트용)</button>`;
+  // 증거 DB 노트 v1.1 — 기존 관련도 스코어링 시트는 그대로 두고, 훑어보며
+  // 고르고 싶을 때만 전환할 수 있는 대안 진입점만 추가한다. 제출 판정은
+  // 이 시트의 data-present-confirm과 완전히 같은 presentEvidenceToCharacter
+  // 하나를 공유(§0 원칙: 정답 판정 로직은 절대 중복 구현하지 않는다).
+  const notebookBtn = (typeof EvidenceNotebook !== 'undefined') ? `<button class="present-test-answer-btn present-notebook-btn" id="presentNotebookBtn" type="button">📓 수첩에서 고르기</button>` : '';
   const tabBar = `<div class="cm-tabbar ces-tabbar">${CASE_ENTRY_PRESENT_TABS_EXPLORE.map(t => `<button class="cm-tab${presentTab === t.id ? ' cm-tab-active' : ''}" data-tab="${t.id}">${t.label}</button>`).join('')}</div>`;
   if (presentTab === 'person') {
     const persons = CaseFileState.getPersons().filter(p => p.id !== characterId);
-    el.listSheetBody.innerHTML = testBtn + tabBar + (persons.length ? `<div class="ces-grid">${persons.map(p => CaseEntryUI.casePersonCardHtml(p)).join('')}</div>` : '<div class="cm-empty">아직 물어볼 만한 인물이 없습니다.</div>');
+    el.listSheetBody.innerHTML = testBtn + notebookBtn + tabBar + (persons.length ? `<div class="ces-grid">${persons.map(p => CaseEntryUI.casePersonCardHtml(p)).join('')}</div>` : '<div class="cm-empty">아직 물어볼 만한 인물이 없습니다.</div>');
     el.listSheetBody.querySelectorAll('[data-present-person]').forEach(btn => btn.addEventListener('click', () => {
       el.listSheet.classList.add('hidden');
       showToastLine(characterId, '음, 그 사람에 대해서는 딱히 할 말이 없는데.');
@@ -1209,7 +1273,7 @@ function renderPresentTiles(characterId) {
       week: (typeof ExplorationState !== 'undefined' && ExplorationState.getCurrentWeek) ? ExplorationState.getCurrentWeek() : null,
       activeTab: presentTab, selectedId: presentSelectedEntryId, maxSuggested: 6,
     };
-    el.listSheetBody.innerHTML = testBtn + tabBar + CaseEntryUI.renderPresentGridHtml(CaseFileState.getCaseEntries(), ctx);
+    el.listSheetBody.innerHTML = testBtn + notebookBtn + tabBar + CaseEntryUI.renderPresentGridHtml(CaseFileState.getCaseEntries(), ctx);
     CaseEntryUI.hydrateCaseEntryIcons(el.listSheetBody);
     el.listSheetBody.querySelectorAll('[data-present-entry]').forEach(btn => btn.addEventListener('click', () => {
       presentSelectedEntryId = presentSelectedEntryId === btn.dataset.presentEntry ? null : btn.dataset.presentEntry;
@@ -1228,6 +1292,15 @@ function renderPresentTiles(characterId) {
     renderPresentTiles(characterId);
   }));
   el.listSheetBody.querySelector('#presentTestAnswerBtn').addEventListener('click', () => presentTestCorrectAnswer(characterId));
+  const notebookBtnEl = el.listSheetBody.querySelector('#presentNotebookBtn');
+  if (notebookBtnEl) notebookBtnEl.addEventListener('click', () => {
+    el.listSheet.classList.add('hidden');
+    EvidenceNotebook.open({
+      mode: 'present',
+      npcId: characterId,
+      onPresent: (entryId) => presentEvidenceToCharacter(characterId, entryId),
+    });
+  });
 }
 function openPresentSheet(characterId) {
   presentTab = 'related'; // §9.2 매번 새로 열 때 "관련 항목"으로 초기화
