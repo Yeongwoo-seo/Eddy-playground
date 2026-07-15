@@ -68,11 +68,18 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .crop-stage{position:relative;width:100%;border-radius:12px;overflow:hidden;touch-action:none;background:#000;cursor:crosshair}
 .crop-stage canvas{display:block;width:100%}
 .crop-rect{position:absolute;border:2px solid var(--cyan);box-shadow:0 0 0 9999px rgba(0,0,0,.5);pointer-events:none;border-radius:4px}
-.crop-zoom-row{margin-top:14px;display:flex;align-items:center;gap:14px}
+.crop-zoom-row{margin-top:14px;display:flex;align-items:center;justify-content:center;gap:22px}
 .crop-zoom-wrap{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:6px}
 .crop-zoom-label{font-family:var(--mono);font-size:10.5px;color:var(--text-muted)}
 .crop-zoom-wrap canvas{border-radius:12px;border:1px solid var(--divider);background:#000}
-.crop-size-col{flex:1}
+.crop-dpad{flex-shrink:0;display:grid;grid-template-columns:34px 34px 34px;grid-template-rows:34px 34px 34px;gap:4px}
+.crop-dpad-btn{background:var(--surface-2);border:1px solid var(--divider);border-radius:8px;color:var(--text-primary);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+.crop-dpad-btn:active{background:var(--cyan);color:#04181c}
+.crop-dpad-up{grid-column:2;grid-row:1}
+.crop-dpad-left{grid-column:1;grid-row:2}
+.crop-dpad-right{grid-column:3;grid-row:2}
+.crop-dpad-down{grid-column:2;grid-row:3}
+.crop-size-row{margin-top:16px}
 .crop-actions{display:flex;gap:10px;margin-top:18px}
 .crop-btn{flex:1;font-family:var(--mono);font-size:13.5px;font-weight:700;border:none;border-radius:14px;padding:13px;cursor:pointer;text-align:center}
 .crop-btn.primary{color:#08110c;background:var(--green)}
@@ -157,6 +164,8 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .fish-row{display:flex;align-items:center;gap:10px;padding:8px 2px;border-bottom:1px solid var(--divider)}
 .fish-row:last-child{border-bottom:none}
 .fish-icon{width:32px;height:32px;flex-shrink:0;border-radius:8px;background-color:var(--surface-1);background-repeat:no-repeat;image-rendering:pixelated;display:flex;align-items:center;justify-content:center;font-size:15px}
+.fish-icon-tappable{cursor:pointer;box-shadow:0 0 0 1px var(--divider)}
+.fish-icon-tappable:active{opacity:.7}
 .fish-info{flex:1;min-width:0}
 .fish-name{font-size:13.5px;font-weight:600;color:var(--text-primary)}
 .fish-sub{font-family:var(--mono);font-size:10.5px;color:var(--text-muted);margin-top:2px}
@@ -310,7 +319,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   <div class="tab-panel hidden" id="panelFish">
     <div class="option-group">
       <div class="option-label">아이콘 스프라이트시트</div>
-      <div class="option-desc">196×136px 투명 PNG · 10열×7행 · 칸 16×16px · 칸 간격 4px · 바깥 여백 없음. 업로드하면 아래 목록의 물고기 순서(왼쪽 위부터 가로로)대로 아이콘이 자동 배정돼요. 마지막 3칸은 비워두면 돼요.</div>
+      <div class="option-desc">196×136px 투명 PNG · 10열×7행 · 칸 16×16px · 칸 간격 4px · 바깥 여백 없음. 업로드하면 아래 목록의 물고기 순서(왼쪽 위부터 가로로)대로 아이콘이 자동 배정돼요. 마지막 3칸은 비워두면 돼요. 시트가 규격에 딱 맞지 않으면 아이콘이 어긋나 보일 수 있는데, 목록에서 물고기 아이콘을 탭하면 그 물고기만 따로 세밀영역조절할 수 있어요.</div>
       <div class="fish-sheet-frame" id="fishSheetFrame">
         <div class="fish-sheet-empty" id="fishSheetEmpty">아직 업로드된 시트가 없어요<br>업로드하기 전까진 기본 이모지로 표시돼요</div>
       </div>
@@ -330,7 +339,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
 <div class="crop-overlay hidden" id="cropOverlay">
   <div class="crop-sheet">
     <div class="crop-title">세밀영역조절</div>
-    <div class="crop-desc">네모를 드래그해서 옮기고, 크기 슬라이더로 조절하세요. 오른쪽 확대 미리보기로 경계를 확인할 수 있어요.</div>
+    <div class="crop-desc">네모를 드래그해서 옮기거나 방향 버튼으로 미세 조정하고, 크기 슬라이더로 크기를 바꾸세요. 확대 미리보기로 경계를 확인할 수 있어요.</div>
     <div class="crop-stage" id="cropStage">
       <canvas id="cropCanvas"></canvas>
       <div class="crop-rect" id="cropRectBox"></div>
@@ -340,11 +349,17 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
         <div class="crop-zoom-label">확대 미리보기</div>
         <canvas id="cropZoomCanvas" width="120" height="120"></canvas>
       </div>
-      <div class="crop-size-col">
-        <div class="option-label">크롭 크기</div>
-        <input type="range" id="cropSizeInput" min="10" max="90" value="40">
-        <div class="range-value" id="cropSizeValue">40%</div>
+      <div class="crop-dpad" id="cropDpad">
+        <button type="button" class="crop-dpad-btn crop-dpad-up" data-dir="up" aria-label="위로">▲</button>
+        <button type="button" class="crop-dpad-btn crop-dpad-left" data-dir="left" aria-label="왼쪽으로">◀</button>
+        <button type="button" class="crop-dpad-btn crop-dpad-right" data-dir="right" aria-label="오른쪽으로">▶</button>
+        <button type="button" class="crop-dpad-btn crop-dpad-down" data-dir="down" aria-label="아래로">▼</button>
       </div>
+    </div>
+    <div class="crop-size-row">
+      <div class="option-label">크롭 크기</div>
+      <input type="range" id="cropSizeInput" min="10" max="90" value="40">
+      <div class="range-value" id="cropSizeValue">40%</div>
     </div>
     <div class="crop-actions">
       <button type="button" class="crop-btn secondary" id="cropCancelBtn">취소</button>
@@ -450,6 +465,7 @@ const el = {
   cropZoomCanvas: document.getElementById('cropZoomCanvas'),
   cropSizeInput: document.getElementById('cropSizeInput'),
   cropSizeValue: document.getElementById('cropSizeValue'),
+  cropDpad: document.getElementById('cropDpad'),
   cropCancelBtn: document.getElementById('cropCancelBtn'),
   cropConfirmBtn: document.getElementById('cropConfirmBtn'),
   barColorInput: document.getElementById('barColorInput'),
@@ -817,10 +833,11 @@ el.fishIconFileInput.addEventListener('change', () => {
   // local blob: URL of the picked file (same-origin, so the crop canvas
   // below never risks a cross-origin "tainted canvas" export failure). Both
   // the source photo and the cropped result only reach AssetDB once the dev
-  // hits 적용 (see cropConfirmBtn below, which also runs removeBackgroundOrFallback
-  // on the cropped result — the source photo stays untouched so re-adjusting
-  // the crop later still has the full original to work from).
-  openCropAdjuster(URL.createObjectURL(file), null, file);
+  // hits 적용 (confirmFishIconCrop below, which also runs
+  // removeBackgroundOrFallback on the cropped result — the source photo
+  // stays untouched so re-adjusting the crop later still has the full
+  // original to work from).
+  openCropAdjuster(URL.createObjectURL(file), null, file, confirmFishIconCrop);
 });
 function openFishIconCropAdjuster() {
   const design = fishingConfig.barDesign || {};
@@ -831,8 +848,42 @@ function openFishIconCropAdjuster() {
     // what keeps the later canvas export from throwing — relies on the
     // bucket's public objects serving permissive CORS headers (Supabase's
     // default for a public bucket, which dev-assets already is per assetDb.js).
-    if (asset) openCropAdjuster(asset.dataUrl, design.fishIconCropRect, null);
+    if (asset) openCropAdjuster(asset.dataUrl, design.fishIconCropRect, null, confirmFishIconCrop);
   }).catch(() => {});
+}
+// The fish-icon crop path exports a new cropped image asset (canvas ->
+// background removal -> upload). The fish-species crop path (further below,
+// confirmFishSpeciesCrop) is much cheaper — it never re-exports anything,
+// just saves which region of the *already-uploaded* sheet to sample via CSS
+// background-position, so it doesn't go through AssetDB.addAsset at all.
+async function confirmFishIconCrop(rect, sourceImg, pendingFile) {
+  const cropConfirmDefaultText = el.cropConfirmBtn.textContent;
+  try {
+    const shortSide = Math.min(sourceImg.naturalWidth, sourceImg.naturalHeight);
+    const rectSize = rect.size * shortSide;
+    const srcX = rect.cx * sourceImg.naturalWidth - rectSize / 2;
+    const srcY = rect.cy * sourceImg.naturalHeight - rectSize / 2;
+    const EXPORT_SIZE = 256;
+    const canvas = document.createElement('canvas');
+    canvas.width = EXPORT_SIZE;
+    canvas.height = EXPORT_SIZE;
+    canvas.getContext('2d').drawImage(sourceImg, srcX, srcY, rectSize, rectSize, 0, 0, EXPORT_SIZE, EXPORT_SIZE);
+    let blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    // 최종 아이콘(잘라낸 결과)에만 배경 제거를 적용 — 원본 소스 사진은 나중에
+    // 다시 크롭 위치를 조정할 때 온전한 전체 사진이 필요하므로 그대로 둔다.
+    el.cropConfirmBtn.textContent = '배경 제거 중...';
+    blob = await removeBackgroundOrFallback(blob);
+    const croppedAsset = await AssetDB.addAsset({ type: 'fishing-fish-icon', name: 'fish-icon.png', blob });
+    const patch = { fishIconAssetId: croppedAsset.id, fishIconCropRect: rect };
+    if (pendingFile) {
+      const sourceAsset = await AssetDB.addAsset({ type: 'fishing-fish-icon-source', name: pendingFile.name, blob: pendingFile });
+      patch.fishIconSourceAssetId = sourceAsset.id;
+    }
+    fishingConfig = await AssetDB.setFishingConfig({ barDesign: Object.assign({}, fishingConfig.barDesign, patch) });
+    renderFishIconSlot();
+  } finally {
+    el.cropConfirmBtn.textContent = cropConfirmDefaultText;
+  }
 }
 async function saveBarDesign() {
   const prev = fishingConfig.barDesign || {};
@@ -1121,17 +1172,22 @@ let cropSourceImg = null;
 let cropRect = { cx: 0.5, cy: 0.5, size: 0.4 };
 let cropDragging = false;
 // Set only when adjusting a freshly-picked photo not yet saved anywhere —
-// cropConfirmBtn below uploads it as the new source alongside the cropped
+// cropOnConfirm below uploads it as the new source alongside the cropped
 // result. Re-adjusting an existing icon (openFishIconCropAdjuster) leaves
 // this null since that source is already saved.
 let cropPendingSourceFile = null;
+// What "적용" actually does — confirmFishIconCrop (export+upload) or
+// confirmFishSpeciesCrop (just save a sheet-region override), set per call
+// to openCropAdjuster so the drag/zoom/size UI stays fully shared.
+let cropOnConfirm = null;
 
-function openCropAdjuster(sourceUrl, existingRect, pendingSourceFile) {
+function openCropAdjuster(sourceUrl, existingRect, pendingSourceFile, onConfirm) {
   const img = new Image();
   img.crossOrigin = 'anonymous';
   img.onload = () => {
     cropSourceImg = img;
     cropPendingSourceFile = pendingSourceFile || null;
+    cropOnConfirm = onConfirm;
     cropRect = existingRect ? Object.assign({}, existingRect) : { cx: 0.5, cy: 0.5, size: 0.4 };
     el.cropSizeInput.value = Math.round(cropRect.size * 100);
     el.cropSizeValue.textContent = el.cropSizeInput.value + '%';
@@ -1145,6 +1201,8 @@ function closeCropAdjuster() {
   if (cropSourceImg && cropSourceImg.src.startsWith('blob:')) URL.revokeObjectURL(cropSourceImg.src);
   cropSourceImg = null;
   cropPendingSourceFile = null;
+  cropOnConfirm = null;
+  stopCropDpadRepeat();
 }
 
 function drawCropStage() {
@@ -1198,6 +1256,49 @@ function updateCropCenterFromEvent(e) {
 el.cropStage.addEventListener('pointerdown', (e) => { cropDragging = true; updateCropCenterFromEvent(e); });
 window.addEventListener('pointermove', (e) => { if (cropDragging) updateCropCenterFromEvent(e); });
 window.addEventListener('pointerup', () => { cropDragging = false; });
+
+// 방향 버튼 — 드래그로 대충 옮긴 뒤 미세 조정할 때 쓴다. 탭 한 번에
+// 0.05%(이미지 기준)씩만 움직이는 세밀한 스텝이고, 400ms 뒤부터는 60ms
+// 간격으로 반복 이동한다. 1.2초 넘게 누르고 있으면 그때부턴 더 큰
+// 스텝(0.3%)으로 가속 — 세밀 조정은 그대로 정밀하되, 먼 거리를 계속
+// 눌러서 옮길 때 답답하지 않게.
+const CROP_NUDGE_STEP = 0.0005;
+const CROP_NUDGE_FAST_STEP = 0.003;
+const CROP_NUDGE_ACCEL_MS = 1200;
+function nudgeCropRect(dir, step) {
+  if (!cropSourceImg) return;
+  const s = step || CROP_NUDGE_STEP;
+  if (dir === 'up') cropRect.cy = clamp01(cropRect.cy - s);
+  else if (dir === 'down') cropRect.cy = clamp01(cropRect.cy + s);
+  else if (dir === 'left') cropRect.cx = clamp01(cropRect.cx - s);
+  else if (dir === 'right') cropRect.cx = clamp01(cropRect.cx + s);
+  drawCropStage();
+}
+let cropDpadRepeatDelay = null;
+let cropDpadRepeatTimer = null;
+let cropDpadHoldStart = 0;
+function stopCropDpadRepeat() {
+  clearTimeout(cropDpadRepeatDelay);
+  clearInterval(cropDpadRepeatTimer);
+  cropDpadRepeatDelay = null;
+  cropDpadRepeatTimer = null;
+}
+el.cropDpad.querySelectorAll('.crop-dpad-btn').forEach(btn => {
+  const dir = btn.dataset.dir;
+  btn.addEventListener('pointerdown', (e) => {
+    e.preventDefault(); // avoid the crop-stage drag/other handlers stealing this same pointer sequence
+    stopCropDpadRepeat();
+    nudgeCropRect(dir);
+    cropDpadHoldStart = Date.now();
+    cropDpadRepeatDelay = setTimeout(() => {
+      cropDpadRepeatTimer = setInterval(() => {
+        const held = Date.now() - cropDpadHoldStart;
+        nudgeCropRect(dir, held > CROP_NUDGE_ACCEL_MS ? CROP_NUDGE_FAST_STEP : CROP_NUDGE_STEP);
+      }, 60);
+    }, 400);
+  });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(evt => btn.addEventListener(evt, stopCropDpadRepeat));
+});
 el.cropSizeInput.addEventListener('input', () => {
   cropRect.size = Number(el.cropSizeInput.value) / 100;
   el.cropSizeValue.textContent = el.cropSizeInput.value + '%';
@@ -1205,38 +1306,14 @@ el.cropSizeInput.addEventListener('input', () => {
 });
 el.cropCancelBtn.addEventListener('click', closeCropAdjuster);
 el.cropConfirmBtn.addEventListener('click', async () => {
-  if (!cropSourceImg) return;
+  if (!cropSourceImg || !cropOnConfirm) return;
   el.cropConfirmBtn.disabled = true;
-  const cropConfirmDefaultText = el.cropConfirmBtn.textContent;
   try {
-    const shortSide = Math.min(cropSourceImg.naturalWidth, cropSourceImg.naturalHeight);
-    const rectSize = cropRect.size * shortSide;
-    const srcX = cropRect.cx * cropSourceImg.naturalWidth - rectSize / 2;
-    const srcY = cropRect.cy * cropSourceImg.naturalHeight - rectSize / 2;
-    const EXPORT_SIZE = 256;
-    const canvas = document.createElement('canvas');
-    canvas.width = EXPORT_SIZE;
-    canvas.height = EXPORT_SIZE;
-    canvas.getContext('2d').drawImage(cropSourceImg, srcX, srcY, rectSize, rectSize, 0, 0, EXPORT_SIZE, EXPORT_SIZE);
-    let blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-    // 최종 아이콘(잘라낸 결과)에만 배경 제거를 적용 — 원본 소스 사진은 나중에
-    // 다시 크롭 위치를 조정할 때 온전한 전체 사진이 필요하므로 그대로 둔다.
-    el.cropConfirmBtn.textContent = '배경 제거 중...';
-    blob = await removeBackgroundOrFallback(blob);
-    el.cropConfirmBtn.textContent = cropConfirmDefaultText;
-    const croppedAsset = await AssetDB.addAsset({ type: 'fishing-fish-icon', name: 'fish-icon.png', blob });
-    const patch = { fishIconAssetId: croppedAsset.id, fishIconCropRect: cropRect };
-    if (cropPendingSourceFile) {
-      const sourceAsset = await AssetDB.addAsset({ type: 'fishing-fish-icon-source', name: cropPendingSourceFile.name, blob: cropPendingSourceFile });
-      patch.fishIconSourceAssetId = sourceAsset.id;
-    }
-    fishingConfig = await AssetDB.setFishingConfig({ barDesign: Object.assign({}, fishingConfig.barDesign, patch) });
+    await cropOnConfirm(cropRect, cropSourceImg, cropPendingSourceFile);
     showSaveNote();
     closeCropAdjuster();
-    renderFishIconSlot();
   } finally {
     el.cropConfirmBtn.disabled = false;
-    el.cropConfirmBtn.textContent = cropConfirmDefaultText;
   }
 });
 el.barColorInput.addEventListener('input', saveBarDesign);
@@ -1248,8 +1325,23 @@ el.zoneSizeInput.addEventListener('input', () => {
 
 /* ===== 물고기 종류 탭 — 카탈로그는 dev/data/fishDefs.js에 코드로 박혀 있고
    (67종, id/등급/가치/난이도/시트 slot 고정), 여기서 편집하는 건 그 위에
-   덮어씌울 아이콘 스프라이트시트 한 장뿐이다. ===== */
+   덮어씌울 아이콘 스프라이트시트 한 장 + 물고기별 세밀영역조절 보정이다.
+   AI로 생성한 시트는 FISH_SHEET_LAYOUT 규격(196x136, 10x7, 16px 칸, 4px
+   간격)에 픽셀 단위로 정확히 맞아떨어지지 않는 경우가 흔해서, 이론적 그리드
+   계산(getFishSlotStyle)만으로는 아이콘이 어긋나 보일 수 있다 — 목록의
+   물고기 아이콘을 탭하면 그 물고기 하나만 다시 크롭 조정(fishIconOverrides,
+   fishDefs.js 참고)할 수 있다. */
 const FISH_GRADE_COLORS = { '일반': 'var(--text-muted)', '레어': 'var(--cyan)', '희귀': 'var(--amber)', '전설': 'var(--signal-red)' };
+
+function loadImageDimensions(url) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    img.onerror = () => resolve(null);
+    img.src = url;
+  });
+}
 
 async function renderFishSheetPreview() {
   el.fishSheetFrame.querySelectorAll('img').forEach(img => img.remove());
@@ -1269,22 +1361,26 @@ async function renderFishSheetPreview() {
   return asset;
 }
 
-function renderFishList(sheetAsset) {
+function renderFishList(sheetAsset, sheetDims) {
+  const overrides = fishingConfig.fishIconOverrides || {};
   const byGrade = {};
   Object.values(fishDefs).forEach(f => { (byGrade[f.grade] = byGrade[f.grade] || []).push(f); });
   el.fishGradeGroups.innerHTML = FISH_GRADE_ORDER.filter(g => byGrade[g]).map(grade => {
     const color = FISH_GRADE_COLORS[grade] || 'var(--text-secondary)';
     const rows = byGrade[grade].sort((a, b) => a.slot - b.slot).map(f => {
-      const style = getFishSlotStyle(f.slot, 2);
+      const override = overrides[f.id];
+      const style = (override && sheetDims)
+        ? getFishCropStyle(override, sheetDims.width, sheetDims.height, 32)
+        : getFishSlotStyle(f.slot, 2);
       const iconStyle = sheetAsset
         ? `background-image:url('${sheetAsset.dataUrl}');background-position:${style.backgroundPosition};background-size:${style.backgroundSize}`
         : '';
       return `
         <div class="fish-row">
-          <div class="fish-icon" style="${iconStyle}">${sheetAsset ? '' : '🐟'}</div>
+          <div class="fish-icon${sheetAsset ? ' fish-icon-tappable' : ''}" style="${iconStyle}" data-fish-id="${f.id}">${sheetAsset ? '' : '🐟'}</div>
           <div class="fish-info">
             <div class="fish-name">${f.name}</div>
-            <div class="fish-sub">난이도 ${f.difficulty} · #${String(f.slot).padStart(2, '0')}</div>
+            <div class="fish-sub">난이도 ${f.difficulty} · #${String(f.slot).padStart(2, '0')}${override ? ' · 조정됨' : ''}</div>
           </div>
           <div class="fish-value">${f.value}P</div>
         </div>`;
@@ -1295,10 +1391,33 @@ function renderFishList(sheetAsset) {
         ${rows}
       </div>`;
   }).join('');
+  if (sheetAsset) {
+    el.fishGradeGroups.querySelectorAll('.fish-icon-tappable').forEach(iconEl => {
+      iconEl.addEventListener('click', () => openFishSpeciesCropAdjuster(Number(iconEl.dataset.fishId), sheetAsset, sheetDims));
+    });
+  }
 }
 
 async function renderFishTab() {
-  renderFishList(await renderFishSheetPreview());
+  const sheetAsset = await renderFishSheetPreview();
+  const sheetDims = sheetAsset ? await loadImageDimensions(sheetAsset.dataUrl) : null;
+  renderFishList(sheetAsset, sheetDims);
+}
+
+function openFishSpeciesCropAdjuster(fishId, sheetAsset, sheetDims) {
+  const fishDef = fishDefs[String(fishId)];
+  if (!fishDef) return;
+  const overrides = fishingConfig.fishIconOverrides || {};
+  const existingRect = overrides[fishId] || (sheetDims ? getFishDefaultCropRect(fishDef.slot) : { cx: 0.5, cy: 0.5, size: 0.15 });
+  openCropAdjuster(sheetAsset.dataUrl, existingRect, null, (rect) => confirmFishSpeciesCrop(rect, fishId));
+}
+// No re-export/upload here — the sheet image itself doesn't change, only
+// which region of it this one fish samples via CSS background-position
+// (see getFishCropStyle in fishDefs.js).
+async function confirmFishSpeciesCrop(rect, fishId) {
+  const overrides = Object.assign({}, fishingConfig.fishIconOverrides, { [fishId]: rect });
+  fishingConfig = await AssetDB.setFishingConfig({ fishIconOverrides: overrides });
+  renderFishTab();
 }
 
 el.fishSheetUploadBtn.addEventListener('click', () => el.fishSheetFileInput.click());
@@ -1312,7 +1431,10 @@ el.fishSheetFileInput.addEventListener('change', async () => {
   renderFishTab();
 });
 el.fishSheetRemoveBtn.addEventListener('click', async () => {
-  fishingConfig = await AssetDB.setFishingConfig({ fishSheetAssetId: null });
+  // Clearing the sheet makes every fish fall back to the emoji placeholder —
+  // any per-fish overrides would be meaningless without a sheet to sample
+  // from, so drop them too rather than leaving stale coordinates behind.
+  fishingConfig = await AssetDB.setFishingConfig({ fishSheetAssetId: null, fishIconOverrides: {} });
   showSaveNote();
   renderFishTab();
 });

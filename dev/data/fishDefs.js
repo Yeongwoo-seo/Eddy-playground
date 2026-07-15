@@ -104,3 +104,40 @@ function getFishSlotStyle(slot, scale) {
   };
 }
 
+/* ===== 세밀영역조절 — 물고기별 아이콘 위치 보정 =====
+   실제 업로드된 시트가 FISH_SHEET_LAYOUT 규격(196x136, 10x7, 칸 16px, 간격
+   4px)에 정확히 맞아떨어진다는 보장이 없다 — AI로 생성한 스프라이트시트는
+   칸이 미묘하게 어긋나는 일이 흔해서, getFishSlotStyle의 이론적 그리드
+   계산만으로는 아이콘이 잘못 잘려 보일 수 있다. 그래서 물고기 하나하나를
+   개별적으로 다시 지정할 수 있게 하는 보정값이 fishIconOverrides
+   (AssetDB.getFishingConfig()의 필드, { [fishId]: { cx, cy, size } }) —
+   dev/minigame-fishing/index.html의 크롭 조정 모달과 같은 정규화 좌표계
+   (0~1, 중심 cx/cy + 짧은 변 기준 비율 size)를 그대로 쓴다. 이 좌표는
+   시트의 실제 로드된 해상도 기준이라, getFishSlotStyle과 달리 실제
+   naturalWidth/naturalHeight를 알아야 픽셀 위치로 환산할 수 있다. */
+function getFishDefaultCropRect(slot) {
+  const { columns, rows, cellSize, gap } = FISH_SHEET_LAYOUT;
+  const col = ((slot - 1) % columns) + 1;
+  const row = Math.ceil(slot / columns);
+  const sheetW = columns * cellSize + (columns - 1) * gap;
+  const sheetH = rows * cellSize + (rows - 1) * gap;
+  const cxPx = (col - 1) * (cellSize + gap) + cellSize / 2;
+  const cyPx = (row - 1) * (cellSize + gap) + cellSize / 2;
+  return { cx: cxPx / sheetW, cy: cyPx / sheetH, size: cellSize / Math.min(sheetW, sheetH) };
+}
+
+// rect: { cx, cy, size } normalized over the sheet's *actual* loaded pixel
+// dimensions (sheetNaturalWidth/Height) — not the theoretical spec size, see
+// above. displaySize: the square icon box (px) this should exactly fill.
+function getFishCropStyle(rect, sheetNaturalWidth, sheetNaturalHeight, displaySize) {
+  const shortSide = Math.min(sheetNaturalWidth, sheetNaturalHeight);
+  const cropSize = rect.size * shortSide;
+  const renderScale = displaySize / cropSize;
+  const x = (rect.cx * sheetNaturalWidth - cropSize / 2) * renderScale;
+  const y = (rect.cy * sheetNaturalHeight - cropSize / 2) * renderScale;
+  return {
+    backgroundPosition: `-${x}px -${y}px`,
+    backgroundSize: `${sheetNaturalWidth * renderScale}px ${sheetNaturalHeight * renderScale}px`,
+  };
+}
+

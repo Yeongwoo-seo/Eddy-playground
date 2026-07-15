@@ -1045,7 +1045,12 @@ const AssetDB = (() => {
   // fishSheetAssetId — 물고기 종류 아이콘 스프라이트시트(dev/data/fishDefs.js의
   // FISH_SHEET_LAYOUT 규격: 196x136px, 10열x7행, 16x16px 칸, 4px 간격) 자산 id.
   // 업로드되면 fishDefs.js의 각 물고기 slot 순서 그대로 아이콘이 배정된다.
-  const FISHING_CONFIG_DEFAULT = { castingFrames: [], reelingFrames: [], barDesign: {}, fishSheetAssetId: null };
+  // fishIconOverrides — 실제 업로드된 시트가 그 규격에 정확히 맞아떨어지지
+  // 않을 때(AI 생성 시트는 흔함) 물고기별로 세밀영역조절로 직접 보정한 크롭
+  // 좌표, { [fishId]: { cx, cy, size } } (정규화 0~1, fishDefs.js의
+  // getFishCropStyle 참고). 보정 없는 물고기는 getFishSlotStyle의 이론적
+  // 그리드 계산으로 폴백한다.
+  const FISHING_CONFIG_DEFAULT = { castingFrames: [], reelingFrames: [], barDesign: {}, fishSheetAssetId: null, fishIconOverrides: {} };
 
   async function getFishingConfig() {
     if (fishingConfigCache.has('config')) return fishingConfigCache.get('config');
@@ -1079,15 +1084,23 @@ const AssetDB = (() => {
     return cfg;
   }
 
-  // 증거수첩 — 증거 제시/증거확인 화면에 쓰일 증거수첩 배경 이미지 한 장과,
-  // 그 위 어느 네모 영역에 어떤 증거 데이터 필드(코드/제목/사진/설명/발견
-  // 위치)가 배치될지의 좌표를 담는다. 좌표는 실제 화면 크기와 무관하게
-  // 재사용되도록 이미지의 원본 픽셀 크기 대비 0~1 비율(x,y,w,h)로 저장 —
-  // getFishingConfig/setFishingConfig와 완전히 같은 단일 JSON blob + patch
-  // 병합 패턴.
+  // 증거수첩 — 책갈피(증인/증거/사진)별 배경 이미지 최대 3장과, 그 위 어느
+  // 네모 영역에 어떤 증거 데이터 필드(코드/제목/사진/설명/발견 위치)가
+  // 배치될지의 좌표를 담는다. 배경 원본(디자이너가 준 3장)이 이미 탭 바
+  // 자체를 그림으로 그려 넣은 상태라(책갈피마다 활성 탭 색만 다른 완성된
+  // 페이지 아트), UI가 별도로 탭 텍스트/아이콘을 그리면 이미지 위에 또
+  // 겹쳐 그려진다 — 그래서 이미지가 배정된 책갈피는 그림 자체가 탭 역할을
+  // 하고 코드 쪽 탭은 투명 히트존으로만 남는다(evidenceNotebook.js 참고).
+  // regions는 세 배경이 레이아웃이 동일하다는 전제로 공유(디자이너 확인,
+  // 탭 색만 다름) — 참고 이미지 하나를 기준으로 한 번만 지정하면 셋 다에
+  // 적용된다. imageAssetId(단수)는 이 3분할 이전에 저장된 이전 데이터용
+  // 레거시 필드 — 아직 특정 책갈피 이미지가 없는 섹션의 폴백으로 쓰인다.
+  // 좌표는 실제 화면 크기와 무관하게 재사용되도록 이미지의 원본 픽셀
+  // 크기 대비 0~1 비율(x,y,w,h)로 저장 — getFishingConfig/setFishingConfig와
+  // 완전히 같은 단일 JSON blob + patch 병합 패턴.
   const evidenceNotebookConfigCache = new Map(); // single entry keyed 'config'
   const EVIDENCE_NOTEBOOK_CONFIG_PATH = 'evidence-notebook/config.json';
-  const EVIDENCE_NOTEBOOK_CONFIG_DEFAULT = { imageAssetId: null, regions: {} };
+  const EVIDENCE_NOTEBOOK_CONFIG_DEFAULT = { imageAssetId: null, imageAssetIds: { witness: null, evidence: null, photo: null }, regions: {} };
 
   async function getEvidenceNotebookConfig() {
     if (evidenceNotebookConfigCache.has('config')) return evidenceNotebookConfigCache.get('config');
