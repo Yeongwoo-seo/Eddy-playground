@@ -1064,7 +1064,11 @@ const AssetDB = (() => {
   // backgroundAssetId — 플레이 화면 전체 배경 그림 자산 id. 비어있으면
   // 기본 하늘/바다 그라데이션(dev/minigame-fishing/play/index.html의
   // .frame 기본 background)이 그대로 쓰인다.
-  const FISHING_CONFIG_DEFAULT = { castingFrames: [], reelingFrames: [], barDesign: {}, fishSheetAssetId: null, fishIconOverrides: {}, castingSheetAssetId: null, castingFrameOverrides: {}, castingFrameDurations: [], backgroundAssetId: null };
+  // castingFrameRodTips — 캐스팅 프레임별 낚싯대 끝 지점, { [frameIndex]:
+  // {x,y} }(0~1, char-stage 박스 기준 정규화 좌표). 캐스팅 던지기 물리와
+  // 현수선 낚싯줄 렌더링(play/index.html의 rodTipPxForFrame)이 이 값을
+  // 쓴다 — 지정 안 한 프레임은 DEFAULT_ROD_TIP_FRAC으로 폴백.
+  const FISHING_CONFIG_DEFAULT = { castingFrames: [], reelingFrames: [], barDesign: {}, fishSheetAssetId: null, fishIconOverrides: {}, castingSheetAssetId: null, castingFrameOverrides: {}, castingFrameDurations: [], backgroundAssetId: null, castingFrameRodTips: {} };
 
   async function getFishingConfig() {
     if (fishingConfigCache.has('config')) return fishingConfigCache.get('config');
