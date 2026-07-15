@@ -53,6 +53,31 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .copy-btn{width:100%;font-family:var(--mono);font-size:13px;font-weight:700;color:var(--text-primary);background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:12px;cursor:pointer}
 .copy-btn:active{opacity:.8}
 .copy-status{font-family:var(--mono);font-size:11px;color:var(--green);min-height:16px;margin-top:6px}
+
+/* ===== 세밀영역조절 — 업로드한 원본 사진 위에 크롭 영역을 네모로 얹고,
+   그 아래 확대 미리보기로 경계를 픽셀 단위까지 맞춰볼 수 있는 크롭 조정
+   모달. 지금은 물고기 아이콘에만 붙어 있다 — barDesign.fishIconSourceAssetId
+   (원본, 크롭 전) + fishIconCropRect(정규화 0~1 좌표) + fishIconAssetId
+   (실제 게임에 쓰이는 크롭 결과물) 세 필드로 구성되어, 아이콘을 다시 탭하면
+   같은 원본·같은 크롭 위치에서 다시 조정을 이어갈 수 있다. */
+.crop-overlay{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.7);display:flex;align-items:flex-end;justify-content:center}
+.crop-overlay.hidden{display:none}
+.crop-sheet{width:100%;max-width:430px;background:var(--surface-1);border-radius:20px 20px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom,0));max-height:90vh;overflow-y:auto}
+.crop-title{font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:.04em;margin-bottom:4px}
+.crop-desc{font-size:12.5px;color:var(--text-muted);margin-bottom:14px;line-height:1.5}
+.crop-stage{position:relative;width:100%;border-radius:12px;overflow:hidden;touch-action:none;background:#000;cursor:crosshair}
+.crop-stage canvas{display:block;width:100%}
+.crop-rect{position:absolute;border:2px solid var(--cyan);box-shadow:0 0 0 9999px rgba(0,0,0,.5);pointer-events:none;border-radius:4px}
+.crop-zoom-row{margin-top:14px;display:flex;align-items:center;gap:14px}
+.crop-zoom-wrap{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:6px}
+.crop-zoom-label{font-family:var(--mono);font-size:10.5px;color:var(--text-muted)}
+.crop-zoom-wrap canvas{border-radius:12px;border:1px solid var(--divider);background:#000}
+.crop-size-col{flex:1}
+.crop-actions{display:flex;gap:10px;margin-top:18px}
+.crop-btn{flex:1;font-family:var(--mono);font-size:13.5px;font-weight:700;border:none;border-radius:14px;padding:13px;cursor:pointer;text-align:center}
+.crop-btn.primary{color:#08110c;background:var(--green)}
+.crop-btn.secondary{color:var(--text-primary);background:var(--surface-2)}
+.crop-btn:active{opacity:.8}
 .frame-slot{position:relative;width:64px;height:64px;border-radius:10px;background:var(--surface-1);border:1px solid var(--divider);overflow:hidden;display:flex;align-items:center;justify-content:center}
 .frame-slot img{width:100%;height:100%;object-fit:cover;display:block}
 .frame-slot .frame-index{position:absolute;top:2px;left:4px;font-family:var(--mono);font-size:9px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9)}
@@ -213,7 +238,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     </div>
     <div class="option-group">
       <div class="option-label">물고기 아이콘</div>
-      <div class="option-desc">업로드하지 않으면 기본 이모지(🐟)로 표시돼요.</div>
+      <div class="option-desc">업로드하지 않으면 기본 이모지(🐟)로 표시돼요. 업로드한 사진은 탭하면 크롭 영역을 다시 세밀 조정할 수 있어요.</div>
       <div class="frame-strip" id="fishIconSlot"></div>
       <button type="button" class="frame-add-btn hidden" id="fishIconAddBtn">+ 아이콘 업로드</button>
       <input type="file" id="fishIconFileInput" accept="image/*">
@@ -248,6 +273,32 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
 
   <div class="save-note" id="saveNote">저장됐어요</div>
   <a class="test-btn" id="testBtn" href="/dev/minigame-fishing/play/">테스트하기</a>
+</div>
+
+<div class="crop-overlay hidden" id="cropOverlay">
+  <div class="crop-sheet">
+    <div class="crop-title">세밀영역조절</div>
+    <div class="crop-desc">네모를 드래그해서 옮기고, 크기 슬라이더로 조절하세요. 오른쪽 확대 미리보기로 경계를 확인할 수 있어요.</div>
+    <div class="crop-stage" id="cropStage">
+      <canvas id="cropCanvas"></canvas>
+      <div class="crop-rect" id="cropRectBox"></div>
+    </div>
+    <div class="crop-zoom-row">
+      <div class="crop-zoom-wrap">
+        <div class="crop-zoom-label">확대 미리보기</div>
+        <canvas id="cropZoomCanvas" width="120" height="120"></canvas>
+      </div>
+      <div class="crop-size-col">
+        <div class="option-label">크롭 크기</div>
+        <input type="range" id="cropSizeInput" min="10" max="90" value="40">
+        <div class="range-value" id="cropSizeValue">40%</div>
+      </div>
+    </div>
+    <div class="crop-actions">
+      <button type="button" class="crop-btn secondary" id="cropCancelBtn">취소</button>
+      <button type="button" class="crop-btn primary" id="cropConfirmBtn">적용</button>
+    </div>
+  </div>
 </div>
 <script>
 if ('serviceWorker' in navigator) {
@@ -321,6 +372,15 @@ const el = {
   fishIconSlot: document.getElementById('fishIconSlot'),
   fishIconAddBtn: document.getElementById('fishIconAddBtn'),
   fishIconFileInput: document.getElementById('fishIconFileInput'),
+  cropOverlay: document.getElementById('cropOverlay'),
+  cropStage: document.getElementById('cropStage'),
+  cropCanvas: document.getElementById('cropCanvas'),
+  cropRectBox: document.getElementById('cropRectBox'),
+  cropZoomCanvas: document.getElementById('cropZoomCanvas'),
+  cropSizeInput: document.getElementById('cropSizeInput'),
+  cropSizeValue: document.getElementById('cropSizeValue'),
+  cropCancelBtn: document.getElementById('cropCancelBtn'),
+  cropConfirmBtn: document.getElementById('cropConfirmBtn'),
   barColorInput: document.getElementById('barColorInput'),
   zoneColorInput: document.getElementById('zoneColorInput'),
   zoneSizeInput: document.getElementById('zoneSizeInput'),
@@ -601,8 +661,14 @@ async function renderFishIconSlot() {
     slot.className = 'frame-slot';
     slot.innerHTML = `${asset ? `<img src="${asset.dataUrl}" alt="">` : ''}
       <div class="frame-actions"><button type="button" class="frame-mini-btn danger" data-act="del">✕</button></div>`;
-    slot.querySelector('[data-act=del]').addEventListener('click', async () => {
-      fishingConfig = await AssetDB.setFishingConfig({ barDesign: Object.assign({}, fishingConfig.barDesign, { fishIconAssetId: null }) });
+    // Tapping the icon itself reopens 세밀영역조절 on the stored original
+    // photo, at the crop rectangle last confirmed — not the cropped result,
+    // which has no room left to adjust.
+    const img = slot.querySelector('img');
+    if (img) img.addEventListener('click', openFishIconCropAdjuster);
+    slot.querySelector('[data-act=del]').addEventListener('click', async (e) => {
+      e.stopPropagation();
+      fishingConfig = await AssetDB.setFishingConfig({ barDesign: Object.assign({}, fishingConfig.barDesign, { fishIconAssetId: null, fishIconSourceAssetId: null, fishIconCropRect: null }) });
       showSaveNote();
       renderFishIconSlot();
     });
@@ -615,27 +681,175 @@ async function renderFishIconSlot() {
 // .frame-add-btn comment above), just toggled hidden/visible depending on
 // whether an icon is already set — not recreated on every render.
 el.fishIconAddBtn.addEventListener('click', () => el.fishIconFileInput.click());
-el.fishIconFileInput.addEventListener('change', async () => {
+el.fishIconFileInput.addEventListener('change', () => {
   const file = el.fishIconFileInput.files[0];
   el.fishIconFileInput.value = '';
   if (!file) return;
-  const blob = await removeBackgroundOrFallback(file);
-  const asset = await AssetDB.addAsset({ type: 'fishing-fish-icon', name: file.name, blob });
-  fishingConfig = await AssetDB.setFishingConfig({ barDesign: Object.assign({}, fishingConfig.barDesign, { fishIconAssetId: asset.id }) });
-  showSaveNote();
-  renderFishIconSlot();
+  // Nothing uploaded yet at this point — the adjuster opens straight off a
+  // local blob: URL of the picked file (same-origin, so the crop canvas
+  // below never risks a cross-origin "tainted canvas" export failure). Both
+  // the source photo and the cropped result only reach AssetDB once the dev
+  // hits 적용 (see cropConfirmBtn below, which also runs removeBackgroundOrFallback
+  // on the cropped result — the source photo stays untouched so re-adjusting
+  // the crop later still has the full original to work from).
+  openCropAdjuster(URL.createObjectURL(file), null, file);
 });
+function openFishIconCropAdjuster() {
+  const design = fishingConfig.barDesign || {};
+  if (!design.fishIconSourceAssetId) return;
+  AssetDB.getAsset(design.fishIconSourceAssetId).then(asset => {
+    // Re-adjusting an already-uploaded source: this URL IS cross-origin
+    // (Supabase Storage), so crossOrigin='anonymous' in openCropAdjuster is
+    // what keeps the later canvas export from throwing — relies on the
+    // bucket's public objects serving permissive CORS headers (Supabase's
+    // default for a public bucket, which dev-assets already is per assetDb.js).
+    if (asset) openCropAdjuster(asset.dataUrl, design.fishIconCropRect, null);
+  }).catch(() => {});
+}
 async function saveBarDesign() {
+  const prev = fishingConfig.barDesign || {};
   const design = {
     barColor: el.barColorInput.value,
     zoneColor: el.zoneColorInput.value,
     zoneSizePct: Number(el.zoneSizeInput.value),
-    fishIconAssetId: (fishingConfig.barDesign || {}).fishIconAssetId || null,
+    fishIconAssetId: prev.fishIconAssetId || null,
+    fishIconSourceAssetId: prev.fishIconSourceAssetId || null,
+    fishIconCropRect: prev.fishIconCropRect || null,
   };
   fishingConfig = await AssetDB.setFishingConfig({ barDesign: design });
   showSaveNote();
   renderBarPreview();
 }
+
+/* ===== 세밀영역조절 — 크롭 조정 모달 =====
+   원본 사진을 캔버스에 그대로 그리고, 그 위에 크롭 영역을 나타내는 네모
+   (.crop-rect)를 얹는다. 네모는 화면에 직접 그리지 않고 CSS 위치·크기만
+   맞춘 별도 div라 매 프레임 캔버스를 다시 그릴 필요가 없다 — 드래그 중엔
+   div 위치만, 확대 미리보기만 캔버스로 다시 그린다. cropRect는 원본 이미지
+   기준 정규화 좌표(0~1, 중심 cx/cy + 짧은 변 기준 비율 size)라 원본 해상도와
+   무관하게 저장/재사용된다. */
+let cropSourceImg = null;
+let cropRect = { cx: 0.5, cy: 0.5, size: 0.4 };
+let cropDragging = false;
+// Set only when adjusting a freshly-picked photo not yet saved anywhere —
+// cropConfirmBtn below uploads it as the new source alongside the cropped
+// result. Re-adjusting an existing icon (openFishIconCropAdjuster) leaves
+// this null since that source is already saved.
+let cropPendingSourceFile = null;
+
+function openCropAdjuster(sourceUrl, existingRect, pendingSourceFile) {
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = () => {
+    cropSourceImg = img;
+    cropPendingSourceFile = pendingSourceFile || null;
+    cropRect = existingRect ? Object.assign({}, existingRect) : { cx: 0.5, cy: 0.5, size: 0.4 };
+    el.cropSizeInput.value = Math.round(cropRect.size * 100);
+    el.cropSizeValue.textContent = el.cropSizeInput.value + '%';
+    el.cropOverlay.classList.remove('hidden');
+    drawCropStage();
+  };
+  img.src = sourceUrl;
+}
+function closeCropAdjuster() {
+  el.cropOverlay.classList.add('hidden');
+  if (cropSourceImg && cropSourceImg.src.startsWith('blob:')) URL.revokeObjectURL(cropSourceImg.src);
+  cropSourceImg = null;
+  cropPendingSourceFile = null;
+}
+
+function drawCropStage() {
+  if (!cropSourceImg) return;
+  const stageWidth = el.cropStage.clientWidth;
+  const scale = stageWidth / cropSourceImg.naturalWidth;
+  const stageHeight = cropSourceImg.naturalHeight * scale;
+  el.cropCanvas.width = stageWidth;
+  el.cropCanvas.height = stageHeight;
+  el.cropCanvas.getContext('2d').drawImage(cropSourceImg, 0, 0, stageWidth, stageHeight);
+
+  const shortSide = Math.min(cropSourceImg.naturalWidth, cropSourceImg.naturalHeight);
+  const rectSizePx = cropRect.size * shortSide * scale;
+  const rectCxPx = cropRect.cx * cropSourceImg.naturalWidth * scale;
+  const rectCyPx = cropRect.cy * cropSourceImg.naturalHeight * scale;
+  el.cropRectBox.style.width = rectSizePx + 'px';
+  el.cropRectBox.style.height = rectSizePx + 'px';
+  el.cropRectBox.style.left = (rectCxPx - rectSizePx / 2) + 'px';
+  el.cropRectBox.style.top = (rectCyPx - rectSizePx / 2) + 'px';
+  drawCropZoom();
+}
+
+function drawCropZoom() {
+  if (!cropSourceImg) return;
+  const zctx = el.cropZoomCanvas.getContext('2d');
+  const shortSide = Math.min(cropSourceImg.naturalWidth, cropSourceImg.naturalHeight);
+  const rectSize = cropRect.size * shortSide;
+  const srcX = cropRect.cx * cropSourceImg.naturalWidth - rectSize / 2;
+  const srcY = cropRect.cy * cropSourceImg.naturalHeight - rectSize / 2;
+  // Shows a bit more than the rect itself so the boundary line is visible
+  // with context around it, not just flat color out to the edge.
+  const pad = rectSize * 0.3;
+  const viewSize = rectSize + pad * 2;
+  const canvasSize = el.cropZoomCanvas.width;
+  zctx.clearRect(0, 0, canvasSize, canvasSize);
+  zctx.drawImage(cropSourceImg, srcX - pad, srcY - pad, viewSize, viewSize, 0, 0, canvasSize, canvasSize);
+  const rectPx = (rectSize / viewSize) * canvasSize;
+  const offsetPx = (pad / viewSize) * canvasSize;
+  zctx.strokeStyle = '#59B8C8';
+  zctx.lineWidth = 2;
+  zctx.strokeRect(offsetPx, offsetPx, rectPx, rectPx);
+}
+
+function clamp01(v) { return Math.max(0, Math.min(1, v)); }
+function updateCropCenterFromEvent(e) {
+  const rect = el.cropStage.getBoundingClientRect();
+  cropRect.cx = clamp01((e.clientX - rect.left) / rect.width);
+  cropRect.cy = clamp01((e.clientY - rect.top) / rect.height);
+  drawCropStage();
+}
+el.cropStage.addEventListener('pointerdown', (e) => { cropDragging = true; updateCropCenterFromEvent(e); });
+window.addEventListener('pointermove', (e) => { if (cropDragging) updateCropCenterFromEvent(e); });
+window.addEventListener('pointerup', () => { cropDragging = false; });
+el.cropSizeInput.addEventListener('input', () => {
+  cropRect.size = Number(el.cropSizeInput.value) / 100;
+  el.cropSizeValue.textContent = el.cropSizeInput.value + '%';
+  drawCropStage();
+});
+el.cropCancelBtn.addEventListener('click', closeCropAdjuster);
+el.cropConfirmBtn.addEventListener('click', async () => {
+  if (!cropSourceImg) return;
+  el.cropConfirmBtn.disabled = true;
+  const cropConfirmDefaultText = el.cropConfirmBtn.textContent;
+  try {
+    const shortSide = Math.min(cropSourceImg.naturalWidth, cropSourceImg.naturalHeight);
+    const rectSize = cropRect.size * shortSide;
+    const srcX = cropRect.cx * cropSourceImg.naturalWidth - rectSize / 2;
+    const srcY = cropRect.cy * cropSourceImg.naturalHeight - rectSize / 2;
+    const EXPORT_SIZE = 256;
+    const canvas = document.createElement('canvas');
+    canvas.width = EXPORT_SIZE;
+    canvas.height = EXPORT_SIZE;
+    canvas.getContext('2d').drawImage(cropSourceImg, srcX, srcY, rectSize, rectSize, 0, 0, EXPORT_SIZE, EXPORT_SIZE);
+    let blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    // 최종 아이콘(잘라낸 결과)에만 배경 제거를 적용 — 원본 소스 사진은 나중에
+    // 다시 크롭 위치를 조정할 때 온전한 전체 사진이 필요하므로 그대로 둔다.
+    el.cropConfirmBtn.textContent = '배경 제거 중...';
+    blob = await removeBackgroundOrFallback(blob);
+    el.cropConfirmBtn.textContent = cropConfirmDefaultText;
+    const croppedAsset = await AssetDB.addAsset({ type: 'fishing-fish-icon', name: 'fish-icon.png', blob });
+    const patch = { fishIconAssetId: croppedAsset.id, fishIconCropRect: cropRect };
+    if (cropPendingSourceFile) {
+      const sourceAsset = await AssetDB.addAsset({ type: 'fishing-fish-icon-source', name: cropPendingSourceFile.name, blob: cropPendingSourceFile });
+      patch.fishIconSourceAssetId = sourceAsset.id;
+    }
+    fishingConfig = await AssetDB.setFishingConfig({ barDesign: Object.assign({}, fishingConfig.barDesign, patch) });
+    showSaveNote();
+    closeCropAdjuster();
+    renderFishIconSlot();
+  } finally {
+    el.cropConfirmBtn.disabled = false;
+    el.cropConfirmBtn.textContent = cropConfirmDefaultText;
+  }
+});
 el.barColorInput.addEventListener('input', saveBarDesign);
 el.zoneColorInput.addEventListener('input', saveBarDesign);
 el.zoneSizeInput.addEventListener('input', () => {
