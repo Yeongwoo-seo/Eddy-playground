@@ -33,16 +33,26 @@ const EvidenceNotebook = (function () {
   // 히트존은 보이지 않게(투명) 얹히기만 하면 되므로 픽셀 정확도보다는
   // 넉넉하게 잡는 쪽이 안전하다.
   const TAB_HOTSPOT_BAND = { top: 0, height: 0.115, left: 0.44, width: 0.56 };
-  // 관리자가 아직 "영역지정"으로 code/title/photo/description/
-  // discoveredLocationText를 안 찍었을 때 쓰는 눈대중 기본값 — 실제 지정된
-  // regions가 있으면 그쪽이 항상 우선한다.
+  // 관리자가 아직 "영역지정"으로 각 라벨을 안 찍었을 때 쓰는 눈대중
+  // 기본값 — 실제 지정된 regions가 있으면 그쪽이 항상 우선한다. 버튼 4개
+  // (prevButton/indexButton/nextButton/submitButton)는 참고 시안 하단
+  // 버튼 줄 위치 기준.
   const DEFAULT_REGION_FALLBACK = {
     code: { x: 0.09, y: 0.10, w: 0.5, h: 0.025 },
     title: { x: 0.09, y: 0.135, w: 0.82, h: 0.05 },
     photo: { x: 0.18, y: 0.20, w: 0.64, h: 0.40 },
     description: { x: 0.10, y: 0.63, w: 0.80, h: 0.11 },
-    discoveredLocationText: { x: 0.10, y: 0.755, w: 0.80, h: 0.04 },
+    discoveredLocationText: { x: 0.10, y: 0.755, w: 0.55, h: 0.035 },
+    relatedPerson: { x: 0.10, y: 0.72, w: 0.55, h: 0.035 },
+    prevButton: { x: 0.09, y: 0.895, w: 0.19, h: 0.045 },
+    indexButton: { x: 0.30, y: 0.895, w: 0.19, h: 0.045 },
+    nextButton: { x: 0.51, y: 0.895, w: 0.19, h: 0.045 },
+    submitButton: { x: 0.71, y: 0.89, w: 0.20, h: 0.055 },
   };
+  // dev/upload/evidence-notebook/index.html의 DEFAULT_LABEL_STYLE과 같은
+  // 기본값 — 텍스트형 라벨(code/title/description/discoveredLocationText/
+  // relatedPerson)에만 의미가 있다.
+  const DEFAULT_LABEL_STYLE = { fontSize: 13, color: '#2c2311', align: 'left', weight: 'normal' };
 
   let mounted = false;
   let el = {};
@@ -106,6 +116,14 @@ const EvidenceNotebook = (function () {
   function regionFor(labelId) {
     const r = notebookConfig && notebookConfig.regions && notebookConfig.regions[labelId];
     return r || DEFAULT_REGION_FALLBACK[labelId] || null;
+  }
+  function styleFor(labelId) {
+    const s = notebookConfig && notebookConfig.styles && notebookConfig.styles[labelId];
+    return Object.assign({}, DEFAULT_LABEL_STYLE, s);
+  }
+  function textStyleCss(labelId) {
+    const s = styleFor(labelId);
+    return `font-size:${s.fontSize}px;color:${s.color};text-align:${s.align};font-weight:${s.weight === 'bold' ? '700' : '400'}`;
   }
   async function ensureEvidencePhotoCatalog() {
     if (typeof AssetDB === 'undefined') return;
@@ -241,11 +259,13 @@ const EvidenceNotebook = (function () {
     const section = SECTIONS.find(s => s.id === state.section) || SECTIONS[1];
     el.overlay.style.setProperty('--evn-tint', section.tint);
 
-    // 실제 배경 아트가 하나라도 있으면 그림 자체에 탭이 그려져 있으므로
-    // CSS 탭바는 완전히 숨기고, 각 페이지 안에 투명 히트존만 얹는다
-    // (renderImageModePageHtml). 배경이 아예 없을 때만 이 탭바로 대체한다.
+    // 실제 배경 아트가 하나라도 있으면 그림 자체에 탭/이전/색인/다음/제출
+    // 버튼이 다 그려져 있으므로 CSS 탭바·하단 바·제출 버튼은 통째로 숨기고,
+    // 각 페이지 안에 투명 히트존만 얹는다(renderImageModePageHtml). 배경이
+    // 아예 없을 때만 이 CSS 크롬으로 대체한다.
     const showChromeTabs = !hasAnyRealBg();
     el.tabbar.classList.toggle('hidden', !showChromeTabs);
+    el.footer.classList.toggle('hidden', !showChromeTabs);
     if (showChromeTabs) {
       el.tabbar.innerHTML = SECTIONS.map(s => `
         <button type="button" class="evn-tab evn-tab-${s.id}${s.id === state.section ? ' evn-tab-active' : ''}" data-evn-tab="${s.id}" style="${s.id === state.section ? `--evn-tab-tint:${s.tint}` : ''}">
@@ -260,7 +280,7 @@ const EvidenceNotebook = (function () {
 
     el.prevBtn.disabled = state.index <= 0;
     el.nextBtn.disabled = state.index >= list.length - 1;
-    el.submitBtn.classList.toggle('hidden', state.mode !== 'present' || !entry);
+    el.submitBtn.classList.toggle('hidden', !showChromeTabs || state.mode !== 'present' || !entry);
     el.npcTag.classList.toggle('hidden', state.mode !== 'present');
     if (state.mode === 'present' && state.npcId) {
       el.npcTag.textContent = `제시 대상 · ${personName(state.npcId)}`;
@@ -305,45 +325,67 @@ const EvidenceNotebook = (function () {
     const r = regionFor(labelId);
     return r ? `left:${r.x * 100}%;top:${r.y * 100}%;width:${r.w * 100}%;height:${r.h * 100}%` : 'display:none';
   }
+  // 텍스트형 라벨(code/title/description/discoveredLocationText/
+  // relatedPerson) 전용 — 위치(regionStyle)에 관리자가 지정한 서식(글자
+  // 크기·색·정렬·굵기, dev/upload/evidence-notebook/index.html의 "서식
+  // 패널")을 더한다.
+  function textRegionStyle(labelId) {
+    const r = regionFor(labelId);
+    if (!r) return 'display:none';
+    return `left:${r.x * 100}%;top:${r.y * 100}%;width:${r.w * 100}%;height:${r.h * 100}%;${textStyleCss(labelId)}`;
+  }
+  // 버튼형 라벨(prevButton/indexButton/nextButton/submitButton) 전용 —
+  // 그림에 이미 그려진 버튼 위에 얹는 투명 히트존이라 위치만 있으면 된다.
+  function buttonHotspotHtml(labelId, dataAttr, ariaLabel) {
+    const r = regionFor(labelId);
+    if (!r) return '';
+    return `<button type="button" class="evn-tab-hotspot" ${dataAttr} style="left:${r.x * 100}%;top:${r.y * 100}%;width:${r.w * 100}%;height:${r.h * 100}%" aria-label="${escapeHtml(ariaLabel)}"></button>`;
+  }
 
   // 실제 배경 아트가 있는 책갈피 — 그림을 그대로 캔버스로 쓰고, 관리자가
-  // "영역지정"으로 찍어둔 code/title/photo/description/discoveredLocationText
-  // 좌표(없으면 눈대중 기본값, DEFAULT_REGION_FALLBACK) 위에 실제 데이터를
-  // 절대좌표로 얹는다. 탭도 그림 자체에 그려져 있으므로 투명 히트존만
-  // TAB_HOTSPOT_BAND 위치에 추가한다.
+  // "영역지정"으로 찍어둔 좌표(없으면 눈대중 기본값, DEFAULT_REGION_FALLBACK)
+  // 위에 실제 데이터를 절대좌표로 얹는다. 탭도, 이전/색인/다음/제출
+  // 버튼도 이미 그림 자체에 그려져 있으므로 투명 히트존만 얹는다 — 그래서
+  // render()가 이 모드일 때 CSS 탭바/하단 바(.evn-footer)/제출 버튼
+  // (.evn-submit-btn)을 통째로 숨긴다(showChromeTabs).
   function renderImageModePageHtml(entry, total, bgUrl) {
     const template = templateFor(entry);
     const photoUrl = photoUrlFor(entry);
     const pageNum = String(state.index + 1).padStart(2, '0');
     const totalStr = String(total).padStart(2, '0');
-    const stages = (entry.stages || []).filter(s => s && s.summary);
     const relatedNpc = (entry.relatedNpcIds && entry.relatedNpcIds[0]) ? personName(entry.relatedNpcIds[0]) : '';
 
     const mainIsPhoto = template === 'image' && !!photoUrl;
     const mainHtml = mainIsPhoto
       ? `<div class="evn-imgmode-photo" style="${regionStyle('photo')}" data-evn-zoom="1"><img src="${photoUrl}" alt="${escapeHtml(entry.title)}"></div>`
-      : `<div class="evn-imgmode-text-main" style="${regionStyle('photo')}">${escapeHtml(entry.description || entry.summary || '')}</div>`;
+      : `<div class="evn-imgmode-text-main" style="${textRegionStyle('photo')}">${escapeHtml(entry.description || entry.summary || '')}</div>`;
     const extraDescHtml = (mainIsPhoto && entry.description)
-      ? `<div class="evn-imgmode-desc" style="${regionStyle('description')}">${escapeHtml(entry.description)}</div>` : '';
-
-    const metaLines = [];
-    if (entry.discoveredLocationText) metaLines.push(`<div class="evn-imgmode-meta-line"><span class="evn-imgmode-meta-icon">📍</span>${escapeHtml(entry.discoveredLocationText)}</div>`);
-    if (relatedNpc) metaLines.push(`<div class="evn-imgmode-meta-line"><span class="evn-imgmode-meta-icon">👤</span>${escapeHtml(relatedNpc)}</div>`);
-    if (stages.length) metaLines.push(`<div class="evn-imgmode-meta-line"><span class="evn-imgmode-meta-icon">✦</span>조사 단계 ${stages.length}건</div>`);
-    const metaHtml = metaLines.length ? `<div class="evn-imgmode-location" style="${regionStyle('discoveredLocationText')}">${metaLines.join('')}</div>` : '';
+      ? `<div class="evn-imgmode-desc" style="${textRegionStyle('description')}">${escapeHtml(entry.description)}</div>` : '';
+    const locationHtml = entry.discoveredLocationText
+      ? `<div class="evn-imgmode-location" style="${textRegionStyle('discoveredLocationText')}"><span class="evn-imgmode-meta-icon">📍</span>${escapeHtml(entry.discoveredLocationText)}</div>` : '';
+    const relatedPersonHtml = relatedNpc
+      ? `<div class="evn-imgmode-location" style="${textRegionStyle('relatedPerson')}"><span class="evn-imgmode-meta-icon">👤</span>${escapeHtml(relatedNpc)}</div>` : '';
 
     const hotspotW = TAB_HOTSPOT_BAND.width / SECTIONS.length;
-    const hotspotsHtml = SECTIONS.map((s, i) => `<button type="button" class="evn-tab-hotspot" data-evn-tab="${s.id}" style="left:${(TAB_HOTSPOT_BAND.left + i * hotspotW) * 100}%;top:${TAB_HOTSPOT_BAND.top * 100}%;width:${hotspotW * 100}%;height:${TAB_HOTSPOT_BAND.height * 100}%" aria-label="${escapeHtml(s.label)}"></button>`).join('');
+    const tabHotspotsHtml = SECTIONS.map((s, i) => `<button type="button" class="evn-tab-hotspot" data-evn-tab="${s.id}" style="left:${(TAB_HOTSPOT_BAND.left + i * hotspotW) * 100}%;top:${TAB_HOTSPOT_BAND.top * 100}%;width:${hotspotW * 100}%;height:${TAB_HOTSPOT_BAND.height * 100}%" aria-label="${escapeHtml(s.label)}"></button>`).join('');
+    const navHotspotsHtml = [
+      state.index > 0 ? buttonHotspotHtml('prevButton', 'data-evn-prev="1"', '이전') : '',
+      buttonHotspotHtml('indexButton', 'data-evn-index="1"', '색인'),
+      state.index < total - 1 ? buttonHotspotHtml('nextButton', 'data-evn-next="1"', '다음') : '',
+      state.mode === 'present' ? buttonHotspotHtml('submitButton', 'data-evn-submit="1"', '제출') : '',
+    ].join('');
 
     return `
       <div class="evn-sheet evn-sheet-imagemode">
         <img class="evn-imgmode-bg" src="${bgUrl}" alt="">
-        ${hotspotsHtml}
-        <div class="evn-imgmode-code" style="${regionStyle('code')}">${escapeHtml(entry.code || '')} · ${pageNum}/${totalStr}</div>
-        <div class="evn-imgmode-title" style="${regionStyle('title')}">${escapeHtml(entry.title)}${entry.status === 'updated' ? '<span class="evn-updated">업데이트됨</span>' : ''}</div>
+        ${tabHotspotsHtml}
+        ${navHotspotsHtml}
+        <div class="evn-imgmode-code" style="${textRegionStyle('code')}">${escapeHtml(entry.code || '')} · ${pageNum}/${totalStr}</div>
+        <div class="evn-imgmode-title" style="${textRegionStyle('title')}">${escapeHtml(entry.title)}${entry.status === 'updated' ? '<span class="evn-updated">업데이트됨</span>' : ''}</div>
         ${mainHtml}
         ${extraDescHtml}
-        ${metaHtml}
+        ${locationHtml}
+        ${relatedPersonHtml}
       </div>
     `;
   }
@@ -400,10 +442,17 @@ const EvidenceNotebook = (function () {
     el.page.querySelectorAll('[data-evn-zoom]').forEach(node => {
       node.addEventListener('click', () => { state.zoomEntry = currentEntry(); render(); });
     });
-    // 이미지 모드 전용 — 그림에 그려진 탭 위에 얹은 투명 히트존(§상단 주석).
+    // 이미지 모드 전용 — 그림에 그려진 탭/이전/색인/다음/제출 버튼 위에
+    // 얹은 투명 히트존(§상단 주석). CSS 크롬(evn-footer/evn-submit-btn)이
+    // 이미 같은 동작(goPrev/goNext/openIndex/requestSubmit)을 쓰므로 그대로
+    // 재사용한다.
     el.page.querySelectorAll('[data-evn-tab]').forEach(node => {
       node.addEventListener('click', () => switchSection(node.dataset.evnTab));
     });
+    el.page.querySelectorAll('[data-evn-prev]').forEach(node => node.addEventListener('click', goPrev));
+    el.page.querySelectorAll('[data-evn-next]').forEach(node => node.addEventListener('click', goNext));
+    el.page.querySelectorAll('[data-evn-index]').forEach(node => node.addEventListener('click', () => { state.isIndexOpen = true; render(); }));
+    el.page.querySelectorAll('[data-evn-submit]').forEach(node => node.addEventListener('click', requestSubmit));
   }
 
   /* ===== 확대 뷰어 (핀치/드래그/더블탭) ===== */
@@ -499,7 +548,7 @@ const EvidenceNotebook = (function () {
           <button type="button" class="evn-close-btn" id="evnCloseBtn2">✕</button>
           <div class="evn-page" id="evnPage"></div>
           <div class="evn-npc-tag hidden" id="evnNpcTag"></div>
-          <div class="evn-footer">
+          <div class="evn-footer" id="evnFooter">
             <button type="button" class="evn-nav-btn" id="evnPrevBtn">‹ 이전</button>
             <button type="button" class="evn-nav-btn evn-nav-btn-index" id="evnIndexBtn">☰ 색인</button>
             <button type="button" class="evn-nav-btn" id="evnNextBtn">다음 ›</button>
@@ -535,6 +584,7 @@ const EvidenceNotebook = (function () {
     el = {
       overlay,
       tabbar: overlay.querySelector('#evnTabbar'),
+      footer: overlay.querySelector('#evnFooter'),
       page: overlay.querySelector('#evnPage'),
       npcTag: overlay.querySelector('#evnNpcTag'),
       prevBtn: overlay.querySelector('#evnPrevBtn'),
@@ -632,9 +682,11 @@ const EvidenceNotebook = (function () {
       .evn-imgmode-photo img{width:100%;height:100%;object-fit:cover;display:block}
       .evn-imgmode-text-main{position:absolute;overflow-y:auto;font-size:12px;line-height:1.5;color:#3a2f1c;padding:4px}
       .evn-imgmode-desc{position:absolute;overflow-y:auto;font-size:11px;line-height:1.5;color:#4a3d22}
-      .evn-imgmode-location{position:absolute;overflow-y:auto;display:flex;flex-direction:column;gap:3px;font-size:10.5px;color:#2c2311}
-      .evn-imgmode-meta-line{display:flex;align-items:baseline;gap:5px}
-      .evn-imgmode-meta-icon{opacity:.8}
+      /* discoveredLocationText/relatedPerson 각각 자기 영역에 아이콘+텍스트
+         한 줄로 표시 — 글자 크기/색은 textRegionStyle의 인라인 스타일이
+         우선한다(관리자 서식 패널, dev/upload/evidence-notebook/index.html). */
+      .evn-imgmode-location{position:absolute;overflow:hidden;display:flex;align-items:baseline;gap:5px;white-space:nowrap}
+      .evn-imgmode-meta-icon{opacity:.8;flex-shrink:0}
       .evn-empty-icon{font-size:34px;opacity:.7}
       .evn-empty-text{font-size:13px;font-weight:600}
 
@@ -665,6 +717,7 @@ const EvidenceNotebook = (function () {
       .evn-npc-tag.hidden{display:none}
 
       .evn-footer{display:flex;gap:8px;margin-top:10px;flex-shrink:0}
+      .evn-footer.hidden{display:none}
       .evn-nav-btn{flex:1;font-family:var(--mono,'IBM Plex Mono',ui-monospace,monospace);font-size:12.5px;font-weight:700;color:#fff;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:12px;padding:12px 8px;cursor:pointer;min-height:44px}
       .evn-nav-btn:disabled{opacity:.35;pointer-events:none}
       .evn-nav-btn:active{opacity:.8}
