@@ -2,7 +2,7 @@
 // (the installed start_url) with { scope: '.' }, so navigating to
 // planner.html/pack.html/arrival.html/secret.html stays inside the
 // standalone app instead of kicking out to the browser
-const CACHE_NAME = 'gangnangkong-tour-v5';
+const CACHE_NAME = 'gangnangkong-tour-v6';
 const APP_SHELL = [
   'schedule.html',
   'planner.html',
@@ -57,4 +57,19 @@ self.addEventListener('fetch', event => {
       return response;
     }).catch(() => caches.match(event.request))
   );
+});
+
+// background trip notifications, delivered by the gangnangkong-tour-push
+// Worker even while the app is fully closed — see worker/README.md
+self.addEventListener('push', event => {
+  let data = {};
+  try { data = event.data ? event.data.json() : {}; } catch (e) {}
+  const title = data.title || '강낭콩 투어';
+  const body = data.body || '';
+  event.waitUntil(self.registration.showNotification(title, { body, icon: 'icons/icon-192.png' }));
+});
+
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  event.waitUntil(clients.openWindow('schedule.html'));
 });

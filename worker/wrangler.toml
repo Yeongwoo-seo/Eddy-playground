@@ -1,0 +1,20 @@
+name = "gangnangkong-tour-push"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+
+# create with: npx wrangler kv namespace create PUSH_KV
+# then paste the returned id below
+kv_namespaces = [
+  { binding = "PUSH_KV", id = "REPLACE_WITH_KV_NAMESPACE_ID" }
+]
+
+# fires every minute and delivers any due-and-unfired notification rules
+[triggers]
+crons = ["* * * * *"]
+
+[vars]
+VAPID_SUBJECT = "mailto:baobab.lunchbox@gmail.com"
+VAPID_PUBLIC_KEY = "BBVVH_C7elBHMMbAYAyrrrN0eLesVlhxEhjyjc4qUHuHhEqg3G4HHic36Zp5Wq-RPs2VVuWcFmESr7eO_kcssIs"
+
+# VAPID_PRIVATE_KEY is a secret, not a var — set it with:
+# npx wrangler secret put VAPID_PRIVATE_KEY
