@@ -43,6 +43,23 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;overflow:hidden}
 .dropzone.busy{opacity:.6;pointer-events:none}
 
+/* ===== 책갈피별 배경 슬롯 3장 =====
+   원본 아트가 탭 바 자체를 그림 안에 그려 넣은 완성된 페이지라(§상단 주석
+   참고), 책갈피마다 별도 이미지를 받는다 — 노트 UI가 텍스트 탭을 따로
+   그리지 않고 이 그림들을 그대로 배경으로 스왑한다. */
+.slot-grid{display:flex;flex-direction:column;gap:10px;margin-bottom:22px}
+.slot-card{display:flex;align-items:center;gap:12px;background:var(--surface-1);border:1px solid var(--divider);border-radius:14px;padding:12px}
+.slot-thumb{width:56px;height:96px;border-radius:8px;overflow:hidden;background:var(--surface-2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--text-muted)}
+.slot-thumb img{width:100%;height:100%;object-fit:cover}
+.slot-body{flex:1;min-width:0}
+.slot-label{font-size:14px;font-weight:700;margin-bottom:2px}
+.slot-status{font-family:var(--mono);font-size:11px}
+.slot-status.done{color:var(--green)}
+.slot-status.todo{color:var(--text-muted)}
+.slot-btn{font-family:var(--mono);font-size:11.5px;font-weight:700;color:var(--text-primary);background:var(--surface-2);border:1px solid var(--divider);border-radius:10px;padding:8px 12px;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.slot-btn:active{opacity:.8}
+.slot-card.busy{opacity:.55;pointer-events:none}
+
 .upload-status{margin-top:14px;padding:12px 14px;border-radius:12px;font-size:12.5px;line-height:1.5}
 .upload-status.busy{background:var(--surface-1);border:1px solid var(--divider);color:var(--text-secondary)}
 .upload-status.error{background:rgba(217,65,65,.12);border:1px solid rgba(217,65,65,.35);color:var(--signal-red)}
@@ -106,22 +123,16 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   <a class="back" id="backBtn" href="/dev/data/">‹ 데이터 설정</a>
   <div class="tag">Operation MK</div>
   <div class="title">증거수첩</div>
-  <div class="sub">증거 제시/증거확인 화면에 쓰일 증거수첩 이미지를 올리고, 그 위 어느 자리에 어떤 증거 데이터(코드·제목·사진·설명·발견 위치)가 들어갈지 네모 영역으로 지정합니다.</div>
+  <div class="sub">증거 제시/증거확인 화면에 쓰일 증거수첩 배경을 책갈피(증인·증거·사진)별로 올립니다. 세 그림은 탭 바까지 포함해 완성된 페이지 아트라, 노트 화면은 이 그림 자체를 책갈피별 배경으로 바꿔 끼웁니다. 세 그림의 레이아웃이 같다는 전제로, 어느 자리에 어떤 증거 데이터(코드·제목·사진·설명·발견 위치)가 들어갈지는 영역 하나만 지정하면 셋 다에 적용됩니다.</div>
 
-  <div class="dropzone" id="dropzone">
-    <div class="dropzone-icon">📓</div>
-    <div class="dropzone-text">증거수첩 이미지 올리기</div>
-    <button type="button" class="select-btn" id="selectBtn">이미지 선택</button>
-    <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp">
-  </div>
+  <div class="slot-grid" id="slotGrid"></div>
+  <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp">
 
   <div class="preview-panel hidden" id="previewPanel">
-    <div class="preview-img-wrap"><img id="previewImg" alt="증거수첩"></div>
     <div class="action-row">
       <button type="button" class="primary-btn" id="areaSelectBtn">영역지정</button>
-      <button type="button" class="secondary-btn" id="changeImageBtn">이미지 교체</button>
     </div>
-    <div class="section-title">데이터 라벨별 지정 현황</div>
+    <div class="section-title">데이터 라벨별 지정 현황 (세 책갈피 공용)</div>
     <div class="region-list" id="regionList"></div>
   </div>
 
@@ -158,10 +169,12 @@ if ('serviceWorker' in navigator) {
    selectType 탭 구조와 모양이 전혀 달라 거기 끼워넣지 않았다).
 
    저장 데이터 (AssetDB.getEvidenceNotebookConfig/setEvidenceNotebookConfig):
-     { imageAssetId, regions: { [labelId]: {x,y,w,h} } }
+     { imageAssetId(레거시, 책갈피 3분할 이전 데이터), imageAssetIds: {
+       witness, evidence, photo }, regions: { [labelId]: {x,y,w,h} } }
    x/y/w/h는 이미지 원본 크기 대비 0~1 비율 — "영역지정" 편집기가 항상
    이미지를 화면 폭에 맞춰(가로=100%) 그리므로, 가로 비율 스케일이 곧 세로
    비율 스케일과 같아 어느 화면 크기에서 다시 그려도 같은 비율로 맞는다.
+   세 책갈피 배경은 레이아웃이 같다는 전제로 regions 하나를 공유한다.
    ========================================================================= */
 
 const EVIDENCE_NOTEBOOK_LABELS = [
@@ -171,20 +184,24 @@ const EVIDENCE_NOTEBOOK_LABELS = [
   { id: 'description', label: '설명' },
   { id: 'discoveredLocationText', label: '발견 위치' },
 ];
+const EVIDENCE_NOTEBOOK_SLOTS = [
+  { id: 'witness', label: '증인' },
+  { id: 'evidence', label: '증거' },
+  { id: 'photo', label: '사진' },
+];
 
-let notebookConfig = { imageAssetId: null, regions: {} };
-let notebookImageUrl = null;
+let notebookConfig = { imageAssetId: null, imageAssetIds: { witness: null, evidence: null, photo: null }, regions: {} };
+let slotImageUrls = { witness: null, evidence: null, photo: null }; // section -> dataUrl
+let legacyFallbackSlots = new Set(); // 레거시 단일 이미지를 임시로 보여주는 중인 슬롯 id들
+let currentUploadSlot = null; // fileInput이 지금 어느 슬롯용으로 열렸는지
 let draftRegions = {}; // 편집기 안에서만 쓰는 임시 상태 — 확정을 눌러야 저장됨
 let selectedLabelId = null;
 
 const el = {
-  dropzone: document.getElementById('dropzone'),
-  selectBtn: document.getElementById('selectBtn'),
+  slotGrid: document.getElementById('slotGrid'),
   fileInput: document.getElementById('fileInput'),
   previewPanel: document.getElementById('previewPanel'),
-  previewImg: document.getElementById('previewImg'),
   areaSelectBtn: document.getElementById('areaSelectBtn'),
-  changeImageBtn: document.getElementById('changeImageBtn'),
   regionList: document.getElementById('regionList'),
   uploadStatus: document.getElementById('uploadStatus'),
   evnFullscreen: document.getElementById('evnFullscreen'),
@@ -202,11 +219,36 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
+// 영역지정 편집기의 기준 이미지 — 세 책갈피가 레이아웃을 공유한다는 전제라
+// 아무거나 먼저 채워진 걸 쓰면 된다(증거 → 증인 → 사진 순으로 우선).
+function referenceImageUrl() {
+  return slotImageUrls.evidence || slotImageUrls.witness || slotImageUrls.photo || null;
+}
+
 function renderMainView() {
-  const hasImage = !!notebookImageUrl;
-  el.dropzone.classList.toggle('hidden', hasImage);
-  el.previewPanel.classList.toggle('hidden', !hasImage);
-  if (hasImage) el.previewImg.src = notebookImageUrl;
+  el.slotGrid.innerHTML = EVIDENCE_NOTEBOOK_SLOTS.map(s => {
+    const url = slotImageUrls[s.id];
+    const isLegacyFallback = legacyFallbackSlots.has(s.id);
+    const thumb = url ? `<img src="${url}" alt="${escapeHtml(s.label)}">` : '📓';
+    const statusText = isLegacyFallback ? '이전 이미지(재배정 필요)' : (url ? '업로드됨' : '미지정');
+    const statusClass = isLegacyFallback ? 'todo' : (url ? 'done' : 'todo');
+    return `
+      <div class="slot-card" id="slotCard-${s.id}">
+        <div class="slot-thumb">${url ? thumb : '📓'}</div>
+        <div class="slot-body">
+          <div class="slot-label">${escapeHtml(s.label)}</div>
+          <div class="slot-status ${statusClass}">${statusText}</div>
+        </div>
+        <button type="button" class="slot-btn" data-slot="${s.id}">${url ? '교체' : '올리기'}</button>
+      </div>
+    `;
+  }).join('');
+  el.slotGrid.querySelectorAll('[data-slot]').forEach(btn => {
+    btn.addEventListener('click', () => { currentUploadSlot = btn.dataset.slot; el.fileInput.click(); });
+  });
+
+  const hasAnyImage = !!referenceImageUrl();
+  el.previewPanel.classList.toggle('hidden', !hasAnyImage);
   renderRegionList();
 }
 
@@ -221,20 +263,10 @@ function renderRegionList() {
   }).join('');
 }
 
-// selectBtn은 dropzone 안에 중첩돼 있어 클릭이 버블링되므로, dropzone 쪽
-// 리스너에서 또 한 번 fileInput.click()이 불리지 않도록 막는다.
-el.selectBtn.addEventListener('click', (e) => { e.stopPropagation(); el.fileInput.click(); });
-el.dropzone.addEventListener('click', () => el.fileInput.click());
-el.changeImageBtn.addEventListener('click', () => el.fileInput.click());
-['dragover', 'drop'].forEach(evt => el.dropzone.addEventListener(evt, (e) => e.preventDefault()));
-el.dropzone.addEventListener('drop', (e) => {
-  const file = e.dataTransfer.files && e.dataTransfer.files[0];
-  if (file) handleFileUpload(file);
-});
 el.fileInput.addEventListener('change', () => {
   const file = el.fileInput.files[0];
   el.fileInput.value = '';
-  if (file) handleFileUpload(file);
+  if (file && currentUploadSlot) handleFileUpload(file, currentUploadSlot);
 });
 
 function setUploadStatus(text, kind) {
@@ -250,21 +282,25 @@ function setUploadStatus(text, kind) {
 // 증거수첩 배경은 배경 DB/장소 DB 사진처럼 화면 전체를 채우는 그림이라
 // 컷아웃 대상이 아니다 — 인물/아이템/증거품 사진과 달리 자동 배경 제거를
 // 적용하지 않는다.
-async function handleFileUpload(file) {
-  el.dropzone.classList.add('busy');
-  el.changeImageBtn.disabled = true;
+async function handleFileUpload(file, slotId) {
+  const card = document.getElementById('slotCard-' + slotId);
+  if (card) card.classList.add('busy');
   try {
     setUploadStatus('업로드 중...', 'busy');
     const asset = await AssetDB.addAsset({ type: 'evidence-notebook', name: file.name, blob: file });
-    notebookConfig = await AssetDB.setEvidenceNotebookConfig({ imageAssetId: asset.id });
-    notebookImageUrl = asset.dataUrl;
+    // 다른 책갈피 값을 잃지 않도록 항상 현재 imageAssetIds 전체를 병합해서
+    // 넘긴다(setEvidenceNotebookConfig는 얕은 병합이라 부분 patch면 나머지
+    // 책갈피가 날아간다 — regions도 같은 이유로 항상 전체를 넘기는 관례).
+    const nextImageAssetIds = Object.assign({}, notebookConfig.imageAssetIds, { [slotId]: asset.id });
+    notebookConfig = await AssetDB.setEvidenceNotebookConfig({ imageAssetIds: nextImageAssetIds });
+    slotImageUrls[slotId] = asset.dataUrl;
+    legacyFallbackSlots.delete(slotId);
     setUploadStatus('', null);
     renderMainView();
   } catch (err) {
     setUploadStatus('업로드 실패: ' + (err && err.message ? err.message : String(err)), 'error');
   } finally {
-    el.dropzone.classList.remove('busy');
-    el.changeImageBtn.disabled = false;
+    if (card) card.classList.remove('busy');
   }
 }
 
@@ -283,11 +319,12 @@ el.evnCloseBtn.addEventListener('click', closeAreaEditor);
 el.evnConfirmBtn.addEventListener('click', confirmAreaEditor);
 
 function openAreaEditor() {
-  if (!notebookImageUrl) return;
+  const refUrl = referenceImageUrl();
+  if (!refUrl) return;
   draftRegions = Object.assign({}, notebookConfig.regions);
   selectedLabelId = null;
   evnPanY = 0;
-  el.evnImg.src = notebookImageUrl;
+  el.evnImg.src = refUrl;
   el.evnFullscreen.classList.remove('hidden');
   renderEvnBadges();
   updateEvnHint();
@@ -441,9 +478,26 @@ function renderEvnDraftBoxLive() {
 
 async function init() {
   notebookConfig = await AssetDB.getEvidenceNotebookConfig().catch(() => notebookConfig);
-  if (notebookConfig.imageAssetId) {
-    const asset = await AssetDB.getAsset(notebookConfig.imageAssetId).catch(() => null);
-    notebookImageUrl = asset ? asset.dataUrl : null;
+  notebookConfig.imageAssetIds = Object.assign({ witness: null, evidence: null, photo: null }, notebookConfig.imageAssetIds);
+  const ids = EVIDENCE_NOTEBOOK_SLOTS.map(s => notebookConfig.imageAssetIds[s.id]).filter(Boolean);
+  if (ids.length) {
+    const assets = await AssetDB.getAssetsByIds(ids).catch(() => []);
+    const byId = new Map(assets.map(a => [a.id, a]));
+    EVIDENCE_NOTEBOOK_SLOTS.forEach(s => {
+      const assetId = notebookConfig.imageAssetIds[s.id];
+      const asset = assetId ? byId.get(assetId) : null;
+      slotImageUrls[s.id] = asset ? asset.dataUrl : null;
+    });
+  }
+  // 레거시(3분할 이전) 이미지가 있고 아직 어느 책갈피에도 재배정되지
+  // 않았다면, 세 슬롯 모두의 임시 표시용 폴백으로만 보여준다 — 실제 저장은
+  // 각 슬롯에 다시 업로드해야 반영된다(§상단 주석 "레거시" 설명 참고).
+  if (notebookConfig.imageAssetId && !ids.length) {
+    const legacyAsset = await AssetDB.getAsset(notebookConfig.imageAssetId).catch(() => null);
+    if (legacyAsset && legacyAsset.dataUrl) {
+      setUploadStatus('이전 버전에서 올린 이미지가 있습니다. 어느 책갈피 그림인지 알 수 없어 미리보기로만 표시하니, 아래에서 각 책갈피에 맞게 다시 올려주세요.', 'busy');
+      EVIDENCE_NOTEBOOK_SLOTS.forEach(s => { if (!slotImageUrls[s.id]) { slotImageUrls[s.id] = legacyAsset.dataUrl; legacyFallbackSlots.add(s.id); } });
+    }
   }
   renderMainView();
 }

@@ -12,11 +12,15 @@
    (game/explore의 player.presentEvidence)이 하므로 이 파일은 정답/오답을
    전혀 모른다.
 
-   배경 아트: dev/upload/evidence-notebook/index.html에서 올린 배경 이미지 1장
-   + 5개 데이터 영역(코드/제목/사진/설명/발견위치, AssetDB.
-   getEvidenceNotebookConfig)이 있으면 그걸 페이지 배경으로 쓰고, 없으면
-   같은 비율의 CSS 목업 페이지(가죽 스프링노트 느낌)로 대체한다 — 아트가
-   없어도 기능은 항상 동작해야 한다는 원칙(§20) 그대로. */
+   배경 아트: dev/upload/evidence-notebook/index.html에서 책갈피(증인/증거/
+   사진)별로 올린 배경 이미지 최대 3장 + 5개 데이터 영역(코드/제목/사진/
+   설명/발견위치, AssetDB.getEvidenceNotebookConfig)을 쓴다. 이 원본 아트는
+   탭 바까지 이미 그림 안에 그려 넣은 완성된 페이지라(디자이너 확인 —
+   책갈피마다 활성 탭 색만 다름), 코드가 별도로 탭 텍스트/아이콘을 그리면
+   그림 위에 또 겹쳐 그려진다. 그래서 실제 배경 이미지가 하나라도 있으면
+   §CSS 탭바(.evn-tabbar)는 완전히 숨기고, 그 대신 그림 자체의 탭 위치에
+   투명 히트존만 얹어 탭 전환을 받는다 — 배경이 하나도 없을 때만(§20
+   "아트 없어도 기능은 항상 동작") CSS로 그린 탭바 + 목업 페이지로 대체한다. */
 
 const EvidenceNotebook = (function () {
   const SECTIONS = [
@@ -24,6 +28,21 @@ const EvidenceNotebook = (function () {
     { id: 'evidence', label: '증거', icon: '🔍', tint: '#1f3a6e' },
     { id: 'photo', label: '사진', icon: '📷', tint: '#1f5c3a' },
   ];
+  // 배경 아트에 그려진 탭 3개의 대략적인 위치(이미지 전체 대비 0~1 비율) —
+  // 참고 시안 기준 눈대중 추정치. 탭 자체는 이미 그림에 그려져 있어 여기
+  // 히트존은 보이지 않게(투명) 얹히기만 하면 되므로 픽셀 정확도보다는
+  // 넉넉하게 잡는 쪽이 안전하다.
+  const TAB_HOTSPOT_BAND = { top: 0, height: 0.115, left: 0.44, width: 0.56 };
+  // 관리자가 아직 "영역지정"으로 code/title/photo/description/
+  // discoveredLocationText를 안 찍었을 때 쓰는 눈대중 기본값 — 실제 지정된
+  // regions가 있으면 그쪽이 항상 우선한다.
+  const DEFAULT_REGION_FALLBACK = {
+    code: { x: 0.09, y: 0.10, w: 0.5, h: 0.025 },
+    title: { x: 0.09, y: 0.135, w: 0.82, h: 0.05 },
+    photo: { x: 0.18, y: 0.20, w: 0.64, h: 0.40 },
+    description: { x: 0.10, y: 0.63, w: 0.80, h: 0.11 },
+    discoveredLocationText: { x: 0.10, y: 0.755, w: 0.80, h: 0.04 },
+  };
 
   let mounted = false;
   let el = {};
@@ -41,8 +60,8 @@ const EvidenceNotebook = (function () {
   };
   const lastViewedBySection = { witness: 0, evidence: 0, photo: 0 };
 
-  let notebookConfig = null; // { imageAssetId, regions }
-  let notebookBgUrl = null;
+  let notebookConfig = null; // { imageAssetId, imageAssetIds:{witness,evidence,photo}, regions }
+  let sectionBgUrls = { witness: null, evidence: null, photo: null };
   let evidencePhotoAssetIds = {}; // entryId -> imageAssetId (evidence-photos catalog)
   let assetUrlCache = {}; // assetId -> dataUrl
 
@@ -63,11 +82,30 @@ const EvidenceNotebook = (function () {
     if (typeof AssetDB === 'undefined' || notebookConfig) return;
     try {
       notebookConfig = await AssetDB.getEvidenceNotebookConfig();
-      if (notebookConfig.imageAssetId) {
-        const asset = await AssetDB.getAsset(notebookConfig.imageAssetId);
-        if (asset && asset.dataUrl) { notebookBgUrl = asset.dataUrl; assetUrlCache[asset.id] = asset.dataUrl; }
+      const perSlotIds = Object.assign({ witness: null, evidence: null, photo: null }, notebookConfig.imageAssetIds);
+      const ids = SECTIONS.map(s => perSlotIds[s.id]).filter(Boolean);
+      if (ids.length) {
+        const assets = await AssetDB.getAssetsByIds(ids);
+        const byId = new Map(assets.map(a => [a.id, a]));
+        SECTIONS.forEach(s => {
+          const asset = perSlotIds[s.id] ? byId.get(perSlotIds[s.id]) : null;
+          if (asset && asset.dataUrl) sectionBgUrls[s.id] = asset.dataUrl;
+        });
       }
-    } catch (e) { notebookConfig = notebookConfig || { imageAssetId: null, regions: {} }; }
+      // 레거시(책갈피 3분할 이전) 단일 이미지 — 아직 자기 슬롯이 없는
+      // 책갈피의 폴백으로만 쓴다. dev/upload/evidence-notebook에서 각
+      // 책갈피에 다시 배정하면 이 폴백은 더 이상 쓰이지 않는다.
+      if (notebookConfig.imageAssetId && SECTIONS.some(s => !sectionBgUrls[s.id])) {
+        const legacy = await AssetDB.getAsset(notebookConfig.imageAssetId);
+        if (legacy && legacy.dataUrl) SECTIONS.forEach(s => { if (!sectionBgUrls[s.id]) sectionBgUrls[s.id] = legacy.dataUrl; });
+      }
+    } catch (e) { notebookConfig = notebookConfig || { imageAssetId: null, imageAssetIds: {}, regions: {} }; }
+  }
+  function sectionBgUrl(sectionId) { return sectionBgUrls[sectionId] || null; }
+  function hasAnyRealBg() { return SECTIONS.some(s => !!sectionBgUrls[s.id]); }
+  function regionFor(labelId) {
+    const r = notebookConfig && notebookConfig.regions && notebookConfig.regions[labelId];
+    return r || DEFAULT_REGION_FALLBACK[labelId] || null;
   }
   async function ensureEvidencePhotoCatalog() {
     if (typeof AssetDB === 'undefined') return;
@@ -202,11 +240,19 @@ const EvidenceNotebook = (function () {
     if (!state.isOpen) return;
     const section = SECTIONS.find(s => s.id === state.section) || SECTIONS[1];
     el.overlay.style.setProperty('--evn-tint', section.tint);
-    el.tabbar.innerHTML = SECTIONS.map(s => `
-      <button type="button" class="evn-tab evn-tab-${s.id}${s.id === state.section ? ' evn-tab-active' : ''}" data-evn-tab="${s.id}" style="${s.id === state.section ? `--evn-tab-tint:${s.tint}` : ''}">
-        <span class="evn-tab-icon">${s.icon}</span><span class="evn-tab-label">${s.label}</span>
-      </button>
-    `).join('');
+
+    // 실제 배경 아트가 하나라도 있으면 그림 자체에 탭이 그려져 있으므로
+    // CSS 탭바는 완전히 숨기고, 각 페이지 안에 투명 히트존만 얹는다
+    // (renderImageModePageHtml). 배경이 아예 없을 때만 이 탭바로 대체한다.
+    const showChromeTabs = !hasAnyRealBg();
+    el.tabbar.classList.toggle('hidden', !showChromeTabs);
+    if (showChromeTabs) {
+      el.tabbar.innerHTML = SECTIONS.map(s => `
+        <button type="button" class="evn-tab evn-tab-${s.id}${s.id === state.section ? ' evn-tab-active' : ''}" data-evn-tab="${s.id}" style="${s.id === state.section ? `--evn-tab-tint:${s.tint}` : ''}">
+          <span class="evn-tab-icon">${s.icon}</span><span class="evn-tab-label">${s.label}</span>
+        </button>
+      `).join('');
+    }
 
     const list = currentEntries();
     const entry = currentEntry();
@@ -251,11 +297,64 @@ const EvidenceNotebook = (function () {
   }
 
   function renderPageHtml(entry, total) {
+    const bg = sectionBgUrl(state.section);
+    return bg ? renderImageModePageHtml(entry, total, bg) : renderFallbackPageHtml(entry, total);
+  }
+
+  function regionStyle(labelId) {
+    const r = regionFor(labelId);
+    return r ? `left:${r.x * 100}%;top:${r.y * 100}%;width:${r.w * 100}%;height:${r.h * 100}%` : 'display:none';
+  }
+
+  // 실제 배경 아트가 있는 책갈피 — 그림을 그대로 캔버스로 쓰고, 관리자가
+  // "영역지정"으로 찍어둔 code/title/photo/description/discoveredLocationText
+  // 좌표(없으면 눈대중 기본값, DEFAULT_REGION_FALLBACK) 위에 실제 데이터를
+  // 절대좌표로 얹는다. 탭도 그림 자체에 그려져 있으므로 투명 히트존만
+  // TAB_HOTSPOT_BAND 위치에 추가한다.
+  function renderImageModePageHtml(entry, total, bgUrl) {
     const template = templateFor(entry);
     const photoUrl = photoUrlFor(entry);
     const pageNum = String(state.index + 1).padStart(2, '0');
     const totalStr = String(total).padStart(2, '0');
-    const bgStyle = notebookBgUrl ? `style="background-image:url('${notebookBgUrl}')"` : '';
+    const stages = (entry.stages || []).filter(s => s && s.summary);
+    const relatedNpc = (entry.relatedNpcIds && entry.relatedNpcIds[0]) ? personName(entry.relatedNpcIds[0]) : '';
+
+    const mainIsPhoto = template === 'image' && !!photoUrl;
+    const mainHtml = mainIsPhoto
+      ? `<div class="evn-imgmode-photo" style="${regionStyle('photo')}" data-evn-zoom="1"><img src="${photoUrl}" alt="${escapeHtml(entry.title)}"></div>`
+      : `<div class="evn-imgmode-text-main" style="${regionStyle('photo')}">${escapeHtml(entry.description || entry.summary || '')}</div>`;
+    const extraDescHtml = (mainIsPhoto && entry.description)
+      ? `<div class="evn-imgmode-desc" style="${regionStyle('description')}">${escapeHtml(entry.description)}</div>` : '';
+
+    const metaLines = [];
+    if (entry.discoveredLocationText) metaLines.push(`<div class="evn-imgmode-meta-line"><span class="evn-imgmode-meta-icon">📍</span>${escapeHtml(entry.discoveredLocationText)}</div>`);
+    if (relatedNpc) metaLines.push(`<div class="evn-imgmode-meta-line"><span class="evn-imgmode-meta-icon">👤</span>${escapeHtml(relatedNpc)}</div>`);
+    if (stages.length) metaLines.push(`<div class="evn-imgmode-meta-line"><span class="evn-imgmode-meta-icon">✦</span>조사 단계 ${stages.length}건</div>`);
+    const metaHtml = metaLines.length ? `<div class="evn-imgmode-location" style="${regionStyle('discoveredLocationText')}">${metaLines.join('')}</div>` : '';
+
+    const hotspotW = TAB_HOTSPOT_BAND.width / SECTIONS.length;
+    const hotspotsHtml = SECTIONS.map((s, i) => `<button type="button" class="evn-tab-hotspot" data-evn-tab="${s.id}" style="left:${(TAB_HOTSPOT_BAND.left + i * hotspotW) * 100}%;top:${TAB_HOTSPOT_BAND.top * 100}%;width:${hotspotW * 100}%;height:${TAB_HOTSPOT_BAND.height * 100}%" aria-label="${escapeHtml(s.label)}"></button>`).join('');
+
+    return `
+      <div class="evn-sheet evn-sheet-imagemode">
+        <img class="evn-imgmode-bg" src="${bgUrl}" alt="">
+        ${hotspotsHtml}
+        <div class="evn-imgmode-code" style="${regionStyle('code')}">${escapeHtml(entry.code || '')} · ${pageNum}/${totalStr}</div>
+        <div class="evn-imgmode-title" style="${regionStyle('title')}">${escapeHtml(entry.title)}${entry.status === 'updated' ? '<span class="evn-updated">업데이트됨</span>' : ''}</div>
+        ${mainHtml}
+        ${extraDescHtml}
+        ${metaHtml}
+      </div>
+    `;
+  }
+
+  // 배경 아트가 아직 없는 책갈피 — CSS만으로 그린 목업 페이지(§20 "아트
+  // 없어도 기능은 항상 동작"). 이 경로에서만 render()가 CSS 탭바를 보여준다.
+  function renderFallbackPageHtml(entry, total) {
+    const template = templateFor(entry);
+    const photoUrl = photoUrlFor(entry);
+    const pageNum = String(state.index + 1).padStart(2, '0');
+    const totalStr = String(total).padStart(2, '0');
 
     let mainHtml;
     if (template === 'image') {
@@ -278,7 +377,7 @@ const EvidenceNotebook = (function () {
     const relatedNpc = (entry.relatedNpcIds && entry.relatedNpcIds[0]) ? personName(entry.relatedNpcIds[0]) : '';
 
     return `
-      <div class="evn-sheet" ${bgStyle}>
+      <div class="evn-sheet">
         <div class="evn-sheet-header">
           <span class="evn-sheet-code">${escapeHtml(entry.code || '')}</span>
           <span class="evn-sheet-page">${pageNum} / ${totalStr}</span>
@@ -300,6 +399,10 @@ const EvidenceNotebook = (function () {
   function bindPageEvents() {
     el.page.querySelectorAll('[data-evn-zoom]').forEach(node => {
       node.addEventListener('click', () => { state.zoomEntry = currentEntry(); render(); });
+    });
+    // 이미지 모드 전용 — 그림에 그려진 탭 위에 얹은 투명 히트존(§상단 주석).
+    el.page.querySelectorAll('[data-evn-tab]').forEach(node => {
+      node.addEventListener('click', () => switchSection(node.dataset.evnTab));
     });
   }
 
@@ -504,17 +607,34 @@ const EvidenceNotebook = (function () {
       .evn-overlay.show .evn-book{transform:scale(1)}
 
       .evn-tabbar{display:flex;justify-content:flex-end;gap:6px;padding-right:10px;flex-shrink:0}
+      .evn-tabbar.hidden{display:none}
       .evn-tab{font-family:var(--mono,'IBM Plex Mono',ui-monospace,monospace);font-size:12px;font-weight:700;color:#c7b98a;background:#14161b;border:1px solid rgba(214,168,75,.35);border-bottom:none;border-radius:8px 8px 0 0;padding:9px 12px 12px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;transform:translateY(6px);transition:transform .2s ease,background .2s ease,color .2s ease}
       .evn-tab-icon{font-size:14px;line-height:1}
       .evn-tab-active{transform:translateY(0);color:#fff;background:var(--evn-tab-tint,#1f3a6e);border-color:var(--evn-tab-tint,#1f3a6e);box-shadow:0 -2px 10px rgba(0,0,0,.35)}
 
       .evn-book-body{position:relative;flex:1;min-height:0;background:linear-gradient(135deg,#12213f,#0c1730);border-radius:4px 14px 14px 14px;border:1px solid rgba(214,168,75,.4);box-shadow:0 20px 50px rgba(0,0,0,.5);padding:16px;display:flex;flex-direction:column}
-      .evn-close-btn{position:absolute;top:10px;right:10px;z-index:5;width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+      .evn-close-btn{position:absolute;top:-14px;right:-6px;z-index:5;width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.4)}
       .evn-close-btn:active{opacity:.8}
 
-      .evn-page{flex:1;min-height:0;display:flex;overscroll-behavior:contain}
+      .evn-page{flex:1;min-height:0;display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain}
       .evn-sheet{flex:1;display:flex;flex-direction:column;min-height:0;background:#f2e6cc linear-gradient(180deg,#f6ecd6,#eaddc0);background-size:cover;background-position:center;border-radius:10px;padding:16px 16px 12px;box-shadow:inset 0 0 0 1px rgba(214,168,75,.5),0 6px 18px rgba(0,0,0,.3);color:#3a2f1c}
       .evn-sheet-empty{align-items:center;justify-content:center;gap:10px;color:#7a6a45}
+
+      /* ===== 이미지 모드 — 실제 배경 아트가 있는 책갈피 (§상단 주석) =====
+         .evn-sheet-imagemode는 flex:none이라 자식 <img>의 자연 비율 높이로만
+         커진다(늘려 채우지 않음) — .evn-page가 세로 스크롤을 대신 맡는다. */
+      .evn-sheet-imagemode{flex:none;position:relative;width:100%;padding:0;border-radius:10px;overflow:hidden;background:none;box-shadow:none;display:block}
+      .evn-imgmode-bg{width:100%;display:block;pointer-events:none;user-select:none;-webkit-user-drag:none}
+      .evn-tab-hotspot{position:absolute;background:transparent;border:none;padding:0;margin:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+      .evn-imgmode-code{position:absolute;font-family:var(--mono,'IBM Plex Mono',ui-monospace,monospace);font-size:10.5px;color:#8a7245;overflow:hidden;white-space:nowrap}
+      .evn-imgmode-title{position:absolute;font-size:14px;font-weight:800;color:#2c2311;line-height:1.25;overflow:hidden}
+      .evn-imgmode-photo{position:absolute;border-radius:6px;overflow:hidden;cursor:zoom-in;background:rgba(255,255,255,.25)}
+      .evn-imgmode-photo img{width:100%;height:100%;object-fit:cover;display:block}
+      .evn-imgmode-text-main{position:absolute;overflow-y:auto;font-size:12px;line-height:1.5;color:#3a2f1c;padding:4px}
+      .evn-imgmode-desc{position:absolute;overflow-y:auto;font-size:11px;line-height:1.5;color:#4a3d22}
+      .evn-imgmode-location{position:absolute;overflow-y:auto;display:flex;flex-direction:column;gap:3px;font-size:10.5px;color:#2c2311}
+      .evn-imgmode-meta-line{display:flex;align-items:baseline;gap:5px}
+      .evn-imgmode-meta-icon{opacity:.8}
       .evn-empty-icon{font-size:34px;opacity:.7}
       .evn-empty-text{font-size:13px;font-weight:600}
 
