@@ -35,6 +35,7 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .tab-btn{flex:1;min-width:calc(50% - 3px);padding:11px 6px;border-radius:10px;background:var(--surface-1);border:1px solid var(--divider);color:var(--text-secondary);font-size:12.5px;font-weight:600;font-family:var(--mono);letter-spacing:.02em;cursor:pointer;text-align:center}
 .tab-btn.active{background:var(--surface-3);color:var(--cyan);border-color:rgba(89,184,200,.4)}
 .tab-panel.hidden{display:none}
+.hidden{display:none}
 
 .option-group{margin-bottom:26px}
 .option-label{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px}
@@ -78,6 +79,26 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .bar-preview-zone{position:absolute;left:0;right:0;border-radius:4px}
 .bar-preview-fish{position:absolute;left:50%;transform:translate(-50%,-50%);font-size:18px}
 
+/* ===== 물고기 종류 탭 ===== */
+.fish-sheet-frame{position:relative;width:196px;height:136px;max-width:100%;margin:0 auto;background-image:repeating-conic-gradient(var(--surface-2) 0% 25%, var(--surface-1) 0% 50%);background-size:16px 16px;border-radius:10px;border:1px solid var(--divider);overflow:hidden}
+.fish-sheet-frame img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;image-rendering:pixelated}
+.fish-sheet-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text-muted);font-family:var(--mono);text-align:center;padding:8px;line-height:1.5}
+.fish-sheet-spec{font-size:12px;color:var(--text-muted);margin-top:10px;line-height:1.6;text-align:center}
+.fish-sheet-actions{display:flex;gap:8px;margin-top:12px}
+.fish-sheet-btn{flex:1;font-family:var(--mono);font-size:12px;font-weight:700;color:var(--text-primary);background:var(--surface-1);border:1px solid var(--divider);border-radius:10px;padding:10px;cursor:pointer;text-align:center}
+.fish-sheet-btn.danger{color:var(--signal-red)}
+.fish-sheet-btn:active{opacity:.8}
+.fish-grade-group{margin-top:24px}
+.fish-grade-title{font-family:var(--mono);font-size:11.5px;font-weight:700;letter-spacing:.06em;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.fish-grade-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.fish-row{display:flex;align-items:center;gap:10px;padding:8px 2px;border-bottom:1px solid var(--divider)}
+.fish-row:last-child{border-bottom:none}
+.fish-icon{width:32px;height:32px;flex-shrink:0;border-radius:8px;background-color:var(--surface-1);background-repeat:no-repeat;image-rendering:pixelated;display:flex;align-items:center;justify-content:center;font-size:15px}
+.fish-info{flex:1;min-width:0}
+.fish-name{font-size:13.5px;font-weight:600;color:var(--text-primary)}
+.fish-sub{font-family:var(--mono);font-size:10.5px;color:var(--text-muted);margin-top:2px}
+.fish-value{font-family:var(--mono);font-size:12.5px;font-weight:700;color:var(--amber);flex-shrink:0}
+
 .save-note{font-family:var(--mono);font-size:11px;color:var(--green);min-height:16px;margin-bottom:8px;opacity:0;transition:opacity .3s}
 .save-note.show{opacity:1}
 
@@ -98,6 +119,7 @@ input[type=file]{display:none}
     <button class="tab-btn" data-tab="cast">캐스팅 모션</button>
     <button class="tab-btn" data-tab="bar">낚시바 디자인</button>
     <button class="tab-btn" data-tab="reel">올리기 모션</button>
+    <button class="tab-btn" data-tab="fish">물고기 종류</button>
   </div>
 
   <!-- ===== 낚시게임 로직 — 난이도/모션타입(물고기 움직임 패턴) 선택. 값은
@@ -186,6 +208,26 @@ input[type=file]{display:none}
     </div>
   </div>
 
+  <!-- ===== 물고기 종류 — 낚시로 잡히는 67종 카탈로그(dev/data/fishDefs.js, 코드
+       내장 정적 데이터라 여기서 직접 편집하진 않는다) + 아이콘 스프라이트시트
+       업로드. 시트를 올리면 각 물고기의 slot(=행/열) 순서 그대로 아이콘이
+       배정된다 — 슬롯 계산은 fishDefs.js의 getFishSlotStyle 참고. ===== -->
+  <div class="tab-panel hidden" id="panelFish">
+    <div class="option-group">
+      <div class="option-label">아이콘 스프라이트시트</div>
+      <div class="option-desc">196×136px 투명 PNG · 10열×7행 · 칸 16×16px · 칸 간격 4px · 바깥 여백 없음. 업로드하면 아래 목록의 물고기 순서(왼쪽 위부터 가로로)대로 아이콘이 자동 배정돼요. 마지막 3칸은 비워두면 돼요.</div>
+      <div class="fish-sheet-frame" id="fishSheetFrame">
+        <div class="fish-sheet-empty" id="fishSheetEmpty">아직 업로드된 시트가 없어요<br>업로드하기 전까진 기본 이모지로 표시돼요</div>
+      </div>
+      <div class="fish-sheet-actions">
+        <button type="button" class="fish-sheet-btn" id="fishSheetUploadBtn">📤 시트 업로드</button>
+        <button type="button" class="fish-sheet-btn danger hidden" id="fishSheetRemoveBtn">✕ 제거</button>
+      </div>
+      <input type="file" id="fishSheetFileInput" accept="image/png">
+    </div>
+    <div id="fishGradeGroups"></div>
+  </div>
+
   <div class="save-note" id="saveNote">저장됐어요</div>
   <a class="test-btn" id="testBtn" href="/dev/minigame-fishing/play/">테스트하기</a>
 </div>
@@ -195,6 +237,7 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 <script src="/dev/assetDb.js"></script>
+<script src="/dev/data/fishDefs.js"></script>
 <script>
 /* =========================================================================
    낚시 미니게임 설정 화면. 4개 탭:
@@ -226,6 +269,7 @@ const el = {
   panelCast: document.getElementById('panelCast'),
   panelReel: document.getElementById('panelReel'),
   panelBar: document.getElementById('panelBar'),
+  panelFish: document.getElementById('panelFish'),
   diffPills: document.getElementById('diffPills'),
   motionPills: document.getElementById('motionPills'),
   testBtn: document.getElementById('testBtn'),
@@ -253,9 +297,15 @@ const el = {
   reelPromptText: document.getElementById('reelPromptText'),
   reelPromptCopyBtn: document.getElementById('reelPromptCopyBtn'),
   reelPromptCopyStatus: document.getElementById('reelPromptCopyStatus'),
+  fishSheetFrame: document.getElementById('fishSheetFrame'),
+  fishSheetEmpty: document.getElementById('fishSheetEmpty'),
+  fishSheetUploadBtn: document.getElementById('fishSheetUploadBtn'),
+  fishSheetRemoveBtn: document.getElementById('fishSheetRemoveBtn'),
+  fishSheetFileInput: document.getElementById('fishSheetFileInput'),
+  fishGradeGroups: document.getElementById('fishGradeGroups'),
 };
 
-const PANELS = { logic: el.panelLogic, cast: el.panelCast, bar: el.panelBar, reel: el.panelReel };
+const PANELS = { logic: el.panelLogic, cast: el.panelCast, bar: el.panelBar, reel: el.panelReel, fish: el.panelFish };
 el.tabsRow.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => selectTab(btn.dataset.tab));
 });
@@ -518,6 +568,77 @@ el.zoneSizeInput.addEventListener('input', () => {
   saveBarDesign();
 });
 
+/* ===== 물고기 종류 탭 — 카탈로그는 dev/data/fishDefs.js에 코드로 박혀 있고
+   (67종, id/등급/가치/난이도/시트 slot 고정), 여기서 편집하는 건 그 위에
+   덮어씌울 아이콘 스프라이트시트 한 장뿐이다. ===== */
+const FISH_GRADE_COLORS = { '일반': 'var(--text-muted)', '레어': 'var(--cyan)', '희귀': 'var(--amber)', '전설': 'var(--signal-red)' };
+
+async function renderFishSheetPreview() {
+  el.fishSheetFrame.querySelectorAll('img').forEach(img => img.remove());
+  const assetId = (fishingConfig || {}).fishSheetAssetId;
+  const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
+  if (!asset) {
+    el.fishSheetEmpty.classList.remove('hidden');
+    el.fishSheetRemoveBtn.classList.add('hidden');
+    return null;
+  }
+  el.fishSheetEmpty.classList.add('hidden');
+  el.fishSheetRemoveBtn.classList.remove('hidden');
+  const img = document.createElement('img');
+  img.src = asset.dataUrl;
+  img.alt = '';
+  el.fishSheetFrame.appendChild(img);
+  return asset;
+}
+
+function renderFishList(sheetAsset) {
+  const byGrade = {};
+  Object.values(fishDefs).forEach(f => { (byGrade[f.grade] = byGrade[f.grade] || []).push(f); });
+  el.fishGradeGroups.innerHTML = FISH_GRADE_ORDER.filter(g => byGrade[g]).map(grade => {
+    const color = FISH_GRADE_COLORS[grade] || 'var(--text-secondary)';
+    const rows = byGrade[grade].sort((a, b) => a.slot - b.slot).map(f => {
+      const style = getFishSlotStyle(f.slot, 2);
+      const iconStyle = sheetAsset
+        ? `background-image:url('${sheetAsset.dataUrl}');background-position:${style.backgroundPosition};background-size:${style.backgroundSize}`
+        : '';
+      return `
+        <div class="fish-row">
+          <div class="fish-icon" style="${iconStyle}">${sheetAsset ? '' : '🐟'}</div>
+          <div class="fish-info">
+            <div class="fish-name">${f.name}</div>
+            <div class="fish-sub">난이도 ${f.difficulty} · #${String(f.slot).padStart(2, '0')}</div>
+          </div>
+          <div class="fish-value">${f.value}P</div>
+        </div>`;
+    }).join('');
+    return `
+      <div class="fish-grade-group">
+        <div class="fish-grade-title" style="color:${color}"><span class="fish-grade-dot" style="background:${color}"></span>${grade} · ${byGrade[grade].length}종</div>
+        ${rows}
+      </div>`;
+  }).join('');
+}
+
+async function renderFishTab() {
+  renderFishList(await renderFishSheetPreview());
+}
+
+el.fishSheetUploadBtn.addEventListener('click', () => el.fishSheetFileInput.click());
+el.fishSheetFileInput.addEventListener('change', async () => {
+  const file = el.fishSheetFileInput.files[0];
+  el.fishSheetFileInput.value = '';
+  if (!file) return;
+  const asset = await AssetDB.addAsset({ type: 'fishing-fish-sheet', name: file.name, blob: file });
+  fishingConfig = await AssetDB.setFishingConfig({ fishSheetAssetId: asset.id });
+  showSaveNote();
+  renderFishTab();
+});
+el.fishSheetRemoveBtn.addEventListener('click', async () => {
+  fishingConfig = await AssetDB.setFishingConfig({ fishSheetAssetId: null });
+  showSaveNote();
+  renderFishTab();
+});
+
 let saveNoteTimer = null;
 function showSaveNote() {
   el.saveNote.classList.add('show');
@@ -538,6 +659,7 @@ async function init() {
   renderFishIconSlot();
   renderFramesTab('castingFrames', el.castFrames, el.castFileInput, el.castPreview, el.castPreviewLabel);
   renderFramesTab('reelingFrames', el.reelFrames, el.reelFileInput, el.reelPreview, el.reelPreviewLabel);
+  renderFishTab();
 }
 init();
 </script>

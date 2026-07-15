@@ -73,6 +73,11 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .overlay-title{font-family:var(--mono);font-size:16px;font-weight:800;letter-spacing:.08em;color:var(--signal-red)}
 .overlay-title.success{color:var(--green)}
 .overlay-message{font-size:14px;color:var(--text-primary)}
+.overlay-fish{display:none;flex-direction:column;align-items:center;gap:6px;margin:2px 0}
+.overlay-fish.show{display:flex}
+.overlay-fish-icon{width:56px;height:56px;border-radius:14px;background-color:rgba(255,255,255,.12);background-repeat:no-repeat;image-rendering:pixelated;display:flex;align-items:center;justify-content:center;font-size:30px}
+.overlay-fish-name{font-size:16px;font-weight:700}
+.overlay-fish-meta{font-family:var(--mono);font-size:11.5px;color:var(--text-secondary)}
 .overlay-count{font-family:var(--mono);font-size:12px;color:var(--text-secondary);margin-bottom:6px}
 .overlay-btn-row{display:flex;gap:10px}
 .overlay-btn{font-family:var(--mono);font-size:13.5px;font-weight:700;letter-spacing:.03em;border:none;border-radius:16px;padding:13px 20px;cursor:pointer;text-decoration:none}
@@ -118,6 +123,11 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
   <div class="overlay" id="overlay">
     <div class="overlay-title" id="overlayTitle">낚시 실패</div>
     <div class="overlay-message" id="overlayMessage"></div>
+    <div class="overlay-fish" id="overlayFish">
+      <div class="overlay-fish-icon" id="overlayFishIcon">🐟</div>
+      <div class="overlay-fish-name" id="overlayFishName"></div>
+      <div class="overlay-fish-meta" id="overlayFishMeta"></div>
+    </div>
     <div class="overlay-count" id="overlayCount"></div>
     <div class="overlay-btn-row">
       <button class="overlay-btn primary" id="retryBtn" type="button">다시 하기</button>
@@ -135,6 +145,7 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 <script src="/dev/assetDb.js"></script>
+<script src="/dev/data/fishDefs.js"></script>
 <script>
 /* =========================================================================
    낚시 미니게임 플레이 화면. 흐름: 캐스팅(대기 탭) → 캐스팅 모션 재생 →
@@ -181,12 +192,17 @@ const el = {
   overlayTitle: document.getElementById('overlayTitle'),
   overlayMessage: document.getElementById('overlayMessage'),
   overlayCount: document.getElementById('overlayCount'),
+  overlayFish: document.getElementById('overlayFish'),
+  overlayFishIcon: document.getElementById('overlayFishIcon'),
+  overlayFishName: document.getElementById('overlayFishName'),
+  overlayFishMeta: document.getElementById('overlayFishMeta'),
   retryBtn: document.getElementById('retryBtn'),
 };
 
 let castFrameUrls = [];
 let reelFrameUrls = [];
 let idleFrameUrl = null;
+let fishSheetUrl = null;
 let zoneSizePct = 28;
 let caughtCount = 0;
 let gameState = 'idle'; // idle | casting | waiting | bite | catching | reeling | result
@@ -206,11 +222,14 @@ async function loadConfig() {
   const ids = [].concat(cfg.castingFrames || [], cfg.reelingFrames || []);
   const design = cfg.barDesign || {};
   if (design.fishIconAssetId) ids.push(design.fishIconAssetId);
+  if (cfg.fishSheetAssetId) ids.push(cfg.fishSheetAssetId);
   let assets = [];
   try { assets = await AssetDB.getAssetsByIds(ids); } catch (e) { /* 위와 동일 */ }
   const byId = new Map(assets.map(a => [a.id, a]));
   castFrameUrls = (cfg.castingFrames || []).map(id => byId.get(id)).filter(Boolean).map(a => a.dataUrl);
   reelFrameUrls = (cfg.reelingFrames || []).map(id => byId.get(id)).filter(Boolean).map(a => a.dataUrl);
+  const fishSheetAsset = cfg.fishSheetAssetId ? byId.get(cfg.fishSheetAssetId) : null;
+  fishSheetUrl = fishSheetAsset ? fishSheetAsset.dataUrl : null;
 
   el.fishbar.style.background = design.barColor || '#171C22';
   el.fishbarZone.style.background = design.zoneColor || '#59B8C8';
@@ -390,6 +409,23 @@ function endCatch(success) {
   if (success) playReelThenResult(); else endRun(false, '물고기가 도망쳤어요...');
 }
 
+// 잡힌 물고기 종을 고른다 — fishDefs의 catchRate가 하나라도 채워져 있으면(합이
+// 0보다 크면) 그 값을 가중치로 쓰고, 전부 0(§업로드 시점의 플레이스홀더 값)이면
+// difficulty가 낮을수록 잘 잡히도록 난이도 제곱의 역수를 가중치로 대신 쓴다.
+function pickCaughtFish() {
+  const all = Object.values(fishDefs);
+  const totalRate = all.reduce((sum, f) => sum + (f.catchRate || 0), 0);
+  const weightOf = totalRate > 0 ? (f => f.catchRate || 0) : (f => 1 / (f.difficulty * f.difficulty));
+  const weights = all.map(weightOf);
+  const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+  let r = Math.random() * totalWeight;
+  for (let i = 0; i < all.length; i++) {
+    r -= weights[i];
+    if (r <= 0) return all[i];
+  }
+  return all[all.length - 1];
+}
+
 async function playReelThenResult() {
   gameState = 'reeling';
   el.statusLine.textContent = '끌어올리는 중...';
@@ -401,16 +437,33 @@ async function playReelThenResult() {
   }
   caughtCount++;
   el.countChip.textContent = caughtCount + '마리';
-  endRun(true, '손맛 좋다! 낚았어요!');
+  endRun(true, '손맛 좋다! 낚았어요!', pickCaughtFish());
 }
 
 /* ===== 결과 / 리셋 ===== */
-function endRun(success, message) {
+function endRun(success, message, fishCaught) {
   gameState = 'result';
   el.overlayTitle.textContent = success ? '낚시 성공' : '낚시 실패';
   el.overlayTitle.classList.toggle('success', success);
   el.overlayMessage.textContent = message;
   el.overlayCount.textContent = `이번 세션 ${caughtCount}마리`;
+  if (fishCaught) {
+    el.overlayFishName.textContent = fishCaught.name;
+    el.overlayFishMeta.textContent = `${fishCaught.grade} · ${fishCaught.value}P`;
+    if (fishSheetUrl) {
+      const style = getFishSlotStyle(fishCaught.slot, 3.5);
+      el.overlayFishIcon.style.backgroundImage = `url('${fishSheetUrl}')`;
+      el.overlayFishIcon.style.backgroundPosition = style.backgroundPosition;
+      el.overlayFishIcon.style.backgroundSize = style.backgroundSize;
+      el.overlayFishIcon.textContent = '';
+    } else {
+      el.overlayFishIcon.style.backgroundImage = 'none';
+      el.overlayFishIcon.textContent = '🐟';
+    }
+    el.overlayFish.classList.add('show');
+  } else {
+    el.overlayFish.classList.remove('show');
+  }
   el.overlay.classList.add('show');
 }
 
