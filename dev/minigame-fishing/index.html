@@ -68,11 +68,18 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .crop-stage{position:relative;width:100%;border-radius:12px;overflow:hidden;touch-action:none;background:#000;cursor:crosshair}
 .crop-stage canvas{display:block;width:100%}
 .crop-rect{position:absolute;border:2px solid var(--cyan);box-shadow:0 0 0 9999px rgba(0,0,0,.5);pointer-events:none;border-radius:4px}
-.crop-zoom-row{margin-top:14px;display:flex;align-items:center;gap:14px}
+.crop-zoom-row{margin-top:14px;display:flex;align-items:center;justify-content:center;gap:22px}
 .crop-zoom-wrap{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:6px}
 .crop-zoom-label{font-family:var(--mono);font-size:10.5px;color:var(--text-muted)}
 .crop-zoom-wrap canvas{border-radius:12px;border:1px solid var(--divider);background:#000}
-.crop-size-col{flex:1}
+.crop-dpad{flex-shrink:0;display:grid;grid-template-columns:34px 34px 34px;grid-template-rows:34px 34px 34px;gap:4px}
+.crop-dpad-btn{background:var(--surface-2);border:1px solid var(--divider);border-radius:8px;color:var(--text-primary);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+.crop-dpad-btn:active{background:var(--cyan);color:#04181c}
+.crop-dpad-up{grid-column:2;grid-row:1}
+.crop-dpad-left{grid-column:1;grid-row:2}
+.crop-dpad-right{grid-column:3;grid-row:2}
+.crop-dpad-down{grid-column:2;grid-row:3}
+.crop-size-row{margin-top:16px}
 .crop-actions{display:flex;gap:10px;margin-top:18px}
 .crop-btn{flex:1;font-family:var(--mono);font-size:13.5px;font-weight:700;border:none;border-radius:14px;padding:13px;cursor:pointer;text-align:center}
 .crop-btn.primary{color:#08110c;background:var(--green)}
@@ -280,7 +287,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
 <div class="crop-overlay hidden" id="cropOverlay">
   <div class="crop-sheet">
     <div class="crop-title">세밀영역조절</div>
-    <div class="crop-desc">네모를 드래그해서 옮기고, 크기 슬라이더로 조절하세요. 오른쪽 확대 미리보기로 경계를 확인할 수 있어요.</div>
+    <div class="crop-desc">네모를 드래그해서 옮기거나 방향 버튼으로 미세 조정하고, 크기 슬라이더로 크기를 바꾸세요. 확대 미리보기로 경계를 확인할 수 있어요.</div>
     <div class="crop-stage" id="cropStage">
       <canvas id="cropCanvas"></canvas>
       <div class="crop-rect" id="cropRectBox"></div>
@@ -290,11 +297,17 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
         <div class="crop-zoom-label">확대 미리보기</div>
         <canvas id="cropZoomCanvas" width="120" height="120"></canvas>
       </div>
-      <div class="crop-size-col">
-        <div class="option-label">크롭 크기</div>
-        <input type="range" id="cropSizeInput" min="10" max="90" value="40">
-        <div class="range-value" id="cropSizeValue">40%</div>
+      <div class="crop-dpad" id="cropDpad">
+        <button type="button" class="crop-dpad-btn crop-dpad-up" data-dir="up" aria-label="위로">▲</button>
+        <button type="button" class="crop-dpad-btn crop-dpad-left" data-dir="left" aria-label="왼쪽으로">◀</button>
+        <button type="button" class="crop-dpad-btn crop-dpad-right" data-dir="right" aria-label="오른쪽으로">▶</button>
+        <button type="button" class="crop-dpad-btn crop-dpad-down" data-dir="down" aria-label="아래로">▼</button>
       </div>
+    </div>
+    <div class="crop-size-row">
+      <div class="option-label">크롭 크기</div>
+      <input type="range" id="cropSizeInput" min="10" max="90" value="40">
+      <div class="range-value" id="cropSizeValue">40%</div>
     </div>
     <div class="crop-actions">
       <button type="button" class="crop-btn secondary" id="cropCancelBtn">취소</button>
@@ -381,6 +394,7 @@ const el = {
   cropZoomCanvas: document.getElementById('cropZoomCanvas'),
   cropSizeInput: document.getElementById('cropSizeInput'),
   cropSizeValue: document.getElementById('cropSizeValue'),
+  cropDpad: document.getElementById('cropDpad'),
   cropCancelBtn: document.getElementById('cropCancelBtn'),
   cropConfirmBtn: document.getElementById('cropConfirmBtn'),
   barColorInput: document.getElementById('barColorInput'),
@@ -799,6 +813,7 @@ function closeCropAdjuster() {
   cropSourceImg = null;
   cropPendingSourceFile = null;
   cropOnConfirm = null;
+  stopCropDpadRepeat();
 }
 
 function drawCropStage() {
@@ -852,6 +867,39 @@ function updateCropCenterFromEvent(e) {
 el.cropStage.addEventListener('pointerdown', (e) => { cropDragging = true; updateCropCenterFromEvent(e); });
 window.addEventListener('pointermove', (e) => { if (cropDragging) updateCropCenterFromEvent(e); });
 window.addEventListener('pointerup', () => { cropDragging = false; });
+
+// 방향 버튼 — 드래그로 대충 옮긴 뒤 1%(이미지 기준) 단위로 미세 조정할 때
+// 쓴다. 탭 한 번에 한 스텝, 누르고 있으면 400ms 뒤부터 80ms 간격으로
+// 반복 이동한다.
+const CROP_NUDGE_STEP = 0.01;
+function nudgeCropRect(dir) {
+  if (!cropSourceImg) return;
+  if (dir === 'up') cropRect.cy = clamp01(cropRect.cy - CROP_NUDGE_STEP);
+  else if (dir === 'down') cropRect.cy = clamp01(cropRect.cy + CROP_NUDGE_STEP);
+  else if (dir === 'left') cropRect.cx = clamp01(cropRect.cx - CROP_NUDGE_STEP);
+  else if (dir === 'right') cropRect.cx = clamp01(cropRect.cx + CROP_NUDGE_STEP);
+  drawCropStage();
+}
+let cropDpadRepeatDelay = null;
+let cropDpadRepeatTimer = null;
+function stopCropDpadRepeat() {
+  clearTimeout(cropDpadRepeatDelay);
+  clearInterval(cropDpadRepeatTimer);
+  cropDpadRepeatDelay = null;
+  cropDpadRepeatTimer = null;
+}
+el.cropDpad.querySelectorAll('.crop-dpad-btn').forEach(btn => {
+  const dir = btn.dataset.dir;
+  btn.addEventListener('pointerdown', (e) => {
+    e.preventDefault(); // avoid the crop-stage drag/other handlers stealing this same pointer sequence
+    stopCropDpadRepeat();
+    nudgeCropRect(dir);
+    cropDpadRepeatDelay = setTimeout(() => {
+      cropDpadRepeatTimer = setInterval(() => nudgeCropRect(dir), 80);
+    }, 400);
+  });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(evt => btn.addEventListener(evt, stopCropDpadRepeat));
+});
 el.cropSizeInput.addEventListener('input', () => {
   cropRect.size = Number(el.cropSizeInput.value) / 100;
   el.cropSizeValue.textContent = el.cropSizeInput.value + '%';
