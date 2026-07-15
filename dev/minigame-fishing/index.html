@@ -126,28 +126,36 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .timeline-total-row input[type=number]{width:70px;background:var(--surface-1);border:1px solid var(--divider);border-radius:8px;padding:8px;color:var(--text-primary);font-family:var(--mono);font-size:13px}
 .timeline-total-unit{font-family:var(--mono);font-size:12px;color:var(--text-muted)}
 
-/* ===== 낚시바 디자인 ===== */
-.color-row{display:flex;align-items:center;gap:12px;margin-bottom:12px}
-.color-row input[type=color]{width:40px;height:40px;border-radius:10px;border:1px solid var(--divider);background:none;padding:0;cursor:pointer}
-.color-row-label{flex:1;font-size:13.5px;color:var(--text-secondary)}
+/* ===== 낚시바 디자인 — PPT 슬라이드형 에디터 =====
+   슬라이드(.slide-stage) 위에 낚시바/캐치바 이미지(.slide-layer.image)와
+   캐치바 영역/게이지 영역(.slide-layer.region) 오브젝트를 자유 배치한다.
+   좌표는 전부 슬라이드 기준 0~1 비율로 저장(barDesign.slideWidthPx/
+   slideHeightPx가 실제 게임 모듈 크기) — 에디터 화면은 항상 편한 배율로
+   확대해서 보여주고(aspect-ratio로 폭에 맞춰 늘인 컨테이너), 슬라이드
+   크기를 바꿔도 안의 배치 비율은 그대로 유지된다. */
 .range-row{margin-bottom:18px}
 .range-row input[type=range]{width:100%;accent-color:var(--cyan)}
 .range-value{font-family:var(--mono);font-size:12px;color:var(--text-muted)}
-.bar-preview-wrap{display:flex;justify-content:center;margin-bottom:22px}
-.bar-preview{position:relative;width:44px;height:200px;border-radius:10px;overflow:hidden;border:1px solid var(--divider);background-size:cover;background-position:center}
-.bar-preview-zone{position:absolute;left:0;right:0;border-radius:4px;background-size:cover;background-position:center}
-.bar-preview-fish{position:absolute;left:50%;transform:translate(-50%,-50%);font-size:18px}
-/* 게이지는 사용자 요청으로 화면에서 숨겼다(코드/로직은 그대로 남겨둠 —
-   나중에 다시 켤 수 있게 display:none만 추가) — 낚시바 크기/캐치바 크기를
-   직접 만드는 새 낚시바 모듈로 대체하는 중이라, 진행도 채우기 효과는 잠시
-   보이지 않는다. */
-.bar-preview-gauge{position:absolute;inset:0;background:rgb(151,126,83);display:none}
+.slide-toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.slide-toolbar .fish-sheet-btn{flex:1;min-width:calc(50% - 4px)}
+.slide-stage-wrap{margin-bottom:10px}
+.slide-stage{position:relative;width:100%;aspect-ratio:var(--slide-ar,90/260);max-width:220px;margin:0 auto;background:var(--surface-1);border:1px solid var(--divider);border-radius:10px;overflow:hidden;touch-action:none}
+.slide-layer{position:absolute;box-sizing:border-box;touch-action:none;cursor:grab}
+.slide-layer img{width:100%;height:100%;object-fit:fill;display:block;pointer-events:none;user-select:none}
+.slide-layer.region{display:flex;align-items:flex-start;justify-content:flex-start;border:2px dashed var(--cyan);background:rgba(89,184,200,.14)}
+.slide-layer.region[data-layer-id="gaugeRegion"]{border-color:var(--amber);background:rgba(214,168,75,.16)}
+.slide-layer.selected{outline:2px solid var(--green);outline-offset:1px}
+.slide-layer-label{font-family:var(--mono);font-size:9px;font-weight:700;color:#050607;background:var(--cyan);padding:2px 4px;border-radius:0 0 4px 0;pointer-events:none}
+.slide-layer.region[data-layer-id="gaugeRegion"] .slide-layer-label{background:var(--amber)}
+.slide-layer-handle{position:absolute;right:-7px;bottom:-7px;width:16px;height:16px;border-radius:50%;background:var(--green);border:2px solid #050607;cursor:nwse-resize;touch-action:none}
 
-/* ===== 낚시바 영역지정 전체화면 편집기 — dev/upload/evidence-notebook/index.html의
-   영역지정 편집기(evn-*)와 완전히 같은 pan/draw 제스처 패턴을 재사용한다:
-   라벨(배지)을 고르지 않은 채 드래그하면 화면을 세로로 훑어보고(pan),
-   배지를 고른 채 드래그하면 그 라벨의 사각형을 그린다. 여긴 라벨이
-   "캐치존" 1개뿐이고 대상 이미지가 낚시바 하나뿐이라는 점만 다르다. */
+/* ===== 세밀영역조절(범용) 전체화면 편집기 — dev/upload/evidence-notebook/
+   index.html의 영역지정 편집기(evn-*)와 완전히 같은 pan/draw 제스처 패턴을
+   재사용한다: 라벨(배지)을 고르지 않은 채 드래그하면 화면을 세로로
+   훑어보고(pan), 배지를 고른 채 드래그하면 그 라벨의 사각형을 그린다.
+   낚시바 디자인 탭에서는 캐치바 이미지 안에서 "실제로 인식될 영역"(임의
+   비율 크롭)을 지정하는 용도로 쓴다 — 라벨이 1개뿐이라 열자마자 자동
+   선택돼 바로 드래그해서 그릴 수 있다. */
 .fbregion-fullscreen{position:fixed;inset:0;z-index:500;background:#050607;display:flex;flex-direction:column}
 .fbregion-fullscreen.hidden{display:none}
 .fbregion-topbar{display:flex;align-items:center;gap:10px;padding:calc(14px + env(safe-area-inset-top,0)) 16px 12px;border-bottom:1px solid var(--divider);flex-shrink:0}
@@ -303,22 +311,10 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     </div>
   </div>
 
-  <!-- ===== 낚시바 디자인 — 낚시바/캐치존 이미지 + 캐치존 영역지정.
-       색상 피커/캐치존 크기 슬라이더/물고기 아이콘은 이 세 가지로 대체되어
-       숨겼다 — 기존 데이터·크롭 조정 코드는 그대로 두고 화면에서만 뺐다.
-       게이지는 낚시바 모듈 자체라 별도 영역지정이 없다. ===== -->
+  <!-- ===== 낚시바 디자인 — PPT 슬라이드형 에디터. 낚시바/캐치바 이미지를
+       자유 배치하고 캐치바 영역/게이지 영역을 사각형으로 지정한다. 슬라이드
+       크기(아래 슬라이더)가 그대로 실제 게임 낚시바 모듈 크기가 된다. ===== -->
   <div class="tab-panel hidden" id="panelBar">
-    <div class="option-group hidden">
-      <div class="option-label">색상</div>
-      <div class="color-row">
-        <input type="color" id="barColorInput" value="#171C22">
-        <div class="color-row-label">낚시바 배경색</div>
-      </div>
-      <div class="color-row">
-        <input type="color" id="zoneColorInput" value="#59B8C8">
-        <div class="color-row-label">캐치존 색상</div>
-      </div>
-    </div>
     <div class="option-group hidden">
       <div class="option-label">물고기 아이콘</div>
       <div class="option-desc">업로드하지 않으면 기본 이모지(🐟)로 표시돼요. 업로드한 사진은 탭하면 크롭 영역을 다시 세밀 조정할 수 있어요.</div>
@@ -328,54 +324,32 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     </div>
 
     <div class="option-group">
-      <div class="option-label">낚시바 크기</div>
-      <div class="option-desc">낚시바 전체(게이지가 채워지는 틀)의 폭/높이예요.</div>
-      <div class="range-row">
-        <input type="range" id="barWidthInput" min="30" max="140" value="52">
-        <div class="range-value" id="barWidthValue">52px</div>
+      <div class="option-label">낚시바 슬라이드</div>
+      <div class="option-desc">PPT 슬라이드처럼 낚시바 이미지·캐치바 이미지를 자유롭게 배치하고, 캐치바 영역·게이지 영역을 사각형으로 지정하세요. 오브젝트를 탭하면 선택되고, 몸통을 드래그하면 이동, 오른쪽 아래 초록 손잡이를 드래그하면 크기가 바뀌어요.</div>
+      <div class="slide-toolbar" id="slideToolbar">
+        <button type="button" class="fish-sheet-btn" id="addBarImageBtn">+ 낚시바 이미지</button>
+        <button type="button" class="fish-sheet-btn" id="addCatchImageBtn">+ 캐치바 이미지</button>
+        <button type="button" class="fish-sheet-btn" id="addZoneRegionBtn">+ 캐치바 영역</button>
+        <button type="button" class="fish-sheet-btn" id="addGaugeRegionBtn">+ 게이지 영역</button>
       </div>
-      <div class="range-row">
-        <input type="range" id="barHeightInput" min="120" max="340" value="230">
-        <div class="range-value" id="barHeightValue">230px</div>
+      <input type="file" id="barLayerFileInput" accept="image/*">
+      <input type="file" id="catchLayerFileInput" accept="image/*">
+      <div class="slide-stage-wrap">
+        <div class="slide-stage" id="slideStage"></div>
       </div>
+      <button type="button" class="fish-sheet-btn hidden" id="cropCatchImageBtn" style="width:100%;margin-top:10px">✂ 캐치바 이미지 인식 영역 자르기</button>
+      <button type="button" class="fish-sheet-btn danger hidden" id="deleteLayerBtn" style="width:100%;margin-top:10px">✕ 선택한 오브젝트 삭제</button>
     </div>
     <div class="option-group">
-      <div class="option-label">캐치바 크기</div>
-      <div class="option-desc">낚시바 안에서 위아래로 움직이는 캐치바(캐치존)의 폭/높이예요. 낚시바 이미지에 "영역지정"을 해뒀다면 그 사각형이 우선하고, 폭 슬라이더는 영역지정을 안 했을 때만 적용돼요.</div>
+      <div class="option-label">슬라이드 크기</div>
+      <div class="option-desc">이 크기가 실제 게임에 쓰이는 낚시바 모듈 전체 크기예요. 크기를 바꿔도 슬라이드 안의 배치 비율은 그대로 유지돼요.</div>
       <div class="range-row">
-        <input type="range" id="zoneWidthInput" min="20" max="100" value="100">
-        <div class="range-value" id="zoneWidthValue">100%</div>
+        <input type="range" id="slideWidthInput" min="40" max="260" value="90">
+        <div class="range-value" id="slideWidthValue">90px</div>
       </div>
       <div class="range-row">
-        <input type="range" id="zoneSizeInput" min="12" max="55" value="28">
-        <div class="range-value" id="zoneSizeValue">28%</div>
-      </div>
-    </div>
-    <div class="option-group">
-      <div class="option-label">낚시바</div>
-      <div class="option-desc">낚시바 전체 배경 그림이에요. 업로드한 뒤 "영역지정"으로 이 그림 위 어디에 캐치존이 놓일지 표시하세요.</div>
-      <div class="frame-strip" id="barImageSlot"></div>
-      <button type="button" class="frame-add-btn hidden" id="barImageAddBtn">+ 낚시바 이미지 업로드</button>
-      <input type="file" id="barImageFileInput" accept="image/*">
-      <button type="button" class="fish-sheet-btn hidden" id="barRegionEditBtn" style="width:100%;margin-top:4px">📐 영역지정</button>
-    </div>
-    <div class="option-group">
-      <div class="option-label">캐치존</div>
-      <div class="option-desc">낚시바 위에서 위아래로 움직이는 캐치존 그림이에요.</div>
-      <div class="frame-strip" id="zoneImageSlot"></div>
-      <button type="button" class="frame-add-btn hidden" id="zoneImageAddBtn">+ 캐치존 이미지 업로드</button>
-      <input type="file" id="zoneImageFileInput" accept="image/*">
-    </div>
-    <div class="option-group hidden">
-      <div class="option-label">게이지</div>
-      <div class="option-desc">현재 화면에는 숨겨져 있어요. 진행도(0%~100%)에 따라 빨강(0%)~연두(70% 이상)로 색이 바뀌는 낚시바 채우기 효과 코드는 남아 있어서, 나중에 다시 켤 수 있어요.</div>
-    </div>
-
-    <div class="bar-preview-wrap">
-      <div class="bar-preview" id="barPreview">
-        <div class="bar-preview-gauge" id="barPreviewGauge"></div>
-        <div class="bar-preview-zone" id="barPreviewZone"></div>
-        <div class="bar-preview-fish" id="barPreviewFish">🐟</div>
+        <input type="range" id="slideHeightInput" min="120" max="420" value="260">
+        <div class="range-value" id="slideHeightValue">260px</div>
       </div>
     </div>
   </div>
@@ -436,10 +410,10 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   </div>
 </div>
 
-<!-- 낚시바 영역지정 — 업로드한 낚시바 이미지 위에 캐치존이 놓일 자리를
-     드래그로 지정한다(게이지는 낚시바 전체를 그대로 쓰므로 지정 대상이
-     아니다). dev/upload/evidence-notebook/index.html의 영역지정 편집기와
-     같은 구조/제스처(fbregion-* = evn-*의 이름만 바꾼 재사용). -->
+<!-- 세밀영역조절(범용) — 낚시바 디자인 탭에서는 업로드한 캐치바 이미지
+     안에서 "실제로 인식될 영역"(임의 비율 크롭)을 드래그로 지정하는 용도로
+     쓴다. dev/upload/evidence-notebook/index.html의 영역지정 편집기와 같은
+     구조/제스처(fbregion-* = evn-*의 이름만 바꾼 재사용). -->
 <div class="fbregion-fullscreen hidden" id="fbregionFullscreen">
   <div class="fbregion-topbar">
     <button type="button" class="fbregion-close-btn" id="fbregionCloseBtn">✕</button>
@@ -542,27 +516,20 @@ const el = {
   cropDpad: document.getElementById('cropDpad'),
   cropCancelBtn: document.getElementById('cropCancelBtn'),
   cropConfirmBtn: document.getElementById('cropConfirmBtn'),
-  barColorInput: document.getElementById('barColorInput'),
-  zoneColorInput: document.getElementById('zoneColorInput'),
-  zoneSizeInput: document.getElementById('zoneSizeInput'),
-  zoneSizeValue: document.getElementById('zoneSizeValue'),
-  barWidthInput: document.getElementById('barWidthInput'),
-  barWidthValue: document.getElementById('barWidthValue'),
-  barHeightInput: document.getElementById('barHeightInput'),
-  barHeightValue: document.getElementById('barHeightValue'),
-  zoneWidthInput: document.getElementById('zoneWidthInput'),
-  zoneWidthValue: document.getElementById('zoneWidthValue'),
-  barPreview: document.getElementById('barPreview'),
-  barPreviewZone: document.getElementById('barPreviewZone'),
-  barPreviewFish: document.getElementById('barPreviewFish'),
-  barPreviewGauge: document.getElementById('barPreviewGauge'),
-  barImageSlot: document.getElementById('barImageSlot'),
-  barImageAddBtn: document.getElementById('barImageAddBtn'),
-  barImageFileInput: document.getElementById('barImageFileInput'),
-  barRegionEditBtn: document.getElementById('barRegionEditBtn'),
-  zoneImageSlot: document.getElementById('zoneImageSlot'),
-  zoneImageAddBtn: document.getElementById('zoneImageAddBtn'),
-  zoneImageFileInput: document.getElementById('zoneImageFileInput'),
+  slideToolbar: document.getElementById('slideToolbar'),
+  addBarImageBtn: document.getElementById('addBarImageBtn'),
+  addCatchImageBtn: document.getElementById('addCatchImageBtn'),
+  addZoneRegionBtn: document.getElementById('addZoneRegionBtn'),
+  addGaugeRegionBtn: document.getElementById('addGaugeRegionBtn'),
+  barLayerFileInput: document.getElementById('barLayerFileInput'),
+  catchLayerFileInput: document.getElementById('catchLayerFileInput'),
+  slideStage: document.getElementById('slideStage'),
+  cropCatchImageBtn: document.getElementById('cropCatchImageBtn'),
+  deleteLayerBtn: document.getElementById('deleteLayerBtn'),
+  slideWidthInput: document.getElementById('slideWidthInput'),
+  slideWidthValue: document.getElementById('slideWidthValue'),
+  slideHeightInput: document.getElementById('slideHeightInput'),
+  slideHeightValue: document.getElementById('slideHeightValue'),
   fbregionFullscreen: document.getElementById('fbregionFullscreen'),
   fbregionCloseBtn: document.getElementById('fbregionCloseBtn'),
   fbregionConfirmBtn: document.getElementById('fbregionConfirmBtn'),
@@ -1057,52 +1024,196 @@ el.reelFileInput.addEventListener('change', async () => {
   }
 });
 
-/* ===== 낚시바 디자인 탭 ===== */
-async function renderBarPreview() {
-  const design = fishingConfig.barDesign || {};
-  el.barPreview.style.width = (design.barWidthPx || 52) + 'px';
-  el.barPreview.style.height = (design.barHeightPx || 230) + 'px';
-  el.barPreview.style.background = design.barColor || '#171C22';
-  el.barPreview.style.backgroundImage = '';
-  if (design.barImageAssetId) {
-    const asset = await AssetDB.getAsset(design.barImageAssetId).catch(() => null);
-    if (asset) el.barPreview.style.backgroundImage = `url(${asset.dataUrl})`;
-  }
+/* ===== 낚시바 디자인 탭 — PPT 슬라이드형 에디터 =====
+   barDesign.slideWidthPx/slideHeightPx가 실제 게임에 쓰이는 낚시바 모듈
+   크기다. barLayer/catchLayer(이미지)와 zoneRegion/gaugeRegion(사각형)은
+   전부 이 슬라이드 기준 0~1 비율(x,y,w,h)로 저장해 슬라이드 크기가 바뀌어도
+   배치 비율이 그대로 유지된다. 에디터 화면 자체는 슬라이드 실제 px 크기와
+   무관하게 항상 편한 배율로 확대해서 보여준다(.slide-stage의 aspect-ratio로
+   폭에 맞춰 늘인 컨테이너). 드래그 중엔 스타일만 즉시 갱신하고, 놓는 순간
+   (pointerup)에만 AssetDB에 저장한다 — 매 pointermove마다 네트워크 저장하면
+   낭비이기 때문. */
+const SLIDE_LAYER_ORDER = ['barLayer', 'zoneRegion', 'gaugeRegion', 'catchLayer']; // z-order: 낚시바 배경 → 영역 표시 → 캐치바 이미지가 맨 위
+const SLIDE_LAYER_META = {
+  barLayer: { kind: 'image', label: '낚시바' },
+  catchLayer: { kind: 'image', label: '캐치바' },
+  zoneRegion: { kind: 'region', label: '캐치바 영역' },
+  gaugeRegion: { kind: 'region', label: '게이지 영역' },
+};
+let selectedLayerId = null;
+const slideAssetUrlCache = new Map(); // assetId -> dataUrl, 매 렌더마다 AssetDB.getAsset 재조회하지 않도록
 
-  // 캐치존은 zoneRegion(낚시바 그림 위 트랙 사각형)이 지정되어 있으면 그
-  // 자리를, 아니면 기존 zoneSizePct 기반 중앙 배치로 대체 표시한다 —
-  // 실제 플레이 화면(play/index.html)의 세로 이동은 이 트랙 안에서
-  // 계속 물리 로직대로 계산되고, 여긴 정지 미리보기라 중앙에 고정해 보여준다.
-  const zoneRegion = design.zoneRegion;
-  el.barPreviewZone.style.backgroundImage = '';
-  el.barPreviewZone.style.background = design.zoneColor || '#59B8C8';
-  if (zoneRegion) {
-    el.barPreviewZone.style.left = zoneRegion.x * 100 + '%';
-    el.barPreviewZone.style.width = zoneRegion.w * 100 + '%';
-    const zonePct = design.zoneSizePct || 28;
-    const trackH = zoneRegion.h * 100;
-    el.barPreviewZone.style.height = (trackH * zonePct / 100) + '%';
-    el.barPreviewZone.style.top = (zoneRegion.y * 100 + (trackH - trackH * zonePct / 100) / 2) + '%';
-  } else {
-    const zonePct = design.zoneSizePct || 28;
-    const zoneWidthPct = design.zoneWidthPct || 100;
-    el.barPreviewZone.style.left = ((100 - zoneWidthPct) / 2) + '%';
-    el.barPreviewZone.style.width = zoneWidthPct + '%';
-    el.barPreviewZone.style.height = zonePct + '%';
-    el.barPreviewZone.style.top = ((100 - zonePct) / 2) + '%';
-  }
-  if (design.zoneImageAssetId) {
-    const asset = await AssetDB.getAsset(design.zoneImageAssetId).catch(() => null);
-    if (asset) el.barPreviewZone.style.backgroundImage = `url(${asset.dataUrl})`;
-  }
-  el.barPreviewFish.style.top = '50%';
-
-  // 게이지 — 더 이상 별도 영역지정이 없다. 낚시바 모듈(barPreview) 전체가
-  // 곧 게이지라 CSS(.bar-preview-gauge{inset:0})가 항상 낚시바 전체를
-  // 덮는다(실제 색은 진행도 값 기준 매 프레임 계산되고 플레이 중에만
-  // 의미가 있어, 미리보기는 CSS 기본값 색 — 기본 시작 게이지 30%에
-  // 해당하는 색 — 으로 고정해서 보여준다).
+function barDesignOf() { return fishingConfig.barDesign || {}; }
+async function patchBarDesign(patch) {
+  fishingConfig = await AssetDB.setFishingConfig({ barDesign: Object.assign({}, fishingConfig.barDesign, patch) });
+  showSaveNote();
+  return fishingConfig.barDesign;
 }
+async function getCachedAssetUrl(assetId) {
+  if (!assetId) return null;
+  if (slideAssetUrlCache.has(assetId)) return slideAssetUrlCache.get(assetId);
+  const asset = await AssetDB.getAsset(assetId).catch(() => null);
+  const url = asset ? asset.dataUrl : null;
+  slideAssetUrlCache.set(assetId, url);
+  return url;
+}
+function loadImageEl(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
+async function renderSlideStage() {
+  const design = barDesignOf();
+  el.slideStage.style.setProperty('--slide-ar', (design.slideWidthPx || 90) + '/' + (design.slideHeightPx || 260));
+  el.slideStage.innerHTML = '';
+  for (const id of SLIDE_LAYER_ORDER) {
+    const data = design[id];
+    if (!data) continue;
+    const meta = SLIDE_LAYER_META[id];
+    const layerEl = document.createElement('div');
+    layerEl.className = 'slide-layer' + (meta.kind === 'region' ? ' region' : '') + (selectedLayerId === id ? ' selected' : '');
+    layerEl.dataset.layerId = id;
+    layerEl.style.left = (data.x * 100) + '%';
+    layerEl.style.top = (data.y * 100) + '%';
+    layerEl.style.width = (data.w * 100) + '%';
+    layerEl.style.height = (data.h * 100) + '%';
+    if (meta.kind === 'image') {
+      const url = await getCachedAssetUrl(data.assetId);
+      if (url) {
+        const img = document.createElement('img');
+        img.src = url;
+        img.alt = '';
+        layerEl.appendChild(img);
+      }
+    } else {
+      const label = document.createElement('span');
+      label.className = 'slide-layer-label';
+      label.textContent = meta.label;
+      layerEl.appendChild(label);
+    }
+    if (selectedLayerId === id) {
+      const handle = document.createElement('div');
+      handle.className = 'slide-layer-handle';
+      layerEl.appendChild(handle);
+      attachLayerResize(handle, id);
+    }
+    attachLayerMove(layerEl, id);
+    el.slideStage.appendChild(layerEl);
+  }
+  updateSlideToolbarState();
+}
+el.slideStage.addEventListener('pointerdown', (e) => {
+  if (e.target !== el.slideStage) return; // 빈 공간 탭 — 선택 해제
+  if (!selectedLayerId) return;
+  selectedLayerId = null;
+  renderSlideStage();
+});
+function updateSlideToolbarState() {
+  const design = barDesignOf();
+  el.addBarImageBtn.classList.toggle('hidden', !!design.barLayer);
+  el.addCatchImageBtn.classList.toggle('hidden', !!design.catchLayer);
+  el.addZoneRegionBtn.classList.toggle('hidden', !!design.zoneRegion);
+  el.addGaugeRegionBtn.classList.toggle('hidden', !!design.gaugeRegion);
+  el.deleteLayerBtn.classList.toggle('hidden', !selectedLayerId);
+  el.cropCatchImageBtn.classList.toggle('hidden', selectedLayerId !== 'catchLayer' || !design.catchLayer);
+}
+function clampLayerPos(v, size) { return Math.min(Math.max(v, 0), 1 - size); }
+
+// 이동 — 첫 탭은 선택만 하고(손잡이가 생길 때까지), 이미 선택된 오브젝트를
+// 다시 누르고 끄는 동작만 실제로 옮긴다. 같은 pointerdown 안에서 선택과
+// 드래그 시작을 동시에 처리하면 renderSlideStage()가 DOM을 통째로 갈아
+// 끼우면서 그 자리에서 시작한 포인터 캡처가 끊겨버리기 때문.
+function attachLayerMove(layerEl, id) {
+  let pointerId = null, start = null, startRect = null;
+  layerEl.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('.slide-layer-handle')) return;
+    e.stopPropagation();
+    if (selectedLayerId !== id) {
+      selectedLayerId = id;
+      renderSlideStage();
+      return;
+    }
+    pointerId = e.pointerId;
+    layerEl.setPointerCapture(pointerId);
+    start = { x: e.clientX, y: e.clientY };
+    startRect = Object.assign({}, barDesignOf()[id]);
+    layerEl._pendingXY = null;
+  });
+  layerEl.addEventListener('pointermove', (e) => {
+    if (e.pointerId !== pointerId) return;
+    const stageRect = el.slideStage.getBoundingClientRect();
+    const dx = (e.clientX - start.x) / stageRect.width;
+    const dy = (e.clientY - start.y) / stageRect.height;
+    const x = clampLayerPos(startRect.x + dx, startRect.w);
+    const y = clampLayerPos(startRect.y + dy, startRect.h);
+    layerEl.style.left = (x * 100) + '%';
+    layerEl.style.top = (y * 100) + '%';
+    layerEl._pendingXY = { x, y };
+  });
+  ['pointerup', 'pointercancel'].forEach(evt => layerEl.addEventListener(evt, async (e) => {
+    if (e.pointerId !== pointerId) return;
+    pointerId = null;
+    if (layerEl._pendingXY) {
+      const data = Object.assign({}, barDesignOf()[id], layerEl._pendingXY);
+      layerEl._pendingXY = null;
+      await patchBarDesign({ [id]: data });
+    }
+  }));
+}
+// 크기조절 손잡이 — 오른쪽 아래 모서리에서만 늘리고 줄인다(간단한 단일
+// 손잡이, frame-timeline-handle과 같은 관례). 손잡이는 오브젝트 자신의
+// 오른쪽 아래에 절대위치로 붙어 있어 width/height가 바뀌면 CSS만으로
+// 같이 따라오므로, 리사이즈 중엔 다시 그릴 필요가 없다.
+function attachLayerResize(handleEl, id) {
+  let pointerId = null, start = null, startRect = null;
+  handleEl.addEventListener('pointerdown', (e) => {
+    e.stopPropagation();
+    pointerId = e.pointerId;
+    handleEl.setPointerCapture(pointerId);
+    start = { x: e.clientX, y: e.clientY };
+    startRect = Object.assign({}, barDesignOf()[id]);
+    handleEl._pendingWH = null;
+  });
+  handleEl.addEventListener('pointermove', (e) => {
+    if (e.pointerId !== pointerId) return;
+    const stageRect = el.slideStage.getBoundingClientRect();
+    const dw = (e.clientX - start.x) / stageRect.width;
+    const dh = (e.clientY - start.y) / stageRect.height;
+    const MIN = 0.04;
+    const w = Math.min(Math.max(startRect.w + dw, MIN), 1 - startRect.x);
+    const h = Math.min(Math.max(startRect.h + dh, MIN), 1 - startRect.y);
+    const layerEl = handleEl.parentElement;
+    layerEl.style.width = (w * 100) + '%';
+    layerEl.style.height = (h * 100) + '%';
+    handleEl._pendingWH = { w, h };
+  });
+  ['pointerup', 'pointercancel'].forEach(evt => handleEl.addEventListener(evt, async (e) => {
+    if (e.pointerId !== pointerId) return;
+    pointerId = null;
+    if (handleEl._pendingWH) {
+      const data = Object.assign({}, barDesignOf()[id], handleEl._pendingWH);
+      handleEl._pendingWH = null;
+      await patchBarDesign({ [id]: data });
+    }
+  }));
+}
+
+el.slideWidthInput.addEventListener('input', () => {
+  el.slideWidthValue.textContent = el.slideWidthInput.value + 'px';
+  el.slideStage.style.setProperty('--slide-ar', el.slideWidthInput.value + '/' + el.slideHeightInput.value);
+});
+el.slideWidthInput.addEventListener('change', () => patchBarDesign({ slideWidthPx: Number(el.slideWidthInput.value) }));
+el.slideHeightInput.addEventListener('input', () => {
+  el.slideHeightValue.textContent = el.slideHeightInput.value + 'px';
+  el.slideStage.style.setProperty('--slide-ar', el.slideWidthInput.value + '/' + el.slideHeightInput.value);
+});
+el.slideHeightInput.addEventListener('change', () => patchBarDesign({ slideHeightPx: Number(el.slideHeightInput.value) }));
+
 async function renderFishIconSlot() {
   const design = fishingConfig.barDesign || {};
   el.fishIconSlot.innerHTML = '';
@@ -1193,124 +1304,68 @@ async function confirmFishIconCrop(rect, sourceImg, pendingFile) {
     el.cropConfirmBtn.textContent = cropConfirmDefaultText;
   }
 }
-async function saveBarDesign() {
-  const prev = fishingConfig.barDesign || {};
-  const design = {
-    barColor: el.barColorInput.value,
-    zoneColor: el.zoneColorInput.value,
-    zoneSizePct: Number(el.zoneSizeInput.value),
-    zoneWidthPct: Number(el.zoneWidthInput.value),
-    barWidthPx: Number(el.barWidthInput.value),
-    barHeightPx: Number(el.barHeightInput.value),
-    fishIconAssetId: prev.fishIconAssetId || null,
-    fishIconSourceAssetId: prev.fishIconSourceAssetId || null,
-    fishIconCropRect: prev.fishIconCropRect || null,
-    barImageAssetId: prev.barImageAssetId || null,
-    zoneImageAssetId: prev.zoneImageAssetId || null,
-    zoneRegion: prev.zoneRegion || null,
-  };
-  fishingConfig = await AssetDB.setFishingConfig({ barDesign: design });
-  showSaveNote();
-  renderBarPreview();
-}
-
-/* ===== 낚시바/캐치존 이미지 업로드 + 캐치존 영역지정 =====
-   낚시바 배경색/캐치존 색상/캐치존 크기 슬라이더/물고기 아이콘(위 option-group
-   들, 화면에서만 숨김)을 대신한다 — 낚시바 이미지 하나, 그 위에서 움직이는
-   캐치존 이미지 하나가 낚시바 그림 위 어디에 놓일지 사각형으로 지정한다
-   (fbregion 편집기, dev/upload/evidence-notebook/index.html의 영역지정과
-   같은 패턴). 실제 물고기가 캐치존 안에서 움직이는 세로 위치 계산은
-   zoneRegion이 지정하는 "트랙" 안에서 기존 물리 로직 그대로 이어간다 —
-   dev/minigame-fishing/play/index.html 쪽 렌더링만 이 트랙 rect를 반영하도록
-   바뀐다. 게이지(0~100% 빨강→연두 단색 보간)는 더 이상 별도 영역지정이
-   없다 — 낚시바 모듈(.fishbar) 전체가 곧 게이지라 크기가 자동으로 낚시바를
-   따라간다. */
-const FB_REGION_LABELS = [
-  { id: 'zoneRegion', label: '캐치존' },
-];
-
-async function renderBarImageSlot() {
-  const design = fishingConfig.barDesign || {};
-  el.barImageSlot.innerHTML = '';
-  if (design.barImageAssetId) {
-    el.barImageAddBtn.classList.add('hidden');
-    el.barRegionEditBtn.classList.remove('hidden');
-    const asset = await AssetDB.getAsset(design.barImageAssetId).catch(() => null);
-    const slot = document.createElement('div');
-    slot.className = 'frame-slot';
-    slot.innerHTML = `${asset ? `<img src="${asset.dataUrl}" alt="">` : ''}
-      <div class="frame-actions"><button type="button" class="frame-mini-btn danger" data-act="del">✕</button></div>`;
-    slot.querySelector('[data-act=del]').addEventListener('click', async () => {
-      fishingConfig = await AssetDB.setFishingConfig({ barDesign: Object.assign({}, fishingConfig.barDesign, { barImageAssetId: null, zoneRegion: null }) });
-      showSaveNote();
-      renderBarImageSlot();
-      renderBarPreview();
-    });
-    el.barImageSlot.appendChild(slot);
-  } else {
-    el.barImageAddBtn.classList.remove('hidden');
-    el.barRegionEditBtn.classList.add('hidden');
-  }
-}
-el.barImageAddBtn.addEventListener('click', () => el.barImageFileInput.click());
-el.barImageFileInput.addEventListener('change', async () => {
-  const file = el.barImageFileInput.files[0];
-  el.barImageFileInput.value = '';
+/* ===== 낚시바 슬라이드 툴바 — 낚시바/캐치바 이미지 추가, 캐치바 영역/
+   게이지 영역 추가, 선택한 오브젝트 삭제. 이미지 오브젝트는 업로드 즉시
+   슬라이드 중앙 부근 기본 위치/크기로 놓이고, 이후 자유롭게 드래그/
+   리사이즈한다(위 attachLayerMove/attachLayerResize). ===== */
+el.addBarImageBtn.addEventListener('click', () => el.barLayerFileInput.click());
+el.barLayerFileInput.addEventListener('change', async () => {
+  const file = el.barLayerFileInput.files[0];
+  el.barLayerFileInput.value = '';
   if (!file) return;
-  el.barImageAddBtn.disabled = true;
+  el.addBarImageBtn.disabled = true;
   try {
     const asset = await AssetDB.addAsset({ type: 'fishing-bar-image', name: file.name, blob: file });
-    fishingConfig = await AssetDB.setFishingConfig({ barDesign: Object.assign({}, fishingConfig.barDesign, { barImageAssetId: asset.id }) });
-    showSaveNote();
-    renderBarImageSlot();
-    renderBarPreview();
+    await patchBarDesign({ barLayer: { assetId: asset.id, x: 0, y: 0, w: 1, h: 1 } });
+    selectedLayerId = 'barLayer';
+    renderSlideStage();
   } finally {
-    el.barImageAddBtn.disabled = false;
+    el.addBarImageBtn.disabled = false;
   }
 });
 
-async function renderZoneImageSlot() {
-  const design = fishingConfig.barDesign || {};
-  el.zoneImageSlot.innerHTML = '';
-  if (design.zoneImageAssetId) {
-    el.zoneImageAddBtn.classList.add('hidden');
-    const asset = await AssetDB.getAsset(design.zoneImageAssetId).catch(() => null);
-    const slot = document.createElement('div');
-    slot.className = 'frame-slot';
-    slot.innerHTML = `${asset ? `<img src="${asset.dataUrl}" alt="">` : ''}
-      <div class="frame-actions"><button type="button" class="frame-mini-btn danger" data-act="del">✕</button></div>`;
-    slot.querySelector('[data-act=del]').addEventListener('click', async () => {
-      fishingConfig = await AssetDB.setFishingConfig({ barDesign: Object.assign({}, fishingConfig.barDesign, { zoneImageAssetId: null }) });
-      showSaveNote();
-      renderZoneImageSlot();
-      renderBarPreview();
-    });
-    el.zoneImageSlot.appendChild(slot);
-  } else {
-    el.zoneImageAddBtn.classList.remove('hidden');
-  }
-}
-el.zoneImageAddBtn.addEventListener('click', () => el.zoneImageFileInput.click());
-el.zoneImageFileInput.addEventListener('change', async () => {
-  const file = el.zoneImageFileInput.files[0];
-  el.zoneImageFileInput.value = '';
+el.addCatchImageBtn.addEventListener('click', () => el.catchLayerFileInput.click());
+el.catchLayerFileInput.addEventListener('change', async () => {
+  const file = el.catchLayerFileInput.files[0];
+  el.catchLayerFileInput.value = '';
   if (!file) return;
-  el.zoneImageAddBtn.disabled = true;
+  el.addCatchImageBtn.disabled = true;
   try {
-    const asset = await AssetDB.addAsset({ type: 'fishing-zone-image', name: file.name, blob: file });
-    fishingConfig = await AssetDB.setFishingConfig({ barDesign: Object.assign({}, fishingConfig.barDesign, { zoneImageAssetId: asset.id }) });
-    showSaveNote();
-    renderZoneImageSlot();
-    renderBarPreview();
+    const asset = await AssetDB.addAsset({ type: 'fishing-catch-image', name: file.name, blob: file });
+    // 크롭 전엔 원본(assetId===sourceAssetId)을 그대로 보여주다가, "인식
+    // 영역 자르기"를 확정하면 confirmFbRegionEditor가 baked 결과로 assetId만
+    // 갈아끼운다(fishIconAssetId/fishIconSourceAssetId 패턴과 동일).
+    await patchBarDesign({ catchLayer: { assetId: asset.id, sourceAssetId: asset.id, cropRect: null, x: 0.15, y: 0.4, w: 0.7, h: 0.16 } });
+    selectedLayerId = 'catchLayer';
+    renderSlideStage();
   } finally {
-    el.zoneImageAddBtn.disabled = false;
+    el.addCatchImageBtn.disabled = false;
   }
 });
 
-/* ===== 낚시바 영역지정 편집기 — evidence-notebook의 evn-* 편집기와 완전히
-   같은 pan/draw 좌표 수학(스케일=스테이지 폭/원본 폭, 세로 스크롤은 배지
-   미선택 시 드래그로 pan). 라벨이 2개뿐이라는 것과 대상 이미지가 하나
-   고정이라는 점만 다르다. ===== */
+el.addZoneRegionBtn.addEventListener('click', async () => {
+  await patchBarDesign({ zoneRegion: { x: 0.1, y: 0.3, w: 0.8, h: 0.4 } });
+  selectedLayerId = 'zoneRegion';
+  renderSlideStage();
+});
+el.addGaugeRegionBtn.addEventListener('click', async () => {
+  await patchBarDesign({ gaugeRegion: { x: 0.1, y: 0.78, w: 0.8, h: 0.12 } });
+  selectedLayerId = 'gaugeRegion';
+  renderSlideStage();
+});
+el.deleteLayerBtn.addEventListener('click', async () => {
+  if (!selectedLayerId) return;
+  await patchBarDesign({ [selectedLayerId]: null });
+  selectedLayerId = null;
+  renderSlideStage();
+});
+
+/* ===== 세밀영역조절(범용) 전체화면 편집기 재사용 — evidence-notebook의
+   evn-* 편집기와 완전히 같은 pan/draw 좌표 수학(스케일=스테이지 폭/원본 폭,
+   세로 스크롤은 배지 미선택 시 드래그로 pan). 낚시바 디자인 탭에서는
+   업로드한 캐치바 이미지 "원본"(catchLayer.sourceAssetId) 안에서 실제로
+   인식될 영역(cropRect, 임의 비율 크롭)을 지정하는 용도다 — 라벨이 1개뿐이라
+   열자마자 자동 선택돼 바로 드래그해서 그릴 수 있다. */
 let fbNaturalW = 0, fbNaturalH = 0;
 let fbScale = 1, fbRenderedH = 0;
 let fbPanY = 0;
@@ -1321,18 +1376,21 @@ let fbDrawStart = null;
 let fbDraftBox = null;
 let fbDraftRegions = {};
 let fbSelectedLabelId = null;
+const FB_REGION_LABELS = [
+  { id: 'cropRect', label: '인식 영역' },
+];
 
-el.barRegionEditBtn.addEventListener('click', openFbRegionEditor);
+el.cropCatchImageBtn.addEventListener('click', openCatchCropEditor);
 el.fbregionCloseBtn.addEventListener('click', closeFbRegionEditor);
 el.fbregionConfirmBtn.addEventListener('click', confirmFbRegionEditor);
 
-function openFbRegionEditor() {
-  const design = fishingConfig.barDesign || {};
-  if (!design.barImageAssetId) return;
-  AssetDB.getAsset(design.barImageAssetId).then(asset => {
+function openCatchCropEditor() {
+  const catchLayer = barDesignOf().catchLayer;
+  if (!catchLayer || !catchLayer.sourceAssetId) return;
+  AssetDB.getAsset(catchLayer.sourceAssetId).then(asset => {
     if (!asset) return;
-    fbDraftRegions = { zoneRegion: design.zoneRegion || null };
-    fbSelectedLabelId = null;
+    fbDraftRegions = { cropRect: catchLayer.cropRect || null };
+    fbSelectedLabelId = 'cropRect'; // 라벨이 하나뿐이라 열자마자 바로 그릴 수 있게 자동 선택
     fbPanY = 0;
     el.fbregionImg.src = asset.dataUrl;
     el.fbregionFullscreen.classList.remove('hidden');
@@ -1352,10 +1410,28 @@ function closeFbRegionEditor() {
   el.fbregionFullscreen.classList.add('hidden');
 }
 async function confirmFbRegionEditor() {
-  fishingConfig = await AssetDB.setFishingConfig({ barDesign: Object.assign({}, fishingConfig.barDesign, fbDraftRegions) });
-  showSaveNote();
-  closeFbRegionEditor();
-  renderBarPreview();
+  const rect = fbDraftRegions.cropRect;
+  const catchLayer = barDesignOf().catchLayer;
+  if (!rect || !catchLayer) { closeFbRegionEditor(); return; }
+  const prevText = el.fbregionConfirmBtn.textContent;
+  el.fbregionConfirmBtn.disabled = true;
+  el.fbregionConfirmBtn.textContent = '자르는 중...';
+  try {
+    const sourceAsset = await AssetDB.getAsset(catchLayer.sourceAssetId);
+    const img = await loadImageEl(sourceAsset.dataUrl);
+    const OUT_W = 160;
+    const outH = Math.max(1, Math.round(OUT_W * (rect.h * img.naturalHeight) / (rect.w * img.naturalWidth)));
+    const croppedDataUrl = cropRegionToDataUrl(img, rect, OUT_W, outH);
+    const blob = await (await fetch(croppedDataUrl)).blob();
+    const croppedAsset = await AssetDB.addAsset({ type: 'fishing-catch-image-cropped', name: 'catch-bar.png', blob });
+    slideAssetUrlCache.delete(croppedAsset.id);
+    await patchBarDesign({ catchLayer: Object.assign({}, catchLayer, { assetId: croppedAsset.id, cropRect: rect }) });
+    closeFbRegionEditor();
+    renderSlideStage();
+  } finally {
+    el.fbregionConfirmBtn.disabled = false;
+    el.fbregionConfirmBtn.textContent = prevText;
+  }
 }
 function fitFbStage() {
   const stageW = el.fbregionStage.clientWidth;
@@ -1627,25 +1703,6 @@ el.cropConfirmBtn.addEventListener('click', async () => {
     el.cropConfirmBtn.disabled = false;
   }
 });
-el.barColorInput.addEventListener('input', saveBarDesign);
-el.zoneColorInput.addEventListener('input', saveBarDesign);
-el.zoneSizeInput.addEventListener('input', () => {
-  el.zoneSizeValue.textContent = el.zoneSizeInput.value + '%';
-  saveBarDesign();
-});
-el.zoneWidthInput.addEventListener('input', () => {
-  el.zoneWidthValue.textContent = el.zoneWidthInput.value + '%';
-  saveBarDesign();
-});
-el.barWidthInput.addEventListener('input', () => {
-  el.barWidthValue.textContent = el.barWidthInput.value + 'px';
-  saveBarDesign();
-});
-el.barHeightInput.addEventListener('input', () => {
-  el.barHeightValue.textContent = el.barHeightInput.value + 'px';
-  saveBarDesign();
-});
-
 /* ===== 물고기 종류 탭 — 카탈로그는 dev/data/fishDefs.js에 코드로 박혀 있고
    (67종, id/등급/가치/난이도/시트 slot 고정), 여기서 편집하는 건 그 위에
    덮어씌울 아이콘 스프라이트시트 한 장 + 물고기별 세밀영역조절 보정이다.
@@ -1774,20 +1831,12 @@ async function init() {
   renderPromptTabs();
   fishingConfig = await AssetDB.getFishingConfig().catch(() => fishingConfig);
   const design = fishingConfig.barDesign || {};
-  el.barColorInput.value = design.barColor || '#171C22';
-  el.zoneColorInput.value = design.zoneColor || '#59B8C8';
-  el.zoneSizeInput.value = design.zoneSizePct || 28;
-  el.zoneSizeValue.textContent = (design.zoneSizePct || 28) + '%';
-  el.zoneWidthInput.value = design.zoneWidthPct || 100;
-  el.zoneWidthValue.textContent = (design.zoneWidthPct || 100) + '%';
-  el.barWidthInput.value = design.barWidthPx || 52;
-  el.barWidthValue.textContent = (design.barWidthPx || 52) + 'px';
-  el.barHeightInput.value = design.barHeightPx || 230;
-  el.barHeightValue.textContent = (design.barHeightPx || 230) + 'px';
-  renderBarPreview();
+  el.slideWidthInput.value = design.slideWidthPx || 90;
+  el.slideWidthValue.textContent = (design.slideWidthPx || 90) + 'px';
+  el.slideHeightInput.value = design.slideHeightPx || 260;
+  el.slideHeightValue.textContent = (design.slideHeightPx || 260) + 'px';
+  renderSlideStage();
   renderFishIconSlot();
-  renderBarImageSlot();
-  renderZoneImageSlot();
   renderCastTab();
   renderFramesTab('reelingFrames', el.reelFrames, el.reelFileInput, el.reelPreview, el.reelPreviewLabel);
   renderFishTab();
