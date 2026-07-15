@@ -137,12 +137,11 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .bar-preview{position:relative;width:44px;height:200px;border-radius:10px;overflow:hidden;border:1px solid var(--divider);background-size:cover;background-position:center}
 .bar-preview-zone{position:absolute;left:0;right:0;border-radius:4px;background-size:cover;background-position:center}
 .bar-preview-fish{position:absolute;left:50%;transform:translate(-50%,-50%);font-size:18px}
-/* 게이지는 더 이상 별도 영역지정이 없다 — 낚시바 모듈(.bar-preview) 전체를
-   그대로 덮는다. 실제 플레이에서는 진행도값 기준으로 매 프레임 단색을 다시
-   계산하지만(dev/minigame-fishing/play/index.html의 gaugeColorForProgress),
-   이 설정 화면 미리보기는 정적이라 기본 시작 게이지(30%)에 해당하는 색
-   하나로 고정해서 보여준다. */
-.bar-preview-gauge{position:absolute;inset:0;background:rgb(151,126,83)}
+/* 게이지는 사용자 요청으로 화면에서 숨겼다(코드/로직은 그대로 남겨둠 —
+   나중에 다시 켤 수 있게 display:none만 추가) — 낚시바 크기/캐치바 크기를
+   직접 만드는 새 낚시바 모듈로 대체하는 중이라, 진행도 채우기 효과는 잠시
+   보이지 않는다. */
+.bar-preview-gauge{position:absolute;inset:0;background:rgb(151,126,83);display:none}
 
 /* ===== 낚시바 영역지정 전체화면 편집기 — dev/upload/evidence-notebook/index.html의
    영역지정 편집기(evn-*)와 완전히 같은 pan/draw 제스처 패턴을 재사용한다:
@@ -321,13 +320,6 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
       </div>
     </div>
     <div class="option-group hidden">
-      <div class="option-label">캐치존 크기</div>
-      <div class="range-row">
-        <input type="range" id="zoneSizeInput" min="12" max="55" value="28">
-        <div class="range-value" id="zoneSizeValue">28%</div>
-      </div>
-    </div>
-    <div class="option-group hidden">
       <div class="option-label">물고기 아이콘</div>
       <div class="option-desc">업로드하지 않으면 기본 이모지(🐟)로 표시돼요. 업로드한 사진은 탭하면 크롭 영역을 다시 세밀 조정할 수 있어요.</div>
       <div class="frame-strip" id="fishIconSlot"></div>
@@ -336,8 +328,32 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     </div>
 
     <div class="option-group">
+      <div class="option-label">낚시바 크기</div>
+      <div class="option-desc">낚시바 전체(게이지가 채워지는 틀)의 폭/높이예요.</div>
+      <div class="range-row">
+        <input type="range" id="barWidthInput" min="30" max="140" value="52">
+        <div class="range-value" id="barWidthValue">52px</div>
+      </div>
+      <div class="range-row">
+        <input type="range" id="barHeightInput" min="120" max="340" value="230">
+        <div class="range-value" id="barHeightValue">230px</div>
+      </div>
+    </div>
+    <div class="option-group">
+      <div class="option-label">캐치바 크기</div>
+      <div class="option-desc">낚시바 안에서 위아래로 움직이는 캐치바(캐치존)의 폭/높이예요. 낚시바 이미지에 "영역지정"을 해뒀다면 그 사각형이 우선하고, 폭 슬라이더는 영역지정을 안 했을 때만 적용돼요.</div>
+      <div class="range-row">
+        <input type="range" id="zoneWidthInput" min="20" max="100" value="100">
+        <div class="range-value" id="zoneWidthValue">100%</div>
+      </div>
+      <div class="range-row">
+        <input type="range" id="zoneSizeInput" min="12" max="55" value="28">
+        <div class="range-value" id="zoneSizeValue">28%</div>
+      </div>
+    </div>
+    <div class="option-group">
       <div class="option-label">낚시바</div>
-      <div class="option-desc">낚시바 전체 배경 그림이에요. 업로드한 뒤 "영역지정"으로 이 그림 위 어디에 캐치존이 놓일지 표시하세요. 게이지는 이 낚시바 전체를 그대로 채워요.</div>
+      <div class="option-desc">낚시바 전체 배경 그림이에요. 업로드한 뒤 "영역지정"으로 이 그림 위 어디에 캐치존이 놓일지 표시하세요.</div>
       <div class="frame-strip" id="barImageSlot"></div>
       <button type="button" class="frame-add-btn hidden" id="barImageAddBtn">+ 낚시바 이미지 업로드</button>
       <input type="file" id="barImageFileInput" accept="image/*">
@@ -350,9 +366,9 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
       <button type="button" class="frame-add-btn hidden" id="zoneImageAddBtn">+ 캐치존 이미지 업로드</button>
       <input type="file" id="zoneImageFileInput" accept="image/*">
     </div>
-    <div class="option-group">
+    <div class="option-group hidden">
       <div class="option-label">게이지</div>
-      <div class="option-desc">낚시 진행도(0%~100%)에 따라 단색이 빨강(0%)에서 연두(70% 이상)로 자연스럽게 바뀌어요(중간쯤은 노랑/주황) — 그림 안에 미리 그려진 그라데이션이 아니라 지금 값 기준으로 매번 새로 계산돼요. 별도 영역지정 없이 낚시바 전체가 곧 게이지예요(낚시바보다 작게 딱 맞춰 그릴 필요 없어요) — 캐치존/물고기는 그 위에 그대로 겹쳐서 보여요.</div>
+      <div class="option-desc">현재 화면에는 숨겨져 있어요. 진행도(0%~100%)에 따라 빨강(0%)~연두(70% 이상)로 색이 바뀌는 낚시바 채우기 효과 코드는 남아 있어서, 나중에 다시 켤 수 있어요.</div>
     </div>
 
     <div class="bar-preview-wrap">
@@ -530,6 +546,12 @@ const el = {
   zoneColorInput: document.getElementById('zoneColorInput'),
   zoneSizeInput: document.getElementById('zoneSizeInput'),
   zoneSizeValue: document.getElementById('zoneSizeValue'),
+  barWidthInput: document.getElementById('barWidthInput'),
+  barWidthValue: document.getElementById('barWidthValue'),
+  barHeightInput: document.getElementById('barHeightInput'),
+  barHeightValue: document.getElementById('barHeightValue'),
+  zoneWidthInput: document.getElementById('zoneWidthInput'),
+  zoneWidthValue: document.getElementById('zoneWidthValue'),
   barPreview: document.getElementById('barPreview'),
   barPreviewZone: document.getElementById('barPreviewZone'),
   barPreviewFish: document.getElementById('barPreviewFish'),
@@ -1038,6 +1060,8 @@ el.reelFileInput.addEventListener('change', async () => {
 /* ===== 낚시바 디자인 탭 ===== */
 async function renderBarPreview() {
   const design = fishingConfig.barDesign || {};
+  el.barPreview.style.width = (design.barWidthPx || 52) + 'px';
+  el.barPreview.style.height = (design.barHeightPx || 230) + 'px';
   el.barPreview.style.background = design.barColor || '#171C22';
   el.barPreview.style.backgroundImage = '';
   if (design.barImageAssetId) {
@@ -1061,8 +1085,9 @@ async function renderBarPreview() {
     el.barPreviewZone.style.top = (zoneRegion.y * 100 + (trackH - trackH * zonePct / 100) / 2) + '%';
   } else {
     const zonePct = design.zoneSizePct || 28;
-    el.barPreviewZone.style.left = '0';
-    el.barPreviewZone.style.width = '';
+    const zoneWidthPct = design.zoneWidthPct || 100;
+    el.barPreviewZone.style.left = ((100 - zoneWidthPct) / 2) + '%';
+    el.barPreviewZone.style.width = zoneWidthPct + '%';
     el.barPreviewZone.style.height = zonePct + '%';
     el.barPreviewZone.style.top = ((100 - zonePct) / 2) + '%';
   }
@@ -1174,6 +1199,9 @@ async function saveBarDesign() {
     barColor: el.barColorInput.value,
     zoneColor: el.zoneColorInput.value,
     zoneSizePct: Number(el.zoneSizeInput.value),
+    zoneWidthPct: Number(el.zoneWidthInput.value),
+    barWidthPx: Number(el.barWidthInput.value),
+    barHeightPx: Number(el.barHeightInput.value),
     fishIconAssetId: prev.fishIconAssetId || null,
     fishIconSourceAssetId: prev.fishIconSourceAssetId || null,
     fishIconCropRect: prev.fishIconCropRect || null,
@@ -1605,6 +1633,18 @@ el.zoneSizeInput.addEventListener('input', () => {
   el.zoneSizeValue.textContent = el.zoneSizeInput.value + '%';
   saveBarDesign();
 });
+el.zoneWidthInput.addEventListener('input', () => {
+  el.zoneWidthValue.textContent = el.zoneWidthInput.value + '%';
+  saveBarDesign();
+});
+el.barWidthInput.addEventListener('input', () => {
+  el.barWidthValue.textContent = el.barWidthInput.value + 'px';
+  saveBarDesign();
+});
+el.barHeightInput.addEventListener('input', () => {
+  el.barHeightValue.textContent = el.barHeightInput.value + 'px';
+  saveBarDesign();
+});
 
 /* ===== 물고기 종류 탭 — 카탈로그는 dev/data/fishDefs.js에 코드로 박혀 있고
    (67종, id/등급/가치/난이도/시트 slot 고정), 여기서 편집하는 건 그 위에
@@ -1738,6 +1778,12 @@ async function init() {
   el.zoneColorInput.value = design.zoneColor || '#59B8C8';
   el.zoneSizeInput.value = design.zoneSizePct || 28;
   el.zoneSizeValue.textContent = (design.zoneSizePct || 28) + '%';
+  el.zoneWidthInput.value = design.zoneWidthPct || 100;
+  el.zoneWidthValue.textContent = (design.zoneWidthPct || 100) + '%';
+  el.barWidthInput.value = design.barWidthPx || 52;
+  el.barWidthValue.textContent = (design.barWidthPx || 52) + 'px';
+  el.barHeightInput.value = design.barHeightPx || 230;
+  el.barHeightValue.textContent = (design.barHeightPx || 230) + 'px';
   renderBarPreview();
   renderFishIconSlot();
   renderBarImageSlot();
