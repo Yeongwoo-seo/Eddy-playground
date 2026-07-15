@@ -75,25 +75,17 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .fishbar-panel{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:4;display:flex;align-items:center;gap:14px;background:rgba(5,20,28,.35);border-radius:20px;padding:18px 20px;backdrop-filter:blur(2px)}
 .fishbar-panel.hidden{display:none}
 .fishbar{position:relative;width:52px;height:230px;border-radius:12px;overflow:hidden;border:2px solid rgba(255,255,255,.5);box-shadow:inset 0 0 12px rgba(0,0,0,.4);background-size:cover;background-position:center}
-.fishbar-zone{position:absolute;left:0;right:0;border-radius:6px;opacity:.85;transition:background .2s;background-size:cover;background-position:center}
-.fishbar-fish{position:absolute;left:50%;transform:translate(-50%,-50%);font-size:22px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.4))}
-.fishbar-fish img{width:26px;height:26px;object-fit:contain;image-rendering:pixelated}
-.progress-track{position:relative;width:14px;height:230px;border-radius:8px;background:rgba(255,255,255,.25);overflow:hidden}
-.progress-track.hidden{display:none}
-/* background도 .fishbar-gauge와 마찬가지로 매 프레임 JS가 갈아끼운다 —
-   기본값은 30%(기본 시작 게이지) 색으로 맞춰둔 것뿐. */
-.progress-fill{position:absolute;left:0;right:0;bottom:0;background:rgb(151,126,83);border-radius:8px 8px 0 0}
-/* 게이지 오버레이 — 0%(빨강)~100%(연두) 세로 그라데이션을 항상 깔아두고,
-   위쪽부터 (100-progress)%만큼 어두운 마스크로 덮어 아래쪽 progress%만
-   드러낸다(기존 progress-fill의 "bottom 기준 height%" 채우기와 같은
-   느낌을 그라데이션 위에서 낸다). */
-/* 배경색은 매 프레임 JS(renderBarFrame/gaugeColorForProgress)가 현재
+/* 게이지가 낚시바 모듈 자체다 — 별도 영역지정 없이 항상 낚시바 전체를
+   채운다(캐치존/물고기보다 아래 쌓여야 위에서 그 둘이 계속 보인다).
+   배경색은 매 프레임 JS(renderBarFrame/gaugeColorForProgress)가 현재
    진행도에 맞는 단색으로 갈아끼운다 — 여기 background는 그 값이 아직
    반영되기 전(첫 프레임) 잠깐 보일 수 있는 기본값일 뿐이라 30%(기본
    시작 게이지) 색으로 맞춰둔다. */
-.fishbar-gauge{position:absolute;border-radius:4px;overflow:hidden;background:rgb(151,126,83)}
-.fishbar-gauge.hidden{display:none}
+.fishbar-gauge{position:absolute;inset:0;overflow:hidden;background:rgb(151,126,83)}
 .fishbar-gauge-mask{position:absolute;left:0;right:0;top:0;background:rgba(5,7,10,.82)}
+.fishbar-zone{position:absolute;left:0;right:0;border-radius:6px;opacity:.85;transition:background .2s;background-size:cover;background-position:center}
+.fishbar-fish{position:absolute;left:50%;transform:translate(-50%,-50%);font-size:22px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.4))}
+.fishbar-fish img{width:26px;height:26px;object-fit:contain;image-rendering:pixelated}
 
 .overlay{position:absolute;inset:0;z-index:8;display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px;text-align:center;padding:32px;background:rgba(5,7,10,.78);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 .overlay.show{display:flex}
@@ -140,17 +132,11 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 
     <div class="fishbar-panel hidden" id="fishbarPanel">
       <div class="fishbar" id="fishbar">
-        <div class="fishbar-zone" id="fishbarZone"></div>
-        <div class="fishbar-fish" id="fishbarFish">🐟</div>
-        <!-- 게이지 영역지정(dev/minigame-fishing/index.html barDesign.gaugeRegion)이
-             있으면 낚시바 그림 위 지정된 자리에 이 오버레이로 대체 표시하고,
-             옆의 고정 progress-track은 숨긴다(없으면 그 반대 — 기존 그대로). -->
-        <div class="fishbar-gauge hidden" id="fishbarGauge">
+        <div class="fishbar-gauge" id="fishbarGauge">
           <div class="fishbar-gauge-mask" id="fishbarGaugeMask"></div>
         </div>
-      </div>
-      <div class="progress-track" id="progressTrack">
-        <div class="progress-fill" id="progressFill" style="height:45%"></div>
+        <div class="fishbar-zone" id="fishbarZone"></div>
+        <div class="fishbar-fish" id="fishbarFish">🐟</div>
       </div>
     </div>
   </div>
@@ -250,8 +236,6 @@ const el = {
   fishbarFish: document.getElementById('fishbarFish'),
   fishbarGauge: document.getElementById('fishbarGauge'),
   fishbarGaugeMask: document.getElementById('fishbarGaugeMask'),
-  progressTrack: document.getElementById('progressTrack'),
-  progressFill: document.getElementById('progressFill'),
   catchHint: document.getElementById('catchHint'),
   countChip: document.getElementById('countChip'),
   overlay: document.getElementById('overlay'),
@@ -266,18 +250,19 @@ const el = {
 };
 
 let castFrameUrls = [];
+let castFrameDurations = null; // per-frame ms, dev/minigame-fishing/index.html 재생 타임라인에서 설정
 let reelFrameUrls = [];
 let idleFrameUrl = null;
 let fishSheetUrl = null;
 let fishSheetDims = null; // { width, height } of the *actual* loaded sheet — needed to turn a fishIconOverrides rect (normalized 0~1) into pixel background-position/size, see getFishCropStyle in fishDefs.js
 let fishIconOverrides = {};
 let zoneSizePct = 28;
-// zoneRegion/gaugeRegion이 설정돼 있으면 물고기/캐치존/게이지를 낚시바
-// 전체(0~100%)가 아니라 이 안(트랙)에서 위치를 계산한다 — 실제 물리
-// (updateFish/updateZone/updateProgress)는 항상 추상적인 0~100 공간에서
-// 그대로 돌아가고, 렌더링(renderBarFrame)만 이 트랙으로 다시 매핑한다.
+// zoneRegion이 설정돼 있으면 캐치존/물고기를 낚시바 전체(0~100%)가 아니라
+// 이 안(트랙)에서 위치를 계산한다 — 실제 물리(updateFish/updateZone/
+// updateProgress)는 항상 추상적인 0~100 공간에서 그대로 돌아가고, 렌더링
+// (renderBarFrame)만 이 트랙으로 다시 매핑한다. 게이지는 더 이상 별도
+// 영역지정이 없다 — 낚시바 모듈 자체(.fishbar 전체)가 게이지다.
 let zoneTrack = null; // { x, y, w, h } — 낚시바 기준 %
-let gaugeTrack = null; // { x, y, w, h } — 낚시바 기준 %
 let caughtCount = 0;
 let gameState = 'idle'; // idle | charging | casting | waiting | bite | catching | reeling | result
 let biteTimer = null;
@@ -334,6 +319,7 @@ async function loadConfig() {
   } else {
     castFrameUrls = [];
   }
+  castFrameDurations = (cfg.castingFrameDurations && cfg.castingFrameDurations.length) ? cfg.castingFrameDurations : null;
   const fishSheetAsset = cfg.fishSheetAssetId ? byId.get(cfg.fishSheetAssetId) : null;
   fishSheetUrl = fishSheetAsset ? fishSheetAsset.dataUrl : null;
   fishIconOverrides = cfg.fishIconOverrides || {};
@@ -375,23 +361,6 @@ async function loadConfig() {
     el.fishbarZone.style.height = zoneSizePct + '%';
   }
 
-  // 게이지 — gaugeRegion이 있으면 낚시바 그림 위 오버레이로, 없으면 기존
-  // 고정 progress-track으로 표시한다.
-  if (design.gaugeRegion) {
-    const g = design.gaugeRegion;
-    gaugeTrack = { x: g.x * 100, y: g.y * 100, w: g.w * 100, h: g.h * 100 };
-    el.fishbarGauge.classList.remove('hidden');
-    el.fishbarGauge.style.left = gaugeTrack.x + '%';
-    el.fishbarGauge.style.top = gaugeTrack.y + '%';
-    el.fishbarGauge.style.width = gaugeTrack.w + '%';
-    el.fishbarGauge.style.height = gaugeTrack.h + '%';
-    el.progressTrack.classList.add('hidden');
-  } else {
-    gaugeTrack = null;
-    el.fishbarGauge.classList.add('hidden');
-    el.progressTrack.classList.remove('hidden');
-  }
-
   const fishIconAsset = design.fishIconAssetId ? byId.get(design.fishIconAssetId) : null;
   if (fishIconAsset) el.fishbarFish.innerHTML = `<img src="${fishIconAsset.dataUrl}" alt="">`;
 
@@ -403,19 +372,22 @@ async function loadConfig() {
   }
 }
 
-/* ===== 캐스팅/올리기 프레임 순차 재생 ===== */
+/* ===== 캐스팅/올리기 프레임 순차 재생 =====
+   frameMs는 고정 ms 숫자(올리기) 또는 프레임별 ms 배열(캐스팅,
+   castFrameDurations — 설정 화면 재생 타임라인에서 조정한 값)을 받는다. */
 function playFrameSequence(urls, frameMs) {
   return new Promise(resolve => {
     if (!urls.length) { resolve(); return; }
-    let i = 0;
     el.charImg.classList.remove('hidden');
     el.charFallback.classList.add('hidden');
-    const timer = setInterval(() => {
+    let i = 0;
+    function showAndScheduleNext() {
       el.charImg.src = urls[i];
+      const ms = Array.isArray(frameMs) ? (frameMs[i] || 90) : frameMs;
       i++;
-      if (i >= urls.length) { clearInterval(timer); resolve(); }
-    }, frameMs);
-    el.charImg.src = urls[0];
+      setTimeout(i >= urls.length ? resolve : showAndScheduleNext, ms);
+    }
+    showAndScheduleNext();
   });
 }
 
@@ -447,7 +419,7 @@ async function releasePowerAndCast() {
   gameState = 'casting';
   el.statusLine.textContent = '캐스팅...';
   if (castFrameUrls.length) {
-    await playFrameSequence(castFrameUrls, 90);
+    await playFrameSequence(castFrameUrls, castFrameDurations || 90);
   } else {
     el.charFallback.style.transition = 'transform .35s ease';
     el.charFallback.style.transform = 'rotate(-25deg)';
@@ -651,13 +623,8 @@ function renderBarFrame() {
     el.fishbarZone.style.top = zone.y + '%';
   }
   const gaugeColor = gaugeColorForProgress(progress);
-  if (gaugeTrack) {
-    el.fishbarGaugeMask.style.height = (100 - progress) + '%';
-    el.fishbarGauge.style.background = gaugeColor;
-  } else {
-    el.progressFill.style.height = progress + '%';
-    el.progressFill.style.background = gaugeColor;
-  }
+  el.fishbarGaugeMask.style.height = (100 - progress) + '%';
+  el.fishbarGauge.style.background = gaugeColor;
 }
 
 function catchTick(ts) {

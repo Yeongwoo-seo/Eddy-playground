@@ -1061,7 +1061,7 @@ const AssetDB = (() => {
   // 규격: 196x136px, 10열x7행, 16x16px 칸, 4px 간격) 자산 id. 업로드되면
   // fishDefs.js의 각 물고기 slot 순서 그대로 아이콘이 배정된다.
   // fishIconOverrides — 물고기별 세밀영역조절 보정, { [fishId]: {cx,cy,size} }.
-  const FISHING_CONFIG_DEFAULT = { castingFrames: [], reelingFrames: [], barDesign: {}, fishSheetAssetId: null, fishIconOverrides: {}, castingSheetAssetId: null, castingFrameOverrides: {} };
+  const FISHING_CONFIG_DEFAULT = { castingFrames: [], reelingFrames: [], barDesign: {}, fishSheetAssetId: null, fishIconOverrides: {}, castingSheetAssetId: null, castingFrameOverrides: {}, castingFrameDurations: [] };
 
   async function getFishingConfig() {
     if (fishingConfigCache.has('config')) return fishingConfigCache.get('config');
