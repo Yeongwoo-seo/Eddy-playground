@@ -23,6 +23,11 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 
 /* ===== Shared top bar ===== */
 .topbar{position:absolute;top:0;left:0;right:0;z-index:6;padding:calc(14px + env(safe-area-inset-top,0)) 16px 14px;display:flex;justify-content:space-between;align-items:center}
+/* 장소명 토스트 — 이동/장소 진입 시 잠깐 떴다 사라진다(§신규 — 예전엔
+   bottom-bar의 goal-line에 상시 표시했지만, 목표 문구와 자리를 다투지 않게
+   상단 토스트로 분리했다). showLocationToast/evidenceToast와 같은 패턴. */
+.location-toast{position:absolute;left:50%;top:calc(54px + env(safe-area-inset-top,0));transform:translateX(-50%) translateY(-8px);z-index:7;background:rgba(8,10,12,.94);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:8px 18px;font-family:var(--sans);font-size:13px;font-weight:700;color:#fff;opacity:0;transition:opacity .25s ease, transform .25s ease;pointer-events:none;max-width:80%;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.location-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .vn-btn{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:#fff;background:rgba(8,10,12,.55);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:9px 14px;cursor:pointer;text-decoration:none;display:inline-block}
 .point-balance{font-family:var(--mono);font-size:11.5px;font-weight:700;color:var(--amber);background:rgba(214,168,75,.14);border:1px solid rgba(214,168,75,.4);border-radius:20px;padding:8px 12px}
 .point-balance.hidden{display:none}
@@ -259,6 +264,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
       <a class="vn-btn" href="/dev/">← DEV</a>
     </div>
   </div>
+  <div class="location-toast" id="locationToast"></div>
 
   <div class="map-view" id="mapView">
     <div class="map-title">지도 · SYDNEY</div>
@@ -392,6 +398,7 @@ const el = {
   locCharStage: document.getElementById('locCharStage'),
   locCharStageImg: document.getElementById('locCharStageImg'),
   goalLine: document.getElementById('goalLine'),
+  locationToast: document.getElementById('locationToast'),
   enterSceneBtn: document.getElementById('enterSceneBtn'),
   investigateBtn: document.getElementById('investigateBtn'),
   talkBtn: document.getElementById('talkBtn'),
@@ -623,8 +630,11 @@ function renderLocation() {
     const p = ExplorationState.checkPhaseCompletion(goal.requiredFactIds);
     el.goalLine.innerHTML = `현재 목표: <b>${p.done}/${p.total}</b> 확인함`;
   } else {
-    el.goalLine.textContent = def.name;
+    el.goalLine.textContent = '';
   }
+  // 장소명은 bottom-bar의 goal-line이 아니라 상단 토스트로 보여준다(§신규 —
+  // 목표 문구와 자리를 다투지 않도록 분리).
+  showLocationToast(def.name);
   return bgReady;
 }
 
@@ -1576,6 +1586,16 @@ function showEvidenceToast(text, correct) {
   el.evidenceToast.classList.add('show');
   clearTimeout(evidenceToastTimer);
   evidenceToastTimer = setTimeout(() => el.evidenceToast.classList.remove('show'), 1800);
+}
+
+// 장소명 토스트 — renderLocation()이 호출될 때마다(이동/최초 진입 모두) 잠깐
+// 떴다 사라진다. showEvidenceToast와 같은 패턴.
+let locationToastTimer = null;
+function showLocationToast(name) {
+  el.locationToast.textContent = name;
+  el.locationToast.classList.add('show');
+  clearTimeout(locationToastTimer);
+  locationToastTimer = setTimeout(() => el.locationToast.classList.remove('show'), 1800);
 }
 
 // A finished interrogation scene's nextSceneId (see dev/dialogueData.js)
