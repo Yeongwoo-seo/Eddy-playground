@@ -35,6 +35,11 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .select-btn{font-family:var(--mono);font-size:12.5px;font-weight:700;color:var(--text-primary);background:var(--surface-2);border:1px solid var(--divider);border-radius:10px;padding:9px 16px;cursor:pointer}
 .select-btn:active{opacity:.8}
 input[type=file]{display:none}
+.dropzone.busy{opacity:.6;pointer-events:none}
+
+.upload-status{margin-top:14px;padding:12px 14px;border-radius:12px;font-size:12.5px;line-height:1.5}
+.upload-status.busy{background:var(--surface-1);border:1px solid var(--divider);color:var(--text-secondary)}
+.upload-status.error{background:rgba(217,65,65,.12);border:1px solid rgba(217,65,65,.35);color:var(--signal-red)}
 
 .preview-panel{margin-top:4px}
 .preview-img-wrap{width:100%;border-radius:16px;overflow:hidden;background:var(--surface-1);border:1px solid var(--divider);margin-bottom:14px}
@@ -113,6 +118,8 @@ input[type=file]{display:none}
     <div class="section-title">데이터 라벨별 지정 현황</div>
     <div class="region-list" id="regionList"></div>
   </div>
+
+  <div class="upload-status hidden" id="uploadStatus"></div>
 </div>
 
 <div class="evn-fullscreen hidden" id="evnFullscreen">
@@ -135,6 +142,23 @@ input[type=file]{display:none}
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
 }
+</script>
+<script>
+// Client-side AI background removal (WASM) — dev/upload/index.html의
+// autoRegisterCharacterPhoto와 같은 모듈/로딩 방식(§675-691 참고). 증거수첩
+// 이미지를 올리는 즉시 자동으로 배경을 제거해 저장한다. 모듈 로드나 처리
+// 자체가 실패해도 업로드를 막지 않고 원본 이미지 그대로 계속 진행한다
+// (removeBackgroundOrFallback 참고).
+window.__removeBackgroundReady = import('https://cdn.jsdelivr.net/npm/@imgly/background-removal/+esm')
+  .then(mod => {
+    if (typeof mod.removeBackground !== 'function') {
+      throw new Error('모듈은 로드됐지만 removeBackground 함수를 찾지 못함 (exports: ' + Object.keys(mod).join(', ') + ')');
+    }
+    window.__removeBackground = mod.removeBackground;
+  })
+  .catch(err => {
+    window.__removeBackgroundLoadError = err;
+  });
 </script>
 <script src="/dev/assetDb.js"></script>
 <script>
@@ -173,6 +197,7 @@ const el = {
   areaSelectBtn: document.getElementById('areaSelectBtn'),
   changeImageBtn: document.getElementById('changeImageBtn'),
   regionList: document.getElementById('regionList'),
+  uploadStatus: document.getElementById('uploadStatus'),
   evnFullscreen: document.getElementById('evnFullscreen'),
   evnCloseBtn: document.getElementById('evnCloseBtn'),
   evnConfirmBtn: document.getElementById('evnConfirmBtn'),
@@ -207,7 +232,9 @@ function renderRegionList() {
   }).join('');
 }
 
-el.selectBtn.addEventListener('click', () => el.fileInput.click());
+// selectBtn은 dropzone 안에 중첩돼 있어 클릭이 버블링되므로, dropzone 쪽
+// 리스너에서 또 한 번 fileInput.click()이 불리지 않도록 막는다.
+el.selectBtn.addEventListener('click', (e) => { e.stopPropagation(); el.fileInput.click(); });
 el.dropzone.addEventListener('click', () => el.fileInput.click());
 el.changeImageBtn.addEventListener('click', () => el.fileInput.click());
 ['dragover', 'drop'].forEach(evt => el.dropzone.addEventListener(evt, (e) => e.preventDefault()));
@@ -221,11 +248,48 @@ el.fileInput.addEventListener('change', () => {
   if (file) handleFileUpload(file);
 });
 
+function setUploadStatus(text, kind) {
+  if (!text) {
+    el.uploadStatus.classList.add('hidden');
+    return;
+  }
+  el.uploadStatus.textContent = text;
+  el.uploadStatus.classList.remove('hidden', 'busy', 'error');
+  el.uploadStatus.classList.add(kind);
+}
+
+// 배경 제거 모듈(dev/upload/index.html의 autoRegisterCharacterPhoto와 같은
+// @imgly/background-removal, 위 상단 스크립트에서 로드) 로딩/처리 자체가
+// 실패해도 원본 파일 그대로 반환해 업로드가 막히지 않게 한다.
+async function removeBackgroundOrFallback(file) {
+  setUploadStatus('배경 제거 모듈 확인 중...', 'busy');
+  await window.__removeBackgroundReady;
+  if (!window.__removeBackground) return file;
+  setUploadStatus('자동 처리 중: 배경 제거...', 'busy');
+  try {
+    return await window.__removeBackground(file);
+  } catch (err) {
+    return file;
+  }
+}
+
 async function handleFileUpload(file) {
-  const asset = await AssetDB.addAsset({ type: 'evidence-notebook', name: file.name, blob: file });
-  notebookConfig = await AssetDB.setEvidenceNotebookConfig({ imageAssetId: asset.id });
-  notebookImageUrl = asset.dataUrl;
-  renderMainView();
+  el.dropzone.classList.add('busy');
+  el.changeImageBtn.disabled = true;
+  try {
+    const blob = await removeBackgroundOrFallback(file);
+    setUploadStatus('업로드 중...', 'busy');
+    const asset = await AssetDB.addAsset({ type: 'evidence-notebook', name: file.name, blob });
+    notebookConfig = await AssetDB.setEvidenceNotebookConfig({ imageAssetId: asset.id });
+    notebookImageUrl = asset.dataUrl;
+    setUploadStatus('', null);
+    renderMainView();
+  } catch (err) {
+    setUploadStatus('업로드 실패: ' + (err && err.message ? err.message : String(err)), 'error');
+  } finally {
+    el.dropzone.classList.remove('busy');
+    el.changeImageBtn.disabled = false;
+  }
 }
 
 /* ===== 영역지정 전체화면 편집기 ===== */
