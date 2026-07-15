@@ -1071,7 +1071,11 @@ const AssetDB = (() => {
   // walkFrames — '이동' 탭의 방향별 걷기 프레임 자산 id 배열, { up, down,
   // left, right }. 각 방향 배열 순서대로 재생된다(캐스팅/올리기 모션과
   // 같은 프레임 배열 관례).
-  const FISHING_CONFIG_DEFAULT = { castingFrames: [], reelingFrames: [], barDesign: {}, fishSheetAssetId: null, fishIconOverrides: {}, castingSheetAssetId: null, castingFrameOverrides: {}, castingFrameDurations: [], backgroundAssetId: null, castingFrameRodTips: {}, walkFrames: { up: [], down: [], left: [], right: [] } };
+  // walkMotion — 격자 이동 테스트의 속도 설정, { stepMs, stepDelayMs }.
+  // stepMs는 한 칸을 이동하는 데 걸리는 시간(슬라이드 애니메이션 길이 겸
+  // 걷기 프레임 재생 속도 기준), stepDelayMs는 방향키/dpad를 누르고 있을 때
+  // 한 칸 이동을 마친 뒤 다음 칸으로 넘어가기 전에 추가로 쉬는 시간이다.
+  const FISHING_CONFIG_DEFAULT = { castingFrames: [], reelingFrames: [], barDesign: {}, fishSheetAssetId: null, fishIconOverrides: {}, castingSheetAssetId: null, castingFrameOverrides: {}, castingFrameDurations: [], backgroundAssetId: null, castingFrameRodTips: {}, walkFrames: { up: [], down: [], left: [], right: [] }, walkMotion: { stepMs: 200, stepDelayMs: 0 } };
 
   async function getFishingConfig() {
     if (fishingConfigCache.has('config')) return fishingConfigCache.get('config');

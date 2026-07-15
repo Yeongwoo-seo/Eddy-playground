@@ -497,6 +497,22 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     </div>
 
     <div class="option-group">
+      <div class="option-label">이동 속도</div>
+      <div class="option-desc">한 칸에서 다음 칸으로 이동하는 데 걸리는 시간이에요. 값이 작을수록 빠르게 이동해요.</div>
+      <div class="range-row">
+        <input type="range" id="moveStepMsInput" min="60" max="500" step="10" value="200">
+        <div class="range-value" id="moveStepMsValue">200ms</div>
+      </div>
+    </div>
+    <div class="option-group">
+      <div class="option-label">이동 후 딜레이</div>
+      <div class="option-desc">방향키나 방향 버튼을 누르고 있을 때, 한 칸 이동을 마치고 다음 칸으로 넘어가기 전에 잠깐 멈추는 시간이에요.</div>
+      <div class="range-row">
+        <input type="range" id="moveStepDelayMsInput" min="0" max="400" step="10" value="0">
+        <div class="range-value" id="moveStepDelayMsValue">0ms</div>
+      </div>
+    </div>
+    <div class="option-group">
       <div class="option-label">격자 이동 테스트</div>
       <div class="option-desc">배경화면(낚시바 디자인 탭에서 업로드)을 축소 없이 원본 크기 그대로 깔아요. 아직 배경을 안 올렸다면 체커보드 격자로 대신 보여줘요. 화살표 키를 누르거나 아래 방향 버튼을 탭하면 캐릭터가 스타듀밸리처럼 한 칸씩 이동해요 — 자유이동이 아니라 격자에 딱 맞춰 스냅됩니다.</div>
       <div class="move-stage" id="moveStage">
@@ -764,6 +780,10 @@ const el = {
   moveWorld: document.getElementById('moveWorld'),
   moveChar: document.getElementById('moveChar'),
   moveDpad: document.getElementById('moveDpad'),
+  moveStepMsInput: document.getElementById('moveStepMsInput'),
+  moveStepMsValue: document.getElementById('moveStepMsValue'),
+  moveStepDelayMsInput: document.getElementById('moveStepDelayMsInput'),
+  moveStepDelayMsValue: document.getElementById('moveStepDelayMsValue'),
 };
 
 const PANELS = { logic: el.panelLogic, cast: el.panelCast, bar: el.panelBar, reel: el.panelReel, fish: el.panelFish, move: el.panelMove };
@@ -2216,11 +2236,18 @@ WALK_DIRS.forEach(dir => {
    캐릭터가 이동할 때마다 뷰포트를 캐릭터 중심으로 스크롤해 카메라처럼
    따라가게 한다(updateCharPosition). */
 const MOVE_TILE_SIZE = 64;
-const MOVE_STEP_MS = 160;
 const MOVE_PLACEHOLDER_COLS = 10;
 const MOVE_PLACEHOLDER_ROWS = 10;
 const moveState = { row: 0, col: 0, dir: 'down', maxRow: MOVE_PLACEHOLDER_ROWS - 1, maxCol: MOVE_PLACEHOLDER_COLS - 1, settleTimer: null };
 let moveAnimTimer = null;
+// 이동 속도/딜레이 슬라이더 값 — fishingConfig.walkMotion에서 불러와 initMoveMotionControls가
+// 채우고, 슬라이더를 드래그할 때마다 즉시 갱신된다(진행 중인 홀드 반복도 다음
+// 스텝부터 새 값을 그대로 읽는다 — scheduleNextHoldStep이 매번 이 변수를 다시 읽음).
+let moveStepMs = 200;
+let moveStepDelayMs = 0;
+function applyMoveTiming() {
+  el.moveChar.style.transitionDuration = moveStepMs + 'ms';
+}
 
 function stopMoveAnim() {
   if (moveAnimTimer) { clearInterval(moveAnimTimer); moveAnimTimer = null; }
@@ -2246,7 +2273,7 @@ function playMoveAnim(dir) {
   moveAnimTimer = setInterval(() => {
     i = (i + 1) % frameCount;
     applyCharFrame(dir, i);
-  }, Math.max(40, Math.round(MOVE_STEP_MS / frameCount)));
+  }, Math.max(40, Math.round(moveStepMs / frameCount)));
 }
 function updateCharPosition() {
   el.moveChar.style.left = (moveState.col * MOVE_TILE_SIZE) + 'px';
@@ -2274,7 +2301,7 @@ function handleMove(dir) {
     playMoveAnim(dir);
     // 이동이 끝나는 시점(트랜지션 종료)에 걷기 애니메이션을 멈추고 그 방향의
     // 첫 프레임(정지 자세)으로 되돌린다.
-    moveState.settleTimer = setTimeout(() => { stopMoveAnim(); applyCharFrame(dir, 0); }, MOVE_STEP_MS);
+    moveState.settleTimer = setTimeout(() => { stopMoveAnim(); applyCharFrame(dir, 0); }, moveStepMs);
   } else {
     // 맵 가장자리에 막혀 실제로는 못 움직여도, 누른 방향을 바라보는 정지
     // 자세로는 바꿔줘야 "눌러도 반응이 없다"는 인상을 안 준다.
@@ -2282,22 +2309,32 @@ function handleMove(dir) {
     applyCharFrame(dir, 0);
   }
 }
-// 꾹 누르고 있으면 한 칸에서 멈추지 않고 MOVE_STEP_MS 간격으로 계속 다음
-// 칸으로 넘어간다 — dpad는 click이 눌림 유지 상태를 안 주므로 pointerdown~up
-// 구간을 자체 setInterval로 관리하고, 키보드는 OS/브라우저마다 다른 키반복
-// 딜레이·속도에 기대지 않도록 첫 keydown에서만 반복을 시작하고(e.repeat인
-// 이후 keydown들은 무시) 같은 타이머로 이동한다.
+// 꾹 누르고 있으면 한 칸에서 멈추지 않고 계속 다음 칸으로 넘어간다 — dpad는
+// click이 눌림 유지 상태를 안 주므로 pointerdown~up 구간을 자체 타이머로
+// 관리하고, 키보드는 OS/브라우저마다 다른 키반복 딜레이·속도에 기대지 않도록
+// 첫 keydown에서만 반복을 시작한다(e.repeat인 이후 keydown들은 무시).
+// setInterval 대신 스텝마다 스스로를 다시 예약하는 방식을 쓰는 이유는
+// moveStepDelayMs(이동 후 딜레이)를 스텝 사이에 끼워 넣어야 해서다 — 한 칸
+// 이동(moveStepMs) + 딜레이(moveStepDelayMs)가 지난 뒤에야 다음 칸으로
+// 넘어간다. 두 값 다 슬라이더로 실시간 조절되므로 매번 최신 값을 다시 읽는다.
 let moveHoldTimer = null;
 let moveHoldDir = null;
+function scheduleNextHoldStep(dir) {
+  moveHoldTimer = setTimeout(() => {
+    if (moveHoldDir !== dir) return;
+    handleMove(dir);
+    scheduleNextHoldStep(dir);
+  }, moveStepMs + moveStepDelayMs);
+}
 function startMoveHold(dir) {
   if (moveHoldDir === dir && moveHoldTimer) return;
   stopMoveHold();
   moveHoldDir = dir;
   handleMove(dir);
-  moveHoldTimer = setInterval(() => handleMove(dir), MOVE_STEP_MS);
+  scheduleNextHoldStep(dir);
 }
 function stopMoveHold() {
-  if (moveHoldTimer) { clearInterval(moveHoldTimer); moveHoldTimer = null; }
+  if (moveHoldTimer) { clearTimeout(moveHoldTimer); moveHoldTimer = null; }
   moveHoldDir = null;
 }
 el.moveDpad.querySelectorAll('[data-dir]').forEach(btn => {
@@ -2323,6 +2360,32 @@ document.addEventListener('keyup', (e) => {
 // 홀드 도중 창 포커스를 잃으면(alt-tab 등) keyup을 못 받아 계속 움직이는
 // 상태로 남을 수 있어, 포커스 이탈 시 안전하게 멈춘다.
 window.addEventListener('blur', stopMoveHold);
+
+async function saveWalkMotion() {
+  fishingConfig = await AssetDB.setFishingConfig({ walkMotion: { stepMs: moveStepMs, stepDelayMs: moveStepDelayMs } });
+  showSaveNote();
+}
+el.moveStepMsInput.addEventListener('input', () => {
+  moveStepMs = Number(el.moveStepMsInput.value);
+  el.moveStepMsValue.textContent = moveStepMs + 'ms';
+  applyMoveTiming();
+  saveWalkMotion();
+});
+el.moveStepDelayMsInput.addEventListener('input', () => {
+  moveStepDelayMs = Number(el.moveStepDelayMsInput.value);
+  el.moveStepDelayMsValue.textContent = moveStepDelayMs + 'ms';
+  saveWalkMotion();
+});
+function initMoveMotionControls() {
+  const motion = fishingConfig.walkMotion || {};
+  moveStepMs = motion.stepMs || 200;
+  moveStepDelayMs = motion.stepDelayMs || 0;
+  el.moveStepMsInput.value = moveStepMs;
+  el.moveStepMsValue.textContent = moveStepMs + 'ms';
+  el.moveStepDelayMsInput.value = moveStepDelayMs;
+  el.moveStepDelayMsValue.textContent = moveStepDelayMs + 'ms';
+  applyMoveTiming();
+}
 
 async function renderMoveTestStage() {
   const bgId = fishingConfig.backgroundAssetId;
@@ -2381,6 +2444,7 @@ async function init() {
   renderFramesTab('reelingFrames', el.reelFrames, el.reelFileInput, el.reelPreview, el.reelPreviewLabel);
   renderFishTab();
   WALK_DIRS.forEach(dir => renderWalkFramesTab(dir));
+  initMoveMotionControls();
   renderMoveTestStage();
 }
 init();
