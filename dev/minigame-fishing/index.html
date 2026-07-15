@@ -206,6 +206,25 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .fish-sub{font-family:var(--mono);font-size:10.5px;color:var(--text-muted);margin-top:2px}
 .fish-value{font-family:var(--mono);font-size:12.5px;font-weight:700;color:var(--amber);flex-shrink:0}
 
+/* ===== 이동 탭 — 격자 이동 테스트. 배경화면(낚시바 디자인 탭에서 올린
+   fishingConfig.backgroundAssetId)을 축소 없이 원본 픽셀 크기로 깔고
+   (.move-world의 width/height를 이미지 실제 크기로 JS에서 지정, background-size:auto),
+   그 위를 스크롤 가능한 뷰포트(.move-stage)로 잘라 보여준다 — 스타듀밸리처럼
+   캐릭터가 움직일 때마다 뷰포트가 캐릭터를 따라 스크롤된다(updateCharPosition
+   참고). 배경이 없으면 격자를 눈으로 확인할 수 있는 체커보드로 대체한다. */
+.move-stage{position:relative;width:100%;height:320px;border-radius:12px;border:1px solid var(--divider);overflow:auto;background:#000;margin-bottom:16px;-webkit-overflow-scrolling:touch}
+.move-world{position:relative;background-repeat:no-repeat;background-position:top left;background-size:auto}
+.move-world.placeholder{background-image:repeating-conic-gradient(var(--surface-2) 0% 25%, var(--surface-1) 0% 50%);background-size:32px 32px}
+.move-char{position:absolute;width:64px;height:64px;background-color:rgba(89,184,200,.28);border:2px solid var(--cyan);border-radius:8px;background-repeat:no-repeat;background-position:center;background-size:cover;image-rendering:pixelated;color:#fff;font-size:26px;display:flex;align-items:center;justify-content:center;transition:left .16s linear,top .16s linear}
+.move-controls-row{display:flex;justify-content:center}
+.move-dpad{display:grid;grid-template-columns:48px 48px 48px;grid-template-rows:48px 48px 48px;gap:6px}
+.move-dpad-btn{background:var(--surface-2);border:1px solid var(--divider);border-radius:10px;color:var(--text-primary);font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-user-drag:none}
+.move-dpad-btn:active{background:var(--cyan);color:#04181c}
+.move-dpad-up{grid-column:2;grid-row:1}
+.move-dpad-left{grid-column:1;grid-row:2}
+.move-dpad-right{grid-column:3;grid-row:2}
+.move-dpad-down{grid-column:2;grid-row:3}
+
 .save-note{font-family:var(--mono);font-size:11px;color:var(--green);min-height:16px;margin-bottom:8px;opacity:0;transition:opacity .3s}
 .save-note.show{opacity:1}
 
@@ -232,6 +251,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     <button class="tab-btn" data-tab="bar">낚시바 디자인</button>
     <button class="tab-btn" data-tab="reel">올리기 모션</button>
     <button class="tab-btn" data-tab="fish">물고기 종류</button>
+    <button class="tab-btn" data-tab="move">이동</button>
   </div>
 
   <!-- ===== 낚시게임 로직 — 난이도/모션타입(물고기 움직임 패턴) 선택. 값은
@@ -428,6 +448,71 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
       <input type="file" id="fishSheetFileInput" accept="image/png">
     </div>
     <div id="fishGradeGroups"></div>
+  </div>
+
+  <!-- ===== 이동 — 캐릭터 상하좌우 걷기 프레임(방향당 여러 장, 올리기
+       모션과 같은 개별 업로드 배열 방식)을 등록하고, 낚시바 디자인 탭의
+       배경화면 위에서 격자(칸) 단위 이동을 테스트한다. 자유이동이 아니라
+       한 번에 정확히 한 칸(MOVE_TILE_SIZE)씩 움직이는 스타듀밸리 방식. ===== -->
+  <div class="tab-panel hidden" id="panelMove">
+    <div class="option-group">
+      <div class="option-label">위로 이동</div>
+      <div class="frame-preview-row">
+        <div class="frame-preview" id="moveUpPreview"></div>
+        <div class="frame-preview-label" id="moveUpPreviewLabel">프레임 없음 — 재생 미리보기</div>
+      </div>
+      <div class="frame-strip" id="moveUpFrames"></div>
+      <button type="button" class="frame-add-btn" id="moveUpAddBtn">+ 프레임 추가</button>
+      <input type="file" id="moveUpFileInput" accept="image/*">
+    </div>
+    <div class="option-group">
+      <div class="option-label">아래로 이동</div>
+      <div class="frame-preview-row">
+        <div class="frame-preview" id="moveDownPreview"></div>
+        <div class="frame-preview-label" id="moveDownPreviewLabel">프레임 없음 — 재생 미리보기</div>
+      </div>
+      <div class="frame-strip" id="moveDownFrames"></div>
+      <button type="button" class="frame-add-btn" id="moveDownAddBtn">+ 프레임 추가</button>
+      <input type="file" id="moveDownFileInput" accept="image/*">
+    </div>
+    <div class="option-group">
+      <div class="option-label">왼쪽 이동</div>
+      <div class="frame-preview-row">
+        <div class="frame-preview" id="moveLeftPreview"></div>
+        <div class="frame-preview-label" id="moveLeftPreviewLabel">프레임 없음 — 재생 미리보기</div>
+      </div>
+      <div class="frame-strip" id="moveLeftFrames"></div>
+      <button type="button" class="frame-add-btn" id="moveLeftAddBtn">+ 프레임 추가</button>
+      <input type="file" id="moveLeftFileInput" accept="image/*">
+    </div>
+    <div class="option-group">
+      <div class="option-label">오른쪽 이동</div>
+      <div class="frame-preview-row">
+        <div class="frame-preview" id="moveRightPreview"></div>
+        <div class="frame-preview-label" id="moveRightPreviewLabel">프레임 없음 — 재생 미리보기</div>
+      </div>
+      <div class="frame-strip" id="moveRightFrames"></div>
+      <button type="button" class="frame-add-btn" id="moveRightAddBtn">+ 프레임 추가</button>
+      <input type="file" id="moveRightFileInput" accept="image/*">
+    </div>
+
+    <div class="option-group">
+      <div class="option-label">격자 이동 테스트</div>
+      <div class="option-desc">배경화면(낚시바 디자인 탭에서 업로드)을 축소 없이 원본 크기 그대로 깔아요. 아직 배경을 안 올렸다면 체커보드 격자로 대신 보여줘요. 화살표 키를 누르거나 아래 방향 버튼을 탭하면 캐릭터가 스타듀밸리처럼 한 칸씩 이동해요 — 자유이동이 아니라 격자에 딱 맞춰 스냅됩니다.</div>
+      <div class="move-stage" id="moveStage">
+        <div class="move-world" id="moveWorld">
+          <div class="move-char" id="moveChar"></div>
+        </div>
+      </div>
+      <div class="move-controls-row">
+        <div class="move-dpad" id="moveDpad">
+          <button type="button" class="move-dpad-btn move-dpad-up" data-dir="up" aria-label="위로">▲</button>
+          <button type="button" class="move-dpad-btn move-dpad-left" data-dir="left" aria-label="왼쪽으로">◀</button>
+          <button type="button" class="move-dpad-btn move-dpad-right" data-dir="right" aria-label="오른쪽으로">▶</button>
+          <button type="button" class="move-dpad-btn move-dpad-down" data-dir="down" aria-label="아래로">▼</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="save-note" id="saveNote">저장됐어요</div>
@@ -654,18 +739,45 @@ const el = {
   fishSheetRemoveBtn: document.getElementById('fishSheetRemoveBtn'),
   fishSheetFileInput: document.getElementById('fishSheetFileInput'),
   fishGradeGroups: document.getElementById('fishGradeGroups'),
+  panelMove: document.getElementById('panelMove'),
+  moveUpPreview: document.getElementById('moveUpPreview'),
+  moveUpPreviewLabel: document.getElementById('moveUpPreviewLabel'),
+  moveUpFrames: document.getElementById('moveUpFrames'),
+  moveUpAddBtn: document.getElementById('moveUpAddBtn'),
+  moveUpFileInput: document.getElementById('moveUpFileInput'),
+  moveDownPreview: document.getElementById('moveDownPreview'),
+  moveDownPreviewLabel: document.getElementById('moveDownPreviewLabel'),
+  moveDownFrames: document.getElementById('moveDownFrames'),
+  moveDownAddBtn: document.getElementById('moveDownAddBtn'),
+  moveDownFileInput: document.getElementById('moveDownFileInput'),
+  moveLeftPreview: document.getElementById('moveLeftPreview'),
+  moveLeftPreviewLabel: document.getElementById('moveLeftPreviewLabel'),
+  moveLeftFrames: document.getElementById('moveLeftFrames'),
+  moveLeftAddBtn: document.getElementById('moveLeftAddBtn'),
+  moveLeftFileInput: document.getElementById('moveLeftFileInput'),
+  moveRightPreview: document.getElementById('moveRightPreview'),
+  moveRightPreviewLabel: document.getElementById('moveRightPreviewLabel'),
+  moveRightFrames: document.getElementById('moveRightFrames'),
+  moveRightAddBtn: document.getElementById('moveRightAddBtn'),
+  moveRightFileInput: document.getElementById('moveRightFileInput'),
+  moveStage: document.getElementById('moveStage'),
+  moveWorld: document.getElementById('moveWorld'),
+  moveChar: document.getElementById('moveChar'),
+  moveDpad: document.getElementById('moveDpad'),
 };
 
-const PANELS = { logic: el.panelLogic, cast: el.panelCast, bar: el.panelBar, reel: el.panelReel, fish: el.panelFish };
+const PANELS = { logic: el.panelLogic, cast: el.panelCast, bar: el.panelBar, reel: el.panelReel, fish: el.panelFish, move: el.panelMove };
 el.tabsRow.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => selectTab(btn.dataset.tab));
 });
 function selectTab(tab) {
   el.tabsRow.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
   Object.entries(PANELS).forEach(([key, panelEl]) => panelEl.classList.toggle('hidden', key !== tab));
-  // 캐스팅 탭이 hidden(display:none)인 동안 그려진 타임라인은 clientWidth가
-  // 0이라 폭 계산이 어긋난다 — 실제로 보이는 시점에 한 번 더 그려서 맞춘다.
+  // 캐스팅 탭/이동 탭이 hidden(display:none)인 동안 그려진 타임라인·스크롤
+  // 위치는 clientWidth/clientHeight가 0이라 계산이 어긋난다 — 실제로 보이는
+  // 시점에 한 번 더 그려서 맞춘다.
   if (tab === 'cast') renderCastTimeline();
+  if (tab === 'move') renderMoveTestStage();
 }
 
 /* ===== 낚시게임 로직 탭 ===== */
@@ -1388,6 +1500,7 @@ async function renderBackgroundImageSlot() {
       fishingConfig = await AssetDB.setFishingConfig({ backgroundAssetId: null });
       showSaveNote();
       renderBackgroundImageSlot();
+      renderMoveTestStage();
     });
     el.backgroundImageSlot.appendChild(slot);
   } else {
@@ -1405,6 +1518,7 @@ el.backgroundImageFileInput.addEventListener('change', async () => {
     fishingConfig = await AssetDB.setFishingConfig({ backgroundAssetId: asset.id });
     showSaveNote();
     renderBackgroundImageSlot();
+    renderMoveTestStage();
   } finally {
     el.backgroundImageAddBtn.disabled = false;
   }
@@ -1998,6 +2112,211 @@ el.fishSheetRemoveBtn.addEventListener('click', async () => {
   renderFishTab();
 });
 
+/* ===== 이동 탭 — 방향별 걷기 프레임 업로드 (올리기 모션과 같은 개별 업로드
+   배열 방식을 4방향에 반복 적용). fishingConfig.walkFrames는 얕은 병합
+   (setFishingConfig)이라, 한 방향만 바뀌어도 barDesign 패턴처럼 walkFrames
+   객체 전체를 다시 만들어 넘겨야 다른 방향 배열이 사라지지 않는다. */
+const WALK_DIRS = ['up', 'down', 'left', 'right'];
+const WALK_ARROWS = { up: '▲', down: '▼', left: '◀', right: '▶' };
+// 방향별로 리졸브된 프레임 dataUrl 배열 — 걷는 동안 매 스텝마다 AssetDB를
+// 다시 조회하면 느려지니, renderWalkFramesTab이 그릴 때마다 여기 캐시해두고
+// 격자 이동 테스트(playMoveAnim)는 이 캐시만 읽는다.
+const walkFrameCache = { up: [], down: [], left: [], right: [] };
+
+function moveElKey(dir, suffix) {
+  return 'move' + dir[0].toUpperCase() + dir.slice(1) + suffix;
+}
+
+async function uploadWalkFrame(file, dir) {
+  const blob = await removeBackgroundOrFallback(file);
+  const asset = await AssetDB.addAsset({ type: 'fishing-walk-frame', name: file.name, blob });
+  const walkFrames = fishingConfig.walkFrames || {};
+  const list = (walkFrames[dir] || []).concat(asset.id);
+  fishingConfig = await AssetDB.setFishingConfig({ walkFrames: Object.assign({}, walkFrames, { [dir]: list }) });
+  showSaveNote();
+  return asset;
+}
+async function removeWalkFrame(dir, index) {
+  const walkFrames = fishingConfig.walkFrames || {};
+  const list = (walkFrames[dir] || []).slice();
+  list.splice(index, 1);
+  fishingConfig = await AssetDB.setFishingConfig({ walkFrames: Object.assign({}, walkFrames, { [dir]: list }) });
+  showSaveNote();
+}
+async function moveWalkFrame(dir, index, delta) {
+  const walkFrames = fishingConfig.walkFrames || {};
+  const list = (walkFrames[dir] || []).slice();
+  const j = index + delta;
+  if (j < 0 || j >= list.length) return;
+  [list[index], list[j]] = [list[j], list[index]];
+  fishingConfig = await AssetDB.setFishingConfig({ walkFrames: Object.assign({}, walkFrames, { [dir]: list }) });
+  showSaveNote();
+}
+
+async function renderWalkFramesTab(dir) {
+  const stripEl = el[moveElKey(dir, 'Frames')];
+  const previewEl = el[moveElKey(dir, 'Preview')];
+  const labelEl = el[moveElKey(dir, 'PreviewLabel')];
+  const ids = (fishingConfig.walkFrames || {})[dir] || [];
+  const assets = await AssetDB.getAssetsByIds(ids).catch(() => []);
+  const byId = new Map(assets.map(a => [a.id, a]));
+  const resolved = ids.map(id => byId.get(id)).filter(Boolean);
+  walkFrameCache[dir] = resolved.map(a => a.dataUrl);
+  stripEl.innerHTML = '';
+  ids.forEach((id, index) => {
+    const asset = byId.get(id);
+    const slot = document.createElement('div');
+    slot.className = 'frame-slot';
+    slot.innerHTML = `
+      <span class="frame-index">${index + 1}</span>
+      ${asset ? `<img src="${asset.dataUrl}" alt="">` : ''}
+      <div class="frame-actions">
+        <button type="button" class="frame-mini-btn" data-act="up">◀</button>
+        <button type="button" class="frame-mini-btn" data-act="down">▶</button>
+        <button type="button" class="frame-mini-btn danger" data-act="del">✕</button>
+      </div>`;
+    slot.querySelector('[data-act=up]').addEventListener('click', () => moveWalkFrame(dir, index, -1).then(() => renderWalkFramesTab(dir)));
+    slot.querySelector('[data-act=down]').addEventListener('click', () => moveWalkFrame(dir, index, 1).then(() => renderWalkFramesTab(dir)));
+    slot.querySelector('[data-act=del]').addEventListener('click', () => removeWalkFrame(dir, index).then(() => renderWalkFramesTab(dir)));
+    stripEl.appendChild(slot);
+  });
+  startPreviewLoop(previewEl, labelEl, resolved);
+}
+
+WALK_DIRS.forEach(dir => {
+  const addBtn = el[moveElKey(dir, 'AddBtn')];
+  const fileInput = el[moveElKey(dir, 'FileInput')];
+  // 정적 버튼(문서 로드 시점부터 DOM에 존재) — frame-add-btn 주석에 적힌
+  // 이유와 같다: 매 렌더마다 새로 만든 버튼은 일부 모바일 브라우저에서
+  // 네이티브 파일 선택창을 안정적으로 못 연다.
+  addBtn.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', async () => {
+    const file = fileInput.files[0];
+    fileInput.value = '';
+    if (!file) return;
+    addBtn.disabled = true;
+    try {
+      await uploadWalkFrame(file, dir);
+      await renderWalkFramesTab(dir);
+    } finally {
+      addBtn.disabled = false;
+    }
+  });
+});
+
+/* ===== 이동 탭 — 격자(칸) 이동 테스트.
+   자유이동이 아니라 스타듀밸리처럼 한 번의 입력에 정확히 MOVE_TILE_SIZE만큼
+   한 칸 스냅 이동한다. 배경은 낚시바 디자인 탭의 backgroundAssetId를 그대로
+   재사용하되, /play/ 화면과 달리 background-size:cover로 축소하지 않고
+   .move-world의 width/height를 이미지 원본 픽셀 크기로 지정해 원본 그대로
+   보여준다 — 그 결과 배경이 좁은 .move-stage 뷰포트보다 커질 수 있으므로,
+   캐릭터가 이동할 때마다 뷰포트를 캐릭터 중심으로 스크롤해 카메라처럼
+   따라가게 한다(updateCharPosition). */
+const MOVE_TILE_SIZE = 64;
+const MOVE_STEP_MS = 160;
+const MOVE_PLACEHOLDER_COLS = 10;
+const MOVE_PLACEHOLDER_ROWS = 10;
+const moveState = { row: 0, col: 0, dir: 'down', maxRow: MOVE_PLACEHOLDER_ROWS - 1, maxCol: MOVE_PLACEHOLDER_COLS - 1, settleTimer: null };
+let moveAnimTimer = null;
+
+function stopMoveAnim() {
+  if (moveAnimTimer) { clearInterval(moveAnimTimer); moveAnimTimer = null; }
+}
+function applyCharFrame(dir, frameIndex) {
+  const frames = walkFrameCache[dir];
+  if (frames && frames.length) {
+    el.moveChar.style.backgroundImage = `url(${frames[frameIndex % frames.length]})`;
+    el.moveChar.textContent = '';
+  } else {
+    // 방향 프레임을 아직 안 올렸어도 격자 스냅 이동 자체는 바로 테스트할 수
+    // 있도록, 방향을 가리키는 화살표 플레이스홀더로 대체한다.
+    el.moveChar.style.backgroundImage = 'none';
+    el.moveChar.textContent = WALK_ARROWS[dir];
+  }
+}
+function playMoveAnim(dir) {
+  stopMoveAnim();
+  const frameCount = (walkFrameCache[dir] && walkFrameCache[dir].length) || 1;
+  let i = 0;
+  applyCharFrame(dir, i);
+  if (frameCount <= 1) return;
+  moveAnimTimer = setInterval(() => {
+    i = (i + 1) % frameCount;
+    applyCharFrame(dir, i);
+  }, Math.max(40, Math.round(MOVE_STEP_MS / frameCount)));
+}
+function updateCharPosition() {
+  el.moveChar.style.left = (moveState.col * MOVE_TILE_SIZE) + 'px';
+  el.moveChar.style.top = (moveState.row * MOVE_TILE_SIZE) + 'px';
+  const targetLeft = moveState.col * MOVE_TILE_SIZE + MOVE_TILE_SIZE / 2 - el.moveStage.clientWidth / 2;
+  const targetTop = moveState.row * MOVE_TILE_SIZE + MOVE_TILE_SIZE / 2 - el.moveStage.clientHeight / 2;
+  el.moveStage.scrollTo({ left: Math.max(0, targetLeft), top: Math.max(0, targetTop), behavior: 'smooth' });
+}
+function handleMove(dir) {
+  let row = moveState.row;
+  let col = moveState.col;
+  if (dir === 'up') row -= 1;
+  else if (dir === 'down') row += 1;
+  else if (dir === 'left') col -= 1;
+  else if (dir === 'right') col += 1;
+  row = Math.max(0, Math.min(moveState.maxRow, row));
+  col = Math.max(0, Math.min(moveState.maxCol, col));
+  const moved = row !== moveState.row || col !== moveState.col;
+  moveState.dir = dir;
+  moveState.row = row;
+  moveState.col = col;
+  updateCharPosition();
+  clearTimeout(moveState.settleTimer);
+  if (moved) {
+    playMoveAnim(dir);
+    // 이동이 끝나는 시점(트랜지션 종료)에 걷기 애니메이션을 멈추고 그 방향의
+    // 첫 프레임(정지 자세)으로 되돌린다.
+    moveState.settleTimer = setTimeout(() => { stopMoveAnim(); applyCharFrame(dir, 0); }, MOVE_STEP_MS);
+  } else {
+    // 맵 가장자리에 막혀 실제로는 못 움직여도, 누른 방향을 바라보는 정지
+    // 자세로는 바꿔줘야 "눌러도 반응이 없다"는 인상을 안 준다.
+    stopMoveAnim();
+    applyCharFrame(dir, 0);
+  }
+}
+el.moveDpad.querySelectorAll('[data-dir]').forEach(btn => {
+  btn.addEventListener('click', () => handleMove(btn.dataset.dir));
+});
+const MOVE_KEY_DIRS = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
+document.addEventListener('keydown', (e) => {
+  const dir = MOVE_KEY_DIRS[e.key];
+  // 이동 탭이 안 보이는 동안은 화살표 키가 그냥 페이지 스크롤로 남아있어야
+  // 하니, 탭이 활성일 때만 가로챈다.
+  if (!dir || el.panelMove.classList.contains('hidden')) return;
+  e.preventDefault();
+  handleMove(dir);
+});
+
+async function renderMoveTestStage() {
+  const bgId = fishingConfig.backgroundAssetId;
+  const bgAsset = bgId ? await AssetDB.getAsset(bgId).catch(() => null) : null;
+  const dims = bgAsset ? await loadImageDimensions(bgAsset.dataUrl) : null;
+  if (bgAsset && dims) {
+    el.moveWorld.classList.remove('placeholder');
+    el.moveWorld.style.backgroundImage = `url(${bgAsset.dataUrl})`;
+    el.moveWorld.style.width = dims.width + 'px';
+    el.moveWorld.style.height = dims.height + 'px';
+    moveState.maxCol = Math.max(0, Math.floor(dims.width / MOVE_TILE_SIZE) - 1);
+    moveState.maxRow = Math.max(0, Math.floor(dims.height / MOVE_TILE_SIZE) - 1);
+  } else {
+    el.moveWorld.classList.add('placeholder');
+    el.moveWorld.style.backgroundImage = '';
+    el.moveWorld.style.width = (MOVE_PLACEHOLDER_COLS * MOVE_TILE_SIZE) + 'px';
+    el.moveWorld.style.height = (MOVE_PLACEHOLDER_ROWS * MOVE_TILE_SIZE) + 'px';
+    moveState.maxCol = MOVE_PLACEHOLDER_COLS - 1;
+    moveState.maxRow = MOVE_PLACEHOLDER_ROWS - 1;
+  }
+  moveState.row = Math.min(moveState.row, moveState.maxRow);
+  moveState.col = Math.min(moveState.col, moveState.maxCol);
+  applyCharFrame(moveState.dir, 0);
+  updateCharPosition();
+}
+
 let saveNoteTimer = null;
 function showSaveNote() {
   el.saveNote.classList.add('show');
@@ -2029,6 +2348,8 @@ async function init() {
   renderCastTab();
   renderFramesTab('reelingFrames', el.reelFrames, el.reelFileInput, el.reelPreview, el.reelPreviewLabel);
   renderFishTab();
+  WALK_DIRS.forEach(dir => renderWalkFramesTab(dir));
+  renderMoveTestStage();
 }
 init();
 </script>
