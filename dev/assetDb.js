@@ -1034,23 +1034,34 @@ const AssetDB = (() => {
     return settings;
   }
 
-  // 낚시 미니게임 설정 — 캐스팅/올리기 모션 프레임(각각 순서가 있는 AssetDB
-  // 이미지 id 배열)과 낚시바 디자인(색상·캐치존 크기·물고기 아이콘)을 한
-  // blob에 묶어 저장한다. 난이도·모션타입(물고기 움직임 패턴)처럼 플레이마다
-  // 바뀌는 값은 여기 두지 않고 기존 미니게임들의 관례대로 play 화면 쿼리스트링
-  // (?diff=&motion=)으로 넘긴다 — 여기 저장하는 건 순수 아트/디자인 자산이라
-  // map-pins/youngwoo-test와 같은 단일 JSON blob 패턴을 그대로 쓴다.
+  // 낚시 미니게임 설정 — 캐스팅/올리기 모션 프레임과 낚시바 디자인(색상·
+  // 캐치존 크기·물고기 아이콘)을 한 blob에 묶어 저장한다. 난이도·모션타입
+  // (물고기 움직임 패턴)처럼 플레이마다 바뀌는 값은 여기 두지 않고 기존
+  // 미니게임들의 관례대로 play 화면 쿼리스트링(?diff=&motion=)으로 넘긴다 —
+  // 여기 저장하는 건 순수 아트/디자인 자산이라 map-pins/youngwoo-test와
+  // 같은 단일 JSON blob 패턴을 그대로 쓴다.
   const fishingConfigCache = new Map(); // single entry keyed 'config'
   const FISHING_CONFIG_PATH = 'fishing-config/config.json';
-  // fishSheetAssetId — 물고기 종류 아이콘 스프라이트시트(dev/data/fishDefs.js의
-  // FISH_SHEET_LAYOUT 규격: 196x136px, 10열x7행, 16x16px 칸, 4px 간격) 자산 id.
-  // 업로드되면 fishDefs.js의 각 물고기 slot 순서 그대로 아이콘이 배정된다.
-  // fishIconOverrides — 실제 업로드된 시트가 그 규격에 정확히 맞아떨어지지
-  // 않을 때(AI 생성 시트는 흔함) 물고기별로 세밀영역조절로 직접 보정한 크롭
-  // 좌표, { [fishId]: { cx, cy, size } } (정규화 0~1, fishDefs.js의
-  // getFishCropStyle 참고). 보정 없는 물고기는 getFishSlotStyle의 이론적
-  // 그리드 계산으로 폴백한다.
-  const FISHING_CONFIG_DEFAULT = { castingFrames: [], reelingFrames: [], barDesign: {}, fishSheetAssetId: null, fishIconOverrides: {} };
+  // reelingFrames — 올리기 모션은 여전히 프레임을 한 장씩 따로 올리는 예전
+  // 방식(각 프레임이 독립된 AssetDB 이미지 id, 순서대로 배열).
+  //
+  // castingFrames — 더 이상 쓰지 않는 레거시 필드(캐스팅도 예전엔 같은
+  // 개별 업로드 방식이었음). 새 세이브는 항상 비어있고, 실제로는 아래
+  // castingSheetAssetId/castingFrameOverrides를 쓴다 — 기존 저장값을
+  // 마이그레이션하지 않고 그냥 무시한다(§신규 기능이라 실사용 데이터 없음).
+  //
+  // castingSheetAssetId — 캐스팅 모션 시트(dev/data/fishDefs.js의
+  // CASTING_SHEET_LAYOUT 규격: 404x64px, 가로 6칸, 64x64px 칸, 4px 간격)
+  // 자산 id. 물고기 아이콘 시트와 같은 패턴이지만 1행짜리 스트립이다.
+  // castingFrameOverrides — 세밀영역조절 보정, { [frameIndex]: {cx,cy,size} }
+  // (정규화 0~1, fishDefs.js의 getFishCropStyle 재사용). 보정 없는
+  // 프레임은 getCastingDefaultCropRect의 이론적 그리드 위치로 폴백한다.
+  //
+  // fishSheetAssetId — 물고기 종류 아이콘 스프라이트시트(FISH_SHEET_LAYOUT
+  // 규격: 196x136px, 10열x7행, 16x16px 칸, 4px 간격) 자산 id. 업로드되면
+  // fishDefs.js의 각 물고기 slot 순서 그대로 아이콘이 배정된다.
+  // fishIconOverrides — 물고기별 세밀영역조절 보정, { [fishId]: {cx,cy,size} }.
+  const FISHING_CONFIG_DEFAULT = { castingFrames: [], reelingFrames: [], barDesign: {}, fishSheetAssetId: null, fishIconOverrides: {}, castingSheetAssetId: null, castingFrameOverrides: {} };
 
   async function getFishingConfig() {
     if (fishingConfigCache.has('config')) return fishingConfigCache.get('config');

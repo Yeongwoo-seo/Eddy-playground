@@ -141,3 +141,65 @@ function getFishCropStyle(rect, sheetNaturalWidth, sheetNaturalHeight, displaySi
   };
 }
 
+/* ===== 캐스팅 모션 시트 규격 — 물고기 아이콘 시트와 같은 패턴이지만 1행
+   짜리 스트립이다. 404x64px 투명 PNG, 가로 6칸, 칸당 64x64px, 칸 간격
+   4px, 바깥 여백 없음(MOTION_PROMPT_SPECS.cast의 AI 프롬프트 규격과 동일—
+   dev/minigame-fishing/index.html). AssetDB.getFishingConfig().
+   castingSheetAssetId가 이 규격의 이미지를 가리키고, castingFrameOverrides
+   ({ [frameIndex]: {cx,cy,size} })가 물고기의 fishIconOverrides와 똑같은
+   세밀영역조절 보정값이다 — 조회는 위 getFishCropStyle을 그대로 재사용
+   (이미 시트/rect/표시크기만 받는 범용 함수라 물고기 전용이 아님). */
+const CASTING_SHEET_LAYOUT = { columns: 6, rows: 1, cellSize: 64, gap: 4 };
+
+function getCastingSlotStyle(frameIndex, scale) {
+  scale = scale || 1;
+  const { columns, cellSize, gap } = CASTING_SHEET_LAYOUT;
+  const x = frameIndex * (cellSize + gap) * scale;
+  const sheetW = (columns * cellSize + (columns - 1) * gap) * scale;
+  const sheetH = cellSize * scale;
+  return {
+    backgroundPosition: `-${x}px 0px`,
+    backgroundSize: `${sheetW}px ${sheetH}px`,
+  };
+}
+
+function getCastingDefaultCropRect(frameIndex) {
+  const { columns, cellSize, gap } = CASTING_SHEET_LAYOUT;
+  const sheetW = columns * cellSize + (columns - 1) * gap;
+  const cxPx = frameIndex * (cellSize + gap) + cellSize / 2;
+  return { cx: cxPx / sheetW, cy: 0.5, size: cellSize / Math.min(sheetW, cellSize) };
+}
+
+// 실제 게임 플레이(dev/minigame-fishing/play/index.html)는 물고기 아이콘과
+// 달리 <img>를 매 프레임 통째로 갈아끼우는 방식이라(CSS background-position
+// 슬라이스가 아니라) 실제 픽셀을 잘라낸 이미지가 필요하다 — 시트 1장 +
+// rect 하나를 진짜 정사각 PNG data URL로 구워낸다. image-rendering:pixelated
+// 대상이라 스무딩을 꺼서 도트 경계를 그대로 유지한다.
+function cropRectToDataUrl(img, rect, outputSize) {
+  const shortSide = Math.min(img.naturalWidth, img.naturalHeight);
+  const cropSize = rect.size * shortSide;
+  const sx = rect.cx * img.naturalWidth - cropSize / 2;
+  const sy = rect.cy * img.naturalHeight - cropSize / 2;
+  const c = document.createElement('canvas');
+  c.width = outputSize;
+  c.height = outputSize;
+  const ctx = c.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(img, sx, sy, cropSize, cropSize, 0, 0, outputSize, outputSize);
+  return c.toDataURL('image/png');
+}
+
+// 시트 1장 + (있으면) frameIndex별 castingFrameOverrides로 최대 6개의
+// 잘라낸 프레임 data URL 배열을 만든다. 보정값이 없는 프레임은
+// getCastingDefaultCropRect의 이론적 그리드 위치를 쓴다. img는 이미
+// 로드된 HTMLImageElement(naturalWidth/Height 확정된 상태)여야 한다.
+function buildCastingFrameDataUrls(img, overrides, outputSize) {
+  overrides = overrides || {};
+  const frames = [];
+  for (let i = 0; i < CASTING_SHEET_LAYOUT.columns; i++) {
+    const rect = overrides[i] || getCastingDefaultCropRect(i);
+    frames.push(cropRectToDataUrl(img, rect, outputSize || CASTING_SHEET_LAYOUT.cellSize));
+  }
+  return frames;
+}
+
