@@ -237,6 +237,8 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .action-btn{width:100%;text-align:left;background:var(--surface-2);color:var(--text-primary);border:1px solid var(--divider);border-radius:12px;padding:14px 16px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:8px}
 .action-btn:active{background:#1c2530}
 .action-btn.cancel{color:var(--text-muted);background:none;border:none;text-align:center;margin-top:4px}
+.present-test-answer-btn{width:100%;text-align:center;background:rgba(214,168,75,.12);color:var(--amber);border:1px dashed rgba(214,168,75,.5);border-radius:12px;padding:10px 14px;font-size:12.5px;font-weight:700;font-family:var(--mono);cursor:pointer;margin-bottom:12px}
+.present-test-answer-btn:active{background:rgba(214,168,75,.22)}
 .topic-row{display:flex;align-items:center;gap:10px;width:100%;background:var(--surface-2);border:1px solid var(--divider);border-radius:12px;padding:13px 14px;color:var(--text-primary);font-size:13.5px;cursor:pointer;text-align:left;font-family:inherit;margin-bottom:8px}
 .topic-row[disabled]{opacity:.4;cursor:default}
 .topic-row-main{flex:1;min-width:0}
@@ -1137,12 +1139,38 @@ const CASE_ENTRY_PRESENT_TABS_EXPLORE = [
 ];
 let presentTab = 'related';
 let presentSelectedEntryId = null;
+
+// 증거 하나를 실제로 제시했을 때의 공통 처리 — data-present-confirm(플레이어가
+// 직접 골라 확인) 경로와 아래 정답 제시 테스트 버튼 경로가 똑같이 쓴다.
+function presentEvidenceToCharacter(characterId, evidenceId) {
+  const rule = presentEvidenceRules.find(r => r.characterId === characterId && r.evidenceId === evidenceId && (!r.phase || r.phase === ExplorationState.getCurrentPhase()));
+  const outcome = rule || defaultPresentReaction;
+  if (rule && (rule.result === 'correct' || rule.result === 'partial')) (rule.effects || []).forEach(applyLocalEffect);
+  // already_used 파생 판정용(§9.5) — scorePresentRelevance의 "이미 같은
+  // NPC에게 제시했으며 변화 없음 -3"(§9.3)이 이 플래그를 읽는다.
+  CaseFileState.setFlag('presented:' + characterId + ':' + evidenceId, true);
+  showToastLine(characterId, outcome.reactionText);
+}
+
+// 정답 제시 (§테스트용) — presentEvidenceRules에 등록된 이 인물+phase의
+// result:'correct' 룰을 찾아 곧바로 제시한다. 심문마다 정답 증거를 목록에서
+// 직접 찾아 고르지 않고도 correct 반응/effects 경로를 바로 확인할 수 있는
+// 개발용 지름길 — 등록된 정답 룰이 없는 인물·phase면 그렇다고 알려준다.
+function presentTestCorrectAnswer(characterId) {
+  const rule = presentEvidenceRules.find(r => r.characterId === characterId && r.result === 'correct' && (!r.phase || r.phase === ExplorationState.getCurrentPhase()));
+  presentSelectedEntryId = null;
+  el.listSheet.classList.add('hidden');
+  if (!rule) { showToastLine(characterId, '[테스트] 이 인물·phase엔 등록된 정답 룰이 없습니다.'); return; }
+  presentEvidenceToCharacter(characterId, rule.evidenceId);
+}
+
 function renderPresentTiles(characterId) {
   CaseEntryUI.injectCaseEntryUIStyles();
+  const testBtn = `<button class="present-test-answer-btn" id="presentTestAnswerBtn" type="button">🧪 정답 제시 (테스트용)</button>`;
   const tabBar = `<div class="cm-tabbar ces-tabbar">${CASE_ENTRY_PRESENT_TABS_EXPLORE.map(t => `<button class="cm-tab${presentTab === t.id ? ' cm-tab-active' : ''}" data-tab="${t.id}">${t.label}</button>`).join('')}</div>`;
   if (presentTab === 'person') {
     const persons = CaseFileState.getPersons().filter(p => p.id !== characterId);
-    el.listSheetBody.innerHTML = tabBar + (persons.length ? `<div class="ces-grid">${persons.map(p => CaseEntryUI.casePersonCardHtml(p)).join('')}</div>` : '<div class="cm-empty">아직 물어볼 만한 인물이 없습니다.</div>');
+    el.listSheetBody.innerHTML = testBtn + tabBar + (persons.length ? `<div class="ces-grid">${persons.map(p => CaseEntryUI.casePersonCardHtml(p)).join('')}</div>` : '<div class="cm-empty">아직 물어볼 만한 인물이 없습니다.</div>');
     el.listSheetBody.querySelectorAll('[data-present-person]').forEach(btn => btn.addEventListener('click', () => {
       el.listSheet.classList.add('hidden');
       showToastLine(characterId, '음, 그 사람에 대해서는 딱히 할 말이 없는데.');
@@ -1159,7 +1187,7 @@ function renderPresentTiles(characterId) {
       week: (typeof ExplorationState !== 'undefined' && ExplorationState.getCurrentWeek) ? ExplorationState.getCurrentWeek() : null,
       activeTab: presentTab, selectedId: presentSelectedEntryId, maxSuggested: 6,
     };
-    el.listSheetBody.innerHTML = tabBar + CaseEntryUI.renderPresentGridHtml(CaseFileState.getCaseEntries(), ctx);
+    el.listSheetBody.innerHTML = testBtn + tabBar + CaseEntryUI.renderPresentGridHtml(CaseFileState.getCaseEntries(), ctx);
     CaseEntryUI.hydrateCaseEntryIcons(el.listSheetBody);
     el.listSheetBody.querySelectorAll('[data-present-entry]').forEach(btn => btn.addEventListener('click', () => {
       presentSelectedEntryId = presentSelectedEntryId === btn.dataset.presentEntry ? null : btn.dataset.presentEntry;
@@ -1169,13 +1197,7 @@ function renderPresentTiles(characterId) {
       const entryId = btn.dataset.presentConfirm;
       presentSelectedEntryId = null;
       el.listSheet.classList.add('hidden');
-      const rule = presentEvidenceRules.find(r => r.characterId === characterId && r.evidenceId === entryId && (!r.phase || r.phase === ExplorationState.getCurrentPhase()));
-      const outcome = rule || defaultPresentReaction;
-      if (rule && (rule.result === 'correct' || rule.result === 'partial')) (rule.effects || []).forEach(applyLocalEffect);
-      // already_used 파생 판정용(§9.5) — scorePresentRelevance의 "이미 같은
-      // NPC에게 제시했으며 변화 없음 -3"(§9.3)이 이 플래그를 읽는다.
-      CaseFileState.setFlag('presented:' + characterId + ':' + entryId, true);
-      showToastLine(characterId, outcome.reactionText);
+      presentEvidenceToCharacter(characterId, entryId);
     }));
   }
   el.listSheetBody.querySelectorAll('[data-tab]').forEach(btn => btn.addEventListener('click', () => {
@@ -1183,6 +1205,7 @@ function renderPresentTiles(characterId) {
     presentSelectedEntryId = null;
     renderPresentTiles(characterId);
   }));
+  el.listSheetBody.querySelector('#presentTestAnswerBtn').addEventListener('click', () => presentTestCorrectAnswer(characterId));
 }
 function openPresentSheet(characterId) {
   presentTab = 'related'; // §9.2 매번 새로 열 때 "관련 항목"으로 초기화
