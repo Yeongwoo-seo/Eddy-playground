@@ -123,6 +123,10 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .sheet-overlay.hidden{display:none}
 .sheet{width:100%;max-width:430px;background:var(--surface-1);border-radius:20px 20px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom,0));border-top:1px solid var(--divider)}
 .sheet-title{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--text-muted);margin-bottom:16px;text-transform:uppercase}
+.sheet-title-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.sheet-title-row .sheet-title{margin-bottom:0}
+.sheet-notebook-btn{font-family:var(--mono);font-size:11px;font-weight:700;color:#e9c467;background:rgba(214,168,75,.12);border:1px solid rgba(214,168,75,.4);border-radius:20px;padding:8px 12px;cursor:pointer;min-height:36px}
+.sheet-notebook-btn:active{opacity:.8}
 .sheet-field{margin-bottom:14px}
 .sheet-field label{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--text-secondary);margin-bottom:6px;text-transform:uppercase}
 .sheet-field select{width:100%;background:var(--surface-2);color:var(--text-primary);border:1px solid var(--divider);border-radius:10px;padding:12px 14px;font-size:14px;font-family:inherit}
@@ -307,7 +311,10 @@ window.addEventListener('orientationchange', setVh100);
 
 <div class="sheet-overlay hidden" id="evidenceSheetOverlay">
   <div class="sheet">
-    <div class="sheet-title">증거 제시</div>
+    <div class="sheet-title-row">
+      <div class="sheet-title">증거 제시</div>
+      <button class="sheet-notebook-btn" id="evidenceSheetNotebookBtn">📓 수첩에서 고르기</button>
+    </div>
     <div class="evidence-sheet-list" id="evidenceSheetList"></div>
     <button class="sheet-close" id="evidenceSheetCloseBtn">닫기</button>
   </div>
@@ -336,6 +343,7 @@ if ('serviceWorker' in navigator) {
 <script src="/dev/vnPlayer.js"></script>
 <script src="/dev/caseMenu.js"></script>
 <script src="/dev/caseEntryUI.js"></script>
+<script src="/dev/evidenceNotebook.js"></script>
 <script src="/dev/travelTips.js"></script>
 <script src="/dev/weekPreloader.js"></script>
 <script>
@@ -398,6 +406,7 @@ const el = {
   evidenceSheetOverlay: document.getElementById('evidenceSheetOverlay'),
   evidenceSheetList: document.getElementById('evidenceSheetList'),
   evidenceSheetCloseBtn: document.getElementById('evidenceSheetCloseBtn'),
+  evidenceSheetNotebookBtn: document.getElementById('evidenceSheetNotebookBtn'),
   bgmMount: document.getElementById('bgmMount'),
   pointBalance: document.getElementById('pointBalance'),
 };
@@ -950,6 +959,29 @@ el.evidenceSheetCloseBtn.addEventListener('click', () => el.evidenceSheetOverlay
 el.evidenceSheetOverlay.addEventListener('click', (e) => {
   if (e.target === el.evidenceSheetOverlay) el.evidenceSheetOverlay.classList.add('hidden');
 });
+
+// 증거 DB 노트 v1.1 — 위 시트와 같은 제출 판정(player.presentEvidence)을
+// 그대로 재사용하는 대안 UI. 시트를 대체하지 않고 "수첩에서 고르기"
+// 버튼으로만 진입 — 관련도 스코어링이 있는 시트가 기본, 훑어보며 고르고
+// 싶을 때만 노트로 전환하는 구조.
+function presentEvidenceFromNotebook(npcId, entryId) {
+  if (npcId) CaseFileState.setFlag('presented:' + npcId + ':' + entryId, true);
+  player.presentEvidence(entryId);
+}
+if (el.evidenceSheetNotebookBtn) {
+  el.evidenceSheetNotebookBtn.addEventListener('click', () => {
+    const line = activeLines[player.getState().index] || {};
+    const npcId = line.characterId || null;
+    el.evidenceSheetOverlay.classList.add('hidden');
+    if (typeof EvidenceNotebook !== 'undefined') {
+      EvidenceNotebook.open({
+        mode: 'present',
+        npcId,
+        onPresent: (entryId) => presentEvidenceFromNotebook(npcId, entryId),
+      });
+    }
+  });
+}
 
 const player = createVNPlayer({
   onLineChange: (line, index, total) => {
