@@ -56,8 +56,10 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
 .slot-status{font-family:var(--mono);font-size:11px}
 .slot-status.done{color:var(--green)}
 .slot-status.todo{color:var(--text-muted)}
+.slot-actions{display:flex;flex-direction:column;gap:6px;flex-shrink:0}
 .slot-btn{font-family:var(--mono);font-size:11.5px;font-weight:700;color:var(--text-primary);background:var(--surface-2);border:1px solid var(--divider);border-radius:10px;padding:8px 12px;cursor:pointer;white-space:nowrap;flex-shrink:0}
 .slot-btn:active{opacity:.8}
+.slot-btn-cutout{color:var(--amber);border-color:rgba(214,168,75,.4)}
 .slot-card.busy{opacity:.55;pointer-events:none}
 
 .upload-status{margin-top:14px;padding:12px 14px;border-radius:12px;font-size:12.5px;line-height:1.5}
@@ -239,12 +241,20 @@ function renderMainView() {
           <div class="slot-label">${escapeHtml(s.label)}</div>
           <div class="slot-status ${statusClass}">${statusText}</div>
         </div>
-        <button type="button" class="slot-btn" data-slot="${s.id}">${url ? '교체' : '올리기'}</button>
+        <div class="slot-actions">
+          <button type="button" class="slot-btn" data-slot="${s.id}">${url ? '교체' : '올리기'}</button>
+          ${url ? `<button type="button" class="slot-btn slot-btn-cutout" data-cutout-slot="${s.id}">배경 제거</button>` : ''}
+        </div>
       </div>
     `;
   }).join('');
   el.slotGrid.querySelectorAll('[data-slot]').forEach(btn => {
     btn.addEventListener('click', () => { currentUploadSlot = btn.dataset.slot; el.fileInput.click(); });
+  });
+  // 자동 실행은 하지 않고, 원할 때만 이 버튼으로 지금 슬롯 이미지에 외곽
+  // flood fill(그림 바깥쪽만 투명화, stripOuterBackground)을 적용한다.
+  el.slotGrid.querySelectorAll('[data-cutout-slot]').forEach(btn => {
+    btn.addEventListener('click', () => applyCutoutToSlot(btn.dataset.cutoutSlot));
   });
 
   const hasAnyImage = !!referenceImageUrl();
@@ -279,28 +289,122 @@ function setUploadStatus(text, kind) {
   el.uploadStatus.classList.add(kind);
 }
 
-// 증거수첩 배경은 원본 파일 그대로 올린다 — 자동 배경 제거(누끼)는 쓰지
-// 않는다. 낚시 미니게임의 물고기 아이콘 시트 업로드(dev/minigame-fishing/
-// index.html의 removeBackgroundOrFallback, @imgly/background-removal)는
-// 이것과 완전히 별개 기능이라 그대로 둔다 — 여기서 끄는 건 증거수첩
-// 배경만이다.
+// 다른 책갈피 값을 잃지 않도록 항상 현재 imageAssetIds 전체를 병합해서
+// 넘긴다(setEvidenceNotebookConfig는 얕은 병합이라 부분 patch면 나머지
+// 책갈피가 날아간다 — regions도 같은 이유로 항상 전체를 넘기는 관례).
+async function saveSlotAsset(slotId, asset) {
+  const nextImageAssetIds = Object.assign({}, notebookConfig.imageAssetIds, { [slotId]: asset.id });
+  notebookConfig = await AssetDB.setEvidenceNotebookConfig({ imageAssetIds: nextImageAssetIds });
+  slotImageUrls[slotId] = asset.dataUrl;
+  legacyFallbackSlots.delete(slotId);
+}
+
+// 증거수첩 배경은 원본 파일 그대로 올린다 — 업로드 시점에 자동으로 배경
+// 제거(누끼)를 걸지는 않는다. 원하면 슬롯 카드의 "배경 제거" 버튼으로
+// 나중에 수동으로 적용할 수 있다(applyCutoutToSlot). 낚시 미니게임의
+// 물고기 아이콘 시트 업로드(dev/minigame-fishing/index.html의
+// removeBackgroundOrFallback, @imgly/background-removal)는 이것과 완전히
+// 별개 기능이라 그대로 둔다.
 async function handleFileUpload(file, slotId) {
   const card = document.getElementById('slotCard-' + slotId);
   if (card) card.classList.add('busy');
   try {
     setUploadStatus('업로드 중...', 'busy');
     const asset = await AssetDB.addAsset({ type: 'evidence-notebook', name: file.name, blob: file });
-    // 다른 책갈피 값을 잃지 않도록 항상 현재 imageAssetIds 전체를 병합해서
-    // 넘긴다(setEvidenceNotebookConfig는 얕은 병합이라 부분 patch면 나머지
-    // 책갈피가 날아간다 — regions도 같은 이유로 항상 전체를 넘기는 관례).
-    const nextImageAssetIds = Object.assign({}, notebookConfig.imageAssetIds, { [slotId]: asset.id });
-    notebookConfig = await AssetDB.setEvidenceNotebookConfig({ imageAssetIds: nextImageAssetIds });
-    slotImageUrls[slotId] = asset.dataUrl;
-    legacyFallbackSlots.delete(slotId);
+    await saveSlotAsset(slotId, asset);
     setUploadStatus('', null);
     renderMainView();
   } catch (err) {
     setUploadStatus('업로드 실패: ' + (err && err.message ? err.message : String(err)), 'error');
+  } finally {
+    if (card) card.classList.remove('busy');
+  }
+}
+
+// 캔버스 가장자리에서만 시작해 비슷한 색이 이어지는 영역만 투명하게 채우는
+// flood fill(외곽만 누끼) — 테두리와 연결되지 않은 안쪽 영역(종이 안쪽
+// 여백처럼 배경과 색이 비슷해도)은 절대 건드리지 않는다. AI 배경 제거
+// (피사체 세그멘테이션)와 달리 그림 안쪽을 오인해 뚫는 일이 없다.
+async function stripOuterBackground(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((resolve, reject) => {
+      const im = new Image();
+      im.onload = () => resolve(im);
+      im.onerror = reject;
+      im.src = url;
+    });
+    const canvas = document.createElement('canvas');
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const { data, width, height } = imageData;
+    const total = width * height;
+    const visited = new Uint8Array(total);
+    const queue = new Int32Array(total);
+    let qHead = 0, qTail = 0;
+    const TOLERANCE = 30; // RGB 유클리드 거리 — 경계 앤티앨리어싱을 흡수할 정도만
+
+    function colorDist(pA, pB) {
+      const dr = data[pA] - data[pB], dg = data[pA + 1] - data[pB + 1], db = data[pA + 2] - data[pB + 2];
+      return Math.sqrt(dr * dr + dg * dg + db * db);
+    }
+    function seed(idx) {
+      if (visited[idx]) return;
+      visited[idx] = 1;
+      data[idx * 4 + 3] = 0;
+      queue[qTail++] = idx;
+    }
+    // 네 변의 픽셀은 정의상 "그림 바깥"이라 색과 무관하게 시작점으로 삼는다
+    // — 여기서부터 색이 이어지는 만큼만 안쪽으로 번져나간다.
+    for (let x = 0; x < width; x++) { seed(x); seed((height - 1) * width + x); }
+    for (let y = 0; y < height; y++) { seed(y * width); seed(y * width + (width - 1)); }
+
+    while (qHead < qTail) {
+      const idx = queue[qHead++];
+      const x = idx % width, y = (idx / width) | 0;
+      const p = idx * 4;
+      const neighbors = [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]];
+      for (const [nx, ny] of neighbors) {
+        if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
+        const nIdx = ny * width + nx;
+        if (visited[nIdx]) continue;
+        if (colorDist(nIdx * 4, p) > TOLERANCE) continue;
+        seed(nIdx);
+      }
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    return blob || file;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+// 슬롯 카드의 "배경 제거" 버튼 — 지금 그 슬롯에 이미 올라간 이미지를
+// 다시 불러와(dataURL → Blob) stripOuterBackground를 적용하고 새 자산으로
+// 저장한다. 원본 파일을 따로 보관하지 않으므로 매번 지금 저장된 이미지
+// 기준으로 처리한다 — 두 번 누르면 이미 투명해진 바깥은 그대로, 그때
+// 남아있는 불투명 영역 기준으로 다시 한 번 도는 것뿐이라 안전하다.
+async function applyCutoutToSlot(slotId) {
+  const url = slotImageUrls[slotId];
+  if (!url) return;
+  const card = document.getElementById('slotCard-' + slotId);
+  if (card) card.classList.add('busy');
+  try {
+    setUploadStatus('배경 제거 중 (그림 바깥쪽만)...', 'busy');
+    const sourceBlob = await (await fetch(url)).blob();
+    const cutoutBlob = await stripOuterBackground(sourceBlob);
+    setUploadStatus('업로드 중...', 'busy');
+    const asset = await AssetDB.addAsset({ type: 'evidence-notebook', name: slotId + '-cutout.png', blob: cutoutBlob });
+    await saveSlotAsset(slotId, asset);
+    setUploadStatus('', null);
+    renderMainView();
+  } catch (err) {
+    setUploadStatus('배경 제거 실패: ' + (err && err.message ? err.message : String(err)), 'error');
   } finally {
     if (card) card.classList.remove('busy');
   }
