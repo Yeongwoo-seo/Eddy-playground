@@ -603,6 +603,15 @@ const interactionDefs = {
       { speaker: '영우', text: '일단 가서 물어보자.', characterId: 'youngwoo', expression: 'neutral' },
     ],
   },
+  // autoPlayOnFirstVisit (§신규) — 처음 만나는 용의자는 심문하기 버튼을
+  // 누르지 않아도 그 장소에 처음 들어가는 순간 심문 씬이 자동 재생된다
+  // (findAutoInterrogation/performMove, dev/explore/index.html) — phaseIntro가
+  // phase 단위로 "낯선 도입부는 자동 재생"하는 것과 같은 원칙을 장소 단위로
+  // 적용한 것. 재방문(이미 state가 'new'가 아님) 이후엔 대화하기/심문하기
+  // 버튼이 그대로 남아 다시 열어볼 수 있다. Phase 5 재검증의 isInterrogation
+  // 항목들(w1reverify-*)은 이 플래그를 일부러 안 붙인다 — "이미 아는 사람을
+  // 다시 찾아가는" 재검증은 §10.4 방침대로 플레이어가 스스로 타이밍을
+  // 고르는 게 맞다("처음 보는 사람"이 아니므로).
   'w1suspect-mina-interview': {
     id: 'w1suspect-mina-interview',
     characterId: 'minah',
@@ -610,6 +619,7 @@ const interactionDefs = {
     phases: ['W1_SUSPECT_INTERVIEWS'],
     type: 'scene',
     isInterrogation: true,
+    autoPlayOnFirstVisit: true,
     label: '심문하기',
     icon: '🔍',
     sceneId: 'week1-scene-006',
@@ -638,6 +648,7 @@ const interactionDefs = {
     phases: ['W1_SUSPECT_INTERVIEWS'],
     type: 'scene',
     isInterrogation: true,
+    autoPlayOnFirstVisit: true,
     label: '심문하기',
     icon: '🔍',
     sceneId: 'week1-scene-007',
@@ -666,6 +677,7 @@ const interactionDefs = {
     phases: ['W1_SUSPECT_INTERVIEWS'],
     type: 'scene',
     isInterrogation: true,
+    autoPlayOnFirstVisit: true,
     label: '심문하기',
     icon: '🔍',
     sceneId: 'week1-scene-008',
