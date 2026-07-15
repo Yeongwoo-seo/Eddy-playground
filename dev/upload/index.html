@@ -226,6 +226,15 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
    their own elements at equal specificity, so this only needs to come last
    to win the cascade for everything that didn't have its own rule. */
 .hidden{display:none}
+
+/* display:none would keep a file input out of the layout tree entirely —
+   some mobile WebKit builds (iOS Safari) silently refuse to open the native
+   file picker for a file input in that state, even from a synchronous click
+   handler (dev/minigame-fishing/index.html의 같은 버그 리포트/수정 참고).
+   minigame-watermelon의 .fruit-input-hidden과 같은 "보이지 않지만 렌더링은
+   되는" 스타일로 우회한다 — 아래 각 file input의 인라인 display:none을 이
+   규칙으로 대체. */
+input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;overflow:hidden}
 </style>
 </head>
 <body>
@@ -386,7 +395,7 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
     <div class="dropzone-icon">🖼️</div>
     <div class="dropzone-text">DROP IMAGE HERE</div>
     <button class="select-btn" id="selectBtn">SELECT IMAGE</button>
-    <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp" style="display:none">
+    <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp">
   </div>
   <div class="hint" id="typeHint">.jpg · .jpeg · .png · .webp</div>
 
@@ -480,7 +489,7 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
       <div class="item-image-row">
         <div class="item-image-preview" id="itemImagePreview"></div>
         <button class="select-btn" id="itemImageBtn">이미지 업로드</button>
-        <input type="file" id="itemImageInput" style="display:none" accept="image/jpeg,image/png,image/webp">
+        <input type="file" id="itemImageInput" accept="image/jpeg,image/png,image/webp">
       </div>
       <div id="itemHotspotRow">
         <div class="field-label">발견 위치 — 씬</div>
@@ -593,7 +602,7 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
     <div class="picker-pills" id="evidenceCategoryPills" style="margin-bottom:14px"></div>
     <div class="hint" id="evidenceCountHint" style="margin:0 0 14px"></div>
     <div id="evidenceList"></div>
-    <input type="file" id="evidencePhotoInput" style="display:none" accept="image/jpeg,image/png,image/webp">
+    <input type="file" id="evidencePhotoInput" accept="image/jpeg,image/png,image/webp">
   </div>
 
   <div class="section-title" id="listTitle">Uploaded Backgrounds</div>
