@@ -80,6 +80,10 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .crop-dpad-right{grid-column:3;grid-row:2}
 .crop-dpad-down{grid-column:2;grid-row:3}
 .crop-size-row{margin-top:16px}
+.crop-size-controls{display:flex;align-items:center;gap:10px}
+.crop-size-controls input[type=range]{flex:1;accent-color:var(--cyan)}
+.crop-size-controls input[type=number]{width:60px;background:var(--surface-1);border:1px solid var(--divider);border-radius:8px;padding:8px;color:var(--text-primary);font-family:var(--mono);font-size:13px;text-align:center}
+.crop-size-unit{font-family:var(--mono);font-size:12px;color:var(--text-muted);flex-shrink:0}
 .crop-actions{display:flex;gap:10px;margin-top:18px}
 .crop-btn{flex:1;font-family:var(--mono);font-size:13.5px;font-weight:700;border:none;border-radius:14px;padding:13px;cursor:pointer;text-align:center}
 .crop-btn.primary{color:#08110c;background:var(--green)}
@@ -407,7 +411,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
 <div class="crop-overlay hidden" id="cropOverlay">
   <div class="crop-sheet">
     <div class="crop-title">세밀영역조절</div>
-    <div class="crop-desc">네모를 드래그해서 옮기거나 방향 버튼으로 미세 조정하고, 크기 슬라이더로 크기를 바꾸세요. 확대 미리보기로 경계를 확인할 수 있어요.</div>
+    <div class="crop-desc">네모를 드래그해서 옮기거나 방향 버튼으로 미세 조정하고, 크기 슬라이더를 드래그하거나(1px 단위) 숫자를 직접 입력해서 크기를 픽셀 단위로 바꾸세요. 확대 미리보기로 경계를 확인할 수 있어요.</div>
     <div class="crop-stage" id="cropStage">
       <canvas id="cropCanvas"></canvas>
       <div class="crop-rect" id="cropRectBox"></div>
@@ -426,8 +430,11 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     </div>
     <div class="crop-size-row">
       <div class="option-label">크롭 크기</div>
-      <input type="range" id="cropSizeInput" min="10" max="100" value="40">
-      <div class="range-value" id="cropSizeValue">40%</div>
+      <div class="crop-size-controls">
+        <input type="range" id="cropSizeInput" min="1" max="100" step="1" value="40">
+        <input type="number" id="cropSizeNumberInput" min="1" max="100" step="1" value="40">
+        <span class="crop-size-unit">px</span>
+      </div>
     </div>
     <div class="crop-actions">
       <button type="button" class="crop-btn secondary" id="cropCancelBtn">취소</button>
@@ -538,7 +545,7 @@ const el = {
   cropRectBox: document.getElementById('cropRectBox'),
   cropZoomCanvas: document.getElementById('cropZoomCanvas'),
   cropSizeInput: document.getElementById('cropSizeInput'),
-  cropSizeValue: document.getElementById('cropSizeValue'),
+  cropSizeNumberInput: document.getElementById('cropSizeNumberInput'),
   cropDpad: document.getElementById('cropDpad'),
   cropCancelBtn: document.getElementById('cropCancelBtn'),
   cropConfirmBtn: document.getElementById('cropConfirmBtn'),
@@ -1500,8 +1507,16 @@ function openCropAdjuster(sourceUrl, existingRect, pendingSourceFile, onConfirm)
     cropPendingSourceFile = pendingSourceFile || null;
     cropOnConfirm = onConfirm;
     cropRect = existingRect ? Object.assign({}, existingRect) : { cx: 0.5, cy: 0.5, size: 0.4 };
-    el.cropSizeInput.value = Math.round(cropRect.size * 100);
-    el.cropSizeValue.textContent = el.cropSizeInput.value + '%';
+    // 크롭 크기를 짧은 변 기준 픽셀 단위로 보여준다 — 슬라이더/입력 범위는
+    // 이미지마다 짧은 변 길이가 달라 매번 다시 잡아야 한다(1px ~ shortSide).
+    const shortSide = Math.min(img.naturalWidth, img.naturalHeight);
+    const sizePx = Math.round(cropRect.size * shortSide);
+    el.cropSizeInput.min = 1;
+    el.cropSizeInput.max = shortSide;
+    el.cropSizeInput.value = sizePx;
+    el.cropSizeNumberInput.min = 1;
+    el.cropSizeNumberInput.max = shortSide;
+    el.cropSizeNumberInput.value = sizePx;
     el.cropOverlay.classList.remove('hidden');
     drawCropStage();
   };
@@ -1610,11 +1625,17 @@ el.cropDpad.querySelectorAll('.crop-dpad-btn').forEach(btn => {
   });
   ['pointerup', 'pointerleave', 'pointercancel'].forEach(evt => btn.addEventListener(evt, stopCropDpadRepeat));
 });
-el.cropSizeInput.addEventListener('input', () => {
-  cropRect.size = Number(el.cropSizeInput.value) / 100;
-  el.cropSizeValue.textContent = el.cropSizeInput.value + '%';
+function setCropSizeFromPx(px) {
+  if (!cropSourceImg || !Number.isFinite(px)) return;
+  const shortSide = Math.min(cropSourceImg.naturalWidth, cropSourceImg.naturalHeight);
+  const clamped = Math.max(1, Math.min(shortSide, Math.round(px)));
+  cropRect.size = clamped / shortSide;
+  el.cropSizeInput.value = clamped;
+  el.cropSizeNumberInput.value = clamped;
   drawCropStage();
-});
+}
+el.cropSizeInput.addEventListener('input', () => setCropSizeFromPx(Number(el.cropSizeInput.value)));
+el.cropSizeNumberInput.addEventListener('input', () => setCropSizeFromPx(Number(el.cropSizeNumberInput.value)));
 el.cropCancelBtn.addEventListener('click', closeCropAdjuster);
 el.cropConfirmBtn.addEventListener('click', async () => {
   if (!cropSourceImg || !cropOnConfirm) return;
