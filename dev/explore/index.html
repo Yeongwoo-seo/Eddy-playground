@@ -216,9 +216,14 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
    rAF). 닫을 때는 반대로 .show를 먼저 떼 애니메이션을 재생시키고, 그 트랜지션
    길이(.3s)만큼 기다린 뒤에야 .hidden을 붙여 레이아웃에서 뺀다. */
 #moveMapSheet{opacity:0;transition:opacity .3s cubic-bezier(0.2,0.8,0.2,1)}
-#moveMapSheet .sheet{transform:translateY(100%);transition:transform .3s cubic-bezier(0.2,0.8,0.2,1)}
+#moveMapSheet .sheet{transform:translateY(100%);transition:transform .3s cubic-bezier(0.2,0.8,0.2,1);touch-action:pan-y}
 #moveMapSheet.show{opacity:1}
 #moveMapSheet.show .sheet{transform:translateY(0)}
+/* 드래그 중엔 트랜지션을 끄고 손가락을 그대로 따라가야 하므로(§신규,
+   setupMoveMapSheetDrag) 이 클래스가 붙어 있는 동안은 위 트랜지션을
+   덮어쓴다 — 드래그가 끝나면(스냅백/닫기 모두) 다시 뗀다. */
+#moveMapSheet .sheet.dragging{transition:none}
+.sheet-drag-handle{width:36px;height:4px;border-radius:2px;background:rgba(255,255,255,.22);margin:-8px auto 14px}
 
 /* ===== 이동하기 지도 — phaseMaps(dev/data/locationDefs.js)가 정의된 phase는
    exit 목록을 리스트 대신 지도 그림 위 원형 핀으로 보여준다(openMoveMapSheet).
@@ -341,7 +346,8 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 </div>
 
 <div class="sheet-overlay hidden" id="moveMapSheet">
-  <div class="sheet" style="max-height:88vh">
+  <div class="sheet" id="moveMapSheetBody" style="max-height:88vh">
+    <div class="sheet-drag-handle"></div>
     <div class="sheet-title">이동하기</div>
     <div class="move-map-wrap" id="moveMapWrap">
       <div class="move-map-pins" id="moveMapPins"></div>
@@ -427,6 +433,7 @@ const el = {
   listSheetBody: document.getElementById('listSheetBody'),
   listSheetCloseBtn: document.getElementById('listSheetCloseBtn'),
   moveMapSheet: document.getElementById('moveMapSheet'),
+  moveMapSheetBody: document.getElementById('moveMapSheetBody'),
   moveMapWrap: document.getElementById('moveMapWrap'),
   moveMapPins: document.getElementById('moveMapPins'),
   moveMapListWrap: document.getElementById('moveMapListWrap'),
@@ -1012,6 +1019,11 @@ function renderExitListRows(container, exitDefs, emptyText) {
 // — hence the double rAF. Closing plays the transition first and only adds
 // .hidden back (pulling it out of layout) once that's had time to finish.
 function showMoveMapSheet() {
+  // A stray leftover inline transform (e.g. a drag ended via a missed
+  // pointercancel) would otherwise override the CSS class-driven open
+  // transition below — always start from a clean slate.
+  el.moveMapSheetBody.classList.remove('dragging');
+  el.moveMapSheetBody.style.transform = '';
   el.moveMapSheet.classList.remove('hidden');
   requestAnimationFrame(() => requestAnimationFrame(() => el.moveMapSheet.classList.add('show')));
 }
@@ -1019,6 +1031,53 @@ function hideMoveMapSheet() {
   el.moveMapSheet.classList.remove('show');
   setTimeout(() => el.moveMapSheet.classList.add('hidden'), 300);
 }
+
+// 이동하기 지도 시트 — 아래로 스와이프해서 닫기(§신규). 핀 버튼(.move-pin)이나
+// 그만두기/목적지 리스트 버튼 위에서 시작한 제스처는 그 자체의 탭 동작이
+// 우선이라 드래그를 시작하지 않고, 시트가 (목적지가 많아) 스크롤된 상태라면
+// 위로 당기는 제스처가 그 스크롤부터 먼저 소비하게 둔다(scrollTop 가드).
+// 손가락을 따라가는 동안은 .dragging(transition:none)으로 즉시 반응하다가,
+// 놓는 순간 그 클래스를 떼 시트 자체의 .3s 트랜지션이 다시 살아나게 하고
+// 그 트랜지션 하나로 스냅백/닫기 애니메이션을 모두 처리한다 — 드래그 위치
+// 그대로에서 이어지므로 다시 위로 튀었다 사라지는 끊김이 없다.
+const MAP_DRAG_DISMISS_PX = 120;
+let mapDragStartY = null;
+let mapDragActive = false;
+let mapDragDelta = 0;
+el.moveMapSheetBody.addEventListener('pointerdown', (e) => {
+  if (e.target.closest('.move-pin, .action-btn, button')) return;
+  if (el.moveMapSheetBody.scrollTop > 0) return;
+  mapDragActive = true;
+  mapDragStartY = e.clientY;
+  mapDragDelta = 0;
+  el.moveMapSheetBody.setPointerCapture(e.pointerId);
+});
+el.moveMapSheetBody.addEventListener('pointermove', (e) => {
+  if (!mapDragActive) return;
+  const delta = e.clientY - mapDragStartY;
+  if (delta <= 0) { mapDragDelta = 0; el.moveMapSheetBody.style.transform = ''; return; }
+  mapDragDelta = delta;
+  el.moveMapSheetBody.classList.add('dragging');
+  el.moveMapSheetBody.style.transform = `translateY(${delta}px)`;
+});
+function endMoveMapDrag() {
+  if (!mapDragActive) return;
+  mapDragActive = false;
+  el.moveMapSheetBody.classList.remove('dragging');
+  if (mapDragDelta > MAP_DRAG_DISMISS_PX) {
+    el.moveMapSheetBody.style.transform = 'translateY(100%)';
+    el.moveMapSheet.classList.remove('show');
+    setTimeout(() => {
+      el.moveMapSheet.classList.add('hidden');
+      el.moveMapSheetBody.style.transform = '';
+    }, 300);
+  } else {
+    el.moveMapSheetBody.style.transform = '';
+  }
+  mapDragDelta = 0;
+}
+el.moveMapSheetBody.addEventListener('pointerup', endMoveMapDrag);
+el.moveMapSheetBody.addEventListener('pointercancel', endMoveMapDrag);
 
 // 이동하기 — 같은 phase 안이면 지금 있는 곳과 무관하게 어디든 바로 갈 수
 // 있다(더 이상 locationDefs.js의 exits로 인접한 곳만 보여주지 않는다 — 그
