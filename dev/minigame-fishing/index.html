@@ -117,9 +117,37 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .range-row input[type=range]{width:100%;accent-color:var(--cyan)}
 .range-value{font-family:var(--mono);font-size:12px;color:var(--text-muted)}
 .bar-preview-wrap{display:flex;justify-content:center;margin-bottom:22px}
-.bar-preview{position:relative;width:44px;height:200px;border-radius:10px;overflow:hidden;border:1px solid var(--divider)}
-.bar-preview-zone{position:absolute;left:0;right:0;border-radius:4px}
+.bar-preview{position:relative;width:44px;height:200px;border-radius:10px;overflow:hidden;border:1px solid var(--divider);background-size:cover;background-position:center}
+.bar-preview-zone{position:absolute;left:0;right:0;border-radius:4px;background-size:cover;background-position:center}
 .bar-preview-fish{position:absolute;left:50%;transform:translate(-50%,-50%);font-size:18px}
+.bar-preview-gauge{position:absolute;background:linear-gradient(to top,#D94141,#3ECF6B);border-radius:3px}
+
+/* ===== 낚시바 영역지정 전체화면 편집기 — dev/upload/evidence-notebook/index.html의
+   영역지정 편집기(evn-*)와 완전히 같은 pan/draw 제스처 패턴을 재사용한다:
+   라벨(배지)을 고르지 않은 채 드래그하면 화면을 세로로 훑어보고(pan),
+   배지를 고른 채 드래그하면 그 라벨의 사각형을 그린다. 여긴 라벨이
+   "캐치존"/"게이지" 2개뿐이고 대상 이미지가 낚시바 하나뿐이라는 점만 다르다. */
+.fbregion-fullscreen{position:fixed;inset:0;z-index:500;background:#050607;display:flex;flex-direction:column}
+.fbregion-fullscreen.hidden{display:none}
+.fbregion-topbar{display:flex;align-items:center;gap:10px;padding:calc(14px + env(safe-area-inset-top,0)) 16px 12px;border-bottom:1px solid var(--divider);flex-shrink:0}
+.fbregion-close-btn{width:32px;height:32px;border-radius:50%;background:var(--surface-1);border:1px solid var(--divider);color:var(--text-primary);font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.fbregion-close-btn:active{opacity:.8}
+.fbregion-topbar-title{flex:1;font-size:15px;font-weight:700}
+.fbregion-confirm-btn{font-family:var(--mono);font-size:12.5px;font-weight:700;color:#04181c;background:var(--cyan);border:none;border-radius:10px;padding:9px 14px;cursor:pointer;flex-shrink:0}
+.fbregion-confirm-btn:active{opacity:.85}
+.fbregion-badges{display:flex;gap:8px;overflow-x:auto;padding:12px 16px;border-bottom:1px solid var(--divider);flex-shrink:0}
+.fbregion-badge{font-family:var(--sans);font-size:13px;font-weight:600;white-space:nowrap;color:var(--text-secondary);background:var(--surface-1);border:1px solid var(--divider);border-radius:20px;padding:9px 14px;cursor:pointer;display:flex;align-items:center;gap:5px;flex-shrink:0}
+.fbregion-badge.done::before{content:'✓';color:var(--green);font-weight:700}
+.fbregion-badge.active{color:#04181c;background:var(--amber);border-color:var(--amber)}
+.fbregion-badge.active.done::before{color:#04181c}
+.fbregion-hint{padding:8px 16px;font-size:12.5px;color:var(--text-muted);line-height:1.5;flex-shrink:0}
+.fbregion-stage{position:relative;flex:1;overflow:hidden;touch-action:none;background:#020304}
+.fbregion-canvas{position:absolute;left:0;top:0;width:100%}
+.fbregion-canvas img{width:100%;display:block;pointer-events:none;user-select:none}
+.fbregion-box{position:absolute;border:2px solid var(--amber);background:rgba(214,168,75,.16);border-radius:4px;pointer-events:none;display:flex;align-items:flex-start;justify-content:flex-start}
+.fbregion-box.draft{border-color:var(--cyan);background:rgba(89,184,200,.18)}
+.fbregion-box-label{font-family:var(--mono);font-size:10.5px;font-weight:700;color:#050607;background:var(--amber);padding:2px 5px;border-radius:0 0 4px 0}
+.fbregion-box.draft .fbregion-box-label{background:var(--cyan)}
 
 /* ===== 물고기 종류 탭 ===== */
 .fish-sheet-frame{position:relative;width:196px;height:136px;max-width:100%;margin:0 auto;background-image:repeating-conic-gradient(var(--surface-2) 0% 25%, var(--surface-1) 0% 50%);background-size:16px 16px;border-radius:10px;border:1px solid var(--divider);overflow:hidden}
@@ -225,9 +253,11 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     </div>
   </div>
 
-  <!-- ===== 낚시바 디자인 — 색상/캐치존 크기/물고기 아이콘. ===== -->
+  <!-- ===== 낚시바 디자인 — 낚시바/캐치존 이미지 + 게이지(그라데이션) 영역지정.
+       색상 피커/캐치존 크기 슬라이더/물고기 아이콘은 이 세 가지로 대체되어
+       숨겼다 — 기존 데이터·크롭 조정 코드는 그대로 두고 화면에서만 뺐다. ===== -->
   <div class="tab-panel hidden" id="panelBar">
-    <div class="option-group">
+    <div class="option-group hidden">
       <div class="option-label">색상</div>
       <div class="color-row">
         <input type="color" id="barColorInput" value="#171C22">
@@ -238,24 +268,46 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
         <div class="color-row-label">캐치존 색상</div>
       </div>
     </div>
-    <div class="option-group">
+    <div class="option-group hidden">
       <div class="option-label">캐치존 크기</div>
       <div class="range-row">
         <input type="range" id="zoneSizeInput" min="12" max="55" value="28">
         <div class="range-value" id="zoneSizeValue">28%</div>
       </div>
     </div>
-    <div class="option-group">
+    <div class="option-group hidden">
       <div class="option-label">물고기 아이콘</div>
       <div class="option-desc">업로드하지 않으면 기본 이모지(🐟)로 표시돼요. 업로드한 사진은 탭하면 크롭 영역을 다시 세밀 조정할 수 있어요.</div>
       <div class="frame-strip" id="fishIconSlot"></div>
       <button type="button" class="frame-add-btn hidden" id="fishIconAddBtn">+ 아이콘 업로드</button>
       <input type="file" id="fishIconFileInput" accept="image/*">
     </div>
+
+    <div class="option-group">
+      <div class="option-label">낚시바</div>
+      <div class="option-desc">낚시바 전체 배경 그림이에요. 업로드한 뒤 "영역지정"으로 이 그림 위 어디에 캐치존/게이지가 놓일지 표시하세요.</div>
+      <div class="frame-strip" id="barImageSlot"></div>
+      <button type="button" class="frame-add-btn hidden" id="barImageAddBtn">+ 낚시바 이미지 업로드</button>
+      <input type="file" id="barImageFileInput" accept="image/*">
+      <button type="button" class="fish-sheet-btn hidden" id="barRegionEditBtn" style="width:100%;margin-top:4px">📐 영역지정</button>
+    </div>
+    <div class="option-group">
+      <div class="option-label">캐치존</div>
+      <div class="option-desc">낚시바 위에서 위아래로 움직이는 캐치존 그림이에요.</div>
+      <div class="frame-strip" id="zoneImageSlot"></div>
+      <button type="button" class="frame-add-btn hidden" id="zoneImageAddBtn">+ 캐치존 이미지 업로드</button>
+      <input type="file" id="zoneImageFileInput" accept="image/*">
+    </div>
+    <div class="option-group">
+      <div class="option-label">게이지</div>
+      <div class="option-desc">낚시 진행도(0%~100%)를 빨강→연두 그라데이션으로 자동 표시해요. 이미지 업로드는 필요 없고, 위 "영역지정"에서 낚시바 그림 위에 놓일 자리만 표시하면 돼요.</div>
+    </div>
+
     <div class="bar-preview-wrap">
       <div class="bar-preview" id="barPreview">
         <div class="bar-preview-zone" id="barPreviewZone"></div>
         <div class="bar-preview-fish" id="barPreviewFish">🐟</div>
+        <div class="bar-preview-gauge hidden" id="barPreviewGauge"></div>
       </div>
     </div>
   </div>
@@ -312,6 +364,25 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     <div class="crop-actions">
       <button type="button" class="crop-btn secondary" id="cropCancelBtn">취소</button>
       <button type="button" class="crop-btn primary" id="cropConfirmBtn">적용</button>
+    </div>
+  </div>
+</div>
+
+<!-- 낚시바 영역지정 — 업로드한 낚시바 이미지 위에 캐치존/게이지가 놓일 자리를
+     드래그로 지정한다. dev/upload/evidence-notebook/index.html의 영역지정
+     편집기와 같은 구조/제스처(fbregion-* = evn-*의 이름만 바꾼 재사용). -->
+<div class="fbregion-fullscreen hidden" id="fbregionFullscreen">
+  <div class="fbregion-topbar">
+    <button type="button" class="fbregion-close-btn" id="fbregionCloseBtn">✕</button>
+    <div class="fbregion-topbar-title">영역지정</div>
+    <button type="button" class="fbregion-confirm-btn" id="fbregionConfirmBtn">확정</button>
+  </div>
+  <div class="fbregion-badges" id="fbregionBadges"></div>
+  <div class="fbregion-hint" id="fbregionHint"></div>
+  <div class="fbregion-stage" id="fbregionStage">
+    <div class="fbregion-canvas" id="fbregionCanvas">
+      <img id="fbregionImg" alt="낚시바">
+      <div id="fbregionBoxes"></div>
     </div>
   </div>
 </div>
@@ -404,6 +475,23 @@ const el = {
   barPreview: document.getElementById('barPreview'),
   barPreviewZone: document.getElementById('barPreviewZone'),
   barPreviewFish: document.getElementById('barPreviewFish'),
+  barPreviewGauge: document.getElementById('barPreviewGauge'),
+  barImageSlot: document.getElementById('barImageSlot'),
+  barImageAddBtn: document.getElementById('barImageAddBtn'),
+  barImageFileInput: document.getElementById('barImageFileInput'),
+  barRegionEditBtn: document.getElementById('barRegionEditBtn'),
+  zoneImageSlot: document.getElementById('zoneImageSlot'),
+  zoneImageAddBtn: document.getElementById('zoneImageAddBtn'),
+  zoneImageFileInput: document.getElementById('zoneImageFileInput'),
+  fbregionFullscreen: document.getElementById('fbregionFullscreen'),
+  fbregionCloseBtn: document.getElementById('fbregionCloseBtn'),
+  fbregionConfirmBtn: document.getElementById('fbregionConfirmBtn'),
+  fbregionBadges: document.getElementById('fbregionBadges'),
+  fbregionHint: document.getElementById('fbregionHint'),
+  fbregionStage: document.getElementById('fbregionStage'),
+  fbregionCanvas: document.getElementById('fbregionCanvas'),
+  fbregionImg: document.getElementById('fbregionImg'),
+  fbregionBoxes: document.getElementById('fbregionBoxes'),
   castPromptText: document.getElementById('castPromptText'),
   castPromptCopyBtn: document.getElementById('castPromptCopyBtn'),
   castPromptCopyStatus: document.getElementById('castPromptCopyStatus'),
@@ -658,14 +746,54 @@ el.reelFileInput.addEventListener('change', async () => {
 });
 
 /* ===== 낚시바 디자인 탭 ===== */
-function renderBarPreview() {
+async function renderBarPreview() {
   const design = fishingConfig.barDesign || {};
   el.barPreview.style.background = design.barColor || '#171C22';
-  const zonePct = design.zoneSizePct || 28;
-  el.barPreviewZone.style.height = zonePct + '%';
-  el.barPreviewZone.style.top = ((100 - zonePct) / 2) + '%';
+  el.barPreview.style.backgroundImage = '';
+  if (design.barImageAssetId) {
+    const asset = await AssetDB.getAsset(design.barImageAssetId).catch(() => null);
+    if (asset) el.barPreview.style.backgroundImage = `url(${asset.dataUrl})`;
+  }
+
+  // 캐치존은 zoneRegion(낚시바 그림 위 트랙 사각형)이 지정되어 있으면 그
+  // 자리를, 아니면 기존 zoneSizePct 기반 중앙 배치로 대체 표시한다 —
+  // 실제 플레이 화면(play/index.html)의 세로 이동은 이 트랙 안에서
+  // 계속 물리 로직대로 계산되고, 여긴 정지 미리보기라 중앙에 고정해 보여준다.
+  const zoneRegion = design.zoneRegion;
+  el.barPreviewZone.style.backgroundImage = '';
   el.barPreviewZone.style.background = design.zoneColor || '#59B8C8';
+  if (zoneRegion) {
+    el.barPreviewZone.style.left = zoneRegion.x * 100 + '%';
+    el.barPreviewZone.style.width = zoneRegion.w * 100 + '%';
+    const zonePct = design.zoneSizePct || 28;
+    const trackH = zoneRegion.h * 100;
+    el.barPreviewZone.style.height = (trackH * zonePct / 100) + '%';
+    el.barPreviewZone.style.top = (zoneRegion.y * 100 + (trackH - trackH * zonePct / 100) / 2) + '%';
+  } else {
+    const zonePct = design.zoneSizePct || 28;
+    el.barPreviewZone.style.left = '0';
+    el.barPreviewZone.style.width = '';
+    el.barPreviewZone.style.height = zonePct + '%';
+    el.barPreviewZone.style.top = ((100 - zonePct) / 2) + '%';
+  }
+  if (design.zoneImageAssetId) {
+    const asset = await AssetDB.getAsset(design.zoneImageAssetId).catch(() => null);
+    if (asset) el.barPreviewZone.style.backgroundImage = `url(${asset.dataUrl})`;
+  }
   el.barPreviewFish.style.top = '50%';
+
+  // 게이지 — gaugeRegion 자리에 빨강→연두 세로 그라데이션만 보여준다(실제
+  // 진행도 값은 플레이 중에만 의미가 있어 미리보기에선 항상 꽉 채워 보여준다).
+  if (design.gaugeRegion) {
+    const g = design.gaugeRegion;
+    el.barPreviewGauge.classList.remove('hidden');
+    el.barPreviewGauge.style.left = g.x * 100 + '%';
+    el.barPreviewGauge.style.top = g.y * 100 + '%';
+    el.barPreviewGauge.style.width = g.w * 100 + '%';
+    el.barPreviewGauge.style.height = g.h * 100 + '%';
+  } else {
+    el.barPreviewGauge.classList.add('hidden');
+  }
 }
 async function renderFishIconSlot() {
   const design = fishingConfig.barDesign || {};
@@ -766,10 +894,271 @@ async function saveBarDesign() {
     fishIconAssetId: prev.fishIconAssetId || null,
     fishIconSourceAssetId: prev.fishIconSourceAssetId || null,
     fishIconCropRect: prev.fishIconCropRect || null,
+    barImageAssetId: prev.barImageAssetId || null,
+    zoneImageAssetId: prev.zoneImageAssetId || null,
+    zoneRegion: prev.zoneRegion || null,
+    gaugeRegion: prev.gaugeRegion || null,
   };
   fishingConfig = await AssetDB.setFishingConfig({ barDesign: design });
   showSaveNote();
   renderBarPreview();
+}
+
+/* ===== 낚시바/캐치존 이미지 업로드 + 게이지/캐치존 영역지정 =====
+   낚시바 배경색/캐치존 색상/캐치존 크기 슬라이더/물고기 아이콘(위 option-group
+   들, 화면에서만 숨김)을 대신한다 — 낚시바 이미지 하나, 그 위에서 움직이는
+   캐치존 이미지 하나, 그리고 게이지(0~100% 빨강→연두 그라데이션, 이미지
+   없음)가 낚시바 그림 위 어디에 놓일지 사각형으로 지정한다(fbregion 편집기,
+   dev/upload/evidence-notebook/index.html의 영역지정과 같은 패턴). 실제
+   물고기가 캐치존 안에서 움직이는 세로 위치 계산은 zoneRegion이 지정하는
+   "트랙" 안에서 기존 물리 로직 그대로 이어간다 — dev/minigame-fishing/play/
+   index.html 쪽 렌더링만 이 트랙 rect를 반영하도록 바뀐다. */
+const FB_REGION_LABELS = [
+  { id: 'zoneRegion', label: '캐치존' },
+  { id: 'gaugeRegion', label: '게이지' },
+];
+
+async function renderBarImageSlot() {
+  const design = fishingConfig.barDesign || {};
+  el.barImageSlot.innerHTML = '';
+  if (design.barImageAssetId) {
+    el.barImageAddBtn.classList.add('hidden');
+    el.barRegionEditBtn.classList.remove('hidden');
+    const asset = await AssetDB.getAsset(design.barImageAssetId).catch(() => null);
+    const slot = document.createElement('div');
+    slot.className = 'frame-slot';
+    slot.innerHTML = `${asset ? `<img src="${asset.dataUrl}" alt="">` : ''}
+      <div class="frame-actions"><button type="button" class="frame-mini-btn danger" data-act="del">✕</button></div>`;
+    slot.querySelector('[data-act=del]').addEventListener('click', async () => {
+      fishingConfig = await AssetDB.setFishingConfig({ barDesign: Object.assign({}, fishingConfig.barDesign, { barImageAssetId: null, zoneRegion: null, gaugeRegion: null }) });
+      showSaveNote();
+      renderBarImageSlot();
+      renderBarPreview();
+    });
+    el.barImageSlot.appendChild(slot);
+  } else {
+    el.barImageAddBtn.classList.remove('hidden');
+    el.barRegionEditBtn.classList.add('hidden');
+  }
+}
+el.barImageAddBtn.addEventListener('click', () => el.barImageFileInput.click());
+el.barImageFileInput.addEventListener('change', async () => {
+  const file = el.barImageFileInput.files[0];
+  el.barImageFileInput.value = '';
+  if (!file) return;
+  el.barImageAddBtn.disabled = true;
+  try {
+    const asset = await AssetDB.addAsset({ type: 'fishing-bar-image', name: file.name, blob: file });
+    fishingConfig = await AssetDB.setFishingConfig({ barDesign: Object.assign({}, fishingConfig.barDesign, { barImageAssetId: asset.id }) });
+    showSaveNote();
+    renderBarImageSlot();
+    renderBarPreview();
+  } finally {
+    el.barImageAddBtn.disabled = false;
+  }
+});
+
+async function renderZoneImageSlot() {
+  const design = fishingConfig.barDesign || {};
+  el.zoneImageSlot.innerHTML = '';
+  if (design.zoneImageAssetId) {
+    el.zoneImageAddBtn.classList.add('hidden');
+    const asset = await AssetDB.getAsset(design.zoneImageAssetId).catch(() => null);
+    const slot = document.createElement('div');
+    slot.className = 'frame-slot';
+    slot.innerHTML = `${asset ? `<img src="${asset.dataUrl}" alt="">` : ''}
+      <div class="frame-actions"><button type="button" class="frame-mini-btn danger" data-act="del">✕</button></div>`;
+    slot.querySelector('[data-act=del]').addEventListener('click', async () => {
+      fishingConfig = await AssetDB.setFishingConfig({ barDesign: Object.assign({}, fishingConfig.barDesign, { zoneImageAssetId: null }) });
+      showSaveNote();
+      renderZoneImageSlot();
+      renderBarPreview();
+    });
+    el.zoneImageSlot.appendChild(slot);
+  } else {
+    el.zoneImageAddBtn.classList.remove('hidden');
+  }
+}
+el.zoneImageAddBtn.addEventListener('click', () => el.zoneImageFileInput.click());
+el.zoneImageFileInput.addEventListener('change', async () => {
+  const file = el.zoneImageFileInput.files[0];
+  el.zoneImageFileInput.value = '';
+  if (!file) return;
+  el.zoneImageAddBtn.disabled = true;
+  try {
+    const asset = await AssetDB.addAsset({ type: 'fishing-zone-image', name: file.name, blob: file });
+    fishingConfig = await AssetDB.setFishingConfig({ barDesign: Object.assign({}, fishingConfig.barDesign, { zoneImageAssetId: asset.id }) });
+    showSaveNote();
+    renderZoneImageSlot();
+    renderBarPreview();
+  } finally {
+    el.zoneImageAddBtn.disabled = false;
+  }
+});
+
+/* ===== 낚시바 영역지정 편집기 — evidence-notebook의 evn-* 편집기와 완전히
+   같은 pan/draw 좌표 수학(스케일=스테이지 폭/원본 폭, 세로 스크롤은 배지
+   미선택 시 드래그로 pan). 라벨이 2개뿐이라는 것과 대상 이미지가 하나
+   고정이라는 점만 다르다. ===== */
+let fbNaturalW = 0, fbNaturalH = 0;
+let fbScale = 1, fbRenderedH = 0;
+let fbPanY = 0;
+let fbPointerId = null;
+let fbMode = null; // 'pan' | 'draw'
+let fbPanStart = null;
+let fbDrawStart = null;
+let fbDraftBox = null;
+let fbDraftRegions = {};
+let fbSelectedLabelId = null;
+
+el.barRegionEditBtn.addEventListener('click', openFbRegionEditor);
+el.fbregionCloseBtn.addEventListener('click', closeFbRegionEditor);
+el.fbregionConfirmBtn.addEventListener('click', confirmFbRegionEditor);
+
+function openFbRegionEditor() {
+  const design = fishingConfig.barDesign || {};
+  if (!design.barImageAssetId) return;
+  AssetDB.getAsset(design.barImageAssetId).then(asset => {
+    if (!asset) return;
+    fbDraftRegions = { zoneRegion: design.zoneRegion || null, gaugeRegion: design.gaugeRegion || null };
+    fbSelectedLabelId = null;
+    fbPanY = 0;
+    el.fbregionImg.src = asset.dataUrl;
+    el.fbregionFullscreen.classList.remove('hidden');
+    renderFbBadges();
+    updateFbHint();
+    const onLoad = () => {
+      fbNaturalW = el.fbregionImg.naturalWidth;
+      fbNaturalH = el.fbregionImg.naturalHeight;
+      fitFbStage();
+      renderFbRegionBoxes();
+    };
+    if (el.fbregionImg.complete && el.fbregionImg.naturalWidth) onLoad();
+    else el.fbregionImg.onload = onLoad;
+  }).catch(() => {});
+}
+function closeFbRegionEditor() {
+  el.fbregionFullscreen.classList.add('hidden');
+}
+async function confirmFbRegionEditor() {
+  fishingConfig = await AssetDB.setFishingConfig({ barDesign: Object.assign({}, fishingConfig.barDesign, fbDraftRegions) });
+  showSaveNote();
+  closeFbRegionEditor();
+  renderBarPreview();
+}
+function fitFbStage() {
+  const stageW = el.fbregionStage.clientWidth;
+  fbScale = stageW / fbNaturalW;
+  fbRenderedH = fbNaturalH * fbScale;
+  el.fbregionCanvas.style.height = fbRenderedH + 'px';
+  clampFbPanY();
+  applyFbPan();
+}
+window.addEventListener('resize', () => { if (fbNaturalW) fitFbStage(); });
+function minFbPanY() {
+  const stageH = el.fbregionStage.clientHeight;
+  return Math.min(0, stageH - fbRenderedH);
+}
+function clampFbPanY() {
+  fbPanY = Math.min(0, Math.max(fbPanY, minFbPanY()));
+}
+function applyFbPan() {
+  el.fbregionCanvas.style.transform = `translateY(${fbPanY}px)`;
+}
+function renderFbBadges() {
+  el.fbregionBadges.innerHTML = FB_REGION_LABELS.map(l => {
+    const done = !!fbDraftRegions[l.id];
+    const active = fbSelectedLabelId === l.id;
+    return `<button type="button" class="fbregion-badge${done ? ' done' : ''}${active ? ' active' : ''}" data-label="${l.id}">${l.label}</button>`;
+  }).join('');
+  el.fbregionBadges.querySelectorAll('.fbregion-badge').forEach(btn => {
+    btn.addEventListener('click', () => {
+      fbSelectedLabelId = fbSelectedLabelId === btn.dataset.label ? null : btn.dataset.label;
+      renderFbBadges();
+      updateFbHint();
+    });
+  });
+}
+function updateFbHint() {
+  el.fbregionHint.textContent = fbSelectedLabelId
+    ? '이미지를 드래그해서 이 라벨이 놓일 자리를 사각형으로 그려주세요.'
+    : '위 배지를 눌러 지정할 대상을 고르세요. 배지를 고르지 않은 채 드래그하면 화면이 위아래로 움직여요.';
+}
+function fbLabelText(id) {
+  const l = FB_REGION_LABELS.find(x => x.id === id);
+  return l ? l.label : id;
+}
+function renderFbRegionBoxes() {
+  el.fbregionBoxes.innerHTML = Object.keys(fbDraftRegions).filter(id => fbDraftRegions[id]).map(id => {
+    const r = fbDraftRegions[id];
+    const isCurrent = id === fbSelectedLabelId;
+    return `<div class="fbregion-box${isCurrent ? ' draft' : ''}" style="left:${r.x * 100}%;top:${r.y * 100}%;width:${r.w * 100}%;height:${r.h * 100}%">
+      <span class="fbregion-box-label">${fbLabelText(id)}</span>
+    </div>`;
+  }).join('');
+}
+function fbStageToCanvas(clientX, clientY) {
+  const rect = el.fbregionStage.getBoundingClientRect();
+  return { canvasX: clientX - rect.left, canvasY: clientY - rect.top - fbPanY };
+}
+el.fbregionStage.addEventListener('pointerdown', (e) => {
+  if (!fbNaturalW || fbPointerId !== null) return;
+  fbPointerId = e.pointerId;
+  el.fbregionStage.setPointerCapture(e.pointerId);
+  if (fbSelectedLabelId) {
+    fbMode = 'draw';
+    fbDrawStart = fbStageToCanvas(e.clientX, e.clientY);
+    fbDraftBox = { x: fbDrawStart.canvasX, y: fbDrawStart.canvasY, w: 0, h: 0 };
+  } else {
+    fbMode = 'pan';
+    fbPanStart = { clientY: e.clientY, startPanY: fbPanY };
+  }
+});
+el.fbregionStage.addEventListener('pointermove', (e) => {
+  if (e.pointerId !== fbPointerId) return;
+  if (fbMode === 'pan') {
+    fbPanY = fbPanStart.startPanY + (e.clientY - fbPanStart.clientY);
+    clampFbPanY();
+    applyFbPan();
+  } else if (fbMode === 'draw') {
+    const cur = fbStageToCanvas(e.clientX, e.clientY);
+    const x0 = Math.min(fbDrawStart.canvasX, cur.canvasX), x1 = Math.max(fbDrawStart.canvasX, cur.canvasX);
+    const y0 = Math.min(fbDrawStart.canvasY, cur.canvasY), y1 = Math.max(fbDrawStart.canvasY, cur.canvasY);
+    fbDraftBox = { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+    renderFbDraftBoxLive();
+  }
+});
+['pointerup', 'pointercancel'].forEach(evt => el.fbregionStage.addEventListener(evt, (e) => {
+  if (e.pointerId !== fbPointerId) return;
+  if (fbMode === 'draw' && fbDraftBox && fbDraftBox.w > 8 && fbDraftBox.h > 8) {
+    const stageW = el.fbregionStage.clientWidth;
+    fbDraftRegions[fbSelectedLabelId] = {
+      x: fbClamp01(fbDraftBox.x / stageW),
+      y: fbClamp01(fbDraftBox.y / fbRenderedH),
+      w: fbClamp01(fbDraftBox.w / stageW),
+      h: fbClamp01(fbDraftBox.h / fbRenderedH),
+    };
+    renderFbBadges();
+    renderFbRegionBoxes();
+  }
+  fbPointerId = null;
+  fbMode = null;
+  fbPanStart = null;
+  fbDrawStart = null;
+  fbDraftBox = null;
+}));
+function fbClamp01(v) { return Math.min(Math.max(v, 0), 1); }
+function renderFbDraftBoxLive() {
+  const existing = document.getElementById('fbLiveBox');
+  const box = existing || document.createElement('div');
+  box.id = 'fbLiveBox';
+  box.className = 'fbregion-box draft';
+  box.style.left = fbDraftBox.x + 'px';
+  box.style.top = fbDraftBox.y + 'px';
+  box.style.width = fbDraftBox.w + 'px';
+  box.style.height = fbDraftBox.h + 'px';
+  box.innerHTML = `<span class="fbregion-box-label">${fbLabelText(fbSelectedLabelId)}</span>`;
+  if (!existing) el.fbregionBoxes.appendChild(box);
 }
 
 /* ===== 세밀영역조절 — 크롭 조정 모달 =====
@@ -1068,6 +1457,8 @@ async function init() {
   el.zoneSizeValue.textContent = (design.zoneSizePct || 28) + '%';
   renderBarPreview();
   renderFishIconSlot();
+  renderBarImageSlot();
+  renderZoneImageSlot();
   renderFramesTab('castingFrames', el.castFrames, el.castFileInput, el.castPreview, el.castPreviewLabel);
   renderFramesTab('reelingFrames', el.reelFrames, el.reelFileInput, el.reelPreview, el.reelPreviewLabel);
   renderFishTab();
