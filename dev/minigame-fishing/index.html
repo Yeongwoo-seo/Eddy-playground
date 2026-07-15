@@ -105,9 +105,26 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .frame-add-btn:disabled{opacity:.4;cursor:default}
 .frame-add-btn.hidden{display:none}
 .frame-preview-row{display:flex;align-items:center;gap:12px;margin-bottom:8px}
-.frame-preview{width:72px;height:72px;border-radius:12px;background:var(--surface-1);border:1px solid var(--divider);display:flex;align-items:center;justify-content:center;overflow:hidden}
-.frame-preview img{width:100%;height:100%;object-fit:cover}
+.frame-preview{width:96px;height:96px;border-radius:12px;background:var(--surface-1);border:1px solid var(--divider);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.frame-preview img{width:100%;height:100%;object-fit:cover;image-rendering:pixelated}
 .frame-preview-label{font-family:var(--mono);font-size:11px;color:var(--text-muted)}
+
+/* ===== 프레임 재생 속도 타임라인 — 워드 표 칸 너비 드래그와 같은 방식.
+   각 구간(.frame-timeline-seg) 너비 = 그 프레임 재생 시간 비율. 구간 사이의
+   손잡이(.frame-timeline-handle)를 드래그하면 그 두 구간끼리만 시간을
+   주고받는다(표 칸 경계처럼 — 전체 길이는 그대로, 옆 칸이 줄어든 만큼
+   늘어난다). 전체 길이 자체를 바꾸고 싶으면 아래 숫자 입력에 초 단위로
+   직접 써서 전체 프레임에 비율대로 스케일한다. */
+.frame-timeline{position:relative;width:100%;height:40px;border-radius:8px;overflow:hidden;background:var(--surface-1);border:1px solid var(--divider);display:flex}
+.frame-timeline-seg{position:relative;height:100%;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:10px;color:var(--text-secondary);overflow:hidden;flex-shrink:0;box-sizing:border-box;border-right:1px solid var(--divider)}
+.frame-timeline-seg:last-child{border-right:none}
+.frame-timeline-handle{position:absolute;top:0;bottom:0;width:16px;margin-left:-8px;cursor:ew-resize;z-index:2;display:flex;align-items:center;justify-content:center;touch-action:none;-webkit-user-select:none;user-select:none}
+.frame-timeline-handle::after{content:'';width:2px;height:60%;background:var(--cyan);border-radius:1px}
+.frame-timeline-handle:active::after{background:var(--text-primary)}
+.timeline-total-row{display:flex;align-items:center;gap:8px;margin-top:10px}
+.timeline-total-label{font-size:13.5px;color:var(--text-secondary)}
+.timeline-total-row input[type=number]{width:70px;background:var(--surface-1);border:1px solid var(--divider);border-radius:8px;padding:8px;color:var(--text-primary);font-family:var(--mono);font-size:13px}
+.timeline-total-unit{font-family:var(--mono);font-size:12px;color:var(--text-muted)}
 
 /* ===== 낚시바 디자인 ===== */
 .color-row{display:flex;align-items:center;gap:12px;margin-bottom:12px}
@@ -227,13 +244,16 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
        패턴(renderCastTab/openCastingFrameCropAdjuster). 올리기 모션은 여전히
        프레임을 한 장씩 올리는 예전 방식(renderFramesTab)을 그대로 쓴다. ===== -->
   <div class="tab-panel hidden" id="panelCast">
-    <div class="frame-preview-row">
-      <div class="frame-preview" id="castPreview"></div>
-      <div class="frame-preview-label" id="castPreviewLabel">프레임 없음 — 재생 미리보기</div>
+    <div class="option-group">
+      <div class="option-label">애니메이션 미리보기</div>
+      <div class="frame-preview-row">
+        <div class="frame-preview" id="castPreview"></div>
+        <div class="frame-preview-label" id="castPreviewLabel">프레임 없음 — 재생 미리보기</div>
+      </div>
     </div>
     <div class="option-group">
       <div class="option-label">캐스팅 모션 시트</div>
-      <div class="option-desc">404×64px 투명 PNG · 가로 6칸 · 칸 64×64px · 칸 간격 4px · 바깥 여백 없음. 업로드하면 6프레임이 왼쪽부터 순서대로 자동 배정돼요. 시트가 규격에 딱 맞지 않으면 프레임이 어긋나 보일 수 있는데, 아래 프레임을 탭하면 그 프레임만 따로 세밀영역조절할 수 있어요.</div>
+      <div class="option-desc">404×64px 투명 PNG · 가로 6칸 · 칸 64×64px · 칸 간격 4px · 바깥 여백 없음. 업로드하면 6프레임이 왼쪽부터 순서대로 자동 배정돼요. 시트가 규격에 딱 맞지 않으면 프레임이 어긋나 보일 수 있는데, 아래 프레임을 탭하면 그 프레임만 따로 세밀영역조절할 수 있어요. 한 프레임의 크롭 크기를 바꾸면 나머지 프레임도 같은 크기로 맞춰져요.</div>
       <div class="fish-sheet-frame cast-sheet-frame" id="castSheetFrame">
         <div class="fish-sheet-empty" id="castSheetEmpty">아직 업로드된 시트가 없어요<br>업로드하기 전까진 간단한 도형으로 대체돼요</div>
       </div>
@@ -244,6 +264,17 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
       <input type="file" id="castSheetFileInput" accept="image/png">
     </div>
     <div class="frame-strip" id="castFrameGrid"></div>
+
+    <div class="option-group">
+      <div class="option-label">프레임 재생 속도</div>
+      <div class="option-desc">구간 너비를 드래그해서(표 칸 너비 늘리듯이) 그 프레임이 얼마나 오래 보일지 조절하세요. 전체 길이는 따로 초 단위로 설정할 수 있어요 — 바꾸면 각 프레임 길이가 비율대로 늘어나거나 줄어들어요.</div>
+      <div class="frame-timeline" id="castTimeline"></div>
+      <div class="timeline-total-row">
+        <span class="timeline-total-label">전체 길이</span>
+        <input type="number" id="castTotalDurationInput" min="0.1" max="10" step="0.05">
+        <span class="timeline-total-unit">초</span>
+      </div>
+    </div>
 
     <div class="prompt-block">
       <div class="option-label">AI 프레임 생성 프롬프트</div>
@@ -472,6 +503,8 @@ const el = {
   castSheetRemoveBtn: document.getElementById('castSheetRemoveBtn'),
   castSheetFileInput: document.getElementById('castSheetFileInput'),
   castFrameGrid: document.getElementById('castFrameGrid'),
+  castTimeline: document.getElementById('castTimeline'),
+  castTotalDurationInput: document.getElementById('castTotalDurationInput'),
   reelFrames: document.getElementById('reelFrames'),
   reelAddBtn: document.getElementById('reelAddBtn'),
   reelFileInput: document.getElementById('reelFileInput'),
@@ -535,6 +568,9 @@ el.tabsRow.querySelectorAll('.tab-btn').forEach(btn => {
 function selectTab(tab) {
   el.tabsRow.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
   Object.entries(PANELS).forEach(([key, panelEl]) => panelEl.classList.toggle('hidden', key !== tab));
+  // 캐스팅 탭이 hidden(display:none)인 동안 그려진 타임라인은 clientWidth가
+  // 0이라 폭 계산이 어긋난다 — 실제로 보이는 시점에 한 번 더 그려서 맞춘다.
+  if (tab === 'cast') renderCastTimeline();
 }
 
 /* ===== 낚시게임 로직 탭 ===== */
@@ -645,9 +681,14 @@ el.castPromptCopyBtn.addEventListener('click', () => copyToClipboard(el.castProm
 el.reelPromptCopyBtn.addEventListener('click', () => copyToClipboard(el.reelPromptText, el.reelPromptCopyStatus));
 
 /* ===== 캐스팅/올리기 모션 탭 — 프레임 업로더 (공용) ===== */
-let animTimer = null;
-function startPreviewLoop(previewEl, labelEl, frames) {
-  if (animTimer) clearInterval(animTimer);
+// 프레임당 재생 시간이 다 다를 수 있어(카운팅 타임라인) setInterval 한 번이
+// 아니라 setTimeout 체인으로 돈다. 타이머를 previewEl 자신에 매달아두는 게
+// 중요하다 — 예전엔 모듈 전역 변수 하나(animTimer)를 캐스팅/올리기 미리보기가
+// 같이 썼는데, init()이 둘 다 시작하면서 나중에 끝난 쪽이 clearInterval로
+// 먼저 시작된 쪽 타이머를 지워버려 그쪽 미리보기가 첫 프레임에서 멈춰버리는
+// 버그가 있었다("프레임 지정해도 뭔일 없는데?").
+function startPreviewLoop(previewEl, labelEl, frames, durations) {
+  if (previewEl._animTimer) { clearTimeout(previewEl._animTimer); previewEl._animTimer = null; }
   if (!frames.length) { previewEl.innerHTML = ''; labelEl.textContent = '프레임 없음 — 재생 미리보기'; return; }
   labelEl.textContent = `${frames.length}프레임 재생 중`;
   let i = 0;
@@ -655,11 +696,13 @@ function startPreviewLoop(previewEl, labelEl, frames) {
   previewEl.innerHTML = '';
   previewEl.appendChild(img);
   function tick() {
-    img.src = frames[i % frames.length].dataUrl;
+    const frameIndex = i % frames.length;
+    img.src = frames[frameIndex].dataUrl;
+    const ms = (durations && durations[frameIndex]) || 120;
     i++;
+    previewEl._animTimer = setTimeout(tick, ms);
   }
   tick();
-  animTimer = setInterval(tick, 120);
 }
 
 // saveNote는 평소엔 "저장됐어요" 고정 텍스트라 배경 제거 진행 상태를 잠깐
@@ -790,7 +833,7 @@ async function renderCastPreviewLoop(sheetAsset) {
   img.src = sheetAsset.dataUrl;
   await new Promise(resolve => { if (img.complete && img.naturalWidth) resolve(); else img.onload = resolve; });
   const urls = buildCastingFrameDataUrls(img, fishingConfig.castingFrameOverrides, 64);
-  startPreviewLoop(el.castPreview, el.castPreviewLabel, urls.map(u => ({ dataUrl: u })));
+  startPreviewLoop(el.castPreview, el.castPreviewLabel, urls.map(u => ({ dataUrl: u })), getCastFrameDurations());
 }
 
 async function renderCastTab() {
@@ -798,6 +841,7 @@ async function renderCastTab() {
   const sheetDims = sheetAsset ? await loadImageDimensions(sheetAsset.dataUrl) : null;
   renderCastFrameGrid(sheetAsset, sheetDims);
   await renderCastPreviewLoop(sheetAsset);
+  renderCastTimeline();
 }
 
 function openCastingFrameCropAdjuster(frameIndex, sheetAsset, sheetDims) {
@@ -807,11 +851,137 @@ function openCastingFrameCropAdjuster(frameIndex, sheetAsset, sheetDims) {
 }
 // 물고기 세밀영역조절(confirmFishSpeciesCrop)과 마찬가지로 시트 자체는
 // 안 바뀐다 — 이 프레임이 시트의 어느 영역을 잘라 쓸지 좌표만 저장한다.
+// 캐스팅 프레임 6장은 전부 같은 캐릭터의 동작 연속이라, 프레임마다 크롭
+// 크기(size)가 다르면 재생했을 때 캐릭터가 커졌다 작아졌다 하는 것처럼
+// 보인다 — 한 프레임의 크기를 바꾸면 나머지 프레임도 같은 size로 맞춘다.
+// 위치(cx/cy)는 프레임마다 다른 포즈라 각자 그대로 둔다.
 async function confirmCastingFrameCrop(rect, frameIndex) {
-  const overrides = Object.assign({}, fishingConfig.castingFrameOverrides, { [frameIndex]: rect });
+  const overrides = {};
+  for (let i = 0; i < CASTING_SHEET_LAYOUT.columns; i++) {
+    if (i === frameIndex) {
+      overrides[i] = rect;
+    } else {
+      const existing = (fishingConfig.castingFrameOverrides || {})[i] || getCastingDefaultCropRect(i);
+      overrides[i] = Object.assign({}, existing, { size: rect.size });
+    }
+  }
   fishingConfig = await AssetDB.setFishingConfig({ castingFrameOverrides: overrides });
   renderCastTab();
 }
+
+/* ===== 프레임 재생 속도 타임라인 ===== */
+const CAST_FRAME_MIN_MS = 20;
+const CAST_FRAME_DEFAULT_MS = 90;
+// 드래그 도중에만 채워지는 로컬 임시값 — 매 pointermove마다 서버에 저장하면
+// 너무 잦은 쓰기라, 드래그가 끝날 때(pointerup)만 실제로 저장한다.
+let castFrameDurationsDraft = null;
+let castTimelineSegEls = [];
+let castTimelineHandleEls = [];
+
+function getCastFrameDurations() {
+  if (castFrameDurationsDraft) return castFrameDurationsDraft.slice();
+  const stored = fishingConfig.castingFrameDurations;
+  const out = [];
+  for (let i = 0; i < CASTING_SHEET_LAYOUT.columns; i++) {
+    out.push((stored && typeof stored[i] === 'number') ? stored[i] : CAST_FRAME_DEFAULT_MS);
+  }
+  return out;
+}
+
+function renderCastTimeline() {
+  const durations = getCastFrameDurations();
+  const total = durations.reduce((a, b) => a + b, 0);
+  const containerWidth = el.castTimeline.clientWidth || 300;
+  el.castTimeline.innerHTML = '';
+  castTimelineSegEls = [];
+  castTimelineHandleEls = [];
+  let cumX = 0;
+  durations.forEach((d, i) => {
+    const w = Math.max(6, (d / total) * containerWidth);
+    const seg = document.createElement('div');
+    seg.className = 'frame-timeline-seg';
+    seg.style.width = w + 'px';
+    seg.textContent = String(i + 1);
+    el.castTimeline.appendChild(seg);
+    castTimelineSegEls.push(seg);
+    cumX += w;
+    if (i < durations.length - 1) {
+      const handle = document.createElement('div');
+      handle.className = 'frame-timeline-handle';
+      handle.style.left = cumX + 'px';
+      el.castTimeline.appendChild(handle);
+      castTimelineHandleEls.push(handle);
+      wireCastTimelineHandle(handle, i);
+    }
+  });
+  el.castTotalDurationInput.value = (total / 1000).toFixed(2);
+}
+
+// 드래그 중에는 DOM을 다시 만들지 않고 이미 있는 구간/손잡이의 width·left만
+// 갱신한다 — pointermove마다 innerHTML을 통째로 새로 그리면 버벅인다.
+function updateCastTimelineWidths() {
+  const durations = getCastFrameDurations();
+  const total = durations.reduce((a, b) => a + b, 0);
+  const containerWidth = el.castTimeline.clientWidth || 300;
+  let cumX = 0;
+  durations.forEach((d, i) => {
+    const w = Math.max(6, (d / total) * containerWidth);
+    if (castTimelineSegEls[i]) castTimelineSegEls[i].style.width = w + 'px';
+    cumX += w;
+    if (castTimelineHandleEls[i]) castTimelineHandleEls[i].style.left = cumX + 'px';
+  });
+  el.castTotalDurationInput.value = (total / 1000).toFixed(2);
+}
+
+// leftIndex/leftIndex+1 두 구간끼리만 시간을 주고받는다(표 칸 경계 드래그와
+// 같은 느낌) — 그 둘의 합은 드래그 도중 항상 그대로라 전체 길이는 안 바뀐다.
+function wireCastTimelineHandle(handle, leftIndex) {
+  let dragging = false;
+  let startX = 0;
+  let startDurations = null;
+  handle.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    dragging = true;
+    handle.setPointerCapture(e.pointerId);
+    startX = e.clientX;
+    startDurations = getCastFrameDurations();
+    castFrameDurationsDraft = startDurations.slice();
+  });
+  handle.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    const containerWidth = el.castTimeline.clientWidth || 300;
+    const pairTotal = startDurations[leftIndex] + startDurations[leftIndex + 1];
+    const total = startDurations.reduce((a, b) => a + b, 0);
+    const deltaPx = e.clientX - startX;
+    const deltaMs = (deltaPx / containerWidth) * total;
+    const newLeft = Math.max(CAST_FRAME_MIN_MS, Math.min(pairTotal - CAST_FRAME_MIN_MS, startDurations[leftIndex] + deltaMs));
+    castFrameDurationsDraft[leftIndex] = newLeft;
+    castFrameDurationsDraft[leftIndex + 1] = pairTotal - newLeft;
+    updateCastTimelineWidths();
+  });
+  ['pointerup', 'pointercancel'].forEach(evt => handle.addEventListener(evt, async () => {
+    if (!dragging) return;
+    dragging = false;
+    const finalDurations = castFrameDurationsDraft;
+    castFrameDurationsDraft = null;
+    fishingConfig = await AssetDB.setFishingConfig({ castingFrameDurations: finalDurations });
+    showSaveNote();
+    renderCastTimeline();
+    renderCastPreviewLoop(await AssetDB.getAsset(fishingConfig.castingSheetAssetId).catch(() => null));
+  }));
+}
+
+el.castTotalDurationInput.addEventListener('change', async () => {
+  const durations = getCastFrameDurations();
+  const oldTotal = durations.reduce((a, b) => a + b, 0);
+  const newTotalMs = Math.max(CAST_FRAME_MIN_MS * CASTING_SHEET_LAYOUT.columns, Number(el.castTotalDurationInput.value) * 1000 || oldTotal);
+  const scale = newTotalMs / oldTotal;
+  const scaled = durations.map(d => Math.max(CAST_FRAME_MIN_MS, d * scale));
+  fishingConfig = await AssetDB.setFishingConfig({ castingFrameDurations: scaled });
+  showSaveNote();
+  renderCastTimeline();
+  renderCastPreviewLoop(await AssetDB.getAsset(fishingConfig.castingSheetAssetId).catch(() => null));
+});
 
 el.castSheetUploadBtn.addEventListener('click', () => el.castSheetFileInput.click());
 el.castSheetFileInput.addEventListener('change', async () => {

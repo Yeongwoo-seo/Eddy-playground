@@ -239,6 +239,7 @@ const el = {
 };
 
 let castFrameUrls = [];
+let castFrameDurations = null; // per-frame ms, dev/minigame-fishing/index.html 재생 타임라인에서 설정
 let reelFrameUrls = [];
 let idleFrameUrl = null;
 let fishSheetUrl = null;
@@ -293,6 +294,7 @@ async function loadConfig() {
   } else {
     castFrameUrls = [];
   }
+  castFrameDurations = (cfg.castingFrameDurations && cfg.castingFrameDurations.length) ? cfg.castingFrameDurations : null;
   const fishSheetAsset = cfg.fishSheetAssetId ? byId.get(cfg.fishSheetAssetId) : null;
   fishSheetUrl = fishSheetAsset ? fishSheetAsset.dataUrl : null;
   fishIconOverrides = cfg.fishIconOverrides || {};
@@ -362,19 +364,22 @@ async function loadConfig() {
   }
 }
 
-/* ===== 캐스팅/올리기 프레임 순차 재생 ===== */
+/* ===== 캐스팅/올리기 프레임 순차 재생 =====
+   frameMs는 고정 ms 숫자(올리기) 또는 프레임별 ms 배열(캐스팅,
+   castFrameDurations — 설정 화면 재생 타임라인에서 조정한 값)을 받는다. */
 function playFrameSequence(urls, frameMs) {
   return new Promise(resolve => {
     if (!urls.length) { resolve(); return; }
-    let i = 0;
     el.charImg.classList.remove('hidden');
     el.charFallback.classList.add('hidden');
-    const timer = setInterval(() => {
+    let i = 0;
+    function showAndScheduleNext() {
       el.charImg.src = urls[i];
+      const ms = Array.isArray(frameMs) ? (frameMs[i] || 90) : frameMs;
       i++;
-      if (i >= urls.length) { clearInterval(timer); resolve(); }
-    }, frameMs);
-    el.charImg.src = urls[0];
+      setTimeout(i >= urls.length ? resolve : showAndScheduleNext, ms);
+    }
+    showAndScheduleNext();
   });
 }
 
@@ -385,7 +390,7 @@ async function startCast() {
   el.castBtn.classList.add('hidden');
   el.statusLine.textContent = '캐스팅...';
   if (castFrameUrls.length) {
-    await playFrameSequence(castFrameUrls, 90);
+    await playFrameSequence(castFrameUrls, castFrameDurations || 90);
   } else {
     el.charFallback.style.transition = 'transform .35s ease';
     el.charFallback.style.transform = 'rotate(-25deg)';
