@@ -67,12 +67,18 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .fishbar-fish img{width:26px;height:26px;object-fit:contain;image-rendering:pixelated}
 .progress-track{position:relative;width:14px;height:230px;border-radius:8px;background:rgba(255,255,255,.25);overflow:hidden}
 .progress-track.hidden{display:none}
-.progress-fill{position:absolute;left:0;right:0;bottom:0;background:var(--green);border-radius:8px 8px 0 0}
+/* background도 .fishbar-gauge와 마찬가지로 매 프레임 JS가 갈아끼운다 —
+   기본값은 30%(기본 시작 게이지) 색으로 맞춰둔 것뿐. */
+.progress-fill{position:absolute;left:0;right:0;bottom:0;background:rgb(151,126,83);border-radius:8px 8px 0 0}
 /* 게이지 오버레이 — 0%(빨강)~100%(연두) 세로 그라데이션을 항상 깔아두고,
    위쪽부터 (100-progress)%만큼 어두운 마스크로 덮어 아래쪽 progress%만
    드러낸다(기존 progress-fill의 "bottom 기준 height%" 채우기와 같은
    느낌을 그라데이션 위에서 낸다). */
-.fishbar-gauge{position:absolute;border-radius:4px;overflow:hidden;background:linear-gradient(to top,var(--signal-red),var(--green))}
+/* 배경색은 매 프레임 JS(renderBarFrame/gaugeColorForProgress)가 현재
+   진행도에 맞는 단색으로 갈아끼운다 — 여기 background는 그 값이 아직
+   반영되기 전(첫 프레임) 잠깐 보일 수 있는 기본값일 뿐이라 30%(기본
+   시작 게이지) 색으로 맞춰둔다. */
+.fishbar-gauge{position:absolute;border-radius:4px;overflow:hidden;background:rgb(151,126,83)}
 .fishbar-gauge.hidden{display:none}
 .fishbar-gauge-mask{position:absolute;left:0;right:0;top:0;background:rgba(5,7,10,.82)}
 
@@ -187,6 +193,22 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
 function vibrate(pattern) { if (navigator.vibrate) navigator.vibrate(pattern); }
 function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
 
+// 게이지 색 — 고정 그라데이션(항상 빨강~연두 전체 범위를 깔아두고 마스크로
+// 일부만 드러내는 방식) 대신, "지금 진행도 값"을 0%(빨강)~70%(연두) 사이에서
+// 내분해 하나의 단색으로 계산한다. 예: 35%면 주황/노랑 계열, 70% 이상은
+// 그 이상 색이 안 바뀌고 연두로 고정. --signal-red(#D94141)/--green(#3ECF6B)
+// CSS 변수와 같은 값을 RGB로 하드코딩해서 매 프레임 보간한다.
+const GAUGE_COLOR_STOPS = { red: [217, 65, 65], green: [62, 207, 107], capPct: 70 };
+function gaugeColorForProgress(pct) {
+  const t = clamp(pct, 0, GAUGE_COLOR_STOPS.capPct) / GAUGE_COLOR_STOPS.capPct;
+  const [r0, g0, b0] = GAUGE_COLOR_STOPS.red;
+  const [r1, g1, b1] = GAUGE_COLOR_STOPS.green;
+  const r = Math.round(r0 + (r1 - r0) * t);
+  const g = Math.round(g0 + (g1 - g0) * t);
+  const b = Math.round(b0 + (b1 - b0) * t);
+  return `rgb(${r},${g},${b})`;
+}
+
 const el = {
   frame: document.getElementById('frame'),
   statusLine: document.getElementById('statusLine'),
@@ -238,7 +260,7 @@ let raf = null;
 let lastT = 0;
 let fish = { y: 50, vy: 0, targetY: 50, pickTimer: 0 };
 let zone = { y: 36, vel: 0 };
-let progress = 45;
+let progress = 30; // 기본 시작 게이지 30%
 
 /* ===== 설정 로드 (AssetDB) — 실패해도 게임은 도형 폴백으로 계속 동작한다. ===== */
 async function loadConfig() {
@@ -428,7 +450,7 @@ function startCatching() {
   el.fishbarPanel.classList.remove('hidden');
   fish = { y: 50, vy: DIFF_TUNING[DIFFICULTY].fishSpeedMult * 34, targetY: 50, pickTimer: 0 };
   zone = { y: clamp(50 - zoneSizePct / 2, 0, 100 - zoneSizePct), vel: 0 };
-  progress = 45;
+  progress = 30;
   holding = false;
   lastT = performance.now();
   raf = requestAnimationFrame(catchTick);
@@ -484,10 +506,13 @@ function renderBarFrame() {
     el.fishbarFish.style.top = fish.y + '%';
     el.fishbarZone.style.top = zone.y + '%';
   }
+  const gaugeColor = gaugeColorForProgress(progress);
   if (gaugeTrack) {
     el.fishbarGaugeMask.style.height = (100 - progress) + '%';
+    el.fishbarGauge.style.background = gaugeColor;
   } else {
     el.progressFill.style.height = progress + '%';
+    el.progressFill.style.background = gaugeColor;
   }
 }
 
