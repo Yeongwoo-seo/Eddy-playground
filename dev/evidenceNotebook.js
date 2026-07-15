@@ -1,0 +1,593 @@
+/* OPERATION MK DEV — 증거수첩(수사 노트) 전체화면 UI (증거 DB 노트 v1.1).
+
+   기존 증거 정의(dialogueData.js/interactionDefs.js/미니게임의 addEvidence,
+   58곳)와 CaseEntryModel(그룹 병합·관련도·게이트 감사)은 절대 건드리지
+   않는다 — 이 파일은 그 위에 얹는 순수 표시 계층 하나뿐이다. 데이터는
+   CaseFileState.getCaseEntries()에서 그대로 받고, 책갈피 분류는
+   CaseEntryModel.getNotebookSection() 한 곳(기존 5개 category → 증인/증거/
+   사진 3개 책갈피)만 쓴다. 기존 제시 시트(CaseEntryUI.renderPresentSheetHtml,
+   관련도 스코어링·게이트 안전성 다 검증된 코드)는 유지한 채, 이 노트는
+   "펼쳐서 한 장씩 읽는" 대안 프레젠테이션 + 증거 제시(present) 모드를
+   추가로 제공한다. 제출 판정 자체는 여전히 호출부가 넘겨주는 콜백
+   (game/explore의 player.presentEvidence)이 하므로 이 파일은 정답/오답을
+   전혀 모른다.
+
+   배경 아트: dev/upload/evidence-notebook/index.html에서 올린 배경 이미지 1장
+   + 5개 데이터 영역(코드/제목/사진/설명/발견위치, AssetDB.
+   getEvidenceNotebookConfig)이 있으면 그걸 페이지 배경으로 쓰고, 없으면
+   같은 비율의 CSS 목업 페이지(가죽 스프링노트 느낌)로 대체한다 — 아트가
+   없어도 기능은 항상 동작해야 한다는 원칙(§20) 그대로. */
+
+const EvidenceNotebook = (function () {
+  const SECTIONS = [
+    { id: 'witness', label: '증인', icon: '👤', tint: '#8a2332' },
+    { id: 'evidence', label: '증거', icon: '🔍', tint: '#1f3a6e' },
+    { id: 'photo', label: '사진', icon: '📷', tint: '#1f5c3a' },
+  ];
+
+  let mounted = false;
+  let el = {};
+  let state = {
+    isOpen: false,
+    mode: 'browse', // 'browse' | 'present'
+    npcId: null,
+    section: 'evidence',
+    entriesBySection: { witness: [], evidence: [], photo: [] },
+    index: 0,
+    isIndexOpen: false,
+    zoomEntry: null,
+    onPresent: null,
+    onClose: null,
+  };
+  const lastViewedBySection = { witness: 0, evidence: 0, photo: 0 };
+
+  let notebookConfig = null; // { imageAssetId, regions }
+  let notebookBgUrl = null;
+  let evidencePhotoAssetIds = {}; // entryId -> imageAssetId (evidence-photos catalog)
+  let assetUrlCache = {}; // assetId -> dataUrl
+
+  function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  function currentEntries() { return state.entriesBySection[state.section] || []; }
+  function currentEntry() { return currentEntries()[state.index] || null; }
+  function personName(npcId) {
+    if (!npcId || typeof CaseFileState === 'undefined') return npcId || '';
+    const p = CaseFileState.getPersons().find(p => p.id === npcId);
+    return p ? p.name : npcId;
+  }
+
+  /* ===== 자산 로딩 (실패해도 노트가 열리는 데는 지장 없어야 함) ===== */
+  async function ensureNotebookConfig() {
+    if (typeof AssetDB === 'undefined' || notebookConfig) return;
+    try {
+      notebookConfig = await AssetDB.getEvidenceNotebookConfig();
+      if (notebookConfig.imageAssetId) {
+        const asset = await AssetDB.getAsset(notebookConfig.imageAssetId);
+        if (asset && asset.dataUrl) { notebookBgUrl = asset.dataUrl; assetUrlCache[asset.id] = asset.dataUrl; }
+      }
+    } catch (e) { notebookConfig = notebookConfig || { imageAssetId: null, regions: {} }; }
+  }
+  async function ensureEvidencePhotoCatalog() {
+    if (typeof AssetDB === 'undefined') return;
+    try {
+      const photos = await AssetDB.getEvidencePhotos();
+      evidencePhotoAssetIds = {};
+      Object.keys(photos).forEach(id => { if (photos[id] && photos[id].imageAssetId) evidencePhotoAssetIds[id] = photos[id].imageAssetId; });
+    } catch (e) { /* offline — pages fall back to icon placeholders */ }
+  }
+  async function hydratePagePhoto(entry) {
+    if (!entry || typeof AssetDB === 'undefined') return false;
+    const assetId = entry.detailImageAssetId || entry.imageAssetId || evidencePhotoAssetIds[entry.id];
+    if (!assetId || assetUrlCache[assetId]) return false;
+    try {
+      const asset = await AssetDB.getAsset(assetId);
+      if (asset && asset.dataUrl) { assetUrlCache[assetId] = asset.dataUrl; return true; }
+    } catch (e) {}
+    return false;
+  }
+  function photoUrlFor(entry) {
+    const assetId = entry && (entry.detailImageAssetId || entry.imageAssetId || evidencePhotoAssetIds[entry.id]);
+    return assetId ? (assetUrlCache[assetId] || null) : null;
+  }
+
+  /* ===== 열기 / 닫기 ===== */
+  // opts: { mode:'browse'|'present', npcId, focusEntryId, onPresent(entryId), onClose() }
+  async function open(opts) {
+    opts = opts || {};
+    ensureMounted();
+    state.mode = opts.mode === 'present' ? 'present' : 'browse';
+    state.npcId = opts.npcId || null;
+    state.onPresent = typeof opts.onPresent === 'function' ? opts.onPresent : null;
+    state.onClose = typeof opts.onClose === 'function' ? opts.onClose : null;
+    state.isIndexOpen = false;
+    state.zoomEntry = null;
+
+    const all = (typeof CaseFileState !== 'undefined' ? CaseFileState.getCaseEntries() : [])
+      .filter(e => e.kind === 'evidence' || e.kind === 'testimony');
+    const pool = state.mode === 'present'
+      ? all.filter(e => e.presentable && e.status !== 'superseded' && e.status !== 'invalid')
+      : all;
+    const bySection = { witness: [], evidence: [], photo: [] };
+    pool.forEach(e => { bySection[CaseEntryModel.getNotebookSection(e)].push(e); });
+    Object.keys(bySection).forEach(k => bySection[k].sort((a, b) => (a.discoveredAt || 0) - (b.discoveredAt || 0)));
+    state.entriesBySection = bySection;
+
+    let startSection = state.section;
+    if (opts.focusEntryId) {
+      const found = SECTIONS.map(s => s.id).find(sec => bySection[sec].some(e => e.id === opts.focusEntryId));
+      if (found) startSection = found;
+    } else if (!bySection[startSection] || !bySection[startSection].length) {
+      startSection = SECTIONS.map(s => s.id).find(sec => bySection[sec].length) || 'evidence';
+    }
+    state.section = startSection;
+    const list = bySection[startSection] || [];
+    if (opts.focusEntryId) {
+      const idx = list.findIndex(e => e.id === opts.focusEntryId);
+      state.index = idx > -1 ? idx : 0;
+    } else {
+      state.index = Math.min(lastViewedBySection[startSection] || 0, Math.max(0, list.length - 1));
+    }
+
+    state.isOpen = true;
+    render();
+    el.overlay.classList.remove('hidden');
+    requestAnimationFrame(() => el.overlay.classList.add('show'));
+
+    // Best-effort background asset load — never blocks the page from being usable.
+    ensureNotebookConfig().then(() => { if (state.isOpen) render(); });
+    ensureEvidencePhotoCatalog().then(() => { if (state.isOpen) hydrateAndRerender(); });
+  }
+
+  function close() {
+    state.isOpen = false;
+    el.overlay.classList.remove('show');
+    setTimeout(() => { if (!state.isOpen) el.overlay.classList.add('hidden'); }, 220);
+    if (state.onClose) state.onClose();
+  }
+
+  async function hydrateAndRerender() {
+    const entry = currentEntry();
+    if (!entry) return;
+    const changed = await hydratePagePhoto(entry);
+    if (changed && state.isOpen) render();
+  }
+
+  /* ===== 네비게이션 ===== */
+  function switchSection(sectionId) {
+    if (state.section === sectionId) return;
+    state.section = sectionId;
+    const list = currentEntries();
+    state.index = Math.min(lastViewedBySection[sectionId] || 0, Math.max(0, list.length - 1));
+    state.isIndexOpen = false;
+    render();
+  }
+  function goPrev() {
+    if (state.index <= 0) return;
+    state.index -= 1;
+    afterNav();
+  }
+  function goNext() {
+    if (state.index >= currentEntries().length - 1) return;
+    state.index += 1;
+    afterNav();
+  }
+  function jumpTo(entryId) {
+    const idx = currentEntries().findIndex(e => e.id === entryId);
+    if (idx < 0) return;
+    state.index = idx;
+    state.isIndexOpen = false;
+    afterNav();
+  }
+  function afterNav() {
+    lastViewedBySection[state.section] = state.index;
+    const entry = currentEntry();
+    if (entry && entry.status === 'new' && typeof CaseFileState !== 'undefined') {
+      CaseFileState.markEvidenceReviewed(entry.id);
+    }
+    render();
+    hydrateAndRerender();
+  }
+
+  /* ===== 렌더 ===== */
+  function templateFor(entry) {
+    if (entry.kind === 'testimony') return 'statement';
+    if (entry.subtype === 'photo' || entry.subtype === 'physical') return 'image';
+    return 'document';
+  }
+  function fallbackIconFor(entry) { return entry.fallbackIcon || (typeof CaseEntryModel !== 'undefined' ? CaseEntryModel.caseEntryFallbackIcon(entry.kind, entry.subtype) : '📄'); }
+
+  function render() {
+    if (!state.isOpen) return;
+    const section = SECTIONS.find(s => s.id === state.section) || SECTIONS[1];
+    el.overlay.style.setProperty('--evn-tint', section.tint);
+    el.tabbar.innerHTML = SECTIONS.map(s => `
+      <button type="button" class="evn-tab evn-tab-${s.id}${s.id === state.section ? ' evn-tab-active' : ''}" data-evn-tab="${s.id}" style="${s.id === state.section ? `--evn-tab-tint:${s.tint}` : ''}">
+        <span class="evn-tab-icon">${s.icon}</span><span class="evn-tab-label">${s.label}</span>
+      </button>
+    `).join('');
+
+    const list = currentEntries();
+    const entry = currentEntry();
+    el.page.innerHTML = entry ? renderPageHtml(entry, list.length) : renderEmptyPageHtml(section.label);
+
+    el.prevBtn.disabled = state.index <= 0;
+    el.nextBtn.disabled = state.index >= list.length - 1;
+    el.submitBtn.classList.toggle('hidden', state.mode !== 'present' || !entry);
+    el.npcTag.classList.toggle('hidden', state.mode !== 'present');
+    if (state.mode === 'present' && state.npcId) {
+      el.npcTag.textContent = `제시 대상 · ${personName(state.npcId)}`;
+    } else if (state.mode === 'present') {
+      el.npcTag.textContent = '증거 제시';
+    }
+
+    el.indexPanel.classList.toggle('hidden', !state.isIndexOpen);
+    if (state.isIndexOpen) el.indexList.innerHTML = renderIndexHtml(list);
+
+    el.zoomPanel.classList.toggle('hidden', !state.zoomEntry);
+    if (state.zoomEntry) renderZoomHtml(state.zoomEntry);
+
+    bindPageEvents();
+  }
+
+  function renderEmptyPageHtml(sectionLabel) {
+    return `<div class="evn-sheet evn-sheet-empty">
+      <div class="evn-empty-icon">📓</div>
+      <div class="evn-empty-text">아직 확보한 ${escapeHtml(sectionLabel)} 항목이 없습니다.</div>
+    </div>`;
+  }
+
+  function renderIndexHtml(list) {
+    if (!list.length) return '<div class="evn-index-empty">항목이 없습니다.</div>';
+    return list.map((e, i) => `
+      <button type="button" class="evn-index-row${i === state.index ? ' evn-index-row-active' : ''}" data-evn-jump="${e.id}">
+        <span class="evn-index-code">${escapeHtml(e.code || '')}</span>
+        <span class="evn-index-title">${escapeHtml(e.title)}</span>
+        ${e.status === 'new' ? '<span class="evn-dot"></span>' : ''}
+        ${e.status === 'updated' ? '<span class="evn-updated">갱신</span>' : ''}
+      </button>
+    `).join('');
+  }
+
+  function renderPageHtml(entry, total) {
+    const template = templateFor(entry);
+    const photoUrl = photoUrlFor(entry);
+    const pageNum = String(state.index + 1).padStart(2, '0');
+    const totalStr = String(total).padStart(2, '0');
+    const bgStyle = notebookBgUrl ? `style="background-image:url('${notebookBgUrl}')"` : '';
+
+    let mainHtml;
+    if (template === 'image') {
+      mainHtml = photoUrl
+        ? `<div class="evn-frame evn-frame-photo" data-evn-zoom="1"><img src="${photoUrl}" alt="${escapeHtml(entry.title)}"></div>`
+        : `<div class="evn-frame evn-frame-empty"><span class="evn-frame-fallback-icon">${fallbackIconFor(entry)}</span></div>`;
+    } else if (template === 'statement') {
+      mainHtml = `<div class="evn-frame evn-frame-statement">
+        ${photoUrl ? `<img class="evn-statement-portrait" src="${photoUrl}" alt="">` : `<span class="evn-frame-fallback-icon">${fallbackIconFor(entry)}</span>`}
+        <div class="evn-statement-quote">${escapeHtml(entry.description || entry.summary || '')}</div>
+      </div>`;
+    } else {
+      mainHtml = `<div class="evn-frame evn-frame-document">
+        <span class="evn-doc-icon">${fallbackIconFor(entry)}</span>
+        <div class="evn-doc-text">${escapeHtml(entry.description || entry.summary || '')}</div>
+      </div>`;
+    }
+
+    const stages = (entry.stages || []).filter(s => s && s.summary);
+    const relatedNpc = (entry.relatedNpcIds && entry.relatedNpcIds[0]) ? personName(entry.relatedNpcIds[0]) : '';
+
+    return `
+      <div class="evn-sheet" ${bgStyle}>
+        <div class="evn-sheet-header">
+          <span class="evn-sheet-code">${escapeHtml(entry.code || '')}</span>
+          <span class="evn-sheet-page">${pageNum} / ${totalStr}</span>
+        </div>
+        <div class="evn-sheet-title">${escapeHtml(entry.title)}${entry.status === 'updated' ? '<span class="evn-updated">업데이트됨</span>' : ''}</div>
+        ${mainHtml}
+        <div class="evn-sheet-scroll">
+          ${template !== 'statement' && template !== 'document' && entry.description ? `<div class="evn-sheet-desc">${escapeHtml(entry.description)}</div>` : ''}
+          <div class="evn-meta-table">
+            ${relatedNpc ? `<div class="evn-meta-row"><span class="evn-meta-icon">👤</span><span class="evn-meta-label">관련 인물</span><span class="evn-meta-value">${escapeHtml(relatedNpc)}</span></div>` : ''}
+            ${entry.discoveredLocationText ? `<div class="evn-meta-row"><span class="evn-meta-icon">📍</span><span class="evn-meta-label">발견 위치</span><span class="evn-meta-value">${escapeHtml(entry.discoveredLocationText)}</span></div>` : ''}
+            ${stages.length ? `<div class="evn-meta-row"><span class="evn-meta-icon">✦</span><span class="evn-meta-label">조사 단계</span><span class="evn-meta-value">${stages.length}건</span></div>` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function bindPageEvents() {
+    el.page.querySelectorAll('[data-evn-zoom]').forEach(node => {
+      node.addEventListener('click', () => { state.zoomEntry = currentEntry(); render(); });
+    });
+  }
+
+  /* ===== 확대 뷰어 (핀치/드래그/더블탭) ===== */
+  let zoomScale = 1, zoomX = 0, zoomY = 0;
+  let zoomPointers = new Map();
+  let zoomPinchStartDist = 0, zoomPinchStartScale = 1;
+  let zoomPanStart = null;
+  let zoomLastTap = 0;
+
+  function renderZoomHtml(entry) {
+    const url = photoUrlFor(entry);
+    zoomScale = 1; zoomX = 0; zoomY = 0;
+    el.zoomImgWrap.innerHTML = url
+      ? `<img id="evnZoomImg" src="${url}" alt="${escapeHtml(entry.title)}">`
+      : `<span class="evn-frame-fallback-icon evn-zoom-fallback">${fallbackIconFor(entry)}</span>`;
+    applyZoomTransform();
+  }
+  function applyZoomTransform() {
+    const img = document.getElementById('evnZoomImg');
+    if (!img) return;
+    img.style.transform = `translate(${zoomX}px, ${zoomY}px) scale(${zoomScale})`;
+  }
+  function closeZoom() { state.zoomEntry = null; render(); }
+
+  function dist(p1, p2) { return Math.hypot(p1.x - p2.x, p1.y - p2.y); }
+
+  function onZoomPointerDown(e) {
+    zoomPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (zoomPointers.size === 2) {
+      const pts = Array.from(zoomPointers.values());
+      zoomPinchStartDist = dist(pts[0], pts[1]);
+      zoomPinchStartScale = zoomScale;
+      zoomPanStart = null;
+    } else if (zoomPointers.size === 1) {
+      const now = Date.now();
+      if (now - zoomLastTap < 300) {
+        zoomScale = zoomScale > 1 ? 1 : 2.5;
+        zoomX = 0; zoomY = 0;
+        applyZoomTransform();
+      }
+      zoomLastTap = now;
+      zoomPanStart = { x: e.clientX, y: e.clientY, panX: zoomX, panY: zoomY };
+    }
+  }
+  function onZoomPointerMove(e) {
+    if (!zoomPointers.has(e.pointerId)) return;
+    zoomPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (zoomPointers.size === 2) {
+      const pts = Array.from(zoomPointers.values());
+      const d = dist(pts[0], pts[1]);
+      if (zoomPinchStartDist > 0) {
+        zoomScale = Math.min(4, Math.max(1, zoomPinchStartScale * (d / zoomPinchStartDist)));
+        applyZoomTransform();
+      }
+    } else if (zoomPointers.size === 1 && zoomPanStart && zoomScale > 1) {
+      zoomX = zoomPanStart.panX + (e.clientX - zoomPanStart.x);
+      zoomY = zoomPanStart.panY + (e.clientY - zoomPanStart.y);
+      applyZoomTransform();
+    }
+  }
+  function onZoomPointerUp(e) {
+    zoomPointers.delete(e.pointerId);
+    if (zoomPointers.size < 2) zoomPinchStartDist = 0;
+    if (zoomPointers.size === 0) zoomPanStart = null;
+  }
+
+  /* ===== 제출 확인 ===== */
+  function requestSubmit() {
+    const entry = currentEntry();
+    if (!entry || !state.onPresent) return;
+    const npcName = state.npcId ? personName(state.npcId) : '대상';
+    el.confirmText.innerHTML = `${escapeHtml(npcName)}에게<br>'${escapeHtml(entry.title)}'을(를)<br>제시하시겠습니까?`;
+    el.confirmPanel.classList.remove('hidden');
+    el.confirmPanel.dataset.entryId = entry.id;
+  }
+  function cancelSubmit() { el.confirmPanel.classList.add('hidden'); }
+  function confirmSubmit() {
+    const entryId = el.confirmPanel.dataset.entryId;
+    el.confirmPanel.classList.add('hidden');
+    if (entryId && state.onPresent) state.onPresent(entryId);
+  }
+
+  /* ===== 마운트 ===== */
+  function ensureMounted() {
+    if (mounted) return;
+    injectStyles();
+    const overlay = document.createElement('div');
+    overlay.className = 'evn-overlay hidden';
+    overlay.innerHTML = `
+      <div class="evn-book">
+        <div class="evn-tabbar" id="evnTabbar"></div>
+        <div class="evn-book-body">
+          <button type="button" class="evn-close-btn" id="evnCloseBtn2">✕</button>
+          <div class="evn-page" id="evnPage"></div>
+          <div class="evn-npc-tag hidden" id="evnNpcTag"></div>
+          <div class="evn-footer">
+            <button type="button" class="evn-nav-btn" id="evnPrevBtn">‹ 이전</button>
+            <button type="button" class="evn-nav-btn evn-nav-btn-index" id="evnIndexBtn">☰ 색인</button>
+            <button type="button" class="evn-nav-btn" id="evnNextBtn">다음 ›</button>
+          </div>
+          <button type="button" class="evn-submit-btn hidden" id="evnSubmitBtn">제출</button>
+        </div>
+        <div class="evn-index-panel hidden" id="evnIndexPanel">
+          <div class="evn-index-header">
+            <div class="evn-index-title">색인</div>
+            <button type="button" class="evn-close-btn" id="evnIndexCloseBtn">✕</button>
+          </div>
+          <div class="evn-index-list" id="evnIndexList"></div>
+        </div>
+        <div class="evn-zoom-panel hidden" id="evnZoomPanel">
+          <button type="button" class="evn-close-btn evn-zoom-close" id="evnZoomCloseBtn">✕</button>
+          <div class="evn-zoom-stage" id="evnZoomStage">
+            <div class="evn-zoom-img-wrap" id="evnZoomImgWrap"></div>
+          </div>
+        </div>
+        <div class="evn-confirm-panel hidden" id="evnConfirmPanel">
+          <div class="evn-confirm-card">
+            <div class="evn-confirm-text" id="evnConfirmText"></div>
+            <div class="evn-confirm-actions">
+              <button type="button" class="evn-confirm-cancel" id="evnConfirmCancelBtn">취소</button>
+              <button type="button" class="evn-confirm-ok" id="evnConfirmOkBtn">제출</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    el = {
+      overlay,
+      tabbar: overlay.querySelector('#evnTabbar'),
+      page: overlay.querySelector('#evnPage'),
+      npcTag: overlay.querySelector('#evnNpcTag'),
+      prevBtn: overlay.querySelector('#evnPrevBtn'),
+      nextBtn: overlay.querySelector('#evnNextBtn'),
+      indexBtn: overlay.querySelector('#evnIndexBtn'),
+      submitBtn: overlay.querySelector('#evnSubmitBtn'),
+      indexPanel: overlay.querySelector('#evnIndexPanel'),
+      indexList: overlay.querySelector('#evnIndexList'),
+      zoomPanel: overlay.querySelector('#evnZoomPanel'),
+      zoomStage: overlay.querySelector('#evnZoomStage'),
+      zoomImgWrap: overlay.querySelector('#evnZoomImgWrap'),
+      confirmPanel: overlay.querySelector('#evnConfirmPanel'),
+      confirmText: overlay.querySelector('#evnConfirmText'),
+    };
+
+    overlay.querySelector('#evnCloseBtn2').addEventListener('click', close);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+    el.prevBtn.addEventListener('click', goPrev);
+    el.nextBtn.addEventListener('click', goNext);
+    el.indexBtn.addEventListener('click', () => { state.isIndexOpen = true; render(); });
+    overlay.querySelector('#evnIndexCloseBtn').addEventListener('click', () => { state.isIndexOpen = false; render(); });
+    el.indexPanel.addEventListener('click', (e) => {
+      const row = e.target.closest('[data-evn-jump]');
+      if (row) jumpTo(row.dataset.evnJump);
+    });
+    el.tabbar.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-evn-tab]');
+      if (btn) switchSection(btn.dataset.evnTab);
+    });
+    el.submitBtn.addEventListener('click', requestSubmit);
+    overlay.querySelector('#evnConfirmCancelBtn').addEventListener('click', cancelSubmit);
+    overlay.querySelector('#evnConfirmOkBtn').addEventListener('click', confirmSubmit);
+    overlay.querySelector('#evnZoomCloseBtn').addEventListener('click', closeZoom);
+    el.zoomPanel.addEventListener('click', (e) => { if (e.target === el.zoomPanel) closeZoom(); });
+    el.zoomStage.addEventListener('pointerdown', onZoomPointerDown);
+    el.zoomStage.addEventListener('pointermove', onZoomPointerMove);
+    ['pointerup', 'pointercancel'].forEach(evt => el.zoomStage.addEventListener(evt, onZoomPointerUp));
+
+    // Swipe left/right on the page itself (outside the zoom viewer) moves
+    // between entries in the current bookmark — kept simple (no live drag
+    // feedback) so it can't fight the zoom viewer's own pan/pinch handlers,
+    // which live in a separate panel entirely.
+    let swipeStartX = null, swipeStartY = null;
+    el.page.addEventListener('touchstart', (e) => {
+      if (e.touches.length !== 1) return;
+      swipeStartX = e.touches[0].clientX; swipeStartY = e.touches[0].clientY;
+    }, { passive: true });
+    el.page.addEventListener('touchend', (e) => {
+      if (swipeStartX == null) return;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - swipeStartX, dy = t.clientY - swipeStartY;
+      swipeStartX = null;
+      if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+        if (dx < 0) goNext(); else goPrev();
+      }
+    }, { passive: true });
+
+    mounted = true;
+  }
+
+  function injectStyles() {
+    if (document.getElementById('evidenceNotebookStyles')) return;
+    const style = document.createElement('style');
+    style.id = 'evidenceNotebookStyles';
+    style.textContent = `
+      .evn-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0);display:flex;align-items:center;justify-content:center;padding:calc(env(safe-area-inset-top,0) + 14px) 14px calc(env(safe-area-inset-bottom,0) + 14px);opacity:0;transition:opacity .25s ease,background .25s ease;-webkit-tap-highlight-color:transparent}
+      .evn-overlay.hidden{display:none}
+      .evn-overlay.show{opacity:1;background:rgba(0,0,0,.72)}
+      .evn-book{position:relative;width:100%;max-width:420px;height:100%;max-height:820px;display:flex;flex-direction:column;transform:scale(.94);transition:transform .25s cubic-bezier(0.2,0.8,0.2,1)}
+      .evn-overlay.show .evn-book{transform:scale(1)}
+
+      .evn-tabbar{display:flex;justify-content:flex-end;gap:6px;padding-right:10px;flex-shrink:0}
+      .evn-tab{font-family:var(--mono,'IBM Plex Mono',ui-monospace,monospace);font-size:12px;font-weight:700;color:#c7b98a;background:#14161b;border:1px solid rgba(214,168,75,.35);border-bottom:none;border-radius:8px 8px 0 0;padding:9px 12px 12px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;transform:translateY(6px);transition:transform .2s ease,background .2s ease,color .2s ease}
+      .evn-tab-icon{font-size:14px;line-height:1}
+      .evn-tab-active{transform:translateY(0);color:#fff;background:var(--evn-tab-tint,#1f3a6e);border-color:var(--evn-tab-tint,#1f3a6e);box-shadow:0 -2px 10px rgba(0,0,0,.35)}
+
+      .evn-book-body{position:relative;flex:1;min-height:0;background:linear-gradient(135deg,#12213f,#0c1730);border-radius:4px 14px 14px 14px;border:1px solid rgba(214,168,75,.4);box-shadow:0 20px 50px rgba(0,0,0,.5);padding:16px;display:flex;flex-direction:column}
+      .evn-close-btn{position:absolute;top:10px;right:10px;z-index:5;width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+      .evn-close-btn:active{opacity:.8}
+
+      .evn-page{flex:1;min-height:0;display:flex;overscroll-behavior:contain}
+      .evn-sheet{flex:1;display:flex;flex-direction:column;min-height:0;background:#f2e6cc linear-gradient(180deg,#f6ecd6,#eaddc0);background-size:cover;background-position:center;border-radius:10px;padding:16px 16px 12px;box-shadow:inset 0 0 0 1px rgba(214,168,75,.5),0 6px 18px rgba(0,0,0,.3);color:#3a2f1c}
+      .evn-sheet-empty{align-items:center;justify-content:center;gap:10px;color:#7a6a45}
+      .evn-empty-icon{font-size:34px;opacity:.7}
+      .evn-empty-text{font-size:13px;font-weight:600}
+
+      .evn-sheet-header{display:flex;justify-content:space-between;align-items:center;font-family:var(--mono,'IBM Plex Mono',ui-monospace,monospace);font-size:11px;letter-spacing:.06em;color:#8a7245;border-bottom:1px solid rgba(138,114,69,.35);padding-bottom:8px;margin-bottom:8px}
+      .evn-sheet-title{font-size:16px;font-weight:800;color:#2c2311;margin-bottom:10px;line-height:1.35}
+      .evn-updated{display:inline-block;margin-left:8px;font-size:10px;font-weight:700;color:#fff;background:#c7752c;border-radius:8px;padding:2px 7px;vertical-align:middle}
+
+      .evn-frame{position:relative;border:2px solid rgba(138,114,69,.55);border-radius:8px;background:rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;min-height:150px;max-height:38vh}
+      .evn-frame-photo{cursor:zoom-in}
+      .evn-frame-photo img{width:100%;height:100%;object-fit:cover;display:block}
+      .evn-frame-empty .evn-frame-fallback-icon{font-size:44px;opacity:.55}
+      .evn-frame-document{flex-direction:column;gap:8px;padding:14px;align-items:flex-start;justify-content:flex-start;overflow-y:auto}
+      .evn-doc-icon{font-size:22px}
+      .evn-doc-text{font-size:13.5px;line-height:1.6;color:#3a2f1c;white-space:pre-wrap}
+      .evn-frame-statement{flex-direction:column;gap:10px;padding:16px}
+      .evn-statement-portrait{width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid rgba(138,114,69,.5)}
+      .evn-statement-quote{font-size:14px;line-height:1.6;color:#3a2f1c;text-align:center;font-style:italic}
+
+      .evn-sheet-scroll{flex:1;min-height:0;overflow-y:auto;margin-top:10px}
+      .evn-sheet-desc{font-size:13px;line-height:1.6;color:#4a3d22;margin-bottom:10px}
+      .evn-meta-table{border-top:1px solid rgba(138,114,69,.3);padding-top:8px;display:flex;flex-direction:column;gap:6px}
+      .evn-meta-row{display:flex;align-items:baseline;gap:8px;font-size:12.5px}
+      .evn-meta-icon{width:16px;text-align:center;opacity:.8}
+      .evn-meta-label{color:#8a7245;flex-shrink:0}
+      .evn-meta-value{color:#2c2311;font-weight:600}
+
+      .evn-npc-tag{position:absolute;top:12px;left:16px;z-index:4;font-family:var(--mono,'IBM Plex Mono',ui-monospace,monospace);font-size:11px;font-weight:700;color:#fff;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.25);border-radius:20px;padding:5px 12px}
+      .evn-npc-tag.hidden{display:none}
+
+      .evn-footer{display:flex;gap:8px;margin-top:10px;flex-shrink:0}
+      .evn-nav-btn{flex:1;font-family:var(--mono,'IBM Plex Mono',ui-monospace,monospace);font-size:12.5px;font-weight:700;color:#fff;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:12px;padding:12px 8px;cursor:pointer;min-height:44px}
+      .evn-nav-btn:disabled{opacity:.35;pointer-events:none}
+      .evn-nav-btn:active{opacity:.8}
+      .evn-submit-btn{margin-top:10px;flex-shrink:0;font-family:var(--mono,'IBM Plex Mono',ui-monospace,monospace);font-size:14px;font-weight:800;color:#2c2311;background:linear-gradient(135deg,#e9c467,#c7942f);border:none;border-radius:12px;padding:14px;cursor:pointer;min-height:48px}
+      .evn-submit-btn.hidden{display:none}
+      .evn-submit-btn:active{opacity:.85}
+
+      .evn-index-panel{position:absolute;inset:0;z-index:6;background:rgba(6,8,12,.96);border-radius:4px 14px 14px 14px;display:flex;flex-direction:column;padding:16px}
+      .evn-index-panel.hidden{display:none}
+      .evn-index-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+      .evn-index-title{font-size:15px;font-weight:700;color:#fff}
+      .evn-index-panel .evn-close-btn{position:static}
+      .evn-index-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px}
+      .evn-index-row{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:11px 12px;cursor:pointer;text-align:left;font-family:inherit;color:#fff;min-height:44px}
+      .evn-index-row-active{border-color:rgba(214,168,75,.6);background:rgba(214,168,75,.12)}
+      .evn-index-code{font-family:var(--mono,'IBM Plex Mono',ui-monospace,monospace);font-size:10.5px;color:#8a95a1;flex-shrink:0}
+      .evn-index-title{font-size:13px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      .evn-dot{width:7px;height:7px;border-radius:50%;background:#59b8c8;flex-shrink:0}
+      .evn-index-empty{color:#8a95a1;font-size:13px;text-align:center;padding:20px 0}
+
+      .evn-zoom-panel{position:absolute;inset:0;z-index:8;background:#000;border-radius:4px 14px 14px 14px;overflow:hidden}
+      .evn-zoom-panel.hidden{display:none}
+      .evn-zoom-close{position:absolute;top:10px;right:10px;z-index:9}
+      .evn-zoom-stage{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;touch-action:none;overflow:hidden}
+      .evn-zoom-img-wrap img{max-width:100%;max-height:100%;object-fit:contain;transform-origin:center;will-change:transform;user-select:none;-webkit-user-drag:none}
+      .evn-zoom-fallback{font-size:64px;opacity:.6}
+
+      .evn-confirm-panel{position:absolute;inset:0;z-index:10;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:24px}
+      .evn-confirm-panel.hidden{display:none}
+      .evn-confirm-card{width:100%;max-width:300px;background:#171c22;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:22px 18px}
+      .evn-confirm-text{font-size:14.5px;line-height:1.5;color:#fff;text-align:center;margin-bottom:18px}
+      .evn-confirm-actions{display:flex;gap:8px}
+      .evn-confirm-cancel,.evn-confirm-ok{flex:1;font-family:var(--mono,'IBM Plex Mono',ui-monospace,monospace);font-size:13px;font-weight:700;border-radius:10px;padding:11px;cursor:pointer;min-height:44px}
+      .evn-confirm-cancel{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);color:#fff}
+      .evn-confirm-ok{background:var(--cyan,#59b8c8);border:none;color:#04181c}
+
+      @media (max-width:374px){
+        .evn-sheet-title{font-size:14.5px}
+        .evn-frame{min-height:120px}
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  return { open, close, injectStyles };
+})();

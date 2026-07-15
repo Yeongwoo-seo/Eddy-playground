@@ -132,6 +132,12 @@ function initCaseMenu(options) {
       if (options.onOpenShop) options.onOpenShop();
     } else if (action === 'openWardrobe') {
       if (options.onOpenWardrobe) options.onOpenWardrobe();
+    } else if (action === 'openNotebook') {
+      // 증거 DB 노트 v1.1 — 기존 평면 목록/상세 뷰(evidenceRow의 data-nav,
+      // renderEvidenceDetail 등)는 그대로 두고, 노트는 별도 진입점으로만
+      // 추가한다. EvidenceNotebook은 선택적 스크립트라 로드 안 된 페이지에서
+      // 버튼 자체가 없거나(주입 쪽에서 typeof 가드) 눌려도 조용히 무시한다.
+      if (typeof EvidenceNotebook !== 'undefined') EvidenceNotebook.open({ mode: 'browse', focusEntryId: id || null });
     }
   }
 
@@ -262,6 +268,7 @@ function initCaseMenu(options) {
     if (!evidence.length) return emptyNote('아직 확보한 증거가 없습니다.');
     const filter = ctx.evidenceFilter || 'all';
     const presentCats = EVIDENCE_CATEGORY_ORDER.filter(c => c !== 'testimony' && evidence.some(ev => (ev.subtype || 'etc') === c));
+    const notebookBtn = `<button class="cm-notebook-btn" data-action="openNotebook">📓 수첩으로 보기</button>`;
     const filterBar = `
       <div class="cm-filter-row">
         <button class="cm-filter-chip${filter === 'all' ? ' cm-filter-chip-active' : ''}" data-evidence-filter="all">전체 ${evidence.length}</button>
@@ -284,7 +291,7 @@ function initCaseMenu(options) {
         `;
       }).join('');
     }
-    return filterBar + bodyHtml;
+    return notebookBtn + filterBar + bodyHtml;
   }
   function evidenceRow(ev) {
     return `
@@ -306,7 +313,8 @@ function initCaseMenu(options) {
   function renderTestimonyTabBody() {
     const testimonies = CaseFileState.getCaseEntries().filter(e => e.kind === 'testimony');
     if (!testimonies.length) return emptyNote('아직 기록된 증언이 없습니다.');
-    return `<div class="cm-list">${testimonies.map(testimonyRow).join('')}</div>`;
+    const notebookBtn = `<button class="cm-notebook-btn" data-action="openNotebook">📓 수첩으로 보기</button>`;
+    return notebookBtn + `<div class="cm-list">${testimonies.map(testimonyRow).join('')}</div>`;
   }
   function testimonyRow(t) {
     return `
@@ -829,6 +837,9 @@ function injectCaseMenuStyles() {
     .cm-tabbar{display:flex;gap:6px;margin-bottom:14px}
     .cm-tab{flex:1;background:#171F29;border:1px solid rgba(255,255,255,.10);color:#7E8791;border-radius:10px;padding:10px 4px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
     .cm-tab-active{color:#D8A93D;border-color:rgba(216,169,61,.5);background:rgba(216,169,61,.08)}
+
+    .cm-notebook-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;background:linear-gradient(135deg,#2a3552,#1a2338);border:1px solid rgba(216,169,61,.4);color:#e9c467;border-radius:14px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:12px;min-height:44px}
+    .cm-notebook-btn:active{opacity:.85}
 
     .cm-filter-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
     .cm-filter-chip{background:#171F29;border:1px solid rgba(255,255,255,.10);color:#7E8791;border-radius:20px;padding:7px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
