@@ -734,6 +734,25 @@ const interactionDefs = {
    그대로 쓴다; wrong/blocked엔 페널티가 없다는 원칙(§8.4)도 그대로
    따른다 — reactionText만 다를 뿐 포인트·진행 차감은 없다. */
 const presentEvidenceRules = [
+  // Phase 4(용의자 탐문) correct 룰 — 아직 실제 컨텐츠로 다듬어진 반응은
+  // 아니고, 탐색허브 제시하기 시트의 "정답 제시(테스트용)" 버튼
+  // (presentTestCorrectAnswer, dev/explore/index.html)이 심문마다 곧바로
+  // 시험해볼 correct 경로를 갖도록 임시로 채운 것 — 실제 심문 씬(006/
+  // 007/008)이 이미 그 자체 증거 게이트로 진행되므로, 이 반응 자체는 여전히
+  // 순수 부가 flavor(§8.2 원칙 그대로)다. 나중에 실제 스토리에 맞는
+  // reactionText/evidenceId로 다듬으면 된다.
+  {
+    characterId: 'minah', phase: 'W1_SUSPECT_INTERVIEWS', evidenceId: 'evidence-mina-illegal-photo', result: 'correct',
+    reactionText: '[테스트] 윤민아: "...그거 어디서 났어요?"',
+  },
+  {
+    characterId: 'adrian', phase: 'W1_SUSPECT_INTERVIEWS', evidenceId: 'evidence-adrian-sender', result: 'correct',
+    reactionText: '[테스트] 애드리언: "...그 계정, 어디서 찾으셨죠."',
+  },
+  {
+    characterId: 'leo', phase: 'W1_SUSPECT_INTERVIEWS', evidenceId: 'evidence-leo-bag-strap-shape', result: 'correct',
+    reactionText: '[테스트] 레오: "...가방 끈이 왜요?"',
+  },
   {
     characterId: 'minah', phase: 'W1_REVERIFICATION', evidenceId: 'evidence-mina-illegal-photo', result: 'correct',
     reactionText: '윤민아: "...그거 이미 말씀드렸잖아요. 또 그 얘기예요?"',
