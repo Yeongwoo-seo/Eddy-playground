@@ -300,6 +300,7 @@ async function loadConfig() {
   if (design.zoneImageAssetId) ids.push(design.zoneImageAssetId);
   if (cfg.fishSheetAssetId) ids.push(cfg.fishSheetAssetId);
   if (cfg.castingSheetAssetId) ids.push(cfg.castingSheetAssetId);
+  if (cfg.backgroundAssetId) ids.push(cfg.backgroundAssetId);
   let assets = [];
   try { assets = await AssetDB.getAssetsByIds(ids); } catch (e) { /* 위와 동일 */ }
   const byId = new Map(assets.map(a => [a.id, a]));
@@ -330,6 +331,17 @@ async function loadConfig() {
       img.src = fishSheetUrl;
     });
   }
+
+  // 배경화면 — 업로드가 없으면 .frame CSS 기본값(하늘/바다 그라데이션)이
+  // 그대로 보이도록 인라인 스타일을 비워둔다. 업로드가 있으면 cover로
+  // 화면을 꽉 채운다 — .frame의 background 단축 속성이 gradient의
+  // position/size/repeat를 초기값으로 리셋해두므로 image만이 아니라
+  // 세 속성 모두 함께 지정해야 한다.
+  const backgroundAsset = cfg.backgroundAssetId ? byId.get(cfg.backgroundAssetId) : null;
+  el.frame.style.backgroundImage = backgroundAsset ? `url(${backgroundAsset.dataUrl})` : '';
+  el.frame.style.backgroundSize = backgroundAsset ? 'cover' : '';
+  el.frame.style.backgroundPosition = backgroundAsset ? 'center' : '';
+  el.frame.style.backgroundRepeat = backgroundAsset ? 'no-repeat' : '';
 
   el.fishbar.style.width = (design.barWidthPx || 52) + 'px';
   el.fishbar.style.height = (design.barHeightPx || 230) + 'px';

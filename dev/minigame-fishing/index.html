@@ -312,6 +312,13 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
        숨겼다 — 기존 데이터·크롭 조정 코드는 그대로 두고 화면에서만 뺐다.
        게이지는 낚시바 모듈 자체라 별도 영역지정이 없다. ===== -->
   <div class="tab-panel hidden" id="panelBar">
+    <div class="option-group">
+      <div class="option-label">배경화면</div>
+      <div class="option-desc">낚시 게임 화면 전체의 배경 그림이에요. 업로드하지 않으면 기본 하늘/바다 그라데이션이 표시돼요.</div>
+      <div class="frame-strip" id="backgroundImageSlot"></div>
+      <button type="button" class="frame-add-btn hidden" id="backgroundImageAddBtn">+ 배경화면 업로드</button>
+      <input type="file" id="backgroundImageFileInput" accept="image/*">
+    </div>
     <div class="option-group hidden">
       <div class="option-label">색상</div>
       <div class="color-row">
@@ -563,6 +570,9 @@ const el = {
   barPreviewZone: document.getElementById('barPreviewZone'),
   barPreviewFish: document.getElementById('barPreviewFish'),
   barPreviewGauge: document.getElementById('barPreviewGauge'),
+  backgroundImageSlot: document.getElementById('backgroundImageSlot'),
+  backgroundImageAddBtn: document.getElementById('backgroundImageAddBtn'),
+  backgroundImageFileInput: document.getElementById('backgroundImageFileInput'),
   barImageSlot: document.getElementById('barImageSlot'),
   barImageAddBtn: document.getElementById('barImageAddBtn'),
   barImageFileInput: document.getElementById('barImageFileInput'),
@@ -1236,6 +1246,46 @@ const FB_REGION_LABELS = [
   { id: 'zoneRegion', label: '캐치존' },
 ];
 
+/* ===== 배경화면 업로드 =====
+   낚시바/캐치존 이미지와 같은 frame-strip 업로드 패턴이지만, barDesign
+   안이 아니라 fishingConfig.backgroundAssetId에 바로 저장한다 — 낚시바
+   디자인이 아니라 플레이 화면 전체(dev/minigame-fishing/play/index.html의
+   .frame)에 적용되는 값이라 별도 최상위 필드로 둔다. */
+async function renderBackgroundImageSlot() {
+  el.backgroundImageSlot.innerHTML = '';
+  if (fishingConfig.backgroundAssetId) {
+    el.backgroundImageAddBtn.classList.add('hidden');
+    const asset = await AssetDB.getAsset(fishingConfig.backgroundAssetId).catch(() => null);
+    const slot = document.createElement('div');
+    slot.className = 'frame-slot';
+    slot.innerHTML = `${asset ? `<img src="${asset.dataUrl}" alt="">` : ''}
+      <div class="frame-actions"><button type="button" class="frame-mini-btn danger" data-act="del">✕</button></div>`;
+    slot.querySelector('[data-act=del]').addEventListener('click', async () => {
+      fishingConfig = await AssetDB.setFishingConfig({ backgroundAssetId: null });
+      showSaveNote();
+      renderBackgroundImageSlot();
+    });
+    el.backgroundImageSlot.appendChild(slot);
+  } else {
+    el.backgroundImageAddBtn.classList.remove('hidden');
+  }
+}
+el.backgroundImageAddBtn.addEventListener('click', () => el.backgroundImageFileInput.click());
+el.backgroundImageFileInput.addEventListener('change', async () => {
+  const file = el.backgroundImageFileInput.files[0];
+  el.backgroundImageFileInput.value = '';
+  if (!file) return;
+  el.backgroundImageAddBtn.disabled = true;
+  try {
+    const asset = await AssetDB.addAsset({ type: 'fishing-background-image', name: file.name, blob: file });
+    fishingConfig = await AssetDB.setFishingConfig({ backgroundAssetId: asset.id });
+    showSaveNote();
+    renderBackgroundImageSlot();
+  } finally {
+    el.backgroundImageAddBtn.disabled = false;
+  }
+});
+
 async function renderBarImageSlot() {
   const design = fishingConfig.barDesign || {};
   el.barImageSlot.innerHTML = '';
@@ -1807,6 +1857,7 @@ async function init() {
   el.barHeightValue.textContent = (design.barHeightPx || 230) + 'px';
   renderBarPreview();
   renderFishIconSlot();
+  renderBackgroundImageSlot();
   renderBarImageSlot();
   renderZoneImageSlot();
   renderCastTab();
