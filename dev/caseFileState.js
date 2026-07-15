@@ -46,6 +46,36 @@ function defaultCaseState() {
   };
 }
 
+/* 증거 DB 노트 v1.1 §5.1 — id 충돌 마이그레이션. 같은 id로 서로 다른 내용이
+   등록됐던 항목(예: 'evidence-k01-not-for-sale'가 인터랙션 허브의 팸플릿
+   증거와 마틴 베일 통화 증언 두 곳에 다르게 정의됐던 문제, addEvidence는
+   id 중복 시 무시하므로 플레이 순서에 따라 카드 내용이 달라졌다)을 정의
+   자체는 각각 새 id로 분리해두고(interactionDefs.js/dialogueData.js 참고),
+   기존 세이브에 남아있는 옛 id 항목은 로드 시 실제 저장된 내용(category/
+   title)으로 판별해 올바른 새 id로 옮겨준다. 게이트 판정(hasEvidence)이나
+   evidenceIds 제시 판정에는 이 옛 id가 애초에 참조되지 않으므로 이 이관은
+   진행 조건에 영향을 주지 않는다. */
+const EVIDENCE_ID_MIGRATIONS = [
+  {
+    staleId: 'evidence-k01-not-for-sale',
+    resolve(item) {
+      const haystack = [item.title, item.description, item.category].filter(Boolean).join(' ');
+      if (item.category === 'testimony' || /마틴|진술|대여/.test(haystack)) {
+        return 'evidence-martin-not-for-sale-testimony';
+      }
+      return 'evidence-k01-pamphlet-not-for-sale';
+    },
+  },
+];
+function migrateEvidenceIds(evidenceList) {
+  if (!Array.isArray(evidenceList) || !evidenceList.length) return evidenceList;
+  return evidenceList.map(item => {
+    const migration = EVIDENCE_ID_MIGRATIONS.find(m => m.staleId === item.id);
+    if (!migration) return item;
+    return Object.assign({}, item, { id: migration.resolve(item) });
+  });
+}
+
 function loadCaseState() {
   try {
     const raw = JSON.parse(localStorage.getItem(CASE_STATE_KEY));
@@ -58,6 +88,7 @@ function loadCaseState() {
       hypothesisHistory: Object.assign({}, raw.hypothesisHistory || {}),
       testimonyHistory: Object.assign({}, raw.testimonyHistory || {}),
       evidenceStages: Object.assign({}, raw.evidenceStages || {}),
+      evidence: migrateEvidenceIds(raw.evidence || []),
     });
   } catch (e) { return defaultCaseState(); }
 }
@@ -347,6 +378,7 @@ const CaseFileState = {
       hypothesisHistory: Object.assign({}, (slot.caseState && slot.caseState.hypothesisHistory) || {}),
       testimonyHistory: Object.assign({}, (slot.caseState && slot.caseState.testimonyHistory) || {}),
       evidenceStages: Object.assign({}, (slot.caseState && slot.caseState.evidenceStages) || {}),
+      evidence: migrateEvidenceIds((slot.caseState && slot.caseState.evidence) || []),
     });
     saveCaseState();
     if (typeof EconomyState !== 'undefined' && slot.economyState) EconomyState.restore(slot.economyState);

@@ -2258,12 +2258,14 @@ const week1Scene009Lines = [
     ],
   },
   {
-    // v4 §13.1 — question-leo-gap was referenced by this scene's own
-    // setQuestionStatus (near the end) but never registered, so that update
-    // was a silent no-op. Registering it here, right where the 공백 itself
-    // is first framed as a mystery, is the earliest honest point to raise it.
+    // 증거 DB 노트 v1.1 §5.4 — 이 씬은 minigame-timeline이 만든
+    // evidence-leo-timeline-gap 없이는 진입할 수 없고, 그 미니게임이 이미
+    // 같은 id로 question-leo-gap을 등록해두므로(addQuestion도 addEvidence와
+    // 동일하게 id 중복 시 무시) 여기서 다시 addQuestion을 호출하는 건 항상
+    // no-op였다. (예전엔 반대로 "여기서 처음 등록한다"고 잘못 파악해 이
+    // 효과를 추가했던 이력이 있음 — v4 §13.1.) 두 등록의 linkedEvidenceIds는
+    // minigame-timeline/index.html 쪽에 합쳐뒀으니 여기서는 중복 호출만 제거.
     id: 'line-002', speaker: '', text: '시간축을 다 맞춰보니,\n레오의 진술과 사진 사이에 공백이 있었다.', characterId: null,
-    effects: [{ type: 'addQuestion', question: { id: 'question-leo-gap', title: '레오의 11분 공백 동안 무슨 일이 있었는가?', linkedEvidenceIds: ['evidence-leo-first-statement', 'evidence-leo-bag-volume-change'] } }],
   },
   { id: 'line-003', speaker: '영우', text: '10시 47분부터 10시 58분까지.', characterId: 'youngwoo', expression: 'serious' },
   { id: 'line-004', speaker: '지수', text: '레오가 말한 시간이랑 안 맞아요.\n그 사이 사진에서 레오가 사라져요.', characterId: 'jisoo', expression: 'serious' },
@@ -3028,7 +3030,7 @@ const week1Scene011bLines = [
     effects: [{
       type: 'addEvidence',
       evidence: {
-        id: 'evidence-k01-not-for-sale', code: 'E-MV1', category: 'testimony', title: '마틴의 진술 — 판매 목적 아님',
+        id: 'evidence-martin-not-for-sale-testimony', code: 'E-MV1', category: 'testimony', title: '마틴의 진술 — 판매 목적 아님',
         description: '마틴 베일 — K-01은 판매용이 아니라 전시 목적으로만 빌려준 것이라는 진술.',
         discoveredLocationText: '전화 통화 · 마틴 베일',
       },

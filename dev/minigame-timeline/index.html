@@ -392,7 +392,13 @@ function grantGapEvidence() {
     description: '레오 박으로 추정되는 손님의 커피 주문(10:59)과 카드 결제(11:02) 시각. 주문과 결제 사이 3분의 텀이 있다.',
     discoveredLocationText: 'Café near Circular Quay · 시간대 정리',
   });
-  const added = CaseFileState.addQuestion({ id: 'question-leo-gap', title: '레오 박의 11분 공백은 무엇인가?', linkedEvidenceIds: ['evidence-leo-timeline-gap'] });
+  // 증거 DB 노트 v1.1 §5.4 — dialogueData.js의 week1-scene-009(line-002)도
+  // 같은 id로 addQuestion을 호출하지만, 그 씬은 이 미니게임의 산출물
+  // (evidence-leo-timeline-gap)이 있어야만 진입 가능한 후속 씬이라 이
+  // 등록이 항상 먼저 실행된다 — addQuestion은 addEvidence와 동일하게 id
+  // 중복 시 무시하므로 그쪽 registration은 실질적으로 항상 죽은 코드였다.
+  // 두 곳의 linkedEvidenceIds를 합쳐 이 유일한 실제 registration에 반영.
+  const added = CaseFileState.addQuestion({ id: 'question-leo-gap', title: '레오 박의 11분 공백은 무엇인가?', linkedEvidenceIds: ['evidence-leo-timeline-gap', 'evidence-leo-first-statement', 'evidence-leo-bag-volume-change'] });
   if (added && typeof caseMenu !== 'undefined' && caseMenu.notifyNewQuestion) caseMenu.notifyNewQuestion('레오 박의 11분 공백은 무엇인가?');
 }
 

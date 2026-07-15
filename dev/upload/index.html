@@ -163,6 +163,8 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .evidence-thumb-empty{display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:20px}
 .evidence-kind-tag-evidence{background:rgba(89,184,200,.14);color:var(--cyan);margin-right:6px}
 .evidence-kind-tag-testimony{background:rgba(214,168,75,.14);color:var(--amber);margin-right:6px}
+.evidence-kind-tag-witness{background:rgba(214,168,75,.14);color:var(--amber);margin-right:6px}
+.evidence-kind-tag-photo{background:rgba(168,120,214,.14);color:#b28ae0;margin-right:6px}
 
 .dialogue-panel.hidden{display:none}
 .dialogue-bulk-input{width:100%;background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:14px 16px;color:var(--text-primary);font-size:13.5px;line-height:1.7;font-family:var(--mono);resize:vertical;min-height:320px}
@@ -3425,8 +3427,15 @@ function resetSoundForm() {
    배경 제거(누끼)+정사각형 크롭을 거친다(see saveCroppedEvidenceImage 위). ===== */
 const EVIDENCE_CATEGORY_LABELS = { physical: '물증', photo: '사진·영상', testimony: '진술', record: '기록', etc: '기타' };
 const EVIDENCE_KIND_LABELS = { evidence: '증거', testimony: '증언' };
+// 증거 DB 노트 v1.1 §3.1 — 노트 책갈피(증인/증거/사진)와 같은 3-way 분류를
+// 업로드 탭에도 그대로 적용해, 여기서 "사진 업로드"를 누를 항목을 노트의
+// 어느 책갈피에 들어갈지 기준으로 바로 찾을 수 있게 한다. CaseEntryModel.
+// getNotebookSection 한 곳에서만 규칙을 정의(§0 원칙: 파생값은 한 곳에서만)
+// 하고 여기서는 그 결과만 쓴다 — kind(증거/증언, 케이스 파일 탭이 쓰는 값)는
+// 그대로 두고 건드리지 않는다.
+const EVIDENCE_SECTION_LABELS = { witness: '증인', evidence: '증거', photo: '사진' };
 let evidenceCatalogCache = null;
-let evidenceKindFilter = 'all'; // all | evidence | testimony — §Phase 1 kind 재분류
+let evidenceSectionFilter = 'all'; // all | witness | evidence | photo
 let evidenceCategoryFilter = 'all';
 let evidenceSearchQuery = '';
 let evidencePhotoAssets = {}; // evidenceId -> { id, dataUrl, ... } asset record, loaded by loadEvidencePhotoAssets
@@ -3467,6 +3476,7 @@ function collectEvidenceCatalog() {
     // caseEntryModel.js의 inferCaseEntryKind와 완전히 같은 규칙 — 케이스 파일
     // 탭/제시 시트가 쓰는 분류와 이 감사 목록의 분류가 어긋나지 않게 한다.
     r.kind = (typeof inferCaseEntryKind === 'function') ? inferCaseEntryKind(r) : (r.category === 'testimony' ? 'testimony' : 'evidence');
+    r.section = (typeof CaseEntryModel !== 'undefined') ? CaseEntryModel.getNotebookSection(r) : r.kind;
   });
   evidenceCatalogCache = rows;
   return rows;
@@ -3504,29 +3514,30 @@ async function renderEvidencePanel() {
   renderEvidenceList();
 }
 
-// 진술(테스티모니)을 물증/사진·영상/기록/기타와 같은 층위의 "카테고리"로
-// 두지 않는다 — kind(증거/증언)를 먼저 나눠 별도 pill로 보여주고, 카테고리
-// 세부 필터는 "증거" kind를 골랐을 때만 의미가 있으므로 그 안에서만 보여준다
-// (증언 kind는 전부 category==='testimony'라 세부 분류가 무의미).
+// 증거 DB 노트 v1.1 §3.1 — 최상위 pill은 노트 책갈피 3종(증인/증거/사진)을
+// 그대로 따른다. 카테고리 세부 필터는 "증거" 책갈피를 골랐을 때만 의미가
+// 있으므로 그 안에서만 보여준다(증인 책갈피는 전부 category==='testimony',
+// 사진 책갈피는 전부 category==='photo'라 세부 분류가 무의미).
 function renderEvidenceList() {
   const rows = collectEvidenceCatalog();
-  const kindCounts = { evidence: rows.filter(r => r.kind === 'evidence').length, testimony: rows.filter(r => r.kind === 'testimony').length };
-  el.evidenceKindPills.innerHTML = `<button class="pill${evidenceKindFilter === 'all' ? ' active' : ''}" data-kind="all">전체 ${rows.length}</button>` +
-    ['evidence', 'testimony'].map(k => `<button class="pill${evidenceKindFilter === k ? ' active' : ''}" data-kind="${k}">${EVIDENCE_KIND_LABELS[k]} ${kindCounts[k]}</button>`).join('');
+  const sectionCounts = { witness: rows.filter(r => r.section === 'witness').length, evidence: rows.filter(r => r.section === 'evidence').length, photo: rows.filter(r => r.section === 'photo').length };
+  el.evidenceKindPills.innerHTML = `<button class="pill${evidenceSectionFilter === 'all' ? ' active' : ''}" data-section="all">전체 ${rows.length}</button>` +
+    ['witness', 'evidence', 'photo'].map(s => `<button class="pill${evidenceSectionFilter === s ? ' active' : ''}" data-section="${s}">${EVIDENCE_SECTION_LABELS[s]} ${sectionCounts[s]}</button>`).join('');
   el.evidenceKindPills.querySelectorAll('.pill').forEach(btn => {
     btn.addEventListener('click', () => {
-      evidenceKindFilter = btn.dataset.kind;
+      evidenceSectionFilter = btn.dataset.section;
       evidenceCategoryFilter = 'all';
       renderEvidenceList();
     });
   });
 
-  const kindFiltered = evidenceKindFilter === 'all' ? rows : rows.filter(r => r.kind === evidenceKindFilter);
+  const sectionFiltered = evidenceSectionFilter === 'all' ? rows : rows.filter(r => r.section === evidenceSectionFilter);
 
-  el.evidenceCategoryPills.classList.toggle('hidden', evidenceKindFilter === 'testimony');
-  if (evidenceKindFilter !== 'testimony') {
-    const categories = ['physical', 'photo', 'record', 'etc'];
-    const categoryBase = evidenceKindFilter === 'all' ? rows.filter(r => r.kind === 'evidence') : kindFiltered;
+  const showCategoryPills = evidenceSectionFilter === 'all' || evidenceSectionFilter === 'evidence';
+  el.evidenceCategoryPills.classList.toggle('hidden', !showCategoryPills);
+  if (showCategoryPills) {
+    const categories = ['physical', 'record', 'etc'];
+    const categoryBase = evidenceSectionFilter === 'all' ? rows.filter(r => r.section === 'evidence') : sectionFiltered;
     el.evidenceCategoryPills.innerHTML = `<button class="pill${evidenceCategoryFilter === 'all' ? ' active' : ''}" data-cat="all">증거 전체 ${categoryBase.length}</button>` +
       categories.map(c => {
         const count = categoryBase.filter(r => (r.category || 'etc') === c).length;
@@ -3539,8 +3550,8 @@ function renderEvidenceList() {
   }
 
   const query = evidenceSearchQuery.trim().toLowerCase();
-  const filtered = kindFiltered.filter(r => {
-    if (evidenceKindFilter !== 'testimony' && evidenceCategoryFilter !== 'all' && (r.category || 'etc') !== evidenceCategoryFilter) return false;
+  const filtered = sectionFiltered.filter(r => {
+    if (evidenceSectionFilter !== 'witness' && evidenceSectionFilter !== 'photo' && evidenceCategoryFilter !== 'all' && (r.category || 'etc') !== evidenceCategoryFilter) return false;
     if (!query) return true;
     const haystack = [r.title, r.code, r.id, r.description, r.discoveredLocationText].filter(Boolean).join(' ').toLowerCase();
     return haystack.includes(query);
@@ -3565,7 +3576,7 @@ function evidenceRowHtml(r) {
   const thumbHtml = photo
     ? `<img class="asset-thumb" src="${photo.dataUrl}" alt="">`
     : `<div class="asset-thumb evidence-thumb-empty">📷</div>`;
-  const kindTag = `<span class="asset-tag evidence-kind-tag-${r.kind}">${EVIDENCE_KIND_LABELS[r.kind]}</span>`;
+  const kindTag = `<span class="asset-tag evidence-kind-tag-${r.section}">${EVIDENCE_SECTION_LABELS[r.section]}</span>`;
   return `
     <div class="asset-card" style="align-items:flex-start">
       ${thumbHtml}
