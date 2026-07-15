@@ -203,6 +203,8 @@ let castFrameUrls = [];
 let reelFrameUrls = [];
 let idleFrameUrl = null;
 let fishSheetUrl = null;
+let fishSheetDims = null; // { width, height } of the *actual* loaded sheet — needed to turn a fishIconOverrides rect (normalized 0~1) into pixel background-position/size, see getFishCropStyle in fishDefs.js
+let fishIconOverrides = {};
 let zoneSizePct = 28;
 let caughtCount = 0;
 let gameState = 'idle'; // idle | casting | waiting | bite | catching | reeling | result
@@ -230,6 +232,16 @@ async function loadConfig() {
   reelFrameUrls = (cfg.reelingFrames || []).map(id => byId.get(id)).filter(Boolean).map(a => a.dataUrl);
   const fishSheetAsset = cfg.fishSheetAssetId ? byId.get(cfg.fishSheetAssetId) : null;
   fishSheetUrl = fishSheetAsset ? fishSheetAsset.dataUrl : null;
+  fishIconOverrides = cfg.fishIconOverrides || {};
+  if (fishSheetUrl) {
+    fishSheetDims = await new Promise(resolve => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+      img.onerror = () => resolve(null);
+      img.src = fishSheetUrl;
+    });
+  }
 
   el.fishbar.style.background = design.barColor || '#171C22';
   el.fishbarZone.style.background = design.zoneColor || '#59B8C8';
@@ -451,7 +463,10 @@ function endRun(success, message, fishCaught) {
     el.overlayFishName.textContent = fishCaught.name;
     el.overlayFishMeta.textContent = `${fishCaught.grade} · ${fishCaught.value}P`;
     if (fishSheetUrl) {
-      const style = getFishSlotStyle(fishCaught.slot, 3.5);
+      const override = fishIconOverrides[fishCaught.id];
+      const style = (override && fishSheetDims)
+        ? getFishCropStyle(override, fishSheetDims.width, fishSheetDims.height, 56)
+        : getFishSlotStyle(fishCaught.slot, 3.5);
       el.overlayFishIcon.style.backgroundImage = `url('${fishSheetUrl}')`;
       el.overlayFishIcon.style.backgroundPosition = style.backgroundPosition;
       el.overlayFishIcon.style.backgroundSize = style.backgroundSize;
