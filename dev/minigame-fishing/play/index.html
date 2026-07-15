@@ -392,11 +392,27 @@ function playFrameSequence(urls, frameMs) {
   });
 }
 
+/* ===== 캐스팅 모션 윈드업 — 홀드 시작하자마자 1→2번 프레임을 재생하고
+   2번에서 멈춰 유지한다(놓을 때까지). 놓으면 releasePowerAndCast가
+   3번 프레임부터 이어서 순차 재생한다. 프레임이 2장 미만이면 할 게 없다. */
+function playCastWindup() {
+  if (castFrameUrls.length < 2) return;
+  el.charImg.classList.remove('hidden');
+  el.charFallback.classList.add('hidden');
+  el.charImg.src = castFrameUrls[0];
+  const ms = Array.isArray(castFrameDurations) ? (castFrameDurations[0] || 90) : (castFrameDurations || 90);
+  setTimeout(() => {
+    if (gameState !== 'charging') return; // 그 사이 이미 놓였으면 덮어쓰지 않는다
+    el.charImg.src = castFrameUrls[1];
+  }, ms);
+}
+
 /* ===== 캐스팅 세기 조절 (누르고 있는 동안) ===== */
 function startPowerCharge() {
   gameState = 'charging';
   el.statusLine.textContent = '세기 조절 중... 손을 떼면 캐스팅!';
   el.castPowerWrap.classList.remove('hidden');
+  playCastWindup();
   castChargeStartT = performance.now();
   const periodSec = CAST_POWER_PERIOD_MS / 1000;
   function tick(ts) {
@@ -419,9 +435,12 @@ async function releasePowerAndCast() {
   el.castPowerWrap.classList.add('hidden');
   gameState = 'casting';
   el.statusLine.textContent = '캐스팅...';
-  if (castFrameUrls.length) {
-    await playFrameSequence(castFrameUrls, castFrameDurations || 90);
-  } else {
+  if (castFrameUrls.length > 2) {
+    // 1,2번은 윈드업(playCastWindup)에서 이미 재생했다 — 3번부터 이어서.
+    const remainingUrls = castFrameUrls.slice(2);
+    const remainingDurations = Array.isArray(castFrameDurations) ? castFrameDurations.slice(2) : castFrameDurations;
+    await playFrameSequence(remainingUrls, remainingDurations || 90);
+  } else if (!castFrameUrls.length) {
     el.charFallback.style.transition = 'transform .35s ease';
     el.charFallback.style.transform = 'rotate(-25deg)';
     await wait(350);
