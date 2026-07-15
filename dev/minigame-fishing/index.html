@@ -833,6 +833,12 @@ function renderCastFrameGrid(sheetAsset, sheetDims) {
 async function renderCastPreviewLoop(sheetAsset) {
   if (!sheetAsset) { startPreviewLoop(el.castPreview, el.castPreviewLabel, []); return; }
   const img = new Image();
+  // crossOrigin은 img.src를 설정하기 *전에* 걸어야 의미가 있다 — sheetAsset.dataUrl은
+  // Supabase Storage의 교차 출처 URL이라, 이게 없으면 buildCastingFrameDataUrls가
+  // 내부에서 canvas.toDataURL()을 호출할 때 "tainted canvas" SecurityError로
+  // 조용히 던져서(잡는 코드가 없어 DevDiag 배너로만 보임) 미리보기가
+  // 영영 "프레임 없음"에 멈춰 있었다.
+  img.crossOrigin = 'anonymous';
   img.src = sheetAsset.dataUrl;
   await new Promise(resolve => { if (img.complete && img.naturalWidth) resolve(); else img.onload = resolve; });
   const urls = buildCastingFrameDataUrls(img, fishingConfig.castingFrameOverrides, 64);
@@ -843,7 +849,14 @@ async function renderCastTab() {
   const sheetAsset = await renderCastSheetPreview();
   const sheetDims = sheetAsset ? await loadImageDimensions(sheetAsset.dataUrl) : null;
   renderCastFrameGrid(sheetAsset, sheetDims);
-  await renderCastPreviewLoop(sheetAsset);
+  // 미리보기 생성(캔버스로 프레임을 잘라내는 작업)이 실패해도 아래 타임라인
+  // 렌더링까지 통째로 막히면 안 된다 — 시트/프레임 그리드는 이미 정상 그려진
+  // 뒤이므로, 미리보기 하나 실패했다고 나머지까지 멈춰 있는 상태로 보이게
+  // 두지 않는다.
+  await renderCastPreviewLoop(sheetAsset).catch((err) => {
+    startPreviewLoop(el.castPreview, el.castPreviewLabel, []);
+    DevDiag.show('캐스팅 미리보기 생성 실패: ' + (err && err.message ? err.message : err));
+  });
   renderCastTimeline();
 }
 
