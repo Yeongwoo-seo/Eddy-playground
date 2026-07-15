@@ -252,6 +252,12 @@ const el = {
 
 let castFrameUrls = [];
 let castFrameDurations = null; // per-frame ms, dev/minigame-fishing/index.html 재생 타임라인에서 설정
+// 캐스팅 프레임별 낚싯대 끝 지점 — dev/minigame-fishing/index.html의
+// 낚시대 끝 지정 도구(rodtipDraft)가 저장한 { [frameIndex]: {x,y} }
+// (0~1, char-stage 박스 기준). 지정 안 된 프레임은 DEFAULT_ROD_TIP_FRAC로
+// 폴백 — 같은 기본값을 설정 화면 defaultRodtipFrac()과 맞춰둔다.
+let castingFrameRodTips = {};
+const DEFAULT_ROD_TIP_FRAC = { x: 0.82, y: 0.15 };
 let reelFrameUrls = [];
 let idleFrameUrl = null;
 let sinkerImageUrl = null;
@@ -324,6 +330,7 @@ async function loadConfig() {
     castFrameUrls = [];
   }
   castFrameDurations = (cfg.castingFrameDurations && cfg.castingFrameDurations.length) ? cfg.castingFrameDurations : null;
+  castingFrameRodTips = cfg.castingFrameRodTips || {};
   const fishSheetAsset = cfg.fishSheetAssetId ? byId.get(cfg.fishSheetAssetId) : null;
   fishSheetUrl = fishSheetAsset ? fishSheetAsset.dataUrl : null;
   fishIconOverrides = cfg.fishIconOverrides || {};
@@ -398,8 +405,11 @@ async function loadConfig() {
 
 /* ===== 캐스팅/올리기 프레임 순차 재생 =====
    frameMs는 고정 ms 숫자(올리기) 또는 프레임별 ms 배열(캐스팅,
-   castFrameDurations — 설정 화면 재생 타임라인에서 조정한 값)을 받는다. */
-function playFrameSequence(urls, frameMs) {
+   castFrameDurations — 설정 화면 재생 타임라인에서 조정한 값)을 받는다.
+   onFrame(i)는 선택 — 캐스팅 던지기(throwSinker 이전, releasePowerAndCast)만
+   써서, 애니메이션이 진행되는 동안에도 매 프레임 낚싯대 끝 위치가 바뀌는
+   대로 낚싯줄(현수선)을 다시 그린다. */
+function playFrameSequence(urls, frameMs, onFrame) {
   return new Promise(resolve => {
     if (!urls.length) { resolve(); return; }
     el.charImg.classList.remove('hidden');
@@ -407,6 +417,7 @@ function playFrameSequence(urls, frameMs) {
     let i = 0;
     function showAndScheduleNext() {
       el.charImg.src = urls[i];
+      if (onFrame) onFrame(i);
       const ms = Array.isArray(frameMs) ? (frameMs[i] || 90) : frameMs;
       i++;
       setTimeout(i >= urls.length ? resolve : showAndScheduleNext, ms);
@@ -450,7 +461,14 @@ function startPowerCharge() {
   castChargeRaf = requestAnimationFrame(tick);
 }
 
-/* ===== 세기 확정 → 캐스팅 모션 → 추 던지기(물리) → 입질 대기 ===== */
+/* ===== 세기 확정 → 캐스팅 모션 → 추 던지기(물리) → 입질 대기 =====
+   손을 떼는(release) 순간 낚싯줄을 바로 만든다 — 애니메이션이 재생되는
+   동안엔 추가 아직 던져지지 않았으니 "1번 프레임의 낚싯대 끝"(origin)에
+   매달려 있는 것으로 그리고, 매 프레임 캐릭터 포즈가 바뀔 때마다 그
+   프레임의 낚싯대 끝(rodTipPxForFrame)에서 origin까지 현수선을 다시
+   그려 낚싯대를 따라 줄이 움직이는 것처럼 보이게 한다. 애니메이션이
+   끝나면 그 origin이 그대로 물리 시뮬레이션(throwSinker)의 시작점이
+   된다. */
 async function releasePowerAndCast() {
   if (gameState !== 'charging') return;
   cancelAnimationFrame(castChargeRaf);
@@ -458,11 +476,23 @@ async function releasePowerAndCast() {
   el.castPowerWrap.classList.add('hidden');
   gameState = 'casting';
   el.statusLine.textContent = '캐스팅...';
+
+  const frameRect = el.frame.getBoundingClientRect();
+  el.castSvg.setAttribute('viewBox', `0 0 ${frameRect.width} ${frameRect.height}`);
+  const origin = rodTipPxForFrame(0, frameRect); // 첫번째 지정된 낚시대 끝 — 물리 시작점
+  el.bobber.classList.add('hidden');
+  el.castSvg.classList.remove('hidden');
+  renderCastLine(origin, origin);
+
   if (castFrameUrls.length > 2) {
     // 1,2번은 윈드업(playCastWindup)에서 이미 재생했다 — 3번부터 이어서.
+    // onFrame(i)의 i는 remainingUrls 기준(0부터 다시 셈)이라, 원래
+    // 6프레임 인덱스를 기대하는 rodTipPxForFrame에는 +2해서 넘긴다.
     const remainingUrls = castFrameUrls.slice(2);
     const remainingDurations = Array.isArray(castFrameDurations) ? castFrameDurations.slice(2) : castFrameDurations;
-    await playFrameSequence(remainingUrls, remainingDurations || 90);
+    await playFrameSequence(remainingUrls, remainingDurations || 90, (i) => {
+      renderCastLine(rodTipPxForFrame(i + 2, frameRect), origin);
+    });
   } else if (!castFrameUrls.length) {
     el.charFallback.style.transition = 'transform .35s ease';
     el.charFallback.style.transform = 'rotate(-25deg)';
@@ -471,47 +501,51 @@ async function releasePowerAndCast() {
   }
   vibrate(15);
   if (idleFrameUrl) el.charImg.src = idleFrameUrl;
-  await throwSinker(power);
+  await throwSinker(power, origin, frameRect);
   waitForBite();
 }
 
-// 낚싯대 끝 위치 — 캐릭터가 낚싯대를 앞으로 들어 올린 채 서 있다고 가정한
-// 눈대중 지점(캐릭터 스테이지 박스 위쪽에서 한 번 더 위·오른쪽으로).
-// char-stage 박스 자체는 캐릭터 몸통 높이라 물 라인(47%)보다 아래일 수
-// 있어 그대로 쓰면 안 되고, 반드시 물 라인보다 위(작은 y)에 있어야 한다.
-function rodTipPx(frameRect) {
+// 낚싯대 끝 위치 — dev/minigame-fishing/index.html의 낚시대 끝 지정
+// 도구에서 프레임별로 저장한 정규화 좌표(castingFrameRodTips, char-stage
+// 박스 기준 0~1)를 실제 char-stage 박스 픽셀 크기에 곱해 el.frame 기준
+// 픽셀 좌표로 바꾼다. 지정 안 한 프레임은 DEFAULT_ROD_TIP_FRAC로 폴백.
+function rodTipPxForFrame(frameIndex, frameRect) {
   const charRect = el.charStage.getBoundingClientRect();
-  return { x: charRect.right - frameRect.left + 6, y: charRect.top - frameRect.top - 50 };
+  const pt = castingFrameRodTips[frameIndex] || DEFAULT_ROD_TIP_FRAC;
+  return {
+    x: charRect.left - frameRect.left + pt.x * charRect.width,
+    y: charRect.top - frameRect.top + pt.y * charRect.height,
+  };
 }
 
-// 포물선 운동으로 추를 던진다 — 피크 높이(H)·중력(g)을 프레임 높이 비례
-// 상수로 고정해 세기와 무관하게 항상 같은 체공 시간이 나오게 하고, 세기는
-// 수평거리(dx)만 늘린다("세질수록 멀리 감"). 착수 지점에 기존 찌(bobber)를
-// 그대로 가져다 놓아 입질 대기 이후 로직은 손대지 않는다.
-function throwSinker(power) {
+// 추를 던진다 — 수평은 등속(v_x = dx/T, dx는 세기(게이지)에 비례), 수직은
+// 초기속도 0의 순수 자유낙하(v_y = g·t)라 위로 튀어 오르는 구간 없이
+// 던지자마자 아래로 떨어지기 시작한다. 체공 시간(T)은 실제 물리
+// 상수(2.5m를 표준중력 9.8m/s²로 자유낙하할 때 걸리는 시간)를 그대로
+// 쓰고, 그 T 안에 정확히 물 라인까지의 픽셀 거리(h0)만큼 떨어지도록
+// 픽셀 중력(g)을 역산한다 — 세기와 무관하게 항상 같은 체공 시간이
+// 나오고, 세기는 수평거리(dx)만 늘린다("세질수록 멀리 감"). 착수
+// 지점에 기존 찌(bobber)를 그대로 가져다 놓아 입질 대기 이후 로직은
+// 손대지 않는다.
+function throwSinker(power, origin, frameRect) {
   return new Promise(resolve => {
-    const frameRect = el.frame.getBoundingClientRect();
-    el.castSvg.setAttribute('viewBox', `0 0 ${frameRect.width} ${frameRect.height}`);
-    const origin = rodTipPx(frameRect);
     const minDx = frameRect.width * 0.10, maxDx = frameRect.width * 0.68;
     const dx = minDx + (power / 100) * (maxDx - minDx);
     const waterY = frameRect.height * 0.47; // 기존 찌 착지 y(47%)와 동일
     const h0 = Math.max(10, waterY - origin.y);
-    const H = frameRect.height * 0.09; // 최고점 높이(낚싯대 끝 기준)
-    const g = frameRect.height * 3.4; // 중력 — 프레임 높이 비례라 기기 크기와 무관하게 체공 시간이 일정
-    const vy0 = -Math.sqrt(2 * g * H);
-    const T = (-vy0 + Math.sqrt(vy0 * vy0 + 2 * g * h0)) / g;
+    const FREE_FALL_HEIGHT_M = 2.5;
+    const GRAVITY_MPS2 = 9.8;
+    const T = Math.sqrt(2 * FREE_FALL_HEIGHT_M / GRAVITY_MPS2);
+    const g = 2 * h0 / (T * T);
     const vx0 = dx / T;
 
-    el.bobber.classList.add('hidden');
-    el.castSvg.classList.remove('hidden');
     let start = null;
     function frame(ts) {
       if (start === null) start = ts;
       const t = (ts - start) / 1000;
       if (t >= T) { finish(dx); return; }
       const x = origin.x + vx0 * t;
-      const y = origin.y + vy0 * t + 0.5 * g * t * t;
+      const y = origin.y + 0.5 * g * t * t;
       renderCastLine(origin, { x, y });
       castFlightRaf = requestAnimationFrame(frame);
     }
