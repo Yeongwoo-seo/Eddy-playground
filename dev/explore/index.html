@@ -151,9 +151,10 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
    text instead of any marker. Markers are appended as children of
    #locCanvas so they inherit its pan/zoom transform for free. ===== */
 .hub-act-btn.active{background:rgba(89,184,200,.22);border-color:rgba(89,184,200,.5)}
-.investigate-hotspot{position:absolute;width:40px;height:40px;margin:-20px 0 0 -20px;border-radius:50%;border:2px solid var(--cyan);background:rgba(89,184,200,.22);display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;padding:0;animation:investigateHotspotPulse 1.8s ease-in-out infinite}
-.investigate-hotspot.done{border-color:var(--amber);background:rgba(214,168,75,.2);animation:none}
-@keyframes investigateHotspotPulse{0%,100%{box-shadow:0 0 0 0 rgba(89,184,200,.35)}50%{box-shadow:0 0 0 8px rgba(89,184,200,0)}}
+/* No visible marker — a plain invisible tap zone (§신규). 조사하기가 정확히
+   어디를 찾아야 하는지 보여주지 않는 편이 실제 "둘러보다 발견한다"는
+   느낌에 가깝다는 판단으로, 이전의 반짝이는 원형 아이콘 마커를 없앴다. */
+.investigate-hotspot{position:absolute;width:40px;height:40px;margin:-20px 0 0 -20px;border-radius:50%;background:transparent;border:none;cursor:pointer;padding:0}
 .investigate-hint{position:absolute;left:16px;right:16px;top:calc(96px + env(safe-area-inset-top,0));z-index:2;text-align:center;font-size:13px;color:var(--text-secondary);background:rgba(8,10,12,.65);border-radius:14px;padding:10px 14px;pointer-events:none;opacity:0;transition:opacity .2s ease}
 .investigate-hint:empty{display:none}
 .investigate-hint.show{opacity:1}
@@ -1178,20 +1179,36 @@ function renderInvestigateHotspots() {
   const def = locationDefs[ExplorationState.getCurrentLocationId()];
   const hotspots = (!locCanvasW || !locCanvasH) ? [] : ((def && def.investigateHotspots) || []).filter(h => ExplorationState.getInteractionState(h.interactionId) !== 'locked');
   hotspots.forEach(h => {
-    const state = ExplorationState.getInteractionState(h.interactionId);
     const btn = document.createElement('button');
-    btn.className = 'investigate-hotspot' + (state === 'exhausted' || state === 'resolved' ? ' done' : '');
+    btn.className = 'investigate-hotspot';
     btn.style.left = ((h.x / 100) * locCanvasW) + 'px';
     btn.style.top = ((h.y / 100) * locCanvasH) + 'px';
-    btn.textContent = h.icon || '🔍';
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      setInvestigateMode(false);
-      playInteraction(h.interactionId);
+      playInvestigateHotspot(h.interactionId);
     });
     el.locCanvas.appendChild(btn);
   });
-  el.investigateHint.textContent = hotspots.length ? '반짝이는 지점을 눌러 살펴보세요.' : '';
+  el.investigateHint.textContent = hotspots.length ? '화면을 둘러보며 눌러보세요.' : '';
+}
+
+// 조사하기 중 핫스팟 하나를 탭했을 때 — playInteraction과 달리 investigate
+// 모드/줌 위치/마커를 그대로 둔다(§신규). 예전엔 탭하자마자 조사하기가
+// 꺼지고 화면이 기본 프레임으로 재배치됐는데, 그러면 핫스팟 하나 볼 때마다
+// 다시 조사하기를 켜야 해서 여러 개를 연달아 둘러보기 불편했다. 배경은
+// 그대로 둔 채 대사창(bottom-bar)만 그 위에 잠깐 나타났다 사라진다 —
+// scene/minigame 타입 핫스팟은 어차피 화면을 완전히 떠나므로(페이지 이동/
+// 인라인 씬 재생) 기존 playInteraction에 그대로 위임한다.
+function playInvestigateHotspot(interactionId) {
+  const def = interactionDefs[interactionId];
+  if (!def) return;
+  if (def.type !== 'topic') { playInteraction(interactionId); return; }
+  el.bottomBar.classList.remove('hidden');
+  playInteractionLines(def.lines || [], () => {
+    ExplorationState.completeInteraction(interactionId);
+    (def.effects || []).forEach(applyLocalEffect);
+    el.bottomBar.classList.add('hidden');
+  });
 }
 function setInvestigateMode(on) {
   investigateMode = on;

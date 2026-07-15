@@ -19,16 +19,18 @@
    an AI-image-generation prompt for whichever location a dev has selected
    (see buildHubLocationPrompt() there). Not read by the actual game.
 
-   `investigateHotspots` (optional) — array of { x, y, interactionId, icon },
-   x/y in % of the background image, read by 조사하기's toggle (see
-   renderInvestigateHotspots() in dev/explore/index.html) to place tappable
-   markers directly on the location's own pannable/zoomable #locCanvas.
-   interactionId can point at any existing interactionDefs entry (topic/
-   minigame/etc.) — same playInteraction() hand-off 대화하기 uses, just
-   reached by tapping a spot in the photo instead of picking from a list.
-   No location defines any yet (needs a dev looking at the actual generated
-   background to place them sensibly); 조사하기 still toggles on and works
-   with zero hotspots, it just has nothing to mark.
+   `investigateHotspots` (optional) — array of { x, y, interactionId }, x/y in
+   % of the background image, read by 조사하기's toggle (see
+   renderInvestigateHotspots() in dev/explore/index.html) to place invisible
+   tappable zones directly on the location's own pannable/zoomable #locCanvas
+   (no visible marker — 조사하기 is a "look around and find it" tool, not a
+   spoiler UI). interactionId can point at any existing interactionDefs entry
+   (topic/minigame/etc.) — a plain 'topic' entry is played in place via
+   playInvestigateHotspot() (investigate mode/pan-zoom stay untouched, so
+   several spots can be checked back-to-back); scene/minigame types fall
+   through to the normal playInteraction() hand-off since those leave the hub
+   view anyway. w1-adrian-spot is the first location to use this (see its own
+   comment below).
 
    `charPositions` (optional) — { [characterId]: { x, y } } in px, this
    location's own exception to the hub-wide standing position. Every hub
@@ -218,20 +220,19 @@ const locationDefs = {
     // 사건 전 자유 조사 10개 핫스팟(구 minigame-exhibition-search HOTSPOTS) —
     // x/y는 실제 사진이 아직 없어 잠정 배치한 값이라, /dev/upload로 진짜
     // 사진을 올린 뒤 눈으로 보고 다시 잡아야 한다(§파일 상단 investigateHotspots
-    // 주석 참고). k01(황동 장치 K-01)이 이 사건의 핵심 단서 — 발견 시 여러 줄
-    // 대사가 있는 유일한 스팟(w1as-topic-k01, 구 K01_DISCOVERY_LINES 그대로
-    // 이식)이라 아이콘을 다르게 뒀다.
+    // 주석 참고). 마커가 안 보이는 순수 탭 존이라 icon은 안 쓴다(§신규 —
+    // dev/explore/index.html의 .investigate-hotspot 참고).
     investigateHotspots: [
-      { x: 50, y: 30, icon: '🔶', interactionId: 'w1as-topic-k01' },
-      { x: 20, y: 55, icon: '🔍', interactionId: 'w1as-topic-camera' },
-      { x: 78, y: 50, icon: '🔍', interactionId: 'w1as-topic-watch' },
-      { x: 35, y: 75, icon: '🔍', interactionId: 'w1as-topic-desk' },
-      { x: 60, y: 78, icon: '🔍', interactionId: 'w1as-topic-tag' },
-      { x: 88, y: 72, icon: '🔍', interactionId: 'w1as-topic-staffdoor' },
-      { x: 30, y: 40, icon: '🔍', interactionId: 'w1as-topic-pamphlet' },
-      { x: 65, y: 35, icon: '🔍', interactionId: 'w1as-topic-guestbook' },
-      { x: 50, y: 12, icon: '🔍', interactionId: 'w1as-topic-ceiling' },
-      { x: 10, y: 85, icon: '🔍', interactionId: 'w1as-topic-entrance' },
+      { x: 50, y: 30, interactionId: 'w1as-topic-k01' },
+      { x: 20, y: 55, interactionId: 'w1as-topic-camera' },
+      { x: 78, y: 50, interactionId: 'w1as-topic-watch' },
+      { x: 35, y: 75, interactionId: 'w1as-topic-desk' },
+      { x: 60, y: 78, interactionId: 'w1as-topic-tag' },
+      { x: 88, y: 72, interactionId: 'w1as-topic-staffdoor' },
+      { x: 30, y: 40, interactionId: 'w1as-topic-pamphlet' },
+      { x: 65, y: 35, interactionId: 'w1as-topic-guestbook' },
+      { x: 50, y: 12, interactionId: 'w1as-topic-ceiling' },
+      { x: 10, y: 85, interactionId: 'w1as-topic-entrance' },
     ],
     // W1_TOURISM 전용 — "이제 안쪽으로 들어가자"는 구 미니게임의 exitBtn
     // 문구를 그대로 가져왔다. 조사 완료 여부와 무관하게 언제든 누를 수
