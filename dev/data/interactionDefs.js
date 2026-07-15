@@ -328,6 +328,46 @@ const interactionDefs = {
     ],
     effects: [{ type: 'setFlag', key: 'sawMakersMarkPlacard', value: true }],
   },
+  // 조사하기(§신규) — 유리문 너머로 안쪽을 들여다보면 전시장 보조 진열
+  // 구역(w1-adrian-spot)이 이동하기 목적지로 열린다(discoveredAdrianSpotEntrance
+  // 플래그, 그 장소의 unlockConditions 참고, dev/data/locationDefs.js). 예전엔
+  // "전시장에 들어간다" 버튼(enterSceneId)을 누르면 곧장 week1-scene-003으로
+  // 허브를 완전히 떠났지만, 이제 그 씬은 w1-adrian-spot에 처음 들어가는 순간
+  // 자동 재생된다(아래 w1as-scene-intro, autoPlayOnFirstVisit).
+  'w1ee-topic-peek-inside': {
+    id: 'w1ee-topic-peek-inside',
+    characterId: 'youngwoo',
+    locationIds: ['w1-exhibition-entrance'],
+    phases: ['W1_TOURISM'],
+    type: 'topic',
+    label: '유리문 안쪽 들여다보기',
+    lines: [
+      { speaker: '', text: '유리문 너머로 진열장 몇 개와 안쪽으로 이어지는 통로가 보인다.', characterId: null },
+      { speaker: '지수', text: '오, 생각보다 안이 넓네요?', characterId: 'jisoo', expression: 'curious' },
+      { speaker: '영우', text: '그러네.\n한번 들어가 볼까?', characterId: 'youngwoo', expression: 'soft' },
+    ],
+    effects: [{ type: 'setFlag', key: 'discoveredAdrianSpotEntrance', value: true }],
+  },
+  // week1-scene-003 진입 (§신규, autoPlayOnFirstVisit) — 예전엔
+  // w1-exhibition-entrance의 "전시장에 들어간다" 버튼(enterSceneId)이 곧장
+  // /dev/game으로 페이지 이동해 재생했지만, 다른 phase의 hand-off들처럼
+  // 인라인 재생(playSceneInline)으로 통일했다. w1ee-topic-peek-inside로 이
+  // 장소가 열린 뒤 실제로 처음 들어오는 순간 자동 재생된다 —
+  // findAutoInterrogation과 완전히 같은 매커니즘(dev/explore/index.html).
+  // 심문 씬들과 달리 재방문용 버튼(label/icon)은 없다 — 순수 도입부 내레이션
+  // 이라 다시 열어볼 일이 없고, 이 phase의 w1-adrian-spot엔 characters도
+  // 비어 있어 대화하기로도 어차피 다시 못 연다. week1-scene-003 자체의
+  // nextSceneId도 없앴다 — 씬이 끝나면 그냥 이 장소(자기 자신)의 허브 화면
+  // 으로 돌아오면 되므로, moveTo로 같은 곳을 다시 이동할 필요가 없다(see
+  // dev/dialogueData.js/dev/data/sceneRoutes.js).
+  'w1as-scene-intro': {
+    id: 'w1as-scene-intro',
+    locationIds: ['w1-adrian-spot'],
+    phases: ['W1_TOURISM'],
+    type: 'scene',
+    autoPlayOnFirstVisit: true,
+    sceneId: 'week1-scene-003',
+  },
 
   /* ===== w1-adrian-spot (전시장 보조 진열 구역) — W1_TOURISM 전용 자유 조사
      10개 핫스팟 (§신규, 구 minigame-exhibition-search/HOTSPOTS 이식). 미니게임

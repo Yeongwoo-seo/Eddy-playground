@@ -1191,11 +1191,18 @@ const week1Scene001Lines = [
    진열 구역, Phase 4/5와 같은 장소를 W1_TOURISM에도 재사용)에 조사하기
    핫스팟 10개로 이식했다(w1as-topic-*, dev/data/interactionDefs.js). K-01
    발견 비트만 원래처럼 여러 줄 대사로 유지되고, 나머지 9개는 짧은 관찰
-   한 줄씩이다. 이 VN 씬은 짧은 도입부만 담당하고 nextSceneId로 그 허브
-   장소에 곧장 내려준다(week1-scene-003-exhibition-return, see
-   dev/data/sceneRoutes.js) — 조사 완료 여부는 강제하지 않으며(§20 게임오버
-   없음), w1-adrian-spot 자체의 enterSceneId("이제 안쪽으로 들어가자")로
-   week1-scene-004(도난 발생)로 넘어간다.
+   한 줄씩이다.
+
+   이 씬 자체의 진입 방식도 바뀌었다(§신규) — 예전엔 w1-exhibition-entrance의
+   "전시장에 들어간다" 버튼(enterSceneId)을 누르면 곧장 여기로 페이지 이동해
+   재생하고 nextSceneId로 w1-adrian-spot에 내려주는 구조였지만, 이제 그 입구
+   장소를 조사(w1ee-topic-peek-inside, dev/data/interactionDefs.js)해야만
+   w1-adrian-spot이 이동하기 목적지로 열리고, 그 장소에 처음 들어가는 순간
+   이 씬이 허브 안에서 인라인 자동 재생된다(w1as-scene-intro,
+   autoPlayOnFirstVisit). 씬이 끝나면 그냥 그 자리(자기 자신)의 허브
+   화면으로 돌아오면 되므로 nextSceneId는 없다 — 조사 완료 여부는 강제하지
+   않으며(§20 게임오버 없음), w1-adrian-spot 자체의 enterSceneId("이제
+   안쪽으로 들어가자")로 week1-scene-004(도난 발생)로 넘어간다.
 
    허브로 넘어가기 직전, 입장 직후에 전시장 직원과 짧게 안내를 주고받고
    영우/지수 티키타카 한 소절을 끼워 넣는다(staff-greet-1~4, banter-1~9).
@@ -3407,13 +3414,12 @@ const week1Scenes = [
     location: 'Pop-up Exhibition',
     introLabel: 'CIRCULAR QUAY',
     time: '10:40',
-    // Hands off into the exploration hub at w1-adrian-spot (전시장 보조 진열
-    // 구역) — see MINIGAME_ROUTES in game/index.html / dev/data/sceneRoutes.js.
-    // The 10 evidence hotspots this used to lead into a standalone minigame
-    // for now live there as investigateHotspots (§신규 재편, see
-    // locationDefs.js/interactionDefs.js's w1as-topic-*).
+    // 이제 w1-adrian-spot(전시장 보조 진열 구역)에 처음 들어가는 순간 그
+    // 장소 안에서 인라인 자동 재생된다(w1as-scene-intro,
+    // autoPlayOnFirstVisit — see dev/data/interactionDefs.js) — 페이지
+    // 이동이 아니므로 nextSceneId도 없다. 10개 증거 핫스팟은 그 장소의
+    // investigateHotspots로 옮겨졌다(§신규 재편, w1as-topic-* 참고).
     lines: week1Scene003Lines,
-    nextSceneId: 'week1-scene-003-exhibition-return',
   },
   {
     id: 'week1-scene-004',

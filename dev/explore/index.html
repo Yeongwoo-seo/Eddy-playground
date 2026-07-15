@@ -1029,7 +1029,12 @@ function hideMoveMapSheet() {
 function openMoveSheet() {
   const currentId = ExplorationState.getCurrentLocationId();
   const phase = ExplorationState.getCurrentPhase();
-  const destDefs = Object.values(locationDefs).filter(l => l.id !== currentId && (l.phases || []).includes(phase));
+  // unlockConditions (§신규, phase-keyed 가능 — locationDefs.js 상단 주석
+  // 참고) — phase에 속한다고 무조건 목적지가 되는 게 아니라, 추가 조건(주로
+  // 다른 장소를 조사해서 얻은 flag)을 만족해야만 열리는 장소가 있다. 없으면
+  // evaluateAllConditions(undefined) === true라 기존 장소는 전부 그대로다.
+  const destDefs = Object.values(locationDefs).filter(l =>
+    l.id !== currentId && (l.phases || []).includes(phase) && evaluateAllConditions(resolveByPhase(l.unlockConditions, phase)));
   const phaseMap = (typeof phaseMaps !== 'undefined') ? phaseMaps[phase] : null;
   const mapDests = phaseMap ? destDefs.filter(d => resolveByPhase(d.mapPosition, phase)) : [];
   if (phaseMap && mapDests.length) {

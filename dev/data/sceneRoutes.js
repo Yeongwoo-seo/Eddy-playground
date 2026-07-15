@@ -12,10 +12,6 @@ const MINIGAME_ROUTES = {
   'week0-scene-001-2-minigame': '/dev/minigame-eastwood/',
   'week0-scene-002-2': '/dev/minigame-phone-search/',
   'week0-scene-shop-visit': '/dev/shop/',
-  // §신규 재편 — 전시장 증거 수집이 전용 미니게임(minigame-exhibition-search,
-  // 삭제됨)에서 탐색 허브의 w1-adrian-spot 조사하기로 옮겨갔다. week1-scene-003
-  // 종료 시 곧장 그 허브 장소로 내려준다 — see dialogueData.js/locationDefs.js.
-  'week1-scene-003-exhibition-return': '/dev/explore/?phase=W1_TOURISM&location=w1-adrian-spot',
   'week1-scene-004-minigame': '/dev/minigame-photo-zoom/',
   'week1-scene-008-minigame': '/dev/minigame-timeline/',
   // The Missing Key v1 §12.6 — 세 용의자 자유 순서 탐문. Both virtual ids

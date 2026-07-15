@@ -53,6 +53,16 @@
    기록이다 — 실제 이동하기는 그 phase에 속한 모든 위치를 목적지로 보여준다
    (openMoveSheet). 코드에서 이 필드를 더 읽는 곳은 없다.
 
+   `unlockConditions` (optional, §신규) — 그 phase에 속한다고 무조건 이동하기
+   목적지가 되는 게 아니라, 추가 조건(주로 다른 장소를 조사해서 얻은 flag)을
+   만족해야만 열리는 드문 경우를 위한 필드. explorationState.js의
+   evaluateAllConditions가 읽는 것과 같은 조건 배열(hasEvidence/hasFact/flags/
+   flagEquals)을 그대로 쓴다 — openMoveSheet(dev/explore/index.html)가 이동하기
+   목적지 목록을 만들 때 phase 소속 여부에 더해 이 조건도 확인한다. 없으면
+   항상 열려 있는 것과 같다(evaluateAllConditions(undefined) === true). 위
+   phase-keyed 관례를 그대로 따라 phase별로 다른 조건(또는 조건 없음)을 줄 수
+   있다 — w1-adrian-spot 참고.
+
    ===== phase-keyed 필드 (§신규 저작 관습) =====
    같은 실제 장소가 phase마다 새 id로 중복 정의되던 문제(예전 w1-suspect-hub/
    w1-reverify-hub, w1-suspect-adrian-spot/w1-reverify-adrian-spot)를 피하려면,
@@ -60,8 +70,9 @@
    내용 차이는 interactionDefs.js의 각 항목이 이미 자체 `locationIds`+`phases`로
    걸러주므로 대부분은 이것만으로 충분하다(w1-adrian-spot 참고).
 
-   그래도 `characters`/`enterSceneId`/`enterSceneLabel`/`mapPosition`처럼 장소
-   자체의 값이 phase마다 달라져야 하는 드문 경우엔, 평범한 값 대신
+   그래도 `characters`/`enterSceneId`/`enterSceneLabel`/`mapPosition`/
+   `unlockConditions`처럼 장소 자체의 값이 phase마다 달라져야 하는 드문
+   경우엔, 평범한 값 대신
    `{ __byPhase: true, [phase]: value }` 객체로 쓴다 — dev/explore/index.html의
    resolveByPhase(value, phase)가 현재 phase 기준으로 해석한다. `__byPhase`
    마커를 반드시 붙여야 한다 — mapPosition의 평범한 값 자체가 이미 `{x,y}`
@@ -133,15 +144,16 @@ const locationDefs = {
     visualBrief: '더 록스 골목 한쪽에 자리한 작은 팝업 전시장의 유리문 입구. "K-01: 잃어버린 시간들" 배너가 입구 위에 걸려 있고, 유리문 너머로 전시 공간 일부가 살짝 비쳐 보인다.',
     characters: ['youngwoo'],
     exits: ['w1-the-rocks-lane'],
-    // A location can also hand off *back into the VN* instead of only to
-    // another routed page (routeOnEnter) or hub location (exits) — the hub
-    // screen shows this as a distinct "들어간다" action, not a normal exit
-    // chip, since it leaves the hub for good (spec §12.2's soft-gate: the
-    // player chose "조금 더 둘러본다" earlier from Phase 1's intro dialogue
-    // (w1-phase1-intro), wandered the hub, and this is where they finally
-    // commit to going in).
-    enterSceneId: 'week1-scene-003',
-    enterSceneLabel: '전시장에 들어간다',
+    // §신규 — "전시장에 들어간다" 버튼(enterSceneId, 눌리는 즉시 허브를
+    // 완전히 떠나 VN 씬으로 이동)을 없애고, 조사하기로 대체했다. 유리문
+    // 안쪽을 조사해야(w1ee-topic-peek-inside) 전시장 보조 진열 구역
+    // (w1-adrian-spot)이 이동하기 목적지로 열린다(그 장소의 unlockConditions
+    // 참고) — 그 장소에 처음 들어가는 순간 원래 "들어간다"에 걸려 있던 씬
+    // (week1-scene-003)이 자동 재생된다(interactionDefs.js의
+    // autoPlayOnFirstVisit 항목, findAutoInterrogation과 같은 매커니즘).
+    investigateHotspots: [
+      { x: 50, y: 55, interactionId: 'w1ee-topic-peek-inside' },
+    ],
   },
 
   /* ===== Phase 4 — 용의자 탐문 (The Missing Key v1 §12.6) =====
@@ -208,6 +220,14 @@ const locationDefs = {
   // w1-exhibition-entrance와 같은 이유(§파일 상단 mapPosition 주석: "안쪽이라
   // 지도에 따로 찍기 애매한 곳")로, 관광 지도엔 핀 대신 이동하기 리스트 줄로
   // 뜬다.
+  //
+  // unlockConditions (§신규) — W1_TOURISM에서는 w1-exhibition-entrance를
+  // 조사(w1ee-topic-peek-inside)해야만 이동하기 목적지로 열린다(openMoveSheet,
+  // dev/explore/index.html — evaluateAllConditions 재사용). phase-keyed라
+  // W1_SUSPECT_INTERVIEWS/W1_REVERIFICATION에는 아예 조건이 없어(resolveByPhase가
+  // null 반환 → evaluateAllConditions(null) === true) 항상 열려 있다 — 그
+  // 단계엔 이미 이야기상 알려진 곳이라 게이트가 필요 없고, /dev/phases의 phase
+  // 직행 테스트도 이 조건 때문에 막히지 않는다.
   'w1-adrian-spot': {
     id: 'w1-adrian-spot',
     week: 1,
@@ -217,6 +237,7 @@ const locationDefs = {
     characters: { __byPhase: true, W1_SUSPECT_INTERVIEWS: ['adrian'], W1_REVERIFICATION: ['adrian'] },
     exits: ['w1-hub-plaza'],
     mapPosition: { __byPhase: true, W1_SUSPECT_INTERVIEWS: { x: 72, y: 32 }, W1_REVERIFICATION: { x: 82, y: 38 } },
+    unlockConditions: { __byPhase: true, W1_TOURISM: [{ type: 'flags', keys: ['discoveredAdrianSpotEntrance'] }] },
     // 사건 전 자유 조사 10개 핫스팟(구 minigame-exhibition-search HOTSPOTS) —
     // x/y는 실제 사진이 아직 없어 잠정 배치한 값이라, /dev/upload로 진짜
     // 사진을 올린 뒤 눈으로 보고 다시 잡아야 한다(§파일 상단 investigateHotspots
