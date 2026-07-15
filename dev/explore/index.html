@@ -448,6 +448,20 @@ function showView(name) {
   currentView = name;
   el.mapView.classList.toggle('active', name === 'map');
   el.locationView.classList.toggle('active', name === 'location');
+  // Every caller does renderLocation() (which fits the background via
+  // applyLocationBackground -> fitLocStage) and only calls showView('location')
+  // afterward — but fitLocStage() reads #locStage's real rendered size, and
+  // while .location-view is still the *previous* (or no) view, it's
+  // display:none, so getBoundingClientRect() returns all zeros and
+  // fitLocStage() silently no-ops (see its own rect.width/height guard).
+  // The background then renders unscaled at its raw top-left corner instead
+  // of centered/cover-fit, until something else happens to re-trigger a fit
+  // (a resize event, moving elsewhere and back). Only ever visible on this
+  // view's very first activation this session (once .location-view is
+  // already .active, later fitLocStage() calls during the awaited
+  // renderLocation() chain get a real rect and work fine) — re-fitting here,
+  // now that the container is guaranteed to have real layout, closes that gap.
+  if (name === 'location' && locCanvasW) fitLocStage();
 }
 
 /* ===== Map view (spec §7.2) ===== */
