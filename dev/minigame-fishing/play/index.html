@@ -242,19 +242,35 @@ let progress = 45;
 
 /* ===== 설정 로드 (AssetDB) — 실패해도 게임은 도형 폴백으로 계속 동작한다. ===== */
 async function loadConfig() {
-  let cfg = { castingFrames: [], reelingFrames: [], barDesign: {} };
+  let cfg = { castingFrames: [], reelingFrames: [], barDesign: {}, castingSheetAssetId: null, castingFrameOverrides: {} };
   try { cfg = await AssetDB.getFishingConfig(); } catch (e) { /* 오프라인/미설정 — 기본값으로 진행 */ }
-  const ids = [].concat(cfg.castingFrames || [], cfg.reelingFrames || []);
+  // castingFrames(개별 업로드 배열)는 더 이상 안 쓴다 — 캐스팅은 이제
+  // castingSheetAssetId 시트 1장을 잘라 쓴다(dev/minigame-fishing/index.html
+  // 참고). 올리기(reelingFrames)는 여전히 예전 방식 그대로.
+  const ids = [].concat(cfg.reelingFrames || []);
   const design = cfg.barDesign || {};
   if (design.fishIconAssetId) ids.push(design.fishIconAssetId);
   if (design.barImageAssetId) ids.push(design.barImageAssetId);
   if (design.zoneImageAssetId) ids.push(design.zoneImageAssetId);
   if (cfg.fishSheetAssetId) ids.push(cfg.fishSheetAssetId);
+  if (cfg.castingSheetAssetId) ids.push(cfg.castingSheetAssetId);
   let assets = [];
   try { assets = await AssetDB.getAssetsByIds(ids); } catch (e) { /* 위와 동일 */ }
   const byId = new Map(assets.map(a => [a.id, a]));
-  castFrameUrls = (cfg.castingFrames || []).map(id => byId.get(id)).filter(Boolean).map(a => a.dataUrl);
   reelFrameUrls = (cfg.reelingFrames || []).map(id => byId.get(id)).filter(Boolean).map(a => a.dataUrl);
+  const castingSheetAsset = cfg.castingSheetAssetId ? byId.get(cfg.castingSheetAssetId) : null;
+  if (castingSheetAsset) {
+    const img = await new Promise(resolve => {
+      const im = new Image();
+      im.crossOrigin = 'anonymous';
+      im.onload = () => resolve(im);
+      im.onerror = () => resolve(null);
+      im.src = castingSheetAsset.dataUrl;
+    });
+    castFrameUrls = img ? buildCastingFrameDataUrls(img, cfg.castingFrameOverrides, 64) : [];
+  } else {
+    castFrameUrls = [];
+  }
   const fishSheetAsset = cfg.fishSheetAssetId ? byId.get(cfg.fishSheetAssetId) : null;
   fishSheetUrl = fishSheetAsset ? fishSheetAsset.dataUrl : null;
   fishIconOverrides = cfg.fishIconOverrides || {};

@@ -151,6 +151,10 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 
 /* ===== 물고기 종류 탭 ===== */
 .fish-sheet-frame{position:relative;width:196px;height:136px;max-width:100%;margin:0 auto;background-image:repeating-conic-gradient(var(--surface-2) 0% 25%, var(--surface-1) 0% 50%);background-size:16px 16px;border-radius:10px;border:1px solid var(--divider);overflow:hidden}
+/* 캐스팅 시트는 404x64px 1행짜리 스트립이라 같은 체커보드 배경에 폭/높이만
+   다르게 준다 — 나머지(빈 상태 문구, 업로드/제거 버튼, 시트 미리보기 <img>)는
+   .fish-sheet-* 클래스를 그대로 재사용한다. */
+.cast-sheet-frame{width:404px;height:64px}
 .fish-sheet-frame img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;image-rendering:pixelated}
 .fish-sheet-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text-muted);font-family:var(--mono);text-align:center;padding:8px;line-height:1.5}
 .fish-sheet-spec{font-size:12px;color:var(--text-muted);margin-top:10px;line-height:1.6;text-align:center}
@@ -215,16 +219,27 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     </div>
   </div>
 
-  <!-- ===== 캐스팅/올리기 모션 — 같은 프레임 업로더 UI를 공유한다 (renderFramesTab). ===== -->
+  <!-- ===== 캐스팅 모션 — 물고기 종류 탭과 같은 시트 업로드 + 세밀영역조절
+       패턴(renderCastTab/openCastingFrameCropAdjuster). 올리기 모션은 여전히
+       프레임을 한 장씩 올리는 예전 방식(renderFramesTab)을 그대로 쓴다. ===== -->
   <div class="tab-panel hidden" id="panelCast">
     <div class="frame-preview-row">
       <div class="frame-preview" id="castPreview"></div>
       <div class="frame-preview-label" id="castPreviewLabel">프레임 없음 — 재생 미리보기</div>
     </div>
-    <div class="frame-note">캐스팅(낚싯대를 휘두르는) 동작의 도트 프레임을 순서대로 올려요. 프레임이 하나도 없으면 플레이 화면에서 간단한 도형으로 대체돼요.</div>
-    <div class="frame-strip" id="castFrames"></div>
-    <button type="button" class="frame-add-btn" id="castAddBtn">+ 프레임 추가</button>
-    <input type="file" id="castFileInput" accept="image/*">
+    <div class="option-group">
+      <div class="option-label">캐스팅 모션 시트</div>
+      <div class="option-desc">404×64px 투명 PNG · 가로 6칸 · 칸 64×64px · 칸 간격 4px · 바깥 여백 없음. 업로드하면 6프레임이 왼쪽부터 순서대로 자동 배정돼요. 시트가 규격에 딱 맞지 않으면 프레임이 어긋나 보일 수 있는데, 아래 프레임을 탭하면 그 프레임만 따로 세밀영역조절할 수 있어요.</div>
+      <div class="fish-sheet-frame cast-sheet-frame" id="castSheetFrame">
+        <div class="fish-sheet-empty" id="castSheetEmpty">아직 업로드된 시트가 없어요<br>업로드하기 전까진 간단한 도형으로 대체돼요</div>
+      </div>
+      <div class="fish-sheet-actions">
+        <button type="button" class="fish-sheet-btn" id="castSheetUploadBtn">📤 시트 업로드</button>
+        <button type="button" class="fish-sheet-btn danger hidden" id="castSheetRemoveBtn">✕ 제거</button>
+      </div>
+      <input type="file" id="castSheetFileInput" accept="image/png">
+    </div>
+    <div class="frame-strip" id="castFrameGrid"></div>
 
     <div class="prompt-block">
       <div class="option-label">AI 프레임 생성 프롬프트</div>
@@ -358,7 +373,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     </div>
     <div class="crop-size-row">
       <div class="option-label">크롭 크기</div>
-      <input type="range" id="cropSizeInput" min="10" max="90" value="40">
+      <input type="range" id="cropSizeInput" min="10" max="100" value="40">
       <div class="range-value" id="cropSizeValue">40%</div>
     </div>
     <div class="crop-actions">
@@ -445,11 +460,14 @@ const el = {
   motionPills: document.getElementById('motionPills'),
   testBtn: document.getElementById('testBtn'),
   saveNote: document.getElementById('saveNote'),
-  castFrames: document.getElementById('castFrames'),
-  castAddBtn: document.getElementById('castAddBtn'),
-  castFileInput: document.getElementById('castFileInput'),
   castPreview: document.getElementById('castPreview'),
   castPreviewLabel: document.getElementById('castPreviewLabel'),
+  castSheetFrame: document.getElementById('castSheetFrame'),
+  castSheetEmpty: document.getElementById('castSheetEmpty'),
+  castSheetUploadBtn: document.getElementById('castSheetUploadBtn'),
+  castSheetRemoveBtn: document.getElementById('castSheetRemoveBtn'),
+  castSheetFileInput: document.getElementById('castSheetFileInput'),
+  castFrameGrid: document.getElementById('castFrameGrid'),
   reelFrames: document.getElementById('reelFrames'),
   reelAddBtn: document.getElementById('reelAddBtn'),
   reelFileInput: document.getElementById('reelFileInput'),
@@ -710,28 +728,110 @@ async function renderFramesTab(key, stripEl, fileInputEl, previewEl, labelEl) {
   startPreviewLoop(previewEl, labelEl, ids.map(id => byId.get(id)).filter(Boolean));
 }
 
-// castAddBtn/reelAddBtn are static buttons already in the DOM at page load
-// (see .frame-add-btn comment above) — wired once here, not recreated by
-// renderFramesTab on every re-render.
-el.castAddBtn.addEventListener('click', () => el.castFileInput.click());
-el.reelAddBtn.addEventListener('click', () => el.reelFileInput.click());
-// Disabled for the duration of the upload — uploadFrame reads/appends to
-// fishingConfig[key] off a local snapshot, so two uploads racing (a fast
-// double-tap before the first renderFramesTab() finishes) can silently
-// drop one of the two frames (last write wins). One in-flight upload at a
-// time per tab avoids that.
-el.castFileInput.addEventListener('change', async () => {
-  const file = el.castFileInput.files[0];
-  el.castFileInput.value = '';
-  if (!file) return;
-  el.castAddBtn.disabled = true;
-  try {
-    await uploadFrame(file, 'castingFrames');
-    renderFramesTab('castingFrames', el.castFrames, el.castFileInput, el.castPreview, el.castPreviewLabel);
-  } finally {
-    el.castAddBtn.disabled = false;
+/* ===== 캐스팅 모션 탭 — 시트 업로드 + 세밀영역조절 (물고기 종류 탭의
+   renderFishTab/openFishSpeciesCropAdjuster와 완전히 같은 패턴, 프레임이
+   67종 물고기 대신 CASTING_SHEET_LAYOUT.columns(6)개 고정 슬롯이라는 점만
+   다르다). 올리기 모션(reelingFrames)은 여전히 renderFramesTab의 개별
+   업로드 배열 방식을 쓴다 — 이번 변경은 캐스팅에만 적용한다. */
+async function renderCastSheetPreview() {
+  el.castSheetFrame.querySelectorAll('img').forEach(img => img.remove());
+  const assetId = (fishingConfig || {}).castingSheetAssetId;
+  const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
+  if (!asset) {
+    el.castSheetEmpty.classList.remove('hidden');
+    el.castSheetRemoveBtn.classList.add('hidden');
+    return null;
   }
+  el.castSheetEmpty.classList.add('hidden');
+  el.castSheetRemoveBtn.classList.remove('hidden');
+  const img = document.createElement('img');
+  img.src = asset.dataUrl;
+  img.alt = '';
+  el.castSheetFrame.appendChild(img);
+  return asset;
+}
+
+function renderCastFrameGrid(sheetAsset, sheetDims) {
+  const overrides = fishingConfig.castingFrameOverrides || {};
+  const cells = [];
+  for (let i = 0; i < CASTING_SHEET_LAYOUT.columns; i++) {
+    const override = overrides[i];
+    const style = (override && sheetDims)
+      ? getFishCropStyle(override, sheetDims.width, sheetDims.height, 64)
+      : getCastingSlotStyle(i, 1);
+    const iconStyle = sheetAsset
+      ? `background-image:url('${sheetAsset.dataUrl}');background-position:${style.backgroundPosition};background-size:${style.backgroundSize};background-repeat:no-repeat;image-rendering:pixelated`
+      : '';
+    cells.push(`
+      <div class="frame-slot${sheetAsset ? ' fish-icon-tappable' : ''}" style="${iconStyle}" data-frame-index="${i}">
+        <span class="frame-index">${i + 1}${override ? ' ✓' : ''}</span>
+        ${sheetAsset ? '' : '<span style="font-size:20px">🎣</span>'}
+      </div>
+    `);
+  }
+  el.castFrameGrid.innerHTML = cells.join('');
+  if (sheetAsset) {
+    el.castFrameGrid.querySelectorAll('[data-frame-index]').forEach(cellEl => {
+      cellEl.addEventListener('click', () => openCastingFrameCropAdjuster(Number(cellEl.dataset.frameIndex), sheetAsset, sheetDims));
+    });
+  }
+}
+
+// 재생 미리보기(startPreviewLoop)는 frames[i].dataUrl 배열을 받는데, 캐스팅은
+// 이제 독립 업로드 배열이 아니라 시트 1장을 잘라낸 결과라 buildCastingFrameDataUrls
+// (dev/data/fishDefs.js)의 출력을 { dataUrl } 형태로 감싸 넣어준다.
+async function renderCastPreviewLoop(sheetAsset) {
+  if (!sheetAsset) { startPreviewLoop(el.castPreview, el.castPreviewLabel, []); return; }
+  const img = new Image();
+  img.src = sheetAsset.dataUrl;
+  await new Promise(resolve => { if (img.complete && img.naturalWidth) resolve(); else img.onload = resolve; });
+  const urls = buildCastingFrameDataUrls(img, fishingConfig.castingFrameOverrides, 64);
+  startPreviewLoop(el.castPreview, el.castPreviewLabel, urls.map(u => ({ dataUrl: u })));
+}
+
+async function renderCastTab() {
+  const sheetAsset = await renderCastSheetPreview();
+  const sheetDims = sheetAsset ? await loadImageDimensions(sheetAsset.dataUrl) : null;
+  renderCastFrameGrid(sheetAsset, sheetDims);
+  await renderCastPreviewLoop(sheetAsset);
+}
+
+function openCastingFrameCropAdjuster(frameIndex, sheetAsset, sheetDims) {
+  const overrides = fishingConfig.castingFrameOverrides || {};
+  const existingRect = overrides[frameIndex] || (sheetDims ? getCastingDefaultCropRect(frameIndex) : { cx: 0.5, cy: 0.5, size: 0.4 });
+  openCropAdjuster(sheetAsset.dataUrl, existingRect, null, (rect) => confirmCastingFrameCrop(rect, frameIndex));
+}
+// 물고기 세밀영역조절(confirmFishSpeciesCrop)과 마찬가지로 시트 자체는
+// 안 바뀐다 — 이 프레임이 시트의 어느 영역을 잘라 쓸지 좌표만 저장한다.
+async function confirmCastingFrameCrop(rect, frameIndex) {
+  const overrides = Object.assign({}, fishingConfig.castingFrameOverrides, { [frameIndex]: rect });
+  fishingConfig = await AssetDB.setFishingConfig({ castingFrameOverrides: overrides });
+  renderCastTab();
+}
+
+el.castSheetUploadBtn.addEventListener('click', () => el.castSheetFileInput.click());
+el.castSheetFileInput.addEventListener('change', async () => {
+  const file = el.castSheetFileInput.files[0];
+  el.castSheetFileInput.value = '';
+  if (!file) return;
+  const asset = await AssetDB.addAsset({ type: 'fishing-cast-sheet', name: file.name, blob: file });
+  fishingConfig = await AssetDB.setFishingConfig({ castingSheetAssetId: asset.id });
+  showSaveNote();
+  renderCastTab();
 });
+el.castSheetRemoveBtn.addEventListener('click', async () => {
+  // 시트를 지우면 프레임별 세밀영역조절 보정도 같이 지운다 — 새 시트를
+  // 올렸을 때 엉뚱한 좌표가 남아있지 않게(물고기 시트 제거와 같은 원칙).
+  fishingConfig = await AssetDB.setFishingConfig({ castingSheetAssetId: null, castingFrameOverrides: {} });
+  showSaveNote();
+  renderCastTab();
+});
+
+// reelAddBtn is a static button already in the DOM at page load (see
+// .frame-add-btn comment above) — wired once here, not recreated by
+// renderFramesTab on every re-render. (castAddBtn/castFileInput no longer
+// exist — casting moved to the sheet-upload flow below, renderCastTab.)
+el.reelAddBtn.addEventListener('click', () => el.reelFileInput.click());
 el.reelFileInput.addEventListener('change', async () => {
   const file = el.reelFileInput.files[0];
   el.reelFileInput.value = '';
@@ -1459,7 +1559,7 @@ async function init() {
   renderFishIconSlot();
   renderBarImageSlot();
   renderZoneImageSlot();
-  renderFramesTab('castingFrames', el.castFrames, el.castFileInput, el.castPreview, el.castPreviewLabel);
+  renderCastTab();
   renderFramesTab('reelingFrames', el.reelFrames, el.reelFileInput, el.reelPreview, el.reelPreviewLabel);
   renderFishTab();
 }
