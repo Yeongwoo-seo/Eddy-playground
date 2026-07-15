@@ -75,13 +75,11 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .fishbar-panel{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:4;display:flex;align-items:center;gap:14px;background:rgba(5,20,28,.35);border-radius:20px;padding:18px 20px;backdrop-filter:blur(2px)}
 .fishbar-panel.hidden{display:none}
 .fishbar{position:relative;width:52px;height:230px;border-radius:12px;overflow:hidden;border:2px solid rgba(255,255,255,.5);box-shadow:inset 0 0 12px rgba(0,0,0,.4);background-size:cover;background-position:center}
-/* 게이지가 낚시바 모듈 자체다 — 별도 영역지정 없이 항상 낚시바 전체를
-   채운다(캐치존/물고기보다 아래 쌓여야 위에서 그 둘이 계속 보인다).
-   배경색은 매 프레임 JS(renderBarFrame/gaugeColorForProgress)가 현재
-   진행도에 맞는 단색으로 갈아끼운다 — 여기 background는 그 값이 아직
-   반영되기 전(첫 프레임) 잠깐 보일 수 있는 기본값일 뿐이라 30%(기본
-   시작 게이지) 색으로 맞춰둔다. */
-.fishbar-gauge{position:absolute;inset:0;overflow:hidden;background:rgb(151,126,83)}
+/* 게이지는 사용자 요청으로 화면에서 숨겼다(코드/로직은 그대로 남겨둠 —
+   나중에 다시 켤 수 있게 display:none만 추가). 낚시바 크기/캐치바 크기를
+   직접 조절하는 새 낚시바 모듈로 대체하는 중이라 진행도 채우기 효과는
+   잠시 보이지 않는다. */
+.fishbar-gauge{position:absolute;inset:0;overflow:hidden;background:rgb(151,126,83);display:none}
 .fishbar-gauge-mask{position:absolute;left:0;right:0;top:0;background:rgba(5,7,10,.82)}
 .fishbar-zone{position:absolute;left:0;right:0;border-radius:6px;opacity:.85;transition:background .2s;background-size:cover;background-position:center}
 .fishbar-fish{position:absolute;left:50%;transform:translate(-50%,-50%);font-size:22px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.4))}
@@ -333,6 +331,8 @@ async function loadConfig() {
     });
   }
 
+  el.fishbar.style.width = (design.barWidthPx || 52) + 'px';
+  el.fishbar.style.height = (design.barHeightPx || 230) + 'px';
   el.fishbar.style.background = design.barColor || '#171C22';
   el.fishbar.style.backgroundImage = '';
   const barImageAsset = design.barImageAssetId ? byId.get(design.barImageAssetId) : null;
@@ -356,8 +356,9 @@ async function loadConfig() {
     el.fishbarZone.style.height = (zoneSizePct / 100 * zoneTrack.h) + '%';
   } else {
     zoneTrack = null;
-    el.fishbarZone.style.left = '0';
-    el.fishbarZone.style.width = '';
+    const zoneWidthPct = design.zoneWidthPct || 100;
+    el.fishbarZone.style.left = ((100 - zoneWidthPct) / 2) + '%';
+    el.fishbarZone.style.width = zoneWidthPct + '%';
     el.fishbarZone.style.height = zoneSizePct + '%';
   }
 
