@@ -203,3 +203,17 @@ function buildCastingFrameDataUrls(img, overrides, outputSize) {
   return frames;
 }
 
+// cropRectToDataUrl은 항상 정사각형(cx,cy,size)만 잘라낸다 — 낚시바 모듈의
+// 캐치바 이미지는 보통 정사각형이 아닌 가로로 긴 띠라 임의 비율 사각형
+// (x,y,w,h, 원본 자연 크기 대비 0~1)을 그대로 잘라내는 범용 버전이 필요하다.
+function cropRegionToDataUrl(img, rect, outputWidth, outputHeight) {
+  const sx = rect.x * img.naturalWidth, sy = rect.y * img.naturalHeight;
+  const sw = rect.w * img.naturalWidth, sh = rect.h * img.naturalHeight;
+  const c = document.createElement('canvas');
+  c.width = outputWidth;
+  c.height = outputHeight;
+  const ctx = c.getContext('2d');
+  ctx.drawImage(img, sx, sy, sw, sh, 0, 0, outputWidth, outputHeight);
+  return c.toDataURL('image/png');
+}
+

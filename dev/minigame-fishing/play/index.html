@@ -85,14 +85,19 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 
 .fishbar-panel{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:4;display:flex;align-items:center;gap:14px;background:rgba(5,20,28,.35);border-radius:20px;padding:18px 20px;backdrop-filter:blur(2px)}
 .fishbar-panel.hidden{display:none}
-.fishbar{position:relative;width:52px;height:230px;border-radius:12px;overflow:hidden;border:2px solid rgba(255,255,255,.5);box-shadow:inset 0 0 12px rgba(0,0,0,.4);background-size:cover;background-position:center}
-/* 게이지는 사용자 요청으로 화면에서 숨겼다(코드/로직은 그대로 남겨둠 —
-   나중에 다시 켤 수 있게 display:none만 추가). 낚시바 크기/캐치바 크기를
-   직접 조절하는 새 낚시바 모듈로 대체하는 중이라 진행도 채우기 효과는
-   잠시 보이지 않는다. */
-.fishbar-gauge{position:absolute;inset:0;overflow:hidden;background:rgb(151,126,83);display:none}
+.fishbar{position:relative;width:52px;height:230px;border-radius:12px;overflow:hidden;border:2px solid rgba(255,255,255,.5);box-shadow:inset 0 0 12px rgba(0,0,0,.4);background:#171C22}
+/* 낚시바 이미지 — 설정 화면(dev/minigame-fishing/index.html) 슬라이드
+   에디터의 barLayer 배치(x,y,w,h, 슬라이드 기준 0~1)를 그대로 옮겨와
+   절대위치로 놓는다. */
+.fishbar-bar-img{position:absolute;pointer-events:none}
+.fishbar-bar-img.hidden{display:none}
+.fishbar-bar-img img{width:100%;height:100%;object-fit:fill;display:block}
+/* 게이지 — 설정 화면에서 gaugeRegion을 지정해야만 나타난다(미지정 시
+   기본 display:none). 위치/크기는 loadConfig가 gaugeRegion 기준으로
+   매 판마다 한 번 정해준다. */
+.fishbar-gauge{position:absolute;overflow:hidden;background:rgb(151,126,83);display:none}
 .fishbar-gauge-mask{position:absolute;left:0;right:0;top:0;background:rgba(5,7,10,.82)}
-.fishbar-zone{position:absolute;left:0;right:0;border-radius:6px;opacity:.85;transition:background .2s;background-size:cover;background-position:center}
+.fishbar-zone{position:absolute;border-radius:6px;opacity:.85;transition:background .2s;background-size:cover;background-position:center}
 .fishbar-fish{position:absolute;left:50%;transform:translate(-50%,-50%);font-size:22px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.4))}
 .fishbar-fish img{width:26px;height:26px;object-fit:contain;image-rendering:pixelated}
 
@@ -143,6 +148,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 
     <div class="fishbar-panel hidden" id="fishbarPanel">
       <div class="fishbar" id="fishbar">
+        <div class="fishbar-bar-img hidden" id="fishbarBarImg"><img alt=""></div>
         <div class="fishbar-gauge" id="fishbarGauge">
           <div class="fishbar-gauge-mask" id="fishbarGaugeMask"></div>
         </div>
@@ -246,6 +252,7 @@ const el = {
   castSinkerImg: document.getElementById('castSinkerImg'),
   fishbarPanel: document.getElementById('fishbarPanel'),
   fishbar: document.getElementById('fishbar'),
+  fishbarBarImg: document.getElementById('fishbarBarImg'),
   fishbarZone: document.getElementById('fishbarZone'),
   fishbarFish: document.getElementById('fishbarFish'),
   fishbarGauge: document.getElementById('fishbarGauge'),
@@ -281,8 +288,8 @@ let zoneSizePct = 28;
 // zoneRegion이 설정돼 있으면 캐치존/물고기를 낚시바 전체(0~100%)가 아니라
 // 이 안(트랙)에서 위치를 계산한다 — 실제 물리(updateFish/updateZone/
 // updateProgress)는 항상 추상적인 0~100 공간에서 그대로 돌아가고, 렌더링
-// (renderBarFrame)만 이 트랙으로 다시 매핑한다. 게이지는 더 이상 별도
-// 영역지정이 없다 — 낚시바 모듈 자체(.fishbar 전체)가 게이지다.
+// (renderBarFrame)만 이 트랙으로 다시 매핑한다. 게이지는 gaugeRegion을
+// 지정했을 때만 그 영역 안에 나타난다(loadConfig 참고).
 let zoneTrack = null; // { x, y, w, h } — 낚시바 기준 %
 let caughtCount = 0;
 let gameState = 'idle'; // idle | charging | casting | waiting | bite | catching | reeling | result
@@ -319,8 +326,8 @@ async function loadConfig() {
   const ids = [].concat(cfg.reelingFrames || []);
   const design = cfg.barDesign || {};
   if (design.fishIconAssetId) ids.push(design.fishIconAssetId);
-  if (design.barImageAssetId) ids.push(design.barImageAssetId);
-  if (design.zoneImageAssetId) ids.push(design.zoneImageAssetId);
+  if (design.barLayer && design.barLayer.assetId) ids.push(design.barLayer.assetId);
+  if (design.catchLayer && design.catchLayer.assetId) ids.push(design.catchLayer.assetId);
   if (design.sinkerImageAssetId) ids.push(design.sinkerImageAssetId);
   if (cfg.fishSheetAssetId) ids.push(cfg.fishSheetAssetId);
   if (cfg.castingSheetAssetId) ids.push(cfg.castingSheetAssetId);
@@ -368,35 +375,69 @@ async function loadConfig() {
   el.frame.style.backgroundPosition = backgroundAsset ? 'center' : '';
   el.frame.style.backgroundRepeat = backgroundAsset ? 'no-repeat' : '';
 
-  el.fishbar.style.width = (design.barWidthPx || 52) + 'px';
-  el.fishbar.style.height = (design.barHeightPx || 230) + 'px';
-  el.fishbar.style.background = design.barColor || '#171C22';
-  el.fishbar.style.backgroundImage = '';
-  const barImageAsset = design.barImageAssetId ? byId.get(design.barImageAssetId) : null;
-  if (barImageAsset) el.fishbar.style.backgroundImage = `url(${barImageAsset.dataUrl})`;
+  // 낚시바 모듈 크기 — 설정 화면 슬라이드 에디터(dev/minigame-fishing/
+  // index.html)의 슬라이드 실제 px 크기를 그대로 쓴다.
+  el.fishbar.style.width = (design.slideWidthPx || 90) + 'px';
+  el.fishbar.style.height = (design.slideHeightPx || 260) + 'px';
 
-  el.fishbarZone.style.background = design.zoneColor || '#59B8C8';
-  el.fishbarZone.style.backgroundImage = '';
-  const zoneImageAsset = design.zoneImageAssetId ? byId.get(design.zoneImageAssetId) : null;
-  if (zoneImageAsset) el.fishbarZone.style.backgroundImage = `url(${zoneImageAsset.dataUrl})`;
+  // 낚시바 이미지 — barLayer(x,y,w,h, 슬라이드 기준 0~1 비율)를 그대로
+  // 절대위치로 옮겨온다(설정 화면 슬라이드와 좌표계가 동일하므로 변환 없음).
+  const barImageAsset = design.barLayer && design.barLayer.assetId ? byId.get(design.barLayer.assetId) : null;
+  if (barImageAsset && design.barLayer) {
+    el.fishbarBarImg.querySelector('img').src = barImageAsset.dataUrl;
+    el.fishbarBarImg.style.left = (design.barLayer.x * 100) + '%';
+    el.fishbarBarImg.style.top = (design.barLayer.y * 100) + '%';
+    el.fishbarBarImg.style.width = (design.barLayer.w * 100) + '%';
+    el.fishbarBarImg.style.height = (design.barLayer.h * 100) + '%';
+    el.fishbarBarImg.classList.remove('hidden');
+  } else {
+    el.fishbarBarImg.classList.add('hidden');
+  }
 
-  zoneSizePct = design.zoneSizePct || 28;
-  // zoneRegion은 낚시바 그림 위 "트랙" 사각형(캐치존이 오르내리는 실제 폭·
-  // 범위) — 캐치존의 좌우 폭·세로 높이는 이 트랙을 기준으로 정하고, 물고기/
-  // 캐치존의 세로 위치는 매 프레임 renderBarFrame이 이 트랙 안으로 다시
-  // 매핑한다(물리 계산 자체는 손대지 않음).
-  if (design.zoneRegion) {
-    const r = design.zoneRegion;
-    zoneTrack = { x: r.x * 100, y: r.y * 100, w: r.w * 100, h: r.h * 100 };
-    el.fishbarZone.style.left = zoneTrack.x + '%';
-    el.fishbarZone.style.width = zoneTrack.w + '%';
+  // 캐치바(캐치존) — zoneRegion(트랙, 슬라이드 기준 0~1)이 화면상 어디에
+  // 놓이는지 정하고, catchLayer(캐치바 이미지가 슬라이드 위 어디에 얼마나
+  // 크게 배치됐는지)를 그 트랙 기준 비율로 다시 매핑해 좌우 위치/폭/높이를
+  // 정한다. 세로 이동 자체(캐치존 y)는 계속 0~100 추상 공간에서 물리대로
+  // 계산되고(updateZone), 여기서 정하는 건 트랙의 화면상 배치뿐이다.
+  const zoneRegion = design.zoneRegion;
+  const catchLayer = design.catchLayer;
+  const catchImageAsset = catchLayer && catchLayer.assetId ? byId.get(catchLayer.assetId) : null;
+  // background(숏핸드)를 먼저 설정해야 한다 — backgroundImage 다음에 설정하면
+  // 숏핸드가 방금 지정한 background-image를 초기화해버린다.
+  el.fishbarZone.style.background = '#59B8C8';
+  el.fishbarZone.style.backgroundImage = catchImageAsset ? `url(${catchImageAsset.dataUrl})` : '';
+  if (zoneRegion) {
+    zoneTrack = { x: zoneRegion.x * 100, y: zoneRegion.y * 100, w: zoneRegion.w * 100, h: zoneRegion.h * 100 };
+    if (catchLayer) {
+      const relX = clamp((catchLayer.x - zoneRegion.x) / zoneRegion.w, 0, 1);
+      const relW = clamp(catchLayer.w / zoneRegion.w, 0.05, 1);
+      zoneSizePct = clamp(catchLayer.h / zoneRegion.h * 100, 5, 95);
+      el.fishbarZone.style.left = (zoneTrack.x + relX * zoneTrack.w) + '%';
+      el.fishbarZone.style.width = (relW * zoneTrack.w) + '%';
+    } else {
+      zoneSizePct = 28;
+      el.fishbarZone.style.left = zoneTrack.x + '%';
+      el.fishbarZone.style.width = zoneTrack.w + '%';
+    }
     el.fishbarZone.style.height = (zoneSizePct / 100 * zoneTrack.h) + '%';
   } else {
     zoneTrack = null;
-    const zoneWidthPct = design.zoneWidthPct || 100;
-    el.fishbarZone.style.left = ((100 - zoneWidthPct) / 2) + '%';
-    el.fishbarZone.style.width = zoneWidthPct + '%';
+    zoneSizePct = 28;
+    el.fishbarZone.style.left = '0%';
+    el.fishbarZone.style.width = '100%';
     el.fishbarZone.style.height = zoneSizePct + '%';
+  }
+
+  // 게이지 — gaugeRegion을 지정했을 때만 나타난다(미지정 시 기본 숨김).
+  if (design.gaugeRegion) {
+    const gr = design.gaugeRegion;
+    el.fishbarGauge.style.left = (gr.x * 100) + '%';
+    el.fishbarGauge.style.top = (gr.y * 100) + '%';
+    el.fishbarGauge.style.width = (gr.w * 100) + '%';
+    el.fishbarGauge.style.height = (gr.h * 100) + '%';
+    el.fishbarGauge.style.display = '';
+  } else {
+    el.fishbarGauge.style.display = 'none';
   }
 
   const fishIconAsset = design.fishIconAssetId ? byId.get(design.fishIconAssetId) : null;
