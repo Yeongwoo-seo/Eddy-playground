@@ -114,7 +114,20 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .hotspot-svg .hs-polygon{fill:rgba(89,184,200,.24);stroke:var(--cyan);stroke-width:2;pointer-events:auto;cursor:move}
 .hotspot-svg .hs-polygon.hidden{display:none}
 .hotspot-svg .hs-other-polygon{fill:rgba(214,168,75,.08);stroke:rgba(214,168,75,.75);stroke-width:1.5;stroke-dasharray:5 4}
+.hotspot-svg .hs-other-polygon.align-selected{fill:rgba(89,184,200,.18);stroke:var(--cyan);stroke-width:2;stroke-dasharray:none}
+.hotspot-svg .hs-polygon.align-selected{stroke:var(--amber)}
+.hotspot-svg .hs-resize-handle{fill:#fff;stroke:var(--cyan);stroke-width:2;cursor:nwse-resize;pointer-events:auto}
+.hotspot-svg .hs-resize-handle.hidden{display:none}
 .hotspot-zoom-hint{font-family:var(--mono);font-size:10px;color:var(--text-muted);text-align:center;margin-top:8px}
+.picker-label-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.picker-label-row .picker-label{margin-bottom:0}
+.hotspot-align-toggle{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.02em;color:var(--text-secondary);background:var(--surface-1);border:1px solid var(--divider);border-radius:10px;padding:7px 11px;cursor:pointer}
+.hotspot-align-toggle.hidden{display:none}
+.hotspot-align-toggle.active{color:var(--cyan);background:rgba(89,184,200,.14);border-color:rgba(89,184,200,.4)}
+.hotspot-align-actions{display:none;gap:8px;margin-top:10px}
+.hotspot-align-actions.show{display:flex}
+.hotspot-align-btn{flex:1;font-family:var(--mono);font-size:11.5px;font-weight:700;color:var(--text-primary);background:var(--surface-1);border:1px solid var(--divider);border-radius:10px;padding:9px 4px;cursor:pointer}
+.hotspot-align-btn:disabled{opacity:.4;cursor:default}
 .hotspot-actions{display:flex;gap:8px;margin-top:12px}
 .hotspot-actions button{flex:1;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--mono);letter-spacing:.04em;border:none}
 .hotspot-actions button:disabled{opacity:.4;cursor:default}
@@ -452,8 +465,16 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
       <div class="picker-pills" id="hotspotStagePickerPills"></div>
     </div>
     <div class="picker hidden" id="hotspotPicker">
-      <div class="picker-label">항목</div>
+      <div class="picker-label-row">
+        <div class="picker-label">항목</div>
+        <button class="hotspot-align-toggle hidden" id="hotspotAlignToggleBtn" type="button">여러 개 선택해서 정렬</button>
+      </div>
       <div class="picker-pills" id="hotspotPickerPills"></div>
+      <div class="hotspot-align-actions" id="hotspotAlignActions">
+        <button class="hotspot-align-btn" id="hotspotAlignLeftBtn" type="button" disabled>◧ 왼쪽 정렬</button>
+        <button class="hotspot-align-btn" id="hotspotAlignCenterBtn" type="button" disabled>◫ 가운데 정렬</button>
+        <button class="hotspot-align-btn" id="hotspotAlignRightBtn" type="button" disabled>◨ 오른쪽 정렬</button>
+      </div>
     </div>
     <div class="hotspot-stage" id="hotspotStage">
       <div class="hotspot-canvas" id="hotspotCanvas">
@@ -462,6 +483,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
           <g id="hotspotOtherPolygons"></g>
           <polygon class="hs-polygon hidden" id="hotspotPolygon"></polygon>
           <g id="hotspotPickingGroup"></g>
+          <rect class="hs-resize-handle hidden" id="hotspotResizeHandle"></rect>
         </svg>
       </div>
     </div>
@@ -985,6 +1007,12 @@ const el = {
   hotspotOtherPolygons: document.getElementById('hotspotOtherPolygons'),
   hotspotPolygon: document.getElementById('hotspotPolygon'),
   hotspotPickingGroup: document.getElementById('hotspotPickingGroup'),
+  hotspotResizeHandle: document.getElementById('hotspotResizeHandle'),
+  hotspotAlignToggleBtn: document.getElementById('hotspotAlignToggleBtn'),
+  hotspotAlignActions: document.getElementById('hotspotAlignActions'),
+  hotspotAlignLeftBtn: document.getElementById('hotspotAlignLeftBtn'),
+  hotspotAlignCenterBtn: document.getElementById('hotspotAlignCenterBtn'),
+  hotspotAlignRightBtn: document.getElementById('hotspotAlignRightBtn'),
   hotspotLeftBtn: document.getElementById('hotspotLeftBtn'),
   hotspotRightBtn: document.getElementById('hotspotRightBtn'),
   hotspotHint: document.getElementById('hotspotHint'),
@@ -2844,6 +2872,13 @@ async function saveCroppedEvidenceImage(cropBlob, croppedImg) {
 let hotspotState = null;
 let currentHotspotStageIndex = 0;
 let currentRoomHotspotId = null;
+// 정렬 모드 (§신규 — PPT식 다중선택 정렬) — "여러 개 선택해서 정렬" 토글이
+// 켜지면 항목 pill 클릭이 지금 편집 중인 항목을 바꾸는 대신 이 Set에
+// 담고/빼는 다중선택으로 바뀐다. room kind(항목이 2개 이상인 배경)에서만
+// 의미가 있으므로 renderHotspotPicker가 그때만 토글 버튼을 보여준다 — see
+// toggleHotspotAlignMode/renderHotspotAlignActions/alignSelectedHotspots.
+let hotspotAlignMode = false;
+let hotspotAlignSelection = new Set();
 // Carries the zoom/pan across switching hotspot slot/area (stage picker,
 // 항목 picker) on the SAME photo, so re-picking a different area doesn't
 // snap back to the fit-to-view zoom every time — only a genuinely different
@@ -2861,6 +2896,10 @@ function hotspotToPoints(h) {
     return [{ x: h.x1, y: h.y1 }, { x: h.x2, y: h.y1 }, { x: h.x2, y: h.y2 }, { x: h.x1, y: h.y2 }];
   }
   return null;
+}
+function hotspotBoundingBox(points) {
+  const xs = points.map(p => p.x), ys = points.map(p => p.y);
+  return { minX: Math.min(...xs), minY: Math.min(...ys), maxX: Math.max(...xs), maxY: Math.max(...ys) };
 }
 
 // Minigames with more than one sequential target (e.g. the 3-stop station
@@ -2928,17 +2967,88 @@ async function renderHotspotPicker(list) {
   const sceneId = activeBackgroundSceneId();
   el.hotspotPicker.classList.remove('hidden');
   const saved = await DevGameState.getRoomHotspots(sceneId);
-  el.hotspotPickerPills.innerHTML = list.map(h =>
-    `<button class="pill${h.id === currentRoomHotspotId ? ' active' : ''}" data-key="${h.id}">${escapeHtml(h.label)}${saved[h.id] ? ' ✓' : ''}</button>`
-  ).join('');
+  el.hotspotPickerPills.innerHTML = list.map(h => {
+    const isActive = hotspotAlignMode ? hotspotAlignSelection.has(h.id) : h.id === currentRoomHotspotId;
+    return `<button class="pill${isActive ? ' active' : ''}" data-key="${h.id}">${escapeHtml(h.label)}${saved[h.id] ? ' ✓' : ''}</button>`;
+  }).join('');
   el.hotspotPickerPills.querySelectorAll('.pill').forEach(btn => {
     btn.addEventListener('click', () => {
-      currentRoomHotspotId = btn.dataset.key;
-      renderHotspotPicker(list);
-      loadHotspotEditor();
+      if (hotspotAlignMode) {
+        const key = btn.dataset.key;
+        if (hotspotAlignSelection.has(key)) hotspotAlignSelection.delete(key); else hotspotAlignSelection.add(key);
+        renderHotspotPicker(list);
+        renderHotspotAlignActions();
+        renderHotspotOtherPolygons();
+      } else {
+        currentRoomHotspotId = btn.dataset.key;
+        renderHotspotPicker(list);
+        loadHotspotEditor();
+      }
     });
   });
+  // 2개 미만이면 정렬할 게 없으니 토글 자체를 숨긴다.
+  el.hotspotAlignToggleBtn.classList.toggle('hidden', list.length < 2);
 }
+
+// 정렬 모드 토글 — 켜고 끌 때마다 선택은 비운다(다른 항목/사진으로 넘어갈
+// 때 stale 선택이 남지 않도록 renderHotspotSection에서도 동일하게 리셋).
+function toggleHotspotAlignMode() {
+  hotspotAlignMode = !hotspotAlignMode;
+  hotspotAlignSelection.clear();
+  el.hotspotAlignToggleBtn.classList.toggle('active', hotspotAlignMode);
+  el.hotspotAlignToggleBtn.textContent = hotspotAlignMode ? '선택 완료' : '여러 개 선택해서 정렬';
+  const roomList = activeRoomHotspotList();
+  if (roomList) renderHotspotPicker(roomList);
+  renderHotspotAlignActions();
+  renderHotspotOtherPolygons();
+}
+function renderHotspotAlignActions() {
+  el.hotspotAlignActions.classList.toggle('show', hotspotAlignMode);
+  const enough = hotspotAlignSelection.size >= 2;
+  [el.hotspotAlignLeftBtn, el.hotspotAlignCenterBtn, el.hotspotAlignRightBtn].forEach(b => { b.disabled = !enough; });
+}
+
+// 선택된 항목들의 bounding box를 PPT의 "선택 영역 기준 정렬"과 같은 방식으로
+// 정렬한다 — 왼쪽/오른쪽은 선택 전체의 가장 왼쪽/오른쪽 모서리에 맞추고,
+// 가운데는 선택 전체 bounding box의 중심에 각 항목 중심을 맞춘다. 좌우
+// 방향만 다루고(요청대로 좌/중/우측 정렬만), 상하 위치는 건드리지 않는다.
+async function alignSelectedHotspots(mode) {
+  if (hotspotAlignSelection.size < 2 || !hotspotState) return;
+  const sceneId = hotspotState.sceneId;
+  const nw = hotspotState.naturalW;
+  const saved = await DevGameState.getRoomHotspots(sceneId);
+  const ids = [...hotspotAlignSelection];
+  const shapes = ids.map(id => {
+    const pts = (id === currentRoomHotspotId ? hotspotState.points : (hotspotToPoints(saved[id]) || []).map(p => ({ x: p.x * nw, y: p.y * hotspotState.naturalH })));
+    return { id, points: pts, box: hotspotBoundingBox(pts) };
+  }).filter(s => s.points.length);
+  if (shapes.length < 2) return;
+  const groupMinX = Math.min(...shapes.map(s => s.box.minX));
+  const groupMaxX = Math.max(...shapes.map(s => s.box.maxX));
+  const groupCenterX = (groupMinX + groupMaxX) / 2;
+  el.hotspotAlignLeftBtn.disabled = el.hotspotAlignCenterBtn.disabled = el.hotspotAlignRightBtn.disabled = true;
+  try {
+    for (const s of shapes) {
+      const targetLeft = mode === 'left' ? groupMinX : mode === 'right' ? groupMaxX - (s.box.maxX - s.box.minX) : groupCenterX - (s.box.maxX - s.box.minX) / 2;
+      const dx = targetLeft - s.box.minX;
+      if (!dx) continue;
+      const movedPoints = s.points.map(p => ({ x: clamp(p.x + dx, 0, hotspotState.naturalW), y: p.y }));
+      await DevGameState.setRoomHotspot(sceneId, s.id, { points: movedPoints.map(p => ({ x: p.x / nw, y: p.y / hotspotState.naturalH })) });
+      if (s.id === currentRoomHotspotId) hotspotState.points = movedPoints;
+    }
+    renderHotspotPolygon();
+    renderHotspotOtherPolygons();
+    el.hotspotHint.textContent = '정렬해서 저장했어요.';
+  } catch (err) {
+    el.hotspotHint.textContent = '정렬 실패: ' + (err && err.message ? err.message : err);
+  } finally {
+    renderHotspotAlignActions();
+  }
+}
+el.hotspotAlignToggleBtn.addEventListener('click', toggleHotspotAlignMode);
+el.hotspotAlignLeftBtn.addEventListener('click', () => alignSelectedHotspots('left'));
+el.hotspotAlignCenterBtn.addEventListener('click', () => alignSelectedHotspots('center'));
+el.hotspotAlignRightBtn.addEventListener('click', () => alignSelectedHotspots('right'));
 
 function renderHotspotSection() {
   const scene = currentScene();
@@ -2946,6 +3056,12 @@ function renderHotspotSection() {
   const roomList = currentType === 'background' ? activeRoomHotspotList() : null;
   const isRoom = !!roomList;
   el.hotspotPanel.classList.toggle('hidden', !(isMinigame || isRoom));
+  // 다른 사진/항목 목록으로 넘어가면 이전 정렬 선택은 의미가 없어지므로 리셋.
+  hotspotAlignMode = false;
+  hotspotAlignSelection.clear();
+  el.hotspotAlignToggleBtn.classList.remove('active');
+  el.hotspotAlignToggleBtn.textContent = '여러 개 선택해서 정렬';
+  el.hotspotAlignActions.classList.remove('show');
   if (!(isMinigame || isRoom)) return;
   if (isMinigame) {
     currentHotspotStageIndex = 0;
@@ -3018,21 +3134,7 @@ async function loadHotspotEditor() {
       startHotspotPicking();
     }
 
-    // In room mode, faintly show every *other* already-placed hotspot on
-    // this same photo for spatial context while placing the rest.
-    if (activeHotspotKind() === 'room') {
-      const all = await DevGameState.getRoomHotspots(sceneId);
-      el.hotspotOtherPolygons.innerHTML = Object.keys(all)
-        .filter(id => id !== currentRoomHotspotId)
-        .map(id => {
-          const pts = hotspotToPoints(all[id]);
-          if (!pts) return '';
-          const attr = pts.map(p => `${p.x * nw},${p.y * nh}`).join(' ');
-          return `<polygon class="hs-other-polygon" points="${attr}"></polygon>`;
-        }).join('');
-    } else {
-      el.hotspotOtherPolygons.innerHTML = '';
-    }
+    await renderHotspotOtherPolygons();
   };
   el.hotspotImg.src = asset.dataUrl;
 }
@@ -3065,6 +3167,7 @@ function startHotspotPicking() {
   hotspotState.mode = 'picking';
   hotspotState.points = [];
   el.hotspotPolygon.classList.add('hidden');
+  el.hotspotResizeHandle.classList.add('hidden');
   renderHotspotPickingGroup();
   renderHotspotActions();
   updateHotspotHint();
@@ -3076,7 +3179,43 @@ function startHotspotWithPoints(points) {
   el.hotspotPickingGroup.innerHTML = '';
   renderHotspotPolygon();
   renderHotspotActions();
-  el.hotspotHint.textContent = '도형을 드래그해서 위치를 옮기거나, "다시 그리기"로 새로 그릴 수 있어요.';
+  el.hotspotHint.textContent = '도형을 드래그해서 위치를 옮기거나, 우하단 손잡이로 크기를 바꾸거나, "다시 그리기"로 새로 그릴 수 있어요.';
+}
+
+// 우하단 크기 조절 손잡이 (§신규) — bounding box 기준 고정 크기 정사각형
+// 마커. 'placed' 상태(도형이 확정된 뒤)에만 보인다 — 점을 찍는 중엔 필요
+// 없다.
+const HS_HANDLE_SIZE = 20;
+function renderHotspotResizeHandle() {
+  if (!hotspotState || hotspotState.mode !== 'placed' || !hotspotState.points.length) {
+    el.hotspotResizeHandle.classList.add('hidden');
+    return;
+  }
+  const box = hotspotBoundingBox(hotspotState.points);
+  el.hotspotResizeHandle.setAttribute('x', box.maxX - HS_HANDLE_SIZE / 2);
+  el.hotspotResizeHandle.setAttribute('y', box.maxY - HS_HANDLE_SIZE / 2);
+  el.hotspotResizeHandle.setAttribute('width', HS_HANDLE_SIZE);
+  el.hotspotResizeHandle.setAttribute('height', HS_HANDLE_SIZE);
+  el.hotspotResizeHandle.classList.remove('hidden');
+}
+
+// room kind에서 지금 편집 중이 아닌 다른 항목들을 옅게(또는 정렬 선택된
+// 것은 강조해서) 보여준다 — loadHotspotEditor(사진을 새로 불러올 때)와
+// 정렬 선택이 바뀌거나 정렬을 실행한 직후에도 다시 호출된다.
+async function renderHotspotOtherPolygons() {
+  if (!hotspotState || activeHotspotKind() !== 'room') { el.hotspotOtherPolygons.innerHTML = ''; return; }
+  const nw = hotspotState.naturalW, nh = hotspotState.naturalH;
+  const all = await DevGameState.getRoomHotspots(hotspotState.sceneId);
+  el.hotspotOtherPolygons.innerHTML = Object.keys(all)
+    .filter(id => id !== currentRoomHotspotId)
+    .map(id => {
+      const pts = hotspotToPoints(all[id]);
+      if (!pts) return '';
+      const attr = pts.map(p => `${p.x * nw},${p.y * nh}`).join(' ');
+      const selected = hotspotAlignMode && hotspotAlignSelection.has(id);
+      return `<polygon class="hs-other-polygon${selected ? ' align-selected' : ''}" points="${attr}"></polygon>`;
+    }).join('');
+  el.hotspotPolygon.classList.toggle('align-selected', hotspotAlignMode && hotspotAlignSelection.has(currentRoomHotspotId));
 }
 
 function renderHotspotPickingGroup() {
@@ -3089,6 +3228,7 @@ function renderHotspotPickingGroup() {
 function renderHotspotPolygon() {
   el.hotspotPolygon.setAttribute('points', hotspotState.points.map(p => `${p.x},${p.y}`).join(' '));
   el.hotspotPolygon.classList.remove('hidden');
+  renderHotspotResizeHandle();
 }
 
 function renderHotspotActions() {
@@ -3241,6 +3381,44 @@ el.hotspotStage.addEventListener('wheel', (e) => {
   hotspotState.scale = newScale;
   applyHotspotTransform();
 }, { passive: false });
+
+/* ===== 우하단 크기 조절 손잡이 드래그 (§신규) =====
+   위 stage 전체의 pointerdown 위임과 별도로 손잡이 자신이 캡처를 갖는다
+   (stopPropagation으로 stage의 팬/이동 로직이 같은 제스처를 또 처리하지
+   않게 막는다). bounding box의 좌상단을 고정 앵커로 두고, 그 앵커 기준
+   가로/세로 비율(scaleX/scaleY)만큼 모든 점을 늘리거나 줄인다 — 사각형이
+   아닌 자유 다각형이어도 "bounding box 리사이즈"로 자연스럽게 동작한다. */
+const HS_MIN_SIZE = 12;
+let hsResizingShape = null;
+el.hotspotResizeHandle.addEventListener('pointerdown', (e) => {
+  if (!hotspotState || hotspotState.mode !== 'placed') return;
+  e.stopPropagation();
+  el.hotspotResizeHandle.setPointerCapture(e.pointerId);
+  const box = hotspotBoundingBox(hotspotState.points);
+  hsResizingShape = {
+    pointerId: e.pointerId,
+    anchor: { x: box.minX, y: box.minY },
+    origW: Math.max(box.maxX - box.minX, 1),
+    origH: Math.max(box.maxY - box.minY, 1),
+    origPoints: hotspotState.points.map(p => ({ x: p.x, y: p.y })),
+  };
+});
+el.hotspotResizeHandle.addEventListener('pointermove', (e) => {
+  if (!hsResizingShape || e.pointerId !== hsResizingShape.pointerId) return;
+  const nat = hotspotScreenToNatural(e.clientX, e.clientY);
+  const s = hotspotState;
+  const newW = clamp(nat.x - hsResizingShape.anchor.x, HS_MIN_SIZE, s.naturalW - hsResizingShape.anchor.x);
+  const newH = clamp(nat.y - hsResizingShape.anchor.y, HS_MIN_SIZE, s.naturalH - hsResizingShape.anchor.y);
+  const scaleX = newW / hsResizingShape.origW, scaleY = newH / hsResizingShape.origH;
+  s.points = hsResizingShape.origPoints.map(p => ({
+    x: hsResizingShape.anchor.x + (p.x - hsResizingShape.anchor.x) * scaleX,
+    y: hsResizingShape.anchor.y + (p.y - hsResizingShape.anchor.y) * scaleY,
+  }));
+  renderHotspotPolygon();
+});
+['pointerup', 'pointercancel'].forEach(evt => el.hotspotResizeHandle.addEventListener(evt, (e) => {
+  if (hsResizingShape && e.pointerId === hsResizingShape.pointerId) hsResizingShape = null;
+}));
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
