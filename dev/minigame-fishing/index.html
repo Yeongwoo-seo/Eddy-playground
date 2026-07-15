@@ -869,12 +869,12 @@ window.addEventListener('pointermove', (e) => { if (cropDragging) updateCropCent
 window.addEventListener('pointerup', () => { cropDragging = false; });
 
 // 방향 버튼 — 드래그로 대충 옮긴 뒤 미세 조정할 때 쓴다. 탭 한 번에
-// 0.2%(이미지 기준)씩만 움직이는 세밀한 스텝이고, 400ms 뒤부터는 60ms
+// 0.05%(이미지 기준)씩만 움직이는 세밀한 스텝이고, 400ms 뒤부터는 60ms
 // 간격으로 반복 이동한다. 1.2초 넘게 누르고 있으면 그때부턴 더 큰
-// 스텝(0.8%)으로 가속 — 세밀 조정은 그대로 정밀하되, 먼 거리를 계속
+// 스텝(0.3%)으로 가속 — 세밀 조정은 그대로 정밀하되, 먼 거리를 계속
 // 눌러서 옮길 때 답답하지 않게.
-const CROP_NUDGE_STEP = 0.002;
-const CROP_NUDGE_FAST_STEP = 0.008;
+const CROP_NUDGE_STEP = 0.0005;
+const CROP_NUDGE_FAST_STEP = 0.003;
 const CROP_NUDGE_ACCEL_MS = 1200;
 function nudgeCropRect(dir, step) {
   if (!cropSourceImg) return;
