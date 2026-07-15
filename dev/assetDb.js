@@ -1045,7 +1045,12 @@ const AssetDB = (() => {
   // fishSheetAssetId — 물고기 종류 아이콘 스프라이트시트(dev/data/fishDefs.js의
   // FISH_SHEET_LAYOUT 규격: 196x136px, 10열x7행, 16x16px 칸, 4px 간격) 자산 id.
   // 업로드되면 fishDefs.js의 각 물고기 slot 순서 그대로 아이콘이 배정된다.
-  const FISHING_CONFIG_DEFAULT = { castingFrames: [], reelingFrames: [], barDesign: {}, fishSheetAssetId: null };
+  // fishIconOverrides — 실제 업로드된 시트가 그 규격에 정확히 맞아떨어지지
+  // 않을 때(AI 생성 시트는 흔함) 물고기별로 세밀영역조절로 직접 보정한 크롭
+  // 좌표, { [fishId]: { cx, cy, size } } (정규화 0~1, fishDefs.js의
+  // getFishCropStyle 참고). 보정 없는 물고기는 getFishSlotStyle의 이론적
+  // 그리드 계산으로 폴백한다.
+  const FISHING_CONFIG_DEFAULT = { castingFrames: [], reelingFrames: [], barDesign: {}, fishSheetAssetId: null, fishIconOverrides: {} };
 
   async function getFishingConfig() {
     if (fishingConfigCache.has('config')) return fishingConfigCache.get('config');
