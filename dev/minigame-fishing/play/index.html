@@ -360,6 +360,10 @@ function preloadWithRetry(url, retries, delayMs) {
 // 그 이상 색이 안 바뀌고 연두로 고정. --signal-red(#D94141)/--green(#3ECF6B)
 // CSS 변수와 같은 값을 RGB로 하드코딩해서 매 프레임 보간한다.
 const GAUGE_COLOR_STOPS = { red: [217, 65, 65], green: [62, 207, 107], capPct: 70 };
+
+// 물고기 등급 이름 색 — 아이템창(showItemPopup)에서 잡은 물고기 이름을
+// 등급(fishDefs.js grade)에 따라 바로 알아볼 수 있게 한다.
+const GRADE_NAME_COLORS = { '일반': '#8B95A1', '레어': '#3B82F6', '희귀': '#A855F7', '전설': '#FFD12E' };
 function gaugeColorForProgress(pct) {
   const t = clamp(pct, 0, GAUGE_COLOR_STOPS.capPct) / GAUGE_COLOR_STOPS.capPct;
   const [r0, g0, b0] = GAUGE_COLOR_STOPS.red;
@@ -1415,6 +1419,7 @@ function showItemPopup(fishCaught) {
   gameState = 'popup';
   positionItemPopupAboveCharacter();
   el.itemPopupName.textContent = fishCaught.name;
+  el.itemPopupName.style.color = GRADE_NAME_COLORS[fishCaught.grade] || '#000';
   el.itemPopupMeta.textContent = `${fishCaught.grade} · ${fishCaught.value}P`;
   if (fishSheetUrl) {
     const override = fishIconOverrides[fishCaught.id];
