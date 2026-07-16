@@ -334,6 +334,18 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
       <button type="button" class="fish-sheet-btn" id="rodtipEditBtn" style="width:100%" disabled>🎯 낚시대 끝 지정</button>
     </div>
 
+    <!-- ===== 캐스팅 게이지 — 화면을 꾹 눌러 세기 조절할 때 뜨는 바(cast-power-wrap)
+         배경 그림 업로드 + "이 그림 위 어디가 채워지는 부분인지" 영역 지정.
+         업로드/영역 둘 다 비어있으면 기본 막대 게이지가 그대로 쓰인다. ===== -->
+    <div class="option-group">
+      <div class="option-label">캐스팅 게이지</div>
+      <div class="option-desc">화면을 꾹 눌러 세기를 조절할 때 보이는 게이지 그림이에요. 업로드한 뒤 "채움 영역 지정"으로 이 그림 위 어디가 채워지는 부분인지 표시하세요. 업로드하지 않으면 기본 막대 게이지로 표시돼요.</div>
+      <div class="frame-strip" id="castGaugeImageSlot"></div>
+      <button type="button" class="frame-add-btn hidden" id="castGaugeImageAddBtn">+ 캐스팅 게이지 이미지 업로드</button>
+      <input type="file" id="castGaugeImageFileInput" accept="image/*">
+      <button type="button" class="fish-sheet-btn hidden" id="castGaugeRegionEditBtn" style="width:100%;margin-top:4px">📐 채움 영역 지정</button>
+    </div>
+
     <div class="option-group">
       <div class="option-label">프레임 재생 속도</div>
       <div class="option-desc">구간 너비를 드래그해서(표 칸 너비 늘리듯이) 그 프레임이 얼마나 오래 보일지 조절하세요. 전체 길이는 따로 초 단위로 설정할 수 있어요 — 바꾸면 각 프레임 길이가 비율대로 늘어나거나 줄어들어요.</div>
@@ -866,6 +878,10 @@ const el = {
   slideWidthValue: document.getElementById('slideWidthValue'),
   slideHeightInput: document.getElementById('slideHeightInput'),
   slideHeightValue: document.getElementById('slideHeightValue'),
+  castGaugeImageSlot: document.getElementById('castGaugeImageSlot'),
+  castGaugeImageAddBtn: document.getElementById('castGaugeImageAddBtn'),
+  castGaugeImageFileInput: document.getElementById('castGaugeImageFileInput'),
+  castGaugeRegionEditBtn: document.getElementById('castGaugeRegionEditBtn'),
   fbregionFullscreen: document.getElementById('fbregionFullscreen'),
   fbregionCloseBtn: document.getElementById('fbregionCloseBtn'),
   fbregionConfirmBtn: document.getElementById('fbregionConfirmBtn'),
@@ -2032,6 +2048,48 @@ el.sinkerImageFileInput.addEventListener('change', async () => {
   }
 });
 
+// 캐스팅 게이지 이미지 — 낚시바/캐치존 이미지와 같은 단일 슬롯 업로드
+// 패턴. 이미지 자체는 그대로 두고(크롭 없음), castGaugeFillRegion으로
+// 어디가 채워지는 부분인지만 별도로 지정한다(아래 openCastGaugeRegionEditor).
+async function renderCastGaugeImageSlot() {
+  el.castGaugeImageSlot.innerHTML = '';
+  if (fishingConfig.castGaugeAssetId) {
+    el.castGaugeImageAddBtn.classList.add('hidden');
+    el.castGaugeRegionEditBtn.classList.remove('hidden');
+    const asset = await AssetDB.getAsset(fishingConfig.castGaugeAssetId).catch(() => null);
+    const slot = document.createElement('div');
+    slot.className = 'frame-slot';
+    slot.innerHTML = `${asset ? `<img src="${asset.dataUrl}" alt="">` : ''}
+      <div class="frame-actions"><button type="button" class="frame-mini-btn danger" data-act="del">✕</button></div>`;
+    slot.querySelector('[data-act=del]').addEventListener('click', async () => {
+      fishingConfig = await AssetDB.setFishingConfig({ castGaugeAssetId: null, castGaugeFillRegion: null });
+      showSaveNote();
+      renderCastGaugeImageSlot();
+    });
+    el.castGaugeImageSlot.appendChild(slot);
+  } else {
+    el.castGaugeImageAddBtn.classList.remove('hidden');
+    el.castGaugeRegionEditBtn.classList.add('hidden');
+  }
+}
+el.castGaugeImageAddBtn.addEventListener('click', () => el.castGaugeImageFileInput.click());
+el.castGaugeImageFileInput.addEventListener('change', async () => {
+  const file = el.castGaugeImageFileInput.files[0];
+  el.castGaugeImageFileInput.value = '';
+  if (!file) return;
+  el.castGaugeImageAddBtn.disabled = true;
+  try {
+    const asset = await AssetDB.addAsset({ type: 'fishing-cast-gauge-image', name: file.name, blob: file });
+    // 새 이미지를 올리면 이전 이미지 기준으로 지정했던 채움 영역은 더 이상
+    // 맞지 않을 수 있으니 같이 지운다.
+    fishingConfig = await AssetDB.setFishingConfig({ castGaugeAssetId: asset.id, castGaugeFillRegion: null });
+    showSaveNote();
+    renderCastGaugeImageSlot();
+  } finally {
+    el.castGaugeImageAddBtn.disabled = false;
+  }
+});
+
 // 물었다! 표시 이미지 — 낚시 추와 같은 단일 슬롯 업로드 패턴. 커졌다
 // 작아지는 도장 연출 위에 얹는 그림이라 배경이 남아있으면 사각형이 같이
 // 나타났다 사라지는 것처럼 보인다 — 여기도 removeBackgroundOrFallback을
@@ -2077,8 +2135,10 @@ el.biteStampImageFileInput.addEventListener('change', async () => {
    evn-* 편집기와 완전히 같은 pan/draw 좌표 수학(스케일=스테이지 폭/원본 폭,
    세로 스크롤은 배지 미선택 시 드래그로 pan). 낚시바 디자인 탭에서는
    업로드한 캐치바 이미지 "원본"(catchLayer.sourceAssetId) 안에서 실제로
-   인식될 영역(cropRect, 임의 비율 크롭)을 지정하는 용도다 — 라벨이 1개뿐이라
-   열자마자 자동 선택돼 바로 드래그해서 그릴 수 있다. */
+   인식될 영역(cropRect, 임의 비율 크롭)을 지정하는 용도, 캐스팅 모션
+   탭에서는 캐스팅 게이지 이미지 위 채움 영역을 지정하는 용도로 같이
+   쓴다(fbTargetKind로 구분) — 라벨이 1개뿐이라 열자마자 자동 선택돼 바로
+   드래그해서 그릴 수 있다. */
 let fbNaturalW = 0, fbNaturalH = 0;
 let fbScale = 1, fbRenderedH = 0;
 let fbPanY = 0;
@@ -2089,34 +2149,51 @@ let fbDrawStart = null;
 let fbDraftBox = null;
 let fbDraftRegions = {};
 let fbSelectedLabelId = null;
-const FB_REGION_LABELS = [
-  { id: 'cropRect', label: '인식 영역' },
-];
+// 이 팝업은 두 군데서 재사용된다 — fbTargetKind가 지금 어느 쪽을 위해
+// 열려 있는지 구분한다: 'catchCrop'(캐치바 이미지에서 실제 쓰일 부분을
+// 잘라 새 이미지로 굽는다) vs 'castGaugeRegion'(캐스팅 게이지 이미지는
+// 그대로 두고, 그 위 어디가 채워지는 부분인지 사각형만 기록한다).
+let fbTargetKind = null;
+const FB_REGION_LABELS_BY_KIND = {
+  catchCrop: [{ id: 'cropRect', label: '인식 영역' }],
+  castGaugeRegion: [{ id: 'cropRect', label: '채움 영역' }],
+};
+function currentFbLabels() { return FB_REGION_LABELS_BY_KIND[fbTargetKind] || FB_REGION_LABELS_BY_KIND.catchCrop; }
 
 el.cropCatchImageBtn.addEventListener('click', openCatchCropEditor);
+el.castGaugeRegionEditBtn.addEventListener('click', openCastGaugeRegionEditor);
 el.fbregionCloseBtn.addEventListener('click', closeFbRegionEditor);
 el.fbregionConfirmBtn.addEventListener('click', confirmFbRegionEditor);
 
+function openFbRegionEditorWithImage(kind, dataUrl, existingRect) {
+  fbTargetKind = kind;
+  fbDraftRegions = { cropRect: existingRect || null };
+  fbSelectedLabelId = 'cropRect'; // 라벨이 하나뿐이라 열자마자 바로 그릴 수 있게 자동 선택
+  fbPanY = 0;
+  el.fbregionImg.src = dataUrl;
+  el.fbregionFullscreen.classList.remove('hidden');
+  renderFbBadges();
+  updateFbHint();
+  const onLoad = () => {
+    fbNaturalW = el.fbregionImg.naturalWidth;
+    fbNaturalH = el.fbregionImg.naturalHeight;
+    fitFbStage();
+    renderFbRegionBoxes();
+  };
+  if (el.fbregionImg.complete && el.fbregionImg.naturalWidth) onLoad();
+  else el.fbregionImg.onload = onLoad;
+}
 function openCatchCropEditor() {
   const catchLayer = barDesignOf().catchLayer;
   if (!catchLayer || !catchLayer.sourceAssetId) return;
   AssetDB.getAsset(catchLayer.sourceAssetId).then(asset => {
-    if (!asset) return;
-    fbDraftRegions = { cropRect: catchLayer.cropRect || null };
-    fbSelectedLabelId = 'cropRect'; // 라벨이 하나뿐이라 열자마자 바로 그릴 수 있게 자동 선택
-    fbPanY = 0;
-    el.fbregionImg.src = asset.dataUrl;
-    el.fbregionFullscreen.classList.remove('hidden');
-    renderFbBadges();
-    updateFbHint();
-    const onLoad = () => {
-      fbNaturalW = el.fbregionImg.naturalWidth;
-      fbNaturalH = el.fbregionImg.naturalHeight;
-      fitFbStage();
-      renderFbRegionBoxes();
-    };
-    if (el.fbregionImg.complete && el.fbregionImg.naturalWidth) onLoad();
-    else el.fbregionImg.onload = onLoad;
+    if (asset) openFbRegionEditorWithImage('catchCrop', asset.dataUrl, catchLayer.cropRect);
+  }).catch(() => {});
+}
+function openCastGaugeRegionEditor() {
+  if (!fishingConfig.castGaugeAssetId) return;
+  AssetDB.getAsset(fishingConfig.castGaugeAssetId).then(asset => {
+    if (asset) openFbRegionEditorWithImage('castGaugeRegion', asset.dataUrl, fishingConfig.castGaugeFillRegion);
   }).catch(() => {});
 }
 function closeFbRegionEditor() {
@@ -2124,8 +2201,16 @@ function closeFbRegionEditor() {
 }
 async function confirmFbRegionEditor() {
   const rect = fbDraftRegions.cropRect;
+  if (!rect) { closeFbRegionEditor(); return; }
+  if (fbTargetKind === 'castGaugeRegion') {
+    // 이미지는 그대로 두고 사각형 좌표만 저장한다 — 새 이미지를 굽지 않는다.
+    fishingConfig = await AssetDB.setFishingConfig({ castGaugeFillRegion: rect });
+    showSaveNote();
+    closeFbRegionEditor();
+    return;
+  }
   const catchLayer = barDesignOf().catchLayer;
-  if (!rect || !catchLayer) { closeFbRegionEditor(); return; }
+  if (!catchLayer) { closeFbRegionEditor(); return; }
   const prevText = el.fbregionConfirmBtn.textContent;
   el.fbregionConfirmBtn.disabled = true;
   el.fbregionConfirmBtn.textContent = '자르는 중...';
@@ -2166,7 +2251,7 @@ function applyFbPan() {
   el.fbregionCanvas.style.transform = `translateY(${fbPanY}px)`;
 }
 function renderFbBadges() {
-  el.fbregionBadges.innerHTML = FB_REGION_LABELS.map(l => {
+  el.fbregionBadges.innerHTML = currentFbLabels().map(l => {
     const done = !!fbDraftRegions[l.id];
     const active = fbSelectedLabelId === l.id;
     return `<button type="button" class="fbregion-badge${done ? ' done' : ''}${active ? ' active' : ''}" data-label="${l.id}">${l.label}</button>`;
@@ -2185,7 +2270,7 @@ function updateFbHint() {
     : '위 배지를 눌러 지정할 대상을 고르세요. 배지를 고르지 않은 채 드래그하면 화면이 위아래로 움직여요.';
 }
 function fbLabelText(id) {
-  const l = FB_REGION_LABELS.find(x => x.id === id);
+  const l = currentFbLabels().find(x => x.id === id);
   return l ? l.label : id;
 }
 function renderFbRegionBoxes() {
@@ -3016,6 +3101,7 @@ async function init() {
   renderFishIconSlot();
   renderBackgroundImageSlot();
   renderSinkerImageSlot();
+  renderCastGaugeImageSlot();
   renderBiteStampImageSlot();
   renderCastPhysicsControls();
   renderCastTab();

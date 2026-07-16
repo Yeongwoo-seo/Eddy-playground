@@ -77,9 +77,19 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
    이 바는 누르고 있는 동안만 보인다. */
 .cast-power-wrap{position:absolute;left:50%;bottom:calc(30px + env(safe-area-inset-bottom,0));transform:translateX(-50%);z-index:5;width:220px;display:flex;flex-direction:column;align-items:center;gap:6px}
 .cast-power-wrap.hidden{display:none}
+.cast-power-stage{position:relative;width:100%}
 .cast-power-track{width:100%;height:20px;border-radius:10px;background:rgba(5,20,28,.45);border:1px solid rgba(255,255,255,.35);overflow:hidden}
 .cast-power-fill{height:100%;width:0%;background:var(--green);border-radius:10px 0 0 10px}
 .cast-power-label{font-family:var(--mono);font-size:12px;font-weight:700;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.5)}
+/* 캐스팅 게이지 이미지 — 설정 화면(dev/minigame-fishing/index.html)에서
+   업로드하면 기본 막대 게이지 대신 이 그림이 배경으로 깔리고, 채움 영역
+   (castGaugeFillRegion)이 지정한 자리에만 진행도 막대(cast-power-fill)가
+   자리잡는다(둘 다 있어야 커스텀 게이지가 켜진다 — loadConfig 참고). */
+.cast-power-gauge-img{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;pointer-events:none;display:none}
+.cast-power-wrap.custom-gauge .cast-power-gauge-img{display:block}
+.cast-power-wrap.custom-gauge .cast-power-stage{aspect-ratio:var(--gauge-ar,220/20)}
+.cast-power-wrap.custom-gauge .cast-power-track{position:absolute;background:transparent;border:none;border-radius:0}
+.cast-power-wrap.custom-gauge .cast-power-fill{background:rgba(62,207,107,.55);border-radius:0}
 
 /* 추(sinker) 던지기 물리 시뮬레이션 — 낚싯대 끝~추 사이는 현수선(catenary)
    커브로 그린다(catenaryPoints/renderCastLine). 좌표계는 el.frame 픽셀
@@ -180,7 +190,10 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
   </div>
 
   <div class="cast-power-wrap hidden" id="castPowerWrap">
-    <div class="cast-power-track"><div class="cast-power-fill" id="castPowerFill"></div></div>
+    <div class="cast-power-stage" id="castPowerStage">
+      <img class="cast-power-gauge-img" id="castPowerGaugeImg" alt="">
+      <div class="cast-power-track" id="castPowerTrack"><div class="cast-power-fill" id="castPowerFill"></div></div>
+    </div>
     <div class="cast-power-label" id="castPowerLabel">0%</div>
   </div>
   <div class="catch-hint hidden" id="catchHint">누르고 있으면 캐치존이 올라가요 · 떼면 내려가요</div>
@@ -292,6 +305,9 @@ const el = {
   biteCaughtText: document.getElementById('biteCaughtText'),
   biteCaughtImg: document.getElementById('biteCaughtImg'),
   castPowerWrap: document.getElementById('castPowerWrap'),
+  castPowerStage: document.getElementById('castPowerStage'),
+  castPowerGaugeImg: document.getElementById('castPowerGaugeImg'),
+  castPowerTrack: document.getElementById('castPowerTrack'),
   castPowerFill: document.getElementById('castPowerFill'),
   castPowerLabel: document.getElementById('castPowerLabel'),
   castSvg: document.getElementById('castSvg'),
@@ -384,6 +400,7 @@ async function loadConfig() {
   if (cfg.fishSheetAssetId) ids.push(cfg.fishSheetAssetId);
   if (cfg.castingSheetAssetId) ids.push(cfg.castingSheetAssetId);
   if (cfg.backgroundAssetId) ids.push(cfg.backgroundAssetId);
+  if (cfg.castGaugeAssetId) ids.push(cfg.castGaugeAssetId);
   const itemPopupCfg = cfg.itemPopup || {};
   if (itemPopupCfg.backgroundAssetId) ids.push(itemPopupCfg.backgroundAssetId);
   let assets = [];
@@ -516,6 +533,36 @@ async function loadConfig() {
   el.bobberDot.style.display = sinkerImageUrl ? 'none' : '';
   el.bobberImg.style.display = sinkerImageUrl ? 'block' : 'none';
   if (sinkerImageUrl) el.bobberImg.src = sinkerImageUrl;
+
+  // 캐스팅 게이지 이미지 — 이미지와 채움 영역(castGaugeFillRegion)이 둘 다
+  // 있어야 커스텀 게이지를 켠다(하나만 있으면 기본 막대 게이지로 그대로
+  // 폴백). 게이지 스테이지의 종횡비를 실제 업로드 이미지 크기에 맞춰야
+  // fillRegion(이미지 자연 크기 대비 0~1)이 화면에서도 같은 자리를 가리킨다.
+  const castGaugeAsset = cfg.castGaugeAssetId ? byId.get(cfg.castGaugeAssetId) : null;
+  const castGaugeFillRegion = cfg.castGaugeFillRegion;
+  if (castGaugeAsset && castGaugeFillRegion) {
+    el.castPowerWrap.classList.add('custom-gauge');
+    const gaugeUrl = await preloadWithRetry(castGaugeAsset.dataUrl, 3, 500);
+    el.castPowerGaugeImg.src = gaugeUrl;
+    const dims = await new Promise(resolve => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+      img.onerror = () => resolve(null);
+      img.src = gaugeUrl;
+    });
+    if (dims) el.castPowerStage.style.setProperty('--gauge-ar', dims.w + '/' + dims.h);
+    el.castPowerTrack.style.left = (castGaugeFillRegion.x * 100) + '%';
+    el.castPowerTrack.style.top = (castGaugeFillRegion.y * 100) + '%';
+    el.castPowerTrack.style.width = (castGaugeFillRegion.w * 100) + '%';
+    el.castPowerTrack.style.height = (castGaugeFillRegion.h * 100) + '%';
+  } else {
+    el.castPowerWrap.classList.remove('custom-gauge');
+    el.castPowerTrack.style.left = '';
+    el.castPowerTrack.style.top = '';
+    el.castPowerTrack.style.width = '';
+    el.castPowerTrack.style.height = '';
+  }
 
   const biteStampAsset = design.biteStampAssetId ? byId.get(design.biteStampAssetId) : null;
   biteStampImageUrl = biteStampAsset ? biteStampAsset.dataUrl : null;
