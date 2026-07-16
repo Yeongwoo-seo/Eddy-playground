@@ -1057,6 +1057,10 @@ function flyFishToCharacter(fishDef) {
     } else {
       flyEl.textContent = '🐟';
     }
+    // 설정 화면 물고기 목록과 같은 좌우반전 — 스프라이트시트 크롭(실제
+    // 사진)일 때만 뒤집는다. transform은 도착 시 translate+scale과 함께
+    // 한 번에 설정되므로 그 문자열 끝에 직접 붙인다.
+    const flip = fishSheetUrl ? ' scaleX(-1)' : '';
     flyEl.style.left = startLeft + '%';
     flyEl.style.top = startTop + '%';
     el.stage.appendChild(flyEl);
@@ -1065,7 +1069,7 @@ function flyFishToCharacter(fishDef) {
       flyEl.style.transition = 'left .9s cubic-bezier(0.25,0.8,0.25,1), top .9s cubic-bezier(0.25,0.8,0.25,1), transform .9s ease';
       flyEl.style.left = endLeft + '%';
       flyEl.style.top = endTop + '%';
-      flyEl.style.transform = 'translate(-50%,-50%) scale(0.55)';
+      flyEl.style.transform = 'translate(-50%,-50%) scale(0.55)' + flip;
     });
     setTimeout(() => { flyEl.remove(); resolve(); }, 920);
   });
@@ -1089,9 +1093,11 @@ function showItemPopup(fishCaught) {
     el.itemPopupIcon.style.backgroundImage = `url('${fishSheetUrl}')`;
     el.itemPopupIcon.style.backgroundPosition = style.backgroundPosition;
     el.itemPopupIcon.style.backgroundSize = style.backgroundSize;
+    el.itemPopupIcon.style.transform = 'scaleX(-1)'; // 설정 화면 물고기 목록과 같은 좌우반전
     el.itemPopupIcon.textContent = '';
   } else {
     el.itemPopupIcon.style.backgroundImage = 'none';
+    el.itemPopupIcon.style.transform = '';
     el.itemPopupIcon.textContent = '🐟';
   }
   el.itemPopup.classList.add('show');
