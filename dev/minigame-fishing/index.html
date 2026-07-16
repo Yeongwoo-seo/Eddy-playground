@@ -261,6 +261,8 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .itempos-stage img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none;-webkit-user-drag:none;-webkit-user-select:none;user-select:none}
 .item-popup-preview{position:relative;width:100%;max-width:220px;aspect-ratio:var(--item-ar,280/260);margin:0 auto;border-radius:20px;overflow:hidden;border:1px solid var(--divider);background:var(--surface-2);background-size:contain;background-repeat:no-repeat;background-position:center}
 .item-popup-preview-icon{position:absolute;border-radius:14px;background-color:rgba(255,255,255,.14);background-repeat:no-repeat;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;font-size:26px;transform:translate(-50%,-50%)}
+.item-popup-preview-name{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;font-weight:700;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.6)}
+.item-popup-preview-meta{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;font-family:var(--mono);color:rgba(255,255,255,.75)}
 
 .save-note{font-family:var(--mono);font-size:11px;color:var(--green);min-height:16px;margin-bottom:8px;opacity:0;transition:opacity .3s}
 .save-note.show{opacity:1}
@@ -650,9 +652,29 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
       <div class="option-desc">배경 그림 위 어디에 잡은 물고기 아이콘이 나타날지 지정하세요.</div>
       <button type="button" class="fish-sheet-btn" id="itemPosEditBtn" style="width:100%">🎯 위치 지정</button>
     </div>
+    <div class="option-group">
+      <div class="option-label">아이템명 글꼴 크기</div>
+      <div class="option-desc">잡은 물고기 이름(예: 숭어)이 표시되는 글자 크기예요.</div>
+      <div class="range-row">
+        <input type="range" id="itemNameSizeInput" min="10" max="28" value="16">
+        <div class="range-value" id="itemNameSizeValue">16px</div>
+      </div>
+      <button type="button" class="fish-sheet-btn" id="itemNamePosEditBtn" style="width:100%;margin-top:4px">🎯 아이템명 위치 지정</button>
+    </div>
+    <div class="option-group">
+      <div class="option-label">설명 글꼴 크기</div>
+      <div class="option-desc">등급 · 가치(예: 일반 · 6P)가 표시되는 글자 크기예요.</div>
+      <div class="range-row">
+        <input type="range" id="itemMetaSizeInput" min="8" max="22" value="12">
+        <div class="range-value" id="itemMetaSizeValue">12px</div>
+      </div>
+      <button type="button" class="fish-sheet-btn" id="itemMetaPosEditBtn" style="width:100%;margin-top:4px">🎯 설명 위치 지정</button>
+    </div>
     <div class="bar-preview-wrap">
       <div class="item-popup-preview" id="itemPopupPreview">
         <div class="item-popup-preview-icon" id="itemPopupPreviewIcon">🐟</div>
+        <div class="item-popup-preview-name" id="itemPopupPreviewName">물고기</div>
+        <div class="item-popup-preview-meta" id="itemPopupPreviewMeta">일반 · 6P</div>
       </div>
     </div>
   </div>
@@ -739,13 +761,14 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   </div>
 </div>
 
-<!-- 아이템 뜨는 위치 지정 — 낚시대 끝 지정과 같은 바텀시트 틀 +
+<!-- 아이템창 위치 지정(범용) — 낚시대 끝 지정과 같은 바텀시트 틀 +
      단일 포인트 마커(rodtip-stage/rodtip-marker 클래스 재사용, 스테이지
-     비율만 itempos-stage로 다르게). -->
+     비율만 itempos-stage로 다르게). 아이콘/아이템명/설명 세 대상이 이 팝업
+     하나를 공유한다(itemPosTargetKey로 구분, openItemPosEditor 참고). -->
 <div class="crop-overlay hidden" id="itemPosOverlay">
   <div class="crop-sheet">
-    <div class="crop-title">아이템 뜨는 위치 지정</div>
-    <div class="crop-desc">그림 위를 탭하거나 드래그해서 아이템 아이콘이 나타날 위치를 옮기세요.</div>
+    <div class="crop-title" id="itemPosTitle">아이템 뜨는 위치 지정</div>
+    <div class="crop-desc" id="itemPosDesc">그림 위를 탭하거나 드래그해서 아이템 아이콘이 나타날 위치를 옮기세요.</div>
     <div class="itempos-stage" id="itemPosStage">
       <img id="itemPosImg" alt="">
       <div class="rodtip-marker" id="itemPosMarker"></div>
@@ -960,9 +983,19 @@ const el = {
   itemIconSizeInput: document.getElementById('itemIconSizeInput'),
   itemIconSizeValue: document.getElementById('itemIconSizeValue'),
   itemPosEditBtn: document.getElementById('itemPosEditBtn'),
+  itemNameSizeInput: document.getElementById('itemNameSizeInput'),
+  itemNameSizeValue: document.getElementById('itemNameSizeValue'),
+  itemNamePosEditBtn: document.getElementById('itemNamePosEditBtn'),
+  itemMetaSizeInput: document.getElementById('itemMetaSizeInput'),
+  itemMetaSizeValue: document.getElementById('itemMetaSizeValue'),
+  itemMetaPosEditBtn: document.getElementById('itemMetaPosEditBtn'),
   itemPopupPreview: document.getElementById('itemPopupPreview'),
   itemPopupPreviewIcon: document.getElementById('itemPopupPreviewIcon'),
+  itemPopupPreviewName: document.getElementById('itemPopupPreviewName'),
+  itemPopupPreviewMeta: document.getElementById('itemPopupPreviewMeta'),
   itemPosOverlay: document.getElementById('itemPosOverlay'),
+  itemPosTitle: document.getElementById('itemPosTitle'),
+  itemPosDesc: document.getElementById('itemPosDesc'),
   itemPosStage: document.getElementById('itemPosStage'),
   itemPosImg: document.getElementById('itemPosImg'),
   itemPosMarker: document.getElementById('itemPosMarker'),
@@ -3032,6 +3065,22 @@ el.itemIconSizeInput.addEventListener('change', async () => {
   fishingConfig = await AssetDB.setFishingConfig({ itemPopup: Object.assign({}, fishingConfig.itemPopup, { iconSizePx: Number(el.itemIconSizeInput.value) }) });
   showSaveNote();
 });
+el.itemNameSizeInput.addEventListener('input', () => {
+  el.itemNameSizeValue.textContent = el.itemNameSizeInput.value + 'px';
+  renderItemPopupPreview();
+});
+el.itemNameSizeInput.addEventListener('change', async () => {
+  fishingConfig = await AssetDB.setFishingConfig({ itemPopup: Object.assign({}, fishingConfig.itemPopup, { nameFontSizePx: Number(el.itemNameSizeInput.value) }) });
+  showSaveNote();
+});
+el.itemMetaSizeInput.addEventListener('input', () => {
+  el.itemMetaSizeValue.textContent = el.itemMetaSizeInput.value + 'px';
+  renderItemPopupPreview();
+});
+el.itemMetaSizeInput.addEventListener('change', async () => {
+  fishingConfig = await AssetDB.setFishingConfig({ itemPopup: Object.assign({}, fishingConfig.itemPopup, { metaFontSizePx: Number(el.itemMetaSizeInput.value) }) });
+  showSaveNote();
+});
 
 // 카드/스테이지 종횡비를 업로드한 배경 이미지의 실제 자연 크기로 맞춘다 —
 // 고정 박스에 억지로 맞추면(cover) 액자 그림이 잘리거나 늘어나 실제 팝업
@@ -3061,16 +3110,40 @@ async function renderItemPopupPreview() {
   el.itemPopupPreviewIcon.style.top = (pos.y * 100) + '%';
   el.itemPopupPreviewIcon.style.width = size + 'px';
   el.itemPopupPreviewIcon.style.height = size + 'px';
+
+  const namePos = ip.namePos || { x: 0.5, y: 0.66 };
+  const metaPos = ip.metaPos || { x: 0.5, y: 0.8 };
+  el.itemPopupPreviewName.style.left = (namePos.x * 100) + '%';
+  el.itemPopupPreviewName.style.top = (namePos.y * 100) + '%';
+  el.itemPopupPreviewName.style.fontSize = (ip.nameFontSizePx || 16) + 'px';
+  el.itemPopupPreviewMeta.style.left = (metaPos.x * 100) + '%';
+  el.itemPopupPreviewMeta.style.top = (metaPos.y * 100) + '%';
+  el.itemPopupPreviewMeta.style.fontSize = (ip.metaFontSizePx || 12) + 'px';
 }
 
+/* ===== 아이템창 위치 지정(범용) — 아이콘/아이템명/설명 세 대상이 이
+   팝업 하나(itemPosOverlay)를 공유한다. itemPosTargetKey가 지금 어느
+   대상을 편집 중인지 기억하고, confirmItemPosEditor가 그 키로 저장한다. */
+const ITEM_POS_TARGETS = {
+  iconPos: { defaultPos: { x: 0.5, y: 0.36 }, title: '아이템 뜨는 위치 지정', desc: '그림 위를 탭하거나 드래그해서 아이템 아이콘이 나타날 위치를 옮기세요.' },
+  namePos: { defaultPos: { x: 0.5, y: 0.66 }, title: '아이템명 위치 지정', desc: '그림 위를 탭하거나 드래그해서 물고기 이름이 나타날 위치를 옮기세요.' },
+  metaPos: { defaultPos: { x: 0.5, y: 0.8 }, title: '설명 위치 지정', desc: '그림 위를 탭하거나 드래그해서 등급 · 가치 문구가 나타날 위치를 옮기세요.' },
+};
+let itemPosTargetKey = 'iconPos';
 let itemPosDraft = { x: 0.5, y: 0.36 };
 let itemPosDragging = false;
-el.itemPosEditBtn.addEventListener('click', openItemPosEditor);
+el.itemPosEditBtn.addEventListener('click', () => openItemPosEditor('iconPos'));
+el.itemNamePosEditBtn.addEventListener('click', () => openItemPosEditor('namePos'));
+el.itemMetaPosEditBtn.addEventListener('click', () => openItemPosEditor('metaPos'));
 el.itemPosCancelBtn.addEventListener('click', () => el.itemPosOverlay.classList.add('hidden'));
 el.itemPosConfirmBtn.addEventListener('click', confirmItemPosEditor);
-async function openItemPosEditor() {
+async function openItemPosEditor(targetKey) {
+  itemPosTargetKey = targetKey;
+  const target = ITEM_POS_TARGETS[targetKey];
+  el.itemPosTitle.textContent = target.title;
+  el.itemPosDesc.textContent = target.desc;
   const ip = fishingConfig.itemPopup || {};
-  itemPosDraft = Object.assign({ x: 0.5, y: 0.36 }, ip.iconPos || {});
+  itemPosDraft = Object.assign({}, target.defaultPos, ip[targetKey] || {});
   el.itemPosImg.src = '';
   let asset = null;
   if (ip.backgroundAssetId) {
@@ -3097,7 +3170,7 @@ el.itemPosStage.addEventListener('pointerdown', (e) => { itemPosDragging = true;
 window.addEventListener('pointermove', (e) => { if (itemPosDragging) updateItemPosFromEvent(e); });
 window.addEventListener('pointerup', () => { itemPosDragging = false; });
 async function confirmItemPosEditor() {
-  fishingConfig = await AssetDB.setFishingConfig({ itemPopup: Object.assign({}, fishingConfig.itemPopup, { iconPos: itemPosDraft }) });
+  fishingConfig = await AssetDB.setFishingConfig({ itemPopup: Object.assign({}, fishingConfig.itemPopup, { [itemPosTargetKey]: itemPosDraft }) });
   showSaveNote();
   el.itemPosOverlay.classList.add('hidden');
   renderItemPopupPreview();
@@ -3135,6 +3208,10 @@ async function init() {
   const itemPopupCfg = fishingConfig.itemPopup || {};
   el.itemIconSizeInput.value = itemPopupCfg.iconSizePx || 64;
   el.itemIconSizeValue.textContent = (itemPopupCfg.iconSizePx || 64) + 'px';
+  el.itemNameSizeInput.value = itemPopupCfg.nameFontSizePx || 16;
+  el.itemNameSizeValue.textContent = (itemPopupCfg.nameFontSizePx || 16) + 'px';
+  el.itemMetaSizeInput.value = itemPopupCfg.metaFontSizePx || 12;
+  el.itemMetaSizeValue.textContent = (itemPopupCfg.metaFontSizePx || 12) + 'px';
   renderItemBgSlot();
   renderItemPopupPreview();
 }

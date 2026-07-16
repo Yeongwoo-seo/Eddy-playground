@@ -129,23 +129,32 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .fish-fly{position:absolute;z-index:7;width:44px;height:44px;border-radius:12px;border:2px solid transparent;background-color:rgba(255,255,255,.12);background-repeat:no-repeat;image-rendering:pixelated;pointer-events:none;transform:translate(-50%,-50%);filter:drop-shadow(0 3px 6px rgba(0,0,0,.4));font-size:28px;display:flex;align-items:center;justify-content:center;box-sizing:border-box}
 
 /* ===== 아이템창 — 낚시 성공(물고기가 캐릭터에게 날아온 다음)에만 뜨는
-   팝업. 실패했을 때는 아무 화면도 뜨지 않고 그냥 대기 상태로 돌아간다
+   말풍선. 실패했을 때는 아무 화면도 뜨지 않고 그냥 대기 상태로 돌아간다
    (endRun/overlay는 더 이상 안 씀 — resetToIdle을 바로 호출). 배경(액자)
-   그림과 아이콘 위치/크기는 dev/minigame-fishing/index.html의 "아이템창"
-   탭(itemPopup config)에서 지정한다. */
-.item-popup{position:absolute;inset:0;z-index:9;display:none;align-items:center;justify-content:center;padding:32px;background:rgba(5,7,10,.78);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
-.item-popup.show{display:flex}
+   그림과 아이콘/이름/설명 위치·크기는 dev/minigame-fishing/index.html의
+   "아이템창" 탭(itemPopup config)에서 지정한다.
+   전체 화면을 덮는 모달이 아니라 캐릭터(el.charStage) 바로 위에 뜨는
+   말풍선이다 — 화면을 어둡게 가리지 않고, 위치는 showItemPopup이 매번
+   캐릭터의 실제 화면 좌표를 기준으로 계산해 left/bottom 인라인 스타일로
+   맞춘다(캐릭터가 화면 가장자리에 가까워도 카드가 화면 밖으로 안 나가게
+   좌우로 clamp). gameState==='popup'인 동안은 el.frame의 pointerdown
+   핸들러가 어차피 아무것도 안 하므로 별도 배경 클릭 차단은 필요 없다. */
+.item-popup{position:absolute;z-index:9;display:none;pointer-events:none}
+.item-popup.show{display:block}
 /* 카드 종횡비 — 업로드한 배경(액자) 이미지의 실제 자연 크기를 그대로
    따라간다(loadConfig가 --item-ar을 이미지 자연 크기로 채워줌). cover
    대신 contain을 쓰는 이유: 종횡비가 이미지와 정확히 같으므로 어느 쪽을
    써도 결과는 같지만, 이미지 로드가 늦어 기본 종횡비(280/260)로 잠깐
    그려질 때 contain이어야 그 사이에도 잘리지 않는다. */
-.item-popup-card{position:relative;width:100%;max-width:280px;aspect-ratio:var(--item-ar,280/260);border-radius:20px;background:var(--surface-1);border:1px solid rgba(255,255,255,.12);box-shadow:0 8px 32px rgba(0,0,0,.4);background-size:contain;background-repeat:no-repeat;background-position:center;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:20px;gap:6px;overflow:hidden}
-.item-popup-title{position:absolute;top:16px;left:0;right:0;text-align:center;font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--green);text-transform:uppercase}
+.item-popup-card{position:relative;width:220px;aspect-ratio:var(--item-ar,280/260);border-radius:20px;background:var(--surface-1);border:1px solid rgba(255,255,255,.12);box-shadow:0 8px 32px rgba(0,0,0,.4);background-size:contain;background-repeat:no-repeat;background-position:center;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:16px;gap:6px;overflow:hidden;pointer-events:auto}
+.item-popup-title{position:absolute;top:14px;left:0;right:0;text-align:center;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--green);text-transform:uppercase}
 .item-popup-icon{position:absolute;border-radius:16px;background-color:rgba(255,255,255,.12);background-repeat:no-repeat;background-size:cover;background-position:center;image-rendering:pixelated;display:flex;align-items:center;justify-content:center;font-size:32px;transform:translate(-50%,-50%)}
-.item-popup-name{font-size:16px;font-weight:700;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.6)}
-.item-popup-meta{font-family:var(--mono);font-size:12px;color:rgba(255,255,255,.75);margin-bottom:8px}
-.item-popup-btn{font-family:var(--mono);font-size:13.5px;font-weight:700;letter-spacing:.03em;border:none;border-radius:16px;padding:13px 28px;cursor:pointer;color:#08110c;background:var(--green)}
+/* 이름/설명(등급·가치)도 아이콘과 같은 방식(위치 지정 피커, 정규화 좌표
+   기준 중심점)으로 자유 배치한다 — 더 이상 flex 흐름에 얹혀 자동으로
+   쌓이지 않는다. */
+.item-popup-name{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;font-size:16px;font-weight:700;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.6)}
+.item-popup-meta{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;font-family:var(--mono);font-size:12px;color:rgba(255,255,255,.75)}
+.item-popup-btn{font-family:var(--mono);font-size:12.5px;font-weight:700;letter-spacing:.03em;border:none;border-radius:14px;padding:10px 22px;cursor:pointer;color:#08110c;background:var(--green)}
 .item-popup-btn:active{opacity:.8}
 </style>
 </head>
@@ -363,6 +372,8 @@ let castPhysics = { gravityMps2: 9.8, vxScale: 1 };
 let zoneTrack = null; // { x, y, w, h } — 낚시바 기준 %
 let itemIconPos = { x: 0.5, y: 0.36 }; // 아이템창 카드 기준 0~1, dev/minigame-fishing/index.html 아이템창 탭에서 지정
 let itemIconSizePx = 64;
+let itemNamePos = { x: 0.5, y: 0.66 };
+let itemMetaPos = { x: 0.5, y: 0.8 };
 let caughtCount = 0;
 let gameState = 'idle'; // idle | charging | casting | waiting | bite | caught | catching | reeling | popup
 let biteTimer = null;
@@ -608,6 +619,15 @@ async function loadConfig() {
   el.itemPopupIcon.style.top = (itemIconPos.y * 100) + '%';
   el.itemPopupIcon.style.width = itemIconSizePx + 'px';
   el.itemPopupIcon.style.height = itemIconSizePx + 'px';
+
+  itemNamePos = itemPopupCfg.namePos || { x: 0.5, y: 0.66 };
+  itemMetaPos = itemPopupCfg.metaPos || { x: 0.5, y: 0.8 };
+  el.itemPopupName.style.left = (itemNamePos.x * 100) + '%';
+  el.itemPopupName.style.top = (itemNamePos.y * 100) + '%';
+  el.itemPopupName.style.fontSize = (itemPopupCfg.nameFontSizePx || 16) + 'px';
+  el.itemPopupMeta.style.left = (itemMetaPos.x * 100) + '%';
+  el.itemPopupMeta.style.top = (itemMetaPos.y * 100) + '%';
+  el.itemPopupMeta.style.fontSize = (itemPopupCfg.metaFontSizePx || 12) + 'px';
 }
 
 /* ===== 캐스팅/올리기 프레임 순차 재생 =====
@@ -1085,8 +1105,30 @@ function flyFishToCharacter(fishDef) {
    배경/아이콘 위치·크기는 dev/minigame-fishing/index.html의 "아이템창" 탭
    (itemPopup config, loadConfig에서 el.itemPopupCard/el.itemPopupIcon에
    이미 적용해둔 상태)을 그대로 쓴다. */
+// 아이템창 카드 폭 — .item-popup-card의 고정 width(220px, CSS)와 맞춰야
+// 한다. 카드가 화면 밖으로 나가지 않도록 캐릭터 중심에 맞추되 좌우
+// ITEM_POPUP_MARGIN 안쪽으로 clamp한다(캐릭터가 화면 가장자리에 가까워도
+// 안전). el.itemPopup(래퍼)은 아직 표시되기 전(.show 없음, display:none)
+// 이라도 left/bottom을 미리 계산해 넣을 수 있다 — 실제 크기(220px)는
+// CSS 고정값이라 레이아웃 측정 없이 상수로 계산 가능.
+const ITEM_POPUP_CARD_WIDTH = 220;
+const ITEM_POPUP_GAP = 14;
+const ITEM_POPUP_MARGIN = 12;
+function positionItemPopupAboveCharacter() {
+  const frameRect = el.frame.getBoundingClientRect();
+  const charRect = el.charStage.getBoundingClientRect();
+  const half = ITEM_POPUP_CARD_WIDTH / 2;
+  const charCenterX = charRect.left - frameRect.left + charRect.width / 2;
+  const clampedCenterX = clamp(charCenterX, ITEM_POPUP_MARGIN + half, frameRect.width - ITEM_POPUP_MARGIN - half);
+  const bottomPx = frameRect.bottom - charRect.top + ITEM_POPUP_GAP;
+  el.itemPopup.style.left = clampedCenterX + 'px';
+  el.itemPopup.style.bottom = bottomPx + 'px';
+  el.itemPopup.style.transform = 'translateX(-50%)';
+}
+
 function showItemPopup(fishCaught) {
   gameState = 'popup';
+  positionItemPopupAboveCharacter();
   el.itemPopupName.textContent = fishCaught.name;
   el.itemPopupMeta.textContent = `${fishCaught.grade} · ${fishCaught.value}P`;
   if (fishSheetUrl) {
