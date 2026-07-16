@@ -487,11 +487,13 @@ async function loadConfig() {
   el.fishbar.style.width = slideWidthPx + 'px';
   el.fishbar.style.height = (design.slideHeightPx || 260) + 'px';
 
-  // 물고기 아이콘 크기 — 기본 폭(90px) 기준 26px를 넘지 않되, 낚시바가
-  // 그보다 좁게 설정되면(slideWidthInput min 40px) 그 폭에 비례해서
-  // 줄어든다. 폭에 상관없이 항상 26px 고정이면 좁은 낚시바에서 아이콘이
-  // 바 너비를 넘어가 튀어나와 보이던 문제가 있었다.
-  const fishIconSizePx = Math.min(26, slideWidthPx * 0.4);
+  // 물고기 아이콘 크기 — 설정 화면(fishIconSizeInput)에서 직접 지정한
+  // 값을 쓴다. 아직 지정한 적 없는 기존 설정(fishIconSizePx 미설정)은
+  // 예전 자동 계산값(기본 폭 90px 기준 26px, 낚시바가 더 좁으면
+  // (slideWidthInput min 40px) 그 폭에 비례해 줄어듦 — 폭에 상관없이 항상
+  // 26px 고정이면 좁은 낚시바에서 아이콘이 바 너비를 넘어가 튀어나와
+  // 보이던 문제가 있었다)으로 그대로 폴백한다.
+  const fishIconSizePx = design.fishIconSizePx || Math.min(26, slideWidthPx * 0.4);
   el.fishbarFish.style.setProperty('--fishbar-fish-size', fishIconSizePx + 'px');
 
   // 낚시바 이미지 — barLayer(x,y,w,h, 슬라이드 기준 0~1 비율)를 그대로
