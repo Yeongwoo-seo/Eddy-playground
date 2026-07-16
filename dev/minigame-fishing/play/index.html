@@ -610,12 +610,13 @@ function startPowerCharge() {
 /* ===== 세기 확정 → 캐스팅 모션 → 추 던지기(물리) → 입질 대기 =====
    손을 떼는(release) 순간 낚싯줄을 바로 만든다 — origin은 그 순간 화면에
    이미 보이고 있던 윈드업 프레임(castWindupFrameIndex)의 낚싯대 끝이다.
-   애니메이션이 재생되는 동안엔 추가 아직 던져지지 않았으니 그 origin에
-   매달려 있는 것으로 그리고, 매 프레임 캐릭터 포즈가 바뀔 때마다 그
-   프레임의 낚싯대 끝(rodTipPxForFrame)에서 origin까지 현수선을 다시
-   그려 낚싯대를 따라 줄이 움직이는 것처럼 보이게 한다. 애니메이션이
-   끝나면 그 origin이 그대로 물리 시뮬레이션(throwSinker)의 시작점이
-   된다. */
+   추 낙하 물리(throwSinker)는 release 즉시 시작한다 — 예전엔 남은
+   팔로우스루 프레임(3~6번)이 다 재생될 때까지 기다린 뒤에야 물리를
+   시작해서 "손을 떼도 한참 있다가 던져진다"는 체감 지연이 있었다.
+   이제 팔로우스루 애니메이션과 추 낙하 물리를 동시에 진행하고, 낚싯줄의
+   낚싯대 쪽 끝(rodTip)만 애니메이션 진행에 따라 계속 갱신한다(추 쪽
+   끝은 throwSinker가 매 프레임 그린다) — 낚싯대를 따라 줄이 움직이는
+   것처럼 보이면서도 추는 릴리즈 순간부터 바로 날아간다. */
 async function releasePowerAndCast() {
   if (gameState !== 'charging') return;
   cancelAnimationFrame(castChargeRaf);
@@ -630,28 +631,32 @@ async function releasePowerAndCast() {
   el.bobber.classList.add('hidden');
   el.castSvg.classList.remove('hidden');
   renderCastLine(origin, origin);
-
-  if (castFrameUrls.length > 2) {
-    // 1,2번은 윈드업(playCastWindup)에서 이미 재생했다 — 3번부터 이어서.
-    // onFrame(i)의 i는 remainingUrls 기준(0부터 다시 셈)이라, 원래
-    // 6프레임 인덱스를 기대하는 rodTipPxForFrame에는 +2해서 넘긴다.
-    const remainingUrls = castFrameUrls.slice(2);
-    const remainingDurations = Array.isArray(castFrameDurations) ? castFrameDurations.slice(2) : castFrameDurations;
-    await playFrameSequence(remainingUrls, remainingDurations || 90, (i) => {
-      renderCastLine(rodTipPxForFrame(i + 2, frameRect), origin);
-    });
-  } else if (!castFrameUrls.length) {
-    el.charFallback.style.transition = 'transform .35s ease';
-    el.charFallback.style.transform = 'rotate(-25deg)';
-    await wait(350);
-    el.charFallback.style.transform = 'rotate(0deg)';
-  }
   vibrate(15);
+
+  let rodTip = origin; // 팔로우스루 프레임이 재생되는 동안 계속 갱신 — throwSinker의 렌더 루프가 매 프레임 읽는다
+  const animPromise = (async () => {
+    if (castFrameUrls.length > 2) {
+      // 1,2번은 윈드업(playCastWindup)에서 이미 재생했다 — 3번부터 이어서.
+      // onFrame(i)의 i는 remainingUrls 기준(0부터 다시 셈)이라, 원래
+      // 6프레임 인덱스를 기대하는 rodTipPxForFrame에는 +2해서 넘긴다.
+      const remainingUrls = castFrameUrls.slice(2);
+      const remainingDurations = Array.isArray(castFrameDurations) ? castFrameDurations.slice(2) : castFrameDurations;
+      await playFrameSequence(remainingUrls, remainingDurations || 90, (i) => {
+        rodTip = rodTipPxForFrame(i + 2, frameRect);
+      });
+    } else if (!castFrameUrls.length) {
+      el.charFallback.style.transition = 'transform .35s ease';
+      el.charFallback.style.transform = 'rotate(-25deg)';
+      await wait(350);
+      el.charFallback.style.transform = 'rotate(0deg)';
+    }
+  })();
   // 캐스팅이 끝난 뒤에도 el.charImg는 그대로 두면 캐스팅 마지막 프레임
   // 포즈에 머문다(playFrameSequence가 이미 그렇게 남겨둠) — idle로
   // 되돌리지 않아야 낚싯대 끝 위치가 대기/입질 내내 그 프레임 기준으로
   // 유지된다. idle 포즈로는 resetToIdle(새 판 시작)에서만 되돌아간다.
-  await throwSinker(power, origin, frameRect);
+  const throwPromise = throwSinker(power, origin, frameRect, () => rodTip);
+  await Promise.all([animPromise, throwPromise]);
   waitForBite();
 }
 
@@ -683,7 +688,7 @@ function rodTipPxForFrame(frameIndex, frameRect) {
 // dev/minigame-fishing/index.html의 추 이동 모션 테스트 도구는 이
 // castPhysics 값과 별개로 자체 미리보기 상수를 쓴다. 착수 지점에 기존
 // 찌(bobber)를 그대로 가져다 놓아 입질 대기 이후 로직은 손대지 않는다.
-function throwSinker(power, origin, frameRect) {
+function throwSinker(power, origin, frameRect, getRodTip) {
   return new Promise(resolve => {
     const minDx = frameRect.width * 0.10, maxDx = frameRect.width * 0.68;
     const baseDx = minDx + (power / 100) * (maxDx - minDx);
@@ -705,11 +710,15 @@ function throwSinker(power, origin, frameRect) {
       if (t >= T) { finish(dx); return; }
       const x = origin.x + vx0 * t;
       const y = origin.y + vy0 * t + 0.5 * g * t * t;
-      renderCastLine(origin, { x, y });
+      // 낚싯줄의 낚싯대 쪽 끝은 물리 시작점(origin)에 고정하지 않고, 아직
+      // 재생 중인 팔로우스루 애니메이션의 현재 프레임 낚싯대 끝을 따라간다
+      // (releasePowerAndCast가 넘겨준 getRodTip) — 던지기는 release 즉시
+      // 시작하지만, 손 위치는 애니메이션이 끝날 때까지 계속 움직이므로.
+      renderCastLine(getRodTip ? getRodTip() : origin, { x, y });
       castFlightRaf = requestAnimationFrame(frame);
     }
     function finish(finalDx) {
-      renderCastLine(origin, { x: origin.x + finalDx, y: waterY });
+      renderCastLine(getRodTip ? getRodTip() : origin, { x: origin.x + finalDx, y: waterY });
       el.castSvg.classList.add('hidden');
       const landingXPct = clamp((origin.x + finalDx) / frameRect.width * 100, 5, 95);
       const landingYPct = waterY / frameRect.height * 100;
