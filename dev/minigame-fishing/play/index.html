@@ -121,7 +121,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 /* 게이지 — 설정 화면에서 gaugeRegion을 지정해야만 나타난다(미지정 시
    기본 display:none). 위치/크기는 loadConfig가 gaugeRegion 기준으로
    매 판마다 한 번 정해준다. */
-.fishbar-gauge{position:absolute;overflow:hidden;background:rgb(151,126,83);display:none}
+.fishbar-gauge{position:absolute;overflow:hidden;background:rgb(151,126,83);background-size:cover;background-repeat:no-repeat;background-position:center;display:none}
 .fishbar-gauge-mask{position:absolute;left:0;right:0;top:0;background:rgba(5,7,10,.82)}
 .fishbar-zone{position:absolute;border-radius:6px;opacity:.85;transition:background .2s;background-size:cover;background-position:center}
 .fishbar-fish{position:absolute;left:50%;transform:translate(-50%,-50%);font-size:22px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.4))}
@@ -357,6 +357,7 @@ let reelFrameUrls = [];
 let idleFrameUrl = null;
 let sinkerImageUrl = null;
 let biteStampImageUrl = null;
+let gaugeImageUrl = null; // 잡아채기 게이지 채움 이미지 — 없으면 renderBarFrame이 진행도 단색으로 폴백
 let fishSheetUrl = null;
 let fishSheetDims = null; // { width, height } of the *actual* loaded sheet — needed to turn a fishIconOverrides rect (normalized 0~1) into pixel background-position/size, see getFishCropStyle in fishDefs.js
 let fishIconOverrides = {};
@@ -411,6 +412,7 @@ async function loadConfig() {
   if (design.catchLayer && design.catchLayer.assetId) ids.push(design.catchLayer.assetId);
   if (design.sinkerImageAssetId) ids.push(design.sinkerImageAssetId);
   if (design.biteStampAssetId) ids.push(design.biteStampAssetId);
+  if (design.gaugeImageAssetId) ids.push(design.gaugeImageAssetId);
   if (cfg.fishSheetAssetId) ids.push(cfg.fishSheetAssetId);
   if (cfg.castingSheetAssetId) ids.push(cfg.castingSheetAssetId);
   if (cfg.backgroundAssetId) ids.push(cfg.backgroundAssetId);
@@ -547,6 +549,14 @@ async function loadConfig() {
   el.bobberDot.style.display = sinkerImageUrl ? 'none' : '';
   el.bobberImg.style.display = sinkerImageUrl ? 'block' : 'none';
   if (sinkerImageUrl) el.bobberImg.src = sinkerImageUrl;
+
+  // 잡아채기 게이지 채움 이미지 — 있으면 fishbarGauge 배경으로 깔고,
+  // 없으면 renderBarFrame이 매 프레임 진행도 색으로 칠한다. 이미지는
+  // 한 번만 지정해두면 되니(색은 진행도가 바뀔 때마다 다시 칠해야 해서
+  // 매 프레임 갱신) 여기 loadConfig에서 한 번만 적용한다.
+  const gaugeImageAsset = design.gaugeImageAssetId ? byId.get(design.gaugeImageAssetId) : null;
+  gaugeImageUrl = gaugeImageAsset ? await preloadWithRetry(gaugeImageAsset.dataUrl, 3, 500) : null;
+  el.fishbarGauge.style.backgroundImage = gaugeImageUrl ? `url(${gaugeImageUrl})` : 'none';
 
   // 캐스팅 게이지 이미지 — 이미지와 채움 영역(castGaugeFillRegion)이 둘 다
   // 있어야 커스텀 게이지를 켠다(하나만 있으면 기본 막대 게이지로 그대로
@@ -1030,9 +1040,10 @@ function renderBarFrame() {
     el.fishbarFish.style.top = fish.y + '%';
     el.fishbarZone.style.top = zone.y + '%';
   }
-  const gaugeColor = gaugeColorForProgress(progress);
   el.fishbarGaugeMask.style.height = (100 - progress) + '%';
-  el.fishbarGauge.style.background = gaugeColor;
+  // 게이지 채움 이미지를 올렸으면 그 이미지를 그대로 두고, 없을 때만
+  // 기존처럼 진행도에 따라 색을 다시 칠한다.
+  if (!gaugeImageUrl) el.fishbarGauge.style.background = gaugeColorForProgress(progress);
 }
 
 function catchTick(ts) {
