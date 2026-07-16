@@ -1080,7 +1080,10 @@ const AssetDB = (() => {
   // play/index.html의 throwSinker 참고) — 표준중력 9.8이 기본값. vxScale은
   // 세기(게이지)로 정해지는 기본 수평거리(dx)에 곱하는 배율로, 1이면 원래
   // 세기~거리 관계 그대로다.
-  const FISHING_CONFIG_DEFAULT = { castingFrames: [], reelingFrames: [], barDesign: {}, fishSheetAssetId: null, fishIconOverrides: {}, castingSheetAssetId: null, castingFrameOverrides: {}, castingFrameDurations: [], backgroundAssetId: null, castingFrameRodTips: {}, walkFrames: { up: [], down: [], left: [], right: [] }, walkSheets: { up: {}, down: {}, left: {}, right: {} }, walkMotion: { stepMs: 200, stepDelayMs: 0 }, castPhysics: { gravityMps2: 9.8, vxScale: 1 } };
+  // itemPopup — 낚시 성공 시(물고기가 추에서 캐릭터로 날아온 다음) 뜨는
+  // 아이템창 팝업의 디자인. backgroundAssetId(팝업 액자 그림) + iconPos(그
+  // 그림 위 어디에 아이템 아이콘이 놓일지, 0~1 정규화 좌표) + iconSizePx.
+  const FISHING_CONFIG_DEFAULT = { castingFrames: [], reelingFrames: [], barDesign: {}, fishSheetAssetId: null, fishIconOverrides: {}, castingSheetAssetId: null, castingFrameOverrides: {}, castingFrameDurations: [], backgroundAssetId: null, castingFrameRodTips: {}, walkFrames: { up: [], down: [], left: [], right: [] }, walkSheets: { up: {}, down: {}, left: {}, right: {} }, walkMotion: { stepMs: 200, stepDelayMs: 0 }, castPhysics: { gravityMps2: 9.8, vxScale: 1 }, itemPopup: { backgroundAssetId: null, iconPos: null, iconSizePx: 64 } };
 
   async function getFishingConfig() {
     if (fishingConfigCache.has('config')) return fishingConfigCache.get('config');
