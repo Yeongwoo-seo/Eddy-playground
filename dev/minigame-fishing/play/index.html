@@ -480,13 +480,15 @@ let lastRodTipPt = null; // throwSinker의 finish가 남겨두는 착수 시점 
    순환시키고, 없으면 위치만 바뀌고 캐릭터 그림은 그대로 둔다(캐스팅
    모션처럼 그림 없이도 동작은 되는 폴백). */
 const MOVE_DIRS = ['up', 'down', 'left', 'right'];
-const MOVE_STEP_PX = 18; // 한 걸음의 화면 픽셀 크기 — el.frame 실제 크기 기준으로 매 스텝 %로 환산한다
+const MOVE_STEP_PX = 18; // "타일 한 칸" 환산 기준 픽셀 크기 — walkMotion.stepMs(이 거리를 이동하는 데 걸리는 시간)와 합쳐 연속 이동 속도(px/ms)를 낸다
 const MOVE_BOUNDS_PCT = { left: [4, 82], bottom: [12, 62] }; // char-stage가 벗어날 수 없는 범위(%) — 상단바/하단 버튼과 안 겹치는 선에서 넉넉히
 let walkFrameUrls = { up: [], down: [], left: [], right: [] };
-let walkMotion = { stepMs: 200, stepDelayMs: 0 };
+let walkMotion = { stepMs: 200 };
 let charPosPct = { left: 9, bottom: 41 }; // .char-stage CSS 기본값과 맞춰둔 시작 위치
-let moveHoldTimer = null;
-let moveAnimFrameIndex = 0;
+let moveRaf = null;
+let moveLastT = 0;
+let moveHoldDir = null;
+let moveAnimTimer = null;
 
 /* ===== 설정 로드 (AssetDB) — 실패해도 게임은 도형 폴백으로 계속 동작한다. ===== */
 async function loadConfig() {
@@ -538,7 +540,7 @@ async function loadConfig() {
   // 이동 방향별 걷기 시트 — 캐스팅 시트와 같은 방식(6프레임, MOTION_SHEET_LAYOUT)
   // 으로 잘라 캐시해둔다. 방향별로 업로드 안 했으면 빈 배열로 두고,
   // stepChar가 그 경우 캐릭터 그림을 그대로 둔 채 위치만 옮긴다.
-  walkMotion = Object.assign({ stepMs: 200, stepDelayMs: 0 }, cfg.walkMotion || {});
+  walkMotion = Object.assign({ stepMs: 200 }, cfg.walkMotion || {});
   walkFrameUrls = { up: [], down: [], left: [], right: [] };
   for (const dir of MOVE_DIRS) {
     const ws = walkSheetsCfg[dir];
@@ -1459,36 +1461,56 @@ function resetToIdle() {
   else { el.charImg.classList.add('hidden'); el.charFallback.classList.remove('hidden'); }
 }
 
-/* ===== 이동 — 방향키 한 걸음(stepChar) + 꾹 누르면 반복(startMoveHold),
-   walkMotion.stepMs 간격으로 걷기 프레임을 순환시킨다(playMoveAnim). ===== */
-function stepChar(dir) {
-  const frameRect = el.frame.getBoundingClientRect();
-  const stepXPct = MOVE_STEP_PX / frameRect.width * 100;
-  const stepYPct = MOVE_STEP_PX / frameRect.height * 100;
-  if (dir === 'left') charPosPct.left = clamp(charPosPct.left - stepXPct, MOVE_BOUNDS_PCT.left[0], MOVE_BOUNDS_PCT.left[1]);
-  if (dir === 'right') charPosPct.left = clamp(charPosPct.left + stepXPct, MOVE_BOUNDS_PCT.left[0], MOVE_BOUNDS_PCT.left[1]);
-  if (dir === 'up') charPosPct.bottom = clamp(charPosPct.bottom + stepYPct, MOVE_BOUNDS_PCT.bottom[0], MOVE_BOUNDS_PCT.bottom[1]);
-  if (dir === 'down') charPosPct.bottom = clamp(charPosPct.bottom - stepYPct, MOVE_BOUNDS_PCT.bottom[0], MOVE_BOUNDS_PCT.bottom[1]);
-  el.charStage.style.left = charPosPct.left + '%';
-  el.charStage.style.bottom = charPosPct.bottom + '%';
+/* ===== 이동 — 격자 스냅 없이 방향키/방향 버튼을 누르고 있는 동안
+   requestAnimationFrame으로 매 프레임 위치를 갱신하는 연속 이동이다.
+   속도는 walkMotion.stepMs(설정 화면 "이동 속도" 슬라이더 — "타일 한 칸
+   (MOVE_STEP_PX)을 이동하는 데 걸리는 시간"으로 해석)를 px/ms로 환산해
+   쓴다. 걷기 프레임은 이동 중엔 계속 순환하고(moveAnimTimer), 멈추면
+   idle 프레임으로 되돌아간다. ===== */
+function moveSpeedPxPerMs() { return MOVE_STEP_PX / Math.max(1, walkMotion.stepMs); }
+function stopMoveAnim() {
+  if (moveAnimTimer) { clearInterval(moveAnimTimer); moveAnimTimer = null; }
 }
 function playMoveAnim(dir) {
+  stopMoveAnim();
   const frames = walkFrameUrls[dir];
   if (!frames || !frames.length) return; // 방향 시트가 없으면 그림은 그대로 두고 위치만 바뀐다
-  moveAnimFrameIndex = (moveAnimFrameIndex + 1) % frames.length;
-  el.charImg.src = frames[moveAnimFrameIndex];
+  let i = 0;
+  el.charImg.src = frames[i];
   el.charImg.classList.remove('hidden');
   el.charFallback.classList.add('hidden');
+  if (frames.length <= 1) return;
+  moveAnimTimer = setInterval(() => {
+    i = (i + 1) % frames.length;
+    el.charImg.src = frames[i];
+  }, Math.max(40, Math.round(walkMotion.stepMs / frames.length)));
+}
+function moveTick(ts) {
+  if (!moveHoldDir) { moveRaf = null; return; }
+  if (!moveLastT) moveLastT = ts;
+  const distPx = moveSpeedPxPerMs() * (ts - moveLastT);
+  moveLastT = ts;
+  const frameRect = el.frame.getBoundingClientRect();
+  const stepXPct = distPx / frameRect.width * 100;
+  const stepYPct = distPx / frameRect.height * 100;
+  if (moveHoldDir === 'left') charPosPct.left = clamp(charPosPct.left - stepXPct, MOVE_BOUNDS_PCT.left[0], MOVE_BOUNDS_PCT.left[1]);
+  if (moveHoldDir === 'right') charPosPct.left = clamp(charPosPct.left + stepXPct, MOVE_BOUNDS_PCT.left[0], MOVE_BOUNDS_PCT.left[1]);
+  if (moveHoldDir === 'up') charPosPct.bottom = clamp(charPosPct.bottom + stepYPct, MOVE_BOUNDS_PCT.bottom[0], MOVE_BOUNDS_PCT.bottom[1]);
+  if (moveHoldDir === 'down') charPosPct.bottom = clamp(charPosPct.bottom - stepYPct, MOVE_BOUNDS_PCT.bottom[0], MOVE_BOUNDS_PCT.bottom[1]);
+  el.charStage.style.left = charPosPct.left + '%';
+  el.charStage.style.bottom = charPosPct.bottom + '%';
+  moveRaf = requestAnimationFrame(moveTick);
 }
 function startMoveHold(dir) {
   if (gameState !== 'idle') return;
-  stopMoveHold();
-  stepChar(dir);
+  if (moveHoldDir === dir) return;
+  moveHoldDir = dir;
   playMoveAnim(dir);
-  moveHoldTimer = setInterval(() => { stepChar(dir); playMoveAnim(dir); }, walkMotion.stepMs + walkMotion.stepDelayMs);
+  if (!moveRaf) { moveLastT = 0; moveRaf = requestAnimationFrame(moveTick); }
 }
 function stopMoveHold() {
-  if (moveHoldTimer) { clearInterval(moveHoldTimer); moveHoldTimer = null; }
+  moveHoldDir = null;
+  stopMoveAnim();
   if (idleFrameUrl) el.charImg.src = idleFrameUrl; // 걷기 멈추면 원래 idle 프레임(있으면)으로 되돌린다
 }
 

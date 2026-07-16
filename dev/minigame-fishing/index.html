@@ -240,7 +240,7 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .move-stage{position:relative;width:100%;height:320px;border-radius:12px;border:1px solid var(--divider);overflow:auto;background:#000;margin-bottom:16px;-webkit-overflow-scrolling:touch}
 .move-world{position:relative;background-repeat:no-repeat;background-position:top left;background-size:auto}
 .move-world.placeholder{background-image:repeating-conic-gradient(var(--surface-2) 0% 25%, var(--surface-1) 0% 50%);background-size:32px 32px}
-.move-char{position:absolute;width:64px;height:64px;background-color:rgba(89,184,200,.28);border:2px solid var(--cyan);border-radius:8px;background-repeat:no-repeat;background-position:center;background-size:cover;image-rendering:pixelated;color:#fff;font-size:26px;display:flex;align-items:center;justify-content:center;transition:left .16s linear,top .16s linear}
+.move-char{position:absolute;width:64px;height:64px;background-color:rgba(89,184,200,.28);border:2px solid var(--cyan);border-radius:8px;background-repeat:no-repeat;background-position:center;background-size:cover;image-rendering:pixelated;color:#fff;font-size:26px;display:flex;align-items:center;justify-content:center}
 .move-controls-row{display:flex;justify-content:center}
 .move-dpad{display:grid;grid-template-columns:48px 48px 48px;grid-template-rows:48px 48px 48px;gap:6px}
 .move-dpad-btn{background:var(--surface-2);border:1px solid var(--divider);border-radius:10px;color:var(--text-primary);font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-user-drag:none}
@@ -541,8 +541,9 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
 
   <!-- ===== 이동 — 캐릭터 상하좌우 걷기 프레임(방향당 여러 장, 올리기
        모션과 같은 개별 업로드 배열 방식)을 등록하고, 낚시바 디자인 탭의
-       배경화면 위에서 격자(칸) 단위 이동을 테스트한다. 자유이동이 아니라
-       한 번에 정확히 한 칸(MOVE_TILE_SIZE)씩 움직이는 스타듀밸리 방식. ===== -->
+       배경화면 위에서 자유 이동을 테스트한다. 격자에 스냅되지 않고
+       방향키/방향 버튼을 누르고 있는 동안 이동 속도(px/ms로 환산)에 맞춰
+       매끄럽게 이동한다. ===== -->
   <div class="tab-panel hidden" id="panelMove">
     <div class="option-group">
       <div class="option-label">위로 이동</div>
@@ -615,23 +616,15 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
 
     <div class="option-group">
       <div class="option-label">이동 속도</div>
-      <div class="option-desc">한 칸에서 다음 칸으로 이동하는 데 걸리는 시간이에요. 값이 작을수록 빠르게 이동해요.</div>
+      <div class="option-desc">캐릭터가 타일 한 칸(64px) 크기만큼 이동하는 데 걸리는 시간 기준으로 속도를 정해요. 값이 작을수록 빠르게 이동해요.</div>
       <div class="range-row">
         <input type="range" id="moveStepMsInput" min="60" max="500" step="10" value="200">
         <div class="range-value" id="moveStepMsValue">200ms</div>
       </div>
     </div>
     <div class="option-group">
-      <div class="option-label">이동 후 딜레이</div>
-      <div class="option-desc">방향키나 방향 버튼을 누르고 있을 때, 한 칸 이동을 마치고 다음 칸으로 넘어가기 전에 잠깐 멈추는 시간이에요.</div>
-      <div class="range-row">
-        <input type="range" id="moveStepDelayMsInput" min="0" max="400" step="10" value="0">
-        <div class="range-value" id="moveStepDelayMsValue">0ms</div>
-      </div>
-    </div>
-    <div class="option-group">
-      <div class="option-label">격자 이동 테스트</div>
-      <div class="option-desc">배경화면(낚시바 디자인 탭에서 업로드)을 축소 없이 원본 크기 그대로 깔아요. 아직 배경을 안 올렸다면 체커보드 격자로 대신 보여줘요. 화살표 키를 누르거나 아래 방향 버튼을 탭하면 캐릭터가 스타듀밸리처럼 한 칸씩 이동해요 — 자유이동이 아니라 격자에 딱 맞춰 스냅됩니다.</div>
+      <div class="option-label">자유 이동 테스트</div>
+      <div class="option-desc">배경화면(낚시바 디자인 탭에서 업로드)을 축소 없이 원본 크기 그대로 깔아요. 아직 배경을 안 올렸다면 체커보드 격자로 대신 보여줘요. 화살표 키를 누르거나 아래 방향 버튼을 누르고 있으면 캐릭터가 격자에 스냅되지 않고 위 이동 속도에 맞춰 자유롭게 이동해요.</div>
       <div class="move-stage" id="moveStage">
         <div class="move-world" id="moveWorld">
           <div class="move-char" id="moveChar"></div>
@@ -1005,8 +998,6 @@ const el = {
   moveDpad: document.getElementById('moveDpad'),
   moveStepMsInput: document.getElementById('moveStepMsInput'),
   moveStepMsValue: document.getElementById('moveStepMsValue'),
-  moveStepDelayMsInput: document.getElementById('moveStepDelayMsInput'),
-  moveStepDelayMsValue: document.getElementById('moveStepDelayMsValue'),
   panelItem: document.getElementById('panelItem'),
   itemBgSlot: document.getElementById('itemBgSlot'),
   itemBgAddBtn: document.getElementById('itemBgAddBtn'),
@@ -2951,27 +2942,29 @@ WALK_DIRS.forEach(dir => {
   });
 });
 
-/* ===== 이동 탭 — 격자(칸) 이동 테스트.
-   자유이동이 아니라 스타듀밸리처럼 한 번의 입력에 정확히 MOVE_TILE_SIZE만큼
-   한 칸 스냅 이동한다. 배경은 낚시바 디자인 탭의 backgroundAssetId를 그대로
-   재사용하되, /play/ 화면과 달리 background-size:cover로 축소하지 않고
-   .move-world의 width/height를 이미지 원본 픽셀 크기로 지정해 원본 그대로
-   보여준다 — 그 결과 배경이 좁은 .move-stage 뷰포트보다 커질 수 있으므로,
-   캐릭터가 이동할 때마다 뷰포트를 캐릭터 중심으로 스크롤해 카메라처럼
-   따라가게 한다(updateCharPosition). */
+/* ===== 이동 탭 — 자유 이동 테스트.
+   더 이상 격자에 스냅되지 않는다 — 방향키/방향 버튼을 누르고 있는 동안
+   requestAnimationFrame으로 매 프레임 위치를 갱신하는 연속 이동이다.
+   속도는 "이동 속도"(moveStepMs) 슬라이더 값을 그대로 쓰되, "타일 한 칸
+   (MOVE_TILE_SIZE)을 이동하는 데 걸리는 시간"으로 해석해 px/ms 속도로
+   환산한다 — 슬라이더 자체는 예전 그대로 두고 의미만 바뀐다. 배경은
+   낚시바 디자인 탭의 backgroundAssetId를 그대로 재사용하되, /play/
+   화면과 달리 background-size:cover로 축소하지 않고 .move-world의
+   width/height를 이미지 원본 픽셀 크기로 지정해 원본 그대로 보여준다 —
+   그 결과 배경이 좁은 .move-stage 뷰포트보다 커질 수 있으므로, 캐릭터가
+   이동할 때마다 뷰포트를 캐릭터 중심으로 스크롤해 카메라처럼 따라가게
+   한다(updateCharPosition). */
 const MOVE_TILE_SIZE = 64;
 const MOVE_PLACEHOLDER_COLS = 10;
 const MOVE_PLACEHOLDER_ROWS = 10;
-const moveState = { row: 0, col: 0, dir: 'down', maxRow: MOVE_PLACEHOLDER_ROWS - 1, maxCol: MOVE_PLACEHOLDER_COLS - 1, settleTimer: null };
+const moveState = { x: 0, y: 0, dir: 'down', maxX: (MOVE_PLACEHOLDER_COLS - 1) * MOVE_TILE_SIZE, maxY: (MOVE_PLACEHOLDER_ROWS - 1) * MOVE_TILE_SIZE };
 let moveAnimTimer = null;
-// 이동 속도/딜레이 슬라이더 값 — fishingConfig.walkMotion에서 불러와 initMoveMotionControls가
-// 채우고, 슬라이더를 드래그할 때마다 즉시 갱신된다(진행 중인 홀드 반복도 다음
-// 스텝부터 새 값을 그대로 읽는다 — scheduleNextHoldStep이 매번 이 변수를 다시 읽음).
+// 이동 속도 슬라이더 값 — fishingConfig.walkMotion에서 불러와
+// initMoveMotionControls가 채우고, 슬라이더를 드래그할 때마다 즉시
+// 갱신된다(진행 중인 이동도 다음 프레임부터 새 값을 그대로 읽는다 —
+// moveTick이 매 프레임 이 변수를 다시 읽음).
 let moveStepMs = 200;
-let moveStepDelayMs = 0;
-function applyMoveTiming() {
-  el.moveChar.style.transitionDuration = moveStepMs + 'ms';
-}
+function moveSpeedPxPerMs() { return MOVE_TILE_SIZE / Math.max(1, moveStepMs); }
 
 function stopMoveAnim() {
   if (moveAnimTimer) { clearInterval(moveAnimTimer); moveAnimTimer = null; }
@@ -2982,8 +2975,8 @@ function applyCharFrame(dir, frameIndex) {
     el.moveChar.style.backgroundImage = `url(${frames[frameIndex % frames.length]})`;
     el.moveChar.textContent = '';
   } else {
-    // 방향 프레임을 아직 안 올렸어도 격자 스냅 이동 자체는 바로 테스트할 수
-    // 있도록, 방향을 가리키는 화살표 플레이스홀더로 대체한다.
+    // 방향 프레임을 아직 안 올렸어도 이동 자체는 바로 테스트할 수 있도록,
+    // 방향을 가리키는 화살표 플레이스홀더로 대체한다.
     el.moveChar.style.backgroundImage = 'none';
     el.moveChar.textContent = WALK_ARROWS[dir];
   }
@@ -3000,66 +2993,42 @@ function playMoveAnim(dir) {
   }, Math.max(40, Math.round(moveStepMs / frameCount)));
 }
 function updateCharPosition() {
-  el.moveChar.style.left = (moveState.col * MOVE_TILE_SIZE) + 'px';
-  el.moveChar.style.top = (moveState.row * MOVE_TILE_SIZE) + 'px';
-  const targetLeft = moveState.col * MOVE_TILE_SIZE + MOVE_TILE_SIZE / 2 - el.moveStage.clientWidth / 2;
-  const targetTop = moveState.row * MOVE_TILE_SIZE + MOVE_TILE_SIZE / 2 - el.moveStage.clientHeight / 2;
-  el.moveStage.scrollTo({ left: Math.max(0, targetLeft), top: Math.max(0, targetTop), behavior: 'smooth' });
+  el.moveChar.style.left = moveState.x + 'px';
+  el.moveChar.style.top = moveState.y + 'px';
+  const targetLeft = moveState.x + MOVE_TILE_SIZE / 2 - el.moveStage.clientWidth / 2;
+  const targetTop = moveState.y + MOVE_TILE_SIZE / 2 - el.moveStage.clientHeight / 2;
+  // 매 프레임 갱신되므로 'smooth'를 쓰면 스크롤 애니메이션끼리 밀려 뚝뚝
+  // 끊겨 보인다 — 즉시 이동(기본 behavior)으로 캐릭터 위치와 함께 매끄럽게 붙인다.
+  el.moveStage.scrollTo({ left: Math.max(0, targetLeft), top: Math.max(0, targetTop) });
 }
-function handleMove(dir) {
-  let row = moveState.row;
-  let col = moveState.col;
-  if (dir === 'up') row -= 1;
-  else if (dir === 'down') row += 1;
-  else if (dir === 'left') col -= 1;
-  else if (dir === 'right') col += 1;
-  row = Math.max(0, Math.min(moveState.maxRow, row));
-  col = Math.max(0, Math.min(moveState.maxCol, col));
-  const moved = row !== moveState.row || col !== moveState.col;
-  moveState.dir = dir;
-  moveState.row = row;
-  moveState.col = col;
-  updateCharPosition();
-  clearTimeout(moveState.settleTimer);
-  if (moved) {
-    playMoveAnim(dir);
-    // 이동이 끝나는 시점(트랜지션 종료)에 걷기 애니메이션을 멈추고 그 방향의
-    // 첫 프레임(정지 자세)으로 되돌린다.
-    moveState.settleTimer = setTimeout(() => { stopMoveAnim(); applyCharFrame(dir, 0); }, moveStepMs);
-  } else {
-    // 맵 가장자리에 막혀 실제로는 못 움직여도, 누른 방향을 바라보는 정지
-    // 자세로는 바꿔줘야 "눌러도 반응이 없다"는 인상을 안 준다.
-    stopMoveAnim();
-    applyCharFrame(dir, 0);
-  }
-}
-// 꾹 누르고 있으면 한 칸에서 멈추지 않고 계속 다음 칸으로 넘어간다 — dpad는
-// click이 눌림 유지 상태를 안 주므로 pointerdown~up 구간을 자체 타이머로
-// 관리하고, 키보드는 OS/브라우저마다 다른 키반복 딜레이·속도에 기대지 않도록
-// 첫 keydown에서만 반복을 시작한다(e.repeat인 이후 keydown들은 무시).
-// setInterval 대신 스텝마다 스스로를 다시 예약하는 방식을 쓰는 이유는
-// moveStepDelayMs(이동 후 딜레이)를 스텝 사이에 끼워 넣어야 해서다 — 한 칸
-// 이동(moveStepMs) + 딜레이(moveStepDelayMs)가 지난 뒤에야 다음 칸으로
-// 넘어간다. 두 값 다 슬라이더로 실시간 조절되므로 매번 최신 값을 다시 읽는다.
-let moveHoldTimer = null;
+// 방향키/방향 버튼을 누르고 있는 동안 매 프레임 moveSpeedPxPerMs()만큼
+// 이동한다 — 격자 스냅 없이 자유롭게 어느 위치에서든 멈출 수 있다.
+let moveRaf = null;
+let moveLastT = 0;
 let moveHoldDir = null;
-function scheduleNextHoldStep(dir) {
-  moveHoldTimer = setTimeout(() => {
-    if (moveHoldDir !== dir) return;
-    handleMove(dir);
-    scheduleNextHoldStep(dir);
-  }, moveStepMs + moveStepDelayMs);
+function moveTick(ts) {
+  if (!moveHoldDir) { moveRaf = null; return; }
+  if (!moveLastT) moveLastT = ts;
+  const dist = moveSpeedPxPerMs() * (ts - moveLastT);
+  moveLastT = ts;
+  if (moveHoldDir === 'up') moveState.y = Math.max(0, moveState.y - dist);
+  if (moveHoldDir === 'down') moveState.y = Math.min(moveState.maxY, moveState.y + dist);
+  if (moveHoldDir === 'left') moveState.x = Math.max(0, moveState.x - dist);
+  if (moveHoldDir === 'right') moveState.x = Math.min(moveState.maxX, moveState.x + dist);
+  updateCharPosition();
+  moveRaf = requestAnimationFrame(moveTick);
 }
 function startMoveHold(dir) {
-  if (moveHoldDir === dir && moveHoldTimer) return;
-  stopMoveHold();
+  moveState.dir = dir;
+  if (moveHoldDir === dir) return;
   moveHoldDir = dir;
-  handleMove(dir);
-  scheduleNextHoldStep(dir);
+  playMoveAnim(dir);
+  if (!moveRaf) { moveLastT = 0; moveRaf = requestAnimationFrame(moveTick); }
 }
 function stopMoveHold() {
-  if (moveHoldTimer) { clearTimeout(moveHoldTimer); moveHoldTimer = null; }
   moveHoldDir = null;
+  stopMoveAnim();
+  applyCharFrame(moveState.dir, 0);
 }
 el.moveDpad.querySelectorAll('[data-dir]').forEach(btn => {
   btn.addEventListener('pointerdown', (e) => { e.preventDefault(); startMoveHold(btn.dataset.dir); });
@@ -3086,29 +3055,19 @@ document.addEventListener('keyup', (e) => {
 window.addEventListener('blur', stopMoveHold);
 
 async function saveWalkMotion() {
-  fishingConfig = await AssetDB.setFishingConfig({ walkMotion: { stepMs: moveStepMs, stepDelayMs: moveStepDelayMs } });
+  fishingConfig = await AssetDB.setFishingConfig({ walkMotion: { stepMs: moveStepMs } });
   showSaveNote();
 }
 el.moveStepMsInput.addEventListener('input', () => {
   moveStepMs = Number(el.moveStepMsInput.value);
   el.moveStepMsValue.textContent = moveStepMs + 'ms';
-  applyMoveTiming();
-  saveWalkMotion();
-});
-el.moveStepDelayMsInput.addEventListener('input', () => {
-  moveStepDelayMs = Number(el.moveStepDelayMsInput.value);
-  el.moveStepDelayMsValue.textContent = moveStepDelayMs + 'ms';
   saveWalkMotion();
 });
 function initMoveMotionControls() {
   const motion = fishingConfig.walkMotion || {};
   moveStepMs = motion.stepMs || 200;
-  moveStepDelayMs = motion.stepDelayMs || 0;
   el.moveStepMsInput.value = moveStepMs;
   el.moveStepMsValue.textContent = moveStepMs + 'ms';
-  el.moveStepDelayMsInput.value = moveStepDelayMs;
-  el.moveStepDelayMsValue.textContent = moveStepDelayMs + 'ms';
-  applyMoveTiming();
 }
 
 async function renderMoveTestStage() {
@@ -3120,18 +3079,18 @@ async function renderMoveTestStage() {
     el.moveWorld.style.backgroundImage = `url(${bgAsset.dataUrl})`;
     el.moveWorld.style.width = dims.width + 'px';
     el.moveWorld.style.height = dims.height + 'px';
-    moveState.maxCol = Math.max(0, Math.floor(dims.width / MOVE_TILE_SIZE) - 1);
-    moveState.maxRow = Math.max(0, Math.floor(dims.height / MOVE_TILE_SIZE) - 1);
+    moveState.maxX = Math.max(0, dims.width - MOVE_TILE_SIZE);
+    moveState.maxY = Math.max(0, dims.height - MOVE_TILE_SIZE);
   } else {
     el.moveWorld.classList.add('placeholder');
     el.moveWorld.style.backgroundImage = '';
     el.moveWorld.style.width = (MOVE_PLACEHOLDER_COLS * MOVE_TILE_SIZE) + 'px';
     el.moveWorld.style.height = (MOVE_PLACEHOLDER_ROWS * MOVE_TILE_SIZE) + 'px';
-    moveState.maxCol = MOVE_PLACEHOLDER_COLS - 1;
-    moveState.maxRow = MOVE_PLACEHOLDER_ROWS - 1;
+    moveState.maxX = (MOVE_PLACEHOLDER_COLS - 1) * MOVE_TILE_SIZE;
+    moveState.maxY = (MOVE_PLACEHOLDER_ROWS - 1) * MOVE_TILE_SIZE;
   }
-  moveState.row = Math.min(moveState.row, moveState.maxRow);
-  moveState.col = Math.min(moveState.col, moveState.maxCol);
+  moveState.x = Math.min(moveState.x, moveState.maxX);
+  moveState.y = Math.min(moveState.y, moveState.maxY);
   applyCharFrame(moveState.dir, 0);
   updateCharPosition();
 }

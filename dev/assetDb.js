@@ -1075,10 +1075,10 @@ const AssetDB = (() => {
   // 뜨는 바) 배경 그림 자산 id. castGaugeFillRegion({x,y,w,h}, 이 그림의
   // 원본 자연 크기 대비 0~1)이 그림 위 어디가 채워지는 부분인지 지정한다 —
   // 둘 다 비어있으면 기본 막대 게이지(cast-power-track/-fill)가 쓰인다.
-  // walkMotion — 격자 이동 테스트의 속도 설정, { stepMs, stepDelayMs }.
-  // stepMs는 한 칸을 이동하는 데 걸리는 시간(슬라이드 애니메이션 길이 겸
-  // 걷기 프레임 재생 속도 기준), stepDelayMs는 방향키/dpad를 누르고 있을 때
-  // 한 칸 이동을 마친 뒤 다음 칸으로 넘어가기 전에 추가로 쉬는 시간이다.
+  // walkMotion — 자유 이동의 속도 설정, { stepMs }. 격자에 스냅되지 않는
+  // 연속 이동이라 stepMs는 "타일 한 칸(MOVE_STEP_PX/MOVE_TILE_SIZE) 크기를
+  // 이동하는 데 걸리는 시간"으로 해석해 px/ms 속도로 환산한다(걷기 프레임
+  // 재생 속도도 이 값 기준).
   // castPhysics — 추 던지기 자유낙하 물리 튜닝, { gravityMps2, vxScale }.
   // gravityMps2는 자유낙하 가속도(클수록 빨리 떨어져 체공 시간 T가 짧아짐,
   // play/index.html의 throwSinker 참고) — 표준중력 9.8이 기본값. vxScale은
@@ -1087,7 +1087,7 @@ const AssetDB = (() => {
   // itemPopup — 낚시 성공 시(물고기가 추에서 캐릭터로 날아온 다음) 뜨는
   // 아이템창 팝업의 디자인. backgroundAssetId(팝업 액자 그림) + iconPos(그
   // 그림 위 어디에 아이템 아이콘이 놓일지, 0~1 정규화 좌표) + iconSizePx.
-  const FISHING_CONFIG_DEFAULT = { castingFrames: [], reelingFrames: [], barDesign: {}, fishSheetAssetId: null, fishIconOverrides: {}, castingSheetAssetId: null, castingFrameOverrides: {}, castingFrameDurations: [], backgroundAssetId: null, castingFrameRodTips: {}, walkFrames: { up: [], down: [], left: [], right: [] }, walkSheets: { up: {}, down: {}, left: {}, right: {} }, walkMotion: { stepMs: 200, stepDelayMs: 0 }, castPhysics: { gravityMps2: 9.8, vxScale: 1 }, itemPopup: { backgroundAssetId: null, iconPos: null, iconSizePx: 64 }, castGaugeAssetId: null, castGaugeFillRegion: null };
+  const FISHING_CONFIG_DEFAULT = { castingFrames: [], reelingFrames: [], barDesign: {}, fishSheetAssetId: null, fishIconOverrides: {}, castingSheetAssetId: null, castingFrameOverrides: {}, castingFrameDurations: [], backgroundAssetId: null, castingFrameRodTips: {}, walkFrames: { up: [], down: [], left: [], right: [] }, walkSheets: { up: {}, down: {}, left: {}, right: {} }, walkMotion: { stepMs: 200 }, castPhysics: { gravityMps2: 9.8, vxScale: 1 }, itemPopup: { backgroundAssetId: null, iconPos: null, iconSizePx: 64 }, castGaugeAssetId: null, castGaugeFillRegion: null };
 
   async function getFishingConfig() {
     if (fishingConfigCache.has('config')) return fishingConfigCache.get('config');
