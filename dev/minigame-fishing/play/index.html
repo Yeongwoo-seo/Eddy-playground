@@ -106,19 +106,21 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .overlay{position:absolute;inset:0;z-index:8;display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px;text-align:center;padding:32px;background:rgba(5,7,10,.78);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 .overlay.show{display:flex}
 .overlay-title{font-family:var(--mono);font-size:16px;font-weight:800;letter-spacing:.08em;color:var(--signal-red)}
-.overlay-title.success{color:var(--green)}
 .overlay-message{font-size:14px;color:var(--text-primary)}
-.overlay-fish{display:none;flex-direction:column;align-items:center;gap:6px;margin:2px 0}
-.overlay-fish.show{display:flex}
-.overlay-fish-icon{width:56px;height:56px;border-radius:14px;background-color:rgba(255,255,255,.12);background-repeat:no-repeat;image-rendering:pixelated;display:flex;align-items:center;justify-content:center;font-size:30px;border:3px solid transparent}
-.overlay-fish-name{font-size:16px;font-weight:700}
-.overlay-fish-meta{font-family:var(--mono);font-size:11.5px;color:var(--text-secondary)}
 .overlay-count{font-family:var(--mono);font-size:12px;color:var(--text-secondary);margin-bottom:6px}
 .overlay-btn-row{display:flex;gap:10px}
 .overlay-btn{font-family:var(--mono);font-size:13.5px;font-weight:700;letter-spacing:.03em;border:none;border-radius:16px;padding:13px 20px;cursor:pointer;text-decoration:none}
 .overlay-btn.primary{color:#08110c;background:var(--green)}
 .overlay-btn.secondary{color:var(--text-primary);background:rgba(255,255,255,.14)}
 .overlay-btn:active{opacity:.8}
+
+/* 낚시 성공 시 결과창(overlay) 대신, 잡은 물고기 아이콘이 찌(추) 자리에
+   나타났다가 캐릭터 쪽으로 날아가 사라지는 걸로 대체한다("계속하기"
+   화면 없이 바로 다음 캐스팅으로 이어지길 원하는 요청) — left/top(%)을
+   JS(playCatchFlyAnimation)가 애니메이션하고, transform은 항상 중앙 정렬
+   유지 + 도착 시 살짝 작아지는 연출만 담당한다. */
+.catch-fly-icon{position:absolute;z-index:6;width:32px;height:32px;border-radius:10px;background-color:rgba(255,255,255,.14);background-repeat:no-repeat;image-rendering:pixelated;display:flex;align-items:center;justify-content:center;font-size:20px;pointer-events:none;border:2px solid transparent;filter:drop-shadow(0 3px 6px rgba(0,0,0,.35))}
+.catch-fly-icon.hidden{display:none}
 </style>
 </head>
 <body>
@@ -158,6 +160,8 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
         <div class="fishbar-fish" id="fishbarFish">🐟</div>
       </div>
     </div>
+
+    <div class="catch-fly-icon hidden" id="catchFlyIcon"></div>
   </div>
 
   <div class="cast-power-wrap hidden" id="castPowerWrap">
@@ -169,11 +173,6 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
   <div class="overlay" id="overlay">
     <div class="overlay-title" id="overlayTitle">낚시 실패</div>
     <div class="overlay-message" id="overlayMessage"></div>
-    <div class="overlay-fish" id="overlayFish">
-      <div class="overlay-fish-icon" id="overlayFishIcon">🐟</div>
-      <div class="overlay-fish-name" id="overlayFishName"></div>
-      <div class="overlay-fish-meta" id="overlayFishMeta"></div>
-    </div>
     <div class="overlay-count" id="overlayCount"></div>
     <div class="overlay-btn-row">
       <button class="overlay-btn primary" id="retryBtn" type="button">다시 하기</button>
@@ -293,10 +292,7 @@ const el = {
   overlayTitle: document.getElementById('overlayTitle'),
   overlayMessage: document.getElementById('overlayMessage'),
   overlayCount: document.getElementById('overlayCount'),
-  overlayFish: document.getElementById('overlayFish'),
-  overlayFishIcon: document.getElementById('overlayFishIcon'),
-  overlayFishName: document.getElementById('overlayFishName'),
-  overlayFishMeta: document.getElementById('overlayFishMeta'),
+  catchFlyIcon: document.getElementById('catchFlyIcon'),
   retryBtn: document.getElementById('retryBtn'),
 };
 
@@ -468,7 +464,11 @@ async function loadConfig() {
     el.fishbarGauge.style.top = (gr.y * 100) + '%';
     el.fishbarGauge.style.width = (gr.w * 100) + '%';
     el.fishbarGauge.style.height = (gr.h * 100) + '%';
-    el.fishbarGauge.style.display = '';
+    // CSS 기본값이 display:none이라 style.display를 빈 문자열로 되돌리면
+    // 그 CSS 규칙이 그대로 이어져 계속 안 보인다 — 반드시 명시적으로
+    // 'block'을 지정해야 실제로 나타난다(gaugeRegion을 지정해도 게이지가
+    // 화면에 전혀 안 보이던 버그의 원인).
+    el.fishbarGauge.style.display = 'block';
   } else {
     el.fishbarGauge.style.display = 'none';
   }
@@ -757,7 +757,7 @@ function missReaction() {
   if (gameState !== 'bite') return;
   el.biteMark.classList.add('hidden');
   el.bobber.classList.add('hidden');
-  endRun(false, '반응이 늦었어요...');
+  endRun('반응이 늦었어요...');
 }
 
 /* ===== 낚시바(잡아채기) ===== */
@@ -847,7 +847,7 @@ function endCatch(success) {
   raf = null;
   el.fishbarPanel.classList.add('hidden');
   el.catchHint.classList.add('hidden');
-  if (success) playReelThenResult(); else endRun(false, '물고기가 도망쳤어요...');
+  if (success) playReelThenResult(); else endRun('물고기가 도망쳤어요...');
 }
 
 // 잡힌 물고기 종을 고른다 — fishDefs의 catchRate가 하나라도 채워져 있으면(합이
@@ -867,6 +867,60 @@ function pickCaughtFish() {
   return all[all.length - 1];
 }
 
+// 낚시 성공 시 결과창(overlay, "계속하기" 버튼) 대신 잡은 물고기 아이콘이
+// 찌(추)가 있던 자리에 나타났다가 캐릭터 쪽으로 날아가며 사라지는 걸로
+// 대체한다 — 화면을 막는 모달 없이 바로 다음 캐스팅으로 이어진다. 시작
+// 위치는 el.bobber의 마지막 착수 지점(숨겨진 뒤에도 style.left/top은
+// 남아있다), 도착 위치는 el.charStage 중심에서 살짝 위(손/얼굴 높이)로
+// 잡는다.
+function playCatchFlyAnimation(fishCaught) {
+  return new Promise(resolve => {
+    const frameRect = el.frame.getBoundingClientRect();
+    const charRect = el.charStage.getBoundingClientRect();
+    const startLeftPct = parseFloat(el.bobber.style.left) || 50;
+    const startTopPct = parseFloat(el.bobber.style.top) || 50;
+    const endLeftPct = (charRect.left - frameRect.left + charRect.width / 2) / frameRect.width * 100;
+    const endTopPct = (charRect.top - frameRect.top + charRect.height * 0.35) / frameRect.height * 100;
+
+    el.catchFlyIcon.style.borderColor = GRADE_BORDER_COLORS[fishCaught.grade] || 'transparent';
+    if (fishSheetUrl) {
+      const override = fishIconOverrides[fishCaught.id];
+      const style = (override && fishSheetDims)
+        ? getFishCropStyle(override, fishSheetDims.width, fishSheetDims.height, 32)
+        : getFishSlotStyle(fishCaught.slot, 2);
+      el.catchFlyIcon.style.backgroundImage = `url('${fishSheetUrl}')`;
+      el.catchFlyIcon.style.backgroundPosition = style.backgroundPosition;
+      el.catchFlyIcon.style.backgroundSize = style.backgroundSize;
+      el.catchFlyIcon.textContent = '';
+    } else {
+      el.catchFlyIcon.style.backgroundImage = 'none';
+      el.catchFlyIcon.textContent = '🐟';
+    }
+
+    el.catchFlyIcon.style.transition = 'none';
+    el.catchFlyIcon.style.left = startLeftPct + '%';
+    el.catchFlyIcon.style.top = startTopPct + '%';
+    el.catchFlyIcon.style.transform = 'translate(-50%,-50%) scale(.5)';
+    el.catchFlyIcon.style.opacity = '0';
+    el.catchFlyIcon.classList.remove('hidden');
+    void el.catchFlyIcon.offsetWidth; // 강제 리플로우 — 시작 위치를 transition 없이 먼저 반영해야 그 다음 값 변경이 애니메이션으로 인식된다
+    el.catchFlyIcon.style.transition = 'left .7s cubic-bezier(.3,.6,.3,1), top .7s cubic-bezier(.3,.6,.3,1), transform .7s cubic-bezier(.3,.6,.3,1), opacity .2s ease';
+    el.catchFlyIcon.style.opacity = '1';
+    el.catchFlyIcon.style.transform = 'translate(-50%,-50%) scale(1)';
+    vibrate(20);
+    requestAnimationFrame(() => {
+      el.catchFlyIcon.style.left = endLeftPct + '%';
+      el.catchFlyIcon.style.top = endTopPct + '%';
+      el.catchFlyIcon.style.transform = 'translate(-50%,-50%) scale(.55)';
+    });
+    setTimeout(() => {
+      el.catchFlyIcon.style.transition = 'opacity .25s ease';
+      el.catchFlyIcon.style.opacity = '0';
+      setTimeout(() => { el.catchFlyIcon.classList.add('hidden'); resolve(); }, 250);
+    }, 750);
+  });
+}
+
 async function playReelThenResult() {
   gameState = 'reeling';
   el.statusLine.textContent = '끌어올리는 중...';
@@ -877,37 +931,21 @@ async function playReelThenResult() {
   }
   caughtCount++;
   el.countChip.textContent = caughtCount + '마리';
-  endRun(true, '손맛 좋다! 낚았어요!', pickCaughtFish());
+  const fishCaught = pickCaughtFish();
+  await playCatchFlyAnimation(fishCaught);
+  resetToIdle();
+  el.statusLine.textContent = `${fishCaught.name} 낚았어요!`;
+  setTimeout(() => {
+    if (gameState === 'idle') el.statusLine.textContent = '화면을 꾹 눌러 캐스팅 세기를 조절하세요';
+  }, 1400);
 }
 
-/* ===== 결과 / 리셋 ===== */
-function endRun(success, message, fishCaught) {
+/* ===== 실패 결과 / 리셋 ===== */
+function endRun(message) {
   gameState = 'result';
-  el.overlayTitle.textContent = success ? '낚시 성공' : '낚시 실패';
-  el.overlayTitle.classList.toggle('success', success);
+  el.overlayTitle.textContent = '낚시 실패';
   el.overlayMessage.textContent = message;
   el.overlayCount.textContent = `이번 세션 ${caughtCount}마리`;
-  if (fishCaught) {
-    el.overlayFishName.textContent = fishCaught.name;
-    el.overlayFishMeta.textContent = `${fishCaught.grade} · ${fishCaught.value}P`;
-    el.overlayFishIcon.style.borderColor = GRADE_BORDER_COLORS[fishCaught.grade] || 'transparent';
-    if (fishSheetUrl) {
-      const override = fishIconOverrides[fishCaught.id];
-      const style = (override && fishSheetDims)
-        ? getFishCropStyle(override, fishSheetDims.width, fishSheetDims.height, 56)
-        : getFishSlotStyle(fishCaught.slot, 3.5);
-      el.overlayFishIcon.style.backgroundImage = `url('${fishSheetUrl}')`;
-      el.overlayFishIcon.style.backgroundPosition = style.backgroundPosition;
-      el.overlayFishIcon.style.backgroundSize = style.backgroundSize;
-      el.overlayFishIcon.textContent = '';
-    } else {
-      el.overlayFishIcon.style.backgroundImage = 'none';
-      el.overlayFishIcon.textContent = '🐟';
-    }
-    el.overlayFish.classList.add('show');
-  } else {
-    el.overlayFish.classList.remove('show');
-  }
   el.overlay.classList.add('show');
 }
 
