@@ -347,11 +347,30 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
       </div>
     </div>
 
+    <div class="option-group">
+      <div class="option-label">자유낙하 속도</div>
+      <div class="option-desc">추가 던져진 뒤 떨어지는 빠르기예요(중력가속도) — 실제 게임(play/index.html throwSinker)에 바로 반영돼요. 값이 클수록 빨리 떨어지고, 체공 시간(T)도 그만큼 짧아져요.</div>
+      <div class="range-row">
+        <input type="range" id="castGravityInput" min="4.9" max="29.4" step="0.1" value="9.8">
+        <div class="range-value" id="castGravityValue">9.8m/s²</div>
+      </div>
+    </div>
+    <div class="option-group">
+      <div class="option-label">수평 속도(v<sub>x</sub>) 배율</div>
+      <div class="option-desc">세기(게이지)로 정해지는 기본 수평 거리에 곱하는 배율이에요 — 이것도 실제 게임에 바로 반영돼요. 1배가 원래 거리이고, 키우면 같은 세기로도 더 멀리 날아가요.</div>
+      <div class="range-row">
+        <input type="range" id="castVxScaleInput" min="0.3" max="2.5" step="0.05" value="1">
+        <div class="range-value" id="castVxScaleValue">1.0배</div>
+      </div>
+    </div>
+
     <!-- ===== 추 이동 모션 테스트 — 실제 게임(play/index.html throwSinker)과
          같은 물리 공식(포물선, T는 1m 자유낙하 기준으로 고정)을 그대로 써서
          궤적만 미리 확인하는 도구. v_x(수평 속도)만 슬라이더로 바꿔가며
          "야구공 던지듯" 살짝 떴다 물로 떨어지는 모양을 다듬어볼 수 있다.
-         저장되는 값이 아니라 순수 미리보기라 AssetDB에 쓰지 않는다. ===== -->
+         저장되는 값이 아니라 순수 미리보기라 AssetDB에 쓰지 않는다 — 위
+         자유낙하 속도/수평 속도 배율과 달리 이 미리보기는 자체 v_x
+         상수만 바꿔볼 뿐, 자유낙하 속도 슬라이더 값은 반영하지 않는다. ===== -->
     <div class="option-group">
       <div class="option-label">추 이동 모션 테스트</div>
       <div class="option-desc">캐스팅할 때 추가 날아가는 궤적(야구공 던지듯 살짝 떴다 물로 떨어지는 포물선)을 미리 확인해요. 실제 게임 물리(체공시간 1m 자유낙하 기준)를 그대로 쓰고, 수평 속도(v_x)만 슬라이더로 바꿔볼 수 있어요. 궤적은 항상 x축으로 직진해요.</div>
@@ -451,6 +470,13 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
       <div class="frame-strip" id="sinkerImageSlot"></div>
       <button type="button" class="frame-add-btn hidden" id="sinkerImageAddBtn">+ 낚시 추 이미지 업로드</button>
       <input type="file" id="sinkerImageFileInput" accept="image/*">
+    </div>
+    <div class="option-group">
+      <div class="option-label">물었다! 표시</div>
+      <div class="option-desc">입질(느낌표) 온 뒤 탭하면 잠깐 커졌다 작아지며 사라지는 표시예요. 업로드하지 않으면 기본 "물었다!" 텍스트로 표시돼요. 업로드하면 배경이 자동으로 제거돼요(누끼).</div>
+      <div class="frame-strip" id="biteStampImageSlot"></div>
+      <button type="button" class="frame-add-btn hidden" id="biteStampImageAddBtn">+ 물었다! 이미지 업로드</button>
+      <input type="file" id="biteStampImageFileInput" accept="image/*">
     </div>
   </div>
 
@@ -774,6 +800,9 @@ const el = {
   sinkerImageSlot: document.getElementById('sinkerImageSlot'),
   sinkerImageAddBtn: document.getElementById('sinkerImageAddBtn'),
   sinkerImageFileInput: document.getElementById('sinkerImageFileInput'),
+  biteStampImageSlot: document.getElementById('biteStampImageSlot'),
+  biteStampImageAddBtn: document.getElementById('biteStampImageAddBtn'),
+  biteStampImageFileInput: document.getElementById('biteStampImageFileInput'),
   slideToolbar: document.getElementById('slideToolbar'),
   addBarImageBtn: document.getElementById('addBarImageBtn'),
   addCatchImageBtn: document.getElementById('addCatchImageBtn'),
@@ -804,6 +833,10 @@ const el = {
   castPromptText: document.getElementById('castPromptText'),
   castPromptCopyBtn: document.getElementById('castPromptCopyBtn'),
   castPromptCopyStatus: document.getElementById('castPromptCopyStatus'),
+  castGravityInput: document.getElementById('castGravityInput'),
+  castGravityValue: document.getElementById('castGravityValue'),
+  castVxScaleInput: document.getElementById('castVxScaleInput'),
+  castVxScaleValue: document.getElementById('castVxScaleValue'),
   reelPromptText: document.getElementById('reelPromptText'),
   reelPromptCopyBtn: document.getElementById('reelPromptCopyBtn'),
   reelPromptCopyStatus: document.getElementById('reelPromptCopyStatus'),
@@ -1449,6 +1482,32 @@ el.castTotalDurationInput.addEventListener('change', async () => {
   renderCastPreviewLoop(await AssetDB.getAsset(fishingConfig.castingSheetAssetId).catch(() => null));
 });
 
+/* ===== 던지기 물리 슬라이더 — /play/의 throwSinker가 읽는
+   fishingConfig.castPhysics(gravityMps2/vxScale)를 편집한다. */
+async function saveCastPhysics() {
+  fishingConfig = await AssetDB.setFishingConfig({
+    castPhysics: { gravityMps2: Number(el.castGravityInput.value), vxScale: Number(el.castVxScaleInput.value) },
+  });
+  showSaveNote();
+}
+el.castGravityInput.addEventListener('input', () => {
+  el.castGravityValue.textContent = Number(el.castGravityInput.value).toFixed(1) + 'm/s²';
+  saveCastPhysics();
+});
+el.castVxScaleInput.addEventListener('input', () => {
+  el.castVxScaleValue.textContent = Number(el.castVxScaleInput.value).toFixed(2) + '배';
+  saveCastPhysics();
+});
+function renderCastPhysicsControls() {
+  const physics = fishingConfig.castPhysics || {};
+  const gravity = physics.gravityMps2 || 9.8;
+  const vxScale = physics.vxScale != null ? physics.vxScale : 1;
+  el.castGravityInput.value = gravity;
+  el.castGravityValue.textContent = gravity.toFixed(1) + 'm/s²';
+  el.castVxScaleInput.value = vxScale;
+  el.castVxScaleValue.textContent = vxScale.toFixed(2) + '배';
+}
+
 el.castSheetUploadBtn.addEventListener('click', () => el.castSheetFileInput.click());
 el.castSheetFileInput.addEventListener('change', async () => {
   const file = el.castSheetFileInput.files[0];
@@ -1952,6 +2011,47 @@ el.castGaugeImageFileInput.addEventListener('change', async () => {
     renderCastGaugeImageSlot();
   } finally {
     el.castGaugeImageAddBtn.disabled = false;
+  }
+});
+
+// 물었다! 표시 이미지 — 낚시 추와 같은 단일 슬롯 업로드 패턴. 커졌다
+// 작아지는 도장 연출 위에 얹는 그림이라 배경이 남아있으면 사각형이 같이
+// 나타났다 사라지는 것처럼 보인다 — 여기도 removeBackgroundOrFallback을
+// 거쳐 항상 배경을 제거한 뒤 저장한다.
+async function renderBiteStampImageSlot() {
+  const design = fishingConfig.barDesign || {};
+  el.biteStampImageSlot.innerHTML = '';
+  if (design.biteStampAssetId) {
+    el.biteStampImageAddBtn.classList.add('hidden');
+    const asset = await AssetDB.getAsset(design.biteStampAssetId).catch(() => null);
+    const slot = document.createElement('div');
+    slot.className = 'frame-slot';
+    slot.innerHTML = `${asset ? `<img src="${asset.dataUrl}" alt="">` : ''}
+      <div class="frame-actions"><button type="button" class="frame-mini-btn danger" data-act="del">✕</button></div>`;
+    slot.querySelector('[data-act=del]').addEventListener('click', async () => {
+      fishingConfig = await AssetDB.setFishingConfig({ barDesign: Object.assign({}, fishingConfig.barDesign, { biteStampAssetId: null }) });
+      showSaveNote();
+      renderBiteStampImageSlot();
+    });
+    el.biteStampImageSlot.appendChild(slot);
+  } else {
+    el.biteStampImageAddBtn.classList.remove('hidden');
+  }
+}
+el.biteStampImageAddBtn.addEventListener('click', () => el.biteStampImageFileInput.click());
+el.biteStampImageFileInput.addEventListener('change', async () => {
+  const file = el.biteStampImageFileInput.files[0];
+  el.biteStampImageFileInput.value = '';
+  if (!file) return;
+  el.biteStampImageAddBtn.disabled = true;
+  try {
+    const blob = await removeBackgroundOrFallback(file);
+    const asset = await AssetDB.addAsset({ type: 'fishing-bite-stamp-image', name: file.name, blob });
+    fishingConfig = await AssetDB.setFishingConfig({ barDesign: Object.assign({}, fishingConfig.barDesign, { biteStampAssetId: asset.id }) });
+    showSaveNote();
+    renderBiteStampImageSlot();
+  } finally {
+    el.biteStampImageAddBtn.disabled = false;
   }
 });
 
@@ -2821,6 +2921,8 @@ async function init() {
   renderBackgroundImageSlot();
   renderSinkerImageSlot();
   renderCastGaugeImageSlot();
+  renderBiteStampImageSlot();
+  renderCastPhysicsControls();
   renderCastTab();
   renderFramesTab('reelingFrames', el.reelFrames, el.reelFileInput, el.reelPreview, el.reelPreviewLabel);
   renderFishTab();
