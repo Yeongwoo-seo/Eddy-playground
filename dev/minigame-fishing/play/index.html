@@ -133,7 +133,14 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
    매 판마다 한 번 정해준다. */
 .fishbar-gauge{position:absolute;overflow:hidden;background:rgb(151,126,83);background-size:cover;background-repeat:no-repeat;background-position:center;display:none}
 .fishbar-gauge-mask{position:absolute;left:0;right:0;top:0;background:rgba(5,7,10,.82)}
-.fishbar-zone{position:absolute;border-radius:6px;opacity:.85;transition:background .2s;background-size:cover;background-position:center}
+/* background-size는 cover(비율 유지, 넘치는 부분 잘라내기)가 아니라
+   100% 100%(꽉 채우기, 늘이기)여야 한다 — 설정 화면 슬라이드 에디터가
+   캐치바 이미지를 <img style="object-fit:fill">로 그려서(잘라내지 않고
+   박스에 딱 맞게 늘여서) 보여주는데, cover를 쓰면 박스 종횡비가 이미지
+   원본과 다를 때 여기서만 옆(주로 좌우)이 잘려나가 에디터에서 본 것과
+   실제 화면이 달라 보인다("이미지 인식이 x축으로 밀려 보인다" 보고의
+   진짜 원인). */
+.fishbar-zone{position:absolute;border-radius:6px;opacity:.85;transition:background .2s;background-size:100% 100%;background-position:center}
 /* --fishbar-fish-size — loadConfig가 낚시바 폭(slideWidthPx) 기준으로 채운다.
    기본값(22px/26px)은 기본 폭(90px) 기준 크기와 같아 CSS 변수가 아직 안
    채워졌을 때도(로드 전 잠깐) 결과가 같다. */
@@ -552,6 +559,10 @@ async function loadConfig() {
     el.fishbarZone.style.background = '#59B8C8';
     el.fishbarZone.style.backgroundImage = '';
   }
+  // background(숏핸드)가 방금 위에서 backgroundSize를 auto로 되돌려놨다 —
+  // CSS(.fishbar-zone{background-size:100% 100%})만으로는 이 인라인
+  // 리셋을 못 이겨서, 매번 다시 명시적으로 채워야 실제로 적용된다.
+  el.fishbarZone.style.backgroundSize = '100% 100%';
   if (zoneRegion) {
     zoneTrack = { x: zoneRegion.x * 100, y: zoneRegion.y * 100, w: zoneRegion.w * 100, h: zoneRegion.h * 100 };
     if (catchLayer) {
