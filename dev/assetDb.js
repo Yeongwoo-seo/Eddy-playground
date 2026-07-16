@@ -1095,7 +1095,7 @@ const AssetDB = (() => {
   // blockedAreas는 캐릭터가 걸어 들어갈 수 없는 영역, interactionAreas는
   // 상점/대화 등 게임에 필요한 상호작용 지점(각 항목에 label 필드로 어떤
   // 상호작용인지 적어둔다) — 셋 다 여러 개를 둘 수 있다.
-  const FISHING_CONFIG_DEFAULT = { castingFrames: [], reelingFrames: [], barDesign: {}, fishSheetAssetId: null, fishIconOverrides: {}, castingSheetAssetId: null, castingFrameOverrides: {}, castingFrameDurations: [], backgroundAssetId: null, castingFrameRodTips: {}, walkFrames: { up: [], down: [], left: [], right: [] }, walkSheets: { up: {}, down: {}, left: {}, right: {} }, walkMotion: { stepMs: 200, animFrameMs: 90 }, castPhysics: { gravityMps2: 9.8, vxScale: 1 }, itemPopup: { backgroundAssetId: null, iconPos: null, iconSizePx: 64 }, castGaugeAssetId: null, castGaugeFillRegion: null, fishableAreas: [], blockedAreas: [], interactionAreas: [] };
+  const FISHING_CONFIG_DEFAULT = { castingFrames: [], reelingFrames: [], barDesign: {}, fishSheetAssetId: null, fishIconOverrides: {}, castingSheetAssetId: null, castingFrameOverrides: {}, castingFrameDurations: [], backgroundAssetId: null, castingFrameRodTips: {}, walkFrames: { up: [], down: [], left: [], right: [] }, walkSheets: { up: {}, down: {}, left: {}, right: {} }, walkMotion: { stepMs: 200, animFrameMs: 90 }, castPhysics: { gravityMps2: 9.8, vxScale: 1 }, itemPopup: { backgroundAssetId: null, iconPos: null, iconSizePx: 64 }, castGaugeAssetId: null, castGaugeFillRegion: null, fishableAreas: [], blockedAreas: [], interactionAreas: [], dialogueScene: { boxLayer: null, jisooLayer: null, youngwooLayer: null } };
 
   async function getFishingConfig() {
     if (fishingConfigCache.has('config')) return fishingConfigCache.get('config');
