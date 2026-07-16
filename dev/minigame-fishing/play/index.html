@@ -719,6 +719,38 @@ async function loadConfig() {
   el.itemPopupMeta.style.left = (itemMetaPos.x * 100) + '%';
   el.itemPopupMeta.style.top = (itemMetaPos.y * 100) + '%';
   el.itemPopupMeta.style.fontSize = (itemPopupCfg.metaFontSizePx || 12) + 'px';
+
+  preloadFishIcons();
+}
+
+// 잡은 물고기 아이콘(overlayFishIcon)은 endRun에서 처음 그 fishId의
+// background-position으로 그릴 때가 돼서야 브라우저가 그 위치를 실제로
+// 디코드/페인트한다 — 시트 자체는 미리 받아놨어도(fishSheetDims 계산용
+// new Image()) 첫 catch 때 화면에 "뜨는" 순간 눈에 띄게 느렸다(사용자 보고).
+// 그래서 게임이 시작하기 전, 보이지 않는 곳에 67종 전부를 실제로 한 번씩
+// 그려서 워밍업해둔다 — display:none은 브라우저가 페인트를 건너뛰어 워밍업
+// 효과가 없으므로, 화면 밖(-9999px)에 두되 레이아웃/페인트는 정상적으로
+// 일어나게 한다.
+function preloadFishIcons() {
+  if (!fishSheetUrl) return;
+  let host = document.getElementById('fishIconPreload');
+  if (!host) {
+    host = document.createElement('div');
+    host.id = 'fishIconPreload';
+    host.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:0;height:0;overflow:hidden;pointer-events:none';
+    host.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(host);
+  }
+  host.innerHTML = '';
+  Object.values(fishDefs).forEach(fishDef => {
+    const override = fishIconOverrides[fishDef.id];
+    const style = (override && fishSheetDims)
+      ? getFishCropStyle(override, fishSheetDims.width, fishSheetDims.height, 56)
+      : getFishSlotStyle(fishDef.slot, 3.5);
+    const div = document.createElement('div');
+    div.style.cssText = `width:56px;height:56px;background-image:url('${fishSheetUrl}');background-position:${style.backgroundPosition};background-size:${style.backgroundSize};background-repeat:no-repeat`;
+    host.appendChild(div);
+  });
 }
 
 /* ===== 캐스팅/올리기 프레임 순차 재생 =====
