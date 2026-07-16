@@ -45,26 +45,15 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 
 .stage{position:absolute;inset:0;z-index:1}
 
-/* 배경을 축소/크롭 없이 1배율(원본 픽셀 크기)로 깔아두는 "월드" 레이어.
-   .world 박스 크기 자체를 배경 원본 px 크기로 맞추고(loadConfig가
-   worldSize로 계산), 캐릭터가 이동할 때마다 화면(.frame) 크기를 뺀
-   만큼만 반대 방향으로 transform:translate하면(updateCamera) 카메라가
-   캐릭터를 따라가는 것처럼 보인다 — 배경이 화면보다 크면 캐릭터가 그
-   안을 자유롭게 돌아다닐 수 있다. 배경을 업로드하지 않았으면(또는 자연
-   크기를 못 읽었으면) 월드 크기를 화면 크기와 같게 둬서 카메라가 전혀
-   움직이지 않는 예전 동작(화면 중앙 근처 좁은 범위 안에서만 이동)으로
-   자연히 폴백한다. 낚시 관련 오버레이(bobber/cast-svg/fishbar-panel 등)는
-   이 레이어 밖(.stage 직계 자식)에 그대로 둬서 카메라 이동과 무관하게
-   항상 화면 기준으로 계산된 자리에 뜬다 — 물리 계산(throwSinker 등)이
-   이미 el.charStage.getBoundingClientRect()로 실제 화면 좌표를 읽으므로,
-   world가 transform으로 옮겨져도 캐릭터의 "실제 화면 위치"만 맞으면 그대로
-   잘 작동한다. */
-.world{position:absolute;left:0;top:0;z-index:2}
-/* left/bottom은 el.world 기준 px 좌표(charWorldPos)고, transform으로 그
-   지점에 박스 중심이 오도록 자기 크기의 절반만큼 밀어서 charWorldPos가
-   실제로 캐릭터 "중심"과 일치하게 한다(박스 크기가 바뀌어도 항상 중심
-   기준이라 안전하다). */
-.char-stage{position:absolute;left:0;bottom:0;transform:translate(-50%,50%);width:84px;height:84px;display:flex;align-items:flex-end;justify-content:center}
+/* 캐릭터가 실제로 화면 위를 움직인다(charWorldPos에서 카메라 오프셋을
+   뺀 화면 기준 px를 매 프레임 left/bottom에 직접 반영, renderCharScreenPos
+   참고) — 배경은 el.frame 자체의 background-position을 캐릭터 좌표에 맞춰
+   옮기는 방식으로 "그 화면 크기에 맞게" 필요한 부분만 보여준다(화면보다
+   큰 배경 이미지 전체를 하나의 거대한 DOM으로 깔아두지 않는다). left/
+   bottom은 화면(.frame) 기준 px고, transform으로 그 지점에 박스 중심이
+   오도록 자기 크기의 절반만큼 밀어서 이 값이 실제로 캐릭터 "중심"과
+   일치하게 한다(박스 크기가 바뀌어도 항상 중심 기준이라 안전하다). */
+.char-stage{position:absolute;left:0;bottom:0;transform:translate(-50%,50%);z-index:2;width:84px;height:84px;display:flex;align-items:flex-end;justify-content:center}
 .char-stage img{max-width:100%;max-height:100%;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 4px 6px rgba(0,0,0,.35))}
 .char-fallback{font-size:46px;filter:drop-shadow(0 4px 6px rgba(0,0,0,.35))}
 .char-fallback.hidden,.char-stage img.hidden{display:none}
@@ -291,12 +280,10 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
   </div>
 
   <div class="stage" id="stage">
-    <div class="world" id="world">
-      <div class="char-stage" id="charStage">
-        <img id="charImg" class="hidden" alt="">
-        <div class="char-fallback" id="charFallback">🧍</div>
-        <div class="interaction-badge hidden" id="interactionBadge"></div>
-      </div>
+    <div class="char-stage" id="charStage">
+      <img id="charImg" class="hidden" alt="">
+      <div class="char-fallback" id="charFallback">🧍</div>
+      <div class="interaction-badge hidden" id="interactionBadge"></div>
     </div>
 
     <div class="bobber hidden" id="bobber">
@@ -453,7 +440,6 @@ function gaugeColorForProgress(pct) {
 const el = {
   frame: document.getElementById('frame'),
   stage: document.getElementById('stage'),
-  world: document.getElementById('world'),
   charStage: document.getElementById('charStage'),
   charImg: document.getElementById('charImg'),
   charFallback: document.getElementById('charFallback'),
@@ -533,9 +519,10 @@ let itemIconPos = { x: 0.5, y: 0.36 }; // 아이템창 카드 기준 0~1, dev/mi
 let itemIconSizePx = 64;
 let itemNamePos = { x: 0.5, y: 0.66 };
 let itemMetaPos = { x: 0.5, y: 0.8 };
-// 배경 이미지 자연 크기 — 배경을 el.world에 1배율(원본 픽셀 크기)로
-// 깔 때(loadConfig) 월드 박스 크기로도 쓰고, 다각형 영역(0~1, 이 자연
-// 크기 기준 정규화 좌표)과 캐릭터/추 착수 지점의 위치를 비교할 때도 쓴다.
+// 배경 이미지 자연 크기 — el.frame에 1배율(원본 픽셀 크기)로 깔 때
+// (loadConfig) 캐릭터가 돌아다닐 수 있는 전체 범위(worldSize)로도 쓰고,
+// 다각형 영역(0~1, 이 자연 크기 기준 정규화 좌표)과 캐릭터/추 착수
+// 지점의 위치를 비교할 때도 쓴다.
 let bgDims = null;
 let fishableAreas = []; // dev/minigame-fishing/index.html "영역 설정" 탭에서 그린 낚시가능 영역들
 let blockedAreas = []; // 이동 불가 영역들
@@ -573,37 +560,41 @@ let lastRodTipPt = null; // throwSinker의 finish가 남겨두는 착수 시점 
 
 /* ===== 이동 모드 =====
    idle(캐스팅 전) 상태에서만 왼쪽 아래 조이스틱으로 캐릭터(char-stage)를
-   걸어 다니게 한다 — 실제 좌표는 화면 % 기준이 아니라 el.world(배경을
-   1배율 원본 크기로 깐 레이어) 안에서의 px 좌표(charWorldPos, 캐릭터
-   "중심" 기준)다. 배경을 업로드했으면 el.world가 그 원본 픽셀 크기만큼
-   커지고, 캐릭터는 그 전체 범위(worldBounds)를 자유롭게 돌아다닐 수
-   있다 — 화면(.frame)보다 월드가 크면 updateCamera가 매 이동마다
-   el.world를 반대 방향으로 translate해 카메라가 캐릭터를 따라가는 것처럼
-   보이게 한다. 배경을 업로드하지 않았으면(또는 자연 크기를 못 읽었으면)
-   el.world 크기를 화면 크기와 똑같이 맞춰 카메라가 전혀 움직이지 않는
-   예전 동작(화면 중앙 근처 좁은 범위 안에서만 이동)이 그대로 유지된다
-   (worldBounds의 hasWorldBackground 분기 참고). 방향별 걷기 스프라이트
-   시트(dev/minigame-fishing/index.html "이동" 탭에서 업로드, walkSheets)가
-   있으면 그 프레임을 순환시키고, 없으면 위치만 바뀌고 캐릭터 그림은
-   그대로 둔다(캐스팅 모션처럼 그림 없이도 동작은 되는 폴백). */
+   걸어 다니게 한다. 캐릭터의 "진짜" 좌표(charWorldPos)는 화면이 아니라
+   배경 원본 이미지 기준 px다(배경을 업로드했으면 worldSize가 그 원본
+   픽셀 크기, 캐릭터는 그 전체 범위(worldBounds)를 자유롭게 돌아다닐 수
+   있다). 화면에는 이 좌표를 그대로 쓰지 않고, 카메라 오프셋(camOffset —
+   updateCamera가 매 프레임 계산)을 뺀 값을 캐릭터의 실제 화면 left/bottom
+   에 반영해 캐릭터가 화면 위를 직접 움직이는 것처럼 보이게 하고,
+   el.frame의 background-position도 같은 camOffset만큼 옮겨 배경이 그
+   좌표에 맞는 부분을 보여주게 한다 — 화면(.frame)보다 이미지가 크면
+   카메라가 이미지 가장자리에서 clamp되므로, 그 근처에서는 캐릭터가 화면
+   가장자리 쪽으로 실제로 움직이는 것처럼 보인다. 배경을 업로드하지
+   않았으면(또는 자연 크기를 못 읽었으면) worldSize를 화면 크기와 똑같이
+   맞춰 카메라가 전혀 움직이지 않는 예전 동작(화면 중앙 근처 좁은 범위
+   안에서만 이동)이 그대로 유지된다(worldBounds의 hasWorldBackground
+   분기 참고). 방향별 걷기 스프라이트시트(dev/minigame-fishing/index.html
+   "이동" 탭에서 업로드, walkSheets)가 있으면 그 프레임을 순환시키고,
+   없으면 위치만 바뀌고 캐릭터 그림은 그대로 둔다(캐스팅 모션처럼 그림
+   없이도 동작은 되는 폴백). */
 const MOVE_DIRS = ['up', 'down', 'left', 'right'];
 const DIALOGUE_INTRO_LAYERS = ['boxLayer', 'jisooLayer', 'youngwooLayer']; // dev/minigame-fishing/index.html "대화" 탭의 DIALOGUE_LAYER_ORDER와 같은 순서(z-order)
 const MOVE_STEP_PX = 18; // "타일 한 칸" 환산 기준 픽셀 크기 — walkMotion.stepMs(이 거리를 이동하는 데 걸리는 시간)와 합쳐 연속 이동 속도(px/ms)를 낸다
-const CHAR_BOX_PX = 84; // .char-stage CSS 폭/높이와 맞춘 값 — 카메라가 캐릭터를 따라갈 때, 그리고 월드 범위에서 캐릭터 절반이 밖으로 안 나가게 여백을 둘 때 쓴다
-const FALLBACK_MOVE_BOUNDS_PCT = { left: [10, 90], bottom: [25, 75] }; // 배경 미업로드 시(=world가 화면과 같은 크기) char-stage 중심이 벗어날 수 없는 범위(%) — 화면 중심(50/50) 기준, 상단바/하단 버튼과 안 겹치는 선에서 넉넉히
+const CHAR_BOX_PX = 84; // .char-stage CSS 폭/높이와 맞춘 값 — 카메라가 캐릭터를 따라갈 때, 그리고 배경 범위에서 캐릭터 절반이 밖으로 안 나가게 여백을 둘 때 쓴다
+const FALLBACK_MOVE_BOUNDS_PCT = { left: [10, 90], bottom: [25, 75] }; // 배경 미업로드 시(=worldSize가 화면과 같은 크기) char-stage 중심이 벗어날 수 없는 범위(%) — 화면 중심(50/50) 기준, 상단바/하단 버튼과 안 겹치는 선에서 넉넉히
 let walkFrameUrls = { up: [], down: [], left: [], right: [] };
 let walkMotion = { stepMs: 200, animFrameMs: 90 };
-let worldSize = { w: 0, h: 0 }; // el.world 박스 크기(px) — 배경 원본 크기 또는(미업로드 시) 화면 크기
+let worldSize = { w: 0, h: 0 }; // 캐릭터가 돌아다닐 수 있는 전체 범위(px) — 배경 원본 크기 또는(미업로드 시) 화면 크기
 let hasWorldBackground = false;
-let charWorldPos = null; // { x, y } px, el.world 기준(캐릭터 중심, y는 아래 기준) — loadConfig에서 처음 채워진다
-let camOffset = { x: 0, y: 0 }; // 지금 카메라가 el.world를 위/왼쪽에서 얼마나 밀어냈는지(top-down px) — updateCamera가 채운다. framePxToImageFrac(추 착수 지점 등 화면 기준 좌표 변환)이 참조한다.
+let charWorldPos = null; // { x, y } px, 배경 원본 이미지 기준(캐릭터 중심, y는 아래 기준) — loadConfig에서 처음 채워진다
+let camOffset = { x: 0, y: 0 }; // 지금 카메라(화면)가 배경 원본 이미지의 왼쪽/위에서 얼마나 떨어진 지점을 보여주고 있는지(top-down px) — updateCamera가 채운다. el.frame의 background-position, 캐릭터의 화면 left/bottom, framePxToImageFrac(추 착수 지점 등 화면 기준 좌표 변환)이 모두 이 값을 기준으로 삼는다.
 let moveRaf = null;
 let moveLastT = 0;
 let moveHoldVec = null; // { dx, dy } — 실제 위치 이동 벡터, 대각선 드래그면 둘 다 0이 아닐 수 있다
 let moveAnimTimer = null;
 
-// 캐릭터 중심이 el.world 안에서 벗어날 수 없는 px 범위. 배경을 업로드했으면
-// 월드 전체(캐릭터 절반이 가장자리 밖으로 안 나가게 CHAR_BOX_PX/2만큼
+// 캐릭터 중심이 배경 이미지 안에서 벗어날 수 없는 px 범위. 배경을 업로드했으면
+// 이미지 전체(캐릭터 절반이 가장자리 밖으로 안 나가게 CHAR_BOX_PX/2만큼
 // 여백을 둔 범위)를 다 돌아다닐 수 있고, 안 했으면 FALLBACK_MOVE_BOUNDS_PCT를
 // (이 경우 worldSize==화면 크기이므로) 그대로 px로 환산해 예전과 같은
 // 좁은 범위를 유지한다.
@@ -620,39 +611,41 @@ function worldBounds() {
   };
 }
 
-// 카메라 — el.world를 캐릭터 중심이 화면 중앙에 오도록 반대 방향으로
-// translate한다. 월드 가장자리에서는 clamp돼 카메라가 더 이상 못 따라가고
-// (화면 크기 - 월드 크기가 음수가 안 나오게) 대신 캐릭터가 화면 가장자리
-// 쪽으로 치우쳐 보인다 — 배경이 화면보다 작거나 없을 때(hasWorldBackground
-// false)는 항상 0으로 clamp돼 카메라가 아예 움직이지 않는다. 계산한
-// camX/camY는 camOffset에 저장해뒀다가 framePxToImageFrac(화면 기준 px를
-// 다각형 판정용 이미지 좌표로 바꾸는 함수)이 그대로 재사용한다.
+// 카메라 — 배경 전체를 담은 거대한 DOM(예전 el.world)을 옮기는 대신,
+// 화면 크기 그대로인 el.frame의 background-position만 캐릭터 좌표에 맞춰
+// 옮긴다("그 화면 사이즈에 맞게 로딩"). 캐릭터(el.charStage)는 그 계산된
+// 카메라 오프셋을 빼 실제 화면 위 자기 위치(left/bottom)에 매 프레임
+// 직접 반영한다 — 캐릭터가 화면 위를 실제로 움직이는 것으로 보이고,
+// 그 뒤에서 배경만 카메라 오프셋만큼 밀려 보이는 식이다. 이미지 가장자리
+// 에서는 clamp돼 카메라가 더 이상 못 따라가고(화면 크기 - 이미지 크기가
+// 음수가 안 나오게) 대신 캐릭터가 화면 가장자리 쪽으로 치우쳐 보인다 —
+// 배경이 화면보다 작거나 없을 때(hasWorldBackground false)는 항상 0으로
+// clamp돼 카메라가 아예 움직이지 않고 캐릭터만 화면 안에서 움직인다.
 function updateCamera() {
   const frameRect = el.frame.getBoundingClientRect();
   const charYFromTop = worldSize.h - charWorldPos.y;
   const camX = clamp(charWorldPos.x - frameRect.width / 2, 0, Math.max(0, worldSize.w - frameRect.width));
   const camY = clamp(charYFromTop - frameRect.height / 2, 0, Math.max(0, worldSize.h - frameRect.height));
   camOffset = { x: camX, y: camY };
-  el.world.style.transform = `translate(${-camX}px, ${-camY}px)`;
+  if (hasWorldBackground) el.frame.style.backgroundPosition = `${-camX}px ${-camY}px`;
+  el.charStage.style.left = (charWorldPos.x - camX) + 'px';
+  el.charStage.style.bottom = (frameRect.height - worldSize.h + charWorldPos.y + camY) + 'px';
 }
 
 // 화면 크기가 바뀌면(회전, 리사이즈) — 배경 미업로드 폴백 모드에서는
-// el.world 크기 자체가 "화면 크기"이므로 다시 맞추고 캐릭터 범위도
-// 재조정한다. 배경을 업로드했을 땐 월드 크기는 그대로고 카메라 clamp만
-// 다시 계산하면 된다. loadConfig가 아직 안 끝나 charWorldPos가 없으면
-// (최초 로드 전) 아무것도 하지 않는다 — loadConfig가 초기 배치를 담당한다.
+// worldSize 자체가 "화면 크기"이므로 다시 맞추고 캐릭터 범위도 재조정한다.
+// 배경을 업로드했을 땐 이미지 크기(worldSize)는 그대로고 카메라 clamp와
+// 캐릭터 화면 위치만 다시 계산하면 된다(updateCamera). loadConfig가 아직
+// 안 끝나 charWorldPos가 없으면(최초 로드 전) 아무것도 하지 않는다 —
+// loadConfig가 초기 배치를 담당한다.
 function onFrameResize() {
   if (!charWorldPos) return;
   if (!hasWorldBackground) {
     const frameRect = el.frame.getBoundingClientRect();
     worldSize = { w: frameRect.width, h: frameRect.height };
-    el.world.style.width = worldSize.w + 'px';
-    el.world.style.height = worldSize.h + 'px';
     const wb = worldBounds();
     charWorldPos.x = clamp(charWorldPos.x, wb.minX, wb.maxX);
     charWorldPos.y = clamp(charWorldPos.y, wb.minY, wb.maxY);
-    el.charStage.style.left = charWorldPos.x + 'px';
-    el.charStage.style.bottom = charWorldPos.y + 'px';
   }
   updateCamera();
 }
@@ -662,12 +655,12 @@ window.addEventListener('orientationchange', onFrameResize);
 /* ===== 영역(다각형) 판정 =====
    dev/minigame-fishing/index.html "영역 설정" 탭에서 그린 다각형은 배경
    이미지의 자연 크기(bgDims) 기준 0~1 정규화 좌표(points)로 저장돼 있다.
-   캐릭터 위치(charWorldPos)는 배경을 업로드했을 땐 이미 el.world(=배경
-   원본 크기) 기준 px라 bgDims로 나누기만 하면 바로 같은 좌표계가 된다
+   캐릭터 위치(charWorldPos)는 배경을 업로드했을 땐 이미 배경 원본 크기
+   기준 px라 bgDims로 나누기만 하면 바로 같은 좌표계가 된다
    (worldPosToImageFrac). 반면 추(찌)가 착수하는 지점처럼 el.frame(화면)
-   기준 픽셀로 계산되는 좌표는, 카메라가 지금 el.world를 얼마나 옮겨뒀는지
-   (camOffset)를 더해 월드 좌표로 바꾼 다음에야 bgDims로 나눌 수 있다
-   (framePxToImageFrac). */
+   기준 픽셀로 계산되는 좌표는, 카메라가 지금 배경을 얼마나 옮겨뒀는지
+   (camOffset)를 더해 배경 원본 좌표로 바꾼 다음에야 bgDims로 나눌 수
+   있다(framePxToImageFrac). */
 function isPointInPolygon(px, py, points) {
   let inside = false;
   for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
@@ -677,7 +670,7 @@ function isPointInPolygon(px, py, points) {
   }
   return inside;
 }
-// x/y: charWorldPos와 같은 형식(el.world 기준 px, 왼쪽/아래 기준).
+// x/y: charWorldPos와 같은 형식(배경 원본 이미지 기준 px, 왼쪽/아래 기준).
 // bgDims를 못 읽었으면(배경 없음 등) 판정 근거가 없으므로 null을 돌려주고,
 // 호출부는 이 경우 전부 "제한 없음"으로 취급한다.
 function worldPosToImageFrac(x, y) {
@@ -714,9 +707,9 @@ function checkInteractionArea() {
 }
 
 // 낚시가능 영역(fishableAreas) 판정은 캐릭터가 아니라 "추(찌)가 실제로
-// 착수한 지점" 기준이다(throwSinker의 finish에서 씀) — 그래서 el.world
+// 착수한 지점" 기준이다(throwSinker의 finish에서 씀) — 그래서 배경 원본
 // 기준 px가 아니라 el.frame(화면) 기준 픽셀 좌표를 받는 버전이 필요하다.
-// camOffset(지금 카메라가 옮겨둔 만큼)을 더해 월드 좌표로 바꾼 뒤
+// camOffset(지금 카메라가 옮겨둔 만큼)을 더해 배경 원본 좌표로 바꾼 뒤
 // worldPosToImageFrac과 같은 식으로 이미지 정규화 좌표를 낸다.
 function framePxToImageFrac(px, py) {
   if (!bgDims) return null;
@@ -804,22 +797,23 @@ async function loadConfig() {
     });
   }
 
-  // 배경화면 — 더 이상 .frame에 직접 깔지 않는다. el.world를 배경의 원본
-  // 픽셀 크기(1배율, 늘이거나 잘라내지 않음)로 키워서 배경 이미지를 그
-  // 위에 얹고, 화면(.frame)보다 크면 카메라(updateCamera)가 캐릭터를
-  // 따라 그 위를 스크롤한다 — 예전엔 .frame 자체가 화면 중앙에 1배율로
-  // 배경을 깔아서(background-position:center) 화면보다 큰 배경은 가운데
-  // 부분만 보이고 나머지는 아예 돌아다닐 수 없었는데, 이제 그 "나머지"도
-  // 카메라가 캐릭터를 따라가며 실제로 보여준다. 업로드가 없거나 자연
-  // 크기를 못 읽었으면 el.world를 화면 크기와 같게 맞춰(배경 이미지 없이)
-  // .frame CSS 기본값(하늘/바다 그라데이션)이 그대로 보이게 하고, 카메라가
-  // 움직이지 않는 예전 동작(좁은 범위 안 이동)으로 자연히 폴백한다.
+  // 배경화면 — el.frame 자체는 화면 크기 그대로 두고, background-position만
+  // 캐릭터 좌표에 맞춰 옮긴다("그 화면 사이즈에 맞게 로딩") — 배경 전체를
+  // 담은 거대한 DOM을 따로 만들어 옮기지 않는다. background-size는 auto라
+  // 항상 원본 픽셀 크기(1배율, 늘이거나 잘라내지 않음) 그대로 그려지고,
+  // background-position(updateCamera가 캐릭터 좌표 기준으로 매 프레임
+  // 계산)만 바뀌어 화면보다 큰 배경도 실제로 돌아다닐 수 있다 — 예전엔
+  // background-position:center로 고정해서 화면보다 큰 배경은 가운데 부분만
+  // 보이고 나머지로는 아예 이동할 수 없었다. 업로드가 없거나 자연 크기를
+  // 못 읽었으면 .frame CSS 기본값(하늘/바다 그라데이션)이 그대로 보이게
+  // 하고, 카메라가 움직이지 않는 예전 동작(좁은 범위 안 이동)으로 자연히
+  // 폴백한다.
   const backgroundAsset = cfg.backgroundAssetId ? byId.get(cfg.backgroundAssetId) : null;
   // 배경 자연 크기 — "영역 설정" 탭에서 그린 다각형(fishableAreas/
   // blockedAreas/interactionAreas)이 이 크기 기준 0~1 정규화 좌표라,
   // 캐릭터/추 착수 지점과 비교하려면 필요하고(worldPosToImageFrac/
-  // framePxToImageFrac 참고), 배경이 있을 땐 el.world 자체의 크기로도
-  // 그대로 쓴다.
+  // framePxToImageFrac 참고), 배경이 있을 땐 캐릭터가 돌아다닐 수 있는
+  // 전체 범위(worldSize)로도 그대로 쓴다.
   bgDims = backgroundAsset ? await new Promise(resolve => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
@@ -834,15 +828,14 @@ async function loadConfig() {
   hasWorldBackground = !!(backgroundAsset && bgDims);
   const frameRectForWorld = el.frame.getBoundingClientRect();
   worldSize = hasWorldBackground ? { w: bgDims.width, h: bgDims.height } : { w: frameRectForWorld.width, h: frameRectForWorld.height };
-  el.world.style.width = worldSize.w + 'px';
-  el.world.style.height = worldSize.h + 'px';
-  el.world.style.backgroundImage = backgroundAsset ? `url(${backgroundAsset.dataUrl})` : 'none';
-  // hasWorldBackground면 월드 크기 자체가 이미 배경 원본 크기라 배경이
-  // 자연스럽게 1:1로 꽉 찬다. 배경은 있는데 자연 크기를 못 읽은 예외
-  // 상황에서는(월드=화면 크기) 예전처럼 auto+center로 최소한 보이게라도 한다.
-  el.world.style.backgroundSize = hasWorldBackground ? '' : 'auto';
-  el.world.style.backgroundPosition = hasWorldBackground ? '' : 'center';
-  el.world.style.backgroundRepeat = 'no-repeat';
+  el.frame.style.backgroundImage = backgroundAsset ? `url(${backgroundAsset.dataUrl})` : '';
+  // hasWorldBackground면 background-size:auto(원본 크기 그대로)로 두고
+  // updateCamera가 매 프레임 background-position을 옮긴다. 배경은 있는데
+  // 자연 크기를 못 읽은 예외 상황에서는(카메라가 못 움직임) 예전처럼
+  // auto+center로 최소한 보이게라도 한다.
+  el.frame.style.backgroundSize = 'auto';
+  el.frame.style.backgroundPosition = hasWorldBackground ? '' : 'center';
+  el.frame.style.backgroundRepeat = backgroundAsset ? 'no-repeat' : '';
   const wb = worldBounds();
   if (!charWorldPos) {
     // 예전 CSS 기본값(화면 정중앙)과 같은 자리에서 시작하되, 새 범위(wb)
@@ -852,8 +845,6 @@ async function loadConfig() {
     charWorldPos.x = clamp(charWorldPos.x, wb.minX, wb.maxX);
     charWorldPos.y = clamp(charWorldPos.y, wb.minY, wb.maxY);
   }
-  el.charStage.style.left = charWorldPos.x + 'px';
-  el.charStage.style.bottom = charWorldPos.y + 'px';
   updateCamera();
 
   // 낚시바 모듈 크기 — 설정 화면 슬라이드 에디터(dev/minigame-fishing/
@@ -1881,9 +1872,7 @@ function moveTick(ts) {
   }
   charWorldPos.x = nextX;
   charWorldPos.y = nextY;
-  el.charStage.style.left = charWorldPos.x + 'px';
-  el.charStage.style.bottom = charWorldPos.y + 'px';
-  updateCamera();
+  updateCamera(); // 카메라 오프셋 재계산 + 캐릭터 화면 위치(left/bottom)까지 함께 반영한다
   checkInteractionArea();
   moveRaf = requestAnimationFrame(moveTick);
 }
