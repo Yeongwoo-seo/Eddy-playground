@@ -1071,7 +1071,11 @@ const AssetDB = (() => {
   // walkFrames — '이동' 탭의 방향별 걷기 프레임 자산 id 배열, { up, down,
   // left, right }. 각 방향 배열 순서대로 재생된다(캐스팅/올리기 모션과
   // 같은 프레임 배열 관례).
-  const FISHING_CONFIG_DEFAULT = { castingFrames: [], reelingFrames: [], barDesign: {}, fishSheetAssetId: null, fishIconOverrides: {}, castingSheetAssetId: null, castingFrameOverrides: {}, castingFrameDurations: [], backgroundAssetId: null, castingFrameRodTips: {}, walkFrames: { up: [], down: [], left: [], right: [] } };
+  // castGaugeAssetId — 캐스팅 세기 게이지(화면을 꾹 눌러 세기 조절할 때
+  // 뜨는 바) 배경 그림 자산 id. castGaugeFillRegion({x,y,w,h}, 이 그림의
+  // 원본 자연 크기 대비 0~1)이 그림 위 어디가 채워지는 부분인지 지정한다 —
+  // 둘 다 비어있으면 기본 막대 게이지(cast-power-track/-fill)가 쓰인다.
+  const FISHING_CONFIG_DEFAULT = { castingFrames: [], reelingFrames: [], barDesign: {}, fishSheetAssetId: null, fishIconOverrides: {}, castingSheetAssetId: null, castingFrameOverrides: {}, castingFrameDurations: [], backgroundAssetId: null, castingFrameRodTips: {}, walkFrames: { up: [], down: [], left: [], right: [] }, castGaugeAssetId: null, castGaugeFillRegion: null };
 
   async function getFishingConfig() {
     if (fishingConfigCache.has('config')) return fishingConfigCache.get('config');
