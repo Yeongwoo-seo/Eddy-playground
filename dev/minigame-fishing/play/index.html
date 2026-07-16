@@ -525,11 +525,15 @@ async function loadConfig() {
     el.fishbarBarImg.classList.add('hidden');
   }
 
-  // 캐치바(캐치존) — zoneRegion(트랙, 슬라이드 기준 0~1)이 화면상 어디에
-  // 놓이는지 정하고, catchLayer(캐치바 이미지가 슬라이드 위 어디에 얼마나
-  // 크게 배치됐는지)를 그 트랙 기준 비율로 다시 매핑해 좌우 위치/폭/높이를
-  // 정한다. 세로 이동 자체(캐치존 y)는 계속 0~100 추상 공간에서 물리대로
-  // 계산되고(updateZone), 여기서 정하는 건 트랙의 화면상 배치뿐이다.
+  // 캐치바(캐치존) — 좌우 위치/폭은 barLayer/fishRegion과 똑같이 catchLayer의
+  // 슬라이드 좌표(x,w)를 그대로 1:1로 쓴다(에디터에서 본 자리 그대로).
+  // 예전엔 zoneRegion 기준 상대 위치로 다시 계산했는데, catchLayer가
+  // zoneRegion 경계를 살짝 벗어나면 클램프 때문에 실제 화면 위치가
+  // 에디터에서 배치한 자리와 어긋나는("이미지 인식이 x축으로 살짝 밀려
+  // 보인다" 보고) 문제가 있었다. zoneRegion은 세로 이동 트랙(위아래로
+  // 움직이는 범위)과 캐치바 높이 비율(zoneSizePct)에만 쓴다 — 세로 이동
+  // 자체(캐치존 y)는 계속 0~100 추상 공간에서 물리대로 계산되고
+  // (updateZone), 여기서 정하는 건 트랙의 화면상 배치뿐이다.
   const zoneRegion = design.zoneRegion;
   const catchLayer = design.catchLayer;
   const catchImageAsset = catchLayer && catchLayer.assetId ? byId.get(catchLayer.assetId) : null;
@@ -551,11 +555,9 @@ async function loadConfig() {
   if (zoneRegion) {
     zoneTrack = { x: zoneRegion.x * 100, y: zoneRegion.y * 100, w: zoneRegion.w * 100, h: zoneRegion.h * 100 };
     if (catchLayer) {
-      const relX = clamp((catchLayer.x - zoneRegion.x) / zoneRegion.w, 0, 1);
-      const relW = clamp(catchLayer.w / zoneRegion.w, 0.05, 1);
       zoneSizePct = clamp(catchLayer.h / zoneRegion.h * 100, 5, 95);
-      el.fishbarZone.style.left = (zoneTrack.x + relX * zoneTrack.w) + '%';
-      el.fishbarZone.style.width = (relW * zoneTrack.w) + '%';
+      el.fishbarZone.style.left = (catchLayer.x * 100) + '%';
+      el.fishbarZone.style.width = (catchLayer.w * 100) + '%';
     } else {
       zoneSizePct = 28;
       el.fishbarZone.style.left = zoneTrack.x + '%';
