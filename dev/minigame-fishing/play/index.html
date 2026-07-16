@@ -13,14 +13,25 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="OPERATION MK DEV">
 <style>
+/* 낚시 화면 전용 폰트 — 요청대로 산돌미생체 하나로 통일한다(아래 --mono/
+   --sans 둘 다 이 폰트를 가리키게 해서, 기존에 모노스페이스/산세리프로
+   나뉘어 있던 텍스트가 전부 같은 서체를 쓰게 된다). 로드 실패 시엔
+   Pretendard/시스템 기본 서체로 자연스럽게 폴백한다. */
+@font-face {
+  font-family: 'SDMiSaeng';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_two@master/SDMiSaeng.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
 :root{
   --bg:#080A0C;--surface-1:#101419;--surface-2:#171C22;
-  --text-primary:#EDF1F4;--text-secondary:#929BA5;--text-muted:#5F6872;
+  --text-primary:#000000;--text-secondary:#929BA5;--text-muted:#5F6872;
   --cyan:#59B8C8;--amber:#D6A84B;--green:#3ECF6B;--signal-red:#D94141;--divider:rgba(255,255,255,0.08);
   --sky-top:#8FD4E8;--sky-bottom:#C7ECDD;--water-top:#2E7DA6;--water-bottom:#0F3C55;
-  --mono:'IBM Plex Mono',ui-monospace,monospace;
-  --sans:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
+  --mono:'SDMiSaeng','Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
+  --sans:'SDMiSaeng','Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
 }
 html,body{height:100%}
 body{background:#000;color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center}
@@ -158,15 +169,16 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 /* 업로드한 배경(액자) 그림이 없을 때만 쓰는 기본 카드 배경 — 업로드한
    그림은 이미 누끼 딴(투명 배경) 액자라 이 사각 배경/테두리/그림자까지
    같이 깔면 그 뒤로 각진 박스가 비쳐 보인다. loadConfig가 배경 자산
-   유무에 따라 이 클래스를 토글한다. */
-.item-popup-card.item-popup-card--fallback{background-color:var(--surface-1);border:1px solid rgba(255,255,255,.12);box-shadow:0 8px 32px rgba(0,0,0,.4)}
-.item-popup-title{position:absolute;top:14px;left:0;right:0;text-align:center;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--green);text-transform:uppercase}
+   유무에 따라 이 클래스를 토글한다. 이름/설명 글씨색을 검은색으로 바꾸면서
+   어두운 배경(--surface-1)에서는 글씨가 안 보이게 되므로, 기본 배경도
+   흰색으로 함께 바꿨다. */
+.item-popup-card.item-popup-card--fallback{background-color:#fff;border:1px solid rgba(0,0,0,.08);box-shadow:0 8px 32px rgba(0,0,0,.25)}
 .item-popup-icon{position:absolute;border-radius:16px;background-color:rgba(255,255,255,.12);background-repeat:no-repeat;background-size:cover;background-position:center;image-rendering:pixelated;display:flex;align-items:center;justify-content:center;font-size:32px;transform:translate(-50%,-50%)}
 /* 이름/설명(등급·가치)도 아이콘과 같은 방식(위치 지정 피커, 정규화 좌표
    기준 중심점)으로 자유 배치한다 — 더 이상 flex 흐름에 얹혀 자동으로
    쌓이지 않는다. */
-.item-popup-name{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;font-size:16px;font-weight:700;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.6)}
-.item-popup-meta{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;font-family:var(--mono);font-size:12px;color:rgba(255,255,255,.75)}
+.item-popup-name{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;font-size:16px;font-weight:700;color:#000}
+.item-popup-meta{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;font-family:var(--mono);font-size:12px;color:#000}
 </style>
 </head>
 <body>
@@ -223,7 +235,6 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 
   <div class="item-popup" id="itemPopup">
     <div class="item-popup-card item-popup-card--fallback" id="itemPopupCard">
-      <div class="item-popup-title">낚시 성공!</div>
       <div class="item-popup-icon" id="itemPopupIcon">🐟</div>
       <div class="item-popup-name" id="itemPopupName"></div>
       <div class="item-popup-meta" id="itemPopupMeta"></div>
