@@ -114,6 +114,24 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
    그림이 비치도록 반투명(.55)은 그대로 유지. */
 .cast-power-wrap.custom-gauge .cast-power-fill{background:linear-gradient(to right,rgba(217,65,65,.55) 0%,rgba(214,168,75,.55) 50%,rgba(62,207,107,.55) 100%);background-repeat:no-repeat;border-radius:0}
 
+/* 이동 모드 — idle(캐스팅 전) 상태에서만 보이는 화면 왼쪽 아래 반투명
+   방향키(십자 배치)와 오른쪽 아래 반투명 낚시 버튼. 기존엔 화면 아무
+   곳이나 누르면 바로 캐스팅 세기 조절이 시작됐는데, 그 자리를 이
+   낚시 버튼 하나로 옮기고(el.frame 전체 pointerdown이 아니라 이 버튼만
+   idle → charging을 트리거한다 — 입력 섹션 참고) 나머지 화면은 캐릭터
+   이동에 쓴다. */
+.move-dpad{position:absolute;left:calc(16px + env(safe-area-inset-left,0));bottom:calc(24px + env(safe-area-inset-bottom,0));z-index:5;display:grid;grid-template-columns:repeat(3,40px);grid-template-rows:repeat(3,40px);gap:4px}
+.move-dpad.hidden{display:none}
+.move-dpad-btn{grid-column:2;background:rgba(5,20,28,.4);border:1px solid rgba(255,255,255,.3);border-radius:10px;color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:pointer}
+.move-dpad-btn:active{background:rgba(5,20,28,.65)}
+.move-dpad-up{grid-row:1}
+.move-dpad-left{grid-row:2;grid-column:1}
+.move-dpad-down{grid-row:2}
+.move-dpad-right{grid-row:2;grid-column:3}
+.fish-btn{position:absolute;right:calc(16px + env(safe-area-inset-right,0));bottom:calc(24px + env(safe-area-inset-bottom,0));z-index:5;width:64px;height:64px;border-radius:50%;background:rgba(5,20,28,.4);border:1px solid rgba(255,255,255,.3);font-size:26px;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:pointer}
+.fish-btn:active{background:rgba(5,20,28,.65);transform:scale(.95)}
+.fish-btn.hidden{display:none}
+
 /* 추(sinker) 던지기 물리 시뮬레이션 — 낚싯대 끝~추 사이는 현수선(catenary)
    커브로 그린다(catenaryPoints/renderCastLine). 좌표계는 el.frame 픽셀
    그대로 써서(viewBox) 물리 계산과 그리기가 같은 단위를 쓴다. */
@@ -253,6 +271,14 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
   </div>
   <div class="catch-hint hidden" id="catchHint">누르고 있으면 캐치존이 올라가요 · 떼면 내려가요</div>
 
+  <div class="move-dpad" id="moveDpad">
+    <button type="button" class="move-dpad-btn move-dpad-up" data-dir="up">▲</button>
+    <button type="button" class="move-dpad-btn move-dpad-left" data-dir="left">◀</button>
+    <button type="button" class="move-dpad-btn move-dpad-right" data-dir="right">▶</button>
+    <button type="button" class="move-dpad-btn move-dpad-down" data-dir="down">▼</button>
+  </div>
+  <button type="button" class="fish-btn" id="fishBtn">🎣</button>
+
   <div class="item-popup" id="itemPopup">
     <div class="item-popup-card item-popup-card--fallback" id="itemPopupCard">
       <div class="item-popup-icon" id="itemPopupIcon">🐟</div>
@@ -375,6 +401,8 @@ const el = {
   fishbarGauge: document.getElementById('fishbarGauge'),
   fishbarGaugeMask: document.getElementById('fishbarGaugeMask'),
   catchHint: document.getElementById('catchHint'),
+  moveDpad: document.getElementById('moveDpad'),
+  fishBtn: document.getElementById('fishBtn'),
   countChip: document.getElementById('countChip'),
   itemPopup: document.getElementById('itemPopup'),
   itemPopupCard: document.getElementById('itemPopupCard'),
@@ -448,6 +476,23 @@ let castFlightRaf = null;
 let bobLineRaf = null; // 착수 후 낚싯줄을 추의 까닥임(bob-idle/bite-dip)에 맞춰 계속 다시 그리는 루프, syncLineToBobber 참고
 let lastRodTipPt = null; // throwSinker의 finish가 남겨두는 착수 시점 낚싯대 끝 — waitForBite가 syncLineToBobber를 시작할 때 씀
 
+/* ===== 이동 모드 =====
+   idle(캐스팅 전) 상태에서만 화면 왼쪽 아래 방향키로 캐릭터(char-stage)를
+   화면 안에서 걸어 다니게 한다 — 실제 좌표는 el.charStage의 left/bottom
+   인라인 스타일(%)로 직접 옮기고, MOVE_BOUNDS_PCT로 화면 밖으로 못
+   나가게 막는다. 방향별 걷기 스프라이트시트(dev/minigame-fishing/
+   index.html "이동" 탭에서 업로드, walkSheets)가 있으면 그 프레임을
+   순환시키고, 없으면 위치만 바뀌고 캐릭터 그림은 그대로 둔다(캐스팅
+   모션처럼 그림 없이도 동작은 되는 폴백). */
+const MOVE_DIRS = ['up', 'down', 'left', 'right'];
+const MOVE_STEP_PX = 18; // 한 걸음의 화면 픽셀 크기 — el.frame 실제 크기 기준으로 매 스텝 %로 환산한다
+const MOVE_BOUNDS_PCT = { left: [4, 82], bottom: [12, 62] }; // char-stage가 벗어날 수 없는 범위(%) — 상단바/하단 버튼과 안 겹치는 선에서 넉넉히
+let walkFrameUrls = { up: [], down: [], left: [], right: [] };
+let walkMotion = { stepMs: 200, stepDelayMs: 0 };
+let charPosPct = { left: 9, bottom: 41 }; // .char-stage CSS 기본값과 맞춰둔 시작 위치
+let moveHoldTimer = null;
+let moveAnimFrameIndex = 0;
+
 /* ===== 설정 로드 (AssetDB) — 실패해도 게임은 도형 폴백으로 계속 동작한다. ===== */
 async function loadConfig() {
   let cfg = { castingFrames: [], reelingFrames: [], barDesign: {}, castingSheetAssetId: null, castingFrameOverrides: {} };
@@ -469,6 +514,8 @@ async function loadConfig() {
   if (cfg.castGaugeAssetId) ids.push(cfg.castGaugeAssetId);
   const itemPopupCfg = cfg.itemPopup || {};
   if (itemPopupCfg.backgroundAssetId) ids.push(itemPopupCfg.backgroundAssetId);
+  const walkSheetsCfg = cfg.walkSheets || {};
+  MOVE_DIRS.forEach(dir => { if (walkSheetsCfg[dir] && walkSheetsCfg[dir].sheetAssetId) ids.push(walkSheetsCfg[dir].sheetAssetId); });
   let assets = [];
   try { assets = await AssetDB.getAssetsByIds(ids); } catch (e) { /* 위와 동일 */ }
   const byId = new Map(assets.map(a => [a.id, a]));
@@ -492,6 +539,25 @@ async function loadConfig() {
   castFrameDurations = (cfg.castingFrameDurations && cfg.castingFrameDurations.length) ? cfg.castingFrameDurations : null;
   castingFrameRodTips = cfg.castingFrameRodTips || {};
   castPhysics = Object.assign({ gravityMps2: 9.8, vxScale: 1 }, cfg.castPhysics || {});
+
+  // 이동 방향별 걷기 시트 — 캐스팅 시트와 같은 방식(6프레임, MOTION_SHEET_LAYOUT)
+  // 으로 잘라 캐시해둔다. 방향별로 업로드 안 했으면 빈 배열로 두고,
+  // stepChar가 그 경우 캐릭터 그림을 그대로 둔 채 위치만 옮긴다.
+  walkMotion = Object.assign({ stepMs: 200, stepDelayMs: 0 }, cfg.walkMotion || {});
+  walkFrameUrls = { up: [], down: [], left: [], right: [] };
+  for (const dir of MOVE_DIRS) {
+    const ws = walkSheetsCfg[dir];
+    const sheetAsset = ws && ws.sheetAssetId ? byId.get(ws.sheetAssetId) : null;
+    if (!sheetAsset) continue;
+    const img = await new Promise(resolve => {
+      const im = new Image();
+      im.crossOrigin = 'anonymous';
+      im.onload = () => resolve(im);
+      im.onerror = () => resolve(null);
+      im.src = sheetAsset.dataUrl;
+    });
+    walkFrameUrls[dir] = img ? buildMotionFrameDataUrls(img, ws.frameOverrides) : [];
+  }
   const fishSheetAsset = cfg.fishSheetAssetId ? byId.get(cfg.fishSheetAssetId) : null;
   fishSheetUrl = fishSheetAsset ? fishSheetAsset.dataUrl : null;
   fishIconOverrides = cfg.fishIconOverrides || {};
@@ -812,6 +878,8 @@ function playCastWindup() {
 /* ===== 캐스팅 세기 조절 (누르고 있는 동안) ===== */
 function startPowerCharge() {
   gameState = 'charging';
+  stopMoveHold();
+  el.moveDpad.classList.add('hidden');
   el.castPowerWrap.classList.remove('hidden');
   playCastWindup();
   castChargeStartT = performance.now();
@@ -1381,30 +1449,76 @@ function resetToIdle() {
   el.bobber.classList.add('hidden');
   el.bobber.classList.remove('bob-idle', 'bite-dip');
   el.biteCaught.classList.add('hidden');
+  el.moveDpad.classList.remove('hidden');
   if (idleFrameUrl) { el.charImg.src = idleFrameUrl; el.charImg.classList.remove('hidden'); el.charFallback.classList.add('hidden'); }
   else { el.charImg.classList.add('hidden'); el.charFallback.classList.remove('hidden'); }
 }
 
+/* ===== 이동 — 방향키 한 걸음(stepChar) + 꾹 누르면 반복(startMoveHold),
+   walkMotion.stepMs 간격으로 걷기 프레임을 순환시킨다(playMoveAnim). ===== */
+function stepChar(dir) {
+  const frameRect = el.frame.getBoundingClientRect();
+  const stepXPct = MOVE_STEP_PX / frameRect.width * 100;
+  const stepYPct = MOVE_STEP_PX / frameRect.height * 100;
+  if (dir === 'left') charPosPct.left = clamp(charPosPct.left - stepXPct, MOVE_BOUNDS_PCT.left[0], MOVE_BOUNDS_PCT.left[1]);
+  if (dir === 'right') charPosPct.left = clamp(charPosPct.left + stepXPct, MOVE_BOUNDS_PCT.left[0], MOVE_BOUNDS_PCT.left[1]);
+  if (dir === 'up') charPosPct.bottom = clamp(charPosPct.bottom + stepYPct, MOVE_BOUNDS_PCT.bottom[0], MOVE_BOUNDS_PCT.bottom[1]);
+  if (dir === 'down') charPosPct.bottom = clamp(charPosPct.bottom - stepYPct, MOVE_BOUNDS_PCT.bottom[0], MOVE_BOUNDS_PCT.bottom[1]);
+  el.charStage.style.left = charPosPct.left + '%';
+  el.charStage.style.bottom = charPosPct.bottom + '%';
+}
+function playMoveAnim(dir) {
+  const frames = walkFrameUrls[dir];
+  if (!frames || !frames.length) return; // 방향 시트가 없으면 그림은 그대로 두고 위치만 바뀐다
+  moveAnimFrameIndex = (moveAnimFrameIndex + 1) % frames.length;
+  el.charImg.src = frames[moveAnimFrameIndex];
+  el.charImg.classList.remove('hidden');
+  el.charFallback.classList.add('hidden');
+}
+function startMoveHold(dir) {
+  if (gameState !== 'idle') return;
+  stopMoveHold();
+  stepChar(dir);
+  playMoveAnim(dir);
+  moveHoldTimer = setInterval(() => { stepChar(dir); playMoveAnim(dir); }, walkMotion.stepMs + walkMotion.stepDelayMs);
+}
+function stopMoveHold() {
+  if (moveHoldTimer) { clearInterval(moveHoldTimer); moveHoldTimer = null; }
+  if (idleFrameUrl) el.charImg.src = idleFrameUrl; // 걷기 멈추면 원래 idle 프레임(있으면)으로 되돌린다
+}
+
 /* ===== 입력 =====
-   캐스팅 버튼 대신 idle 상태에서 화면을 누르고 있으면 세기 게이지가
-   왔다리갔다리 돌아가다가(startPowerCharge), 손을 떼는 순간 값으로 던진다
-   (releasePowerAndCast) — 잡아채기(catching) 중 홀드와 같은 pointerdown/up
-   쌍을 gameState로 나눠 재사용한다. waiting(입질 대기 중) 탭은 기다리지
-   않고 바로 빈손으로 릴을 감고, popup(아이템창 뜬 상태) 탭은 그냥
-   닫는다(아이템창엔 확인 버튼이 따로 없다 — el.itemPopup이
-   pointer-events:none이라 카드를 눌러도 그대로 여기까지 뚫고 내려온다). */
+   화면 아무 곳이나 누르면 캐스팅 세기 조절이 시작되던 것을 오른쪽 아래
+   낚시 버튼(el.fishBtn) 하나로 옮겼다 — idle 상태에서 나머지 화면은
+   왼쪽 아래 방향키(el.moveDpad)로 캐릭터를 이동하는 데 쓴다. 손을 떼는
+   순간(pointerup 등)은 여전히 el.frame 전체에서 받는다 — 버튼 밖으로
+   손가락이 밀려나가도 놓으면 그 순간 값으로 던져지게(releasePowerAndCast)
+   두는 편이 더 관대한 UX다. 잡아채기(catching) 중 홀드와 같은
+   pointerdown/up 쌍을 gameState로 나눠 재사용한다. waiting(입질 대기
+   중) 탭은 기다리지 않고 바로 빈손으로 릴을 감고, popup(아이템창 뜬
+   상태) 탭은 그냥 닫는다(아이템창엔 확인 버튼이 따로 없다 —
+   el.itemPopup이 pointer-events:none이라 카드를 눌러도 그대로 여기까지
+   뚫고 내려온다). */
 el.frame.addEventListener('pointerdown', () => {
   if (gameState === 'bite') { handleReactionTap(); return; }
   if (gameState === 'catching') { holding = true; return; }
   if (gameState === 'waiting') { abortWaitingReel(); return; }
   if (gameState === 'popup') { resetToIdle(); return; }
-  if (gameState === 'idle') { startPowerCharge(); return; }
 });
 ['pointerup', 'pointercancel', 'pointerleave'].forEach(evt => {
   el.frame.addEventListener(evt, () => {
     holding = false;
     if (gameState === 'charging') releasePowerAndCast();
   });
+});
+el.fishBtn.addEventListener('pointerdown', (e) => {
+  e.stopPropagation(); // el.frame의 pointerdown(위)까지 뚫고 내려가 다른 상태 분기를 같이 건드리지 않게 막는다
+  if (gameState === 'idle') startPowerCharge();
+});
+MOVE_DIRS.forEach(dir => {
+  const btn = el.moveDpad.querySelector(`[data-dir="${dir}"]`);
+  btn.addEventListener('pointerdown', (e) => { e.stopPropagation(); startMoveHold(dir); });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(evt => btn.addEventListener(evt, stopMoveHold));
 });
 
 loadConfig();
