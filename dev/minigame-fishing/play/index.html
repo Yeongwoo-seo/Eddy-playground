@@ -483,7 +483,7 @@ const MOVE_DIRS = ['up', 'down', 'left', 'right'];
 const MOVE_STEP_PX = 18; // "타일 한 칸" 환산 기준 픽셀 크기 — walkMotion.stepMs(이 거리를 이동하는 데 걸리는 시간)와 합쳐 연속 이동 속도(px/ms)를 낸다
 const MOVE_BOUNDS_PCT = { left: [4, 82], bottom: [12, 62] }; // char-stage가 벗어날 수 없는 범위(%) — 상단바/하단 버튼과 안 겹치는 선에서 넉넉히
 let walkFrameUrls = { up: [], down: [], left: [], right: [] };
-let walkMotion = { stepMs: 200 };
+let walkMotion = { stepMs: 200, animFrameMs: 90 };
 let charPosPct = { left: 9, bottom: 41 }; // .char-stage CSS 기본값과 맞춰둔 시작 위치
 let moveRaf = null;
 let moveLastT = 0;
@@ -540,7 +540,7 @@ async function loadConfig() {
   // 이동 방향별 걷기 시트 — 캐스팅 시트와 같은 방식(6프레임, MOTION_SHEET_LAYOUT)
   // 으로 잘라 캐시해둔다. 방향별로 업로드 안 했으면 빈 배열로 두고,
   // stepChar가 그 경우 캐릭터 그림을 그대로 둔 채 위치만 옮긴다.
-  walkMotion = Object.assign({ stepMs: 200 }, cfg.walkMotion || {});
+  walkMotion = Object.assign({ stepMs: 200, animFrameMs: 90 }, cfg.walkMotion || {});
   walkFrameUrls = { up: [], down: [], left: [], right: [] };
   for (const dir of MOVE_DIRS) {
     const ws = walkSheetsCfg[dir];
@@ -1483,7 +1483,7 @@ function playMoveAnim(dir) {
   moveAnimTimer = setInterval(() => {
     i = (i + 1) % frames.length;
     el.charImg.src = frames[i];
-  }, Math.max(40, Math.round(walkMotion.stepMs / frames.length)));
+  }, walkMotion.animFrameMs);
 }
 function moveTick(ts) {
   if (!moveHoldDir) { moveRaf = null; return; }
