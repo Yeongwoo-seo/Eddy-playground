@@ -221,9 +221,16 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
    좌우로 clamp). 확인 버튼 없이 화면 아무 곳이나 탭하면 사라진다 —
    .item-popup과 .item-popup-card 둘 다 pointer-events:none이라 카드 위를
    눌러도 그대로 el.frame의 pointerdown으로 뚫고 내려가 gameState==='popup'
-   분기(resetToIdle)가 처리한다. */
-.item-popup{position:absolute;z-index:9;display:none;pointer-events:none}
-.item-popup.show{display:block}
+   분기(resetToIdle)가 처리한다.
+   display:none으로 숨겼다 뜰 때 처음 그리면(populateItemPopup이 그리는
+   카드 배경/물고기 아이콘 background-image) 브라우저가 그제서야 디코드해서
+   뜨는 순간 느렸다(사용자 보고 — 잡은 물고기 아이콘도 같은 문제였다, 그때
+   fishIconPreload로 고친 것과 같은 원인). 그래서 숨김 상태를 display:none이
+   아니라 화면 밖(-9999px)으로 밀어두는 방식으로 바꿨다 — 레이아웃/페인트는
+   정상적으로 계속 일어나 미리 그려두면 실제로 디코드가 끝나 있고,
+   showItemPopup은 populateItemPopup(startCatching이 미리 한 번 불러둔 것과
+   같은 내용)과 위치만 다시 맞추면 그만이다. */
+.item-popup{position:absolute;z-index:9;pointer-events:none;left:-9999px}
 /* 카드 종횡비 — 업로드한 배경(액자) 이미지의 실제 자연 크기를 그대로
    따라간다(loadConfig가 --item-ar을 이미지 자연 크기로 채워줌). cover
    대신 contain을 쓰는 이유: 종횡비가 이미지와 정확히 같으므로 어느 쪽을
@@ -1264,6 +1271,10 @@ function startCatching() {
   progress = 30;
   holding = false;
   pendingCatchFish = pickCaughtFish();
+  // 아이템창을 화면 밖(left:-9999px)에서 이 시점에 미리 채워둬서, 실제
+  // 공개(showItemPopup) 순간엔 위치만 옮기면 되게 한다 — populateItemPopup
+  // 주석 참고.
+  populateItemPopup(pendingCatchFish);
   lastT = performance.now();
   raf = requestAnimationFrame(catchTick);
 }
@@ -1372,10 +1383,11 @@ async function playReelThenResult() {
   caughtCount++;
   el.countChip.textContent = caughtCount + '마리';
   const fishCaught = pendingCatchFish;
-  // 물고기가 날아오는 동안(flyFishToCharacter, ~1.6초) 기다렸다가 아이템창을
-  // 띄우지 않고, 물고기처럼 아이템창도 곧바로 미리 띄운다 — await 없이 둘
-  // 다 동시에 시작한다.
-  flyFishToCharacter(fishCaught);
+  // 아이템창 내용(populateItemPopup)은 startCatching 때 이미 화면 밖에서
+  // 다 그려놨으니 지연 없이 뜰 준비는 끝났지만, 뜨는 시점 자체는 물고기가
+  // 캐릭터에 실제로 도착한 다음이어야 자연스럽다(사용자 요청) — 그래서
+  // flyFishToCharacter가 끝날 때까지 기다렸다가 showItemPopup을 부른다.
+  await flyFishToCharacter(fishCaught);
   showItemPopup(fishCaught);
 }
 
@@ -1450,9 +1462,9 @@ function flyFishToCharacter(fishDef) {
 // 한다. 카드가 화면 밖으로 나가지 않도록 캐릭터 중심에 맞추되 좌우
 // ITEM_POPUP_MARGIN 안쪽으로 clamp한다(캐릭터가 화면 가장자리에 가까워도
 // 안전 — % 기반 위치만 쓰면 캐릭터가 가장자리에 있을 때 카드가 화면
-// 밖으로 잘려 나간다). el.itemPopup(래퍼)은 아직 표시되기 전(.show 없음,
-// display:none)이라도 left/bottom을 미리 계산해 넣을 수 있다 — 실제
-// 크기(220px)는 CSS 고정값이라 레이아웃 측정 없이 상수로 계산 가능.
+// 밖으로 잘려 나간다). el.itemPopup(래퍼)은 아직 화면 밖(left:-9999px)에
+// 있을 때라도 left/bottom을 미리 계산해 넣을 수 있다 — 실제 크기(220px)는
+// CSS 고정값이라 레이아웃 측정 없이 상수로 계산 가능.
 const ITEM_POPUP_CARD_WIDTH = 220;
 const ITEM_POPUP_GAP = 14;
 const ITEM_POPUP_MARGIN = 12;
@@ -1468,9 +1480,13 @@ function positionItemPopupAboveCharacter() {
   el.itemPopup.style.transform = 'translateX(-50%)';
 }
 
-function showItemPopup(fishCaught) {
-  gameState = 'popup';
-  positionItemPopupAboveCharacter();
+// 카드 배경/이름/등급·가치/아이콘을 채운다 — showItemPopup(실제 공개
+// 순간)뿐 아니라 startCatching(어떤 물고기가 걸릴지 정해지자마자, 잡아채기
+// 미니게임 + 릴 감기 + 날아오기 연출까지 몇 초의 여유가 있을 때)에서도
+// 미리 호출해 화면 밖(.item-popup의 기본 left:-9999px)에서 이미 디코드/
+// 페인트가 끝나 있게 한다 — showItemPopup은 그 뒤 위치만 화면 안으로
+// 옮기면 되니 그 순간엔 새로 그릴 게 없어 지연이 없다.
+function populateItemPopup(fishCaught) {
   el.itemPopupName.textContent = fishCaught.name;
   el.itemPopupName.style.color = GRADE_NAME_COLORS[fishCaught.grade] || '#000';
   el.itemPopupMeta.textContent = `${fishCaught.grade} · ${fishCaught.value}P`;
@@ -1494,12 +1510,17 @@ function showItemPopup(fishCaught) {
     el.itemPopupIcon.style.transform = 'translate(-50%,-50%)';
     el.itemPopupIcon.textContent = '🐟';
   }
-  el.itemPopup.classList.add('show');
+}
+
+function showItemPopup(fishCaught) {
+  gameState = 'popup';
+  populateItemPopup(fishCaught);
+  positionItemPopupAboveCharacter();
 }
 
 /* ===== 리셋 ===== */
 function resetToIdle() {
-  el.itemPopup.classList.remove('show');
+  el.itemPopup.style.left = '-9999px';
   gameState = 'idle';
   cancelAnimationFrame(bobLineRaf);
   el.castPowerWrap.classList.add('hidden');
