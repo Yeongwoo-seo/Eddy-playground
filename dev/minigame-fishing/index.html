@@ -164,9 +164,11 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .slide-layer img{width:100%;height:100%;object-fit:fill;display:block;pointer-events:none;user-select:none}
 .slide-layer.region{display:flex;align-items:flex-start;justify-content:flex-start;border:2px dashed var(--cyan);background:rgba(89,184,200,.14)}
 .slide-layer.region[data-layer-id="gaugeRegion"]{border-color:var(--amber);background:rgba(214,168,75,.16)}
+.slide-layer.region[data-layer-id="fishRegion"]{border-color:var(--signal-red);background:rgba(217,65,65,.16)}
 .slide-layer.selected{outline:2px solid var(--green);outline-offset:1px}
 .slide-layer-label{font-family:var(--mono);font-size:9px;font-weight:700;color:#050607;background:var(--cyan);padding:2px 4px;border-radius:0 0 4px 0;pointer-events:none}
 .slide-layer.region[data-layer-id="gaugeRegion"] .slide-layer-label{background:var(--amber)}
+.slide-layer.region[data-layer-id="fishRegion"] .slide-layer-label{background:var(--signal-red)}
 .slide-layer-handle{position:absolute;right:-7px;bottom:-7px;width:16px;height:16px;border-radius:50%;background:var(--green);border:2px solid #050607;cursor:nwse-resize;touch-action:none}
 
 /* ===== 세밀영역조절(범용) 전체화면 편집기 — dev/upload/evidence-notebook/
@@ -462,12 +464,13 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
 
     <div class="option-group">
       <div class="option-label">낚시바 슬라이드</div>
-      <div class="option-desc">PPT 슬라이드처럼 낚시바 이미지·캐치바 이미지를 자유롭게 배치하고, 캐치바 영역·게이지 영역을 사각형으로 지정하세요. 오브젝트를 탭하면 선택되고, 몸통을 드래그하면 이동, 오른쪽 아래 초록 손잡이를 드래그하면 크기가 바뀌어요.</div>
+      <div class="option-desc">PPT 슬라이드처럼 낚시바 이미지·캐치바 이미지를 자유롭게 배치하고, 캐치바 영역·게이지 영역·물고기 영역을 사각형으로 지정하세요. 오브젝트를 탭하면 선택되고, 몸통을 드래그하면 이동, 오른쪽 아래 초록 손잡이를 드래그하면 크기가 바뀌어요.</div>
       <div class="slide-toolbar" id="slideToolbar">
         <button type="button" class="fish-sheet-btn" id="addBarImageBtn">+ 낚시바 이미지</button>
         <button type="button" class="fish-sheet-btn" id="addCatchImageBtn">+ 캐치바 이미지</button>
         <button type="button" class="fish-sheet-btn" id="addZoneRegionBtn">+ 캐치바 영역</button>
         <button type="button" class="fish-sheet-btn" id="addGaugeRegionBtn">+ 게이지 영역</button>
+        <button type="button" class="fish-sheet-btn" id="addFishRegionBtn">+ 물고기 영역</button>
       </div>
       <input type="file" id="barLayerFileInput" accept="image/*">
       <input type="file" id="catchLayerFileInput" accept="image/*">
@@ -921,6 +924,7 @@ const el = {
   addCatchImageBtn: document.getElementById('addCatchImageBtn'),
   addZoneRegionBtn: document.getElementById('addZoneRegionBtn'),
   addGaugeRegionBtn: document.getElementById('addGaugeRegionBtn'),
+  addFishRegionBtn: document.getElementById('addFishRegionBtn'),
   barLayerFileInput: document.getElementById('barLayerFileInput'),
   catchLayerFileInput: document.getElementById('catchLayerFileInput'),
   slideStage: document.getElementById('slideStage'),
@@ -1694,12 +1698,13 @@ el.reelFileInput.addEventListener('change', async () => {
    폭에 맞춰 늘인 컨테이너). 드래그 중엔 스타일만 즉시 갱신하고, 놓는 순간
    (pointerup)에만 AssetDB에 저장한다 — 매 pointermove마다 네트워크 저장하면
    낭비이기 때문. */
-const SLIDE_LAYER_ORDER = ['barLayer', 'zoneRegion', 'gaugeRegion', 'catchLayer']; // z-order: 낚시바 배경 → 영역 표시 → 캐치바 이미지가 맨 위
+const SLIDE_LAYER_ORDER = ['barLayer', 'zoneRegion', 'gaugeRegion', 'fishRegion', 'catchLayer']; // z-order: 낚시바 배경 → 영역 표시 → 캐치바 이미지가 맨 위
 const SLIDE_LAYER_META = {
   barLayer: { kind: 'image', label: '낚시바' },
   catchLayer: { kind: 'image', label: '캐치바' },
   zoneRegion: { kind: 'region', label: '캐치바 영역' },
   gaugeRegion: { kind: 'region', label: '게이지 영역' },
+  fishRegion: { kind: 'region', label: '물고기 영역' },
 };
 let selectedLayerId = null;
 const slideAssetUrlCache = new Map(); // assetId -> dataUrl, 매 렌더마다 AssetDB.getAsset 재조회하지 않도록
@@ -1800,6 +1805,7 @@ function updateSlideToolbarState() {
   el.addCatchImageBtn.classList.toggle('hidden', !!design.catchLayer);
   el.addZoneRegionBtn.classList.toggle('hidden', !!design.zoneRegion);
   el.addGaugeRegionBtn.classList.toggle('hidden', !!design.gaugeRegion);
+  el.addFishRegionBtn.classList.toggle('hidden', !!design.fishRegion);
   el.deleteLayerBtn.classList.toggle('hidden', !selectedLayerId);
   el.cropCatchImageBtn.classList.toggle('hidden', selectedLayerId !== 'catchLayer' || !design.catchLayer);
   el.reloadCatchImageBtn.classList.toggle('hidden', selectedLayerId !== 'catchLayer' || !design.catchLayer);
@@ -2086,6 +2092,11 @@ el.addZoneRegionBtn.addEventListener('click', async () => {
 el.addGaugeRegionBtn.addEventListener('click', async () => {
   await patchBarDesign({ gaugeRegion: { x: 0.1, y: 0.78, w: 0.8, h: 0.12 } });
   selectedLayerId = 'gaugeRegion';
+  renderSlideStage();
+});
+el.addFishRegionBtn.addEventListener('click', async () => {
+  await patchBarDesign({ fishRegion: { x: 0.1, y: 0.3, w: 0.8, h: 0.4 } });
+  selectedLayerId = 'fishRegion';
   renderSlideStage();
 });
 el.deleteLayerBtn.addEventListener('click', async () => {
