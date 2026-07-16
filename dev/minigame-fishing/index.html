@@ -200,15 +200,15 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 
 /* ===== 물고기 종류 탭 ===== */
 .fish-sheet-frame{position:relative;width:196px;height:136px;max-width:100%;margin:0 auto;background-image:repeating-conic-gradient(var(--surface-2) 0% 25%, var(--surface-1) 0% 50%);background-size:16px 16px;border-radius:10px;border:1px solid var(--divider);overflow:hidden}
-/* 캐스팅 시트는 404x64px 1행짜리 스트립 규격이라 같은 체커보드 배경에
-   비율만 다르게 준다 — 나머지(빈 상태 문구, 업로드/제거 버튼, 시트 미리보기
-   <img>)는 .fish-sheet-* 클래스를 그대로 재사용한다. 예전엔 width/height를
-   404px/64px로 못박아서, 그보다 큰(고해상도) 시트를 올려도 이 작은 박스
-   안에 눌려 들어갔다 — width는 컨테이너 폭까지 자유롭게 늘어나고
-   aspect-ratio로 규격 비율만 유지하므로, 더 큰 시트를 올려도 (프레임 격자
-   쪽 실제 계산 버그도 같이 고쳤으니, see renderCastFrameGrid) 찌그러지지
-   않고 꽉 채워 보인다. */
-.cast-sheet-frame{width:100%;max-width:404px;height:auto;aspect-ratio:404/64}
+/* 캐스팅/이동(4방향) 모션 시트는 모두 404x64px 1행짜리 스트립 규격이라
+   같은 체커보드 배경에 비율만 다르게 준다 — 나머지(빈 상태 문구, 업로드/제거
+   버튼, 시트 미리보기 <img>)는 .fish-sheet-* 클래스를 그대로 재사용한다.
+   예전엔 width/height를 404px/64px로 못박아서, 그보다 큰(고해상도) 시트를
+   올려도 이 작은 박스 안에 눌려 들어갔다 — width는 컨테이너 폭까지 자유롭게
+   늘어나고 aspect-ratio로 규격 비율만 유지하므로, 더 큰 시트를 올려도
+   (프레임 격자 쪽 실제 계산 버그도 같이 고쳤으니, see renderCastFrameGrid/
+   renderWalkFrameGrid) 찌그러지지 않고 꽉 채워 보인다. */
+.motion-sheet-frame{width:100%;max-width:404px;height:auto;aspect-ratio:404/64}
 .fish-sheet-frame img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;image-rendering:pixelated}
 .fish-sheet-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text-muted);font-family:var(--mono);text-align:center;padding:8px;line-height:1.5}
 .fish-sheet-spec{font-size:12px;color:var(--text-muted);margin-top:10px;line-height:1.6;text-align:center}
@@ -307,7 +307,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     <div class="option-group">
       <div class="option-label">캐스팅 모션 시트</div>
       <div class="option-desc">404×64px 투명 PNG · 가로 6칸 · 칸 64×64px · 칸 간격 4px · 바깥 여백 없음. 업로드하면 6프레임이 왼쪽부터 순서대로 자동 배정돼요. 시트가 규격에 딱 맞지 않으면 프레임이 어긋나 보일 수 있는데, 아래 프레임을 탭하면 그 프레임만 따로 세밀영역조절할 수 있어요. 한 프레임의 크롭 크기를 바꾸면 나머지 프레임도 같은 크기로 맞춰져요.</div>
-      <div class="fish-sheet-frame cast-sheet-frame" id="castSheetFrame">
+      <div class="fish-sheet-frame motion-sheet-frame" id="castSheetFrame">
         <div class="fish-sheet-empty" id="castSheetEmpty">아직 업로드된 시트가 없어요<br>업로드하기 전까진 간단한 도형으로 대체돼요</div>
       </div>
       <div class="fish-sheet-actions">
@@ -473,9 +473,16 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
         <div class="frame-preview" id="moveUpPreview"></div>
         <div class="frame-preview-label" id="moveUpPreviewLabel">프레임 없음 — 재생 미리보기</div>
       </div>
-      <div class="frame-strip" id="moveUpFrames"></div>
-      <button type="button" class="frame-add-btn" id="moveUpAddBtn">+ 프레임 추가</button>
-      <input type="file" id="moveUpFileInput" accept="image/*">
+      <div class="option-desc">404×64px 투명 PNG · 가로 6칸 · 칸 64×64px · 칸 간격 4px · 바깥 여백 없음. 업로드하면 6프레임이 자동 배정돼요. 아래 프레임을 탭하면 그 프레임만 세밀영역조절할 수 있고, 크기를 바꾸면 나머지 프레임도 같은 크기로 맞춰져요.</div>
+      <div class="fish-sheet-frame motion-sheet-frame" id="moveUpSheetFrame">
+        <div class="fish-sheet-empty" id="moveUpSheetEmpty">아직 업로드된 시트가 없어요<br>업로드하기 전까진 화살표로 대체돼요</div>
+      </div>
+      <div class="fish-sheet-actions">
+        <button type="button" class="fish-sheet-btn" id="moveUpSheetUploadBtn">📤 시트 업로드</button>
+        <button type="button" class="fish-sheet-btn danger hidden" id="moveUpSheetRemoveBtn">✕ 제거</button>
+      </div>
+      <input type="file" id="moveUpSheetFileInput" accept="image/png">
+      <div class="frame-strip" id="moveUpFrameGrid"></div>
     </div>
     <div class="option-group">
       <div class="option-label">아래로 이동</div>
@@ -483,9 +490,16 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
         <div class="frame-preview" id="moveDownPreview"></div>
         <div class="frame-preview-label" id="moveDownPreviewLabel">프레임 없음 — 재생 미리보기</div>
       </div>
-      <div class="frame-strip" id="moveDownFrames"></div>
-      <button type="button" class="frame-add-btn" id="moveDownAddBtn">+ 프레임 추가</button>
-      <input type="file" id="moveDownFileInput" accept="image/*">
+      <div class="option-desc">404×64px 투명 PNG · 가로 6칸 · 칸 64×64px · 칸 간격 4px · 바깥 여백 없음. 업로드하면 6프레임이 자동 배정돼요. 아래 프레임을 탭하면 그 프레임만 세밀영역조절할 수 있고, 크기를 바꾸면 나머지 프레임도 같은 크기로 맞춰져요.</div>
+      <div class="fish-sheet-frame motion-sheet-frame" id="moveDownSheetFrame">
+        <div class="fish-sheet-empty" id="moveDownSheetEmpty">아직 업로드된 시트가 없어요<br>업로드하기 전까진 화살표로 대체돼요</div>
+      </div>
+      <div class="fish-sheet-actions">
+        <button type="button" class="fish-sheet-btn" id="moveDownSheetUploadBtn">📤 시트 업로드</button>
+        <button type="button" class="fish-sheet-btn danger hidden" id="moveDownSheetRemoveBtn">✕ 제거</button>
+      </div>
+      <input type="file" id="moveDownSheetFileInput" accept="image/png">
+      <div class="frame-strip" id="moveDownFrameGrid"></div>
     </div>
     <div class="option-group">
       <div class="option-label">왼쪽 이동</div>
@@ -493,9 +507,16 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
         <div class="frame-preview" id="moveLeftPreview"></div>
         <div class="frame-preview-label" id="moveLeftPreviewLabel">프레임 없음 — 재생 미리보기</div>
       </div>
-      <div class="frame-strip" id="moveLeftFrames"></div>
-      <button type="button" class="frame-add-btn" id="moveLeftAddBtn">+ 프레임 추가</button>
-      <input type="file" id="moveLeftFileInput" accept="image/*">
+      <div class="option-desc">404×64px 투명 PNG · 가로 6칸 · 칸 64×64px · 칸 간격 4px · 바깥 여백 없음. 업로드하면 6프레임이 자동 배정돼요. 아래 프레임을 탭하면 그 프레임만 세밀영역조절할 수 있고, 크기를 바꾸면 나머지 프레임도 같은 크기로 맞춰져요.</div>
+      <div class="fish-sheet-frame motion-sheet-frame" id="moveLeftSheetFrame">
+        <div class="fish-sheet-empty" id="moveLeftSheetEmpty">아직 업로드된 시트가 없어요<br>업로드하기 전까진 화살표로 대체돼요</div>
+      </div>
+      <div class="fish-sheet-actions">
+        <button type="button" class="fish-sheet-btn" id="moveLeftSheetUploadBtn">📤 시트 업로드</button>
+        <button type="button" class="fish-sheet-btn danger hidden" id="moveLeftSheetRemoveBtn">✕ 제거</button>
+      </div>
+      <input type="file" id="moveLeftSheetFileInput" accept="image/png">
+      <div class="frame-strip" id="moveLeftFrameGrid"></div>
     </div>
     <div class="option-group">
       <div class="option-label">오른쪽 이동</div>
@@ -503,9 +524,16 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
         <div class="frame-preview" id="moveRightPreview"></div>
         <div class="frame-preview-label" id="moveRightPreviewLabel">프레임 없음 — 재생 미리보기</div>
       </div>
-      <div class="frame-strip" id="moveRightFrames"></div>
-      <button type="button" class="frame-add-btn" id="moveRightAddBtn">+ 프레임 추가</button>
-      <input type="file" id="moveRightFileInput" accept="image/*">
+      <div class="option-desc">404×64px 투명 PNG · 가로 6칸 · 칸 64×64px · 칸 간격 4px · 바깥 여백 없음. 업로드하면 6프레임이 자동 배정돼요. 아래 프레임을 탭하면 그 프레임만 세밀영역조절할 수 있고, 크기를 바꾸면 나머지 프레임도 같은 크기로 맞춰져요.</div>
+      <div class="fish-sheet-frame motion-sheet-frame" id="moveRightSheetFrame">
+        <div class="fish-sheet-empty" id="moveRightSheetEmpty">아직 업로드된 시트가 없어요<br>업로드하기 전까진 화살표로 대체돼요</div>
+      </div>
+      <div class="fish-sheet-actions">
+        <button type="button" class="fish-sheet-btn" id="moveRightSheetUploadBtn">📤 시트 업로드</button>
+        <button type="button" class="fish-sheet-btn danger hidden" id="moveRightSheetRemoveBtn">✕ 제거</button>
+      </div>
+      <input type="file" id="moveRightSheetFileInput" accept="image/png">
+      <div class="frame-strip" id="moveRightFrameGrid"></div>
     </div>
 
     <div class="option-group">
@@ -772,24 +800,36 @@ const el = {
   panelMove: document.getElementById('panelMove'),
   moveUpPreview: document.getElementById('moveUpPreview'),
   moveUpPreviewLabel: document.getElementById('moveUpPreviewLabel'),
-  moveUpFrames: document.getElementById('moveUpFrames'),
-  moveUpAddBtn: document.getElementById('moveUpAddBtn'),
-  moveUpFileInput: document.getElementById('moveUpFileInput'),
+  moveUpSheetFrame: document.getElementById('moveUpSheetFrame'),
+  moveUpSheetEmpty: document.getElementById('moveUpSheetEmpty'),
+  moveUpSheetUploadBtn: document.getElementById('moveUpSheetUploadBtn'),
+  moveUpSheetRemoveBtn: document.getElementById('moveUpSheetRemoveBtn'),
+  moveUpSheetFileInput: document.getElementById('moveUpSheetFileInput'),
+  moveUpFrameGrid: document.getElementById('moveUpFrameGrid'),
   moveDownPreview: document.getElementById('moveDownPreview'),
   moveDownPreviewLabel: document.getElementById('moveDownPreviewLabel'),
-  moveDownFrames: document.getElementById('moveDownFrames'),
-  moveDownAddBtn: document.getElementById('moveDownAddBtn'),
-  moveDownFileInput: document.getElementById('moveDownFileInput'),
+  moveDownSheetFrame: document.getElementById('moveDownSheetFrame'),
+  moveDownSheetEmpty: document.getElementById('moveDownSheetEmpty'),
+  moveDownSheetUploadBtn: document.getElementById('moveDownSheetUploadBtn'),
+  moveDownSheetRemoveBtn: document.getElementById('moveDownSheetRemoveBtn'),
+  moveDownSheetFileInput: document.getElementById('moveDownSheetFileInput'),
+  moveDownFrameGrid: document.getElementById('moveDownFrameGrid'),
   moveLeftPreview: document.getElementById('moveLeftPreview'),
   moveLeftPreviewLabel: document.getElementById('moveLeftPreviewLabel'),
-  moveLeftFrames: document.getElementById('moveLeftFrames'),
-  moveLeftAddBtn: document.getElementById('moveLeftAddBtn'),
-  moveLeftFileInput: document.getElementById('moveLeftFileInput'),
+  moveLeftSheetFrame: document.getElementById('moveLeftSheetFrame'),
+  moveLeftSheetEmpty: document.getElementById('moveLeftSheetEmpty'),
+  moveLeftSheetUploadBtn: document.getElementById('moveLeftSheetUploadBtn'),
+  moveLeftSheetRemoveBtn: document.getElementById('moveLeftSheetRemoveBtn'),
+  moveLeftSheetFileInput: document.getElementById('moveLeftSheetFileInput'),
+  moveLeftFrameGrid: document.getElementById('moveLeftFrameGrid'),
   moveRightPreview: document.getElementById('moveRightPreview'),
   moveRightPreviewLabel: document.getElementById('moveRightPreviewLabel'),
-  moveRightFrames: document.getElementById('moveRightFrames'),
-  moveRightAddBtn: document.getElementById('moveRightAddBtn'),
-  moveRightFileInput: document.getElementById('moveRightFileInput'),
+  moveRightSheetFrame: document.getElementById('moveRightSheetFrame'),
+  moveRightSheetEmpty: document.getElementById('moveRightSheetEmpty'),
+  moveRightSheetUploadBtn: document.getElementById('moveRightSheetUploadBtn'),
+  moveRightSheetRemoveBtn: document.getElementById('moveRightSheetRemoveBtn'),
+  moveRightSheetFileInput: document.getElementById('moveRightSheetFileInput'),
+  moveRightFrameGrid: document.getElementById('moveRightFrameGrid'),
   moveStage: document.getElementById('moveStage'),
   moveWorld: document.getElementById('moveWorld'),
   moveChar: document.getElementById('moveChar'),
@@ -1021,7 +1061,7 @@ async function renderFramesTab(key, stripEl, fileInputEl, previewEl, labelEl) {
 
 /* ===== 캐스팅 모션 탭 — 시트 업로드 + 세밀영역조절 (물고기 종류 탭의
    renderFishTab/openFishSpeciesCropAdjuster와 완전히 같은 패턴, 프레임이
-   67종 물고기 대신 CASTING_SHEET_LAYOUT.columns(6)개 고정 슬롯이라는 점만
+   67종 물고기 대신 MOTION_SHEET_LAYOUT.columns(6)개 고정 슬롯이라는 점만
    다르다). 올리기 모션(reelingFrames)은 여전히 renderFramesTab의 개별
    업로드 배열 방식을 쓴다 — 이번 변경은 캐스팅에만 적용한다. */
 async function renderCastSheetPreview() {
@@ -1045,21 +1085,21 @@ async function renderCastSheetPreview() {
 function renderCastFrameGrid(sheetAsset, sheetDims) {
   const overrides = fishingConfig.castingFrameOverrides || {};
   const cells = [];
-  for (let i = 0; i < CASTING_SHEET_LAYOUT.columns; i++) {
+  for (let i = 0; i < MOTION_SHEET_LAYOUT.columns; i++) {
     const override = overrides[i];
     // sheetDims(실제 업로드된 시트의 진짜 픽셀 크기)를 알고 있으면 override
     // 유무와 무관하게 항상 getFishCropStyle로 계산한다 — 예전엔 override가
-    // 없을 때 getCastingSlotStyle(이론적 규격 404x64px을 그대로 픽셀 값으로
+    // 없을 때 getMotionSlotStyle(이론적 규격 404x64px을 그대로 픽셀 값으로
     // 쓰는 함수)로 빠졌는데, 그 404x64보다 큰(또는 비율이 다른) 시트를
     // 올리면 실제 이미지를 그 작은 크기에 맞춰 억지로 눌러 넣어서 프레임이
-    // 다 깨져 보였다. getCastingDefaultCropRect는 애초에 %(0~1) 기반이라
+    // 다 깨져 보였다. getMotionDefaultCropRect는 애초에 %(0~1) 기반이라
     // 실제 크기와 무관하게 항상 정확하다 — sheetDims가 아직 없을 때(시트
-    // 자체가 없는 빈 상태)만 순수 표시용 fallback으로 getCastingSlotStyle을
+    // 자체가 없는 빈 상태)만 순수 표시용 fallback으로 getMotionSlotStyle을
     // 쓴다.
-    const rect = override || (sheetDims ? getCastingDefaultCropRect(i) : null);
+    const rect = override || (sheetDims ? getMotionDefaultCropRect(i) : null);
     const style = (rect && sheetDims)
       ? getFishCropStyle(rect, sheetDims.width, sheetDims.height, 64)
-      : getCastingSlotStyle(i, 1);
+      : getMotionSlotStyle(i, 1);
     const iconStyle = sheetAsset
       ? `background-image:url('${sheetAsset.dataUrl}');background-position:${style.backgroundPosition};background-size:${style.backgroundSize};background-repeat:no-repeat;image-rendering:pixelated`
       : '';
@@ -1079,7 +1119,7 @@ function renderCastFrameGrid(sheetAsset, sheetDims) {
 }
 
 // 재생 미리보기(startPreviewLoop)는 frames[i].dataUrl 배열을 받는데, 캐스팅은
-// 이제 독립 업로드 배열이 아니라 시트 1장을 잘라낸 결과라 buildCastingFrameDataUrls
+// 이제 독립 업로드 배열이 아니라 시트 1장을 잘라낸 결과라 buildMotionFrameDataUrls
 // (dev/data/fishDefs.js)의 출력을 { dataUrl } 형태로 감싸 넣어준다.
 // castFrameThumbUrls — 위 미리보기 재생과 아래 낚시대 끝 지정 도구가
 // 같은 크롭 결과(64×64 데이터URL 6장)를 공유해서 쓴다.
@@ -1088,14 +1128,14 @@ async function renderCastPreviewLoop(sheetAsset) {
   if (!sheetAsset) { castFrameThumbUrls = []; startPreviewLoop(el.castPreview, el.castPreviewLabel, []); return; }
   const img = new Image();
   // crossOrigin은 img.src를 설정하기 *전에* 걸어야 의미가 있다 — sheetAsset.dataUrl은
-  // Supabase Storage의 교차 출처 URL이라, 이게 없으면 buildCastingFrameDataUrls가
+  // Supabase Storage의 교차 출처 URL이라, 이게 없으면 buildMotionFrameDataUrls가
   // 내부에서 canvas.toDataURL()을 호출할 때 "tainted canvas" SecurityError로
   // 조용히 던져서(잡는 코드가 없어 DevDiag 배너로만 보임) 미리보기가
   // 영영 "프레임 없음"에 멈춰 있었다.
   img.crossOrigin = 'anonymous';
   img.src = sheetAsset.dataUrl;
   await new Promise(resolve => { if (img.complete && img.naturalWidth) resolve(); else img.onload = resolve; });
-  const urls = buildCastingFrameDataUrls(img, fishingConfig.castingFrameOverrides, 64);
+  const urls = buildMotionFrameDataUrls(img, fishingConfig.castingFrameOverrides, 64);
   castFrameThumbUrls = urls;
   startPreviewLoop(el.castPreview, el.castPreviewLabel, urls.map(u => ({ dataUrl: u })), getCastFrameDurations());
 }
@@ -1119,7 +1159,7 @@ async function renderCastTab() {
 
 function openCastingFrameCropAdjuster(frameIndex, sheetAsset, sheetDims) {
   const overrides = fishingConfig.castingFrameOverrides || {};
-  const existingRect = overrides[frameIndex] || (sheetDims ? getCastingDefaultCropRect(frameIndex) : { cx: 0.5, cy: 0.5, size: 0.4 });
+  const existingRect = overrides[frameIndex] || (sheetDims ? getMotionDefaultCropRect(frameIndex) : { cx: 0.5, cy: 0.5, size: 0.4 });
   openCropAdjuster(sheetAsset.dataUrl, existingRect, null, (rect) => confirmCastingFrameCrop(rect, frameIndex));
 }
 // 물고기 세밀영역조절(confirmFishSpeciesCrop)과 마찬가지로 시트 자체는
@@ -1130,11 +1170,11 @@ function openCastingFrameCropAdjuster(frameIndex, sheetAsset, sheetDims) {
 // 위치(cx/cy)는 프레임마다 다른 포즈라 각자 그대로 둔다.
 async function confirmCastingFrameCrop(rect, frameIndex) {
   const overrides = {};
-  for (let i = 0; i < CASTING_SHEET_LAYOUT.columns; i++) {
+  for (let i = 0; i < MOTION_SHEET_LAYOUT.columns; i++) {
     if (i === frameIndex) {
       overrides[i] = rect;
     } else {
-      const existing = (fishingConfig.castingFrameOverrides || {})[i] || getCastingDefaultCropRect(i);
+      const existing = (fishingConfig.castingFrameOverrides || {})[i] || getMotionDefaultCropRect(i);
       overrides[i] = Object.assign({}, existing, { size: rect.size });
     }
   }
@@ -1158,7 +1198,7 @@ function openRodtipEditor() {
   if (!castFrameThumbUrls.length) return;
   const saved = fishingConfig.castingFrameRodTips || {};
   rodtipDraft = {};
-  for (let i = 0; i < CASTING_SHEET_LAYOUT.columns; i++) {
+  for (let i = 0; i < MOTION_SHEET_LAYOUT.columns; i++) {
     rodtipDraft[i] = Object.assign({}, defaultRodtipFrac(), saved[i]);
   }
   renderRodtipFramePicker();
@@ -1289,7 +1329,7 @@ function getCastFrameDurations() {
   if (castFrameDurationsDraft) return castFrameDurationsDraft.slice();
   const stored = fishingConfig.castingFrameDurations;
   const out = [];
-  for (let i = 0; i < CASTING_SHEET_LAYOUT.columns; i++) {
+  for (let i = 0; i < MOTION_SHEET_LAYOUT.columns; i++) {
     out.push((stored && typeof stored[i] === 'number') ? stored[i] : CAST_FRAME_DEFAULT_MS);
   }
   return out;
@@ -1381,7 +1421,7 @@ function wireCastTimelineHandle(handle, leftIndex) {
 el.castTotalDurationInput.addEventListener('change', async () => {
   const durations = getCastFrameDurations();
   const oldTotal = durations.reduce((a, b) => a + b, 0);
-  const newTotalMs = Math.max(CAST_FRAME_MIN_MS * CASTING_SHEET_LAYOUT.columns, Number(el.castTotalDurationInput.value) * 1000 || oldTotal);
+  const newTotalMs = Math.max(CAST_FRAME_MIN_MS * MOTION_SHEET_LAYOUT.columns, Number(el.castTotalDurationInput.value) * 1000 || oldTotal);
   const scale = newTotalMs / oldTotal;
   const scaled = durations.map(d => Math.max(CAST_FRAME_MIN_MS, d * scale));
   fishingConfig = await AssetDB.setFishingConfig({ castingFrameDurations: scaled });
@@ -2318,95 +2358,162 @@ el.fishSheetRemoveBtn.addEventListener('click', async () => {
   renderFishTab();
 });
 
-/* ===== 이동 탭 — 방향별 걷기 프레임 업로드 (올리기 모션과 같은 개별 업로드
-   배열 방식을 4방향에 반복 적용). fishingConfig.walkFrames는 얕은 병합
-   (setFishingConfig)이라, 한 방향만 바뀌어도 barDesign 패턴처럼 walkFrames
-   객체 전체를 다시 만들어 넘겨야 다른 방향 배열이 사라지지 않는다. */
+/* ===== 이동 탭 — 방향별 걷기 모션 시트 (캐스팅 모션과 같은 시트 업로드 +
+   세밀영역조절 패턴을 4방향에 반복 적용, dev/data/fishDefs.js의
+   MOTION_SHEET_LAYOUT/getMotionSlotStyle/getMotionDefaultCropRect/
+   buildMotionFrameDataUrls를 그대로 공유). 예전엔 방향마다 프레임을 한 장씩
+   따로 업로드했지만(walkFrames), 시트 규격이 안 맞을 때 프레임이 어긋나
+   보이는 문제와 프레임 크기가 제각각이라 재생 시 캐릭터가 커졌다 작아졌다
+   하는 문제를 캐스팅과 같은 방식으로 해결한다. fishingConfig.walkSheets는
+   { [dir]: { sheetAssetId, frameOverrides } } — 얕은 병합(setFishingConfig)
+   이라 한 방향만 바뀌어도 walkSheets 객체 전체를 다시 만들어 넘겨야 다른
+   방향이 사라지지 않는다(barDesign/walkFrames와 같은 관례). */
 const WALK_DIRS = ['up', 'down', 'left', 'right'];
 const WALK_ARROWS = { up: '▲', down: '▼', left: '◀', right: '▶' };
-// 방향별로 리졸브된 프레임 dataUrl 배열 — 걷는 동안 매 스텝마다 AssetDB를
-// 다시 조회하면 느려지니, renderWalkFramesTab이 그릴 때마다 여기 캐시해두고
-// 격자 이동 테스트(playMoveAnim)는 이 캐시만 읽는다.
+// 방향별로 잘라낸 프레임 dataUrl 배열 — 걷는 동안 매 스텝마다 다시 자르면
+// 느려지니, renderWalkTab이 그릴 때마다 여기 캐시해두고 격자 이동 테스트
+// (playMoveAnim)는 이 캐시만 읽는다.
 const walkFrameCache = { up: [], down: [], left: [], right: [] };
 
 function moveElKey(dir, suffix) {
   return 'move' + dir[0].toUpperCase() + dir.slice(1) + suffix;
 }
 
-async function uploadWalkFrame(file, dir) {
-  const blob = await removeBackgroundOrFallback(file);
-  const asset = await AssetDB.addAsset({ type: 'fishing-walk-frame', name: file.name, blob });
-  const walkFrames = fishingConfig.walkFrames || {};
-  const list = (walkFrames[dir] || []).concat(asset.id);
-  fishingConfig = await AssetDB.setFishingConfig({ walkFrames: Object.assign({}, walkFrames, { [dir]: list }) });
-  showSaveNote();
-  return asset;
+function getWalkSheetAssetId(dir) { return ((fishingConfig.walkSheets || {})[dir] || {}).sheetAssetId || null; }
+function getWalkFrameOverrides(dir) { return ((fishingConfig.walkSheets || {})[dir] || {}).frameOverrides || {}; }
+async function setWalkSheetAssetId(dir, assetId) {
+  const walkSheets = Object.assign({}, fishingConfig.walkSheets);
+  walkSheets[dir] = { sheetAssetId: assetId, frameOverrides: assetId ? getWalkFrameOverrides(dir) : {} };
+  fishingConfig = await AssetDB.setFishingConfig({ walkSheets });
 }
-async function removeWalkFrame(dir, index) {
-  const walkFrames = fishingConfig.walkFrames || {};
-  const list = (walkFrames[dir] || []).slice();
-  list.splice(index, 1);
-  fishingConfig = await AssetDB.setFishingConfig({ walkFrames: Object.assign({}, walkFrames, { [dir]: list }) });
-  showSaveNote();
-}
-async function moveWalkFrame(dir, index, delta) {
-  const walkFrames = fishingConfig.walkFrames || {};
-  const list = (walkFrames[dir] || []).slice();
-  const j = index + delta;
-  if (j < 0 || j >= list.length) return;
-  [list[index], list[j]] = [list[j], list[index]];
-  fishingConfig = await AssetDB.setFishingConfig({ walkFrames: Object.assign({}, walkFrames, { [dir]: list }) });
-  showSaveNote();
+async function setWalkFrameOverrides(dir, overrides) {
+  const walkSheets = Object.assign({}, fishingConfig.walkSheets);
+  walkSheets[dir] = Object.assign({}, walkSheets[dir], { frameOverrides: overrides });
+  fishingConfig = await AssetDB.setFishingConfig({ walkSheets });
 }
 
-async function renderWalkFramesTab(dir) {
-  const stripEl = el[moveElKey(dir, 'Frames')];
+async function renderWalkSheetPreview(dir) {
+  const frameEl = el[moveElKey(dir, 'SheetFrame')];
+  const emptyEl = el[moveElKey(dir, 'SheetEmpty')];
+  const removeBtn = el[moveElKey(dir, 'SheetRemoveBtn')];
+  frameEl.querySelectorAll('img').forEach(img => img.remove());
+  const assetId = getWalkSheetAssetId(dir);
+  const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
+  if (!asset) {
+    emptyEl.classList.remove('hidden');
+    removeBtn.classList.add('hidden');
+    return null;
+  }
+  emptyEl.classList.add('hidden');
+  removeBtn.classList.remove('hidden');
+  const img = document.createElement('img');
+  img.src = asset.dataUrl;
+  img.alt = '';
+  frameEl.appendChild(img);
+  return asset;
+}
+
+function renderWalkFrameGrid(dir, sheetAsset, sheetDims) {
+  const overrides = getWalkFrameOverrides(dir);
+  const gridEl = el[moveElKey(dir, 'FrameGrid')];
+  const cells = [];
+  for (let i = 0; i < MOTION_SHEET_LAYOUT.columns; i++) {
+    const override = overrides[i];
+    // getMotionDefaultCropRect는 %(0~1) 기반이라 실제 시트 크기와 무관하게
+    // 항상 정확하다 — sheetDims를 알면서도 override가 없다고 픽셀 기반인
+    // getMotionSlotStyle로 빠지면, 404x64보다 크거나 비율이 다른 시트를
+    // 올렸을 때 프레임이 눌려 찌그러진다(renderCastFrameGrid와 같은 버그).
+    const rect = override || (sheetDims ? getMotionDefaultCropRect(i) : null);
+    const style = (rect && sheetDims)
+      ? getFishCropStyle(rect, sheetDims.width, sheetDims.height, 64)
+      : getMotionSlotStyle(i, 1);
+    const iconStyle = sheetAsset
+      ? `background-image:url('${sheetAsset.dataUrl}');background-position:${style.backgroundPosition};background-size:${style.backgroundSize};background-repeat:no-repeat;image-rendering:pixelated`
+      : '';
+    cells.push(`
+      <div class="frame-slot${sheetAsset ? ' fish-icon-tappable' : ''}" style="${iconStyle}" data-frame-index="${i}">
+        <span class="frame-index">${i + 1}${override ? ' ✓' : ''}</span>
+        ${sheetAsset ? '' : `<span style="font-size:20px">${WALK_ARROWS[dir]}</span>`}
+      </div>
+    `);
+  }
+  gridEl.innerHTML = cells.join('');
+  if (sheetAsset) {
+    gridEl.querySelectorAll('[data-frame-index]').forEach(cellEl => {
+      cellEl.addEventListener('click', () => openWalkFrameCropAdjuster(dir, Number(cellEl.dataset.frameIndex), sheetAsset, sheetDims));
+    });
+  }
+}
+
+async function renderWalkPreviewLoop(dir, sheetAsset) {
   const previewEl = el[moveElKey(dir, 'Preview')];
   const labelEl = el[moveElKey(dir, 'PreviewLabel')];
-  const ids = (fishingConfig.walkFrames || {})[dir] || [];
-  const assets = await AssetDB.getAssetsByIds(ids).catch(() => []);
-  const byId = new Map(assets.map(a => [a.id, a]));
-  const resolved = ids.map(id => byId.get(id)).filter(Boolean);
-  walkFrameCache[dir] = resolved.map(a => a.dataUrl);
-  stripEl.innerHTML = '';
-  ids.forEach((id, index) => {
-    const asset = byId.get(id);
-    const slot = document.createElement('div');
-    slot.className = 'frame-slot';
-    slot.innerHTML = `
-      <span class="frame-index">${index + 1}</span>
-      ${asset ? `<img src="${asset.dataUrl}" alt="">` : ''}
-      <div class="frame-actions">
-        <button type="button" class="frame-mini-btn" data-act="up">◀</button>
-        <button type="button" class="frame-mini-btn" data-act="down">▶</button>
-        <button type="button" class="frame-mini-btn danger" data-act="del">✕</button>
-      </div>`;
-    slot.querySelector('[data-act=up]').addEventListener('click', () => moveWalkFrame(dir, index, -1).then(() => renderWalkFramesTab(dir)));
-    slot.querySelector('[data-act=down]').addEventListener('click', () => moveWalkFrame(dir, index, 1).then(() => renderWalkFramesTab(dir)));
-    slot.querySelector('[data-act=del]').addEventListener('click', () => removeWalkFrame(dir, index).then(() => renderWalkFramesTab(dir)));
-    stripEl.appendChild(slot);
+  if (!sheetAsset) { startPreviewLoop(previewEl, labelEl, []); walkFrameCache[dir] = []; return; }
+  const img = new Image();
+  img.crossOrigin = 'anonymous'; // 교차 출처 시트를 캔버스로 잘라내려면 필수 — 캐스팅 미리보기가 이거 빠뜨려서 조용히 실패했던 것과 같은 문제
+  img.src = sheetAsset.dataUrl;
+  await new Promise(resolve => { if (img.complete && img.naturalWidth) resolve(); else img.onload = resolve; });
+  const urls = buildMotionFrameDataUrls(img, getWalkFrameOverrides(dir), 64);
+  walkFrameCache[dir] = urls;
+  startPreviewLoop(previewEl, labelEl, urls.map(u => ({ dataUrl: u })));
+}
+
+async function renderWalkTab(dir) {
+  const sheetAsset = await renderWalkSheetPreview(dir);
+  const sheetDims = sheetAsset ? await loadImageDimensions(sheetAsset.dataUrl) : null;
+  renderWalkFrameGrid(dir, sheetAsset, sheetDims);
+  await renderWalkPreviewLoop(dir, sheetAsset).catch((err) => {
+    startPreviewLoop(el[moveElKey(dir, 'Preview')], el[moveElKey(dir, 'PreviewLabel')], []);
+    walkFrameCache[dir] = [];
+    DevDiag.show(dir + ' 이동 미리보기 생성 실패: ' + (err && err.message ? err.message : err));
   });
-  startPreviewLoop(previewEl, labelEl, resolved);
+}
+
+function openWalkFrameCropAdjuster(dir, frameIndex, sheetAsset, sheetDims) {
+  const overrides = getWalkFrameOverrides(dir);
+  const existingRect = overrides[frameIndex] || (sheetDims ? getMotionDefaultCropRect(frameIndex) : { cx: 0.5, cy: 0.5, size: 0.4 });
+  openCropAdjuster(sheetAsset.dataUrl, existingRect, null, (rect) => confirmWalkFrameCrop(dir, rect, frameIndex));
+}
+// 캐스팅과 같은 이유로(confirmCastingFrameCrop 주석 참고) 한 프레임의 크롭
+// 크기를 바꾸면 같은 방향의 나머지 5프레임도 같은 크기로 맞춘다.
+async function confirmWalkFrameCrop(dir, rect, frameIndex) {
+  const current = getWalkFrameOverrides(dir);
+  const overrides = {};
+  for (let i = 0; i < MOTION_SHEET_LAYOUT.columns; i++) {
+    if (i === frameIndex) {
+      overrides[i] = rect;
+    } else {
+      const existing = current[i] || getMotionDefaultCropRect(i);
+      overrides[i] = Object.assign({}, existing, { size: rect.size });
+    }
+  }
+  await setWalkFrameOverrides(dir, overrides);
+  await renderWalkTab(dir);
 }
 
 WALK_DIRS.forEach(dir => {
-  const addBtn = el[moveElKey(dir, 'AddBtn')];
-  const fileInput = el[moveElKey(dir, 'FileInput')];
-  // 정적 버튼(문서 로드 시점부터 DOM에 존재) — frame-add-btn 주석에 적힌
-  // 이유와 같다: 매 렌더마다 새로 만든 버튼은 일부 모바일 브라우저에서
-  // 네이티브 파일 선택창을 안정적으로 못 연다.
-  addBtn.addEventListener('click', () => fileInput.click());
+  const uploadBtn = el[moveElKey(dir, 'SheetUploadBtn')];
+  const removeBtn = el[moveElKey(dir, 'SheetRemoveBtn')];
+  const fileInput = el[moveElKey(dir, 'SheetFileInput')];
+  uploadBtn.addEventListener('click', () => fileInput.click());
   fileInput.addEventListener('change', async () => {
     const file = fileInput.files[0];
     fileInput.value = '';
     if (!file) return;
-    addBtn.disabled = true;
+    uploadBtn.disabled = true;
     try {
-      await uploadWalkFrame(file, dir);
-      await renderWalkFramesTab(dir);
+      const asset = await AssetDB.addAsset({ type: 'fishing-motion-sheet', name: file.name, blob: file });
+      await setWalkSheetAssetId(dir, asset.id);
+      showSaveNote();
+      await renderWalkTab(dir);
     } finally {
-      addBtn.disabled = false;
+      uploadBtn.disabled = false;
     }
+  });
+  removeBtn.addEventListener('click', async () => {
+    await setWalkSheetAssetId(dir, null);
+    showSaveNote();
+    await renderWalkTab(dir);
   });
 });
 
@@ -2618,7 +2725,7 @@ async function init() {
   renderCastTab();
   renderFramesTab('reelingFrames', el.reelFrames, el.reelFileInput, el.reelPreview, el.reelPreviewLabel);
   renderFishTab();
-  WALK_DIRS.forEach(dir => renderWalkFramesTab(dir));
+  WALK_DIRS.forEach(dir => renderWalkTab(dir));
   initMoveMotionControls();
   renderMoveTestStage();
 }

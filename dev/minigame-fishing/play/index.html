@@ -353,7 +353,7 @@ async function loadConfig() {
       im.onerror = () => resolve(null);
       im.src = castingSheetAsset.dataUrl;
     });
-    castFrameUrls = img ? buildCastingFrameDataUrls(img, cfg.castingFrameOverrides, 64) : [];
+    castFrameUrls = img ? buildMotionFrameDataUrls(img, cfg.castingFrameOverrides, 64) : [];
   } else {
     castFrameUrls = [];
   }
