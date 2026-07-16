@@ -34,7 +34,6 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 
 .stage{position:absolute;inset:0;z-index:1}
 
-.status-line{position:absolute;top:calc(60px + env(safe-area-inset-top,0));left:0;right:0;z-index:5;text-align:center;font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:.03em;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.5)}
 
 .char-stage{position:absolute;left:9%;bottom:41%;z-index:2;width:84px;height:84px;display:flex;align-items:flex-end;justify-content:center}
 .char-stage img{max-width:100%;max-height:100%;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 4px 6px rgba(0,0,0,.35))}
@@ -178,8 +177,6 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
   </div>
 
   <div class="stage" id="stage">
-    <div class="status-line" id="statusLine">화면을 꾹 눌러 캐스팅 세기를 조절하세요</div>
-
     <div class="char-stage" id="charStage">
       <img id="charImg" class="hidden" alt="">
       <div class="char-fallback" id="charFallback">🧍</div>
@@ -318,7 +315,6 @@ function gaugeColorForProgress(pct) {
 const el = {
   frame: document.getElementById('frame'),
   stage: document.getElementById('stage'),
-  statusLine: document.getElementById('statusLine'),
   charStage: document.getElementById('charStage'),
   charImg: document.getElementById('charImg'),
   charFallback: document.getElementById('charFallback'),
@@ -718,7 +714,6 @@ function playCastWindup() {
 /* ===== 캐스팅 세기 조절 (누르고 있는 동안) ===== */
 function startPowerCharge() {
   gameState = 'charging';
-  el.statusLine.textContent = '세기 조절 중... 손을 떼면 캐스팅!';
   el.castPowerWrap.classList.remove('hidden');
   playCastWindup();
   castChargeStartT = performance.now();
@@ -751,7 +746,6 @@ async function releasePowerAndCast() {
   const power = castPower;
   el.castPowerWrap.classList.add('hidden');
   gameState = 'casting';
-  el.statusLine.textContent = '캐스팅...';
 
   const frameRect = el.frame.getBoundingClientRect();
   el.castSvg.setAttribute('viewBox', `0 0 ${frameRect.width} ${frameRect.height}`);
@@ -954,7 +948,6 @@ function syncLineToBobber(rodTipPt) {
 
 function waitForBite() {
   gameState = 'waiting'; // syncLineToBobber보다 먼저 바뀌어 있어야 루프 첫 tick이 안 죽는다
-  el.statusLine.textContent = '입질을 기다리는 중...';
   el.bobber.classList.add('bob-idle');
   syncLineToBobber(lastRodTipPt);
   const delay = BITE_WAIT_MIN_MS + Math.random() * (BITE_WAIT_MAX_MS - BITE_WAIT_MIN_MS);
@@ -967,7 +960,6 @@ function triggerBite() {
   el.bobber.classList.remove('bob-idle');
   el.bobber.classList.add('bite-dip');
   el.biteMark.classList.remove('hidden');
-  el.statusLine.textContent = '지금이야! 탭!';
   vibrate([0, 60, 40, 60]);
   reactionTimer = setTimeout(missReaction, DIFF_TUNING[DIFFICULTY].reactionWindow);
 }
@@ -1036,7 +1028,6 @@ async function abortWaitingReel() {
   clearTimeout(biteTimer);
   gameState = 'reeling';
   cancelAnimationFrame(bobLineRaf);
-  el.statusLine.textContent = '허탕... 다시 던져보세요';
   el.bobber.classList.remove('bob-idle');
   el.bobber.classList.add('hidden');
   el.castSvg.classList.add('hidden');
@@ -1051,7 +1042,6 @@ async function abortWaitingReel() {
 /* ===== 낚시바(잡아채기) ===== */
 function startCatching() {
   gameState = 'catching';
-  el.statusLine.textContent = '잡아채기!';
   el.catchHint.classList.remove('hidden');
   el.fishbarPanel.classList.remove('hidden');
   fish = { y: 50, vy: DIFF_TUNING[DIFFICULTY].fishSpeedMult * 34, targetY: 50, pickTimer: 0 };
@@ -1158,7 +1148,6 @@ function pickCaughtFish() {
 
 async function playReelThenResult() {
   gameState = 'reeling';
-  el.statusLine.textContent = '끌어올리는 중...';
   if (reelFrameUrls.length) {
     await playFrameSequence(reelFrameUrls, 90);
   } else {
@@ -1167,7 +1156,6 @@ async function playReelThenResult() {
   caughtCount++;
   el.countChip.textContent = caughtCount + '마리';
   const fishCaught = pickCaughtFish();
-  el.statusLine.textContent = '손맛 좋다! 낚았어요!';
   await flyFishToCharacter(fishCaught);
   showItemPopup(fishCaught);
 }
@@ -1290,7 +1278,6 @@ function resetToIdle() {
   el.itemPopup.classList.remove('show');
   gameState = 'idle';
   cancelAnimationFrame(bobLineRaf);
-  el.statusLine.textContent = '화면을 꾹 눌러 캐스팅 세기를 조절하세요';
   el.castPowerWrap.classList.add('hidden');
   el.castSvg.classList.add('hidden');
   el.bobber.classList.add('hidden');
