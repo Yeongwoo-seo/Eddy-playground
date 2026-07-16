@@ -397,6 +397,7 @@ const CAST_POWER_PERIOD_MS = 1100; // 0→100→0 한 바퀴 도는 시간
    수평속도(vx0)만 세기에 따라 달라져 "세질수록 멀리 감"이 자연스럽게
    나온다. ===== */
 let castFlightRaf = null;
+let bobLineRaf = null; // 착수 후 낚싯줄을 추의 까닥임(bob-idle/bite-dip)에 맞춰 계속 다시 그리는 루프, syncLineToBobber 참고
 
 /* ===== 설정 로드 (AssetDB) — 실패해도 게임은 도형 폴백으로 계속 동작한다. ===== */
 async function loadConfig() {
@@ -824,6 +825,7 @@ function throwSinker(power, origin, frameRect, getRodTip) {
       el.bobber.style.left = landingXPct + '%';
       el.bobber.style.top = landingYPct + '%';
       el.bobber.classList.remove('hidden');
+      syncLineToBobber(getRodTip ? getRodTip() : origin);
       resolve();
     }
     castFlightRaf = requestAnimationFrame(frame);
@@ -847,6 +849,7 @@ function renderCastLine(p0, p1) {
   const pts = catenaryPoints(p0, p1);
   el.castLinePath.setAttribute('d', 'M' + pts.map(p => `${p.x},${p.y}`).join(' L'));
 }
+
 function catenaryPoints(p0, p1, samples) {
   samples = samples || 16;
   const dx = p1.x - p0.x, dy = p1.y - p0.y; // 화면 좌표계 — 아래로 갈수록 y가 커진다
@@ -883,6 +886,29 @@ function catenaryPoints(p0, p1, samples) {
   return pts;
 }
 
+// 착수 후(입질 대기 중~입질) el.bobber는 CSS 애니메이션(bob-idle/bite-dip)으로
+// 위아래로 움직이는데, renderCastLine은 착수 순간의 좌표에 한 번만 그려두고
+// 끝이라 줄(castSvg)이 그 자리에 고정된 채 추만 애니메이션으로 까닥거려서
+// 줄과 추가 따로 노는 것처럼 보였다. gameState가 waiting/bite인 동안 매
+// 프레임 el.bobber(정확히는 실제 보이는 도트/이미지)의 현재 화면 위치를
+// 읽어 줄 끝(p1)을 거기 맞춰 다시 그린다 — CSS 키프레임 수치를 그대로
+// 베끼는 대신 실제 렌더된 위치를 읽으므로 애니메이션이 바뀌어도 항상 맞다.
+function syncLineToBobber(rodTipPt) {
+  cancelAnimationFrame(bobLineRaf);
+  function tick() {
+    if (gameState !== 'waiting' && gameState !== 'bite') { bobLineRaf = null; return; }
+    const frameRect = el.frame.getBoundingClientRect();
+    const sinkerEl = sinkerImageUrl ? el.bobberImg : el.bobberDot;
+    const rect = sinkerEl.getBoundingClientRect();
+    renderCastLine(rodTipPt, {
+      x: rect.left + rect.width / 2 - frameRect.left,
+      y: rect.top + rect.height / 2 - frameRect.top,
+    });
+    bobLineRaf = requestAnimationFrame(tick);
+  }
+  tick();
+}
+
 function waitForBite() {
   gameState = 'waiting';
   el.statusLine.textContent = '입질을 기다리는 중...';
@@ -905,6 +931,7 @@ function triggerBite() {
 function handleReactionTap() {
   if (gameState !== 'bite') return;
   clearTimeout(reactionTimer);
+  cancelAnimationFrame(bobLineRaf);
   gameState = 'caught'; // "물었다!" 연출이 끝날 때까지 다른 입력을 막는 과도 상태
   el.biteMark.classList.add('hidden');
   el.bobber.classList.add('hidden');
@@ -964,6 +991,7 @@ async function abortWaitingReel() {
   if (gameState !== 'waiting') return;
   clearTimeout(biteTimer);
   gameState = 'reeling';
+  cancelAnimationFrame(bobLineRaf);
   el.statusLine.textContent = '허탕... 다시 던져보세요';
   el.bobber.classList.remove('bob-idle');
   el.bobber.classList.add('hidden');
@@ -1208,6 +1236,7 @@ function showItemPopup(fishCaught) {
 function resetToIdle() {
   el.itemPopup.classList.remove('show');
   gameState = 'idle';
+  cancelAnimationFrame(bobLineRaf);
   el.statusLine.textContent = '화면을 꾹 눌러 캐스팅 세기를 조절하세요';
   el.castPowerWrap.classList.add('hidden');
   el.castSvg.classList.add('hidden');
