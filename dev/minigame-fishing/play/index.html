@@ -1853,8 +1853,8 @@ el.joystick.addEventListener('pointermove', (e) => {
    localStorage에 저장해 다음 접속에도 유지한다. */
 const LAYOUT_PREFS_KEY = 'fishingLayoutPrefs_v1';
 let layoutPrefs = {
-  joystick: { size: 130, left: 40, bottom: 56 }, // size=.joystick-base 지름(px), left/bottom=.joystick 앵커(px)
-  fishBtn: { size: 114, right: 16, bottom: 24 }, // 요청한 스크린샷 실측 크기로 기본값 고정
+  joystick: { size: 130, left: 12, bottom: 57 }, // size=.joystick-base 지름(px), left/bottom=.joystick 앵커(px) — 요청한 스크린샷 실측값으로 기본값 고정
+  fishBtn: { size: 114, right: 23, bottom: 82 }, // 요청한 스크린샷 실측 크기·위치로 기본값 고정
 };
 let layoutEditMode = false;
 let layoutDragTarget = null; // 'joystick' | 'fishBtn' | null
