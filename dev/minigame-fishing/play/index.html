@@ -113,18 +113,25 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
    낚시 버튼 하나로 옮기고(el.frame 전체 pointerdown이 아니라 이 버튼만
    idle → charging을 트리거한다 — 입력 섹션 참고) 나머지 화면은 캐릭터
    이동에 쓴다. */
-/* 이동 조이스틱 — 큰 원(베이스, .joystick) 안에서 작은 원(손잡이,
+/* 이동 조이스틱 — 큰 원(베이스, .joystick-base) 안에서 작은 원(손잡이,
    .joystick-knob)을 드래그한다. 실제 캐릭터 "위치" 이동은 8방향(대각선
    포함) 그대로 자유롭다 — 45도 단위 8구역 스냅(JOYSTICK_ZONE_DX/DY).
    다만 걷기 "애니메이션"(어느 시트를 보여줄지, 상/하/좌/우)은 대각선이
    섞이면 어색해 보이므로, 드래그를 시작해서 처음 넘어간 축(가로/세로)에
    그 드래그가 끝날 때까지 고정한다(updateJoystickFromPointer의
    joystickAxisLock/spriteDirLock 참고) — 이동과 애니메이션 방향이
-   서로 다른 값을 가질 수 있다는 뜻이다. */
-.joystick{position:absolute;left:calc(16px + env(safe-area-inset-left,0));bottom:calc(24px + env(safe-area-inset-bottom,0));z-index:5;width:100px;height:100px;border-radius:50%;background:rgba(5,20,28,.35);border:1px solid rgba(255,255,255,.3);touch-action:none}
+   서로 다른 값을 가질 수 있다는 뜻이다.
+   .joystick(바깥)은 실제로 눈에 보이는 원보다 더 큰, 투명한 "탭 인식
+   범위" 확장용 히트박스다 — 손가락이 시각적 원 밖으로 조금 벗어나도
+   여기 안이면 바로 그 지점을 조이스틱 입력으로 잡는다(pointerdown이
+   el.joystick에 걸려 있으므로, updateJoystickFromPointer가 클릭 지점과
+   중심 사이 각도/거리로 방향을 계산하는 기존 로직 그대로 재사용된다).
+   실제 눈에 보이는 원은 안쪽 .joystick-base가 그린다. */
+.joystick{position:absolute;left:calc(40px + env(safe-area-inset-left,0));bottom:calc(56px + env(safe-area-inset-bottom,0));z-index:5;width:170px;height:170px;touch-action:none}
 .joystick.hidden{display:none}
-.joystick-knob{position:absolute;left:50%;top:50%;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;background:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.65);pointer-events:none}
-.fish-btn{position:absolute;right:calc(16px + env(safe-area-inset-right,0));bottom:calc(24px + env(safe-area-inset-bottom,0));z-index:5;width:64px;height:64px;border-radius:50%;background:rgba(5,20,28,.4);border:1px solid rgba(255,255,255,.3);font-size:26px;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:pointer}
+.joystick-base{position:absolute;left:50%;top:50%;width:130px;height:130px;margin:-65px 0 0 -65px;border-radius:50%;background:rgba(5,20,28,.35);border:1px solid rgba(255,255,255,.3);pointer-events:none}
+.joystick-knob{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;background:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.65);pointer-events:none}
+.fish-btn{position:absolute;right:calc(16px + env(safe-area-inset-right,0));bottom:calc(24px + env(safe-area-inset-bottom,0));z-index:5;width:80px;height:80px;border-radius:50%;background:rgba(5,20,28,.4);border:1px solid rgba(255,255,255,.3);font-size:32px;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:pointer}
 .fish-btn:active{background:rgba(5,20,28,.65);transform:scale(.95)}
 .fish-btn.hidden{display:none}
 
@@ -267,6 +274,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
   <div class="catch-hint hidden" id="catchHint">누르고 있으면 캐치존이 올라가요 · 떼면 내려가요</div>
 
   <div class="joystick" id="joystick">
+    <div class="joystick-base"></div>
     <div class="joystick-knob" id="joystickKnob"></div>
   </div>
   <button type="button" class="fish-btn" id="fishBtn">🎣</button>
@@ -1578,8 +1586,8 @@ el.fishBtn.addEventListener('pointerdown', (e) => {
    않는다). 중앙(데드존)으로 돌아오면 두 잠금 모두 풀려 다음 밀기에서
    다시 "처음 움직인 방향"을 새로 잡는다. 손잡이 자체는 축 제한 없이
    자유롭게 움직인다(부드러운 시각 피드백). */
-const JOYSTICK_RADIUS = 40; // px, 손잡이가 벗어날 수 없는 반지름
-const JOYSTICK_DEADZONE = 10; // px, 이보다 작게 움직이면 방향 없음(제자리)
+const JOYSTICK_RADIUS = 52; // px, 손잡이가 벗어날 수 없는 반지름(커진 베이스 원 크기에 맞춰 확대)
+const JOYSTICK_DEADZONE = 13; // px, 이보다 작게 움직이면 방향 없음(제자리)
 // zone index 0~7 = 오른쪽, 오른쪽아래, 아래, 왼쪽아래, 왼쪽, 왼쪽위, 위, 오른쪽위 (캐릭터 이동 기준, dy는 이미 화면↔캐릭터 좌표계 반전 반영)
 const JOYSTICK_ZONE_DX = [1, 1, 0, -1, -1, -1, 0, 1];
 const JOYSTICK_ZONE_DY = [0, -1, -1, -1, 0, 1, 1, 1];
