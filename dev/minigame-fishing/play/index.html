@@ -89,7 +89,14 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .cast-power-wrap.hidden{display:none}
 .cast-power-stage{position:relative;width:100%}
 .cast-power-track{width:100%;height:20px;border-radius:10px;background:rgba(5,20,28,.45);border:1px solid rgba(255,255,255,.35);overflow:hidden}
-.cast-power-fill{height:100%;width:0%;background:var(--green);border-radius:10px 0 0 10px}
+/* 세기 게이지 색 — 작을 때 빨강, 중간 노랑, 최대일 때 초록으로 이어지는
+   그라데이션. .cast-power-fill 자신의 너비(0~100%)에 맞춰 그라데이션이
+   같이 늘어나 버리면 세기가 낮아도 항상 빨강→초록이 그 좁은 폭 안에 다
+   눌려 들어가 버리므로, background-size를 트랙의 실제 폭(.cast-power-wrap
+   과 같은 220px)으로 고정해 뒀다 — 그러면 채워진 만큼만 그 고정된
+   그라데이션의 왼쪽 일부가 드러나는 식이라, 실제 세기 값과 색이 항상
+   맞아떨어진다. */
+.cast-power-fill{height:100%;width:0%;background:linear-gradient(to right,var(--signal-red) 0%,var(--amber) 50%,var(--green) 100%);background-size:220px 100%;background-repeat:no-repeat;border-radius:10px 0 0 10px}
 .cast-power-label{font-family:var(--mono);font-size:12px;font-weight:700;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.5)}
 /* 캐스팅 게이지 이미지 — 설정 화면(dev/minigame-fishing/index.html)에서
    업로드하면 기본 막대 게이지 대신 이 그림이 배경으로 깔리고, 채움 영역
