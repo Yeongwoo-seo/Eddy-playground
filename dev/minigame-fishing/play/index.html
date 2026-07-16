@@ -1545,29 +1545,38 @@ function stopMoveHold() {
    화면 아무 곳이나 누르면 캐스팅 세기 조절이 시작되던 것을 오른쪽 아래
    낚시 버튼(el.fishBtn) 하나로 옮겼다("낚시 버튼 = 낚싯대를 든다"는
    뜻이라, 안 누르고 있는 게 기본값이고 그 사이엔 왼쪽 아래 조이스틱
-   (el.joystick)으로 캐릭터를 이동한다). 손을 떼는 순간(pointerup 등)은
-   여전히 el.frame 전체에서 받는다 — 버튼 밖으로 손가락이 밀려나가도
-   놓으면 그 순간 값으로 던져지게(releasePowerAndCast) 두는 편이 더
-   관대한 UX다. 잡아채기(catching) 중 홀드와 같은 pointerdown/up 쌍을
-   gameState로 나눠 재사용한다. waiting(입질 대기 중) 탭은 기다리지
-   않고 바로 빈손으로 릴을 감고, popup(아이템창 뜬 상태) 탭은 그냥
-   닫는다(아이템창엔 확인 버튼이 따로 없다 — el.itemPopup이
-   pointer-events:none이라 카드를 눌러도 그대로 여기까지 뚫고 내려온다). */
-el.frame.addEventListener('pointerdown', () => {
+   (el.joystick)으로 캐릭터를 이동한다). 낚시 시작(idle→charging)뿐
+   아니라 캐스팅(놓으면 던지기), 입질 반응, 잡아채기 중 홀드(캐스팅바를
+   밀어올리는 것), 입질 대기 중 조기 올리기, 아이템창 닫기까지 이 버튼
+   하나로 전부 되게 handleActionPointerDown/Release를 el.frame(화면
+   전체 — 기존처럼 어디를 눌러도 동작)과 el.fishBtn 양쪽에 같이 건다.
+   다만 idle→charging(낚시 시작)만은 el.fishBtn 전용이다 — el.frame에도
+   걸면 이동 중 화면 탭이 다시 캐스팅을 트리거해버려 조이스틱 이동 UX가
+   깨진다. */
+function handleActionPointerDown() {
   if (gameState === 'bite') { handleReactionTap(); return; }
   if (gameState === 'catching') { holding = true; return; }
   if (gameState === 'waiting') { abortWaitingReel(); return; }
   if (gameState === 'popup') { resetToIdle(); return; }
-});
+}
+function handleActionPointerRelease() {
+  holding = false;
+  if (gameState === 'charging') releasePowerAndCast();
+}
+el.frame.addEventListener('pointerdown', handleActionPointerDown);
 ['pointerup', 'pointercancel', 'pointerleave'].forEach(evt => {
-  el.frame.addEventListener(evt, () => {
-    holding = false;
-    if (gameState === 'charging') releasePowerAndCast();
-  });
+  el.frame.addEventListener(evt, handleActionPointerRelease);
 });
 el.fishBtn.addEventListener('pointerdown', (e) => {
-  e.stopPropagation(); // el.frame의 pointerdown(위)까지 뚫고 내려가 다른 상태 분기를 같이 건드리지 않게 막는다
-  if (gameState === 'idle') startPowerCharge();
+  e.stopPropagation(); // el.frame의 pointerdown(위)까지 뚫고 내려가 같은 동작을 두 번 건드리지 않게 막는다
+  if (gameState === 'idle') { startPowerCharge(); return; }
+  handleActionPointerDown();
+});
+['pointerup', 'pointercancel', 'pointerleave'].forEach(evt => {
+  el.fishBtn.addEventListener(evt, (e) => {
+    e.stopPropagation();
+    handleActionPointerRelease();
+  });
 });
 
 /* ===== 이동 조이스틱 입력 =====
