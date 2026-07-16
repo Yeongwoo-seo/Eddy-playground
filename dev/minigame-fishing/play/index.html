@@ -148,7 +148,12 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
    대신 contain을 쓰는 이유: 종횡비가 이미지와 정확히 같으므로 어느 쪽을
    써도 결과는 같지만, 이미지 로드가 늦어 기본 종횡비(280/260)로 잠깐
    그려질 때 contain이어야 그 사이에도 잘리지 않는다. */
-.item-popup-card{position:relative;width:180px;aspect-ratio:var(--item-ar,280/260);border-radius:16px;background:var(--surface-1);border:1px solid rgba(255,255,255,.12);box-shadow:0 6px 20px rgba(0,0,0,.4);background-size:contain;background-repeat:no-repeat;background-position:center;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:14px;gap:4px;overflow:hidden}
+.item-popup-card{position:relative;width:180px;aspect-ratio:var(--item-ar,280/260);border-radius:16px;background-size:contain;background-repeat:no-repeat;background-position:center;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:14px;gap:4px;overflow:hidden}
+/* 업로드한 배경(액자) 그림이 없을 때만 쓰는 기본 카드 배경 — 업로드한
+   그림은 이미 누끼 딴(투명 배경) 액자라 이 사각 배경/테두리/그림자까지
+   같이 깔면 그 뒤로 각진 박스가 비쳐 보인다. loadConfig가 배경 자산
+   유무에 따라 이 클래스를 토글한다. */
+.item-popup-card.item-popup-card--fallback{background-color:var(--surface-1);border:1px solid rgba(255,255,255,.12);box-shadow:0 6px 20px rgba(0,0,0,.4)}
 .item-popup-title{position:absolute;top:10px;left:0;right:0;text-align:center;font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.06em;color:var(--green);text-transform:uppercase}
 .item-popup-icon{position:absolute;border-radius:14px;background-color:rgba(255,255,255,.12);background-repeat:no-repeat;background-size:cover;background-position:center;image-rendering:pixelated;display:flex;align-items:center;justify-content:center;font-size:28px;transform:translate(-50%,-50%)}
 .item-popup-name{font-size:14px;font-weight:700;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.6)}
@@ -210,7 +215,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
   <div class="catch-hint hidden" id="catchHint">누르고 있으면 캐치존이 올라가요 · 떼면 내려가요</div>
 
   <div class="item-popup" id="itemPopup">
-    <div class="item-popup-card" id="itemPopupCard">
+    <div class="item-popup-card item-popup-card--fallback" id="itemPopupCard">
       <div class="item-popup-title">낚시 성공!</div>
       <div class="item-popup-icon" id="itemPopupIcon">🐟</div>
       <div class="item-popup-name" id="itemPopupName"></div>
@@ -594,6 +599,7 @@ async function loadConfig() {
   if (itemPopupBgAsset) {
     const itemBgUrl = await preloadWithRetry(itemPopupBgAsset.dataUrl, 3, 500);
     el.itemPopupCard.style.backgroundImage = `url(${itemBgUrl})`;
+    el.itemPopupCard.classList.remove('item-popup-card--fallback');
     const itemBgDims = await new Promise(resolve => {
       const img = new Image();
       img.crossOrigin = 'anonymous';
@@ -605,6 +611,7 @@ async function loadConfig() {
   } else {
     el.itemPopupCard.style.backgroundImage = '';
     el.itemPopupCard.style.removeProperty('--item-ar');
+    el.itemPopupCard.classList.add('item-popup-card--fallback');
   }
   itemIconPos = itemPopupCfg.iconPos || { x: 0.5, y: 0.36 };
   itemIconSizePx = itemPopupCfg.iconSizePx || 64;
