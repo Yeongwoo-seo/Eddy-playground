@@ -259,7 +259,11 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
    보이던 문제를 해결한다. */
 .itempos-stage{position:relative;width:100%;max-width:280px;aspect-ratio:var(--item-ar,280/260);margin:0 auto;border-radius:12px;overflow:hidden;background:#15191f;touch-action:none;cursor:crosshair}
 .itempos-stage img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none;-webkit-user-drag:none;-webkit-user-select:none;user-select:none}
-.item-popup-preview{position:relative;width:100%;max-width:220px;aspect-ratio:var(--item-ar,280/260);margin:0 auto;border-radius:20px;overflow:hidden;border:1px solid var(--divider);background:var(--surface-2);background-size:contain;background-repeat:no-repeat;background-position:center}
+.item-popup-preview{position:relative;width:100%;max-width:220px;aspect-ratio:var(--item-ar,280/260);margin:0 auto;border-radius:20px;overflow:hidden;background-size:contain;background-repeat:no-repeat;background-position:center}
+/* 배경(액자) 그림을 업로드하지 않았을 때만 쓰는 기본 미리보기 배경 —
+   실제 팝업(play/index.html .item-popup-card--fallback)과 같은 이유로,
+   이미 누끼 딴 액자 그림 위에는 이 테두리/배경을 깔지 않는다. */
+.item-popup-preview.item-popup-preview--fallback{border:1px solid var(--divider);background-color:var(--surface-2)}
 .item-popup-preview-icon{position:absolute;border-radius:14px;background-color:rgba(255,255,255,.14);background-repeat:no-repeat;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;font-size:26px;transform:translate(-50%,-50%)}
 .item-popup-preview-name{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;font-weight:700;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.6)}
 .item-popup-preview-meta{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;font-family:var(--mono);color:rgba(255,255,255,.75)}
@@ -444,9 +448,9 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
       <button type="button" class="frame-add-btn hidden" id="backgroundImageAddBtn">+ 배경화면 업로드</button>
       <input type="file" id="backgroundImageFileInput" accept="image/*">
     </div>
-    <div class="option-group hidden">
+    <div class="option-group">
       <div class="option-label">물고기 아이콘</div>
-      <div class="option-desc">업로드하지 않으면 기본 이모지(🐟)로 표시돼요. 업로드한 사진은 탭하면 크롭 영역을 다시 세밀 조정할 수 있어요.</div>
+      <div class="option-desc">잡아채기 중 낚시바 안에서 움직이는 물고기 아이콘이에요(잡히는 물고기 종별 아이콘은 '물고기 종류' 탭에서 따로 지정해요). 업로드하지 않으면 기본 이모지(🐟)로 표시돼요. 업로드한 사진은 탭하면 크롭 영역을 다시 세밀 조정할 수 있어요.</div>
       <div class="frame-strip" id="fishIconSlot"></div>
       <button type="button" class="frame-add-btn hidden" id="fishIconAddBtn">+ 아이콘 업로드</button>
       <input type="file" id="fishIconFileInput" accept="image/*">
@@ -468,6 +472,16 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
       </div>
       <button type="button" class="fish-sheet-btn hidden" id="cropCatchImageBtn" style="width:100%;margin-top:10px">✂ 캐치바 이미지 인식 영역 자르기</button>
       <button type="button" class="fish-sheet-btn danger hidden" id="deleteLayerBtn" style="width:100%;margin-top:10px">✕ 선택한 오브젝트 삭제</button>
+    </div>
+    <!-- ===== 게이지 채움 이미지 — 위 슬라이드에서 "+ 게이지 영역"으로 지정한
+         사각형 안을 채우는 그림. 업로드하지 않으면 기존처럼 진행도(0~100%)에
+         따라 빨강→초록으로 바뀌는 단색으로 채워진다. ===== -->
+    <div class="option-group">
+      <div class="option-label">게이지 채움 이미지</div>
+      <div class="option-desc">게이지 영역 안을 채우는 그림이에요(진행도가 오를수록 아래에서부터 드러나요). 업로드하지 않으면 기본처럼 진행도에 따라 빨강→초록으로 바뀌는 단색으로 채워져요.</div>
+      <div class="frame-strip" id="gaugeImageSlot"></div>
+      <button type="button" class="frame-add-btn hidden" id="gaugeImageAddBtn">+ 게이지 채움 이미지 업로드</button>
+      <input type="file" id="gaugeImageFileInput" accept="image/*">
     </div>
     <div class="option-group">
       <div class="option-label">슬라이드 크기</div>
@@ -671,7 +685,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
       <button type="button" class="fish-sheet-btn" id="itemMetaPosEditBtn" style="width:100%;margin-top:4px">🎯 설명 위치 지정</button>
     </div>
     <div class="bar-preview-wrap">
-      <div class="item-popup-preview" id="itemPopupPreview">
+      <div class="item-popup-preview item-popup-preview--fallback" id="itemPopupPreview">
         <div class="item-popup-preview-icon" id="itemPopupPreviewIcon">🐟</div>
         <div class="item-popup-preview-name" id="itemPopupPreviewName">물고기</div>
         <div class="item-popup-preview-meta" id="itemPopupPreviewMeta">일반 · 6P</div>
@@ -786,9 +800,11 @@ if ('serviceWorker' in navigator) {
 </script>
 <script>
 // Client-side AI background removal (WASM) — dev/upload/index.html의
-// autoRegisterCharacterPhoto와 같은 모듈/로딩 방식. 캐스팅/올리기 프레임과
-// 물고기 아이콘을 올리는 즉시 자동으로 배경을 제거한다(removeBackgroundOrFallback
-// 참고) — 모듈 로드/처리 자체가 실패해도 원본 그대로 계속 진행한다.
+// autoRegisterCharacterPhoto와 같은 모듈/로딩 방식. 캐스팅/올리기/이동 프레임,
+// 낚시 추, 물었다! 표시 이미지를 올리는 즉시 자동으로 배경을 제거한다
+// (removeBackgroundOrFallback 참고) — 모듈 로드/처리 자체가 실패해도 원본
+// 그대로 계속 진행한다. 물고기 아이콘(fishIconAssetId)은 자동 배경 제거가
+// 필수가 아니라 여기서 제외돼 있다(confirmFishIconCrop 참고).
 window.__removeBackgroundReady = import('https://cdn.jsdelivr.net/npm/@imgly/background-removal/+esm')
   .then(mod => {
     if (typeof mod.removeBackground !== 'function') {
@@ -889,6 +905,9 @@ const el = {
   sinkerImageSlot: document.getElementById('sinkerImageSlot'),
   sinkerImageAddBtn: document.getElementById('sinkerImageAddBtn'),
   sinkerImageFileInput: document.getElementById('sinkerImageFileInput'),
+  gaugeImageSlot: document.getElementById('gaugeImageSlot'),
+  gaugeImageAddBtn: document.getElementById('gaugeImageAddBtn'),
+  gaugeImageFileInput: document.getElementById('gaugeImageFileInput'),
   biteStampImageSlot: document.getElementById('biteStampImageSlot'),
   biteStampImageAddBtn: document.getElementById('biteStampImageAddBtn'),
   biteStampImageFileInput: document.getElementById('biteStampImageFileInput'),
@@ -1677,6 +1696,26 @@ const SLIDE_LAYER_META = {
 let selectedLayerId = null;
 const slideAssetUrlCache = new Map(); // assetId -> dataUrl, 매 렌더마다 AssetDB.getAsset 재조회하지 않도록
 
+// 업로드 직후엔 Supabase Storage에 방금 올린 파일이 공개 URL로 아직 안
+// 읽히는 경우가 있다(전파 지연) — 낚시바/캐치바 이미지를 올리자마자
+// 에디터 미리보기에 즉시 표시하려 하면 이 지연 때문에 <img>가 한 번
+// 깨져서 "이미지가 적용 안 된다"로 보인다. play/index.html의
+// preloadWithRetry와 같은 방식으로 실제로 로드될 때까지 몇 번 재시도한다.
+function preloadWithRetry(url, retries, delayMs) {
+  return new Promise(resolve => {
+    const attempt = (remaining) => {
+      const img = new Image();
+      img.onload = () => resolve(url);
+      img.onerror = () => {
+        if (remaining > 0) setTimeout(() => attempt(remaining - 1), delayMs);
+        else resolve(url); // 재시도 다 써도 일단 원래 URL로 시도는 하게 둔다
+      };
+      img.src = url;
+    };
+    attempt(retries);
+  });
+}
+
 function barDesignOf() { return fishingConfig.barDesign || {}; }
 async function patchBarDesign(patch) {
   fishingConfig = await AssetDB.setFishingConfig({ barDesign: Object.assign({}, fishingConfig.barDesign, patch) });
@@ -1720,7 +1759,7 @@ async function renderSlideStage() {
       const url = await getCachedAssetUrl(data.assetId);
       if (url) {
         const img = document.createElement('img');
-        img.src = url;
+        img.src = await preloadWithRetry(url, 3, 500);
         img.alt = '';
         layerEl.appendChild(img);
       }
@@ -1886,10 +1925,10 @@ el.fishIconFileInput.addEventListener('change', () => {
   // local blob: URL of the picked file (same-origin, so the crop canvas
   // below never risks a cross-origin "tainted canvas" export failure). Both
   // the source photo and the cropped result only reach AssetDB once the dev
-  // hits 적용 (confirmFishIconCrop below, which also runs
-  // removeBackgroundOrFallback on the cropped result — the source photo
-  // stays untouched so re-adjusting the crop later still has the full
-  // original to work from).
+  // hits 적용 (confirmFishIconCrop below, which uploads the cropped result
+  // as-is, no automatic background removal — the source photo stays
+  // untouched so re-adjusting the crop later still has the full original
+  // to work from).
   openCropAdjuster(URL.createObjectURL(file), null, file, confirmFishIconCrop);
 });
 function openFishIconCropAdjuster() {
@@ -1905,7 +1944,7 @@ function openFishIconCropAdjuster() {
   }).catch(() => {});
 }
 // The fish-icon crop path exports a new cropped image asset (canvas ->
-// background removal -> upload). The fish-species crop path (further below,
+// upload, as-is). The fish-species crop path (further below,
 // confirmFishSpeciesCrop) is much cheaper — it never re-exports anything,
 // just saves which region of the *already-uploaded* sheet to sample via CSS
 // background-position, so it doesn't go through AssetDB.addAsset at all.
@@ -1921,11 +1960,9 @@ async function confirmFishIconCrop(rect, sourceImg, pendingFile) {
     canvas.width = EXPORT_SIZE;
     canvas.height = EXPORT_SIZE;
     canvas.getContext('2d').drawImage(sourceImg, srcX, srcY, rectSize, rectSize, 0, 0, EXPORT_SIZE, EXPORT_SIZE);
-    let blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-    // 최종 아이콘(잘라낸 결과)에만 배경 제거를 적용 — 원본 소스 사진은 나중에
-    // 다시 크롭 위치를 조정할 때 온전한 전체 사진이 필요하므로 그대로 둔다.
-    el.cropConfirmBtn.textContent = '배경 제거 중...';
-    blob = await removeBackgroundOrFallback(blob);
+    // 배경 제거(누끼) 자동 적용은 여기서 안 한다 — 물고기 아이콘은 자동
+    // 배경 제거가 필수가 아니라, 업로드한 크롭 결과를 그대로 쓴다.
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
     const croppedAsset = await AssetDB.addAsset({ type: 'fishing-fish-icon', name: 'fish-icon.png', blob });
     const patch = { fishIconAssetId: croppedAsset.id, fishIconCropRect: rect };
     if (pendingFile) {
@@ -2083,6 +2120,47 @@ el.sinkerImageFileInput.addEventListener('change', async () => {
     renderSinkerImageSlot();
   } finally {
     el.sinkerImageAddBtn.disabled = false;
+  }
+});
+
+// 게이지 채움 이미지 — 배경화면/낚시바 이미지와 같은 단일 슬롯 업로드
+// 패턴(배경 제거 없음 — 사각형 영역을 통째로 채우는 텍스처라 누끼가
+// 필요 없다). play/index.html이 이 이미지를 fishbarGauge의 배경으로
+// 깔고, 업로드가 없을 때만 기존 진행도 색상(gaugeColorForProgress)으로
+// 폴백한다.
+async function renderGaugeImageSlot() {
+  const design = fishingConfig.barDesign || {};
+  el.gaugeImageSlot.innerHTML = '';
+  if (design.gaugeImageAssetId) {
+    el.gaugeImageAddBtn.classList.add('hidden');
+    const asset = await AssetDB.getAsset(design.gaugeImageAssetId).catch(() => null);
+    const slot = document.createElement('div');
+    slot.className = 'frame-slot';
+    slot.innerHTML = `${asset ? `<img src="${asset.dataUrl}" alt="">` : ''}
+      <div class="frame-actions"><button type="button" class="frame-mini-btn danger" data-act="del">✕</button></div>`;
+    slot.querySelector('[data-act=del]').addEventListener('click', async () => {
+      fishingConfig = await AssetDB.setFishingConfig({ barDesign: Object.assign({}, fishingConfig.barDesign, { gaugeImageAssetId: null }) });
+      showSaveNote();
+      renderGaugeImageSlot();
+    });
+    el.gaugeImageSlot.appendChild(slot);
+  } else {
+    el.gaugeImageAddBtn.classList.remove('hidden');
+  }
+}
+el.gaugeImageAddBtn.addEventListener('click', () => el.gaugeImageFileInput.click());
+el.gaugeImageFileInput.addEventListener('change', async () => {
+  const file = el.gaugeImageFileInput.files[0];
+  el.gaugeImageFileInput.value = '';
+  if (!file) return;
+  el.gaugeImageAddBtn.disabled = true;
+  try {
+    const asset = await AssetDB.addAsset({ type: 'fishing-gauge-image', name: file.name, blob: file });
+    fishingConfig = await AssetDB.setFishingConfig({ barDesign: Object.assign({}, fishingConfig.barDesign, { gaugeImageAssetId: asset.id }) });
+    showSaveNote();
+    renderGaugeImageSlot();
+  } finally {
+    el.gaugeImageAddBtn.disabled = false;
   }
 });
 
@@ -2602,8 +2680,13 @@ function renderFishList(sheetAsset, sheetDims) {
       const style = (override && sheetDims)
         ? getFishCropStyle(override, sheetDims.width, sheetDims.height, 32)
         : getFishSlotStyle(f.slot, 2);
+      // 좌우반전(scaleX(-1)) — 업로드하는 스프라이트시트가 보통 물고기가
+      // 왼쪽을 보고 있어서, 게임 안에서 오른쪽(캐릭터 쪽)을 보도록 여기서
+      // 한 번에 뒤집는다. 크롭 위치/크기(background-position/size)는 원본
+      // 시트 좌표 그대로 두고 화면에 그릴 때만 시각적으로 뒤집는 것이라
+      // 세밀영역조절 좌표(fishIconOverrides)에는 영향이 없다.
       const iconStyle = sheetAsset
-        ? `background-image:url('${sheetAsset.dataUrl}');background-position:${style.backgroundPosition};background-size:${style.backgroundSize}`
+        ? `background-image:url('${sheetAsset.dataUrl}');background-position:${style.backgroundPosition};background-size:${style.backgroundSize};transform:scaleX(-1)`
         : '';
       return `
         <div class="fish-row">
@@ -3105,6 +3188,7 @@ async function renderItemPopupPreview() {
     asset = await AssetDB.getAsset(ip.backgroundAssetId).catch(() => null);
     if (asset) el.itemPopupPreview.style.backgroundImage = `url(${asset.dataUrl})`;
   }
+  el.itemPopupPreview.classList.toggle('item-popup-preview--fallback', !asset);
   await applyItemAspectRatio(el.itemPopupPreview, asset ? asset.dataUrl : null);
   el.itemPopupPreviewIcon.style.left = (pos.x * 100) + '%';
   el.itemPopupPreviewIcon.style.top = (pos.y * 100) + '%';
@@ -3196,6 +3280,7 @@ async function init() {
   renderFishIconSlot();
   renderBackgroundImageSlot();
   renderSinkerImageSlot();
+  renderGaugeImageSlot();
   renderCastGaugeImageSlot();
   renderBiteStampImageSlot();
   renderCastPhysicsControls();
