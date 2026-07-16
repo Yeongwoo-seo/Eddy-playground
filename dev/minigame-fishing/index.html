@@ -250,6 +250,33 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .move-dpad-right{grid-column:3;grid-row:2}
 .move-dpad-down{grid-column:2;grid-row:3}
 
+/* ===== 영역 설정 탭 — 배경 위에 다각형(낚시가능/이동불가/상호작용) 영역을
+   그리는 에디터. 스테이지 종횡비를 배경 이미지 자연 크기에 맞춰(--area-ar,
+   아이템창 --item-ar과 같은 패턴) object-fit:fill로 꽉 채우면, 탭 좌표를
+   0~1로 바꿀 때 letterbox(여백) 보정이 필요 없다. SVG는 viewBox="0 0 100 100"
+   퍼센트 좌표계라 저장된 정규화 좌표(0~1)에 그냥 100을 곱해 넣으면 된다. */
+.area-stage{position:relative;width:100%;max-width:400px;aspect-ratio:var(--area-ar,3/4);margin:0 auto 10px;background:#000;border-radius:12px;overflow:hidden;border:1px solid var(--divider);touch-action:none;cursor:crosshair}
+.area-stage img{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;display:block;pointer-events:none;-webkit-user-select:none;user-select:none;-webkit-user-drag:none}
+.area-bg-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:16px;font-size:12px;color:var(--text-muted);font-family:var(--mono);line-height:1.6}
+.area-svg{position:absolute;inset:0;width:100%;height:100%}
+.area-saved-polygon{fill-opacity:.22;stroke-width:.6;vector-effect:non-scaling-stroke}
+.area-saved-polygon.kind-fishable{fill:var(--green);stroke:var(--green)}
+.area-saved-polygon.kind-blocked{fill:var(--signal-red);stroke:var(--signal-red)}
+.area-saved-polygon.kind-interaction{fill:var(--amber);stroke:var(--amber)}
+.area-draft-line{fill:rgba(89,184,200,.22);stroke:var(--cyan);stroke-width:.6;stroke-dasharray:1.5 1.2;vector-effect:non-scaling-stroke}
+.area-draft-line.hidden{display:none}
+.area-draft-point{fill:var(--cyan);stroke:#04181c;stroke-width:.4;vector-effect:non-scaling-stroke}
+.area-draft-hint{font-size:12px;color:var(--text-muted);margin-bottom:10px}
+.area-draft-actions{display:flex;gap:8px;margin-bottom:22px;flex-wrap:wrap}
+.area-draft-actions .fish-sheet-btn{flex:1;min-width:calc(33.33% - 6px)}
+.area-row{display:flex;align-items:center;gap:8px;padding:8px 2px;border-bottom:1px solid var(--divider)}
+.area-row:last-child{border-bottom:none}
+.area-row-swatch{width:12px;height:12px;border-radius:3px;flex-shrink:0}
+.area-row-label{flex:1;font-size:13.5px;color:var(--text-primary)}
+.area-row-label input{width:100%;background:var(--surface-1);border:1px solid var(--divider);border-radius:8px;padding:8px 10px;color:var(--text-primary);font-size:13.5px;font-family:var(--sans)}
+.area-row-del{width:26px;height:26px;border-radius:50%;border:none;background:rgba(217,65,65,.16);color:var(--signal-red);font-size:13px;cursor:pointer;flex-shrink:0}
+.area-empty-note{font-size:12.5px;color:var(--text-muted);padding:8px 2px}
+
 /* ===== 아이템창 탭 — 낚시 성공 시(물고기가 추에서 캐릭터로 날아온 다음)
    뜨는 아이템창 팝업의 배경(액자) 그림 + 아이템 아이콘이 놓일 위치/크기.
    위치 지정 피커는 낚시대 끝 지정(rodtip-stage/rodtip-marker)과 완전히
@@ -297,6 +324,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     <button class="tab-btn" data-tab="reel">올리기 모션</button>
     <button class="tab-btn" data-tab="fish">물고기 종류</button>
     <button class="tab-btn" data-tab="move">이동</button>
+    <button class="tab-btn" data-tab="area">영역 설정</button>
     <button class="tab-btn" data-tab="item">아이템창</button>
   </div>
 
@@ -646,6 +674,40 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
           <button type="button" class="move-dpad-btn move-dpad-down" data-dir="down" aria-label="아래로">▼</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- ===== 영역 설정 — 낚시바 디자인 탭의 배경화면 위에 다각형 영역을
+       그린다. 세 가지 종류(낚시가능/이동불가/상호작용)를 탭으로 오가며
+       각각 여러 개 그릴 수 있다. 배경 이미지가 스테이지를 정확히 꽉
+       채우도록(--area-ar을 이미지 자연 크기로 맞춤) 그려서, 탭 좌표를
+       0~1 정규화 좌표로 바꾸는 데 별도 letterbox 보정이 필요 없다. ===== -->
+  <div class="tab-panel hidden" id="panelArea">
+    <div class="option-group">
+      <div class="option-label">영역 종류</div>
+      <div class="option-pills" id="areaKindPills"></div>
+      <div class="option-desc" id="areaKindDesc"></div>
+    </div>
+    <div class="option-group">
+      <div class="area-stage" id="areaStage">
+        <img id="areaBgImg" class="hidden" alt="">
+        <div class="area-bg-empty" id="areaBgEmpty">배경화면을 먼저 업로드하세요(낚시바 디자인 탭)</div>
+        <svg class="area-svg" id="areaSvg" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <g id="areaSavedPolygons"></g>
+          <polyline class="area-draft-line hidden" id="areaDraftLine"></polyline>
+          <g id="areaDraftPoints"></g>
+        </svg>
+      </div>
+      <div class="area-draft-hint" id="areaDraftHint">탭해서 꼭짓점을 추가하세요 (3개 이상 찍고 완료)</div>
+      <div class="area-draft-actions">
+        <button type="button" class="fish-sheet-btn" id="areaDraftUndoBtn">↩ 점 취소</button>
+        <button type="button" class="fish-sheet-btn danger" id="areaDraftCancelBtn">✕ 그리기 취소</button>
+        <button type="button" class="fish-sheet-btn" id="areaDraftFinishBtn" disabled>✓ 완료</button>
+      </div>
+    </div>
+    <div class="option-group">
+      <div class="option-label" id="areaListLabel">저장된 영역</div>
+      <div id="areaList"></div>
     </div>
   </div>
 
@@ -1008,6 +1070,22 @@ const el = {
   moveStepMsValue: document.getElementById('moveStepMsValue'),
   moveAnimMsInput: document.getElementById('moveAnimMsInput'),
   moveAnimMsValue: document.getElementById('moveAnimMsValue'),
+  panelArea: document.getElementById('panelArea'),
+  areaKindPills: document.getElementById('areaKindPills'),
+  areaKindDesc: document.getElementById('areaKindDesc'),
+  areaStage: document.getElementById('areaStage'),
+  areaBgImg: document.getElementById('areaBgImg'),
+  areaBgEmpty: document.getElementById('areaBgEmpty'),
+  areaSvg: document.getElementById('areaSvg'),
+  areaSavedPolygons: document.getElementById('areaSavedPolygons'),
+  areaDraftLine: document.getElementById('areaDraftLine'),
+  areaDraftPoints: document.getElementById('areaDraftPoints'),
+  areaDraftHint: document.getElementById('areaDraftHint'),
+  areaDraftUndoBtn: document.getElementById('areaDraftUndoBtn'),
+  areaDraftCancelBtn: document.getElementById('areaDraftCancelBtn'),
+  areaDraftFinishBtn: document.getElementById('areaDraftFinishBtn'),
+  areaListLabel: document.getElementById('areaListLabel'),
+  areaList: document.getElementById('areaList'),
   panelItem: document.getElementById('panelItem'),
   itemBgSlot: document.getElementById('itemBgSlot'),
   itemBgAddBtn: document.getElementById('itemBgAddBtn'),
@@ -1035,7 +1113,7 @@ const el = {
   itemPosConfirmBtn: document.getElementById('itemPosConfirmBtn'),
 };
 
-const PANELS = { logic: el.panelLogic, cast: el.panelCast, bar: el.panelBar, reel: el.panelReel, fish: el.panelFish, move: el.panelMove, item: el.panelItem };
+const PANELS = { logic: el.panelLogic, cast: el.panelCast, bar: el.panelBar, reel: el.panelReel, fish: el.panelFish, move: el.panelMove, area: el.panelArea, item: el.panelItem };
 el.tabsRow.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => selectTab(btn.dataset.tab));
 });
@@ -1050,6 +1128,7 @@ function selectTab(tab) {
   // 이동 탭에서 방향키/dpad를 누른 채로 다른 탭으로 넘어가면 keyup/pointerup을
   // 못 받아 홀드 타이머가 안 보이는 곳에서 계속 도는 채로 남을 수 있다.
   else stopMoveHold();
+  if (tab === 'area') renderAreaTab();
 }
 
 /* ===== 낚시게임 로직 탭 ===== */
@@ -3115,6 +3194,160 @@ async function renderMoveTestStage() {
   applyCharFrame(moveState.dir, 0);
   updateCharPosition();
 }
+
+/* ===== 영역 설정 탭 =====
+   낚시바 디자인 탭에서 올린 배경화면(fishingConfig.backgroundAssetId) 위에
+   다각형 영역을 그린다. 세 종류(낚시가능/이동불가/상호작용) 각각 여러 개를
+   둘 수 있고, fishingConfig의 fishableAreas/blockedAreas/interactionAreas
+   배열에 { id, points: [{x,y}](0~1 정규화), label?(상호작용만) }로 저장된다.
+   탭 좌표 → 정규화 좌표 변환은 el.areaStage가 --area-ar로 배경 이미지와
+   정확히 같은 종횡비를 갖도록 만들어서(아이템창 --item-ar과 같은 패턴)
+   letterbox 보정 없이 바로 stage 기준 비율로 계산할 수 있다. */
+const AREA_KIND_OPTIONS = [
+  { id: 'fishable', label: '낚시가능', configKey: 'fishableAreas', desc: '캐스팅해서 낚시할 수 있는 영역이에요. 여러 개 그릴 수 있어요.' },
+  { id: 'blocked', label: '이동불가', configKey: 'blockedAreas', desc: '캐릭터가 걸어 들어갈 수 없는 영역이에요. 여러 개 그릴 수 있어요.' },
+  { id: 'interaction', label: '상호작용', configKey: 'interactionAreas', desc: '상점·대화 등 게임에 필요한 상호작용 지점이에요. 라벨을 적어 어떤 상호작용인지 구분하세요.' },
+];
+let areaKind = 'fishable';
+let areaDraft = [];
+
+function areaKindOption(kind) { return AREA_KIND_OPTIONS.find(o => o.id === kind); }
+function getAreaList(kind) { return fishingConfig[areaKindOption(kind).configKey] || []; }
+
+function renderAreaKindPills() {
+  el.areaKindPills.innerHTML = AREA_KIND_OPTIONS.map(o =>
+    `<button type="button" class="option-pill${o.id === areaKind ? ' active' : ''}" data-kind="${o.id}">${o.label}</button>`
+  ).join('');
+  el.areaKindPills.querySelectorAll('[data-kind]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.dataset.kind === areaKind) return;
+      areaKind = btn.dataset.kind;
+      areaDraft = [];
+      renderAreaKindPills();
+      el.areaKindDesc.textContent = areaKindOption(areaKind).desc;
+      renderAreaSavedPolygons();
+      renderAreaDraft();
+      renderAreaList();
+    });
+  });
+}
+
+async function renderAreaTab() {
+  el.areaKindDesc.textContent = areaKindOption(areaKind).desc;
+  const bgId = fishingConfig.backgroundAssetId;
+  const bgAsset = bgId ? await AssetDB.getAsset(bgId).catch(() => null) : null;
+  const dims = bgAsset ? await loadImageDimensions(bgAsset.dataUrl) : null;
+  if (bgAsset && dims) {
+    el.areaBgImg.src = bgAsset.dataUrl;
+    el.areaBgImg.classList.remove('hidden');
+    el.areaBgEmpty.classList.add('hidden');
+    el.areaStage.style.setProperty('--area-ar', dims.width + '/' + dims.height);
+  } else {
+    el.areaBgImg.classList.add('hidden');
+    el.areaBgEmpty.classList.remove('hidden');
+    el.areaStage.style.removeProperty('--area-ar');
+  }
+  renderAreaSavedPolygons();
+  renderAreaDraft();
+  renderAreaList();
+}
+
+function renderAreaSavedPolygons() {
+  const list = getAreaList(areaKind);
+  el.areaSavedPolygons.innerHTML = list.map(a =>
+    `<polygon class="area-saved-polygon kind-${areaKind}" points="${a.points.map(p => `${p.x * 100},${p.y * 100}`).join(' ')}"></polygon>`
+  ).join('');
+}
+
+function renderAreaDraft() {
+  const hasBg = !!fishingConfig.backgroundAssetId;
+  if (!hasBg) {
+    el.areaDraftHint.textContent = '배경화면을 먼저 업로드하세요(낚시바 디자인 탭)';
+  } else if (!areaDraft.length) {
+    el.areaDraftHint.textContent = '탭해서 꼭짓점을 추가하세요 (3개 이상 찍고 완료)';
+  } else {
+    el.areaDraftHint.textContent = `${areaDraft.length}개 점 찍음 — 계속 탭하거나 완료를 누르세요`;
+  }
+  el.areaDraftFinishBtn.disabled = areaDraft.length < 3;
+  if (areaDraft.length) {
+    el.areaDraftLine.setAttribute('points', areaDraft.map(p => `${p.x * 100},${p.y * 100}`).join(' '));
+    el.areaDraftLine.classList.remove('hidden');
+  } else {
+    el.areaDraftLine.classList.add('hidden');
+  }
+  el.areaDraftPoints.innerHTML = areaDraft.map(p =>
+    `<circle class="area-draft-point" cx="${p.x * 100}" cy="${p.y * 100}" r="1.4"></circle>`
+  ).join('');
+}
+
+function renderAreaList() {
+  const kindOpt = areaKindOption(areaKind);
+  const list = getAreaList(areaKind);
+  el.areaListLabel.textContent = `저장된 영역 — ${kindOpt.label} (${list.length}개)`;
+  if (!list.length) {
+    el.areaList.innerHTML = '<div class="area-empty-note">아직 그린 영역이 없어요.</div>';
+    return;
+  }
+  el.areaList.innerHTML = list.map((a, i) => `
+    <div class="area-row" data-id="${a.id}">
+      <div class="area-row-swatch" style="background:var(${areaKind === 'fishable' ? '--green' : areaKind === 'blocked' ? '--signal-red' : '--amber'})"></div>
+      <div class="area-row-label">${areaKind === 'interaction'
+        ? `<input type="text" value="${(a.label || '').replace(/"/g, '&quot;')}" placeholder="예: 상점, 대화" data-label-id="${a.id}">`
+        : `영역 ${i + 1} (꼭짓점 ${a.points.length}개)`}</div>
+      <button type="button" class="area-row-del" data-del-id="${a.id}">✕</button>
+    </div>
+  `).join('');
+  el.areaList.querySelectorAll('[data-del-id]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.delId;
+      const next = getAreaList(areaKind).filter(a => a.id !== id);
+      fishingConfig = await AssetDB.setFishingConfig({ [kindOpt.configKey]: next });
+      showSaveNote();
+      renderAreaSavedPolygons();
+      renderAreaList();
+    });
+  });
+  el.areaList.querySelectorAll('[data-label-id]').forEach(input => {
+    input.addEventListener('change', async () => {
+      const id = input.dataset.labelId;
+      const next = getAreaList(areaKind).map(a => a.id === id ? Object.assign({}, a, { label: input.value }) : a);
+      fishingConfig = await AssetDB.setFishingConfig({ [kindOpt.configKey]: next });
+      showSaveNote();
+    });
+  });
+}
+
+function areaStageEventToFrac(e) {
+  const rect = el.areaStage.getBoundingClientRect();
+  return { x: clamp01((e.clientX - rect.left) / rect.width), y: clamp01((e.clientY - rect.top) / rect.height) };
+}
+el.areaStage.addEventListener('pointerdown', (e) => {
+  if (!fishingConfig.backgroundAssetId) return; // 배경 없이는 좌표 기준(--area-ar)이 없어 그릴 수 없다
+  areaDraft.push(areaStageEventToFrac(e));
+  renderAreaDraft();
+});
+el.areaDraftUndoBtn.addEventListener('click', () => {
+  areaDraft.pop();
+  renderAreaDraft();
+});
+el.areaDraftCancelBtn.addEventListener('click', () => {
+  areaDraft = [];
+  renderAreaDraft();
+});
+el.areaDraftFinishBtn.addEventListener('click', async () => {
+  if (areaDraft.length < 3) return;
+  const kindOpt = areaKindOption(areaKind);
+  const newArea = { id: `area_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, points: areaDraft.slice() };
+  if (areaKind === 'interaction') newArea.label = '';
+  const next = getAreaList(areaKind).concat(newArea);
+  fishingConfig = await AssetDB.setFishingConfig({ [kindOpt.configKey]: next });
+  showSaveNote();
+  areaDraft = [];
+  renderAreaSavedPolygons();
+  renderAreaDraft();
+  renderAreaList();
+});
+renderAreaKindPills();
 
 /* ===== 아이템창 탭 — 팝업 배경 업로드 + 아이콘 크기/위치.
    fishingConfig.itemPopup = { backgroundAssetId, iconPos: {x,y}(0~1, 팝업

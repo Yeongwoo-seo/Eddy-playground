@@ -1088,7 +1088,14 @@ const AssetDB = (() => {
   // itemPopup — 낚시 성공 시(물고기가 추에서 캐릭터로 날아온 다음) 뜨는
   // 아이템창 팝업의 디자인. backgroundAssetId(팝업 액자 그림) + iconPos(그
   // 그림 위 어디에 아이템 아이콘이 놓일지, 0~1 정규화 좌표) + iconSizePx.
-  const FISHING_CONFIG_DEFAULT = { castingFrames: [], reelingFrames: [], barDesign: {}, fishSheetAssetId: null, fishIconOverrides: {}, castingSheetAssetId: null, castingFrameOverrides: {}, castingFrameDurations: [], backgroundAssetId: null, castingFrameRodTips: {}, walkFrames: { up: [], down: [], left: [], right: [] }, walkSheets: { up: {}, down: {}, left: {}, right: {} }, walkMotion: { stepMs: 200, animFrameMs: 90 }, castPhysics: { gravityMps2: 9.8, vxScale: 1 }, itemPopup: { backgroundAssetId: null, iconPos: null, iconSizePx: 64 }, castGaugeAssetId: null, castGaugeFillRegion: null };
+  // fishableAreas/blockedAreas/interactionAreas — 배경화면(backgroundAssetId)
+  // 위에 그리는 다각형 영역들, 각각 [{ id, points: [{x,y}, ...] }] (points는
+  // 배경 이미지 원본 크기 기준 0~1 정규화 좌표, "영역 설정" 탭의 폴리곤
+  // 에디터가 채운다). fishableAreas는 캐스팅해서 낚시할 수 있는 영역,
+  // blockedAreas는 캐릭터가 걸어 들어갈 수 없는 영역, interactionAreas는
+  // 상점/대화 등 게임에 필요한 상호작용 지점(각 항목에 label 필드로 어떤
+  // 상호작용인지 적어둔다) — 셋 다 여러 개를 둘 수 있다.
+  const FISHING_CONFIG_DEFAULT = { castingFrames: [], reelingFrames: [], barDesign: {}, fishSheetAssetId: null, fishIconOverrides: {}, castingSheetAssetId: null, castingFrameOverrides: {}, castingFrameDurations: [], backgroundAssetId: null, castingFrameRodTips: {}, walkFrames: { up: [], down: [], left: [], right: [] }, walkSheets: { up: {}, down: {}, left: {}, right: {} }, walkMotion: { stepMs: 200, animFrameMs: 90 }, castPhysics: { gravityMps2: 9.8, vxScale: 1 }, itemPopup: { backgroundAssetId: null, iconPos: null, iconSizePx: 64 }, castGaugeAssetId: null, castGaugeFillRegion: null, fishableAreas: [], blockedAreas: [], interactionAreas: [] };
 
   async function getFishingConfig() {
     if (fishingConfigCache.has('config')) return fishingConfigCache.get('config');
