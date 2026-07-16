@@ -178,11 +178,20 @@ function getMotionDefaultCropRect(frameIndex) {
 // 슬라이스가 아니라) 실제 픽셀을 잘라낸 이미지가 필요하다 — 시트 1장 +
 // rect 하나를 진짜 정사각 PNG data URL로 구워낸다. image-rendering:pixelated
 // 대상이라 스무딩을 꺼서 도트 경계를 그대로 유지한다.
-function cropRectToDataUrl(img, rect, outputSize) {
+//
+// 출력 캔버스는 원본 크롭 해상도(cropSize)를 그대로 쓴다 — 예전엔 항상
+// outputSize(기본 64px, MOTION_SHEET_LAYOUT.cellSize)로 강제 리샘플해서,
+// 원본 스펙(404×64px)보다 큰/고해상도 시트를 올려도 프레임마다 64×64로
+// 뭉개진 뒤 미리보기(96px 박스)/실제 플레이(84px 박스)에서 다시 확대되며
+// 흐리게/깨져 보였다. maxOutputSize는 극단적으로 큰 이미지의 data URL
+// 폭주만 막는 상한선일 뿐, 그 이하 크기는 원본 해상도 그대로 나간다.
+const MOTION_FRAME_MAX_OUTPUT = 512;
+function cropRectToDataUrl(img, rect, maxOutputSize) {
   const shortSide = Math.min(img.naturalWidth, img.naturalHeight);
   const cropSize = rect.size * shortSide;
   const sx = rect.cx * img.naturalWidth - cropSize / 2;
   const sy = rect.cy * img.naturalHeight - cropSize / 2;
+  const outputSize = Math.max(1, Math.round(Math.min(cropSize, maxOutputSize || MOTION_FRAME_MAX_OUTPUT)));
   const c = document.createElement('canvas');
   c.width = outputSize;
   c.height = outputSize;
@@ -196,12 +205,12 @@ function cropRectToDataUrl(img, rect, outputSize) {
 // 프레임 data URL 배열을 만든다. 보정값이 없는 프레임은
 // getMotionDefaultCropRect의 이론적 그리드 위치를 쓴다. img는 이미 로드된
 // HTMLImageElement(naturalWidth/Height 확정된 상태)여야 한다.
-function buildMotionFrameDataUrls(img, overrides, outputSize) {
+function buildMotionFrameDataUrls(img, overrides, maxOutputSize) {
   overrides = overrides || {};
   const frames = [];
   for (let i = 0; i < MOTION_SHEET_LAYOUT.columns; i++) {
     const rect = overrides[i] || getMotionDefaultCropRect(i);
-    frames.push(cropRectToDataUrl(img, rect, outputSize || MOTION_SHEET_LAYOUT.cellSize));
+    frames.push(cropRectToDataUrl(img, rect, maxOutputSize));
   }
   return frames;
 }
