@@ -83,7 +83,9 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .catch-hint{position:absolute;left:0;right:0;bottom:calc(18px + env(safe-area-inset-bottom,0));z-index:5;text-align:center;font-family:var(--mono);font-size:11px;color:rgba(255,255,255,.85);text-shadow:0 1px 4px rgba(0,0,0,.5)}
 .catch-hint.hidden{display:none}
 
-.fishbar-panel{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:4;display:flex;align-items:center;gap:14px;background:rgba(5,20,28,.35);border-radius:20px;padding:18px 20px;backdrop-filter:blur(2px)}
+/* 낚시바를 감싸던 반투명 둥근 배경 패널은 사용자 요청으로 없앴다 —
+   낚시바(.fishbar)만 화면에 떠 있고, 그 뒤 배경은 그대로 비친다. */
+.fishbar-panel{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:4;display:flex;align-items:center;gap:14px;padding:18px 20px}
 .fishbar-panel.hidden{display:none}
 .fishbar{position:relative;width:52px;height:230px;border-radius:12px;overflow:hidden;border:2px solid rgba(255,255,255,.5);box-shadow:inset 0 0 12px rgba(0,0,0,.4);background:#171C22}
 /* 낚시바 이미지 — 설정 화면(dev/minigame-fishing/index.html) 슬라이드
@@ -216,6 +218,26 @@ const DIFF_TUNING = {
 function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
 function vibrate(pattern) { if (navigator.vibrate) navigator.vibrate(pattern); }
 function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+// assetDb.js의 dataUrl은 더 이상 base64가 아니라 실제 Supabase Storage 공개
+// URL이다 — 업로드 직후 곧바로 재생 화면을 열면 Storage 쪽 전파가 아직
+// 안 끝나 첫 로드가 실패하고(그 자리엔 background-color만 남아 "단색으로만
+// 보임") 새로고침하면 되던 증상의 유력한 원인이라, background-image로 바로
+// 꽂기 전에 이 헬퍼로 먼저 로드를 검증하고 실패하면 짧게 대기 후 재시도한다.
+function preloadWithRetry(url, retries, delayMs) {
+  return new Promise(resolve => {
+    const attempt = (remaining) => {
+      const img = new Image();
+      img.onload = () => resolve(url);
+      img.onerror = () => {
+        if (remaining > 0) setTimeout(() => attempt(remaining - 1), delayMs);
+        else resolve(url); // 재시도 다 써도 일단 원래 URL로 시도는 하게 둔다
+      };
+      img.src = url;
+    };
+    attempt(retries);
+  });
+}
 
 // 게이지 색 — 고정 그라데이션(항상 빨강~연두 전체 범위를 깔아두고 마스크로
 // 일부만 드러내는 방식) 대신, "지금 진행도 값"을 0%(빨강)~70%(연두) 사이에서
@@ -384,7 +406,7 @@ async function loadConfig() {
   // 절대위치로 옮겨온다(설정 화면 슬라이드와 좌표계가 동일하므로 변환 없음).
   const barImageAsset = design.barLayer && design.barLayer.assetId ? byId.get(design.barLayer.assetId) : null;
   if (barImageAsset && design.barLayer) {
-    el.fishbarBarImg.querySelector('img').src = barImageAsset.dataUrl;
+    el.fishbarBarImg.querySelector('img').src = await preloadWithRetry(barImageAsset.dataUrl, 3, 500);
     el.fishbarBarImg.style.left = (design.barLayer.x * 100) + '%';
     el.fishbarBarImg.style.top = (design.barLayer.y * 100) + '%';
     el.fishbarBarImg.style.width = (design.barLayer.w * 100) + '%';
@@ -405,7 +427,7 @@ async function loadConfig() {
   // background(숏핸드)를 먼저 설정해야 한다 — backgroundImage 다음에 설정하면
   // 숏핸드가 방금 지정한 background-image를 초기화해버린다.
   el.fishbarZone.style.background = '#59B8C8';
-  el.fishbarZone.style.backgroundImage = catchImageAsset ? `url(${catchImageAsset.dataUrl})` : '';
+  el.fishbarZone.style.backgroundImage = catchImageAsset ? `url(${await preloadWithRetry(catchImageAsset.dataUrl, 3, 500)})` : '';
   if (zoneRegion) {
     zoneTrack = { x: zoneRegion.x * 100, y: zoneRegion.y * 100, w: zoneRegion.w * 100, h: zoneRegion.h * 100 };
     if (catchLayer) {
