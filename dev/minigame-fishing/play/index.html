@@ -133,24 +133,26 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .fish-fly{position:absolute;z-index:7;width:44px;height:44px;border-radius:12px;border:2px solid transparent;background-color:rgba(255,255,255,.12);background-repeat:no-repeat;image-rendering:pixelated;pointer-events:none;transform:translate(-50%,-50%);filter:drop-shadow(0 3px 6px rgba(0,0,0,.4));font-size:28px;display:flex;align-items:center;justify-content:center;box-sizing:border-box}
 
 /* ===== 아이템창 — 낚시 성공(물고기가 캐릭터에게 날아온 다음)에만 뜨는
-   팝업. 실패했을 때는 아무 화면도 뜨지 않고 그냥 대기 상태로 돌아간다
-   (endRun/overlay는 더 이상 안 씀 — resetToIdle을 바로 호출). 배경(액자)
-   그림과 아이콘 위치/크기는 dev/minigame-fishing/index.html의 "아이템창"
-   탭(itemPopup config)에서 지정한다. */
-.item-popup{position:absolute;inset:0;z-index:9;display:none;align-items:center;justify-content:center;padding:32px;background:rgba(5,7,10,.78);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
-.item-popup.show{display:flex}
+   말풍선형 카드. 실패했을 때는 아무 화면도 뜨지 않고 그냥 대기 상태로
+   돌아간다(missReaction/endCatch 참고). 화면 전체를 덮는 모달이 아니라
+   캐릭터 머리 위에 떠 있는 인게임 엘리먼트다(positionItemPopup이 매번
+   el.charStage 기준으로 위치를 다시 잡는다) — 확인 버튼 없이 화면
+   아무 곳이나 탭하면 사라진다(pointer-events:none이라 카드 위를 눌러도
+   그대로 el.frame의 pointerdown으로 뚫고 내려가 resetToIdle이 불린다).
+   배경(액자) 그림과 아이콘 위치/크기는 dev/minigame-fishing/index.html의
+   "아이템창" 탭(itemPopup config)에서 지정한다. */
+.item-popup{position:absolute;z-index:9;display:none;pointer-events:none;transform:translate(-50%,-100%)}
+.item-popup.show{display:block}
 /* 카드 종횡비 — 업로드한 배경(액자) 이미지의 실제 자연 크기를 그대로
    따라간다(loadConfig가 --item-ar을 이미지 자연 크기로 채워줌). cover
    대신 contain을 쓰는 이유: 종횡비가 이미지와 정확히 같으므로 어느 쪽을
    써도 결과는 같지만, 이미지 로드가 늦어 기본 종횡비(280/260)로 잠깐
    그려질 때 contain이어야 그 사이에도 잘리지 않는다. */
-.item-popup-card{position:relative;width:100%;max-width:280px;aspect-ratio:var(--item-ar,280/260);border-radius:20px;background:var(--surface-1);border:1px solid rgba(255,255,255,.12);box-shadow:0 8px 32px rgba(0,0,0,.4);background-size:contain;background-repeat:no-repeat;background-position:center;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:20px;gap:6px;overflow:hidden}
-.item-popup-title{position:absolute;top:16px;left:0;right:0;text-align:center;font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--green);text-transform:uppercase}
-.item-popup-icon{position:absolute;border-radius:16px;background-color:rgba(255,255,255,.12);background-repeat:no-repeat;background-size:cover;background-position:center;image-rendering:pixelated;display:flex;align-items:center;justify-content:center;font-size:32px;transform:translate(-50%,-50%)}
-.item-popup-name{font-size:16px;font-weight:700;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.6)}
-.item-popup-meta{font-family:var(--mono);font-size:12px;color:rgba(255,255,255,.75);margin-bottom:8px}
-.item-popup-btn{font-family:var(--mono);font-size:13.5px;font-weight:700;letter-spacing:.03em;border:none;border-radius:16px;padding:13px 28px;cursor:pointer;color:#08110c;background:var(--green)}
-.item-popup-btn:active{opacity:.8}
+.item-popup-card{position:relative;width:180px;aspect-ratio:var(--item-ar,280/260);border-radius:16px;background:var(--surface-1);border:1px solid rgba(255,255,255,.12);box-shadow:0 6px 20px rgba(0,0,0,.4);background-size:contain;background-repeat:no-repeat;background-position:center;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:14px;gap:4px;overflow:hidden}
+.item-popup-title{position:absolute;top:10px;left:0;right:0;text-align:center;font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.06em;color:var(--green);text-transform:uppercase}
+.item-popup-icon{position:absolute;border-radius:14px;background-color:rgba(255,255,255,.12);background-repeat:no-repeat;background-size:cover;background-position:center;image-rendering:pixelated;display:flex;align-items:center;justify-content:center;font-size:28px;transform:translate(-50%,-50%)}
+.item-popup-name{font-size:14px;font-weight:700;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.6)}
+.item-popup-meta{font-family:var(--mono);font-size:11px;color:rgba(255,255,255,.75)}
 </style>
 </head>
 <body>
@@ -213,7 +215,6 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
       <div class="item-popup-icon" id="itemPopupIcon">🐟</div>
       <div class="item-popup-name" id="itemPopupName"></div>
       <div class="item-popup-meta" id="itemPopupMeta"></div>
-      <button class="item-popup-btn" id="itemPopupConfirmBtn" type="button">확인</button>
     </div>
   </div>
 </div>
@@ -337,7 +338,6 @@ const el = {
   itemPopupIcon: document.getElementById('itemPopupIcon'),
   itemPopupName: document.getElementById('itemPopupName'),
   itemPopupMeta: document.getElementById('itemPopupMeta'),
-  itemPopupConfirmBtn: document.getElementById('itemPopupConfirmBtn'),
 };
 
 let castFrameUrls = [];
@@ -790,8 +790,12 @@ function throwSinker(power, origin, frameRect, getRodTip) {
       castFlightRaf = requestAnimationFrame(frame);
     }
     function finish(finalDx) {
+      // 착수해도 castSvg(낚싯줄)는 숨기지 않는다 — 추가 물에 떠 있는 동안
+      // (입질 대기 내내) 낚싯대와 추가 계속 줄로 이어져 보여야 한다.
+      // handleReactionTap(입질 물어서 잡아채기로 넘어갈 때)과
+      // abortWaitingReel/missReaction/resetToIdle(대기 중단·실패·리셋)에서
+      // 각자 자기 타이밍에 숨긴다.
       renderCastLine(getRodTip ? getRodTip() : origin, { x: origin.x + finalDx, y: waterY });
-      el.castSvg.classList.add('hidden');
       const landingXPct = clamp((origin.x + finalDx) / frameRect.width * 100, 5, 95);
       const landingYPct = waterY / frameRect.height * 100;
       el.bobber.style.transition = 'none';
@@ -883,6 +887,7 @@ function handleReactionTap() {
   el.biteMark.classList.add('hidden');
   el.bobber.classList.add('hidden');
   el.bobber.classList.remove('bite-dip');
+  el.castSvg.classList.add('hidden'); // 낚시바(잡아채기)로 넘어가면 추/찌 자체가 안 보이니 줄도 같이 숨긴다
   playBiteCaughtAnimation().then(startCatching);
 }
 
@@ -924,7 +929,29 @@ function missReaction() {
   if (gameState !== 'bite') return;
   el.biteMark.classList.add('hidden');
   el.bobber.classList.add('hidden');
+  el.castSvg.classList.add('hidden');
   resetToIdle(); // 실패 — 화면 전환 없이 그냥 대기 상태로 돌아간다
+}
+
+// 입질 대기 중(waiting) 화면을 다시 탭하면 입질을 기다리지 않고 바로
+// 릴을 감아 올린다 — 당연히 아무것도 안 걸려 있으니 빈손으로 끝난다.
+// playReelThenResult(성공 시 릴 감기)와 같은 올리기 프레임을 재생하되
+// 물고기가 없으니 flyFishToCharacter/showItemPopup 없이 곧장 대기로
+// 돌아간다.
+async function abortWaitingReel() {
+  if (gameState !== 'waiting') return;
+  clearTimeout(biteTimer);
+  gameState = 'reeling';
+  el.statusLine.textContent = '허탕... 다시 던져보세요';
+  el.bobber.classList.remove('bob-idle');
+  el.bobber.classList.add('hidden');
+  el.castSvg.classList.add('hidden');
+  if (reelFrameUrls.length) {
+    await playFrameSequence(reelFrameUrls, 90);
+  } else {
+    await wait(300);
+  }
+  resetToIdle();
 }
 
 /* ===== 낚시바(잡아채기) ===== */
@@ -1102,8 +1129,22 @@ function flyFishToCharacter(fishDef) {
    배경/아이콘 위치·크기는 dev/minigame-fishing/index.html의 "아이템창" 탭
    (itemPopup config, loadConfig에서 el.itemPopupCard/el.itemPopupIcon에
    이미 적용해둔 상태)을 그대로 쓴다. */
+// 캐릭터 머리 위에 뜨도록 el.charStage 기준으로 위치를 잡는다 —
+// flyFishToCharacter가 도착 지점을 계산하는 방식과 같다. .item-popup 자체가
+// transform:translate(-50%,-100%)라 이 left/top이 카드의 "아래쪽 중앙
+// 꼭짓점"이 된다(카드가 그 점에서부터 위로 펼쳐짐).
+function positionItemPopup() {
+  const frameRect = el.frame.getBoundingClientRect();
+  const charRect = el.charStage.getBoundingClientRect();
+  const leftPct = ((charRect.left + charRect.width / 2) - frameRect.left) / frameRect.width * 100;
+  const topPct = ((charRect.top - 12) - frameRect.top) / frameRect.height * 100; // 머리 위 12px 여백
+  el.itemPopup.style.left = leftPct + '%';
+  el.itemPopup.style.top = topPct + '%';
+}
+
 function showItemPopup(fishCaught) {
   gameState = 'popup';
+  positionItemPopup();
   el.itemPopupName.textContent = fishCaught.name;
   el.itemPopupMeta.textContent = `${fishCaught.grade} · ${fishCaught.value}P`;
   if (fishSheetUrl) {
@@ -1142,11 +1183,15 @@ function resetToIdle() {
    캐스팅 버튼 대신 idle 상태에서 화면을 누르고 있으면 세기 게이지가
    왔다리갔다리 돌아가다가(startPowerCharge), 손을 떼는 순간 값으로 던진다
    (releasePowerAndCast) — 잡아채기(catching) 중 홀드와 같은 pointerdown/up
-   쌍을 gameState로 나눠 재사용한다. */
-el.itemPopupConfirmBtn.addEventListener('click', resetToIdle);
+   쌍을 gameState로 나눠 재사용한다. waiting(입질 대기 중) 탭은 기다리지
+   않고 바로 빈손으로 릴을 감고, popup(아이템창 뜬 상태) 탭은 그냥
+   닫는다(아이템창엔 확인 버튼이 따로 없다 — el.itemPopup이
+   pointer-events:none이라 카드를 눌러도 그대로 여기까지 뚫고 내려온다). */
 el.frame.addEventListener('pointerdown', () => {
   if (gameState === 'bite') { handleReactionTap(); return; }
   if (gameState === 'catching') { holding = true; return; }
+  if (gameState === 'waiting') { abortWaitingReel(); return; }
+  if (gameState === 'popup') { resetToIdle(); return; }
   if (gameState === 'idle') { startPowerCharge(); return; }
 });
 ['pointerup', 'pointercancel', 'pointerleave'].forEach(evt => {
