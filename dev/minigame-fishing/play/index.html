@@ -765,7 +765,12 @@ function throwSinker(power, origin, frameRect, getRodTip) {
     const minDx = frameRect.width * 0.10, maxDx = frameRect.width * 0.68;
     const baseDx = minDx + (power / 100) * (maxDx - minDx);
     const dx = baseDx * (castPhysics.vxScale || 1);
-    const waterY = frameRect.height * 0.47; // 기존 찌 착지 y(47%)와 동일
+    // 착지선(waterY)은 화면 절대 위치(47%) 대신 캐릭터가 서 있는 줄(발 밑,
+    // char-stage 아래쪽 끝)에 맞춘다 — 화면 고정 비율로는 캐릭터 위치와
+    // 무관하게 항상 같은 높이라, 캐릭터가 화면 아래쪽에 있을 때 추가
+    // 캐릭터보다 한참 위에 떠 보이는 문제가 있었다.
+    const charRect = el.charStage.getBoundingClientRect();
+    const waterY = charRect.bottom - frameRect.top;
     const h0 = Math.max(10, waterY - origin.y);
     const FREE_FALL_HEIGHT_M = 1;
     const gravityMps2 = castPhysics.gravityMps2 || 9.8;
