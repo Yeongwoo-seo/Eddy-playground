@@ -113,24 +113,25 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .fishbar-fish{position:absolute;left:50%;transform:translate(-50%,-50%);font-size:22px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.4))}
 .fishbar-fish img{width:26px;height:26px;object-fit:contain;image-rendering:pixelated}
 
-.overlay{position:absolute;inset:0;z-index:8;display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px;text-align:center;padding:32px;background:rgba(5,7,10,.78);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
-.overlay.show{display:flex}
-.overlay-title{font-family:var(--mono);font-size:16px;font-weight:800;letter-spacing:.08em;color:var(--signal-red)}
-.overlay-message{font-size:14px;color:var(--text-primary)}
-.overlay-count{font-family:var(--mono);font-size:12px;color:var(--text-secondary);margin-bottom:6px}
-.overlay-btn-row{display:flex;gap:10px}
-.overlay-btn{font-family:var(--mono);font-size:13.5px;font-weight:700;letter-spacing:.03em;border:none;border-radius:16px;padding:13px 20px;cursor:pointer;text-decoration:none}
-.overlay-btn.primary{color:#08110c;background:var(--green)}
-.overlay-btn.secondary{color:var(--text-primary);background:rgba(255,255,255,.14)}
-.overlay-btn:active{opacity:.8}
+/* 낚시 성공 시 잡은 물고기 아이콘이 추(찌) 자리에서 캐릭터에게로 천천히
+   날아오는 연출용 임시 엘리먼트 — flyFishToCharacter가 매 캐치마다
+   새로 만들고(el.stage에 추가) 도착하면 제거한다. */
+.fish-fly{position:absolute;z-index:7;width:44px;height:44px;border-radius:12px;border:2px solid transparent;background-color:rgba(255,255,255,.12);background-repeat:no-repeat;image-rendering:pixelated;pointer-events:none;transform:translate(-50%,-50%);filter:drop-shadow(0 3px 6px rgba(0,0,0,.4));font-size:28px;display:flex;align-items:center;justify-content:center;box-sizing:border-box}
 
-/* 낚시 성공 시 결과창(overlay) 대신, 잡은 물고기 아이콘이 찌(추) 자리에
-   나타났다가 캐릭터 쪽으로 날아가 사라지는 걸로 대체한다("계속하기"
-   화면 없이 바로 다음 캐스팅으로 이어지길 원하는 요청) — left/top(%)을
-   JS(playCatchFlyAnimation)가 애니메이션하고, transform은 항상 중앙 정렬
-   유지 + 도착 시 살짝 작아지는 연출만 담당한다. */
-.catch-fly-icon{position:absolute;z-index:6;width:32px;height:32px;border-radius:10px;background-color:rgba(255,255,255,.14);background-repeat:no-repeat;image-rendering:pixelated;display:flex;align-items:center;justify-content:center;font-size:20px;pointer-events:none;border:2px solid transparent;filter:drop-shadow(0 3px 6px rgba(0,0,0,.35))}
-.catch-fly-icon.hidden{display:none}
+/* ===== 아이템창 — 낚시 성공(물고기가 캐릭터에게 날아온 다음)에만 뜨는
+   팝업. 실패했을 때는 아무 화면도 뜨지 않고 그냥 대기 상태로 돌아간다
+   (endRun/overlay는 더 이상 안 씀 — resetToIdle을 바로 호출). 배경(액자)
+   그림과 아이콘 위치/크기는 dev/minigame-fishing/index.html의 "아이템창"
+   탭(itemPopup config)에서 지정한다. */
+.item-popup{position:absolute;inset:0;z-index:9;display:none;align-items:center;justify-content:center;padding:32px;background:rgba(5,7,10,.78);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.item-popup.show{display:flex}
+.item-popup-card{position:relative;width:100%;max-width:280px;min-height:260px;border-radius:20px;background:var(--surface-1);border:1px solid rgba(255,255,255,.12);box-shadow:0 8px 32px rgba(0,0,0,.4);background-size:cover;background-position:center;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:20px;gap:6px;overflow:hidden}
+.item-popup-title{position:absolute;top:16px;left:0;right:0;text-align:center;font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--green);text-transform:uppercase}
+.item-popup-icon{position:absolute;border-radius:16px;background-color:rgba(255,255,255,.12);background-repeat:no-repeat;background-size:cover;background-position:center;image-rendering:pixelated;display:flex;align-items:center;justify-content:center;font-size:32px;transform:translate(-50%,-50%)}
+.item-popup-name{font-size:16px;font-weight:700;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.6)}
+.item-popup-meta{font-family:var(--mono);font-size:12px;color:rgba(255,255,255,.75);margin-bottom:8px}
+.item-popup-btn{font-family:var(--mono);font-size:13.5px;font-weight:700;letter-spacing:.03em;border:none;border-radius:16px;padding:13px 28px;cursor:pointer;color:#08110c;background:var(--green)}
+.item-popup-btn:active{opacity:.8}
 </style>
 </head>
 <body>
@@ -176,7 +177,6 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
       </div>
     </div>
 
-    <div class="catch-fly-icon hidden" id="catchFlyIcon"></div>
   </div>
 
   <div class="cast-power-wrap hidden" id="castPowerWrap">
@@ -185,13 +185,13 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
   </div>
   <div class="catch-hint hidden" id="catchHint">누르고 있으면 캐치존이 올라가요 · 떼면 내려가요</div>
 
-  <div class="overlay" id="overlay">
-    <div class="overlay-title" id="overlayTitle">낚시 실패</div>
-    <div class="overlay-message" id="overlayMessage"></div>
-    <div class="overlay-count" id="overlayCount"></div>
-    <div class="overlay-btn-row">
-      <button class="overlay-btn primary" id="retryBtn" type="button">다시 하기</button>
-      <a class="overlay-btn secondary" href="/dev/minigames/">목록으로</a>
+  <div class="item-popup" id="itemPopup">
+    <div class="item-popup-card" id="itemPopupCard">
+      <div class="item-popup-title">낚시 성공!</div>
+      <div class="item-popup-icon" id="itemPopupIcon">🐟</div>
+      <div class="item-popup-name" id="itemPopupName"></div>
+      <div class="item-popup-meta" id="itemPopupMeta"></div>
+      <button class="item-popup-btn" id="itemPopupConfirmBtn" type="button">확인</button>
     </div>
   </div>
 </div>
@@ -264,7 +264,7 @@ function preloadWithRetry(url, retries, delayMs) {
 // CSS 변수와 같은 값을 RGB로 하드코딩해서 매 프레임 보간한다.
 const GAUGE_COLOR_STOPS = { red: [217, 65, 65], green: [62, 207, 107], capPct: 70 };
 
-// 물고기 등급 테두리 색 — 낚시 성공 결과창(overlay-fish-icon)에서 잡은
+// 물고기 등급 테두리 색 — 날아오는 물고기 아이콘(.fish-fly)에서 잡은
 // 물고기의 등급(fishDefs.js grade)을 테두리로 바로 알아볼 수 있게 한다.
 const GRADE_BORDER_COLORS = { '일반': '#8B95A1', '레어': '#3B82F6', '희귀': '#A855F7', '전설': '#FFD12E' };
 function gaugeColorForProgress(pct) {
@@ -279,6 +279,7 @@ function gaugeColorForProgress(pct) {
 
 const el = {
   frame: document.getElementById('frame'),
+  stage: document.getElementById('stage'),
   statusLine: document.getElementById('statusLine'),
   charStage: document.getElementById('charStage'),
   charImg: document.getElementById('charImg'),
@@ -306,12 +307,12 @@ const el = {
   fishbarGaugeMask: document.getElementById('fishbarGaugeMask'),
   catchHint: document.getElementById('catchHint'),
   countChip: document.getElementById('countChip'),
-  overlay: document.getElementById('overlay'),
-  overlayTitle: document.getElementById('overlayTitle'),
-  overlayMessage: document.getElementById('overlayMessage'),
-  overlayCount: document.getElementById('overlayCount'),
-  catchFlyIcon: document.getElementById('catchFlyIcon'),
-  retryBtn: document.getElementById('retryBtn'),
+  itemPopup: document.getElementById('itemPopup'),
+  itemPopupCard: document.getElementById('itemPopupCard'),
+  itemPopupIcon: document.getElementById('itemPopupIcon'),
+  itemPopupName: document.getElementById('itemPopupName'),
+  itemPopupMeta: document.getElementById('itemPopupMeta'),
+  itemPopupConfirmBtn: document.getElementById('itemPopupConfirmBtn'),
 };
 
 let castFrameUrls = [];
@@ -339,8 +340,10 @@ let castPhysics = { gravityMps2: 9.8, vxScale: 1 };
 // (renderBarFrame)만 이 트랙으로 다시 매핑한다. 게이지는 gaugeRegion을
 // 지정했을 때만 그 영역 안에 나타난다(loadConfig 참고).
 let zoneTrack = null; // { x, y, w, h } — 낚시바 기준 %
+let itemIconPos = { x: 0.5, y: 0.36 }; // 아이템창 카드 기준 0~1, dev/minigame-fishing/index.html 아이템창 탭에서 지정
+let itemIconSizePx = 64;
 let caughtCount = 0;
-let gameState = 'idle'; // idle | charging | casting | waiting | bite | caught | catching | reeling | result
+let gameState = 'idle'; // idle | charging | casting | waiting | bite | caught | catching | reeling | popup
 let biteTimer = null;
 let reactionTimer = null;
 let holding = false;
@@ -381,6 +384,8 @@ async function loadConfig() {
   if (cfg.fishSheetAssetId) ids.push(cfg.fishSheetAssetId);
   if (cfg.castingSheetAssetId) ids.push(cfg.castingSheetAssetId);
   if (cfg.backgroundAssetId) ids.push(cfg.backgroundAssetId);
+  const itemPopupCfg = cfg.itemPopup || {};
+  if (itemPopupCfg.backgroundAssetId) ids.push(itemPopupCfg.backgroundAssetId);
   let assets = [];
   try { assets = await AssetDB.getAssetsByIds(ids); } catch (e) { /* 위와 동일 */ }
   const byId = new Map(assets.map(a => [a.id, a]));
@@ -524,6 +529,17 @@ async function loadConfig() {
     el.charImg.classList.remove('hidden');
     el.charFallback.classList.add('hidden');
   }
+
+  // 아이템창 — 낚시 성공 후(물고기가 캐릭터에게 날아온 다음) 뜨는 팝업의
+  // 배경/아이콘 위치·크기. dev/minigame-fishing/index.html의 "아이템창" 탭 설정.
+  const itemPopupBgAsset = itemPopupCfg.backgroundAssetId ? byId.get(itemPopupCfg.backgroundAssetId) : null;
+  el.itemPopupCard.style.backgroundImage = itemPopupBgAsset ? `url(${itemPopupBgAsset.dataUrl})` : '';
+  itemIconPos = itemPopupCfg.iconPos || { x: 0.5, y: 0.36 };
+  itemIconSizePx = itemPopupCfg.iconSizePx || 64;
+  el.itemPopupIcon.style.left = (itemIconPos.x * 100) + '%';
+  el.itemPopupIcon.style.top = (itemIconPos.y * 100) + '%';
+  el.itemPopupIcon.style.width = itemIconSizePx + 'px';
+  el.itemPopupIcon.style.height = itemIconSizePx + 'px';
 }
 
 /* ===== 캐스팅/올리기 프레임 순차 재생 =====
@@ -827,7 +843,7 @@ function missReaction() {
   if (gameState !== 'bite') return;
   el.biteMark.classList.add('hidden');
   el.bobber.classList.add('hidden');
-  endRun('반응이 늦었어요...');
+  resetToIdle(); // 실패 — 화면 전환 없이 그냥 대기 상태로 돌아간다
 }
 
 /* ===== 낚시바(잡아채기) ===== */
@@ -917,7 +933,7 @@ function endCatch(success) {
   raf = null;
   el.fishbarPanel.classList.add('hidden');
   el.catchHint.classList.add('hidden');
-  if (success) playReelThenResult(); else endRun('물고기가 도망쳤어요...');
+  if (success) playReelThenResult(); else resetToIdle(); // 실패 — 화면 전환 없이 그냥 대기 상태로 돌아간다
 }
 
 // 잡힌 물고기 종을 고른다 — fishDefs의 catchRate가 하나라도 채워져 있으면(합이
@@ -937,60 +953,6 @@ function pickCaughtFish() {
   return all[all.length - 1];
 }
 
-// 낚시 성공 시 결과창(overlay, "계속하기" 버튼) 대신 잡은 물고기 아이콘이
-// 찌(추)가 있던 자리에 나타났다가 캐릭터 쪽으로 날아가며 사라지는 걸로
-// 대체한다 — 화면을 막는 모달 없이 바로 다음 캐스팅으로 이어진다. 시작
-// 위치는 el.bobber의 마지막 착수 지점(숨겨진 뒤에도 style.left/top은
-// 남아있다), 도착 위치는 el.charStage 중심에서 살짝 위(손/얼굴 높이)로
-// 잡는다.
-function playCatchFlyAnimation(fishCaught) {
-  return new Promise(resolve => {
-    const frameRect = el.frame.getBoundingClientRect();
-    const charRect = el.charStage.getBoundingClientRect();
-    const startLeftPct = parseFloat(el.bobber.style.left) || 50;
-    const startTopPct = parseFloat(el.bobber.style.top) || 50;
-    const endLeftPct = (charRect.left - frameRect.left + charRect.width / 2) / frameRect.width * 100;
-    const endTopPct = (charRect.top - frameRect.top + charRect.height * 0.35) / frameRect.height * 100;
-
-    el.catchFlyIcon.style.borderColor = GRADE_BORDER_COLORS[fishCaught.grade] || 'transparent';
-    if (fishSheetUrl) {
-      const override = fishIconOverrides[fishCaught.id];
-      const style = (override && fishSheetDims)
-        ? getFishCropStyle(override, fishSheetDims.width, fishSheetDims.height, 32)
-        : getFishSlotStyle(fishCaught.slot, 2);
-      el.catchFlyIcon.style.backgroundImage = `url('${fishSheetUrl}')`;
-      el.catchFlyIcon.style.backgroundPosition = style.backgroundPosition;
-      el.catchFlyIcon.style.backgroundSize = style.backgroundSize;
-      el.catchFlyIcon.textContent = '';
-    } else {
-      el.catchFlyIcon.style.backgroundImage = 'none';
-      el.catchFlyIcon.textContent = '🐟';
-    }
-
-    el.catchFlyIcon.style.transition = 'none';
-    el.catchFlyIcon.style.left = startLeftPct + '%';
-    el.catchFlyIcon.style.top = startTopPct + '%';
-    el.catchFlyIcon.style.transform = 'translate(-50%,-50%) scale(.5)';
-    el.catchFlyIcon.style.opacity = '0';
-    el.catchFlyIcon.classList.remove('hidden');
-    void el.catchFlyIcon.offsetWidth; // 강제 리플로우 — 시작 위치를 transition 없이 먼저 반영해야 그 다음 값 변경이 애니메이션으로 인식된다
-    el.catchFlyIcon.style.transition = 'left .7s cubic-bezier(.3,.6,.3,1), top .7s cubic-bezier(.3,.6,.3,1), transform .7s cubic-bezier(.3,.6,.3,1), opacity .2s ease';
-    el.catchFlyIcon.style.opacity = '1';
-    el.catchFlyIcon.style.transform = 'translate(-50%,-50%) scale(1)';
-    vibrate(20);
-    requestAnimationFrame(() => {
-      el.catchFlyIcon.style.left = endLeftPct + '%';
-      el.catchFlyIcon.style.top = endTopPct + '%';
-      el.catchFlyIcon.style.transform = 'translate(-50%,-50%) scale(.55)';
-    });
-    setTimeout(() => {
-      el.catchFlyIcon.style.transition = 'opacity .25s ease';
-      el.catchFlyIcon.style.opacity = '0';
-      setTimeout(() => { el.catchFlyIcon.classList.add('hidden'); resolve(); }, 250);
-    }, 750);
-  });
-}
-
 async function playReelThenResult() {
   gameState = 'reeling';
   el.statusLine.textContent = '끌어올리는 중...';
@@ -1002,25 +964,82 @@ async function playReelThenResult() {
   caughtCount++;
   el.countChip.textContent = caughtCount + '마리';
   const fishCaught = pickCaughtFish();
-  await playCatchFlyAnimation(fishCaught);
-  resetToIdle();
-  el.statusLine.textContent = `${fishCaught.name} 낚았어요!`;
-  setTimeout(() => {
-    if (gameState === 'idle') el.statusLine.textContent = '화면을 꾹 눌러 캐스팅 세기를 조절하세요';
-  }, 1400);
+  el.statusLine.textContent = '손맛 좋다! 낚았어요!';
+  await flyFishToCharacter(fishCaught);
+  showItemPopup(fishCaught);
 }
 
-/* ===== 실패 결과 / 리셋 ===== */
-function endRun(message) {
-  gameState = 'result';
-  el.overlayTitle.textContent = '낚시 실패';
-  el.overlayMessage.textContent = message;
-  el.overlayCount.textContent = `이번 세션 ${caughtCount}마리`;
-  el.overlay.classList.add('show');
+/* ===== 물고기 날아오기 연출 =====
+   추(찌)가 마지막으로 착수했던 자리(el.bobber의 현재 left/top — throwSinker의
+   finish에서 남겨둔 값)에서 캐릭터(el.charStage) 쪽으로 물고기 아이콘이
+   천천히 날아든다. 임시 엘리먼트(.fish-fly)를 만들어 el.stage에 얹고,
+   도착하면 지운다. */
+function flyFishToCharacter(fishDef) {
+  return new Promise(resolve => {
+    const frameRect = el.frame.getBoundingClientRect();
+    const startLeft = parseFloat(el.bobber.style.left) || 26;
+    const startTop = parseFloat(el.bobber.style.top) || 64;
+    const charRect = el.charStage.getBoundingClientRect();
+    const endLeft = ((charRect.left + charRect.width / 2) - frameRect.left) / frameRect.width * 100;
+    const endTop = ((charRect.top + charRect.height * 0.3) - frameRect.top) / frameRect.height * 100;
+
+    const flyEl = document.createElement('div');
+    flyEl.className = 'fish-fly';
+    flyEl.style.borderColor = GRADE_BORDER_COLORS[fishDef.grade] || 'transparent';
+    if (fishSheetUrl) {
+      const override = fishIconOverrides[fishDef.id];
+      const style = (override && fishSheetDims)
+        ? getFishCropStyle(override, fishSheetDims.width, fishSheetDims.height, 44)
+        : getFishSlotStyle(fishDef.slot, 3.5);
+      flyEl.style.backgroundImage = `url('${fishSheetUrl}')`;
+      flyEl.style.backgroundPosition = style.backgroundPosition;
+      flyEl.style.backgroundSize = style.backgroundSize;
+    } else {
+      flyEl.textContent = '🐟';
+    }
+    flyEl.style.left = startLeft + '%';
+    flyEl.style.top = startTop + '%';
+    el.stage.appendChild(flyEl);
+    vibrate(20);
+    requestAnimationFrame(() => {
+      flyEl.style.transition = 'left .9s cubic-bezier(0.25,0.8,0.25,1), top .9s cubic-bezier(0.25,0.8,0.25,1), transform .9s ease';
+      flyEl.style.left = endLeft + '%';
+      flyEl.style.top = endTop + '%';
+      flyEl.style.transform = 'translate(-50%,-50%) scale(0.55)';
+    });
+    setTimeout(() => { flyEl.remove(); resolve(); }, 920);
+  });
 }
 
+/* ===== 아이템창 =====
+   실패 시엔 아무 화면도 없이 그냥 대기로 돌아가고(missReaction/endCatch
+   참고), 성공해서 물고기가 캐릭터에게 도착한 다음에만 이 팝업이 뜬다.
+   배경/아이콘 위치·크기는 dev/minigame-fishing/index.html의 "아이템창" 탭
+   (itemPopup config, loadConfig에서 el.itemPopupCard/el.itemPopupIcon에
+   이미 적용해둔 상태)을 그대로 쓴다. */
+function showItemPopup(fishCaught) {
+  gameState = 'popup';
+  el.itemPopupName.textContent = fishCaught.name;
+  el.itemPopupMeta.textContent = `${fishCaught.grade} · ${fishCaught.value}P`;
+  if (fishSheetUrl) {
+    const override = fishIconOverrides[fishCaught.id];
+    const style = (override && fishSheetDims)
+      ? getFishCropStyle(override, fishSheetDims.width, fishSheetDims.height, itemIconSizePx)
+      : getFishSlotStyle(fishCaught.slot, 3.5);
+    el.itemPopupIcon.style.backgroundImage = `url('${fishSheetUrl}')`;
+    el.itemPopupIcon.style.backgroundPosition = style.backgroundPosition;
+    el.itemPopupIcon.style.backgroundSize = style.backgroundSize;
+    el.itemPopupIcon.textContent = '';
+  } else {
+    el.itemPopupIcon.style.backgroundImage = 'none';
+    el.itemPopupIcon.textContent = '🐟';
+  }
+  el.itemPopup.classList.add('show');
+}
+
+/* ===== 리셋 ===== */
 function resetToIdle() {
-  el.overlay.classList.remove('show');
+  el.itemPopup.classList.remove('show');
   gameState = 'idle';
   el.statusLine.textContent = '화면을 꾹 눌러 캐스팅 세기를 조절하세요';
   el.castPowerWrap.classList.add('hidden');
@@ -1037,7 +1056,7 @@ function resetToIdle() {
    왔다리갔다리 돌아가다가(startPowerCharge), 손을 떼는 순간 값으로 던진다
    (releasePowerAndCast) — 잡아채기(catching) 중 홀드와 같은 pointerdown/up
    쌍을 gameState로 나눠 재사용한다. */
-el.retryBtn.addEventListener('click', resetToIdle);
+el.itemPopupConfirmBtn.addEventListener('click', resetToIdle);
 el.frame.addEventListener('pointerdown', () => {
   if (gameState === 'bite') { handleReactionTap(); return; }
   if (gameState === 'catching') { holding = true; return; }

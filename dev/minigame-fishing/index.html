@@ -248,6 +248,15 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .move-dpad-right{grid-column:3;grid-row:2}
 .move-dpad-down{grid-column:2;grid-row:3}
 
+/* ===== 아이템창 탭 — 낚시 성공 시(물고기가 추에서 캐릭터로 날아온 다음)
+   뜨는 아이템창 팝업의 배경(액자) 그림 + 아이템 아이콘이 놓일 위치/크기.
+   위치 지정 피커는 낚시대 끝 지정(rodtip-stage/rodtip-marker)과 완전히
+   같은 단일 포인트 드래그 패턴을 재사용하고, 스테이지 비율만 다르다. */
+.itempos-stage{position:relative;width:100%;max-width:280px;height:260px;margin:0 auto;border-radius:12px;overflow:hidden;background:#15191f;touch-action:none;cursor:crosshair}
+.itempos-stage img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;-webkit-user-drag:none;-webkit-user-select:none;user-select:none}
+.item-popup-preview{position:relative;width:220px;height:220px;border-radius:20px;overflow:hidden;border:1px solid var(--divider);background:var(--surface-2);background-size:cover;background-position:center}
+.item-popup-preview-icon{position:absolute;border-radius:14px;background-color:rgba(255,255,255,.14);background-repeat:no-repeat;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;font-size:26px;transform:translate(-50%,-50%)}
+
 .save-note{font-family:var(--mono);font-size:11px;color:var(--green);min-height:16px;margin-bottom:8px;opacity:0;transition:opacity .3s}
 .save-note.show{opacity:1}
 
@@ -275,6 +284,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     <button class="tab-btn" data-tab="reel">올리기 모션</button>
     <button class="tab-btn" data-tab="fish">물고기 종류</button>
     <button class="tab-btn" data-tab="move">이동</button>
+    <button class="tab-btn" data-tab="item">아이템창</button>
   </div>
 
   <!-- ===== 낚시게임 로직 — 난이도/모션타입(물고기 움직임 패턴) 선택. 값은
@@ -597,6 +607,39 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     </div>
   </div>
 
+  <!-- ===== 아이템창 — 낚시 성공 시(물고기가 추에서 캐릭터로 날아온 다음)
+       뜨는 팝업의 디자인. 배경(액자) 그림을 올리고, 그 위 어디에 잡은
+       물고기 아이콘이 놓일지 점 하나로 지정한다(낚시대 끝 지정과 같은
+       단일 포인트 피커 — 아래 itemPosOverlay가 rodtip-stage/rodtip-marker
+       클래스를 그대로 재사용). 실제 팝업은
+       dev/minigame-fishing/play/index.html의 #itemPopup 참고. ===== -->
+  <div class="tab-panel hidden" id="panelItem">
+    <div class="option-group">
+      <div class="option-label">팝업 배경</div>
+      <div class="option-desc">낚시 성공 시 뜨는 아이템창의 배경(액자) 그림이에요. 업로드하지 않으면 기본 카드 배경이 표시돼요.</div>
+      <div class="frame-strip" id="itemBgSlot"></div>
+      <button type="button" class="frame-add-btn hidden" id="itemBgAddBtn">+ 배경 업로드</button>
+      <input type="file" id="itemBgFileInput" accept="image/*">
+    </div>
+    <div class="option-group">
+      <div class="option-label">아이템 아이콘 크기</div>
+      <div class="range-row">
+        <input type="range" id="itemIconSizeInput" min="32" max="120" value="64">
+        <div class="range-value" id="itemIconSizeValue">64px</div>
+      </div>
+    </div>
+    <div class="option-group">
+      <div class="option-label">아이템 뜨는 위치</div>
+      <div class="option-desc">배경 그림 위 어디에 잡은 물고기 아이콘이 나타날지 지정하세요.</div>
+      <button type="button" class="fish-sheet-btn" id="itemPosEditBtn" style="width:100%">🎯 위치 지정</button>
+    </div>
+    <div class="bar-preview-wrap">
+      <div class="item-popup-preview" id="itemPopupPreview">
+        <div class="item-popup-preview-icon" id="itemPopupPreviewIcon">🐟</div>
+      </div>
+    </div>
+  </div>
+
   <div class="save-note" id="saveNote">저장됐어요</div>
   <a class="test-btn" id="testBtn" href="/dev/minigame-fishing/play/">테스트하기</a>
 </div>
@@ -675,6 +718,24 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     <div class="fbregion-canvas" id="fbregionCanvas">
       <img id="fbregionImg" alt="낚시바">
       <div id="fbregionBoxes"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 아이템 뜨는 위치 지정 — 낚시대 끝 지정과 같은 바텀시트 틀 +
+     단일 포인트 마커(rodtip-stage/rodtip-marker 클래스 재사용, 스테이지
+     비율만 itempos-stage로 다르게). -->
+<div class="crop-overlay hidden" id="itemPosOverlay">
+  <div class="crop-sheet">
+    <div class="crop-title">아이템 뜨는 위치 지정</div>
+    <div class="crop-desc">그림 위를 탭하거나 드래그해서 아이템 아이콘이 나타날 위치를 옮기세요.</div>
+    <div class="itempos-stage" id="itemPosStage">
+      <img id="itemPosImg" alt="">
+      <div class="rodtip-marker" id="itemPosMarker"></div>
+    </div>
+    <div class="crop-actions">
+      <button type="button" class="crop-btn secondary" id="itemPosCancelBtn">취소</button>
+      <button type="button" class="crop-btn primary" id="itemPosConfirmBtn">적용</button>
     </div>
   </div>
 </div>
@@ -871,9 +932,24 @@ const el = {
   moveStepMsValue: document.getElementById('moveStepMsValue'),
   moveStepDelayMsInput: document.getElementById('moveStepDelayMsInput'),
   moveStepDelayMsValue: document.getElementById('moveStepDelayMsValue'),
+  panelItem: document.getElementById('panelItem'),
+  itemBgSlot: document.getElementById('itemBgSlot'),
+  itemBgAddBtn: document.getElementById('itemBgAddBtn'),
+  itemBgFileInput: document.getElementById('itemBgFileInput'),
+  itemIconSizeInput: document.getElementById('itemIconSizeInput'),
+  itemIconSizeValue: document.getElementById('itemIconSizeValue'),
+  itemPosEditBtn: document.getElementById('itemPosEditBtn'),
+  itemPopupPreview: document.getElementById('itemPopupPreview'),
+  itemPopupPreviewIcon: document.getElementById('itemPopupPreviewIcon'),
+  itemPosOverlay: document.getElementById('itemPosOverlay'),
+  itemPosStage: document.getElementById('itemPosStage'),
+  itemPosImg: document.getElementById('itemPosImg'),
+  itemPosMarker: document.getElementById('itemPosMarker'),
+  itemPosCancelBtn: document.getElementById('itemPosCancelBtn'),
+  itemPosConfirmBtn: document.getElementById('itemPosConfirmBtn'),
 };
 
-const PANELS = { logic: el.panelLogic, cast: el.panelCast, bar: el.panelBar, reel: el.panelReel, fish: el.panelFish, move: el.panelMove };
+const PANELS = { logic: el.panelLogic, cast: el.panelCast, bar: el.panelBar, reel: el.panelReel, fish: el.panelFish, move: el.panelMove, item: el.panelItem };
 el.tabsRow.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => selectTab(btn.dataset.tab));
 });
@@ -2815,6 +2891,111 @@ async function renderMoveTestStage() {
   updateCharPosition();
 }
 
+/* ===== 아이템창 탭 — 팝업 배경 업로드 + 아이콘 크기/위치.
+   fishingConfig.itemPopup = { backgroundAssetId, iconPos: {x,y}(0~1, 팝업
+   카드 기준), iconSizePx }. 위치 지정은 낚시대 끝 지정과 같은 단일 포인트
+   피커(itemPos* = rodtip* 패턴 재사용, 프레임별 배열이 아니라 값 하나만
+   다룬다는 점만 다르다). ===== */
+async function renderItemBgSlot() {
+  const ip = fishingConfig.itemPopup || {};
+  el.itemBgSlot.innerHTML = '';
+  if (ip.backgroundAssetId) {
+    el.itemBgAddBtn.classList.add('hidden');
+    const asset = await AssetDB.getAsset(ip.backgroundAssetId).catch(() => null);
+    const slot = document.createElement('div');
+    slot.className = 'frame-slot';
+    slot.innerHTML = `${asset ? `<img src="${asset.dataUrl}" alt="">` : ''}
+      <div class="frame-actions"><button type="button" class="frame-mini-btn danger" data-act="del">✕</button></div>`;
+    slot.querySelector('[data-act=del]').addEventListener('click', async () => {
+      fishingConfig = await AssetDB.setFishingConfig({ itemPopup: Object.assign({}, fishingConfig.itemPopup, { backgroundAssetId: null }) });
+      showSaveNote();
+      renderItemBgSlot();
+      renderItemPopupPreview();
+    });
+    el.itemBgSlot.appendChild(slot);
+  } else {
+    el.itemBgAddBtn.classList.remove('hidden');
+  }
+}
+el.itemBgAddBtn.addEventListener('click', () => el.itemBgFileInput.click());
+el.itemBgFileInput.addEventListener('change', async () => {
+  const file = el.itemBgFileInput.files[0];
+  el.itemBgFileInput.value = '';
+  if (!file) return;
+  el.itemBgAddBtn.disabled = true;
+  try {
+    const asset = await AssetDB.addAsset({ type: 'fishing-item-popup-background', name: file.name, blob: file });
+    fishingConfig = await AssetDB.setFishingConfig({ itemPopup: Object.assign({}, fishingConfig.itemPopup, { backgroundAssetId: asset.id }) });
+    showSaveNote();
+    renderItemBgSlot();
+    renderItemPopupPreview();
+  } finally {
+    el.itemBgAddBtn.disabled = false;
+  }
+});
+
+el.itemIconSizeInput.addEventListener('input', () => {
+  el.itemIconSizeValue.textContent = el.itemIconSizeInput.value + 'px';
+  renderItemPopupPreview();
+});
+el.itemIconSizeInput.addEventListener('change', async () => {
+  fishingConfig = await AssetDB.setFishingConfig({ itemPopup: Object.assign({}, fishingConfig.itemPopup, { iconSizePx: Number(el.itemIconSizeInput.value) }) });
+  showSaveNote();
+});
+
+async function renderItemPopupPreview() {
+  const ip = fishingConfig.itemPopup || {};
+  const pos = ip.iconPos || { x: 0.5, y: 0.36 };
+  const size = ip.iconSizePx || 64;
+  el.itemPopupPreview.style.backgroundImage = '';
+  if (ip.backgroundAssetId) {
+    const asset = await AssetDB.getAsset(ip.backgroundAssetId).catch(() => null);
+    if (asset) el.itemPopupPreview.style.backgroundImage = `url(${asset.dataUrl})`;
+  }
+  el.itemPopupPreviewIcon.style.left = (pos.x * 100) + '%';
+  el.itemPopupPreviewIcon.style.top = (pos.y * 100) + '%';
+  el.itemPopupPreviewIcon.style.width = size + 'px';
+  el.itemPopupPreviewIcon.style.height = size + 'px';
+}
+
+let itemPosDraft = { x: 0.5, y: 0.36 };
+let itemPosDragging = false;
+el.itemPosEditBtn.addEventListener('click', openItemPosEditor);
+el.itemPosCancelBtn.addEventListener('click', () => el.itemPosOverlay.classList.add('hidden'));
+el.itemPosConfirmBtn.addEventListener('click', confirmItemPosEditor);
+async function openItemPosEditor() {
+  const ip = fishingConfig.itemPopup || {};
+  itemPosDraft = Object.assign({ x: 0.5, y: 0.36 }, ip.iconPos || {});
+  el.itemPosImg.src = '';
+  if (ip.backgroundAssetId) {
+    const asset = await AssetDB.getAsset(ip.backgroundAssetId).catch(() => null);
+    if (asset) el.itemPosImg.src = asset.dataUrl;
+  }
+  renderItemPosMarker();
+  el.itemPosOverlay.classList.remove('hidden');
+}
+function renderItemPosMarker() {
+  el.itemPosMarker.style.left = (itemPosDraft.x * 100) + '%';
+  el.itemPosMarker.style.top = (itemPosDraft.y * 100) + '%';
+}
+function updateItemPosFromEvent(e) {
+  const rect = el.itemPosStage.getBoundingClientRect();
+  itemPosDraft = {
+    x: clamp01((e.clientX - rect.left) / rect.width),
+    y: clamp01((e.clientY - rect.top) / rect.height),
+  };
+  renderItemPosMarker();
+}
+el.itemPosStage.addEventListener('pointerdown', (e) => { itemPosDragging = true; updateItemPosFromEvent(e); });
+window.addEventListener('pointermove', (e) => { if (itemPosDragging) updateItemPosFromEvent(e); });
+window.addEventListener('pointerup', () => { itemPosDragging = false; });
+async function confirmItemPosEditor() {
+  fishingConfig = await AssetDB.setFishingConfig({ itemPopup: Object.assign({}, fishingConfig.itemPopup, { iconPos: itemPosDraft }) });
+  showSaveNote();
+  el.itemPosOverlay.classList.add('hidden');
+  renderItemPopupPreview();
+}
+
 let saveNoteTimer = null;
 function showSaveNote() {
   el.saveNote.classList.add('show');
@@ -2843,6 +3024,11 @@ async function init() {
   WALK_DIRS.forEach(dir => renderWalkTab(dir));
   initMoveMotionControls();
   renderMoveTestStage();
+  const itemPopupCfg = fishingConfig.itemPopup || {};
+  el.itemIconSizeInput.value = itemPopupCfg.iconSizePx || 64;
+  el.itemIconSizeValue.textContent = (itemPopupCfg.iconSizePx || 64) + 'px';
+  renderItemBgSlot();
+  renderItemPopupPreview();
 }
 init();
 </script>
