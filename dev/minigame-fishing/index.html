@@ -259,7 +259,11 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
    보이던 문제를 해결한다. */
 .itempos-stage{position:relative;width:100%;max-width:280px;aspect-ratio:var(--item-ar,280/260);margin:0 auto;border-radius:12px;overflow:hidden;background:#15191f;touch-action:none;cursor:crosshair}
 .itempos-stage img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none;-webkit-user-drag:none;-webkit-user-select:none;user-select:none}
-.item-popup-preview{position:relative;width:100%;max-width:220px;aspect-ratio:var(--item-ar,280/260);margin:0 auto;border-radius:20px;overflow:hidden;border:1px solid var(--divider);background:var(--surface-2);background-size:contain;background-repeat:no-repeat;background-position:center}
+.item-popup-preview{position:relative;width:100%;max-width:220px;aspect-ratio:var(--item-ar,280/260);margin:0 auto;border-radius:20px;overflow:hidden;background-size:contain;background-repeat:no-repeat;background-position:center}
+/* 배경(액자) 그림을 업로드하지 않았을 때만 쓰는 기본 미리보기 배경 —
+   실제 팝업(play/index.html .item-popup-card--fallback)과 같은 이유로,
+   이미 누끼 딴 액자 그림 위에는 이 테두리/배경을 깔지 않는다. */
+.item-popup-preview.item-popup-preview--fallback{border:1px solid var(--divider);background-color:var(--surface-2)}
 .item-popup-preview-icon{position:absolute;border-radius:14px;background-color:rgba(255,255,255,.14);background-repeat:no-repeat;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;font-size:26px;transform:translate(-50%,-50%)}
 
 .save-note{font-family:var(--mono);font-size:11px;color:var(--green);min-height:16px;margin-bottom:8px;opacity:0;transition:opacity .3s}
@@ -651,7 +655,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
       <button type="button" class="fish-sheet-btn" id="itemPosEditBtn" style="width:100%">🎯 위치 지정</button>
     </div>
     <div class="bar-preview-wrap">
-      <div class="item-popup-preview" id="itemPopupPreview">
+      <div class="item-popup-preview item-popup-preview--fallback" id="itemPopupPreview">
         <div class="item-popup-preview-icon" id="itemPopupPreviewIcon">🐟</div>
       </div>
     </div>
@@ -3081,6 +3085,7 @@ async function renderItemPopupPreview() {
     asset = await AssetDB.getAsset(ip.backgroundAssetId).catch(() => null);
     if (asset) el.itemPopupPreview.style.backgroundImage = `url(${asset.dataUrl})`;
   }
+  el.itemPopupPreview.classList.toggle('item-popup-preview--fallback', !asset);
   await applyItemAspectRatio(el.itemPopupPreview, asset ? asset.dataUrl : null);
   el.itemPopupPreviewIcon.style.left = (pos.x * 100) + '%';
   el.itemPopupPreviewIcon.style.top = (pos.y * 100) + '%';
