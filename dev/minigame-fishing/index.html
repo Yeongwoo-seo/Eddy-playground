@@ -1135,7 +1135,10 @@ async function renderCastPreviewLoop(sheetAsset) {
   img.crossOrigin = 'anonymous';
   img.src = sheetAsset.dataUrl;
   await new Promise(resolve => { if (img.complete && img.naturalWidth) resolve(); else img.onload = resolve; });
-  const urls = buildMotionFrameDataUrls(img, fishingConfig.castingFrameOverrides, 64);
+  // outputSize를 안 넘긴다 — buildMotionFrameDataUrls가 원본 크롭 해상도를
+  // 그대로 살린다(§신규 버그 수정: 예전엔 64px로 강제 축소해서 96px 미리보기
+  // 박스에서 다시 확대되며 흐리게 보였다).
+  const urls = buildMotionFrameDataUrls(img, fishingConfig.castingFrameOverrides);
   castFrameThumbUrls = urls;
   startPreviewLoop(el.castPreview, el.castPreviewLabel, urls.map(u => ({ dataUrl: u })), getCastFrameDurations());
 }
@@ -2462,7 +2465,8 @@ async function renderWalkPreviewLoop(dir, sheetAsset) {
   img.crossOrigin = 'anonymous'; // 교차 출처 시트를 캔버스로 잘라내려면 필수 — 캐스팅 미리보기가 이거 빠뜨려서 조용히 실패했던 것과 같은 문제
   img.src = sheetAsset.dataUrl;
   await new Promise(resolve => { if (img.complete && img.naturalWidth) resolve(); else img.onload = resolve; });
-  const urls = buildMotionFrameDataUrls(img, getWalkFrameOverrides(dir), 64);
+  // outputSize를 안 넘긴다 — 캐스팅 미리보기와 같은 이유(§신규 버그 수정).
+  const urls = buildMotionFrameDataUrls(img, getWalkFrameOverrides(dir));
   walkFrameCache[dir] = urls;
   startPreviewLoop(previewEl, labelEl, urls.map(u => ({ dataUrl: u })));
 }

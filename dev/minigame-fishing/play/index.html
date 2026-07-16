@@ -375,7 +375,10 @@ async function loadConfig() {
       im.onerror = () => resolve(null);
       im.src = castingSheetAsset.dataUrl;
     });
-    castFrameUrls = img ? buildMotionFrameDataUrls(img, cfg.castingFrameOverrides, 64) : [];
+    // outputSize를 안 넘긴다 — buildMotionFrameDataUrls가 원본 크롭 해상도를
+    // 그대로 살린다(§신규 버그 수정: 예전엔 64px로 강제 축소해서 84px
+    // char-stage에서 다시 확대되며 흐리게 보였다).
+    castFrameUrls = img ? buildMotionFrameDataUrls(img, cfg.castingFrameOverrides) : [];
   } else {
     castFrameUrls = [];
   }
