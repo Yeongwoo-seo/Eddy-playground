@@ -124,8 +124,11 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .fishbar-gauge{position:absolute;overflow:hidden;background:rgb(151,126,83);background-size:cover;background-repeat:no-repeat;background-position:center;display:none}
 .fishbar-gauge-mask{position:absolute;left:0;right:0;top:0;background:rgba(5,7,10,.82)}
 .fishbar-zone{position:absolute;border-radius:6px;opacity:.85;transition:background .2s;background-size:cover;background-position:center}
-.fishbar-fish{position:absolute;left:50%;transform:translate(-50%,-50%);font-size:22px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.4))}
-.fishbar-fish img{width:26px;height:26px;object-fit:contain;image-rendering:pixelated}
+/* --fishbar-fish-size — loadConfig가 낚시바 폭(slideWidthPx) 기준으로 채운다.
+   기본값(22px/26px)은 기본 폭(90px) 기준 크기와 같아 CSS 변수가 아직 안
+   채워졌을 때도(로드 전 잠깐) 결과가 같다. */
+.fishbar-fish{position:absolute;left:50%;transform:translate(-50%,-50%);font-size:var(--fishbar-fish-size,22px);filter:drop-shadow(0 2px 3px rgba(0,0,0,.4))}
+.fishbar-fish img{width:var(--fishbar-fish-size,26px);height:var(--fishbar-fish-size,26px);object-fit:contain;image-rendering:pixelated}
 
 /* 낚시 성공 시 잡은 물고기 아이콘이 추(찌) 자리에서 캐릭터에게로 천천히
    날아오는 연출용 임시 엘리먼트 — flyFishToCharacter가 매 캐치마다
@@ -469,8 +472,16 @@ async function loadConfig() {
 
   // 낚시바 모듈 크기 — 설정 화면 슬라이드 에디터(dev/minigame-fishing/
   // index.html)의 슬라이드 실제 px 크기를 그대로 쓴다.
-  el.fishbar.style.width = (design.slideWidthPx || 90) + 'px';
+  const slideWidthPx = design.slideWidthPx || 90;
+  el.fishbar.style.width = slideWidthPx + 'px';
   el.fishbar.style.height = (design.slideHeightPx || 260) + 'px';
+
+  // 물고기 아이콘 크기 — 기본 폭(90px) 기준 26px를 넘지 않되, 낚시바가
+  // 그보다 좁게 설정되면(slideWidthInput min 40px) 그 폭에 비례해서
+  // 줄어든다. 폭에 상관없이 항상 26px 고정이면 좁은 낚시바에서 아이콘이
+  // 바 너비를 넘어가 튀어나와 보이던 문제가 있었다.
+  const fishIconSizePx = Math.min(26, slideWidthPx * 0.4);
+  el.fishbarFish.style.setProperty('--fishbar-fish-size', fishIconSizePx + 'px');
 
   // 낚시바 이미지 — barLayer(x,y,w,h, 슬라이드 기준 0~1 비율)를 그대로
   // 절대위치로 옮겨온다(설정 화면 슬라이드와 좌표계가 동일하므로 변환 없음).
