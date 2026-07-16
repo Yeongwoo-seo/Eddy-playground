@@ -1639,6 +1639,26 @@ const SLIDE_LAYER_META = {
 let selectedLayerId = null;
 const slideAssetUrlCache = new Map(); // assetId -> dataUrl, 매 렌더마다 AssetDB.getAsset 재조회하지 않도록
 
+// 업로드 직후엔 Supabase Storage에 방금 올린 파일이 공개 URL로 아직 안
+// 읽히는 경우가 있다(전파 지연) — 낚시바/캐치바 이미지를 올리자마자
+// 에디터 미리보기에 즉시 표시하려 하면 이 지연 때문에 <img>가 한 번
+// 깨져서 "이미지가 적용 안 된다"로 보인다. play/index.html의
+// preloadWithRetry와 같은 방식으로 실제로 로드될 때까지 몇 번 재시도한다.
+function preloadWithRetry(url, retries, delayMs) {
+  return new Promise(resolve => {
+    const attempt = (remaining) => {
+      const img = new Image();
+      img.onload = () => resolve(url);
+      img.onerror = () => {
+        if (remaining > 0) setTimeout(() => attempt(remaining - 1), delayMs);
+        else resolve(url); // 재시도 다 써도 일단 원래 URL로 시도는 하게 둔다
+      };
+      img.src = url;
+    };
+    attempt(retries);
+  });
+}
+
 function barDesignOf() { return fishingConfig.barDesign || {}; }
 async function patchBarDesign(patch) {
   fishingConfig = await AssetDB.setFishingConfig({ barDesign: Object.assign({}, fishingConfig.barDesign, patch) });
@@ -1682,7 +1702,7 @@ async function renderSlideStage() {
       const url = await getCachedAssetUrl(data.assetId);
       if (url) {
         const img = document.createElement('img');
-        img.src = url;
+        img.src = await preloadWithRetry(url, 3, 500);
         img.alt = '';
         layerEl.appendChild(img);
       }
