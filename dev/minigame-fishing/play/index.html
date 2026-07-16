@@ -113,14 +113,14 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
    낚시 버튼 하나로 옮기고(el.frame 전체 pointerdown이 아니라 이 버튼만
    idle → charging을 트리거한다 — 입력 섹션 참고) 나머지 화면은 캐릭터
    이동에 쓴다. */
-.move-dpad{position:absolute;left:calc(16px + env(safe-area-inset-left,0));bottom:calc(24px + env(safe-area-inset-bottom,0));z-index:5;display:grid;grid-template-columns:repeat(3,40px);grid-template-rows:repeat(3,40px);gap:4px}
-.move-dpad.hidden{display:none}
-.move-dpad-btn{grid-column:2;background:rgba(5,20,28,.4);border:1px solid rgba(255,255,255,.3);border-radius:10px;color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:pointer}
-.move-dpad-btn:active{background:rgba(5,20,28,.65)}
-.move-dpad-up{grid-row:1}
-.move-dpad-left{grid-row:2;grid-column:1}
-.move-dpad-down{grid-row:2}
-.move-dpad-right{grid-row:2;grid-column:3}
+/* 이동 조이스틱 — 큰 원(베이스, .joystick) 안에서 작은 원(손잡이,
+   .joystick-knob)을 드래그한다. 손잡이는 자유롭게 움직이는 것처럼
+   보이지만 실제 캐릭터 이동은 8방향(상하좌우+대각선)으로만 스냅된다 —
+   드래그 각도를 45도 단위 구간(zone)으로 나눠 인식한다(updateJoystickFromPointer
+   참고). */
+.joystick{position:absolute;left:calc(16px + env(safe-area-inset-left,0));bottom:calc(24px + env(safe-area-inset-bottom,0));z-index:5;width:100px;height:100px;border-radius:50%;background:rgba(5,20,28,.35);border:1px solid rgba(255,255,255,.3);touch-action:none}
+.joystick.hidden{display:none}
+.joystick-knob{position:absolute;left:50%;top:50%;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;background:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.65);pointer-events:none}
 .fish-btn{position:absolute;right:calc(16px + env(safe-area-inset-right,0));bottom:calc(24px + env(safe-area-inset-bottom,0));z-index:5;width:64px;height:64px;border-radius:50%;background:rgba(5,20,28,.4);border:1px solid rgba(255,255,255,.3);font-size:26px;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:pointer}
 .fish-btn:active{background:rgba(5,20,28,.65);transform:scale(.95)}
 .fish-btn.hidden{display:none}
@@ -263,11 +263,8 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
   </div>
   <div class="catch-hint hidden" id="catchHint">누르고 있으면 캐치존이 올라가요 · 떼면 내려가요</div>
 
-  <div class="move-dpad" id="moveDpad">
-    <button type="button" class="move-dpad-btn move-dpad-up" data-dir="up">▲</button>
-    <button type="button" class="move-dpad-btn move-dpad-left" data-dir="left">◀</button>
-    <button type="button" class="move-dpad-btn move-dpad-right" data-dir="right">▶</button>
-    <button type="button" class="move-dpad-btn move-dpad-down" data-dir="down">▼</button>
+  <div class="joystick" id="joystick">
+    <div class="joystick-knob" id="joystickKnob"></div>
   </div>
   <button type="button" class="fish-btn" id="fishBtn">🎣</button>
 
@@ -396,7 +393,8 @@ const el = {
   fishbarGauge: document.getElementById('fishbarGauge'),
   fishbarGaugeMask: document.getElementById('fishbarGaugeMask'),
   catchHint: document.getElementById('catchHint'),
-  moveDpad: document.getElementById('moveDpad'),
+  joystick: document.getElementById('joystick'),
+  joystickKnob: document.getElementById('joystickKnob'),
   fishBtn: document.getElementById('fishBtn'),
   countChip: document.getElementById('countChip'),
   itemPopup: document.getElementById('itemPopup'),
@@ -487,7 +485,7 @@ let walkMotion = { stepMs: 200, animFrameMs: 90 };
 let charPosPct = { left: 9, bottom: 41 }; // .char-stage CSS 기본값과 맞춰둔 시작 위치
 let moveRaf = null;
 let moveLastT = 0;
-let moveHoldDir = null;
+let moveHoldVec = null; // { dx, dy } — 각 -1/0/1, 조이스틱 드래그 각도가 스냅된 8방향 중 하나(대각선은 둘 다 0이 아님)
 let moveAnimTimer = null;
 
 /* ===== 설정 로드 (AssetDB) — 실패해도 게임은 도형 폴백으로 계속 동작한다. ===== */
@@ -884,7 +882,7 @@ function powerToColor(power, alpha) {
 function startPowerCharge() {
   gameState = 'charging';
   stopMoveHold();
-  el.moveDpad.classList.add('hidden');
+  el.joystick.classList.add('hidden');
   el.castPowerWrap.classList.remove('hidden');
   playCastWindup();
   castChargeStartT = performance.now();
@@ -1456,24 +1454,29 @@ function resetToIdle() {
   el.bobber.classList.add('hidden');
   el.bobber.classList.remove('bob-idle', 'bite-dip');
   el.biteCaught.classList.add('hidden');
-  el.moveDpad.classList.remove('hidden');
+  el.joystick.classList.remove('hidden');
   if (idleFrameUrl) { el.charImg.src = idleFrameUrl; el.charImg.classList.remove('hidden'); el.charFallback.classList.add('hidden'); }
   else { el.charImg.classList.add('hidden'); el.charFallback.classList.remove('hidden'); }
 }
 
-/* ===== 이동 — 격자 스냅 없이 방향키/방향 버튼을 누르고 있는 동안
+/* ===== 이동 — 격자 스냅 없이 조이스틱을 누르고 있는 동안
    requestAnimationFrame으로 매 프레임 위치를 갱신하는 연속 이동이다.
    속도는 walkMotion.stepMs(설정 화면 "이동 속도" 슬라이더 — "타일 한 칸
    (MOVE_STEP_PX)을 이동하는 데 걸리는 시간"으로 해석)를 px/ms로 환산해
-   쓴다. 걷기 프레임은 이동 중엔 계속 순환하고(moveAnimTimer), 멈추면
-   idle 프레임으로 되돌아간다. ===== */
+   쓴다. moveHoldVec의 dx/dy가 둘 다 0이 아니면 대각선 이동이다 — 그림은
+   8방향 시트가 없으므로 가로(좌우) 성분이 있으면 좌/우, 없으면 상/하
+   스프라이트로 대신한다(spriteDirFor). 걷기 프레임은 이동 중엔 계속
+   순환하고(moveAnimTimer), 멈추면 idle 프레임으로 되돌아간다. ===== */
 function moveSpeedPxPerMs() { return MOVE_STEP_PX / Math.max(1, walkMotion.stepMs); }
 function stopMoveAnim() {
   if (moveAnimTimer) { clearInterval(moveAnimTimer); moveAnimTimer = null; }
 }
-function playMoveAnim(dir) {
+function spriteDirFor(dx, dy) {
+  return dx !== 0 ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'up' : 'down');
+}
+function playMoveAnim(spriteDir) {
   stopMoveAnim();
-  const frames = walkFrameUrls[dir];
+  const frames = walkFrameUrls[spriteDir];
   if (!frames || !frames.length) return; // 방향 시트가 없으면 그림은 그대로 두고 위치만 바뀐다
   let i = 0;
   el.charImg.src = frames[i];
@@ -1486,46 +1489,52 @@ function playMoveAnim(dir) {
   }, walkMotion.animFrameMs);
 }
 function moveTick(ts) {
-  if (!moveHoldDir) { moveRaf = null; return; }
+  if (!moveHoldVec) { moveRaf = null; return; }
   if (!moveLastT) moveLastT = ts;
-  const distPx = moveSpeedPxPerMs() * (ts - moveLastT);
+  let distPx = moveSpeedPxPerMs() * (ts - moveLastT);
   moveLastT = ts;
+  // 대각선은 가로/세로 둘 다 움직이는 만큼, 축 하나만 움직일 때와 체감
+  // 속도(벡터 크기)를 맞추려면 각 축 이동량을 1/√2로 줄여야 한다 —
+  // 안 그러면 대각선이 약 1.41배 더 빨리 이동하는 흔한 버그가 생긴다.
+  if (moveHoldVec.dx && moveHoldVec.dy) distPx /= Math.SQRT2;
   const frameRect = el.frame.getBoundingClientRect();
-  const stepXPct = distPx / frameRect.width * 100;
-  const stepYPct = distPx / frameRect.height * 100;
-  if (moveHoldDir === 'left') charPosPct.left = clamp(charPosPct.left - stepXPct, MOVE_BOUNDS_PCT.left[0], MOVE_BOUNDS_PCT.left[1]);
-  if (moveHoldDir === 'right') charPosPct.left = clamp(charPosPct.left + stepXPct, MOVE_BOUNDS_PCT.left[0], MOVE_BOUNDS_PCT.left[1]);
-  if (moveHoldDir === 'up') charPosPct.bottom = clamp(charPosPct.bottom + stepYPct, MOVE_BOUNDS_PCT.bottom[0], MOVE_BOUNDS_PCT.bottom[1]);
-  if (moveHoldDir === 'down') charPosPct.bottom = clamp(charPosPct.bottom - stepYPct, MOVE_BOUNDS_PCT.bottom[0], MOVE_BOUNDS_PCT.bottom[1]);
+  if (moveHoldVec.dx) {
+    const stepXPct = distPx / frameRect.width * 100;
+    charPosPct.left = clamp(charPosPct.left + moveHoldVec.dx * stepXPct, MOVE_BOUNDS_PCT.left[0], MOVE_BOUNDS_PCT.left[1]);
+  }
+  if (moveHoldVec.dy) {
+    const stepYPct = distPx / frameRect.height * 100;
+    charPosPct.bottom = clamp(charPosPct.bottom + moveHoldVec.dy * stepYPct, MOVE_BOUNDS_PCT.bottom[0], MOVE_BOUNDS_PCT.bottom[1]);
+  }
   el.charStage.style.left = charPosPct.left + '%';
   el.charStage.style.bottom = charPosPct.bottom + '%';
   moveRaf = requestAnimationFrame(moveTick);
 }
-function startMoveHold(dir) {
+function startMoveHold(dx, dy) {
   if (gameState !== 'idle') return;
-  if (moveHoldDir === dir) return;
-  moveHoldDir = dir;
-  playMoveAnim(dir);
+  if (moveHoldVec && moveHoldVec.dx === dx && moveHoldVec.dy === dy) return;
+  moveHoldVec = { dx, dy };
+  playMoveAnim(spriteDirFor(dx, dy));
   if (!moveRaf) { moveLastT = 0; moveRaf = requestAnimationFrame(moveTick); }
 }
 function stopMoveHold() {
-  moveHoldDir = null;
+  moveHoldVec = null;
   stopMoveAnim();
   if (idleFrameUrl) el.charImg.src = idleFrameUrl; // 걷기 멈추면 원래 idle 프레임(있으면)으로 되돌린다
 }
 
 /* ===== 입력 =====
    화면 아무 곳이나 누르면 캐스팅 세기 조절이 시작되던 것을 오른쪽 아래
-   낚시 버튼(el.fishBtn) 하나로 옮겼다 — idle 상태에서 나머지 화면은
-   왼쪽 아래 방향키(el.moveDpad)로 캐릭터를 이동하는 데 쓴다. 손을 떼는
-   순간(pointerup 등)은 여전히 el.frame 전체에서 받는다 — 버튼 밖으로
-   손가락이 밀려나가도 놓으면 그 순간 값으로 던져지게(releasePowerAndCast)
-   두는 편이 더 관대한 UX다. 잡아채기(catching) 중 홀드와 같은
-   pointerdown/up 쌍을 gameState로 나눠 재사용한다. waiting(입질 대기
-   중) 탭은 기다리지 않고 바로 빈손으로 릴을 감고, popup(아이템창 뜬
-   상태) 탭은 그냥 닫는다(아이템창엔 확인 버튼이 따로 없다 —
-   el.itemPopup이 pointer-events:none이라 카드를 눌러도 그대로 여기까지
-   뚫고 내려온다). */
+   낚시 버튼(el.fishBtn) 하나로 옮겼다("낚시 버튼 = 낚싯대를 든다"는
+   뜻이라, 안 누르고 있는 게 기본값이고 그 사이엔 왼쪽 아래 조이스틱
+   (el.joystick)으로 캐릭터를 이동한다). 손을 떼는 순간(pointerup 등)은
+   여전히 el.frame 전체에서 받는다 — 버튼 밖으로 손가락이 밀려나가도
+   놓으면 그 순간 값으로 던져지게(releasePowerAndCast) 두는 편이 더
+   관대한 UX다. 잡아채기(catching) 중 홀드와 같은 pointerdown/up 쌍을
+   gameState로 나눠 재사용한다. waiting(입질 대기 중) 탭은 기다리지
+   않고 바로 빈손으로 릴을 감고, popup(아이템창 뜬 상태) 탭은 그냥
+   닫는다(아이템창엔 확인 버튼이 따로 없다 — el.itemPopup이
+   pointer-events:none이라 카드를 눌러도 그대로 여기까지 뚫고 내려온다). */
 el.frame.addEventListener('pointerdown', () => {
   if (gameState === 'bite') { handleReactionTap(); return; }
   if (gameState === 'catching') { holding = true; return; }
@@ -1542,11 +1551,67 @@ el.fishBtn.addEventListener('pointerdown', (e) => {
   e.stopPropagation(); // el.frame의 pointerdown(위)까지 뚫고 내려가 다른 상태 분기를 같이 건드리지 않게 막는다
   if (gameState === 'idle') startPowerCharge();
 });
-MOVE_DIRS.forEach(dir => {
-  const btn = el.moveDpad.querySelector(`[data-dir="${dir}"]`);
-  btn.addEventListener('pointerdown', (e) => { e.stopPropagation(); startMoveHold(dir); });
-  ['pointerup', 'pointercancel', 'pointerleave'].forEach(evt => btn.addEventListener(evt, stopMoveHold));
+
+/* ===== 이동 조이스틱 입력 =====
+   드래그 각도를 45도 단위 8개 구간(zone, 0=오른쪽부터 시계방향)으로
+   나눠 그 순간의 이동 방향(dx,dy)을 정한다 — 손잡이 자체는 자유롭게
+   움직이지만(부드러운 시각 피드백), 실제 캐릭터는 항상 8방향 중
+   하나로만 스냅되어 움직인다. 화면 좌표는 아래로 갈수록 y가 커지는데
+   (포인터 dy>0 = 아래로 드래그), 캐릭터 이동은 반대로 bottom%가
+   커질수록 위로 올라가므로 세로 성분(JOYSTICK_ZONE_DY)은 포인터 dy의
+   부호를 뒤집어 둔다. */
+const JOYSTICK_RADIUS = 40; // px, 손잡이가 벗어날 수 없는 반지름
+const JOYSTICK_DEADZONE = 10; // px, 이보다 작게 움직이면 방향 없음(제자리)
+// zone index 0~7 = 오른쪽, 오른쪽아래, 아래, 왼쪽아래, 왼쪽, 왼쪽위, 위, 오른쪽위
+const JOYSTICK_ZONE_DX = [1, 1, 0, -1, -1, -1, 0, 1];
+const JOYSTICK_ZONE_DY = [0, -1, -1, -1, 0, 1, 1, 1];
+let joystickPointerId = null;
+let joystickCenter = null;
+let activeMoveDir = null; // { dx, dy } — 방향이 바뀔 때만 startMoveHold를 다시 건다
+function updateJoystickFromPointer(clientX, clientY) {
+  const dx = clientX - joystickCenter.x;
+  const dy = clientY - joystickCenter.y;
+  const dist = Math.hypot(dx, dy);
+  const clampedDist = Math.min(dist, JOYSTICK_RADIUS);
+  const angle = Math.atan2(dy, dx);
+  el.joystickKnob.style.transform = `translate(${Math.cos(angle) * clampedDist}px, ${Math.sin(angle) * clampedDist}px)`;
+  if (dist < JOYSTICK_DEADZONE) {
+    activeMoveDir = null;
+    stopMoveHold();
+    return;
+  }
+  const angle360 = (angle * 180 / Math.PI + 360) % 360;
+  const zoneIndex = Math.round(angle360 / 45) % 8;
+  const zoneDx = JOYSTICK_ZONE_DX[zoneIndex];
+  const zoneDy = JOYSTICK_ZONE_DY[zoneIndex];
+  if (!activeMoveDir || activeMoveDir.dx !== zoneDx || activeMoveDir.dy !== zoneDy) {
+    activeMoveDir = { dx: zoneDx, dy: zoneDy };
+    startMoveHold(zoneDx, zoneDy);
+  }
+}
+function resetJoystick() {
+  joystickPointerId = null;
+  activeMoveDir = null;
+  el.joystickKnob.style.transform = 'translate(0,0)';
+  stopMoveHold();
+}
+el.joystick.addEventListener('pointerdown', (e) => {
+  e.stopPropagation();
+  if (gameState !== 'idle') return;
+  joystickPointerId = e.pointerId;
+  el.joystick.setPointerCapture(e.pointerId);
+  const rect = el.joystick.getBoundingClientRect();
+  joystickCenter = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+  updateJoystickFromPointer(e.clientX, e.clientY);
 });
+el.joystick.addEventListener('pointermove', (e) => {
+  if (e.pointerId !== joystickPointerId) return;
+  updateJoystickFromPointer(e.clientX, e.clientY);
+});
+['pointerup', 'pointercancel'].forEach(evt => el.joystick.addEventListener(evt, (e) => {
+  if (e.pointerId !== joystickPointerId) return;
+  resetJoystick();
+}));
 
 loadConfig();
 </script>
