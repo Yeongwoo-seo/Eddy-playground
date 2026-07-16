@@ -623,6 +623,14 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
       </div>
     </div>
     <div class="option-group">
+      <div class="option-label">걷기 애니메이션 전환 속도</div>
+      <div class="option-desc">걷는 프레임이 다음 프레임으로 넘어가는 데 걸리는 시간이에요. 이동 속도와는 별개로 조절돼요 — 값이 작을수록 다리가 빨리 움직이는 것처럼 보여요.</div>
+      <div class="range-row">
+        <input type="range" id="moveAnimMsInput" min="40" max="300" step="10" value="90">
+        <div class="range-value" id="moveAnimMsValue">90ms</div>
+      </div>
+    </div>
+    <div class="option-group">
       <div class="option-label">자유 이동 테스트</div>
       <div class="option-desc">배경화면(낚시바 디자인 탭에서 업로드)을 축소 없이 원본 크기 그대로 깔아요. 아직 배경을 안 올렸다면 체커보드 격자로 대신 보여줘요. 화살표 키를 누르거나 아래 방향 버튼을 누르고 있으면 캐릭터가 격자에 스냅되지 않고 위 이동 속도에 맞춰 자유롭게 이동해요.</div>
       <div class="move-stage" id="moveStage">
@@ -998,6 +1006,8 @@ const el = {
   moveDpad: document.getElementById('moveDpad'),
   moveStepMsInput: document.getElementById('moveStepMsInput'),
   moveStepMsValue: document.getElementById('moveStepMsValue'),
+  moveAnimMsInput: document.getElementById('moveAnimMsInput'),
+  moveAnimMsValue: document.getElementById('moveAnimMsValue'),
   panelItem: document.getElementById('panelItem'),
   itemBgSlot: document.getElementById('itemBgSlot'),
   itemBgAddBtn: document.getElementById('itemBgAddBtn'),
@@ -2959,11 +2969,14 @@ const MOVE_PLACEHOLDER_COLS = 10;
 const MOVE_PLACEHOLDER_ROWS = 10;
 const moveState = { x: 0, y: 0, dir: 'down', maxX: (MOVE_PLACEHOLDER_COLS - 1) * MOVE_TILE_SIZE, maxY: (MOVE_PLACEHOLDER_ROWS - 1) * MOVE_TILE_SIZE };
 let moveAnimTimer = null;
-// 이동 속도 슬라이더 값 — fishingConfig.walkMotion에서 불러와
-// initMoveMotionControls가 채우고, 슬라이더를 드래그할 때마다 즉시
-// 갱신된다(진행 중인 이동도 다음 프레임부터 새 값을 그대로 읽는다 —
-// moveTick이 매 프레임 이 변수를 다시 읽음).
+// 이동 속도/걷기 애니메이션 전환 속도 슬라이더 값 — fishingConfig.walkMotion
+// 에서 불러와 initMoveMotionControls가 채우고, 슬라이더를 드래그할 때마다
+// 즉시 갱신된다(진행 중인 이동도 다음 프레임부터 새 값을 그대로 읽는다 —
+// moveTick이 매 프레임 이 변수를 다시 읽음). 둘은 서로 독립적이다 —
+// moveStepMs는 실제 위치 이동 속도, moveAnimMs는 걷기 프레임이 몇 ms마다
+// 다음 프레임으로 넘어가는지(다리 움직이는 체감 속도)만 정한다.
 let moveStepMs = 200;
+let moveAnimMs = 90;
 function moveSpeedPxPerMs() { return MOVE_TILE_SIZE / Math.max(1, moveStepMs); }
 
 function stopMoveAnim() {
@@ -2990,7 +3003,7 @@ function playMoveAnim(dir) {
   moveAnimTimer = setInterval(() => {
     i = (i + 1) % frameCount;
     applyCharFrame(dir, i);
-  }, Math.max(40, Math.round(moveStepMs / frameCount)));
+  }, moveAnimMs);
 }
 function updateCharPosition() {
   el.moveChar.style.left = moveState.x + 'px';
@@ -3055,7 +3068,7 @@ document.addEventListener('keyup', (e) => {
 window.addEventListener('blur', stopMoveHold);
 
 async function saveWalkMotion() {
-  fishingConfig = await AssetDB.setFishingConfig({ walkMotion: { stepMs: moveStepMs } });
+  fishingConfig = await AssetDB.setFishingConfig({ walkMotion: { stepMs: moveStepMs, animFrameMs: moveAnimMs } });
   showSaveNote();
 }
 el.moveStepMsInput.addEventListener('input', () => {
@@ -3063,11 +3076,19 @@ el.moveStepMsInput.addEventListener('input', () => {
   el.moveStepMsValue.textContent = moveStepMs + 'ms';
   saveWalkMotion();
 });
+el.moveAnimMsInput.addEventListener('input', () => {
+  moveAnimMs = Number(el.moveAnimMsInput.value);
+  el.moveAnimMsValue.textContent = moveAnimMs + 'ms';
+  saveWalkMotion();
+});
 function initMoveMotionControls() {
   const motion = fishingConfig.walkMotion || {};
   moveStepMs = motion.stepMs || 200;
+  moveAnimMs = motion.animFrameMs || 90;
   el.moveStepMsInput.value = moveStepMs;
   el.moveStepMsValue.textContent = moveStepMs + 'ms';
+  el.moveAnimMsInput.value = moveAnimMs;
+  el.moveAnimMsValue.textContent = moveAnimMs + 'ms';
 }
 
 async function renderMoveTestStage() {
