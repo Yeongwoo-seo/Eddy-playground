@@ -505,10 +505,18 @@ async function loadConfig() {
   const zoneRegion = design.zoneRegion;
   const catchLayer = design.catchLayer;
   const catchImageAsset = catchLayer && catchLayer.assetId ? byId.get(catchLayer.assetId) : null;
-  // background(숏핸드)를 먼저 설정해야 한다 — backgroundImage 다음에 설정하면
-  // 숏핸드가 방금 지정한 background-image를 초기화해버린다.
-  el.fishbarZone.style.background = '#59B8C8';
-  el.fishbarZone.style.backgroundImage = catchImageAsset ? `url(${await preloadWithRetry(catchImageAsset.dataUrl, 3, 500)})` : '';
+  // 이미지가 있으면 파란 폴백 색(#59B8C8)을 아예 깔지 않는다 — 예전엔 색을
+  // 항상 먼저 채워두고 그 위에 이미지를 얹기만 했는데, 업로드한 이미지에
+  // 투명한 부분이 조금이라도 있으면 그 틈으로 파란색이 그대로 비쳐서
+  // "이미지를 올렸는데도 이상한 파란 바가 보인다"는 문제가 있었다.
+  if (catchImageAsset) {
+    const catchImageUrl = await preloadWithRetry(catchImageAsset.dataUrl, 3, 500);
+    el.fishbarZone.style.background = 'none';
+    el.fishbarZone.style.backgroundImage = `url(${catchImageUrl})`;
+  } else {
+    el.fishbarZone.style.background = '#59B8C8';
+    el.fishbarZone.style.backgroundImage = '';
+  }
   if (zoneRegion) {
     zoneTrack = { x: zoneRegion.x * 100, y: zoneRegion.y * 100, w: zoneRegion.w * 100, h: zoneRegion.h * 100 };
     if (catchLayer) {
