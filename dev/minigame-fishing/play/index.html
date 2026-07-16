@@ -36,7 +36,7 @@
 html,body{height:100%}
 body{background:#000;color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center}
 
-.frame{position:relative;width:100%;max-width:430px;height:100dvh;height:100vh;height:var(--vh100, 100vh);overflow:hidden;background:linear-gradient(180deg,var(--sky-top) 0%,var(--sky-bottom) 55%,var(--water-top) 55%,var(--water-bottom) 100%);display:flex;flex-direction:column;touch-action:none}
+.frame{position:relative;width:100%;max-width:430px;height:100dvh;height:100vh;height:var(--vh100, 100vh);overflow:hidden;background:linear-gradient(180deg,var(--sky-top) 0%,var(--sky-bottom) 55%,var(--water-top) 55%,var(--water-bottom) 100%);display:flex;flex-direction:column;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-user-drag:none}
 
 .topbar{position:absolute;top:0;left:0;right:0;z-index:6;padding:calc(14px + env(safe-area-inset-top,0)) 16px 10px;display:flex;align-items:center;justify-content:space-between;pointer-events:none}
 .back-chip{pointer-events:auto;flex-shrink:0;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.4);border:1px solid rgba(10,40,50,.25);color:#0A2A3A;font-size:18px;font-weight:700;line-height:1;text-decoration:none}
@@ -143,9 +143,6 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .cast-line{fill:none;stroke:rgba(230,230,220,.9);stroke-width:1.5}
 .cast-sinker{fill:#5a5f66;stroke:rgba(0,0,0,.4);stroke-width:1}
 .cast-sinker-img{display:none}
-
-.catch-hint{position:absolute;left:0;right:0;bottom:calc(18px + env(safe-area-inset-bottom,0));z-index:5;text-align:center;font-family:var(--mono);font-size:11px;color:rgba(255,255,255,.85);text-shadow:0 1px 4px rgba(0,0,0,.5)}
-.catch-hint.hidden{display:none}
 
 /* 낚시바를 감싸던 반투명 둥근 배경 패널은 사용자 요청으로 없앴다 —
    낚시바(.fishbar)만 화면에 떠 있고, 그 뒤 배경은 그대로 비친다. .fishbar
@@ -271,8 +268,6 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
       <div class="cast-power-track" id="castPowerTrack"><div class="cast-power-fill" id="castPowerFill"></div></div>
     </div>
   </div>
-  <div class="catch-hint hidden" id="catchHint">누르고 있으면 캐치존이 올라가요 · 떼면 내려가요</div>
-
   <div class="joystick" id="joystick">
     <div class="joystick-base"></div>
     <div class="joystick-knob" id="joystickKnob"></div>
@@ -403,7 +398,6 @@ const el = {
   fishbarFish: document.getElementById('fishbarFish'),
   fishbarGauge: document.getElementById('fishbarGauge'),
   fishbarGaugeMask: document.getElementById('fishbarGaugeMask'),
-  catchHint: document.getElementById('catchHint'),
   joystick: document.getElementById('joystick'),
   joystickKnob: document.getElementById('joystickKnob'),
   fishBtn: document.getElementById('fishBtn'),
@@ -1223,7 +1217,6 @@ async function abortWaitingReel() {
 /* ===== 낚시바(잡아채기) ===== */
 function startCatching() {
   gameState = 'catching';
-  el.catchHint.classList.remove('hidden');
   el.fishbarPanel.classList.remove('hidden');
   fish = { y: 100, vy: -DIFF_TUNING[DIFFICULTY].fishSpeedMult * 34, targetY: 100, pickTimer: 0 };
   zone = { y: 100 - zoneSizePct, vel: 0 };
@@ -1308,7 +1301,6 @@ function endCatch(success) {
   if (raf) cancelAnimationFrame(raf);
   raf = null;
   el.fishbarPanel.classList.add('hidden');
-  el.catchHint.classList.add('hidden');
   if (success) playReelThenResult(); else resetToIdle(); // 실패 — 화면 전환 없이 그냥 대기 상태로 돌아간다
 }
 
