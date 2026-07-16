@@ -383,12 +383,16 @@ let zoneSizePct = 28;
 // castPhysics — dev/minigame-fishing/index.html '캐스팅 모션' 탭의 던지기
 // 물리 슬라이더 값, throwSinker에서 자유낙하 가속도/수평속도 배율로 쓴다.
 let castPhysics = { gravityMps2: 9.8, vxScale: 1 };
-// zoneRegion이 설정돼 있으면 캐치존/물고기를 낚시바 전체(0~100%)가 아니라
-// 이 안(트랙)에서 위치를 계산한다 — 실제 물리(updateFish/updateZone/
-// updateProgress)는 항상 추상적인 0~100 공간에서 그대로 돌아가고, 렌더링
-// (renderBarFrame)만 이 트랙으로 다시 매핑한다. 게이지는 gaugeRegion을
-// 지정했을 때만 그 영역 안에 나타난다(loadConfig 참고).
+// zoneRegion/fishRegion이 설정돼 있으면 캐치존/물고기를 낚시바 전체
+// (0~100%)가 아니라 각자의 트랙 안에서 위치를 계산한다 — 실제 물리
+// (updateFish/updateZone/updateProgress)는 항상 추상적인 0~100 공간에서
+// 그대로 돌아가고, 렌더링(renderBarFrame)만 이 트랙들로 다시 매핑한다.
+// 게이지는 gaugeRegion을 지정했을 때만 그 영역 안에 나타난다(loadConfig
+// 참고).
 let zoneTrack = null; // { x, y, w, h } — 낚시바 기준 %
+// fishRegion을 아직 안 만든 기존 설정도 그대로 동작해야 하므로, 지정 안
+// 됐으면 zoneTrack을 그대로 따른다(예전 동작과 동일) — loadConfig 참고.
+let fishTrack = null; // { x, y, w, h } — 낚시바 기준 %
 let itemIconPos = { x: 0.5, y: 0.36 }; // 아이템창 카드 기준 0~1, dev/minigame-fishing/index.html 아이템창 탭에서 지정
 let itemIconSizePx = 64;
 let itemNamePos = { x: 0.5, y: 0.66 };
@@ -565,6 +569,16 @@ async function loadConfig() {
     el.fishbarZone.style.width = '100%';
     el.fishbarZone.style.height = zoneSizePct + '%';
   }
+
+  // 물고기(.fishbar-fish) — fishRegion(트랙, 슬라이드 기준 0~1)이 있으면
+  // 그 안에서 움직이고, 없으면 예전처럼 캐치존과 같은 zoneTrack을 그대로
+  // 쓴다(fishRegion을 아직 안 만든 기존 설정과의 호환). fish.y는 세로
+  // 위치만 담당하므로, 가로 위치는 트랙 가로 중앙에 고정한다.
+  const fishRegion = design.fishRegion;
+  fishTrack = fishRegion
+    ? { x: fishRegion.x * 100, y: fishRegion.y * 100, w: fishRegion.w * 100, h: fishRegion.h * 100 }
+    : zoneTrack;
+  el.fishbarFish.style.left = fishTrack ? (fishTrack.x + fishTrack.w / 2) + '%' : '50%';
 
   // 게이지 — gaugeRegion을 지정했을 때만 나타난다(미지정 시 기본 숨김).
   if (design.gaugeRegion) {
@@ -1117,13 +1131,8 @@ function updateProgress(dt) {
 }
 
 function renderBarFrame() {
-  if (zoneTrack) {
-    el.fishbarFish.style.top = (zoneTrack.y + fish.y / 100 * zoneTrack.h) + '%';
-    el.fishbarZone.style.top = (zoneTrack.y + zone.y / 100 * zoneTrack.h) + '%';
-  } else {
-    el.fishbarFish.style.top = fish.y + '%';
-    el.fishbarZone.style.top = zone.y + '%';
-  }
+  el.fishbarFish.style.top = fishTrack ? (fishTrack.y + fish.y / 100 * fishTrack.h) + '%' : fish.y + '%';
+  el.fishbarZone.style.top = zoneTrack ? (zoneTrack.y + zone.y / 100 * zoneTrack.h) + '%' : zone.y + '%';
   el.fishbarGaugeMask.style.height = (100 - progress) + '%';
   // 게이지 채움 이미지를 올렸으면 그 이미지를 그대로 두고, 없을 때만
   // 기존처럼 진행도에 따라 색을 다시 칠한다.
