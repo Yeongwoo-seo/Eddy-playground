@@ -89,7 +89,14 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .cast-power-wrap.hidden{display:none}
 .cast-power-stage{position:relative;width:100%}
 .cast-power-track{width:100%;height:20px;border-radius:10px;background:rgba(5,20,28,.45);border:1px solid rgba(255,255,255,.35);overflow:hidden}
-.cast-power-fill{height:100%;width:0%;background:var(--green);border-radius:10px 0 0 10px}
+/* 세기 게이지 색 — 작을 때 빨강, 중간 노랑, 최대일 때 초록으로 이어지는
+   그라데이션. .cast-power-fill 자신의 너비(0~100%)에 맞춰 그라데이션이
+   같이 늘어나 버리면 세기가 낮아도 항상 빨강→초록이 그 좁은 폭 안에 다
+   눌려 들어가 버리므로, background-size를 트랙의 실제 폭(.cast-power-wrap
+   과 같은 220px)으로 고정해 뒀다 — 그러면 채워진 만큼만 그 고정된
+   그라데이션의 왼쪽 일부가 드러나는 식이라, 실제 세기 값과 색이 항상
+   맞아떨어진다. */
+.cast-power-fill{height:100%;width:0%;background:linear-gradient(to right,var(--signal-red) 0%,var(--amber) 50%,var(--green) 100%);background-size:220px 100%;background-repeat:no-repeat;border-radius:10px 0 0 10px}
 .cast-power-label{font-family:var(--mono);font-size:12px;font-weight:700;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.5)}
 /* 캐스팅 게이지 이미지 — 설정 화면(dev/minigame-fishing/index.html)에서
    업로드하면 기본 막대 게이지 대신 이 그림이 배경으로 깔리고, 채움 영역
@@ -778,6 +785,38 @@ async function loadConfig() {
   el.itemPopupMeta.style.left = (itemMetaPos.x * 100) + '%';
   el.itemPopupMeta.style.top = (itemMetaPos.y * 100) + '%';
   el.itemPopupMeta.style.fontSize = (itemPopupCfg.metaFontSizePx || 12) + 'px';
+
+  preloadFishIcons();
+}
+
+// 잡은 물고기 아이콘(overlayFishIcon)은 endRun에서 처음 그 fishId의
+// background-position으로 그릴 때가 돼서야 브라우저가 그 위치를 실제로
+// 디코드/페인트한다 — 시트 자체는 미리 받아놨어도(fishSheetDims 계산용
+// new Image()) 첫 catch 때 화면에 "뜨는" 순간 눈에 띄게 느렸다(사용자 보고).
+// 그래서 게임이 시작하기 전, 보이지 않는 곳에 67종 전부를 실제로 한 번씩
+// 그려서 워밍업해둔다 — display:none은 브라우저가 페인트를 건너뛰어 워밍업
+// 효과가 없으므로, 화면 밖(-9999px)에 두되 레이아웃/페인트는 정상적으로
+// 일어나게 한다.
+function preloadFishIcons() {
+  if (!fishSheetUrl) return;
+  let host = document.getElementById('fishIconPreload');
+  if (!host) {
+    host = document.createElement('div');
+    host.id = 'fishIconPreload';
+    host.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:0;height:0;overflow:hidden;pointer-events:none';
+    host.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(host);
+  }
+  host.innerHTML = '';
+  Object.values(fishDefs).forEach(fishDef => {
+    const override = fishIconOverrides[fishDef.id];
+    const style = (override && fishSheetDims)
+      ? getFishCropStyle(override, fishSheetDims.width, fishSheetDims.height, 56)
+      : getFishSlotStyle(fishDef.slot, 3.5);
+    const div = document.createElement('div');
+    div.style.cssText = `width:56px;height:56px;background-image:url('${fishSheetUrl}');background-position:${style.backgroundPosition};background-size:${style.backgroundSize};background-repeat:no-repeat`;
+    host.appendChild(div);
+  });
 }
 
 /* ===== 캐스팅/올리기 프레임 순차 재생 =====
@@ -1160,8 +1199,8 @@ function startCatching() {
   gameState = 'catching';
   el.catchHint.classList.remove('hidden');
   el.fishbarPanel.classList.remove('hidden');
-  fish = { y: 50, vy: DIFF_TUNING[DIFFICULTY].fishSpeedMult * 34, targetY: 50, pickTimer: 0 };
-  zone = { y: clamp(50 - zoneSizePct / 2, 0, 100 - zoneSizePct), vel: 0 };
+  fish = { y: 100, vy: -DIFF_TUNING[DIFFICULTY].fishSpeedMult * 34, targetY: 100, pickTimer: 0 };
+  zone = { y: 100 - zoneSizePct, vel: 0 };
   progress = 30;
   holding = false;
   pendingCatchFish = pickCaughtFish();
