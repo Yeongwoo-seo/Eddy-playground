@@ -104,10 +104,14 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .catch-hint.hidden{display:none}
 
 /* 낚시바를 감싸던 반투명 둥근 배경 패널은 사용자 요청으로 없앴다 —
-   낚시바(.fishbar)만 화면에 떠 있고, 그 뒤 배경은 그대로 비친다. */
+   낚시바(.fishbar)만 화면에 떠 있고, 그 뒤 배경은 그대로 비친다. .fishbar
+   자체도 배경을 투명하게 둔다 — 예전엔 #171C22 하드코딩 색이 채워져
+   있었는데, "PPT 슬라이드형 에디터"로 바뀌면서 색상 피커(barColor)가
+   빠진 채 그 하드코딩 색만 남아, 낚시바 이미지를 안 올렸거나 슬라이드
+   전체를 안 덮으면 안 덮인 부분이 그냥 검게 보이는 문제가 있었다. */
 .fishbar-panel{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:4;display:flex;align-items:center;gap:14px;padding:18px 20px}
 .fishbar-panel.hidden{display:none}
-.fishbar{position:relative;width:52px;height:230px;border-radius:12px;overflow:hidden;border:2px solid rgba(255,255,255,.5);box-shadow:inset 0 0 12px rgba(0,0,0,.4);background:#171C22}
+.fishbar{position:relative;width:52px;height:230px;border-radius:12px;overflow:hidden;border:2px solid rgba(255,255,255,.5);box-shadow:inset 0 0 12px rgba(0,0,0,.4)}
 /* 낚시바 이미지 — 설정 화면(dev/minigame-fishing/index.html) 슬라이드
    에디터의 barLayer 배치(x,y,w,h, 슬라이드 기준 0~1)를 그대로 옮겨와
    절대위치로 놓는다. */
