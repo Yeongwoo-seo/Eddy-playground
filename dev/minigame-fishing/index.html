@@ -777,9 +777,11 @@ if ('serviceWorker' in navigator) {
 </script>
 <script>
 // Client-side AI background removal (WASM) — dev/upload/index.html의
-// autoRegisterCharacterPhoto와 같은 모듈/로딩 방식. 캐스팅/올리기 프레임과
-// 물고기 아이콘을 올리는 즉시 자동으로 배경을 제거한다(removeBackgroundOrFallback
-// 참고) — 모듈 로드/처리 자체가 실패해도 원본 그대로 계속 진행한다.
+// autoRegisterCharacterPhoto와 같은 모듈/로딩 방식. 캐스팅/올리기/이동 프레임,
+// 낚시 추, 물었다! 표시 이미지를 올리는 즉시 자동으로 배경을 제거한다
+// (removeBackgroundOrFallback 참고) — 모듈 로드/처리 자체가 실패해도 원본
+// 그대로 계속 진행한다. 물고기 아이콘(fishIconAssetId)은 자동 배경 제거가
+// 필수가 아니라 여기서 제외돼 있다(confirmFishIconCrop 참고).
 window.__removeBackgroundReady = import('https://cdn.jsdelivr.net/npm/@imgly/background-removal/+esm')
   .then(mod => {
     if (typeof mod.removeBackground !== 'function') {
@@ -1890,10 +1892,10 @@ el.fishIconFileInput.addEventListener('change', () => {
   // local blob: URL of the picked file (same-origin, so the crop canvas
   // below never risks a cross-origin "tainted canvas" export failure). Both
   // the source photo and the cropped result only reach AssetDB once the dev
-  // hits 적용 (confirmFishIconCrop below, which also runs
-  // removeBackgroundOrFallback on the cropped result — the source photo
-  // stays untouched so re-adjusting the crop later still has the full
-  // original to work from).
+  // hits 적용 (confirmFishIconCrop below, which uploads the cropped result
+  // as-is, no automatic background removal — the source photo stays
+  // untouched so re-adjusting the crop later still has the full original
+  // to work from).
   openCropAdjuster(URL.createObjectURL(file), null, file, confirmFishIconCrop);
 });
 function openFishIconCropAdjuster() {
@@ -1909,7 +1911,7 @@ function openFishIconCropAdjuster() {
   }).catch(() => {});
 }
 // The fish-icon crop path exports a new cropped image asset (canvas ->
-// background removal -> upload). The fish-species crop path (further below,
+// upload, as-is). The fish-species crop path (further below,
 // confirmFishSpeciesCrop) is much cheaper — it never re-exports anything,
 // just saves which region of the *already-uploaded* sheet to sample via CSS
 // background-position, so it doesn't go through AssetDB.addAsset at all.
@@ -1925,11 +1927,9 @@ async function confirmFishIconCrop(rect, sourceImg, pendingFile) {
     canvas.width = EXPORT_SIZE;
     canvas.height = EXPORT_SIZE;
     canvas.getContext('2d').drawImage(sourceImg, srcX, srcY, rectSize, rectSize, 0, 0, EXPORT_SIZE, EXPORT_SIZE);
-    let blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-    // 최종 아이콘(잘라낸 결과)에만 배경 제거를 적용 — 원본 소스 사진은 나중에
-    // 다시 크롭 위치를 조정할 때 온전한 전체 사진이 필요하므로 그대로 둔다.
-    el.cropConfirmBtn.textContent = '배경 제거 중...';
-    blob = await removeBackgroundOrFallback(blob);
+    // 배경 제거(누끼) 자동 적용은 여기서 안 한다 — 물고기 아이콘은 자동
+    // 배경 제거가 필수가 아니라, 업로드한 크롭 결과를 그대로 쓴다.
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
     const croppedAsset = await AssetDB.addAsset({ type: 'fishing-fish-icon', name: 'fish-icon.png', blob });
     const patch = { fishIconAssetId: croppedAsset.id, fishIconCropRect: rect };
     if (pendingFile) {
