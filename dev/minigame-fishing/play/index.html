@@ -1111,11 +1111,16 @@ function flyFishToCharacter(fishDef) {
       flyEl.textContent = '🐟';
     }
     // 설정 화면 물고기 목록과 같은 좌우반전 — 스프라이트시트 크롭(실제
-    // 사진)일 때만 뒤집는다. transform은 도착 시 translate+scale과 함께
-    // 한 번에 설정되므로 그 문자열 끝에 직접 붙인다.
+    // 사진)일 때만 뒤집는다. 시작 transform에도 미리 넣어둬야 한다 —
+    // transition이 걸린 상태로 도착 시점에만 scaleX(-1)을 추가하면
+    // "날아가는 동안 좌우가 뒤집히는" 애니메이션처럼 보인다(요청: 반전은
+    // 애니메이션이 아니라 처음부터 반전된 상태로 보여야 함). 시작/도착
+    // 값에 똑같이 넣어두면 그 값 자체는 transition 동안 그대로라
+    // 애니메이션되지 않고, translate/scale만 움직인다.
     const flip = fishSheetUrl ? ' scaleX(-1)' : '';
     flyEl.style.left = startLeft + '%';
     flyEl.style.top = startTop + '%';
+    flyEl.style.transform = 'translate(-50%,-50%)' + flip;
     el.stage.appendChild(flyEl);
     vibrate(20);
     requestAnimationFrame(() => {
@@ -1160,13 +1165,24 @@ function showItemPopup(fishCaught) {
     el.itemPopupIcon.style.backgroundImage = `url('${fishSheetUrl}')`;
     el.itemPopupIcon.style.backgroundPosition = style.backgroundPosition;
     el.itemPopupIcon.style.backgroundSize = style.backgroundSize;
-    el.itemPopupIcon.style.transform = 'scaleX(-1)'; // 설정 화면 물고기 목록과 같은 좌우반전
+    // 설정 화면 물고기 목록과 같은 좌우반전 — translate(-50%,-50%)는
+    // CSS(.item-popup-icon)가 아니라 여기서 인라인으로 같이 넣어줘야 한다.
+    // scaleX(-1)만 인라인으로 넣으면 그 자체가 transform 전체를 덮어써서
+    // CSS의 translate(-50%,-50%) 중심정렬이 사라져(아이콘이 지정 위치에서
+    // 오른쪽 아래로 반 칸 밀려 보임) 버린다.
+    el.itemPopupIcon.style.transform = 'translate(-50%,-50%) scaleX(-1)';
     el.itemPopupIcon.textContent = '';
   } else {
     el.itemPopupIcon.style.backgroundImage = 'none';
-    el.itemPopupIcon.style.transform = '';
+    el.itemPopupIcon.style.transform = 'translate(-50%,-50%)';
     el.itemPopupIcon.textContent = '🐟';
   }
+  // 등급 테두리(GRADE_BORDER_COLORS)는 날아오는 중(.fish-fly, flyFishToCharacter)에만
+  // 보여주는 연출이다 — 액자(아이템창 카드)에 자리잡은 뒤에는 테두리 없이
+  // 깔끔하게 보이도록 명시적으로 지운다(.item-popup-icon 자체엔 border가
+  // 없어 지금도 안 보이지만, 나중에 border를 추가하는 변경이 들어와도
+  // 이 자리에서 항상 투명하게 리셋해 실수로 남는 걸 막는다).
+  el.itemPopupIcon.style.borderColor = 'transparent';
   el.itemPopup.classList.add('show');
 }
 
