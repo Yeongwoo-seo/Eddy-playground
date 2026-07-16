@@ -208,6 +208,10 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .sheet-overlay.hidden{display:none}
 .sheet{width:100%;max-width:430px;background:var(--surface-1);border-radius:20px 20px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom,0));border-top:1px solid var(--divider);max-height:78vh;overflow-y:auto}
 .sheet-title{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--text-muted);margin-bottom:14px;text-transform:uppercase}
+.sheet-title-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.sheet-title-row .sheet-title{margin-bottom:0}
+.sheet-notebook-btn{font-family:var(--mono);font-size:11px;font-weight:700;color:#e9c467;background:rgba(214,168,75,.12);border:1px solid rgba(214,168,75,.4);border-radius:20px;padding:8px 12px;cursor:pointer;min-height:36px}
+.sheet-notebook-btn:active{opacity:.8}
 
 /* 이동하기 지도 시트만 슬라이드업으로 뜬다(showMoveMapSheet/hideMoveMapSheet) —
    .hidden(display:none)을 뗀 직후 바로 .show를 붙이면 브라우저가 두 스타일
@@ -331,7 +335,10 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 
 <div class="sheet-overlay hidden" id="evidenceSheet">
   <div class="sheet">
-    <div class="sheet-title">증거 제시</div>
+    <div class="sheet-title-row">
+      <div class="sheet-title">증거 제시</div>
+      <button class="sheet-notebook-btn" id="evidenceSheetNotebookBtn">📓 수첩에서 고르기</button>
+    </div>
     <div class="evidence-sheet-list" id="evidenceSheetList"></div>
     <button class="action-btn cancel" id="evidenceSheetCloseBtn">닫기</button>
   </div>
@@ -448,6 +455,7 @@ const el = {
   evidenceBackBtn: document.getElementById('evidenceBackBtn'),
   evidenceToast: document.getElementById('evidenceToast'),
   evidenceSheet: document.getElementById('evidenceSheet'),
+  evidenceSheetNotebookBtn: document.getElementById('evidenceSheetNotebookBtn'),
   evidenceSheetList: document.getElementById('evidenceSheetList'),
   evidenceSheetCloseBtn: document.getElementById('evidenceSheetCloseBtn'),
 };
@@ -1772,6 +1780,22 @@ el.evidenceBackBtn.addEventListener('click', (e) => {
 });
 el.evidenceSheetCloseBtn.addEventListener('click', () => el.evidenceSheet.classList.add('hidden'));
 el.evidenceSheet.addEventListener('click', (e) => { if (e.target === el.evidenceSheet) el.evidenceSheet.classList.add('hidden'); });
+
+// 증거 DB 노트 v1.1 — dev/game/index.html의 같은 이름 버튼과 동일한 대안 UI.
+// 이 시트를 대체하지 않고 "수첩에서 고르기" 버튼으로만 진입 — 관련도
+// 스코어링이 있는 목록이 기본, 훑어보며 고르고 싶을 때만 노트로 전환.
+if (el.evidenceSheetNotebookBtn) {
+  el.evidenceSheetNotebookBtn.addEventListener('click', () => {
+    el.evidenceSheet.classList.add('hidden');
+    if (typeof EvidenceNotebook !== 'undefined') {
+      EvidenceNotebook.open({
+        mode: 'present',
+        npcId: currentCharacterId,
+        onPresent: (entryId) => currentDialoguePlayer.presentEvidence(entryId),
+      });
+    }
+  });
+}
 
 let evidenceToastTimer = null;
 function showEvidenceToast(text, correct) {
