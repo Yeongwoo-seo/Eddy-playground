@@ -115,9 +115,9 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
    이동에 쓴다. */
 /* 이동 조이스틱 — 큰 원(베이스, .joystick) 안에서 작은 원(손잡이,
    .joystick-knob)을 드래그한다. 손잡이는 자유롭게 움직이는 것처럼
-   보이지만 실제 캐릭터 이동은 8방향(상하좌우+대각선)으로만 스냅된다 —
-   드래그 각도를 45도 단위 구간(zone)으로 나눠 인식한다(updateJoystickFromPointer
-   참고). */
+   보이지만 실제 캐릭터 이동은 상하좌우 4방향 중 하나로만 스냅된다(대각선
+   이동 없음) — 드래그를 시작해서 처음 넘어간 축(가로/세로)에 그 드래그가
+   끝날 때까지 고정한다(updateJoystickFromPointer의 joystickAxisLock 참고). */
 .joystick{position:absolute;left:calc(16px + env(safe-area-inset-left,0));bottom:calc(24px + env(safe-area-inset-bottom,0));z-index:5;width:100px;height:100px;border-radius:50%;background:rgba(5,20,28,.35);border:1px solid rgba(255,255,255,.3);touch-action:none}
 .joystick.hidden{display:none}
 .joystick-knob{position:absolute;left:50%;top:50%;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;background:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.65);pointer-events:none}
@@ -485,7 +485,7 @@ let walkMotion = { stepMs: 200, animFrameMs: 90 };
 let charPosPct = { left: 9, bottom: 41 }; // .char-stage CSS 기본값과 맞춰둔 시작 위치
 let moveRaf = null;
 let moveLastT = 0;
-let moveHoldVec = null; // { dx, dy } — 각 -1/0/1, 조이스틱 드래그 각도가 스냅된 8방향 중 하나(대각선은 둘 다 0이 아님)
+let moveHoldVec = null; // { dx, dy } — 조이스틱 축 고정 덕에 항상 둘 중 하나만 0이 아니다(대각선 이동 없음)
 let moveAnimTimer = null;
 
 /* ===== 설정 로드 (AssetDB) — 실패해도 게임은 도형 폴백으로 계속 동작한다. ===== */
@@ -1463,10 +1463,10 @@ function resetToIdle() {
    requestAnimationFrame으로 매 프레임 위치를 갱신하는 연속 이동이다.
    속도는 walkMotion.stepMs(설정 화면 "이동 속도" 슬라이더 — "타일 한 칸
    (MOVE_STEP_PX)을 이동하는 데 걸리는 시간"으로 해석)를 px/ms로 환산해
-   쓴다. moveHoldVec의 dx/dy가 둘 다 0이 아니면 대각선 이동이다 — 그림은
-   8방향 시트가 없으므로 가로(좌우) 성분이 있으면 좌/우, 없으면 상/하
-   스프라이트로 대신한다(spriteDirFor). 걷기 프레임은 이동 중엔 계속
-   순환하고(moveAnimTimer), 멈추면 idle 프레임으로 되돌아간다. ===== */
+   쓴다. moveHoldVec의 dx/dy는 조이스틱의 축 고정(joystickAxisLock) 덕에
+   항상 둘 중 하나만 0이 아니다 — 대각선 이동은 없다. 그 방향에 맞는
+   스프라이트(좌/우/상/하)를 고른다(spriteDirFor). 걷기 프레임은 이동
+   중엔 계속 순환하고(moveAnimTimer), 멈추면 idle 프레임으로 되돌아간다. ===== */
 function moveSpeedPxPerMs() { return MOVE_STEP_PX / Math.max(1, walkMotion.stepMs); }
 function stopMoveAnim() {
   if (moveAnimTimer) { clearInterval(moveAnimTimer); moveAnimTimer = null; }
@@ -1491,12 +1491,8 @@ function playMoveAnim(spriteDir) {
 function moveTick(ts) {
   if (!moveHoldVec) { moveRaf = null; return; }
   if (!moveLastT) moveLastT = ts;
-  let distPx = moveSpeedPxPerMs() * (ts - moveLastT);
+  const distPx = moveSpeedPxPerMs() * (ts - moveLastT);
   moveLastT = ts;
-  // 대각선은 가로/세로 둘 다 움직이는 만큼, 축 하나만 움직일 때와 체감
-  // 속도(벡터 크기)를 맞추려면 각 축 이동량을 1/√2로 줄여야 한다 —
-  // 안 그러면 대각선이 약 1.41배 더 빨리 이동하는 흔한 버그가 생긴다.
-  if (moveHoldVec.dx && moveHoldVec.dy) distPx /= Math.SQRT2;
   const frameRect = el.frame.getBoundingClientRect();
   if (moveHoldVec.dx) {
     const stepXPct = distPx / frameRect.width * 100;
@@ -1553,20 +1549,21 @@ el.fishBtn.addEventListener('pointerdown', (e) => {
 });
 
 /* ===== 이동 조이스틱 입력 =====
-   드래그 각도를 45도 단위 8개 구간(zone, 0=오른쪽부터 시계방향)으로
-   나눠 그 순간의 이동 방향(dx,dy)을 정한다 — 손잡이 자체는 자유롭게
-   움직이지만(부드러운 시각 피드백), 실제 캐릭터는 항상 8방향 중
-   하나로만 스냅되어 움직인다. 화면 좌표는 아래로 갈수록 y가 커지는데
-   (포인터 dy>0 = 아래로 드래그), 캐릭터 이동은 반대로 bottom%가
-   커질수록 위로 올라가므로 세로 성분(JOYSTICK_ZONE_DY)은 포인터 dy의
-   부호를 뒤집어 둔다. */
+   대각선으로 밀어도 실제 이동은 항상 가로/세로 둘 중 하나(대각선 이동
+   없음) — 한 번 밀기 시작할 때 가로/세로 중 어느 쪽으로 먼저(더 크게)
+   움직였는지로 그 드래그가 끝날 때까지 축을 고정한다(axisLock). 고정된
+   축 안에서 부호(방향)는 계속 갱신되지만(예: 가로축 고정 중 오른쪽↔왼쪽
+   전환은 됨), 다른 축으로는 절대 안 넘어간다 — 중앙(데드존)으로 돌아오면
+   축 고정이 풀려 다음 밀기에서 다시 "처음 움직인 방향"을 새로 잡는다.
+   손잡이 자체는 축 제한 없이 자유롭게 움직인다(부드러운 시각 피드백).
+   화면 좌표는 아래로 갈수록 y가 커지는데(포인터 dy>0 = 아래로 드래그),
+   캐릭터 이동은 반대로 bottom%가 커질수록 위로 올라가므로 세로 방향은
+   포인터 dy의 부호를 뒤집어 쓴다. */
 const JOYSTICK_RADIUS = 40; // px, 손잡이가 벗어날 수 없는 반지름
 const JOYSTICK_DEADZONE = 10; // px, 이보다 작게 움직이면 방향 없음(제자리)
-// zone index 0~7 = 오른쪽, 오른쪽아래, 아래, 왼쪽아래, 왼쪽, 왼쪽위, 위, 오른쪽위
-const JOYSTICK_ZONE_DX = [1, 1, 0, -1, -1, -1, 0, 1];
-const JOYSTICK_ZONE_DY = [0, -1, -1, -1, 0, 1, 1, 1];
 let joystickPointerId = null;
 let joystickCenter = null;
+let joystickAxisLock = null; // 'x' | 'y' | null — 드래그 시작 후 처음 넘어간 축에 고정
 let activeMoveDir = null; // { dx, dy } — 방향이 바뀔 때만 startMoveHold를 다시 건다
 function updateJoystickFromPointer(clientX, clientY) {
   const dx = clientX - joystickCenter.x;
@@ -1577,13 +1574,13 @@ function updateJoystickFromPointer(clientX, clientY) {
   el.joystickKnob.style.transform = `translate(${Math.cos(angle) * clampedDist}px, ${Math.sin(angle) * clampedDist}px)`;
   if (dist < JOYSTICK_DEADZONE) {
     activeMoveDir = null;
+    joystickAxisLock = null; // 중앙으로 돌아오면 축 고정도 풀어서, 다음에 미는 방향이 새로 "처음"이 되게 한다
     stopMoveHold();
     return;
   }
-  const angle360 = (angle * 180 / Math.PI + 360) % 360;
-  const zoneIndex = Math.round(angle360 / 45) % 8;
-  const zoneDx = JOYSTICK_ZONE_DX[zoneIndex];
-  const zoneDy = JOYSTICK_ZONE_DY[zoneIndex];
+  if (!joystickAxisLock) joystickAxisLock = Math.abs(dx) >= Math.abs(dy) ? 'x' : 'y';
+  const zoneDx = joystickAxisLock === 'x' ? (dx > 0 ? 1 : -1) : 0;
+  const zoneDy = joystickAxisLock === 'y' ? (dy > 0 ? -1 : 1) : 0;
   if (!activeMoveDir || activeMoveDir.dx !== zoneDx || activeMoveDir.dy !== zoneDy) {
     activeMoveDir = { dx: zoneDx, dy: zoneDy };
     startMoveHold(zoneDx, zoneDy);
@@ -1592,6 +1589,7 @@ function updateJoystickFromPointer(clientX, clientY) {
 function resetJoystick() {
   joystickPointerId = null;
   activeMoveDir = null;
+  joystickAxisLock = null;
   el.joystickKnob.style.transform = 'translate(0,0)';
   stopMoveHold();
 }
