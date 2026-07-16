@@ -55,6 +55,11 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .char-fallback{font-size:46px;filter:drop-shadow(0 4px 6px rgba(0,0,0,.35))}
 .char-fallback.hidden,.char-stage img.hidden{display:none}
 
+/* 상호작용 영역(상점/대화 등) 안에 서 있을 때 캐릭터 머리 위에 뜨는
+   라벨 배지 — checkInteractionArea가 영역을 드나들 때만 토글한다. */
+.interaction-badge{position:absolute;left:50%;bottom:100%;transform:translate(-50%,-6px);z-index:4;background:rgba(214,168,75,.92);color:#1a1206;font-family:var(--mono);font-size:11px;font-weight:700;padding:4px 10px;border-radius:12px;white-space:nowrap;pointer-events:none;box-shadow:0 2px 6px rgba(0,0,0,.3)}
+.interaction-badge.hidden{display:none}
+
 .bobber{position:absolute;left:26%;top:64%;z-index:3;width:0;height:0;transform:translate(-50%,-50%)}
 .bobber.hidden{display:none}
 .bobber-dot{width:16px;height:16px;border-radius:50% 50% 50% 0;background:radial-gradient(circle at 35% 30%,#FF7A6E,#D9455B);box-shadow:0 2px 6px rgba(0,0,0,.35);transform:translate(-50%,-50%) rotate(45deg)}
@@ -147,6 +152,10 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .fish-btn{position:absolute;right:calc(var(--fish-right) + env(safe-area-inset-right,0));bottom:calc(var(--fish-bottom) + env(safe-area-inset-bottom,0));z-index:5;width:var(--fish-size);height:var(--fish-size);border-radius:50%;background:rgba(5,20,28,.4);border:1px solid rgba(255,255,255,.3);font-size:calc(var(--fish-size) * 0.4);display:flex;align-items:center;justify-content:center;touch-action:none;cursor:pointer}
 .fish-btn:active{background:rgba(5,20,28,.65);transform:scale(.95)}
 .fish-btn.hidden{display:none}
+/* 낚시가능 영역 밖에서 낚시 버튼을 눌렀을 때(canFishHere() false) 잠깐
+   빨갛게 번쩍여 "여기선 낚시할 수 없다"는 걸 알려준다(flashFishBtnDenied). */
+@keyframes fishBtnDenied{0%,100%{background:rgba(5,20,28,.4)}50%{background:rgba(217,65,65,.85)}}
+.fish-btn.denied{animation:fishBtnDenied .3s ease}
 
 /* 배치 편집 — 우상단 버튼을 누르면 조이스틱/낚시 버튼을 드래그로 옮기고
    슬라이더로 크기를 바꿀 수 있다(layoutEditMode). idle 상태에서만
@@ -263,6 +272,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
     <div class="char-stage" id="charStage">
       <img id="charImg" class="hidden" alt="">
       <div class="char-fallback" id="charFallback">🧍</div>
+      <div class="interaction-badge hidden" id="interactionBadge"></div>
     </div>
 
     <div class="bobber hidden" id="bobber">
@@ -415,6 +425,7 @@ const el = {
   charStage: document.getElementById('charStage'),
   charImg: document.getElementById('charImg'),
   charFallback: document.getElementById('charFallback'),
+  interactionBadge: document.getElementById('interactionBadge'),
   bobber: document.getElementById('bobber'),
   bobberDot: document.getElementById('bobberDot'),
   bobberImg: document.getElementById('bobberImg'),
@@ -489,6 +500,13 @@ let itemIconPos = { x: 0.5, y: 0.36 }; // 아이템창 카드 기준 0~1, dev/mi
 let itemIconSizePx = 64;
 let itemNamePos = { x: 0.5, y: 0.66 };
 let itemMetaPos = { x: 0.5, y: 0.8 };
+// 배경 이미지 자연 크기 — 배경은 background-size:auto(1배율, 중앙 정렬)로
+// 깔리므로(loadConfig 참고), 다각형 영역(0~1, 이 자연 크기 기준 정규화
+// 좌표)과 캐릭터의 화면 %위치를 서로 비교하려면 이 크기를 알아야 한다.
+let bgDims = null;
+let fishableAreas = []; // dev/minigame-fishing/index.html "영역 설정" 탭에서 그린 낚시가능 영역들
+let blockedAreas = []; // 이동 불가 영역들
+let interactionAreas = []; // 상호작용(상점/대화 등) 영역들, 각 { id, points, label }
 let caughtCount = 0;
 let gameState = 'idle'; // idle | charging | casting | waiting | bite | caught | catching | reeling | popup
 let biteTimer = null;
@@ -538,6 +556,80 @@ let moveRaf = null;
 let moveLastT = 0;
 let moveHoldVec = null; // { dx, dy } — 실제 위치 이동 벡터, 대각선 드래그면 둘 다 0이 아닐 수 있다
 let moveAnimTimer = null;
+
+/* ===== 영역(다각형) 판정 =====
+   dev/minigame-fishing/index.html "영역 설정" 탭에서 그린 다각형은 배경
+   이미지의 자연 크기(bgDims) 기준 0~1 정규화 좌표(points)로 저장돼 있다.
+   배경은 background-size:auto로 화면 중앙에 1배율로 깔리므로(loadConfig
+   참고), 캐릭터의 화면 %위치(charPosPct)를 그 좌표계로 바꾸려면 프레임
+   중심에서 배경 이미지가 얼마나 벗어나 있는지(오프셋)만 빼주면 된다 —
+   별도 스케일 보정(예: background-size:cover였다면 필요했을 letterbox
+   계산)이 필요 없다. */
+function isPointInPolygon(px, py, points) {
+  let inside = false;
+  for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+    const xi = points[i].x, yi = points[i].y, xj = points[j].x, yj = points[j].y;
+    const intersect = ((yi > py) !== (yj > py)) && (px < (xj - xi) * (py - yi) / (yj - yi) + xi);
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+// leftPct/bottomPct: charPosPct와 같은 형식(왼쪽 기준 %, 아래 기준 %).
+// bgDims를 못 읽었으면(배경 없음 등) 판정 근거가 없으므로 null을 돌려주고,
+// 호출부는 이 경우 전부 "제한 없음"으로 취급한다.
+function charFrameFracToImageFrac(leftPct, bottomPct, frameRect) {
+  if (!bgDims) return null;
+  const offsetX = (frameRect.width - bgDims.width) / 2;
+  const offsetY = (frameRect.height - bgDims.height) / 2;
+  const px = leftPct / 100 * frameRect.width;
+  const py = frameRect.height - bottomPct / 100 * frameRect.height; // bottom%(아래 기준) → 위 기준 px
+  return { x: (px - offsetX) / bgDims.width, y: (py - offsetY) / bgDims.height };
+}
+function isInsideAnyArea(frac, areas) {
+  return !!frac && areas.some(a => isPointInPolygon(frac.x, frac.y, a.points));
+}
+function areaContaining(frac, areas) {
+  if (!frac) return null;
+  return areas.find(a => isPointInPolygon(frac.x, frac.y, a.points)) || null;
+}
+
+// 상호작용 영역(상점/대화 등) — 캐릭터가 들어오고 나갈 때만(매 프레임이
+// 아니라 상태가 바뀔 때만) 배지를 갱신하고 이벤트를 쏜다. 이 미니게임
+// 자체엔 상점/대화 UI가 없으므로, 실제 동작은 다른 화면이 이 이벤트를
+// 구독해서 만들면 된다 — 여기선 영역 감지 + 라벨 배지 표시까지만 한다.
+let activeInteractionAreaId = null;
+function checkInteractionArea(frameRect) {
+  frameRect = frameRect || el.frame.getBoundingClientRect();
+  const area = areaContaining(charFrameFracToImageFrac(charPosPct.left, charPosPct.bottom, frameRect), interactionAreas);
+  const id = area ? area.id : null;
+  if (id === activeInteractionAreaId) return;
+  activeInteractionAreaId = id;
+  if (area) {
+    el.interactionBadge.textContent = area.label || '상호작용';
+    el.interactionBadge.classList.remove('hidden');
+    vibrate(10);
+    window.dispatchEvent(new CustomEvent('fishing:interaction-enter', { detail: { id: area.id, label: area.label } }));
+  } else {
+    el.interactionBadge.classList.add('hidden');
+    window.dispatchEvent(new CustomEvent('fishing:interaction-leave', {}));
+  }
+}
+
+// 낚시가능 영역(fishableAreas) — 지정 안 했으면(길이 0) 예전처럼 어디서나
+// 낚시할 수 있다. 지정했으면 캐릭터가 그 안에 서 있을 때만 낚시 버튼이
+// 캐스팅을 시작한다.
+function canFishHere() {
+  if (!fishableAreas.length) return true;
+  const frameRect = el.frame.getBoundingClientRect();
+  const frac = charFrameFracToImageFrac(charPosPct.left, charPosPct.bottom, frameRect);
+  return frac ? isInsideAnyArea(frac, fishableAreas) : true; // 배경 자연 크기를 못 읽었으면 제한할 근거가 없다
+}
+function flashFishBtnDenied() {
+  el.fishBtn.classList.remove('denied');
+  void el.fishBtn.offsetWidth; // 리플로우 강제 — 연달아 눌러도 매번 애니메이션이 다시 재생되게 한다
+  el.fishBtn.classList.add('denied');
+  vibrate([0, 40, 40, 40]);
+}
 
 /* ===== 설정 로드 (AssetDB) — 실패해도 게임은 도형 폴백으로 계속 동작한다. ===== */
 async function loadConfig() {
@@ -629,6 +721,19 @@ async function loadConfig() {
   el.frame.style.backgroundSize = backgroundAsset ? 'auto' : '';
   el.frame.style.backgroundPosition = backgroundAsset ? 'center' : '';
   el.frame.style.backgroundRepeat = backgroundAsset ? 'no-repeat' : '';
+  // 배경 자연 크기 — "영역 설정" 탭에서 그린 다각형(fishableAreas/
+  // blockedAreas/interactionAreas)이 이 크기 기준 0~1 정규화 좌표라,
+  // 캐릭터 위치와 비교하려면 필요하다(charFrameFracToImageFrac 참고).
+  bgDims = backgroundAsset ? await new Promise(resolve => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    img.onerror = () => resolve(null);
+    img.src = backgroundAsset.dataUrl;
+  }) : null;
+  fishableAreas = cfg.fishableAreas || [];
+  blockedAreas = cfg.blockedAreas || [];
+  interactionAreas = cfg.interactionAreas || [];
 
   // 낚시바 모듈 크기 — 설정 화면 슬라이드 에디터(dev/minigame-fishing/
   // index.html)의 슬라이드 실제 px 크기를 그대로 쓴다.
@@ -1572,6 +1677,12 @@ function applyMoveSprite(spriteDir) {
   currentSpriteDir = spriteDir;
   playMoveAnim(spriteDir);
 }
+// 이동 불가 영역(blockedAreas)이 있으면 후보 위치가 그 안에 들어가는지
+// 검사한다 — bgDims를 못 읽었으면(배경 없음) 판정 근거가 없으니 항상 허용.
+function isPositionBlocked(leftPct, bottomPct, frameRect) {
+  if (!blockedAreas.length) return false;
+  return isInsideAnyArea(charFrameFracToImageFrac(leftPct, bottomPct, frameRect), blockedAreas);
+}
 function moveTick(ts) {
   if (!moveHoldVec) { moveRaf = null; return; }
   if (!moveLastT) moveLastT = ts;
@@ -1579,16 +1690,24 @@ function moveTick(ts) {
   moveLastT = ts;
   if (moveHoldVec.dx && moveHoldVec.dy) distPx /= Math.SQRT2; // 대각선은 두 축을 동시에 움직이므로 축당 속도를 낮춰 체감 속도를 맞춘다
   const frameRect = el.frame.getBoundingClientRect();
+  // X축, Y축을 따로 검사해서 막힌 축만 취소한다 — 벽에 대각선으로 부딪혀도
+  // 막히지 않은 축으로는 계속 미끄러지듯 움직일 수 있다.
+  let nextLeft = charPosPct.left, nextBottom = charPosPct.bottom;
   if (moveHoldVec.dx) {
     const stepXPct = distPx / frameRect.width * 100;
-    charPosPct.left = clamp(charPosPct.left + moveHoldVec.dx * stepXPct, MOVE_BOUNDS_PCT.left[0], MOVE_BOUNDS_PCT.left[1]);
+    const candidate = clamp(charPosPct.left + moveHoldVec.dx * stepXPct, MOVE_BOUNDS_PCT.left[0], MOVE_BOUNDS_PCT.left[1]);
+    if (!isPositionBlocked(candidate, nextBottom, frameRect)) nextLeft = candidate;
   }
   if (moveHoldVec.dy) {
     const stepYPct = distPx / frameRect.height * 100;
-    charPosPct.bottom = clamp(charPosPct.bottom + moveHoldVec.dy * stepYPct, MOVE_BOUNDS_PCT.bottom[0], MOVE_BOUNDS_PCT.bottom[1]);
+    const candidate = clamp(charPosPct.bottom + moveHoldVec.dy * stepYPct, MOVE_BOUNDS_PCT.bottom[0], MOVE_BOUNDS_PCT.bottom[1]);
+    if (!isPositionBlocked(nextLeft, candidate, frameRect)) nextBottom = candidate;
   }
+  charPosPct.left = nextLeft;
+  charPosPct.bottom = nextBottom;
   el.charStage.style.left = charPosPct.left + '%';
   el.charStage.style.bottom = charPosPct.bottom + '%';
+  checkInteractionArea(frameRect);
   moveRaf = requestAnimationFrame(moveTick);
 }
 function startMoveHold(dx, dy, spriteDir) {
@@ -1633,7 +1752,11 @@ el.frame.addEventListener('pointerdown', handleActionPointerDown);
 el.fishBtn.addEventListener('pointerdown', (e) => {
   e.stopPropagation(); // el.frame의 pointerdown까지 뚫고 내려가 같은 동작을 두 번 건드리지 않게 막는다
   if (layoutEditMode) { fishBtnDragPointerId = e.pointerId; el.fishBtn.setPointerCapture(e.pointerId); startLayoutDrag('fishBtn', e); return; }
-  if (gameState === 'idle') { startPowerCharge(); return; }
+  if (gameState === 'idle') {
+    if (!canFishHere()) { flashFishBtnDenied(); return; } // 낚시가능 영역이 지정돼 있는데 그 밖에 서 있으면 캐스팅을 막는다
+    startPowerCharge();
+    return;
+  }
   handleActionPointerDown();
 });
 el.fishBtn.addEventListener('pointermove', (e) => {
@@ -1820,7 +1943,7 @@ el.layoutEditDoneBtn.addEventListener('click', (e) => {
 loadLayoutPrefs();
 applyLayoutPrefs();
 
-loadConfig();
+loadConfig().then(() => checkInteractionArea()); // 초기 스폰 위치가 이미 상호작용 영역 안일 수도 있으니 로드 직후 한 번 확인
 </script>
 <script src="/dev/devPlanFab.js"></script>
 </body>
