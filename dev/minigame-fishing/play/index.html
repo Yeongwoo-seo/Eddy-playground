@@ -63,6 +63,14 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .interaction-badge{position:absolute;left:50%;bottom:100%;transform:translate(-50%,-6px);z-index:4;background:rgba(214,168,75,.92);color:#1a1206;font-family:var(--mono);font-size:11px;font-weight:700;padding:4px 10px;border-radius:12px;white-space:nowrap;pointer-events:none;box-shadow:0 2px 6px rgba(0,0,0,.3)}
 .interaction-badge.hidden{display:none}
 
+/* 낚시 성공 후 캐릭터가 물고기를 들고 있는 자세(올리기 마지막 프레임)일
+   때, 잡은 물고기 아이콘을 그 위에 겹쳐 그린다 — 위치는
+   dev/minigame-fishing/index.html "올리기 모션" 탭에서 지정한
+   heldFishPos(char-stage 기준 0~1), 크기는 --held-fish-size(우상단
+   배치 편집 패널의 슬라이더, layoutPrefs.heldFish.size)로 정한다. */
+.held-fish{position:absolute;width:var(--held-fish-size,40px);height:var(--held-fish-size,40px);transform:translate(-50%,-50%);background-repeat:no-repeat;background-position:center;background-size:cover;image-rendering:pixelated;pointer-events:none;filter:drop-shadow(0 2px 4px rgba(0,0,0,.4))}
+.held-fish.hidden{display:none}
+
 .bobber{position:absolute;left:26%;top:64%;z-index:3;width:0;height:0;transform:translate(-50%,-50%)}
 .bobber.hidden{display:none}
 .bobber-dot{width:16px;height:16px;border-radius:50% 50% 50% 0;background:radial-gradient(circle at 35% 30%,#FF7A6E,#D9455B);box-shadow:0 2px 6px rgba(0,0,0,.35);transform:translate(-50%,-50%) rotate(45deg)}
@@ -284,6 +292,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
       <img id="charImg" class="hidden" alt="">
       <div class="char-fallback" id="charFallback">🧍</div>
       <div class="interaction-badge hidden" id="interactionBadge"></div>
+      <div class="held-fish hidden" id="heldFish"></div>
     </div>
 
     <div class="bobber hidden" id="bobber">
@@ -331,6 +340,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
   <div class="layout-edit-panel hidden" id="layoutEditPanel">
     <label>조이스틱 크기<input type="range" id="layoutJoySize" min="80" max="220" step="2"></label>
     <label>낚시 버튼 크기<input type="range" id="layoutFishSize" min="50" max="150" step="2"></label>
+    <label>물고기 들기 크기<input type="range" id="layoutHeldFishSize" min="20" max="100" step="2"></label>
     <button type="button" id="layoutEditDoneBtn">완료</button>
   </div>
   <div class="layout-edit-hint hidden" id="layoutEditHint">조이스틱·낚시 버튼을 드래그해서 위치를 옮길 수 있어요</div>
@@ -444,6 +454,7 @@ const el = {
   charImg: document.getElementById('charImg'),
   charFallback: document.getElementById('charFallback'),
   interactionBadge: document.getElementById('interactionBadge'),
+  heldFish: document.getElementById('heldFish'),
   bobber: document.getElementById('bobber'),
   bobberDot: document.getElementById('bobberDot'),
   bobberImg: document.getElementById('bobberImg'),
@@ -474,6 +485,7 @@ const el = {
   layoutEditPanel: document.getElementById('layoutEditPanel'),
   layoutJoySize: document.getElementById('layoutJoySize'),
   layoutFishSize: document.getElementById('layoutFishSize'),
+  layoutHeldFishSize: document.getElementById('layoutHeldFishSize'),
   layoutEditDoneBtn: document.getElementById('layoutEditDoneBtn'),
   layoutEditHint: document.getElementById('layoutEditHint'),
   countChip: document.getElementById('countChip'),
@@ -493,6 +505,12 @@ let castFrameDurations = null; // per-frame ms, dev/minigame-fishing/index.html 
 // 폴백 — 같은 기본값을 설정 화면 defaultRodtipFrac()과 맞춰둔다.
 let castingFrameRodTips = {};
 const DEFAULT_ROD_TIP_FRAC = { x: 0.82, y: 0.15 };
+// 물고기 들기 위치 — dev/minigame-fishing/index.html "올리기 모션" 탭에서
+// 지정한 점(0~1, char-stage 박스 기준, 같은 기본값을
+// DEFAULT_HELD_FISH_POS와 맞춰둔다) — 낚시 성공 후 캐릭터가 물고기를
+// 들고 있는 자세일 때 이 위치에 잡은 물고기 아이콘을 그린다.
+const DEFAULT_HELD_FISH_POS = { x: 0.5, y: 0.25 };
+let heldFishPos = DEFAULT_HELD_FISH_POS;
 let reelFrameUrls = [];
 let idleFrameUrl = null;
 let sinkerImageUrl = null;
@@ -764,6 +782,7 @@ async function loadConfig() {
   }
   castFrameDurations = (cfg.castingFrameDurations && cfg.castingFrameDurations.length) ? cfg.castingFrameDurations : null;
   castingFrameRodTips = cfg.castingFrameRodTips || {};
+  heldFishPos = cfg.heldFishPos || DEFAULT_HELD_FISH_POS;
   castPhysics = Object.assign({ gravityMps2: 9.8, vxScale: 1 }, cfg.castPhysics || {});
 
   // 이동 방향별 걷기 시트 — 캐스팅 시트와 같은 방식(6프레임, MOTION_SHEET_LAYOUT)
@@ -1786,10 +1805,34 @@ function populateItemPopup(fishCaught) {
   }
 }
 
+// 캐릭터가 물고기를 들고 있는 자세(올리기 마지막 프레임 — playFrameSequence가
+// el.charImg를 이미 그 프레임에 남겨둔 상태) 위에 잡은 물고기 아이콘을
+// heldFishPos 자리에 겹쳐 그린다. 아이템창(showItemPopup)과 같은 타이밍에
+// 뜨고, resetToIdle에서 같이 사라진다.
+function showHeldFish(fishCaught) {
+  el.heldFish.style.left = (heldFishPos.x * 100) + '%';
+  el.heldFish.style.top = (heldFishPos.y * 100) + '%';
+  if (fishSheetUrl) {
+    const override = fishIconOverrides[fishCaught.id];
+    const style = (override && fishSheetDims)
+      ? getFishCropStyle(override, fishSheetDims.width, fishSheetDims.height, 40)
+      : getFishSlotStyle(fishCaught.slot, 3.5);
+    el.heldFish.style.backgroundImage = `url('${fishSheetUrl}')`;
+    el.heldFish.style.backgroundPosition = style.backgroundPosition;
+    el.heldFish.style.backgroundSize = style.backgroundSize;
+    el.heldFish.textContent = '';
+  } else {
+    el.heldFish.style.backgroundImage = 'none';
+    el.heldFish.textContent = '🐟';
+  }
+  el.heldFish.classList.remove('hidden');
+}
+
 function showItemPopup(fishCaught) {
   gameState = 'popup';
   populateItemPopup(fishCaught);
   positionItemPopupAboveCharacter();
+  showHeldFish(fishCaught);
 }
 
 /* ===== 리셋 ===== */
@@ -1802,6 +1845,7 @@ function resetToIdle() {
   el.bobber.classList.add('hidden');
   el.bobber.classList.remove('bob-idle', 'bite-dip');
   el.biteCaught.classList.add('hidden');
+  el.heldFish.classList.add('hidden');
   el.joystick.classList.remove('hidden');
   if (idleFrameUrl) { el.charImg.src = idleFrameUrl; el.charImg.classList.remove('hidden'); el.charFallback.classList.add('hidden'); }
   else { el.charImg.classList.add('hidden'); el.charFallback.classList.remove('hidden'); }
@@ -2015,6 +2059,7 @@ const LAYOUT_PREFS_KEY = 'fishingLayoutPrefs_v1';
 let layoutPrefs = {
   joystick: { size: 130, left: 12, bottom: 57 }, // size=.joystick-base 지름(px), left/bottom=.joystick 앵커(px) — 요청한 스크린샷 실측값으로 기본값 고정
   fishBtn: { size: 114, right: 23, bottom: 82 }, // 요청한 스크린샷 실측 크기·위치로 기본값 고정
+  heldFish: { size: 40 }, // 낚시 성공 후 캐릭터가 들고 있는 물고기 아이콘 크기(px) — .held-fish 기본값과 맞춤
 };
 let layoutEditMode = false;
 let layoutDragTarget = null; // 'joystick' | 'fishBtn' | null
@@ -2028,6 +2073,7 @@ function loadLayoutPrefs() {
     const saved = JSON.parse(raw);
     if (saved.joystick) Object.assign(layoutPrefs.joystick, saved.joystick);
     if (saved.fishBtn) Object.assign(layoutPrefs.fishBtn, saved.fishBtn);
+    if (saved.heldFish) Object.assign(layoutPrefs.heldFish, saved.heldFish);
   } catch (err) { /* 저장값이 깨졌으면 기본값 그대로 쓴다 */ }
 }
 function saveLayoutPrefs() {
@@ -2043,6 +2089,7 @@ function applyLayoutPrefs() {
   root.setProperty('--fish-size', layoutPrefs.fishBtn.size + 'px');
   root.setProperty('--fish-right', layoutPrefs.fishBtn.right + 'px');
   root.setProperty('--fish-bottom', layoutPrefs.fishBtn.bottom + 'px');
+  root.setProperty('--held-fish-size', layoutPrefs.heldFish.size + 'px');
 }
 // 조이스틱 반지름/데드존은 --joy-base-size에 비례해서 커진 원 크기에 맞게 매번 다시 계산한다(고정 상수 대신).
 function joystickRadiusPx() { return layoutPrefs.joystick.size * 0.4; }
@@ -2082,6 +2129,7 @@ el.layoutEditBtn.addEventListener('pointerdown', (e) => {
   if (layoutEditMode) {
     el.layoutJoySize.value = layoutPrefs.joystick.size;
     el.layoutFishSize.value = layoutPrefs.fishBtn.size;
+    el.layoutHeldFishSize.value = layoutPrefs.heldFish.size;
     stopMoveHold();
   }
 });
@@ -2095,6 +2143,11 @@ el.layoutFishSize.addEventListener('input', () => {
   applyLayoutPrefs();
 });
 el.layoutFishSize.addEventListener('change', saveLayoutPrefs);
+el.layoutHeldFishSize.addEventListener('input', () => {
+  layoutPrefs.heldFish.size = Number(el.layoutHeldFishSize.value);
+  applyLayoutPrefs();
+});
+el.layoutHeldFishSize.addEventListener('change', saveLayoutPrefs);
 el.layoutEditDoneBtn.addEventListener('click', (e) => {
   e.stopPropagation();
   layoutEditMode = false;
