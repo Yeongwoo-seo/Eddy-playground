@@ -277,14 +277,19 @@ function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
 // 안 끝나 첫 로드가 실패하고(그 자리엔 background-color만 남아 "단색으로만
 // 보임") 새로고침하면 되던 증상의 유력한 원인이라, background-image로 바로
 // 꽂기 전에 이 헬퍼로 먼저 로드를 검증하고 실패하면 짧게 대기 후 재시도한다.
+// ok:false(재시도를 다 썼는데도 로드 실패)를 호출부에 알려줘야, 색 폴백
+// 없이 곧바로 background-image만 꽂는 자리(예: 캐치바)에서 "이미지도 안
+// 뜨고 폴백 색도 없어서 완전히 안 보이는" 상태를 피하고 대신 색으로
+// 폴백할 수 있다 — url만 반환하던 이전 버전은 이 실패를 구분할 수
+// 없었다.
 function preloadWithRetry(url, retries, delayMs) {
   return new Promise(resolve => {
     const attempt = (remaining) => {
       const img = new Image();
-      img.onload = () => resolve(url);
+      img.onload = () => resolve({ url, ok: true });
       img.onerror = () => {
         if (remaining > 0) setTimeout(() => attempt(remaining - 1), delayMs);
-        else resolve(url); // 재시도 다 써도 일단 원래 URL로 시도는 하게 둔다
+        else resolve({ url, ok: false }); // 재시도 다 써도 일단 원래 URL로 시도는 하게 둔다
       };
       img.src = url;
     };
@@ -493,7 +498,7 @@ async function loadConfig() {
   // 절대위치로 옮겨온다(설정 화면 슬라이드와 좌표계가 동일하므로 변환 없음).
   const barImageAsset = design.barLayer && design.barLayer.assetId ? byId.get(design.barLayer.assetId) : null;
   if (barImageAsset && design.barLayer) {
-    el.fishbarBarImg.querySelector('img').src = await preloadWithRetry(barImageAsset.dataUrl, 3, 500);
+    el.fishbarBarImg.querySelector('img').src = (await preloadWithRetry(barImageAsset.dataUrl, 3, 500)).url;
     el.fishbarBarImg.style.left = (design.barLayer.x * 100) + '%';
     el.fishbarBarImg.style.top = (design.barLayer.y * 100) + '%';
     el.fishbarBarImg.style.width = (design.barLayer.w * 100) + '%';
@@ -511,14 +516,17 @@ async function loadConfig() {
   const zoneRegion = design.zoneRegion;
   const catchLayer = design.catchLayer;
   const catchImageAsset = catchLayer && catchLayer.assetId ? byId.get(catchLayer.assetId) : null;
-  // 이미지가 있으면 파란 폴백 색(#59B8C8)을 아예 깔지 않는다 — 예전엔 색을
+  // 이미지 로드에 성공했을 때만 파란 폴백 색(#59B8C8)을 뺀다 — 예전엔 색을
   // 항상 먼저 채워두고 그 위에 이미지를 얹기만 했는데, 업로드한 이미지에
   // 투명한 부분이 조금이라도 있으면 그 틈으로 파란색이 그대로 비쳐서
-  // "이미지를 올렸는데도 이상한 파란 바가 보인다"는 문제가 있었다.
+  // "이미지를 올렸는데도 이상한 파란 바가 보인다"는 문제가 있었다. 다만
+  // 색을 아예 없애버리면 이미지 로드가 실패했을 때(재시도를 다 써도 안 될
+  // 때) 색도 이미지도 없어 캐치바가 완전히 안 보이는 문제가 생겨서
+  // (사용자 보고: "캐치바가 아예 안떠"), 로드 성공 여부에 따라 나눈다.
   if (catchImageAsset) {
-    const catchImageUrl = await preloadWithRetry(catchImageAsset.dataUrl, 3, 500);
-    el.fishbarZone.style.background = 'none';
-    el.fishbarZone.style.backgroundImage = `url(${catchImageUrl})`;
+    const catchImage = await preloadWithRetry(catchImageAsset.dataUrl, 3, 500);
+    el.fishbarZone.style.background = catchImage.ok ? 'none' : '#59B8C8';
+    el.fishbarZone.style.backgroundImage = `url(${catchImage.url})`;
   } else {
     el.fishbarZone.style.background = '#59B8C8';
     el.fishbarZone.style.backgroundImage = '';
@@ -581,7 +589,7 @@ async function loadConfig() {
   // 한 번만 지정해두면 되니(색은 진행도가 바뀔 때마다 다시 칠해야 해서
   // 매 프레임 갱신) 여기 loadConfig에서 한 번만 적용한다.
   const gaugeImageAsset = design.gaugeImageAssetId ? byId.get(design.gaugeImageAssetId) : null;
-  gaugeImageUrl = gaugeImageAsset ? await preloadWithRetry(gaugeImageAsset.dataUrl, 3, 500) : null;
+  gaugeImageUrl = gaugeImageAsset ? (await preloadWithRetry(gaugeImageAsset.dataUrl, 3, 500)).url : null;
   el.fishbarGauge.style.backgroundImage = gaugeImageUrl ? `url(${gaugeImageUrl})` : 'none';
 
   // 캐스팅 게이지 이미지 — 이미지와 채움 영역(castGaugeFillRegion)이 둘 다
@@ -592,7 +600,7 @@ async function loadConfig() {
   const castGaugeFillRegion = cfg.castGaugeFillRegion;
   if (castGaugeAsset && castGaugeFillRegion) {
     el.castPowerWrap.classList.add('custom-gauge');
-    const gaugeUrl = await preloadWithRetry(castGaugeAsset.dataUrl, 3, 500);
+    const gaugeUrl = (await preloadWithRetry(castGaugeAsset.dataUrl, 3, 500)).url;
     el.castPowerGaugeImg.src = gaugeUrl;
     const dims = await new Promise(resolve => {
       const img = new Image();
@@ -633,7 +641,7 @@ async function loadConfig() {
   // 맞춰야 액자 그림이 잘리거나 늘어나지 않고 업로드한 그대로 보인다.
   const itemPopupBgAsset = itemPopupCfg.backgroundAssetId ? byId.get(itemPopupCfg.backgroundAssetId) : null;
   if (itemPopupBgAsset) {
-    const itemBgUrl = await preloadWithRetry(itemPopupBgAsset.dataUrl, 3, 500);
+    const itemBgUrl = (await preloadWithRetry(itemPopupBgAsset.dataUrl, 3, 500)).url;
     el.itemPopupCard.style.backgroundImage = `url(${itemBgUrl})`;
     el.itemPopupCard.classList.remove('item-popup-card--fallback');
     const itemBgDims = await new Promise(resolve => {
