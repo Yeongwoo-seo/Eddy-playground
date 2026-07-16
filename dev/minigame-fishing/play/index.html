@@ -132,7 +132,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 /* 낚시 성공 시 잡은 물고기 아이콘이 추(찌) 자리에서 캐릭터에게로 천천히
    날아오는 연출용 임시 엘리먼트 — flyFishToCharacter가 매 캐치마다
    새로 만들고(el.stage에 추가) 도착하면 제거한다. */
-.fish-fly{position:absolute;z-index:7;width:44px;height:44px;border-radius:12px;background-color:rgba(255,255,255,.12);background-repeat:no-repeat;image-rendering:pixelated;pointer-events:none;transform:translate(-50%,-50%);filter:drop-shadow(0 3px 6px rgba(0,0,0,.4));font-size:28px;display:flex;align-items:center;justify-content:center;box-sizing:border-box}
+.fish-fly{position:absolute;z-index:7;width:44px;height:44px;border-radius:12px;background-repeat:no-repeat;image-rendering:pixelated;pointer-events:none;transform:translate(-50%,-50%);filter:drop-shadow(0 3px 6px rgba(0,0,0,.4));font-size:28px;display:flex;align-items:center;justify-content:center;box-sizing:border-box}
 
 /* ===== 아이템창 — 낚시 성공(물고기가 캐릭터에게 날아온 다음)에만 뜨는
    말풍선. 실패했을 때는 아무 화면도 뜨지 않고 그냥 대기 상태로 돌아간다
@@ -1174,8 +1174,13 @@ async function playReelThenResult() {
 /* ===== 물고기 날아오기 연출 =====
    추(찌)가 마지막으로 착수했던 자리(el.bobber의 현재 left/top — throwSinker의
    finish에서 남겨둔 값)에서 캐릭터(el.charStage) 쪽으로 물고기 아이콘이
-   천천히 날아든다. 임시 엘리먼트(.fish-fly)를 만들어 el.stage에 얹고,
-   도착하면 지운다. */
+   크기 변화 없이 포물선을 그리며 천천히 날아든다(요청: 크기는 그대로,
+   좀 더 느리게, 정점이 캐릭터 위치보다 위로 떠도 됨) — CSS transition
+   대신 매 프레임 위치를 직접 계산해서 그린다(throwSinker의 추 궤적과
+   같은 방식). 임시 엘리먼트(.fish-fly)를 만들어 el.stage에 얹고, 도착하면
+   지운다. */
+const FISH_FLY_DURATION_MS = 1600;
+const FISH_FLY_ARC_PCT = 18; // 포물선 정점이 시작~도착 직선보다 이만큼(프레임 세로 %) 더 위로 뜬다
 function flyFishToCharacter(fishDef) {
   return new Promise(resolve => {
     const frameRect = el.frame.getBoundingClientRect();
@@ -1199,28 +1204,31 @@ function flyFishToCharacter(fishDef) {
       flyEl.textContent = '🐟';
     }
     // 설정 화면 물고기 목록과 같은 좌우반전 — 스프라이트시트 크롭(실제
-    // 사진)일 때만 뒤집는다. 시작/도착 값 둘 다 scale(x,y) 하나의 함수로
-    // 넣어야 한다 — 시작 "scaleX(-1)" + 도착 "scale(.55) scaleX(-1)"처럼
-    // transform 함수 개수/순서가 다르면, 브라우저가 각 함수를 그대로
-    // 보간하지 못하고 행렬로 분해해서 보간하다가 그 과정에서 잠깐
-    // 뒤집히는(회전하는) 것처럼 보이는 아티팩트가 생긴다(요청: 반전은
-    // 애니메이션이 아니라 처음부터 반전된 상태로 보여야 함). x값이
-    // flipX(-1 또는 1)에서 flipX*.55로, 부호가 안 바뀐 채로 크기만
-    // 줄어들도록 하나의 scale(x,y) 함수로 통일하면 뒤집힘 없이 이동+
-    // 축소만 자연스럽게 보간된다.
+    // 사진)일 때만 뒤집는다. 크기는 날아가는 내내 안 바뀌니 이 transform도
+    // 끝까지 고정값이라 애니메이션되지 않는다.
     const flipX = fishSheetUrl ? -1 : 1;
+    flyEl.style.transform = `translate(-50%,-50%) scale(${flipX},1)`;
     flyEl.style.left = startLeft + '%';
     flyEl.style.top = startTop + '%';
-    flyEl.style.transform = `translate(-50%,-50%) scale(${flipX},1)`;
     el.stage.appendChild(flyEl);
     vibrate(20);
-    requestAnimationFrame(() => {
-      flyEl.style.transition = 'left .9s cubic-bezier(0.25,0.8,0.25,1), top .9s cubic-bezier(0.25,0.8,0.25,1), transform .9s ease';
-      flyEl.style.left = endLeft + '%';
-      flyEl.style.top = endTop + '%';
-      flyEl.style.transform = `translate(-50%,-50%) scale(${flipX * 0.55},0.55)`;
-    });
-    setTimeout(() => { flyEl.remove(); resolve(); }, 920);
+
+    let start = null;
+    function frame(ts) {
+      if (start === null) start = ts;
+      const t = Math.min((ts - start) / FISH_FLY_DURATION_MS, 1);
+      // 4·t·(1-t)는 t=0.5에서 정점(1)을 찍는 포물선 모양이라, 직선 보간에서
+      // 이 값만큼 위로(화면 좌표는 위로 갈수록 top%가 작아지므로 빼준다)
+      // 띄우면 시작~도착 어느 쪽 y와 비교해도 위로 볼록한 아치가 된다.
+      const left = startLeft + (endLeft - startLeft) * t;
+      const top = startTop + (endTop - startTop) * t - FISH_FLY_ARC_PCT * 4 * t * (1 - t);
+      flyEl.style.left = left + '%';
+      flyEl.style.top = top + '%';
+      if (t < 1) { requestAnimationFrame(frame); return; }
+      flyEl.remove();
+      resolve();
+    }
+    requestAnimationFrame(frame);
   });
 }
 
