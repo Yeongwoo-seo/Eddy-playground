@@ -330,6 +330,9 @@ let fishSheetUrl = null;
 let fishSheetDims = null; // { width, height } of the *actual* loaded sheet — needed to turn a fishIconOverrides rect (normalized 0~1) into pixel background-position/size, see getFishCropStyle in fishDefs.js
 let fishIconOverrides = {};
 let zoneSizePct = 28;
+// castPhysics — dev/minigame-fishing/index.html '캐스팅 모션' 탭의 던지기
+// 물리 슬라이더 값, throwSinker에서 자유낙하 가속도/수평속도 배율로 쓴다.
+let castPhysics = { gravityMps2: 9.8, vxScale: 1 };
 // zoneRegion이 설정돼 있으면 캐치존/물고기를 낚시바 전체(0~100%)가 아니라
 // 이 안(트랙)에서 위치를 계산한다 — 실제 물리(updateFish/updateZone/
 // updateProgress)는 항상 추상적인 0~100 공간에서 그대로 돌아가고, 렌더링
@@ -400,6 +403,7 @@ async function loadConfig() {
   }
   castFrameDurations = (cfg.castingFrameDurations && cfg.castingFrameDurations.length) ? cfg.castingFrameDurations : null;
   castingFrameRodTips = cfg.castingFrameRodTips || {};
+  castPhysics = Object.assign({ gravityMps2: 9.8, vxScale: 1 }, cfg.castPhysics || {});
   const fishSheetAsset = cfg.fishSheetAssetId ? byId.get(cfg.fishSheetAssetId) : null;
   fishSheetUrl = fishSheetAsset ? fishSheetAsset.dataUrl : null;
   fishIconOverrides = cfg.fishIconOverrides || {};
@@ -651,24 +655,29 @@ function rodTipPxForFrame(frameIndex, frameRect) {
 // 추를 던진다 — 수평은 등속(v_x = dx/T, dx는 세기(게이지)에 비례)으로
 // x축을 따라 무조건 직진하고, 수직은 야구공을 던진 듯 살짝 떠올랐다가
 // 떨어지는 포물선(v_y = vy0 + g·t, vy0<0=위로 발사)이다. 체공 시간(T)은
-// 실제 물리 상수(1m를 표준중력 9.8m/s²로 자유낙하할 때 걸리는 시간)로
-// 고정해두고, 그 T 안에 정확히 물 라인까지의 픽셀 거리(h0)만큼 떨어지도록
-// vy0/픽셀 중력(g)을 역산한다 — 세기와 무관하게 항상 같은 체공 시간이
-// 나오고, 세기는 수평거리(dx)만 늘린다("세질수록 멀리 감"). ARC_STRENGTH는
-// 얼마나 높이 떠올랐다가 떨어지는지(평균 낙하속도 h0/T 대비 초기 상승
-// 속도의 비율) 조절하는 값 — dev/minigame-fishing/index.html의 추 이동
-// 모션 테스트 도구도 같은 공식을 쓴다. 착수 지점에 기존 찌(bobber)를
-// 그대로 가져다 놓아 입질 대기 이후 로직은 손대지 않는다.
+// 1m를 castPhysics.gravityMps2 중력가속도로 자유낙하할 때 걸리는 시간
+// (설정 화면 '캐스팅 모션' 탭의 자유낙하 속도 슬라이더로 조절)으로 정하고,
+// 그 T 안에 정확히 물 라인까지의 픽셀 거리(h0)만큼 떨어지도록 vy0/픽셀
+// 중력(g)을 역산한다 — gravityMps2가 클수록 T가 짧아져(T=√(2H/g)) 더
+// 빨리 떨어진다. dx(수평거리)는 세기(게이지)로 정해지는 기본값에
+// castPhysics.vxScale(역시 슬라이더)을 곱해 늘리거나 줄인다 — 세기와
+// 무관하게 항상 같은 체공 시간이 나오고, 세기는 수평거리(dx)만 늘린다
+// ("세질수록 멀리 감"). ARC_STRENGTH는 얼마나 높이 떠올랐다가 떨어지는지
+// (평균 낙하속도 h0/T 대비 초기 상승 속도의 비율) 조절하는 값 —
+// dev/minigame-fishing/index.html의 추 이동 모션 테스트 도구는 이
+// castPhysics 값과 별개로 자체 미리보기 상수를 쓴다. 착수 지점에 기존
+// 찌(bobber)를 그대로 가져다 놓아 입질 대기 이후 로직은 손대지 않는다.
 function throwSinker(power, origin, frameRect) {
   return new Promise(resolve => {
     const minDx = frameRect.width * 0.10, maxDx = frameRect.width * 0.68;
-    const dx = minDx + (power / 100) * (maxDx - minDx);
+    const baseDx = minDx + (power / 100) * (maxDx - minDx);
+    const dx = baseDx * (castPhysics.vxScale || 1);
     const waterY = frameRect.height * 0.47; // 기존 찌 착지 y(47%)와 동일
     const h0 = Math.max(10, waterY - origin.y);
     const FREE_FALL_HEIGHT_M = 1;
-    const GRAVITY_MPS2 = 9.8;
+    const gravityMps2 = castPhysics.gravityMps2 || 9.8;
     const ARC_STRENGTH = 1.0;
-    const T = Math.sqrt(2 * FREE_FALL_HEIGHT_M / GRAVITY_MPS2);
+    const T = Math.sqrt(2 * FREE_FALL_HEIGHT_M / gravityMps2);
     const vy0 = -ARC_STRENGTH * (h0 / T);
     const g = 2 * (h0 - vy0 * T) / (T * T);
     const vx0 = dx / T;
