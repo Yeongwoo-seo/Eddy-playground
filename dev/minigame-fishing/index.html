@@ -1819,7 +1819,16 @@ el.catchLayerFileInput.addEventListener('change', async () => {
     // 크롭 전엔 원본(assetId===sourceAssetId)을 그대로 보여주다가, "인식
     // 영역 자르기"를 확정하면 confirmFbRegionEditor가 baked 결과로 assetId만
     // 갈아끼운다(fishIconAssetId/fishIconSourceAssetId 패턴과 동일).
-    await patchBarDesign({ catchLayer: { assetId: asset.id, sourceAssetId: asset.id, cropRect: null, x: 0.15, y: 0.4, w: 0.7, h: 0.16 } });
+    const catchLayer = { assetId: asset.id, sourceAssetId: asset.id, cropRect: null, x: 0.15, y: 0.4, w: 0.7, h: 0.16 };
+    const patch = { catchLayer };
+    // 캐치바 영역(zoneRegion, 캐치바가 위아래로 움직이는 트랙)이 아직 없으면
+    // "캐치바 이미지"만 올리고 "캐치바 영역"은 안 눌러서 재생 화면에 그림
+    // 없이 단색 트랙만 보이는 문제(사용자 보고: "이미지 쓰는게 아니라 그
+    // 영역만 갖다 쓰는거 같다")가 생긴다 — 두 버튼을 각각 눌러야 하는 걸
+    // 모르기 쉬우므로, 이미지를 올리면 기본 영역(+ 캐치바 영역 버튼과 같은
+    // 값)을 함께 만들어 한 번의 업로드로 바로 움직이는 캐치바가 나오게 한다.
+    if (!barDesignOf().zoneRegion) patch.zoneRegion = { x: 0.1, y: 0.3, w: 0.8, h: 0.4 };
+    await patchBarDesign(patch);
     selectedLayerId = 'catchLayer';
     renderSlideStage();
   } finally {
