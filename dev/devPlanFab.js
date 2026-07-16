@@ -76,16 +76,6 @@
     modal.classList.remove('dpf-show');
   }
 
-  // localStorage는 이 기기 안에서도 탭/창마다 따로 로드돼 있으면 서로의
-  // 변경을 실시간으로 모른다 — 예: /dev/plan/에서 메모를 고친 뒤 이
-  // 팝업이 이미 열려 있던 다른 탭으로 돌아오면 옛 내용 그대로다. 새로고침
-  // 버튼은 지금 저장된 최신 값을 다시 읽어와 텍스트영역에 반영한다.
-  function refreshFromStorage() {
-    clearTimeout(saveTimer);
-    textarea.value = localStorage.getItem(STORAGE_KEY) || '';
-    status.textContent = '새로고침됨';
-  }
-
   function clamp(v, min, max) { return Math.min(Math.max(v, min), max); }
 
   // Position is stored as % of viewport (not px) so it stays sane across
@@ -137,7 +127,14 @@
   }));
 
   backdrop.addEventListener('click', closeModal);
-  refreshBtn.addEventListener('click', refreshFromStorage);
+  // 새로고침 버튼은 페이지 새로고침이다 — 지금 입력 중인 내용을 먼저
+  // 저장해 두어야(디바운스 도중이면 클릭 시점에 아직 localStorage에
+  // 안 쓰였을 수 있다) 새로고침 후에도 이어서 볼 수 있다.
+  refreshBtn.addEventListener('click', () => {
+    clearTimeout(saveTimer);
+    localStorage.setItem(STORAGE_KEY, textarea.value);
+    location.reload();
+  });
   closeBtn.addEventListener('click', closeModal);
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && modal.classList.contains('dpf-show')) closeModal();
