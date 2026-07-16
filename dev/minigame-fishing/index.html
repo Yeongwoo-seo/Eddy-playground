@@ -471,6 +471,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
         <div class="slide-stage" id="slideStage"></div>
       </div>
       <button type="button" class="fish-sheet-btn hidden" id="cropCatchImageBtn" style="width:100%;margin-top:10px">✂ 캐치바 이미지 인식 영역 자르기</button>
+      <button type="button" class="fish-sheet-btn hidden" id="reloadCatchImageBtn" style="width:100%;margin-top:10px">🔄 캐치바 이미지 다시 불러오기</button>
       <button type="button" class="fish-sheet-btn danger hidden" id="deleteLayerBtn" style="width:100%;margin-top:10px">✕ 선택한 오브젝트 삭제</button>
     </div>
     <!-- ===== 게이지 채움 이미지 — 위 슬라이드에서 "+ 게이지 영역"으로 지정한
@@ -920,6 +921,7 @@ const el = {
   catchLayerFileInput: document.getElementById('catchLayerFileInput'),
   slideStage: document.getElementById('slideStage'),
   cropCatchImageBtn: document.getElementById('cropCatchImageBtn'),
+  reloadCatchImageBtn: document.getElementById('reloadCatchImageBtn'),
   deleteLayerBtn: document.getElementById('deleteLayerBtn'),
   slideWidthInput: document.getElementById('slideWidthInput'),
   slideWidthValue: document.getElementById('slideWidthValue'),
@@ -1794,6 +1796,7 @@ function updateSlideToolbarState() {
   el.addGaugeRegionBtn.classList.toggle('hidden', !!design.gaugeRegion);
   el.deleteLayerBtn.classList.toggle('hidden', !selectedLayerId);
   el.cropCatchImageBtn.classList.toggle('hidden', selectedLayerId !== 'catchLayer' || !design.catchLayer);
+  el.reloadCatchImageBtn.classList.toggle('hidden', selectedLayerId !== 'catchLayer' || !design.catchLayer);
 }
 function clampLayerPos(v, size) { return Math.min(Math.max(v, 0), 1 - size); }
 
@@ -2277,6 +2280,21 @@ const FB_REGION_LABELS_BY_KIND = {
 function currentFbLabels() { return FB_REGION_LABELS_BY_KIND[fbTargetKind] || FB_REGION_LABELS_BY_KIND.catchCrop; }
 
 el.cropCatchImageBtn.addEventListener('click', openCatchCropEditor);
+// 캐치바 이미지 다시 불러오기 — 업로드는 됐는데 미리보기/플레이 화면에
+// 파란 폴백 색만 보이는 등 로드가 실패한 것 같을 때, 페이지를 통째로
+// 새로고침하지 않고 그 레이어의 캐시된 URL(slideAssetUrlCache)만 지워서
+// AssetDB에서 다시 가져오게 한다.
+el.reloadCatchImageBtn.addEventListener('click', async () => {
+  const catchLayer = barDesignOf().catchLayer;
+  if (!catchLayer || !catchLayer.assetId) return;
+  const prevText = el.reloadCatchImageBtn.textContent;
+  el.reloadCatchImageBtn.disabled = true;
+  el.reloadCatchImageBtn.textContent = '다시 불러오는 중...';
+  slideAssetUrlCache.delete(catchLayer.assetId);
+  await renderSlideStage();
+  el.reloadCatchImageBtn.disabled = false;
+  el.reloadCatchImageBtn.textContent = prevText;
+});
 el.castGaugeRegionEditBtn.addEventListener('click', openCastGaugeRegionEditor);
 el.fbregionCloseBtn.addEventListener('click', closeFbRegionEditor);
 el.fbregionConfirmBtn.addEventListener('click', confirmFbRegionEditor);
