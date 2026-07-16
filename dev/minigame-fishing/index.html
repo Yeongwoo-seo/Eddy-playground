@@ -95,6 +95,16 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .rodtip-stage{position:relative;width:100%;max-width:280px;aspect-ratio:1/1;margin:0 auto;border-radius:12px;overflow:hidden;background:#000;touch-action:none;cursor:crosshair}
 .rodtip-stage img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;image-rendering:pixelated;pointer-events:none;-webkit-user-drag:none;-webkit-user-select:none;user-select:none}
 .rodtip-marker{position:absolute;width:18px;height:18px;margin-left:-9px;margin-top:-9px;border-radius:50%;background:rgba(89,184,200,.35);border:2px solid var(--cyan);pointer-events:none}
+
+/* ===== 추 이동 모션 테스트 — 캐스팅 탭의 미니 미리보기 스테이지. 낚싯대
+   끝(origin, 고정 마커)에서 추(dot)가 v_x 슬라이더 값으로 포물선을 그리며
+   물 라인(water)까지 날아가는 걸 보여준다. */
+.sinker-test-stage{position:relative;width:100%;height:170px;border-radius:12px;overflow:hidden;background:linear-gradient(180deg,#0E2530 0%,#0E2530 55%,#0A3548 55%,#0A3548 100%);border:1px solid var(--divider);margin-bottom:14px}
+.sinker-test-svg{position:absolute;inset:0;width:100%;height:100%}
+.sinker-test-water{stroke:rgba(89,184,200,.5);stroke-width:1.5;stroke-dasharray:4 4}
+.sinker-test-origin{fill:var(--cyan)}
+.sinker-test-path{fill:none;stroke:rgba(230,230,220,.8);stroke-width:1.5}
+.sinker-test-dot{fill:var(--amber);stroke:rgba(0,0,0,.4);stroke-width:1}
 .frame-slot{position:relative;width:64px;height:64px;border-radius:10px;background:var(--surface-1);border:1px solid var(--divider);overflow:hidden;display:flex;align-items:center;justify-content:center}
 .frame-slot img{width:100%;height:100%;object-fit:cover;display:block}
 .frame-slot .frame-index{position:absolute;top:2px;left:4px;font-family:var(--mono);font-size:9px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9)}
@@ -305,7 +315,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
 
     <div class="option-group">
       <div class="option-label">낚시대 끝 지정</div>
-      <div class="option-desc">프레임마다 낚싯대 끝(줄이 시작하는 지점)을 지정하세요. 손을 떼서 캐스팅하는 순간부터 이 지점과 추 사이를 현수선(줄이 늘어진 곡선)으로 이어 그려요 — 애니메이션 동안은 그 프레임의 낚싯대 끝 지점을, 실제로 추가 날아가는 물리 계산은 1번 프레임의 지점을 시작점으로 써요.</div>
+      <div class="option-desc">프레임마다 낚싯대 끝(줄이 시작하는 지점)을 지정하세요. 손을 떼서 캐스팅하는 순간부터 이 지점과 추 사이를 현수선(줄이 늘어진 곡선)으로 이어 그려요 — 애니메이션 동안은 그 프레임의 낚싯대 끝 지점을, 실제로 추가 날아가는 물리 계산은 손을 뗄 때 이미 화면에 보이던 프레임의 지점을 시작점으로 써요.</div>
       <button type="button" class="fish-sheet-btn" id="rodtipEditBtn" style="width:100%" disabled>🎯 낚시대 끝 지정</button>
     </div>
 
@@ -318,6 +328,29 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
         <input type="number" id="castTotalDurationInput" min="0.1" max="10" step="0.05">
         <span class="timeline-total-unit">초</span>
       </div>
+    </div>
+
+    <!-- ===== 추 이동 모션 테스트 — 실제 게임(play/index.html throwSinker)과
+         같은 물리 공식(포물선, T는 1m 자유낙하 기준으로 고정)을 그대로 써서
+         궤적만 미리 확인하는 도구. v_x(수평 속도)만 슬라이더로 바꿔가며
+         "야구공 던지듯" 살짝 떴다 물로 떨어지는 모양을 다듬어볼 수 있다.
+         저장되는 값이 아니라 순수 미리보기라 AssetDB에 쓰지 않는다. ===== -->
+    <div class="option-group">
+      <div class="option-label">추 이동 모션 테스트</div>
+      <div class="option-desc">캐스팅할 때 추가 날아가는 궤적(야구공 던지듯 살짝 떴다 물로 떨어지는 포물선)을 미리 확인해요. 실제 게임 물리(체공시간 1m 자유낙하 기준)를 그대로 쓰고, 수평 속도(v_x)만 슬라이더로 바꿔볼 수 있어요. 궤적은 항상 x축으로 직진해요.</div>
+      <div class="sinker-test-stage" id="sinkerTestStage">
+        <svg class="sinker-test-svg" id="sinkerTestSvg">
+          <line class="sinker-test-water" id="sinkerTestWaterLine"></line>
+          <circle class="sinker-test-origin" id="sinkerTestOrigin" r="4"></circle>
+          <path class="sinker-test-path" id="sinkerTestPath"></path>
+          <circle class="sinker-test-dot" id="sinkerTestDot" r="6"></circle>
+        </svg>
+      </div>
+      <div class="range-row">
+        <input type="range" id="sinkerTestVxInput" min="300" max="3000" step="50" value="1600">
+        <div class="range-value" id="sinkerTestVxValue">v_x 1600px/s</div>
+      </div>
+      <button type="button" class="fish-sheet-btn" id="sinkerTestThrowBtn" style="width:100%">🎣 던지기 테스트</button>
     </div>
 
     <div class="prompt-block">
@@ -663,6 +696,15 @@ const el = {
   rodtipMarker: document.getElementById('rodtipMarker'),
   rodtipCancelBtn: document.getElementById('rodtipCancelBtn'),
   rodtipConfirmBtn: document.getElementById('rodtipConfirmBtn'),
+  sinkerTestStage: document.getElementById('sinkerTestStage'),
+  sinkerTestSvg: document.getElementById('sinkerTestSvg'),
+  sinkerTestWaterLine: document.getElementById('sinkerTestWaterLine'),
+  sinkerTestOrigin: document.getElementById('sinkerTestOrigin'),
+  sinkerTestPath: document.getElementById('sinkerTestPath'),
+  sinkerTestDot: document.getElementById('sinkerTestDot'),
+  sinkerTestVxInput: document.getElementById('sinkerTestVxInput'),
+  sinkerTestVxValue: document.getElementById('sinkerTestVxValue'),
+  sinkerTestThrowBtn: document.getElementById('sinkerTestThrowBtn'),
   reelFrames: document.getElementById('reelFrames'),
   reelAddBtn: document.getElementById('reelAddBtn'),
   reelFileInput: document.getElementById('reelFileInput'),
@@ -763,7 +805,7 @@ function selectTab(tab) {
   // 캐스팅 탭/이동 탭이 hidden(display:none)인 동안 그려진 타임라인·스크롤
   // 위치는 clientWidth/clientHeight가 0이라 계산이 어긋난다 — 실제로 보이는
   // 시점에 한 번 더 그려서 맞춘다.
-  if (tab === 'cast') renderCastTimeline();
+  if (tab === 'cast') { renderCastTimeline(); renderSinkerTestStageStatics(); }
   if (tab === 'move') renderMoveTestStage();
   // 이동 탭에서 방향키/dpad를 누른 채로 다른 탭으로 넘어가면 keyup/pointerup을
   // 못 받아 홀드 타이머가 안 보이는 곳에서 계속 도는 채로 남을 수 있다.
@@ -1148,6 +1190,76 @@ el.rodtipConfirmBtn.addEventListener('click', async () => {
   showSaveNote();
   closeRodtipEditor();
 });
+
+/* ===== 추 이동 모션 테스트 =====
+   dev/minigame-fishing/play/index.html의 throwSinker와 완전히 같은 공식
+   (T는 1m 자유낙하 기준으로 고정, ARC_STRENGTH만큼 위로 떴다가 포물선으로
+   낙하)을 쓴다 — 다른 건 v_x를 게이지 세기 대신 슬라이더 값으로 바로
+   받는다는 점뿐이다. 저장하지 않는 순수 미리보기 도구라 AssetDB를 건드리지
+   않는다. */
+const SINKER_TEST_ORIGIN_FRAC = { x: 0.14, y: 0.2 }; // 스테이지 기준 0~1, 낚싯대 끝
+const SINKER_TEST_WATER_FRAC_Y = 0.55; // 스테이지 기준 0~1
+let sinkerTestRaf = null;
+
+function renderSinkerTestStageStatics() {
+  const rect = el.sinkerTestStage.getBoundingClientRect();
+  const width = rect.width || 300, height = rect.height || 170;
+  el.sinkerTestSvg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+  const waterY = SINKER_TEST_WATER_FRAC_Y * height;
+  el.sinkerTestWaterLine.setAttribute('x1', 0);
+  el.sinkerTestWaterLine.setAttribute('x2', width);
+  el.sinkerTestWaterLine.setAttribute('y1', waterY);
+  el.sinkerTestWaterLine.setAttribute('y2', waterY);
+  const originX = SINKER_TEST_ORIGIN_FRAC.x * width, originY = SINKER_TEST_ORIGIN_FRAC.y * height;
+  el.sinkerTestOrigin.setAttribute('cx', originX);
+  el.sinkerTestOrigin.setAttribute('cy', originY);
+  el.sinkerTestDot.setAttribute('cx', originX);
+  el.sinkerTestDot.setAttribute('cy', originY);
+  el.sinkerTestPath.setAttribute('d', '');
+}
+
+function throwSinkerTest() {
+  if (sinkerTestRaf) cancelAnimationFrame(sinkerTestRaf);
+  const rect = el.sinkerTestStage.getBoundingClientRect();
+  const width = rect.width || 300, height = rect.height || 170;
+  const origin = { x: SINKER_TEST_ORIGIN_FRAC.x * width, y: SINKER_TEST_ORIGIN_FRAC.y * height };
+  const waterY = SINKER_TEST_WATER_FRAC_Y * height;
+  const h0 = Math.max(10, waterY - origin.y);
+  const vx0 = Number(el.sinkerTestVxInput.value);
+
+  const FREE_FALL_HEIGHT_M = 1;
+  const GRAVITY_MPS2 = 9.8;
+  const ARC_STRENGTH = 1.0;
+  const T = Math.sqrt(2 * FREE_FALL_HEIGHT_M / GRAVITY_MPS2);
+  const vy0 = -ARC_STRENGTH * (h0 / T);
+  const g = 2 * (h0 - vy0 * T) / (T * T);
+
+  const pathPts = [`${origin.x},${origin.y}`];
+  let start = null;
+  function frame(ts) {
+    if (start === null) start = ts;
+    const t = (ts - start) / 1000;
+    if (t >= T) { finish(); return; }
+    const x = origin.x + vx0 * t; // 추 이동 궤적은 무조건 x축 직진 — 수평은 항상 등속 일직선
+    const y = origin.y + vy0 * t + 0.5 * g * t * t;
+    pathPts.push(`${x},${y}`);
+    el.sinkerTestPath.setAttribute('d', 'M' + pathPts.join(' L'));
+    el.sinkerTestDot.setAttribute('cx', x);
+    el.sinkerTestDot.setAttribute('cy', y);
+    sinkerTestRaf = requestAnimationFrame(frame);
+  }
+  function finish() {
+    const finalX = origin.x + vx0 * T;
+    el.sinkerTestDot.setAttribute('cx', finalX);
+    el.sinkerTestDot.setAttribute('cy', waterY);
+  }
+  sinkerTestRaf = requestAnimationFrame(frame);
+}
+
+el.sinkerTestVxInput.addEventListener('input', () => {
+  el.sinkerTestVxValue.textContent = 'v_x ' + el.sinkerTestVxInput.value + 'px/s';
+});
+el.sinkerTestThrowBtn.addEventListener('click', throwSinkerTest);
 
 /* ===== 프레임 재생 속도 타임라인 ===== */
 const CAST_FRAME_MIN_MS = 20;
