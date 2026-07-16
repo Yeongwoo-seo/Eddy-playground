@@ -1236,7 +1236,6 @@ function startCatching() {
 
 function updateFish(dt) {
   const tuning = DIFF_TUNING[DIFFICULTY];
-  const baseSpeed = 40 * tuning.fishSpeedMult;
   if (MOTION_TYPE === 'linear') {
     fish.y += fish.vy * dt;
     if (fish.y <= 0) { fish.y = 0; fish.vy = Math.abs(fish.vy); }
@@ -1253,20 +1252,27 @@ function updateFish(dt) {
       fish.pickTimer = 0.6 + Math.random() * 0.8;
     }
   }
-  const approachSpeed = baseSpeed * (MOTION_TYPE === 'zigzag' ? 1.7 : 0.95);
-  const diff = fish.targetY - fish.y;
-  const step = Math.sign(diff) * Math.min(Math.abs(diff), approachSpeed * dt);
-  fish.y += step;
+  // 목표 지점까지 등속 직선(딱딱하게 스냅되는 느낌)으로 움직이는 대신,
+  // 지수 감쇠 스무딩으로 미끄러지듯 다가간다 — 가까워질수록 느려지고,
+  // 새 목표가 잡혀 방향이 바뀌어도 순간적으로 꺾이지 않고 자연스럽게
+  // 이어진다. k는 프레임레이트 무관하게(dt 기반) 매 프레임 남은 거리의
+  // 몇 %를 좁힐지 정하는 감쇠율이다.
+  const smoothRate = (MOTION_TYPE === 'zigzag' ? 8 : 4) * tuning.fishSpeedMult;
+  const k = 1 - Math.exp(-smoothRate * dt);
+  fish.y += (fish.targetY - fish.y) * k;
 }
 
 function updateZone(dt) {
   const RISE_ACCEL = 230, GRAVITY = 190, MAX_SPEED = 140;
+  const BOUNCE_DAMPING = 0.6; // 농구공처럼 튈 때마다 속도를 이만큼만 남겨 점점 잦아든다
   zone.vel += (holding ? -RISE_ACCEL : GRAVITY) * dt;
   zone.vel = clamp(zone.vel, -MAX_SPEED, MAX_SPEED);
   zone.y += zone.vel * dt;
   const maxY = 100 - zoneSizePct;
-  if (zone.y <= 0) { zone.y = 0; zone.vel = 0; }
-  if (zone.y >= maxY) { zone.y = maxY; zone.vel = 0; }
+  // 멈춰서는 대신 반대 방향으로 튕겨낸다 — 위(천장, y<=0)에 닿으면 아래로,
+  // 아래(바닥, y>=maxY)에 닿으면 위로 되돌아간다.
+  if (zone.y <= 0) { zone.y = 0; zone.vel = Math.abs(zone.vel) * BOUNCE_DAMPING; }
+  if (zone.y >= maxY) { zone.y = maxY; zone.vel = -Math.abs(zone.vel) * BOUNCE_DAMPING; }
 }
 
 function updateProgress(dt) {
@@ -1333,7 +1339,10 @@ async function playReelThenResult() {
   caughtCount++;
   el.countChip.textContent = caughtCount + '마리';
   const fishCaught = pendingCatchFish;
-  await flyFishToCharacter(fishCaught);
+  // 물고기가 날아오는 동안(flyFishToCharacter, ~1.6초) 기다렸다가 아이템창을
+  // 띄우지 않고, 물고기처럼 아이템창도 곧바로 미리 띄운다 — await 없이 둘
+  // 다 동시에 시작한다.
+  flyFishToCharacter(fishCaught);
   showItemPopup(fishCaught);
 }
 
