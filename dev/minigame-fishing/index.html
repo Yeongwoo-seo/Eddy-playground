@@ -451,6 +451,10 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     <div class="option-group">
       <div class="option-label">물고기 아이콘</div>
       <div class="option-desc">잡아채기 중 낚시바 안에서 움직이는 물고기 아이콘이에요(잡히는 물고기 종별 아이콘은 '물고기 종류' 탭에서 따로 지정해요). 업로드하지 않으면 기본 이모지(🐟)로 표시돼요. 업로드한 사진은 탭하면 크롭 영역을 다시 세밀 조정할 수 있어요.</div>
+      <div class="range-row">
+        <input type="range" id="fishIconSizeInput" min="10" max="40" value="26">
+        <div class="range-value" id="fishIconSizeValue">26px</div>
+      </div>
       <div class="frame-strip" id="fishIconSlot"></div>
       <button type="button" class="frame-add-btn hidden" id="fishIconAddBtn">+ 아이콘 업로드</button>
       <input type="file" id="fishIconFileInput" accept="image/*">
@@ -923,6 +927,8 @@ const el = {
   cropCatchImageBtn: document.getElementById('cropCatchImageBtn'),
   reloadCatchImageBtn: document.getElementById('reloadCatchImageBtn'),
   deleteLayerBtn: document.getElementById('deleteLayerBtn'),
+  fishIconSizeInput: document.getElementById('fishIconSizeInput'),
+  fishIconSizeValue: document.getElementById('fishIconSizeValue'),
   slideWidthInput: document.getElementById('slideWidthInput'),
   slideWidthValue: document.getElementById('slideWidthValue'),
   slideHeightInput: document.getElementById('slideHeightInput'),
@@ -1879,6 +1885,10 @@ function attachLayerResize(handleEl, id) {
   }));
 }
 
+el.fishIconSizeInput.addEventListener('input', () => {
+  el.fishIconSizeValue.textContent = el.fishIconSizeInput.value + 'px';
+});
+el.fishIconSizeInput.addEventListener('change', () => patchBarDesign({ fishIconSizePx: Number(el.fishIconSizeInput.value) }));
 el.slideWidthInput.addEventListener('input', () => {
   el.slideWidthValue.textContent = el.slideWidthInput.value + 'px';
   el.slideStage.style.setProperty('--slide-ar', el.slideWidthInput.value + '/' + el.slideHeightInput.value);
@@ -3290,6 +3300,8 @@ async function init() {
   renderPromptTabs();
   fishingConfig = await AssetDB.getFishingConfig().catch(() => fishingConfig);
   const design = fishingConfig.barDesign || {};
+  el.fishIconSizeInput.value = design.fishIconSizePx || 26;
+  el.fishIconSizeValue.textContent = (design.fishIconSizePx || 26) + 'px';
   el.slideWidthInput.value = design.slideWidthPx || 90;
   el.slideWidthValue.textContent = (design.slideWidthPx || 90) + 'px';
   el.slideHeightInput.value = design.slideHeightPx || 260;
