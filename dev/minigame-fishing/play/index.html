@@ -269,6 +269,18 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
    쌓이지 않는다. */
 .item-popup-name{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;font-size:16px;font-weight:700;color:#000}
 .item-popup-meta{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;font-family:var(--mono);font-size:12px;color:#000}
+
+/* ===== 대화 인트로 — 낚시 시작 전 지수/영우 대화 장면. dev/minigame-fishing/
+   index.html "대화" 탭의 슬라이드 에디터와 같은 0~1 비율 좌표계를 그대로
+   재사용해 대화창/지수/영우 이미지를 겹쳐 그린다(.dialogue-intro-layer
+   img가 object-fit:fill인 것도 그 에디터의 .slide-layer img와 맞춘 것 —
+   에디터에서 본 자리·크기 그대로 재생 화면에도 나온다). 화면 전체를
+   덮는 반투명 배경 위에 탭 한 번이면(대사 텍스트가 아직 없어서) 바로
+   사라지고 낚시가 시작된다. */
+.dialogue-intro{position:absolute;inset:0;z-index:20;background:rgba(0,0,0,.45);cursor:pointer}
+.dialogue-intro.hidden{display:none}
+.dialogue-intro-layer{position:absolute;box-sizing:border-box}
+.dialogue-intro-layer img{width:100%;height:100%;object-fit:fill;display:block;pointer-events:none;user-select:none}
 </style>
 </head>
 <body>
@@ -343,6 +355,13 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
       <div class="item-popup-meta" id="itemPopupMeta"></div>
     </div>
   </div>
+
+  <!-- ===== 대화 인트로 — 낚시 시작(idle) 전에 딱 한 번 뜨는 지수/영우 대화
+       장면. dev/minigame-fishing/index.html "대화" 탭에서 배치한 대화창/
+       지수/영우 이미지를 그 슬라이드와 같은 0~1 비율 좌표로 그대로 겹쳐
+       그린다. 대사 텍스트는 아직 없어서 탭하면 바로 넘어간다(renderDialogueIntro/
+       loadConfig 참고). -->
+  <div class="dialogue-intro hidden" id="dialogueIntro"></div>
 </div>
 <script>
 function setVh100() { document.documentElement.style.setProperty('--vh100', window.innerHeight + 'px'); }
@@ -477,6 +496,7 @@ const el = {
   itemPopupIcon: document.getElementById('itemPopupIcon'),
   itemPopupName: document.getElementById('itemPopupName'),
   itemPopupMeta: document.getElementById('itemPopupMeta'),
+  dialogueIntro: document.getElementById('dialogueIntro'),
 };
 
 let castFrameUrls = [];
@@ -567,6 +587,7 @@ let lastRodTipPt = null; // throwSinker의 finish가 남겨두는 착수 시점 
    있으면 그 프레임을 순환시키고, 없으면 위치만 바뀌고 캐릭터 그림은
    그대로 둔다(캐스팅 모션처럼 그림 없이도 동작은 되는 폴백). */
 const MOVE_DIRS = ['up', 'down', 'left', 'right'];
+const DIALOGUE_INTRO_LAYERS = ['boxLayer', 'jisooLayer', 'youngwooLayer']; // dev/minigame-fishing/index.html "대화" 탭의 DIALOGUE_LAYER_ORDER와 같은 순서(z-order)
 const MOVE_STEP_PX = 18; // "타일 한 칸" 환산 기준 픽셀 크기 — walkMotion.stepMs(이 거리를 이동하는 데 걸리는 시간)와 합쳐 연속 이동 속도(px/ms)를 낸다
 const CHAR_BOX_PX = 84; // .char-stage CSS 폭/높이와 맞춘 값 — 카메라가 캐릭터를 따라갈 때, 그리고 월드 범위에서 캐릭터 절반이 밖으로 안 나가게 여백을 둘 때 쓴다
 const FALLBACK_MOVE_BOUNDS_PCT = { left: [10, 90], bottom: [25, 75] }; // 배경 미업로드 시(=world가 화면과 같은 크기) char-stage 중심이 벗어날 수 없는 범위(%) — 화면 중심(50/50) 기준, 상단바/하단 버튼과 안 겹치는 선에서 넉넉히
@@ -726,6 +747,8 @@ async function loadConfig() {
   if (itemPopupCfg.backgroundAssetId) ids.push(itemPopupCfg.backgroundAssetId);
   const walkSheetsCfg = cfg.walkSheets || {};
   MOVE_DIRS.forEach(dir => { if (walkSheetsCfg[dir] && walkSheetsCfg[dir].sheetAssetId) ids.push(walkSheetsCfg[dir].sheetAssetId); });
+  const dialogueSceneCfg = cfg.dialogueScene || {};
+  DIALOGUE_INTRO_LAYERS.forEach(key => { if (dialogueSceneCfg[key] && dialogueSceneCfg[key].assetId) ids.push(dialogueSceneCfg[key].assetId); });
   let assets = [];
   try { assets = await AssetDB.getAssetsByIds(ids); } catch (e) { /* 위와 동일 */ }
   const byId = new Map(assets.map(a => [a.id, a]));
@@ -1044,7 +1067,50 @@ async function loadConfig() {
   el.itemPopupMeta.style.fontSize = (itemPopupCfg.metaFontSizePx || 12) + 'px';
 
   preloadFishIcons();
+
+  // 대화 인트로 — 대화창/지수/영우 중 하나라도 배치돼 있으면 idle로 바로
+  // 들어가는 대신 이 장면부터 보여준다(설정한 게 하나도 없으면 기존처럼
+  // 곧장 idle). renderDialogueIntro가 실제로 뭔가 그렸을 때만 gameState를
+  // 바꿔야, 오래된(빈) 설정을 가진 세션에서 화면이 검게 가려진 채 아무
+  // 반응도 없는 상태로 남는 일이 없다.
+  if (renderDialogueIntro(dialogueSceneCfg, byId)) {
+    gameState = 'dialogue';
+  }
 }
+function renderDialogueIntro(dialogueScene, byId) {
+  el.dialogueIntro.innerHTML = '';
+  const hasAnyLayer = DIALOGUE_INTRO_LAYERS.some(key => dialogueScene[key]);
+  if (!hasAnyLayer) {
+    el.dialogueIntro.classList.add('hidden');
+    return false;
+  }
+  DIALOGUE_INTRO_LAYERS.forEach(key => {
+    const data = dialogueScene[key];
+    if (!data) return;
+    const layerEl = document.createElement('div');
+    layerEl.className = 'dialogue-intro-layer';
+    layerEl.style.left = (data.x * 100) + '%';
+    layerEl.style.top = (data.y * 100) + '%';
+    layerEl.style.width = (data.w * 100) + '%';
+    layerEl.style.height = (data.h * 100) + '%';
+    const asset = data.assetId ? byId.get(data.assetId) : null;
+    if (asset) {
+      const img = document.createElement('img');
+      img.src = asset.dataUrl;
+      img.alt = '';
+      layerEl.appendChild(img);
+    }
+    el.dialogueIntro.appendChild(layerEl);
+  });
+  el.dialogueIntro.classList.remove('hidden');
+  return true;
+}
+el.dialogueIntro.addEventListener('pointerdown', (e) => {
+  if (gameState !== 'dialogue') return;
+  e.stopPropagation();
+  el.dialogueIntro.classList.add('hidden');
+  gameState = 'idle';
+});
 
 // 잡은 물고기 아이콘(overlayFishIcon)은 endRun에서 처음 그 fishId의
 // background-position으로 그릴 때가 돼서야 브라우저가 그 위치를 실제로
