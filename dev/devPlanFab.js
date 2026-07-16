@@ -23,7 +23,8 @@
     .dpf-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
     .dpf-title{font-size:17px;font-weight:700;color:#EDF1F4;flex:1}
     .dpf-status{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;color:#5F6872;letter-spacing:.04em;white-space:nowrap}
-    .dpf-close{width:28px;height:28px;border-radius:50%;background:#171C22;border:1px solid rgba(255,255,255,.08);color:#EDF1F4;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+    .dpf-refresh,.dpf-close{width:28px;height:28px;border-radius:50%;background:#171C22;border:1px solid rgba(255,255,255,.08);color:#EDF1F4;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+    .dpf-refresh:active,.dpf-close:active{opacity:.7}
     .dpf-sub{font-size:12.5px;color:#929BA5;margin-bottom:12px;line-height:1.5}
     .dpf-textarea{flex:1;width:100%;resize:none;background:#101419;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px;color:#EDF1F4;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:13.5px;line-height:1.7;outline:none}
     .dpf-textarea:focus{border-color:rgba(89,184,200,.4)}
@@ -44,6 +45,7 @@
       <div class="dpf-header">
         <div class="dpf-title">개발계획</div>
         <div class="dpf-status" id="dpfStatus">&nbsp;</div>
+        <button class="dpf-refresh" aria-label="새로고침">⟳</button>
         <button class="dpf-close" aria-label="닫기">✕</button>
       </div>
       <div class="dpf-sub">이 기기에만 저장되는 메모입니다.</div>
@@ -60,6 +62,7 @@
   const textarea = modal.querySelector('#dpfText');
   const status = modal.querySelector('#dpfStatus');
   const backdrop = modal.querySelector('.dpf-backdrop');
+  const refreshBtn = modal.querySelector('.dpf-refresh');
   const closeBtn = modal.querySelector('.dpf-close');
 
   function openModal() {
@@ -124,6 +127,14 @@
   }));
 
   backdrop.addEventListener('click', closeModal);
+  // 새로고침 버튼은 페이지 새로고침이다 — 지금 입력 중인 내용을 먼저
+  // 저장해 두어야(디바운스 도중이면 클릭 시점에 아직 localStorage에
+  // 안 쓰였을 수 있다) 새로고침 후에도 이어서 볼 수 있다.
+  refreshBtn.addEventListener('click', () => {
+    clearTimeout(saveTimer);
+    localStorage.setItem(STORAGE_KEY, textarea.value);
+    location.reload();
+  });
   closeBtn.addEventListener('click', closeModal);
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && modal.classList.contains('dpf-show')) closeModal();

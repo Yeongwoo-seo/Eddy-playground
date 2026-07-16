@@ -141,19 +141,22 @@ function getFishCropStyle(rect, sheetNaturalWidth, sheetNaturalHeight, displaySi
   };
 }
 
-/* ===== 캐스팅 모션 시트 규격 — 물고기 아이콘 시트와 같은 패턴이지만 1행
-   짜리 스트립이다. 404x64px 투명 PNG, 가로 6칸, 칸당 64x64px, 칸 간격
+/* ===== 모션 시트 규격 — 캐스팅/이동(4방향) 등 "6프레임짜리 한 동작"
+   모션이 전부 같이 쓰는 규격이다. 물고기 아이콘 시트와 같은 패턴이지만
+   1행짜리 스트립이다. 404x64px 투명 PNG, 가로 6칸, 칸당 64x64px, 칸 간격
    4px, 바깥 여백 없음(MOTION_PROMPT_SPECS.cast의 AI 프롬프트 규격과 동일—
-   dev/minigame-fishing/index.html). AssetDB.getFishingConfig().
-   castingSheetAssetId가 이 규격의 이미지를 가리키고, castingFrameOverrides
-   ({ [frameIndex]: {cx,cy,size} })가 물고기의 fishIconOverrides와 똑같은
-   세밀영역조절 보정값이다 — 조회는 위 getFishCropStyle을 그대로 재사용
-   (이미 시트/rect/표시크기만 받는 범용 함수라 물고기 전용이 아님). */
-const CASTING_SHEET_LAYOUT = { columns: 6, rows: 1, cellSize: 64, gap: 4 };
+   dev/minigame-fishing/index.html). 모션마다 AssetDB.getFishingConfig()의
+   어느 필드에 sheetAssetId/frameOverrides({ [frameIndex]: {cx,cy,size} })를
+   저장하는지는 다르지만(캐스팅은 castingSheetAssetId/castingFrameOverrides,
+   이동은 walkSheets.<dir>.sheetAssetId/frameOverrides), 시트 규격과 슬롯
+   계산은 전부 이 하나를 공유한다. frameOverrides는 물고기의
+   fishIconOverrides와 같은 세밀영역조절 좌표계라 조회는 위 getFishCropStyle을
+   그대로 재사용한다(이미 시트/rect/표시크기만 받는 범용 함수). */
+const MOTION_SHEET_LAYOUT = { columns: 6, rows: 1, cellSize: 64, gap: 4 };
 
-function getCastingSlotStyle(frameIndex, scale) {
+function getMotionSlotStyle(frameIndex, scale) {
   scale = scale || 1;
-  const { columns, cellSize, gap } = CASTING_SHEET_LAYOUT;
+  const { columns, cellSize, gap } = MOTION_SHEET_LAYOUT;
   const x = frameIndex * (cellSize + gap) * scale;
   const sheetW = (columns * cellSize + (columns - 1) * gap) * scale;
   const sheetH = cellSize * scale;
@@ -163,8 +166,8 @@ function getCastingSlotStyle(frameIndex, scale) {
   };
 }
 
-function getCastingDefaultCropRect(frameIndex) {
-  const { columns, cellSize, gap } = CASTING_SHEET_LAYOUT;
+function getMotionDefaultCropRect(frameIndex) {
+  const { columns, cellSize, gap } = MOTION_SHEET_LAYOUT;
   const sheetW = columns * cellSize + (columns - 1) * gap;
   const cxPx = frameIndex * (cellSize + gap) + cellSize / 2;
   return { cx: cxPx / sheetW, cy: 0.5, size: cellSize / Math.min(sheetW, cellSize) };
@@ -175,11 +178,20 @@ function getCastingDefaultCropRect(frameIndex) {
 // 슬라이스가 아니라) 실제 픽셀을 잘라낸 이미지가 필요하다 — 시트 1장 +
 // rect 하나를 진짜 정사각 PNG data URL로 구워낸다. image-rendering:pixelated
 // 대상이라 스무딩을 꺼서 도트 경계를 그대로 유지한다.
-function cropRectToDataUrl(img, rect, outputSize) {
+//
+// 출력 캔버스는 원본 크롭 해상도(cropSize)를 그대로 쓴다 — 예전엔 항상
+// outputSize(기본 64px, MOTION_SHEET_LAYOUT.cellSize)로 강제 리샘플해서,
+// 원본 스펙(404×64px)보다 큰/고해상도 시트를 올려도 프레임마다 64×64로
+// 뭉개진 뒤 미리보기(96px 박스)/실제 플레이(84px 박스)에서 다시 확대되며
+// 흐리게/깨져 보였다. maxOutputSize는 극단적으로 큰 이미지의 data URL
+// 폭주만 막는 상한선일 뿐, 그 이하 크기는 원본 해상도 그대로 나간다.
+const MOTION_FRAME_MAX_OUTPUT = 512;
+function cropRectToDataUrl(img, rect, maxOutputSize) {
   const shortSide = Math.min(img.naturalWidth, img.naturalHeight);
   const cropSize = rect.size * shortSide;
   const sx = rect.cx * img.naturalWidth - cropSize / 2;
   const sy = rect.cy * img.naturalHeight - cropSize / 2;
+  const outputSize = Math.max(1, Math.round(Math.min(cropSize, maxOutputSize || MOTION_FRAME_MAX_OUTPUT)));
   const c = document.createElement('canvas');
   c.width = outputSize;
   c.height = outputSize;
@@ -189,16 +201,16 @@ function cropRectToDataUrl(img, rect, outputSize) {
   return c.toDataURL('image/png');
 }
 
-// 시트 1장 + (있으면) frameIndex별 castingFrameOverrides로 최대 6개의
-// 잘라낸 프레임 data URL 배열을 만든다. 보정값이 없는 프레임은
-// getCastingDefaultCropRect의 이론적 그리드 위치를 쓴다. img는 이미
-// 로드된 HTMLImageElement(naturalWidth/Height 확정된 상태)여야 한다.
-function buildCastingFrameDataUrls(img, overrides, outputSize) {
+// 시트 1장 + (있으면) frameIndex별 frameOverrides로 최대 6개의 잘라낸
+// 프레임 data URL 배열을 만든다. 보정값이 없는 프레임은
+// getMotionDefaultCropRect의 이론적 그리드 위치를 쓴다. img는 이미 로드된
+// HTMLImageElement(naturalWidth/Height 확정된 상태)여야 한다.
+function buildMotionFrameDataUrls(img, overrides, maxOutputSize) {
   overrides = overrides || {};
   const frames = [];
-  for (let i = 0; i < CASTING_SHEET_LAYOUT.columns; i++) {
-    const rect = overrides[i] || getCastingDefaultCropRect(i);
-    frames.push(cropRectToDataUrl(img, rect, outputSize || CASTING_SHEET_LAYOUT.cellSize));
+  for (let i = 0; i < MOTION_SHEET_LAYOUT.columns; i++) {
+    const rect = overrides[i] || getMotionDefaultCropRect(i);
+    frames.push(cropRectToDataUrl(img, rect, maxOutputSize));
   }
   return frames;
 }

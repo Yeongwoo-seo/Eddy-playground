@@ -93,7 +93,9 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .catch-hint{position:absolute;left:0;right:0;bottom:calc(18px + env(safe-area-inset-bottom,0));z-index:5;text-align:center;font-family:var(--mono);font-size:11px;color:rgba(255,255,255,.85);text-shadow:0 1px 4px rgba(0,0,0,.5)}
 .catch-hint.hidden{display:none}
 
-.fishbar-panel{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:4;display:flex;align-items:center;gap:14px;background:rgba(5,20,28,.35);border-radius:20px;padding:18px 20px;backdrop-filter:blur(2px)}
+/* 낚시바를 감싸던 반투명 둥근 배경 패널은 사용자 요청으로 없앴다 —
+   낚시바(.fishbar)만 화면에 떠 있고, 그 뒤 배경은 그대로 비친다. */
+.fishbar-panel{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:4;display:flex;align-items:center;gap:14px;padding:18px 20px}
 .fishbar-panel.hidden{display:none}
 .fishbar{position:relative;width:52px;height:230px;border-radius:12px;overflow:hidden;border:2px solid rgba(255,255,255,.5);box-shadow:inset 0 0 12px rgba(0,0,0,.4);background:#171C22}
 /* 낚시바 이미지 — 설정 화면(dev/minigame-fishing/index.html) 슬라이드
@@ -114,19 +116,21 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .overlay{position:absolute;inset:0;z-index:8;display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px;text-align:center;padding:32px;background:rgba(5,7,10,.78);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 .overlay.show{display:flex}
 .overlay-title{font-family:var(--mono);font-size:16px;font-weight:800;letter-spacing:.08em;color:var(--signal-red)}
-.overlay-title.success{color:var(--green)}
 .overlay-message{font-size:14px;color:var(--text-primary)}
-.overlay-fish{display:none;flex-direction:column;align-items:center;gap:6px;margin:2px 0}
-.overlay-fish.show{display:flex}
-.overlay-fish-icon{width:56px;height:56px;border-radius:14px;background-color:rgba(255,255,255,.12);background-repeat:no-repeat;image-rendering:pixelated;display:flex;align-items:center;justify-content:center;font-size:30px}
-.overlay-fish-name{font-size:16px;font-weight:700}
-.overlay-fish-meta{font-family:var(--mono);font-size:11.5px;color:var(--text-secondary)}
 .overlay-count{font-family:var(--mono);font-size:12px;color:var(--text-secondary);margin-bottom:6px}
 .overlay-btn-row{display:flex;gap:10px}
 .overlay-btn{font-family:var(--mono);font-size:13.5px;font-weight:700;letter-spacing:.03em;border:none;border-radius:16px;padding:13px 20px;cursor:pointer;text-decoration:none}
 .overlay-btn.primary{color:#08110c;background:var(--green)}
 .overlay-btn.secondary{color:var(--text-primary);background:rgba(255,255,255,.14)}
 .overlay-btn:active{opacity:.8}
+
+/* 낚시 성공 시 결과창(overlay) 대신, 잡은 물고기 아이콘이 찌(추) 자리에
+   나타났다가 캐릭터 쪽으로 날아가 사라지는 걸로 대체한다("계속하기"
+   화면 없이 바로 다음 캐스팅으로 이어지길 원하는 요청) — left/top(%)을
+   JS(playCatchFlyAnimation)가 애니메이션하고, transform은 항상 중앙 정렬
+   유지 + 도착 시 살짝 작아지는 연출만 담당한다. */
+.catch-fly-icon{position:absolute;z-index:6;width:32px;height:32px;border-radius:10px;background-color:rgba(255,255,255,.14);background-repeat:no-repeat;image-rendering:pixelated;display:flex;align-items:center;justify-content:center;font-size:20px;pointer-events:none;border:2px solid transparent;filter:drop-shadow(0 3px 6px rgba(0,0,0,.35))}
+.catch-fly-icon.hidden{display:none}
 </style>
 </head>
 <body>
@@ -166,6 +170,8 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
         <div class="fishbar-fish" id="fishbarFish">🐟</div>
       </div>
     </div>
+
+    <div class="catch-fly-icon hidden" id="catchFlyIcon"></div>
   </div>
 
   <div class="cast-power-wrap hidden" id="castPowerWrap">
@@ -180,11 +186,6 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
   <div class="overlay" id="overlay">
     <div class="overlay-title" id="overlayTitle">낚시 실패</div>
     <div class="overlay-message" id="overlayMessage"></div>
-    <div class="overlay-fish" id="overlayFish">
-      <div class="overlay-fish-icon" id="overlayFishIcon">🐟</div>
-      <div class="overlay-fish-name" id="overlayFishName"></div>
-      <div class="overlay-fish-meta" id="overlayFishMeta"></div>
-    </div>
     <div class="overlay-count" id="overlayCount"></div>
     <div class="overlay-btn-row">
       <button class="overlay-btn primary" id="retryBtn" type="button">다시 하기</button>
@@ -221,14 +222,38 @@ const DIFFICULTY = ['easy', 'hard'].includes(settingsParams.get('diff')) ? setti
 const MOTION_TYPE = ['linear', 'random'].includes(settingsParams.get('motion')) ? settingsParams.get('motion') : 'zigzag';
 
 const DIFF_TUNING = {
-  easy: { biteDelayMin: 700, biteDelayMax: 1500, reactionWindow: 900, fishSpeedMult: 0.85, fillRate: 30, drainRate: 14 },
-  normal: { biteDelayMin: 900, biteDelayMax: 1900, reactionWindow: 700, fishSpeedMult: 1.0, fillRate: 24, drainRate: 18 },
-  hard: { biteDelayMin: 1100, biteDelayMax: 2300, reactionWindow: 520, fishSpeedMult: 1.3, fillRate: 20, drainRate: 24 },
+  easy: { reactionWindow: 900, fishSpeedMult: 0.85, fillRate: 30, drainRate: 14 },
+  normal: { reactionWindow: 700, fishSpeedMult: 1.0, fillRate: 24, drainRate: 18 },
+  hard: { reactionWindow: 520, fishSpeedMult: 1.3, fillRate: 20, drainRate: 24 },
 };
+// 낚시 대기시간(캐스팅 착수 후 입질까지) — 난이도와 무관하게 항상 5~10초
+// 사이 랜덤이다.
+const BITE_WAIT_MIN_MS = 5000;
+const BITE_WAIT_MAX_MS = 10000;
 
 function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
 function vibrate(pattern) { if (navigator.vibrate) navigator.vibrate(pattern); }
 function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+// assetDb.js의 dataUrl은 더 이상 base64가 아니라 실제 Supabase Storage 공개
+// URL이다 — 업로드 직후 곧바로 재생 화면을 열면 Storage 쪽 전파가 아직
+// 안 끝나 첫 로드가 실패하고(그 자리엔 background-color만 남아 "단색으로만
+// 보임") 새로고침하면 되던 증상의 유력한 원인이라, background-image로 바로
+// 꽂기 전에 이 헬퍼로 먼저 로드를 검증하고 실패하면 짧게 대기 후 재시도한다.
+function preloadWithRetry(url, retries, delayMs) {
+  return new Promise(resolve => {
+    const attempt = (remaining) => {
+      const img = new Image();
+      img.onload = () => resolve(url);
+      img.onerror = () => {
+        if (remaining > 0) setTimeout(() => attempt(remaining - 1), delayMs);
+        else resolve(url); // 재시도 다 써도 일단 원래 URL로 시도는 하게 둔다
+      };
+      img.src = url;
+    };
+    attempt(retries);
+  });
+}
 
 // 게이지 색 — 고정 그라데이션(항상 빨강~연두 전체 범위를 깔아두고 마스크로
 // 일부만 드러내는 방식) 대신, "지금 진행도 값"을 0%(빨강)~70%(연두) 사이에서
@@ -236,6 +261,10 @@ function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
 // 그 이상 색이 안 바뀌고 연두로 고정. --signal-red(#D94141)/--green(#3ECF6B)
 // CSS 변수와 같은 값을 RGB로 하드코딩해서 매 프레임 보간한다.
 const GAUGE_COLOR_STOPS = { red: [217, 65, 65], green: [62, 207, 107], capPct: 70 };
+
+// 물고기 등급 테두리 색 — 낚시 성공 결과창(overlay-fish-icon)에서 잡은
+// 물고기의 등급(fishDefs.js grade)을 테두리로 바로 알아볼 수 있게 한다.
+const GRADE_BORDER_COLORS = { '일반': '#8B95A1', '레어': '#3B82F6', '희귀': '#A855F7', '전설': '#FFD12E' };
 function gaugeColorForProgress(pct) {
   const t = clamp(pct, 0, GAUGE_COLOR_STOPS.capPct) / GAUGE_COLOR_STOPS.capPct;
   const [r0, g0, b0] = GAUGE_COLOR_STOPS.red;
@@ -279,10 +308,7 @@ const el = {
   overlayTitle: document.getElementById('overlayTitle'),
   overlayMessage: document.getElementById('overlayMessage'),
   overlayCount: document.getElementById('overlayCount'),
-  overlayFish: document.getElementById('overlayFish'),
-  overlayFishIcon: document.getElementById('overlayFishIcon'),
-  overlayFishName: document.getElementById('overlayFishName'),
-  overlayFishMeta: document.getElementById('overlayFishMeta'),
+  catchFlyIcon: document.getElementById('catchFlyIcon'),
   retryBtn: document.getElementById('retryBtn'),
 };
 
@@ -362,7 +388,10 @@ async function loadConfig() {
       im.onerror = () => resolve(null);
       im.src = castingSheetAsset.dataUrl;
     });
-    castFrameUrls = img ? buildCastingFrameDataUrls(img, cfg.castingFrameOverrides, 64) : [];
+    // outputSize를 안 넘긴다 — buildMotionFrameDataUrls가 원본 크롭 해상도를
+    // 그대로 살린다(§신규 버그 수정: 예전엔 64px로 강제 축소해서 84px
+    // char-stage에서 다시 확대되며 흐리게 보였다).
+    castFrameUrls = img ? buildMotionFrameDataUrls(img, cfg.castingFrameOverrides) : [];
   } else {
     castFrameUrls = [];
   }
@@ -401,7 +430,7 @@ async function loadConfig() {
   // 절대위치로 옮겨온다(설정 화면 슬라이드와 좌표계가 동일하므로 변환 없음).
   const barImageAsset = design.barLayer && design.barLayer.assetId ? byId.get(design.barLayer.assetId) : null;
   if (barImageAsset && design.barLayer) {
-    el.fishbarBarImg.querySelector('img').src = barImageAsset.dataUrl;
+    el.fishbarBarImg.querySelector('img').src = await preloadWithRetry(barImageAsset.dataUrl, 3, 500);
     el.fishbarBarImg.style.left = (design.barLayer.x * 100) + '%';
     el.fishbarBarImg.style.top = (design.barLayer.y * 100) + '%';
     el.fishbarBarImg.style.width = (design.barLayer.w * 100) + '%';
@@ -422,7 +451,7 @@ async function loadConfig() {
   // background(숏핸드)를 먼저 설정해야 한다 — backgroundImage 다음에 설정하면
   // 숏핸드가 방금 지정한 background-image를 초기화해버린다.
   el.fishbarZone.style.background = '#59B8C8';
-  el.fishbarZone.style.backgroundImage = catchImageAsset ? `url(${catchImageAsset.dataUrl})` : '';
+  el.fishbarZone.style.backgroundImage = catchImageAsset ? `url(${await preloadWithRetry(catchImageAsset.dataUrl, 3, 500)})` : '';
   if (zoneRegion) {
     zoneTrack = { x: zoneRegion.x * 100, y: zoneRegion.y * 100, w: zoneRegion.w * 100, h: zoneRegion.h * 100 };
     if (catchLayer) {
@@ -452,7 +481,11 @@ async function loadConfig() {
     el.fishbarGauge.style.top = (gr.y * 100) + '%';
     el.fishbarGauge.style.width = (gr.w * 100) + '%';
     el.fishbarGauge.style.height = (gr.h * 100) + '%';
-    el.fishbarGauge.style.display = '';
+    // CSS 기본값이 display:none이라 style.display를 빈 문자열로 되돌리면
+    // 그 CSS 규칙이 그대로 이어져 계속 안 보인다 — 반드시 명시적으로
+    // 'block'을 지정해야 실제로 나타난다(gaugeRegion을 지정해도 게이지가
+    // 화면에 전혀 안 보이던 버그의 원인).
+    el.fishbarGauge.style.display = 'block';
   } else {
     el.fishbarGauge.style.display = 'none';
   }
@@ -480,13 +513,14 @@ async function loadConfig() {
   const castGaugeFillRegion = cfg.castGaugeFillRegion;
   if (castGaugeAsset && castGaugeFillRegion) {
     el.castPowerWrap.classList.add('custom-gauge');
-    el.castPowerGaugeImg.src = castGaugeAsset.dataUrl;
+    const gaugeUrl = await preloadWithRetry(castGaugeAsset.dataUrl, 3, 500);
+    el.castPowerGaugeImg.src = gaugeUrl;
     const dims = await new Promise(resolve => {
       const img = new Image();
       img.crossOrigin = 'anonymous';
       img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
       img.onerror = () => resolve(null);
-      img.src = castGaugeAsset.dataUrl;
+      img.src = gaugeUrl;
     });
     if (dims) el.castPowerStage.style.setProperty('--gauge-ar', dims.w + '/' + dims.h);
     el.castPowerTrack.style.left = (castGaugeFillRegion.x * 100) + '%';
@@ -534,8 +568,14 @@ function playFrameSequence(urls, frameMs, onFrame) {
 
 /* ===== 캐스팅 모션 윈드업 — 홀드 시작하자마자 1→2번 프레임을 재생하고
    2번에서 멈춰 유지한다(놓을 때까지). 놓으면 releasePowerAndCast가
-   3번 프레임부터 이어서 순차 재생한다. 프레임이 2장 미만이면 할 게 없다. */
+   3번 프레임부터 이어서 순차 재생한다. 프레임이 2장 미만이면 할 게 없다.
+   castWindupFrameIndex는 지금 화면에 보이는 프레임 번호를 따로 기록해둔다
+   — 손을 떼는 순간(releasePowerAndCast) 줄/추가 "이미 그 시점에 보이던
+   낚싯대 끝"에서 생기게 하려면 항상 1번 프레임이 아니라 이 값을 origin
+   계산에 써야 한다. */
+let castWindupFrameIndex = 0;
 function playCastWindup() {
+  castWindupFrameIndex = 0;
   if (castFrameUrls.length < 2) return;
   el.charImg.classList.remove('hidden');
   el.charFallback.classList.add('hidden');
@@ -544,6 +584,7 @@ function playCastWindup() {
   setTimeout(() => {
     if (gameState !== 'charging') return; // 그 사이 이미 놓였으면 덮어쓰지 않는다
     el.charImg.src = castFrameUrls[1];
+    castWindupFrameIndex = 1;
   }, ms);
 }
 
@@ -568,8 +609,9 @@ function startPowerCharge() {
 }
 
 /* ===== 세기 확정 → 캐스팅 모션 → 추 던지기(물리) → 입질 대기 =====
-   손을 떼는(release) 순간 낚싯줄을 바로 만든다 — 애니메이션이 재생되는
-   동안엔 추가 아직 던져지지 않았으니 "1번 프레임의 낚싯대 끝"(origin)에
+   손을 떼는(release) 순간 낚싯줄을 바로 만든다 — origin은 그 순간 화면에
+   이미 보이고 있던 윈드업 프레임(castWindupFrameIndex)의 낚싯대 끝이다.
+   애니메이션이 재생되는 동안엔 추가 아직 던져지지 않았으니 그 origin에
    매달려 있는 것으로 그리고, 매 프레임 캐릭터 포즈가 바뀔 때마다 그
    프레임의 낚싯대 끝(rodTipPxForFrame)에서 origin까지 현수선을 다시
    그려 낚싯대를 따라 줄이 움직이는 것처럼 보이게 한다. 애니메이션이
@@ -585,7 +627,7 @@ async function releasePowerAndCast() {
 
   const frameRect = el.frame.getBoundingClientRect();
   el.castSvg.setAttribute('viewBox', `0 0 ${frameRect.width} ${frameRect.height}`);
-  const origin = rodTipPxForFrame(0, frameRect); // 첫번째 지정된 낚시대 끝 — 물리 시작점
+  const origin = rodTipPxForFrame(castWindupFrameIndex, frameRect); // 뗄 때 이미 화면에 보이던 프레임의 낚싯대 끝 — 물리 시작점
   el.bobber.classList.add('hidden');
   el.castSvg.classList.remove('hidden');
   renderCastLine(origin, origin);
@@ -606,7 +648,10 @@ async function releasePowerAndCast() {
     el.charFallback.style.transform = 'rotate(0deg)';
   }
   vibrate(15);
-  if (idleFrameUrl) el.charImg.src = idleFrameUrl;
+  // 캐스팅이 끝난 뒤에도 el.charImg는 그대로 두면 캐스팅 마지막 프레임
+  // 포즈에 머문다(playFrameSequence가 이미 그렇게 남겨둠) — idle로
+  // 되돌리지 않아야 낚싯대 끝 위치가 대기/입질 내내 그 프레임 기준으로
+  // 유지된다. idle 포즈로는 resetToIdle(새 판 시작)에서만 되돌아간다.
   await throwSinker(power, origin, frameRect);
   waitForBite();
 }
@@ -624,25 +669,29 @@ function rodTipPxForFrame(frameIndex, frameRect) {
   };
 }
 
-// 추를 던진다 — 수평은 등속(v_x = dx/T, dx는 세기(게이지)에 비례), 수직은
-// 초기속도 0의 순수 자유낙하(v_y = g·t)라 위로 튀어 오르는 구간 없이
-// 던지자마자 아래로 떨어지기 시작한다. 체공 시간(T)은 실제 물리
-// 상수(2.5m를 표준중력 9.8m/s²로 자유낙하할 때 걸리는 시간)를 그대로
-// 쓰고, 그 T 안에 정확히 물 라인까지의 픽셀 거리(h0)만큼 떨어지도록
-// 픽셀 중력(g)을 역산한다 — 세기와 무관하게 항상 같은 체공 시간이
-// 나오고, 세기는 수평거리(dx)만 늘린다("세질수록 멀리 감"). 착수
-// 지점에 기존 찌(bobber)를 그대로 가져다 놓아 입질 대기 이후 로직은
-// 손대지 않는다.
+// 추를 던진다 — 수평은 등속(v_x = dx/T, dx는 세기(게이지)에 비례)으로
+// x축을 따라 무조건 직진하고, 수직은 야구공을 던진 듯 살짝 떠올랐다가
+// 떨어지는 포물선(v_y = vy0 + g·t, vy0<0=위로 발사)이다. 체공 시간(T)은
+// 실제 물리 상수(1m를 표준중력 9.8m/s²로 자유낙하할 때 걸리는 시간)로
+// 고정해두고, 그 T 안에 정확히 물 라인까지의 픽셀 거리(h0)만큼 떨어지도록
+// vy0/픽셀 중력(g)을 역산한다 — 세기와 무관하게 항상 같은 체공 시간이
+// 나오고, 세기는 수평거리(dx)만 늘린다("세질수록 멀리 감"). ARC_STRENGTH는
+// 얼마나 높이 떠올랐다가 떨어지는지(평균 낙하속도 h0/T 대비 초기 상승
+// 속도의 비율) 조절하는 값 — dev/minigame-fishing/index.html의 추 이동
+// 모션 테스트 도구도 같은 공식을 쓴다. 착수 지점에 기존 찌(bobber)를
+// 그대로 가져다 놓아 입질 대기 이후 로직은 손대지 않는다.
 function throwSinker(power, origin, frameRect) {
   return new Promise(resolve => {
     const minDx = frameRect.width * 0.10, maxDx = frameRect.width * 0.68;
     const dx = minDx + (power / 100) * (maxDx - minDx);
     const waterY = frameRect.height * 0.47; // 기존 찌 착지 y(47%)와 동일
     const h0 = Math.max(10, waterY - origin.y);
-    const FREE_FALL_HEIGHT_M = 2.5;
+    const FREE_FALL_HEIGHT_M = 1;
     const GRAVITY_MPS2 = 9.8;
+    const ARC_STRENGTH = 1.0;
     const T = Math.sqrt(2 * FREE_FALL_HEIGHT_M / GRAVITY_MPS2);
-    const g = 2 * h0 / (T * T);
+    const vy0 = -ARC_STRENGTH * (h0 / T);
+    const g = 2 * (h0 - vy0 * T) / (T * T);
     const vx0 = dx / T;
 
     let start = null;
@@ -651,7 +700,7 @@ function throwSinker(power, origin, frameRect) {
       const t = (ts - start) / 1000;
       if (t >= T) { finish(dx); return; }
       const x = origin.x + vx0 * t;
-      const y = origin.y + 0.5 * g * t * t;
+      const y = origin.y + vy0 * t + 0.5 * g * t * t;
       renderCastLine(origin, { x, y });
       castFlightRaf = requestAnimationFrame(frame);
     }
@@ -670,10 +719,10 @@ function throwSinker(power, origin, frameRect) {
   });
 }
 
-// 낚싯대 끝(p0)~추(p1) 사이를 현수선(catenary)으로 그린다. 실제 줄 길이는
-// 두 점 사이 직선거리(D)에 여유(12%)를 준 값(L)으로 정하고, L·dx·dy로부터
-// 현수선 매개변수 a를 이분법으로 구한다(전형적인 "두 점을 지나는 현수선"
-// 문제 — a>0에서 단조 함수라 이분법이 항상 수렴한다).
+// 낚싯대 끝(p0)~추(p1) 사이를 현수선(catenary, y=a·cosh(x/a)=a·(e^(x/a)+e^(-x/a))/2)
+// 으로 그린다. 실제 줄 길이는 두 점 사이 직선거리(D)에 여유(12%)를 준
+// 값(L)으로 정하고, L·dx·dy로부터 현수선 매개변수 a를 이분법으로 구한다
+// (전형적인 "두 점을 지나는 현수선" 문제).
 const SINKER_IMG_SIZE = 22; // px, css픽셀 = svg viewBox 단위(카메라 좌표계 그대로)
 function renderCastLine(p0, p1) {
   el.castSinker.setAttribute('cx', p1.x);
@@ -689,25 +738,36 @@ function renderCastLine(p0, p1) {
 }
 function catenaryPoints(p0, p1, samples) {
   samples = samples || 16;
-  const dx = p1.x - p0.x, dy = p1.y - p0.y;
+  const dx = p1.x - p0.x, dy = p1.y - p0.y; // 화면 좌표계 — 아래로 갈수록 y가 커진다
   const D = Math.hypot(dx, dy);
   if (D < 4 || Math.abs(dx) < 2) return [p0, p1]; // 거의 수직/한 점 — 커브 의미 없음
   const L = D * 1.12;
-  const target = Math.sqrt(Math.max(L * L - dy * dy, 0));
+  // y=a·cosh(x/a)+q는 항상 볼록(가운데가 "더 작은" y 쪽으로 처지는) 함수라,
+  // 위로 갈수록 y가 커지는 보통의 수학 좌표계에서는 그 처지는 방향이
+  // 곧 "아래"라 정확히 늘어진 케이블 모양이 된다. 그런데 여긴 화면
+  // 좌표계(아래로 갈수록 y가 커짐)라 dy를 그대로 쓰면 케이블이 화면에서
+  // 위로(작은 y) 볼록하게 그려진다 — 다리 아치처럼. dy 부호를 뒤집은
+  // mathDy로 풀고, 마지막에 다시 부호를 뒤집어(p0.y - ylMath) 화면
+  // 좌표로 되돌린다.
+  const mathDy = -dy;
+  const target = Math.sqrt(Math.max(L * L - mathDy * mathDy, 0));
+  // f(a) = a로 정해지는 케이블 길이 - 목표 길이(target). a가 작을수록
+  // 더 팽팽히 휘어 길이가 길어지므로 f는 a에 대해 단조 감소한다 —
+  // f(mid)>0(길이 초과)이면 a를 늘려야 하니 lo를 올린다.
   function f(a) { return 2 * a * Math.sinh(dx / (2 * a)) - target; }
   let lo = 1e-3, hi = Math.max(Math.abs(dx), 1) * 50;
   for (let i = 0; i < 60; i++) {
     const mid = (lo + hi) / 2;
-    if (f(mid) > 0) hi = mid; else lo = mid;
+    if (f(mid) > 0) lo = mid; else hi = mid;
   }
   const a = (lo + hi) / 2;
-  const p = (dx - a * Math.log((L + dy) / (L - dy))) / 2;
+  const p = (dx - a * Math.log((L + mathDy) / (L - mathDy))) / 2;
   const q = -a * Math.cosh(p / a);
   const pts = [];
   for (let i = 0; i <= samples; i++) {
     const xl = dx * i / samples;
-    const yl = a * Math.cosh((xl - p) / a) + q;
-    pts.push({ x: p0.x + xl, y: p0.y + yl });
+    const ylMath = a * Math.cosh((xl - p) / a) + q;
+    pts.push({ x: p0.x + xl, y: p0.y - ylMath });
   }
   return pts;
 }
@@ -716,8 +776,7 @@ function waitForBite() {
   gameState = 'waiting';
   el.statusLine.textContent = '입질을 기다리는 중...';
   el.bobber.classList.add('bob-idle');
-  const tuning = DIFF_TUNING[DIFFICULTY];
-  const delay = tuning.biteDelayMin + Math.random() * (tuning.biteDelayMax - tuning.biteDelayMin);
+  const delay = BITE_WAIT_MIN_MS + Math.random() * (BITE_WAIT_MAX_MS - BITE_WAIT_MIN_MS);
   biteTimer = setTimeout(triggerBite, delay);
 }
 
@@ -745,7 +804,7 @@ function missReaction() {
   if (gameState !== 'bite') return;
   el.biteMark.classList.add('hidden');
   el.bobber.classList.add('hidden');
-  endRun(false, '반응이 늦었어요...');
+  endRun('반응이 늦었어요...');
 }
 
 /* ===== 낚시바(잡아채기) ===== */
@@ -835,7 +894,7 @@ function endCatch(success) {
   raf = null;
   el.fishbarPanel.classList.add('hidden');
   el.catchHint.classList.add('hidden');
-  if (success) playReelThenResult(); else endRun(false, '물고기가 도망쳤어요...');
+  if (success) playReelThenResult(); else endRun('물고기가 도망쳤어요...');
 }
 
 // 잡힌 물고기 종을 고른다 — fishDefs의 catchRate가 하나라도 채워져 있으면(합이
@@ -855,47 +914,85 @@ function pickCaughtFish() {
   return all[all.length - 1];
 }
 
+// 낚시 성공 시 결과창(overlay, "계속하기" 버튼) 대신 잡은 물고기 아이콘이
+// 찌(추)가 있던 자리에 나타났다가 캐릭터 쪽으로 날아가며 사라지는 걸로
+// 대체한다 — 화면을 막는 모달 없이 바로 다음 캐스팅으로 이어진다. 시작
+// 위치는 el.bobber의 마지막 착수 지점(숨겨진 뒤에도 style.left/top은
+// 남아있다), 도착 위치는 el.charStage 중심에서 살짝 위(손/얼굴 높이)로
+// 잡는다.
+function playCatchFlyAnimation(fishCaught) {
+  return new Promise(resolve => {
+    const frameRect = el.frame.getBoundingClientRect();
+    const charRect = el.charStage.getBoundingClientRect();
+    const startLeftPct = parseFloat(el.bobber.style.left) || 50;
+    const startTopPct = parseFloat(el.bobber.style.top) || 50;
+    const endLeftPct = (charRect.left - frameRect.left + charRect.width / 2) / frameRect.width * 100;
+    const endTopPct = (charRect.top - frameRect.top + charRect.height * 0.35) / frameRect.height * 100;
+
+    el.catchFlyIcon.style.borderColor = GRADE_BORDER_COLORS[fishCaught.grade] || 'transparent';
+    if (fishSheetUrl) {
+      const override = fishIconOverrides[fishCaught.id];
+      const style = (override && fishSheetDims)
+        ? getFishCropStyle(override, fishSheetDims.width, fishSheetDims.height, 32)
+        : getFishSlotStyle(fishCaught.slot, 2);
+      el.catchFlyIcon.style.backgroundImage = `url('${fishSheetUrl}')`;
+      el.catchFlyIcon.style.backgroundPosition = style.backgroundPosition;
+      el.catchFlyIcon.style.backgroundSize = style.backgroundSize;
+      el.catchFlyIcon.textContent = '';
+    } else {
+      el.catchFlyIcon.style.backgroundImage = 'none';
+      el.catchFlyIcon.textContent = '🐟';
+    }
+
+    el.catchFlyIcon.style.transition = 'none';
+    el.catchFlyIcon.style.left = startLeftPct + '%';
+    el.catchFlyIcon.style.top = startTopPct + '%';
+    el.catchFlyIcon.style.transform = 'translate(-50%,-50%) scale(.5)';
+    el.catchFlyIcon.style.opacity = '0';
+    el.catchFlyIcon.classList.remove('hidden');
+    void el.catchFlyIcon.offsetWidth; // 강제 리플로우 — 시작 위치를 transition 없이 먼저 반영해야 그 다음 값 변경이 애니메이션으로 인식된다
+    el.catchFlyIcon.style.transition = 'left .7s cubic-bezier(.3,.6,.3,1), top .7s cubic-bezier(.3,.6,.3,1), transform .7s cubic-bezier(.3,.6,.3,1), opacity .2s ease';
+    el.catchFlyIcon.style.opacity = '1';
+    el.catchFlyIcon.style.transform = 'translate(-50%,-50%) scale(1)';
+    vibrate(20);
+    requestAnimationFrame(() => {
+      el.catchFlyIcon.style.left = endLeftPct + '%';
+      el.catchFlyIcon.style.top = endTopPct + '%';
+      el.catchFlyIcon.style.transform = 'translate(-50%,-50%) scale(.55)';
+    });
+    setTimeout(() => {
+      el.catchFlyIcon.style.transition = 'opacity .25s ease';
+      el.catchFlyIcon.style.opacity = '0';
+      setTimeout(() => { el.catchFlyIcon.classList.add('hidden'); resolve(); }, 250);
+    }, 750);
+  });
+}
+
 async function playReelThenResult() {
   gameState = 'reeling';
   el.statusLine.textContent = '끌어올리는 중...';
   if (reelFrameUrls.length) {
-    await playFrameSequence(reelFrameUrls, 90);
     await playFrameSequence(reelFrameUrls, 90);
   } else {
     await wait(500);
   }
   caughtCount++;
   el.countChip.textContent = caughtCount + '마리';
-  endRun(true, '손맛 좋다! 낚았어요!', pickCaughtFish());
+  const fishCaught = pickCaughtFish();
+  await playCatchFlyAnimation(fishCaught);
+  resetToIdle();
+  el.statusLine.textContent = `${fishCaught.name} 낚았어요!`;
+  setTimeout(() => {
+    if (gameState === 'idle') el.statusLine.textContent = '화면을 꾹 눌러 캐스팅 세기를 조절하세요';
+  }, 1400);
 }
 
-/* ===== 결과 / 리셋 ===== */
-function endRun(success, message, fishCaught) {
+/* ===== 실패 결과 / 리셋 ===== */
+function endRun(message) {
   gameState = 'result';
-  el.overlayTitle.textContent = success ? '낚시 성공' : '낚시 실패';
-  el.overlayTitle.classList.toggle('success', success);
+  el.overlayTitle.textContent = '낚시 실패';
   el.overlayMessage.textContent = message;
   el.overlayCount.textContent = `이번 세션 ${caughtCount}마리`;
-  if (fishCaught) {
-    el.overlayFishName.textContent = fishCaught.name;
-    el.overlayFishMeta.textContent = `${fishCaught.grade} · ${fishCaught.value}P`;
-    if (fishSheetUrl) {
-      const override = fishIconOverrides[fishCaught.id];
-      const style = (override && fishSheetDims)
-        ? getFishCropStyle(override, fishSheetDims.width, fishSheetDims.height, 56)
-        : getFishSlotStyle(fishCaught.slot, 3.5);
-      el.overlayFishIcon.style.backgroundImage = `url('${fishSheetUrl}')`;
-      el.overlayFishIcon.style.backgroundPosition = style.backgroundPosition;
-      el.overlayFishIcon.style.backgroundSize = style.backgroundSize;
-      el.overlayFishIcon.textContent = '';
-    } else {
-      el.overlayFishIcon.style.backgroundImage = 'none';
-      el.overlayFishIcon.textContent = '🐟';
-    }
-    el.overlayFish.classList.add('show');
-  } else {
-    el.overlayFish.classList.remove('show');
-  }
   el.overlay.classList.add('show');
 }
 

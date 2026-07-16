@@ -1075,7 +1075,11 @@ const AssetDB = (() => {
   // 뜨는 바) 배경 그림 자산 id. castGaugeFillRegion({x,y,w,h}, 이 그림의
   // 원본 자연 크기 대비 0~1)이 그림 위 어디가 채워지는 부분인지 지정한다 —
   // 둘 다 비어있으면 기본 막대 게이지(cast-power-track/-fill)가 쓰인다.
-  const FISHING_CONFIG_DEFAULT = { castingFrames: [], reelingFrames: [], barDesign: {}, fishSheetAssetId: null, fishIconOverrides: {}, castingSheetAssetId: null, castingFrameOverrides: {}, castingFrameDurations: [], backgroundAssetId: null, castingFrameRodTips: {}, walkFrames: { up: [], down: [], left: [], right: [] }, castGaugeAssetId: null, castGaugeFillRegion: null };
+  // walkMotion — 격자 이동 테스트의 속도 설정, { stepMs, stepDelayMs }.
+  // stepMs는 한 칸을 이동하는 데 걸리는 시간(슬라이드 애니메이션 길이 겸
+  // 걷기 프레임 재생 속도 기준), stepDelayMs는 방향키/dpad를 누르고 있을 때
+  // 한 칸 이동을 마친 뒤 다음 칸으로 넘어가기 전에 추가로 쉬는 시간이다.
+  const FISHING_CONFIG_DEFAULT = { castingFrames: [], reelingFrames: [], barDesign: {}, fishSheetAssetId: null, fishIconOverrides: {}, castingSheetAssetId: null, castingFrameOverrides: {}, castingFrameDurations: [], backgroundAssetId: null, castingFrameRodTips: {}, walkFrames: { up: [], down: [], left: [], right: [] }, walkSheets: { up: {}, down: {}, left: {}, right: {} }, walkMotion: { stepMs: 200, stepDelayMs: 0 }, castGaugeAssetId: null, castGaugeFillRegion: null };
 
   async function getFishingConfig() {
     if (fishingConfigCache.has('config')) return fishingConfigCache.get('config');
