@@ -1095,7 +1095,12 @@ const AssetDB = (() => {
   // blockedAreas는 캐릭터가 걸어 들어갈 수 없는 영역, interactionAreas는
   // 상점/대화 등 게임에 필요한 상호작용 지점(각 항목에 label 필드로 어떤
   // 상호작용인지 적어둔다) — 셋 다 여러 개를 둘 수 있다.
-  const FISHING_CONFIG_DEFAULT = { castingFrames: [], reelingFrames: [], barDesign: {}, fishSheetAssetId: null, fishIconOverrides: {}, castingSheetAssetId: null, castingFrameOverrides: {}, castingFrameDurations: [], backgroundAssetId: null, castingFrameRodTips: {}, walkFrames: { up: [], down: [], left: [], right: [] }, walkSheets: { up: {}, down: {}, left: {}, right: {} }, walkMotion: { stepMs: 200, animFrameMs: 90 }, castPhysics: { gravityMps2: 9.8, vxScale: 1 }, itemPopup: { backgroundAssetId: null, iconPos: null, iconSizePx: 64 }, castGaugeAssetId: null, castGaugeFillRegion: null, fishableAreas: [], blockedAreas: [], interactionAreas: [], dialogueScene: { boxLayer: null, jisooLayer: null, youngwooLayer: null } };
+  // heldFishPos — 낚시 성공 후 캐릭터가 물고기를 들고 있는 포즈일 때, 잡은
+  // 물고기 아이콘이 캐릭터 기준(char-stage 박스, 0~1 정규화 좌표) 어디에
+  // 놓일지. "올리기 모션" 탭에서 올리기 마지막 프레임 위로 점을 찍어
+  // 지정한다(rodtip-marker와 같은 단일 포인트 피커). null이면
+  // play/index.html의 기본값(DEFAULT_HELD_FISH_POS)으로 폴백한다.
+  const FISHING_CONFIG_DEFAULT = { castingFrames: [], reelingFrames: [], barDesign: {}, fishSheetAssetId: null, fishIconOverrides: {}, castingSheetAssetId: null, castingFrameOverrides: {}, castingFrameDurations: [], backgroundAssetId: null, castingFrameRodTips: {}, walkFrames: { up: [], down: [], left: [], right: [] }, walkSheets: { up: {}, down: {}, left: {}, right: {} }, walkMotion: { stepMs: 200, animFrameMs: 90 }, castPhysics: { gravityMps2: 9.8, vxScale: 1 }, itemPopup: { backgroundAssetId: null, iconPos: null, iconSizePx: 64 }, castGaugeAssetId: null, castGaugeFillRegion: null, fishableAreas: [], blockedAreas: [], interactionAreas: [], dialogueScene: { boxLayer: null, jisooLayer: null, youngwooLayer: null }, heldFishPos: null };
 
   async function getFishingConfig() {
     if (fishingConfigCache.has('config')) return fishingConfigCache.get('config');

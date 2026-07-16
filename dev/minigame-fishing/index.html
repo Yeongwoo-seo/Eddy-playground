@@ -288,6 +288,8 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
    보이던 문제를 해결한다. */
 .itempos-stage{position:relative;width:100%;max-width:280px;aspect-ratio:var(--item-ar,280/260);margin:0 auto;border-radius:12px;overflow:hidden;background:#15191f;touch-action:none;cursor:crosshair}
 .itempos-stage img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none;-webkit-user-drag:none;-webkit-user-select:none;user-select:none}
+.heldfish-stage{position:relative;width:100%;max-width:280px;aspect-ratio:var(--heldfish-ar,1/1);margin:0 auto;border-radius:12px;overflow:hidden;background:#000;touch-action:none;cursor:crosshair}
+.heldfish-stage img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;image-rendering:pixelated;pointer-events:none;-webkit-user-drag:none;-webkit-user-select:none;user-select:none}
 .item-popup-preview{position:relative;width:100%;max-width:220px;aspect-ratio:var(--item-ar,280/260);margin:0 auto;border-radius:20px;overflow:hidden;background-size:contain;background-repeat:no-repeat;background-position:center}
 /* 배경(액자) 그림을 업로드하지 않았을 때만 쓰는 기본 미리보기 배경 —
    실제 팝업(play/index.html .item-popup-card--fallback)과 같은 이유로,
@@ -458,6 +460,12 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     <div class="frame-strip" id="reelFrames"></div>
     <button type="button" class="frame-add-btn" id="reelAddBtn">+ 프레임 추가</button>
     <input type="file" id="reelFileInput" accept="image/*">
+
+    <div class="option-group">
+      <div class="option-label">물고기 들기 위치</div>
+      <div class="option-desc">낚시 성공 후 캐릭터가 물고기를 들고 있는 자세(올리기 마지막 프레임) 위에서, 물고기 아이콘이 나타날 위치를 지정하세요.</div>
+      <button type="button" class="fish-sheet-btn" id="heldFishPosEditBtn" style="width:100%" disabled>🐟 물고기 들기 위치 지정</button>
+    </div>
 
     <div class="prompt-block">
       <div class="option-label">AI 프레임 생성 프롬프트</div>
@@ -891,6 +899,26 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     </div>
   </div>
 </div>
+
+<!-- 물고기 들기 위치 지정 — itemPosOverlay와 같은 바텀시트 틀 +
+     단일 포인트 마커(rodtip-marker 재사용)지만, 기준 이미지가 아이템창
+     배경이 아니라 올리기 모션의 마지막 프레임이라 별도 오버레이를 쓴다
+     (openHeldFishPosEditor 참고). --heldfish-ar로 종횡비를 그 프레임의
+     실제 자연 크기에 맞춘다(itempos-stage의 --item-ar과 같은 방식). -->
+<div class="crop-overlay hidden" id="heldFishPosOverlay">
+  <div class="crop-sheet">
+    <div class="crop-title">물고기 들기 위치 지정</div>
+    <div class="crop-desc">올리기 마지막 프레임이에요 — 그림 위를 탭하거나 드래그해서 물고기 아이콘이 나타날 위치를 옮기세요.</div>
+    <div class="heldfish-stage" id="heldFishPosStage">
+      <img id="heldFishPosImg" alt="">
+      <div class="rodtip-marker" id="heldFishPosMarker"></div>
+    </div>
+    <div class="crop-actions">
+      <button type="button" class="crop-btn secondary" id="heldFishPosCancelBtn">취소</button>
+      <button type="button" class="crop-btn primary" id="heldFishPosConfirmBtn">적용</button>
+    </div>
+  </div>
+</div>
 <script>
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
@@ -1147,6 +1175,13 @@ const el = {
   jisooImageFileInput: document.getElementById('jisooImageFileInput'),
   youngwooImageFileInput: document.getElementById('youngwooImageFileInput'),
   deleteDialogueLayerBtn: document.getElementById('deleteDialogueLayerBtn'),
+  heldFishPosEditBtn: document.getElementById('heldFishPosEditBtn'),
+  heldFishPosOverlay: document.getElementById('heldFishPosOverlay'),
+  heldFishPosStage: document.getElementById('heldFishPosStage'),
+  heldFishPosImg: document.getElementById('heldFishPosImg'),
+  heldFishPosMarker: document.getElementById('heldFishPosMarker'),
+  heldFishPosCancelBtn: document.getElementById('heldFishPosCancelBtn'),
+  heldFishPosConfirmBtn: document.getElementById('heldFishPosConfirmBtn'),
 };
 
 const PANELS = { logic: el.panelLogic, cast: el.panelCast, bar: el.panelBar, reel: el.panelReel, fish: el.panelFish, move: el.panelMove, area: el.panelArea, item: el.panelItem, dialogue: el.panelDialogue };
@@ -1800,6 +1835,7 @@ el.reelFileInput.addEventListener('change', async () => {
   try {
     await uploadFrame(file, 'reelingFrames');
     renderFramesTab('reelingFrames', el.reelFrames, el.reelFileInput, el.reelPreview, el.reelPreviewLabel);
+    updateHeldFishBtnState();
   } finally {
     el.reelAddBtn.disabled = false;
   }
@@ -3742,6 +3778,57 @@ el.deleteDialogueLayerBtn.addEventListener('click', async () => {
   renderDialogueSlideStage();
 });
 
+/* ===== 물고기 들기 위치 지정 =====
+   itemPos 피커와 같은 단일 포인트 드래그 패턴이지만, 기준 이미지가
+   올리기 모션의 마지막 프레임이고 저장 위치도 fishingConfig.heldFishPos
+   (char-stage 박스 기준 0~1)로 다르다 — play/index.html이 낚시 성공 후
+   캐릭터가 물고기를 들고 있는 자세에서 이 좌표에 물고기 아이콘을 그린다. */
+const DEFAULT_HELD_FISH_POS = { x: 0.5, y: 0.25 };
+let heldFishPosDraft = Object.assign({}, DEFAULT_HELD_FISH_POS);
+let heldFishPosDragging = false;
+function updateHeldFishBtnState() {
+  el.heldFishPosEditBtn.disabled = !(fishingConfig.reelingFrames || []).length;
+}
+async function openHeldFishPosEditor() {
+  const reelIds = fishingConfig.reelingFrames || [];
+  if (!reelIds.length) return;
+  heldFishPosDraft = Object.assign({}, DEFAULT_HELD_FISH_POS, fishingConfig.heldFishPos || {});
+  const lastAsset = await AssetDB.getAsset(reelIds[reelIds.length - 1]).catch(() => null);
+  el.heldFishPosImg.src = lastAsset ? lastAsset.dataUrl : '';
+  if (lastAsset) {
+    try {
+      const img = await loadImageEl(lastAsset.dataUrl);
+      el.heldFishPosStage.style.setProperty('--heldfish-ar', img.naturalWidth + '/' + img.naturalHeight);
+    } catch (e) { el.heldFishPosStage.style.removeProperty('--heldfish-ar'); }
+  } else {
+    el.heldFishPosStage.style.removeProperty('--heldfish-ar');
+  }
+  renderHeldFishPosMarker();
+  el.heldFishPosOverlay.classList.remove('hidden');
+}
+function renderHeldFishPosMarker() {
+  el.heldFishPosMarker.style.left = (heldFishPosDraft.x * 100) + '%';
+  el.heldFishPosMarker.style.top = (heldFishPosDraft.y * 100) + '%';
+}
+function updateHeldFishPosFromEvent(e) {
+  const rect = el.heldFishPosStage.getBoundingClientRect();
+  heldFishPosDraft = {
+    x: clamp01((e.clientX - rect.left) / rect.width),
+    y: clamp01((e.clientY - rect.top) / rect.height),
+  };
+  renderHeldFishPosMarker();
+}
+el.heldFishPosEditBtn.addEventListener('click', openHeldFishPosEditor);
+el.heldFishPosStage.addEventListener('pointerdown', (e) => { heldFishPosDragging = true; updateHeldFishPosFromEvent(e); });
+window.addEventListener('pointermove', (e) => { if (heldFishPosDragging) updateHeldFishPosFromEvent(e); });
+window.addEventListener('pointerup', () => { heldFishPosDragging = false; });
+el.heldFishPosCancelBtn.addEventListener('click', () => el.heldFishPosOverlay.classList.add('hidden'));
+el.heldFishPosConfirmBtn.addEventListener('click', async () => {
+  fishingConfig = await AssetDB.setFishingConfig({ heldFishPos: heldFishPosDraft });
+  showSaveNote();
+  el.heldFishPosOverlay.classList.add('hidden');
+});
+
 let saveNoteTimer = null;
 function showSaveNote() {
   el.saveNote.classList.add('show');
@@ -3770,6 +3857,7 @@ async function init() {
   renderCastPhysicsControls();
   renderCastTab();
   renderFramesTab('reelingFrames', el.reelFrames, el.reelFileInput, el.reelPreview, el.reelPreviewLabel);
+  updateHeldFishBtnState();
   renderFishTab();
   WALK_DIRS.forEach(dir => renderWalkTab(dir));
   initMoveMotionControls();
