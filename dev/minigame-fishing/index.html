@@ -440,6 +440,13 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
       <button type="button" class="frame-add-btn hidden" id="sinkerImageAddBtn">+ 낚시 추 이미지 업로드</button>
       <input type="file" id="sinkerImageFileInput" accept="image/*">
     </div>
+    <div class="option-group">
+      <div class="option-label">물었다! 표시</div>
+      <div class="option-desc">입질(느낌표) 온 뒤 탭하면 잠깐 커졌다 작아지며 사라지는 표시예요. 업로드하지 않으면 기본 "물었다!" 텍스트로 표시돼요. 업로드하면 배경이 자동으로 제거돼요(누끼).</div>
+      <div class="frame-strip" id="biteStampImageSlot"></div>
+      <button type="button" class="frame-add-btn hidden" id="biteStampImageAddBtn">+ 물었다! 이미지 업로드</button>
+      <input type="file" id="biteStampImageFileInput" accept="image/*">
+    </div>
   </div>
 
   <!-- ===== 물고기 종류 — 낚시로 잡히는 67종 카탈로그(dev/data/fishDefs.js, 코드
@@ -762,6 +769,9 @@ const el = {
   sinkerImageSlot: document.getElementById('sinkerImageSlot'),
   sinkerImageAddBtn: document.getElementById('sinkerImageAddBtn'),
   sinkerImageFileInput: document.getElementById('sinkerImageFileInput'),
+  biteStampImageSlot: document.getElementById('biteStampImageSlot'),
+  biteStampImageAddBtn: document.getElementById('biteStampImageAddBtn'),
+  biteStampImageFileInput: document.getElementById('biteStampImageFileInput'),
   slideToolbar: document.getElementById('slideToolbar'),
   addBarImageBtn: document.getElementById('addBarImageBtn'),
   addCatchImageBtn: document.getElementById('addCatchImageBtn'),
@@ -1897,6 +1907,47 @@ el.sinkerImageFileInput.addEventListener('change', async () => {
   }
 });
 
+// 물었다! 표시 이미지 — 낚시 추와 같은 단일 슬롯 업로드 패턴. 커졌다
+// 작아지는 도장 연출 위에 얹는 그림이라 배경이 남아있으면 사각형이 같이
+// 나타났다 사라지는 것처럼 보인다 — 여기도 removeBackgroundOrFallback을
+// 거쳐 항상 배경을 제거한 뒤 저장한다.
+async function renderBiteStampImageSlot() {
+  const design = fishingConfig.barDesign || {};
+  el.biteStampImageSlot.innerHTML = '';
+  if (design.biteStampAssetId) {
+    el.biteStampImageAddBtn.classList.add('hidden');
+    const asset = await AssetDB.getAsset(design.biteStampAssetId).catch(() => null);
+    const slot = document.createElement('div');
+    slot.className = 'frame-slot';
+    slot.innerHTML = `${asset ? `<img src="${asset.dataUrl}" alt="">` : ''}
+      <div class="frame-actions"><button type="button" class="frame-mini-btn danger" data-act="del">✕</button></div>`;
+    slot.querySelector('[data-act=del]').addEventListener('click', async () => {
+      fishingConfig = await AssetDB.setFishingConfig({ barDesign: Object.assign({}, fishingConfig.barDesign, { biteStampAssetId: null }) });
+      showSaveNote();
+      renderBiteStampImageSlot();
+    });
+    el.biteStampImageSlot.appendChild(slot);
+  } else {
+    el.biteStampImageAddBtn.classList.remove('hidden');
+  }
+}
+el.biteStampImageAddBtn.addEventListener('click', () => el.biteStampImageFileInput.click());
+el.biteStampImageFileInput.addEventListener('change', async () => {
+  const file = el.biteStampImageFileInput.files[0];
+  el.biteStampImageFileInput.value = '';
+  if (!file) return;
+  el.biteStampImageAddBtn.disabled = true;
+  try {
+    const blob = await removeBackgroundOrFallback(file);
+    const asset = await AssetDB.addAsset({ type: 'fishing-bite-stamp-image', name: file.name, blob });
+    fishingConfig = await AssetDB.setFishingConfig({ barDesign: Object.assign({}, fishingConfig.barDesign, { biteStampAssetId: asset.id }) });
+    showSaveNote();
+    renderBiteStampImageSlot();
+  } finally {
+    el.biteStampImageAddBtn.disabled = false;
+  }
+});
+
 /* ===== 세밀영역조절(범용) 전체화면 편집기 재사용 — evidence-notebook의
    evn-* 편집기와 완전히 같은 pan/draw 좌표 수학(스케일=스테이지 폭/원본 폭,
    세로 스크롤은 배지 미선택 시 드래그로 pan). 낚시바 디자인 탭에서는
@@ -2735,6 +2786,7 @@ async function init() {
   renderFishIconSlot();
   renderBackgroundImageSlot();
   renderSinkerImageSlot();
+  renderBiteStampImageSlot();
   renderCastTab();
   renderFramesTab('reelingFrames', el.reelFrames, el.reelFileInput, el.reelPreview, el.reelPreviewLabel);
   renderFishTab();
