@@ -106,7 +106,13 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .cast-power-wrap.custom-gauge .cast-power-gauge-img{display:block}
 .cast-power-wrap.custom-gauge .cast-power-stage{aspect-ratio:var(--gauge-ar,220/20)}
 .cast-power-wrap.custom-gauge .cast-power-track{position:absolute;background:transparent;border:none;border-radius:0}
-.cast-power-wrap.custom-gauge .cast-power-fill{background:rgba(62,207,107,.55);border-radius:0}
+/* 커스텀 게이지도 기본 막대와 같은 빨강→노랑→초록 그라데이션을 쓴다 —
+   다만 트랙 폭이 220px 고정이 아니라 castGaugeFillRegion(비율) 기반이라
+   실제 픽셀 폭이 매번 다르다. background-size는 loadConfig가 트랙의
+   실제 offsetWidth를 읽어 인라인으로 맞춰준다(el.castPowerFill.style.
+   backgroundSize) — 여기 CSS의 220px는 그 전까지의 폴백일 뿐이다. 배경
+   그림이 비치도록 반투명(.55)은 그대로 유지. */
+.cast-power-wrap.custom-gauge .cast-power-fill{background:linear-gradient(to right,rgba(217,65,65,.55) 0%,rgba(214,168,75,.55) 50%,rgba(62,207,107,.55) 100%);background-repeat:no-repeat;border-radius:0}
 
 /* 이동 모드 — idle(캐스팅 전) 상태에서만 보이는 화면 왼쪽 아래 반투명
    방향키(십자 배치)와 오른쪽 아래 반투명 낚시 버튼. 기존엔 화면 아무
@@ -727,12 +733,17 @@ async function loadConfig() {
     el.castPowerTrack.style.top = (castGaugeFillRegion.y * 100) + '%';
     el.castPowerTrack.style.width = (castGaugeFillRegion.w * 100) + '%';
     el.castPowerTrack.style.height = (castGaugeFillRegion.h * 100) + '%';
+    // 커스텀 게이지 트랙은 %(castGaugeFillRegion) 기반이라 실제 픽셀 폭이
+    // 매번 다르다 — 기본 220px 그라데이션 크기로는 안 맞으므로, 방금 적용한
+    // 레이아웃을 읽어(offsetWidth) 그라데이션 크기를 트랙 실제 폭에 맞춘다.
+    el.castPowerFill.style.backgroundSize = el.castPowerTrack.offsetWidth + 'px 100%';
   } else {
     el.castPowerWrap.classList.remove('custom-gauge');
     el.castPowerTrack.style.left = '';
     el.castPowerTrack.style.top = '';
     el.castPowerTrack.style.width = '';
     el.castPowerTrack.style.height = '';
+    el.castPowerFill.style.backgroundSize = ''; // 기본 막대의 220px 고정값(CSS)으로 복귀
   }
 
   const biteStampAsset = design.biteStampAssetId ? byId.get(design.biteStampAssetId) : null;
