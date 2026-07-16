@@ -2564,8 +2564,13 @@ function renderFishList(sheetAsset, sheetDims) {
       const style = (override && sheetDims)
         ? getFishCropStyle(override, sheetDims.width, sheetDims.height, 32)
         : getFishSlotStyle(f.slot, 2);
+      // 좌우반전(scaleX(-1)) — 업로드하는 스프라이트시트가 보통 물고기가
+      // 왼쪽을 보고 있어서, 게임 안에서 오른쪽(캐릭터 쪽)을 보도록 여기서
+      // 한 번에 뒤집는다. 크롭 위치/크기(background-position/size)는 원본
+      // 시트 좌표 그대로 두고 화면에 그릴 때만 시각적으로 뒤집는 것이라
+      // 세밀영역조절 좌표(fishIconOverrides)에는 영향이 없다.
       const iconStyle = sheetAsset
-        ? `background-image:url('${sheetAsset.dataUrl}');background-position:${style.backgroundPosition};background-size:${style.backgroundSize}`
+        ? `background-image:url('${sheetAsset.dataUrl}');background-position:${style.backgroundPosition};background-size:${style.backgroundSize};transform:scaleX(-1)`
         : '';
       return `
         <div class="fish-row">
