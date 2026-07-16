@@ -471,6 +471,16 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
       <button type="button" class="fish-sheet-btn hidden" id="cropCatchImageBtn" style="width:100%;margin-top:10px">✂ 캐치바 이미지 인식 영역 자르기</button>
       <button type="button" class="fish-sheet-btn danger hidden" id="deleteLayerBtn" style="width:100%;margin-top:10px">✕ 선택한 오브젝트 삭제</button>
     </div>
+    <!-- ===== 게이지 채움 이미지 — 위 슬라이드에서 "+ 게이지 영역"으로 지정한
+         사각형 안을 채우는 그림. 업로드하지 않으면 기존처럼 진행도(0~100%)에
+         따라 빨강→초록으로 바뀌는 단색으로 채워진다. ===== -->
+    <div class="option-group">
+      <div class="option-label">게이지 채움 이미지</div>
+      <div class="option-desc">게이지 영역 안을 채우는 그림이에요(진행도가 오를수록 아래에서부터 드러나요). 업로드하지 않으면 기본처럼 진행도에 따라 빨강→초록으로 바뀌는 단색으로 채워져요.</div>
+      <div class="frame-strip" id="gaugeImageSlot"></div>
+      <button type="button" class="frame-add-btn hidden" id="gaugeImageAddBtn">+ 게이지 채움 이미지 업로드</button>
+      <input type="file" id="gaugeImageFileInput" accept="image/*">
+    </div>
     <div class="option-group">
       <div class="option-label">슬라이드 크기</div>
       <div class="option-desc">이 크기가 실제 게임에 쓰이는 낚시바 모듈 전체 크기예요. 크기를 바꿔도 슬라이드 안의 배치 비율은 그대로 유지돼요.</div>
@@ -870,6 +880,9 @@ const el = {
   sinkerImageSlot: document.getElementById('sinkerImageSlot'),
   sinkerImageAddBtn: document.getElementById('sinkerImageAddBtn'),
   sinkerImageFileInput: document.getElementById('sinkerImageFileInput'),
+  gaugeImageSlot: document.getElementById('gaugeImageSlot'),
+  gaugeImageAddBtn: document.getElementById('gaugeImageAddBtn'),
+  gaugeImageFileInput: document.getElementById('gaugeImageFileInput'),
   biteStampImageSlot: document.getElementById('biteStampImageSlot'),
   biteStampImageAddBtn: document.getElementById('biteStampImageAddBtn'),
   biteStampImageFileInput: document.getElementById('biteStampImageFileInput'),
@@ -2077,6 +2090,47 @@ el.sinkerImageFileInput.addEventListener('change', async () => {
   }
 });
 
+// 게이지 채움 이미지 — 배경화면/낚시바 이미지와 같은 단일 슬롯 업로드
+// 패턴(배경 제거 없음 — 사각형 영역을 통째로 채우는 텍스처라 누끼가
+// 필요 없다). play/index.html이 이 이미지를 fishbarGauge의 배경으로
+// 깔고, 업로드가 없을 때만 기존 진행도 색상(gaugeColorForProgress)으로
+// 폴백한다.
+async function renderGaugeImageSlot() {
+  const design = fishingConfig.barDesign || {};
+  el.gaugeImageSlot.innerHTML = '';
+  if (design.gaugeImageAssetId) {
+    el.gaugeImageAddBtn.classList.add('hidden');
+    const asset = await AssetDB.getAsset(design.gaugeImageAssetId).catch(() => null);
+    const slot = document.createElement('div');
+    slot.className = 'frame-slot';
+    slot.innerHTML = `${asset ? `<img src="${asset.dataUrl}" alt="">` : ''}
+      <div class="frame-actions"><button type="button" class="frame-mini-btn danger" data-act="del">✕</button></div>`;
+    slot.querySelector('[data-act=del]').addEventListener('click', async () => {
+      fishingConfig = await AssetDB.setFishingConfig({ barDesign: Object.assign({}, fishingConfig.barDesign, { gaugeImageAssetId: null }) });
+      showSaveNote();
+      renderGaugeImageSlot();
+    });
+    el.gaugeImageSlot.appendChild(slot);
+  } else {
+    el.gaugeImageAddBtn.classList.remove('hidden');
+  }
+}
+el.gaugeImageAddBtn.addEventListener('click', () => el.gaugeImageFileInput.click());
+el.gaugeImageFileInput.addEventListener('change', async () => {
+  const file = el.gaugeImageFileInput.files[0];
+  el.gaugeImageFileInput.value = '';
+  if (!file) return;
+  el.gaugeImageAddBtn.disabled = true;
+  try {
+    const asset = await AssetDB.addAsset({ type: 'fishing-gauge-image', name: file.name, blob: file });
+    fishingConfig = await AssetDB.setFishingConfig({ barDesign: Object.assign({}, fishingConfig.barDesign, { gaugeImageAssetId: asset.id }) });
+    showSaveNote();
+    renderGaugeImageSlot();
+  } finally {
+    el.gaugeImageAddBtn.disabled = false;
+  }
+});
+
 // 캐스팅 게이지 이미지 — 낚시바/캐치존 이미지와 같은 단일 슬롯 업로드
 // 패턴. 이미지 자체는 그대로 두고(크롭 없음), castGaugeFillRegion으로
 // 어디가 채워지는 부분인지만 별도로 지정한다(아래 openCastGaugeRegionEditor).
@@ -3153,6 +3207,7 @@ async function init() {
   renderFishIconSlot();
   renderBackgroundImageSlot();
   renderSinkerImageSlot();
+  renderGaugeImageSlot();
   renderCastGaugeImageSlot();
   renderBiteStampImageSlot();
   renderCastPhysicsControls();
