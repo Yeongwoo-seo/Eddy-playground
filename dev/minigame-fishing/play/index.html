@@ -1099,8 +1099,8 @@ function startCatching() {
   gameState = 'catching';
   el.catchHint.classList.remove('hidden');
   el.fishbarPanel.classList.remove('hidden');
-  fish = { y: 50, vy: DIFF_TUNING[DIFFICULTY].fishSpeedMult * 34, targetY: 50, pickTimer: 0 };
-  zone = { y: clamp(50 - zoneSizePct / 2, 0, 100 - zoneSizePct), vel: 0 };
+  fish = { y: 100, vy: -DIFF_TUNING[DIFFICULTY].fishSpeedMult * 34, targetY: 100, pickTimer: 0 };
+  zone = { y: 100 - zoneSizePct, vel: 0 };
   progress = 30;
   holding = false;
   pendingCatchFish = pickCaughtFish();
