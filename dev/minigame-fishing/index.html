@@ -2168,10 +2168,15 @@ async function openFrameEraser(category, frameIndex) {
   await loadImageIntoEraseCanvas(url);
   el.eraseOverlay.classList.remove('hidden');
   fitEraseCanvasToStage();
+  // 개발계획 플로팅 버튼(devPlanFab.js)이 항상 화면 왼쪽 아래(16px,16px)에
+  // 떠 있어서, 이 전체화면 지우개의 왼쪽 아래 버튼/캔버스 영역과 겹쳐
+  // 꾹 누르면 지우기 대신 그 버튼이 드래그되던 문제 — 열려있는 동안만 숨긴다.
+  if (window.__devPlanFab) window.__devPlanFab.style.display = 'none';
 }
 function closeEraseOverlay() {
   el.eraseOverlay.classList.add('hidden');
   eraseCtx = null;
+  if (window.__devPlanFab) window.__devPlanFab.style.display = '';
 }
 function eraseCanvasPointFromEvent(e) {
   const rect = el.eraseCanvas.getBoundingClientRect();
