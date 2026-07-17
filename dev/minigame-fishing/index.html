@@ -1006,6 +1006,13 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
       <button type="button" class="secondary" id="eraseResetBtn">처음으로</button>
       <button type="button" class="secondary" id="eraseRestoreBtn">복원(원본 크롭)</button>
     </div>
+    <!-- 초록이 삭제 — 프레임 전체를 픽셀 단위로 훑어 초록색계열(그린스크린
+         잔여물 등)만 자동으로 투명 처리한다. 손으로 문지르는 지우개와 달리
+         한 번에 색 기준으로 지우는 보조 기능이라 실행취소(eraseUndoBtn)로
+         똑같이 되돌릴 수 있게 pushEraseUndoSnapshot을 그대로 재사용한다. -->
+    <div class="erase-action-row">
+      <button type="button" class="secondary" id="eraseGreenRemoveBtn">🟩 초록이 삭제</button>
+    </div>
     <button type="button" class="primary" id="eraseApplyBtn" style="width:100%">적용</button>
   </div>
 </div>
@@ -1137,6 +1144,7 @@ const el = {
   eraseUndoBtn: document.getElementById('eraseUndoBtn'),
   eraseResetBtn: document.getElementById('eraseResetBtn'),
   eraseRestoreBtn: document.getElementById('eraseRestoreBtn'),
+  eraseGreenRemoveBtn: document.getElementById('eraseGreenRemoveBtn'),
   eraseApplyBtn: document.getElementById('eraseApplyBtn'),
   eraseCancelBtn: document.getElementById('eraseCancelBtn'),
   sinkerTestStage: document.getElementById('sinkerTestStage'),
@@ -2257,6 +2265,23 @@ el.eraseRestoreBtn.addEventListener('click', async () => {
   showSaveNote();
   closeEraseOverlay();
   renderMotionTab();
+});
+// 초록이 삭제 — R/B보다 G가 뚜렷하게 높은 픽셀(그린스크린류)만 골라
+// alpha를 0으로 만든다. 사람 피부·머리카락 등 다른 색상은 건드리지 않도록
+// 그냥 "초록 성분이 크다" 정도가 아니라 R/B 대비 확실히 우세할 때만 지운다.
+function isGreenScreenish(r, g, b) {
+  return g > 60 && g > r * 1.15 && g > b * 1.15 && (g - Math.max(r, b)) > 20;
+}
+el.eraseGreenRemoveBtn.addEventListener('click', () => {
+  if (!eraseCtx) return;
+  pushEraseUndoSnapshot();
+  const imgData = eraseCtx.getImageData(0, 0, el.eraseCanvas.width, el.eraseCanvas.height);
+  const data = imgData.data;
+  for (let i = 0; i < data.length; i += 4) {
+    if (data[i + 3] === 0) continue; // 이미 투명한 픽셀은 건너뜀
+    if (isGreenScreenish(data[i], data[i + 1], data[i + 2])) data[i + 3] = 0;
+  }
+  eraseCtx.putImageData(imgData, 0, 0);
 });
 el.eraseCancelBtn.addEventListener('click', closeEraseOverlay);
 el.eraseApplyBtn.addEventListener('click', async () => {
