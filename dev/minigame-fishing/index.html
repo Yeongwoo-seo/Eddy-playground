@@ -1847,13 +1847,27 @@ let rodtipDraft = {};
 let rodtipSelectedIndex = 0;
 let rodtipDragging = false;
 let rodtipCategory = 'cast';
+// 캐스팅은 실제 플레이(play/index.html loadConfig)에서 시트 6프레임 뒤에
+// 올리기 1번째 프레임을 7번째 프레임으로 이어붙여 캐스팅 종료 후 대기
+// 포즈로 쓴다(castFrameUrls.concat(reelFrameUrls[0])) — 여기서도 같은
+// 7번째 프레임을 골라 낚싯대 끝을 지정할 수 있어야, 그 대기 포즈에서도
+// 줄이 손끝과 안 어긋난다. 저장 키는 castingFrameRodTips[6]으로 그대로
+// 맞아떨어진다(rodTipPxForFrame이 인덱스로 조회하기 때문).
+function rodtipDisplayFrames(category) {
+  const frames = motionFrameCache[category];
+  if (category === 'cast' && frames.length && motionFrameCache.reel.length) {
+    return frames.concat(motionFrameCache.reel[0]);
+  }
+  return frames;
+}
 
 function openRodtipEditor(category) {
   rodtipCategory = category;
-  if (!motionFrameCache[rodtipCategory].length) return;
+  const frames = rodtipDisplayFrames(rodtipCategory);
+  if (!frames.length) return;
   const saved = fishingConfig[RODTIP_CONFIG_KEY[rodtipCategory]] || {};
   rodtipDraft = {};
-  for (let i = 0; i < MOTION_GRID_COLUMNS; i++) {
+  for (let i = 0; i < frames.length; i++) {
     rodtipDraft[i] = Object.assign({}, defaultRodtipFrac(), saved[i]);
   }
   el.rodtipTitle.textContent = RODTIP_TITLES[rodtipCategory];
@@ -1865,7 +1879,7 @@ function closeRodtipEditor() {
   el.rodtipOverlay.classList.add('hidden');
 }
 function renderRodtipFramePicker() {
-  el.rodtipFramePicker.innerHTML = motionFrameCache[rodtipCategory].map((url, i) =>
+  el.rodtipFramePicker.innerHTML = rodtipDisplayFrames(rodtipCategory).map((url, i) =>
     `<div class="rodtip-frame-thumb${i === rodtipSelectedIndex ? ' active' : ''}" data-i="${i}" style="background-image:url('${url}')"></div>`
   ).join('');
   el.rodtipFramePicker.querySelectorAll('[data-i]').forEach((thumb) => {
@@ -1874,7 +1888,7 @@ function renderRodtipFramePicker() {
 }
 function selectRodtipFrame(i) {
   rodtipSelectedIndex = i;
-  el.rodtipImg.src = motionFrameCache[rodtipCategory][i];
+  el.rodtipImg.src = rodtipDisplayFrames(rodtipCategory)[i];
   renderRodtipFramePicker();
   renderRodtipMarker();
 }
