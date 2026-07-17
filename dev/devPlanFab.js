@@ -59,6 +59,11 @@
   document.body.appendChild(fab);
   document.body.appendChild(modal);
 
+  // 다른 화면(전체화면 오버레이 등)이 이 버튼과 같은 자리(왼쪽 아래)를
+  // 쓸 때 겹쳐서 터치를 가로채 가는 문제 — 그 화면이 열려있는 동안
+  // window.__devPlanFab.style.display = 'none' 으로 잠깐 숨길 수 있게 참조를 남긴다.
+  window.__devPlanFab = fab;
+
   const textarea = modal.querySelector('#dpfText');
   const status = modal.querySelector('#dpfStatus');
   const backdrop = modal.querySelector('.dpf-backdrop');
