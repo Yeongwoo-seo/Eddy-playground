@@ -43,6 +43,15 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .back-chip:active{transform:scale(.92)}
 .count-chip{pointer-events:none;font-family:var(--mono);font-size:11.5px;font-weight:700;color:#0A2A3A;background:rgba(255,255,255,.45);border-radius:14px;padding:6px 12px}
 
+/* 배경화면 줌 슬라이더 — 업로드한 배경이 있을 때만(hasWorldBackground)
+   우상단에 나타난다(loadConfig가 hidden 토글). 값이 바뀌면 bgZoom을
+   갱신하고 updateCamera를 다시 불러 배경 확대/축소 + 카메라 위치를
+   즉시 반영한다(bgZoom 참고). */
+.bg-zoom-wrap{position:absolute;top:calc(50px + env(safe-area-inset-top,0));right:16px;z-index:6;display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.4);border:1px solid rgba(10,40,50,.25);border-radius:14px;padding:6px 10px;pointer-events:auto}
+.bg-zoom-wrap.hidden{display:none}
+.bg-zoom-icon{font-size:12px;line-height:1;flex-shrink:0}
+.bg-zoom-wrap input[type=range]{width:72px;height:4px;accent-color:#0A2A3A}
+
 .stage{position:absolute;inset:0;z-index:1}
 
 /* 캐릭터가 실제로 화면 위를 움직인다(charWorldPos에서 카메라 오프셋을
@@ -286,6 +295,10 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
     <a class="back-chip" href="/dev/minigame-fishing/" aria-label="뒤로">‹</a>
     <div class="count-chip" id="countChip">0마리</div>
   </div>
+  <div class="bg-zoom-wrap hidden" id="bgZoomWrap">
+    <span class="bg-zoom-icon">🔍</span>
+    <input type="range" id="bgZoomSlider" min="0.6" max="2" step="0.05" value="1" aria-label="배경화면 줌">
+  </div>
 
   <div class="stage" id="stage">
     <div class="char-stage" id="charStage">
@@ -489,6 +502,8 @@ const el = {
   layoutEditDoneBtn: document.getElementById('layoutEditDoneBtn'),
   layoutEditHint: document.getElementById('layoutEditHint'),
   countChip: document.getElementById('countChip'),
+  bgZoomWrap: document.getElementById('bgZoomWrap'),
+  bgZoomSlider: document.getElementById('bgZoomSlider'),
   itemPopup: document.getElementById('itemPopup'),
   itemPopupCard: document.getElementById('itemPopupCard'),
   itemPopupIcon: document.getElementById('itemPopupIcon'),
@@ -605,7 +620,15 @@ let walkMotion = { stepMs: 200, animFrameMs: 90 };
 let worldSize = { w: 0, h: 0 }; // 캐릭터가 돌아다닐 수 있는 전체 범위(px) — 배경 원본 크기 또는(미업로드 시) 화면 크기
 let hasWorldBackground = false;
 let charWorldPos = null; // { x, y } px, 배경 원본 이미지 기준(캐릭터 중심, y는 아래 기준) — loadConfig에서 처음 채워진다
-let camOffset = { x: 0, y: 0 }; // 지금 카메라(화면)가 배경 원본 이미지의 왼쪽/위에서 얼마나 떨어진 지점을 보여주고 있는지(top-down px) — updateCamera가 채운다. el.frame의 background-position, 캐릭터의 화면 left/bottom, framePxToImageFrac(추 착수 지점 등 화면 기준 좌표 변환)이 모두 이 값을 기준으로 삼는다.
+let camOffset = { x: 0, y: 0 }; // 지금 카메라(화면)가 배경 원본 이미지의 왼쪽/위에서 얼마나 떨어진 지점을 보여주고 있는지(top-down px, bgZoom이 적용된 스케일 기준) — updateCamera가 채운다. el.frame의 background-position, 캐릭터의 화면 left/bottom, framePxToImageFrac(추 착수 지점 등 화면 기준 좌표 변환)이 모두 이 값을 기준으로 삼는다.
+// 배경화면 줌 — 우상단 슬라이더(el.bgZoomSlider)로 조절한다. 캐릭터의
+// "진짜" 좌표(charWorldPos)와 영역(다각형) 판정은 항상 원본 이미지 px
+// 기준으로 그대로 두고, updateCamera/framePxToImageFrac에서만 이 배율을
+// 곱하거나 나눠 화면에 보이는 배경 크기와 카메라 이동 범위만 바꾼다 —
+// 배경 미업로드 시(hasWorldBackground false)는 슬라이더가 숨겨지고
+// effectiveBgZoom()이 항상 1을 돌려줘 예전 폴백 동작과 완전히 같다.
+let bgZoom = 1;
+function effectiveBgZoom() { return hasWorldBackground ? bgZoom : 1; }
 let moveRaf = null;
 let moveLastT = 0;
 let moveHoldVec = null; // { dx, dy } — 실제 위치 이동 벡터, 대각선 드래그면 둘 다 0이 아닐 수 있다
@@ -641,13 +664,19 @@ function worldBounds() {
 // clamp돼 카메라가 아예 움직이지 않고 캐릭터만 화면 안에서 움직인다.
 function updateCamera() {
   const frameRect = el.frame.getBoundingClientRect();
-  const charYFromTop = worldSize.h - charWorldPos.y;
-  const camX = clamp(charWorldPos.x - frameRect.width / 2, 0, Math.max(0, worldSize.w - frameRect.width));
-  const camY = clamp(charYFromTop - frameRect.height / 2, 0, Math.max(0, worldSize.h - frameRect.height));
+  const zoom = effectiveBgZoom();
+  const scaledW = worldSize.w * zoom, scaledH = worldSize.h * zoom;
+  const charXScaled = charWorldPos.x * zoom;
+  const charYFromTopScaled = (worldSize.h - charWorldPos.y) * zoom;
+  const camX = clamp(charXScaled - frameRect.width / 2, 0, Math.max(0, scaledW - frameRect.width));
+  const camY = clamp(charYFromTopScaled - frameRect.height / 2, 0, Math.max(0, scaledH - frameRect.height));
   camOffset = { x: camX, y: camY };
-  if (hasWorldBackground) el.frame.style.backgroundPosition = `${-camX}px ${-camY}px`;
-  el.charStage.style.left = (charWorldPos.x - camX) + 'px';
-  el.charStage.style.bottom = (frameRect.height - worldSize.h + charWorldPos.y + camY) + 'px';
+  if (hasWorldBackground) {
+    el.frame.style.backgroundSize = `${scaledW}px ${scaledH}px`;
+    el.frame.style.backgroundPosition = `${-camX}px ${-camY}px`;
+  }
+  el.charStage.style.left = (charXScaled - camX) + 'px';
+  el.charStage.style.bottom = (frameRect.height - charYFromTopScaled + camY) + 'px';
 }
 
 // 화면 크기가 바뀌면(회전, 리사이즈) — 배경 미업로드 폴백 모드에서는
@@ -731,7 +760,8 @@ function checkInteractionArea() {
 // worldPosToImageFrac과 같은 식으로 이미지 정규화 좌표를 낸다.
 function framePxToImageFrac(px, py) {
   if (!bgDims) return null;
-  const worldX = px + camOffset.x, worldYFromTop = py + camOffset.y;
+  const zoom = effectiveBgZoom();
+  const worldX = (px + camOffset.x) / zoom, worldYFromTop = (py + camOffset.y) / zoom;
   return { x: worldX / bgDims.width, y: worldYFromTop / bgDims.height };
 }
 
@@ -845,6 +875,12 @@ async function loadConfig() {
   interactionAreas = cfg.interactionAreas || [];
 
   hasWorldBackground = !!(backgroundAsset && bgDims);
+  // 배경이 바뀔 때마다(재입장 등) 줌을 1배율로 되돌린다 — 슬라이더는
+  // 배경이 있을 때만 보이고, 없으면 숨긴다(effectiveBgZoom이 어차피 1로
+  // 강제하지만 슬라이더 자체를 숨겨 조작할 수 없게 한다).
+  bgZoom = 1;
+  el.bgZoomSlider.value = '1';
+  el.bgZoomWrap.classList.toggle('hidden', !hasWorldBackground);
   const frameRectForWorld = el.frame.getBoundingClientRect();
   worldSize = hasWorldBackground ? { w: bgDims.width, h: bgDims.height } : { w: frameRectForWorld.width, h: frameRectForWorld.height };
   el.frame.style.backgroundImage = backgroundAsset ? `url(${backgroundAsset.dataUrl})` : '';
@@ -2148,6 +2184,13 @@ el.layoutHeldFishSize.addEventListener('input', () => {
   applyLayoutPrefs();
 });
 el.layoutHeldFishSize.addEventListener('change', saveLayoutPrefs);
+// 배경화면 줌 슬라이더 — 값이 바뀔 때마다 즉시 카메라를 다시 계산해
+// 확대/축소와 카메라 위치(camOffset)를 함께 반영한다(charWorldPos 자체는
+// 원본 좌표 그대로라 캐릭터가 걷는 로직/영역 판정엔 영향이 없다).
+el.bgZoomSlider.addEventListener('input', () => {
+  bgZoom = Number(el.bgZoomSlider.value);
+  updateCamera();
+});
 el.layoutEditDoneBtn.addEventListener('click', (e) => {
   e.stopPropagation();
   layoutEditMode = false;
