@@ -1694,12 +1694,13 @@ function playCastWindup() {
   if (castFrameUrls.length < 2) return;
   el.charImg.classList.remove('hidden');
   el.charFallback.classList.add('hidden');
-  // 캐스팅·올리기 시트는 옆모습 한 장뿐이라 왼쪽을 보고 있던 채로 낚시를
-  // 시작하면 좌우반전해서 쓴다 — 캐스팅 시작 시점(여기)에 한 번만 정하면
-  // 되는 건, 낚시 중엔 이동이 막혀 lastFacingDir이 안 바뀌기 때문에
-  // resetToIdle까지 이 클래스가 그대로 유지돼도 캐스팅→올리기→결과 연출
-  // 내내(el.charImg.src만 바뀌는) 계속 맞게 반전돼 있다.
-  el.charImg.classList.toggle('char-mirror-x', lastFacingDir === 'left');
+  // 캐스팅·올리기 시트는 옆모습 한 장뿐이고 원본은 왼쪽을 보는 포즈라,
+  // 오른쪽을 보고 있던 채로 낚시를 시작하면 좌우반전해서 쓴다(위/아래는
+  // 아직 미구현 — 반전 없이 원본 그대로 나간다). 캐스팅 시작 시점(여기)에
+  // 한 번만 정하면 되는 건, 낚시 중엔 이동이 막혀 lastFacingDir이 안
+  // 바뀌기 때문에 resetToIdle까지 이 클래스가 그대로 유지돼도 캐스팅→
+  // 올리기→결과 연출 내내(el.charImg.src만 바뀌는) 계속 맞게 반전돼 있다.
+  el.charImg.classList.toggle('char-mirror-x', lastFacingDir === 'right');
   el.charImg.src = castFrameUrls[0];
   const ms = Array.isArray(castFrameDurations) ? (castFrameDurations[0] || 90) : (castFrameDurations || 90);
   setTimeout(() => {
@@ -1819,11 +1820,11 @@ async function releasePowerAndCast() {
   waitForBite();
 }
 
-// 캐스팅/올리기 시트는 방향별로 따로 없는 옆모습 한 장뿐이라(왼쪽을 보고
-// 있을 때는 el.charImg에 char-mirror-x 클래스로 좌우반전해서 쓴다 —
-// playCastWindup 참고), 반전된 상태에선 저장된 낚싯대 끝 x좌표(오른쪽 기준
-// 원본 그림 기준)도 화면에서는 반대쪽(1-x)에 나타난다. 그대로 두면 줄이
-// 실제 낚싯대 끝과 다른 자리에 그려진다.
+// 캐스팅/올리기 시트는 방향별로 따로 없는 옆모습 한 장뿐이라(원본은 왼쪽을
+// 보는 포즈 — 오른쪽을 보고 있을 때는 el.charImg에 char-mirror-x 클래스로
+// 좌우반전해서 쓴다, playCastWindup 참고), 반전된 상태에선 저장된 낚싯대
+// 끝 x좌표(왼쪽 기준 원본 그림 기준)도 화면에서는 반대쪽(1-x)에 나타난다.
+// 그대로 두면 줄이 실제 낚싯대 끝과 다른 자리에 그려진다.
 function isCharMirrored() { return el.charImg.classList.contains('char-mirror-x'); }
 
 // 낚싯대 끝 위치 — dev/minigame-fishing/index.html의 낚시대 끝 지정
