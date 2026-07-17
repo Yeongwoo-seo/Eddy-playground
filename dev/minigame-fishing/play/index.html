@@ -2812,6 +2812,7 @@ el.joystick.addEventListener('pointermove', (e) => {
 });
 ['pointerup', 'pointercancel'].forEach(evt => el.joystick.addEventListener(evt, (e) => {
   if (e.pointerId !== joystickPointerId) return;
+  e.stopPropagation(); // el.frame까지 뚫고 내려가면 낚시 버튼으로 이미 charging 중일 때 이 조이스틱 릴리즈가 releasePowerAndCast를 잘못 트리거해버린다
   if (layoutEditMode) { endLayoutDrag(); joystickPointerId = null; return; }
   resetJoystick();
 }));
