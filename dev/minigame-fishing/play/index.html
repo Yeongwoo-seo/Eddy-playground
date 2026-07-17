@@ -850,6 +850,7 @@ async function loadConfig() {
   const byId = new Map(assets.map(a => [a.id, a]));
   const motionSheetAsset = cfg.motionSheetAssetId ? byId.get(cfg.motionSheetAssetId) : null;
   const motionOverrides = cfg.motionFrameOverrides || {};
+  const motionRowOverrides = cfg.motionRowOverrides || {};
   let motionSheetImg = null;
   if (motionSheetAsset) {
     motionSheetImg = await new Promise(resolve => {
@@ -863,8 +864,8 @@ async function loadConfig() {
   // outputSize를 안 넘긴다 — buildMotionCategoryFrameDataUrls가 원본 크롭
   // 해상도를 그대로 살린다(84px char-stage/96px 미리보기에서 다시 확대되며
   // 흐려지지 않게).
-  castFrameUrls = motionSheetImg ? buildMotionCategoryFrameDataUrls(motionSheetImg, MOTION_CATEGORIES.indexOf('cast'), motionOverrides.cast) : [];
-  reelFrameUrls = motionSheetImg ? buildMotionCategoryFrameDataUrls(motionSheetImg, MOTION_CATEGORIES.indexOf('reel'), motionOverrides.reel) : [];
+  castFrameUrls = motionSheetImg ? buildMotionCategoryFrameDataUrls(motionSheetImg, MOTION_CATEGORIES.indexOf('cast'), motionOverrides.cast, motionRowOverrides.cast) : [];
+  reelFrameUrls = motionSheetImg ? buildMotionCategoryFrameDataUrls(motionSheetImg, MOTION_CATEGORIES.indexOf('reel'), motionOverrides.reel, motionRowOverrides.reel) : [];
   castFrameDurations = (cfg.castingFrameDurations && cfg.castingFrameDurations.length) ? cfg.castingFrameDurations : null;
   castingFrameRodTips = cfg.castingFrameRodTips || {};
   heldFishPos = cfg.heldFishPos || DEFAULT_HELD_FISH_POS;
@@ -885,7 +886,7 @@ async function loadConfig() {
     // 시트가 없으면 6칸 전부 빈 자리(null)로 시작한다 — 시트 없이도 개별
     // 업로드/누끼 프레임만으로 걷기 애니메이션이 동작해야 하기 때문.
     const dirFrames = motionSheetImg
-      ? buildMotionCategoryFrameDataUrls(motionSheetImg, MOTION_CATEGORIES.indexOf(dir), motionOverrides[dir])
+      ? buildMotionCategoryFrameDataUrls(motionSheetImg, MOTION_CATEGORIES.indexOf(dir), motionOverrides[dir], motionRowOverrides[dir])
       : new Array(MOTION_GRID_COLUMNS).fill(null);
     const dirImageOverrides = motionFrameImageOverrides[dir] || {};
     Object.keys(dirImageOverrides).forEach(idxStr => {

@@ -162,11 +162,19 @@ const MOTION_GRID_COLUMNS = 6;
 // 있다. 정사각형이 아닌 칸(가로 6등분 폭 ≠ 세로 6등분 높이)이어도
 // getFishCropStyle 등 기존 크롭 도구는 항상 정사각형(cx,cy,size)만 다루므로,
 // 칸의 짧은 변에 맞춰 정사각형으로 잘라 칸 중앙에 배치한다.
-function getMotionGridDefaultCropRect(row, col, sheetW, sheetH) {
+//
+// rowOverride({top,height}, 시트 세로 기준 0~1 정규화)가 있으면 6등분
+// 계산 대신 그 세로 범위를 이 행 전체(6칸)의 기준으로 쓴다 — 업로드한
+// 시트가 정확히 6등분되지 않을 때, 프레임마다 따로 y를 맞추는 대신 행
+// 하나만 조정하면 그 행의 기본 위치(아직 프레임별 보정을 안 한 칸)가
+// 전부 같이 맞춰진다("모션 상세조정" 세밀영역조절 모달의 행 영역 조정,
+// dev/minigame-fishing/index.html openMotionRowAdjuster 참고).
+function getMotionGridDefaultCropRect(row, col, sheetW, sheetH, rowOverride) {
   const cellW = sheetW / MOTION_GRID_COLUMNS;
-  const cellH = sheetH / MOTION_CATEGORIES.length;
+  const rowTopPx = rowOverride ? rowOverride.top * sheetH : (row * sheetH) / MOTION_CATEGORIES.length;
+  const cellH = rowOverride ? rowOverride.height * sheetH : sheetH / MOTION_CATEGORIES.length;
   const cxPx = col * cellW + cellW / 2;
-  const cyPx = row * cellH + cellH / 2;
+  const cyPx = rowTopPx + cellH / 2;
   const cellShort = Math.min(cellW, cellH);
   return { cx: cxPx / sheetW, cy: cyPx / sheetH, size: cellShort / Math.min(sheetW, sheetH) };
 }
@@ -199,14 +207,14 @@ function cropRectToDataUrl(img, rect, maxOutputSize) {
 
 // 시트 1장 + 카테고리(행) + (있으면) frameIndex별 frameOverrides로 그 행의
 // 6칸을 잘라낸 프레임 data URL 배열을 만든다. 보정값이 없는 칸은
-// getMotionGridDefaultCropRect의 격자 위치(실제 시트 크기 기준)를 쓴다.
-// img는 이미 로드된 HTMLImageElement(naturalWidth/Height 확정된 상태)여야
-// 한다.
-function buildMotionCategoryFrameDataUrls(img, categoryRow, overrides, maxOutputSize) {
+// getMotionGridDefaultCropRect의 격자 위치(실제 시트 크기 기준, rowOverride가
+// 있으면 그 행의 세로 범위 반영)를 쓴다. img는 이미 로드된
+// HTMLImageElement(naturalWidth/Height 확정된 상태)여야 한다.
+function buildMotionCategoryFrameDataUrls(img, categoryRow, overrides, rowOverride, maxOutputSize) {
   overrides = overrides || {};
   const frames = [];
   for (let i = 0; i < MOTION_GRID_COLUMNS; i++) {
-    const rect = overrides[i] || getMotionGridDefaultCropRect(categoryRow, i, img.naturalWidth, img.naturalHeight);
+    const rect = overrides[i] || getMotionGridDefaultCropRect(categoryRow, i, img.naturalWidth, img.naturalHeight, rowOverride);
     frames.push(cropRectToDataUrl(img, rect, maxOutputSize));
   }
   return frames;
