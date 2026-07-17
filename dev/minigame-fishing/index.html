@@ -376,6 +376,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
       </div>
       <div class="fish-sheet-actions">
         <button type="button" class="fish-sheet-btn" id="motionSheetUploadBtn">📤 시트 업로드</button>
+        <button type="button" class="fish-sheet-btn hidden" id="motionSheetCutoutBtn">✂ 배경 제거</button>
         <button type="button" class="fish-sheet-btn danger hidden" id="motionSheetRemoveBtn">✕ 제거</button>
       </div>
       <input type="file" id="motionSheetFileInput" accept="image/png">
@@ -929,6 +930,7 @@ const el = {
   motionSheetFrame: document.getElementById('motionSheetFrame'),
   motionSheetEmpty: document.getElementById('motionSheetEmpty'),
   motionSheetUploadBtn: document.getElementById('motionSheetUploadBtn'),
+  motionSheetCutoutBtn: document.getElementById('motionSheetCutoutBtn'),
   motionSheetRemoveBtn: document.getElementById('motionSheetRemoveBtn'),
   motionSheetFileInput: document.getElementById('motionSheetFileInput'),
   castTimeline: document.getElementById('castTimeline'),
@@ -1380,11 +1382,13 @@ async function renderMotionSheetPreview() {
   const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
   if (!asset) {
     el.motionSheetEmpty.classList.remove('hidden');
+    el.motionSheetCutoutBtn.classList.add('hidden');
     el.motionSheetRemoveBtn.classList.add('hidden');
     el.motionSheetFrame.style.removeProperty('--motion-ar');
     return null;
   }
   el.motionSheetEmpty.classList.add('hidden');
+  el.motionSheetCutoutBtn.classList.remove('hidden');
   el.motionSheetRemoveBtn.classList.remove('hidden');
   const img = document.createElement('img');
   img.src = asset.dataUrl;
@@ -2054,6 +2058,26 @@ el.motionSheetFileInput.addEventListener('change', async () => {
   fishingConfig = await AssetDB.setFishingConfig({ motionSheetAssetId: asset.id });
   showSaveNote();
   renderMotionTab();
+});
+// 시트 자체(36칸 전체)를 한 번에 배경 제거한다 — 각 프레임을 낱개로
+// 누끼따는 이동(4방향) 전용 "프레임 전체 배경 제거"(cutoutMotionCategoryAll)
+// 와 달리, 시트 원본 이미지 한 장을 통째로 처리해 같은 motionSheetAssetId
+// 자리에 덮어써서 크롭 좌표(motionFrameOverrides 등)는 그대로 유지된다.
+el.motionSheetCutoutBtn.addEventListener('click', async () => {
+  if (!motionSheetAsset) return;
+  el.motionSheetCutoutBtn.disabled = true;
+  try {
+    const srcBlob = await dataUrlToBlob(motionSheetAsset.dataUrl);
+    const resultBlob = await removeBackgroundOrFallback(srcBlob);
+    const asset = await AssetDB.addAsset({ type: 'fishing-motion-sheet', name: 'motion-sheet-cutout.png', blob: resultBlob });
+    fishingConfig = await AssetDB.setFishingConfig({ motionSheetAssetId: asset.id });
+    showSaveNote();
+    renderMotionTab();
+  } catch (err) {
+    DevDiag.show('모션 시트 배경 제거 실패: ' + (err && err.message ? err.message : err));
+  } finally {
+    el.motionSheetCutoutBtn.disabled = false;
+  }
 });
 el.motionSheetRemoveBtn.addEventListener('click', async () => {
   // 시트를 지우면 카테고리별 세밀영역조절 보정과 행 영역 보정도 같이
