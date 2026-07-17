@@ -1095,7 +1095,15 @@ const AssetDB = (() => {
   // 놓일지. "모션" 탭 올리기 카테고리의 마지막 프레임 위로 점을 찍어
   // 지정한다(rodtip-marker와 같은 단일 포인트 피커). null이면
   // play/index.html의 기본값(DEFAULT_HELD_FISH_POS)으로 폴백한다.
-  const FISHING_CONFIG_DEFAULT = { barDesign: {}, fishSheetAssetId: null, fishIconOverrides: {}, motionSheetAssetId: null, motionFrameOverrides: { cast: {}, reel: {}, up: {}, down: {}, left: {}, right: {} }, castingFrameDurations: [], backgroundAssetId: null, castingFrameRodTips: {}, walkMotion: { stepMs: 200, animFrameMs: 90 }, castPhysics: { gravityMps2: 9.8, vxScale: 1 }, itemPopup: { backgroundAssetId: null, iconPos: null, iconSizePx: 64 }, castGaugeAssetId: null, castGaugeFillRegion: null, fishableAreas: [], blockedAreas: [], interactionAreas: [], dialogueScene: { boxLayer: null, jisooLayer: null, youngwooLayer: null }, heldFishPos: null };
+  // motionPlaybackMs — 이동(위/아래/왼쪽/오른쪽) 각 방향별 걷기 프레임 전환
+  // 속도(ms), { up, down, left, right }. walkMotion.animFrameMs(전체 방향
+  // 공통 기본값)를 방향별로 재정의한다 — 값이 없는 방향은 여전히
+  // walkMotion.animFrameMs를 쓴다.
+  // motionFrameImageOverrides — 이동 방향별로 특정 프레임을 모션 시트
+  // 크롭 대신 개별 업로드한 사진(배경 자동 제거)으로 대체, { [dir]:
+  // { [frameIndex]: assetId } }. 값이 있는 칸은 motionFrameOverrides(크롭
+  // 좌표 보정)보다 우선한다.
+  const FISHING_CONFIG_DEFAULT = { barDesign: {}, fishSheetAssetId: null, fishIconOverrides: {}, motionSheetAssetId: null, motionFrameOverrides: { cast: {}, reel: {}, up: {}, down: {}, left: {}, right: {} }, motionFrameImageOverrides: { up: {}, down: {}, left: {}, right: {} }, motionPlaybackMs: { up: 90, down: 90, left: 90, right: 90 }, castingFrameDurations: [], backgroundAssetId: null, castingFrameRodTips: {}, walkMotion: { stepMs: 200, animFrameMs: 90 }, castPhysics: { gravityMps2: 9.8, vxScale: 1 }, itemPopup: { backgroundAssetId: null, iconPos: null, iconSizePx: 64 }, castGaugeAssetId: null, castGaugeFillRegion: null, fishableAreas: [], blockedAreas: [], interactionAreas: [], dialogueScene: { boxLayer: null, jisooLayer: null, youngwooLayer: null }, heldFishPos: null };
 
   async function getFishingConfig() {
     if (fishingConfigCache.has('config')) return fishingConfigCache.get('config');
