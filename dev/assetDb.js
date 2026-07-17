@@ -1066,6 +1066,12 @@ const AssetDB = (() => {
   // motionFrameOverrides — 카테고리별 세밀영역조절 보정,
   // { [category]: { [frameIndex]: {cx,cy,size} } }. 보정 없는 칸은
   // getMotionGridDefaultCropRect의 격자 위치를 그대로 쓴다.
+  // motionRowOffsets — 카테고리(행) 전체를 한 번에 위/아래로 미는 오프셋,
+  // { [category]: { cy } } (cy는 시트 세로 기준 0~±0.5 정규화 값). AI로
+  // 생성한 시트가 이론적 6등분 위치와 행 전체가 통째로 어긋나 있을 때, 칸
+  // 6개를 하나하나 다시 맞추지 않고 행 단위로 한 번에 보정하는 용도 —
+  // getMotionGridDefaultCropRect가 이 값을 기본 위치 계산에 반영하고,
+  // motionFrameOverrides로 이미 손으로 맞춘 칸에는 영향을 주지 않는다.
   // castGaugeAssetId — 캐스팅 세기 게이지(화면을 꾹 눌러 세기 조절할 때
   // 뜨는 바) 배경 그림 자산 id. castGaugeFillRegion({x,y,w,h}, 이 그림의
   // 원본 자연 크기 대비 0~1)이 그림 위 어디가 채워지는 부분인지 지정한다 —
@@ -1095,7 +1101,7 @@ const AssetDB = (() => {
   // 놓일지. "모션" 탭 올리기 카테고리의 마지막 프레임 위로 점을 찍어
   // 지정한다(rodtip-marker와 같은 단일 포인트 피커). null이면
   // play/index.html의 기본값(DEFAULT_HELD_FISH_POS)으로 폴백한다.
-  const FISHING_CONFIG_DEFAULT = { barDesign: {}, fishSheetAssetId: null, fishIconOverrides: {}, motionSheetAssetId: null, motionFrameOverrides: { cast: {}, reel: {}, up: {}, down: {}, left: {}, right: {} }, castingFrameDurations: [], backgroundAssetId: null, castingFrameRodTips: {}, walkMotion: { stepMs: 200, animFrameMs: 90 }, castPhysics: { gravityMps2: 9.8, vxScale: 1 }, itemPopup: { backgroundAssetId: null, iconPos: null, iconSizePx: 64 }, castGaugeAssetId: null, castGaugeFillRegion: null, fishableAreas: [], blockedAreas: [], interactionAreas: [], dialogueScene: { boxLayer: null, jisooLayer: null, youngwooLayer: null }, heldFishPos: null };
+  const FISHING_CONFIG_DEFAULT = { barDesign: {}, fishSheetAssetId: null, fishIconOverrides: {}, motionSheetAssetId: null, motionFrameOverrides: { cast: {}, reel: {}, up: {}, down: {}, left: {}, right: {} }, motionRowOffsets: { cast: {}, reel: {}, up: {}, down: {}, left: {}, right: {} }, castingFrameDurations: [], backgroundAssetId: null, castingFrameRodTips: {}, walkMotion: { stepMs: 200, animFrameMs: 90 }, castPhysics: { gravityMps2: 9.8, vxScale: 1 }, itemPopup: { backgroundAssetId: null, iconPos: null, iconSizePx: 64 }, castGaugeAssetId: null, castGaugeFillRegion: null, fishableAreas: [], blockedAreas: [], interactionAreas: [], dialogueScene: { boxLayer: null, jisooLayer: null, youngwooLayer: null }, heldFishPos: null };
 
   async function getFishingConfig() {
     if (fishingConfigCache.has('config')) return fishingConfigCache.get('config');
