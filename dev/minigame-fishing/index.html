@@ -1372,7 +1372,6 @@ el.motionPromptCopyBtn.addEventListener('click', () => copyToClipboard(el.motion
 function startPreviewLoop(previewEl, labelEl, frames, durations) {
   if (previewEl._animTimer) { clearTimeout(previewEl._animTimer); previewEl._animTimer = null; }
   if (!frames.length) { previewEl.innerHTML = ''; labelEl.textContent = '프레임 없음 — 재생 미리보기'; return; }
-  labelEl.textContent = `${frames.length}프레임 재생 중`;
   let i = 0;
   const img = document.createElement('img');
   previewEl.innerHTML = '';
@@ -1380,6 +1379,7 @@ function startPreviewLoop(previewEl, labelEl, frames, durations) {
   function tick() {
     const frameIndex = i % frames.length;
     img.src = frames[frameIndex].dataUrl;
+    labelEl.textContent = `${frameIndex + 1}/${frames.length}번 프레임 재생 중`;
     const ms = (durations && durations[frameIndex]) || 120;
     i++;
     previewEl._animTimer = setTimeout(tick, ms);
