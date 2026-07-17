@@ -495,6 +495,12 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     </div>
 
     <div class="option-group">
+      <div class="option-label">낚시대 끝 지정</div>
+      <div class="option-desc">올리기 1~4번 프레임마다 낚싯대 끝을 지정하세요. 낚시 성공 후 물고기가 딸려 올라올 때, 잡아채기(낚시바) 홀드/릴리즈 중, 캐스팅 취소로 추가 되돌아올 때 이 지점과 추/물고기 사이를 줄로 이어 그려요 — 캐스팅 때의 느슨한 현수선과 달리 팽팽하게 당겨진 상태예요. 1번(대기 포즈)은 살짝 처진 현수선이고, 4번(완전히 들어올린 포즈)으로 갈수록 점점 팽팽해져 완전한 직선이 돼요.</div>
+      <button type="button" class="fish-sheet-btn" id="reelRodtipEditBtn" style="width:100%" disabled>🎯 낚시대 끝 지정</button>
+    </div>
+
+    <div class="option-group">
       <div class="option-label">낚시대 재생속도</div>
       <div class="option-desc">잡아채기 중 캐치바를 누르고 있을 때/뗐을 때 낚싯대 프레임(2~4번)이 넘어가는 속도예요. 값이 작을수록 빠르게 움직여요.</div>
       <div class="range-row">
@@ -965,7 +971,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
      매번 저장하지 않음 — cropRect류 다른 조정기들과 다른 점). -->
 <div class="crop-overlay hidden" id="rodtipOverlay">
   <div class="crop-sheet">
-    <div class="crop-title">낚시대 끝 지정</div>
+    <div class="crop-title" id="rodtipTitle">낚시대 끝 지정</div>
     <div class="crop-desc">아래에서 프레임을 고르고, 그림 위를 탭하거나 드래그해서 낚싯대 끝(줄이 시작하는 지점)을 옮기세요. 프레임마다 따로 지정할 수 있어요.</div>
     <div class="rodtip-frame-picker" id="rodtipFramePicker"></div>
     <div class="rodtip-stage" id="rodtipStage">
@@ -1126,7 +1132,9 @@ const el = {
   castTimeline: document.getElementById('castTimeline'),
   castTotalDurationInput: document.getElementById('castTotalDurationInput'),
   rodtipEditBtn: document.getElementById('rodtipEditBtn'),
+  reelRodtipEditBtn: document.getElementById('reelRodtipEditBtn'),
   rodtipOverlay: document.getElementById('rodtipOverlay'),
+  rodtipTitle: document.getElementById('rodtipTitle'),
   rodtipFramePicker: document.getElementById('rodtipFramePicker'),
   rodtipStage: document.getElementById('rodtipStage'),
   rodtipImg: document.getElementById('rodtipImg'),
@@ -1777,6 +1785,7 @@ async function renderMotionTab() {
     });
   }
   el.rodtipEditBtn.disabled = !motionFrameCache.cast.length;
+  el.reelRodtipEditBtn.disabled = !motionFrameCache.reel.length;
   updateHeldFishBtnState();
   renderCastTimeline();
   initMotionSpeedControls();
@@ -1920,24 +1929,31 @@ MOVE_CATEGORIES.forEach((category) => {
 });
 
 /* ===== 낚시대 끝 지정 =====
-   캐스팅 프레임(64×64 크롭 결과, motionFrameCache.cast) 각각에 낚싯대 끝
-   점 하나를 0~1 정규화 좌표로 저장한다(dev/minigame-fishing/play/index.html의
-   rodTipPxForFrame이 이 값을 char-stage 박스 비율로 다시 픽셀화해
-   씀 — DEFAULT_ROD_TIP_FRAC과 여기 defaultRodtipFrac()은 같은 값으로
-   맞춰둔다). 6프레임 전부를 draft 객체에 모아뒀다가 "적용" 한 번에
-   저장한다 — 프레임을 오갈 때마다 저장하면 되돌리기가 안 된다. */
+   캐스팅/올리기 프레임(64×64 크롭 결과, motionFrameCache[category]) 각각에
+   낚싯대 끝 점 하나를 0~1 정규화 좌표로 저장한다(dev/minigame-fishing/
+   play/index.html의 rodTipPxForFrame/reelTipPxForFrame이 이 값을 char-stage
+   박스 비율로 다시 픽셀화해 씀 — DEFAULT_ROD_TIP_FRAC과 여기
+   defaultRodtipFrac()은 같은 값으로 맞춰둔다). 캐스팅/올리기 두 카테고리가
+   같은 바텀시트(rodtipOverlay)를 rodtipCategory로 구분해 공유한다 — 열 때
+   고른 카테고리의 6프레임 전부를 draft 객체에 모아뒀다가 "적용" 한 번에
+   저장한다(프레임을 오갈 때마다 저장하면 되돌리기가 안 된다). */
 function defaultRodtipFrac() { return { x: 0.82, y: 0.15 }; }
+const RODTIP_CONFIG_KEY = { cast: 'castingFrameRodTips', reel: 'reelFrameRodTips' };
+const RODTIP_TITLES = { cast: '낚시대 끝 지정 (캐스팅)', reel: '낚시대 끝 지정 (올리기)' };
 let rodtipDraft = {};
 let rodtipSelectedIndex = 0;
 let rodtipDragging = false;
+let rodtipCategory = 'cast';
 
-function openRodtipEditor() {
-  if (!motionFrameCache.cast.length) return;
-  const saved = fishingConfig.castingFrameRodTips || {};
+function openRodtipEditor(category) {
+  rodtipCategory = category;
+  if (!motionFrameCache[rodtipCategory].length) return;
+  const saved = fishingConfig[RODTIP_CONFIG_KEY[rodtipCategory]] || {};
   rodtipDraft = {};
   for (let i = 0; i < MOTION_GRID_COLUMNS; i++) {
     rodtipDraft[i] = Object.assign({}, defaultRodtipFrac(), saved[i]);
   }
+  el.rodtipTitle.textContent = RODTIP_TITLES[rodtipCategory];
   renderRodtipFramePicker();
   selectRodtipFrame(0);
   el.rodtipOverlay.classList.remove('hidden');
@@ -1946,7 +1962,7 @@ function closeRodtipEditor() {
   el.rodtipOverlay.classList.add('hidden');
 }
 function renderRodtipFramePicker() {
-  el.rodtipFramePicker.innerHTML = motionFrameCache.cast.map((url, i) =>
+  el.rodtipFramePicker.innerHTML = motionFrameCache[rodtipCategory].map((url, i) =>
     `<div class="rodtip-frame-thumb${i === rodtipSelectedIndex ? ' active' : ''}" data-i="${i}" style="background-image:url('${url}')"></div>`
   ).join('');
   el.rodtipFramePicker.querySelectorAll('[data-i]').forEach((thumb) => {
@@ -1955,7 +1971,7 @@ function renderRodtipFramePicker() {
 }
 function selectRodtipFrame(i) {
   rodtipSelectedIndex = i;
-  el.rodtipImg.src = motionFrameCache.cast[i];
+  el.rodtipImg.src = motionFrameCache[rodtipCategory][i];
   renderRodtipFramePicker();
   renderRodtipMarker();
 }
@@ -1975,10 +1991,11 @@ function updateRodtipFromEvent(e) {
 el.rodtipStage.addEventListener('pointerdown', (e) => { rodtipDragging = true; updateRodtipFromEvent(e); });
 window.addEventListener('pointermove', (e) => { if (rodtipDragging) updateRodtipFromEvent(e); });
 window.addEventListener('pointerup', () => { rodtipDragging = false; });
-el.rodtipEditBtn.addEventListener('click', openRodtipEditor);
+el.rodtipEditBtn.addEventListener('click', () => openRodtipEditor('cast'));
+el.reelRodtipEditBtn.addEventListener('click', () => openRodtipEditor('reel'));
 el.rodtipCancelBtn.addEventListener('click', closeRodtipEditor);
 el.rodtipConfirmBtn.addEventListener('click', async () => {
-  fishingConfig = await AssetDB.setFishingConfig({ castingFrameRodTips: rodtipDraft });
+  fishingConfig = await AssetDB.setFishingConfig({ [RODTIP_CONFIG_KEY[rodtipCategory]]: rodtipDraft });
   showSaveNote();
   closeRodtipEditor();
 });

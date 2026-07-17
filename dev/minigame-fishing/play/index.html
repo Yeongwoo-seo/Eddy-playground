@@ -553,6 +553,10 @@ let castFrameDurations = null; // per-frame ms, dev/minigame-fishing/index.html 
 // 폴백 — 같은 기본값을 설정 화면 defaultRodtipFrac()과 맞춰둔다.
 let castingFrameRodTips = {};
 const DEFAULT_ROD_TIP_FRAC = { x: 0.82, y: 0.15 };
+// 올리기 프레임별 낚싯대 끝 지점 — castingFrameRodTips와 같은 형식·폴백을
+// 쓰지만 저장 키(reelFrameRodTips)와 참조 프레임 시트(reelFrameUrls)가
+// 다르다. reelTipPxForFrame이 이 값을 픽셀화한다.
+let reelFrameRodTips = {};
 // 물고기 들기 위치 — dev/minigame-fishing/index.html "올리기 모션" 탭에서
 // 지정한 점(0~1, char-stage 박스 기준, 같은 기본값을
 // DEFAULT_HELD_FISH_POS와 맞춰둔다) — 낚시 성공 후 캐릭터가 물고기를
@@ -916,6 +920,7 @@ async function loadConfig() {
   if (castFrameUrls.length && reelFrameUrls.length) castFrameUrls = castFrameUrls.concat(reelFrameUrls[0]);
   castFrameDurations = (cfg.castingFrameDurations && cfg.castingFrameDurations.length) ? cfg.castingFrameDurations : null;
   castingFrameRodTips = cfg.castingFrameRodTips || {};
+  reelFrameRodTips = cfg.reelFrameRodTips || {};
   heldFishPos = cfg.heldFishPos || DEFAULT_HELD_FISH_POS;
   castPhysics = Object.assign({ gravityMps2: 9.8, vxScale: 1 }, cfg.castPhysics || {});
   reelMotion = Object.assign({ holdFrameMs: 90 }, cfg.reelMotion || {});
@@ -1383,6 +1388,17 @@ function playFrameSequence(urls, frameMs, onFrame) {
 const REEL_HOLD_UP_SEQ = [1, 2, 3];
 const REEL_HOLD_DOWN_SEQ = [3, 1, 0];
 let reelHoldTimer = null;
+// 잡아채기(낚시바) 중 낚싯줄의 추 쪽 고정 좌표 — 입질이 문 지점(추가 물에
+// 떠 있던 el.bobber의 마지막 위치, startCatching이 기록)이다. 캐치바를
+// 올리든 내리든 이 지점은 안 움직이고, 낚싯대 쪽 끝(reelTipPxForFrame)만
+// 지금 재생 중인 올리기 프레임(currentReelFrameIndex)을 따라 움직인다.
+let catchingBitePt = null;
+let currentReelFrameIndex = 0;
+function renderCatchingReelLine() {
+  if (!catchingBitePt) return;
+  const frameRect = el.frame.getBoundingClientRect();
+  renderCastLine(reelTipPxForFrame(currentReelFrameIndex, frameRect), catchingBitePt, reelLineSlack(currentReelFrameIndex));
+}
 function stopReelHoldAnim() {
   if (reelHoldTimer) { clearTimeout(reelHoldTimer); reelHoldTimer = null; }
 }
@@ -1393,7 +1409,9 @@ function playReelHoldSeq(seq) {
   el.charFallback.classList.add('hidden');
   let i = 0;
   function step() {
+    currentReelFrameIndex = seq[i];
     el.charImg.src = reelFrameUrls[seq[i]];
+    renderCatchingReelLine();
     i++;
     reelHoldTimer = i < seq.length ? setTimeout(step, reelMotion.holdFrameMs) : null;
   }
@@ -1510,14 +1528,18 @@ async function releasePowerAndCast() {
     // 추가 낚시가능 영역 안에 떨어지면 낚시가 진행되지 않는다 — 캐스팅
     // 취소. 착수 지점에서 바로 사라지는 대신, 올리기 4번 프레임을 유지한
     // 채 추가 낚싯대 끝(캐릭터)으로 되감겨 돌아오는 걸 보여준 뒤에야
-    // 대기 상태로 되돌린다.
+    // 대기 상태로 되돌린다. 되감기는 캐스팅 프레임이 아니라 올리기 4번
+    // 프레임의 낚싯대 끝(reelTipPxForFrame)을 기준으로 하고, 4번은 완전히
+    // 팽팽한 직선(reelLineSlack(3)===0)으로 이어 그린다.
+    let reelBackOrigin = rodTip;
     if (reelFrameUrls.length > 3) {
       stopReelHoldAnim();
       el.charImg.classList.remove('hidden');
       el.charFallback.classList.add('hidden');
       el.charImg.src = reelFrameUrls[3];
+      reelBackOrigin = reelTipPxForFrame(3, frameRect);
     }
-    await reelSinkerBack(rodTip);
+    await reelSinkerBack(reelBackOrigin, 3);
     el.bobber.classList.add('hidden');
     el.castSvg.classList.add('hidden');
     resetToIdle();
@@ -1537,6 +1559,28 @@ function rodTipPxForFrame(frameIndex, frameRect) {
     x: charRect.left - frameRect.left + pt.x * charRect.width,
     y: charRect.top - frameRect.top + pt.y * charRect.height,
   };
+}
+
+// 올리기 프레임 버전의 rodTipPxForFrame — 저장된 좌표(reelFrameRodTips)만
+// 다르고 픽셀화 방식은 동일하다.
+function reelTipPxForFrame(frameIndex, frameRect) {
+  const charRect = el.charStage.getBoundingClientRect();
+  const pt = reelFrameRodTips[frameIndex] || DEFAULT_ROD_TIP_FRAC;
+  return {
+    x: charRect.left - frameRect.left + pt.x * charRect.width,
+    y: charRect.top - frameRect.top + pt.y * charRect.height,
+  };
+}
+
+// 올리기 동작 중 낚싯줄의 팽팽함 — 캐스팅 때의 느슨한 현수선(catenaryPoints
+// 기본 12% 여유)과 달리 릴을 감아 올리는 중이라 훨씬 팽팽하다. 올리기
+// 프레임 인덱스(0=1번~3=4번)에 따라 살짝 처진 현수선(1번, 5% 여유)에서
+// 완전한 직선(4번, 여유 0)으로 점점 팽팽해지도록 보간한다. 5·6번(인덱스 4
+// 이상, 낚시 성공 후 프레임)은 4번과 같은 완전한 직선을 유지한다.
+const TAUT_REEL_MAX_SLACK = 0.05;
+function reelLineSlack(reelFrameIndex) {
+  const t = Math.min(Math.max(reelFrameIndex, 0) / 3, 1);
+  return TAUT_REEL_MAX_SLACK * (1 - t);
 }
 
 // 추를 던진다 — 수평은 등속(v_x = dx/T, dx는 세기(게이지)에 비례)으로
@@ -1620,11 +1664,13 @@ function throwSinker(power, origin, frameRect, getRodTip) {
 }
 
 // 낚싯대 끝(p0)~추(p1) 사이를 현수선(catenary, y=a·cosh(x/a)=a·(e^(x/a)+e^(-x/a))/2)
-// 으로 그린다. 실제 줄 길이는 두 점 사이 직선거리(D)에 여유(12%)를 준
-// 값(L)으로 정하고, L·dx·dy로부터 현수선 매개변수 a를 이분법으로 구한다
-// (전형적인 "두 점을 지나는 현수선" 문제).
+// 으로 그린다. 실제 줄 길이는 두 점 사이 직선거리(D)에 여유(기본 12%,
+// slack 인자로 재정의 가능 — 올리기 중엔 renderCastLine(p0,p1,reelLineSlack(i))
+// 처럼 훨씬 작은 값을 넘겨 팽팽하게 그린다)를 준 값(L)으로 정하고,
+// L·dx·dy로부터 현수선 매개변수 a를 이분법으로 구한다(전형적인 "두 점을
+// 지나는 현수선" 문제).
 const SINKER_IMG_SIZE = 22; // px, css픽셀 = svg viewBox 단위(카메라 좌표계 그대로)
-function renderCastLine(p0, p1) {
+function renderCastLine(p0, p1, slack) {
   el.castSinker.setAttribute('cx', p1.x);
   el.castSinker.setAttribute('cy', p1.y);
   if (sinkerImageUrl) {
@@ -1633,16 +1679,17 @@ function renderCastLine(p0, p1) {
     el.castSinkerImg.setAttribute('width', SINKER_IMG_SIZE);
     el.castSinkerImg.setAttribute('height', SINKER_IMG_SIZE);
   }
-  const pts = catenaryPoints(p0, p1);
+  const pts = catenaryPoints(p0, p1, 16, slack);
   el.castLinePath.setAttribute('d', 'M' + pts.map(p => `${p.x},${p.y}`).join(' L'));
 }
 
-function catenaryPoints(p0, p1, samples) {
+function catenaryPoints(p0, p1, samples, slack) {
   samples = samples || 16;
+  slack = slack == null ? 0.12 : slack;
   const dx = p1.x - p0.x, dy = p1.y - p0.y; // 화면 좌표계 — 아래로 갈수록 y가 커진다
   const D = Math.hypot(dx, dy);
-  if (D < 4 || Math.abs(dx) < 2) return [p0, p1]; // 거의 수직/한 점 — 커브 의미 없음
-  const L = D * 1.12;
+  if (D < 4 || Math.abs(dx) < 2 || slack <= 0.0005) return [p0, p1]; // 거의 수직/한 점, 또는 완전한 직선(여유 0) — 커브 의미 없음
+  const L = D * (1 + slack);
   // y=a·cosh(x/a)+q는 항상 볼록(가운데가 "더 작은" y 쪽으로 처지는) 함수라,
   // 위로 갈수록 y가 커지는 보통의 수학 좌표계에서는 그 처지는 방향이
   // 곧 "아래"라 정확히 늘어진 케이블 모양이 된다. 그런데 여긴 화면
@@ -1675,19 +1722,21 @@ function catenaryPoints(p0, p1, samples) {
 
 // 캐스팅 취소(추가 낚시 불가 영역에 떨어짐) 연출 — 착수 지점에서 바로
 // 사라지는 대신, 추가 낚싯대 끝(rodTipPt)까지 되감기듯 돌아오는 동안 줄도
-// 같이 따라 그린다(renderCastLine 재사용). el.bobber는 착수 시 finish()가
-// 남겨둔 left/top(%)에서 시작해 rodTipPt까지 보간한다 — bob-idle 클래스가
-// 아직 안 붙은 상태(waitForBite 이전)라 CSS 애니메이션 오프셋 없이
-// left/top(%)이 곧 화면 중심 좌표라 별도 DOM 측정 없이 바로 프레임 px로
-// 환산할 수 있다.
+// 같이 따라 그린다(renderCastLine 재사용, reelFrameIndex로 팽팽함을
+// 정한다 — 호출부(releasePowerAndCast)는 항상 올리기 4번=완전한 직선을
+// 넘긴다). el.bobber는 착수 시 finish()가 남겨둔 left/top(%)에서 시작해
+// rodTipPt까지 보간한다 — bob-idle 클래스가 아직 안 붙은 상태(waitForBite
+// 이전)라 CSS 애니메이션 오프셋 없이 left/top(%)이 곧 화면 중심 좌표라
+// 별도 DOM 측정 없이 바로 프레임 px로 환산할 수 있다.
 const CAST_CANCEL_REEL_MS = 450;
-function reelSinkerBack(rodTipPt) {
+function reelSinkerBack(rodTipPt, reelFrameIndex) {
   return new Promise(resolve => {
     const frameRect = el.frame.getBoundingClientRect();
     const startLeftPct = parseFloat(el.bobber.style.left) || 0;
     const startTopPct = parseFloat(el.bobber.style.top) || 0;
     const endLeftPct = rodTipPt.x / frameRect.width * 100;
     const endTopPct = rodTipPt.y / frameRect.height * 100;
+    const slack = reelLineSlack(reelFrameIndex);
     let start = null;
     function frame(ts) {
       if (start === null) start = ts;
@@ -1696,7 +1745,7 @@ function reelSinkerBack(rodTipPt) {
       const topPct = startTopPct + (endTopPct - startTopPct) * t;
       el.bobber.style.left = leftPct + '%';
       el.bobber.style.top = topPct + '%';
-      renderCastLine(rodTipPt, { x: leftPct / 100 * frameRect.width, y: topPct / 100 * frameRect.height });
+      renderCastLine(rodTipPt, { x: leftPct / 100 * frameRect.width, y: topPct / 100 * frameRect.height }, slack);
       if (t < 1) { requestAnimationFrame(frame); return; }
       resolve();
     }
@@ -1753,7 +1802,7 @@ function handleReactionTap() {
   el.biteMark.classList.add('hidden');
   el.bobber.classList.add('hidden');
   el.bobber.classList.remove('bite-dip');
-  el.castSvg.classList.add('hidden'); // 낚시바(잡아채기)로 넘어가면 추/찌 자체가 안 보이니 줄도 같이 숨긴다
+  el.castSvg.classList.add('hidden'); // "물었다!" 연출 동안만 잠깐 숨긴다 — startCatching이 올리기 프레임 기준으로 다시 켠다
   playBiteCaughtAnimation().then(startCatching);
 }
 
@@ -1834,11 +1883,23 @@ function startCatching() {
   holding = false;
   // 낚시대가 나타난 시점 — 올리기 1번 프레임(대기 포즈)으로 시작한다.
   stopReelHoldAnim();
+  currentReelFrameIndex = 0;
   if (reelFrameUrls.length) {
     el.charImg.classList.remove('hidden');
     el.charFallback.classList.add('hidden');
     el.charImg.src = reelFrameUrls[0];
   }
+  // 낚싯줄 — 추 쪽 끝은 입질이 문 지점(el.bobber가 마지막으로 떠 있던
+  // 자리, hidden으로 감춰졌어도 left/top(%)은 그대로 남아있다)에 고정하고,
+  // 낚싯대 쪽 끝은 지금 프레임(1번)의 올리기 낚싯대 끝을 쓴다.
+  const catchFrameRect = el.frame.getBoundingClientRect();
+  catchingBitePt = {
+    x: (parseFloat(el.bobber.style.left) || 0) / 100 * catchFrameRect.width,
+    y: (parseFloat(el.bobber.style.top) || 0) / 100 * catchFrameRect.height,
+  };
+  el.castSvg.setAttribute('viewBox', `0 0 ${catchFrameRect.width} ${catchFrameRect.height}`);
+  el.castSvg.classList.remove('hidden');
+  renderCatchingReelLine();
   pendingCatchFish = pickCaughtFish();
   // 아이템창을 화면 밖(left:-9999px)에서 이 시점에 미리 채워둬서, 실제
   // 공개(showItemPopup) 순간엔 위치만 옮기면 되게 한다 — populateItemPopup
@@ -1948,6 +2009,7 @@ async function playReelThenResult() {
   // 물고기가 딸려 올라오는 동안(flyFishToCharacter가 실제로 날아가는
   // 연출을 재생) — 올리기 5번 프레임. 도착하면 flyFishToCharacter가 직접
   // 6번 프레임으로 바꾼다.
+  currentReelFrameIndex = 4;
   if (reelFrameUrls.length > 4) {
     el.charImg.classList.remove('hidden');
     el.charFallback.classList.add('hidden');
@@ -1955,6 +2017,7 @@ async function playReelThenResult() {
   } else {
     await wait(500);
   }
+  renderCatchingReelLine(); // 잡아채기 중이던 줄을 5번 프레임 낚싯대 끝 기준으로 갱신 — flyFishToCharacter가 시작하면 추 쪽 끝을 날아가는 물고기로 바로 이어받는다
   caughtCount++;
   el.countChip.textContent = caughtCount + '마리';
   const fishCaught = pendingCatchFish;
@@ -1973,7 +2036,9 @@ async function playReelThenResult() {
    좀 더 느리게, 정점이 캐릭터 위치보다 위로 떠도 됨) — CSS transition
    대신 매 프레임 위치를 직접 계산해서 그린다(throwSinker의 추 궤적과
    같은 방식). 임시 엘리먼트(.fish-fly)를 만들어 el.stage에 얹고, 도착하면
-   지운다. */
+   지운다. 날아가는 내내 올리기 5번 프레임의 낚싯대 끝~물고기 사이를
+   완전히 팽팽한 직선(reelLineSlack(4)===0)으로 이어 그리다가, 도착하는
+   순간 줄을 숨긴다(heldFish 오버레이로 넘어감). */
 const FISH_FLY_DURATION_MS = 1600;
 const FISH_FLY_ARC_PCT = 18; // 포물선 정점이 시작~도착 직선보다 이만큼(프레임 세로 %) 더 위로 뜬다
 function flyFishToCharacter(fishDef) {
@@ -1984,6 +2049,7 @@ function flyFishToCharacter(fishDef) {
     const charRect = el.charStage.getBoundingClientRect();
     const endLeft = ((charRect.left + charRect.width / 2) - frameRect.left) / frameRect.width * 100;
     const endTop = ((charRect.top + charRect.height * 0.3) - frameRect.top) / frameRect.height * 100;
+    const reelTipPt = reelTipPxForFrame(4, frameRect);
 
     const flyEl = document.createElement('div');
     flyEl.className = 'fish-fly';
@@ -2019,11 +2085,14 @@ function flyFishToCharacter(fishDef) {
       const top = startTop + (endTop - startTop) * t - FISH_FLY_ARC_PCT * 4 * t * (1 - t);
       flyEl.style.left = left + '%';
       flyEl.style.top = top + '%';
+      renderCastLine(reelTipPt, { x: left / 100 * frameRect.width, y: top / 100 * frameRect.height }, reelLineSlack(4));
       if (t < 1) { requestAnimationFrame(frame); return; }
       flyEl.remove();
       // 물고기가 캐릭터에 도착한 순간 — 올리기 6번(마지막) 프레임, 물고기를
-      // 들고 있는 자세(heldFish 오버레이가 이 프레임 위에 그려진다).
+      // 들고 있는 자세(heldFish 오버레이가 이 프레임 위에 그려진다). 낚싯줄은
+      // 여기서부터 필요 없다.
       if (reelFrameUrls.length > 5) el.charImg.src = reelFrameUrls[5];
+      el.castSvg.classList.add('hidden');
       resolve();
     }
     requestAnimationFrame(frame);
@@ -2126,6 +2195,7 @@ function resetToIdle() {
   gameState = 'idle';
   stopReelHoldAnim();
   cancelAnimationFrame(bobLineRaf);
+  catchingBitePt = null;
   el.castPowerWrap.classList.add('hidden');
   el.castSvg.classList.add('hidden');
   el.bobber.classList.add('hidden');
