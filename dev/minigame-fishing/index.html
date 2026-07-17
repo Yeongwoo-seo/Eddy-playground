@@ -61,7 +61,13 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
    같은 원본·같은 크롭 위치에서 다시 조정을 이어갈 수 있다. */
 .crop-overlay{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.7);display:flex;align-items:flex-end;justify-content:center}
 .crop-overlay.hidden{display:none}
-.crop-sheet{width:100%;max-width:430px;background:var(--surface-1);border-radius:20px 20px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom,0));max-height:90vh;overflow-y:auto}
+.crop-sheet{width:100%;max-width:430px;background:var(--surface-1);border-radius:20px 20px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom,0));max-height:90vh;overflow-y:auto;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+/* 방향 버튼을 꾹 눌러 반복 이동시키는 동안 손가락이 버튼 밖으로 살짝
+   벗어나면(길게 누르기 특성상 흔함) 근처 라벨 텍스트("크롭 크기" 등)가
+   브라우저 기본 텍스트 선택/드래그로 잡혀버리는 문제가 있었다 — 시트
+   전체에 user-select:none을 걸어 막는다. 숫자 입력칸은 값 입력을
+   위해 선택이 계속 가능해야 하므로 도로 풀어준다. */
+.crop-sheet input{-webkit-user-select:text;user-select:text}
 .crop-title{font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:.04em;margin-bottom:4px}
 .crop-desc{font-size:12.5px;color:var(--text-muted);margin-bottom:14px;line-height:1.5}
 .crop-stage{position:relative;width:100%;border-radius:12px;overflow:hidden;touch-action:none;background:#000;cursor:crosshair}
@@ -86,6 +92,12 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .crop-size-controls input[type=range]{flex:1;accent-color:var(--cyan)}
 .crop-size-controls input[type=number]{width:60px;background:var(--surface-1);border:1px solid var(--divider);border-radius:8px;padding:8px;color:var(--text-primary);font-family:var(--mono);font-size:13px;text-align:center}
 .crop-size-unit{font-family:var(--mono);font-size:12px;color:var(--text-muted);flex-shrink:0}
+/* 행 영역 조정(모션 탭 전용) — crop-dpad는 4방향 3x3 격자라 위/아래 2개만
+   쓰는 이 용도엔 안 맞아 세로 2단 스택으로 따로 둔다. 버튼 자체 스타일은
+   crop-dpad-btn을 그대로 재사용한다. */
+.rowadjust-dpad-row{margin-top:14px;display:flex;justify-content:center}
+.rowadjust-dpad{display:flex;flex-direction:column;gap:4px}
+.rowadjust-dpad .crop-dpad-btn{width:34px;height:34px}
 .crop-actions{display:flex;gap:10px;margin-top:18px}
 .crop-btn{flex:1;font-family:var(--mono);font-size:13.5px;font-weight:700;border:none;border-radius:14px;padding:13px;cursor:pointer;text-align:center}
 .crop-btn.primary{color:#08110c;background:var(--green)}
@@ -379,7 +391,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   <div class="tab-panel hidden" id="panelMotion">
     <div class="option-group">
       <div class="option-label">모션 시트</div>
-      <div class="option-desc">투명 PNG · 정확히 6행×6열(36칸) 격자 · 이미지 크기는 자유예요(업로드한 실제 가로/세로를 그대로 6등분해서 칸을 구해요). 행 순서(위에서부터): ① 캐스팅 ② 올리기 ③ 위로 이동 ④ 아래로 이동 ⑤ 왼쪽 이동 ⑥ 오른쪽 이동 — 각 행 안에서는 왼쪽부터 순서대로 6프레임이에요. 격자에 딱 맞지 않으면 아래 각 동작의 프레임을 탭해서 따로 세밀영역조절할 수 있고, 한 프레임의 크롭 크기를 바꾸면 같은 동작의 나머지 프레임도 같은 크기로 맞춰져요.</div>
+      <div class="option-desc">투명 PNG · 정확히 6행×6열(36칸) 격자 · 이미지 크기는 자유예요(업로드한 실제 가로/세로를 그대로 6등분해서 칸을 구해요). 행 순서(위에서부터): ① 캐스팅 ② 올리기 ③ 위로 이동 ④ 아래로 이동 ⑤ 왼쪽 이동 ⑥ 오른쪽 이동 — 각 행 안에서는 왼쪽부터 순서대로 6프레임이에요. 격자에 딱 맞지 않으면 아래 각 동작의 "행 영역 조정"으로 그 행 6칸의 세로 범위를 통째로 맞추거나, 프레임을 탭해서 하나씩 따로 세밀영역조절할 수 있어요. 한 프레임의 크롭 크기를 바꾸면 같은 동작의 나머지 프레임도 같은 크기로 맞춰져요.</div>
       <div class="fish-sheet-frame" id="motionSheetFrame">
         <div class="fish-sheet-empty" id="motionSheetEmpty">아직 업로드된 시트가 없어요<br>업로드하기 전까진 각 동작이 도형/화살표로 대체돼요</div>
       </div>
@@ -397,6 +409,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
         <div class="frame-preview-label" id="motionCastPreviewLabel">프레임 없음 — 재생 미리보기</div>
       </div>
       <div class="frame-strip" id="motionCastFrameGrid"></div>
+      <button type="button" class="fish-sheet-btn" id="motionCastRowAdjustBtn" style="width:100%;margin-top:8px" disabled>📐 행 영역 조정</button>
     </div>
 
     <div class="option-group">
@@ -477,6 +490,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
         <div class="frame-preview-label" id="motionReelPreviewLabel">프레임 없음 — 재생 미리보기</div>
       </div>
       <div class="frame-strip" id="motionReelFrameGrid"></div>
+      <button type="button" class="fish-sheet-btn" id="motionReelRowAdjustBtn" style="width:100%;margin-top:8px" disabled>📐 행 영역 조정</button>
       <div class="option-desc">① 낚시대가 나타날 때: 1번 프레임. ② 잡아채기(낚시바)에서 캐치바를 올리는 버튼을 누르고 있는 동안: 2번→4번 프레임을 재생하고 4번에서 유지, 손을 떼면 4번→2번→1번 순서로 되돌아가요. ③ 낚시 성공 후 물고기가 딸려 올라오는 동안: 5번 프레임. ④ 물고기가 캐릭터에 도착한 뒤: 6번(마지막) 프레임이에요.</div>
     </div>
 
@@ -503,6 +517,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
         <div class="range-value" id="motionUpSpeedValue">재생 속도 90ms</div>
       </div>
       <div class="frame-strip" id="motionUpFrameGrid"></div>
+      <button type="button" class="fish-sheet-btn" id="motionUpRowAdjustBtn" style="width:100%;margin-top:8px" disabled>📐 행 영역 조정</button>
     </div>
 
     <div class="motion-category-title">④ 아래로 이동</div>
@@ -518,6 +533,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
         <div class="range-value" id="motionDownSpeedValue">재생 속도 90ms</div>
       </div>
       <div class="frame-strip" id="motionDownFrameGrid"></div>
+      <button type="button" class="fish-sheet-btn" id="motionDownRowAdjustBtn" style="width:100%;margin-top:8px" disabled>📐 행 영역 조정</button>
     </div>
 
     <div class="motion-category-title">⑤ 왼쪽 이동</div>
@@ -533,6 +549,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
         <div class="range-value" id="motionLeftSpeedValue">재생 속도 90ms</div>
       </div>
       <div class="frame-strip" id="motionLeftFrameGrid"></div>
+      <button type="button" class="fish-sheet-btn" id="motionLeftRowAdjustBtn" style="width:100%;margin-top:8px" disabled>📐 행 영역 조정</button>
     </div>
 
     <div class="motion-category-title">⑥ 오른쪽 이동</div>
@@ -548,6 +565,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
         <div class="range-value" id="motionRightSpeedValue">재생 속도 90ms</div>
       </div>
       <div class="frame-strip" id="motionRightFrameGrid"></div>
+      <button type="button" class="fish-sheet-btn" id="motionRightRowAdjustBtn" style="width:100%;margin-top:8px" disabled>📐 행 영역 조정</button>
     </div>
 
     <div class="option-group">
@@ -902,6 +920,42 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   </div>
 </div>
 
+<!-- ===== 행 영역 조정 — 모션 시트(6행×6열)의 한 행(동작 하나)이 정확히
+     6등분 지점에 맞지 않을 때, 그 행의 세로 범위(상단 위치 + 높이)를
+     한 번에 옮긴다. crop-overlay와 같은 틀을 재사용하되, 크롭 네모(정사각,
+     cx/cy/size) 대신 시트 전체 폭을 가로지르는 가로 띠(top/height, 세로만
+     움직임)를 다룬다 — openMotionRowAdjuster 참고. 적용하면 아직 프레임별
+     세밀영역조절을 안 한 칸들의 기본 위치가 이 범위로 맞춰지고, 이미
+     보정해둔 프레임은 그대로 유지된다. -->
+<div class="crop-overlay hidden" id="motionRowOverlay">
+  <div class="crop-sheet">
+    <div class="crop-title">행 영역 조정</div>
+    <div class="crop-desc">이 동작(행) 전체의 세로 범위를 옮기세요 — 시트가 정확히 6등분되지 않을 때, 프레임 6개를 하나씩 옮기는 대신 여기서 한 번에 맞추면 아직 따로 조정하지 않은 칸들이 전부 이 범위를 기준으로 배치돼요. 이미 세밀영역조절을 해둔 프레임은 영향을 안 받아요.</div>
+    <div class="crop-stage" id="motionRowStage">
+      <canvas id="motionRowCanvas"></canvas>
+      <div class="crop-rect" id="motionRowRectBox"></div>
+    </div>
+    <div class="rowadjust-dpad-row">
+      <div class="rowadjust-dpad" id="motionRowDpad">
+        <button type="button" class="crop-dpad-btn" data-dir="up" aria-label="위로">▲</button>
+        <button type="button" class="crop-dpad-btn" data-dir="down" aria-label="아래로">▼</button>
+      </div>
+    </div>
+    <div class="crop-size-row">
+      <div class="option-label">행 높이</div>
+      <div class="crop-size-controls">
+        <input type="range" id="motionRowHeightInput" min="1" max="100" step="1" value="40">
+        <input type="number" id="motionRowHeightNumberInput" min="1" max="100" step="1" value="40">
+        <span class="crop-size-unit">px</span>
+      </div>
+    </div>
+    <div class="crop-actions">
+      <button type="button" class="crop-btn secondary" id="motionRowCancelBtn">취소</button>
+      <button type="button" class="crop-btn primary" id="motionRowConfirmBtn">적용</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== 낚시대 끝 지정 — crop-overlay와 같은 바텀시트 틀을 재사용하되,
      영역(크기 있는 네모)이 아니라 프레임마다 점 하나만 찍는다. 위쪽
      프레임 선택 줄(rodtip-frame-picker)에서 프레임을 고르면 아래
@@ -1101,6 +1155,15 @@ const el = {
   cropDpad: document.getElementById('cropDpad'),
   cropCancelBtn: document.getElementById('cropCancelBtn'),
   cropConfirmBtn: document.getElementById('cropConfirmBtn'),
+  motionRowOverlay: document.getElementById('motionRowOverlay'),
+  motionRowStage: document.getElementById('motionRowStage'),
+  motionRowCanvas: document.getElementById('motionRowCanvas'),
+  motionRowRectBox: document.getElementById('motionRowRectBox'),
+  motionRowDpad: document.getElementById('motionRowDpad'),
+  motionRowHeightInput: document.getElementById('motionRowHeightInput'),
+  motionRowHeightNumberInput: document.getElementById('motionRowHeightNumberInput'),
+  motionRowCancelBtn: document.getElementById('motionRowCancelBtn'),
+  motionRowConfirmBtn: document.getElementById('motionRowConfirmBtn'),
   backgroundImageSlot: document.getElementById('backgroundImageSlot'),
   backgroundImageAddBtn: document.getElementById('backgroundImageAddBtn'),
   backgroundImageFileInput: document.getElementById('backgroundImageFileInput'),
@@ -1160,11 +1223,13 @@ const el = {
   motionCastPreview: document.getElementById('motionCastPreview'),
   motionCastPreviewLabel: document.getElementById('motionCastPreviewLabel'),
   motionCastFrameGrid: document.getElementById('motionCastFrameGrid'),
+  motionCastRowAdjustBtn: document.getElementById('motionCastRowAdjustBtn'),
   motionReelPreview: document.getElementById('motionReelPreview'),
   motionReelPreviewLabel: document.getElementById('motionReelPreviewLabel'),
   motionReelFrameGrid: document.getElementById('motionReelFrameGrid'),
   reelHoldFrameMsInput: document.getElementById('reelHoldFrameMsInput'),
   reelHoldFrameMsValue: document.getElementById('reelHoldFrameMsValue'),
+  motionReelRowAdjustBtn: document.getElementById('motionReelRowAdjustBtn'),
   motionUpPreview: document.getElementById('motionUpPreview'),
   motionUpPreviewLabel: document.getElementById('motionUpPreviewLabel'),
   motionUpFrameGrid: document.getElementById('motionUpFrameGrid'),
@@ -1172,6 +1237,7 @@ const el = {
   motionUpUploadInput: document.getElementById('motionUpUploadInput'),
   motionUpSpeedInput: document.getElementById('motionUpSpeedInput'),
   motionUpSpeedValue: document.getElementById('motionUpSpeedValue'),
+  motionUpRowAdjustBtn: document.getElementById('motionUpRowAdjustBtn'),
   motionDownPreview: document.getElementById('motionDownPreview'),
   motionDownPreviewLabel: document.getElementById('motionDownPreviewLabel'),
   motionDownFrameGrid: document.getElementById('motionDownFrameGrid'),
@@ -1179,6 +1245,7 @@ const el = {
   motionDownUploadInput: document.getElementById('motionDownUploadInput'),
   motionDownSpeedInput: document.getElementById('motionDownSpeedInput'),
   motionDownSpeedValue: document.getElementById('motionDownSpeedValue'),
+  motionDownRowAdjustBtn: document.getElementById('motionDownRowAdjustBtn'),
   motionLeftPreview: document.getElementById('motionLeftPreview'),
   motionLeftPreviewLabel: document.getElementById('motionLeftPreviewLabel'),
   motionLeftFrameGrid: document.getElementById('motionLeftFrameGrid'),
@@ -1186,6 +1253,7 @@ const el = {
   motionLeftUploadInput: document.getElementById('motionLeftUploadInput'),
   motionLeftSpeedInput: document.getElementById('motionLeftSpeedInput'),
   motionLeftSpeedValue: document.getElementById('motionLeftSpeedValue'),
+  motionLeftRowAdjustBtn: document.getElementById('motionLeftRowAdjustBtn'),
   motionRightPreview: document.getElementById('motionRightPreview'),
   motionRightPreviewLabel: document.getElementById('motionRightPreviewLabel'),
   motionRightFrameGrid: document.getElementById('motionRightFrameGrid'),
@@ -1193,6 +1261,7 @@ const el = {
   motionRightUploadInput: document.getElementById('motionRightUploadInput'),
   motionRightSpeedInput: document.getElementById('motionRightSpeedInput'),
   motionRightSpeedValue: document.getElementById('motionRightSpeedValue'),
+  motionRightRowAdjustBtn: document.getElementById('motionRightRowAdjustBtn'),
   panelMove: document.getElementById('panelMove'),
   moveStage: document.getElementById('moveStage'),
   moveWorld: document.getElementById('moveWorld'),
@@ -1559,6 +1628,18 @@ async function setMotionPlaybackMs(category, ms) {
   fishingConfig = await AssetDB.setFishingConfig({ motionPlaybackMs });
 }
 
+// 행(카테고리) 전체의 세로 범위 보정 — {top,height}(시트 세로 기준 0~1) 또는
+// 없으면(6등분 그대로) null. getMotionGridDefaultCropRect의 rowOverride
+// 인자로 그대로 넘겨 쓴다.
+function getMotionRowOverride(category) {
+  return ((fishingConfig.motionRowOverrides || {})[category]) || null;
+}
+async function setMotionRowOverride(category, rowRect) {
+  const motionRowOverrides = Object.assign({}, fishingConfig.motionRowOverrides);
+  motionRowOverrides[category] = rowRect;
+  fishingConfig = await AssetDB.setFishingConfig({ motionRowOverrides });
+}
+
 async function renderMotionSheetPreview() {
   el.motionSheetFrame.querySelectorAll('img').forEach(img => img.remove());
   const assetId = (fishingConfig || {}).motionSheetAssetId;
@@ -1588,6 +1669,7 @@ async function renderMotionSheetPreview() {
 async function renderMotionFrameGrid(category, sheetAsset, sheetDims) {
   const overrides = getMotionFrameOverrides(category);
   const imageOverrides = MOVE_CATEGORIES.includes(category) ? getMotionFrameImageOverrides(category) : {};
+  const rowOverride = getMotionRowOverride(category);
   const gridEl = el[motionElKey(category, 'FrameGrid')];
   const row = MOTION_CATEGORIES.indexOf(category);
   const cells = [];
@@ -1601,7 +1683,7 @@ async function renderMotionFrameGrid(category, sheetAsset, sheetDims) {
       hasContent = true;
     } else {
       const override = overrides[i];
-      const rect = override || (sheetDims ? getMotionGridDefaultCropRect(row, i, sheetDims.width, sheetDims.height) : null);
+      const rect = override || (sheetDims ? getMotionGridDefaultCropRect(row, i, sheetDims.width, sheetDims.height, rowOverride) : null);
       if (sheetAsset && rect) {
         const style = getFishCropStyle(rect, sheetDims.width, sheetDims.height, 64);
         iconStyle = `background-image:url('${sheetAsset.dataUrl}');background-position:${style.backgroundPosition};background-size:${style.backgroundSize};background-repeat:no-repeat;image-rendering:pixelated`;
@@ -1659,7 +1741,7 @@ async function renderMotionPreviewLoop(category, sheetAsset, sheetDims) {
   // outputSize를 안 넘긴다 — buildMotionCategoryFrameDataUrls가 원본 크롭
   // 해상도를 그대로 살린다(96px 미리보기 박스에서 다시 확대되며 흐려지지
   // 않게).
-  const urls = buildMotionCategoryFrameDataUrls(img, row, getMotionFrameOverrides(category));
+  const urls = buildMotionCategoryFrameDataUrls(img, row, getMotionFrameOverrides(category), getMotionRowOverride(category));
   // 개별 업로드로 대체된 프레임(motionFrameImageOverrides)이 있으면 시트
   // 크롭 대신 그 사진을 재생 미리보기에도 그대로 쓴다 — play/index.html의
   // walkFrameUrls 조립과 같은 우선순위.
@@ -1685,6 +1767,7 @@ async function renderMotionTab() {
   el.motionSheetFrame.style.setProperty('--motion-ar', motionSheetDims ? (motionSheetDims.width + '/' + motionSheetDims.height) : '1/1');
   for (const category of MOTION_CATEGORIES) {
     await renderMotionFrameGrid(category, motionSheetAsset, motionSheetDims);
+    el[motionElKey(category, 'RowAdjustBtn')].disabled = !motionSheetAsset;
     // 미리보기 생성(캔버스로 프레임을 잘라내는 작업)이 실패해도 나머지
     // 카테고리·아래 타임라인 렌더링까지 통째로 막히면 안 된다.
     await renderMotionPreviewLoop(category, motionSheetAsset, motionSheetDims).catch((err) => {
@@ -1715,7 +1798,7 @@ function initMotionSpeedControls() {
 function openMotionFrameCropAdjuster(category, frameIndex, sheetAsset, sheetDims) {
   const overrides = getMotionFrameOverrides(category);
   const row = MOTION_CATEGORIES.indexOf(category);
-  const existingRect = overrides[frameIndex] || (sheetDims ? getMotionGridDefaultCropRect(row, frameIndex, sheetDims.width, sheetDims.height) : { cx: 0.5, cy: 0.5, size: 0.15 });
+  const existingRect = overrides[frameIndex] || (sheetDims ? getMotionGridDefaultCropRect(row, frameIndex, sheetDims.width, sheetDims.height, getMotionRowOverride(category)) : { cx: 0.5, cy: 0.5, size: 0.15 });
   openCropAdjuster(sheetAsset.dataUrl, existingRect, null, (rect) => confirmMotionFrameCrop(category, rect, frameIndex));
 }
 // 물고기 세밀영역조절(confirmFishSpeciesCrop)과 마찬가지로 시트 자체는
@@ -1728,12 +1811,13 @@ function openMotionFrameCropAdjuster(category, frameIndex, sheetAsset, sheetDims
 async function confirmMotionFrameCrop(category, rect, frameIndex) {
   const current = getMotionFrameOverrides(category);
   const row = MOTION_CATEGORIES.indexOf(category);
+  const rowOverride = getMotionRowOverride(category);
   const overrides = {};
   for (let i = 0; i < MOTION_GRID_COLUMNS; i++) {
     if (i === frameIndex) {
       overrides[i] = rect;
     } else {
-      const existing = current[i] || (motionSheetDims ? getMotionGridDefaultCropRect(row, i, motionSheetDims.width, motionSheetDims.height) : null);
+      const existing = current[i] || (motionSheetDims ? getMotionGridDefaultCropRect(row, i, motionSheetDims.width, motionSheetDims.height, rowOverride) : null);
       overrides[i] = existing ? Object.assign({}, existing, { size: rect.size }) : Object.assign({ cx: 0.5, cy: 0.5 }, { size: rect.size });
     }
   }
@@ -2137,11 +2221,21 @@ el.motionSheetFileInput.addEventListener('change', async () => {
   renderMotionTab();
 });
 el.motionSheetRemoveBtn.addEventListener('click', async () => {
-  // 시트를 지우면 카테고리별 세밀영역조절 보정도 같이 지운다 — 새 시트를
-  // 올렸을 때 엉뚱한 좌표가 남아있지 않게(물고기 시트 제거와 같은 원칙).
-  fishingConfig = await AssetDB.setFishingConfig({ motionSheetAssetId: null, motionFrameOverrides: {} });
+  // 시트를 지우면 카테고리별 세밀영역조절 보정과 행 영역 보정도 같이
+  // 지운다 — 새 시트를 올렸을 때 엉뚱한 좌표가 남아있지 않게(물고기 시트
+  // 제거와 같은 원칙).
+  fishingConfig = await AssetDB.setFishingConfig({ motionSheetAssetId: null, motionFrameOverrides: {}, motionRowOverrides: {} });
   showSaveNote();
   renderMotionTab();
+});
+
+// 행 영역 조정 버튼 — 카테고리(행)마다 하나씩, 시트가 있어야 활성화된다
+// (renderMotionTab이 disabled 상태를 매번 갱신).
+MOTION_CATEGORIES.forEach(category => {
+  el[motionElKey(category, 'RowAdjustBtn')].addEventListener('click', () => {
+    if (!motionSheetAsset || !motionSheetDims) return;
+    openMotionRowAdjuster(category, motionSheetAsset, motionSheetDims);
+  });
 });
 
 /* ===== 낚시바 디자인 탭 — PPT 슬라이드형 에디터 =====
@@ -3158,6 +3252,151 @@ el.cropConfirmBtn.addEventListener('click', async () => {
     el.cropConfirmBtn.disabled = false;
   }
 });
+
+/* ===== 행 영역 조정 — 모션 시트 카테고리(행) 하나의 세로 범위를 통째로
+   옮기는 모달. 위 크롭 조정 모달(cropStage/cropRect)과 같은 틀이지만 다루는
+   값이 다르다 — 정사각형 크롭(cx,cy,size) 대신 시트 전체 폭을 가로지르는
+   가로 띠(top,height, 시트 세로 기준 0~1 정규화)라 가로 이동은 없고 세로
+   이동/높이 조절만 있다. 적용값은 motionRowOverrides에 저장되고
+   getMotionGridDefaultCropRect의 rowOverride 인자로 그 행의 기본 칸 위치
+   계산에 쓰인다(프레임별로 이미 세밀영역조절해둔 칸은 영향받지 않음). */
+let motionRowSourceImg = null;
+let motionRowCategory = null;
+let motionRowRect = { top: 0, height: 1 / MOTION_CATEGORIES.length };
+let motionRowDragging = false;
+let motionRowDragStartY = 0;
+let motionRowDragStartTop = 0;
+
+function clampMotionRowTop(top, height) {
+  return Math.max(0, Math.min(1 - height, top));
+}
+
+function openMotionRowAdjuster(category, sheetAsset, sheetDims) {
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = () => {
+    motionRowSourceImg = img;
+    motionRowCategory = category;
+    const row = MOTION_CATEGORIES.indexOf(category);
+    const existing = getMotionRowOverride(category);
+    motionRowRect = existing
+      ? Object.assign({}, existing)
+      : { top: row / MOTION_CATEGORIES.length, height: 1 / MOTION_CATEGORIES.length };
+    const heightPx = Math.round(motionRowRect.height * img.naturalHeight);
+    el.motionRowHeightInput.min = 1;
+    el.motionRowHeightInput.max = img.naturalHeight;
+    el.motionRowHeightInput.value = heightPx;
+    el.motionRowHeightNumberInput.min = 1;
+    el.motionRowHeightNumberInput.max = img.naturalHeight;
+    el.motionRowHeightNumberInput.value = heightPx;
+    el.motionRowOverlay.classList.remove('hidden');
+    drawMotionRowStage();
+  };
+  img.src = sheetAsset.dataUrl;
+}
+function closeMotionRowAdjuster() {
+  el.motionRowOverlay.classList.add('hidden');
+  motionRowSourceImg = null;
+  motionRowCategory = null;
+  stopMotionRowDpadRepeat();
+}
+
+function drawMotionRowStage() {
+  if (!motionRowSourceImg) return;
+  const stageWidth = el.motionRowStage.clientWidth;
+  const scale = stageWidth / motionRowSourceImg.naturalWidth;
+  const stageHeight = motionRowSourceImg.naturalHeight * scale;
+  el.motionRowCanvas.width = stageWidth;
+  el.motionRowCanvas.height = stageHeight;
+  el.motionRowCanvas.getContext('2d').drawImage(motionRowSourceImg, 0, 0, stageWidth, stageHeight);
+  el.motionRowRectBox.style.left = '0';
+  el.motionRowRectBox.style.width = stageWidth + 'px';
+  el.motionRowRectBox.style.top = (motionRowRect.top * motionRowSourceImg.naturalHeight * scale) + 'px';
+  el.motionRowRectBox.style.height = (motionRowRect.height * motionRowSourceImg.naturalHeight * scale) + 'px';
+}
+
+// 가로 띠는 화면 폭 전체를 차지해서 크롭 네모처럼 "누른 지점으로 순간이동"
+// 시키면 어느 지점을 눌러도 띠가 크게 튀어 보인다 — 확대 미리보기 드래그
+// (updateCropCenterFromZoomDrag)처럼 pointerdown 시점 좌표를 기억해뒀다가
+// 매 move마다 그 차이(델타)만큼만 옮긴다.
+function startMotionRowDrag(e) {
+  motionRowDragging = true;
+  motionRowDragStartY = e.clientY;
+  motionRowDragStartTop = motionRowRect.top;
+}
+function updateMotionRowFromDrag(e) {
+  if (!motionRowSourceImg) return;
+  const stageRect = el.motionRowStage.getBoundingClientRect();
+  const dy = (e.clientY - motionRowDragStartY) / stageRect.height;
+  motionRowRect.top = clampMotionRowTop(motionRowDragStartTop + dy, motionRowRect.height);
+  drawMotionRowStage();
+}
+el.motionRowStage.addEventListener('pointerdown', (e) => { e.preventDefault(); startMotionRowDrag(e); });
+window.addEventListener('pointermove', (e) => { if (motionRowDragging) updateMotionRowFromDrag(e); });
+window.addEventListener('pointerup', () => { motionRowDragging = false; });
+
+const MOTION_ROW_NUDGE_STEP = 0.0005;
+const MOTION_ROW_NUDGE_FAST_STEP = 0.003;
+const MOTION_ROW_NUDGE_ACCEL_MS = 1200;
+function nudgeMotionRowRect(dir, step) {
+  if (!motionRowSourceImg) return;
+  const s = step || MOTION_ROW_NUDGE_STEP;
+  if (dir === 'up') motionRowRect.top = clampMotionRowTop(motionRowRect.top - s, motionRowRect.height);
+  else if (dir === 'down') motionRowRect.top = clampMotionRowTop(motionRowRect.top + s, motionRowRect.height);
+  drawMotionRowStage();
+}
+let motionRowDpadRepeatDelay = null;
+let motionRowDpadRepeatTimer = null;
+let motionRowDpadHoldStart = 0;
+function stopMotionRowDpadRepeat() {
+  clearTimeout(motionRowDpadRepeatDelay);
+  clearInterval(motionRowDpadRepeatTimer);
+  motionRowDpadRepeatDelay = null;
+  motionRowDpadRepeatTimer = null;
+}
+el.motionRowDpad.querySelectorAll('.crop-dpad-btn').forEach(btn => {
+  const dir = btn.dataset.dir;
+  btn.addEventListener('pointerdown', (e) => {
+    e.preventDefault(); // motionRowStage 등 다른 핸들러가 같은 포인터 시퀀스를 가로채지 않게
+    stopMotionRowDpadRepeat();
+    nudgeMotionRowRect(dir);
+    motionRowDpadHoldStart = Date.now();
+    motionRowDpadRepeatDelay = setTimeout(() => {
+      motionRowDpadRepeatTimer = setInterval(() => {
+        const held = Date.now() - motionRowDpadHoldStart;
+        nudgeMotionRowRect(dir, held > MOTION_ROW_NUDGE_ACCEL_MS ? MOTION_ROW_NUDGE_FAST_STEP : MOTION_ROW_NUDGE_STEP);
+      }, 60);
+    }, 400);
+  });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(evt => btn.addEventListener(evt, stopMotionRowDpadRepeat));
+});
+
+function setMotionRowHeightFromPx(px) {
+  if (!motionRowSourceImg || !Number.isFinite(px)) return;
+  const naturalH = motionRowSourceImg.naturalHeight;
+  const clamped = Math.max(1, Math.min(naturalH, Math.round(px)));
+  motionRowRect.height = clamped / naturalH;
+  motionRowRect.top = clampMotionRowTop(motionRowRect.top, motionRowRect.height);
+  el.motionRowHeightInput.value = clamped;
+  el.motionRowHeightNumberInput.value = clamped;
+  drawMotionRowStage();
+}
+el.motionRowHeightInput.addEventListener('input', () => setMotionRowHeightFromPx(Number(el.motionRowHeightInput.value)));
+el.motionRowHeightNumberInput.addEventListener('input', () => setMotionRowHeightFromPx(Number(el.motionRowHeightNumberInput.value)));
+el.motionRowCancelBtn.addEventListener('click', closeMotionRowAdjuster);
+el.motionRowConfirmBtn.addEventListener('click', async () => {
+  if (!motionRowSourceImg || !motionRowCategory) return;
+  el.motionRowConfirmBtn.disabled = true;
+  try {
+    await setMotionRowOverride(motionRowCategory, motionRowRect);
+    showSaveNote();
+    closeMotionRowAdjuster();
+    renderMotionTab();
+  } finally {
+    el.motionRowConfirmBtn.disabled = false;
+  }
+});
+
 /* ===== 물고기 종류 탭 — 카탈로그는 dev/data/fishDefs.js에 코드로 박혀 있고
    (67종, id/등급/가치/난이도/시트 slot 고정), 여기서 편집하는 건 그 위에
    덮어씌울 아이콘 스프라이트시트 한 장 + 물고기별 세밀영역조절 보정이다.

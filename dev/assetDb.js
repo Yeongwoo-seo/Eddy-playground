@@ -1066,6 +1066,12 @@ const AssetDB = (() => {
   // motionFrameOverrides — 카테고리별 세밀영역조절 보정,
   // { [category]: { [frameIndex]: {cx,cy,size} } }. 보정 없는 칸은
   // getMotionGridDefaultCropRect의 격자 위치를 그대로 쓴다.
+  // motionRowOverrides — 카테고리(행) 전체의 세로 범위 보정,
+  // { [category]: {top,height} }(시트 세로 기준 0~1 정규화). 업로드한
+  // 시트가 정확히 6등분되지 않을 때, 그 행의 프레임 6개를 하나하나 옮기는
+  // 대신 행 하나만 조정하면 아직 프레임별 보정이 없는 칸들의 기본 위치가
+  // 전부 같이 맞춰진다. 카테고리가 없거나 비어 있으면 기존처럼 6등분
+  // 위치를 그대로 쓴다.
   // castGaugeAssetId — 캐스팅 세기 게이지(화면을 꾹 눌러 세기 조절할 때
   // 뜨는 바) 배경 그림 자산 id. castGaugeFillRegion({x,y,w,h}, 이 그림의
   // 원본 자연 크기 대비 0~1)이 그림 위 어디가 채워지는 부분인지 지정한다 —
@@ -1111,7 +1117,7 @@ const AssetDB = (() => {
   // 크롭 대신 개별 업로드한 사진(배경 자동 제거)으로 대체, { [dir]:
   // { [frameIndex]: assetId } }. 값이 있는 칸은 motionFrameOverrides(크롭
   // 좌표 보정)보다 우선한다.
-  const FISHING_CONFIG_DEFAULT = { barDesign: {}, fishSheetAssetId: null, fishIconOverrides: {}, motionSheetAssetId: null, motionFrameOverrides: { cast: {}, reel: {}, up: {}, down: {}, left: {}, right: {} }, motionFrameImageOverrides: { up: {}, down: {}, left: {}, right: {} }, motionPlaybackMs: { up: 90, down: 90, left: 90, right: 90 }, castingFrameDurations: [], backgroundAssetId: null, castingFrameRodTips: {}, walkMotion: { stepMs: 200, animFrameMs: 90 }, castPhysics: { gravityMps2: 9.8, vxScale: 1 }, itemPopup: { backgroundAssetId: null, iconPos: null, iconSizePx: 64 }, castGaugeAssetId: null, castGaugeFillRegion: null, fishableAreas: [], blockedAreas: [], interactionAreas: [], dialogueScene: { boxLayer: null, jisooLayer: null, youngwooLayer: null }, heldFishPos: null, characterIdleSheets: { jisu: { assetId: null, overrides: {} }, youngwoo: { assetId: null, overrides: {} } }, youngwooNpcPos: null };
+  const FISHING_CONFIG_DEFAULT = { barDesign: {}, fishSheetAssetId: null, fishIconOverrides: {}, motionSheetAssetId: null, motionFrameOverrides: { cast: {}, reel: {}, up: {}, down: {}, left: {}, right: {} }, motionRowOverrides: {}, motionFrameImageOverrides: { up: {}, down: {}, left: {}, right: {} }, motionPlaybackMs: { up: 90, down: 90, left: 90, right: 90 }, castingFrameDurations: [], backgroundAssetId: null, castingFrameRodTips: {}, walkMotion: { stepMs: 200, animFrameMs: 90 }, castPhysics: { gravityMps2: 9.8, vxScale: 1 }, itemPopup: { backgroundAssetId: null, iconPos: null, iconSizePx: 64 }, castGaugeAssetId: null, castGaugeFillRegion: null, fishableAreas: [], blockedAreas: [], interactionAreas: [], dialogueScene: { boxLayer: null, jisooLayer: null, youngwooLayer: null }, heldFishPos: null, characterIdleSheets: { jisu: { assetId: null, overrides: {} }, youngwoo: { assetId: null, overrides: {} } }, youngwooNpcPos: null };
 
   async function getFishingConfig() {
     if (fishingConfigCache.has('config')) return fishingConfigCache.get('config');
