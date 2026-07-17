@@ -71,6 +71,11 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .crop-title{font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:.04em;margin-bottom:4px}
 .crop-desc{font-size:12.5px;color:var(--text-muted);margin-bottom:14px;line-height:1.5}
 .crop-stage{position:relative;width:100%;border-radius:12px;overflow:hidden;touch-action:none;background:#000;cursor:crosshair}
+/* ===== 지우개 다듬기 스테이지 — crop-stage와 같은 바텀시트 안에 놓이지만,
+   배경은 checkerboard(fish-sheet-frame과 같은 패턴)로 깔아 지운 자리(투명)가
+   바로 눈에 보이게 한다. */
+.erase-stage{position:relative;width:100%;border-radius:12px;overflow:hidden;touch-action:none;background-image:repeating-conic-gradient(var(--surface-2) 0% 25%, var(--surface-1) 0% 50%);background-size:16px 16px;cursor:crosshair}
+.erase-stage canvas{display:block;width:100%}
 .crop-stage canvas{display:block;width:100%}
 .crop-rect{position:absolute;border:2px solid var(--cyan);box-shadow:0 0 0 9999px rgba(0,0,0,.5);pointer-events:none;border-radius:4px}
 .crop-zoom-row{margin-top:14px;display:flex;align-items:center;justify-content:center;gap:22px}
@@ -838,6 +843,34 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   </div>
 </div>
 
+<!-- ===== 개별 업로드 프레임 지우개 다듬기 — handleMotionCategoryUpload가
+     자동 배경 제거(removeBackgroundOrFallback) 직후 프레임마다 이 모달을
+     열어, 남은 배경 얼룩을 손가락/마우스로 문질러 지울 기회를 준다
+     (destination-out 합성이라 지운 자리는 완전히 투명해진다). "확인"을
+     눌러야 다음 프레임으로 넘어간다 — crop-overlay와 같은 바텀시트 틀
+     재사용. -->
+<div class="crop-overlay hidden" id="eraseOverlay">
+  <div class="crop-sheet">
+    <div class="crop-title" id="eraseTitle">배경 지우개로 다듬기</div>
+    <div class="crop-desc">자동으로 배경을 지웠어요. 남은 부분이 있으면 그림 위를 손가락으로 문질러서 지우세요. 다 됐으면 "확인"을 눌러 저장하세요.</div>
+    <div class="erase-stage" id="eraseStage">
+      <canvas id="eraseCanvas"></canvas>
+    </div>
+    <div class="crop-size-row">
+      <div class="option-label">지우개 크기</div>
+      <div class="crop-size-controls">
+        <input type="range" id="eraseBrushInput" min="4" max="60" step="1" value="20">
+        <input type="number" id="eraseBrushNumberInput" min="4" max="60" step="1" value="20">
+        <span class="crop-size-unit">px</span>
+      </div>
+    </div>
+    <div class="crop-actions">
+      <button type="button" class="crop-btn secondary" id="eraseResetBtn">↺ 초기화</button>
+      <button type="button" class="crop-btn primary" id="eraseConfirmBtn">확인</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== 낚시대 끝 지정 — crop-overlay와 같은 바텀시트 틀을 재사용하되,
      영역(크기 있는 네모)이 아니라 프레임마다 점 하나만 찍는다. 위쪽
      프레임 선택 줄(rodtip-frame-picker)에서 프레임을 고르면 아래
@@ -1015,6 +1048,14 @@ const el = {
   motionFrameActionsCutoutBtn: document.getElementById('motionFrameActionsCutoutBtn'),
   motionFrameActionsClearBtn: document.getElementById('motionFrameActionsClearBtn'),
   motionFrameActionsCancelBtn: document.getElementById('motionFrameActionsCancelBtn'),
+  eraseOverlay: document.getElementById('eraseOverlay'),
+  eraseTitle: document.getElementById('eraseTitle'),
+  eraseStage: document.getElementById('eraseStage'),
+  eraseCanvas: document.getElementById('eraseCanvas'),
+  eraseBrushInput: document.getElementById('eraseBrushInput'),
+  eraseBrushNumberInput: document.getElementById('eraseBrushNumberInput'),
+  eraseResetBtn: document.getElementById('eraseResetBtn'),
+  eraseConfirmBtn: document.getElementById('eraseConfirmBtn'),
   castGaugeImageSlot: document.getElementById('castGaugeImageSlot'),
   castGaugeImageAddBtn: document.getElementById('castGaugeImageAddBtn'),
   castGaugeImageFileInput: document.getElementById('castGaugeImageFileInput'),
@@ -1742,21 +1783,115 @@ el.motionFrameActionsClearBtn.addEventListener('click', async () => {
 });
 el.motionFrameActionsCancelBtn.addEventListener('click', closeMotionFrameActions);
 
+// ===== 개별 업로드 프레임 지우개 다듬기 =====
+// openMotionFrameEraser(blob, label)는 자동 배경 제거 결과를 캔버스에
+// 그려 보여주고, 사용자가 문질러(destination-out 합성) 남은 배경을 지운
+// 뒤 "확인"을 누르면 그 결과를 Blob으로 resolve하는 Promise를 돌려준다
+// — handleMotionCategoryUpload가 프레임마다 await해서 순서대로 처리한다.
+let eraseCtx = null;
+let eraseSourceImg = null;
+let eraseOriginalObjectUrl = null;
+let eraseDrawing = false;
+let eraseResolve = null;
+let eraseBrushPx = 20;
+
+function openMotionFrameEraser(blob, label) {
+  return new Promise((resolve, reject) => {
+    eraseResolve = resolve;
+    const objectUrl = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      eraseSourceImg = img;
+      eraseOriginalObjectUrl = objectUrl;
+      el.eraseTitle.textContent = label ? `배경 지우개로 다듬기 — ${label}` : '배경 지우개로 다듬기';
+      el.eraseOverlay.classList.remove('hidden');
+      resetEraseCanvas();
+    };
+    img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error('이미지를 불러오지 못했어요')); };
+    img.src = objectUrl;
+  });
+}
+function resetEraseCanvas() {
+  if (!eraseSourceImg) return;
+  const stageWidth = el.eraseStage.clientWidth;
+  const scale = stageWidth / eraseSourceImg.naturalWidth;
+  el.eraseCanvas.width = stageWidth;
+  el.eraseCanvas.height = eraseSourceImg.naturalHeight * scale;
+  eraseCtx = el.eraseCanvas.getContext('2d');
+  eraseCtx.clearRect(0, 0, el.eraseCanvas.width, el.eraseCanvas.height);
+  eraseCtx.drawImage(eraseSourceImg, 0, 0, el.eraseCanvas.width, el.eraseCanvas.height);
+}
+function closeMotionFrameEraser() {
+  el.eraseOverlay.classList.add('hidden');
+  if (eraseOriginalObjectUrl) URL.revokeObjectURL(eraseOriginalObjectUrl);
+  eraseSourceImg = null;
+  eraseOriginalObjectUrl = null;
+  eraseCtx = null;
+}
+function eraseAt(x, y) {
+  if (!eraseCtx) return;
+  eraseCtx.save();
+  eraseCtx.globalCompositeOperation = 'destination-out';
+  eraseCtx.beginPath();
+  eraseCtx.arc(x, y, eraseBrushPx / 2, 0, Math.PI * 2);
+  eraseCtx.fill();
+  eraseCtx.restore();
+}
+function eraseEventToCanvasXY(e) {
+  const rect = el.eraseCanvas.getBoundingClientRect();
+  return {
+    x: (e.clientX - rect.left) * (el.eraseCanvas.width / rect.width),
+    y: (e.clientY - rect.top) * (el.eraseCanvas.height / rect.height),
+  };
+}
+el.eraseStage.addEventListener('pointerdown', (e) => {
+  eraseDrawing = true;
+  const { x, y } = eraseEventToCanvasXY(e);
+  eraseAt(x, y);
+});
+window.addEventListener('pointermove', (e) => {
+  if (!eraseDrawing) return;
+  const { x, y } = eraseEventToCanvasXY(e);
+  eraseAt(x, y);
+});
+window.addEventListener('pointerup', () => { eraseDrawing = false; });
+
+function setEraseBrushPx(px) {
+  eraseBrushPx = Math.max(4, Math.min(60, px || 0));
+  el.eraseBrushInput.value = eraseBrushPx;
+  el.eraseBrushNumberInput.value = eraseBrushPx;
+}
+el.eraseBrushInput.addEventListener('input', () => setEraseBrushPx(Number(el.eraseBrushInput.value)));
+el.eraseBrushNumberInput.addEventListener('input', () => setEraseBrushPx(Number(el.eraseBrushNumberInput.value)));
+el.eraseResetBtn.addEventListener('click', resetEraseCanvas);
+el.eraseConfirmBtn.addEventListener('click', () => {
+  el.eraseCanvas.toBlob((blob) => {
+    const resolve = eraseResolve;
+    closeMotionFrameEraser();
+    eraseResolve = null;
+    if (resolve) resolve(blob);
+  }, 'image/png');
+});
+
 // ===== 이동 모션 프레임 개별 업로드 (프레임 미리보기 오른쪽 "📤 개별
 // 업로드" 버튼) =====
 // 여러 장을 한 번에 고르면 앞에서부터 프레임 1~6 순서로 배정한다(더 적게
 // 고르면 그만큼만 채우고 나머지 프레임은 그대로 시트 크롭을 쓴다). 소품
-// 이미지 업로드(sinkerImageAddBtn 등)와 같은 이유로 배경을 자동 제거한 뒤
-// 저장한다.
+// 이미지 업로드(sinkerImageAddBtn 등)와 같은 이유로 배경을 자동 제거한
+// 뒤, 지우개 다듬기 모달(openMotionFrameEraser)에서 확인을 받아야 다음
+// 프레임으로 넘어간다.
 async function handleMotionCategoryUpload(category, files) {
   if (!files.length) return;
   const btn = el[motionElKey(category, 'UploadBtn')];
   btn.disabled = true;
   try {
     const overrides = Object.assign({}, getMotionFrameImageOverrides(category));
-    for (let i = 0; i < files.length && i < MOTION_GRID_COLUMNS; i++) {
-      const blob = await removeBackgroundOrFallback(files[i]);
-      const asset = await AssetDB.addAsset({ type: 'fishing-motion-frame', name: files[i].name, blob });
+    const count = Math.min(files.length, MOTION_GRID_COLUMNS);
+    for (let i = 0; i < count; i++) {
+      const cutoutBlob = await removeBackgroundOrFallback(files[i]);
+      const label = `${MOTION_LABELS[category]} ${i + 1}번 프레임` + (count > 1 ? ` (${i + 1}/${count})` : '');
+      const finalBlob = await openMotionFrameEraser(cutoutBlob, label);
+      const asset = await AssetDB.addAsset({ type: 'fishing-motion-frame', name: files[i].name, blob: finalBlob });
       overrides[i] = asset.id;
     }
     await setMotionFrameImageOverrides(category, overrides);
