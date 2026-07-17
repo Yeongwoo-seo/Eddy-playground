@@ -2302,7 +2302,11 @@ async function playReelThenResult() {
   } else {
     await wait(500);
   }
-  renderCatchingReelLine(); // 잡아채기 중이던 줄을 5번 프레임 낚싯대 끝 기준으로 갱신 — flyFishToCharacter가 시작하면 추 쪽 끝을 날아가는 물고기로 바로 이어받는다
+  // 물고기가 딸려 올라오는(flyFishToCharacter) 동안엔 낚싯줄을 안 그린다 —
+  // 잡아채기(낚시바) 중이던 줄은 여기서 그냥 숨긴다. 완전히 팽팽한 직선
+  // (reelLineSlack(4)===0)이 포물선으로 날아가는 물고기를 따라가면 부자연
+  // 스러워 보였다(요청).
+  el.castSvg.classList.add('hidden');
   caughtCount++;
   el.countChip.textContent = caughtCount + '마리';
   const fishCaught = pendingCatchFish;
@@ -2322,9 +2326,9 @@ async function playReelThenResult() {
    좀 더 느리게, 정점이 캐릭터 위치보다 위로 떠도 됨) — CSS transition
    대신 매 프레임 위치를 직접 계산해서 그린다(throwSinker의 추 궤적과
    같은 방식). 임시 엘리먼트(.fish-fly)를 만들어 el.stage에 얹고, 도착하면
-   지운다. 날아가는 내내 올리기 5번 프레임의 낚싯대 끝~물고기 사이를
-   완전히 팽팽한 직선(reelLineSlack(4)===0)으로 이어 그리다가, 도착하는
-   순간 줄을 숨긴다(heldFish 오버레이로 넘어감). */
+   지운다. 낚싯줄은 playReelThenResult가 이 함수를 부르기 전에 이미 숨겨둔다
+   — 완전히 팽팽한 직선(reelLineSlack(4)===0)이 포물선으로 날아가는 물고기를
+   따라가면 부자연스러워 보여서(요청) 끌어올리는 동안엔 줄을 아예 안 그린다. */
 const FISH_FLY_DURATION_MS = 1600;
 const FISH_FLY_ARC_PCT = 18; // 포물선 정점이 시작~도착 직선보다 이만큼(프레임 세로 %) 더 위로 뜬다
 function flyFishToCharacter(fishDef) {
@@ -2335,7 +2339,6 @@ function flyFishToCharacter(fishDef) {
     const charRect = el.charStage.getBoundingClientRect();
     const endLeft = ((charRect.left + charRect.width / 2) - frameRect.left) / frameRect.width * 100;
     const endTop = ((charRect.top + charRect.height * 0.3) - frameRect.top) / frameRect.height * 100;
-    const reelTipPt = reelTipPxForFrame(4, frameRect);
 
     const flyEl = document.createElement('div');
     flyEl.className = 'fish-fly';
@@ -2371,14 +2374,11 @@ function flyFishToCharacter(fishDef) {
       const top = startTop + (endTop - startTop) * t - FISH_FLY_ARC_PCT * 4 * t * (1 - t);
       flyEl.style.left = left + '%';
       flyEl.style.top = top + '%';
-      renderCastLine(reelTipPt, { x: left / 100 * frameRect.width, y: top / 100 * frameRect.height }, reelLineSlack(4));
       if (t < 1) { requestAnimationFrame(frame); return; }
       flyEl.remove();
       // 물고기가 캐릭터에 도착한 순간 — 올리기 6번(마지막) 프레임, 물고기를
-      // 들고 있는 자세(heldFish 오버레이가 이 프레임 위에 그려진다). 낚싯줄은
-      // 여기서부터 필요 없다.
+      // 들고 있는 자세(heldFish 오버레이가 이 프레임 위에 그려진다).
       if (reelFrameUrls.length > 5) el.charImg.src = reelFrameUrls[5];
-      el.castSvg.classList.add('hidden');
       resolve();
     }
     requestAnimationFrame(frame);
