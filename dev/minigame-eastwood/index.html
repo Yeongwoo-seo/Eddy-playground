@@ -195,24 +195,27 @@ if ('serviceWorker' in navigator) {
 <script>
 /* ===== Route-map minigame (The Missing Key v1 §11.2) — rebuilt from the
    original 3-stop "tap stations in order" design into the documented 3-stage
-   flow over 4 stops (공항/시티/숙소=Eastwood/영우 직장=Marayong):
+   flow over 4 stops (공항/서큘러키/숙소=Eastwood/영우 직장=Marayong):
      Stage 1 라벨 배치 — pick a label chip, tap its spot on the map (any order)
      Stage 2 관계 연결 — tap two placed pins to wire each of the 3 real legs
      Stage 3 이동 경로 확인 — tap all 4 pins in the correct travel order
    Map image + hand-marked hotspots (배경 DB → 미니게임, /dev/upload) are
    unchanged infrastructure — this scene's own minigameStages (dialogueData.js)
    already listed all 4 stops, so /dev/upload already offers 4 hotspot slots;
-   only this page's gameplay logic needed rebuilding. */
+   only this page's gameplay logic needed rebuilding.
+   [써큘러키 낚시 씬 추가] 2번째 지점을 뭉뚱그린 "시티" 대신 실제 정류장인
+   서큘러키(Circular Quay)로 바꿨다 — week0-scene-circular-quay(낚시 미니게임)
+   가 그 지점에서 실제로 벌어지는 곳이다. */
 const MINIGAME_ID = 'week0-scene-001-2-minigame';
 const HOTSPOT_MIN_FR = 0.035; // floor on tap-target size so a careless hotspot still stays easy to hit
 
 const LOCATIONS = [
   { id: 'airport', label: '공항' },
-  { id: 'city', label: '시티' },
+  { id: 'circular-quay', label: '서큘러키 (Circular Quay)' },
   { id: 'eastwood', label: '숙소 (Eastwood)' },
   { id: 'marayong', label: '영우 직장 (Marayong)' },
 ];
-// 공항 → 시티 → 숙소 → 영우 직장 — both Stage 2's 3 valid legs and Stage 3's
+// 공항 → 서큘러키 → 숙소 → 영우 직장 — both Stage 2's 3 valid legs and Stage 3's
 // required tap order are derived from this single sequence.
 const ROUTE_ORDER = [0, 1, 2, 3];
 const REQUIRED_LEGS = ROUTE_ORDER.slice(0, -1).map((_, i) => [ROUTE_ORDER[i], ROUTE_ORDER[i + 1]]);
