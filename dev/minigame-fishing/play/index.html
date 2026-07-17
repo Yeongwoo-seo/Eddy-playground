@@ -38,6 +38,14 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 
 .frame{position:relative;width:100%;max-width:430px;height:100dvh;height:100vh;height:var(--vh100, 100vh);overflow:hidden;background:linear-gradient(180deg,var(--sky-top) 0%,var(--sky-bottom) 55%,var(--water-top) 55%,var(--water-bottom) 100%);display:flex;flex-direction:column;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-user-drag:none}
 
+/* ===== 프리로드 오버레이 — revealGame 참고. 기본은 완전 불투명 검정 +
+   클릭 차단(pointer-events 기본값 auto), .fade-out이 붙으면 서서히
+   투명해지며 클릭도 바로 풀어준다(트랜지션이 끝나기 전이라도 아래 게임을
+   만질 수 있게), 트랜지션이 끝나면 .hidden으로 완전히 빼서 다시 안 그린다. */
+.preload-overlay{position:absolute;inset:0;z-index:999;background:#000;opacity:1;transition:opacity .9s ease}
+.preload-overlay.fade-out{opacity:0;pointer-events:none}
+.preload-overlay.hidden{display:none}
+
 .topbar{position:absolute;top:0;left:0;right:0;z-index:6;padding:calc(14px + env(safe-area-inset-top,0)) 16px 10px;display:flex;align-items:center;justify-content:space-between;pointer-events:none}
 .back-chip{pointer-events:auto;flex-shrink:0;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.4);border:1px solid rgba(10,40,50,.25);color:#0A2A3A;font-size:18px;font-weight:700;line-height:1;text-decoration:none}
 .back-chip:active{transform:scale(.92)}
@@ -363,6 +371,12 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 </head>
 <body>
 <div class="frame" id="frame">
+  <!-- ===== 프리로드 오버레이 — 배경/캐릭터 모션/물고기 시트 등 이미지
+       자산이 전부 디코드되기 전까지 화면을 검게 덮어둔다. 정적 마크업이라
+       body{background:#000}과 이어져 첫 페인트부터 검고, JS가 loadConfig
+       (dev/minigame-fishing/play/index.html)에서 자산을 전부 preloadImage로
+       미리 디코드한 뒤 revealGame()이 .fade-out을 붙여 서서히 밝힌다. ===== -->
+  <div class="preload-overlay" id="preloadOverlay"></div>
   <div class="topbar">
     <a class="back-chip" href="/dev/minigame-fishing/" aria-label="뒤로">‹</a>
     <div class="count-chip" id="countChip">0마리</div>
@@ -579,6 +593,7 @@ function gaugeColorForProgress(pct) {
 
 const el = {
   frame: document.getElementById('frame'),
+  preloadOverlay: document.getElementById('preloadOverlay'),
   bgLayer: document.getElementById('bgLayer'),
   stage: document.getElementById('stage'),
   charStage: document.getElementById('charStage'),
@@ -1130,6 +1145,14 @@ async function loadConfig() {
   let assets = [];
   try { assets = await AssetDB.getAssetsByIds(ids); } catch (e) { /* 위와 동일 */ }
   const byId = new Map(assets.map(a => [a.id, a]));
+  // 화면을 밝히기 전에(revealGame) 여기서 모은 이미지 자산을 전부 먼저
+  // 디코드해둔다 — dataUrl은 실제로는 base64가 아니라 Supabase Storage
+  // HTTPS URL(assetDb.js 참고)이라 방금 올린 파일은 공개 URL 전파가 아직
+  // 안 됐을 수 있어 preloadWithRetry(barImageAsset 등과 같은 재시도)를
+  // 그대로 쓴다. 아래 나머지 로직(배경/모션 프레임 등 조립)과 병렬로
+  // 돌리고, 함수 맨 끝에서 await해 loadConfig 자체가 이 프리로드까지
+  // 끝나야 resolve되게 한다.
+  const preloadAllAssetImages = Promise.all(assets.map(a => preloadWithRetry(a.dataUrl, 3, 500)));
   const motionOverrides = cfg.motionFrameOverrides || {};
   // 카테고리별 소스 이미지(메인 시트 또는 카테고리 스트립, resolveMotionCategorySource
   // 참고)를 assetId별로 한 번씩만 로드해 재사용한다 — 카테고리 스트립을 안 올린
@@ -1531,6 +1554,22 @@ async function loadConfig() {
   if (renderDialogueIntro(dialogueSceneCfg, byId)) {
     gameState = 'dialogue';
   }
+
+  await preloadAllAssetImages;
+}
+
+// 프리로드 오버레이(#preloadOverlay, 정적 마크업이라 첫 페인트부터 검다)를
+// 서서히 걷어낸다 — loadConfig()가 이미지 자산을 전부 디코드하고 나서만
+// 호출된다. transitionend에서 .hidden을 붙여 트랜지션이 끝난 뒤엔 완전히
+// 빼서(레이아웃/페인트에서 제외) 다시 그릴 일이 없게 한다.
+let gameRevealed = false;
+function revealGame() {
+  if (gameRevealed) return;
+  gameRevealed = true;
+  el.preloadOverlay.classList.add('fade-out');
+  el.preloadOverlay.addEventListener('transitionend', () => {
+    el.preloadOverlay.classList.add('hidden');
+  }, { once: true });
 }
 function renderDialogueIntro(dialogueScene, byId) {
   el.dialogueIntro.innerHTML = '';
@@ -2952,7 +2991,16 @@ el.layoutCodeCloseBtn.addEventListener('click', (e) => {
 loadLayoutPrefs();
 applyLayoutPrefs();
 
-loadConfig().then(() => checkInteractionArea()); // 초기 스폰 위치가 이미 상호작용 영역 안일 수도 있으니 로드 직후 한 번 확인
+// 오프라인이거나 Supabase 응답이 유난히 느려도 화면이 검게 영영 멈춰
+// 있으면 안 되니, loadConfig가 안 끝나도 이 시간이 지나면 강제로 밝힌다
+// (그 시점까지 못 그려진 이미지는 나중에 그냥 나타난다 — revealGame은
+// gameRevealed 가드가 있어 두 경로 중 먼저 온 쪽만 실제로 밝힌다).
+setTimeout(revealGame, 8000);
+
+loadConfig().then(() => {
+  checkInteractionArea(); // 초기 스폰 위치가 이미 상호작용 영역 안일 수도 있으니 로드 직후 한 번 확인
+  revealGame();
+});
 </script>
 <script src="/dev/devPlanFab.js"></script>
 </body>
