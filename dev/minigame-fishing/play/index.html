@@ -45,14 +45,23 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 
 .stage{position:absolute;inset:0;z-index:1}
 
+/* 배경 전용 레이어 — el.frame(화면 크기 고정)의 background-position을 매
+   프레임 바꾸던 예전 방식은 카메라가 움직일 때마다 배경 전체를 다시
+   페인트해야 해서(특히 고용량 배경일수록) 뚝뚝 끊겨 보였다. 대신 이
+   레이어를 배경 원본 크기(줌 적용)로 한 번만 만들어두고, 카메라 이동은
+   GPU가 합성만 하면 되는 transform(translate3d)으로 처리한다 —
+   background-position/size는 줌이 바뀔 때(applyBgLayerSize)만 다시
+   계산한다. */
+.bg-layer{position:absolute;left:0;top:0;z-index:0;background-repeat:no-repeat;will-change:transform;pointer-events:none}
+
 /* 캐릭터가 실제로 화면 위를 움직인다(charWorldPos에서 카메라 오프셋을
    뺀 화면 기준 px를 매 프레임 left/bottom에 직접 반영, renderCharScreenPos
-   참고) — 배경은 el.frame 자체의 background-position을 캐릭터 좌표에 맞춰
-   옮기는 방식으로 "그 화면 크기에 맞게" 필요한 부분만 보여준다(화면보다
-   큰 배경 이미지 전체를 하나의 거대한 DOM으로 깔아두지 않는다). left/
-   bottom은 화면(.frame) 기준 px고, transform으로 그 지점에 박스 중심이
-   오도록 자기 크기의 절반만큼 밀어서 이 값이 실제로 캐릭터 "중심"과
-   일치하게 한다(박스 크기가 바뀌어도 항상 중심 기준이라 안전하다). */
+   참고) — 배경은 el.bgLayer(배경 원본 크기로 미리 맞춰둔 레이어)를
+   transform:translate3d로 같은 카메라 오프셋만큼 옮기는 방식으로 "그
+   화면 크기에 맞게" 필요한 부분만 보여준다. left/bottom은 화면(.frame)
+   기준 px고, transform으로 그 지점에 박스 중심이 오도록 자기 크기의
+   절반만큼 밀어서 이 값이 실제로 캐릭터 "중심"과 일치하게 한다(박스
+   크기가 바뀌어도 항상 중심 기준이라 안전하다). */
 .char-stage{position:absolute;left:0;bottom:0;transform:translate(-50%,50%) scale(var(--char-scale,1));z-index:2;width:84px;height:84px;display:flex;align-items:flex-end;justify-content:center}
 .char-stage img{max-width:100%;max-height:100%;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 4px 6px rgba(0,0,0,.35))}
 .char-fallback{font-size:46px;filter:drop-shadow(0 4px 6px rgba(0,0,0,.35))}
@@ -297,6 +306,8 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
     <div class="count-chip" id="countChip">0마리</div>
   </div>
 
+  <div class="bg-layer" id="bgLayer"></div>
+
   <div class="stage" id="stage">
     <div class="char-stage" id="charStage">
       <img id="charImg" class="hidden" alt="">
@@ -463,6 +474,7 @@ function gaugeColorForProgress(pct) {
 
 const el = {
   frame: document.getElementById('frame'),
+  bgLayer: document.getElementById('bgLayer'),
   stage: document.getElementById('stage'),
   charStage: document.getElementById('charStage'),
   charImg: document.getElementById('charImg'),
@@ -633,6 +645,13 @@ let camOffset = { x: 0, y: 0 }; // 지금 카메라(화면)가 배경 원본 이
 // effectiveBgZoom()이 항상 1을 돌려줘 예전 폴백 동작과 완전히 같다.
 let bgZoom = 1;
 function effectiveBgZoom() { return hasWorldBackground ? bgZoom : 1; }
+// updateCamera는 이동 중 매 프레임(moveTick) 호출되므로, 그때마다
+// el.frame.getBoundingClientRect()를 다시 읽으면 매 프레임 강제 레이아웃
+// 계산(reflow)이 걸려 끊겨 보인다 — 화면 크기는 리사이즈/회전 때만
+// 바뀌므로 그때(refreshFrameRect)만 갱신해 캐시해두고 매 프레임은 이
+// 캐시를 읽기만 한다.
+let frameRect = { width: 0, height: 0 };
+function refreshFrameRect() { frameRect = el.frame.getBoundingClientRect(); }
 let moveRaf = null;
 let moveLastT = 0;
 let moveHoldVec = null; // { dx, dy } — 실제 위치 이동 벡터, 대각선 드래그면 둘 다 0이 아닐 수 있다
@@ -656,18 +675,35 @@ function worldBounds() {
   };
 }
 
+// 배경 레이어 크기 — 배경 원본 px * 줌으로 el.bgLayer 자체의 width/
+// height/background-size를 맞춘다. 줌이 바뀌거나(슬라이더) 배경을 새로
+// 불러올 때만 호출하면 되고, 카메라 이동(매 프레임) 경로에는 없다 —
+// width/height 변경은 reflow를 유발하므로 그 빈도를 줄이는 게 핵심이다.
+function applyBgLayerSize() {
+  const zoom = effectiveBgZoom();
+  const scaledW = worldSize.w * zoom, scaledH = worldSize.h * zoom;
+  el.bgLayer.style.width = scaledW + 'px';
+  el.bgLayer.style.height = scaledH + 'px';
+  el.bgLayer.style.backgroundSize = `${scaledW}px ${scaledH}px`;
+}
+
 // 카메라 — 배경 전체를 담은 거대한 DOM(예전 el.world)을 옮기는 대신,
-// 화면 크기 그대로인 el.frame의 background-position만 캐릭터 좌표에 맞춰
-// 옮긴다("그 화면 사이즈에 맞게 로딩"). 캐릭터(el.charStage)는 그 계산된
-// 카메라 오프셋을 빼 실제 화면 위 자기 위치(left/bottom)에 매 프레임
-// 직접 반영한다 — 캐릭터가 화면 위를 실제로 움직이는 것으로 보이고,
-// 그 뒤에서 배경만 카메라 오프셋만큼 밀려 보이는 식이다. 이미지 가장자리
-// 에서는 clamp돼 카메라가 더 이상 못 따라가고(화면 크기 - 이미지 크기가
-// 음수가 안 나오게) 대신 캐릭터가 화면 가장자리 쪽으로 치우쳐 보인다 —
-// 배경이 화면보다 작거나 없을 때(hasWorldBackground false)는 항상 0으로
-// clamp돼 카메라가 아예 움직이지 않고 캐릭터만 화면 안에서 움직인다.
+// 배경 원본 크기(줌 적용)로 미리 맞춰둔 el.bgLayer를 캐릭터 좌표에 맞춰
+// transform:translate3d로 민다("그 화면 사이즈에 맞게 로딩"). 캐릭터
+// (el.charStage)는 그 계산된 카메라 오프셋을 빼 실제 화면 위 자기 위치
+// (left/bottom)에 매 프레임 직접 반영한다 — 캐릭터가 화면 위를 실제로
+// 움직이는 것으로 보이고, 그 뒤에서 배경만 카메라 오프셋만큼 밀려 보이는
+// 식이다. background-position을 매 프레임 바꾸던 예전 방식은 카메라가
+// 움직일 때마다 배경 전체를 다시 페인트해야 해서 고용량 배경일수록 뚝뚝
+// 끊겨 보였다 — transform은 페인트 없이 GPU 합성만으로 처리돼 더 부드럽다.
+// 이미지 가장자리에서는 clamp돼 카메라가 더 이상 못 따라가고(화면 크기 -
+// 이미지 크기가 음수가 안 나오게) 대신 캐릭터가 화면 가장자리 쪽으로
+// 치우쳐 보인다 — 배경이 화면보다 작거나 없을 때(hasWorldBackground
+// false)는 항상 0으로 clamp돼 카메라가 아예 움직이지 않고 캐릭터만 화면
+// 안에서 움직인다. frameRect는 리사이즈/회전 때만 갱신되는 캐시값이다
+// (refreshFrameRect) — 이동 중 매 프레임 getBoundingClientRect()를
+// 다시 읽으면 그 자체로 강제 reflow가 걸려 끊겨 보인다.
 function updateCamera() {
-  const frameRect = el.frame.getBoundingClientRect();
   const zoom = effectiveBgZoom();
   const scaledW = worldSize.w * zoom, scaledH = worldSize.h * zoom;
   const charXScaled = charWorldPos.x * zoom;
@@ -676,8 +712,7 @@ function updateCamera() {
   const camY = clamp(charYFromTopScaled - frameRect.height / 2, 0, Math.max(0, scaledH - frameRect.height));
   camOffset = { x: camX, y: camY };
   if (hasWorldBackground) {
-    el.frame.style.backgroundSize = `${scaledW}px ${scaledH}px`;
-    el.frame.style.backgroundPosition = `${-camX}px ${-camY}px`;
+    el.bgLayer.style.transform = `translate3d(${-camX}px, ${-camY}px, 0)`;
   }
   el.charStage.style.left = (charXScaled - camX) + 'px';
   el.charStage.style.bottom = (frameRect.height - charYFromTopScaled + camY) + 'px';
@@ -691,8 +726,8 @@ function updateCamera() {
 // loadConfig가 초기 배치를 담당한다.
 function onFrameResize() {
   if (!charWorldPos) return;
+  refreshFrameRect();
   if (!hasWorldBackground) {
-    const frameRect = el.frame.getBoundingClientRect();
     worldSize = { w: frameRect.width, h: frameRect.height };
     const wb = worldBounds();
     charWorldPos.x = clamp(charWorldPos.x, wb.minX, wb.maxX);
@@ -876,16 +911,29 @@ async function loadConfig() {
   bgZoom = 1;
   el.layoutBgZoom.value = '1';
   el.layoutBgZoomRow.classList.toggle('hidden', !hasWorldBackground);
-  const frameRectForWorld = el.frame.getBoundingClientRect();
-  worldSize = hasWorldBackground ? { w: bgDims.width, h: bgDims.height } : { w: frameRectForWorld.width, h: frameRectForWorld.height };
-  el.frame.style.backgroundImage = backgroundAsset ? `url(${backgroundAsset.dataUrl})` : '';
-  // hasWorldBackground면 background-size:auto(원본 크기 그대로)로 두고
-  // updateCamera가 매 프레임 background-position을 옮긴다. 배경은 있는데
-  // 자연 크기를 못 읽은 예외 상황에서는(카메라가 못 움직임) 예전처럼
-  // auto+center로 최소한 보이게라도 한다.
-  el.frame.style.backgroundSize = 'auto';
-  el.frame.style.backgroundPosition = hasWorldBackground ? '' : 'center';
-  el.frame.style.backgroundRepeat = backgroundAsset ? 'no-repeat' : '';
+  refreshFrameRect();
+  worldSize = hasWorldBackground ? { w: bgDims.width, h: bgDims.height } : { w: frameRect.width, h: frameRect.height };
+  if (hasWorldBackground) {
+    // 카메라가 움직이는 정상 경로 — el.bgLayer에 원본 이미지를 원본 크기
+    // 그대로 얹고, updateCamera는 이 레이어를 transform으로만 민다(el.frame
+    // 자체는 CSS 기본 그라데이션을 그대로 유지 — 배경이 화면보다 작을 때
+    // 가장자리에 비쳐 보인다).
+    el.frame.style.backgroundImage = '';
+    el.bgLayer.style.backgroundImage = `url(${backgroundAsset.dataUrl})`;
+    el.bgLayer.style.backgroundRepeat = 'no-repeat';
+    el.bgLayer.style.display = '';
+    applyBgLayerSize();
+  } else {
+    // 배경이 없거나(그라데이션 폴백) 자연 크기를 못 읽은 예외 상황 —
+    // 카메라가 움직일 수 없으므로 el.bgLayer는 꺼두고 예전처럼 el.frame에
+    // auto+center로 정적으로 얹는다(카메라 계산 없이 최소한 보이게라도 함).
+    el.bgLayer.style.backgroundImage = '';
+    el.bgLayer.style.display = 'none';
+    el.frame.style.backgroundImage = backgroundAsset ? `url(${backgroundAsset.dataUrl})` : '';
+    el.frame.style.backgroundSize = 'auto';
+    el.frame.style.backgroundPosition = 'center';
+    el.frame.style.backgroundRepeat = backgroundAsset ? 'no-repeat' : '';
+  }
   const wb = worldBounds();
   if (!charWorldPos) {
     // 예전 CSS 기본값(화면 정중앙)과 같은 자리에서 시작하되, 새 범위(wb)
@@ -2229,6 +2277,7 @@ el.layoutCastingScale.addEventListener('change', saveLayoutPrefs);
 // 저장하지 않는다(loadConfig가 배경을 새로 불러올 때마다 1배율로 리셋).
 el.layoutBgZoom.addEventListener('input', () => {
   bgZoom = Number(el.layoutBgZoom.value);
+  applyBgLayerSize();
   updateCamera();
 });
 el.layoutEditDoneBtn.addEventListener('click', (e) => {
