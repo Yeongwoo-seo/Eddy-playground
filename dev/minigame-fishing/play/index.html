@@ -1397,8 +1397,17 @@ async function releasePowerAndCast() {
   const throwPromise = throwSinker(power, origin, frameRect, () => rodTip);
   const [, throwResult] = await Promise.all([animPromise, throwPromise]);
   if (throwResult.blocked) {
-    // 추가 낚시가능 영역 안에 떨어지면 낚시가 진행되지 않는다 — 입질을
-    // 기다리지 않고 바로 대기 상태로 되돌린다.
+    // 추가 낚시가능 영역 안에 떨어지면 낚시가 진행되지 않는다 — 캐스팅
+    // 취소. 착수 지점에서 바로 사라지는 대신, 올리기 4번 프레임을 유지한
+    // 채 추가 낚싯대 끝(캐릭터)으로 되감겨 돌아오는 걸 보여준 뒤에야
+    // 대기 상태로 되돌린다.
+    if (reelFrameUrls.length > 3) {
+      stopReelHoldAnim();
+      el.charImg.classList.remove('hidden');
+      el.charFallback.classList.add('hidden');
+      el.charImg.src = reelFrameUrls[3];
+    }
+    await reelSinkerBack(rodTip);
     el.bobber.classList.add('hidden');
     el.castSvg.classList.add('hidden');
     resetToIdle();
@@ -1552,6 +1561,37 @@ function catenaryPoints(p0, p1, samples) {
     pts.push({ x: p0.x + xl, y: p0.y - ylMath });
   }
   return pts;
+}
+
+// 캐스팅 취소(추가 낚시 불가 영역에 떨어짐) 연출 — 착수 지점에서 바로
+// 사라지는 대신, 추가 낚싯대 끝(rodTipPt)까지 되감기듯 돌아오는 동안 줄도
+// 같이 따라 그린다(renderCastLine 재사용). el.bobber는 착수 시 finish()가
+// 남겨둔 left/top(%)에서 시작해 rodTipPt까지 보간한다 — bob-idle 클래스가
+// 아직 안 붙은 상태(waitForBite 이전)라 CSS 애니메이션 오프셋 없이
+// left/top(%)이 곧 화면 중심 좌표라 별도 DOM 측정 없이 바로 프레임 px로
+// 환산할 수 있다.
+const CAST_CANCEL_REEL_MS = 450;
+function reelSinkerBack(rodTipPt) {
+  return new Promise(resolve => {
+    const frameRect = el.frame.getBoundingClientRect();
+    const startLeftPct = parseFloat(el.bobber.style.left) || 0;
+    const startTopPct = parseFloat(el.bobber.style.top) || 0;
+    const endLeftPct = rodTipPt.x / frameRect.width * 100;
+    const endTopPct = rodTipPt.y / frameRect.height * 100;
+    let start = null;
+    function frame(ts) {
+      if (start === null) start = ts;
+      const t = Math.min((ts - start) / CAST_CANCEL_REEL_MS, 1);
+      const leftPct = startLeftPct + (endLeftPct - startLeftPct) * t;
+      const topPct = startTopPct + (endTopPct - startTopPct) * t;
+      el.bobber.style.left = leftPct + '%';
+      el.bobber.style.top = topPct + '%';
+      renderCastLine(rodTipPt, { x: leftPct / 100 * frameRect.width, y: topPct / 100 * frameRect.height });
+      if (t < 1) { requestAnimationFrame(frame); return; }
+      resolve();
+    }
+    requestAnimationFrame(frame);
+  });
 }
 
 // 착수 후(입질 대기 중~입질) el.bobber는 CSS 애니메이션(bob-idle/bite-dip)으로
