@@ -1745,7 +1745,9 @@ async function releasePowerAndCast() {
     // 채 추가 낚싯대 끝(캐릭터)으로 되감겨 돌아오는 걸 보여준 뒤에야
     // 대기 상태로 되돌린다. 되감기는 캐스팅 프레임이 아니라 올리기 4번
     // 프레임의 낚싯대 끝(reelTipPxForFrame)을 기준으로 하고, 4번은 완전히
-    // 팽팽한 직선(reelLineSlack(3)===0)으로 이어 그린다.
+    // 팽팽한 직선(reelLineSlack(3)===0)으로 이어 그린다. 되감기 이동시간은
+    // throwSinker가 돌려준 flightMs(이번 캐스팅이 날아간 시간)를 그대로
+    // 써서, 날아간 시간만큼 되돌아오게 한다.
     let reelBackOrigin = rodTip;
     if (reelFrameUrls.length > 3) {
       stopReelHoldAnim();
@@ -1754,7 +1756,7 @@ async function releasePowerAndCast() {
       el.charImg.src = reelFrameUrls[3];
       reelBackOrigin = reelTipPxForFrame(3, frameRect);
     }
-    await reelSinkerBack(reelBackOrigin, 3);
+    await reelSinkerBack(reelBackOrigin, 3, throwResult.flightMs);
     el.bobber.classList.add('hidden');
     el.castSvg.classList.add('hidden');
     resetToIdle();
@@ -1872,7 +1874,10 @@ function throwSinker(power, origin, frameRect, getRodTip) {
       // 바로 idle로 되돌린다).
       const landingFrac = framePxToImageFrac(origin.x + finalDx, waterY);
       const blocked = fishableAreas.length > 0 && isInsideAnyArea(landingFrac, fishableAreas);
-      resolve({ blocked });
+      // flightMs — 이번 캐스팅이 날아간(=취소까지 걸린) 시간. 캐스팅 취소 시
+      // reelSinkerBack이 되감기 이동시간으로 그대로 재사용해서, 날아간
+      // 시간만큼 되돌아오게 한다(왕복 대칭).
+      resolve({ blocked, flightMs: T * 1000 });
     }
     castFlightRaf = requestAnimationFrame(frame);
   });
@@ -1942,9 +1947,12 @@ function catenaryPoints(p0, p1, samples, slack) {
 // 넘긴다). el.bobber는 착수 시 finish()가 남겨둔 left/top(%)에서 시작해
 // rodTipPt까지 보간한다 — bob-idle 클래스가 아직 안 붙은 상태(waitForBite
 // 이전)라 CSS 애니메이션 오프셋 없이 left/top(%)이 곧 화면 중심 좌표라
-// 별도 DOM 측정 없이 바로 프레임 px로 환산할 수 있다.
+// 별도 DOM 측정 없이 바로 프레임 px로 환산할 수 있다. durationMs는
+// 호출부가 넘기는 이번 캐스팅의 flightMs(날아간 시간) — 되감기도 같은
+// 시간만큼 걸리게 해 왕복이 대칭으로 보이게 한다. 값이 없으면(구버전
+// 호출부 등) CAST_CANCEL_REEL_MS로 대체한다.
 const CAST_CANCEL_REEL_MS = 450;
-function reelSinkerBack(rodTipPt, reelFrameIndex) {
+function reelSinkerBack(rodTipPt, reelFrameIndex, durationMs) {
   return new Promise(resolve => {
     const frameRect = el.frame.getBoundingClientRect();
     const startLeftPct = parseFloat(el.bobber.style.left) || 0;
@@ -1952,10 +1960,11 @@ function reelSinkerBack(rodTipPt, reelFrameIndex) {
     const endLeftPct = rodTipPt.x / frameRect.width * 100;
     const endTopPct = rodTipPt.y / frameRect.height * 100;
     const slack = reelLineSlack(reelFrameIndex);
+    const ms = durationMs || CAST_CANCEL_REEL_MS;
     let start = null;
     function frame(ts) {
       if (start === null) start = ts;
-      const t = Math.min((ts - start) / CAST_CANCEL_REEL_MS, 1);
+      const t = Math.min((ts - start) / ms, 1);
       const leftPct = startLeftPct + (endLeftPct - startLeftPct) * t;
       const topPct = startTopPct + (endTopPct - startTopPct) * t;
       el.bobber.style.left = leftPct + '%';
