@@ -297,6 +297,32 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .item-popup-name{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;font-size:16px;font-weight:700;color:#000}
 .item-popup-meta{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;font-family:var(--mono);font-size:12px;color:#000}
 
+/* ===== 영우 NPC 메뉴 / 물고기 팔기 — 대화 인트로(.dialogue-intro)와 같은
+   전체화면 반투명 오버레이 + 배경 탭으로 닫기 규칙을 그대로 따른다. */
+.npc-menu,.sell-fish{position:absolute;inset:0;z-index:21;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center}
+.npc-menu.hidden,.sell-fish.hidden{display:none}
+.npc-menu-card{width:240px;background:rgba(8,16,22,.92);border:1px solid rgba(255,255,255,.18);border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:10px}
+.npc-menu-title{text-align:center;font-size:17px;font-weight:700;color:#fff;margin-bottom:6px}
+.npc-menu-btn{padding:12px;border-radius:14px;border:none;font-size:14px;font-weight:700;color:#fff;font-family:inherit}
+.npc-menu-btn--sell{background:rgba(62,207,107,.85)}
+.npc-menu-btn--quit{background:rgba(217,65,65,.85)}
+.npc-menu-btn--close{background:rgba(255,255,255,.15);color:rgba(255,255,255,.85)}
+.npc-menu-btn:active{opacity:.8}
+
+.sell-fish-card{width:270px;max-height:70vh;background:rgba(8,16,22,.94);border:1px solid rgba(255,255,255,.18);border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:10px}
+.sell-fish-title{text-align:center;font-size:16px;font-weight:700;color:#fff}
+.sell-fish-list{display:flex;flex-direction:column;gap:6px;max-height:38vh;overflow-y:auto}
+.sell-fish-empty{text-align:center;font-size:13px;color:rgba(255,255,255,.6);padding:10px 0}
+.sell-fish-row{display:flex;align-items:center;gap:8px;font-size:13px;color:#fff}
+.sell-fish-name{flex:1;font-weight:600}
+.sell-fish-qty{color:rgba(255,255,255,.6)}
+.sell-fish-value{font-family:var(--mono);font-weight:700;color:#FFD12E;min-width:44px;text-align:right}
+.sell-fish-total{text-align:right;font-size:15px;font-weight:800;color:#fff;border-top:1px solid rgba(255,255,255,.15);padding-top:8px}
+.sell-fish-confirm{padding:12px;border-radius:14px;border:none;font-size:14px;font-weight:700;color:#fff;background:rgba(62,207,107,.85);font-family:inherit}
+.sell-fish-confirm:disabled{background:rgba(255,255,255,.12);color:rgba(255,255,255,.4)}
+.sell-fish-close{padding:10px;border-radius:14px;border:none;font-size:13px;font-weight:700;color:rgba(255,255,255,.85);background:rgba(255,255,255,.15);font-family:inherit}
+.sell-fish-confirm:active,.sell-fish-close:active{opacity:.8}
+
 /* ===== 대화 인트로 — 낚시 시작 전 지수/영우 대화 장면. dev/minigame-fishing/
    index.html "대화" 탭의 슬라이드 에디터와 같은 0~1 비율 좌표계를 그대로
    재사용해 대화창/지수/영우 이미지를 겹쳐 그린다(.dialogue-intro-layer
@@ -393,6 +419,30 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
     </div>
   </div>
 
+  <!-- ===== 영우 NPC 메뉴 — NPC 근처(npcWorldPos 반경 안, checkInteractionArea/
+       isNearYoungwoo)에서 idle 상태 화면을 탭하면 뜬다. 대화 인트로
+       (.dialogue-intro)와 같은 관례로, 카드 밖(반투명 배경)을 탭하면 그냥
+       닫힌다 — 카드/버튼은 자체 pointerdown에서 stopPropagation해 그 탭이
+       배경 닫기로 새지 않게 한다. -->
+  <div class="npc-menu hidden" id="npcMenu">
+    <div class="npc-menu-card" id="npcMenuCard">
+      <div class="npc-menu-title">영우</div>
+      <button type="button" class="npc-menu-btn npc-menu-btn--sell" id="npcMenuSellBtn">물고기 팔기</button>
+      <button type="button" class="npc-menu-btn npc-menu-btn--quit" id="npcMenuQuitBtn">그만하기</button>
+      <button type="button" class="npc-menu-btn npc-menu-btn--close" id="npcMenuCloseBtn">닫기</button>
+    </div>
+  </div>
+
+  <div class="sell-fish hidden" id="sellFishModal">
+    <div class="sell-fish-card" id="sellFishCard">
+      <div class="sell-fish-title">물고기 팔기</div>
+      <div class="sell-fish-list" id="sellFishList"></div>
+      <div class="sell-fish-total" id="sellFishTotal">총 0P</div>
+      <button type="button" class="sell-fish-confirm" id="sellFishConfirmBtn">전부 팔기</button>
+      <button type="button" class="sell-fish-close" id="sellFishCloseBtn">닫기</button>
+    </div>
+  </div>
+
   <!-- ===== 대화 인트로 — 낚시 시작(idle) 전에 딱 한 번 뜨는 지수/영우 대화
        장면. dev/minigame-fishing/index.html "대화" 탭에서 배치한 대화창/
        지수/영우 이미지를 그 슬라이드와 같은 0~1 비율 좌표로 그대로 겹쳐
@@ -411,6 +461,7 @@ if ('serviceWorker' in navigator) {
 </script>
 <script src="/dev/assetDb.js"></script>
 <script src="/dev/data/fishDefs.js"></script>
+<script src="/dev/state/economyState.js"></script>
 <script>
 /* =========================================================================
    낚시 미니게임 플레이 화면. 흐름: 캐스팅(대기 탭) → 캐스팅 모션 재생 →
@@ -421,7 +472,9 @@ if ('serviceWorker' in navigator) {
    타입(물고기 움직임 패턴)은 다른 미니게임들과 같은 관례로 쿼리스트링
    (?diff=&motion=), 캐스팅·올리기 프레임과 낚시바 디자인은 AssetDB.
    getFishingConfig()로 직접 불러온다(watermelon/play가 fruit 이미지를
-   localStorage에서 직접 읽는 것과 같은 자산-데이터 취급).
+   localStorage에서 직접 읽는 것과 같은 자산-데이터 취급). 영우 NPC(대화
+   메뉴, handleQuit)의 "그만하기"가 다음 씬으로 넘어갈 때 쓰는 ?nextScene=
+   도 같은 쿼리스트링에서 읽는다.
    ========================================================================= */
 
 const settingsParams = new URLSearchParams(location.search);
@@ -543,6 +596,17 @@ const el = {
   itemPopupName: document.getElementById('itemPopupName'),
   itemPopupMeta: document.getElementById('itemPopupMeta'),
   dialogueIntro: document.getElementById('dialogueIntro'),
+  npcMenu: document.getElementById('npcMenu'),
+  npcMenuCard: document.getElementById('npcMenuCard'),
+  npcMenuSellBtn: document.getElementById('npcMenuSellBtn'),
+  npcMenuQuitBtn: document.getElementById('npcMenuQuitBtn'),
+  npcMenuCloseBtn: document.getElementById('npcMenuCloseBtn'),
+  sellFishModal: document.getElementById('sellFishModal'),
+  sellFishCard: document.getElementById('sellFishCard'),
+  sellFishList: document.getElementById('sellFishList'),
+  sellFishTotal: document.getElementById('sellFishTotal'),
+  sellFishConfirmBtn: document.getElementById('sellFishConfirmBtn'),
+  sellFishCloseBtn: document.getElementById('sellFishCloseBtn'),
 };
 
 let castFrameUrls = [];
@@ -553,6 +617,10 @@ let castFrameDurations = null; // per-frame ms, dev/minigame-fishing/index.html 
 // 폴백 — 같은 기본값을 설정 화면 defaultRodtipFrac()과 맞춰둔다.
 let castingFrameRodTips = {};
 const DEFAULT_ROD_TIP_FRAC = { x: 0.82, y: 0.15 };
+// 올리기 프레임별 낚싯대 끝 지점 — castingFrameRodTips와 같은 형식·폴백을
+// 쓰지만 저장 키(reelFrameRodTips)와 참조 프레임 시트(reelFrameUrls)가
+// 다르다. reelTipPxForFrame이 이 값을 픽셀화한다.
+let reelFrameRodTips = {};
 // 물고기 들기 위치 — dev/minigame-fishing/index.html "올리기 모션" 탭에서
 // 지정한 점(0~1, char-stage 박스 기준, 같은 기본값을
 // DEFAULT_HELD_FISH_POS와 맞춰둔다) — 낚시 성공 후 캐릭터가 물고기를
@@ -619,7 +687,10 @@ let fishableAreas = []; // dev/minigame-fishing/index.html "영역 설정" 탭�
 let blockedAreas = []; // 이동 불가 영역들
 let interactionAreas = []; // 상호작용(상점/대화 등) 영역들, 각 { id, points, label }
 let caughtCount = 0;
-let gameState = 'idle'; // idle | charging | casting | waiting | bite | caught | catching | reeling | popup
+// 아직 영우에게 안 판 물고기 — fishId(문자열) -> 마리 수. caughtCount(상단
+// 칩, 이번 판 누적 총 마릿수 표시)와 달리 팔면 비워진다(confirmSellFish).
+let caughtFishTally = {};
+let gameState = 'idle'; // idle | charging | casting | waiting | bite | caught | catching | reeling | popup | dialogue | npcMenu | sellFish
 let biteTimer = null;
 let reactionTimer = null;
 let holding = false;
@@ -823,13 +894,29 @@ function areaContaining(frac, areas) {
   return areas.find(a => isPointInPolygon(frac.x, frac.y, a.points)) || null;
 }
 
+// 영우 NPC와의 상호작용 판정 — 상호작용 영역(다각형)과 달리 설정 화면에서
+// 따로 영역을 그릴 필요 없이, "캐릭터" 탭에서 지정한 npcWorldPos 기준
+// 반경(원형)만으로 판정한다. id를 다른 상호작용 영역과 겹치지 않는 고정값
+// (YOUNGWOO_NPC_INTERACTION_ID)으로 둬서 checkInteractionArea가 다각형보다
+// 이 판정을 우선하게 한다.
+const YOUNGWOO_NPC_INTERACTION_ID = 'youngwoo-npc';
+const NPC_INTERACT_RADIUS_PX = CHAR_BOX_PX * 1.3;
+function isNearYoungwoo() {
+  if (!npcWorldPos) return false;
+  const dx = charWorldPos.x - npcWorldPos.x, dy = charWorldPos.y - npcWorldPos.y;
+  return (dx * dx + dy * dy) <= NPC_INTERACT_RADIUS_PX * NPC_INTERACT_RADIUS_PX;
+}
+
 // 상호작용 영역(상점/대화 등) — 캐릭터가 들어오고 나갈 때만(매 프레임이
 // 아니라 상태가 바뀔 때만) 배지를 갱신하고 이벤트를 쏜다. 이 미니게임
-// 자체엔 상점/대화 UI가 없으므로, 실제 동작은 다른 화면이 이 이벤트를
+// 자체엔 상점 UI가 없으므로, 실제 동작은 다른 화면이 이 이벤트를
 // 구독해서 만들면 된다 — 여기선 영역 감지 + 라벨 배지 표시까지만 한다.
+// (영우 NPC는 예외 — 대화는 이 화면 안에서 바로 처리한다, 아래 openNpcMenu.)
 let activeInteractionAreaId = null;
 function checkInteractionArea() {
-  const area = areaContaining(worldPosToImageFrac(charWorldPos.x, charWorldPos.y), interactionAreas);
+  const area = isNearYoungwoo()
+    ? { id: YOUNGWOO_NPC_INTERACTION_ID, label: '영우 · 탭해서 대화하기' }
+    : areaContaining(worldPosToImageFrac(charWorldPos.x, charWorldPos.y), interactionAreas);
   const id = area ? area.id : null;
   if (id === activeInteractionAreaId) return;
   activeInteractionAreaId = id;
@@ -842,6 +929,98 @@ function checkInteractionArea() {
     el.interactionBadge.classList.add('hidden');
     window.dispatchEvent(new CustomEvent('fishing:interaction-leave', {}));
   }
+}
+
+/* ===== 영우 NPC 메뉴 =====
+   NPC 반경 안(activeInteractionAreaId === YOUNGWOO_NPC_INTERACTION_ID)에서
+   idle 상태 화면을 탭하면(handleActionPointerDown) 뜬다. "물고기 팔기"는
+   이번 판에서 잡아 아직 안 판 물고기(caughtFishTally)를 전부 포인트로
+   바꾸고(EconomyState), "그만하기"는 낚시를 끝내고 다음 씬으로 넘긴다
+   (handleQuit) — 대화 인트로와 같은 관례로 카드 밖(반투명 배경)을 탭하면
+   그냥 닫힌다. */
+function openNpcMenu() {
+  gameState = 'npcMenu';
+  el.npcMenu.classList.remove('hidden');
+}
+function closeNpcMenu() {
+  gameState = 'idle';
+  el.npcMenu.classList.add('hidden');
+}
+
+function totalCaughtFishValue() {
+  return Object.entries(caughtFishTally).reduce((sum, [id, qty]) => {
+    const def = getFishDef(id);
+    return sum + (def ? def.value * qty : 0);
+  }, 0);
+}
+function renderSellFishList() {
+  const entries = Object.entries(caughtFishTally).filter(([, qty]) => qty > 0);
+  el.sellFishList.innerHTML = '';
+  if (!entries.length) {
+    el.sellFishList.innerHTML = '<div class="sell-fish-empty">팔 수 있는 물고기가 없어요</div>';
+  } else {
+    entries.forEach(([id, qty]) => {
+      const def = getFishDef(id);
+      if (!def) return;
+      const row = document.createElement('div');
+      row.className = 'sell-fish-row';
+      row.innerHTML = `<span class="sell-fish-name" style="color:${GRADE_NAME_COLORS[def.grade] || '#fff'}">${def.name}</span><span class="sell-fish-qty">x${qty}</span><span class="sell-fish-value">${def.value * qty}P</span>`;
+      el.sellFishList.appendChild(row);
+    });
+  }
+  const total = totalCaughtFishValue();
+  el.sellFishTotal.textContent = `총 ${total}P`;
+  el.sellFishConfirmBtn.disabled = total <= 0;
+}
+function openSellFishModal() {
+  gameState = 'sellFish';
+  renderSellFishList();
+  el.npcMenu.classList.add('hidden');
+  el.sellFishModal.classList.remove('hidden');
+}
+function closeSellFishModal() {
+  gameState = 'idle';
+  el.sellFishModal.classList.add('hidden');
+}
+function confirmSellFish() {
+  const total = totalCaughtFishValue();
+  if (total <= 0) return;
+  EconomyState.addPoints(total, { source: 'fishing-sell-fish' });
+  caughtFishTally = {};
+  vibrate(15);
+  closeSellFishModal();
+}
+
+el.npcMenuSellBtn.addEventListener('pointerdown', (e) => { e.stopPropagation(); openSellFishModal(); });
+el.npcMenuQuitBtn.addEventListener('pointerdown', (e) => { e.stopPropagation(); handleQuit(); });
+el.npcMenuCloseBtn.addEventListener('pointerdown', (e) => { e.stopPropagation(); closeNpcMenu(); });
+el.npcMenuCard.addEventListener('pointerdown', (e) => e.stopPropagation());
+el.npcMenu.addEventListener('pointerdown', (e) => {
+  if (gameState !== 'npcMenu') return;
+  e.stopPropagation();
+  closeNpcMenu();
+});
+
+el.sellFishConfirmBtn.addEventListener('pointerdown', (e) => { e.stopPropagation(); confirmSellFish(); });
+el.sellFishCloseBtn.addEventListener('pointerdown', (e) => { e.stopPropagation(); closeSellFishModal(); });
+el.sellFishCard.addEventListener('pointerdown', (e) => e.stopPropagation());
+el.sellFishModal.addEventListener('pointerdown', (e) => {
+  if (gameState !== 'sellFish') return;
+  e.stopPropagation();
+  closeSellFishModal();
+});
+
+/* ===== 그만하기 =====
+   낚시를 시작한 씬이 ?nextScene=<sceneId>로 넘어온 경우(다른 미니게임들과
+   같은 관례 — dev/minigame-timeline/index.html의 하드코딩된 다음 씬
+   리다이렉트 참고) 그 씬으로 넘긴다. 아직 이 미니게임을 게임 씬 흐름에
+   연결하지 않은 상태(설정 화면에서 바로 "플레이 테스트"로 들어온 경우 등)
+   에서는 지금까지처럼 설정 화면(뒤로가기 칩과 같은 목적지)으로 돌아간다.
+   §추후 — "미니게임만 즐기기" 단독 실행 모드가 생기면 그때는 메인 메뉴로
+   돌아가야 하지만, 그 모드 자체가 아직 없어 지금은 구현하지 않는다. */
+function handleQuit() {
+  const nextScene = settingsParams.get('nextScene');
+  location.href = nextScene ? ('/dev/game/?scene=' + encodeURIComponent(nextScene)) : '/dev/minigame-fishing/';
 }
 
 // 낚시가능 영역(fishableAreas) 판정은 캐릭터가 아니라 "추(찌)가 실제로
@@ -916,6 +1095,7 @@ async function loadConfig() {
   if (castFrameUrls.length && reelFrameUrls.length) castFrameUrls = castFrameUrls.concat(reelFrameUrls[0]);
   castFrameDurations = (cfg.castingFrameDurations && cfg.castingFrameDurations.length) ? cfg.castingFrameDurations : null;
   castingFrameRodTips = cfg.castingFrameRodTips || {};
+  reelFrameRodTips = cfg.reelFrameRodTips || {};
   heldFishPos = cfg.heldFishPos || DEFAULT_HELD_FISH_POS;
   castPhysics = Object.assign({ gravityMps2: 9.8, vxScale: 1 }, cfg.castPhysics || {});
   reelMotion = Object.assign({ holdFrameMs: 90 }, cfg.reelMotion || {});
@@ -1383,6 +1563,17 @@ function playFrameSequence(urls, frameMs, onFrame) {
 const REEL_HOLD_UP_SEQ = [1, 2, 3];
 const REEL_HOLD_DOWN_SEQ = [3, 1, 0];
 let reelHoldTimer = null;
+// 잡아채기(낚시바) 중 낚싯줄의 추 쪽 고정 좌표 — 입질이 문 지점(추가 물에
+// 떠 있던 el.bobber의 마지막 위치, startCatching이 기록)이다. 캐치바를
+// 올리든 내리든 이 지점은 안 움직이고, 낚싯대 쪽 끝(reelTipPxForFrame)만
+// 지금 재생 중인 올리기 프레임(currentReelFrameIndex)을 따라 움직인다.
+let catchingBitePt = null;
+let currentReelFrameIndex = 0;
+function renderCatchingReelLine() {
+  if (!catchingBitePt) return;
+  const frameRect = el.frame.getBoundingClientRect();
+  renderCastLine(reelTipPxForFrame(currentReelFrameIndex, frameRect), catchingBitePt, reelLineSlack(currentReelFrameIndex));
+}
 function stopReelHoldAnim() {
   if (reelHoldTimer) { clearTimeout(reelHoldTimer); reelHoldTimer = null; }
 }
@@ -1393,7 +1584,9 @@ function playReelHoldSeq(seq) {
   el.charFallback.classList.add('hidden');
   let i = 0;
   function step() {
+    currentReelFrameIndex = seq[i];
     el.charImg.src = reelFrameUrls[seq[i]];
+    renderCatchingReelLine();
     i++;
     reelHoldTimer = i < seq.length ? setTimeout(step, reelMotion.holdFrameMs) : null;
   }
@@ -1510,14 +1703,18 @@ async function releasePowerAndCast() {
     // 추가 낚시가능 영역 안에 떨어지면 낚시가 진행되지 않는다 — 캐스팅
     // 취소. 착수 지점에서 바로 사라지는 대신, 올리기 4번 프레임을 유지한
     // 채 추가 낚싯대 끝(캐릭터)으로 되감겨 돌아오는 걸 보여준 뒤에야
-    // 대기 상태로 되돌린다.
+    // 대기 상태로 되돌린다. 되감기는 캐스팅 프레임이 아니라 올리기 4번
+    // 프레임의 낚싯대 끝(reelTipPxForFrame)을 기준으로 하고, 4번은 완전히
+    // 팽팽한 직선(reelLineSlack(3)===0)으로 이어 그린다.
+    let reelBackOrigin = rodTip;
     if (reelFrameUrls.length > 3) {
       stopReelHoldAnim();
       el.charImg.classList.remove('hidden');
       el.charFallback.classList.add('hidden');
       el.charImg.src = reelFrameUrls[3];
+      reelBackOrigin = reelTipPxForFrame(3, frameRect);
     }
-    await reelSinkerBack(rodTip);
+    await reelSinkerBack(reelBackOrigin, 3);
     el.bobber.classList.add('hidden');
     el.castSvg.classList.add('hidden');
     resetToIdle();
@@ -1537,6 +1734,28 @@ function rodTipPxForFrame(frameIndex, frameRect) {
     x: charRect.left - frameRect.left + pt.x * charRect.width,
     y: charRect.top - frameRect.top + pt.y * charRect.height,
   };
+}
+
+// 올리기 프레임 버전의 rodTipPxForFrame — 저장된 좌표(reelFrameRodTips)만
+// 다르고 픽셀화 방식은 동일하다.
+function reelTipPxForFrame(frameIndex, frameRect) {
+  const charRect = el.charStage.getBoundingClientRect();
+  const pt = reelFrameRodTips[frameIndex] || DEFAULT_ROD_TIP_FRAC;
+  return {
+    x: charRect.left - frameRect.left + pt.x * charRect.width,
+    y: charRect.top - frameRect.top + pt.y * charRect.height,
+  };
+}
+
+// 올리기 동작 중 낚싯줄의 팽팽함 — 캐스팅 때의 느슨한 현수선(catenaryPoints
+// 기본 12% 여유)과 달리 릴을 감아 올리는 중이라 훨씬 팽팽하다. 올리기
+// 프레임 인덱스(0=1번~3=4번)에 따라 살짝 처진 현수선(1번, 5% 여유)에서
+// 완전한 직선(4번, 여유 0)으로 점점 팽팽해지도록 보간한다. 5·6번(인덱스 4
+// 이상, 낚시 성공 후 프레임)은 4번과 같은 완전한 직선을 유지한다.
+const TAUT_REEL_MAX_SLACK = 0.05;
+function reelLineSlack(reelFrameIndex) {
+  const t = Math.min(Math.max(reelFrameIndex, 0) / 3, 1);
+  return TAUT_REEL_MAX_SLACK * (1 - t);
 }
 
 // 추를 던진다 — 수평은 등속(v_x = dx/T, dx는 세기(게이지)에 비례)으로
@@ -1620,11 +1839,13 @@ function throwSinker(power, origin, frameRect, getRodTip) {
 }
 
 // 낚싯대 끝(p0)~추(p1) 사이를 현수선(catenary, y=a·cosh(x/a)=a·(e^(x/a)+e^(-x/a))/2)
-// 으로 그린다. 실제 줄 길이는 두 점 사이 직선거리(D)에 여유(12%)를 준
-// 값(L)으로 정하고, L·dx·dy로부터 현수선 매개변수 a를 이분법으로 구한다
-// (전형적인 "두 점을 지나는 현수선" 문제).
+// 으로 그린다. 실제 줄 길이는 두 점 사이 직선거리(D)에 여유(기본 12%,
+// slack 인자로 재정의 가능 — 올리기 중엔 renderCastLine(p0,p1,reelLineSlack(i))
+// 처럼 훨씬 작은 값을 넘겨 팽팽하게 그린다)를 준 값(L)으로 정하고,
+// L·dx·dy로부터 현수선 매개변수 a를 이분법으로 구한다(전형적인 "두 점을
+// 지나는 현수선" 문제).
 const SINKER_IMG_SIZE = 22; // px, css픽셀 = svg viewBox 단위(카메라 좌표계 그대로)
-function renderCastLine(p0, p1) {
+function renderCastLine(p0, p1, slack) {
   el.castSinker.setAttribute('cx', p1.x);
   el.castSinker.setAttribute('cy', p1.y);
   if (sinkerImageUrl) {
@@ -1633,16 +1854,17 @@ function renderCastLine(p0, p1) {
     el.castSinkerImg.setAttribute('width', SINKER_IMG_SIZE);
     el.castSinkerImg.setAttribute('height', SINKER_IMG_SIZE);
   }
-  const pts = catenaryPoints(p0, p1);
+  const pts = catenaryPoints(p0, p1, 16, slack);
   el.castLinePath.setAttribute('d', 'M' + pts.map(p => `${p.x},${p.y}`).join(' L'));
 }
 
-function catenaryPoints(p0, p1, samples) {
+function catenaryPoints(p0, p1, samples, slack) {
   samples = samples || 16;
+  slack = slack == null ? 0.12 : slack;
   const dx = p1.x - p0.x, dy = p1.y - p0.y; // 화면 좌표계 — 아래로 갈수록 y가 커진다
   const D = Math.hypot(dx, dy);
-  if (D < 4 || Math.abs(dx) < 2) return [p0, p1]; // 거의 수직/한 점 — 커브 의미 없음
-  const L = D * 1.12;
+  if (D < 4 || Math.abs(dx) < 2 || slack <= 0.0005) return [p0, p1]; // 거의 수직/한 점, 또는 완전한 직선(여유 0) — 커브 의미 없음
+  const L = D * (1 + slack);
   // y=a·cosh(x/a)+q는 항상 볼록(가운데가 "더 작은" y 쪽으로 처지는) 함수라,
   // 위로 갈수록 y가 커지는 보통의 수학 좌표계에서는 그 처지는 방향이
   // 곧 "아래"라 정확히 늘어진 케이블 모양이 된다. 그런데 여긴 화면
@@ -1675,19 +1897,21 @@ function catenaryPoints(p0, p1, samples) {
 
 // 캐스팅 취소(추가 낚시 불가 영역에 떨어짐) 연출 — 착수 지점에서 바로
 // 사라지는 대신, 추가 낚싯대 끝(rodTipPt)까지 되감기듯 돌아오는 동안 줄도
-// 같이 따라 그린다(renderCastLine 재사용). el.bobber는 착수 시 finish()가
-// 남겨둔 left/top(%)에서 시작해 rodTipPt까지 보간한다 — bob-idle 클래스가
-// 아직 안 붙은 상태(waitForBite 이전)라 CSS 애니메이션 오프셋 없이
-// left/top(%)이 곧 화면 중심 좌표라 별도 DOM 측정 없이 바로 프레임 px로
-// 환산할 수 있다.
+// 같이 따라 그린다(renderCastLine 재사용, reelFrameIndex로 팽팽함을
+// 정한다 — 호출부(releasePowerAndCast)는 항상 올리기 4번=완전한 직선을
+// 넘긴다). el.bobber는 착수 시 finish()가 남겨둔 left/top(%)에서 시작해
+// rodTipPt까지 보간한다 — bob-idle 클래스가 아직 안 붙은 상태(waitForBite
+// 이전)라 CSS 애니메이션 오프셋 없이 left/top(%)이 곧 화면 중심 좌표라
+// 별도 DOM 측정 없이 바로 프레임 px로 환산할 수 있다.
 const CAST_CANCEL_REEL_MS = 450;
-function reelSinkerBack(rodTipPt) {
+function reelSinkerBack(rodTipPt, reelFrameIndex) {
   return new Promise(resolve => {
     const frameRect = el.frame.getBoundingClientRect();
     const startLeftPct = parseFloat(el.bobber.style.left) || 0;
     const startTopPct = parseFloat(el.bobber.style.top) || 0;
     const endLeftPct = rodTipPt.x / frameRect.width * 100;
     const endTopPct = rodTipPt.y / frameRect.height * 100;
+    const slack = reelLineSlack(reelFrameIndex);
     let start = null;
     function frame(ts) {
       if (start === null) start = ts;
@@ -1696,7 +1920,7 @@ function reelSinkerBack(rodTipPt) {
       const topPct = startTopPct + (endTopPct - startTopPct) * t;
       el.bobber.style.left = leftPct + '%';
       el.bobber.style.top = topPct + '%';
-      renderCastLine(rodTipPt, { x: leftPct / 100 * frameRect.width, y: topPct / 100 * frameRect.height });
+      renderCastLine(rodTipPt, { x: leftPct / 100 * frameRect.width, y: topPct / 100 * frameRect.height }, slack);
       if (t < 1) { requestAnimationFrame(frame); return; }
       resolve();
     }
@@ -1753,7 +1977,7 @@ function handleReactionTap() {
   el.biteMark.classList.add('hidden');
   el.bobber.classList.add('hidden');
   el.bobber.classList.remove('bite-dip');
-  el.castSvg.classList.add('hidden'); // 낚시바(잡아채기)로 넘어가면 추/찌 자체가 안 보이니 줄도 같이 숨긴다
+  el.castSvg.classList.add('hidden'); // "물었다!" 연출 동안만 잠깐 숨긴다 — startCatching이 올리기 프레임 기준으로 다시 켠다
   playBiteCaughtAnimation().then(startCatching);
 }
 
@@ -1834,11 +2058,23 @@ function startCatching() {
   holding = false;
   // 낚시대가 나타난 시점 — 올리기 1번 프레임(대기 포즈)으로 시작한다.
   stopReelHoldAnim();
+  currentReelFrameIndex = 0;
   if (reelFrameUrls.length) {
     el.charImg.classList.remove('hidden');
     el.charFallback.classList.add('hidden');
     el.charImg.src = reelFrameUrls[0];
   }
+  // 낚싯줄 — 추 쪽 끝은 입질이 문 지점(el.bobber가 마지막으로 떠 있던
+  // 자리, hidden으로 감춰졌어도 left/top(%)은 그대로 남아있다)에 고정하고,
+  // 낚싯대 쪽 끝은 지금 프레임(1번)의 올리기 낚싯대 끝을 쓴다.
+  const catchFrameRect = el.frame.getBoundingClientRect();
+  catchingBitePt = {
+    x: (parseFloat(el.bobber.style.left) || 0) / 100 * catchFrameRect.width,
+    y: (parseFloat(el.bobber.style.top) || 0) / 100 * catchFrameRect.height,
+  };
+  el.castSvg.setAttribute('viewBox', `0 0 ${catchFrameRect.width} ${catchFrameRect.height}`);
+  el.castSvg.classList.remove('hidden');
+  renderCatchingReelLine();
   pendingCatchFish = pickCaughtFish();
   // 아이템창을 화면 밖(left:-9999px)에서 이 시점에 미리 채워둬서, 실제
   // 공개(showItemPopup) 순간엔 위치만 옮기면 되게 한다 — populateItemPopup
@@ -1948,6 +2184,7 @@ async function playReelThenResult() {
   // 물고기가 딸려 올라오는 동안(flyFishToCharacter가 실제로 날아가는
   // 연출을 재생) — 올리기 5번 프레임. 도착하면 flyFishToCharacter가 직접
   // 6번 프레임으로 바꾼다.
+  currentReelFrameIndex = 4;
   if (reelFrameUrls.length > 4) {
     el.charImg.classList.remove('hidden');
     el.charFallback.classList.add('hidden');
@@ -1955,9 +2192,11 @@ async function playReelThenResult() {
   } else {
     await wait(500);
   }
+  renderCatchingReelLine(); // 잡아채기 중이던 줄을 5번 프레임 낚싯대 끝 기준으로 갱신 — flyFishToCharacter가 시작하면 추 쪽 끝을 날아가는 물고기로 바로 이어받는다
   caughtCount++;
   el.countChip.textContent = caughtCount + '마리';
   const fishCaught = pendingCatchFish;
+  caughtFishTally[fishCaught.id] = (caughtFishTally[fishCaught.id] || 0) + 1;
   // 아이템창 내용(populateItemPopup)은 startCatching 때 이미 화면 밖에서
   // 다 그려놨으니 지연 없이 뜰 준비는 끝났지만, 뜨는 시점 자체는 물고기가
   // 캐릭터에 실제로 도착한 다음이어야 자연스럽다(사용자 요청) — 그래서
@@ -1973,7 +2212,9 @@ async function playReelThenResult() {
    좀 더 느리게, 정점이 캐릭터 위치보다 위로 떠도 됨) — CSS transition
    대신 매 프레임 위치를 직접 계산해서 그린다(throwSinker의 추 궤적과
    같은 방식). 임시 엘리먼트(.fish-fly)를 만들어 el.stage에 얹고, 도착하면
-   지운다. */
+   지운다. 날아가는 내내 올리기 5번 프레임의 낚싯대 끝~물고기 사이를
+   완전히 팽팽한 직선(reelLineSlack(4)===0)으로 이어 그리다가, 도착하는
+   순간 줄을 숨긴다(heldFish 오버레이로 넘어감). */
 const FISH_FLY_DURATION_MS = 1600;
 const FISH_FLY_ARC_PCT = 18; // 포물선 정점이 시작~도착 직선보다 이만큼(프레임 세로 %) 더 위로 뜬다
 function flyFishToCharacter(fishDef) {
@@ -1984,6 +2225,7 @@ function flyFishToCharacter(fishDef) {
     const charRect = el.charStage.getBoundingClientRect();
     const endLeft = ((charRect.left + charRect.width / 2) - frameRect.left) / frameRect.width * 100;
     const endTop = ((charRect.top + charRect.height * 0.3) - frameRect.top) / frameRect.height * 100;
+    const reelTipPt = reelTipPxForFrame(4, frameRect);
 
     const flyEl = document.createElement('div');
     flyEl.className = 'fish-fly';
@@ -2019,11 +2261,14 @@ function flyFishToCharacter(fishDef) {
       const top = startTop + (endTop - startTop) * t - FISH_FLY_ARC_PCT * 4 * t * (1 - t);
       flyEl.style.left = left + '%';
       flyEl.style.top = top + '%';
+      renderCastLine(reelTipPt, { x: left / 100 * frameRect.width, y: top / 100 * frameRect.height }, reelLineSlack(4));
       if (t < 1) { requestAnimationFrame(frame); return; }
       flyEl.remove();
       // 물고기가 캐릭터에 도착한 순간 — 올리기 6번(마지막) 프레임, 물고기를
-      // 들고 있는 자세(heldFish 오버레이가 이 프레임 위에 그려진다).
+      // 들고 있는 자세(heldFish 오버레이가 이 프레임 위에 그려진다). 낚싯줄은
+      // 여기서부터 필요 없다.
       if (reelFrameUrls.length > 5) el.charImg.src = reelFrameUrls[5];
+      el.castSvg.classList.add('hidden');
       resolve();
     }
     requestAnimationFrame(frame);
@@ -2126,6 +2371,7 @@ function resetToIdle() {
   gameState = 'idle';
   stopReelHoldAnim();
   cancelAnimationFrame(bobLineRaf);
+  catchingBitePt = null;
   el.castPowerWrap.classList.add('hidden');
   el.castSvg.classList.add('hidden');
   el.bobber.classList.add('hidden');
@@ -2241,6 +2487,7 @@ function handleActionPointerDown() {
   if (gameState === 'catching') { holding = true; playReelHoldSeq(REEL_HOLD_UP_SEQ); return; }
   if (gameState === 'waiting') { abortWaitingReel(); return; }
   if (gameState === 'popup') { resetToIdle(); return; }
+  if (gameState === 'idle' && activeInteractionAreaId === YOUNGWOO_NPC_INTERACTION_ID) { openNpcMenu(); return; }
 }
 function handleActionPointerRelease() {
   const wasHolding = holding;
