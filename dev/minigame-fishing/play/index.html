@@ -454,7 +454,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
     <label>조이스틱 크기<input type="range" id="layoutJoySize" min="80" max="220" step="2"></label>
     <label>낚시 버튼 크기<input type="range" id="layoutFishSize" min="50" max="150" step="2"></label>
     <label>물고기 들기 크기<input type="range" id="layoutHeldFishSize" min="20" max="100" step="2"></label>
-    <label>캐릭터 배율<input type="range" id="layoutCharScale" min="0.5" max="2" step="0.05"></label>
+    <label>캐릭터 배율<input type="range" id="layoutCharScale" min="0.1" max="2" step="0.05"></label>
     <label>캐스팅 UI 배율<input type="range" id="layoutCastingScale" min="0.5" max="2" step="0.05"></label>
     <label class="hidden" id="layoutBgZoomRow">배경화면 배율<input type="range" id="layoutBgZoom" min="0.3" max="2" step="0.05"></label>
     <button type="button" class="secondary" id="layoutCastingPosBtn">🎯 캐스팅 게이지 위치 수정하기</button>
@@ -2847,11 +2847,11 @@ el.joystick.addEventListener('pointermove', (e) => {
    저장하지 않는다(loadConfig 참고). */
 const LAYOUT_PREFS_KEY = 'fishingLayoutPrefs_v1';
 let layoutPrefs = {
-  joystick: { size: 130, left: 12, bottom: 57 }, // size=.joystick-base 지름(px), left/bottom=.joystick 앵커(px) — 요청한 스크린샷 실측값으로 기본값 고정
-  fishBtn: { size: 114, right: 23, bottom: 82 }, // 요청한 스크린샷 실측 크기·위치로 기본값 고정
-  heldFish: { size: 40 }, // 낚시 성공 후 캐릭터가 들고 있는 물고기 아이콘 크기(px) — .held-fish 기본값과 맞춤
-  char: { scale: 1 }, // 캐릭터(.char-stage) 전체 배율 — --char-scale, char-stage의 transform:scale에 그대로 들어간다
-  casting: { scale: 1, left: 0, bottom: 16 }, // 캐스팅 파워바/잡아채기 낚시바/찌/입질 팝업/아이템 팝업/물고기 날아가는 연출을 한 번에 묶어 조절하는 배율 — --casting-scale과 각 요소의 JS 계산 transform에 곱해진다. 추 던지기 궤적(cast-svg)은 낚싯대 끝의 실제 화면 좌표에 맞춰야 해서 일부러 빼뒀다(비율만 바꾸면 궤적 시작점이 캐릭터 손끝에서 어긋나 보인다). left/bottom은 더 이상 화면 기준 절대 위치가 아니라, 캐스팅 게이지(cast-power-wrap)가 뜨는 "캐릭터 머리 위" 기준점에서 얼마나 더 옮길지 정하는 오프셋이다(positionCastGaugeAboveCharacter 참고) — 기본값은 캐릭터 머리 위 16px.
+  joystick: { size: 128, left: 1, bottom: 0 }, // size=.joystick-base 지름(px), left/bottom=.joystick 앵커(px) — 요청한 코드보기 값으로 기본값 고정
+  fishBtn: { size: 118, right: 9, bottom: 28 }, // 요청한 코드보기 값으로 기본값 고정
+  heldFish: { size: 32 }, // 낚시 성공 후 캐릭터가 들고 있는 물고기 아이콘 크기(px) — .held-fish 기본값과 맞춤
+  char: { scale: 1 }, // 캐릭터(.char-stage) 전체 배율 — --char-scale, char-stage의 transform:scale에 그대로 들어간다. 이번 일괄 적용에서는 일부러 제외 — 슬라이더(layoutCharScale)로 직접 조절
+  casting: { scale: 0.55, left: -1, bottom: 4 }, // 캐스팅 파워바/잡아채기 낚시바/찌/입질 팝업/아이템 팝업/물고기 날아가는 연출을 한 번에 묶어 조절하는 배율 — --casting-scale과 각 요소의 JS 계산 transform에 곱해진다. 추 던지기 궤적(cast-svg)은 낚싯대 끝의 실제 화면 좌표에 맞춰야 해서 일부러 빼뒀다(비율만 바꾸면 궤적 시작점이 캐릭터 손끝에서 어긋나 보인다). left/bottom은 더 이상 화면 기준 절대 위치가 아니라, 캐스팅 게이지(cast-power-wrap)가 뜨는 "캐릭터 머리 위" 기준점에서 얼마나 더 옮길지 정하는 오프셋이다(positionCastGaugeAboveCharacter 참고) — 요청한 코드보기 값으로 기본값 고정.
 };
 let layoutEditMode = false;
 let layoutDragTarget = null; // 'joystick' | 'fishBtn' | 'casting' | null
