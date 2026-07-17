@@ -1110,6 +1110,12 @@ async function loadConfig() {
   MOTION_CATEGORIES.forEach(category => {
     if (motionCategorySheetAssetId[category]) ids.push(motionCategorySheetAssetId[category]);
   });
+  // 프레임별 지우기(motionFrameEraseOverrides, dev/minigame-fishing/index.html
+  // openFrameEraser) — 있으면 그 프레임은 시트 크롭 대신 이 손질된 PNG를 쓴다.
+  const motionFrameEraseOverrides = cfg.motionFrameEraseOverrides || {};
+  MOTION_CATEGORIES.forEach(category => {
+    Object.values(motionFrameEraseOverrides[category] || {}).forEach(assetId => { if (assetId) ids.push(assetId); });
+  });
   if (cfg.backgroundAssetId) ids.push(cfg.backgroundAssetId);
   if (cfg.castGaugeAssetId) ids.push(cfg.castGaugeAssetId);
   const characterIdleSheetsCfg = cfg.characterIdleSheets || {};
@@ -1149,7 +1155,12 @@ async function loadConfig() {
   async function buildCategoryFrames(category) {
     const source = resolveMotionCategorySource(cfg, category);
     const img = await loadSourceImg(source.assetId);
-    return img ? buildMotionCategoryFrameDataUrls(img, source.row, motionOverrides[category], source.rowOverride) : [];
+    const frames = img ? buildMotionCategoryFrameDataUrls(img, source.row, motionOverrides[category], source.rowOverride) : [];
+    const eraseOverrides = motionFrameEraseOverrides[category] || {};
+    return frames.map((url, i) => {
+      const asset = eraseOverrides[i] ? byId.get(eraseOverrides[i]) : null;
+      return asset ? asset.dataUrl : url;
+    });
   }
 
   castFrameUrls = await buildCategoryFrames('cast');
