@@ -641,6 +641,10 @@ const CHAR_BOX_PX = 84; // .char-stage CSS 폭/높이와 맞춘 값 — 카메�
 const FALLBACK_MOVE_BOUNDS_PCT = { left: [10, 90], bottom: [25, 75] }; // 배경 미업로드 시(=worldSize가 화면과 같은 크기) char-stage 중심이 벗어날 수 없는 범위(%) — 화면 중심(50/50) 기준, 상단바/하단 버튼과 안 겹치는 선에서 넉넉히
 let walkFrameUrls = { up: [], down: [], left: [], right: [] };
 let walkMotion = { stepMs: 200, animFrameMs: 90 };
+// 방향별 걷기 프레임 전환 속도(dev/minigame-fishing/index.html "모션" 탭의
+// 이동 4방향 각 재생 속도 슬라이더) — 값이 없는 방향은 walkMotion.animFrameMs로
+// 폴백한다(loadConfig에서 채운다).
+let motionPlaybackMs = { up: 90, down: 90, left: 90, right: 90 };
 let worldSize = { w: 0, h: 0 }; // 캐릭터가 돌아다닐 수 있는 전체 범위(px) — 배경 원본 크기 또는(미업로드 시) 화면 크기
 let hasWorldBackground = false;
 let charWorldPos = null; // { x, y } px, 배경 원본 이미지 기준(캐릭터 중심, y는 아래 기준) — loadConfig에서 처음 채워진다
@@ -829,6 +833,12 @@ async function loadConfig() {
   if (design.gaugeImageAssetId) ids.push(design.gaugeImageAssetId);
   if (cfg.fishSheetAssetId) ids.push(cfg.fishSheetAssetId);
   if (cfg.motionSheetAssetId) ids.push(cfg.motionSheetAssetId);
+  // 이동(4방향) 개별 프레임 업로드/누끼 오버라이드 — motionFrameImageOverrides
+  // 값이 있는 칸은 아래에서 시트 크롭 대신 이 자산을 그대로 쓴다.
+  const motionFrameImageOverrides = cfg.motionFrameImageOverrides || {};
+  MOVE_DIRS.forEach(dir => {
+    Object.values(motionFrameImageOverrides[dir] || {}).forEach(assetId => { if (assetId) ids.push(assetId); });
+  });
   if (cfg.backgroundAssetId) ids.push(cfg.backgroundAssetId);
   if (cfg.castGaugeAssetId) ids.push(cfg.castGaugeAssetId);
   const itemPopupCfg = cfg.itemPopup || {};
@@ -866,11 +876,23 @@ async function loadConfig() {
   // 자체를 안 올렸으면 빈 배열로 두고, stepChar가 그 경우 캐릭터 그림을
   // 그대로 둔 채 위치만 옮긴다.
   walkMotion = Object.assign({ stepMs: 200, animFrameMs: 90 }, cfg.walkMotion || {});
+  motionPlaybackMs = Object.assign(
+    { up: walkMotion.animFrameMs, down: walkMotion.animFrameMs, left: walkMotion.animFrameMs, right: walkMotion.animFrameMs },
+    cfg.motionPlaybackMs || {}
+  );
   walkFrameUrls = { up: [], down: [], left: [], right: [] };
-  if (motionSheetImg) {
-    for (const dir of MOVE_DIRS) {
-      walkFrameUrls[dir] = buildMotionCategoryFrameDataUrls(motionSheetImg, MOTION_CATEGORIES.indexOf(dir), motionOverrides[dir]);
-    }
+  for (const dir of MOVE_DIRS) {
+    // 시트가 없으면 6칸 전부 빈 자리(null)로 시작한다 — 시트 없이도 개별
+    // 업로드/누끼 프레임만으로 걷기 애니메이션이 동작해야 하기 때문.
+    const dirFrames = motionSheetImg
+      ? buildMotionCategoryFrameDataUrls(motionSheetImg, MOTION_CATEGORIES.indexOf(dir), motionOverrides[dir])
+      : new Array(MOTION_GRID_COLUMNS).fill(null);
+    const dirImageOverrides = motionFrameImageOverrides[dir] || {};
+    Object.keys(dirImageOverrides).forEach(idxStr => {
+      const asset = byId.get(dirImageOverrides[idxStr]);
+      if (asset) dirFrames[Number(idxStr)] = asset.dataUrl;
+    });
+    walkFrameUrls[dir] = dirFrames.filter(Boolean);
   }
   const fishSheetAsset = cfg.fishSheetAssetId ? byId.get(cfg.fishSheetAssetId) : null;
   fishSheetUrl = fishSheetAsset ? fishSheetAsset.dataUrl : null;
@@ -2034,7 +2056,9 @@ function resetToIdle() {
    벡터와 분리된 값으로 호출자(조이스틱 입력)가 축 고정해서 넘겨준다 —
    같은 방향이 계속 재생 중이면 다시 트리거하지 않는다(applyMoveSprite).
    걷기 프레임은 이동 중엔 계속 순환하고(moveAnimTimer), 멈추면 idle
-   프레임으로 되돌아간다. ===== */
+   프레임으로 되돌아간다. 프레임 전환 속도는 방향별로 다를 수 있다
+   (motionPlaybackMs[dir], loadConfig가 방향별로 없으면 walkMotion.animFrameMs로
+   채운다) — playMoveAnim의 setInterval이 그 방향의 값을 쓴다. ===== */
 function moveSpeedPxPerMs() { return MOVE_STEP_PX / Math.max(1, walkMotion.stepMs); }
 function stopMoveAnim() {
   if (moveAnimTimer) { clearInterval(moveAnimTimer); moveAnimTimer = null; }
@@ -2054,7 +2078,7 @@ function playMoveAnim(spriteDir) {
   moveAnimTimer = setInterval(() => {
     i = (i + 1) % frames.length;
     el.charImg.src = frames[i];
-  }, walkMotion.animFrameMs);
+  }, motionPlaybackMs[spriteDir] || walkMotion.animFrameMs);
 }
 let currentSpriteDir = null; // 지금 재생 중인 걷기 방향 — 실제로 바뀔 때만 playMoveAnim을 다시 걸어서 프레임이 튀지 않게 한다
 function applyMoveSprite(spriteDir) {
