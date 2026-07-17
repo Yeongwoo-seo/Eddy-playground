@@ -1095,7 +1095,15 @@ const AssetDB = (() => {
   // 놓일지. "모션" 탭 올리기 카테고리의 마지막 프레임 위로 점을 찍어
   // 지정한다(rodtip-marker와 같은 단일 포인트 피커). null이면
   // play/index.html의 기본값(DEFAULT_HELD_FISH_POS)으로 폴백한다.
-  const FISHING_CONFIG_DEFAULT = { barDesign: {}, fishSheetAssetId: null, fishIconOverrides: {}, motionSheetAssetId: null, motionFrameOverrides: { cast: {}, reel: {}, up: {}, down: {}, left: {}, right: {} }, castingFrameDurations: [], backgroundAssetId: null, castingFrameRodTips: {}, walkMotion: { stepMs: 200, animFrameMs: 90 }, castPhysics: { gravityMps2: 9.8, vxScale: 1 }, itemPopup: { backgroundAssetId: null, iconPos: null, iconSizePx: 64 }, castGaugeAssetId: null, castGaugeFillRegion: null, fishableAreas: [], blockedAreas: [], interactionAreas: [], dialogueScene: { boxLayer: null, jisooLayer: null, youngwooLayer: null }, heldFishPos: null };
+  // characterIdleSheets — 지수(플레이어)/영우(NPC)가 멈춰 서 있을 때의
+  // 방향별(위/아래/왼쪽/오른쪽) idle 포즈, 2열×2행 시트 한 장씩(fishDefs.js의
+  // IDLE_GRID_DIRS/buildIdleFrameDataUrls 참고). jisu가 비어있으면 캐스팅
+  // 1번 프레임을 그대로 재사용하던 예전 idle 동작으로 폴백한다(play/index.html).
+  // youngwoo는 NPC용이라 항상 down(정면) 프레임만 쓴다.
+  // youngwooNpcPos — 영우 NPC가 서 있는 위치, 배경화면(backgroundAssetId)
+  // 원본 크기 기준 0~1 정규화 좌표("영역 설정" 탭 다각형 점과 같은 좌표계).
+  // null이면 배경이 있어도 NPC를 그리지 않는다(위치 미지정).
+  const FISHING_CONFIG_DEFAULT = { barDesign: {}, fishSheetAssetId: null, fishIconOverrides: {}, motionSheetAssetId: null, motionFrameOverrides: { cast: {}, reel: {}, up: {}, down: {}, left: {}, right: {} }, castingFrameDurations: [], backgroundAssetId: null, castingFrameRodTips: {}, walkMotion: { stepMs: 200, animFrameMs: 90 }, castPhysics: { gravityMps2: 9.8, vxScale: 1 }, itemPopup: { backgroundAssetId: null, iconPos: null, iconSizePx: 64 }, castGaugeAssetId: null, castGaugeFillRegion: null, fishableAreas: [], blockedAreas: [], interactionAreas: [], dialogueScene: { boxLayer: null, jisooLayer: null, youngwooLayer: null }, heldFishPos: null, characterIdleSheets: { jisu: { assetId: null, overrides: {} }, youngwoo: { assetId: null, overrides: {} } }, youngwooNpcPos: null };
 
   async function getFishingConfig() {
     if (fishingConfigCache.has('config')) return fishingConfigCache.get('config');

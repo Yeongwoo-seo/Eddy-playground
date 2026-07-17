@@ -226,3 +226,38 @@ function cropRegionToDataUrl(img, rect, outputWidth, outputHeight) {
   return c.toDataURL('image/png');
 }
 
+/* ===== idle 시트 규격 — 지수(플레이어)/영우(NPC)가 "멈춰 서 있을 때"의
+   방향별 포즈를 2열×2행 격자 한 장에 담는다. 모션 시트(6열×6행, 걷기/
+   캐스팅/올리기용 연속 동작)와 달리 이건 방향당 딱 1장(정지 포즈)이라
+   훨씬 작은 격자다. 순서(왼쪽 위부터 가로로, IDLE_GRID_DIRS 고정): 위→
+   아래→왼쪽→오른쪽. 크롭 방식은 모션 시트와 동일(getFishCropStyle/
+   cropRectToDataUrl 재사용) — 열 개수(2)만 다르다. AssetDB.getFishingConfig().
+   characterIdleSheets = { jisu: {assetId, overrides}, youngwoo: {assetId,
+   overrides} }, overrides는 { [dirIndex]: {cx,cy,size} } 형태로 모션 시트의
+   motionFrameOverrides와 같은 좌표계를 쓴다. */
+const IDLE_GRID_DIRS = ['up', 'down', 'left', 'right'];
+const IDLE_GRID_COLUMNS = 2;
+
+function getIdleGridDefaultCropRect(index, sheetW, sheetH) {
+  const col = index % IDLE_GRID_COLUMNS;
+  const row = Math.floor(index / IDLE_GRID_COLUMNS);
+  const cellW = sheetW / IDLE_GRID_COLUMNS;
+  const cellH = sheetH / IDLE_GRID_COLUMNS; // 2행이라 열과 같은 개수
+  const cxPx = col * cellW + cellW / 2;
+  const cyPx = row * cellH + cellH / 2;
+  const cellShort = Math.min(cellW, cellH);
+  return { cx: cxPx / sheetW, cy: cyPx / sheetH, size: cellShort / Math.min(sheetW, sheetH) };
+}
+
+// 시트 1장 + (있으면) index별 overrides로 4칸을 잘라 { up, down, left,
+// right } data URL 맵을 만든다. img는 이미 로드된 HTMLImageElement여야 한다.
+function buildIdleFrameDataUrls(img, overrides, maxOutputSize) {
+  overrides = overrides || {};
+  const out = {};
+  IDLE_GRID_DIRS.forEach((dir, i) => {
+    const rect = overrides[i] || getIdleGridDefaultCropRect(i, img.naturalWidth, img.naturalHeight);
+    out[dir] = cropRectToDataUrl(img, rect, maxOutputSize);
+  });
+  return out;
+}
+
