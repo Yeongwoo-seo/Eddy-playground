@@ -205,6 +205,34 @@ function cropRectToDataUrl(img, rect, maxOutputSize) {
   return c.toDataURL('image/png');
 }
 
+// ===== 카테고리별 "통짜" 모션 시트 =====
+// 예전엔 이동(4방향) 카테고리만 "개별 업로드"로 프레임을 낱장 사진(카테고리당
+// 최대 6장, 순서대로 배정)으로 대체할 수 있었다. 지금은 6개 카테고리
+// 전부(캐스팅·올리기 포함) 그 카테고리 하나의 6프레임을 담은 가로 스트립
+// 이미지 한 장(1행×6열)을 올리면 메인 모션 시트와 같은 방식(6등분 크롭)으로
+// 자동으로 잘린다 — AssetDB.getFishingConfig().motionCategorySheetAssetId,
+// { [category]: assetId } 형태. 카테고리별로 이 스트립을 올렸으면 그 카테고리는
+// 메인 6행×6열 시트(motionSheetAssetId) 대신 이 스트립에서 프레임을 잘라내고,
+// 안 올렸으면 예전처럼 메인 시트의 그 행을 쓴다. 크롭 좌표(motionFrameOverrides)는
+// 소스가 무엇이든 "지금 이 카테고리가 쓰는 이미지 위의 정규화 좌표"라는 뜻이
+// 똑같아서 스트립/메인 시트 어느 쪽이든 같은 필드를 그대로 재사용한다 — 다만
+// 스트립은 항상 1행짜리라 행 위치는 row=0, rowOverride는 항상 전체 높이
+// ({top:0,height:1})로 고정한다(메인 시트처럼 6등분 위치를 계산할 필요가 없다).
+// dev/minigame-fishing/index.html(에디터)과 play/index.html(실제 플레이) 둘 다
+// 이 함수로 소스를 결정한다.
+function resolveMotionCategorySource(cfg, category) {
+  const stripAssetId = ((cfg.motionCategorySheetAssetId || {})[category]) || null;
+  if (stripAssetId) {
+    return { assetId: stripAssetId, row: 0, rowOverride: { top: 0, height: 1 }, usingCategorySheet: true };
+  }
+  return {
+    assetId: cfg.motionSheetAssetId || null,
+    row: MOTION_CATEGORIES.indexOf(category),
+    rowOverride: ((cfg.motionRowOverrides || {})[category]) || null,
+    usingCategorySheet: false,
+  };
+}
+
 // 시트 1장 + 카테고리(행) + (있으면) frameIndex별 frameOverrides로 그 행의
 // 6칸을 잘라낸 프레임 data URL 배열을 만든다. 보정값이 없는 칸은
 // getMotionGridDefaultCropRect의 격자 위치(실제 시트 크기 기준, rowOverride가

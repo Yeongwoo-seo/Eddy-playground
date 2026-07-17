@@ -87,6 +87,14 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .crop-dpad-left{grid-column:1;grid-row:2}
 .crop-dpad-right{grid-column:3;grid-row:2}
 .crop-dpad-down{grid-column:2;grid-row:3}
+/* ===== 모션 겹치기 토글 — 1번 프레임 세밀영역조절에서만 보이는 정렬
+   가이드(다른 모션 카테고리의 1번 프레임을 확대 미리보기에 반투명 겹침).
+   .option-pill과 같은 톤이지만 on/off 두 상태만 있는 단일 버튼이라 별도
+   클래스로 뒀다. */
+.crop-overlap-row{margin-top:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.crop-overlap-toggle{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--text-secondary);background:var(--surface-2);border:1px solid var(--divider);border-radius:10px;padding:9px 12px;cursor:pointer}
+.crop-overlap-toggle.active{color:#04181c;background:var(--cyan);border-color:var(--cyan)}
+.crop-overlap-select{flex:1;min-width:120px;background:var(--surface-1);border:1px solid var(--divider);border-radius:10px;padding:9px 10px;color:var(--text-primary);font-family:var(--sans);font-size:13px}
 .crop-size-row{margin-top:16px}
 .crop-size-controls{display:flex;align-items:center;gap:10px}
 .crop-size-controls input[type=range]{flex:1;accent-color:var(--cyan)}
@@ -251,6 +259,14 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
    한 탭 안에 나란히 이어지므로 시각적으로 구간을 나눠준다. */
 .motion-category-title{font-family:var(--mono);font-size:12.5px;font-weight:700;letter-spacing:.04em;color:var(--cyan);margin:28px 0 4px;padding-top:20px;border-top:1px solid var(--divider)}
 .motion-category-title:first-of-type{margin-top:20px}
+/* ===== 모션 하부 탭 — 카테고리 6개(캐스팅/올리기/이동 4방향)를 한 번에
+   전부 렌더링하던 걸 이 탭으로 나눠 지금 고른 카테고리 하나만 렌더링한다
+   (렉 방지, renderActiveMotionCategory 참고). 최상단 .tabs/.tab-btn과 같은
+   토글 패턴이지만 6개가 좁은 화면에 들어가야 해서 3열로 더 촘촘하게 잡는다. */
+.motion-subtabs{display:flex;flex-wrap:wrap;gap:6px;margin:20px 0 4px}
+.motion-subtab-btn{flex:1;min-width:calc(33.333% - 4px);padding:9px 4px;border-radius:10px;background:var(--surface-1);border:1px solid var(--divider);color:var(--text-secondary);font-size:11.5px;font-weight:600;font-family:var(--mono);letter-spacing:.01em;cursor:pointer;text-align:center}
+.motion-subtab-btn.active{background:var(--surface-3);color:var(--cyan);border-color:rgba(89,184,200,.4)}
+.motion-subtab-panel.hidden{display:none}
 .fish-sheet-actions{display:flex;gap:8px;margin-top:12px}
 .fish-sheet-btn{flex:1;font-family:var(--mono);font-size:12px;font-weight:700;color:var(--text-primary);background:var(--surface-1);border:1px solid var(--divider);border-radius:10px;padding:10px;cursor:pointer;text-align:center}
 .fish-sheet-btn.danger{color:var(--signal-red)}
@@ -375,14 +391,18 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
        읽어 재생한다. 다만 걷기 프레임 "전환 속도"(재생 속도)는 이동(4방향) 각
        카테고리 블록에서 방향별로 따로 정할 수 있다(motionPlaybackMs) —
        값이 없는 방향은 아래 "이동 설정"의 걷기 애니메이션 전환 속도(moveAnimMs)를
-       그대로 쓴다. 또한 이동(4방향)은 프레임마다 시트 크롭 대신 사진을
-       개별 업로드하거나(motionFrameImageOverrides) 그 프레임만 배경을 다시
-       제거(누끼)할 수 있다 — 캐스팅/올리기는 이 두 기능의 범위 밖(위
-       MOVE_CATEGORIES 참고). ===== -->
+       그대로 쓴다. 카테고리 6개(캐스팅·올리기·이동 4방향) 전부 "6프레임
+       업로드"로 그 동작 하나의 프레임 6장을 담은 가로 스트립 이미지 한 장을
+       통째로 올리면 메인 6행×6열 시트 대신 그 스트립에서 6등분해 잘라 쓴다
+       (motionCategorySheetAssetId, resolveMotionCategorySource@fishDefs.js) —
+       안 올린 카테고리는 그대로 메인 시트의 그 행을 쓴다. 카테고리 6개를
+       한 화면에 다 렌더링하면(각자 프레임 크롭+재생 타이머) 편집할 때마다
+       느려져서, 하부 탭(motionSubtabs)으로 나눠 지금 선택된 카테고리
+       하나만 렌더링한다(renderActiveMotionCategory). ===== -->
   <div class="tab-panel" id="panelMotion">
     <div class="option-group">
       <div class="option-label">모션 시트</div>
-      <div class="option-desc">투명 PNG · 정확히 6행×6열(36칸) 격자 · 이미지 크기는 자유예요(업로드한 실제 가로/세로를 그대로 6등분해서 칸을 구해요). 행 순서(위에서부터): ① 캐스팅 ② 올리기 ③ 위로 이동 ④ 아래로 이동 ⑤ 왼쪽 이동 ⑥ 오른쪽 이동 — 각 행 안에서는 왼쪽부터 순서대로 6프레임이에요. 격자에 딱 맞지 않으면 아래 각 동작의 "행 영역 조정"으로 그 행 6칸의 세로 범위를 통째로 맞추거나, 프레임을 탭해서 하나씩 따로 세밀영역조절할 수 있어요. 한 프레임의 크롭 크기를 바꾸면 같은 동작의 나머지 프레임도 같은 크기로 맞춰져요.</div>
+      <div class="option-desc">투명 PNG · 정확히 6행×6열(36칸) 격자 · 이미지 크기는 자유예요(업로드한 실제 가로/세로를 그대로 6등분해서 칸을 구해요). 행 순서(위에서부터): ① 캐스팅 ② 올리기 ③ 위로 이동 ④ 아래로 이동 ⑤ 왼쪽 이동 ⑥ 오른쪽 이동 — 각 행 안에서는 왼쪽부터 순서대로 6프레임이에요. 격자에 딱 맞지 않으면 아래 각 동작의 "행 영역 조정"으로 그 행 6칸의 세로 범위를 통째로 맞추거나, 프레임을 탭해서 하나씩 따로 세밀영역조절할 수 있어요. 한 프레임의 크롭 크기를 바꾸면 같은 동작의 나머지 프레임도 같은 크기로 맞춰져요. 특정 동작만 따로 준비했다면 아래 그 동작 탭에서 "6프레임 업로드"로 한 장에 담아 올리세요 — 그 동작은 이 메인 시트 대신 그 이미지를 써요.</div>
       <div class="fish-sheet-frame" id="motionSheetFrame">
         <div class="fish-sheet-empty" id="motionSheetEmpty">아직 업로드된 시트가 없어요<br>업로드하기 전까진 각 동작이 도형/화살표로 대체돼요</div>
       </div>
@@ -394,13 +414,35 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
       <input type="file" id="motionSheetFileInput" accept="image/png">
     </div>
 
-    <div class="motion-category-title">① 캐스팅</div>
+    <!-- ===== 모션 하부 탭 — 카테고리 6개를 한 번에 다 렌더링하던 예전
+         방식이 편집할 때마다(크롭 확정, 업로드 등) 6개 전부 다시 크롭+재생
+         루프를 돌려 느렸다. 최상단 탭(.tabs/.tab-btn)과 같은 active/hidden
+         패턴이지만 이 탭 그룹 전용 클래스(.motion-subtabs/.motion-subtab-btn/
+         .motion-subtab-panel)로 스타일만 더 촘촘하게 잡는다 — switchMotionSubtab
+         참고. ===== -->
+    <div class="motion-subtabs" id="motionSubtabs">
+      <button type="button" class="motion-subtab-btn active" data-category="cast">① 캐스팅</button>
+      <button type="button" class="motion-subtab-btn" data-category="reel">② 올리기</button>
+      <button type="button" class="motion-subtab-btn" data-category="up">③ 위로 이동</button>
+      <button type="button" class="motion-subtab-btn" data-category="down">④ 아래로 이동</button>
+      <button type="button" class="motion-subtab-btn" data-category="left">⑤ 왼쪽 이동</button>
+      <button type="button" class="motion-subtab-btn" data-category="right">⑥ 오른쪽 이동</button>
+    </div>
+
+    <div class="motion-subtab-panel" id="motionSubtabCast" data-category="cast">
     <div class="option-group">
       <div class="frame-preview-row">
         <div class="frame-preview" id="motionCastPreview"></div>
         <div class="frame-preview-label" id="motionCastPreviewLabel">프레임 없음 — 재생 미리보기</div>
       </div>
       <div class="frame-strip" id="motionCastFrameGrid"></div>
+      <div class="option-desc">프레임을 탭하면 세밀영역조절이 열려요. 캐스팅 동작만 따로 준비했다면 프레임 6장을 왼쪽부터 순서대로 이어붙인 가로 스트립 한 장으로 올리세요 — 자동으로 6등분해서 잘라요.</div>
+      <div class="fish-sheet-actions">
+        <button type="button" class="fish-sheet-btn" id="motionCastStripUploadBtn">📤 6프레임 업로드</button>
+        <button type="button" class="fish-sheet-btn hidden" id="motionCastStripCutoutBtn">✂ 배경 제거</button>
+        <button type="button" class="fish-sheet-btn danger hidden" id="motionCastStripRemoveBtn">✕ 되돌리기(메인 시트로)</button>
+      </div>
+      <input type="file" id="motionCastStripFileInput" accept="image/*">
       <button type="button" class="fish-sheet-btn" id="motionCastRowAdjustBtn" style="width:100%;margin-top:8px" disabled>📐 행 영역 조정</button>
     </div>
 
@@ -475,15 +517,23 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
       <button type="button" class="fish-sheet-btn" id="sinkerTestThrowBtn" style="width:100%;padding:18px;font-size:16px;border-radius:14px;margin-top:4px">🎣 던지기 테스트</button>
     </div>
 
-    <div class="motion-category-title">② 올리기</div>
+    </div><!-- /motionSubtabCast -->
+
+    <div class="motion-subtab-panel hidden" id="motionSubtabReel" data-category="reel">
     <div class="option-group">
       <div class="frame-preview-row">
         <div class="frame-preview" id="motionReelPreview"></div>
         <div class="frame-preview-label" id="motionReelPreviewLabel">프레임 없음 — 재생 미리보기</div>
       </div>
       <div class="frame-strip" id="motionReelFrameGrid"></div>
+      <div class="option-desc">① 낚시대가 나타날 때: 1번 프레임. ② 잡아채기(낚시바)에서 캐치바를 올리는 버튼을 누르고 있는 동안: 2번→4번 프레임을 재생하고 4번에서 유지, 손을 떼면 4번→2번→1번 순서로 되돌아가요. ③ 낚시 성공 후 물고기가 딸려 올라오는 동안: 5번 프레임. ④ 물고기가 캐릭터에 도착한 뒤: 6번(마지막) 프레임이에요. 올리기 동작만 따로 준비했다면 프레임 6장을 이어붙인 가로 스트립 한 장으로 올리세요.</div>
+      <div class="fish-sheet-actions">
+        <button type="button" class="fish-sheet-btn" id="motionReelStripUploadBtn">📤 6프레임 업로드</button>
+        <button type="button" class="fish-sheet-btn hidden" id="motionReelStripCutoutBtn">✂ 배경 제거</button>
+        <button type="button" class="fish-sheet-btn danger hidden" id="motionReelStripRemoveBtn">✕ 되돌리기(메인 시트로)</button>
+      </div>
+      <input type="file" id="motionReelStripFileInput" accept="image/*">
       <button type="button" class="fish-sheet-btn" id="motionReelRowAdjustBtn" style="width:100%;margin-top:8px" disabled>📐 행 영역 조정</button>
-      <div class="option-desc">① 낚시대가 나타날 때: 1번 프레임. ② 잡아채기(낚시바)에서 캐치바를 올리는 버튼을 누르고 있는 동안: 2번→4번 프레임을 재생하고 4번에서 유지, 손을 떼면 4번→2번→1번 순서로 되돌아가요. ③ 낚시 성공 후 물고기가 딸려 올라오는 동안: 5번 프레임. ④ 물고기가 캐릭터에 도착한 뒤: 6번(마지막) 프레임이에요.</div>
     </div>
 
     <div class="option-group">
@@ -500,75 +550,92 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
         <div class="range-value" id="reelHoldFrameMsValue">90ms</div>
       </div>
     </div>
+    </div><!-- /motionSubtabReel -->
 
-    <div class="motion-category-title">③ 위로 이동</div>
+    <div class="motion-subtab-panel hidden" id="motionSubtabUp" data-category="up">
     <div class="option-group">
-      <div class="option-desc">방향별 재생 속도는 이 방향의 걷기 프레임이 다음 프레임으로 얼마나 빨리 넘어가는지(미리보기·실제 게임 공통)를 정해요 — "이동" 탭의 걷기 애니메이션 전환 속도는 방향별로 따로 정하지 않았을 때 쓰는 기본값이에요. 프레임을 탭하면 시트 크롭을 조정하고, 개별 업로드한 프레임은 손을 대면 나오는 ✂로 그 프레임만 배경을 다시 제거하거나 ✕로 업로드를 취소할 수 있어요.</div>
+      <div class="option-desc">방향별 재생 속도는 이 방향의 걷기 프레임이 다음 프레임으로 얼마나 빨리 넘어가는지(미리보기·실제 게임 공통)를 정해요 — "이동" 탭의 걷기 애니메이션 전환 속도는 방향별로 따로 정하지 않았을 때 쓰는 기본값이에요. 프레임을 탭하면 세밀영역조절이 열려요.</div>
       <div class="frame-preview-row">
         <div class="frame-preview" id="motionUpPreview"></div>
         <div class="frame-preview-label" id="motionUpPreviewLabel">프레임 없음 — 재생 미리보기</div>
-        <button type="button" class="frame-upload-icon-btn" id="motionUpUploadBtn" title="개별 프레임 업로드">📤 개별 업로드</button>
-        <input type="file" id="motionUpUploadInput" accept="image/*" multiple>
       </div>
       <div class="range-row">
         <input type="range" id="motionUpSpeedInput" min="40" max="300" step="10" value="90">
         <div class="range-value" id="motionUpSpeedValue">재생 속도 90ms</div>
       </div>
       <div class="frame-strip" id="motionUpFrameGrid"></div>
+      <div class="fish-sheet-actions">
+        <button type="button" class="fish-sheet-btn" id="motionUpStripUploadBtn">📤 6프레임 업로드</button>
+        <button type="button" class="fish-sheet-btn hidden" id="motionUpStripCutoutBtn">✂ 배경 제거</button>
+        <button type="button" class="fish-sheet-btn danger hidden" id="motionUpStripRemoveBtn">✕ 되돌리기(메인 시트로)</button>
+      </div>
+      <input type="file" id="motionUpStripFileInput" accept="image/*">
       <button type="button" class="fish-sheet-btn" id="motionUpRowAdjustBtn" style="width:100%;margin-top:8px" disabled>📐 행 영역 조정</button>
-      <button type="button" class="fish-sheet-btn" id="motionUpCutoutAllBtn" style="width:100%;margin-top:8px" disabled>✂ 프레임 전체 배경 제거</button>
     </div>
+    </div><!-- /motionSubtabUp -->
 
-    <div class="motion-category-title">④ 아래로 이동</div>
+    <div class="motion-subtab-panel hidden" id="motionSubtabDown" data-category="down">
     <div class="option-group">
       <div class="frame-preview-row">
         <div class="frame-preview" id="motionDownPreview"></div>
         <div class="frame-preview-label" id="motionDownPreviewLabel">프레임 없음 — 재생 미리보기</div>
-        <button type="button" class="frame-upload-icon-btn" id="motionDownUploadBtn" title="개별 프레임 업로드">📤 개별 업로드</button>
-        <input type="file" id="motionDownUploadInput" accept="image/*" multiple>
       </div>
       <div class="range-row">
         <input type="range" id="motionDownSpeedInput" min="40" max="300" step="10" value="90">
         <div class="range-value" id="motionDownSpeedValue">재생 속도 90ms</div>
       </div>
       <div class="frame-strip" id="motionDownFrameGrid"></div>
+      <div class="fish-sheet-actions">
+        <button type="button" class="fish-sheet-btn" id="motionDownStripUploadBtn">📤 6프레임 업로드</button>
+        <button type="button" class="fish-sheet-btn hidden" id="motionDownStripCutoutBtn">✂ 배경 제거</button>
+        <button type="button" class="fish-sheet-btn danger hidden" id="motionDownStripRemoveBtn">✕ 되돌리기(메인 시트로)</button>
+      </div>
+      <input type="file" id="motionDownStripFileInput" accept="image/*">
       <button type="button" class="fish-sheet-btn" id="motionDownRowAdjustBtn" style="width:100%;margin-top:8px" disabled>📐 행 영역 조정</button>
-      <button type="button" class="fish-sheet-btn" id="motionDownCutoutAllBtn" style="width:100%;margin-top:8px" disabled>✂ 프레임 전체 배경 제거</button>
     </div>
+    </div><!-- /motionSubtabDown -->
 
-    <div class="motion-category-title">⑤ 왼쪽 이동</div>
+    <div class="motion-subtab-panel hidden" id="motionSubtabLeft" data-category="left">
     <div class="option-group">
       <div class="frame-preview-row">
         <div class="frame-preview" id="motionLeftPreview"></div>
         <div class="frame-preview-label" id="motionLeftPreviewLabel">프레임 없음 — 재생 미리보기</div>
-        <button type="button" class="frame-upload-icon-btn" id="motionLeftUploadBtn" title="개별 프레임 업로드">📤 개별 업로드</button>
-        <input type="file" id="motionLeftUploadInput" accept="image/*" multiple>
       </div>
       <div class="range-row">
         <input type="range" id="motionLeftSpeedInput" min="40" max="300" step="10" value="90">
         <div class="range-value" id="motionLeftSpeedValue">재생 속도 90ms</div>
       </div>
       <div class="frame-strip" id="motionLeftFrameGrid"></div>
+      <div class="fish-sheet-actions">
+        <button type="button" class="fish-sheet-btn" id="motionLeftStripUploadBtn">📤 6프레임 업로드</button>
+        <button type="button" class="fish-sheet-btn hidden" id="motionLeftStripCutoutBtn">✂ 배경 제거</button>
+        <button type="button" class="fish-sheet-btn danger hidden" id="motionLeftStripRemoveBtn">✕ 되돌리기(메인 시트로)</button>
+      </div>
+      <input type="file" id="motionLeftStripFileInput" accept="image/*">
       <button type="button" class="fish-sheet-btn" id="motionLeftRowAdjustBtn" style="width:100%;margin-top:8px" disabled>📐 행 영역 조정</button>
-      <button type="button" class="fish-sheet-btn" id="motionLeftCutoutAllBtn" style="width:100%;margin-top:8px" disabled>✂ 프레임 전체 배경 제거</button>
     </div>
+    </div><!-- /motionSubtabLeft -->
 
-    <div class="motion-category-title">⑥ 오른쪽 이동</div>
+    <div class="motion-subtab-panel hidden" id="motionSubtabRight" data-category="right">
     <div class="option-group">
       <div class="frame-preview-row">
         <div class="frame-preview" id="motionRightPreview"></div>
         <div class="frame-preview-label" id="motionRightPreviewLabel">프레임 없음 — 재생 미리보기</div>
-        <button type="button" class="frame-upload-icon-btn" id="motionRightUploadBtn" title="개별 프레임 업로드">📤 개별 업로드</button>
-        <input type="file" id="motionRightUploadInput" accept="image/*" multiple>
       </div>
       <div class="range-row">
         <input type="range" id="motionRightSpeedInput" min="40" max="300" step="10" value="90">
         <div class="range-value" id="motionRightSpeedValue">재생 속도 90ms</div>
       </div>
       <div class="frame-strip" id="motionRightFrameGrid"></div>
+      <div class="fish-sheet-actions">
+        <button type="button" class="fish-sheet-btn" id="motionRightStripUploadBtn">📤 6프레임 업로드</button>
+        <button type="button" class="fish-sheet-btn hidden" id="motionRightStripCutoutBtn">✂ 배경 제거</button>
+        <button type="button" class="fish-sheet-btn danger hidden" id="motionRightStripRemoveBtn">✕ 되돌리기(메인 시트로)</button>
+      </div>
+      <input type="file" id="motionRightStripFileInput" accept="image/*">
       <button type="button" class="fish-sheet-btn" id="motionRightRowAdjustBtn" style="width:100%;margin-top:8px" disabled>📐 행 영역 조정</button>
-      <button type="button" class="fish-sheet-btn" id="motionRightCutoutAllBtn" style="width:100%;margin-top:8px" disabled>✂ 프레임 전체 배경 제거</button>
     </div>
+    </div><!-- /motionSubtabRight -->
 
     <div class="motion-category-title">이동 설정</div>
     <div class="option-group">
@@ -771,6 +838,15 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
         <button type="button" class="crop-dpad-btn crop-dpad-down" data-dir="down" aria-label="아래로">▼</button>
       </div>
     </div>
+    <!-- ===== 모션 겹치기 — 1번 프레임(frameIndex===0) 세밀영역조절에서만
+         보인다(openMotionFrameCropAdjuster의 motionOverlapOptions). 다른
+         모션 카테고리를 골라 그 카테고리의 1번 프레임을 확대 미리보기에
+         반투명하게 겹쳐서, 서로 다른 동작끼리도 캐릭터 위치/크기가 맞는지
+         맞춰볼 수 있는 정렬 가이드다 — 저장되지 않는 편집 보조 기능. -->
+    <div class="crop-overlap-row hidden" id="cropOverlapRow">
+      <button type="button" class="crop-overlap-toggle" id="cropOverlapToggleBtn">모션 겹치기: OFF</button>
+      <select class="crop-overlap-select hidden" id="cropOverlapSelect"></select>
+    </div>
     <div class="crop-size-row">
       <div class="option-label">크롭 크기</div>
       <div class="crop-size-controls">
@@ -819,21 +895,6 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     <div class="crop-actions">
       <button type="button" class="crop-btn secondary" id="motionRowCancelBtn">취소</button>
       <button type="button" class="crop-btn primary" id="motionRowConfirmBtn">적용</button>
-    </div>
-  </div>
-</div>
-
-<!-- ===== 개별 업로드 프레임 수정 — 프레임(칸)을 탭하면(더 이상 손을 대고
-     있어야만 나오는 ✂/✕ 미니 버튼이 아니라) 바로 뜨는 액션 시트. crop-overlay와
-     같은 바텀시트 틀 재사용. openMotionFrameActions 참고. -->
-<div class="crop-overlay hidden" id="motionFrameActionsOverlay">
-  <div class="crop-sheet">
-    <div class="crop-title" id="motionFrameActionsTitle">프레임 수정</div>
-    <div class="crop-desc">이 프레임은 개별 업로드한 사진이에요. 배경을 다시 제거하거나 업로드를 취소해서 시트 크롭으로 되돌릴 수 있어요.</div>
-    <div class="crop-actions" style="flex-direction:column">
-      <button type="button" class="crop-btn primary" id="motionFrameActionsCutoutBtn">✂ 배경 다시 제거</button>
-      <button type="button" class="crop-btn secondary" id="motionFrameActionsClearBtn">✕ 업로드 취소(시트 크롭으로 되돌리기)</button>
-      <button type="button" class="crop-btn secondary" id="motionFrameActionsCancelBtn">닫기</button>
     </div>
   </div>
 </div>
@@ -995,6 +1056,9 @@ const el = {
   cropRectBox: document.getElementById('cropRectBox'),
   cropZoomCanvas: document.getElementById('cropZoomCanvas'),
   cropZoomOnionHint: document.getElementById('cropZoomOnionHint'),
+  cropOverlapRow: document.getElementById('cropOverlapRow'),
+  cropOverlapToggleBtn: document.getElementById('cropOverlapToggleBtn'),
+  cropOverlapSelect: document.getElementById('cropOverlapSelect'),
   cropSizeInput: document.getElementById('cropSizeInput'),
   cropSizeNumberInput: document.getElementById('cropSizeNumberInput'),
   cropDpad: document.getElementById('cropDpad'),
@@ -1010,11 +1074,6 @@ const el = {
   motionRowHeightNumberInput: document.getElementById('motionRowHeightNumberInput'),
   motionRowCancelBtn: document.getElementById('motionRowCancelBtn'),
   motionRowConfirmBtn: document.getElementById('motionRowConfirmBtn'),
-  motionFrameActionsOverlay: document.getElementById('motionFrameActionsOverlay'),
-  motionFrameActionsTitle: document.getElementById('motionFrameActionsTitle'),
-  motionFrameActionsCutoutBtn: document.getElementById('motionFrameActionsCutoutBtn'),
-  motionFrameActionsClearBtn: document.getElementById('motionFrameActionsClearBtn'),
-  motionFrameActionsCancelBtn: document.getElementById('motionFrameActionsCancelBtn'),
   castGaugeImageSlot: document.getElementById('castGaugeImageSlot'),
   castGaugeImageAddBtn: document.getElementById('castGaugeImageAddBtn'),
   castGaugeImageFileInput: document.getElementById('castGaugeImageFileInput'),
@@ -1048,39 +1107,28 @@ const el = {
   motionUpPreview: document.getElementById('motionUpPreview'),
   motionUpPreviewLabel: document.getElementById('motionUpPreviewLabel'),
   motionUpFrameGrid: document.getElementById('motionUpFrameGrid'),
-  motionUpUploadBtn: document.getElementById('motionUpUploadBtn'),
-  motionUpUploadInput: document.getElementById('motionUpUploadInput'),
   motionUpSpeedInput: document.getElementById('motionUpSpeedInput'),
   motionUpSpeedValue: document.getElementById('motionUpSpeedValue'),
   motionUpRowAdjustBtn: document.getElementById('motionUpRowAdjustBtn'),
-  motionUpCutoutAllBtn: document.getElementById('motionUpCutoutAllBtn'),
   motionDownPreview: document.getElementById('motionDownPreview'),
   motionDownPreviewLabel: document.getElementById('motionDownPreviewLabel'),
   motionDownFrameGrid: document.getElementById('motionDownFrameGrid'),
-  motionDownUploadBtn: document.getElementById('motionDownUploadBtn'),
-  motionDownUploadInput: document.getElementById('motionDownUploadInput'),
   motionDownSpeedInput: document.getElementById('motionDownSpeedInput'),
   motionDownSpeedValue: document.getElementById('motionDownSpeedValue'),
   motionDownRowAdjustBtn: document.getElementById('motionDownRowAdjustBtn'),
-  motionDownCutoutAllBtn: document.getElementById('motionDownCutoutAllBtn'),
   motionLeftPreview: document.getElementById('motionLeftPreview'),
   motionLeftPreviewLabel: document.getElementById('motionLeftPreviewLabel'),
   motionLeftFrameGrid: document.getElementById('motionLeftFrameGrid'),
-  motionLeftUploadBtn: document.getElementById('motionLeftUploadBtn'),
-  motionLeftUploadInput: document.getElementById('motionLeftUploadInput'),
   motionLeftSpeedInput: document.getElementById('motionLeftSpeedInput'),
   motionLeftSpeedValue: document.getElementById('motionLeftSpeedValue'),
   motionLeftRowAdjustBtn: document.getElementById('motionLeftRowAdjustBtn'),
-  motionLeftCutoutAllBtn: document.getElementById('motionLeftCutoutAllBtn'),
   motionRightPreview: document.getElementById('motionRightPreview'),
   motionRightPreviewLabel: document.getElementById('motionRightPreviewLabel'),
   motionRightFrameGrid: document.getElementById('motionRightFrameGrid'),
-  motionRightUploadBtn: document.getElementById('motionRightUploadBtn'),
-  motionRightUploadInput: document.getElementById('motionRightUploadInput'),
   motionRightSpeedInput: document.getElementById('motionRightSpeedInput'),
   motionRightSpeedValue: document.getElementById('motionRightSpeedValue'),
   motionRightRowAdjustBtn: document.getElementById('motionRightRowAdjustBtn'),
-  motionRightCutoutAllBtn: document.getElementById('motionRightCutoutAllBtn'),
+  motionSubtabs: document.getElementById('motionSubtabs'),
   moveStage: document.getElementById('moveStage'),
   moveWorld: document.getElementById('moveWorld'),
   moveChar: document.getElementById('moveChar'),
@@ -1153,6 +1201,17 @@ const el = {
   youngwooPosCancelBtn: document.getElementById('youngwooPosCancelBtn'),
   youngwooPosConfirmBtn: document.getElementById('youngwooPosConfirmBtn'),
 };
+
+// 카테고리 6개(motion-category-title/motionElKey는 이 파일 아래쪽에서
+// 정의되지만 function 선언이라 호이스팅돼 여기서 바로 쓸 수 있다) 각각의
+// "6프레임 업로드" 스트립 업로드/배경제거/되돌리기 버튼 + 파일 입력을
+// 한 번에 등록한다 — 6개 × 4개라 위 리터럴에 낱개로 늘어놓는 대신 루프로.
+MOTION_CATEGORIES.forEach((category) => {
+  ['StripUploadBtn', 'StripCutoutBtn', 'StripRemoveBtn', 'StripFileInput'].forEach((suffix) => {
+    const key = motionElKey(category, suffix);
+    el[key] = document.getElementById(key);
+  });
+});
 
 const PANELS = { motion: el.panelMotion, area: el.panelArea, dialogue: el.panelDialogue, character: el.panelCharacter };
 el.tabsRow.querySelectorAll('.tab-btn').forEach(btn => {
@@ -1359,9 +1418,10 @@ async function removeBackgroundOrFallback(file) {
    조립한다(el 맵의 실제 키와 일치해야 함). */
 const MOTION_LABELS = { cast: '캐스팅', reel: '올리기', up: '위로 이동', down: '아래로 이동', left: '왼쪽 이동', right: '오른쪽 이동' };
 const MOTION_FALLBACK_ICONS = { cast: '🎣', reel: '🎣', up: '▲', down: '▼', left: '◀', right: '▶' };
-// 이동(위/아래/왼쪽/오른쪽) 4개 카테고리만 방향별 재생 속도·개별 프레임
-// 업로드·누끼 버튼을 갖는다 — 캐스팅/올리기는 캐스팅 전용 타임라인
-// (castTimeline)이 이미 있거나(캐스팅) 아직 그런 요구가 없어(올리기) 범위 밖.
+// 이동(위/아래/왼쪽/오른쪽) 4개 카테고리만 방향별 재생 속도 슬라이더를
+// 갖는다 — 캐스팅/올리기는 캐스팅 전용 타임라인(castTimeline)이 이미
+// 있거나(캐스팅) 아직 그런 요구가 없어(올리기) 범위 밖. "6프레임 업로드"
+// (카테고리별 통짜 스트립)는 6개 카테고리 전부 공통으로 갖는다.
 const MOVE_CATEGORIES = ['up', 'down', 'left', 'right'];
 function motionElKey(category, suffix) {
   return 'motion' + category[0].toUpperCase() + category.slice(1) + suffix;
@@ -1369,10 +1429,18 @@ function motionElKey(category, suffix) {
 
 let motionSheetAsset = null;
 let motionSheetDims = null;
-// 카테고리별로 잘라낸 프레임 dataUrl 배열 — 미리보기 재생, 낚시대 끝 지정
-// 도구, 격자 이동 테스트가 전부 이 캐시만 읽는다(renderMotionTab이 매
-// 렌더마다 채운다).
+// 카테고리별로 잘라낸 프레임 dataUrl 배열 — 재생 미리보기, 낚시대 끝 지정
+// 도구, 물고기 들기 위치, 자유 이동 테스트가 전부 이 캐시만 읽는다.
+// renderMotionTab이 하부 탭과 무관하게 6개 전부 매번 채운다(이 계산 자체는
+// 가볍다) — 프레임 그리드 DOM과 재생 타이머만 활성 탭 하나로 제한한다
+// (renderActiveMotionCategory 참고, 렉의 실제 원인이었다).
 const motionFrameCache = { cast: [], reel: [], up: [], down: [], left: [], right: [] };
+
+// 지금 하부 탭에서 보고 있는 카테고리 하나 — renderMotionTab은 이 카테고리의
+// 프레임 그리드+재생 미리보기만 렌더링한다(switchMotionSubtab 참고). 카테고리
+// 6개를 한 번에 다 렌더링하면(각자 캔버스 크롭 6장+재생 타이머) 편집할
+// 때마다(크롭 확정 등 renderMotionTab을 다시 부르는 모든 동작) 느려졌었다.
+let activeMotionCategory = 'cast';
 
 function getMotionFrameOverrides(category) {
   return ((fishingConfig.motionFrameOverrides || {})[category]) || {};
@@ -1386,16 +1454,17 @@ async function setMotionFrameOverrides(category, overrides) {
   fishingConfig = await AssetDB.setFishingConfig({ motionFrameOverrides });
 }
 
-// motionFrameImageOverrides — 크롭 좌표 대신 그 프레임 자체를 개별 업로드한
-// (배경 제거 완료) 사진으로 통째로 대체한다, { [frameIndex]: assetId }.
-// motionFrameOverrides(크롭 보정)와 같은 얕은 병합 관례를 따른다.
-function getMotionFrameImageOverrides(category) {
-  return ((fishingConfig.motionFrameImageOverrides || {})[category]) || {};
+// motionCategorySheetAssetId — 카테고리 하나(예: 위로 이동)의 프레임 6장을
+// 담은 가로 스트립(1행×6열) 원본, { [category]: assetId }. 있으면
+// resolveMotionCategorySource(fishDefs.js)가 메인 6x6 시트 대신 이걸 쓰라고
+// 알려준다. motionFrameOverrides(크롭 보정)와 같은 얕은 병합 관례.
+function getMotionCategoryStripAssetId(category) {
+  return ((fishingConfig.motionCategorySheetAssetId || {})[category]) || null;
 }
-async function setMotionFrameImageOverrides(category, overrides) {
-  const motionFrameImageOverrides = Object.assign({}, fishingConfig.motionFrameImageOverrides);
-  motionFrameImageOverrides[category] = overrides;
-  fishingConfig = await AssetDB.setFishingConfig({ motionFrameImageOverrides });
+async function setMotionCategoryStripAssetId(category, assetId) {
+  const motionCategorySheetAssetId = Object.assign({}, fishingConfig.motionCategorySheetAssetId);
+  motionCategorySheetAssetId[category] = assetId;
+  fishingConfig = await AssetDB.setFishingConfig({ motionCategorySheetAssetId });
 }
 
 // motionPlaybackMs — 이동 방향별 걷기 프레임 전환 속도(ms). 값이 없는
@@ -1412,7 +1481,9 @@ async function setMotionPlaybackMs(category, ms) {
 
 // 행(카테고리) 전체의 세로 범위 보정 — {top,height}(시트 세로 기준 0~1) 또는
 // 없으면(6등분 그대로) null. getMotionGridDefaultCropRect의 rowOverride
-// 인자로 그대로 넘겨 쓴다.
+// 인자로 그대로 넘겨 쓴다. 메인 시트를 쓰는 카테고리에만 의미가 있다 —
+// 카테고리 스트립을 쓰는 동안엔 resolveMotionCategorySource가 항상
+// {top:0,height:1}을 강제해서 이 값을 무시한다.
 function getMotionRowOverride(category) {
   return ((fishingConfig.motionRowOverrides || {})[category]) || null;
 }
@@ -1443,138 +1514,171 @@ async function renderMotionSheetPreview() {
   return asset;
 }
 
-// 이동 카테고리는 프레임마다 두 소스 중 하나로 그려진다: (1) 개별 업로드로
-// 대체된 프레임(motionFrameImageOverrides, 최우선) — 자체 이미지를 그대로
-// 보여준다, 또는 (2) 시트 크롭(기존 방식, motionFrameOverrides로 좌표만
-// 보정). 예전엔 업로드로 대체된 칸에 손을 대고 있어야만 나오는 ✂/✕ 미니
-// 버튼(.frame-actions, CSS :active 트리거)으로만 수정할 수 있어서 터치에서
-// 잘 안 눌렸다 — 지금은 그냥 칸을 탭하면 바로 수정 경로로 들어간다: 시트
-// 크롭 칸은 세밀영역조절(openMotionFrameCropAdjuster), 업로드 대체 칸은
-// 액션 시트(openMotionFrameActions)로. 프레임을 하나씩 낱개로 배경 제거하던
-// 예전 ✂ 버튼은 위 "프레임 전체 배경 제거" 버튼(cutoutMotionCategoryAll)으로
-// 대체됐다 — 카테고리 전체를 한 번에 제거한 뒤, 원치 않는 칸만 액션 시트의
-// "업로드 취소"로 시트 크롭으로 되돌리면 된다.
-async function renderMotionFrameGrid(category, sheetAsset, sheetDims) {
-  const overrides = getMotionFrameOverrides(category);
-  const imageOverrides = MOVE_CATEGORIES.includes(category) ? getMotionFrameImageOverrides(category) : {};
-  const rowOverride = getMotionRowOverride(category);
-  const gridEl = el[motionElKey(category, 'FrameGrid')];
-  const row = MOTION_CATEGORIES.indexOf(category);
-  const cells = [];
-  for (let i = 0; i < MOTION_GRID_COLUMNS; i++) {
-    const imageOverrideAssetId = imageOverrides[i];
-    const imageOverrideAsset = imageOverrideAssetId ? await AssetDB.getAsset(imageOverrideAssetId).catch(() => null) : null;
-    let iconStyle = '';
-    let hasContent = false;
-    if (imageOverrideAsset) {
-      iconStyle = `background-image:url('${imageOverrideAsset.dataUrl}');background-size:cover;background-position:center;image-rendering:pixelated`;
-      hasContent = true;
-    } else {
-      const override = overrides[i];
-      const rect = override || (sheetDims ? getMotionGridDefaultCropRect(row, i, sheetDims.width, sheetDims.height, rowOverride) : null);
-      if (sheetAsset && rect) {
-        const style = getFishCropStyle(rect, sheetDims.width, sheetDims.height, 64);
-        iconStyle = `background-image:url('${sheetAsset.dataUrl}');background-position:${style.backgroundPosition};background-size:${style.backgroundSize};background-repeat:no-repeat;image-rendering:pixelated`;
-        hasContent = true;
-      }
-    }
-    cells.push(`
-      <div class="frame-slot${hasContent ? ' fish-icon-tappable' : ''}" style="${iconStyle}" data-frame-index="${i}">
-        <span class="frame-index">${i + 1}${imageOverrideAsset ? ' 📤' : (overrides[i] ? ' ✓' : '')}</span>
-        ${hasContent ? '' : `<span style="font-size:20px">${MOTION_FALLBACK_ICONS[category]}</span>`}
-      </div>
-    `);
+// 카테고리 하나가 "지금 실제로 쓰는" 소스 이미지를 찾는다 — 카테고리 스트립을
+// 올렸으면 그걸, 아니면 메인 모션 시트를 쓴다(resolveMotionCategorySource,
+// fishDefs.js). 메인 시트는 renderMotionTab이 이미 한 번 로드해둔
+// motionSheetAsset/motionSheetDims를 재사용해서(같은 시트를 여러 카테고리가
+// 같이 쓰는 경우가 흔하다) 다시 내려받지 않는다.
+async function loadMotionCategorySource(category) {
+  const source = resolveMotionCategorySource(fishingConfig, category);
+  if (!source.assetId) return { source, asset: null, dims: null };
+  if (motionSheetAsset && source.assetId === motionSheetAsset.id) {
+    return { source, asset: motionSheetAsset, dims: motionSheetDims };
   }
-  gridEl.innerHTML = cells.join('');
-  gridEl.querySelectorAll('[data-frame-index]').forEach(cellEl => {
-    const i = Number(cellEl.dataset.frameIndex);
-    if (imageOverrides[i]) {
-      // 업로드로 대체된 칸은 시트가 없어도(예: 시트 없이 프레임을 낱개로만
-      // 올린 경우) 액션 시트를 열 수 있어야 한다 — sheetAsset과 무관.
-      cellEl.addEventListener('click', () => openMotionFrameActions(category, i));
-    } else if (sheetAsset && sheetDims) {
-      cellEl.addEventListener('click', () => openMotionFrameCropAdjuster(category, i, sheetAsset, sheetDims));
-    }
-  });
+  const asset = await AssetDB.getAsset(source.assetId).catch(() => null);
+  const dims = asset ? await loadImageDimensions(asset.dataUrl).catch(() => null) : null;
+  return { source, asset, dims };
 }
 
-// 재생 미리보기(startPreviewLoop)는 frames[i].dataUrl 배열을 받는다 —
-// buildMotionCategoryFrameDataUrls(dev/data/fishDefs.js)의 출력을
-// { dataUrl } 형태로 감싸 넣어준다. 캐스팅만 프레임별 재생 속도(타임라인)
-// 설정이 있어 durations를 같이 넘긴다.
-async function renderMotionPreviewLoop(category, sheetAsset, sheetDims) {
-  const previewEl = el[motionElKey(category, 'Preview')];
-  const labelEl = el[motionElKey(category, 'PreviewLabel')];
-  if (!sheetAsset || !sheetDims) { motionFrameCache[category] = []; startPreviewLoop(previewEl, labelEl, []); return; }
+// 소스 이미지를 실제로 로드해(HTMLImageElement) 6프레임을 캔버스로 잘라낸
+// dataUrl 배열을 만들고 motionFrameCache[category]에 채운다 — 재생 미리보기와
+// 낚시대 끝 지정/물고기 들기 위치가 전부 이 결과(캐시)를 읽는다.
+async function computeMotionCategoryFrames(category) {
+  const { source, asset, dims } = await loadMotionCategorySource(category);
+  if (!asset || !dims) { motionFrameCache[category] = []; return { source, asset, dims, urls: [] }; }
   const img = new Image();
-  // crossOrigin은 img.src를 설정하기 *전에* 걸어야 의미가 있다 — sheetAsset.dataUrl은
+  // crossOrigin은 img.src를 설정하기 *전에* 걸어야 의미가 있다 — asset.dataUrl은
   // Supabase Storage의 교차 출처 URL이라, 이게 없으면 buildMotionCategoryFrameDataUrls가
   // 내부에서 canvas.toDataURL()을 호출할 때 "tainted canvas" SecurityError로
   // 조용히 던져서(잡는 코드가 없어 DevDiag 배너로만 보임) 미리보기가
   // 영영 "프레임 없음"에 멈춰 있었다.
   img.crossOrigin = 'anonymous';
-  img.src = sheetAsset.dataUrl;
+  img.src = asset.dataUrl;
   await new Promise(resolve => { if (img.complete && img.naturalWidth) resolve(); else img.onload = resolve; });
-  const row = MOTION_CATEGORIES.indexOf(category);
   // outputSize를 안 넘긴다 — buildMotionCategoryFrameDataUrls가 원본 크롭
   // 해상도를 그대로 살린다(96px 미리보기 박스에서 다시 확대되며 흐려지지
   // 않게).
-  const urls = buildMotionCategoryFrameDataUrls(img, row, getMotionFrameOverrides(category), getMotionRowOverride(category));
-  // 개별 업로드로 대체된 프레임(motionFrameImageOverrides)이 있으면 시트
-  // 크롭 대신 그 사진을 재생 미리보기에도 그대로 쓴다 — play/index.html의
-  // walkFrameUrls 조립과 같은 우선순위.
-  if (MOVE_CATEGORIES.includes(category)) {
-    const imageOverrides = getMotionFrameImageOverrides(category);
-    await Promise.all(Object.keys(imageOverrides).map(async (idxStr) => {
-      const idx = Number(idxStr);
-      if (idx < 0 || idx >= urls.length) return;
-      const asset = await AssetDB.getAsset(imageOverrides[idxStr]).catch(() => null);
-      if (asset) urls[idx] = asset.dataUrl;
-    }));
-  }
+  const urls = buildMotionCategoryFrameDataUrls(img, source.row, getMotionFrameOverrides(category), source.rowOverride);
   motionFrameCache[category] = urls;
+  return { source, asset, dims, urls };
+}
+
+// 프레임을 탭하면 세밀영역조절(openMotionFrameCropAdjuster)이 열린다 — CSS
+// background-position으로만 그려서(캔버스 크롭 없음) 6칸을 한 번에 그려도
+// 가볍다.
+function renderMotionFrameGrid(category, source, sourceAsset, sourceDims) {
+  const overrides = getMotionFrameOverrides(category);
+  const gridEl = el[motionElKey(category, 'FrameGrid')];
+  const cells = [];
+  for (let i = 0; i < MOTION_GRID_COLUMNS; i++) {
+    const override = overrides[i];
+    const rect = override || (sourceDims ? getMotionGridDefaultCropRect(source.row, i, sourceDims.width, sourceDims.height, source.rowOverride) : null);
+    let iconStyle = '';
+    let hasContent = false;
+    if (sourceAsset && rect) {
+      const style = getFishCropStyle(rect, sourceDims.width, sourceDims.height, 64);
+      iconStyle = `background-image:url('${sourceAsset.dataUrl}');background-position:${style.backgroundPosition};background-size:${style.backgroundSize};background-repeat:no-repeat;image-rendering:pixelated`;
+      hasContent = true;
+    }
+    cells.push(`
+      <div class="frame-slot${hasContent ? ' fish-icon-tappable' : ''}" style="${iconStyle}" data-frame-index="${i}">
+        <span class="frame-index">${i + 1}${overrides[i] ? ' ✓' : ''}</span>
+        ${hasContent ? '' : `<span style="font-size:20px">${MOTION_FALLBACK_ICONS[category]}</span>`}
+      </div>
+    `);
+  }
+  gridEl.innerHTML = cells.join('');
+  if (!sourceAsset || !sourceDims) return;
+  gridEl.querySelectorAll('[data-frame-index]').forEach(cellEl => {
+    const i = Number(cellEl.dataset.frameIndex);
+    cellEl.addEventListener('click', () => openMotionFrameCropAdjuster(category, i, source, sourceAsset, sourceDims));
+  });
+}
+
+// 재생 타이머가 안 보이는 탭에서도 계속 도는 걸 막는다 — startPreviewLoop이
+// previewEl._animTimer에 매달아둔 타이머를 그대로 정지시킨다.
+function stopMotionPreviewLoop(category) {
+  const previewEl = el[motionElKey(category, 'Preview')];
+  if (previewEl && previewEl._animTimer) { clearTimeout(previewEl._animTimer); previewEl._animTimer = null; }
+}
+
+// 카테고리별 "6프레임 업로드" 버튼 3종(업로드/배경 제거/되돌리기)의 노출
+// 상태를 스트립 유무에 맞춘다 — 메인 모션 시트의 3버튼(motionSheetUploadBtn
+// 등)과 같은 패턴.
+function renderMotionCategoryStripUI(category) {
+  const hasStrip = !!getMotionCategoryStripAssetId(category);
+  el[motionElKey(category, 'StripUploadBtn')].textContent = hasStrip ? '📤 6프레임 다시 업로드' : '📤 6프레임 업로드';
+  el[motionElKey(category, 'StripCutoutBtn')].classList.toggle('hidden', !hasStrip);
+  el[motionElKey(category, 'StripRemoveBtn')].classList.toggle('hidden', !hasStrip);
+}
+
+// 지금 활성 하부 탭(activeMotionCategory) 하나만 프레임 그리드+재생
+// 미리보기를 렌더링한다 — precomputed가 있으면(캐스팅/올리기처럼 이미
+// renderMotionTab에서 계산해둔 경우) 다시 계산하지 않고 그대로 쓴다.
+async function renderActiveMotionCategory(precomputed) {
+  const category = activeMotionCategory;
+  MOTION_CATEGORIES.forEach((c) => { if (c !== category) stopMotionPreviewLoop(c); });
+
+  let result = precomputed;
+  if (!result) {
+    result = await computeMotionCategoryFrames(category).catch((err) => {
+      DevDiag.show(MOTION_LABELS[category] + ' 미리보기 생성 실패: ' + (err && err.message ? err.message : err));
+      return { source: resolveMotionCategorySource(fishingConfig, category), asset: null, dims: null, urls: [] };
+    });
+  }
+  const { source, asset, dims, urls } = result;
+
+  renderMotionFrameGrid(category, source, asset, dims);
+  el[motionElKey(category, 'RowAdjustBtn')].disabled = source.usingCategorySheet || !motionSheetAsset;
+
+  const previewEl = el[motionElKey(category, 'Preview')];
+  const labelEl = el[motionElKey(category, 'PreviewLabel')];
   const durations = category === 'cast'
     ? getCastFrameDurations()
     : (MOVE_CATEGORIES.includes(category) ? new Array(MOTION_GRID_COLUMNS).fill(getMotionPlaybackMs(category)) : null);
   startPreviewLoop(previewEl, labelEl, urls.map(u => ({ dataUrl: u })), durations);
+
+  if (MOVE_CATEGORIES.includes(category)) {
+    const ms = getMotionPlaybackMs(category);
+    el[motionElKey(category, 'SpeedInput')].value = ms;
+    el[motionElKey(category, 'SpeedValue')].textContent = '재생 속도 ' + ms + 'ms';
+  }
 }
+
+function switchMotionSubtab(category) {
+  if (category === activeMotionCategory) return;
+  activeMotionCategory = category;
+  el.motionSubtabs.querySelectorAll('.motion-subtab-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.category === category);
+  });
+  document.querySelectorAll('.motion-subtab-panel').forEach(panelEl => {
+    panelEl.classList.toggle('hidden', panelEl.dataset.category !== category);
+  });
+  renderActiveMotionCategory(null);
+}
+el.motionSubtabs.querySelectorAll('.motion-subtab-btn').forEach(btn => {
+  btn.addEventListener('click', () => switchMotionSubtab(btn.dataset.category));
+});
 
 async function renderMotionTab() {
   motionSheetAsset = await renderMotionSheetPreview();
   motionSheetDims = motionSheetAsset ? await loadImageDimensions(motionSheetAsset.dataUrl) : null;
   el.motionSheetFrame.style.setProperty('--motion-ar', motionSheetDims ? (motionSheetDims.width + '/' + motionSheetDims.height) : '1/1');
+  MOTION_CATEGORIES.forEach(renderMotionCategoryStripUI);
+
+  // 프레임 캐시(motionFrameCache)는 6개 카테고리 전부 하부 탭과 무관하게
+  // 매번 계산해둔다 — 낚시대 끝 지정(rodtipEditBtn/reelRodtipEditBtn)·물고기
+  // 들기 위치(heldFishPosEditBtn)·자유 이동 테스트(moveChar, 아래
+  // applyCharFrame)가 활성 탭과 상관없이 이 값을 읽기 때문. 시트/스트립을
+  // 캔버스로 잘라내는 이 계산 자체는 가볍다 — 진짜 렉의 원인은 그 아래
+  // 프레임 그리드 DOM(36칸 매번 재구성)과 카테고리마다 따로 도는 재생
+  // 미리보기 타이머 6개가 동시에 존재하던 것이었다. 그 두 가지(DOM 그리드,
+  // 재생 타이머)만 지금 활성 탭(activeMotionCategory) 하나로 제한한다
+  // (아래 renderActiveMotionCategory).
+  const precomputed = {};
   for (const category of MOTION_CATEGORIES) {
-    await renderMotionFrameGrid(category, motionSheetAsset, motionSheetDims);
-    el[motionElKey(category, 'RowAdjustBtn')].disabled = !motionSheetAsset;
-    // 미리보기 생성(캔버스로 프레임을 잘라내는 작업)이 실패해도 나머지
-    // 카테고리·아래 타임라인 렌더링까지 통째로 막히면 안 된다.
-    await renderMotionPreviewLoop(category, motionSheetAsset, motionSheetDims).catch((err) => {
+    precomputed[category] = await computeMotionCategoryFrames(category).catch((err) => {
       motionFrameCache[category] = [];
-      startPreviewLoop(el[motionElKey(category, 'Preview')], el[motionElKey(category, 'PreviewLabel')], []);
-      DevDiag.show(MOTION_LABELS[category] + ' 미리보기 생성 실패: ' + (err && err.message ? err.message : err));
+      DevDiag.show(MOTION_LABELS[category] + ' 프레임 계산 실패: ' + (err && err.message ? err.message : err));
+      return null;
     });
-    if (MOVE_CATEGORIES.includes(category)) {
-      el[motionElKey(category, 'CutoutAllBtn')].disabled = !motionFrameCache[category].some(Boolean);
-    }
   }
   el.rodtipEditBtn.disabled = !motionFrameCache.cast.length;
   el.reelRodtipEditBtn.disabled = !motionFrameCache.reel.length;
   updateHeldFishBtnState();
-  renderCastTimeline();
-  initMotionSpeedControls();
-}
 
-// 이동 방향별 "재생 속도" 슬라이더 — 값이 없으면 moveAnimMs(이동 탭 기본값)를
-// 보여준다. renderMotionTab이 fishingConfig를 다시 읽을 때마다(크롭 조정,
-// 업로드 등 이후) 같이 다시 불러 슬라이더가 저장된 값과 어긋나지 않게 한다.
-function initMotionSpeedControls() {
-  MOVE_CATEGORIES.forEach((category) => {
-    const ms = getMotionPlaybackMs(category);
-    const input = el[motionElKey(category, 'SpeedInput')];
-    const value = el[motionElKey(category, 'SpeedValue')];
-    input.value = ms;
-    value.textContent = '재생 속도 ' + ms + 'ms';
-  });
+  await renderActiveMotionCategory(precomputed[activeMotionCategory] || null);
+  renderCastTimeline();
 }
 
 // frameIndex가 1번 이상(0-based로 1 이상, 즉 화면상 2번 프레임부터)일 때
@@ -1585,31 +1689,21 @@ function initMotionSpeedControls() {
 // 크기뿐 아니라 세로 위치도 1번 프레임과 같은 기준으로 맞춰야 실제로
 // 걸을 때 캐릭터 높이가 흔들리지 않는다. cx(가로 위치)는 프레임마다 다른
 // 포즈(팔다리 위치)라 그대로 둔다. (2) onionSkin — 확대 미리보기에 반투명
-// 하게 겹쳐 그릴 바로 앞 프레임(frameIndex-1)의 이미지+영역. 앞 프레임이
-// 업로드 오버라이드로 대체돼 있으면(시트 크롭이 아니라 독립된 사진이면)
-// 그 사진 전체를 겹치고, 아니면 같은 시트에서 그 프레임의 크롭 영역을 겹친다.
-async function openMotionFrameCropAdjuster(category, frameIndex, sheetAsset, sheetDims) {
+// 하게 겹쳐 그릴 바로 앞 프레임(frameIndex-1)의 이미지+영역(같은 카테고리
+// 안에서만). (3) 1번 프레임(frameIndex===0)에서는 대신 motionOverlapOptions로
+// "모션 겹치기" 토글을 넘긴다 — 다른 모션 카테고리의 1번 프레임을 반투명
+// 가이드로 겹쳐보는 기능(openCropAdjuster 참고, 저장 안 되는 편집 보조).
+async function openMotionFrameCropAdjuster(category, frameIndex, source, sourceAsset, sourceDims) {
   const overrides = getMotionFrameOverrides(category);
-  const row = MOTION_CATEGORIES.indexOf(category);
-  const rowOverride = getMotionRowOverride(category);
-  const rectFor = (idx) => overrides[idx] || (sheetDims ? getMotionGridDefaultCropRect(row, idx, sheetDims.width, sheetDims.height, rowOverride) : { cx: 0.5, cy: 0.5, size: 0.15 });
+  const rectFor = (idx) => overrides[idx] || (sourceDims ? getMotionGridDefaultCropRect(source.row, idx, sourceDims.width, sourceDims.height, source.rowOverride) : { cx: 0.5, cy: 0.5, size: 0.15 });
   const existingRect = rectFor(frameIndex);
   const firstFrameRect = frameIndex > 0 ? rectFor(0) : null;
   const matchFirstFrameRef = firstFrameRect ? { cy: firstFrameRect.cy, size: firstFrameRect.size } : null;
 
-  let onionSkin = null;
-  if (frameIndex > 0) {
-    const prevIndex = frameIndex - 1;
-    const imageOverrides = MOVE_CATEGORIES.includes(category) ? getMotionFrameImageOverrides(category) : {};
-    const prevOverrideAssetId = imageOverrides[prevIndex];
-    if (prevOverrideAssetId) {
-      const asset = await AssetDB.getAsset(prevOverrideAssetId).catch(() => null);
-      if (asset) onionSkin = { url: asset.dataUrl, rect: { cx: 0.5, cy: 0.5, size: 1 } };
-    } else if (sheetAsset) {
-      onionSkin = { url: sheetAsset.dataUrl, rect: rectFor(prevIndex) };
-    }
-  }
-  openCropAdjuster(sheetAsset.dataUrl, existingRect, null, (rect) => confirmMotionFrameCrop(category, rect, frameIndex), onionSkin, matchFirstFrameRef);
+  const onionSkin = (frameIndex > 0 && sourceAsset) ? { url: sourceAsset.dataUrl, rect: rectFor(frameIndex - 1) } : null;
+  const motionOverlapOptions = frameIndex === 0 ? { currentCategory: category } : null;
+
+  openCropAdjuster(sourceAsset.dataUrl, existingRect, null, (rect) => confirmMotionFrameCrop(category, rect, frameIndex, source, sourceDims), onionSkin, matchFirstFrameRef, motionOverlapOptions);
 }
 // 물고기 세밀영역조절(confirmFishSpeciesCrop)과 마찬가지로 시트 자체는
 // 안 바뀐다 — 이 프레임이 시트의 어느 영역을 잘라 쓸지 좌표만 저장한다.
@@ -1617,17 +1711,18 @@ async function openMotionFrameCropAdjuster(category, frameIndex, sheetAsset, she
 // 프레임마다 크롭 크기(size)가 다르면 재생했을 때 캐릭터가 커졌다
 // 작아졌다 하는 것처럼 보인다 — 한 프레임의 크기를 바꾸면 같은 카테고리의
 // 나머지 프레임도 같은 크기로 맞춘다. 위치(cx/cy)는 프레임마다 다른
-// 포즈라 각자 그대로 둔다.
-async function confirmMotionFrameCrop(category, rect, frameIndex) {
+// 포즈라 각자 그대로 둔다. source/sourceDims는 openMotionFrameCropAdjuster가
+// 이미 결정해둔 것(스트립인지 메인 시트인지)을 그대로 넘겨받는다 — 여기서
+// 다시 resolveMotionCategorySource를 부르면 그새 스트립이 바뀌었을 때
+// 어긋날 수 있다.
+async function confirmMotionFrameCrop(category, rect, frameIndex, source, sourceDims) {
   const current = getMotionFrameOverrides(category);
-  const row = MOTION_CATEGORIES.indexOf(category);
-  const rowOverride = getMotionRowOverride(category);
   const overrides = {};
   for (let i = 0; i < MOTION_GRID_COLUMNS; i++) {
     if (i === frameIndex) {
       overrides[i] = rect;
     } else {
-      const existing = current[i] || (motionSheetDims ? getMotionGridDefaultCropRect(row, i, motionSheetDims.width, motionSheetDims.height, rowOverride) : null);
+      const existing = current[i] || (sourceDims ? getMotionGridDefaultCropRect(source.row, i, sourceDims.width, sourceDims.height, source.rowOverride) : null);
       overrides[i] = existing ? Object.assign({}, existing, { size: rect.size }) : Object.assign({ cx: 0.5, cy: 0.5 }, { size: rect.size });
     }
   }
@@ -1644,139 +1739,76 @@ async function dataUrlToBlob(dataUrl) {
   return res.blob();
 }
 
-// ===== 이동 모션 개별 프레임 누끼따기 =====
-// 지금 그 칸에 보이는 그림(motionFrameCache — 업로드 오버라이드가 있으면
-// 그 사진, 없으면 시트에서 잘라낸 크롭)을 기준으로 배경을 제거해 새
-// 업로드 오버라이드로 저장한다. 시트 크롭 프레임에 쓰면 그 프레임만
-// 개별 업로드로 "승격"되는 셈 — 시트 자체나 다른 프레임엔 영향 없다.
-async function cutoutMotionFrame(category, frameIndex, btn) {
-  const dataUrl = motionFrameCache[category] && motionFrameCache[category][frameIndex];
-  if (!dataUrl) return;
-  if (btn) btn.disabled = true;
-  try {
-    const srcBlob = await dataUrlToBlob(dataUrl);
-    const resultBlob = await removeBackgroundOrFallback(srcBlob);
-    const asset = await AssetDB.addAsset({ type: 'fishing-motion-frame', name: `${category}-frame${frameIndex}.png`, blob: resultBlob });
-    const overrides = Object.assign({}, getMotionFrameImageOverrides(category));
-    overrides[frameIndex] = asset.id;
-    await setMotionFrameImageOverrides(category, overrides);
-    showSaveNote();
-    renderMotionTab();
-  } catch (err) {
-    DevDiag.show('프레임 배경 제거 실패: ' + (err && err.message ? err.message : err));
-  }
-}
-
-async function clearMotionFrameImageOverride(category, frameIndex) {
-  const overrides = Object.assign({}, getMotionFrameImageOverrides(category));
-  delete overrides[frameIndex];
-  await setMotionFrameImageOverrides(category, overrides);
-  showSaveNote();
-  renderMotionTab();
-}
-
-// ===== 이동 모션 프레임 전체 누끼따기 =====
-// 카테고리(행) 하나의 프레임 6장을 한 번에 배경 제거해 전부 업로드
-// 오버라이드로 승격한다 — cutoutMotionFrame을 프레임마다 부르는 대신, 저장을
-// 한 번(setMotionFrameImageOverrides 한 번)만 해서 중간 렌더 깜빡임 없이
-// 끝난다. 이미 업로드 오버라이드가 있던 칸도 다시 처리해 새로 배경을 뗀다
-// — 결과가 마음에 안 드는 칸만 액션 시트의 "업로드 취소"로 개별 되돌리면
-// 된다.
-async function cutoutMotionCategoryAll(category, btn) {
-  const frames = motionFrameCache[category] || [];
-  if (!frames.length) return;
-  if (btn) btn.disabled = true;
-  try {
-    const overrides = Object.assign({}, getMotionFrameImageOverrides(category));
-    for (let i = 0; i < frames.length; i++) {
-      if (!frames[i]) continue;
-      const srcBlob = await dataUrlToBlob(frames[i]);
-      const resultBlob = await removeBackgroundOrFallback(srcBlob);
-      const asset = await AssetDB.addAsset({ type: 'fishing-motion-frame', name: `${category}-frame${i}.png`, blob: resultBlob });
-      overrides[i] = asset.id;
-    }
-    await setMotionFrameImageOverrides(category, overrides);
-    showSaveNote();
-    renderMotionTab();
-  } catch (err) {
-    DevDiag.show(MOTION_LABELS[category] + ' 프레임 전체 배경 제거 실패: ' + (err && err.message ? err.message : err));
-  } finally {
-    if (btn) btn.disabled = false;
-  }
-}
-MOVE_CATEGORIES.forEach((category) => {
-  el[motionElKey(category, 'CutoutAllBtn')].addEventListener('click', (e) => cutoutMotionCategoryAll(category, e.currentTarget));
-});
-
-// ===== 개별 업로드 프레임 액션 시트 =====
-// 프레임 칸(업로드 오버라이드가 있는 칸)을 탭하면 뜬다 — 다시 배경
-// 제거(cutoutMotionFrame 재사용)하거나, 업로드를 취소해 시트 크롭으로
-// 되돌릴 수 있다(clearMotionFrameImageOverride 재사용).
-let motionFrameActionsCategory = null;
-let motionFrameActionsIndex = null;
-function openMotionFrameActions(category, frameIndex) {
-  motionFrameActionsCategory = category;
-  motionFrameActionsIndex = frameIndex;
-  el.motionFrameActionsTitle.textContent = `${MOTION_LABELS[category]} — ${frameIndex + 1}번 프레임 수정`;
-  el.motionFrameActionsOverlay.classList.remove('hidden');
-}
-function closeMotionFrameActions() {
-  el.motionFrameActionsOverlay.classList.add('hidden');
-  motionFrameActionsCategory = null;
-  motionFrameActionsIndex = null;
-}
-el.motionFrameActionsCutoutBtn.addEventListener('click', async () => {
-  if (motionFrameActionsCategory === null || motionFrameActionsIndex === null) return;
-  el.motionFrameActionsCutoutBtn.disabled = true;
-  try {
-    await cutoutMotionFrame(motionFrameActionsCategory, motionFrameActionsIndex);
-  } finally {
-    el.motionFrameActionsCutoutBtn.disabled = false;
-  }
-  closeMotionFrameActions();
-});
-el.motionFrameActionsClearBtn.addEventListener('click', async () => {
-  if (motionFrameActionsCategory === null || motionFrameActionsIndex === null) return;
-  await clearMotionFrameImageOverride(motionFrameActionsCategory, motionFrameActionsIndex);
-  closeMotionFrameActions();
-});
-el.motionFrameActionsCancelBtn.addEventListener('click', closeMotionFrameActions);
-
-// ===== 이동 모션 프레임 개별 업로드 (프레임 미리보기 오른쪽 "📤 개별
-// 업로드" 버튼) =====
-// 여러 장을 한 번에 고르면 앞에서부터 프레임 1~6 순서로 배정한다(더 적게
-// 고르면 그만큼만 채우고 나머지 프레임은 그대로 시트 크롭을 쓴다). 소품
-// 이미지 업로드(sinkerImageAddBtn 등)와 같은 이유로 배경을 자동 제거한 뒤
-// 저장한다.
-async function handleMotionCategoryUpload(category, files) {
-  if (!files.length) return;
-  const btn = el[motionElKey(category, 'UploadBtn')];
+// ===== 카테고리별 "6프레임 업로드" (프레임 6장을 이어붙인 가로 스트립
+// 한 장) =====
+// 예전엔 이동(4방향)만 여러 장을 낱개로 골라 프레임 1~6에 순서대로
+// 배정했다 — 지금은 6개 카테고리(캐스팅·올리기 포함) 전부 스트립 한 장을
+// 올리면 메인 시트와 같은 방식(6등분)으로 자동으로 잘린다. 소품 이미지
+// 업로드(sinkerImageAddBtn 등)와 같은 이유로 배경을 자동 제거한 뒤 저장한다.
+async function handleMotionCategoryStripUpload(category, file) {
+  if (!file) return;
+  const btn = el[motionElKey(category, 'StripUploadBtn')];
   btn.disabled = true;
   try {
-    const overrides = Object.assign({}, getMotionFrameImageOverrides(category));
-    for (let i = 0; i < files.length && i < MOTION_GRID_COLUMNS; i++) {
-      const blob = await removeBackgroundOrFallback(files[i]);
-      const asset = await AssetDB.addAsset({ type: 'fishing-motion-frame', name: files[i].name, blob });
-      overrides[i] = asset.id;
-    }
-    await setMotionFrameImageOverrides(category, overrides);
+    const blob = await removeBackgroundOrFallback(file);
+    const asset = await AssetDB.addAsset({ type: 'fishing-motion-category-strip', name: file.name, blob });
+    await setMotionCategoryStripAssetId(category, asset.id);
     showSaveNote();
     renderMotionTab();
   } catch (err) {
-    DevDiag.show('개별 프레임 업로드 실패: ' + (err && err.message ? err.message : err));
+    DevDiag.show(MOTION_LABELS[category] + ' 프레임 업로드 실패: ' + (err && err.message ? err.message : err));
   } finally {
     btn.disabled = false;
   }
 }
-MOVE_CATEGORIES.forEach((category) => {
-  const uploadBtn = el[motionElKey(category, 'UploadBtn')];
-  const uploadInput = el[motionElKey(category, 'UploadInput')];
-  uploadBtn.addEventListener('click', () => uploadInput.click());
-  uploadInput.addEventListener('change', () => {
-    const files = Array.from(uploadInput.files || []);
-    uploadInput.value = '';
-    handleMotionCategoryUpload(category, files);
+// 이미 올려둔 스트립 원본을 통째로 다시 배경 제거한다 — 메인 시트의
+// motionSheetCutoutBtn과 같은 패턴(motionCategorySheetAssetId 자리에 덮어써서
+// 크롭 좌표(motionFrameOverrides)는 그대로 유지된다).
+async function cutoutMotionCategoryStrip(category, btn) {
+  const assetId = getMotionCategoryStripAssetId(category);
+  if (!assetId) return;
+  const asset = await AssetDB.getAsset(assetId).catch(() => null);
+  if (!asset) return;
+  if (btn) btn.disabled = true;
+  try {
+    const srcBlob = await dataUrlToBlob(asset.dataUrl);
+    const resultBlob = await removeBackgroundOrFallback(srcBlob);
+    const newAsset = await AssetDB.addAsset({ type: 'fishing-motion-category-strip', name: `${category}-strip-cutout.png`, blob: resultBlob });
+    await setMotionCategoryStripAssetId(category, newAsset.id);
+    showSaveNote();
+    renderMotionTab();
+  } catch (err) {
+    DevDiag.show(MOTION_LABELS[category] + ' 배경 제거 실패: ' + (err && err.message ? err.message : err));
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+// 스트립을 지우면 그 카테고리는 다시 메인 모션 시트의 그 행을 쓰게
+// 되돌아간다 — 크롭 보정(motionFrameOverrides)도 같이 지운다. 스트립
+// 기준 좌표와 메인 시트 기준 좌표는 값은 같아도 잘라내는 원본이 서로 달라,
+// 그대로 두면 메인 시트의 엉뚱한 자리를 잘라낼 수 있다(모션 시트 제거와
+// 같은 원칙).
+async function removeMotionCategoryStrip(category) {
+  await setMotionCategoryStripAssetId(category, null);
+  await setMotionFrameOverrides(category, {});
+  showSaveNote();
+  renderMotionTab();
+}
+MOTION_CATEGORIES.forEach((category) => {
+  const uploadBtn = el[motionElKey(category, 'StripUploadBtn')];
+  const cutoutBtn = el[motionElKey(category, 'StripCutoutBtn')];
+  const removeBtn = el[motionElKey(category, 'StripRemoveBtn')];
+  const fileInput = el[motionElKey(category, 'StripFileInput')];
+  uploadBtn.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files[0];
+    fileInput.value = '';
+    handleMotionCategoryStripUpload(category, file);
   });
+  cutoutBtn.addEventListener('click', (e) => cutoutMotionCategoryStrip(category, e.currentTarget));
+  removeBtn.addEventListener('click', () => removeMotionCategoryStrip(category));
+});
+MOVE_CATEGORIES.forEach((category) => {
   const speedInput = el[motionElKey(category, 'SpeedInput')];
   const speedValue = el[motionElKey(category, 'SpeedValue')];
   speedInput.addEventListener('input', () => {
@@ -2105,10 +2137,10 @@ el.motionSheetFileInput.addEventListener('change', async () => {
   showSaveNote();
   renderMotionTab();
 });
-// 시트 자체(36칸 전체)를 한 번에 배경 제거한다 — 각 프레임을 낱개로
-// 누끼따는 이동(4방향) 전용 "프레임 전체 배경 제거"(cutoutMotionCategoryAll)
-// 와 달리, 시트 원본 이미지 한 장을 통째로 처리해 같은 motionSheetAssetId
-// 자리에 덮어써서 크롭 좌표(motionFrameOverrides 등)는 그대로 유지된다.
+// 시트 자체(36칸 전체)를 한 번에 배경 제거한다 — 카테고리별 스트립 전용
+// "배경 제거"(cutoutMotionCategoryStrip)와 같은 패턴이지만, 이건 시트 원본
+// 이미지 한 장을 통째로 처리해 같은 motionSheetAssetId 자리에 덮어써서
+// 크롭 좌표(motionFrameOverrides 등)는 그대로 유지된다.
 el.motionSheetCutoutBtn.addEventListener('click', async () => {
   if (!motionSheetAsset) return;
   el.motionSheetCutoutBtn.disabled = true;
@@ -2426,8 +2458,14 @@ let cropOnionSkin = null;
 // 둘 다 같이 맞춘다 — cx(가로 위치)는 프레임마다 다른 포즈라 안 건드린다.
 // null이면 버튼을 숨긴다.
 let cropMatchFirstFrameRef = null;
+// cropMotionOverlapOptions — 1번 프레임(frameIndex===0) 세밀영역조절에서만
+// { currentCategory }로 넘어온다(openMotionFrameCropAdjuster 참고). null이면
+// "모션 겹치기" 토글 행 자체를 숨긴다 — 다른 openCropAdjuster 호출(물고기
+// 아이콘 등)은 이 인자를 안 넘겨서 항상 숨김 그대로다.
+let cropMotionOverlapOptions = null;
+let cropMotionOverlapOn = false;
 
-function openCropAdjuster(sourceUrl, existingRect, pendingSourceFile, onConfirm, onionSkin, matchFirstFrameRef) {
+function openCropAdjuster(sourceUrl, existingRect, pendingSourceFile, onConfirm, onionSkin, matchFirstFrameRef, motionOverlapOptions) {
   const img = new Image();
   img.crossOrigin = 'anonymous';
   img.onload = () => {
@@ -2439,6 +2477,19 @@ function openCropAdjuster(sourceUrl, existingRect, pendingSourceFile, onConfirm,
     cropMatchFirstFrameRef = matchFirstFrameRef || null;
     el.cropMatchFirstFrameBtn.classList.toggle('hidden', cropMatchFirstFrameRef === null);
     el.cropZoomOnionHint.classList.toggle('hidden', !onionSkin);
+    // 모션 겹치기 토글 — 매번 OFF로 초기화하고, 지금 카테고리를 뺀 나머지
+    // 5개를 <select>에 채운다(사이즈/좌표 조절 중 실수로 켜둔 채 다른
+    // 프레임으로 넘어가는 걸 막는다).
+    cropMotionOverlapOptions = motionOverlapOptions || null;
+    cropMotionOverlapOn = false;
+    el.cropOverlapRow.classList.toggle('hidden', !cropMotionOverlapOptions);
+    el.cropOverlapToggleBtn.textContent = '모션 겹치기: OFF';
+    el.cropOverlapToggleBtn.classList.remove('active');
+    el.cropOverlapSelect.classList.add('hidden');
+    if (cropMotionOverlapOptions) {
+      const otherCategories = MOTION_CATEGORIES.filter(c => c !== cropMotionOverlapOptions.currentCategory);
+      el.cropOverlapSelect.innerHTML = otherCategories.map(c => `<option value="${c}">${MOTION_LABELS[c]}</option>`).join('');
+    }
     // 크롭 크기를 짧은 변 기준 픽셀 단위로 보여준다 — 슬라이더/입력 범위는
     // 이미지마다 짧은 변 길이가 달라 매번 다시 잡아야 한다(1px ~ shortSide).
     const shortSide = Math.min(img.naturalWidth, img.naturalHeight);
@@ -2472,8 +2523,48 @@ function closeCropAdjuster() {
   cropOnConfirm = null;
   cropOnionSkin = null;
   cropMatchFirstFrameRef = null;
+  cropMotionOverlapOptions = null;
+  cropMotionOverlapOn = false;
   stopCropDpadRepeat();
 }
+
+// 모션 겹치기 — 고른 카테고리의 1번 프레임(메인 시트든 카테고리 스트립이든
+// resolveMotionCategorySource가 결정한 지금 활성 소스)을 반투명 온션스킨으로
+// 불러온다. 토글이 그새 꺼졌거나 다른 카테고리로 바뀌었으면(비동기 로딩
+// 도중 사용자가 계속 조작했을 수 있다) 결과를 버린다.
+async function loadMotionOverlapOnion(category) {
+  cropOnionSkin = null;
+  drawCropStage();
+  const { source, asset, dims } = await loadMotionCategorySource(category);
+  if (!cropMotionOverlapOn || el.cropOverlapSelect.value !== category) return;
+  if (!asset || !dims) return;
+  const overrides = getMotionFrameOverrides(category);
+  const rect = overrides[0] || getMotionGridDefaultCropRect(source.row, 0, dims.width, dims.height, source.rowOverride);
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = () => {
+    if (!cropMotionOverlapOn || el.cropOverlapSelect.value !== category) return;
+    cropOnionSkin = { img, rect };
+    drawCropStage();
+  };
+  img.src = asset.dataUrl;
+}
+el.cropOverlapToggleBtn.addEventListener('click', () => {
+  if (!cropMotionOverlapOptions) return;
+  cropMotionOverlapOn = !cropMotionOverlapOn;
+  el.cropOverlapToggleBtn.textContent = '모션 겹치기: ' + (cropMotionOverlapOn ? 'ON' : 'OFF');
+  el.cropOverlapToggleBtn.classList.toggle('active', cropMotionOverlapOn);
+  el.cropOverlapSelect.classList.toggle('hidden', !cropMotionOverlapOn);
+  if (cropMotionOverlapOn) {
+    loadMotionOverlapOnion(el.cropOverlapSelect.value);
+  } else {
+    cropOnionSkin = null;
+    drawCropStage();
+  }
+});
+el.cropOverlapSelect.addEventListener('change', () => {
+  if (cropMotionOverlapOn) loadMotionOverlapOnion(el.cropOverlapSelect.value);
+});
 
 function drawCropStage() {
   if (!cropSourceImg) return;

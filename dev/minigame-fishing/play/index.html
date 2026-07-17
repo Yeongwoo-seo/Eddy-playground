@@ -1066,11 +1066,13 @@ async function loadConfig() {
   if (design.gaugeImageAssetId) ids.push(design.gaugeImageAssetId);
   if (cfg.fishSheetAssetId) ids.push(cfg.fishSheetAssetId);
   if (cfg.motionSheetAssetId) ids.push(cfg.motionSheetAssetId);
-  // 이동(4방향) 개별 프레임 업로드/누끼 오버라이드 — motionFrameImageOverrides
-  // 값이 있는 칸은 아래에서 시트 크롭 대신 이 자산을 그대로 쓴다.
-  const motionFrameImageOverrides = cfg.motionFrameImageOverrides || {};
-  MOVE_DIRS.forEach(dir => {
-    Object.values(motionFrameImageOverrides[dir] || {}).forEach(assetId => { if (assetId) ids.push(assetId); });
+  // 카테고리별 "6프레임 업로드" 스트립(motionCategorySheetAssetId, 1행×6열
+  // 한 장) — 있으면 resolveMotionCategorySource(fishDefs.js)가 그 카테고리는
+  // 메인 6x6 시트 대신 이 스트립을 쓰라고 알려준다(dev/minigame-fishing/
+  // index.html 참고).
+  const motionCategorySheetAssetId = cfg.motionCategorySheetAssetId || {};
+  MOTION_CATEGORIES.forEach(category => {
+    if (motionCategorySheetAssetId[category]) ids.push(motionCategorySheetAssetId[category]);
   });
   if (cfg.backgroundAssetId) ids.push(cfg.backgroundAssetId);
   if (cfg.castGaugeAssetId) ids.push(cfg.castGaugeAssetId);
@@ -1086,24 +1088,36 @@ async function loadConfig() {
   let assets = [];
   try { assets = await AssetDB.getAssetsByIds(ids); } catch (e) { /* 위와 동일 */ }
   const byId = new Map(assets.map(a => [a.id, a]));
-  const motionSheetAsset = cfg.motionSheetAssetId ? byId.get(cfg.motionSheetAssetId) : null;
   const motionOverrides = cfg.motionFrameOverrides || {};
-  const motionRowOverrides = cfg.motionRowOverrides || {};
-  let motionSheetImg = null;
-  if (motionSheetAsset) {
-    motionSheetImg = await new Promise(resolve => {
+  // 카테고리별 소스 이미지(메인 시트 또는 카테고리 스트립, resolveMotionCategorySource
+  // 참고)를 assetId별로 한 번씩만 로드해 재사용한다 — 카테고리 스트립을 안 올린
+  // 동작들은 다 같은 메인 시트를 같이 쓰는 게 흔하다.
+  const sourceImgCache = new Map();
+  function loadSourceImg(assetId) {
+    if (!assetId) return Promise.resolve(null);
+    if (sourceImgCache.has(assetId)) return sourceImgCache.get(assetId);
+    const asset = byId.get(assetId);
+    const promise = asset ? new Promise(resolve => {
       const im = new Image();
       im.crossOrigin = 'anonymous';
       im.onload = () => resolve(im);
       im.onerror = () => resolve(null);
-      im.src = motionSheetAsset.dataUrl;
-    });
+      im.src = asset.dataUrl;
+    }) : Promise.resolve(null);
+    sourceImgCache.set(assetId, promise);
+    return promise;
   }
   // outputSize를 안 넘긴다 — buildMotionCategoryFrameDataUrls가 원본 크롭
   // 해상도를 그대로 살린다(84px char-stage/96px 미리보기에서 다시 확대되며
   // 흐려지지 않게).
-  castFrameUrls = motionSheetImg ? buildMotionCategoryFrameDataUrls(motionSheetImg, MOTION_CATEGORIES.indexOf('cast'), motionOverrides.cast, motionRowOverrides.cast) : [];
-  reelFrameUrls = motionSheetImg ? buildMotionCategoryFrameDataUrls(motionSheetImg, MOTION_CATEGORIES.indexOf('reel'), motionOverrides.reel, motionRowOverrides.reel) : [];
+  async function buildCategoryFrames(category) {
+    const source = resolveMotionCategorySource(cfg, category);
+    const img = await loadSourceImg(source.assetId);
+    return img ? buildMotionCategoryFrameDataUrls(img, source.row, motionOverrides[category], source.rowOverride) : [];
+  }
+
+  castFrameUrls = await buildCategoryFrames('cast');
+  reelFrameUrls = await buildCategoryFrames('reel');
   // 캐스팅 시트의 6프레임 뒤에 올리기 1번째 프레임을 7번째 프레임으로
   // 이어붙인다 — 캐스팅이 끝난 뒤 대기 내내 머무는 마지막 포즈(위
   // playFrameSequence 주석 참고)가 올리기 애니메이션의 시작 포즈와 같아져,
@@ -1116,10 +1130,9 @@ async function loadConfig() {
   castPhysics = Object.assign({ gravityMps2: 9.8, vxScale: 1 }, cfg.castPhysics || {});
   reelMotion = Object.assign({ holdFrameMs: 90 }, cfg.reelMotion || {});
 
-  // 이동 방향별 걷기 프레임 — 캐스팅/올리기와 같은 통합 모션 시트
-  // (motionSheetImg)의 up/down/left/right 행에서 잘라 캐시해둔다. 시트
-  // 자체를 안 올렸으면 빈 배열로 두고, stepChar가 그 경우 캐릭터 그림을
-  // 그대로 둔 채 위치만 옮긴다.
+  // 이동 방향별 걷기 프레임 — 캐스팅/올리기와 같은 방식(메인 모션 시트 또는
+  // 카테고리 스트립)으로 잘라 캐시해둔다. 소스 이미지가 없으면 빈 배열로
+  // 두고, stepChar가 그 경우 캐릭터 그림을 그대로 둔 채 위치만 옮긴다.
   walkMotion = Object.assign({ stepMs: 200, animFrameMs: 90 }, cfg.walkMotion || {});
   motionPlaybackMs = Object.assign(
     { up: walkMotion.animFrameMs, down: walkMotion.animFrameMs, left: walkMotion.animFrameMs, right: walkMotion.animFrameMs },
@@ -1127,17 +1140,7 @@ async function loadConfig() {
   );
   walkFrameUrls = { up: [], down: [], left: [], right: [] };
   for (const dir of MOVE_DIRS) {
-    // 시트가 없으면 6칸 전부 빈 자리(null)로 시작한다 — 시트 없이도 개별
-    // 업로드/누끼 프레임만으로 걷기 애니메이션이 동작해야 하기 때문.
-    const dirFrames = motionSheetImg
-      ? buildMotionCategoryFrameDataUrls(motionSheetImg, MOTION_CATEGORIES.indexOf(dir), motionOverrides[dir], motionRowOverrides[dir])
-      : new Array(MOTION_GRID_COLUMNS).fill(null);
-    const dirImageOverrides = motionFrameImageOverrides[dir] || {};
-    Object.keys(dirImageOverrides).forEach(idxStr => {
-      const asset = byId.get(dirImageOverrides[idxStr]);
-      if (asset) dirFrames[Number(idxStr)] = asset.dataUrl;
-    });
-    walkFrameUrls[dir] = dirFrames.filter(Boolean);
+    walkFrameUrls[dir] = await buildCategoryFrames(dir);
   }
 
   // 지수/영우 idle(멈춰 서 있을 때) 프레임 — dev/minigame-fishing/index.html
