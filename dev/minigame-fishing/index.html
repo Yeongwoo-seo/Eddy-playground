@@ -121,6 +121,32 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .crop-btn.primary{color:#08110c;background:var(--green)}
 .crop-btn.secondary{color:var(--text-primary);background:var(--surface-2)}
 .crop-btn:active{opacity:.8}
+
+/* ===== 프레임별 지우기 — 모션 프레임 그리드 칸의 🧹 배지로 연다. 세밀영역조절
+   (크롭)과 달리 손으로 칠해서 픽셀 자체를 지우는 도구라, crop-sheet(바텀시트,
+   최대 430px 폭)로는 정밀하게 지우기 힘들다는 피드백을 받아 전체화면
+   오버레이로 따로 뺐다 — 캔버스를 화면 가득 채워서 확대해 보면서 지울 수
+   있다. 지운 결과는 원본 프레임을 대체하는 새 PNG로 저장되고(motionFrameEraseOverrides),
+   시트 자체나 크롭 좌표는 건드리지 않는다 — "복원"을 누르면 이 보정만
+   지우고 원래 크롭 결과로 돌아간다. */
+.erase-overlay{position:fixed;inset:0;z-index:60;background:#0b0e12;display:flex;flex-direction:column}
+.erase-overlay.hidden{display:none}
+.erase-topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:calc(14px + env(safe-area-inset-top,0)) 16px 12px;flex-shrink:0}
+.erase-topbar button{font-family:var(--mono);font-size:12.5px;font-weight:700;color:var(--text-primary);background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:9px 12px;cursor:pointer}
+.erase-topbar button:disabled{opacity:.4}
+.erase-title{font-family:var(--mono);font-size:11.5px;color:var(--text-muted);letter-spacing:.02em;text-align:center;flex:1}
+.erase-canvas-wrap{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:12px;
+  background-image:linear-gradient(45deg,#20262e 25%,transparent 25%),linear-gradient(-45deg,#20262e 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#20262e 75%),linear-gradient(-45deg,transparent 75%,#20262e 75%);
+  background-size:20px 20px;background-position:0 0,0 10px,10px -10px,-10px 0px;background-color:#151a20}
+.erase-canvas-wrap canvas{max-width:100%;max-height:100%;touch-action:none;image-rendering:pixelated;cursor:crosshair;box-shadow:0 0 0 1px rgba(255,255,255,.15);-webkit-user-select:none;user-select:none}
+.erase-controls{flex-shrink:0;padding:14px 16px calc(16px + env(safe-area-inset-bottom,0));display:flex;flex-direction:column;gap:10px}
+.erase-controls label{display:flex;flex-direction:column;gap:6px;color:var(--text-secondary);font-size:12.5px;font-weight:600;font-family:var(--mono)}
+.erase-controls input[type=range]{width:100%}
+.erase-action-row{display:flex;gap:10px}
+.erase-action-row button{flex:1;font-family:var(--mono);font-size:13.5px;font-weight:700;border:none;border-radius:14px;padding:13px;cursor:pointer;text-align:center}
+.erase-action-row button.secondary{color:var(--text-primary);background:var(--surface-2)}
+.erase-action-row button.primary{color:#04181c;background:var(--cyan)}
+.erase-action-row button:active{opacity:.8}
 .rodtip-frame-picker{display:flex;gap:6px;overflow-x:auto;margin-bottom:14px}
 .rodtip-frame-thumb{flex-shrink:0;width:44px;height:44px;border-radius:8px;border:2px solid var(--divider);background-color:#000;background-size:cover;background-position:center;cursor:pointer;image-rendering:pixelated}
 .rodtip-frame-thumb.active{border-color:var(--cyan)}
@@ -144,6 +170,11 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .frame-slot:active .frame-actions{opacity:1}
 .frame-mini-btn{width:20px;height:20px;border-radius:50%;border:none;background:rgba(255,255,255,.16);color:#fff;font-size:11px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .frame-mini-btn.danger{background:var(--signal-red)}
+/* 모션 프레임 그리드 칸의 지우개 배지 — frame-mini-btn과 달리 항상 보인다
+   (지우기 기능 자체가 눈에 안 띄면 못 찾을까봐). 지우기 보정이 저장돼
+   있으면(marked) 시안색으로 표시해서 "이 프레임은 손댔다"를 알려준다. */
+.frame-erase-btn{position:absolute;right:2px;bottom:2px;width:18px;height:18px;border-radius:50%;border:none;background:rgba(5,7,10,.72);color:#fff;font-size:10px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;z-index:1}
+.frame-erase-btn.marked{background:var(--cyan);color:#04181c}
 /* Static button already in the DOM at page load (not created on the fly
    inside a re-render) — same proven pattern as dev/upload/index.html's
    #selectBtn and the fish-sheet tab's #fishSheetUploadBtn, which trigger
@@ -945,6 +976,26 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   </div>
 </div>
 
+<!-- 프레임별 지우기 — 전체화면. 모션 프레임 그리드 칸의 🧹 배지로 연다. -->
+<div class="erase-overlay hidden" id="eraseOverlay">
+  <div class="erase-topbar">
+    <button type="button" id="eraseCancelBtn">✕ 취소</button>
+    <div class="erase-title" id="eraseTitle">프레임 지우기</div>
+    <button type="button" id="eraseUndoBtn">↶ 실행취소</button>
+  </div>
+  <div class="erase-canvas-wrap" id="eraseCanvasWrap">
+    <canvas id="eraseCanvas"></canvas>
+  </div>
+  <div class="erase-controls">
+    <label>지우개 굵기<input type="range" id="eraseBrushSize" min="4" max="80" step="1" value="24"></label>
+    <div class="erase-action-row">
+      <button type="button" class="secondary" id="eraseResetBtn">처음으로</button>
+      <button type="button" class="secondary" id="eraseRestoreBtn">복원(원본 크롭)</button>
+    </div>
+    <button type="button" class="primary" id="eraseApplyBtn" style="width:100%">적용</button>
+  </div>
+</div>
+
 <!-- 세밀영역조절(범용) — 낚시바 디자인 탭에서는 업로드한 캐치바 이미지
      안에서 "실제로 인식될 영역"(임의 비율 크롭)을 드래그로 지정하는 용도로
      쓴다. dev/upload/evidence-notebook/index.html의 영역지정 편집기와 같은
@@ -1064,6 +1115,16 @@ const el = {
   rodtipMarker: document.getElementById('rodtipMarker'),
   rodtipCancelBtn: document.getElementById('rodtipCancelBtn'),
   rodtipConfirmBtn: document.getElementById('rodtipConfirmBtn'),
+  eraseOverlay: document.getElementById('eraseOverlay'),
+  eraseTitle: document.getElementById('eraseTitle'),
+  eraseCanvasWrap: document.getElementById('eraseCanvasWrap'),
+  eraseCanvas: document.getElementById('eraseCanvas'),
+  eraseBrushSize: document.getElementById('eraseBrushSize'),
+  eraseUndoBtn: document.getElementById('eraseUndoBtn'),
+  eraseResetBtn: document.getElementById('eraseResetBtn'),
+  eraseRestoreBtn: document.getElementById('eraseRestoreBtn'),
+  eraseApplyBtn: document.getElementById('eraseApplyBtn'),
+  eraseCancelBtn: document.getElementById('eraseCancelBtn'),
   sinkerTestStage: document.getElementById('sinkerTestStage'),
   sinkerTestSvg: document.getElementById('sinkerTestSvg'),
   sinkerTestWaterLine: document.getElementById('sinkerTestWaterLine'),
@@ -1483,6 +1544,22 @@ async function setMotionFrameOverrides(category, overrides) {
   fishingConfig = await AssetDB.setFishingConfig({ motionFrameOverrides });
 }
 
+// motionFrameEraseOverrides — motionFrameOverrides(크롭 좌표)와는 별개로,
+// "지우기"로 손본 프레임의 완성된 결과물(PNG asset) 자체를 프레임 인덱스별로
+// 저장한다. { [category]: { [frameIndex]: assetId } }. 있으면 시트 크롭
+// 결과 대신 이 이미지를 그 프레임으로 쓴다(computeMotionCategoryFrames/
+// play/index.html buildCategoryFrames 둘 다 같은 우선순위).
+function getMotionFrameEraseOverrides(category) {
+  return ((fishingConfig.motionFrameEraseOverrides || {})[category]) || {};
+}
+async function setMotionFrameEraseOverride(category, frameIndex, assetId) {
+  const motionFrameEraseOverrides = Object.assign({}, fishingConfig.motionFrameEraseOverrides);
+  const categoryMap = Object.assign({}, motionFrameEraseOverrides[category]);
+  if (assetId) categoryMap[frameIndex] = assetId; else delete categoryMap[frameIndex];
+  motionFrameEraseOverrides[category] = categoryMap;
+  fishingConfig = await AssetDB.setFishingConfig({ motionFrameEraseOverrides });
+}
+
 // motionCategorySheetAssetId — 카테고리 하나(예: 위로 이동)의 프레임 6장을
 // 담은 가로 스트립(1행×6열) 원본, { [category]: assetId }. 있으면
 // resolveMotionCategorySource(fishDefs.js)가 메인 6x6 시트 대신 이걸 쓰라고
@@ -1589,8 +1666,23 @@ async function computeMotionCategoryFrames(category) {
   // 해상도를 그대로 살린다(96px 미리보기 박스에서 다시 확대되며 흐려지지
   // 않게).
   const urls = buildMotionCategoryFrameDataUrls(img, source.row, getMotionFrameOverrides(category), source.rowOverride);
-  motionFrameCache[category] = urls;
-  return { source, asset, dims, urls };
+  const merged = await applyMotionFrameEraseOverrides(category, urls);
+  motionFrameCache[category] = merged;
+  return { source, asset, dims, urls: merged };
+}
+// 시트 크롭 결과(urls) 위에 "지우기"로 손본 프레임이 있으면 그걸로 바꿔치기한다
+// — play/index.html buildCategoryFrames도 같은 우선순위(erase override > 크롭)로
+// 맞춰뒀다.
+async function applyMotionFrameEraseOverrides(category, urls) {
+  const overrides = getMotionFrameEraseOverrides(category);
+  const ids = Object.keys(overrides).map(k => overrides[k]).filter(Boolean);
+  if (!ids.length) return urls;
+  const assets = await AssetDB.getAssetsByIds(ids).catch(() => []);
+  const byId = new Map(assets.map(a => [a.id, a]));
+  return urls.map((url, i) => {
+    const asset = overrides[i] ? byId.get(overrides[i]) : null;
+    return asset ? asset.dataUrl : url;
+  });
 }
 
 // 프레임을 탭하면 세밀영역조절(openMotionFrameCropAdjuster)이 열린다 — CSS
@@ -1598,6 +1690,7 @@ async function computeMotionCategoryFrames(category) {
 // 가볍다.
 function renderMotionFrameGrid(category, source, sourceAsset, sourceDims) {
   const overrides = getMotionFrameOverrides(category);
+  const eraseOverrides = getMotionFrameEraseOverrides(category);
   const gridEl = el[motionElKey(category, 'FrameGrid')];
   const cells = [];
   for (let i = 0; i < MOTION_GRID_COLUMNS; i++) {
@@ -1613,6 +1706,7 @@ function renderMotionFrameGrid(category, source, sourceAsset, sourceDims) {
     cells.push(`
       <div class="frame-slot${hasContent ? ' fish-icon-tappable' : ''}" style="${iconStyle}" data-frame-index="${i}">
         <span class="frame-index">${i + 1}${overrides[i] ? ' ✓' : ''}</span>
+        ${hasContent ? `<button type="button" class="frame-erase-btn${eraseOverrides[i] ? ' marked' : ''}" data-erase-index="${i}" title="지우기">🧹</button>` : ''}
         ${hasContent ? '' : `<span style="font-size:20px">${MOTION_FALLBACK_ICONS[category]}</span>`}
       </div>
     `);
@@ -1622,6 +1716,12 @@ function renderMotionFrameGrid(category, source, sourceAsset, sourceDims) {
   gridEl.querySelectorAll('[data-frame-index]').forEach(cellEl => {
     const i = Number(cellEl.dataset.frameIndex);
     cellEl.addEventListener('click', () => openMotionFrameCropAdjuster(category, i, source, sourceAsset, sourceDims));
+  });
+  gridEl.querySelectorAll('[data-erase-index]').forEach(btnEl => {
+    btnEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openFrameEraser(category, Number(btnEl.dataset.eraseIndex));
+    });
   });
 }
 
@@ -1892,13 +1992,27 @@ let rodtipDraft = {};
 let rodtipSelectedIndex = 0;
 let rodtipDragging = false;
 let rodtipCategory = 'cast';
+// 캐스팅은 실제 플레이(play/index.html loadConfig)에서 시트 6프레임 뒤에
+// 올리기 1번째 프레임을 7번째 프레임으로 이어붙여 캐스팅 종료 후 대기
+// 포즈로 쓴다(castFrameUrls.concat(reelFrameUrls[0])) — 여기서도 같은
+// 7번째 프레임을 골라 낚싯대 끝을 지정할 수 있어야, 그 대기 포즈에서도
+// 줄이 손끝과 안 어긋난다. 저장 키는 castingFrameRodTips[6]으로 그대로
+// 맞아떨어진다(rodTipPxForFrame이 인덱스로 조회하기 때문).
+function rodtipDisplayFrames(category) {
+  const frames = motionFrameCache[category];
+  if (category === 'cast' && frames.length && motionFrameCache.reel.length) {
+    return frames.concat(motionFrameCache.reel[0]);
+  }
+  return frames;
+}
 
 function openRodtipEditor(category) {
   rodtipCategory = category;
-  if (!motionFrameCache[rodtipCategory].length) return;
+  const frames = rodtipDisplayFrames(rodtipCategory);
+  if (!frames.length) return;
   const saved = fishingConfig[RODTIP_CONFIG_KEY[rodtipCategory]] || {};
   rodtipDraft = {};
-  for (let i = 0; i < MOTION_GRID_COLUMNS; i++) {
+  for (let i = 0; i < frames.length; i++) {
     rodtipDraft[i] = Object.assign({}, defaultRodtipFrac(), saved[i]);
   }
   el.rodtipTitle.textContent = RODTIP_TITLES[rodtipCategory];
@@ -1910,7 +2024,7 @@ function closeRodtipEditor() {
   el.rodtipOverlay.classList.add('hidden');
 }
 function renderRodtipFramePicker() {
-  el.rodtipFramePicker.innerHTML = motionFrameCache[rodtipCategory].map((url, i) =>
+  el.rodtipFramePicker.innerHTML = rodtipDisplayFrames(rodtipCategory).map((url, i) =>
     `<div class="rodtip-frame-thumb${i === rodtipSelectedIndex ? ' active' : ''}" data-i="${i}" style="background-image:url('${url}')"></div>`
   ).join('');
   el.rodtipFramePicker.querySelectorAll('[data-i]').forEach((thumb) => {
@@ -1919,7 +2033,7 @@ function renderRodtipFramePicker() {
 }
 function selectRodtipFrame(i) {
   rodtipSelectedIndex = i;
-  el.rodtipImg.src = motionFrameCache[rodtipCategory][i];
+  el.rodtipImg.src = rodtipDisplayFrames(rodtipCategory)[i];
   renderRodtipFramePicker();
   renderRodtipMarker();
 }
@@ -1946,6 +2060,136 @@ el.rodtipConfirmBtn.addEventListener('click', async () => {
   fishingConfig = await AssetDB.setFishingConfig({ [RODTIP_CONFIG_KEY[rodtipCategory]]: rodtipDraft });
   showSaveNote();
   closeRodtipEditor();
+});
+
+/* ===== 프레임별 지우기 =====
+   motionFrameCache[category][frameIndex](이미 시트에서 크롭 + 기존 지우기
+   보정까지 반영된 결과)를 캔버스에 그려놓고, 손가락/마우스로 드래그한
+   자리를 destination-out으로 지운다(알파를 0으로 만든다 — 배경 제거 후
+   남는 초록/흰색 잔상을 픽셀 단위로 직접 없앨 수 있게). 캔버스 자체는
+   원본 해상도 그대로 두고 CSS로만 화면에 꽉 차게 키운다 — 포인터 좌표는
+   getBoundingClientRect 비율로 캔버스 좌표계로 되돌린다(el.frame 기준
+   좌표를 쓰는 다른 드래그 도구들과 같은 변환 방식). "적용"을 누르면 캔버스를
+   PNG로 구워 AssetDB에 새 자산으로 올리고 motionFrameEraseOverrides에
+   그 자산 id를 저장한다. */
+let eraseCategory = null;
+let eraseFrameIndex = null;
+let eraseOriginalUrl = null; // 이번에 열었을 때의 원본(지우기 시작 전) — "처음으로"가 여기로 되돌아간다
+let eraseCtx = null;
+let eraseUndoStack = [];
+let eraseDrawing = false;
+let eraseLastPt = null;
+
+function loadImageIntoEraseCanvas(url) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      el.eraseCanvas.width = img.naturalWidth;
+      el.eraseCanvas.height = img.naturalHeight;
+      eraseCtx = el.eraseCanvas.getContext('2d');
+      eraseCtx.imageSmoothingEnabled = false;
+      eraseCtx.clearRect(0, 0, el.eraseCanvas.width, el.eraseCanvas.height);
+      eraseCtx.drawImage(img, 0, 0);
+      resolve();
+    };
+    img.onerror = resolve;
+    img.src = url;
+  });
+}
+
+async function openFrameEraser(category, frameIndex) {
+  const url = motionFrameCache[category][frameIndex];
+  if (!url) return;
+  eraseCategory = category;
+  eraseFrameIndex = frameIndex;
+  eraseOriginalUrl = url;
+  eraseUndoStack = [];
+  el.eraseTitle.textContent = `${MOTION_LABELS[category]} ${frameIndex + 1}번 프레임 지우기`;
+  await loadImageIntoEraseCanvas(url);
+  el.eraseOverlay.classList.remove('hidden');
+}
+function closeEraseOverlay() {
+  el.eraseOverlay.classList.add('hidden');
+  eraseCtx = null;
+}
+function eraseCanvasPointFromEvent(e) {
+  const rect = el.eraseCanvas.getBoundingClientRect();
+  return {
+    x: (e.clientX - rect.left) * (el.eraseCanvas.width / rect.width),
+    y: (e.clientY - rect.top) * (el.eraseCanvas.height / rect.height),
+  };
+}
+function eraseBrushRadiusPx() {
+  const rect = el.eraseCanvas.getBoundingClientRect();
+  const scale = rect.width ? el.eraseCanvas.width / rect.width : 1;
+  return (Number(el.eraseBrushSize.value) / 2) * scale;
+}
+function eraseAt(x, y) {
+  eraseCtx.save();
+  eraseCtx.globalCompositeOperation = 'destination-out';
+  eraseCtx.beginPath();
+  eraseCtx.arc(x, y, eraseBrushRadiusPx(), 0, Math.PI * 2);
+  eraseCtx.fill();
+  eraseCtx.restore();
+}
+function pushEraseUndoSnapshot() {
+  eraseUndoStack.push(eraseCtx.getImageData(0, 0, el.eraseCanvas.width, el.eraseCanvas.height));
+  if (eraseUndoStack.length > 20) eraseUndoStack.shift(); // 무한정 쌓이지 않게 최근 20장만
+}
+el.eraseCanvas.addEventListener('pointerdown', (e) => {
+  if (!eraseCtx) return;
+  e.preventDefault();
+  eraseDrawing = true;
+  el.eraseCanvas.setPointerCapture(e.pointerId);
+  pushEraseUndoSnapshot();
+  eraseLastPt = eraseCanvasPointFromEvent(e);
+  eraseAt(eraseLastPt.x, eraseLastPt.y);
+});
+el.eraseCanvas.addEventListener('pointermove', (e) => {
+  if (!eraseDrawing) return;
+  const pt = eraseCanvasPointFromEvent(e);
+  // 빠르게 드래그하면 점 사이가 끊겨 보여서, 이전 점과의 거리에 맞춰
+  // 중간 지점들도 같이 지운다(선을 그리듯 촘촘하게).
+  const dist = Math.hypot(pt.x - eraseLastPt.x, pt.y - eraseLastPt.y);
+  const steps = Math.max(1, Math.ceil(dist / 4));
+  for (let s = 1; s <= steps; s++) {
+    eraseAt(eraseLastPt.x + (pt.x - eraseLastPt.x) * s / steps, eraseLastPt.y + (pt.y - eraseLastPt.y) * s / steps);
+  }
+  eraseLastPt = pt;
+});
+['pointerup', 'pointercancel', 'pointerleave'].forEach(evt => {
+  el.eraseCanvas.addEventListener(evt, () => { eraseDrawing = false; eraseLastPt = null; });
+});
+el.eraseUndoBtn.addEventListener('click', () => {
+  if (!eraseUndoStack.length) return;
+  eraseCtx.putImageData(eraseUndoStack.pop(), 0, 0);
+});
+el.eraseResetBtn.addEventListener('click', () => {
+  eraseUndoStack = [];
+  loadImageIntoEraseCanvas(eraseOriginalUrl);
+});
+el.eraseRestoreBtn.addEventListener('click', async () => {
+  await setMotionFrameEraseOverride(eraseCategory, eraseFrameIndex, null);
+  showSaveNote();
+  closeEraseOverlay();
+  renderMotionTab();
+});
+el.eraseCancelBtn.addEventListener('click', closeEraseOverlay);
+el.eraseApplyBtn.addEventListener('click', async () => {
+  el.eraseApplyBtn.disabled = true;
+  try {
+    const blob = await new Promise(resolve => el.eraseCanvas.toBlob(resolve, 'image/png'));
+    const asset = await AssetDB.addAsset({ type: 'fishing-motion-frame-erase', name: `${eraseCategory}-frame${eraseFrameIndex}-erased.png`, blob });
+    await setMotionFrameEraseOverride(eraseCategory, eraseFrameIndex, asset.id);
+    showSaveNote();
+    closeEraseOverlay();
+    renderMotionTab();
+  } catch (err) {
+    DevDiag.show('지우기 저장 실패: ' + (err && err.message ? err.message : err));
+  } finally {
+    el.eraseApplyBtn.disabled = false;
+  }
 });
 
 /* ===== 추 이동 모션 테스트 =====
