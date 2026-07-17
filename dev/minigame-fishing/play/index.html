@@ -543,6 +543,14 @@ const DEFAULT_ROD_TIP_FRAC = { x: 0.82, y: 0.15 };
 const DEFAULT_HELD_FISH_POS = { x: 0.5, y: 0.25 };
 let heldFishPos = DEFAULT_HELD_FISH_POS;
 let reelFrameUrls = [];
+// 올리기 모션(reelFrameUrls) 6프레임의 쓰임 — 1번: 낚시대가 나왔을 때(대기),
+// 2~4번(index 1~3): 잡아채기(낚시바) 중 캐치바 올리는 버튼을 누르고 있는
+// 동안(놓으면 4→2→1로 되돌아간다), 5번(index 4): 낚시 성공 후 물고기가
+// 딸려 올라오는 동안(flyFishToCharacter 재생 중), 6번(index 5): 물고기가
+// 캐릭터에 도착한 뒤(= 기존 "올리기 마지막 프레임", heldFish 오버레이가
+// 뜨는 자세). dev/minigame-fishing/index.html "올리기 모션" 탭에서
+// 지정한 낚시대 재생속도(reelMotion.holdFrameMs)로 재생한다.
+let reelMotion = { holdFrameMs: 90 };
 let idleFrameUrl = null;
 let sinkerImageUrl = null;
 let biteStampImageUrl = null;
@@ -851,6 +859,7 @@ async function loadConfig() {
   castingFrameRodTips = cfg.castingFrameRodTips || {};
   heldFishPos = cfg.heldFishPos || DEFAULT_HELD_FISH_POS;
   castPhysics = Object.assign({ gravityMps2: 9.8, vxScale: 1 }, cfg.castPhysics || {});
+  reelMotion = Object.assign({ holdFrameMs: 90 }, cfg.reelMotion || {});
 
   // 이동 방향별 걷기 프레임 — 캐스팅/올리기와 같은 통합 모션 시트
   // (motionSheetImg)의 up/down/left/right 행에서 잘라 캐시해둔다. 시트
@@ -1254,6 +1263,33 @@ function playFrameSequence(urls, frameMs, onFrame) {
   });
 }
 
+/* ===== 잡아채기(낚시바) 중 낚싯대 홀드/릴리즈 모션 =====
+   캐치바를 올리는 낚시 버튼을 누르고 있는 동안 2번→4번(index 1→3)
+   프레임을 순서대로 재생하고 4번에서 멈춰 유지한다. 손을 떼면 그 자리에서
+   4번→2번→1번(index 3→1→0) 순서로 되감아 1번(대기 포즈)에서 멈춘다 —
+   handleActionPointerDown/Release가 gameState==='catching'일 때 호출한다.
+   재생 속도(프레임 간 간격)는 설정 화면 "낚시대 재생속도"(reelMotion.
+   holdFrameMs)를 따른다. */
+const REEL_HOLD_UP_SEQ = [1, 2, 3];
+const REEL_HOLD_DOWN_SEQ = [3, 1, 0];
+let reelHoldTimer = null;
+function stopReelHoldAnim() {
+  if (reelHoldTimer) { clearTimeout(reelHoldTimer); reelHoldTimer = null; }
+}
+function playReelHoldSeq(seq) {
+  stopReelHoldAnim();
+  if (reelFrameUrls.length < 4) return;
+  el.charImg.classList.remove('hidden');
+  el.charFallback.classList.add('hidden');
+  let i = 0;
+  function step() {
+    el.charImg.src = reelFrameUrls[seq[i]];
+    i++;
+    reelHoldTimer = i < seq.length ? setTimeout(step, reelMotion.holdFrameMs) : null;
+  }
+  step();
+}
+
 /* ===== 캐스팅 모션 윈드업 — 홀드 시작하자마자 1→2번 프레임을 재생하고
    2번에서 멈춰 유지한다(놓을 때까지). 놓으면 releasePowerAndCast가
    3번 프레임부터 이어서 순차 재생한다. 프레임이 2장 미만이면 할 게 없다.
@@ -1642,6 +1678,13 @@ function startCatching() {
   zone = { y: 100 - zoneSizePct, vel: 0 };
   progress = 30;
   holding = false;
+  // 낚시대가 나타난 시점 — 올리기 1번 프레임(대기 포즈)으로 시작한다.
+  stopReelHoldAnim();
+  if (reelFrameUrls.length) {
+    el.charImg.classList.remove('hidden');
+    el.charFallback.classList.add('hidden');
+    el.charImg.src = reelFrameUrls[0];
+  }
   pendingCatchFish = pickCaughtFish();
   // 아이템창을 화면 밖(left:-9999px)에서 이 시점에 미리 채워둬서, 실제
   // 공개(showItemPopup) 순간엔 위치만 옮기면 되게 한다 — populateItemPopup
@@ -1724,6 +1767,7 @@ function catchTick(ts) {
 function endCatch(success) {
   if (raf) cancelAnimationFrame(raf);
   raf = null;
+  stopReelHoldAnim(); // 홀드/릴리즈 되감기 도중이었어도 결과 연출(5·6번 프레임)이 덮어쓴다
   el.fishbarPanel.classList.add('hidden');
   if (success) playReelThenResult(); else resetToIdle(); // 실패 — 화면 전환 없이 그냥 대기 상태로 돌아간다
 }
@@ -1747,8 +1791,13 @@ function pickCaughtFish() {
 
 async function playReelThenResult() {
   gameState = 'reeling';
-  if (reelFrameUrls.length) {
-    await playFrameSequence(reelFrameUrls, 90);
+  // 물고기가 딸려 올라오는 동안(flyFishToCharacter가 실제로 날아가는
+  // 연출을 재생) — 올리기 5번 프레임. 도착하면 flyFishToCharacter가 직접
+  // 6번 프레임으로 바꾼다.
+  if (reelFrameUrls.length > 4) {
+    el.charImg.classList.remove('hidden');
+    el.charFallback.classList.add('hidden');
+    el.charImg.src = reelFrameUrls[4];
   } else {
     await wait(500);
   }
@@ -1818,6 +1867,9 @@ function flyFishToCharacter(fishDef) {
       flyEl.style.top = top + '%';
       if (t < 1) { requestAnimationFrame(frame); return; }
       flyEl.remove();
+      // 물고기가 캐릭터에 도착한 순간 — 올리기 6번(마지막) 프레임, 물고기를
+      // 들고 있는 자세(heldFish 오버레이가 이 프레임 위에 그려진다).
+      if (reelFrameUrls.length > 5) el.charImg.src = reelFrameUrls[5];
       resolve();
     }
     requestAnimationFrame(frame);
@@ -1918,6 +1970,7 @@ function showItemPopup(fishCaught) {
 function resetToIdle() {
   el.itemPopup.style.left = '-9999px';
   gameState = 'idle';
+  stopReelHoldAnim();
   cancelAnimationFrame(bobLineRaf);
   el.castPowerWrap.classList.add('hidden');
   el.castSvg.classList.add('hidden');
@@ -2026,12 +2079,14 @@ function stopMoveHold() {
    깨진다. */
 function handleActionPointerDown() {
   if (gameState === 'bite') { handleReactionTap(); return; }
-  if (gameState === 'catching') { holding = true; return; }
+  if (gameState === 'catching') { holding = true; playReelHoldSeq(REEL_HOLD_UP_SEQ); return; }
   if (gameState === 'waiting') { abortWaitingReel(); return; }
   if (gameState === 'popup') { resetToIdle(); return; }
 }
 function handleActionPointerRelease() {
+  const wasHolding = holding;
   holding = false;
+  if (gameState === 'catching' && wasHolding) playReelHoldSeq(REEL_HOLD_DOWN_SEQ);
   if (gameState === 'charging') releasePowerAndCast();
 }
 el.frame.addEventListener('pointerdown', handleActionPointerDown);

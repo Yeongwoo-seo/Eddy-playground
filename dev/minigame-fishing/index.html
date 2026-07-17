@@ -461,6 +461,16 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
         <div class="frame-preview-label" id="motionReelPreviewLabel">프레임 없음 — 재생 미리보기</div>
       </div>
       <div class="frame-strip" id="motionReelFrameGrid"></div>
+      <div class="option-desc">① 낚시대가 나타날 때: 1번 프레임. ② 잡아채기(낚시바)에서 캐치바를 올리는 버튼을 누르고 있는 동안: 2번→4번 프레임을 재생하고 4번에서 유지, 손을 떼면 4번→2번→1번 순서로 되돌아가요. ③ 낚시 성공 후 물고기가 딸려 올라오는 동안: 5번 프레임. ④ 물고기가 캐릭터에 도착한 뒤: 6번(마지막) 프레임이에요.</div>
+    </div>
+
+    <div class="option-group">
+      <div class="option-label">낚시대 재생속도</div>
+      <div class="option-desc">잡아채기 중 캐치바를 누르고 있을 때/뗐을 때 낚싯대 프레임(2~4번)이 넘어가는 속도예요. 값이 작을수록 빠르게 움직여요.</div>
+      <div class="range-row">
+        <input type="range" id="reelHoldFrameMsInput" min="30" max="300" step="10" value="90">
+        <div class="range-value" id="reelHoldFrameMsValue">90ms</div>
+      </div>
     </div>
 
     <div class="motion-category-title">③ 위로 이동</div>
@@ -1048,6 +1058,8 @@ const el = {
   motionReelPreview: document.getElementById('motionReelPreview'),
   motionReelPreviewLabel: document.getElementById('motionReelPreviewLabel'),
   motionReelFrameGrid: document.getElementById('motionReelFrameGrid'),
+  reelHoldFrameMsInput: document.getElementById('reelHoldFrameMsInput'),
+  reelHoldFrameMsValue: document.getElementById('reelHoldFrameMsValue'),
   motionUpPreview: document.getElementById('motionUpPreview'),
   motionUpPreviewLabel: document.getElementById('motionUpPreviewLabel'),
   motionUpFrameGrid: document.getElementById('motionUpFrameGrid'),
@@ -1772,6 +1784,23 @@ function renderCastPhysicsControls() {
   el.castGravityValue.textContent = gravity.toFixed(1) + 'm/s²';
   el.castVxScaleInput.value = vxScale;
   el.castVxScaleValue.textContent = vxScale.toFixed(2) + '배';
+}
+
+/* ===== 낚시대 재생속도 — 잡아채기(낚시바) 중 캐치바 홀드/릴리즈로 재생되는
+   올리기 2~4번 프레임의 프레임 간 간격(ms). /play/의 reelMotion.holdFrameMs
+   (playReelHoldSeq)가 이 값을 그대로 읽는다. */
+async function saveReelMotion() {
+  fishingConfig = await AssetDB.setFishingConfig({ reelMotion: { holdFrameMs: Number(el.reelHoldFrameMsInput.value) } });
+  showSaveNote();
+}
+el.reelHoldFrameMsInput.addEventListener('input', () => {
+  el.reelHoldFrameMsValue.textContent = el.reelHoldFrameMsInput.value + 'ms';
+  saveReelMotion();
+});
+function renderReelMotionControls() {
+  const holdFrameMs = (fishingConfig.reelMotion && fishingConfig.reelMotion.holdFrameMs) || 90;
+  el.reelHoldFrameMsInput.value = holdFrameMs;
+  el.reelHoldFrameMsValue.textContent = holdFrameMs + 'ms';
 }
 
 el.motionSheetUploadBtn.addEventListener('click', () => el.motionSheetFileInput.click());
@@ -3679,6 +3708,7 @@ async function init() {
   renderCastGaugeImageSlot();
   renderBiteStampImageSlot();
   renderCastPhysicsControls();
+  renderReelMotionControls();
   renderMotionTab();
   renderFishTab();
   initMoveMotionControls();
