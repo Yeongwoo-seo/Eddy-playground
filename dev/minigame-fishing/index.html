@@ -74,9 +74,10 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .crop-stage canvas{display:block;width:100%}
 .crop-rect{position:absolute;border:2px solid var(--cyan);box-shadow:0 0 0 9999px rgba(0,0,0,.5);pointer-events:none;border-radius:4px}
 .crop-zoom-row{margin-top:14px;display:flex;align-items:center;justify-content:center;gap:22px}
-/* 확대(cropZoomExpandBtn) 상태에서는 확대 미리보기가 crop-stage와 같은
-   폭(정사각형)으로 커져서 방향 패드와 나란히 둘 공간이 없다 — 세로로
-   쌓는다. */
+/* 지우개를 켜면(cropEraseToggleBtn) 확대 미리보기가 crop-stage와 같은
+   폭(정사각형)으로 커진다 — 정밀하게 지우려면 큰 화면이 필요해서, 지우개
+   ON/OFF에 맞춰 자동으로 커졌다 줄어든다(setCropZoomExpanded). 방향 패드와
+   나란히 둘 공간이 없어 세로로 쌓는다. */
 .crop-zoom-row.zoom-expanded{flex-direction:column}
 .crop-zoom-wrap{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:6px}
 .crop-zoom-row.zoom-expanded .crop-zoom-wrap{width:100%}
@@ -87,13 +88,6 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
    참고) — touch-action:none을 안 주면 모바일에서 드래그가 페이지 스크롤로
    먹혀버린다. */
 .crop-zoom-wrap canvas{display:block;border-radius:12px;border:1px solid var(--divider);background:#000;touch-action:none;cursor:crosshair}
-/* 확대 미리보기 우하단의 크게 보기 버튼 — 누르면 crop-stage(위 원본
-   스테이지)와 같은 폭(정사각형)으로 커진다("사실상 전체화면"이 아니라
-   그 프레임 컨테이너 크기에 맞추는 것뿐). drawCropZoom이 캔버스 자체의
-   width 속성으로 그리는 배율을 정하므로, 버튼은 canvas.width/height를
-   직접 바꾸고 다시 그리기만 하면 된다(el.cropZoomExpandBtn 핸들러 참고). */
-.crop-zoom-expand-btn{position:absolute;right:4px;bottom:4px;width:22px;height:22px;border-radius:6px;border:none;background:rgba(5,7,10,.72);color:#fff;font-size:12px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
-.crop-zoom-expand-btn.active{background:var(--cyan);color:#04181c}
 .crop-dpad{flex-shrink:0;display:grid;grid-template-columns:34px 34px 34px;grid-template-rows:34px 34px 34px;gap:4px}
 .crop-dpad-btn{background:var(--surface-2);border:1px solid var(--divider);border-radius:8px;color:var(--text-primary);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-user-drag:none}
 .crop-dpad-btn:active{background:var(--cyan);color:#04181c}
@@ -885,7 +879,6 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
         <div class="crop-zoom-label">확대 미리보기<span class="crop-zoom-onion-hint hidden" id="cropZoomOnionHint"> · 이전 프레임 반투명 겹침</span></div>
         <div class="crop-zoom-canvas-wrap">
           <canvas id="cropZoomCanvas" width="120" height="120"></canvas>
-          <button type="button" class="crop-zoom-expand-btn" id="cropZoomExpandBtn" aria-label="확대 미리보기 크게 보기">⛶</button>
         </div>
         <div class="crop-zoom-match hidden" id="cropZoomMatch"></div>
       </div>
@@ -1163,7 +1156,6 @@ const el = {
   cropEraseResetBtn: document.getElementById('cropEraseResetBtn'),
   cropEraseHint: document.getElementById('cropEraseHint'),
   cropZoomRow: document.getElementById('cropZoomRow'),
-  cropZoomExpandBtn: document.getElementById('cropZoomExpandBtn'),
   cropOverlapRow: document.getElementById('cropOverlapRow'),
   cropOverlapToggleBtn: document.getElementById('cropOverlapToggleBtn'),
   cropOverlapSelect: document.getElementById('cropOverlapSelect'),
@@ -2768,9 +2760,11 @@ let cropOnionSkin = null;
 // 둘 다 같이 맞춘다 — cx(가로 위치)는 프레임마다 다른 포즈라 안 건드린다.
 // null이면 버튼을 숨긴다.
 let cropMatchFirstFrameRef = null;
-// cropZoomExpanded — 확대 미리보기 우하단 ⛶ 버튼으로 켠다. crop-stage(원본
-// 스테이지)와 같은 폭의 정사각형으로 캔버스 자체를 키워서 다시 그린다(el.
-// cropZoomExpandBtn 핸들러). 새 프레임을 열 때마다 꺼진 상태로 시작한다.
+// cropZoomExpanded — 지우개(cropEraseToggleBtn)를 켜면 같이 켜진다. 정밀하게
+// 지우려면 확대 미리보기가 커야 해서, 지우개 ON/OFF에 그대로 묶었다(따로
+// 켜고 끄는 버튼은 없다) — crop-stage(원본 스테이지)와 같은 폭의 정사각형으로
+// 캔버스 자체를 키워서 다시 그린다(setCropZoomExpanded). 새 프레임을 열 때마다
+// 꺼진 상태로 시작한다.
 let cropZoomExpanded = false;
 // cropMotionOverlapOptions — 1번 프레임(frameIndex===0) 세밀영역조절에서만
 // { currentCategory }로 넘어온다(openMotionFrameCropAdjuster 참고). null이면
@@ -2807,14 +2801,7 @@ function openCropAdjuster(sourceUrl, existingRect, pendingSourceFile, onConfirm,
     el.cropMatchFirstFrameBtn.classList.toggle('hidden', cropMatchFirstFrameRef === null);
     el.cropZoomOnionHint.classList.toggle('hidden', !onionSkin);
     // 확대 미리보기는 프레임을 새로 열 때마다 원래 크기(120px)로 되돌린다.
-    cropZoomExpanded = false;
-    el.cropZoomRow.classList.remove('zoom-expanded');
-    el.cropZoomExpandBtn.classList.remove('active');
-    el.cropZoomExpandBtn.textContent = '⛶';
-    el.cropZoomCanvas.width = 120;
-    el.cropZoomCanvas.height = 120;
-    el.cropZoomCanvas.style.width = '';
-    el.cropZoomCanvas.style.height = '';
+    setCropZoomExpanded(false);
     // 온션스킨(이전 프레임이든, 아래 모션 겹치기 select로 고른 다른
     // 카테고리든)이 있어도 이미지가 비동기로 도착하기 전엔 일치도를 계산할
     // 게 없다 — 일단 숨겨두면 drawCropStage()가 매번 다시 그리며 채운다.
@@ -3045,17 +3032,17 @@ function drawCropZoom() {
 // 늘리면(width:100%) 120px 원본이 그대로 확대돼 흐려지므로, drawCropZoom이
 // 읽는 el.cropZoomCanvas.width를 실제로 바꿔 그 해상도로 다시 그린다 —
 // 전체화면 오버레이가 아니라 이 모달 안에서 crop-stage 크기에 맞춰
-// 커지기만 한다는 점이 다르다.
-el.cropZoomExpandBtn.addEventListener('click', () => {
-  cropZoomExpanded = !cropZoomExpanded;
-  el.cropZoomExpandBtn.classList.toggle('active', cropZoomExpanded);
-  el.cropZoomExpandBtn.textContent = cropZoomExpanded ? '⤡' : '⛶';
-  el.cropZoomRow.classList.toggle('zoom-expanded', cropZoomExpanded);
-  const size = cropZoomExpanded ? Math.round(el.cropStage.clientWidth) : 120;
+// 커지기만 한다는 점이 다르다. 따로 누르는 버튼이 아니라 지우개 ON/OFF에
+// 묶여 있다(el.cropEraseToggleBtn 핸들러) — 정밀하게 지우려면 큰 화면이
+// 필요하니 지우개를 켜는 순간 자동으로 커진다.
+function setCropZoomExpanded(expanded) {
+  cropZoomExpanded = expanded;
+  el.cropZoomRow.classList.toggle('zoom-expanded', expanded);
+  const size = expanded ? Math.round(el.cropStage.clientWidth) : 120;
   el.cropZoomCanvas.width = size;
   el.cropZoomCanvas.height = size;
   drawCropZoom();
-});
+}
 
 // ===== 지우개 그리기 =====
 // cropEraseCanvas를 처음 쓸 때(지우개 첫 획) 원본 이미지를 그대로 복제해둔
@@ -3166,6 +3153,8 @@ el.cropEraseToggleBtn.addEventListener('click', () => {
   el.cropEraseToggleBtn.classList.toggle('active', cropEraseMode);
   el.cropEraseBrushInput.classList.toggle('hidden', !cropEraseMode);
   el.cropEraseHint.classList.toggle('hidden', !cropEraseMode);
+  // 정밀하게 지우려면 확대 미리보기가 커야 한다 — 지우개 ON/OFF에 그대로 묶는다.
+  setCropZoomExpanded(cropEraseMode);
 });
 el.cropEraseBrushInput.addEventListener('input', () => {
   cropEraseBrushPx = Number(el.cropEraseBrushInput.value);
