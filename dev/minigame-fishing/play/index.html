@@ -812,6 +812,11 @@ async function loadConfig() {
   // 흐려지지 않게).
   castFrameUrls = motionSheetImg ? buildMotionCategoryFrameDataUrls(motionSheetImg, MOTION_CATEGORIES.indexOf('cast'), motionOverrides.cast) : [];
   reelFrameUrls = motionSheetImg ? buildMotionCategoryFrameDataUrls(motionSheetImg, MOTION_CATEGORIES.indexOf('reel'), motionOverrides.reel) : [];
+  // 캐스팅 시트의 6프레임 뒤에 올리기 1번째 프레임을 7번째 프레임으로
+  // 이어붙인다 — 캐스팅이 끝난 뒤 대기 내내 머무는 마지막 포즈(위
+  // playFrameSequence 주석 참고)가 올리기 애니메이션의 시작 포즈와 같아져,
+  // 입질 성공 후 올리기로 넘어갈 때 포즈가 튀지 않는다.
+  if (castFrameUrls.length && reelFrameUrls.length) castFrameUrls = castFrameUrls.concat(reelFrameUrls[0]);
   castFrameDurations = (cfg.castingFrameDurations && cfg.castingFrameDurations.length) ? cfg.castingFrameDurations : null;
   castingFrameRodTips = cfg.castingFrameRodTips || {};
   heldFishPos = cfg.heldFishPos || DEFAULT_HELD_FISH_POS;
@@ -1567,9 +1572,9 @@ function missReaction() {
 
 // 입질 대기 중(waiting) 화면을 다시 탭하면 입질을 기다리지 않고 바로
 // 릴을 감아 올린다 — 당연히 아무것도 안 걸려 있으니 빈손으로 끝난다.
-// playReelThenResult(성공 시 릴 감기)와 같은 올리기 프레임을 재생하되
-// 물고기가 없으니 flyFishToCharacter/showItemPopup 없이 곧장 대기로
-// 돌아간다.
+// 성공 시(playReelThenResult)처럼 올리기 프레임 전체를 순차 재생하지
+// 않고, 올리기 4번째 프레임(reelFrameUrls[3])만 잠깐 보여준다 — 빈손으로
+// 끝나는 취소 동작이라 굳이 릴 감는 전체 동작을 다 보여줄 필요가 없다.
 async function abortWaitingReel() {
   if (gameState !== 'waiting') return;
   clearTimeout(biteTimer);
@@ -1579,7 +1584,11 @@ async function abortWaitingReel() {
   el.bobber.classList.add('hidden');
   el.castSvg.classList.add('hidden');
   if (reelFrameUrls.length) {
-    await playFrameSequence(reelFrameUrls, 90);
+    const frame = reelFrameUrls[3] || reelFrameUrls[reelFrameUrls.length - 1];
+    el.charImg.classList.remove('hidden');
+    el.charFallback.classList.add('hidden');
+    el.charImg.src = frame;
+    await wait(300);
   } else {
     await wait(300);
   }
