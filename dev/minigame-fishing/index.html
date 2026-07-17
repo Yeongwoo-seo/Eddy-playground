@@ -249,6 +249,10 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .move-dpad-left{grid-column:1;grid-row:2}
 .move-dpad-right{grid-column:3;grid-row:2}
 .move-dpad-down{grid-column:2;grid-row:3}
+.move-test-status{font-family:var(--mono);font-size:11.5px;color:var(--text-secondary);margin-bottom:8px}
+.move-warp-row{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid var(--divider)}
+.move-warp-row:last-child{border-bottom:none}
+.move-warp-label{flex:1;font-size:13.5px;color:var(--text-primary)}
 
 /* ===== 영역 설정 탭 — 배경 위에 다각형(낚시가능/이동불가/상호작용) 영역을
    그리는 에디터. 스테이지 종횡비를 배경 이미지 자연 크기에 맞춰(--area-ar,
@@ -667,9 +671,27 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
         <div class="range-value" id="moveAnimMsValue">90ms</div>
       </div>
     </div>
+    <!-- ===== 맵 — 독립된 배경화면 4장(맵 1~4)을 각각 만들고, 맵마다
+         "이동 영역"(출입구)을 사각형으로 그려서 다른 맵으로 넘어가게
+         연결한다. 낚시바 디자인 탭의 공용 backgroundAssetId와는 별개로
+         moveMaps[].backgroundAssetId를 쓴다 — 아래 자유 이동 테스트가
+         이 4개 맵 사이를 실제로 오가며 보여준다. ===== -->
+    <div class="option-group">
+      <div class="option-label">맵</div>
+      <div class="option-desc">맵을 선택해서 배경화면을 올리고, "이동 영역 추가"로 사각형을 그려 다른 맵으로 넘어가는 출입구를 만드세요. 출입구에 들어가면 그 맵 한가운데서 다시 시작해요.</div>
+      <div class="option-pills" id="moveMapPills"></div>
+      <div class="frame-strip" id="moveMapBgSlot"></div>
+      <button type="button" class="frame-add-btn hidden" id="moveMapBgAddBtn">+ 맵 배경화면 업로드</button>
+      <input type="file" id="moveMapBgFileInput" accept="image/*">
+      <div class="option-desc" id="moveWarpTargetHint" style="margin-top:14px">이동 영역을 추가하면 어느 맵으로 넘어갈지 먼저 고르세요.</div>
+      <div class="option-pills" id="moveWarpTargetPills"></div>
+      <button type="button" class="fish-sheet-btn" id="moveWarpAddBtn" style="width:100%;margin-top:4px" disabled>🚪 이동 영역 추가</button>
+      <div id="moveWarpList"></div>
+    </div>
     <div class="option-group">
       <div class="option-label">자유 이동 테스트</div>
-      <div class="option-desc">배경화면(낚시바 디자인 탭에서 업로드)을 축소 없이 원본 크기 그대로 깔아요. 아직 배경을 안 올렸다면 체커보드 격자로 대신 보여줘요. 화살표 키를 누르거나 아래 방향 버튼을 누르고 있으면 캐릭터가 격자에 스냅되지 않고 위 이동 속도에 맞춰 자유롭게 이동해요.</div>
+      <div class="option-desc">현재 맵 배경화면을 축소 없이 원본 크기 그대로 깔아요. 아직 배경을 안 올렸다면 체커보드 격자로 대신 보여줘요. 화살표 키를 누르거나 아래 방향 버튼을 누르고 있으면 캐릭터가 격자에 스냅되지 않고 위 이동 속도에 맞춰 자유롭게 이동하고, 이동 영역에 들어가면 연결된 맵으로 바로 넘어가요.</div>
+      <div class="move-test-status" id="moveTestStatus">현재 맵: 1</div>
       <div class="move-stage" id="moveStage">
         <div class="move-world" id="moveWorld">
           <div class="move-char" id="moveChar"></div>
@@ -1121,6 +1143,14 @@ const el = {
   moveWorld: document.getElementById('moveWorld'),
   moveChar: document.getElementById('moveChar'),
   moveDpad: document.getElementById('moveDpad'),
+  moveMapPills: document.getElementById('moveMapPills'),
+  moveMapBgSlot: document.getElementById('moveMapBgSlot'),
+  moveMapBgAddBtn: document.getElementById('moveMapBgAddBtn'),
+  moveMapBgFileInput: document.getElementById('moveMapBgFileInput'),
+  moveWarpTargetPills: document.getElementById('moveWarpTargetPills'),
+  moveWarpAddBtn: document.getElementById('moveWarpAddBtn'),
+  moveWarpList: document.getElementById('moveWarpList'),
+  moveTestStatus: document.getElementById('moveTestStatus'),
   moveStepMsInput: document.getElementById('moveStepMsInput'),
   moveStepMsValue: document.getElementById('moveStepMsValue'),
   moveAnimMsInput: document.getElementById('moveAnimMsInput'),
@@ -2441,14 +2471,18 @@ let fbDrawStart = null;
 let fbDraftBox = null;
 let fbDraftRegions = {};
 let fbSelectedLabelId = null;
-// 이 팝업은 두 군데서 재사용된다 — fbTargetKind가 지금 어느 쪽을 위해
+// 이 팝업은 세 군데서 재사용된다 — fbTargetKind가 지금 어느 쪽을 위해
 // 열려 있는지 구분한다: 'catchCrop'(캐치바 이미지에서 실제 쓰일 부분을
 // 잘라 새 이미지로 굽는다) vs 'castGaugeRegion'(캐스팅 게이지 이미지는
-// 그대로 두고, 그 위 어디가 채워지는 부분인지 사각형만 기록한다).
+// 그대로 두고, 그 위 어디가 채워지는 부분인지 사각형만 기록한다) vs
+// 'moveWarpRect'(맵 배경 이미지는 그대로 두고, 그 위 어디가 다른 맵으로
+// 넘어가는 이동 영역인지 사각형만 기록한다 — moveWarpPendingTarget에
+// 미리 골라둔 목적지 맵과 함께 저장).
 let fbTargetKind = null;
 const FB_REGION_LABELS_BY_KIND = {
   catchCrop: [{ id: 'cropRect', label: '인식 영역' }],
   castGaugeRegion: [{ id: 'cropRect', label: '채움 영역' }],
+  moveWarpRect: [{ id: 'cropRect', label: '이동 영역' }],
 };
 function currentFbLabels() { return FB_REGION_LABELS_BY_KIND[fbTargetKind] || FB_REGION_LABELS_BY_KIND.catchCrop; }
 
@@ -2514,6 +2548,20 @@ async function confirmFbRegionEditor() {
     fishingConfig = await AssetDB.setFishingConfig({ castGaugeFillRegion: rect });
     showSaveNote();
     closeFbRegionEditor();
+    return;
+  }
+  if (fbTargetKind === 'moveWarpRect') {
+    // 맵 이미지도 그대로 두고, 사각형 + 미리 골라둔 목적지 맵을 그 맵의
+    // warps 배열에 추가한다.
+    const map = (fishingConfig.moveMaps || [])[moveMapEditIndex] || { warps: [] };
+    const warps = (map.warps || []).concat({ rect, targetMap: moveWarpPendingTarget });
+    await patchMoveMap(moveMapEditIndex, { warps });
+    showSaveNote();
+    closeFbRegionEditor();
+    moveWarpPendingTarget = null;
+    renderMoveWarpTargetPills();
+    renderMoveWarpList();
+    renderMoveTestStage();
     return;
   }
   const catchLayer = barDesignOf().catchLayer;
@@ -3180,7 +3228,42 @@ function moveTick(ts) {
   if (moveHoldDir === 'left') moveState.x = Math.max(0, moveState.x - dist);
   if (moveHoldDir === 'right') moveState.x = Math.min(moveState.maxX, moveState.x + dist);
   updateCharPosition();
+  checkMoveWarps();
   moveRaf = requestAnimationFrame(moveTick);
+}
+
+/* ===== 맵 이동(워프) — 자유 이동 테스트가 지금 서 있는 맵(currentMoveMap,
+   moveMapEditIndex와는 별개 — 저건 "맵" 탭에서 편집 중인 맵일 뿐, 이건
+   실제로 걸어다니는 테스트의 현재 위치)의 warps 사각형(픽셀 좌표로 미리
+   환산해 moveWarpRectsPx에 캐싱)과 캐릭터 히트박스가 겹치면 targetMap으로
+   즉시 전환하고 그 맵 한가운데서 다시 시작한다. moveWarpCooldown은 막
+   넘어간 순간 같은 자리가 또 다른 워프와 겹쳐서 곧바로 되튕기는 걸
+   막는 짧은 무시 구간이다. ===== */
+let currentMoveMap = 0;
+let moveWarpRectsPx = [];
+let moveWarpCooldown = false;
+function checkMoveWarps() {
+  if (moveWarpCooldown || !moveWarpRectsPx.length) return;
+  const charLeft = moveState.x, charRight = moveState.x + MOVE_TILE_SIZE;
+  const charTop = moveState.y, charBottom = moveState.y + MOVE_TILE_SIZE;
+  for (const w of moveWarpRectsPx) {
+    const overlap = charLeft < w.x + w.w && charRight > w.x && charTop < w.y + w.h && charBottom > w.y;
+    if (overlap) { warpToMap(w.targetMap); return; }
+  }
+}
+async function warpToMap(targetMap) {
+  if (targetMap == null || targetMap === currentMoveMap) return;
+  moveWarpCooldown = true;
+  currentMoveMap = Math.max(0, Math.min(3, targetMap));
+  await renderMoveTestStage();
+  moveState.x = moveState.maxX / 2;
+  moveState.y = moveState.maxY / 2;
+  updateCharPosition();
+  updateMoveTestStatus();
+  setTimeout(() => { moveWarpCooldown = false; }, 400);
+}
+function updateMoveTestStatus() {
+  el.moveTestStatus.textContent = `현재 맵: ${currentMoveMap + 1}`;
 }
 function startMoveHold(dir) {
   moveState.dir = dir;
@@ -3242,8 +3325,134 @@ function initMoveMotionControls() {
   el.moveAnimMsValue.textContent = moveAnimMs + 'ms';
 }
 
+/* ===== 맵 섹션 — "맵" 탭에서 편집 중인 맵(moveMapEditIndex, 0~3)의 배경
+   화면 업로드 + 이동 영역(워프) 추가/삭제. moveMapEditIndex는 아래 자유
+   이동 테스트가 실제로 서 있는 currentMoveMap과 별개 상태다 — 4번 맵을
+   편집하고 있어도 테스트는 여전히 1번 맵에 있을 수 있다. */
+let moveMapEditIndex = 0;
+let moveWarpPendingTarget = null;
+const MOVE_MAP_LABELS = ['맵 1', '맵 2', '맵 3', '맵 4'];
+
+// moveMaps 배열은 barDesign처럼 통째로 다시 써야 저장된다 — index번째
+// 맵 객체에만 patch를 얕은 병합해 새 배열을 만들어 저장한다.
+async function patchMoveMap(index, patch) {
+  const maps = (fishingConfig.moveMaps || []).map((m, i) => i === index ? Object.assign({}, m, patch) : m);
+  fishingConfig = await AssetDB.setFishingConfig({ moveMaps: maps });
+}
+
+function renderMoveMapPills() {
+  el.moveMapPills.innerHTML = MOVE_MAP_LABELS.map((label, i) =>
+    `<button type="button" class="option-pill${i === moveMapEditIndex ? ' active' : ''}" data-map="${i}">${label}</button>`
+  ).join('');
+  el.moveMapPills.querySelectorAll('.option-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      moveMapEditIndex = Number(btn.dataset.map);
+      moveWarpPendingTarget = null;
+      renderMoveMapPills();
+      renderMoveMapBgSlot();
+      renderMoveWarpTargetPills();
+      renderMoveWarpList();
+    });
+  });
+}
+
+function updateMoveWarpAddBtnState() {
+  const map = (fishingConfig.moveMaps || [])[moveMapEditIndex] || {};
+  el.moveWarpAddBtn.disabled = moveWarpPendingTarget == null || !map.backgroundAssetId;
+}
+
+async function renderMoveMapBgSlot() {
+  const map = (fishingConfig.moveMaps || [])[moveMapEditIndex] || {};
+  el.moveMapBgSlot.innerHTML = '';
+  if (map.backgroundAssetId) {
+    el.moveMapBgAddBtn.classList.add('hidden');
+    const asset = await AssetDB.getAsset(map.backgroundAssetId).catch(() => null);
+    const slot = document.createElement('div');
+    slot.className = 'frame-slot';
+    slot.innerHTML = `${asset ? `<img src="${asset.dataUrl}" alt="">` : ''}
+      <div class="frame-actions"><button type="button" class="frame-mini-btn danger" data-act="del">✕</button></div>`;
+    slot.querySelector('[data-act=del]').addEventListener('click', async () => {
+      await patchMoveMap(moveMapEditIndex, { backgroundAssetId: null });
+      showSaveNote();
+      renderMoveMapBgSlot();
+      renderMoveTestStage();
+    });
+    el.moveMapBgSlot.appendChild(slot);
+  } else {
+    el.moveMapBgAddBtn.classList.remove('hidden');
+  }
+  updateMoveWarpAddBtnState();
+}
+el.moveMapBgAddBtn.addEventListener('click', () => el.moveMapBgFileInput.click());
+el.moveMapBgFileInput.addEventListener('change', async () => {
+  const file = el.moveMapBgFileInput.files[0];
+  el.moveMapBgFileInput.value = '';
+  if (!file) return;
+  el.moveMapBgAddBtn.disabled = true;
+  try {
+    const asset = await AssetDB.addAsset({ type: 'fishing-move-map-background', name: file.name, blob: file });
+    await patchMoveMap(moveMapEditIndex, { backgroundAssetId: asset.id });
+    showSaveNote();
+    renderMoveMapBgSlot();
+    renderMoveTestStage();
+  } finally {
+    el.moveMapBgAddBtn.disabled = false;
+  }
+});
+
+function renderMoveWarpTargetPills() {
+  el.moveWarpTargetPills.innerHTML = MOVE_MAP_LABELS.map((label, i) => {
+    if (i === moveMapEditIndex) return ''; // 자기 자신으로는 못 넘어간다
+    return `<button type="button" class="option-pill${i === moveWarpPendingTarget ? ' active' : ''}" data-map="${i}">${label}</button>`;
+  }).join('');
+  el.moveWarpTargetPills.querySelectorAll('.option-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      moveWarpPendingTarget = Number(btn.dataset.map);
+      renderMoveWarpTargetPills();
+      updateMoveWarpAddBtnState();
+    });
+  });
+  updateMoveWarpAddBtnState();
+}
+
+el.moveWarpAddBtn.addEventListener('click', () => {
+  const map = (fishingConfig.moveMaps || [])[moveMapEditIndex] || {};
+  if (!map.backgroundAssetId || moveWarpPendingTarget == null) return;
+  AssetDB.getAsset(map.backgroundAssetId).then(asset => {
+    if (asset) openFbRegionEditorWithImage('moveWarpRect', asset.dataUrl, null);
+  }).catch(() => {});
+});
+
+async function renderMoveWarpList() {
+  const map = (fishingConfig.moveMaps || [])[moveMapEditIndex] || {};
+  const warps = map.warps || [];
+  if (!warps.length) {
+    el.moveWarpList.innerHTML = '<div class="option-desc">아직 이동 영역이 없어요.</div>';
+    return;
+  }
+  el.moveWarpList.innerHTML = warps.map((w, i) => `
+    <div class="move-warp-row">
+      <div class="move-warp-label">🚪 → ${MOVE_MAP_LABELS[w.targetMap] || '?'}</div>
+      <button type="button" class="frame-mini-btn danger" data-idx="${i}">✕</button>
+    </div>
+  `).join('');
+  el.moveWarpList.querySelectorAll('[data-idx]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const idx = Number(btn.dataset.idx);
+      const newWarps = warps.slice();
+      newWarps.splice(idx, 1);
+      await patchMoveMap(moveMapEditIndex, { warps: newWarps });
+      showSaveNote();
+      renderMoveWarpList();
+      renderMoveTestStage();
+    });
+  });
+}
+
 async function renderMoveTestStage() {
-  const bgId = fishingConfig.backgroundAssetId;
+  const maps = fishingConfig.moveMaps || [];
+  const currentMap = maps[currentMoveMap] || { backgroundAssetId: null, warps: [] };
+  const bgId = currentMap.backgroundAssetId;
   const bgAsset = bgId ? await AssetDB.getAsset(bgId).catch(() => null) : null;
   const dims = bgAsset ? await loadImageDimensions(bgAsset.dataUrl) : null;
   if (bgAsset && dims) {
@@ -3253,6 +3462,11 @@ async function renderMoveTestStage() {
     el.moveWorld.style.height = dims.height + 'px';
     moveState.maxX = Math.max(0, dims.width - MOVE_TILE_SIZE);
     moveState.maxY = Math.max(0, dims.height - MOVE_TILE_SIZE);
+    moveWarpRectsPx = (currentMap.warps || []).map(w => ({
+      x: w.rect.x * dims.width, y: w.rect.y * dims.height,
+      w: w.rect.w * dims.width, h: w.rect.h * dims.height,
+      targetMap: w.targetMap,
+    }));
   } else {
     el.moveWorld.classList.add('placeholder');
     el.moveWorld.style.backgroundImage = '';
@@ -3260,11 +3474,13 @@ async function renderMoveTestStage() {
     el.moveWorld.style.height = (MOVE_PLACEHOLDER_ROWS * MOVE_TILE_SIZE) + 'px';
     moveState.maxX = (MOVE_PLACEHOLDER_COLS - 1) * MOVE_TILE_SIZE;
     moveState.maxY = (MOVE_PLACEHOLDER_ROWS - 1) * MOVE_TILE_SIZE;
+    moveWarpRectsPx = [];
   }
   moveState.x = Math.min(moveState.x, moveState.maxX);
   moveState.y = Math.min(moveState.y, moveState.maxY);
   applyCharFrame(moveState.dir, 0);
   updateCharPosition();
+  updateMoveTestStatus();
 }
 
 /* ===== 영역 설정 탭 =====
@@ -3861,6 +4077,10 @@ async function init() {
   renderFishTab();
   WALK_DIRS.forEach(dir => renderWalkTab(dir));
   initMoveMotionControls();
+  renderMoveMapPills();
+  renderMoveMapBgSlot();
+  renderMoveWarpTargetPills();
+  renderMoveWarpList();
   renderMoveTestStage();
   const itemPopupCfg = fishingConfig.itemPopup || {};
   el.itemIconSizeInput.value = itemPopupCfg.iconSizePx || 64;

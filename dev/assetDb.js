@@ -1100,7 +1100,13 @@ const AssetDB = (() => {
   // 놓일지. "올리기 모션" 탭에서 올리기 마지막 프레임 위로 점을 찍어
   // 지정한다(rodtip-marker와 같은 단일 포인트 피커). null이면
   // play/index.html의 기본값(DEFAULT_HELD_FISH_POS)으로 폴백한다.
-  const FISHING_CONFIG_DEFAULT = { castingFrames: [], reelingFrames: [], barDesign: {}, fishSheetAssetId: null, fishIconOverrides: {}, castingSheetAssetId: null, castingFrameOverrides: {}, castingFrameDurations: [], backgroundAssetId: null, castingFrameRodTips: {}, walkFrames: { up: [], down: [], left: [], right: [] }, walkSheets: { up: {}, down: {}, left: {}, right: {} }, walkMotion: { stepMs: 200, animFrameMs: 90 }, castPhysics: { gravityMps2: 9.8, vxScale: 1 }, itemPopup: { backgroundAssetId: null, iconPos: null, iconSizePx: 64 }, castGaugeAssetId: null, castGaugeFillRegion: null, fishableAreas: [], blockedAreas: [], interactionAreas: [], dialogueScene: { boxLayer: null, jisooLayer: null, youngwooLayer: null }, heldFishPos: null };
+  // moveMaps — "이동" 탭 자유 이동 테스트용 독립 맵 4개, 각각
+  // { backgroundAssetId, warps: [{ rect:{x,y,w,h}(0~1, 그 맵 배경 원본
+  // 크기 기준), targetMap(0~3, 다른 맵 인덱스) }] }. 캐릭터가 warp의 rect
+  // 안으로 들어가면 targetMap으로 화면이 바뀌고 그 맵 한가운데서 다시
+  // 시작한다("이동 영역" = 맵과 맵 사이 출입구).
+  const MOVE_MAP_DEFAULT = () => ({ backgroundAssetId: null, warps: [] });
+  const FISHING_CONFIG_DEFAULT = { castingFrames: [], reelingFrames: [], barDesign: {}, fishSheetAssetId: null, fishIconOverrides: {}, castingSheetAssetId: null, castingFrameOverrides: {}, castingFrameDurations: [], backgroundAssetId: null, castingFrameRodTips: {}, walkFrames: { up: [], down: [], left: [], right: [] }, walkSheets: { up: {}, down: {}, left: {}, right: {} }, walkMotion: { stepMs: 200, animFrameMs: 90 }, castPhysics: { gravityMps2: 9.8, vxScale: 1 }, itemPopup: { backgroundAssetId: null, iconPos: null, iconSizePx: 64 }, castGaugeAssetId: null, castGaugeFillRegion: null, fishableAreas: [], blockedAreas: [], interactionAreas: [], dialogueScene: { boxLayer: null, jisooLayer: null, youngwooLayer: null }, heldFishPos: null, moveMaps: [MOVE_MAP_DEFAULT(), MOVE_MAP_DEFAULT(), MOVE_MAP_DEFAULT(), MOVE_MAP_DEFAULT()] };
 
   async function getFishingConfig() {
     if (fishingConfigCache.has('config')) return fishingConfigCache.get('config');
