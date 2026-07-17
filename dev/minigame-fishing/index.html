@@ -96,6 +96,15 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .crop-overlap-toggle{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--text-secondary);background:var(--surface-2);border:1px solid var(--divider);border-radius:10px;padding:9px 12px;cursor:pointer}
 .crop-overlap-toggle.active{color:#04181c;background:var(--cyan);border-color:var(--cyan)}
 .crop-overlap-select{flex:1;min-width:120px;background:var(--surface-1);border:1px solid var(--divider);border-radius:10px;padding:9px 10px;color:var(--text-primary);font-family:var(--sans);font-size:13px}
+/* ===== 지우개 — 확대 미리보기(cropZoomCanvas) 위에서 배경 잔여물을 손으로
+   직접 지우는 도구. 빨간 톤(signal-red)으로 다른 토글(cyan)과 구분해
+   "지우는 중" 상태를 눈에 띄게 한다. */
+.crop-erase-row{margin-top:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.crop-erase-toggle{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--text-secondary);background:var(--surface-2);border:1px solid var(--divider);border-radius:10px;padding:9px 12px;cursor:pointer}
+.crop-erase-toggle.active{color:#fff;background:var(--signal-red);border-color:var(--signal-red)}
+.crop-erase-brush-input{flex:1;min-width:100px;accent-color:var(--signal-red)}
+.crop-erase-reset-btn{font-family:var(--mono);font-size:11.5px;font-weight:700;color:var(--text-secondary);background:var(--surface-1);border:1px solid var(--divider);border-radius:10px;padding:8px 10px;cursor:pointer}
+.crop-erase-hint{margin-top:8px;font-size:11.5px;color:var(--text-muted);line-height:1.5}
 .crop-size-row{margin-top:16px}
 .crop-size-controls{display:flex;align-items:center;gap:10px}
 .crop-size-controls input[type=range]{flex:1;accent-color:var(--cyan)}
@@ -840,6 +849,18 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
         <button type="button" class="crop-dpad-btn crop-dpad-down" data-dir="down" aria-label="아래로">▼</button>
       </div>
     </div>
+    <!-- ===== 지우개 — eraseTarget이 있는 호출(openMotionFrameCropAdjuster,
+         openIdleFrameCropAdjuster)에서만 보인다. 자동 배경 제거(AI) 결과에
+         남은 잔여물(그림자, 테두리 잔상)을 확대 미리보기 위에서 직접 문질러
+         지운다 — 시트/스트립 전체가 아니라 지금 프레임의 크롭 영역+여백만
+         보여주는 확대 미리보기라 다른 프레임을 실수로 건드릴 걱정이 적다.
+         지운 내용은 "적용"을 눌러야 새 이미지로 저장된다(eraseTarget.save). -->
+    <div class="crop-erase-row hidden" id="cropEraseRow">
+      <button type="button" class="crop-erase-toggle" id="cropEraseToggleBtn">🧹 지우개: OFF</button>
+      <input type="range" class="crop-erase-brush-input hidden" id="cropEraseBrushInput" min="4" max="36" step="1" value="14">
+      <button type="button" class="crop-erase-reset-btn hidden" id="cropEraseResetBtn">↩ 지운 부분 되돌리기</button>
+    </div>
+    <div class="crop-erase-hint hidden" id="cropEraseHint">확대 미리보기를 손가락/마우스로 문질러서 배경 잔여물을 지우세요 — 적용을 눌러야 저장돼요.</div>
     <!-- ===== 모션 겹치기 — 1번 프레임(frameIndex===0) 세밀영역조절에서만
          보인다(openMotionFrameCropAdjuster의 motionOverlapOptions). 다른
          모션 카테고리를 골라 그 카테고리의 1번 프레임을 확대 미리보기에
@@ -1059,6 +1080,11 @@ const el = {
   cropZoomCanvas: document.getElementById('cropZoomCanvas'),
   cropZoomOnionHint: document.getElementById('cropZoomOnionHint'),
   cropZoomMatch: document.getElementById('cropZoomMatch'),
+  cropEraseRow: document.getElementById('cropEraseRow'),
+  cropEraseToggleBtn: document.getElementById('cropEraseToggleBtn'),
+  cropEraseBrushInput: document.getElementById('cropEraseBrushInput'),
+  cropEraseResetBtn: document.getElementById('cropEraseResetBtn'),
+  cropEraseHint: document.getElementById('cropEraseHint'),
   cropOverlapRow: document.getElementById('cropOverlapRow'),
   cropOverlapToggleBtn: document.getElementById('cropOverlapToggleBtn'),
   cropOverlapSelect: document.getElementById('cropOverlapSelect'),
@@ -1469,6 +1495,17 @@ async function setMotionCategoryStripAssetId(category, assetId) {
   motionCategorySheetAssetId[category] = assetId;
   fishingConfig = await AssetDB.setFishingConfig({ motionCategorySheetAssetId });
 }
+// 지우개(세밀영역조절의 cropEraseTarget)가 편집된 이미지를 새 자산으로
+// 올린 뒤 이 카테고리가 "지금 실제로 쓰는" 자리에 다시 꽂는다 — source가
+// 카테고리 스트립을 쓰는 중이면 그 스트립 자리, 아니면 메인 모션 시트
+// 자리(resolveMotionCategorySource가 결정한 그대로).
+async function setMotionSourceAssetId(category, source, assetId) {
+  if (source.usingCategorySheet) {
+    await setMotionCategoryStripAssetId(category, assetId);
+  } else {
+    fishingConfig = await AssetDB.setFishingConfig({ motionSheetAssetId: assetId });
+  }
+}
 
 // motionPlaybackMs — 이동 방향별 걷기 프레임 전환 속도(ms). 값이 없는
 // 방향은 "이동" 탭의 걷기 애니메이션 전환 속도(전체 공통 기본값)를 쓴다.
@@ -1705,8 +1742,16 @@ async function openMotionFrameCropAdjuster(category, frameIndex, source, sourceA
 
   const onionSkin = (frameIndex > 0 && sourceAsset) ? { url: sourceAsset.dataUrl, rect: rectFor(frameIndex - 1) } : null;
   const motionOverlapOptions = frameIndex === 0 ? { currentCategory: category } : null;
+  // 지우개로 지운 결과는 이 프레임 하나가 아니라 지금 쓰는 소스 이미지
+  // 전체(메인 시트 또는 카테고리 스트립)에 저장된다 — 확대 미리보기가
+  // 이 프레임의 크롭 영역+여백만 보여줘서 다른 프레임을 건드릴 걱정 없이
+  // 지울 수 있다.
+  const eraseTarget = {
+    assetType: source.usingCategorySheet ? 'fishing-motion-category-strip' : 'fishing-motion-sheet',
+    save: (assetId) => setMotionSourceAssetId(category, source, assetId),
+  };
 
-  openCropAdjuster(sourceAsset.dataUrl, existingRect, null, (rect) => confirmMotionFrameCrop(category, rect, frameIndex, source, sourceDims), onionSkin, matchFirstFrameRef, motionOverlapOptions);
+  openCropAdjuster(sourceAsset.dataUrl, existingRect, null, (rect) => confirmMotionFrameCrop(category, rect, frameIndex, source, sourceDims), onionSkin, matchFirstFrameRef, motionOverlapOptions, eraseTarget);
 }
 // 물고기 세밀영역조절(confirmFishSpeciesCrop)과 마찬가지로 시트 자체는
 // 안 바뀐다 — 이 프레임이 시트의 어느 영역을 잘라 쓸지 좌표만 저장한다.
@@ -2467,8 +2512,23 @@ let cropMatchFirstFrameRef = null;
 // 아이콘 등)은 이 인자를 안 넘겨서 항상 숨김 그대로다.
 let cropMotionOverlapOptions = null;
 let cropMotionOverlapOn = false;
+// ===== 지우개 =====
+// cropEraseTarget — { assetType, save(assetId) }. openCropAdjuster 호출자가
+// "지운 결과를 어디에 다시 저장할지"를 알려준다(메인 모션 시트/카테고리
+// 스트립/캐릭터 idle 시트 — openMotionFrameCropAdjuster·
+// openIdleFrameCropAdjuster 참고). null이면 지우개 행 자체를 숨긴다.
+let cropEraseTarget = null;
+// cropEraseCanvas — 원본 이미지를 한 번 복제해두고 지우개 획을 여기에만
+// 그린다(destination-out). cropSourceImg(불변 Image)는 절대 안 바꾸고,
+// null이면(아직 한 번도 안 지웠으면) 화면엔 cropSourceImg를 그대로 쓴다 —
+// drawCropStage/drawCropZoom이 항상 (cropEraseCanvas || cropSourceImg)를
+// 그린다.
+let cropEraseCanvas = null;
+let cropErasedDirty = false;
+let cropEraseMode = false;
+let cropEraseBrushPx = 14;
 
-function openCropAdjuster(sourceUrl, existingRect, pendingSourceFile, onConfirm, onionSkin, matchFirstFrameRef, motionOverlapOptions) {
+function openCropAdjuster(sourceUrl, existingRect, pendingSourceFile, onConfirm, onionSkin, matchFirstFrameRef, motionOverlapOptions, eraseTarget) {
   const img = new Image();
   img.crossOrigin = 'anonymous';
   img.onload = () => {
@@ -2498,6 +2558,19 @@ function openCropAdjuster(sourceUrl, existingRect, pendingSourceFile, onConfirm,
       const otherCategories = MOTION_CATEGORIES.filter(c => c !== cropMotionOverlapOptions.currentCategory);
       el.cropOverlapSelect.innerHTML = otherCategories.map(c => `<option value="${c}">${MOTION_LABELS[c]}</option>`).join('');
     }
+    // 지우개 — 매번 OFF/깨끗한 상태로 초기화한다(이전 프레임에서 지운
+    // 캔버스를 다음 프레임에 실수로 이어 쓰지 않게).
+    cropEraseTarget = eraseTarget || null;
+    cropEraseCanvas = null;
+    cropErasedDirty = false;
+    cropEraseMode = false;
+    cropEraseBrushPx = Number(el.cropEraseBrushInput.value) || 14;
+    el.cropEraseRow.classList.toggle('hidden', !cropEraseTarget);
+    el.cropEraseToggleBtn.textContent = '🧹 지우개: OFF';
+    el.cropEraseToggleBtn.classList.remove('active');
+    el.cropEraseBrushInput.classList.add('hidden');
+    el.cropEraseResetBtn.classList.add('hidden');
+    el.cropEraseHint.classList.add('hidden');
     // 크롭 크기를 짧은 변 기준 픽셀 단위로 보여준다 — 슬라이더/입력 범위는
     // 이미지마다 짧은 변 길이가 달라 매번 다시 잡아야 한다(1px ~ shortSide).
     const shortSide = Math.min(img.naturalWidth, img.naturalHeight);
@@ -2533,6 +2606,10 @@ function closeCropAdjuster() {
   cropMatchFirstFrameRef = null;
   cropMotionOverlapOptions = null;
   cropMotionOverlapOn = false;
+  cropEraseTarget = null;
+  cropEraseCanvas = null;
+  cropErasedDirty = false;
+  cropEraseMode = false;
   stopCropDpadRepeat();
 }
 
@@ -2574,14 +2651,23 @@ el.cropOverlapSelect.addEventListener('change', () => {
   if (cropMotionOverlapOn) loadMotionOverlapOnion(el.cropOverlapSelect.value);
 });
 
+// cropSrcW/H — cropEraseCanvas(HTMLCanvasElement, width/height)와
+// cropSourceImg/cropOnionSkin.img(HTMLImageElement, naturalWidth/Height)를
+// drawCropZoomLayer 등에서 같은 코드로 다루기 위한 크기 조회. 지운 적이
+// 없으면(cropEraseCanvas===null) 항상 cropSourceImg만 쓰이므로 이 구분이
+// 실제로 갈리는 건 지우개를 쓴 뒤뿐이다.
+function cropSrcW(img) { return img.naturalWidth !== undefined ? img.naturalWidth : img.width; }
+function cropSrcH(img) { return img.naturalHeight !== undefined ? img.naturalHeight : img.height; }
+
 function drawCropStage() {
   if (!cropSourceImg) return;
+  const drawSrc = cropEraseCanvas || cropSourceImg;
   const stageWidth = el.cropStage.clientWidth;
   const scale = stageWidth / cropSourceImg.naturalWidth;
   const stageHeight = cropSourceImg.naturalHeight * scale;
   el.cropCanvas.width = stageWidth;
   el.cropCanvas.height = stageHeight;
-  el.cropCanvas.getContext('2d').drawImage(cropSourceImg, 0, 0, stageWidth, stageHeight);
+  el.cropCanvas.getContext('2d').drawImage(drawSrc, 0, 0, stageWidth, stageHeight);
 
   const shortSide = Math.min(cropSourceImg.naturalWidth, cropSourceImg.naturalHeight);
   const rectSizePx = cropRect.size * shortSide * scale;
@@ -2596,15 +2682,18 @@ function drawCropStage() {
 
 // 확대 미리보기 캔버스에 이미지 한 장을 그린다 — rect(cx,cy,size, img
 // 자신의 짧은 변 기준 정규화 좌표) 주변에 30% 여백을 더한 영역을 캔버스
-// 전체에 채운다. 온션스킨(cropOnionSkin)과 현재 프레임(cropSourceImg)이
-// 서로 다른 이미지·다른 rect를 가져도 같은 공식으로 "그 프레임 자신의
-// 크롭 영역+여백"을 캔버스에 꽉 채우므로, 두 레이어를 겹쳐 그리면 두
-// 프레임의 인물/포즈가 같은 자리에 정렬돼 이어지는지 비교하기 쉽다.
+// 전체에 채운다. 온션스킨(cropOnionSkin)과 현재 프레임(cropEraseCanvas나
+// cropSourceImg)이 서로 다른 이미지·다른 rect를 가져도 같은 공식으로
+// "그 프레임 자신의 크롭 영역+여백"을 캔버스에 꽉 채우므로, 두 레이어를
+// 겹쳐 그리면 두 프레임의 인물/포즈가 같은 자리에 정렬돼 이어지는지
+// 비교하기 쉽다. img는 HTMLImageElement 또는 HTMLCanvasElement(지운 결과) —
+// cropSrcW/H로 크기를 통일해서 읽는다.
 function drawCropZoomLayer(zctx, img, rect, canvasSize, alpha) {
-  const shortSide = Math.min(img.naturalWidth, img.naturalHeight);
+  const w = cropSrcW(img), h = cropSrcH(img);
+  const shortSide = Math.min(w, h);
   const rectSize = rect.size * shortSide;
-  const srcX = rect.cx * img.naturalWidth - rectSize / 2;
-  const srcY = rect.cy * img.naturalHeight - rectSize / 2;
+  const srcX = rect.cx * w - rectSize / 2;
+  const srcY = rect.cy * h - rectSize / 2;
   const pad = rectSize * 0.3;
   const viewSize = rectSize + pad * 2;
   zctx.save();
@@ -2638,7 +2727,7 @@ function computeOnionMatchPercent() {
   actx.clearRect(0, 0, CROP_MATCH_SIZE, CROP_MATCH_SIZE);
   bctx.clearRect(0, 0, CROP_MATCH_SIZE, CROP_MATCH_SIZE);
   drawCropZoomLayer(actx, cropOnionSkin.img, cropOnionSkin.rect, CROP_MATCH_SIZE, 1);
-  drawCropZoomLayer(bctx, cropSourceImg, cropRect, CROP_MATCH_SIZE, 1);
+  drawCropZoomLayer(bctx, cropEraseCanvas || cropSourceImg, cropRect, CROP_MATCH_SIZE, 1);
   const a = actx.getImageData(0, 0, CROP_MATCH_SIZE, CROP_MATCH_SIZE).data;
   const b = bctx.getImageData(0, 0, CROP_MATCH_SIZE, CROP_MATCH_SIZE).data;
   let diffSum = 0;
@@ -2668,13 +2757,43 @@ function drawCropZoom() {
   if (cropOnionSkin && cropOnionSkin.img) {
     drawCropZoomLayer(zctx, cropOnionSkin.img, cropOnionSkin.rect, canvasSize, 0.45);
   }
-  const { rectSize, viewSize, pad } = drawCropZoomLayer(zctx, cropSourceImg, cropRect, canvasSize, 1);
+  const { rectSize, viewSize, pad } = drawCropZoomLayer(zctx, cropEraseCanvas || cropSourceImg, cropRect, canvasSize, 1);
   const rectPx = (rectSize / viewSize) * canvasSize;
   const offsetPx = (pad / viewSize) * canvasSize;
   zctx.strokeStyle = '#59B8C8';
   zctx.lineWidth = 2;
   zctx.strokeRect(offsetPx, offsetPx, rectPx, rectPx);
   updateCropMatchLabel();
+}
+
+// ===== 지우개 그리기 =====
+// cropEraseCanvas를 처음 쓸 때(지우개 첫 획) 원본 이미지를 그대로 복제해둔
+// "편집 가능한 사본"을 만든다 — cropSourceImg(원본 Image)는 절대 다시
+// 그려 덮지 않는다.
+function ensureCropEraseCanvas() {
+  if (cropEraseCanvas) return cropEraseCanvas;
+  const c = document.createElement('canvas');
+  c.width = cropSourceImg.naturalWidth;
+  c.height = cropSourceImg.naturalHeight;
+  c.getContext('2d').drawImage(cropSourceImg, 0, 0);
+  cropEraseCanvas = c;
+  return c;
+}
+// (xImg, yImg)는 원본 이미지 픽셀 좌표, radiusImg도 같은 단위 — 호출부
+// (zoomCanvasEventToImagePoint)가 화면(zoom 캔버스) 좌표를 이 단위로 미리
+// 환산해서 넘긴다.
+function eraseAtImagePoint(xImg, yImg, radiusImg) {
+  const canvas = ensureCropEraseCanvas();
+  const ctx = canvas.getContext('2d');
+  ctx.save();
+  ctx.globalCompositeOperation = 'destination-out';
+  ctx.beginPath();
+  ctx.arc(xImg, yImg, radiusImg, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+  cropErasedDirty = true;
+  el.cropEraseResetBtn.classList.remove('hidden');
+  drawCropStage();
 }
 
 function clamp01(v) { return Math.max(0, Math.min(1, v)); }
@@ -2713,13 +2832,61 @@ function updateCropCenterFromZoomDrag(e) {
   cropRect.cy = clamp01(cropRect.cy + dyImg / cropSourceImg.naturalHeight);
   drawCropStage();
 }
+// 확대 미리보기 화면 좌표(e.clientX/Y) → 원본 이미지 픽셀 좌표. 지우개가
+// 이 좌표에 브러시 반지름(cropEraseBrushPx, 화면 px)을 scale로 환산해서
+// 찍는다 — updateCropCenterFromZoomDrag와 같은 scale 공식(확대 화면 1px =
+// 원본 이미지 몇 px인지)을 델타가 아니라 절대 위치에 적용한다.
+function zoomCanvasEventToImagePoint(e) {
+  const shortSide = Math.min(cropSourceImg.naturalWidth, cropSourceImg.naturalHeight);
+  const rectSize = cropRect.size * shortSide;
+  const pad = rectSize * 0.3;
+  const viewSize = rectSize + pad * 2;
+  const canvasRect = el.cropZoomCanvas.getBoundingClientRect();
+  const scale = viewSize / canvasRect.width;
+  const srcX = cropRect.cx * cropSourceImg.naturalWidth - rectSize / 2 - pad;
+  const srcY = cropRect.cy * cropSourceImg.naturalHeight - rectSize / 2 - pad;
+  return {
+    x: srcX + (e.clientX - canvasRect.left) * scale,
+    y: srcY + (e.clientY - canvasRect.top) * scale,
+    scale,
+  };
+}
+function eraseAtZoomEvent(e) {
+  const pt = zoomCanvasEventToImagePoint(e);
+  eraseAtImagePoint(pt.x, pt.y, cropEraseBrushPx * pt.scale);
+}
 el.cropZoomCanvas.addEventListener('pointerdown', (e) => {
   e.preventDefault(); // cropStage 등 다른 핸들러가 같은 포인터 시퀀스를 가로채지 않게
   cropZoomDragging = true;
+  if (cropEraseMode) { eraseAtZoomEvent(e); return; }
   cropZoomDragLast = { x: e.clientX, y: e.clientY };
 });
-window.addEventListener('pointermove', (e) => { if (cropZoomDragging) updateCropCenterFromZoomDrag(e); });
+window.addEventListener('pointermove', (e) => {
+  if (!cropZoomDragging) return;
+  if (cropEraseMode) { eraseAtZoomEvent(e); return; }
+  updateCropCenterFromZoomDrag(e);
+});
 window.addEventListener('pointerup', () => { cropZoomDragging = false; });
+
+el.cropEraseToggleBtn.addEventListener('click', () => {
+  if (!cropEraseTarget) return;
+  cropEraseMode = !cropEraseMode;
+  el.cropEraseToggleBtn.textContent = '🧹 지우개: ' + (cropEraseMode ? 'ON' : 'OFF');
+  el.cropEraseToggleBtn.classList.toggle('active', cropEraseMode);
+  el.cropEraseBrushInput.classList.toggle('hidden', !cropEraseMode);
+  el.cropEraseHint.classList.toggle('hidden', !cropEraseMode);
+});
+el.cropEraseBrushInput.addEventListener('input', () => {
+  cropEraseBrushPx = Number(el.cropEraseBrushInput.value);
+});
+// 지운 내용을 전부 버리고 원본으로 되돌린다 — 아직 "적용"을 안 눌렀을 때만
+// 의미가 있다(적용하면 이미 새 자산으로 저장돼 모달이 닫힌다).
+el.cropEraseResetBtn.addEventListener('click', () => {
+  cropEraseCanvas = null;
+  cropErasedDirty = false;
+  el.cropEraseResetBtn.classList.add('hidden');
+  drawCropStage();
+});
 
 // 방향 버튼 — 드래그로 대충 옮긴 뒤 미세 조정할 때 쓴다. 탭 한 번에
 // 0.05%(이미지 기준)씩만 움직이는 세밀한 스텝이고, 400ms 뒤부터는 60ms
@@ -2792,9 +2959,20 @@ el.cropConfirmBtn.addEventListener('click', async () => {
   if (!cropSourceImg || !cropOnConfirm) return;
   el.cropConfirmBtn.disabled = true;
   try {
+    // 지운 내용이 있으면(cropErasedDirty) 먼저 편집된 이미지를 새 자산으로
+    // 올리고 eraseTarget.save로 그 자리(메인 시트/카테고리 스트립/idle
+    // 시트)에 다시 꽂아둔다 — 크롭 rect 저장(cropOnConfirm)은 그 다음이라,
+    // renderMotionTab 등이 다시 렌더링할 때 이미 바뀐 이미지를 읽는다.
+    if (cropErasedDirty && cropEraseCanvas && cropEraseTarget) {
+      const blob = await new Promise(resolve => cropEraseCanvas.toBlob(resolve, 'image/png'));
+      const asset = await AssetDB.addAsset({ type: cropEraseTarget.assetType || 'fishing-erased-image', name: 'erased.png', blob });
+      await cropEraseTarget.save(asset.id);
+    }
     await cropOnConfirm(cropRect, cropSourceImg, cropPendingSourceFile);
     showSaveNote();
     closeCropAdjuster();
+  } catch (err) {
+    DevDiag.show('저장 실패: ' + (err && err.message ? err.message : err));
   } finally {
     el.cropConfirmBtn.disabled = false;
   }
@@ -3699,7 +3877,8 @@ function renderIdleFrameGrid(character, sheetAsset, sheetDims) {
 function openIdleFrameCropAdjuster(character, frameIndex, sheetAsset, sheetDims) {
   const overrides = getIdleSheetConfig(character).overrides || {};
   const existingRect = overrides[frameIndex] || (sheetDims ? getIdleGridDefaultCropRect(frameIndex, sheetDims.width, sheetDims.height) : { cx: 0.5, cy: 0.5, size: 0.15 });
-  openCropAdjuster(sheetAsset.dataUrl, existingRect, null, (rect) => confirmIdleFrameCrop(character, rect, frameIndex));
+  const eraseTarget = { assetType: 'fishing-idle-sheet', save: (assetId) => setIdleSheetConfig(character, { assetId }) };
+  openCropAdjuster(sheetAsset.dataUrl, existingRect, null, (rect) => confirmIdleFrameCrop(character, rect, frameIndex), null, null, null, eraseTarget);
 }
 // 모션 탭의 confirmMotionFrameCrop과 같은 원칙 — 4방향 다 같은 캐릭터라
 // 크롭 크기(size)가 다르면 방향이 바뀔 때 캐릭터가 커졌다 작아졌다 하는
