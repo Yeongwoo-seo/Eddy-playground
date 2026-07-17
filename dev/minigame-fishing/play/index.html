@@ -71,6 +71,13 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
    절반만큼 밀어서 이 값이 실제로 캐릭터 "중심"과 일치하게 한다(박스
    크기가 바뀌어도 항상 중심 기준이라 안전하다). */
 .char-stage{position:absolute;left:0;bottom:0;transform:translate(-50%,50%) scale(var(--char-scale,1));z-index:2;width:84px;height:84px;display:flex;align-items:flex-end;justify-content:center}
+/* 캐릭터 발밑 그림자 — img/char-fallback의 drop-shadow 필터(실루엣을 따라
+   흐릿하게 감싸는 외곽 그림자)와 별개로, 바닥에 깔린 타원 그림자를 하나
+   더 둔다. char-stage 맨 앞(다른 자식보다 먼저)에 둬서 항상 캐릭터
+   뒤쪽에 깔리고, align-items:flex-end로 캐릭터가 내려앉는 바로 그
+   기준선(box bottom)에 맞춘다 — --char-scale이 걸리는 char-stage 안에
+   있어서 캐릭터 확대/축소에 그대로 같이 따라간다. */
+.char-ground-shadow{position:absolute;left:50%;bottom:-2px;transform:translateX(-50%);width:58%;height:11px;border-radius:50%;background:radial-gradient(ellipse at center, rgba(0,0,0,.4) 0%, rgba(0,0,0,.4) 35%, rgba(0,0,0,0) 75%);pointer-events:none}
 .char-stage img{max-width:100%;max-height:100%;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 4px 6px rgba(0,0,0,.35))}
 .char-stage img.char-mirror-x{transform:scaleX(-1)}
 .char-fallback{font-size:46px;filter:drop-shadow(0 4px 6px rgba(0,0,0,.35))}
@@ -386,6 +393,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 
   <div class="stage" id="stage">
     <div class="char-stage" id="charStage">
+      <div class="char-ground-shadow"></div>
       <img id="charImg" class="hidden" alt="">
       <div class="char-fallback" id="charFallback">🧍</div>
       <div class="interaction-badge hidden" id="interactionBadge"></div>

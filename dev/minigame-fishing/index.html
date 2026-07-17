@@ -142,10 +142,15 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .erase-topbar button{font-family:var(--mono);font-size:12.5px;font-weight:700;color:var(--text-primary);background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:9px 12px;cursor:pointer}
 .erase-topbar button:disabled{opacity:.4}
 .erase-title{font-family:var(--mono);font-size:11.5px;color:var(--text-muted);letter-spacing:.02em;text-align:center;flex:1}
-.erase-canvas-wrap{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:12px;
+.erase-canvas-wrap{flex:1;min-height:0;position:relative;overflow:hidden;padding:12px;box-sizing:border-box;
   background-image:linear-gradient(45deg,#20262e 25%,transparent 25%),linear-gradient(-45deg,#20262e 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#20262e 75%),linear-gradient(-45deg,transparent 75%,#20262e 75%);
   background-size:20px 20px;background-position:0 0,0 10px,10px -10px,-10px 0px;background-color:#151a20}
-.erase-canvas-wrap canvas{max-width:100%;max-height:100%;touch-action:none;image-rendering:pixelated;cursor:crosshair;box-shadow:0 0 0 1px rgba(255,255,255,.15);-webkit-user-select:none;user-select:none}
+/* 두 손가락 줌/이동(pinch+pan) 지원 — position:absolute + transform-origin:0 0로
+   두고 translate/scale을 그대로 tx/ty/scale 값으로 매핑한다(minigame-eastwood의
+   mapStage/mapCanvas와 같은 방식). max-width/max-height로 화면에 맞추던 예전
+   방식은 transform 스케일과 함께 쓸 수 없어서 fitEraseCanvasToStage가 JS로
+   초기 배율/위치를 계산해 대신한다. */
+.erase-canvas-wrap canvas{position:absolute;top:0;left:0;transform-origin:0 0;touch-action:none;image-rendering:pixelated;cursor:crosshair;box-shadow:0 0 0 1px rgba(255,255,255,.15);-webkit-user-select:none;user-select:none}
 .erase-controls{flex-shrink:0;padding:14px 16px calc(16px + env(safe-area-inset-bottom,0));display:flex;flex-direction:column;gap:10px}
 .erase-controls label{display:flex;flex-direction:column;gap:6px;color:var(--text-secondary);font-size:12.5px;font-weight:600;font-family:var(--mono)}
 .erase-controls input[type=range]{width:100%}
@@ -996,7 +1001,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     <canvas id="eraseCanvas"></canvas>
   </div>
   <div class="erase-controls">
-    <label>지우개 굵기<input type="range" id="eraseBrushSize" min="4" max="80" step="1" value="24"></label>
+    <label>지우개 굵기<input type="range" id="eraseBrushSize" min="1" max="80" step="1" value="24"></label>
     <div class="erase-action-row">
       <button type="button" class="secondary" id="eraseResetBtn">처음으로</button>
       <button type="button" class="secondary" id="eraseRestoreBtn">복원(원본 크롭)</button>
@@ -2090,6 +2095,38 @@ let eraseUndoStack = [];
 let eraseDrawing = false;
 let eraseLastPt = null;
 
+// ===== 두 손가락 줌/이동 — minigame-eastwood의 mapStage/mapCanvas와 같은
+// translate+scale 방식. eraseCanvas는 transform-origin:0 0로 두고 tx/ty를
+// 캔버스 좌상단의 el.eraseCanvasWrap 기준 절대 좌표로 쓴다. 손가락이 1개면
+// 지우기, 2개가 되는 순간 지우기를 멈추고 핀치줌+이동으로 전환한다.
+let eraseViewScale = 1, eraseViewBaseScale = 1, eraseViewTx = 0, eraseViewTy = 0;
+const eraseActivePointers = new Map();
+let erasePinchStartDist = 0, erasePinchStartScale = 1;
+const ERASE_MIN_SCALE_MULT = 1, ERASE_MAX_SCALE_MULT = 4;
+
+function eraseDist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+function eraseMid(a, b) { return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; }
+function clampEraseScale(s) { return Math.min(Math.max(s, eraseViewBaseScale * ERASE_MIN_SCALE_MULT), eraseViewBaseScale * ERASE_MAX_SCALE_MULT); }
+function clampEraseView() {
+  const rect = el.eraseCanvasWrap.getBoundingClientRect();
+  const scaledW = el.eraseCanvas.width * eraseViewScale, scaledH = el.eraseCanvas.height * eraseViewScale;
+  eraseViewTx = scaledW <= rect.width ? (rect.width - scaledW) / 2 : Math.min(0, Math.max(rect.width - scaledW, eraseViewTx));
+  eraseViewTy = scaledH <= rect.height ? (rect.height - scaledH) / 2 : Math.min(0, Math.max(rect.height - scaledH, eraseViewTy));
+}
+function applyEraseViewTransform() {
+  clampEraseView();
+  el.eraseCanvas.style.transform = `translate(${eraseViewTx}px, ${eraseViewTy}px) scale(${eraseViewScale})`;
+}
+function fitEraseCanvasToStage() {
+  const rect = el.eraseCanvasWrap.getBoundingClientRect();
+  const availW = Math.max(1, rect.width - 24), availH = Math.max(1, rect.height - 24); // padding:12px 만큼 여유
+  eraseViewBaseScale = Math.min(availW / el.eraseCanvas.width, availH / el.eraseCanvas.height);
+  eraseViewScale = eraseViewBaseScale;
+  eraseViewTx = (rect.width - el.eraseCanvas.width * eraseViewScale) / 2;
+  eraseViewTy = (rect.height - el.eraseCanvas.height * eraseViewScale) / 2;
+  applyEraseViewTransform();
+}
+
 function loadImageIntoEraseCanvas(url) {
   return new Promise((resolve) => {
     const img = new Image();
@@ -2115,9 +2152,14 @@ async function openFrameEraser(category, frameIndex) {
   eraseFrameIndex = frameIndex;
   eraseOriginalUrl = url;
   eraseUndoStack = [];
+  eraseActivePointers.clear();
+  erasePinchStartDist = 0;
+  eraseDrawing = false;
+  eraseLastPt = null;
   el.eraseTitle.textContent = `${MOTION_LABELS[category]} ${frameIndex + 1}번 프레임 지우기`;
   await loadImageIntoEraseCanvas(url);
   el.eraseOverlay.classList.remove('hidden');
+  fitEraseCanvasToStage();
 }
 function closeEraseOverlay() {
   el.eraseOverlay.classList.add('hidden');
@@ -2150,14 +2192,40 @@ function pushEraseUndoSnapshot() {
 el.eraseCanvas.addEventListener('pointerdown', (e) => {
   if (!eraseCtx) return;
   e.preventDefault();
-  eraseDrawing = true;
   el.eraseCanvas.setPointerCapture(e.pointerId);
-  pushEraseUndoSnapshot();
-  eraseLastPt = eraseCanvasPointFromEvent(e);
-  eraseAt(eraseLastPt.x, eraseLastPt.y);
+  eraseActivePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (eraseActivePointers.size === 1) {
+    eraseDrawing = true;
+    pushEraseUndoSnapshot();
+    eraseLastPt = eraseCanvasPointFromEvent(e);
+    eraseAt(eraseLastPt.x, eraseLastPt.y);
+  } else if (eraseActivePointers.size === 2) {
+    // 두 번째 손가락이 닿는 순간 지우기 중이었으면 멈추고 핀치줌으로 전환한다.
+    eraseDrawing = false;
+    eraseLastPt = null;
+    const pts = [...eraseActivePointers.values()];
+    erasePinchStartDist = eraseDist(pts[0], pts[1]);
+    erasePinchStartScale = eraseViewScale;
+  }
 });
 el.eraseCanvas.addEventListener('pointermove', (e) => {
-  if (!eraseDrawing) return;
+  if (!eraseActivePointers.has(e.pointerId)) return;
+  eraseActivePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (eraseActivePointers.size === 2 && erasePinchStartDist) {
+    const pts = [...eraseActivePointers.values()];
+    const d = eraseDist(pts[0], pts[1]);
+    const newScale = clampEraseScale(erasePinchStartScale * (d / erasePinchStartDist));
+    const rect = el.eraseCanvasWrap.getBoundingClientRect();
+    const midNow = eraseMid(pts[0], pts[1]);
+    const stageX = midNow.x - rect.left, stageY = midNow.y - rect.top;
+    const ratio = newScale / eraseViewScale;
+    eraseViewTx = stageX - (stageX - eraseViewTx) * ratio;
+    eraseViewTy = stageY - (stageY - eraseViewTy) * ratio;
+    eraseViewScale = newScale;
+    applyEraseViewTransform();
+    return;
+  }
+  if (!eraseDrawing || eraseActivePointers.size !== 1) return;
   const pt = eraseCanvasPointFromEvent(e);
   // 빠르게 드래그하면 점 사이가 끊겨 보여서, 이전 점과의 거리에 맞춰
   // 중간 지점들도 같이 지운다(선을 그리듯 촘촘하게).
@@ -2169,7 +2237,12 @@ el.eraseCanvas.addEventListener('pointermove', (e) => {
   eraseLastPt = pt;
 });
 ['pointerup', 'pointercancel', 'pointerleave'].forEach(evt => {
-  el.eraseCanvas.addEventListener(evt, () => { eraseDrawing = false; eraseLastPt = null; });
+  el.eraseCanvas.addEventListener(evt, (e) => {
+    eraseActivePointers.delete(e.pointerId);
+    if (eraseActivePointers.size < 2) erasePinchStartDist = 0;
+    eraseDrawing = false;
+    eraseLastPt = null;
+  });
 });
 el.eraseUndoBtn.addEventListener('click', () => {
   if (!eraseUndoStack.length) return;
