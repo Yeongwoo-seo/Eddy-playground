@@ -1833,19 +1833,24 @@ function initMotionSpeedControls() {
 }
 
 // frameIndex가 1번 이상(0-based로 1 이상, 즉 화면상 2번 프레임부터)일 때
-// 두 가지를 크롭 조정 모달에 같이 넘긴다: (1) matchFirstFrameSize — "1번
-// 프레임 높이에 맞추기" 버튼이 채워 넣을 크기값(1번 프레임의 현재 크롭
-// size), (2) onionSkin — 확대 미리보기에 반투명하게 겹쳐 그릴 바로 앞
-// 프레임(frameIndex-1)의 이미지+영역. 앞 프레임이 업로드 오버라이드로
-// 대체돼 있으면(시트 크롭이 아니라 독립된 사진이면) 그 사진 전체를
-// 겹치고, 아니면 같은 시트에서 그 프레임의 크롭 영역을 겹친다.
+// 두 가지를 크롭 조정 모달에 같이 넘긴다: (1) matchFirstFrameRef — "1번
+// 프레임 높이에 맞추기" 버튼이 채워 넣을 1번 프레임의 현재 cy(세로 위치)와
+// size(크롭 크기). size만 맞추면 크기는 같아져도 세로 기준점(y좌표)이 각자
+// 달라 캐릭터가 프레임마다 위아래로 들쭉날쭉해 보인다 — "높이에 맞추기"는
+// 크기뿐 아니라 세로 위치도 1번 프레임과 같은 기준으로 맞춰야 실제로
+// 걸을 때 캐릭터 높이가 흔들리지 않는다. cx(가로 위치)는 프레임마다 다른
+// 포즈(팔다리 위치)라 그대로 둔다. (2) onionSkin — 확대 미리보기에 반투명
+// 하게 겹쳐 그릴 바로 앞 프레임(frameIndex-1)의 이미지+영역. 앞 프레임이
+// 업로드 오버라이드로 대체돼 있으면(시트 크롭이 아니라 독립된 사진이면)
+// 그 사진 전체를 겹치고, 아니면 같은 시트에서 그 프레임의 크롭 영역을 겹친다.
 async function openMotionFrameCropAdjuster(category, frameIndex, sheetAsset, sheetDims) {
   const overrides = getMotionFrameOverrides(category);
   const row = MOTION_CATEGORIES.indexOf(category);
   const rowOverride = getMotionRowOverride(category);
   const rectFor = (idx) => overrides[idx] || (sheetDims ? getMotionGridDefaultCropRect(row, idx, sheetDims.width, sheetDims.height, rowOverride) : { cx: 0.5, cy: 0.5, size: 0.15 });
   const existingRect = rectFor(frameIndex);
-  const matchFirstFrameSize = frameIndex > 0 ? rectFor(0).size : null;
+  const firstFrameRect = frameIndex > 0 ? rectFor(0) : null;
+  const matchFirstFrameRef = firstFrameRect ? { cy: firstFrameRect.cy, size: firstFrameRect.size } : null;
 
   let onionSkin = null;
   if (frameIndex > 0) {
@@ -1859,7 +1864,7 @@ async function openMotionFrameCropAdjuster(category, frameIndex, sheetAsset, she
       onionSkin = { url: sheetAsset.dataUrl, rect: rectFor(prevIndex) };
     }
   }
-  openCropAdjuster(sheetAsset.dataUrl, existingRect, null, (rect) => confirmMotionFrameCrop(category, rect, frameIndex), onionSkin, matchFirstFrameSize);
+  openCropAdjuster(sheetAsset.dataUrl, existingRect, null, (rect) => confirmMotionFrameCrop(category, rect, frameIndex), onionSkin, matchFirstFrameRef);
 }
 // 물고기 세밀영역조절(confirmFishSpeciesCrop)과 마찬가지로 시트 자체는
 // 안 바뀐다 — 이 프레임이 시트의 어느 영역을 잘라 쓸지 좌표만 저장한다.
@@ -3205,18 +3210,21 @@ let cropPendingSourceFile = null;
 // to openCropAdjuster so the drag/zoom/size UI stays fully shared.
 let cropOnConfirm = null;
 // 모션 프레임 세밀영역조절에서만 쓰는 두 부가 기능 — 다른 openCropAdjuster
-// 호출(물고기 아이콘, 물고기 종류 등)은 onionSkin/matchFirstFrameSize를
+// 호출(물고기 아이콘, 물고기 종류 등)은 onionSkin/matchFirstFrameRef를
 // 안 넘기므로 항상 null로 남아 기존 동작 그대로다.
 // cropOnionSkin — 확대 미리보기에 반투명하게 겹쳐 그릴 "바로 앞 프레임"
 // { img, rect } (openMotionFrameCropAdjuster 참고). 소스 이미지와 별도로
 // 비동기로 로드되므로, 메인 이미지보다 늦게 도착하면 도착하는 대로 다시
 // drawCropStage()를 불러 반영한다.
 let cropOnionSkin = null;
-// cropMatchFirstFrameSize — "1번 프레임 높이에 맞추기" 버튼이 채워 넣을
-// 크기값(cropRect.size와 같은 단위, 0~1). null이면 버튼을 숨긴다.
-let cropMatchFirstFrameSize = null;
+// cropMatchFirstFrameRef — "1번 프레임 높이에 맞추기" 버튼이 채워 넣을 1번
+// 프레임의 { cy, size }(cropRect와 같은 단위, 0~1). size만 맞추고 cy(세로
+// 위치)를 안 맞추면 크기는 같아져도 캐릭터가 프레임마다 위아래로 떠 보여서
+// 둘 다 같이 맞춘다 — cx(가로 위치)는 프레임마다 다른 포즈라 안 건드린다.
+// null이면 버튼을 숨긴다.
+let cropMatchFirstFrameRef = null;
 
-function openCropAdjuster(sourceUrl, existingRect, pendingSourceFile, onConfirm, onionSkin, matchFirstFrameSize) {
+function openCropAdjuster(sourceUrl, existingRect, pendingSourceFile, onConfirm, onionSkin, matchFirstFrameRef) {
   const img = new Image();
   img.crossOrigin = 'anonymous';
   img.onload = () => {
@@ -3225,8 +3233,8 @@ function openCropAdjuster(sourceUrl, existingRect, pendingSourceFile, onConfirm,
     cropOnConfirm = onConfirm;
     cropRect = existingRect ? Object.assign({}, existingRect) : { cx: 0.5, cy: 0.5, size: 0.4 };
     cropOnionSkin = null;
-    cropMatchFirstFrameSize = (typeof matchFirstFrameSize === 'number') ? matchFirstFrameSize : null;
-    el.cropMatchFirstFrameBtn.classList.toggle('hidden', cropMatchFirstFrameSize === null);
+    cropMatchFirstFrameRef = matchFirstFrameRef || null;
+    el.cropMatchFirstFrameBtn.classList.toggle('hidden', cropMatchFirstFrameRef === null);
     el.cropZoomOnionHint.classList.toggle('hidden', !onionSkin);
     // 크롭 크기를 짧은 변 기준 픽셀 단위로 보여준다 — 슬라이더/입력 범위는
     // 이미지마다 짧은 변 길이가 달라 매번 다시 잡아야 한다(1px ~ shortSide).
@@ -3260,7 +3268,7 @@ function closeCropAdjuster() {
   cropPendingSourceFile = null;
   cropOnConfirm = null;
   cropOnionSkin = null;
-  cropMatchFirstFrameSize = null;
+  cropMatchFirstFrameRef = null;
   stopCropDpadRepeat();
 }
 
@@ -3419,14 +3427,18 @@ function setCropSizeFromPx(px) {
 }
 el.cropSizeInput.addEventListener('input', () => setCropSizeFromPx(Number(el.cropSizeInput.value)));
 el.cropSizeNumberInput.addEventListener('input', () => setCropSizeFromPx(Number(el.cropSizeNumberInput.value)));
-// "1번 프레임 높이에 맞추기" — 크기만 1번 프레임과 같게 맞추고 위치(cx/cy)는
-// 지금 조정 중인 프레임 그대로 둔다(confirmMotionFrameCrop이 어차피 적용
-// 시점에 나머지 프레임 크기도 다시 이 값으로 맞추지만, 이 버튼은 적용 전
-// 미리보기·확대 화면에서 바로 1번 프레임과 비교해볼 수 있게 해준다).
+// "1번 프레임 높이에 맞추기" — 크기와 세로 위치(cy)를 1번 프레임과 같게
+// 맞춘다. 크기만 맞추고 cy를 안 맞추면 캐릭터가 프레임마다 위아래로
+// 들쭉날쭉해 보인다 — cy까지 같은 기준으로 맞춰야 실제로 높이가 고정된다.
+// 가로 위치(cx)는 지금 조정 중인 프레임 그대로 둔다(포즈마다 팔다리
+// 위치가 달라서). confirmMotionFrameCrop이 적용 시점에 나머지 프레임
+// 크기도 다시 이 값으로 맞추지만, 이 버튼은 적용 전 미리보기·확대
+// 화면에서 바로 1번 프레임과 비교해볼 수 있게 해준다.
 el.cropMatchFirstFrameBtn.addEventListener('click', () => {
-  if (cropMatchFirstFrameSize === null || !cropSourceImg) return;
+  if (!cropMatchFirstFrameRef || !cropSourceImg) return;
+  cropRect.cy = cropMatchFirstFrameRef.cy;
   const shortSide = Math.min(cropSourceImg.naturalWidth, cropSourceImg.naturalHeight);
-  setCropSizeFromPx(Math.round(cropMatchFirstFrameSize * shortSide));
+  setCropSizeFromPx(Math.round(cropMatchFirstFrameRef.size * shortSide));
 });
 el.cropCancelBtn.addEventListener('click', closeCropAdjuster);
 el.cropConfirmBtn.addEventListener('click', async () => {
