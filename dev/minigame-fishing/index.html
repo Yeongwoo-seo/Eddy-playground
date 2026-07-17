@@ -76,6 +76,7 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .crop-zoom-row{margin-top:14px;display:flex;align-items:center;justify-content:center;gap:22px}
 .crop-zoom-wrap{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:6px}
 .crop-zoom-label{font-family:var(--mono);font-size:10.5px;color:var(--text-muted)}
+.crop-zoom-match{font-family:var(--mono);font-size:11px;font-weight:600}
 /* 드래그로도 크롭 중심을 옮길 수 있다(세밀조정용, updateCropCenterFromZoomDrag
    참고) — touch-action:none을 안 주면 모바일에서 드래그가 페이지 스크롤로
    먹혀버린다. */
@@ -830,6 +831,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
       <div class="crop-zoom-wrap">
         <div class="crop-zoom-label">확대 미리보기<span class="crop-zoom-onion-hint hidden" id="cropZoomOnionHint"> · 이전 프레임 반투명 겹침</span></div>
         <canvas id="cropZoomCanvas" width="120" height="120"></canvas>
+        <div class="crop-zoom-match hidden" id="cropZoomMatch"></div>
       </div>
       <div class="crop-dpad" id="cropDpad">
         <button type="button" class="crop-dpad-btn crop-dpad-up" data-dir="up" aria-label="위로">▲</button>
@@ -1056,6 +1058,7 @@ const el = {
   cropRectBox: document.getElementById('cropRectBox'),
   cropZoomCanvas: document.getElementById('cropZoomCanvas'),
   cropZoomOnionHint: document.getElementById('cropZoomOnionHint'),
+  cropZoomMatch: document.getElementById('cropZoomMatch'),
   cropOverlapRow: document.getElementById('cropOverlapRow'),
   cropOverlapToggleBtn: document.getElementById('cropOverlapToggleBtn'),
   cropOverlapSelect: document.getElementById('cropOverlapSelect'),
@@ -2477,6 +2480,11 @@ function openCropAdjuster(sourceUrl, existingRect, pendingSourceFile, onConfirm,
     cropMatchFirstFrameRef = matchFirstFrameRef || null;
     el.cropMatchFirstFrameBtn.classList.toggle('hidden', cropMatchFirstFrameRef === null);
     el.cropZoomOnionHint.classList.toggle('hidden', !onionSkin);
+    // 온션스킨(이전 프레임이든, 아래 모션 겹치기 select로 고른 다른
+    // 카테고리든)이 있어도 이미지가 비동기로 도착하기 전엔 일치도를 계산할
+    // 게 없다 — 일단 숨겨두면 drawCropStage()가 매번 다시 그리며 채운다.
+    el.cropZoomMatch.classList.add('hidden');
+    el.cropZoomMatch.textContent = '';
     // 모션 겹치기 토글 — 매번 OFF로 초기화하고, 지금 카테고리를 뺀 나머지
     // 5개를 <select>에 채운다(사이즈/좌표 조절 중 실수로 켜둔 채 다른
     // 프레임으로 넘어가는 걸 막는다).
@@ -2606,6 +2614,50 @@ function drawCropZoomLayer(zctx, img, rect, canvasSize, alpha) {
   return { rectSize, pad, viewSize };
 }
 
+// 일치도 — 온션스킨(이전 프레임이든, 모션 겹치기로 고른 다른 카테고리든 —
+// 어느 쪽이든 cropOnionSkin 하나로 들어온다)과 현재 크롭이 drawCropZoomLayer와
+// 같은 시야(크롭 영역+30% 여백)에서 픽셀 단위로 얼마나 겹치는지 보여주는
+// 참고 지표다. 두 레이어를 각각 별도 오프스크린 캔버스에 그린 뒤 RGBA
+// 채널별 절대 차이의 평균을 0~100% 유사도로 뒤집어 계산한다 — 캐릭터가
+// 배경 제거된 투명 PNG라 실루엣(알파)이 안 겹치면 차이가 커지고, 자세가
+// 거의 같은 자리에서 이어지면 100%에 가깝다. 화면에 보이는 cropZoomCanvas
+// (120px)와 별도로 계산용 캔버스를 모듈 스코프에 재사용해 드래그 중 매
+// 프레임 새 캔버스를 만들지 않는다.
+const CROP_MATCH_SIZE = 64;
+let cropMatchCanvasA = null, cropMatchCanvasB = null;
+function computeOnionMatchPercent() {
+  if (!cropOnionSkin || !cropOnionSkin.img || !cropSourceImg) return null;
+  if (!cropMatchCanvasA) {
+    cropMatchCanvasA = document.createElement('canvas');
+    cropMatchCanvasA.width = cropMatchCanvasA.height = CROP_MATCH_SIZE;
+    cropMatchCanvasB = document.createElement('canvas');
+    cropMatchCanvasB.width = cropMatchCanvasB.height = CROP_MATCH_SIZE;
+  }
+  const actx = cropMatchCanvasA.getContext('2d');
+  const bctx = cropMatchCanvasB.getContext('2d');
+  actx.clearRect(0, 0, CROP_MATCH_SIZE, CROP_MATCH_SIZE);
+  bctx.clearRect(0, 0, CROP_MATCH_SIZE, CROP_MATCH_SIZE);
+  drawCropZoomLayer(actx, cropOnionSkin.img, cropOnionSkin.rect, CROP_MATCH_SIZE, 1);
+  drawCropZoomLayer(bctx, cropSourceImg, cropRect, CROP_MATCH_SIZE, 1);
+  const a = actx.getImageData(0, 0, CROP_MATCH_SIZE, CROP_MATCH_SIZE).data;
+  const b = bctx.getImageData(0, 0, CROP_MATCH_SIZE, CROP_MATCH_SIZE).data;
+  let diffSum = 0;
+  for (let i = 0; i < a.length; i += 4) {
+    diffSum += (Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2]) + Math.abs(a[i + 3] - b[i + 3])) / 4;
+  }
+  const avgDiff = diffSum / (a.length / 4); // 0(완전 동일)~255(완전 반대)
+  return Math.max(0, Math.round(100 - (avgDiff / 255) * 100));
+}
+// 일치도 라벨 갱신 — 온션스킨이 없으면 숨기고, 있으면 값에 따라 색을 바꿔
+// (초록 85%+·노랑 60~85%·빨강 60% 미만) 한눈에 정렬 상태를 가늠할 수 있게 한다.
+function updateCropMatchLabel() {
+  const pct = computeOnionMatchPercent();
+  if (pct === null) { el.cropZoomMatch.classList.add('hidden'); return; }
+  el.cropZoomMatch.classList.remove('hidden');
+  el.cropZoomMatch.textContent = `일치도 ${pct}%`;
+  el.cropZoomMatch.style.color = pct >= 85 ? 'var(--green)' : pct >= 60 ? 'var(--amber)' : 'var(--signal-red)';
+}
+
 function drawCropZoom() {
   if (!cropSourceImg) return;
   const zctx = el.cropZoomCanvas.getContext('2d');
@@ -2622,6 +2674,7 @@ function drawCropZoom() {
   zctx.strokeStyle = '#59B8C8';
   zctx.lineWidth = 2;
   zctx.strokeRect(offsetPx, offsetPx, rectPx, rectPx);
+  updateCropMatchLabel();
 }
 
 function clamp01(v) { return Math.max(0, Math.min(1, v)); }
