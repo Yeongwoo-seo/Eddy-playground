@@ -126,10 +126,18 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .frame-add-btn:active{opacity:.7}
 .frame-add-btn:disabled{opacity:.4;cursor:default}
 .frame-add-btn.hidden{display:none}
-.frame-preview-row{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.frame-preview-row{display:flex;align-items:center;flex-wrap:wrap;gap:10px 12px;margin-bottom:8px}
 .frame-preview{width:96px;height:96px;border-radius:12px;background:var(--surface-1);border:1px solid var(--divider);display:flex;align-items:center;justify-content:center;overflow:hidden}
 .frame-preview img{width:100%;height:100%;object-fit:cover;image-rendering:pixelated}
-.frame-preview-label{font-family:var(--mono);font-size:11px;color:var(--text-muted)}
+.frame-preview-label{flex:1 1 auto;min-width:80px;font-family:var(--mono);font-size:11px;color:var(--text-muted)}
+/* ===== 이동 모션(위/아래/왼쪽/오른쪽) 프레임 미리보기 오른쪽의 "개별
+   업로드" — frame-preview-row 안에서 미리보기 박스 옆에 나란히 놓인다.
+   .frame-add-btn과 달리 줄 전체를 차지하지 않는 보조 버튼이라 폭을
+   내용만큼만 차지(flex-shrink:0)하고, 좁은 화면에선 flex-wrap으로 아래
+   줄에 떨어진다. */
+.frame-upload-icon-btn{flex-shrink:0;font-family:var(--mono);font-size:11.5px;font-weight:700;color:var(--text-primary);background:var(--surface-1);border:1px dashed var(--divider);border-radius:10px;padding:8px 10px;cursor:pointer}
+.frame-upload-icon-btn:active{opacity:.7}
+.frame-upload-icon-btn:disabled{opacity:.4;cursor:default}
 
 /* ===== 프레임 재생 속도 타임라인 — 워드 표 칸 너비 드래그와 같은 방식.
    각 구간(.frame-timeline-seg) 너비 = 그 프레임 재생 시간 비율. 구간 사이의
@@ -358,9 +366,16 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
        다른 업로드 방식을 쓰는 3개 탭이었다). 행 순서 고정(dev/data/
        fishDefs.js의 MOTION_CATEGORIES): 캐스팅→올리기→위→아래→왼쪽→오른쪽.
        렌더/크롭은 카테고리를 인자로 받는 공용 함수(renderMotionTab 등)로
-       처리한다. 이동 속도·자유 이동 테스트(조이스틱 물리)는 여전히 별도
-       "이동" 탭(panelMove)에 있다 — 여기서 바뀌는 건 프레임 소스뿐이고,
-       그 탭은 motionFrameCache.up/down/left/right를 읽어 재생한다. ===== -->
+       처리한다. 이동 속도(타일 이동 시간)·자유 이동 테스트(조이스틱 물리)는
+       여전히 별도 "이동" 탭(panelMove)에 있다 — 여기서 바뀌는 건 프레임
+       소스뿐이고, 그 탭은 motionFrameCache.up/down/left/right를 읽어
+       재생한다. 다만 걷기 프레임 "전환 속도"(재생 속도)는 이동(4방향) 각
+       카테고리 블록에서 방향별로 따로 정할 수 있다(motionPlaybackMs) —
+       값이 없는 방향은 panelMove의 걷기 애니메이션 전환 속도(moveAnimMs)를
+       그대로 쓴다. 또한 이동(4방향)은 프레임마다 시트 크롭 대신 사진을
+       개별 업로드하거나(motionFrameImageOverrides) 그 프레임만 배경을 다시
+       제거(누끼)할 수 있다 — 캐스팅/올리기는 이 두 기능의 범위 밖(위
+       MOVE_CATEGORIES 참고). ===== -->
   <div class="tab-panel hidden" id="panelMotion">
     <div class="option-group">
       <div class="option-label">모션 시트</div>
@@ -462,13 +477,30 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
         <div class="frame-preview-label" id="motionReelPreviewLabel">프레임 없음 — 재생 미리보기</div>
       </div>
       <div class="frame-strip" id="motionReelFrameGrid"></div>
+      <div class="option-desc">① 낚시대가 나타날 때: 1번 프레임. ② 잡아채기(낚시바)에서 캐치바를 올리는 버튼을 누르고 있는 동안: 2번→4번 프레임을 재생하고 4번에서 유지, 손을 떼면 4번→2번→1번 순서로 되돌아가요. ③ 낚시 성공 후 물고기가 딸려 올라오는 동안: 5번 프레임. ④ 물고기가 캐릭터에 도착한 뒤: 6번(마지막) 프레임이에요.</div>
+    </div>
+
+    <div class="option-group">
+      <div class="option-label">낚시대 재생속도</div>
+      <div class="option-desc">잡아채기 중 캐치바를 누르고 있을 때/뗐을 때 낚싯대 프레임(2~4번)이 넘어가는 속도예요. 값이 작을수록 빠르게 움직여요.</div>
+      <div class="range-row">
+        <input type="range" id="reelHoldFrameMsInput" min="30" max="300" step="10" value="90">
+        <div class="range-value" id="reelHoldFrameMsValue">90ms</div>
+      </div>
     </div>
 
     <div class="motion-category-title">③ 위로 이동</div>
     <div class="option-group">
+      <div class="option-desc">방향별 재생 속도는 이 방향의 걷기 프레임이 다음 프레임으로 얼마나 빨리 넘어가는지(미리보기·실제 게임 공통)를 정해요 — "이동" 탭의 걷기 애니메이션 전환 속도는 방향별로 따로 정하지 않았을 때 쓰는 기본값이에요. 프레임을 탭하면 시트 크롭을 조정하고, 개별 업로드한 프레임은 손을 대면 나오는 ✂로 그 프레임만 배경을 다시 제거하거나 ✕로 업로드를 취소할 수 있어요.</div>
       <div class="frame-preview-row">
         <div class="frame-preview" id="motionUpPreview"></div>
         <div class="frame-preview-label" id="motionUpPreviewLabel">프레임 없음 — 재생 미리보기</div>
+        <button type="button" class="frame-upload-icon-btn" id="motionUpUploadBtn" title="개별 프레임 업로드">📤 개별 업로드</button>
+        <input type="file" id="motionUpUploadInput" accept="image/*" multiple>
+      </div>
+      <div class="range-row">
+        <input type="range" id="motionUpSpeedInput" min="40" max="300" step="10" value="90">
+        <div class="range-value" id="motionUpSpeedValue">재생 속도 90ms</div>
       </div>
       <div class="frame-strip" id="motionUpFrameGrid"></div>
     </div>
@@ -478,6 +510,12 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
       <div class="frame-preview-row">
         <div class="frame-preview" id="motionDownPreview"></div>
         <div class="frame-preview-label" id="motionDownPreviewLabel">프레임 없음 — 재생 미리보기</div>
+        <button type="button" class="frame-upload-icon-btn" id="motionDownUploadBtn" title="개별 프레임 업로드">📤 개별 업로드</button>
+        <input type="file" id="motionDownUploadInput" accept="image/*" multiple>
+      </div>
+      <div class="range-row">
+        <input type="range" id="motionDownSpeedInput" min="40" max="300" step="10" value="90">
+        <div class="range-value" id="motionDownSpeedValue">재생 속도 90ms</div>
       </div>
       <div class="frame-strip" id="motionDownFrameGrid"></div>
     </div>
@@ -487,6 +525,12 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
       <div class="frame-preview-row">
         <div class="frame-preview" id="motionLeftPreview"></div>
         <div class="frame-preview-label" id="motionLeftPreviewLabel">프레임 없음 — 재생 미리보기</div>
+        <button type="button" class="frame-upload-icon-btn" id="motionLeftUploadBtn" title="개별 프레임 업로드">📤 개별 업로드</button>
+        <input type="file" id="motionLeftUploadInput" accept="image/*" multiple>
+      </div>
+      <div class="range-row">
+        <input type="range" id="motionLeftSpeedInput" min="40" max="300" step="10" value="90">
+        <div class="range-value" id="motionLeftSpeedValue">재생 속도 90ms</div>
       </div>
       <div class="frame-strip" id="motionLeftFrameGrid"></div>
     </div>
@@ -496,6 +540,12 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
       <div class="frame-preview-row">
         <div class="frame-preview" id="motionRightPreview"></div>
         <div class="frame-preview-label" id="motionRightPreviewLabel">프레임 없음 — 재생 미리보기</div>
+        <button type="button" class="frame-upload-icon-btn" id="motionRightUploadBtn" title="개별 프레임 업로드">📤 개별 업로드</button>
+        <input type="file" id="motionRightUploadInput" accept="image/*" multiple>
+      </div>
+      <div class="range-row">
+        <input type="range" id="motionRightSpeedInput" min="40" max="300" step="10" value="90">
+        <div class="range-value" id="motionRightSpeedValue">재생 속도 90ms</div>
       </div>
       <div class="frame-strip" id="motionRightFrameGrid"></div>
     </div>
@@ -631,8 +681,8 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
       </div>
     </div>
     <div class="option-group">
-      <div class="option-label">걷기 애니메이션 전환 속도</div>
-      <div class="option-desc">걷는 프레임이 다음 프레임으로 넘어가는 데 걸리는 시간이에요. 이동 속도와는 별개로 조절돼요 — 값이 작을수록 다리가 빨리 움직이는 것처럼 보여요.</div>
+      <div class="option-label">걷기 애니메이션 전환 속도 (기본값)</div>
+      <div class="option-desc">걷는 프레임이 다음 프레임으로 넘어가는 데 걸리는 시간이에요. 이동 속도와는 별개로 조절돼요 — 값이 작을수록 다리가 빨리 움직이는 것처럼 보여요. 방향별로 따로 정하고 싶으면 "모션" 탭의 위/아래/왼쪽/오른쪽 이동 각각에 있는 재생 속도를 조절하세요 — 여기 값은 방향별로 따로 정하지 않았을 때만 쓰이는 공통 기본값이에요.</div>
       <div class="range-row">
         <input type="range" id="moveAnimMsInput" min="40" max="300" step="10" value="90">
         <div class="range-value" id="moveAnimMsValue">90ms</div>
@@ -1113,18 +1163,36 @@ const el = {
   motionReelPreview: document.getElementById('motionReelPreview'),
   motionReelPreviewLabel: document.getElementById('motionReelPreviewLabel'),
   motionReelFrameGrid: document.getElementById('motionReelFrameGrid'),
+  reelHoldFrameMsInput: document.getElementById('reelHoldFrameMsInput'),
+  reelHoldFrameMsValue: document.getElementById('reelHoldFrameMsValue'),
   motionUpPreview: document.getElementById('motionUpPreview'),
   motionUpPreviewLabel: document.getElementById('motionUpPreviewLabel'),
   motionUpFrameGrid: document.getElementById('motionUpFrameGrid'),
+  motionUpUploadBtn: document.getElementById('motionUpUploadBtn'),
+  motionUpUploadInput: document.getElementById('motionUpUploadInput'),
+  motionUpSpeedInput: document.getElementById('motionUpSpeedInput'),
+  motionUpSpeedValue: document.getElementById('motionUpSpeedValue'),
   motionDownPreview: document.getElementById('motionDownPreview'),
   motionDownPreviewLabel: document.getElementById('motionDownPreviewLabel'),
   motionDownFrameGrid: document.getElementById('motionDownFrameGrid'),
+  motionDownUploadBtn: document.getElementById('motionDownUploadBtn'),
+  motionDownUploadInput: document.getElementById('motionDownUploadInput'),
+  motionDownSpeedInput: document.getElementById('motionDownSpeedInput'),
+  motionDownSpeedValue: document.getElementById('motionDownSpeedValue'),
   motionLeftPreview: document.getElementById('motionLeftPreview'),
   motionLeftPreviewLabel: document.getElementById('motionLeftPreviewLabel'),
   motionLeftFrameGrid: document.getElementById('motionLeftFrameGrid'),
+  motionLeftUploadBtn: document.getElementById('motionLeftUploadBtn'),
+  motionLeftUploadInput: document.getElementById('motionLeftUploadInput'),
+  motionLeftSpeedInput: document.getElementById('motionLeftSpeedInput'),
+  motionLeftSpeedValue: document.getElementById('motionLeftSpeedValue'),
   motionRightPreview: document.getElementById('motionRightPreview'),
   motionRightPreviewLabel: document.getElementById('motionRightPreviewLabel'),
   motionRightFrameGrid: document.getElementById('motionRightFrameGrid'),
+  motionRightUploadBtn: document.getElementById('motionRightUploadBtn'),
+  motionRightUploadInput: document.getElementById('motionRightUploadInput'),
+  motionRightSpeedInput: document.getElementById('motionRightSpeedInput'),
+  motionRightSpeedValue: document.getElementById('motionRightSpeedValue'),
   panelMove: document.getElementById('panelMove'),
   moveStage: document.getElementById('moveStage'),
   moveWorld: document.getElementById('moveWorld'),
@@ -1440,6 +1508,10 @@ async function removeBackgroundOrFallback(file) {
    조립한다(el 맵의 실제 키와 일치해야 함). */
 const MOTION_LABELS = { cast: '캐스팅', reel: '올리기', up: '위로 이동', down: '아래로 이동', left: '왼쪽 이동', right: '오른쪽 이동' };
 const MOTION_FALLBACK_ICONS = { cast: '🎣', reel: '🎣', up: '▲', down: '▼', left: '◀', right: '▶' };
+// 이동(위/아래/왼쪽/오른쪽) 4개 카테고리만 방향별 재생 속도·개별 프레임
+// 업로드·누끼 버튼을 갖는다 — 캐스팅/올리기는 캐스팅 전용 타임라인
+// (castTimeline)이 이미 있거나(캐스팅) 아직 그런 요구가 없어(올리기) 범위 밖.
+const MOVE_CATEGORIES = ['up', 'down', 'left', 'right'];
 function motionElKey(category, suffix) {
   return 'motion' + category[0].toUpperCase() + category.slice(1) + suffix;
 }
@@ -1463,6 +1535,30 @@ async function setMotionFrameOverrides(category, overrides) {
   fishingConfig = await AssetDB.setFishingConfig({ motionFrameOverrides });
 }
 
+// motionFrameImageOverrides — 크롭 좌표 대신 그 프레임 자체를 개별 업로드한
+// (배경 제거 완료) 사진으로 통째로 대체한다, { [frameIndex]: assetId }.
+// motionFrameOverrides(크롭 보정)와 같은 얕은 병합 관례를 따른다.
+function getMotionFrameImageOverrides(category) {
+  return ((fishingConfig.motionFrameImageOverrides || {})[category]) || {};
+}
+async function setMotionFrameImageOverrides(category, overrides) {
+  const motionFrameImageOverrides = Object.assign({}, fishingConfig.motionFrameImageOverrides);
+  motionFrameImageOverrides[category] = overrides;
+  fishingConfig = await AssetDB.setFishingConfig({ motionFrameImageOverrides });
+}
+
+// motionPlaybackMs — 이동 방향별 걷기 프레임 전환 속도(ms). 값이 없는
+// 방향은 "이동" 탭의 걷기 애니메이션 전환 속도(전체 공통 기본값)를 쓴다.
+function getMotionPlaybackMs(category) {
+  const stored = (fishingConfig.motionPlaybackMs || {})[category];
+  return typeof stored === 'number' ? stored : moveAnimMs;
+}
+async function setMotionPlaybackMs(category, ms) {
+  const motionPlaybackMs = Object.assign({}, fishingConfig.motionPlaybackMs);
+  motionPlaybackMs[category] = ms;
+  fishingConfig = await AssetDB.setFishingConfig({ motionPlaybackMs });
+}
+
 async function renderMotionSheetPreview() {
   el.motionSheetFrame.querySelectorAll('img').forEach(img => img.remove());
   const assetId = (fishingConfig || {}).motionSheetAssetId;
@@ -1482,33 +1578,64 @@ async function renderMotionSheetPreview() {
   return asset;
 }
 
-function renderMotionFrameGrid(category, sheetAsset, sheetDims) {
+// 이동 카테고리는 프레임마다 두 소스 중 하나로 그려진다: (1) 개별 업로드로
+// 대체된 프레임(motionFrameImageOverrides, 최우선) — 자체 이미지를 그대로
+// 보여준다, 또는 (2) 시트 크롭(기존 방식, motionFrameOverrides로 좌표만
+// 보정). 업로드로 대체된 칸엔 손을 대면 나오는 ✂(다시 배경 제거)/✕(업로드
+// 취소, 시트 크롭으로 되돌림) 버튼을, 시트 크롭 칸엔 ✂(그 크롭을 잘라내
+// 배경을 제거해 업로드 오버라이드로 승격) 버튼만 얹는다 — sinker 이미지 등
+// 다른 곳의 .frame-actions(탭하면 뜨는 오버레이) 관례 그대로.
+async function renderMotionFrameGrid(category, sheetAsset, sheetDims) {
   const overrides = getMotionFrameOverrides(category);
+  const imageOverrides = MOVE_CATEGORIES.includes(category) ? getMotionFrameImageOverrides(category) : {};
   const gridEl = el[motionElKey(category, 'FrameGrid')];
   const row = MOTION_CATEGORIES.indexOf(category);
   const cells = [];
   for (let i = 0; i < MOTION_GRID_COLUMNS; i++) {
-    const override = overrides[i];
-    const rect = override || (sheetDims ? getMotionGridDefaultCropRect(row, i, sheetDims.width, sheetDims.height) : null);
-    const iconStyle = (sheetAsset && rect)
-      ? (() => {
-          const style = getFishCropStyle(rect, sheetDims.width, sheetDims.height, 64);
-          return `background-image:url('${sheetAsset.dataUrl}');background-position:${style.backgroundPosition};background-size:${style.backgroundSize};background-repeat:no-repeat;image-rendering:pixelated`;
-        })()
+    const imageOverrideAssetId = imageOverrides[i];
+    const imageOverrideAsset = imageOverrideAssetId ? await AssetDB.getAsset(imageOverrideAssetId).catch(() => null) : null;
+    let iconStyle = '';
+    let hasContent = false;
+    if (imageOverrideAsset) {
+      iconStyle = `background-image:url('${imageOverrideAsset.dataUrl}');background-size:cover;background-position:center;image-rendering:pixelated`;
+      hasContent = true;
+    } else {
+      const override = overrides[i];
+      const rect = override || (sheetDims ? getMotionGridDefaultCropRect(row, i, sheetDims.width, sheetDims.height) : null);
+      if (sheetAsset && rect) {
+        const style = getFishCropStyle(rect, sheetDims.width, sheetDims.height, 64);
+        iconStyle = `background-image:url('${sheetAsset.dataUrl}');background-position:${style.backgroundPosition};background-size:${style.backgroundSize};background-repeat:no-repeat;image-rendering:pixelated`;
+        hasContent = true;
+      }
+    }
+    const actionBtns = MOVE_CATEGORIES.includes(category) && hasContent
+      ? `<div class="frame-actions">
+          <button type="button" class="frame-mini-btn" data-act="cutout" data-i="${i}" title="배경 제거">✂</button>
+          ${imageOverrideAsset ? `<button type="button" class="frame-mini-btn danger" data-act="clear-override" data-i="${i}" title="업로드 취소">✕</button>` : ''}
+        </div>`
       : '';
     cells.push(`
-      <div class="frame-slot${sheetAsset && rect ? ' fish-icon-tappable' : ''}" style="${iconStyle}" data-frame-index="${i}">
-        <span class="frame-index">${i + 1}${override ? ' ✓' : ''}</span>
-        ${sheetAsset && rect ? '' : `<span style="font-size:20px">${MOTION_FALLBACK_ICONS[category]}</span>`}
+      <div class="frame-slot${hasContent ? ' fish-icon-tappable' : ''}" style="${iconStyle}" data-frame-index="${i}">
+        <span class="frame-index">${i + 1}${imageOverrideAsset ? ' 📤' : (overrides[i] ? ' ✓' : '')}</span>
+        ${hasContent ? '' : `<span style="font-size:20px">${MOTION_FALLBACK_ICONS[category]}</span>`}
+        ${actionBtns}
       </div>
     `);
   }
   gridEl.innerHTML = cells.join('');
   if (sheetAsset && sheetDims) {
     gridEl.querySelectorAll('[data-frame-index]').forEach(cellEl => {
-      cellEl.addEventListener('click', () => openMotionFrameCropAdjuster(category, Number(cellEl.dataset.frameIndex), sheetAsset, sheetDims));
+      const i = Number(cellEl.dataset.frameIndex);
+      if (imageOverrides[i]) return; // 업로드로 대체된 프레임은 시트 크롭 대상이 아니다
+      cellEl.addEventListener('click', () => openMotionFrameCropAdjuster(category, i, sheetAsset, sheetDims));
     });
   }
+  gridEl.querySelectorAll('[data-act=cutout]').forEach(btn => {
+    btn.addEventListener('click', (e) => { e.stopPropagation(); cutoutMotionFrame(category, Number(btn.dataset.i), btn); });
+  });
+  gridEl.querySelectorAll('[data-act=clear-override]').forEach(btn => {
+    btn.addEventListener('click', (e) => { e.stopPropagation(); clearMotionFrameImageOverride(category, Number(btn.dataset.i)); });
+  });
 }
 
 // 재생 미리보기(startPreviewLoop)는 frames[i].dataUrl 배열을 받는다 —
@@ -1533,8 +1660,22 @@ async function renderMotionPreviewLoop(category, sheetAsset, sheetDims) {
   // 해상도를 그대로 살린다(96px 미리보기 박스에서 다시 확대되며 흐려지지
   // 않게).
   const urls = buildMotionCategoryFrameDataUrls(img, row, getMotionFrameOverrides(category));
+  // 개별 업로드로 대체된 프레임(motionFrameImageOverrides)이 있으면 시트
+  // 크롭 대신 그 사진을 재생 미리보기에도 그대로 쓴다 — play/index.html의
+  // walkFrameUrls 조립과 같은 우선순위.
+  if (MOVE_CATEGORIES.includes(category)) {
+    const imageOverrides = getMotionFrameImageOverrides(category);
+    await Promise.all(Object.keys(imageOverrides).map(async (idxStr) => {
+      const idx = Number(idxStr);
+      if (idx < 0 || idx >= urls.length) return;
+      const asset = await AssetDB.getAsset(imageOverrides[idxStr]).catch(() => null);
+      if (asset) urls[idx] = asset.dataUrl;
+    }));
+  }
   motionFrameCache[category] = urls;
-  const durations = category === 'cast' ? getCastFrameDurations() : null;
+  const durations = category === 'cast'
+    ? getCastFrameDurations()
+    : (MOVE_CATEGORIES.includes(category) ? new Array(MOTION_GRID_COLUMNS).fill(getMotionPlaybackMs(category)) : null);
   startPreviewLoop(previewEl, labelEl, urls.map(u => ({ dataUrl: u })), durations);
 }
 
@@ -1543,7 +1684,7 @@ async function renderMotionTab() {
   motionSheetDims = motionSheetAsset ? await loadImageDimensions(motionSheetAsset.dataUrl) : null;
   el.motionSheetFrame.style.setProperty('--motion-ar', motionSheetDims ? (motionSheetDims.width + '/' + motionSheetDims.height) : '1/1');
   for (const category of MOTION_CATEGORIES) {
-    renderMotionFrameGrid(category, motionSheetAsset, motionSheetDims);
+    await renderMotionFrameGrid(category, motionSheetAsset, motionSheetDims);
     // 미리보기 생성(캔버스로 프레임을 잘라내는 작업)이 실패해도 나머지
     // 카테고리·아래 타임라인 렌더링까지 통째로 막히면 안 된다.
     await renderMotionPreviewLoop(category, motionSheetAsset, motionSheetDims).catch((err) => {
@@ -1555,6 +1696,20 @@ async function renderMotionTab() {
   el.rodtipEditBtn.disabled = !motionFrameCache.cast.length;
   updateHeldFishBtnState();
   renderCastTimeline();
+  initMotionSpeedControls();
+}
+
+// 이동 방향별 "재생 속도" 슬라이더 — 값이 없으면 moveAnimMs(이동 탭 기본값)를
+// 보여준다. renderMotionTab이 fishingConfig를 다시 읽을 때마다(크롭 조정,
+// 업로드 등 이후) 같이 다시 불러 슬라이더가 저장된 값과 어긋나지 않게 한다.
+function initMotionSpeedControls() {
+  MOVE_CATEGORIES.forEach((category) => {
+    const ms = getMotionPlaybackMs(category);
+    const input = el[motionElKey(category, 'SpeedInput')];
+    const value = el[motionElKey(category, 'SpeedValue')];
+    input.value = ms;
+    value.textContent = '재생 속도 ' + ms + 'ms';
+  });
 }
 
 function openMotionFrameCropAdjuster(category, frameIndex, sheetAsset, sheetDims) {
@@ -1585,6 +1740,100 @@ async function confirmMotionFrameCrop(category, rect, frameIndex) {
   await setMotionFrameOverrides(category, overrides);
   renderMotionTab();
 }
+
+// data URL(모션 프레임 미리보기·캔버스 크롭 결과가 전부 이 형태)을 실제
+// Blob으로 바꾼다 — removeBackgroundOrFallback/AssetDB.addAsset은 File/Blob을
+// 받지 data URL 문자열은 못 받는다. 브라우저가 data: URL을 그대로
+// fetch할 수 있다는 점을 이용한 최소 구현.
+async function dataUrlToBlob(dataUrl) {
+  const res = await fetch(dataUrl);
+  return res.blob();
+}
+
+// ===== 이동 모션 개별 프레임 누끼따기 =====
+// 지금 그 칸에 보이는 그림(motionFrameCache — 업로드 오버라이드가 있으면
+// 그 사진, 없으면 시트에서 잘라낸 크롭)을 기준으로 배경을 제거해 새
+// 업로드 오버라이드로 저장한다. 시트 크롭 프레임에 쓰면 그 프레임만
+// 개별 업로드로 "승격"되는 셈 — 시트 자체나 다른 프레임엔 영향 없다.
+async function cutoutMotionFrame(category, frameIndex, btn) {
+  const dataUrl = motionFrameCache[category] && motionFrameCache[category][frameIndex];
+  if (!dataUrl) return;
+  if (btn) btn.disabled = true;
+  try {
+    const srcBlob = await dataUrlToBlob(dataUrl);
+    const resultBlob = await removeBackgroundOrFallback(srcBlob);
+    const asset = await AssetDB.addAsset({ type: 'fishing-motion-frame', name: `${category}-frame${frameIndex}.png`, blob: resultBlob });
+    const overrides = Object.assign({}, getMotionFrameImageOverrides(category));
+    overrides[frameIndex] = asset.id;
+    await setMotionFrameImageOverrides(category, overrides);
+    showSaveNote();
+    renderMotionTab();
+  } catch (err) {
+    DevDiag.show('프레임 배경 제거 실패: ' + (err && err.message ? err.message : err));
+  }
+}
+
+async function clearMotionFrameImageOverride(category, frameIndex) {
+  const overrides = Object.assign({}, getMotionFrameImageOverrides(category));
+  delete overrides[frameIndex];
+  await setMotionFrameImageOverrides(category, overrides);
+  showSaveNote();
+  renderMotionTab();
+}
+
+// ===== 이동 모션 프레임 개별 업로드 (프레임 미리보기 오른쪽 "📤 개별
+// 업로드" 버튼) =====
+// 여러 장을 한 번에 고르면 앞에서부터 프레임 1~6 순서로 배정한다(더 적게
+// 고르면 그만큼만 채우고 나머지 프레임은 그대로 시트 크롭을 쓴다). 소품
+// 이미지 업로드(sinkerImageAddBtn 등)와 같은 이유로 배경을 자동 제거한 뒤
+// 저장한다.
+async function handleMotionCategoryUpload(category, files) {
+  if (!files.length) return;
+  const btn = el[motionElKey(category, 'UploadBtn')];
+  btn.disabled = true;
+  try {
+    const overrides = Object.assign({}, getMotionFrameImageOverrides(category));
+    for (let i = 0; i < files.length && i < MOTION_GRID_COLUMNS; i++) {
+      const blob = await removeBackgroundOrFallback(files[i]);
+      const asset = await AssetDB.addAsset({ type: 'fishing-motion-frame', name: files[i].name, blob });
+      overrides[i] = asset.id;
+    }
+    await setMotionFrameImageOverrides(category, overrides);
+    showSaveNote();
+    renderMotionTab();
+  } catch (err) {
+    DevDiag.show('개별 프레임 업로드 실패: ' + (err && err.message ? err.message : err));
+  } finally {
+    btn.disabled = false;
+  }
+}
+MOVE_CATEGORIES.forEach((category) => {
+  const uploadBtn = el[motionElKey(category, 'UploadBtn')];
+  const uploadInput = el[motionElKey(category, 'UploadInput')];
+  uploadBtn.addEventListener('click', () => uploadInput.click());
+  uploadInput.addEventListener('change', () => {
+    const files = Array.from(uploadInput.files || []);
+    uploadInput.value = '';
+    handleMotionCategoryUpload(category, files);
+  });
+  const speedInput = el[motionElKey(category, 'SpeedInput')];
+  const speedValue = el[motionElKey(category, 'SpeedValue')];
+  speedInput.addEventListener('input', () => {
+    const ms = Number(speedInput.value);
+    speedValue.textContent = '재생 속도 ' + ms + 'ms';
+    setMotionPlaybackMs(category, ms).then(() => {
+      showSaveNote();
+      // 재생 미리보기가 새 속도를 바로 반영하도록 그 카테고리만 다시 튼다
+      // (renderMotionTab 전체를 다시 돌면 프레임 그리드까지 깜빡여 과하다).
+      startPreviewLoop(
+        el[motionElKey(category, 'Preview')],
+        el[motionElKey(category, 'PreviewLabel')],
+        motionFrameCache[category].map(u => ({ dataUrl: u })),
+        new Array(MOTION_GRID_COLUMNS).fill(ms)
+      );
+    });
+  });
+});
 
 /* ===== 낚시대 끝 지정 =====
    캐스팅 프레임(64×64 크롭 결과, motionFrameCache.cast) 각각에 낚싯대 끝
@@ -1858,6 +2107,23 @@ function renderCastPhysicsControls() {
   el.castGravityValue.textContent = gravity.toFixed(1) + 'm/s²';
   el.castVxScaleInput.value = vxScale;
   el.castVxScaleValue.textContent = vxScale.toFixed(2) + '배';
+}
+
+/* ===== 낚시대 재생속도 — 잡아채기(낚시바) 중 캐치바 홀드/릴리즈로 재생되는
+   올리기 2~4번 프레임의 프레임 간 간격(ms). /play/의 reelMotion.holdFrameMs
+   (playReelHoldSeq)가 이 값을 그대로 읽는다. */
+async function saveReelMotion() {
+  fishingConfig = await AssetDB.setFishingConfig({ reelMotion: { holdFrameMs: Number(el.reelHoldFrameMsInput.value) } });
+  showSaveNote();
+}
+el.reelHoldFrameMsInput.addEventListener('input', () => {
+  el.reelHoldFrameMsValue.textContent = el.reelHoldFrameMsInput.value + 'ms';
+  saveReelMotion();
+});
+function renderReelMotionControls() {
+  const holdFrameMs = (fishingConfig.reelMotion && fishingConfig.reelMotion.holdFrameMs) || 90;
+  el.reelHoldFrameMsInput.value = holdFrameMs;
+  el.reelHoldFrameMsValue.textContent = holdFrameMs + 'ms';
 }
 
 el.motionSheetUploadBtn.addEventListener('click', () => el.motionSheetFileInput.click());
@@ -3953,6 +4219,7 @@ async function init() {
   renderCastGaugeImageSlot();
   renderBiteStampImageSlot();
   renderCastPhysicsControls();
+  renderReelMotionControls();
   renderMotionTab();
   renderFishTab();
   initMoveMotionControls();
