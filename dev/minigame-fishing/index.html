@@ -230,7 +230,7 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
    전 기본값은 정사각형). width는 컨테이너 폭까지 자유롭게 늘어나고
    aspect-ratio로 비율만 유지하므로 어떤 크기의 시트를 올려도 찌그러지지
    않고 꽉 채워 보인다. */
-#motionSheetFrame{width:100%;max-width:340px;height:auto;aspect-ratio:var(--motion-ar,1/1)}
+#motionSheetFrame,#jisuIdleSheetFrame,#youngwooIdleSheetFrame{width:100%;max-width:340px;height:auto;aspect-ratio:var(--motion-ar,1/1)}
 .fish-sheet-frame img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;image-rendering:pixelated}
 .fish-sheet-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text-muted);font-family:var(--mono);text-align:center;padding:8px;line-height:1.5}
 .fish-sheet-spec{font-size:12px;color:var(--text-muted);margin-top:10px;line-height:1.6;text-align:center}
@@ -353,6 +353,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     <button class="tab-btn" data-tab="area">영역 설정</button>
     <button class="tab-btn" data-tab="item">아이템창</button>
     <button class="tab-btn" data-tab="dialogue">대화</button>
+    <button class="tab-btn" data-tab="character">캐릭터</button>
   </div>
 
   <!-- ===== 낚시게임 로직 — 난이도/모션타입(물고기 움직임 패턴) 선택. 값은
@@ -837,6 +838,49 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     </div>
   </div>
 
+  <!-- ===== 캐릭터 — 지수(플레이어)/영우(NPC)가 "멈춰 서 있을 때"의 방향별
+       idle 포즈. 각각 2열×2행 시트 한 장(위/아래/왼쪽/오른쪽, IDLE_GRID_DIRS
+       순서)을 올리면 renderIdleTab이 카테고리별 모션 탭과 같은 방식으로
+       잘라 프레임 그리드를 보여준다. 지수는 실제 낚시 플레이어(play/index.html)
+       캐릭터라 이동을 멈추면 마지막으로 보던 방향의 이 프레임으로 돌아가고,
+       영우는 화면에 가만히 서 있는 NPC라 항상 아래(정면) 프레임만 쓴다 —
+       그래서 위치 지정 UI도 영우에만 있다(배경화면 위 좌표 하나). ===== -->
+  <div class="tab-panel hidden" id="panelCharacter">
+    <div class="option-group">
+      <div class="option-label">지수(플레이어) idle</div>
+      <div class="option-desc">투명 PNG · 정확히 2열×2행(4칸) 격자 · 순서(왼쪽 위부터): 위·아래·왼쪽·오른쪽. 낚시 중 캐릭터가 이동을 멈추면 마지막으로 보던 방향의 이 프레임으로 돌아가요. 업로드하지 않으면 예전처럼 캐스팅 1번 프레임을 그대로 써요.</div>
+      <div class="fish-sheet-frame" id="jisuIdleSheetFrame">
+        <div class="fish-sheet-empty" id="jisuIdleSheetEmpty">아직 업로드된 시트가 없어요<br>업로드하기 전까진 캐스팅 1번 프레임이 idle로 쓰여요</div>
+      </div>
+      <div class="fish-sheet-actions">
+        <button type="button" class="fish-sheet-btn" id="jisuIdleSheetUploadBtn">📤 시트 업로드</button>
+        <button type="button" class="fish-sheet-btn danger hidden" id="jisuIdleSheetRemoveBtn">✕ 제거</button>
+      </div>
+      <input type="file" id="jisuIdleSheetFileInput" accept="image/png">
+      <div class="frame-strip" id="jisuIdleFrameGrid"></div>
+    </div>
+
+    <div class="option-group">
+      <div class="option-label">영우(NPC) idle</div>
+      <div class="option-desc">투명 PNG · 정확히 2열×2행(4칸) 격자 · 순서(왼쪽 위부터): 위·아래·왼쪽·오른쪽. 영우는 화면에 가만히 서 있는 NPC라 이 중 아래(정면) 프레임만 실제로 쓰여요 — 나머지 방향도 나중을 위해 같이 올려둘 수 있어요.</div>
+      <div class="fish-sheet-frame" id="youngwooIdleSheetFrame">
+        <div class="fish-sheet-empty" id="youngwooIdleSheetEmpty">아직 업로드된 시트가 없어요<br>업로드하기 전까진 영우가 화면에 나타나지 않아요</div>
+      </div>
+      <div class="fish-sheet-actions">
+        <button type="button" class="fish-sheet-btn" id="youngwooIdleSheetUploadBtn">📤 시트 업로드</button>
+        <button type="button" class="fish-sheet-btn danger hidden" id="youngwooIdleSheetRemoveBtn">✕ 제거</button>
+      </div>
+      <input type="file" id="youngwooIdleSheetFileInput" accept="image/png">
+      <div class="frame-strip" id="youngwooIdleFrameGrid"></div>
+    </div>
+
+    <div class="option-group">
+      <div class="option-label">영우 위치</div>
+      <div class="option-desc">낚시바 디자인 탭에서 올린 배경화면 위, 영우가 서 있을 자리를 지정하세요. 배경화면과 영우 idle 시트를 둘 다 올려야 지정할 수 있고, 지정하지 않으면 영우는 화면에 나타나지 않아요.</div>
+      <button type="button" class="fish-sheet-btn" id="youngwooPosEditBtn" style="width:100%" disabled>📍 영우 위치 지정</button>
+    </div>
+  </div>
+
   <div class="save-note" id="saveNote">저장됐어요</div>
   <a class="test-btn" id="testBtn" href="/dev/minigame-fishing/play/">테스트하기</a>
 </div>
@@ -990,6 +1034,27 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     <div class="crop-actions">
       <button type="button" class="crop-btn secondary" id="heldFishPosCancelBtn">취소</button>
       <button type="button" class="crop-btn primary" id="heldFishPosConfirmBtn">적용</button>
+    </div>
+  </div>
+</div>
+
+<!-- 영우 위치 지정 — heldFishPosOverlay와 같은 바텀시트 틀 + 단일 포인트
+     마커(rodtip-marker 재사용)지만, 기준 이미지가 낚시바 디자인 탭의
+     배경화면(fishingConfig.backgroundAssetId)이다 — 영우가 실제로 서는
+     좌표계가 그 배경 원본 크기 기준 0~1(영역 설정 탭 다각형 점과 동일)이라
+     같은 이미지 위에서 지정해야 실제 게임(play/index.html)과 자리가
+     어긋나지 않는다. --heldfish-ar로 종횡비를 배경의 실제 자연 크기에 맞춘다. -->
+<div class="crop-overlay hidden" id="youngwooPosOverlay">
+  <div class="crop-sheet">
+    <div class="crop-title">영우 위치 지정</div>
+    <div class="crop-desc">배경화면이에요 — 그림 위를 탭하거나 드래그해서 영우가 서 있을 위치를 옮기세요.</div>
+    <div class="heldfish-stage" id="youngwooPosStage">
+      <img id="youngwooPosImg" alt="">
+      <div class="rodtip-marker" id="youngwooPosMarker"></div>
+    </div>
+    <div class="crop-actions">
+      <button type="button" class="crop-btn secondary" id="youngwooPosCancelBtn">취소</button>
+      <button type="button" class="crop-btn primary" id="youngwooPosConfirmBtn">적용</button>
     </div>
   </div>
 </div>
@@ -1263,9 +1328,29 @@ const el = {
   heldFishPosMarker: document.getElementById('heldFishPosMarker'),
   heldFishPosCancelBtn: document.getElementById('heldFishPosCancelBtn'),
   heldFishPosConfirmBtn: document.getElementById('heldFishPosConfirmBtn'),
+  panelCharacter: document.getElementById('panelCharacter'),
+  jisuIdleSheetFrame: document.getElementById('jisuIdleSheetFrame'),
+  jisuIdleSheetEmpty: document.getElementById('jisuIdleSheetEmpty'),
+  jisuIdleSheetUploadBtn: document.getElementById('jisuIdleSheetUploadBtn'),
+  jisuIdleSheetRemoveBtn: document.getElementById('jisuIdleSheetRemoveBtn'),
+  jisuIdleSheetFileInput: document.getElementById('jisuIdleSheetFileInput'),
+  jisuIdleFrameGrid: document.getElementById('jisuIdleFrameGrid'),
+  youngwooIdleSheetFrame: document.getElementById('youngwooIdleSheetFrame'),
+  youngwooIdleSheetEmpty: document.getElementById('youngwooIdleSheetEmpty'),
+  youngwooIdleSheetUploadBtn: document.getElementById('youngwooIdleSheetUploadBtn'),
+  youngwooIdleSheetRemoveBtn: document.getElementById('youngwooIdleSheetRemoveBtn'),
+  youngwooIdleSheetFileInput: document.getElementById('youngwooIdleSheetFileInput'),
+  youngwooIdleFrameGrid: document.getElementById('youngwooIdleFrameGrid'),
+  youngwooPosEditBtn: document.getElementById('youngwooPosEditBtn'),
+  youngwooPosOverlay: document.getElementById('youngwooPosOverlay'),
+  youngwooPosStage: document.getElementById('youngwooPosStage'),
+  youngwooPosImg: document.getElementById('youngwooPosImg'),
+  youngwooPosMarker: document.getElementById('youngwooPosMarker'),
+  youngwooPosCancelBtn: document.getElementById('youngwooPosCancelBtn'),
+  youngwooPosConfirmBtn: document.getElementById('youngwooPosConfirmBtn'),
 };
 
-const PANELS = { logic: el.panelLogic, motion: el.panelMotion, bar: el.panelBar, fish: el.panelFish, move: el.panelMove, area: el.panelArea, item: el.panelItem, dialogue: el.panelDialogue };
+const PANELS = { logic: el.panelLogic, motion: el.panelMotion, bar: el.panelBar, fish: el.panelFish, move: el.panelMove, area: el.panelArea, item: el.panelItem, dialogue: el.panelDialogue, character: el.panelCharacter };
 el.tabsRow.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => selectTab(btn.dataset.tab));
 });
@@ -1281,6 +1366,7 @@ function selectTab(tab) {
   // 못 받아 홀드 타이머가 안 보이는 곳에서 계속 도는 채로 남을 수 있다.
   else stopMoveHold();
   if (tab === 'area') renderAreaTab();
+  if (tab === 'character') renderCharacterTab();
 }
 
 /* ===== 낚시게임 로직 탭 ===== */
@@ -4156,6 +4242,194 @@ el.heldFishPosConfirmBtn.addEventListener('click', async () => {
   fishingConfig = await AssetDB.setFishingConfig({ heldFishPos: heldFishPosDraft });
   showSaveNote();
   el.heldFishPosOverlay.classList.add('hidden');
+});
+
+/* ===== 캐릭터 탭 — 지수/영우 idle 시트(2열×2행) 업로드 + 프레임 그리드
+   (모션 탭의 renderMotionFrameGrid/openMotionFrameCropAdjuster/
+   confirmMotionFrameCrop과 같은 시트+크롭 패턴을 character 파라미터로
+   일반화했다 — 차이는 카테고리(행) 개념이 없고 격자가 6열이 아니라
+   2열이라는 것뿐). idleFrameCache는 두 캐릭터의 잘라낸 4방향 프레임을
+   담아 영우 위치 지정 버튼의 활성화 조건(youngwooIdleFrameCache에 뭔가
+   있어야 위치를 지정할 이유가 있다) 등에 쓴다. */
+const IDLE_LABELS = { up: '위', down: '아래', left: '왼쪽', right: '오른쪽' };
+const idleFrameCache = { jisu: {}, youngwoo: {} };
+const idleSheetAssetCache = { jisu: null, youngwoo: null };
+const idleSheetDimsCache = { jisu: null, youngwoo: null };
+
+function getIdleSheetConfig(character) {
+  return ((fishingConfig.characterIdleSheets || {})[character]) || { assetId: null, overrides: {} };
+}
+// 얕은 병합(setFishingConfig)이라 한 캐릭터만 바뀌어도 characterIdleSheets
+// 전체를 다시 만들어 넘겨야 다른 캐릭터가 사라지지 않는다(motionFrameOverrides와
+// 같은 관례).
+async function setIdleSheetConfig(character, patch) {
+  const characterIdleSheets = Object.assign({ jisu: { assetId: null, overrides: {} }, youngwoo: { assetId: null, overrides: {} } }, fishingConfig.characterIdleSheets);
+  characterIdleSheets[character] = Object.assign({}, getIdleSheetConfig(character), patch);
+  fishingConfig = await AssetDB.setFishingConfig({ characterIdleSheets });
+}
+
+async function renderIdleSheetPreview(character) {
+  const frameEl = el[character + 'IdleSheetFrame'];
+  const emptyEl = el[character + 'IdleSheetEmpty'];
+  const removeBtn = el[character + 'IdleSheetRemoveBtn'];
+  frameEl.querySelectorAll('img').forEach(img => img.remove());
+  const assetId = getIdleSheetConfig(character).assetId;
+  const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
+  if (!asset) {
+    emptyEl.classList.remove('hidden');
+    removeBtn.classList.add('hidden');
+    frameEl.style.removeProperty('--motion-ar');
+    return null;
+  }
+  emptyEl.classList.add('hidden');
+  removeBtn.classList.remove('hidden');
+  const img = document.createElement('img');
+  img.src = asset.dataUrl;
+  img.alt = '';
+  frameEl.appendChild(img);
+  return asset;
+}
+
+function renderIdleFrameGrid(character, sheetAsset, sheetDims) {
+  const overrides = getIdleSheetConfig(character).overrides || {};
+  const gridEl = el[character + 'IdleFrameGrid'];
+  const cells = IDLE_GRID_DIRS.map((dir, i) => {
+    const override = overrides[i];
+    const rect = override || (sheetDims ? getIdleGridDefaultCropRect(i, sheetDims.width, sheetDims.height) : null);
+    const iconStyle = (sheetAsset && rect)
+      ? (() => {
+          const style = getFishCropStyle(rect, sheetDims.width, sheetDims.height, 64);
+          return `background-image:url('${sheetAsset.dataUrl}');background-position:${style.backgroundPosition};background-size:${style.backgroundSize};background-repeat:no-repeat;image-rendering:pixelated`;
+        })()
+      : '';
+    return `
+      <div class="frame-slot${sheetAsset && rect ? ' fish-icon-tappable' : ''}" style="${iconStyle}" data-frame-index="${i}">
+        <span class="frame-index">${IDLE_LABELS[dir]}${override ? ' ✓' : ''}</span>
+      </div>
+    `;
+  });
+  gridEl.innerHTML = cells.join('');
+  if (sheetAsset && sheetDims) {
+    gridEl.querySelectorAll('[data-frame-index]').forEach(cellEl => {
+      cellEl.addEventListener('click', () => openIdleFrameCropAdjuster(character, Number(cellEl.dataset.frameIndex), sheetAsset, sheetDims));
+    });
+  }
+}
+
+function openIdleFrameCropAdjuster(character, frameIndex, sheetAsset, sheetDims) {
+  const overrides = getIdleSheetConfig(character).overrides || {};
+  const existingRect = overrides[frameIndex] || (sheetDims ? getIdleGridDefaultCropRect(frameIndex, sheetDims.width, sheetDims.height) : { cx: 0.5, cy: 0.5, size: 0.15 });
+  openCropAdjuster(sheetAsset.dataUrl, existingRect, null, (rect) => confirmIdleFrameCrop(character, rect, frameIndex));
+}
+// 모션 탭의 confirmMotionFrameCrop과 같은 원칙 — 4방향 다 같은 캐릭터라
+// 크롭 크기(size)가 다르면 방향이 바뀔 때 캐릭터가 커졌다 작아졌다 하는
+// 것처럼 보인다. 한 프레임의 크기를 바꾸면 나머지 3개도 같은 크기로 맞추고,
+// 위치(cx/cy)는 방향마다 다른 포즈라 각자 그대로 둔다.
+async function confirmIdleFrameCrop(character, rect, frameIndex) {
+  const current = getIdleSheetConfig(character).overrides || {};
+  const dims = idleSheetDimsCache[character];
+  const overrides = {};
+  for (let i = 0; i < IDLE_GRID_DIRS.length; i++) {
+    if (i === frameIndex) {
+      overrides[i] = rect;
+    } else {
+      const existing = current[i] || (dims ? getIdleGridDefaultCropRect(i, dims.width, dims.height) : null);
+      overrides[i] = existing ? Object.assign({}, existing, { size: rect.size }) : Object.assign({ cx: 0.5, cy: 0.5 }, { size: rect.size });
+    }
+  }
+  await setIdleSheetConfig(character, { overrides });
+  renderCharacterTab();
+}
+
+async function renderIdleCharacter(character) {
+  const asset = await renderIdleSheetPreview(character);
+  const dims = asset ? await loadImageDimensions(asset.dataUrl) : null;
+  el[character + 'IdleSheetFrame'].style.setProperty('--motion-ar', dims ? (dims.width + '/' + dims.height) : '1/1');
+  idleSheetAssetCache[character] = asset;
+  idleSheetDimsCache[character] = dims;
+  renderIdleFrameGrid(character, asset, dims);
+  if (asset && dims) {
+    const img = await new Promise(resolve => {
+      const im = new Image();
+      im.crossOrigin = 'anonymous';
+      im.src = asset.dataUrl;
+      im.onload = () => resolve(im);
+      im.onerror = () => resolve(null);
+    });
+    idleFrameCache[character] = img ? buildIdleFrameDataUrls(img, getIdleSheetConfig(character).overrides) : {};
+  } else {
+    idleFrameCache[character] = {};
+  }
+}
+
+async function renderCharacterTab() {
+  await renderIdleCharacter('jisu');
+  await renderIdleCharacter('youngwoo');
+  el.youngwooPosEditBtn.disabled = !(fishingConfig.backgroundAssetId && idleFrameCache.youngwoo.down);
+}
+
+['jisu', 'youngwoo'].forEach((character) => {
+  el[character + 'IdleSheetUploadBtn'].addEventListener('click', () => el[character + 'IdleSheetFileInput'].click());
+  el[character + 'IdleSheetFileInput'].addEventListener('change', async () => {
+    const input = el[character + 'IdleSheetFileInput'];
+    const file = input.files[0];
+    input.value = '';
+    if (!file) return;
+    const asset = await AssetDB.addAsset({ type: 'fishing-idle-sheet-' + character, name: file.name, blob: file });
+    await setIdleSheetConfig(character, { assetId: asset.id, overrides: {} });
+    showSaveNote();
+    renderCharacterTab();
+  });
+  el[character + 'IdleSheetRemoveBtn'].addEventListener('click', async () => {
+    // 시트를 지우면 세밀영역조절 보정도 같이 지운다 — 새 시트를 올렸을 때
+    // 엉뚱한 좌표가 남아있지 않게(모션 탭 시트 제거와 같은 원칙).
+    await setIdleSheetConfig(character, { assetId: null, overrides: {} });
+    showSaveNote();
+    renderCharacterTab();
+  });
+});
+
+/* ===== 영우 위치 지정 =====
+   heldFishPos 피커와 같은 단일 포인트 드래그 패턴이지만, 기준 이미지가
+   낚시바 디자인 탭의 배경화면(fishingConfig.backgroundAssetId)이고 저장
+   좌표계도 그 배경 원본 크기 기준 0~1(영역 설정 탭 다각형 점, play/index.html의
+   worldPosToImageFrac과 동일한 top-down 좌표계)이다 — 영우는 배경 위
+   고정된 세계 좌표에 서 있는 NPC라, char-stage 기준이 아니라 배경 기준
+   좌표가 맞다. */
+let youngwooPosDraft = { x: 0.5, y: 0.5 };
+let youngwooPosDragging = false;
+async function openYoungwooPosEditor() {
+  if (!fishingConfig.backgroundAssetId || !idleFrameCache.youngwoo.down) return;
+  const bgAsset = await AssetDB.getAsset(fishingConfig.backgroundAssetId).catch(() => null);
+  if (!bgAsset) return;
+  const dims = await loadImageDimensions(bgAsset.dataUrl);
+  youngwooPosDraft = Object.assign({ x: 0.5, y: 0.5 }, fishingConfig.youngwooNpcPos || {});
+  el.youngwooPosImg.src = bgAsset.dataUrl;
+  el.youngwooPosStage.style.setProperty('--heldfish-ar', dims ? (dims.width + '/' + dims.height) : '1/1');
+  renderYoungwooPosMarker();
+  el.youngwooPosOverlay.classList.remove('hidden');
+}
+function renderYoungwooPosMarker() {
+  el.youngwooPosMarker.style.left = (youngwooPosDraft.x * 100) + '%';
+  el.youngwooPosMarker.style.top = (youngwooPosDraft.y * 100) + '%';
+}
+function updateYoungwooPosFromEvent(e) {
+  const rect = el.youngwooPosStage.getBoundingClientRect();
+  youngwooPosDraft = {
+    x: clamp01((e.clientX - rect.left) / rect.width),
+    y: clamp01((e.clientY - rect.top) / rect.height),
+  };
+  renderYoungwooPosMarker();
+}
+el.youngwooPosEditBtn.addEventListener('click', openYoungwooPosEditor);
+el.youngwooPosStage.addEventListener('pointerdown', (e) => { youngwooPosDragging = true; updateYoungwooPosFromEvent(e); });
+window.addEventListener('pointermove', (e) => { if (youngwooPosDragging) updateYoungwooPosFromEvent(e); });
+window.addEventListener('pointerup', () => { youngwooPosDragging = false; });
+el.youngwooPosCancelBtn.addEventListener('click', () => el.youngwooPosOverlay.classList.add('hidden'));
+el.youngwooPosConfirmBtn.addEventListener('click', async () => {
+  fishingConfig = await AssetDB.setFishingConfig({ youngwooNpcPos: youngwooPosDraft });
+  showSaveNote();
+  el.youngwooPosOverlay.classList.add('hidden');
 });
 
 let saveNoteTimer = null;

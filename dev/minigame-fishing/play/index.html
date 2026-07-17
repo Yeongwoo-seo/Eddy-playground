@@ -67,6 +67,17 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .char-fallback{font-size:46px;filter:drop-shadow(0 4px 6px rgba(0,0,0,.35))}
 .char-fallback.hidden,.char-stage img.hidden{display:none}
 
+/* 영우 NPC — char-stage와 같은 형식(left/bottom, 자기 크기 절반만큼 밀어
+   중심 기준)이지만 배경 위 고정된 세계 좌표(npcWorldPos, 설정 화면
+   "캐릭터" 탭에서 지정한 youngwooNpcPos)에 그대로 서 있는다 — 조이스틱
+   이동/카메라와는 무관하고, updateCamera가 매 프레임 같은 camOffset으로
+   화면 위치만 다시 계산한다. pointer-events:none — 상호작용 지점은
+   fishingConfig.interactionAreas로 별도 지정하지 이 NPC 그림 자체를
+   탭 대상으로 삼지 않는다. */
+.npc-stage{position:absolute;left:0;bottom:0;transform:translate(-50%,50%);z-index:2;width:84px;height:84px;display:flex;align-items:flex-end;justify-content:center;pointer-events:none}
+.npc-stage img{max-width:100%;max-height:100%;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 4px 6px rgba(0,0,0,.35))}
+.npc-stage.hidden{display:none}
+
 /* 상호작용 영역(상점/대화 등) 안에 서 있을 때 캐릭터 머리 위에 뜨는
    라벨 배지 — checkInteractionArea가 영역을 드나들 때만 토글한다. */
 .interaction-badge{position:absolute;left:50%;bottom:100%;transform:translate(-50%,-6px);z-index:4;background:rgba(214,168,75,.92);color:#1a1206;font-family:var(--mono);font-size:11px;font-weight:700;padding:4px 10px;border-radius:12px;white-space:nowrap;pointer-events:none;box-shadow:0 2px 6px rgba(0,0,0,.3)}
@@ -316,6 +327,10 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
       <div class="held-fish hidden" id="heldFish"></div>
     </div>
 
+    <div class="npc-stage hidden" id="npcYoungwooStage">
+      <img id="npcYoungwooImg" alt="">
+    </div>
+
     <div class="bobber hidden" id="bobber">
       <div class="bobber-dot" id="bobberDot"></div>
       <img class="bobber-img" id="bobberImg" alt="">
@@ -481,6 +496,8 @@ const el = {
   charFallback: document.getElementById('charFallback'),
   interactionBadge: document.getElementById('interactionBadge'),
   heldFish: document.getElementById('heldFish'),
+  npcYoungwooStage: document.getElementById('npcYoungwooStage'),
+  npcYoungwooImg: document.getElementById('npcYoungwooImg'),
   bobber: document.getElementById('bobber'),
   bobberDot: document.getElementById('bobberDot'),
   bobberImg: document.getElementById('bobberImg'),
@@ -543,6 +560,24 @@ const DEFAULT_ROD_TIP_FRAC = { x: 0.82, y: 0.15 };
 const DEFAULT_HELD_FISH_POS = { x: 0.5, y: 0.25 };
 let heldFishPos = DEFAULT_HELD_FISH_POS;
 let reelFrameUrls = [];
+// 지수(플레이어) idle 프레임 — dev/minigame-fishing/index.html "캐릭터" 탭에서
+// 올린 2x2 시트(up/down/left/right, 방향당 1장)를 잘라 캐시해둔다. 이동을
+// 멈추면(stopMoveHold) 마지막으로 걷던 방향(lastFacingDir)의 이 프레임으로
+// 돌아간다 — 시트를 안 올렸으면 예전처럼 캐스팅 1번 프레임으로 폴백한다
+// (idlePoseUrl 참고).
+let jisuIdleFrameUrls = { up: null, down: null, left: null, right: null };
+let lastFacingDir = 'down'; // 마지막으로 재생됐던 걷기 방향 — applyMoveSprite가 갱신, stopMoveHold에서도 null로 지워지지 않는다(currentSpriteDir과 다른 점)
+function idlePoseUrl() {
+  return (jisuIdleFrameUrls && jisuIdleFrameUrls[lastFacingDir]) || castFrameUrls[0] || null;
+}
+// 영우 NPC idle — 항상 아래(정면) 프레임 하나만 쓴다("캐릭터" 탭에서
+// 방향별로 다 올릴 수 있지만, 영우는 화면에 가만히 서 있는 NPC라 정면만
+// 실제로 쓴다). npcWorldPos는 youngwooNpcPos(배경 원본 크기 기준 0~1)를
+// charWorldPos와 같은 형식(px, 왼쪽/아래 기준)으로 환산해둔 세계 좌표 —
+// 배경이 없거나 위치를 지정하지 않았으면 null이라 updateCamera가 그냥
+// 건너뛰고 el.npcYoungwooStage도 hidden으로 남는다.
+let youngwooIdleFrameUrls = { up: null, down: null, left: null, right: null };
+let npcWorldPos = null;
 // 올리기 모션(reelFrameUrls) 6프레임의 쓰임 — 1번: 낚시대가 나왔을 때(대기),
 // 2~4번(index 1~3): 잡아채기(낚시바) 중 캐치바 올리는 버튼을 누르고 있는
 // 동안(놓으면 4→2→1로 되돌아간다), 5번(index 4): 낚시 성공 후 물고기가
@@ -551,7 +586,6 @@ let reelFrameUrls = [];
 // 뜨는 자세). dev/minigame-fishing/index.html "올리기 모션" 탭에서
 // 지정한 낚시대 재생속도(reelMotion.holdFrameMs)로 재생한다.
 let reelMotion = { holdFrameMs: 90 };
-let idleFrameUrl = null;
 let sinkerImageUrl = null;
 let biteStampImageUrl = null;
 let gaugeImageUrl = null; // 잡아채기 게이지 채움 이미지 — 없으면 renderBarFrame이 진행도 단색으로 폴백
@@ -728,6 +762,12 @@ function updateCamera() {
   }
   el.charStage.style.left = (charXScaled - camX) + 'px';
   el.charStage.style.bottom = (frameRect.height - charYFromTopScaled + camY) + 'px';
+  if (npcWorldPos) {
+    const npcXScaled = npcWorldPos.x * zoom;
+    const npcYFromTopScaled = (worldSize.h - npcWorldPos.y) * zoom;
+    el.npcYoungwooStage.style.left = (npcXScaled - camX) + 'px';
+    el.npcYoungwooStage.style.bottom = (frameRect.height - npcYFromTopScaled + camY) + 'px';
+  }
 }
 
 // 화면 크기가 바뀌면(회전, 리사이즈) — 배경 미업로드 폴백 모드에서는
@@ -841,6 +881,9 @@ async function loadConfig() {
   });
   if (cfg.backgroundAssetId) ids.push(cfg.backgroundAssetId);
   if (cfg.castGaugeAssetId) ids.push(cfg.castGaugeAssetId);
+  const characterIdleSheetsCfg = cfg.characterIdleSheets || {};
+  if (characterIdleSheetsCfg.jisu && characterIdleSheetsCfg.jisu.assetId) ids.push(characterIdleSheetsCfg.jisu.assetId);
+  if (characterIdleSheetsCfg.youngwoo && characterIdleSheetsCfg.youngwoo.assetId) ids.push(characterIdleSheetsCfg.youngwoo.assetId);
   const itemPopupCfg = cfg.itemPopup || {};
   if (itemPopupCfg.backgroundAssetId) ids.push(itemPopupCfg.backgroundAssetId);
   const dialogueSceneCfg = cfg.dialogueScene || {};
@@ -866,6 +909,11 @@ async function loadConfig() {
   // 흐려지지 않게).
   castFrameUrls = motionSheetImg ? buildMotionCategoryFrameDataUrls(motionSheetImg, MOTION_CATEGORIES.indexOf('cast'), motionOverrides.cast, motionRowOverrides.cast) : [];
   reelFrameUrls = motionSheetImg ? buildMotionCategoryFrameDataUrls(motionSheetImg, MOTION_CATEGORIES.indexOf('reel'), motionOverrides.reel, motionRowOverrides.reel) : [];
+  // 캐스팅 시트의 6프레임 뒤에 올리기 1번째 프레임을 7번째 프레임으로
+  // 이어붙인다 — 캐스팅이 끝난 뒤 대기 내내 머무는 마지막 포즈(위
+  // playFrameSequence 주석 참고)가 올리기 애니메이션의 시작 포즈와 같아져,
+  // 입질 성공 후 올리기로 넘어갈 때 포즈가 튀지 않는다.
+  if (castFrameUrls.length && reelFrameUrls.length) castFrameUrls = castFrameUrls.concat(reelFrameUrls[0]);
   castFrameDurations = (cfg.castingFrameDurations && cfg.castingFrameDurations.length) ? cfg.castingFrameDurations : null;
   castingFrameRodTips = cfg.castingFrameRodTips || {};
   heldFishPos = cfg.heldFishPos || DEFAULT_HELD_FISH_POS;
@@ -895,6 +943,30 @@ async function loadConfig() {
     });
     walkFrameUrls[dir] = dirFrames.filter(Boolean);
   }
+
+  // 지수/영우 idle(멈춰 서 있을 때) 프레임 — dev/minigame-fishing/index.html
+  // "캐릭터" 탭에서 올린 2x2 시트(fishDefs.js의 IDLE_GRID_DIRS/
+  // buildIdleFrameDataUrls)를 방향별로 잘라 캐시해둔다. 시트를 안 올렸으면
+  // 빈 값 그대로 둔다 — 지수는 idlePoseUrl()이 castFrameUrls[0]로 폴백하고,
+  // 영우는 아래(down) 프레임이 없으면 아래에서 el.npcYoungwooStage를 hidden으로 둔다.
+  async function loadIdleFrames(characterCfg) {
+    const empty = { up: null, down: null, left: null, right: null };
+    if (!characterCfg || !characterCfg.assetId) return empty;
+    const asset = byId.get(characterCfg.assetId);
+    if (!asset) return empty;
+    const img = await new Promise(resolve => {
+      const im = new Image();
+      im.crossOrigin = 'anonymous';
+      im.onload = () => resolve(im);
+      im.onerror = () => resolve(null);
+      im.src = asset.dataUrl;
+    });
+    return img ? buildIdleFrameDataUrls(img, characterCfg.overrides) : empty;
+  }
+  const characterIdleSheets = cfg.characterIdleSheets || {};
+  jisuIdleFrameUrls = await loadIdleFrames(characterIdleSheets.jisu);
+  youngwooIdleFrameUrls = await loadIdleFrames(characterIdleSheets.youngwoo);
+
   const fishSheetAsset = cfg.fishSheetAssetId ? byId.get(cfg.fishSheetAssetId) : null;
   fishSheetUrl = fishSheetAsset ? fishSheetAsset.dataUrl : null;
   fishIconOverrides = cfg.fishIconOverrides || {};
@@ -975,6 +1047,21 @@ async function loadConfig() {
     charWorldPos.x = clamp(charWorldPos.x, wb.minX, wb.maxX);
     charWorldPos.y = clamp(charWorldPos.y, wb.minY, wb.maxY);
   }
+
+  // 영우 NPC — youngwooNpcPos(배경 원본 크기 기준 0~1, top-down)를
+  // charWorldPos와 같은 세계 좌표 형식(px, 왼쪽/아래 기준)으로 환산한다.
+  // worldPosToImageFrac의 역변환(y = h*(1-frac.y))과 같은 식이다. 배경이
+  // 없으면(hasWorldBackground false) 좌표계 기준이 없으니 NPC를 그리지
+  // 않는다 — down 프레임이 없을 때도 마찬가지(영우는 항상 정면만 쓴다).
+  const youngwooNpcPos = cfg.youngwooNpcPos;
+  npcWorldPos = (hasWorldBackground && youngwooNpcPos) ? { x: youngwooNpcPos.x * bgDims.width, y: bgDims.height * (1 - youngwooNpcPos.y) } : null;
+  if (npcWorldPos && youngwooIdleFrameUrls.down) {
+    el.npcYoungwooImg.src = youngwooIdleFrameUrls.down;
+    el.npcYoungwooStage.classList.remove('hidden');
+  } else {
+    el.npcYoungwooStage.classList.add('hidden');
+  }
+
   updateCamera();
 
   // 낚시바 모듈 크기 — 설정 화면 슬라이드 에디터(dev/minigame-fishing/
@@ -1142,9 +1229,9 @@ async function loadConfig() {
   el.biteCaughtImg.style.display = biteStampImageUrl ? 'block' : 'none';
   if (biteStampImageUrl) el.biteCaughtImg.src = biteStampImageUrl;
 
-  idleFrameUrl = castFrameUrls[0] || null;
-  if (idleFrameUrl) {
-    el.charImg.src = idleFrameUrl;
+  const initialIdlePose = idlePoseUrl();
+  if (initialIdlePose) {
+    el.charImg.src = initialIdlePose;
     el.charImg.classList.remove('hidden');
     el.charFallback.classList.add('hidden');
   }
@@ -1714,9 +1801,9 @@ function missReaction() {
 
 // 입질 대기 중(waiting) 화면을 다시 탭하면 입질을 기다리지 않고 바로
 // 릴을 감아 올린다 — 당연히 아무것도 안 걸려 있으니 빈손으로 끝난다.
-// playReelThenResult(성공 시 릴 감기)와 같은 올리기 프레임을 재생하되
-// 물고기가 없으니 flyFishToCharacter/showItemPopup 없이 곧장 대기로
-// 돌아간다.
+// 성공 시(playReelThenResult)처럼 올리기 프레임 전체를 순차 재생하지
+// 않고, 올리기 4번째 프레임(reelFrameUrls[3])만 잠깐 보여준다 — 빈손으로
+// 끝나는 취소 동작이라 굳이 릴 감는 전체 동작을 다 보여줄 필요가 없다.
 async function abortWaitingReel() {
   if (gameState !== 'waiting') return;
   clearTimeout(biteTimer);
@@ -1726,7 +1813,11 @@ async function abortWaitingReel() {
   el.bobber.classList.add('hidden');
   el.castSvg.classList.add('hidden');
   if (reelFrameUrls.length) {
-    await playFrameSequence(reelFrameUrls, 90);
+    const frame = reelFrameUrls[3] || reelFrameUrls[reelFrameUrls.length - 1];
+    el.charImg.classList.remove('hidden');
+    el.charFallback.classList.add('hidden');
+    el.charImg.src = frame;
+    await wait(300);
   } else {
     await wait(300);
   }
@@ -2042,7 +2133,8 @@ function resetToIdle() {
   el.biteCaught.classList.add('hidden');
   el.heldFish.classList.add('hidden');
   el.joystick.classList.remove('hidden');
-  if (idleFrameUrl) { el.charImg.src = idleFrameUrl; el.charImg.classList.remove('hidden'); el.charFallback.classList.add('hidden'); }
+  const pose = idlePoseUrl();
+  if (pose) { el.charImg.src = pose; el.charImg.classList.remove('hidden'); el.charFallback.classList.add('hidden'); }
   else { el.charImg.classList.add('hidden'); el.charFallback.classList.remove('hidden'); }
 }
 
@@ -2085,6 +2177,7 @@ let currentSpriteDir = null; // 지금 재생 중인 걷기 방향 — 실제로
 function applyMoveSprite(spriteDir) {
   if (!spriteDir || spriteDir === currentSpriteDir) return;
   currentSpriteDir = spriteDir;
+  lastFacingDir = spriteDir; // stopMoveHold가 currentSpriteDir을 null로 지워도 이건 남아 idlePoseUrl이 "마지막으로 보던 방향"을 계속 알 수 있다
   playMoveAnim(spriteDir);
 }
 // 이동 불가 영역(blockedAreas)이 있으면 후보 위치가 그 안에 들어가는지
@@ -2127,7 +2220,8 @@ function stopMoveHold() {
   moveHoldVec = null;
   currentSpriteDir = null;
   stopMoveAnim();
-  if (idleFrameUrl) el.charImg.src = idleFrameUrl; // 걷기 멈추면 원래 idle 프레임(있으면)으로 되돌린다
+  const pose = idlePoseUrl();
+  if (pose) el.charImg.src = pose; // 걷기 멈추면 마지막으로 보던 방향의 idle 프레임(있으면)으로 되돌린다
 }
 
 /* ===== 입력 =====
