@@ -10,6 +10,12 @@
 // dead page.
 const MINIGAME_ROUTES = {
   'week0-scene-001-2-minigame': '/dev/minigame-eastwood/',
+  // 서큘러키 깜짝 낚시 (week0-scene-circular-quay 참고) — 독립형 낚시 미니게임
+  // (fishing-minigame, dev/minigame-fishing/) 재사용. 클리어 조건이 따로 없는
+  // 오픈형 미니게임이라 게임 쪽에서 자동으로 다음 씬으로 넘기지 않고, 대신
+  // SHOP_TUTORIAL_RETURN_SCENE로 설정한 mkShopReturnUrl을 그 화면의 뒤로가기
+  // 버튼이 읽어 돌아온다(옷가게/옷장과 같은 계약).
+  'week0-scene-circular-quay-minigame': '/dev/minigame-fishing/play/',
   'week0-scene-002-2': '/dev/minigame-phone-search/',
   'week0-scene-shop-visit': '/dev/shop/',
   // §신규 재편 — 전시장 증거 수집이 전용 미니게임(minigame-exhibition-search,
@@ -41,5 +47,10 @@ const MINIGAME_ROUTES = {
 // 옷가게/옷장 cards use) — this scripted handoff sets it explicitly to the
 // scene *after* the shop visit (week0-scene-002-1) instead of back into the
 // intro dialogue, so leaving the shop continues the story instead of
-// replaying the boutique chat.
-const SHOP_TUTORIAL_RETURN_SCENE = { 'week0-scene-shop-visit': 'week0-scene-002-1' };
+// replaying the boutique chat. The fishing detour reuses the same contract:
+// week0-scene-circular-quay-minigame returns into week0-scene-shop-intro
+// (the very next beat) instead of the fishing setup screen.
+const SHOP_TUTORIAL_RETURN_SCENE = {
+  'week0-scene-shop-visit': 'week0-scene-002-1',
+  'week0-scene-circular-quay-minigame': 'week0-scene-shop-intro',
+};

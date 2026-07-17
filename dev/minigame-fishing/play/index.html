@@ -378,7 +378,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
        미리 디코드한 뒤 revealGame()이 .fade-out을 붙여 서서히 밝힌다. ===== -->
   <div class="preload-overlay" id="preloadOverlay"></div>
   <div class="topbar">
-    <a class="back-chip" href="/dev/minigame-fishing/" aria-label="뒤로">‹</a>
+    <a class="back-chip" id="backChip" href="/dev/minigame-fishing/" aria-label="뒤로">‹</a>
     <div class="count-chip" id="countChip">0마리</div>
   </div>
 
@@ -592,6 +592,7 @@ function gaugeColorForProgress(pct) {
 }
 
 const el = {
+  backChip: document.getElementById('backChip'),
   frame: document.getElementById('frame'),
   preloadOverlay: document.getElementById('preloadOverlay'),
   bgLayer: document.getElementById('bgLayer'),
@@ -667,6 +668,13 @@ const el = {
   sellFishConfirmBtn: document.getElementById('sellFishConfirmBtn'),
   sellFishCloseBtn: document.getElementById('sellFishCloseBtn'),
 };
+
+// 스토리에서 넘어온 경우(week0-scene-circular-quay-minigame 등) 뒤로가기는
+// 낚시 설정 화면이 아니라 다음 씬으로 이어져야 한다 — /dev/shop/, /dev/wardrobe/
+// 와 같은 mkShopReturnUrl 계약(SHOP_TUTORIAL_RETURN_SCENE, dev/data/
+// sceneRoutes.js)을 그대로 재사용한다. 값이 없으면(=/dev/minigames 등에서 직접
+// 열었으면) 원래대로 설정 화면으로 돌아간다.
+el.backChip.href = sessionStorage.getItem('mkShopReturnUrl') || '/dev/minigame-fishing/';
 
 let castFrameUrls = [];
 let castFrameDurations = null; // per-frame ms, dev/minigame-fishing/index.html 재생 타임라인에서 설정

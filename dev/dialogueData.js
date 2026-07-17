@@ -552,26 +552,26 @@ const week0SceneFirstNightLines = [
 /* OPERATION MK — WEEK 0 · SCENE 1-2 「시드니 지리 파악」 v4
    Dialogue Set: dialogue-week0-scene001-2
    Scene: week0-scene-001-2 (Sydney Airport arrivals concourse, map signage, 09:45)
-   Setup beat before the route-map minigame — teaches 시드니 CBD/공항/숙소
-   (Eastwood)/영우 근무지(Marayong) as four map anchors instead of the old
-   3-stop station-name drill. nextSceneId hands off to that minigame page
-   directly (not another VN scene).
+   Setup beat before the route-map minigame — teaches 서큘러키(Circular
+   Quay)/공항/숙소(Eastwood)/영우 근무지(Marayong) as four map anchors instead
+   of the old 3-stop station-name drill. nextSceneId hands off to that
+   minigame page directly (not another VN scene).
    [v4 지리 정정] Eastwood is the accommodation (한인 상권이 가까워 지내기
    편한 곳) and Marayong is 영우's workplace — the reverse of the v3 draft,
    which had Marayong as the stay and a since-dropped Kings Park as the
    workplace. minigameStages on this scene's week0Scenes registry entry
-   below now lists the 4 locations this setup dialogue teaches; the actual
-   /dev/minigame-eastwood/ implementation still plays the older 3-stop
-   "station in order" tap game (STAGES const in that file) and hasn't been
-   rebuilt for the label-placement/relationship-connect/route-trace design
-   this scene now describes — needs its own follow-up implementation pass. */
+   below now lists the 4 locations this setup dialogue teaches.
+   [써큘러키 낚시 씬 추가] 시티(Sydney CBD)라는 뭉뚱그린 명칭 대신, 항구 바로
+   앞의 실제 지명인 서큘러키(Circular Quay)를 두 번째 지점으로 쓴다 — 열차로
+   지나가는 실제 정류장이자, week0-scene-circular-quay(낚시 미니게임으로
+   이어짐)가 벌어지는 곳이기도 하다. */
 const week0Scene001_2Lines = [
   { id: 'line-001', speaker: '', text: '공항 도착층을 빠져나온 두 사람은\n열차 표지판과 시드니 광역 지도가 있는 안내판 앞에 멈춰 섰다.', characterId: null },
   { id: 'line-002', speaker: '지수', text: '잠만.', characterId: 'jisoo', expression: 'curious' },
   { id: 'line-003', speaker: '지수', text: '우리 지금 시드니 어디쯤 있는 거예요?', characterId: 'jisoo', expression: 'curious' },
   { id: 'line-004', speaker: '영우', text: '여기.', characterId: 'youngwoo', expression: 'neutral' },
   { id: 'line-005', speaker: '', text: '영우가 지도 아래쪽에 있는 공항 표시를 가리킨다.', characterId: 'youngwoo', expression: 'neutral' },
-  { id: 'line-006', speaker: '영우', text: '공항은 시티보다 아래쪽에 있어.', characterId: 'youngwoo', expression: 'neutral' },
+  { id: 'line-006', speaker: '영우', text: '공항은 서큘러키(Circular Quay)보다 아래쪽에 있어.', characterId: 'youngwoo', expression: 'neutral' },
   { id: 'line-007', speaker: '지수', text: '엥.', characterId: 'jisoo', expression: 'shocked' },
   { id: 'line-008', speaker: '지수', text: '나 시드니 도착했으니까\n바로 오페라하우스 옆인 줄 알았는데????', characterId: 'jisoo', expression: 'shocked' },
   { id: 'line-009', speaker: '영우', text: 'ㅋㅎㅋㅎㅋㅎㅋㅎㅋㅎ\n시드니가 그렇게 작진 않아요 손님', characterId: 'youngwoo', expression: 'happy' },
@@ -579,20 +579,20 @@ const week0Scene001_2Lines = [
   { id: 'line-011', speaker: '지수', text: '지금부터 현실 지리 수업 시작이네.', characterId: 'jisoo', expression: 'smirk' },
   { id: 'line-012', speaker: '영우', text: '웅.\n김지수 시드니 생존교육 1교시.', characterId: 'youngwoo', expression: 'smirk' },
   { id: 'line-013', speaker: '지수', text: '선생님 설명 잘하세요.\n평가 들어갑니다.', characterId: 'jisoo', expression: 'smirk' },
-  { id: 'line-014', speaker: '영우', text: '일단 공항이 여기.\n\n시티는 그 위쪽.', characterId: 'youngwoo', expression: 'neutral' },
-  { id: 'line-015', speaker: '영우', text: '오페라하우스랑 하버브리지는\n시티 북쪽 항구 쪽에 있고.', characterId: 'youngwoo', expression: 'neutral' },
-  { id: 'line-016', speaker: '지수', text: '공항 아래쪽.\n시티 위쪽.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-014', speaker: '영우', text: '일단 공항이 여기.\n\n서큘러키는 그 위쪽.', characterId: 'youngwoo', expression: 'neutral' },
+  { id: 'line-015', speaker: '영우', text: '오페라하우스랑 하버브리지는\n서큘러키 바로 옆 항구 쪽에 있고.', characterId: 'youngwoo', expression: 'neutral' },
+  { id: 'line-016', speaker: '지수', text: '공항 아래쪽.\n서큘러키 위쪽.', characterId: 'jisoo', expression: 'curious' },
   { id: 'line-017', speaker: '지수', text: '오키.\n여기까진 이해했어요.', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-018', speaker: '영우', text: '그리고 우리가 묵을 곳은\n시티에서 조금 더 들어간 Eastwood야.', characterId: 'youngwoo', expression: 'neutral' },
+  { id: 'line-018', speaker: '영우', text: '그리고 우리가 묵을 곳은\n서큘러키에서 조금 더 들어간 Eastwood야.', characterId: 'youngwoo', expression: 'neutral' },
   { id: 'line-019', speaker: '지수', text: '숙소가 Eastwood예요?', characterId: 'jisoo', expression: 'curious' },
   { id: 'line-020', speaker: '', text: '지수가 지도의 Eastwood 표시를 누른다.', characterId: 'jisoo', expression: 'curious' },
   { id: 'line-021', speaker: '영우', text: '웅.\n한인 식당이랑 마트도 많아서 지내기 편해.', characterId: 'youngwoo', expression: 'soft' },
   { id: 'line-022', speaker: '지수', text: '헐.\n한국 음식 있어요?', characterId: 'jisoo', expression: 'happy' },
   { id: 'line-023', speaker: '영우', text: '지리 설명보다 반응이 훨씬 빠른데.', characterId: 'youngwoo', expression: 'smirk' },
   { id: 'line-024', speaker: '지수', text: '먹는 건 중요하니까요.', characterId: 'jisoo', expression: 'happy' },
-  { id: 'line-025', speaker: '지수', text: '근데 생각보다 시티에서 가깝네????', characterId: 'jisoo', expression: 'shocked' },
+  { id: 'line-025', speaker: '지수', text: '근데 생각보다 서큘러키에서 가깝네????', characterId: 'jisoo', expression: 'shocked' },
   { id: 'line-026', speaker: '영우', text: '웅.\n그래서 오가기 편해.', characterId: 'youngwoo', expression: 'soft' },
-  { id: 'line-027', speaker: '지수', text: '공항에서 시티 쪽으로 올라갔다가\n거기서 좀 더 들어가는 느낌?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-027', speaker: '지수', text: '공항에서 서큘러키 쪽으로 올라갔다가\n거기서 좀 더 들어가는 느낌?', characterId: 'jisoo', expression: 'curious' },
   { id: 'line-028', speaker: '영우', text: '오.\n마자마자.', characterId: 'youngwoo', expression: 'happy' },
   { id: 'line-029', speaker: '지수', text: '벌써 지리 천재.', characterId: 'jisoo', expression: 'happy' },
   { id: 'line-030', speaker: '영우', text: '아직 한 군데 남았습니다.', characterId: 'youngwoo', expression: 'smirk' },
@@ -609,9 +609,9 @@ const week0Scene001_2Lines = [
   { id: 'line-041', speaker: '영우', text: '출몰은 뭐야 ㅋㅎㅋㅎㅋㅎㅋㅎㅋㅎ', characterId: 'youngwoo', expression: 'happy' },
   { id: 'line-042', speaker: '지수', text: '주로 야간에 발견됨.\n커피와 도시락을 들고 다님.', characterId: 'jisoo', expression: 'smirk' },
   { id: 'line-043', speaker: '영우', text: '아 너무 정확한데 ㅋㅎㅋㅎㅋㅎㅋㅎㅋㅎ', characterId: 'youngwoo', expression: 'happy' },
-  { id: 'line-044', speaker: '영우', text: '정리하면,\n\n공항은 남동쪽.\n\n시티는 공항보다 위쪽.\n\n숙소 Eastwood는 시티에서 좀 더 들어간 쪽.\n\n내 일터 Marayong은 숙소보다 훨씬 먼 서쪽.', characterId: 'youngwoo', expression: 'neutral' },
+  { id: 'line-044', speaker: '영우', text: '정리하면,\n\n공항은 남동쪽.\n\n서큘러키는 공항보다 위쪽.\n\n숙소 Eastwood는 서큘러키에서 좀 더 들어간 쪽.\n\n내 일터 Marayong은 숙소보다 훨씬 먼 서쪽.', characterId: 'youngwoo', expression: 'neutral' },
   { id: 'line-045', speaker: '지수', text: '잠만.\n내가 해볼게.', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-046', speaker: '지수', text: '공항 여기.\n\n시티 여기.\n\n숙소 Eastwood 여기.\n\n영우 일하는 Marayong 여기.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-046', speaker: '지수', text: '공항 여기.\n\n서큘러키 여기.\n\n숙소 Eastwood 여기.\n\n영우 일하는 Marayong 여기.', characterId: 'jisoo', expression: 'curious' },
   { id: 'line-047', speaker: '영우', text: '오.\n다 맞았어.', characterId: 'youngwoo', expression: 'happy' },
   { id: 'line-048', speaker: '지수', text: '야르!!!!', characterId: 'jisoo', expression: 'happy' },
   { id: 'line-049', speaker: '지수', text: '이제 저 시드니 사람 다 됐죠?', characterId: 'jisoo', expression: 'smirk' },
@@ -639,7 +639,7 @@ const week0SceneTrainLines = [
   { id: 'line-007', speaker: '', text: '지도 위에서만 보던 장소들을 확인한 뒤,\n두 사람은 숙소 방향 열차에 자리를 잡았다.', characterId: null },
   { id: 'line-008', speaker: '지수', text: '그러면 지금은\n공항에서 숙소 쪽으로 가는 중인 거죠?', characterId: 'jisoo', expression: 'curious' },
   { id: 'line-009', speaker: '영우', text: '웅웅.', characterId: 'youngwoo', expression: 'neutral' },
-  { id: 'line-010', speaker: '영우', text: '조금 전 지도에서 본 것처럼\n시티 방향으로 올라갔다가 서쪽으로 이동하는 거야.', characterId: 'youngwoo', expression: 'neutral' },
+  { id: 'line-010', speaker: '영우', text: '조금 전 지도에서 본 것처럼\n서큘러키 방향으로 올라갔다가 서쪽으로 이동하는 거야.', characterId: 'youngwoo', expression: 'neutral' },
   { id: 'line-011', speaker: '지수', text: '그리고 Eastwood가 숙소.', characterId: 'jisoo', expression: 'curious' },
   { id: 'line-012', speaker: '지수', text: '거기서 훨씬 더 서쪽이 영우 일하는 Marayong.', characterId: 'jisoo', expression: 'curious' },
   { id: 'line-013', speaker: '영우', text: '마자.\n진짜 잘 기억하네.', characterId: 'youngwoo', expression: 'happy' },
@@ -648,7 +648,7 @@ const week0SceneTrainLines = [
   { id: 'line-016', speaker: '영우', text: '서식지 ㅋㅎㅋㅎㅋㅎㅋㅎㅋㅎ', characterId: 'youngwoo', expression: 'happy' },
   { id: 'line-017', speaker: '지수', text: '근데 실제로 보니까\n지도보다 훨씬 넓다.', characterId: 'jisoo', expression: 'curious' },
   { id: 'line-018', speaker: '영우', text: '시드니가 동네마다 분위기도 많이 달라.', characterId: 'youngwoo', expression: 'neutral' },
-  { id: 'line-019', speaker: '영우', text: '시티는 건물 많고 관광지 느낌이고,\nEastwood는 좀 더 아기자기하고 한인 상권도 있어.', characterId: 'youngwoo', expression: 'neutral' },
+  { id: 'line-019', speaker: '영우', text: '서큘러키는 항구 앞이라 관광지 느낌이고,\nEastwood는 좀 더 아기자기하고 한인 상권도 있어.', characterId: 'youngwoo', expression: 'neutral' },
   { id: 'line-020', speaker: '지수', text: '그럼 영우 일하는 Marayong도\n비슷한 느낌이에요?', characterId: 'jisoo', expression: 'curious' },
   { id: 'line-021', speaker: '영우', text: '아니.\n거긴 또 달라. 훨씬 조용하고 공업 지역 느낌이야.', characterId: 'youngwoo', expression: 'soft' },
   { id: 'line-022', speaker: '지수', text: '신기하다.', characterId: 'jisoo', expression: 'soft' },
@@ -697,15 +697,53 @@ const week0SceneTrainLines = [
   { id: 'line-065', speaker: '', text: '지도 속 낯선 지명들은\n창밖의 실제 풍경으로 하나씩 바뀌고 있었다.', characterId: null },
 ];
 
+/* OPERATION MK — WEEK 0 · SCENE 「서큘러키 · 깜짝 낚시」
+   Dialogue Set: dialogue-week0-scene-circular-quay
+   Scene: week0-scene-circular-quay (Circular Quay Waterfront, 10:35)
+   Inserted between week0-scene-train and week0-scene-shop-intro — pays off
+   minigame-eastwood's success-dialogue foreshadow ("이따 숙소 가는 길에 한
+   군데 들렀다 가자" / "가보면 알아", see that file's successLines) with an
+   actual detour: 영우 gets off one stop early at Circular Quay and surprises
+   지수 with fishing off the quay. Hands off into the standalone fishing
+   minigame (MINIGAME_ROUTES['week0-scene-circular-quay-minigame'] in
+   dev/data/sceneRoutes.js) instead of another VN scene. */
+const week0SceneCircularQuayLines = [
+  { id: 'line-001', speaker: '', text: 'Circular Quay 역.\n오전 10시 35분.', characterId: null },
+  { id: 'line-002', speaker: '지수', text: '음...\n벌써 도착했어요?', characterId: 'jisoo', expression: 'blank' },
+  { id: 'line-003', speaker: '영우', text: '아니, 아직.\n근데 여기서 잠깐만 내리자.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-004', speaker: '지수', text: '어?\n우리 숙소 이 역 아니잖아요.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-005', speaker: '영우', text: '맞아.\n아까 말한 "한 군데" 여기야.', characterId: 'youngwoo', expression: 'smirk' },
+  { id: 'line-006', speaker: '지수', text: '아 그거!!!\n뭔데요 뭔데요.', characterId: 'jisoo', expression: 'shocked' },
+  { id: 'line-007', speaker: '영우', text: '일단 나와봐.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-008', speaker: '', text: '개찰구를 빠져나오자\n넓은 워터프론트가 펼쳐졌다.', characterId: null },
+  { id: 'line-009', speaker: '', text: '여러 척의 페리가 정박해 있고,\n저 멀리 오페라하우스의 흰 지붕과 하버브리지가 보였다.', characterId: null },
+  { id: 'line-010', speaker: '지수', text: '헐...\n대박, 여기 완전 그림이잖아요.', characterId: 'jisoo', expression: 'shocked' },
+  { id: 'line-011', speaker: '영우', text: '그치?\n아까 지도에서 본 데 맞지.', characterId: 'youngwoo', expression: 'happy' },
+  { id: 'line-012', speaker: '지수', text: '맞다!\n오페라하우스랑 하버브리지 여기서 보이는 데.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-013', speaker: '', text: '지수가 난간 쪽으로 다가가다가,\n부두 끝에서 낚싯대를 드리운 사람들을 발견했다.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-014', speaker: '지수', text: '어?\n저기 사람들 낚시해요?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-015', speaker: '영우', text: '어.\n그게 오늘 서프라이즈야.', characterId: 'youngwoo', expression: 'smirk' },
+  { id: 'line-016', speaker: '지수', text: '네????', characterId: 'jisoo', expression: 'shocked' },
+  { id: 'line-017', speaker: '영우', text: '지수 저번에\n낚시 한번 해보고 싶다고 했었잖아.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-018', speaker: '지수', text: '그걸 기억하고 있었어요??', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-019', speaker: '영우', text: '당연하지.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-020', speaker: '지수', text: '완전 감동...\n근데 나 낚시 한 번도 안 해봤는데.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-021', speaker: '영우', text: '괜찮아.\n내가 알려줄게.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-022', speaker: '지수', text: '오케이!\n첫 손님인 만큼 잘 부탁드립니다 선생님.', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-023', speaker: '영우', text: '지리 수업 때보다\n더 잘 가르칠 자신 있음.', characterId: 'youngwoo', expression: 'smirk' },
+  { id: 'line-024', speaker: '', text: '[ 잠시 후 — 낚시 화면으로 이동합니다 ]', characterId: null },
+];
+
 /* OPERATION MK — WEEK 0 · SCENE 「작은 편집숍」 (The Missing Key v1 §5.2/§11.3)
    Dialogue Set: dialogue-week0-scene-shop-intro
    Scene: week0-scene-shop-intro (Eastwood Street, 20:05)
-   Inserted between week0-scene-train and week0-scene-002-1 — 지도 미니게임
-   에서 얻은 500P를 실제로 써 보는 첫 경험. 강제 구매는 없다 (§5.2 "강제 구매
-   여부"): 어느 쪽을 골라도 같은 상점 화면으로 이어지고, 튜토리얼은 구매 여부와
-   무관하게 완료된다. 실제 미리보기·구매는 대사가 아니라 /dev/shop/ 화면에서
-   일어난다 — hand-off는 기존 미니게임 라우팅과 같은 nextSceneId 패턴
-   (week0-scene-shop-visit, MINIGAME_ROUTES in game/index.html) 을 쓴다. */
+   Inserted between week0-scene-circular-quay(-minigame) and week0-scene-002-1
+   — 지도 미니게임에서 얻은 500P를 실제로 써 보는 첫 경험. 강제 구매는 없다
+   (§5.2 "강제 구매 여부"): 어느 쪽을 골라도 같은 상점 화면으로 이어지고,
+   튜토리얼은 구매 여부와 무관하게 완료된다. 실제 미리보기·구매는 대사가 아니라
+   /dev/shop/ 화면에서 일어난다 — hand-off는 기존 미니게임 라우팅과 같은
+   nextSceneId 패턴 (week0-scene-shop-visit, MINIGAME_ROUTES in
+   game/index.html) 을 쓴다. */
 const week0SceneShopIntroLines = [
   { id: 'line-001', speaker: '', text: 'Eastwood 역 출구.\n저녁 8시 05분.', characterId: null },
   { id: 'line-002', speaker: '', text: '역에서 나온 두 사람은\n숙소 쪽으로 천천히 걸었다.', characterId: null },
@@ -988,7 +1026,7 @@ const week0Scenes = [
     // /dev/minigame-eastwood/ now implements the documented 3-stage design
     // (라벨 배치 → 관계 연결 → 경로 확인, The Missing Key v1 §11.2) over these
     // same 4 hotspots, in this array's order.
-    minigameStages: ['공항 (Sydney International Airport)', '시티 (Sydney CBD)', '숙소 (Eastwood)', '영우 근무지 (Marayong)'],
+    minigameStages: ['공항 (Sydney International Airport)', '서큘러키 (Circular Quay)', '숙소 (Eastwood)', '영우 근무지 (Marayong)'],
   },
   {
     id: 'week0-scene-001-2-minigame',
@@ -1006,14 +1044,35 @@ const week0Scenes = [
     introLabel: 'SYDNEY TRAINS',
     time: '10:05',
     lines: week0SceneTrainLines,
-    // The Missing Key v1 §5.2/§11.1 — hands off into the new shop-unlock
-    // scene instead of straight to the accommodation now (was
-    // 'week0-scene-002-1'; that scene still follows right after).
-    nextSceneId: 'week0-scene-shop-intro',
+    // Hands off into the Circular Quay detour (surprise fishing stop) instead
+    // of straight to the shop/accommodation now — see week0-scene-circular-
+    // quay's header comment.
+    nextSceneId: 'week0-scene-circular-quay',
+  },
+  {
+    id: 'week0-scene-circular-quay',
+    order: 5,
+    name: '서큘러키 · 깜짝 낚시',
+    location: 'Circular Quay Waterfront',
+    introLabel: 'CIRCULAR QUAY',
+    time: '10:35',
+    lines: week0SceneCircularQuayLines,
+    // Hands off to the standalone fishing minigame (a routed page, same
+    // MINIGAME_ROUTES handoff every other minigame uses) — see
+    // dev/data/sceneRoutes.js.
+    nextSceneId: 'week0-scene-circular-quay-minigame',
+  },
+  {
+    id: 'week0-scene-circular-quay-minigame',
+    order: 6,
+    name: '서큘러키 낚시',
+    location: 'Circular Quay Waterfront',
+    time: '10:40',
+    route: '/dev/minigame-fishing/play/',
   },
   {
     id: 'week0-scene-shop-intro',
-    order: 5,
+    order: 7,
     name: '작은 편집숍 · 옷가게 오픈',
     location: 'Eastwood Street',
     introLabel: 'EASTWOOD',
@@ -1031,7 +1090,7 @@ const week0Scenes = [
   },
   {
     id: 'week0-scene-shop-visit',
-    order: 6,
+    order: 8,
     name: '옷가게 튜토리얼',
     location: 'Eastwood Boutique',
     time: '20:10',
@@ -1039,7 +1098,7 @@ const week0Scenes = [
   },
   {
     id: 'week0-scene-002-1',
-    order: 7,
+    order: 9,
     name: '진짜 같이 있네 · 첫날 저녁 · 떨어진 충전기',
     location: 'Eastwood Accommodation',
     introLabel: 'EASTWOOD',
@@ -1061,7 +1120,7 @@ const week0Scenes = [
   },
   {
     id: 'week0-scene-002-2',
-    order: 8,
+    order: 10,
     name: '핸드폰을 찾아라',
     location: 'Eastwood Accommodation',
     time: '22:35',
@@ -1073,7 +1132,7 @@ const week0Scenes = [
   },
   {
     id: 'week0-scene-002-3',
-    order: 9,
+    order: 11,
     name: '근데 이 열쇠 뭐지? · 집주인과의 통화 · 첫날 밤',
     location: 'Eastwood Accommodation',
     introLabel: 'EASTWOOD',
@@ -1100,6 +1159,9 @@ const week0Scenes = [
 const week0SceneGroups = [
   { range: '#1-2', label: '공항 도착', sceneIds: ['week0-scene-flight'] },
   { range: '#3-5', label: '지하철 · 열차', sceneIds: ['week0-scene-001-2', 'week0-scene-001-2-minigame', 'week0-scene-train'] },
+  // 서큘러키 깜짝 낚시 — 열차와 옷가게 사이, 숙소로 가기 전 들르는 서프라이즈
+  // 정류장. minigame-eastwood의 성공 대사가 예고한 "한 군데"의 정체.
+  { range: 'NEW', label: '서큘러키 · 낚시', sceneIds: ['week0-scene-circular-quay', 'week0-scene-circular-quay-minigame'] },
   // The Missing Key v1 §5.2 — new shop-unlock beat, inserted between the
   // train and the accommodation arrival.
   { range: 'NEW', label: '옷가게 오픈', sceneIds: ['week0-scene-shop-intro', 'week0-scene-shop-visit'] },
