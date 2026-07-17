@@ -256,8 +256,8 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .fish-sub{font-family:var(--mono);font-size:10.5px;color:var(--text-muted);margin-top:2px}
 .fish-value{font-family:var(--mono);font-size:12.5px;font-weight:700;color:var(--amber);flex-shrink:0}
 
-/* ===== 이동 탭 — 격자 이동 테스트. 배경화면(낚시바 디자인 탭에서 올린
-   fishingConfig.backgroundAssetId)을 축소 없이 원본 픽셀 크기로 깔고
+/* ===== 이동 설정(모션 탭 안) — 격자 이동 테스트. 배경화면(fishingConfig.
+   backgroundAssetId, 영역 설정/캐릭터 탭과 공유)을 축소 없이 원본 픽셀 크기로 깔고
    (.move-world의 width/height를 이미지 실제 크기로 JS에서 지정, background-size:auto),
    그 위를 스크롤 가능한 뷰포트(.move-stage)로 잘라 보여준다 — 스타듀밸리처럼
    캐릭터가 움직일 때마다 뷰포트가 캐릭터를 따라 스크롤된다(updateCharPosition
@@ -342,34 +342,13 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   <a class="back" href="/dev/minigames/">‹ DEV</a>
   <div class="tag">Minigame · 설정</div>
   <div class="title">🎣 낚시</div>
-  <div class="sub">캐스팅 → 입질 대기 → 낚시바로 잡아채기 → 올리기까지 이어지는 독립형 낚시 미니게임이에요. 아래 5개 탭에서 로직·모션·디자인을 각각 설정해요.</div>
+  <div class="sub">캐스팅 → 입질 대기 → 낚시바로 잡아채기 → 올리기까지 이어지는 독립형 낚시 미니게임이에요. 아래 4개 탭에서 모션·영역·대화·캐릭터를 각각 설정해요.</div>
 
   <div class="tabs" id="tabsRow">
-    <button class="tab-btn active" data-tab="logic">낚시게임 로직</button>
-    <button class="tab-btn" data-tab="motion">모션</button>
-    <button class="tab-btn" data-tab="bar">낚시바 디자인</button>
-    <button class="tab-btn" data-tab="fish">물고기 종류</button>
-    <button class="tab-btn" data-tab="move">이동</button>
+    <button class="tab-btn active" data-tab="motion">모션</button>
     <button class="tab-btn" data-tab="area">영역 설정</button>
-    <button class="tab-btn" data-tab="item">아이템창</button>
     <button class="tab-btn" data-tab="dialogue">대화</button>
     <button class="tab-btn" data-tab="character">캐릭터</button>
-  </div>
-
-  <!-- ===== 낚시게임 로직 — 난이도/모션타입(물고기 움직임 패턴) 선택. 값은
-       AssetDB가 아니라 다른 미니게임들과 같은 관례로 테스트하기 링크의
-       쿼리스트링(?diff=&motion=)에 실려 /play/로 전달된다. ===== -->
-  <div class="tab-panel" id="panelLogic">
-    <div class="option-group">
-      <div class="option-label">난이도</div>
-      <div class="option-desc">낚시바에서 물고기가 얼마나 빠르게/자주 캐치존을 벗어나는지 정해요.</div>
-      <div class="option-pills" id="diffPills"></div>
-    </div>
-    <div class="option-group">
-      <div class="option-label">모션타입 (물고기 움직임 패턴)</div>
-      <div class="option-desc">낚시바 안에서 물고기가 움직이는 방식이에요.</div>
-      <div class="option-pills" id="motionPills"></div>
-    </div>
   </div>
 
   <!-- ===== 모션 — 캐스팅·올리기·이동(4방향) 6가지 동작의 "프레임"을
@@ -379,16 +358,16 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
        fishDefs.js의 MOTION_CATEGORIES): 캐스팅→올리기→위→아래→왼쪽→오른쪽.
        렌더/크롭은 카테고리를 인자로 받는 공용 함수(renderMotionTab 등)로
        처리한다. 이동 속도(타일 이동 시간)·자유 이동 테스트(조이스틱 물리)는
-       여전히 별도 "이동" 탭(panelMove)에 있다 — 여기서 바뀌는 건 프레임
-       소스뿐이고, 그 탭은 motionFrameCache.up/down/left/right를 읽어
-       재생한다. 다만 걷기 프레임 "전환 속도"(재생 속도)는 이동(4방향) 각
+       원래 별도 "이동" 탭이었지만 이제 이 탭 안 "이동 설정" 구간(⑥ 오른쪽
+       이동 다음)으로 합쳐졌다 — 프리뷰는 motionFrameCache.up/down/left/right를
+       읽어 재생한다. 다만 걷기 프레임 "전환 속도"(재생 속도)는 이동(4방향) 각
        카테고리 블록에서 방향별로 따로 정할 수 있다(motionPlaybackMs) —
-       값이 없는 방향은 panelMove의 걷기 애니메이션 전환 속도(moveAnimMs)를
+       값이 없는 방향은 아래 "이동 설정"의 걷기 애니메이션 전환 속도(moveAnimMs)를
        그대로 쓴다. 또한 이동(4방향)은 프레임마다 시트 크롭 대신 사진을
        개별 업로드하거나(motionFrameImageOverrides) 그 프레임만 배경을 다시
        제거(누끼)할 수 있다 — 캐스팅/올리기는 이 두 기능의 범위 밖(위
        MOVE_CATEGORIES 참고). ===== -->
-  <div class="tab-panel hidden" id="panelMotion">
+  <div class="tab-panel" id="panelMotion">
     <div class="option-group">
       <div class="option-label">모션 시트</div>
       <div class="option-desc">투명 PNG · 정확히 6행×6열(36칸) 격자 · 이미지 크기는 자유예요(업로드한 실제 가로/세로를 그대로 6등분해서 칸을 구해요). 행 순서(위에서부터): ① 캐스팅 ② 올리기 ③ 위로 이동 ④ 아래로 이동 ⑤ 왼쪽 이동 ⑥ 오른쪽 이동 — 각 행 안에서는 왼쪽부터 순서대로 6프레임이에요. 격자에 딱 맞지 않으면 아래 각 동작의 "행 영역 조정"으로 그 행 6칸의 세로 범위를 통째로 맞추거나, 프레임을 탭해서 하나씩 따로 세밀영역조절할 수 있어요. 한 프레임의 크롭 크기를 바꾸면 같은 동작의 나머지 프레임도 같은 크기로 맞춰져요.</div>
@@ -578,6 +557,41 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
       <button type="button" class="fish-sheet-btn" id="motionRightCutoutAllBtn" style="width:100%;margin-top:8px" disabled>✂ 프레임 전체 배경 제거</button>
     </div>
 
+    <div class="motion-category-title">이동 설정</div>
+    <div class="option-group">
+      <div class="option-label">이동 속도</div>
+      <div class="option-desc">캐릭터가 타일 한 칸(64px) 크기만큼 이동하는 데 걸리는 시간 기준으로 속도를 정해요. 값이 작을수록 빠르게 이동해요.</div>
+      <div class="range-row">
+        <input type="range" id="moveStepMsInput" min="60" max="500" step="10" value="200">
+        <div class="range-value" id="moveStepMsValue">200ms</div>
+      </div>
+    </div>
+    <div class="option-group">
+      <div class="option-label">걷기 애니메이션 전환 속도 (기본값)</div>
+      <div class="option-desc">걷는 프레임이 다음 프레임으로 넘어가는 데 걸리는 시간이에요. 이동 속도와는 별개로 조절돼요 — 값이 작을수록 다리가 빨리 움직이는 것처럼 보여요. 방향별로 따로 정하고 싶으면 위 위/아래/왼쪽/오른쪽 이동 각각에 있는 재생 속도를 조절하세요 — 여기 값은 방향별로 따로 정하지 않았을 때만 쓰이는 공통 기본값이에요.</div>
+      <div class="range-row">
+        <input type="range" id="moveAnimMsInput" min="40" max="300" step="10" value="90">
+        <div class="range-value" id="moveAnimMsValue">90ms</div>
+      </div>
+    </div>
+    <div class="option-group">
+      <div class="option-label">자유 이동 테스트</div>
+      <div class="option-desc">배경화면(영역 설정/캐릭터 탭에서 쓰는 배경)을 축소 없이 원본 크기 그대로 깔아요. 아직 배경을 안 올렸다면 체커보드 격자로 대신 보여줘요. 화살표 키를 누르거나 아래 방향 버튼을 누르고 있으면 캐릭터가 격자에 스냅되지 않고 위 이동 속도에 맞춰 자유롭게 이동해요.</div>
+      <div class="move-stage" id="moveStage">
+        <div class="move-world" id="moveWorld">
+          <div class="move-char" id="moveChar"></div>
+        </div>
+      </div>
+      <div class="move-controls-row">
+        <div class="move-dpad" id="moveDpad">
+          <button type="button" class="move-dpad-btn move-dpad-up" data-dir="up" aria-label="위로">▲</button>
+          <button type="button" class="move-dpad-btn move-dpad-left" data-dir="left" aria-label="왼쪽으로">◀</button>
+          <button type="button" class="move-dpad-btn move-dpad-right" data-dir="right" aria-label="오른쪽으로">▶</button>
+          <button type="button" class="move-dpad-btn move-dpad-down" data-dir="down" aria-label="아래로">▼</button>
+        </div>
+      </div>
+    </div>
+
     <div class="option-group">
       <div class="option-label">물고기 들기 위치</div>
       <div class="option-desc">낚시 성공 후 캐릭터가 물고기를 들고 있는 자세(올리기 마지막 프레임) 위에서, 물고기 아이콘이 나타날 위치를 지정하세요.</div>
@@ -593,147 +607,6 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     </div>
   </div>
 
-  <!-- ===== 낚시바 디자인 — PPT 슬라이드형 에디터. 낚시바/캐치바 이미지를
-       자유 배치하고 캐치바 영역/게이지 영역을 사각형으로 지정한다. 슬라이드
-       크기(아래 슬라이더)가 그대로 실제 게임 낚시바 모듈 크기가 된다. ===== -->
-  <div class="tab-panel hidden" id="panelBar">
-    <div class="option-group">
-      <div class="option-label">배경화면</div>
-      <div class="option-desc">낚시 게임 화면 전체의 배경 그림이에요. 업로드하지 않으면 기본 하늘/바다 그라데이션이 표시돼요.</div>
-      <div class="frame-strip" id="backgroundImageSlot"></div>
-      <button type="button" class="frame-add-btn hidden" id="backgroundImageAddBtn">+ 배경화면 업로드</button>
-      <input type="file" id="backgroundImageFileInput" accept="image/*">
-    </div>
-    <div class="option-group">
-      <div class="option-label">물고기 아이콘</div>
-      <div class="option-desc">잡아채기 중 낚시바 안에서 움직이는 물고기 아이콘이에요(잡히는 물고기 종별 아이콘은 '물고기 종류' 탭에서 따로 지정해요). 업로드하지 않으면 기본 이모지(🐟)로 표시돼요. 업로드한 사진은 탭하면 크롭 영역을 다시 세밀 조정할 수 있어요.</div>
-      <div class="range-row">
-        <input type="range" id="fishIconSizeInput" min="10" max="40" value="26">
-        <div class="range-value" id="fishIconSizeValue">26px</div>
-      </div>
-      <div class="frame-strip" id="fishIconSlot"></div>
-      <button type="button" class="frame-add-btn hidden" id="fishIconAddBtn">+ 아이콘 업로드</button>
-      <input type="file" id="fishIconFileInput" accept="image/*">
-    </div>
-
-    <div class="option-group">
-      <div class="option-label">낚시바 슬라이드</div>
-      <div class="option-desc">PPT 슬라이드처럼 낚시바 이미지·캐치바 이미지를 자유롭게 배치하고, 캐치바 영역·게이지 영역·물고기 영역을 사각형으로 지정하세요. 오브젝트를 탭하면 선택되고, 몸통을 드래그하면 이동, 오른쪽 아래 초록 손잡이를 드래그하면 크기가 바뀌어요.</div>
-      <div class="slide-toolbar" id="slideToolbar">
-        <button type="button" class="fish-sheet-btn" id="addBarImageBtn">+ 낚시바 이미지</button>
-        <button type="button" class="fish-sheet-btn" id="addCatchImageBtn">+ 캐치바 이미지</button>
-        <button type="button" class="fish-sheet-btn" id="addZoneRegionBtn">+ 캐치바 영역</button>
-        <button type="button" class="fish-sheet-btn" id="addGaugeRegionBtn">+ 게이지 영역</button>
-        <button type="button" class="fish-sheet-btn" id="addFishRegionBtn">+ 물고기 영역</button>
-      </div>
-      <input type="file" id="barLayerFileInput" accept="image/*">
-      <input type="file" id="catchLayerFileInput" accept="image/*">
-      <div class="slide-stage-wrap">
-        <div class="slide-stage" id="slideStage"></div>
-      </div>
-      <button type="button" class="fish-sheet-btn hidden" id="cropCatchImageBtn" style="width:100%;margin-top:10px">✂ 캐치바 이미지 인식 영역 자르기</button>
-      <button type="button" class="fish-sheet-btn hidden" id="reloadCatchImageBtn" style="width:100%;margin-top:10px">🔄 캐치바 이미지 다시 불러오기</button>
-      <button type="button" class="fish-sheet-btn danger hidden" id="deleteLayerBtn" style="width:100%;margin-top:10px">✕ 선택한 오브젝트 삭제</button>
-    </div>
-    <!-- ===== 게이지 채움 이미지 — 위 슬라이드에서 "+ 게이지 영역"으로 지정한
-         사각형 안을 채우는 그림. 업로드하지 않으면 기존처럼 진행도(0~100%)에
-         따라 빨강→초록으로 바뀌는 단색으로 채워진다. ===== -->
-    <div class="option-group">
-      <div class="option-label">게이지 채움 이미지</div>
-      <div class="option-desc">게이지 영역 안을 채우는 그림이에요(진행도가 오를수록 아래에서부터 드러나요). 업로드하지 않으면 기본처럼 진행도에 따라 빨강→초록으로 바뀌는 단색으로 채워져요.</div>
-      <div class="frame-strip" id="gaugeImageSlot"></div>
-      <button type="button" class="frame-add-btn hidden" id="gaugeImageAddBtn">+ 게이지 채움 이미지 업로드</button>
-      <input type="file" id="gaugeImageFileInput" accept="image/*">
-    </div>
-    <div class="option-group">
-      <div class="option-label">슬라이드 크기</div>
-      <div class="option-desc">이 크기가 실제 게임에 쓰이는 낚시바 모듈 전체 크기예요. 크기를 바꿔도 슬라이드 안의 배치 비율은 그대로 유지돼요.</div>
-      <div class="range-row">
-        <input type="range" id="slideWidthInput" min="40" max="260" value="90">
-        <div class="range-value" id="slideWidthValue">90px</div>
-      </div>
-      <div class="range-row">
-        <input type="range" id="slideHeightInput" min="120" max="420" value="260">
-        <div class="range-value" id="slideHeightValue">260px</div>
-      </div>
-    </div>
-    <div class="option-group">
-      <div class="option-label">낚시 추</div>
-      <div class="option-desc">캐스팅할 때 낚싯대 끝에서 날아가는 추(찌 무게추) 그림이에요. 업로드하지 않으면 기본 동그라미로 표시돼요. 업로드하면 배경이 자동으로 제거돼요(누끼).</div>
-      <div class="frame-strip" id="sinkerImageSlot"></div>
-      <button type="button" class="frame-add-btn hidden" id="sinkerImageAddBtn">+ 낚시 추 이미지 업로드</button>
-      <input type="file" id="sinkerImageFileInput" accept="image/*">
-    </div>
-    <div class="option-group">
-      <div class="option-label">물었다! 표시</div>
-      <div class="option-desc">입질(느낌표) 온 뒤 탭하면 잠깐 커졌다 작아지며 사라지는 표시예요. 업로드하지 않으면 기본 "물었다!" 텍스트로 표시돼요. 업로드하면 배경이 자동으로 제거돼요(누끼).</div>
-      <div class="frame-strip" id="biteStampImageSlot"></div>
-      <button type="button" class="frame-add-btn hidden" id="biteStampImageAddBtn">+ 물었다! 이미지 업로드</button>
-      <input type="file" id="biteStampImageFileInput" accept="image/*">
-    </div>
-  </div>
-
-  <!-- ===== 물고기 종류 — 낚시로 잡히는 67종 카탈로그(dev/data/fishDefs.js, 코드
-       내장 정적 데이터라 여기서 직접 편집하진 않는다) + 아이콘 스프라이트시트
-       업로드. 시트를 올리면 각 물고기의 slot(=행/열) 순서 그대로 아이콘이
-       배정된다 — 슬롯 계산은 fishDefs.js의 getFishSlotStyle 참고. ===== -->
-  <div class="tab-panel hidden" id="panelFish">
-    <div class="option-group">
-      <div class="option-label">아이콘 스프라이트시트</div>
-      <div class="option-desc">196×136px 투명 PNG · 10열×7행 · 칸 16×16px · 칸 간격 4px · 바깥 여백 없음. 업로드하면 아래 목록의 물고기 순서(왼쪽 위부터 가로로)대로 아이콘이 자동 배정돼요. 마지막 3칸은 비워두면 돼요. 시트가 규격에 딱 맞지 않으면 아이콘이 어긋나 보일 수 있는데, 목록에서 물고기 아이콘을 탭하면 그 물고기만 따로 세밀영역조절할 수 있어요.</div>
-      <div class="fish-sheet-frame" id="fishSheetFrame">
-        <div class="fish-sheet-empty" id="fishSheetEmpty">아직 업로드된 시트가 없어요<br>업로드하기 전까진 기본 이모지로 표시돼요</div>
-      </div>
-      <div class="fish-sheet-actions">
-        <button type="button" class="fish-sheet-btn" id="fishSheetUploadBtn">📤 시트 업로드</button>
-        <button type="button" class="fish-sheet-btn danger hidden" id="fishSheetRemoveBtn">✕ 제거</button>
-      </div>
-      <input type="file" id="fishSheetFileInput" accept="image/png">
-    </div>
-    <div id="fishGradeGroups"></div>
-  </div>
-
-  <!-- ===== 이동 — 걷기 모션 프레임(상하좌우)은 "모션" 탭의 통합 시트에서
-       가져온다(motionFrameCache.up/down/left/right, dev/minigame-fishing/
-       index.html 모션 탭 참고) — 이 탭은 이동 속도 설정과 낚시바 디자인
-       탭의 배경화면 위에서 자유 이동을 테스트하는 용도만 남았다. 격자에
-       스냅되지 않고 방향키/방향 버튼을 누르고 있는 동안 이동 속도(px/ms로
-       환산)에 맞춰 매끄럽게 이동한다. ===== -->
-  <div class="tab-panel hidden" id="panelMove">
-    <div class="option-group">
-      <div class="option-label">이동 속도</div>
-      <div class="option-desc">캐릭터가 타일 한 칸(64px) 크기만큼 이동하는 데 걸리는 시간 기준으로 속도를 정해요. 값이 작을수록 빠르게 이동해요.</div>
-      <div class="range-row">
-        <input type="range" id="moveStepMsInput" min="60" max="500" step="10" value="200">
-        <div class="range-value" id="moveStepMsValue">200ms</div>
-      </div>
-    </div>
-    <div class="option-group">
-      <div class="option-label">걷기 애니메이션 전환 속도 (기본값)</div>
-      <div class="option-desc">걷는 프레임이 다음 프레임으로 넘어가는 데 걸리는 시간이에요. 이동 속도와는 별개로 조절돼요 — 값이 작을수록 다리가 빨리 움직이는 것처럼 보여요. 방향별로 따로 정하고 싶으면 "모션" 탭의 위/아래/왼쪽/오른쪽 이동 각각에 있는 재생 속도를 조절하세요 — 여기 값은 방향별로 따로 정하지 않았을 때만 쓰이는 공통 기본값이에요.</div>
-      <div class="range-row">
-        <input type="range" id="moveAnimMsInput" min="40" max="300" step="10" value="90">
-        <div class="range-value" id="moveAnimMsValue">90ms</div>
-      </div>
-    </div>
-    <div class="option-group">
-      <div class="option-label">자유 이동 테스트</div>
-      <div class="option-desc">배경화면(낚시바 디자인 탭에서 업로드)을 축소 없이 원본 크기 그대로 깔아요. 아직 배경을 안 올렸다면 체커보드 격자로 대신 보여줘요. 화살표 키를 누르거나 아래 방향 버튼을 누르고 있으면 캐릭터가 격자에 스냅되지 않고 위 이동 속도에 맞춰 자유롭게 이동해요.</div>
-      <div class="move-stage" id="moveStage">
-        <div class="move-world" id="moveWorld">
-          <div class="move-char" id="moveChar"></div>
-        </div>
-      </div>
-      <div class="move-controls-row">
-        <div class="move-dpad" id="moveDpad">
-          <button type="button" class="move-dpad-btn move-dpad-up" data-dir="up" aria-label="위로">▲</button>
-          <button type="button" class="move-dpad-btn move-dpad-left" data-dir="left" aria-label="왼쪽으로">◀</button>
-          <button type="button" class="move-dpad-btn move-dpad-right" data-dir="right" aria-label="오른쪽으로">▶</button>
-          <button type="button" class="move-dpad-btn move-dpad-down" data-dir="down" aria-label="아래로">▼</button>
-        </div>
-      </div>
-    </div>
-  </div>
 
   <!-- ===== 영역 설정 — 낚시바 디자인 탭의 배경화면 위에 다각형 영역을
        그린다. 세 가지 종류(낚시가능/이동불가/상호작용)를 탭으로 오가며
@@ -749,7 +622,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     <div class="option-group">
       <div class="area-stage" id="areaStage">
         <img id="areaBgImg" class="hidden" alt="">
-        <div class="area-bg-empty" id="areaBgEmpty">배경화면을 먼저 업로드하세요(낚시바 디자인 탭)</div>
+        <div class="area-bg-empty" id="areaBgEmpty">아직 배경화면이 없어요</div>
         <svg class="area-svg" id="areaSvg" viewBox="0 0 100 100" preserveAspectRatio="none">
           <g id="areaSavedPolygons"></g>
           <polyline class="area-draft-line hidden" id="areaDraftLine"></polyline>
@@ -766,59 +639,6 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     <div class="option-group">
       <div class="option-label" id="areaListLabel">저장된 영역</div>
       <div id="areaList"></div>
-    </div>
-  </div>
-
-  <!-- ===== 아이템창 — 낚시 성공 시(물고기가 추에서 캐릭터로 날아온 다음)
-       뜨는 팝업의 디자인. 배경(액자) 그림을 올리고, 그 위 어디에 잡은
-       물고기 아이콘이 놓일지 점 하나로 지정한다(낚시대 끝 지정과 같은
-       단일 포인트 피커 — 아래 itemPosOverlay가 rodtip-stage/rodtip-marker
-       클래스를 그대로 재사용). 실제 팝업은
-       dev/minigame-fishing/play/index.html의 #itemPopup 참고. ===== -->
-  <div class="tab-panel hidden" id="panelItem">
-    <div class="option-group">
-      <div class="option-label">팝업 배경</div>
-      <div class="option-desc">낚시 성공 시 뜨는 아이템창의 배경(액자) 그림이에요. 업로드하지 않으면 기본 카드 배경이 표시돼요.</div>
-      <div class="frame-strip" id="itemBgSlot"></div>
-      <button type="button" class="frame-add-btn hidden" id="itemBgAddBtn">+ 배경 업로드</button>
-      <input type="file" id="itemBgFileInput" accept="image/*">
-    </div>
-    <div class="option-group">
-      <div class="option-label">아이템 아이콘 크기</div>
-      <div class="range-row">
-        <input type="range" id="itemIconSizeInput" min="32" max="120" value="64">
-        <div class="range-value" id="itemIconSizeValue">64px</div>
-      </div>
-    </div>
-    <div class="option-group">
-      <div class="option-label">아이템 뜨는 위치</div>
-      <div class="option-desc">배경 그림 위 어디에 잡은 물고기 아이콘이 나타날지 지정하세요.</div>
-      <button type="button" class="fish-sheet-btn" id="itemPosEditBtn" style="width:100%">🎯 위치 지정</button>
-    </div>
-    <div class="option-group">
-      <div class="option-label">아이템명 글꼴 크기</div>
-      <div class="option-desc">잡은 물고기 이름(예: 숭어)이 표시되는 글자 크기예요.</div>
-      <div class="range-row">
-        <input type="range" id="itemNameSizeInput" min="10" max="28" value="16">
-        <div class="range-value" id="itemNameSizeValue">16px</div>
-      </div>
-      <button type="button" class="fish-sheet-btn" id="itemNamePosEditBtn" style="width:100%;margin-top:4px">🎯 아이템명 위치 지정</button>
-    </div>
-    <div class="option-group">
-      <div class="option-label">설명 글꼴 크기</div>
-      <div class="option-desc">등급 · 가치(예: 일반 · 6P)가 표시되는 글자 크기예요.</div>
-      <div class="range-row">
-        <input type="range" id="itemMetaSizeInput" min="8" max="22" value="12">
-        <div class="range-value" id="itemMetaSizeValue">12px</div>
-      </div>
-      <button type="button" class="fish-sheet-btn" id="itemMetaPosEditBtn" style="width:100%;margin-top:4px">🎯 설명 위치 지정</button>
-    </div>
-    <div class="bar-preview-wrap">
-      <div class="item-popup-preview item-popup-preview--fallback" id="itemPopupPreview">
-        <div class="item-popup-preview-icon" id="itemPopupPreviewIcon">🐟</div>
-        <div class="item-popup-preview-name" id="itemPopupPreviewName">물고기</div>
-        <div class="item-popup-preview-meta" id="itemPopupPreviewMeta">일반 · 6P</div>
-      </div>
     </div>
   </div>
 
@@ -886,7 +706,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
 
     <div class="option-group">
       <div class="option-label">영우 위치</div>
-      <div class="option-desc">낚시바 디자인 탭에서 올린 배경화면 위, 영우가 서 있을 자리를 지정하세요. 배경화면과 영우 idle 시트를 둘 다 올려야 지정할 수 있고, 지정하지 않으면 영우는 화면에 나타나지 않아요.</div>
+      <div class="option-desc">배경화면 위, 영우가 서 있을 자리를 지정하세요. 배경화면과 영우 idle 시트를 둘 다 있어야 지정할 수 있고, 지정하지 않으면 영우는 화면에 나타나지 않아요.</div>
       <button type="button" class="fish-sheet-btn" id="youngwooPosEditBtn" style="width:100%" disabled>📍 영우 위치 지정</button>
     </div>
   </div>
@@ -1025,30 +845,11 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   </div>
 </div>
 
-<!-- 아이템창 위치 지정(범용) — 낚시대 끝 지정과 같은 바텀시트 틀 +
-     단일 포인트 마커(rodtip-stage/rodtip-marker 클래스 재사용, 스테이지
-     비율만 itempos-stage로 다르게). 아이콘/아이템명/설명 세 대상이 이 팝업
-     하나를 공유한다(itemPosTargetKey로 구분, openItemPosEditor 참고). -->
-<div class="crop-overlay hidden" id="itemPosOverlay">
-  <div class="crop-sheet">
-    <div class="crop-title" id="itemPosTitle">아이템 뜨는 위치 지정</div>
-    <div class="crop-desc" id="itemPosDesc">그림 위를 탭하거나 드래그해서 아이템 아이콘이 나타날 위치를 옮기세요.</div>
-    <div class="itempos-stage" id="itemPosStage">
-      <img id="itemPosImg" alt="">
-      <div class="rodtip-marker" id="itemPosMarker"></div>
-    </div>
-    <div class="crop-actions">
-      <button type="button" class="crop-btn secondary" id="itemPosCancelBtn">취소</button>
-      <button type="button" class="crop-btn primary" id="itemPosConfirmBtn">적용</button>
-    </div>
-  </div>
-</div>
-
-<!-- 물고기 들기 위치 지정 — itemPosOverlay와 같은 바텀시트 틀 +
-     단일 포인트 마커(rodtip-marker 재사용)지만, 기준 이미지가 아이템창
-     배경이 아니라 올리기 모션의 마지막 프레임이라 별도 오버레이를 쓴다
+<!-- 물고기 들기 위치 지정 — 낚시대 끝 지정과 같은 바텀시트 틀 + 단일
+     포인트 마커(rodtip-stage/rodtip-marker 클래스 재사용)지만, 기준
+     이미지가 올리기 모션의 마지막 프레임이라 별도 오버레이를 쓴다
      (openHeldFishPosEditor 참고). --heldfish-ar로 종횡비를 그 프레임의
-     실제 자연 크기에 맞춘다(itempos-stage의 --item-ar과 같은 방식). -->
+     실제 자연 크기에 맞춘다. -->
 <div class="crop-overlay hidden" id="heldFishPosOverlay">
   <div class="crop-sheet">
     <div class="crop-title">물고기 들기 위치 지정</div>
@@ -1111,38 +912,19 @@ window.__removeBackgroundReady = import('https://cdn.jsdelivr.net/npm/@imgly/bac
 <script src="/dev/data/fishDefs.js"></script>
 <script>
 /* =========================================================================
-   낚시 미니게임 설정 화면. 5개 탭:
-   - 낚시게임 로직: 난이도/모션타입 선택 — 다른 미니게임들과 같은 관례로
-     테스트하기 링크의 쿼리스트링(?diff=&motion=)에 실려 /play/로 전달된다.
+   낚시 미니게임 설정 화면. 4개 탭:
    - 모션: 캐스팅·올리기·이동(4방향) 6가지 동작 프레임을 6행×6열 시트 한
      장으로 업로드 — AssetDB.setFishingConfig의 motionSheetAssetId/
      motionFrameOverrides에 저장, /play/가 카테고리(행)별로 잘라 재생한다.
-   - 낚시바 디자인: 캐치존 색상/크기, 물고기 아이콘 — 같은 blob의 barDesign.
+     이동 속도/자유 이동 테스트도 이 탭 안에 통합돼 있다.
+   - 영역 설정 / 대화 / 캐릭터: 각각 아래 해당 섹션 참고.
    ========================================================================= */
 
-const DIFFICULTY_OPTIONS = [
-  { id: 'normal', label: '보통' },
-  { id: 'easy', label: '쉬움' },
-  { id: 'hard', label: '어려움' },
-];
-const MOTION_OPTIONS = [
-  { id: 'zigzag', label: '지그재그형' },
-  { id: 'linear', label: '직선형' },
-  { id: 'random', label: '랜덤형' },
-];
-
-let selected = { diff: 'normal', motion: 'zigzag' };
 let fishingConfig = { barDesign: {} };
 
 const el = {
   tabsRow: document.getElementById('tabsRow'),
-  panelLogic: document.getElementById('panelLogic'),
   panelMotion: document.getElementById('panelMotion'),
-  panelBar: document.getElementById('panelBar'),
-  panelFish: document.getElementById('panelFish'),
-  diffPills: document.getElementById('diffPills'),
-  motionPills: document.getElementById('motionPills'),
-  testBtn: document.getElementById('testBtn'),
   saveNote: document.getElementById('saveNote'),
   motionSheetFrame: document.getElementById('motionSheetFrame'),
   motionSheetEmpty: document.getElementById('motionSheetEmpty'),
@@ -1170,9 +952,6 @@ const el = {
   sinkerTestVxInput: document.getElementById('sinkerTestVxInput'),
   sinkerTestVxValue: document.getElementById('sinkerTestVxValue'),
   sinkerTestThrowBtn: document.getElementById('sinkerTestThrowBtn'),
-  fishIconSlot: document.getElementById('fishIconSlot'),
-  fishIconAddBtn: document.getElementById('fishIconAddBtn'),
-  fishIconFileInput: document.getElementById('fishIconFileInput'),
   cropOverlay: document.getElementById('cropOverlay'),
   cropStage: document.getElementById('cropStage'),
   cropCanvas: document.getElementById('cropCanvas'),
@@ -1199,36 +978,6 @@ const el = {
   motionFrameActionsCutoutBtn: document.getElementById('motionFrameActionsCutoutBtn'),
   motionFrameActionsClearBtn: document.getElementById('motionFrameActionsClearBtn'),
   motionFrameActionsCancelBtn: document.getElementById('motionFrameActionsCancelBtn'),
-  backgroundImageSlot: document.getElementById('backgroundImageSlot'),
-  backgroundImageAddBtn: document.getElementById('backgroundImageAddBtn'),
-  backgroundImageFileInput: document.getElementById('backgroundImageFileInput'),
-  sinkerImageSlot: document.getElementById('sinkerImageSlot'),
-  sinkerImageAddBtn: document.getElementById('sinkerImageAddBtn'),
-  sinkerImageFileInput: document.getElementById('sinkerImageFileInput'),
-  gaugeImageSlot: document.getElementById('gaugeImageSlot'),
-  gaugeImageAddBtn: document.getElementById('gaugeImageAddBtn'),
-  gaugeImageFileInput: document.getElementById('gaugeImageFileInput'),
-  biteStampImageSlot: document.getElementById('biteStampImageSlot'),
-  biteStampImageAddBtn: document.getElementById('biteStampImageAddBtn'),
-  biteStampImageFileInput: document.getElementById('biteStampImageFileInput'),
-  slideToolbar: document.getElementById('slideToolbar'),
-  addBarImageBtn: document.getElementById('addBarImageBtn'),
-  addCatchImageBtn: document.getElementById('addCatchImageBtn'),
-  addZoneRegionBtn: document.getElementById('addZoneRegionBtn'),
-  addGaugeRegionBtn: document.getElementById('addGaugeRegionBtn'),
-  addFishRegionBtn: document.getElementById('addFishRegionBtn'),
-  barLayerFileInput: document.getElementById('barLayerFileInput'),
-  catchLayerFileInput: document.getElementById('catchLayerFileInput'),
-  slideStage: document.getElementById('slideStage'),
-  cropCatchImageBtn: document.getElementById('cropCatchImageBtn'),
-  reloadCatchImageBtn: document.getElementById('reloadCatchImageBtn'),
-  deleteLayerBtn: document.getElementById('deleteLayerBtn'),
-  fishIconSizeInput: document.getElementById('fishIconSizeInput'),
-  fishIconSizeValue: document.getElementById('fishIconSizeValue'),
-  slideWidthInput: document.getElementById('slideWidthInput'),
-  slideWidthValue: document.getElementById('slideWidthValue'),
-  slideHeightInput: document.getElementById('slideHeightInput'),
-  slideHeightValue: document.getElementById('slideHeightValue'),
   castGaugeImageSlot: document.getElementById('castGaugeImageSlot'),
   castGaugeImageAddBtn: document.getElementById('castGaugeImageAddBtn'),
   castGaugeImageFileInput: document.getElementById('castGaugeImageFileInput'),
@@ -1249,12 +998,6 @@ const el = {
   castGravityValue: document.getElementById('castGravityValue'),
   castVxScaleInput: document.getElementById('castVxScaleInput'),
   castVxScaleValue: document.getElementById('castVxScaleValue'),
-  fishSheetFrame: document.getElementById('fishSheetFrame'),
-  fishSheetEmpty: document.getElementById('fishSheetEmpty'),
-  fishSheetUploadBtn: document.getElementById('fishSheetUploadBtn'),
-  fishSheetRemoveBtn: document.getElementById('fishSheetRemoveBtn'),
-  fishSheetFileInput: document.getElementById('fishSheetFileInput'),
-  fishGradeGroups: document.getElementById('fishGradeGroups'),
   motionCastPreview: document.getElementById('motionCastPreview'),
   motionCastPreviewLabel: document.getElementById('motionCastPreviewLabel'),
   motionCastFrameGrid: document.getElementById('motionCastFrameGrid'),
@@ -1301,7 +1044,6 @@ const el = {
   motionRightSpeedValue: document.getElementById('motionRightSpeedValue'),
   motionRightRowAdjustBtn: document.getElementById('motionRightRowAdjustBtn'),
   motionRightCutoutAllBtn: document.getElementById('motionRightCutoutAllBtn'),
-  panelMove: document.getElementById('panelMove'),
   moveStage: document.getElementById('moveStage'),
   moveWorld: document.getElementById('moveWorld'),
   moveChar: document.getElementById('moveChar'),
@@ -1326,31 +1068,6 @@ const el = {
   areaDraftFinishBtn: document.getElementById('areaDraftFinishBtn'),
   areaListLabel: document.getElementById('areaListLabel'),
   areaList: document.getElementById('areaList'),
-  panelItem: document.getElementById('panelItem'),
-  itemBgSlot: document.getElementById('itemBgSlot'),
-  itemBgAddBtn: document.getElementById('itemBgAddBtn'),
-  itemBgFileInput: document.getElementById('itemBgFileInput'),
-  itemIconSizeInput: document.getElementById('itemIconSizeInput'),
-  itemIconSizeValue: document.getElementById('itemIconSizeValue'),
-  itemPosEditBtn: document.getElementById('itemPosEditBtn'),
-  itemNameSizeInput: document.getElementById('itemNameSizeInput'),
-  itemNameSizeValue: document.getElementById('itemNameSizeValue'),
-  itemNamePosEditBtn: document.getElementById('itemNamePosEditBtn'),
-  itemMetaSizeInput: document.getElementById('itemMetaSizeInput'),
-  itemMetaSizeValue: document.getElementById('itemMetaSizeValue'),
-  itemMetaPosEditBtn: document.getElementById('itemMetaPosEditBtn'),
-  itemPopupPreview: document.getElementById('itemPopupPreview'),
-  itemPopupPreviewIcon: document.getElementById('itemPopupPreviewIcon'),
-  itemPopupPreviewName: document.getElementById('itemPopupPreviewName'),
-  itemPopupPreviewMeta: document.getElementById('itemPopupPreviewMeta'),
-  itemPosOverlay: document.getElementById('itemPosOverlay'),
-  itemPosTitle: document.getElementById('itemPosTitle'),
-  itemPosDesc: document.getElementById('itemPosDesc'),
-  itemPosStage: document.getElementById('itemPosStage'),
-  itemPosImg: document.getElementById('itemPosImg'),
-  itemPosMarker: document.getElementById('itemPosMarker'),
-  itemPosCancelBtn: document.getElementById('itemPosCancelBtn'),
-  itemPosConfirmBtn: document.getElementById('itemPosConfirmBtn'),
   panelDialogue: document.getElementById('panelDialogue'),
   dialogueSlideStage: document.getElementById('dialogueSlideStage'),
   addDialogueBoxBtn: document.getElementById('addDialogueBoxBtn'),
@@ -1389,7 +1106,7 @@ const el = {
   youngwooPosConfirmBtn: document.getElementById('youngwooPosConfirmBtn'),
 };
 
-const PANELS = { logic: el.panelLogic, motion: el.panelMotion, bar: el.panelBar, fish: el.panelFish, move: el.panelMove, area: el.panelArea, item: el.panelItem, dialogue: el.panelDialogue, character: el.panelCharacter };
+const PANELS = { motion: el.panelMotion, area: el.panelArea, dialogue: el.panelDialogue, character: el.panelCharacter };
 el.tabsRow.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => selectTab(btn.dataset.tab));
 });
@@ -1406,28 +1123,6 @@ function selectTab(tab) {
   else stopMoveHold();
   if (tab === 'area') renderAreaTab();
   if (tab === 'character') renderCharacterTab();
-}
-
-/* ===== 낚시게임 로직 탭 ===== */
-function renderPills(container, options, key) {
-  container.innerHTML = options.map(o =>
-    `<button type="button" class="option-pill${o.id === selected[key] ? ' active' : ''}" data-id="${o.id}">${o.label}</button>`
-  ).join('');
-  container.querySelectorAll('.option-pill').forEach(btn => {
-    btn.addEventListener('click', () => { selected[key] = btn.dataset.id; renderLogicTab(); });
-  });
-}
-function updateTestBtnHref() {
-  const params = new URLSearchParams();
-  if (selected.diff !== 'normal') params.set('diff', selected.diff);
-  if (selected.motion !== 'zigzag') params.set('motion', selected.motion);
-  const qs = params.toString();
-  el.testBtn.href = '/dev/minigame-fishing/play/' + (qs ? '?' + qs : '');
-}
-function renderLogicTab() {
-  renderPills(el.diffPills, DIFFICULTY_OPTIONS, 'diff');
-  renderPills(el.motionPills, MOTION_OPTIONS, 'motion');
-  updateTestBtnHref();
 }
 
 /* ===== AI 프레임 생성 프롬프트 — dev/upload/index.html의
@@ -2378,31 +2073,12 @@ MOTION_CATEGORIES.forEach(category => {
   });
 });
 
-/* ===== 낚시바 디자인 탭 — PPT 슬라이드형 에디터 =====
-   barDesign.slideWidthPx/slideHeightPx가 실제 게임에 쓰이는 낚시바 모듈
-   크기다. barLayer/catchLayer(이미지)와 zoneRegion/gaugeRegion(사각형)은
-   전부 이 슬라이드 기준 0~1 비율(x,y,w,h)로 저장해 슬라이드 크기가 바뀌어도
-   배치 비율이 그대로 유지된다. 에디터 화면 자체는 슬라이드 실제 px 크기와
-   무관하게 항상 편한 배율로 확대해서 보여준다(.slide-stage의 aspect-ratio로
-   폭에 맞춰 늘인 컨테이너). 드래그 중엔 스타일만 즉시 갱신하고, 놓는 순간
-   (pointerup)에만 AssetDB에 저장한다 — 매 pointermove마다 네트워크 저장하면
-   낭비이기 때문. */
-const SLIDE_LAYER_ORDER = ['barLayer', 'zoneRegion', 'gaugeRegion', 'fishRegion', 'catchLayer']; // z-order: 낚시바 배경 → 영역 표시 → 캐치바 이미지가 맨 위
-const SLIDE_LAYER_META = {
-  barLayer: { kind: 'image', label: '낚시바' },
-  catchLayer: { kind: 'image', label: '캐치바' },
-  zoneRegion: { kind: 'region', label: '캐치바 영역' },
-  gaugeRegion: { kind: 'region', label: '게이지 영역' },
-  fishRegion: { kind: 'region', label: '물고기 영역' },
-};
-let selectedLayerId = null;
-const slideAssetUrlCache = new Map(); // assetId -> dataUrl, 매 렌더마다 AssetDB.getAsset 재조회하지 않도록
-
 // 업로드 직후엔 Supabase Storage에 방금 올린 파일이 공개 URL로 아직 안
-// 읽히는 경우가 있다(전파 지연) — 낚시바/캐치바 이미지를 올리자마자
-// 에디터 미리보기에 즉시 표시하려 하면 이 지연 때문에 <img>가 한 번
-// 깨져서 "이미지가 적용 안 된다"로 보인다. play/index.html의
-// preloadWithRetry와 같은 방식으로 실제로 로드될 때까지 몇 번 재시도한다.
+// 읽히는 경우가 있다(전파 지연) — 이미지를 올리자마자 에디터 미리보기에
+// 즉시 표시하려 하면 이 지연 때문에 <img>가 한 번 깨져서 "이미지가 적용
+// 안 된다"로 보인다. play/index.html의 preloadWithRetry와 같은 방식으로
+// 실제로 로드될 때까지 몇 번 재시도한다(대화 탭의 renderDialogueSlideStage와
+// 공유하는 유틸리티).
 function preloadWithRetry(url, retries, delayMs) {
   return new Promise(resolve => {
     const attempt = (remaining) => {
@@ -2418,12 +2094,9 @@ function preloadWithRetry(url, retries, delayMs) {
   });
 }
 
-function barDesignOf() { return fishingConfig.barDesign || {}; }
-async function patchBarDesign(patch) {
-  fishingConfig = await AssetDB.setFishingConfig({ barDesign: Object.assign({}, fishingConfig.barDesign, patch) });
-  showSaveNote();
-  return fishingConfig.barDesign;
-}
+// assetId -> dataUrl 캐시, 매 렌더마다 AssetDB.getAsset 재조회하지 않도록.
+// 대화 탭(renderDialogueSlideStage)과 공유한다.
+const slideAssetUrlCache = new Map();
 async function getCachedAssetUrl(assetId) {
   if (!assetId) return null;
   if (slideAssetUrlCache.has(assetId)) return slideAssetUrlCache.get(assetId);
@@ -2432,454 +2105,14 @@ async function getCachedAssetUrl(assetId) {
   slideAssetUrlCache.set(assetId, url);
   return url;
 }
-function loadImageEl(url) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => resolve(img);
-    img.onerror = reject;
-    img.src = url;
-  });
-}
-
-async function renderSlideStage() {
-  const design = barDesignOf();
-  el.slideStage.style.setProperty('--slide-ar', (design.slideWidthPx || 90) + '/' + (design.slideHeightPx || 260));
-  el.slideStage.innerHTML = '';
-  for (const id of SLIDE_LAYER_ORDER) {
-    const data = design[id];
-    if (!data) continue;
-    const meta = SLIDE_LAYER_META[id];
-    const layerEl = document.createElement('div');
-    layerEl.className = 'slide-layer' + (meta.kind === 'region' ? ' region' : '') + (selectedLayerId === id ? ' selected' : '');
-    layerEl.dataset.layerId = id;
-    layerEl.style.left = (data.x * 100) + '%';
-    layerEl.style.top = (data.y * 100) + '%';
-    layerEl.style.width = (data.w * 100) + '%';
-    layerEl.style.height = (data.h * 100) + '%';
-    if (meta.kind === 'image') {
-      const url = await getCachedAssetUrl(data.assetId);
-      if (url) {
-        const img = document.createElement('img');
-        img.src = await preloadWithRetry(url, 3, 500);
-        img.alt = '';
-        layerEl.appendChild(img);
-      }
-    } else {
-      const label = document.createElement('span');
-      label.className = 'slide-layer-label';
-      label.textContent = meta.label;
-      layerEl.appendChild(label);
-    }
-    if (selectedLayerId === id) {
-      const handle = document.createElement('div');
-      handle.className = 'slide-layer-handle';
-      layerEl.appendChild(handle);
-      attachLayerResize(handle, id);
-    }
-    attachLayerMove(layerEl, id);
-    el.slideStage.appendChild(layerEl);
-  }
-  updateSlideToolbarState();
-}
-el.slideStage.addEventListener('pointerdown', (e) => {
-  if (e.target !== el.slideStage) return; // 빈 공간 탭 — 선택 해제
-  if (!selectedLayerId) return;
-  selectedLayerId = null;
-  renderSlideStage();
-});
-function updateSlideToolbarState() {
-  const design = barDesignOf();
-  el.addBarImageBtn.classList.toggle('hidden', !!design.barLayer);
-  el.addCatchImageBtn.classList.toggle('hidden', !!design.catchLayer);
-  el.addZoneRegionBtn.classList.toggle('hidden', !!design.zoneRegion);
-  el.addGaugeRegionBtn.classList.toggle('hidden', !!design.gaugeRegion);
-  el.addFishRegionBtn.classList.toggle('hidden', !!design.fishRegion);
-  el.deleteLayerBtn.classList.toggle('hidden', !selectedLayerId);
-  el.cropCatchImageBtn.classList.toggle('hidden', selectedLayerId !== 'catchLayer' || !design.catchLayer);
-  el.reloadCatchImageBtn.classList.toggle('hidden', selectedLayerId !== 'catchLayer' || !design.catchLayer);
-}
+// PPT 슬라이드형 오브젝트(대화 탭의 slide-layer)의 0~1 정규화 좌표를
+// 스테이지 경계 안으로 고정한다 — 대화 탭의 attachDialogueLayerMove/Resize와
+// 공유한다.
 function clampLayerPos(v, size) { return Math.min(Math.max(v, 0), 1 - size); }
 
-// 이동 — 첫 탭은 선택만 하고(손잡이가 생길 때까지), 이미 선택된 오브젝트를
-// 다시 누르고 끄는 동작만 실제로 옮긴다. 같은 pointerdown 안에서 선택과
-// 드래그 시작을 동시에 처리하면 renderSlideStage()가 DOM을 통째로 갈아
-// 끼우면서 그 자리에서 시작한 포인터 캡처가 끊겨버리기 때문.
-function attachLayerMove(layerEl, id) {
-  let pointerId = null, start = null, startRect = null;
-  layerEl.addEventListener('pointerdown', (e) => {
-    if (e.target.closest('.slide-layer-handle')) return;
-    e.stopPropagation();
-    if (selectedLayerId !== id) {
-      selectedLayerId = id;
-      renderSlideStage();
-      return;
-    }
-    pointerId = e.pointerId;
-    layerEl.setPointerCapture(pointerId);
-    start = { x: e.clientX, y: e.clientY };
-    startRect = Object.assign({}, barDesignOf()[id]);
-    layerEl._pendingXY = null;
-  });
-  layerEl.addEventListener('pointermove', (e) => {
-    if (e.pointerId !== pointerId) return;
-    const stageRect = el.slideStage.getBoundingClientRect();
-    const dx = (e.clientX - start.x) / stageRect.width;
-    const dy = (e.clientY - start.y) / stageRect.height;
-    const x = clampLayerPos(startRect.x + dx, startRect.w);
-    const y = clampLayerPos(startRect.y + dy, startRect.h);
-    layerEl.style.left = (x * 100) + '%';
-    layerEl.style.top = (y * 100) + '%';
-    layerEl._pendingXY = { x, y };
-  });
-  ['pointerup', 'pointercancel'].forEach(evt => layerEl.addEventListener(evt, async (e) => {
-    if (e.pointerId !== pointerId) return;
-    pointerId = null;
-    if (layerEl._pendingXY) {
-      const data = Object.assign({}, barDesignOf()[id], layerEl._pendingXY);
-      layerEl._pendingXY = null;
-      await patchBarDesign({ [id]: data });
-    }
-  }));
-}
-// 크기조절 손잡이 — 오른쪽 아래 모서리에서만 늘리고 줄인다(간단한 단일
-// 손잡이, frame-timeline-handle과 같은 관례). 손잡이는 오브젝트 자신의
-// 오른쪽 아래에 절대위치로 붙어 있어 width/height가 바뀌면 CSS만으로
-// 같이 따라오므로, 리사이즈 중엔 다시 그릴 필요가 없다.
-function attachLayerResize(handleEl, id) {
-  let pointerId = null, start = null, startRect = null;
-  handleEl.addEventListener('pointerdown', (e) => {
-    e.stopPropagation();
-    pointerId = e.pointerId;
-    handleEl.setPointerCapture(pointerId);
-    start = { x: e.clientX, y: e.clientY };
-    startRect = Object.assign({}, barDesignOf()[id]);
-    handleEl._pendingWH = null;
-  });
-  handleEl.addEventListener('pointermove', (e) => {
-    if (e.pointerId !== pointerId) return;
-    const stageRect = el.slideStage.getBoundingClientRect();
-    const dw = (e.clientX - start.x) / stageRect.width;
-    const dh = (e.clientY - start.y) / stageRect.height;
-    const MIN = 0.04;
-    const w = Math.min(Math.max(startRect.w + dw, MIN), 1 - startRect.x);
-    const h = Math.min(Math.max(startRect.h + dh, MIN), 1 - startRect.y);
-    const layerEl = handleEl.parentElement;
-    layerEl.style.width = (w * 100) + '%';
-    layerEl.style.height = (h * 100) + '%';
-    handleEl._pendingWH = { w, h };
-  });
-  ['pointerup', 'pointercancel'].forEach(evt => handleEl.addEventListener(evt, async (e) => {
-    if (e.pointerId !== pointerId) return;
-    pointerId = null;
-    if (handleEl._pendingWH) {
-      const data = Object.assign({}, barDesignOf()[id], handleEl._pendingWH);
-      handleEl._pendingWH = null;
-      await patchBarDesign({ [id]: data });
-    }
-  }));
-}
-
-el.fishIconSizeInput.addEventListener('input', () => {
-  el.fishIconSizeValue.textContent = el.fishIconSizeInput.value + 'px';
-});
-el.fishIconSizeInput.addEventListener('change', () => patchBarDesign({ fishIconSizePx: Number(el.fishIconSizeInput.value) }));
-el.slideWidthInput.addEventListener('input', () => {
-  el.slideWidthValue.textContent = el.slideWidthInput.value + 'px';
-  el.slideStage.style.setProperty('--slide-ar', el.slideWidthInput.value + '/' + el.slideHeightInput.value);
-});
-el.slideWidthInput.addEventListener('change', () => patchBarDesign({ slideWidthPx: Number(el.slideWidthInput.value) }));
-el.slideHeightInput.addEventListener('input', () => {
-  el.slideHeightValue.textContent = el.slideHeightInput.value + 'px';
-  el.slideStage.style.setProperty('--slide-ar', el.slideWidthInput.value + '/' + el.slideHeightInput.value);
-});
-el.slideHeightInput.addEventListener('change', () => patchBarDesign({ slideHeightPx: Number(el.slideHeightInput.value) }));
-
-async function renderFishIconSlot() {
-  const design = fishingConfig.barDesign || {};
-  el.fishIconSlot.innerHTML = '';
-  if (design.fishIconAssetId) {
-    el.fishIconAddBtn.classList.add('hidden');
-    const asset = await AssetDB.getAsset(design.fishIconAssetId).catch(() => null);
-    const slot = document.createElement('div');
-    slot.className = 'frame-slot';
-    slot.innerHTML = `${asset ? `<img src="${asset.dataUrl}" alt="">` : ''}
-      <div class="frame-actions"><button type="button" class="frame-mini-btn danger" data-act="del">✕</button></div>`;
-    // Tapping the icon itself reopens 세밀영역조절 on the stored original
-    // photo, at the crop rectangle last confirmed — not the cropped result,
-    // which has no room left to adjust.
-    const img = slot.querySelector('img');
-    if (img) img.addEventListener('click', openFishIconCropAdjuster);
-    slot.querySelector('[data-act=del]').addEventListener('click', async (e) => {
-      e.stopPropagation();
-      fishingConfig = await AssetDB.setFishingConfig({ barDesign: Object.assign({}, fishingConfig.barDesign, { fishIconAssetId: null, fishIconSourceAssetId: null, fishIconCropRect: null }) });
-      showSaveNote();
-      renderFishIconSlot();
-    });
-    el.fishIconSlot.appendChild(slot);
-  } else {
-    el.fishIconAddBtn.classList.remove('hidden');
-  }
-}
-// fishIconAddBtn is a static button already in the DOM at page load (see
-// .frame-add-btn comment above), just toggled hidden/visible depending on
-// whether an icon is already set — not recreated on every render.
-el.fishIconAddBtn.addEventListener('click', () => el.fishIconFileInput.click());
-el.fishIconFileInput.addEventListener('change', () => {
-  const file = el.fishIconFileInput.files[0];
-  el.fishIconFileInput.value = '';
-  if (!file) return;
-  // Nothing uploaded yet at this point — the adjuster opens straight off a
-  // local blob: URL of the picked file (same-origin, so the crop canvas
-  // below never risks a cross-origin "tainted canvas" export failure). Both
-  // the source photo and the cropped result only reach AssetDB once the dev
-  // hits 적용 (confirmFishIconCrop below, which uploads the cropped result
-  // as-is, no automatic background removal — the source photo stays
-  // untouched so re-adjusting the crop later still has the full original
-  // to work from).
-  openCropAdjuster(URL.createObjectURL(file), null, file, confirmFishIconCrop);
-});
-function openFishIconCropAdjuster() {
-  const design = fishingConfig.barDesign || {};
-  if (!design.fishIconSourceAssetId) return;
-  AssetDB.getAsset(design.fishIconSourceAssetId).then(asset => {
-    // Re-adjusting an already-uploaded source: this URL IS cross-origin
-    // (Supabase Storage), so crossOrigin='anonymous' in openCropAdjuster is
-    // what keeps the later canvas export from throwing — relies on the
-    // bucket's public objects serving permissive CORS headers (Supabase's
-    // default for a public bucket, which dev-assets already is per assetDb.js).
-    if (asset) openCropAdjuster(asset.dataUrl, design.fishIconCropRect, null, confirmFishIconCrop);
-  }).catch(() => {});
-}
-// The fish-icon crop path exports a new cropped image asset (canvas ->
-// upload, as-is). The fish-species crop path (further below,
-// confirmFishSpeciesCrop) is much cheaper — it never re-exports anything,
-// just saves which region of the *already-uploaded* sheet to sample via CSS
-// background-position, so it doesn't go through AssetDB.addAsset at all.
-async function confirmFishIconCrop(rect, sourceImg, pendingFile) {
-  const cropConfirmDefaultText = el.cropConfirmBtn.textContent;
-  try {
-    const shortSide = Math.min(sourceImg.naturalWidth, sourceImg.naturalHeight);
-    const rectSize = rect.size * shortSide;
-    const srcX = rect.cx * sourceImg.naturalWidth - rectSize / 2;
-    const srcY = rect.cy * sourceImg.naturalHeight - rectSize / 2;
-    const EXPORT_SIZE = 256;
-    const canvas = document.createElement('canvas');
-    canvas.width = EXPORT_SIZE;
-    canvas.height = EXPORT_SIZE;
-    canvas.getContext('2d').drawImage(sourceImg, srcX, srcY, rectSize, rectSize, 0, 0, EXPORT_SIZE, EXPORT_SIZE);
-    // 배경 제거(누끼) 자동 적용은 여기서 안 한다 — 물고기 아이콘은 자동
-    // 배경 제거가 필수가 아니라, 업로드한 크롭 결과를 그대로 쓴다.
-    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-    const croppedAsset = await AssetDB.addAsset({ type: 'fishing-fish-icon', name: 'fish-icon.png', blob });
-    const patch = { fishIconAssetId: croppedAsset.id, fishIconCropRect: rect };
-    if (pendingFile) {
-      const sourceAsset = await AssetDB.addAsset({ type: 'fishing-fish-icon-source', name: pendingFile.name, blob: pendingFile });
-      patch.fishIconSourceAssetId = sourceAsset.id;
-    }
-    fishingConfig = await AssetDB.setFishingConfig({ barDesign: Object.assign({}, fishingConfig.barDesign, patch) });
-    renderFishIconSlot();
-  } finally {
-    el.cropConfirmBtn.textContent = cropConfirmDefaultText;
-  }
-}
-/* ===== 배경화면 업로드 =====
-   낚시바/캐치존 이미지와 같은 frame-strip 업로드 패턴이지만, barDesign
-   안이 아니라 fishingConfig.backgroundAssetId에 바로 저장한다 — 낚시바
-   디자인이 아니라 플레이 화면 전체(dev/minigame-fishing/play/index.html의
-   .frame)에 적용되는 값이라 별도 최상위 필드로 둔다. */
-async function renderBackgroundImageSlot() {
-  el.backgroundImageSlot.innerHTML = '';
-  if (fishingConfig.backgroundAssetId) {
-    el.backgroundImageAddBtn.classList.add('hidden');
-    const asset = await AssetDB.getAsset(fishingConfig.backgroundAssetId).catch(() => null);
-    const slot = document.createElement('div');
-    slot.className = 'frame-slot';
-    slot.innerHTML = `${asset ? `<img src="${asset.dataUrl}" alt="">` : ''}
-      <div class="frame-actions"><button type="button" class="frame-mini-btn danger" data-act="del">✕</button></div>`;
-    slot.querySelector('[data-act=del]').addEventListener('click', async () => {
-      fishingConfig = await AssetDB.setFishingConfig({ backgroundAssetId: null });
-      showSaveNote();
-      renderBackgroundImageSlot();
-      renderMoveTestStage();
-    });
-    el.backgroundImageSlot.appendChild(slot);
-  } else {
-    el.backgroundImageAddBtn.classList.remove('hidden');
-  }
-}
-el.backgroundImageAddBtn.addEventListener('click', () => el.backgroundImageFileInput.click());
-el.backgroundImageFileInput.addEventListener('change', async () => {
-  const file = el.backgroundImageFileInput.files[0];
-  el.backgroundImageFileInput.value = '';
-  if (!file) return;
-  el.backgroundImageAddBtn.disabled = true;
-  try {
-    const asset = await AssetDB.addAsset({ type: 'fishing-background-image', name: file.name, blob: file });
-    fishingConfig = await AssetDB.setFishingConfig({ backgroundAssetId: asset.id });
-    showSaveNote();
-    renderBackgroundImageSlot();
-    renderMoveTestStage();
-  } finally {
-    el.backgroundImageAddBtn.disabled = false;
-  }
-});
-
-/* ===== 낚시바 슬라이드 툴바 — 낚시바/캐치바 이미지 추가, 캐치바 영역/
-   게이지 영역 추가, 선택한 오브젝트 삭제. 이미지 오브젝트는 업로드 즉시
-   슬라이드 중앙 부근 기본 위치/크기로 놓이고, 이후 자유롭게 드래그/
-   리사이즈한다(위 attachLayerMove/attachLayerResize). ===== */
-el.addBarImageBtn.addEventListener('click', () => el.barLayerFileInput.click());
-el.barLayerFileInput.addEventListener('change', async () => {
-  const file = el.barLayerFileInput.files[0];
-  el.barLayerFileInput.value = '';
-  if (!file) return;
-  el.addBarImageBtn.disabled = true;
-  try {
-    const asset = await AssetDB.addAsset({ type: 'fishing-bar-image', name: file.name, blob: file });
-    await patchBarDesign({ barLayer: { assetId: asset.id, x: 0, y: 0, w: 1, h: 1 } });
-    selectedLayerId = 'barLayer';
-    renderSlideStage();
-  } finally {
-    el.addBarImageBtn.disabled = false;
-  }
-});
-
-el.addCatchImageBtn.addEventListener('click', () => el.catchLayerFileInput.click());
-el.catchLayerFileInput.addEventListener('change', async () => {
-  const file = el.catchLayerFileInput.files[0];
-  el.catchLayerFileInput.value = '';
-  if (!file) return;
-  el.addCatchImageBtn.disabled = true;
-  try {
-    const asset = await AssetDB.addAsset({ type: 'fishing-catch-image', name: file.name, blob: file });
-    // 크롭 전엔 원본(assetId===sourceAssetId)을 그대로 보여주다가, "인식
-    // 영역 자르기"를 확정하면 confirmFbRegionEditor가 baked 결과로 assetId만
-    // 갈아끼운다(fishIconAssetId/fishIconSourceAssetId 패턴과 동일).
-    const catchLayer = { assetId: asset.id, sourceAssetId: asset.id, cropRect: null, x: 0.15, y: 0.4, w: 0.7, h: 0.16 };
-    const patch = { catchLayer };
-    // 캐치바 영역(zoneRegion, 캐치바가 위아래로 움직이는 트랙)이 아직 없으면
-    // "캐치바 이미지"만 올리고 "캐치바 영역"은 안 눌러서 재생 화면에 그림
-    // 없이 단색 트랙만 보이는 문제(사용자 보고: "이미지 쓰는게 아니라 그
-    // 영역만 갖다 쓰는거 같다")가 생긴다 — 두 버튼을 각각 눌러야 하는 걸
-    // 모르기 쉬우므로, 이미지를 올리면 기본 영역(+ 캐치바 영역 버튼과 같은
-    // 값)을 함께 만들어 한 번의 업로드로 바로 움직이는 캐치바가 나오게 한다.
-    if (!barDesignOf().zoneRegion) patch.zoneRegion = { x: 0.1, y: 0.3, w: 0.8, h: 0.4 };
-    await patchBarDesign(patch);
-    selectedLayerId = 'catchLayer';
-    renderSlideStage();
-  } finally {
-    el.addCatchImageBtn.disabled = false;
-  }
-});
-
-el.addZoneRegionBtn.addEventListener('click', async () => {
-  await patchBarDesign({ zoneRegion: { x: 0.1, y: 0.3, w: 0.8, h: 0.4 } });
-  selectedLayerId = 'zoneRegion';
-  renderSlideStage();
-});
-el.addGaugeRegionBtn.addEventListener('click', async () => {
-  await patchBarDesign({ gaugeRegion: { x: 0.1, y: 0.78, w: 0.8, h: 0.12 } });
-  selectedLayerId = 'gaugeRegion';
-  renderSlideStage();
-});
-el.addFishRegionBtn.addEventListener('click', async () => {
-  await patchBarDesign({ fishRegion: { x: 0.1, y: 0.3, w: 0.8, h: 0.4 } });
-  selectedLayerId = 'fishRegion';
-  renderSlideStage();
-});
-el.deleteLayerBtn.addEventListener('click', async () => {
-  if (!selectedLayerId) return;
-  await patchBarDesign({ [selectedLayerId]: null });
-  selectedLayerId = null;
-  renderSlideStage();
-});
-
-// 낚시 추 이미지 — 바/캐치존 이미지와 같은 단일 슬롯 업로드 패턴이지만,
-// 물리적인 소품(추)이라 배경이 남아있으면 캐스팅 중 사각형 배경이 같이
-// 날아가 보인다 — 프레임 업로드(uploadFrame)와 같은 이유로 여기도
-// removeBackgroundOrFallback을 거쳐 항상 배경을 제거한 뒤 저장한다.
-async function renderSinkerImageSlot() {
-  const design = fishingConfig.barDesign || {};
-  el.sinkerImageSlot.innerHTML = '';
-  if (design.sinkerImageAssetId) {
-    el.sinkerImageAddBtn.classList.add('hidden');
-    const asset = await AssetDB.getAsset(design.sinkerImageAssetId).catch(() => null);
-    const slot = document.createElement('div');
-    slot.className = 'frame-slot';
-    slot.innerHTML = `${asset ? `<img src="${asset.dataUrl}" alt="">` : ''}
-      <div class="frame-actions"><button type="button" class="frame-mini-btn danger" data-act="del">✕</button></div>`;
-    slot.querySelector('[data-act=del]').addEventListener('click', async () => {
-      fishingConfig = await AssetDB.setFishingConfig({ barDesign: Object.assign({}, fishingConfig.barDesign, { sinkerImageAssetId: null }) });
-      showSaveNote();
-      renderSinkerImageSlot();
-    });
-    el.sinkerImageSlot.appendChild(slot);
-  } else {
-    el.sinkerImageAddBtn.classList.remove('hidden');
-  }
-}
-el.sinkerImageAddBtn.addEventListener('click', () => el.sinkerImageFileInput.click());
-el.sinkerImageFileInput.addEventListener('change', async () => {
-  const file = el.sinkerImageFileInput.files[0];
-  el.sinkerImageFileInput.value = '';
-  if (!file) return;
-  el.sinkerImageAddBtn.disabled = true;
-  try {
-    const blob = await removeBackgroundOrFallback(file);
-    const asset = await AssetDB.addAsset({ type: 'fishing-sinker-image', name: file.name, blob });
-    fishingConfig = await AssetDB.setFishingConfig({ barDesign: Object.assign({}, fishingConfig.barDesign, { sinkerImageAssetId: asset.id }) });
-    showSaveNote();
-    renderSinkerImageSlot();
-  } finally {
-    el.sinkerImageAddBtn.disabled = false;
-  }
-});
-
-// 게이지 채움 이미지 — 배경화면/낚시바 이미지와 같은 단일 슬롯 업로드
-// 패턴(배경 제거 없음 — 사각형 영역을 통째로 채우는 텍스처라 누끼가
-// 필요 없다). play/index.html이 이 이미지를 fishbarGauge의 배경으로
-// 깔고, 업로드가 없을 때만 기존 진행도 색상(gaugeColorForProgress)으로
-// 폴백한다.
-async function renderGaugeImageSlot() {
-  const design = fishingConfig.barDesign || {};
-  el.gaugeImageSlot.innerHTML = '';
-  if (design.gaugeImageAssetId) {
-    el.gaugeImageAddBtn.classList.add('hidden');
-    const asset = await AssetDB.getAsset(design.gaugeImageAssetId).catch(() => null);
-    const slot = document.createElement('div');
-    slot.className = 'frame-slot';
-    slot.innerHTML = `${asset ? `<img src="${asset.dataUrl}" alt="">` : ''}
-      <div class="frame-actions"><button type="button" class="frame-mini-btn danger" data-act="del">✕</button></div>`;
-    slot.querySelector('[data-act=del]').addEventListener('click', async () => {
-      fishingConfig = await AssetDB.setFishingConfig({ barDesign: Object.assign({}, fishingConfig.barDesign, { gaugeImageAssetId: null }) });
-      showSaveNote();
-      renderGaugeImageSlot();
-    });
-    el.gaugeImageSlot.appendChild(slot);
-  } else {
-    el.gaugeImageAddBtn.classList.remove('hidden');
-  }
-}
-el.gaugeImageAddBtn.addEventListener('click', () => el.gaugeImageFileInput.click());
-el.gaugeImageFileInput.addEventListener('change', async () => {
-  const file = el.gaugeImageFileInput.files[0];
-  el.gaugeImageFileInput.value = '';
-  if (!file) return;
-  el.gaugeImageAddBtn.disabled = true;
-  try {
-    const asset = await AssetDB.addAsset({ type: 'fishing-gauge-image', name: file.name, blob: file });
-    fishingConfig = await AssetDB.setFishingConfig({ barDesign: Object.assign({}, fishingConfig.barDesign, { gaugeImageAssetId: asset.id }) });
-    showSaveNote();
-    renderGaugeImageSlot();
-  } finally {
-    el.gaugeImageAddBtn.disabled = false;
-  }
-});
-
-// 캐스팅 게이지 이미지 — 낚시바/캐치존 이미지와 같은 단일 슬롯 업로드
-// 패턴. 이미지 자체는 그대로 두고(크롭 없음), castGaugeFillRegion으로
-// 어디가 채워지는 부분인지만 별도로 지정한다(아래 openCastGaugeRegionEditor).
+// 캐스팅 게이지 이미지 — 단일 슬롯 업로드 패턴. 이미지 자체는 그대로
+// 두고(크롭 없음), castGaugeFillRegion으로 어디가 채워지는 부분인지만
+// 별도로 지정한다(아래 openCastGaugeRegionEditor).
 async function renderCastGaugeImageSlot() {
   el.castGaugeImageSlot.innerHTML = '';
   if (fishingConfig.castGaugeAssetId) {
@@ -2919,55 +2152,11 @@ el.castGaugeImageFileInput.addEventListener('change', async () => {
   }
 });
 
-// 물었다! 표시 이미지 — 낚시 추와 같은 단일 슬롯 업로드 패턴. 커졌다
-// 작아지는 도장 연출 위에 얹는 그림이라 배경이 남아있으면 사각형이 같이
-// 나타났다 사라지는 것처럼 보인다 — 여기도 removeBackgroundOrFallback을
-// 거쳐 항상 배경을 제거한 뒤 저장한다.
-async function renderBiteStampImageSlot() {
-  const design = fishingConfig.barDesign || {};
-  el.biteStampImageSlot.innerHTML = '';
-  if (design.biteStampAssetId) {
-    el.biteStampImageAddBtn.classList.add('hidden');
-    const asset = await AssetDB.getAsset(design.biteStampAssetId).catch(() => null);
-    const slot = document.createElement('div');
-    slot.className = 'frame-slot';
-    slot.innerHTML = `${asset ? `<img src="${asset.dataUrl}" alt="">` : ''}
-      <div class="frame-actions"><button type="button" class="frame-mini-btn danger" data-act="del">✕</button></div>`;
-    slot.querySelector('[data-act=del]').addEventListener('click', async () => {
-      fishingConfig = await AssetDB.setFishingConfig({ barDesign: Object.assign({}, fishingConfig.barDesign, { biteStampAssetId: null }) });
-      showSaveNote();
-      renderBiteStampImageSlot();
-    });
-    el.biteStampImageSlot.appendChild(slot);
-  } else {
-    el.biteStampImageAddBtn.classList.remove('hidden');
-  }
-}
-el.biteStampImageAddBtn.addEventListener('click', () => el.biteStampImageFileInput.click());
-el.biteStampImageFileInput.addEventListener('change', async () => {
-  const file = el.biteStampImageFileInput.files[0];
-  el.biteStampImageFileInput.value = '';
-  if (!file) return;
-  el.biteStampImageAddBtn.disabled = true;
-  try {
-    const blob = await removeBackgroundOrFallback(file);
-    const asset = await AssetDB.addAsset({ type: 'fishing-bite-stamp-image', name: file.name, blob });
-    fishingConfig = await AssetDB.setFishingConfig({ barDesign: Object.assign({}, fishingConfig.barDesign, { biteStampAssetId: asset.id }) });
-    showSaveNote();
-    renderBiteStampImageSlot();
-  } finally {
-    el.biteStampImageAddBtn.disabled = false;
-  }
-});
-
-/* ===== 세밀영역조절(범용) 전체화면 편집기 재사용 — evidence-notebook의
+/* ===== 세밀영역조절(범용) 전체화면 편집기 — evidence-notebook의
    evn-* 편집기와 완전히 같은 pan/draw 좌표 수학(스케일=스테이지 폭/원본 폭,
-   세로 스크롤은 배지 미선택 시 드래그로 pan). 낚시바 디자인 탭에서는
-   업로드한 캐치바 이미지 "원본"(catchLayer.sourceAssetId) 안에서 실제로
-   인식될 영역(cropRect, 임의 비율 크롭)을 지정하는 용도, 캐스팅 모션
-   탭에서는 캐스팅 게이지 이미지 위 채움 영역을 지정하는 용도로 같이
-   쓴다(fbTargetKind로 구분) — 라벨이 1개뿐이라 열자마자 자동 선택돼 바로
-   드래그해서 그릴 수 있다. */
+   세로 스크롤은 배지 미선택 시 드래그로 pan). 캐스팅 모션 탭에서 캐스팅
+   게이지 이미지 위 채움 영역을 지정하는 용도로 쓴다 — 라벨이 1개뿐이라
+   열자마자 자동 선택돼 바로 드래그해서 그릴 수 있다. */
 let fbNaturalW = 0, fbNaturalH = 0;
 let fbScale = 1, fbRenderedH = 0;
 let fbPanY = 0;
@@ -2978,39 +2167,14 @@ let fbDrawStart = null;
 let fbDraftBox = null;
 let fbDraftRegions = {};
 let fbSelectedLabelId = null;
-// 이 팝업은 두 군데서 재사용된다 — fbTargetKind가 지금 어느 쪽을 위해
-// 열려 있는지 구분한다: 'catchCrop'(캐치바 이미지에서 실제 쓰일 부분을
-// 잘라 새 이미지로 굽는다) vs 'castGaugeRegion'(캐스팅 게이지 이미지는
-// 그대로 두고, 그 위 어디가 채워지는 부분인지 사각형만 기록한다).
-let fbTargetKind = null;
-const FB_REGION_LABELS_BY_KIND = {
-  catchCrop: [{ id: 'cropRect', label: '인식 영역' }],
-  castGaugeRegion: [{ id: 'cropRect', label: '채움 영역' }],
-};
-function currentFbLabels() { return FB_REGION_LABELS_BY_KIND[fbTargetKind] || FB_REGION_LABELS_BY_KIND.catchCrop; }
+const FB_REGION_LABELS = [{ id: 'cropRect', label: '채움 영역' }];
+function currentFbLabels() { return FB_REGION_LABELS; }
 
-el.cropCatchImageBtn.addEventListener('click', openCatchCropEditor);
-// 캐치바 이미지 다시 불러오기 — 업로드는 됐는데 미리보기/플레이 화면에
-// 파란 폴백 색만 보이는 등 로드가 실패한 것 같을 때, 페이지를 통째로
-// 새로고침하지 않고 그 레이어의 캐시된 URL(slideAssetUrlCache)만 지워서
-// AssetDB에서 다시 가져오게 한다.
-el.reloadCatchImageBtn.addEventListener('click', async () => {
-  const catchLayer = barDesignOf().catchLayer;
-  if (!catchLayer || !catchLayer.assetId) return;
-  const prevText = el.reloadCatchImageBtn.textContent;
-  el.reloadCatchImageBtn.disabled = true;
-  el.reloadCatchImageBtn.textContent = '다시 불러오는 중...';
-  slideAssetUrlCache.delete(catchLayer.assetId);
-  await renderSlideStage();
-  el.reloadCatchImageBtn.disabled = false;
-  el.reloadCatchImageBtn.textContent = prevText;
-});
 el.castGaugeRegionEditBtn.addEventListener('click', openCastGaugeRegionEditor);
 el.fbregionCloseBtn.addEventListener('click', closeFbRegionEditor);
 el.fbregionConfirmBtn.addEventListener('click', confirmFbRegionEditor);
 
-function openFbRegionEditorWithImage(kind, dataUrl, existingRect) {
-  fbTargetKind = kind;
+function openFbRegionEditorWithImage(dataUrl, existingRect) {
   fbDraftRegions = { cropRect: existingRect || null };
   fbSelectedLabelId = 'cropRect'; // 라벨이 하나뿐이라 열자마자 바로 그릴 수 있게 자동 선택
   fbPanY = 0;
@@ -3027,17 +2191,10 @@ function openFbRegionEditorWithImage(kind, dataUrl, existingRect) {
   if (el.fbregionImg.complete && el.fbregionImg.naturalWidth) onLoad();
   else el.fbregionImg.onload = onLoad;
 }
-function openCatchCropEditor() {
-  const catchLayer = barDesignOf().catchLayer;
-  if (!catchLayer || !catchLayer.sourceAssetId) return;
-  AssetDB.getAsset(catchLayer.sourceAssetId).then(asset => {
-    if (asset) openFbRegionEditorWithImage('catchCrop', asset.dataUrl, catchLayer.cropRect);
-  }).catch(() => {});
-}
 function openCastGaugeRegionEditor() {
   if (!fishingConfig.castGaugeAssetId) return;
   AssetDB.getAsset(fishingConfig.castGaugeAssetId).then(asset => {
-    if (asset) openFbRegionEditorWithImage('castGaugeRegion', asset.dataUrl, fishingConfig.castGaugeFillRegion);
+    if (asset) openFbRegionEditorWithImage(asset.dataUrl, fishingConfig.castGaugeFillRegion);
   }).catch(() => {});
 }
 function closeFbRegionEditor() {
@@ -3046,34 +2203,10 @@ function closeFbRegionEditor() {
 async function confirmFbRegionEditor() {
   const rect = fbDraftRegions.cropRect;
   if (!rect) { closeFbRegionEditor(); return; }
-  if (fbTargetKind === 'castGaugeRegion') {
-    // 이미지는 그대로 두고 사각형 좌표만 저장한다 — 새 이미지를 굽지 않는다.
-    fishingConfig = await AssetDB.setFishingConfig({ castGaugeFillRegion: rect });
-    showSaveNote();
-    closeFbRegionEditor();
-    return;
-  }
-  const catchLayer = barDesignOf().catchLayer;
-  if (!catchLayer) { closeFbRegionEditor(); return; }
-  const prevText = el.fbregionConfirmBtn.textContent;
-  el.fbregionConfirmBtn.disabled = true;
-  el.fbregionConfirmBtn.textContent = '자르는 중...';
-  try {
-    const sourceAsset = await AssetDB.getAsset(catchLayer.sourceAssetId);
-    const img = await loadImageEl(sourceAsset.dataUrl);
-    const OUT_W = 160;
-    const outH = Math.max(1, Math.round(OUT_W * (rect.h * img.naturalHeight) / (rect.w * img.naturalWidth)));
-    const croppedDataUrl = cropRegionToDataUrl(img, rect, OUT_W, outH);
-    const blob = await (await fetch(croppedDataUrl)).blob();
-    const croppedAsset = await AssetDB.addAsset({ type: 'fishing-catch-image-cropped', name: 'catch-bar.png', blob });
-    slideAssetUrlCache.delete(croppedAsset.id);
-    await patchBarDesign({ catchLayer: Object.assign({}, catchLayer, { assetId: croppedAsset.id, cropRect: rect }) });
-    closeFbRegionEditor();
-    renderSlideStage();
-  } finally {
-    el.fbregionConfirmBtn.disabled = false;
-    el.fbregionConfirmBtn.textContent = prevText;
-  }
+  // 이미지는 그대로 두고 사각형 좌표만 저장한다 — 새 이미지를 굽지 않는다.
+  fishingConfig = await AssetDB.setFishingConfig({ castGaugeFillRegion: rect });
+  showSaveNote();
+  closeFbRegionEditor();
 }
 function fitFbStage() {
   const stageW = el.fbregionStage.clientWidth;
@@ -3597,16 +2730,8 @@ el.motionRowConfirmBtn.addEventListener('click', async () => {
   }
 });
 
-/* ===== 물고기 종류 탭 — 카탈로그는 dev/data/fishDefs.js에 코드로 박혀 있고
-   (67종, id/등급/가치/난이도/시트 slot 고정), 여기서 편집하는 건 그 위에
-   덮어씌울 아이콘 스프라이트시트 한 장 + 물고기별 세밀영역조절 보정이다.
-   AI로 생성한 시트는 FISH_SHEET_LAYOUT 규격(196x136, 10x7, 16px 칸, 4px
-   간격)에 픽셀 단위로 정확히 맞아떨어지지 않는 경우가 흔해서, 이론적 그리드
-   계산(getFishSlotStyle)만으로는 아이콘이 어긋나 보일 수 있다 — 목록의
-   물고기 아이콘을 탭하면 그 물고기 하나만 다시 크롭 조정(fishIconOverrides,
-   fishDefs.js 참고)할 수 있다. */
-const FISH_GRADE_COLORS = { '일반': 'var(--text-muted)', '레어': 'var(--cyan)', '희귀': 'var(--amber)', '전설': 'var(--signal-red)' };
-
+// 여러 탭(모션 탭 시트, 캐릭터 탭 idle 시트)에서 업로드한 이미지의 실제
+// 자연 크기를 구할 때 쓰는 공용 유틸리티.
 function loadImageDimensions(url) {
   return new Promise(resolve => {
     const img = new Image();
@@ -3617,119 +2742,19 @@ function loadImageDimensions(url) {
   });
 }
 
-async function renderFishSheetPreview() {
-  el.fishSheetFrame.querySelectorAll('img').forEach(img => img.remove());
-  const assetId = (fishingConfig || {}).fishSheetAssetId;
-  const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
-  if (!asset) {
-    el.fishSheetEmpty.classList.remove('hidden');
-    el.fishSheetRemoveBtn.classList.add('hidden');
-    return null;
-  }
-  el.fishSheetEmpty.classList.add('hidden');
-  el.fishSheetRemoveBtn.classList.remove('hidden');
-  const img = document.createElement('img');
-  img.src = asset.dataUrl;
-  img.alt = '';
-  el.fishSheetFrame.appendChild(img);
-  return asset;
-}
-
-function renderFishList(sheetAsset, sheetDims) {
-  const overrides = fishingConfig.fishIconOverrides || {};
-  const byGrade = {};
-  Object.values(fishDefs).forEach(f => { (byGrade[f.grade] = byGrade[f.grade] || []).push(f); });
-  el.fishGradeGroups.innerHTML = FISH_GRADE_ORDER.filter(g => byGrade[g]).map(grade => {
-    const color = FISH_GRADE_COLORS[grade] || 'var(--text-secondary)';
-    const rows = byGrade[grade].sort((a, b) => a.slot - b.slot).map(f => {
-      const override = overrides[f.id];
-      const style = (override && sheetDims)
-        ? getFishCropStyle(override, sheetDims.width, sheetDims.height, 32)
-        : getFishSlotStyle(f.slot, 2);
-      // 좌우반전(scaleX(-1)) — 업로드하는 스프라이트시트가 보통 물고기가
-      // 왼쪽을 보고 있어서, 게임 안에서 오른쪽(캐릭터 쪽)을 보도록 여기서
-      // 한 번에 뒤집는다. 크롭 위치/크기(background-position/size)는 원본
-      // 시트 좌표 그대로 두고 화면에 그릴 때만 시각적으로 뒤집는 것이라
-      // 세밀영역조절 좌표(fishIconOverrides)에는 영향이 없다.
-      const iconStyle = sheetAsset
-        ? `background-image:url('${sheetAsset.dataUrl}');background-position:${style.backgroundPosition};background-size:${style.backgroundSize};transform:scaleX(-1)`
-        : '';
-      return `
-        <div class="fish-row">
-          <div class="fish-icon${sheetAsset ? ' fish-icon-tappable' : ''}" style="${iconStyle}" data-fish-id="${f.id}">${sheetAsset ? '' : '🐟'}</div>
-          <div class="fish-info">
-            <div class="fish-name">${f.name}</div>
-            <div class="fish-sub">난이도 ${f.difficulty} · #${String(f.slot).padStart(2, '0')}${override ? ' · 조정됨' : ''}</div>
-          </div>
-          <div class="fish-value">${f.value}P</div>
-        </div>`;
-    }).join('');
-    return `
-      <div class="fish-grade-group">
-        <div class="fish-grade-title" style="color:${color}"><span class="fish-grade-dot" style="background:${color}"></span>${grade} · ${byGrade[grade].length}종</div>
-        ${rows}
-      </div>`;
-  }).join('');
-  if (sheetAsset) {
-    el.fishGradeGroups.querySelectorAll('.fish-icon-tappable').forEach(iconEl => {
-      iconEl.addEventListener('click', () => openFishSpeciesCropAdjuster(Number(iconEl.dataset.fishId), sheetAsset, sheetDims));
-    });
-  }
-}
-
-async function renderFishTab() {
-  const sheetAsset = await renderFishSheetPreview();
-  const sheetDims = sheetAsset ? await loadImageDimensions(sheetAsset.dataUrl) : null;
-  renderFishList(sheetAsset, sheetDims);
-}
-
-function openFishSpeciesCropAdjuster(fishId, sheetAsset, sheetDims) {
-  const fishDef = fishDefs[String(fishId)];
-  if (!fishDef) return;
-  const overrides = fishingConfig.fishIconOverrides || {};
-  const existingRect = overrides[fishId] || (sheetDims ? getFishDefaultCropRect(fishDef.slot) : { cx: 0.5, cy: 0.5, size: 0.15 });
-  openCropAdjuster(sheetAsset.dataUrl, existingRect, null, (rect) => confirmFishSpeciesCrop(rect, fishId));
-}
-// No re-export/upload here — the sheet image itself doesn't change, only
-// which region of it this one fish samples via CSS background-position
-// (see getFishCropStyle in fishDefs.js).
-async function confirmFishSpeciesCrop(rect, fishId) {
-  const overrides = Object.assign({}, fishingConfig.fishIconOverrides, { [fishId]: rect });
-  fishingConfig = await AssetDB.setFishingConfig({ fishIconOverrides: overrides });
-  renderFishTab();
-}
-
-el.fishSheetUploadBtn.addEventListener('click', () => el.fishSheetFileInput.click());
-el.fishSheetFileInput.addEventListener('change', async () => {
-  const file = el.fishSheetFileInput.files[0];
-  el.fishSheetFileInput.value = '';
-  if (!file) return;
-  const asset = await AssetDB.addAsset({ type: 'fishing-fish-sheet', name: file.name, blob: file });
-  fishingConfig = await AssetDB.setFishingConfig({ fishSheetAssetId: asset.id });
-  showSaveNote();
-  renderFishTab();
-});
-el.fishSheetRemoveBtn.addEventListener('click', async () => {
-  // Clearing the sheet makes every fish fall back to the emoji placeholder —
-  // any per-fish overrides would be meaningless without a sheet to sample
-  // from, so drop them too rather than leaving stale coordinates behind.
-  fishingConfig = await AssetDB.setFishingConfig({ fishSheetAssetId: null, fishIconOverrides: {} });
-  showSaveNote();
-  renderFishTab();
-});
-
 // 격자 이동 테스트(아래)와 낚시대 끝 지정 등에서 쓰는 이동 방향 4개 —
 // 모션 시트의 카테고리(MOTION_CATEGORIES)에도 같은 이름으로 포함돼 있다.
 const WALK_DIRS = ['up', 'down', 'left', 'right'];
 
-/* ===== 이동 탭 — 자유 이동 테스트.
+/* ===== 이동 설정(모션 탭 안) — 자유 이동 테스트.
    더 이상 격자에 스냅되지 않는다 — 방향키/방향 버튼을 누르고 있는 동안
    requestAnimationFrame으로 매 프레임 위치를 갱신하는 연속 이동이다.
    속도는 "이동 속도"(moveStepMs) 슬라이더 값을 그대로 쓰되, "타일 한 칸
    (MOVE_TILE_SIZE)을 이동하는 데 걸리는 시간"으로 해석해 px/ms 속도로
    환산한다 — 슬라이더 자체는 예전 그대로 두고 의미만 바뀐다. 배경은
-   낚시바 디자인 탭의 backgroundAssetId를 그대로 재사용하되, /play/
-   화면과 달리 background-size:cover로 축소하지 않고 .move-world의
+   fishingConfig.backgroundAssetId(영역 설정/캐릭터 탭과 공유하는 배경)를
+   그대로 재사용하되, /play/ 화면과 달리 background-size:cover로 축소하지
+   않고 .move-world의
    width/height를 이미지 원본 픽셀 크기로 지정해 원본 그대로 보여준다 —
    그 결과 배경이 좁은 .move-stage 뷰포트보다 커질 수 있으므로, 캐릭터가
    이동할 때마다 뷰포트를 캐릭터 중심으로 스크롤해 카메라처럼 따라가게
@@ -3953,7 +2978,7 @@ function renderAreaSavedPolygons() {
 function renderAreaDraft() {
   const hasBg = !!fishingConfig.backgroundAssetId;
   if (!hasBg) {
-    el.areaDraftHint.textContent = '배경화면을 먼저 업로드하세요(낚시바 디자인 탭)';
+    el.areaDraftHint.textContent = '아직 배경화면이 없어요';
   } else if (!areaDraft.length) {
     el.areaDraftHint.textContent = '탭해서 꼭짓점을 추가하세요 (3개 이상 찍고 완료)';
   } else {
@@ -4040,176 +3065,13 @@ el.areaDraftFinishBtn.addEventListener('click', async () => {
 });
 renderAreaKindPills();
 
-/* ===== 아이템창 탭 — 팝업 배경 업로드 + 아이콘 크기/위치.
-   fishingConfig.itemPopup = { backgroundAssetId, iconPos: {x,y}(0~1, 팝업
-   카드 기준), iconSizePx }. 위치 지정은 낚시대 끝 지정과 같은 단일 포인트
-   피커(itemPos* = rodtip* 패턴 재사용, 프레임별 배열이 아니라 값 하나만
-   다룬다는 점만 다르다). ===== */
-async function renderItemBgSlot() {
-  const ip = fishingConfig.itemPopup || {};
-  el.itemBgSlot.innerHTML = '';
-  if (ip.backgroundAssetId) {
-    el.itemBgAddBtn.classList.add('hidden');
-    const asset = await AssetDB.getAsset(ip.backgroundAssetId).catch(() => null);
-    const slot = document.createElement('div');
-    slot.className = 'frame-slot';
-    slot.innerHTML = `${asset ? `<img src="${asset.dataUrl}" alt="">` : ''}
-      <div class="frame-actions"><button type="button" class="frame-mini-btn danger" data-act="del">✕</button></div>`;
-    slot.querySelector('[data-act=del]').addEventListener('click', async () => {
-      fishingConfig = await AssetDB.setFishingConfig({ itemPopup: Object.assign({}, fishingConfig.itemPopup, { backgroundAssetId: null }) });
-      showSaveNote();
-      renderItemBgSlot();
-      renderItemPopupPreview();
-    });
-    el.itemBgSlot.appendChild(slot);
-  } else {
-    el.itemBgAddBtn.classList.remove('hidden');
-  }
-}
-el.itemBgAddBtn.addEventListener('click', () => el.itemBgFileInput.click());
-el.itemBgFileInput.addEventListener('change', async () => {
-  const file = el.itemBgFileInput.files[0];
-  el.itemBgFileInput.value = '';
-  if (!file) return;
-  el.itemBgAddBtn.disabled = true;
-  try {
-    const asset = await AssetDB.addAsset({ type: 'fishing-item-popup-background', name: file.name, blob: file });
-    fishingConfig = await AssetDB.setFishingConfig({ itemPopup: Object.assign({}, fishingConfig.itemPopup, { backgroundAssetId: asset.id }) });
-    showSaveNote();
-    renderItemBgSlot();
-    renderItemPopupPreview();
-  } finally {
-    el.itemBgAddBtn.disabled = false;
-  }
-});
-
-el.itemIconSizeInput.addEventListener('input', () => {
-  el.itemIconSizeValue.textContent = el.itemIconSizeInput.value + 'px';
-  renderItemPopupPreview();
-});
-el.itemIconSizeInput.addEventListener('change', async () => {
-  fishingConfig = await AssetDB.setFishingConfig({ itemPopup: Object.assign({}, fishingConfig.itemPopup, { iconSizePx: Number(el.itemIconSizeInput.value) }) });
-  showSaveNote();
-});
-el.itemNameSizeInput.addEventListener('input', () => {
-  el.itemNameSizeValue.textContent = el.itemNameSizeInput.value + 'px';
-  renderItemPopupPreview();
-});
-el.itemNameSizeInput.addEventListener('change', async () => {
-  fishingConfig = await AssetDB.setFishingConfig({ itemPopup: Object.assign({}, fishingConfig.itemPopup, { nameFontSizePx: Number(el.itemNameSizeInput.value) }) });
-  showSaveNote();
-});
-el.itemMetaSizeInput.addEventListener('input', () => {
-  el.itemMetaSizeValue.textContent = el.itemMetaSizeInput.value + 'px';
-  renderItemPopupPreview();
-});
-el.itemMetaSizeInput.addEventListener('change', async () => {
-  fishingConfig = await AssetDB.setFishingConfig({ itemPopup: Object.assign({}, fishingConfig.itemPopup, { metaFontSizePx: Number(el.itemMetaSizeInput.value) }) });
-  showSaveNote();
-});
-
-// 카드/스테이지 종횡비를 업로드한 배경 이미지의 실제 자연 크기로 맞춘다 —
-// 고정 박스에 억지로 맞추면(cover) 액자 그림이 잘리거나 늘어나 실제 팝업
-// (play/index.html)과 어긋나 보이므로, 세 군데(미리보기/위치피커/실제
-// 팝업) 전부 이 값을 --item-ar로 공유한다.
-async function applyItemAspectRatio(targetEl, dataUrl) {
-  if (!dataUrl) { targetEl.style.removeProperty('--item-ar'); return; }
-  try {
-    const img = await loadImageEl(dataUrl);
-    targetEl.style.setProperty('--item-ar', img.naturalWidth + '/' + img.naturalHeight);
-  } catch (e) {
-    targetEl.style.removeProperty('--item-ar');
-  }
-}
-async function renderItemPopupPreview() {
-  const ip = fishingConfig.itemPopup || {};
-  const pos = ip.iconPos || { x: 0.5, y: 0.36 };
-  const size = ip.iconSizePx || 64;
-  el.itemPopupPreview.style.backgroundImage = '';
-  let asset = null;
-  if (ip.backgroundAssetId) {
-    asset = await AssetDB.getAsset(ip.backgroundAssetId).catch(() => null);
-    if (asset) el.itemPopupPreview.style.backgroundImage = `url(${asset.dataUrl})`;
-  }
-  el.itemPopupPreview.classList.toggle('item-popup-preview--fallback', !asset);
-  await applyItemAspectRatio(el.itemPopupPreview, asset ? asset.dataUrl : null);
-  el.itemPopupPreviewIcon.style.left = (pos.x * 100) + '%';
-  el.itemPopupPreviewIcon.style.top = (pos.y * 100) + '%';
-  el.itemPopupPreviewIcon.style.width = size + 'px';
-  el.itemPopupPreviewIcon.style.height = size + 'px';
-
-  const namePos = ip.namePos || { x: 0.5, y: 0.66 };
-  const metaPos = ip.metaPos || { x: 0.5, y: 0.8 };
-  el.itemPopupPreviewName.style.left = (namePos.x * 100) + '%';
-  el.itemPopupPreviewName.style.top = (namePos.y * 100) + '%';
-  el.itemPopupPreviewName.style.fontSize = (ip.nameFontSizePx || 16) + 'px';
-  el.itemPopupPreviewMeta.style.left = (metaPos.x * 100) + '%';
-  el.itemPopupPreviewMeta.style.top = (metaPos.y * 100) + '%';
-  el.itemPopupPreviewMeta.style.fontSize = (ip.metaFontSizePx || 12) + 'px';
-}
-
-/* ===== 아이템창 위치 지정(범용) — 아이콘/아이템명/설명 세 대상이 이
-   팝업 하나(itemPosOverlay)를 공유한다. itemPosTargetKey가 지금 어느
-   대상을 편집 중인지 기억하고, confirmItemPosEditor가 그 키로 저장한다. */
-const ITEM_POS_TARGETS = {
-  iconPos: { defaultPos: { x: 0.5, y: 0.36 }, title: '아이템 뜨는 위치 지정', desc: '그림 위를 탭하거나 드래그해서 아이템 아이콘이 나타날 위치를 옮기세요.' },
-  namePos: { defaultPos: { x: 0.5, y: 0.66 }, title: '아이템명 위치 지정', desc: '그림 위를 탭하거나 드래그해서 물고기 이름이 나타날 위치를 옮기세요.' },
-  metaPos: { defaultPos: { x: 0.5, y: 0.8 }, title: '설명 위치 지정', desc: '그림 위를 탭하거나 드래그해서 등급 · 가치 문구가 나타날 위치를 옮기세요.' },
-};
-let itemPosTargetKey = 'iconPos';
-let itemPosDraft = { x: 0.5, y: 0.36 };
-let itemPosDragging = false;
-el.itemPosEditBtn.addEventListener('click', () => openItemPosEditor('iconPos'));
-el.itemNamePosEditBtn.addEventListener('click', () => openItemPosEditor('namePos'));
-el.itemMetaPosEditBtn.addEventListener('click', () => openItemPosEditor('metaPos'));
-el.itemPosCancelBtn.addEventListener('click', () => el.itemPosOverlay.classList.add('hidden'));
-el.itemPosConfirmBtn.addEventListener('click', confirmItemPosEditor);
-async function openItemPosEditor(targetKey) {
-  itemPosTargetKey = targetKey;
-  const target = ITEM_POS_TARGETS[targetKey];
-  el.itemPosTitle.textContent = target.title;
-  el.itemPosDesc.textContent = target.desc;
-  const ip = fishingConfig.itemPopup || {};
-  itemPosDraft = Object.assign({}, target.defaultPos, ip[targetKey] || {});
-  el.itemPosImg.src = '';
-  let asset = null;
-  if (ip.backgroundAssetId) {
-    asset = await AssetDB.getAsset(ip.backgroundAssetId).catch(() => null);
-    if (asset) el.itemPosImg.src = asset.dataUrl;
-  }
-  await applyItemAspectRatio(el.itemPosStage, asset ? asset.dataUrl : null);
-  renderItemPosMarker();
-  el.itemPosOverlay.classList.remove('hidden');
-}
-function renderItemPosMarker() {
-  el.itemPosMarker.style.left = (itemPosDraft.x * 100) + '%';
-  el.itemPosMarker.style.top = (itemPosDraft.y * 100) + '%';
-}
-function updateItemPosFromEvent(e) {
-  const rect = el.itemPosStage.getBoundingClientRect();
-  itemPosDraft = {
-    x: clamp01((e.clientX - rect.left) / rect.width),
-    y: clamp01((e.clientY - rect.top) / rect.height),
-  };
-  renderItemPosMarker();
-}
-el.itemPosStage.addEventListener('pointerdown', (e) => { itemPosDragging = true; updateItemPosFromEvent(e); });
-window.addEventListener('pointermove', (e) => { if (itemPosDragging) updateItemPosFromEvent(e); });
-window.addEventListener('pointerup', () => { itemPosDragging = false; });
-async function confirmItemPosEditor() {
-  fishingConfig = await AssetDB.setFishingConfig({ itemPopup: Object.assign({}, fishingConfig.itemPopup, { [itemPosTargetKey]: itemPosDraft }) });
-  showSaveNote();
-  el.itemPosOverlay.classList.add('hidden');
-  renderItemPopupPreview();
-}
-
-/* ===== 대화 탭 — 낚시바 디자인 탭의 PPT 슬라이드형 에디터(SLIDE_LAYER_ORDER/
-   renderSlideStage/attachLayerMove/attachLayerResize)와 완전히 같은 구조를
-   그대로 다시 쓴다(barDesignOf/patchBarDesign 대신 dialogueSceneOf/
-   patchDialogueScene, el.slideStage 대신 el.dialogueSlideStage). 낚시바는
-   고정 크기 모듈(barDesign.slideWidthPx/slideHeightPx)이라 슬라이드
-   크기까지 조절하지만, 대화 장면은 재생 화면(el.frame) 전체에 그대로
-   덮이는 것이라 슬라이드 크기 슬라이더 없이 실제 모바일 화면 비율
+/* ===== 대화 탭 — PPT 슬라이드형 에디터. 오브젝트를 자유 배치하는 구조
+   자체는 이전 낚시바 디자인 탭의 slide-stage/slide-layer와 같은 패턴이지만
+   (getCachedAssetUrl/preloadWithRetry/clampLayerPos 유틸리티는 그대로
+   공유한다), 레이어 이동/리사이즈(attachDialogueLayerMove/Resize)와 상태
+   저장(dialogueSceneOf/patchDialogueScene, el.dialogueSlideStage)은 이
+   탭 전용으로 따로 구현돼 있다. 대화 장면은 재생 화면(el.frame) 전체에
+   그대로 덮이는 것이라 슬라이드 크기 슬라이더 없이 실제 모바일 화면 비율
    (414/896, HTML의 --slide-ar 인라인 스타일)로 고정해 편집한다. 세 레이어
    모두 이미지 레이어라(영역 사각형 없음) DIALOGUE_LAYER_META는 전부
    kind:'image'. 대사 텍스트 위치/내용은 이번 범위 밖이라 다루지 않는다. */
@@ -4640,38 +3502,14 @@ function showSaveNote() {
 }
 
 async function init() {
-  renderLogicTab();
   renderPromptTabs();
   fishingConfig = await AssetDB.getFishingConfig().catch(() => fishingConfig);
-  const design = fishingConfig.barDesign || {};
-  el.fishIconSizeInput.value = design.fishIconSizePx || 26;
-  el.fishIconSizeValue.textContent = (design.fishIconSizePx || 26) + 'px';
-  el.slideWidthInput.value = design.slideWidthPx || 90;
-  el.slideWidthValue.textContent = (design.slideWidthPx || 90) + 'px';
-  el.slideHeightInput.value = design.slideHeightPx || 260;
-  el.slideHeightValue.textContent = (design.slideHeightPx || 260) + 'px';
-  renderSlideStage();
-  renderFishIconSlot();
-  renderBackgroundImageSlot();
-  renderSinkerImageSlot();
-  renderGaugeImageSlot();
   renderCastGaugeImageSlot();
-  renderBiteStampImageSlot();
   renderCastPhysicsControls();
   renderReelMotionControls();
   renderMotionTab();
-  renderFishTab();
   initMoveMotionControls();
   renderMoveTestStage();
-  const itemPopupCfg = fishingConfig.itemPopup || {};
-  el.itemIconSizeInput.value = itemPopupCfg.iconSizePx || 64;
-  el.itemIconSizeValue.textContent = (itemPopupCfg.iconSizePx || 64) + 'px';
-  el.itemNameSizeInput.value = itemPopupCfg.nameFontSizePx || 16;
-  el.itemNameSizeValue.textContent = (itemPopupCfg.nameFontSizePx || 16) + 'px';
-  el.itemMetaSizeInput.value = itemPopupCfg.metaFontSizePx || 12;
-  el.itemMetaSizeValue.textContent = (itemPopupCfg.metaFontSizePx || 12) + 'px';
-  renderItemBgSlot();
-  renderItemPopupPreview();
   renderDialogueSlideStage();
 }
 init();
