@@ -2063,23 +2063,30 @@ function catenaryPoints(p0, p1, samples, slack) {
   // 좌표로 되돌린다.
   const mathDy = -dy;
   const target = Math.sqrt(Math.max(L * L - mathDy * mathDy, 0));
+  // 아래 sinh/log 유도는 dx>0(오른쪽으로 던지기)를 전제로 한다 — 왼쪽으로
+  // 던질 때(dx<0)는 f(a)가 항상 음수라 이분법이 a를 0으로 붕괴시켜
+  // cosh가 발산(NaN)하고 줄이 아예 안 보였다. 절댓값(adx)으로 풀고 부호
+  // (sign)는 마지막에 x좌표에만 되돌려 적용한다 — 현수선은 좌우대칭이라
+  // 결과가 동일하다.
+  const sign = dx < 0 ? -1 : 1;
+  const adx = Math.abs(dx);
   // f(a) = a로 정해지는 케이블 길이 - 목표 길이(target). a가 작을수록
   // 더 팽팽히 휘어 길이가 길어지므로 f는 a에 대해 단조 감소한다 —
   // f(mid)>0(길이 초과)이면 a를 늘려야 하니 lo를 올린다.
-  function f(a) { return 2 * a * Math.sinh(dx / (2 * a)) - target; }
-  let lo = 1e-3, hi = Math.max(Math.abs(dx), 1) * 50;
+  function f(a) { return 2 * a * Math.sinh(adx / (2 * a)) - target; }
+  let lo = 1e-3, hi = Math.max(adx, 1) * 50;
   for (let i = 0; i < 60; i++) {
     const mid = (lo + hi) / 2;
     if (f(mid) > 0) lo = mid; else hi = mid;
   }
   const a = (lo + hi) / 2;
-  const p = (dx - a * Math.log((L + mathDy) / (L - mathDy))) / 2;
+  const p = (adx - a * Math.log((L + mathDy) / (L - mathDy))) / 2;
   const q = -a * Math.cosh(p / a);
   const pts = [];
   for (let i = 0; i <= samples; i++) {
-    const xl = dx * i / samples;
+    const xl = adx * i / samples;
     const ylMath = a * Math.cosh((xl - p) / a) + q;
-    pts.push({ x: p0.x + xl, y: p0.y - ylMath });
+    pts.push({ x: p0.x + sign * xl, y: p0.y - ylMath });
   }
   return pts;
 }
