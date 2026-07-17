@@ -192,6 +192,18 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .slide-layer.region[data-layer-id="gaugeRegion"] .slide-layer-label{background:var(--amber)}
 .slide-layer.region[data-layer-id="fishRegion"] .slide-layer-label{background:var(--signal-red)}
 .slide-layer-handle{position:absolute;right:-7px;bottom:-7px;width:16px;height:16px;border-radius:50%;background:var(--green);border:2px solid #050607;cursor:nwse-resize;touch-action:none}
+/* 대화 탭 — 초상화/이름/대사 영역(대화창·지수·영우 이미지 레이어와 같은
+   슬라이드 위 rect이지만 이미지가 아니라 자리만 잡아두는 region이라, 낚시바
+   디자인 탭의 gaugeRegion/fishRegion과 같은 방식으로 색만 다르게 구분한다). */
+.slide-layer.region[data-layer-id="portraitLayer"]{border-color:#B48EAD;background:rgba(180,142,173,.16)}
+.slide-layer.region[data-layer-id="nameLayer"]{border-color:var(--green);background:rgba(62,207,107,.14)}
+.slide-layer.region[data-layer-id="textLayer"]{border-color:#F2C14E;background:rgba(242,193,78,.14)}
+.slide-layer.region[data-layer-id="portraitLayer"] .slide-layer-label{background:#B48EAD}
+.slide-layer.region[data-layer-id="nameLayer"] .slide-layer-label{background:var(--green)}
+.slide-layer.region[data-layer-id="textLayer"] .slide-layer-label{background:#F2C14E}
+.slide-layer.region[data-layer-id="portraitLayer"] img{width:100%;height:100%;object-fit:cover}
+.dialogue-text-preview{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:4px;font-size:11px;font-weight:600;color:var(--text-primary);text-align:center;overflow:hidden;pointer-events:none;word-break:keep-all}
+.dialogue-text-input{width:100%;background:var(--surface-1);border:1px solid var(--divider);border-radius:8px;padding:8px 10px;color:var(--text-primary);font-size:13.5px;font-family:var(--sans);margin-top:10px;resize:vertical;box-sizing:border-box}
 
 /* ===== 세밀영역조절(범용) 전체화면 편집기 — dev/upload/evidence-notebook/
    index.html의 영역지정 편집기(evn-*)와 완전히 같은 pan/draw 제스처 패턴을
@@ -653,11 +665,14 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   <div class="tab-panel hidden" id="panelDialogue">
     <div class="option-group">
       <div class="option-label">대화 장면 레이아웃</div>
-      <div class="option-desc">낚시 시작 전 나오는 대화 장면이에요. 대화창(말풍선 배경)·지수·영우 이미지를 올리면 아래 슬라이드에 추가되고, PPT처럼 자유롭게 배치할 수 있어요(몸통 드래그=이동, 오른쪽 아래 초록 손잡이=크기). 대사 텍스트는 이번엔 다루지 않아요.</div>
+      <div class="option-desc">낚시 시작 전 나오는 대화 장면이에요. 대화창(말풍선 배경)·지수·영우 이미지와 초상화·이름·대화 영역을 올리면 아래 슬라이드에 추가되고, PPT처럼 자유롭게 배치할 수 있어요(몸통 드래그=이동, 오른쪽 아래 초록 손잡이=크기). 초상화·이름·대화는 이미지가 아니라 자리만 잡아두는 영역이에요 — 실제로 뭐가 나올지는 아래 "초상화 이미지"/"화자 · 대사"에서 정해요.</div>
       <div class="slide-toolbar" id="dialogueToolbar">
         <button type="button" class="fish-sheet-btn" id="addDialogueBoxBtn">+ 대화창 이미지</button>
         <button type="button" class="fish-sheet-btn" id="addJisooImageBtn">+ 지수 이미지</button>
         <button type="button" class="fish-sheet-btn" id="addYoungwooImageBtn">+ 영우 이미지</button>
+        <button type="button" class="fish-sheet-btn" id="addPortraitAreaBtn">+ 초상화 영역</button>
+        <button type="button" class="fish-sheet-btn" id="addNameAreaBtn">+ 이름 영역</button>
+        <button type="button" class="fish-sheet-btn" id="addTextAreaBtn">+ 대화 영역</button>
       </div>
       <input type="file" id="dialogueBoxFileInput" accept="image/*">
       <input type="file" id="jisooImageFileInput" accept="image/*">
@@ -666,6 +681,26 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
         <div class="slide-stage" id="dialogueSlideStage" style="--slide-ar:414/896"></div>
       </div>
       <button type="button" class="fish-sheet-btn danger hidden" id="deleteDialogueLayerBtn" style="width:100%;margin-top:10px">✕ 선택한 오브젝트 삭제</button>
+    </div>
+
+    <div class="option-group">
+      <div class="option-label">초상화 이미지</div>
+      <div class="option-desc">위 "초상화 영역"에 표시할 지수·영우 사진이에요. 아래 "화자 · 대사"에서 고른 사람의 사진이 그 영역에 나와요(꽉 채워 자르기라 정사각형에 가깝게 준비하면 잘 어울려요).</div>
+      <div class="slide-toolbar">
+        <button type="button" class="fish-sheet-btn" id="addJisooPortraitBtn">+ 지수 초상화</button>
+        <button type="button" class="fish-sheet-btn danger hidden" id="removeJisooPortraitBtn">✕ 지수 초상화 제거</button>
+        <button type="button" class="fish-sheet-btn" id="addYoungwooPortraitBtn">+ 영우 초상화</button>
+        <button type="button" class="fish-sheet-btn danger hidden" id="removeYoungwooPortraitBtn">✕ 영우 초상화 제거</button>
+      </div>
+      <input type="file" id="jisooPortraitFileInput" accept="image/*">
+      <input type="file" id="youngwooPortraitFileInput" accept="image/*">
+    </div>
+
+    <div class="option-group">
+      <div class="option-label">화자 · 대사</div>
+      <div class="option-desc">지금 대화 장면에서 말하는 사람을 고르고 대사를 입력하세요. "이름 영역"엔 고른 사람 이름이, "대화 영역"엔 아래 텍스트가 표시돼요.</div>
+      <div class="option-pills" id="dialogueSpeakerPills"></div>
+      <textarea class="dialogue-text-input" id="dialogueTextInput" placeholder="대사를 입력하세요" rows="3"></textarea>
     </div>
   </div>
 
@@ -1079,6 +1114,17 @@ const el = {
   jisooImageFileInput: document.getElementById('jisooImageFileInput'),
   youngwooImageFileInput: document.getElementById('youngwooImageFileInput'),
   deleteDialogueLayerBtn: document.getElementById('deleteDialogueLayerBtn'),
+  addPortraitAreaBtn: document.getElementById('addPortraitAreaBtn'),
+  addNameAreaBtn: document.getElementById('addNameAreaBtn'),
+  addTextAreaBtn: document.getElementById('addTextAreaBtn'),
+  addJisooPortraitBtn: document.getElementById('addJisooPortraitBtn'),
+  removeJisooPortraitBtn: document.getElementById('removeJisooPortraitBtn'),
+  jisooPortraitFileInput: document.getElementById('jisooPortraitFileInput'),
+  addYoungwooPortraitBtn: document.getElementById('addYoungwooPortraitBtn'),
+  removeYoungwooPortraitBtn: document.getElementById('removeYoungwooPortraitBtn'),
+  youngwooPortraitFileInput: document.getElementById('youngwooPortraitFileInput'),
+  dialogueSpeakerPills: document.getElementById('dialogueSpeakerPills'),
+  dialogueTextInput: document.getElementById('dialogueTextInput'),
   heldFishPosEditBtn: document.getElementById('heldFishPosEditBtn'),
   heldFishPosOverlay: document.getElementById('heldFishPosOverlay'),
   heldFishPosStage: document.getElementById('heldFishPosStage'),
@@ -3096,15 +3142,24 @@ renderAreaKindPills();
    저장(dialogueSceneOf/patchDialogueScene, el.dialogueSlideStage)은 이
    탭 전용으로 따로 구현돼 있다. 대화 장면은 재생 화면(el.frame) 전체에
    그대로 덮이는 것이라 슬라이드 크기 슬라이더 없이 실제 모바일 화면 비율
-   (414/896, HTML의 --slide-ar 인라인 스타일)로 고정해 편집한다. 세 레이어
-   모두 이미지 레이어라(영역 사각형 없음) DIALOGUE_LAYER_META는 전부
-   kind:'image'. 대사 텍스트 위치/내용은 이번 범위 밖이라 다루지 않는다. */
-const DIALOGUE_LAYER_ORDER = ['boxLayer', 'jisooLayer', 'youngwooLayer']; // z-order: 대화창 배경 → 지수 → 영우
+   (414/896, HTML의 --slide-ar 인라인 스타일)로 고정해 편집한다.
+   boxLayer/jisooLayer/youngwooLayer는 이미지 레이어(kind:'image')지만,
+   portraitLayer/nameLayer/textLayer는 자리만 잡아두는 region이다 — 실제
+   내용(초상화 사진은 jisooPortraitAssetId/youngwooPortraitAssetId, 이름/
+   대사 텍스트는 speaker/text)은 이 세 영역과 별개로 아래 "초상화 이미지"/
+   "화자 · 대사"에서 정하고, 지금 화자(speaker)에 따라 어느 쪽 내용을
+   보여줄지만 바뀐다(다른 미니게임들의 공용 대화창(msg-panel)과 같은 원칙 —
+   초상화/이름/대사 영역은 하나씩만 두고 화자에 따라 내용만 바뀐다). */
+const DIALOGUE_LAYER_ORDER = ['boxLayer', 'jisooLayer', 'youngwooLayer', 'portraitLayer', 'nameLayer', 'textLayer']; // z-order
 const DIALOGUE_LAYER_META = {
   boxLayer: { kind: 'image', label: '대화창' },
   jisooLayer: { kind: 'image', label: '지수' },
   youngwooLayer: { kind: 'image', label: '영우' },
+  portraitLayer: { kind: 'portrait', label: '초상화' },
+  nameLayer: { kind: 'text', label: '이름' },
+  textLayer: { kind: 'text', label: '대사' },
 };
+const DIALOGUE_SPEAKER_OPTIONS = [{ id: 'jisoo', label: '지수' }, { id: 'youngwoo', label: '영우' }];
 let selectedDialogueLayerId = null;
 function dialogueSceneOf() { return fishingConfig.dialogueScene || {}; }
 async function patchDialogueScene(patch) {
@@ -3114,24 +3169,43 @@ async function patchDialogueScene(patch) {
 }
 async function renderDialogueSlideStage() {
   const scene = dialogueSceneOf();
+  const speaker = scene.speaker === 'youngwoo' ? 'youngwoo' : 'jisoo';
   el.dialogueSlideStage.innerHTML = '';
   for (const id of DIALOGUE_LAYER_ORDER) {
     const data = scene[id];
     if (!data) continue;
     const meta = DIALOGUE_LAYER_META[id];
     const layerEl = document.createElement('div');
-    layerEl.className = 'slide-layer' + (selectedDialogueLayerId === id ? ' selected' : '');
+    layerEl.className = 'slide-layer' + (meta.kind !== 'image' ? ' region' : '') + (selectedDialogueLayerId === id ? ' selected' : '');
     layerEl.dataset.layerId = id;
     layerEl.style.left = (data.x * 100) + '%';
     layerEl.style.top = (data.y * 100) + '%';
     layerEl.style.width = (data.w * 100) + '%';
     layerEl.style.height = (data.h * 100) + '%';
-    const url = await getCachedAssetUrl(data.assetId);
-    if (url) {
-      const img = document.createElement('img');
-      img.src = await preloadWithRetry(url, 3, 500);
-      img.alt = '';
-      layerEl.appendChild(img);
+    if (meta.kind === 'image') {
+      const url = await getCachedAssetUrl(data.assetId);
+      if (url) {
+        const img = document.createElement('img');
+        img.src = await preloadWithRetry(url, 3, 500);
+        img.alt = '';
+        layerEl.appendChild(img);
+      }
+    } else if (meta.kind === 'portrait') {
+      const portraitAssetId = speaker === 'youngwoo' ? scene.youngwooPortraitAssetId : scene.jisooPortraitAssetId;
+      const url = portraitAssetId ? await getCachedAssetUrl(portraitAssetId) : null;
+      if (url) {
+        const img = document.createElement('img');
+        img.src = await preloadWithRetry(url, 3, 500);
+        img.alt = '';
+        layerEl.appendChild(img);
+      }
+    } else if (meta.kind === 'text') {
+      const preview = document.createElement('div');
+      preview.className = 'dialogue-text-preview';
+      preview.textContent = id === 'nameLayer'
+        ? (speaker === 'youngwoo' ? '영우' : '지수')
+        : (scene.text || '대사가 여기에 표시돼요');
+      layerEl.appendChild(preview);
     }
     const label = document.createElement('span');
     label.className = 'slide-layer-label';
@@ -3159,7 +3233,14 @@ function updateDialogueToolbarState() {
   el.addDialogueBoxBtn.classList.toggle('hidden', !!scene.boxLayer);
   el.addJisooImageBtn.classList.toggle('hidden', !!scene.jisooLayer);
   el.addYoungwooImageBtn.classList.toggle('hidden', !!scene.youngwooLayer);
+  el.addPortraitAreaBtn.classList.toggle('hidden', !!scene.portraitLayer);
+  el.addNameAreaBtn.classList.toggle('hidden', !!scene.nameLayer);
+  el.addTextAreaBtn.classList.toggle('hidden', !!scene.textLayer);
   el.deleteDialogueLayerBtn.classList.toggle('hidden', !selectedDialogueLayerId);
+  el.addJisooPortraitBtn.classList.toggle('hidden', !!scene.jisooPortraitAssetId);
+  el.removeJisooPortraitBtn.classList.toggle('hidden', !scene.jisooPortraitAssetId);
+  el.addYoungwooPortraitBtn.classList.toggle('hidden', !!scene.youngwooPortraitAssetId);
+  el.removeYoungwooPortraitBtn.classList.toggle('hidden', !scene.youngwooPortraitAssetId);
 }
 function attachDialogueLayerMove(layerEl, id) {
   let pointerId = null, start = null, startRect = null;
@@ -3280,6 +3361,75 @@ el.deleteDialogueLayerBtn.addEventListener('click', async () => {
   if (!selectedDialogueLayerId) return;
   await patchDialogueScene({ [selectedDialogueLayerId]: null });
   selectedDialogueLayerId = null;
+  renderDialogueSlideStage();
+});
+el.addPortraitAreaBtn.addEventListener('click', async () => {
+  await patchDialogueScene({ portraitLayer: { x: 0.06, y: 0.62, w: 0.16, h: 0.16 } });
+  selectedDialogueLayerId = 'portraitLayer';
+  renderDialogueSlideStage();
+});
+el.addNameAreaBtn.addEventListener('click', async () => {
+  await patchDialogueScene({ nameLayer: { x: 0.26, y: 0.62, w: 0.3, h: 0.06 } });
+  selectedDialogueLayerId = 'nameLayer';
+  renderDialogueSlideStage();
+});
+el.addTextAreaBtn.addEventListener('click', async () => {
+  await patchDialogueScene({ textLayer: { x: 0.26, y: 0.7, w: 0.68, h: 0.18 } });
+  selectedDialogueLayerId = 'textLayer';
+  renderDialogueSlideStage();
+});
+el.addJisooPortraitBtn.addEventListener('click', () => el.jisooPortraitFileInput.click());
+el.jisooPortraitFileInput.addEventListener('change', async () => {
+  const file = el.jisooPortraitFileInput.files[0];
+  el.jisooPortraitFileInput.value = '';
+  if (!file) return;
+  el.addJisooPortraitBtn.disabled = true;
+  try {
+    const asset = await AssetDB.addAsset({ type: 'fishing-dialogue-portrait-jisoo', name: file.name, blob: file });
+    await patchDialogueScene({ jisooPortraitAssetId: asset.id });
+    renderDialogueSlideStage();
+  } finally {
+    el.addJisooPortraitBtn.disabled = false;
+  }
+});
+el.removeJisooPortraitBtn.addEventListener('click', async () => {
+  await patchDialogueScene({ jisooPortraitAssetId: null });
+  renderDialogueSlideStage();
+});
+el.addYoungwooPortraitBtn.addEventListener('click', () => el.youngwooPortraitFileInput.click());
+el.youngwooPortraitFileInput.addEventListener('change', async () => {
+  const file = el.youngwooPortraitFileInput.files[0];
+  el.youngwooPortraitFileInput.value = '';
+  if (!file) return;
+  el.addYoungwooPortraitBtn.disabled = true;
+  try {
+    const asset = await AssetDB.addAsset({ type: 'fishing-dialogue-portrait-youngwoo', name: file.name, blob: file });
+    await patchDialogueScene({ youngwooPortraitAssetId: asset.id });
+    renderDialogueSlideStage();
+  } finally {
+    el.addYoungwooPortraitBtn.disabled = false;
+  }
+});
+el.removeYoungwooPortraitBtn.addEventListener('click', async () => {
+  await patchDialogueScene({ youngwooPortraitAssetId: null });
+  renderDialogueSlideStage();
+});
+function renderDialogueSpeakerPills() {
+  const scene = dialogueSceneOf();
+  const speaker = scene.speaker === 'youngwoo' ? 'youngwoo' : 'jisoo';
+  el.dialogueSpeakerPills.innerHTML = DIALOGUE_SPEAKER_OPTIONS.map(o =>
+    `<button type="button" class="option-pill${o.id === speaker ? ' active' : ''}" data-id="${o.id}">${o.label}</button>`
+  ).join('');
+  el.dialogueSpeakerPills.querySelectorAll('.option-pill').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      await patchDialogueScene({ speaker: btn.dataset.id });
+      renderDialogueSpeakerPills();
+      renderDialogueSlideStage();
+    });
+  });
+}
+el.dialogueTextInput.addEventListener('change', async () => {
+  await patchDialogueScene({ text: el.dialogueTextInput.value });
   renderDialogueSlideStage();
 });
 
@@ -3534,6 +3684,8 @@ async function init() {
   renderMotionTab();
   initMoveMotionControls();
   renderMoveTestStage();
+  el.dialogueTextInput.value = (fishingConfig.dialogueScene && fishingConfig.dialogueScene.text) || '';
+  renderDialogueSpeakerPills();
   renderDialogueSlideStage();
 }
 init();

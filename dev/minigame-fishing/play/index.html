@@ -334,6 +334,13 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .dialogue-intro.hidden{display:none}
 .dialogue-intro-layer{position:absolute;box-sizing:border-box}
 .dialogue-intro-layer img{width:100%;height:100%;object-fit:fill;display:block;pointer-events:none;user-select:none}
+/* 초상화 영역은 대화창/지수/영우 이미지 레이어와 달리 사진을 늘리지 않고
+   꽉 채워 자른다(object-fit:cover) — 정사각형에 가깝지 않은 사진이어도
+   얼굴이 잘리지 않게. 이름/대사 영역은 이미지가 아니라 텍스트라 위
+   .dialogue-intro-layer img 규칙을 안 타고 여기서 따로 그린다. */
+.dialogue-intro-layer.dialogue-portrait-layer img{object-fit:cover;border-radius:8px}
+.dialogue-intro-name{width:100%;height:100%;display:flex;align-items:center;color:#fff;font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+.dialogue-intro-text{width:100%;height:100%;color:#fff;font-size:14px;line-height:1.5;white-space:pre-wrap;overflow:hidden;text-shadow:0 1px 3px rgba(0,0,0,.6)}
 </style>
 </head>
 <body>
@@ -740,7 +747,8 @@ let lastRodTipPt = null; // throwSinker의 finish가 남겨두는 착수 시점 
    프레임을 순환시키고, 없으면 위치만 바뀌고 캐릭터 그림은 그대로 둔다(캐스팅 모션처럼 그림
    없이도 동작은 되는 폴백). */
 const MOVE_DIRS = ['up', 'down', 'left', 'right'];
-const DIALOGUE_INTRO_LAYERS = ['boxLayer', 'jisooLayer', 'youngwooLayer']; // dev/minigame-fishing/index.html "대화" 탭의 DIALOGUE_LAYER_ORDER와 같은 순서(z-order)
+const DIALOGUE_INTRO_IMAGE_LAYERS = ['boxLayer', 'jisooLayer', 'youngwooLayer']; // dev/minigame-fishing/index.html "대화" 탭의 DIALOGUE_LAYER_ORDER 중 kind:'image' 레이어와 같은 순서(z-order)
+const DIALOGUE_INTRO_LAYERS = [...DIALOGUE_INTRO_IMAGE_LAYERS, 'portraitLayer', 'nameLayer', 'textLayer']; // 전체 z-order — portrait/name/text는 이미지가 아니라 자리만 잡아두는 region(에디터의 kind:'portrait'/'text'와 대응)
 const MOVE_STEP_PX = 18; // "타일 한 칸" 환산 기준 픽셀 크기 — walkMotion.stepMs(이 거리를 이동하는 데 걸리는 시간)와 합쳐 연속 이동 속도(px/ms)를 낸다
 const CHAR_BOX_PX = 84; // .char-stage CSS 폭/높이와 맞춘 값 — 카메라가 캐릭터를 따라갈 때, 그리고 배경 범위에서 캐릭터 절반이 밖으로 안 나가게 여백을 둘 때 쓴다
 const FALLBACK_MOVE_BOUNDS_PCT = { left: [10, 90], bottom: [25, 75] }; // 배경 미업로드 시(=worldSize가 화면과 같은 크기) char-stage 중심이 벗어날 수 없는 범위(%) — 화면 중심(50/50) 기준, 상단바/하단 버튼과 안 겹치는 선에서 넉넉히
@@ -1066,7 +1074,9 @@ async function loadConfig() {
   const itemPopupCfg = cfg.itemPopup || {};
   if (itemPopupCfg.backgroundAssetId) ids.push(itemPopupCfg.backgroundAssetId);
   const dialogueSceneCfg = cfg.dialogueScene || {};
-  DIALOGUE_INTRO_LAYERS.forEach(key => { if (dialogueSceneCfg[key] && dialogueSceneCfg[key].assetId) ids.push(dialogueSceneCfg[key].assetId); });
+  DIALOGUE_INTRO_IMAGE_LAYERS.forEach(key => { if (dialogueSceneCfg[key] && dialogueSceneCfg[key].assetId) ids.push(dialogueSceneCfg[key].assetId); });
+  if (dialogueSceneCfg.jisooPortraitAssetId) ids.push(dialogueSceneCfg.jisooPortraitAssetId);
+  if (dialogueSceneCfg.youngwooPortraitAssetId) ids.push(dialogueSceneCfg.youngwooPortraitAssetId);
   let assets = [];
   try { assets = await AssetDB.getAssetsByIds(ids); } catch (e) { /* 위와 동일 */ }
   const byId = new Map(assets.map(a => [a.id, a]));
@@ -1472,6 +1482,7 @@ function renderDialogueIntro(dialogueScene, byId) {
     el.dialogueIntro.classList.add('hidden');
     return false;
   }
+  const speaker = dialogueScene.speaker === 'youngwoo' ? 'youngwoo' : 'jisoo';
   DIALOGUE_INTRO_LAYERS.forEach(key => {
     const data = dialogueScene[key];
     if (!data) return;
@@ -1481,6 +1492,35 @@ function renderDialogueIntro(dialogueScene, byId) {
     layerEl.style.top = (data.y * 100) + '%';
     layerEl.style.width = (data.w * 100) + '%';
     layerEl.style.height = (data.h * 100) + '%';
+    if (key === 'nameLayer') {
+      const nameEl = document.createElement('div');
+      nameEl.className = 'dialogue-intro-name';
+      nameEl.textContent = speaker === 'youngwoo' ? '영우' : '지수';
+      layerEl.appendChild(nameEl);
+      el.dialogueIntro.appendChild(layerEl);
+      return;
+    }
+    if (key === 'textLayer') {
+      const textEl = document.createElement('div');
+      textEl.className = 'dialogue-intro-text';
+      textEl.textContent = dialogueScene.text || '';
+      layerEl.appendChild(textEl);
+      el.dialogueIntro.appendChild(layerEl);
+      return;
+    }
+    if (key === 'portraitLayer') {
+      layerEl.classList.add('dialogue-portrait-layer');
+      const portraitAssetId = speaker === 'youngwoo' ? dialogueScene.youngwooPortraitAssetId : dialogueScene.jisooPortraitAssetId;
+      const portraitAsset = portraitAssetId ? byId.get(portraitAssetId) : null;
+      if (portraitAsset) {
+        const img = document.createElement('img');
+        img.src = portraitAsset.dataUrl;
+        img.alt = '';
+        layerEl.appendChild(img);
+      }
+      el.dialogueIntro.appendChild(layerEl);
+      return;
+    }
     const asset = data.assetId ? byId.get(data.assetId) : null;
     if (asset) {
       const img = document.createElement('img');
