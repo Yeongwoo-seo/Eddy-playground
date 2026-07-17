@@ -456,8 +456,10 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
     <label>물고기 들기 크기<input type="range" id="layoutHeldFishSize" min="20" max="100" step="2"></label>
     <label>캐릭터 배율<input type="range" id="layoutCharScale" min="0.1" max="2" step="0.05"></label>
     <label>캐스팅 UI 배율<input type="range" id="layoutCastingScale" min="0.5" max="2" step="0.05"></label>
+    <label>낚시바 배율<input type="range" id="layoutFishbarScale" min="0.3" max="2" step="0.05"></label>
     <label class="hidden" id="layoutBgZoomRow">배경화면 배율<input type="range" id="layoutBgZoom" min="0.3" max="2" step="0.05"></label>
     <button type="button" class="secondary" id="layoutCastingPosBtn">🎯 캐스팅 게이지 위치 수정하기</button>
+    <button type="button" class="secondary" id="layoutFishbarPosBtn">🎣 낚시바 위치 수정하기</button>
     <button type="button" class="secondary" id="layoutCodeBtn">📋 코드보기</button>
     <button type="button" id="layoutEditDoneBtn">완료</button>
   </div>
@@ -649,12 +651,14 @@ const el = {
   layoutHeldFishSize: document.getElementById('layoutHeldFishSize'),
   layoutCharScale: document.getElementById('layoutCharScale'),
   layoutCastingScale: document.getElementById('layoutCastingScale'),
+  layoutFishbarScale: document.getElementById('layoutFishbarScale'),
   layoutBgZoomRow: document.getElementById('layoutBgZoomRow'),
   layoutBgZoom: document.getElementById('layoutBgZoom'),
   layoutEditDoneBtn: document.getElementById('layoutEditDoneBtn'),
   layoutEditHint: document.getElementById('layoutEditHint'),
   layoutDragGhost: document.getElementById('layoutDragGhost'),
   layoutCastingPosBtn: document.getElementById('layoutCastingPosBtn'),
+  layoutFishbarPosBtn: document.getElementById('layoutFishbarPosBtn'),
   layoutCodeBtn: document.getElementById('layoutCodeBtn'),
   layoutCodeOverlay: document.getElementById('layoutCodeOverlay'),
   layoutCodeTextarea: document.getElementById('layoutCodeTextarea'),
@@ -2506,10 +2510,10 @@ const FISHBAR_MARGIN = 12;
 function positionFishbarRightOfCharacter() {
   const frameRect = el.frame.getBoundingClientRect();
   const charRect = el.charStage.getBoundingClientRect();
-  const scale = layoutPrefs.casting.scale;
+  const scale = layoutPrefs.fishbar.scale;
   const panelWidth = el.fishbarPanel.offsetWidth * scale;
-  const charCenterY = charRect.top - frameRect.top + charRect.height / 2;
-  const anchorLeftPx = charRect.right - frameRect.left + FISHBAR_GAP;
+  const charCenterY = charRect.top - frameRect.top + charRect.height / 2 + layoutPrefs.fishbar.top;
+  const anchorLeftPx = charRect.right - frameRect.left + FISHBAR_GAP + layoutPrefs.fishbar.left;
   const clampedLeftPx = Math.min(anchorLeftPx, frameRect.width - FISHBAR_MARGIN - panelWidth);
   el.fishbarPanel.style.left = clampedLeftPx + 'px';
   el.fishbarPanel.style.top = charCenterY + 'px';
@@ -2851,15 +2855,18 @@ let layoutPrefs = {
   fishBtn: { size: 118, right: 9, bottom: 28 }, // 요청한 코드보기 값으로 기본값 고정
   heldFish: { size: 32 }, // 낚시 성공 후 캐릭터가 들고 있는 물고기 아이콘 크기(px) — .held-fish 기본값과 맞춤
   char: { scale: 0.5, outline: 0 }, // 캐릭터(.char-stage) 전체 배율 — --char-scale, char-stage의 transform:scale에 그대로 들어간다. 요청한 코드보기 값으로 기본값 고정
-  casting: { scale: 0.55, left: 1, bottom: -20 }, // 캐스팅 파워바/잡아채기 낚시바/찌/입질 팝업/아이템 팝업/물고기 날아가는 연출을 한 번에 묶어 조절하는 배율 — --casting-scale과 각 요소의 JS 계산 transform에 곱해진다. 추 던지기 궤적(cast-svg)은 낚싯대 끝의 실제 화면 좌표에 맞춰야 해서 일부러 빼뒀다(비율만 바꾸면 궤적 시작점이 캐릭터 손끝에서 어긋나 보인다). left/bottom은 더 이상 화면 기준 절대 위치가 아니라, 캐스팅 게이지(cast-power-wrap)가 뜨는 "캐릭터 머리 위" 기준점에서 얼마나 더 옮길지 정하는 오프셋이다(positionCastGaugeAboveCharacter 참고) — 요청한 코드보기 값으로 기본값 고정.
+  casting: { scale: 0.55, left: 1, bottom: -20 }, // 캐스팅 파워바/찌/입질 팝업/아이템 팝업/물고기 날아가는 연출을 한 번에 묶어 조절하는 배율 — --casting-scale과 각 요소의 JS 계산 transform에 곱해진다. 추 던지기 궤적(cast-svg)은 낚싯대 끝의 실제 화면 좌표에 맞춰야 해서 일부러 빼뒀다(비율만 바꾸면 궤적 시작점이 캐릭터 손끝에서 어긋나 보인다). left/bottom은 더 이상 화면 기준 절대 위치가 아니라, 캐스팅 게이지(cast-power-wrap)가 뜨는 "캐릭터 머리 위" 기준점에서 얼마나 더 옮길지 정하는 오프셋이다(positionCastGaugeAboveCharacter 참고) — 요청한 코드보기 값으로 기본값 고정.
+  fishbar: { scale: 1, left: 0, top: 0 }, // 잡아채기 낚시바(fishbar-panel) 전용 배율·위치 — 예전엔 casting.scale을 같이 썼지만, 낚시바만 따로 크기/위치를 잡고 싶다는 요청으로 분리했다. left/top은 "캐릭터 오른쪽, 세로 중앙" 기준점(positionFishbarRightOfCharacter)에서 얼마나 더 옮길지 정하는 오프셋 — top인 이유는 그 함수가 bottom이 아니라 top으로 세로 위치를 잡기 때문(캐스팅 게이지 쪽 bottom과 부호 방향이 다르다).
 };
 let layoutEditMode = false;
-let layoutDragTarget = null; // 'joystick' | 'fishBtn' | 'casting' | null
+let layoutDragTarget = null; // 'joystick' | 'fishBtn' | 'casting' | 'fishbar' | null
 let layoutDragStartPointer = null;
 let layoutDragStartPos = null;
 let fishBtnDragPointerId = null;
 let castingDragPointerId = null;
+let fishbarDragPointerId = null;
 let castingPosPreview = false; // 캐스팅 게이지는 평소 세기 조절 중에만 보여서, 위치를 드래그로 옮기려면 편집 중엔 강제로 보여줘야 한다(layoutCastingPosBtn).
+let fishbarPosPreview = false; // 낚시바도 마찬가지 — 평소엔 잡아채기(catching) 중에만 보여서, 위치를 드래그로 옮기려면 편집 중엔 강제로 보여줘야 한다(layoutFishbarPosBtn).
 function loadLayoutPrefs() {
   try {
     const raw = localStorage.getItem(LAYOUT_PREFS_KEY);
@@ -2870,6 +2877,7 @@ function loadLayoutPrefs() {
     if (saved.heldFish) Object.assign(layoutPrefs.heldFish, saved.heldFish);
     if (saved.char) Object.assign(layoutPrefs.char, saved.char);
     if (saved.casting) Object.assign(layoutPrefs.casting, saved.casting);
+    if (saved.fishbar) Object.assign(layoutPrefs.fishbar, saved.fishbar);
   } catch (err) { /* 저장값이 깨졌으면 기본값 그대로 쓴다 */ }
 }
 function saveLayoutPrefs() {
@@ -2906,6 +2914,7 @@ function syncDragGhost(targetEl) {
 function layoutDragTargetEl() {
   if (layoutDragTarget === 'joystick') return el.joystick;
   if (layoutDragTarget === 'casting') return el.castPowerWrap;
+  if (layoutDragTarget === 'fishbar') return el.fishbarPanel;
   return el.fishBtn;
 }
 function startLayoutDrag(target, e) {
@@ -2913,6 +2922,7 @@ function startLayoutDrag(target, e) {
   layoutDragStartPointer = { x: e.clientX, y: e.clientY };
   if (target === 'joystick') layoutDragStartPos = { left: layoutPrefs.joystick.left, bottom: layoutPrefs.joystick.bottom };
   else if (target === 'casting') layoutDragStartPos = { left: layoutPrefs.casting.left, bottom: layoutPrefs.casting.bottom };
+  else if (target === 'fishbar') layoutDragStartPos = { left: layoutPrefs.fishbar.left, top: layoutPrefs.fishbar.top };
   else layoutDragStartPos = { right: layoutPrefs.fishBtn.right, bottom: layoutPrefs.fishBtn.bottom };
   layoutDragTargetEl().classList.add('layout-drag-hide');
   el.layoutDragGhost.classList.remove('hidden');
@@ -2930,12 +2940,19 @@ function updateLayoutDrag(e) {
     // 자연스럽다(예: 기준점보다 살짝 왼쪽/아래로) — 0 이상으로 clamp하지 않는다.
     layoutPrefs.casting.left = layoutDragStartPos.left + dx;
     layoutPrefs.casting.bottom = layoutDragStartPos.bottom - dy;
+  } else if (layoutDragTarget === 'fishbar') {
+    // "캐릭터 오른쪽, 세로 중앙" 기준점에서의 오프셋 — casting과 마찬가지로
+    // 음수 오프셋도 자연스러워 clamp하지 않는다. top 기준이라 dy는 그대로
+    // 더한다(bottom 기준인 joystick/fishBtn과 부호 방향이 반대).
+    layoutPrefs.fishbar.left = layoutDragStartPos.left + dx;
+    layoutPrefs.fishbar.top = layoutDragStartPos.top + dy;
   } else {
     layoutPrefs.fishBtn.right = Math.max(0, layoutDragStartPos.right - dx);
     layoutPrefs.fishBtn.bottom = Math.max(0, layoutDragStartPos.bottom - dy);
   }
   applyLayoutPrefs();
   if (layoutDragTarget === 'casting') positionCastGaugeAboveCharacter();
+  else if (layoutDragTarget === 'fishbar') positionFishbarRightOfCharacter();
   syncDragGhost(layoutDragTargetEl());
 }
 function endLayoutDrag() {
@@ -2958,12 +2975,16 @@ el.layoutEditBtn.addEventListener('pointerdown', (e) => {
     el.layoutHeldFishSize.value = layoutPrefs.heldFish.size;
     el.layoutCharScale.value = layoutPrefs.char.scale;
     el.layoutCastingScale.value = layoutPrefs.casting.scale;
+    el.layoutFishbarScale.value = layoutPrefs.fishbar.scale;
     el.layoutBgZoom.value = bgZoom;
     stopMoveHold();
   } else {
     castingPosPreview = false;
     el.layoutCastingPosBtn.classList.remove('active');
     if (gameState !== 'charging') el.castPowerWrap.classList.add('hidden');
+    fishbarPosPreview = false;
+    el.layoutFishbarPosBtn.classList.remove('active');
+    if (gameState !== 'catching') el.fishbarPanel.classList.add('hidden');
   }
 });
 el.layoutJoySize.addEventListener('input', () => {
@@ -2992,6 +3013,12 @@ el.layoutCastingScale.addEventListener('input', () => {
   if (castingPosPreview) positionCastGaugeAboveCharacter();
 });
 el.layoutCastingScale.addEventListener('change', saveLayoutPrefs);
+el.layoutFishbarScale.addEventListener('input', () => {
+  layoutPrefs.fishbar.scale = Number(el.layoutFishbarScale.value);
+  applyLayoutPrefs();
+  if (fishbarPosPreview) positionFishbarRightOfCharacter();
+});
+el.layoutFishbarScale.addEventListener('change', saveLayoutPrefs);
 // 캐스팅 게이지 위치 드래그 — fishBtn과 같은 패턴(편집 모드에서만 pointerdown이
 // startLayoutDrag로 빠진다)이지만, 게이지는 평소 세기 조절 중에만 보이는 요소라
 // 드래그 대상으로 삼으려면 먼저 이 버튼으로 강제로 띄워둬야 한다.
@@ -3020,6 +3047,34 @@ el.castPowerWrap.addEventListener('pointermove', (e) => {
     castingDragPointerId = null;
   });
 });
+// 낚시바 위치 드래그 — 캐스팅 게이지와 같은 패턴. 낚시바는 평소 잡아채기
+// (catching) 중에만 보이는 요소라, 드래그 대상으로 삼으려면 먼저 이 버튼으로
+// 강제로 띄워둬야 한다.
+el.layoutFishbarPosBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  fishbarPosPreview = !fishbarPosPreview;
+  el.layoutFishbarPosBtn.classList.toggle('active', fishbarPosPreview);
+  el.fishbarPanel.classList.toggle('hidden', !fishbarPosPreview);
+  if (fishbarPosPreview) positionFishbarRightOfCharacter();
+});
+el.fishbarPanel.addEventListener('pointerdown', (e) => {
+  if (!layoutEditMode) return;
+  e.stopPropagation();
+  fishbarDragPointerId = e.pointerId;
+  el.fishbarPanel.setPointerCapture(e.pointerId);
+  startLayoutDrag('fishbar', e);
+});
+el.fishbarPanel.addEventListener('pointermove', (e) => {
+  if (!layoutEditMode || e.pointerId !== fishbarDragPointerId) return;
+  updateLayoutDrag(e);
+});
+['pointerup', 'pointercancel', 'pointerleave'].forEach(evt => {
+  el.fishbarPanel.addEventListener(evt, (e) => {
+    if (!layoutEditMode || e.pointerId !== fishbarDragPointerId) return;
+    endLayoutDrag();
+    fishbarDragPointerId = null;
+  });
+});
 // 배경화면 배율 — 배경을 업로드했을 때만 이 행이 보인다(loadConfig가
 // layoutBgZoomRow의 hidden을 토글). 값이 바뀔 때마다 즉시 카메라를 다시
 // 계산해 확대/축소와 카메라 위치(camOffset)를 함께 반영한다(charWorldPos
@@ -3040,6 +3095,9 @@ el.layoutEditDoneBtn.addEventListener('click', (e) => {
   castingPosPreview = false;
   el.layoutCastingPosBtn.classList.remove('active');
   if (gameState !== 'charging') el.castPowerWrap.classList.add('hidden');
+  fishbarPosPreview = false;
+  el.layoutFishbarPosBtn.classList.remove('active');
+  if (gameState !== 'catching') el.fishbarPanel.classList.add('hidden');
 });
 async function copyToClipboard(textareaEl, statusEl) {
   if (!textareaEl.value) return;
