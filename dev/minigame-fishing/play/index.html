@@ -1892,10 +1892,10 @@ function throwSinker(power, origin, frameRect, getRodTip) {
   return new Promise(resolve => {
     const minDx = frameRect.width * 0.10, maxDx = frameRect.width * 0.68;
     const baseDx = minDx + (power / 100) * (maxDx - minDx);
-    // 원본 모션(왼쪽을 보는 포즈)은 오른쪽(+x)으로 던지는 게 기본이다 —
-    // 오른쪽을 보고 있어 캐릭터가 좌우반전(char-mirror-x)됐으면 던지는
-    // 방향도 같이 뒤집어야(-x) 반전된 낚싯대 방향과 추가 실제로 맞는다.
-    const dx = baseDx * (castPhysics.vxScale || 1) * (isCharMirrored() ? -1 : 1);
+    // 캐릭터가 보고 있는 쪽으로 추를 던진다 — 원본 모션(왼쪽을 보는 포즈,
+    // char-mirror-x 없음)은 왼쪽(-x)으로, 오른쪽을 보고 있어 좌우반전
+    // (char-mirror-x)됐으면 오른쪽(+x)으로 던진다.
+    const dx = baseDx * (castPhysics.vxScale || 1) * (isCharMirrored() ? 1 : -1);
     // 착지선(waterY)은 화면 절대 위치(47%) 대신 캐릭터가 서 있는 줄(발 밑,
     // char-stage 아래쪽 끝)에 맞춘다 — 화면 고정 비율로는 캐릭터 위치와
     // 무관하게 항상 같은 높이라, 캐릭터가 화면 아래쪽에 있을 때 추가
