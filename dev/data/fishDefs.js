@@ -141,36 +141,34 @@ function getFishCropStyle(rect, sheetNaturalWidth, sheetNaturalHeight, displaySi
   };
 }
 
-/* ===== 모션 시트 규격 — 캐스팅/이동(4방향) 등 "6프레임짜리 한 동작"
-   모션이 전부 같이 쓰는 규격이다. 물고기 아이콘 시트와 같은 패턴이지만
-   1행짜리 스트립이다. 404x64px 투명 PNG, 가로 6칸, 칸당 64x64px, 칸 간격
-   4px, 바깥 여백 없음(MOTION_PROMPT_SPECS.cast의 AI 프롬프트 규격과 동일—
-   dev/minigame-fishing/index.html). 모션마다 AssetDB.getFishingConfig()의
-   어느 필드에 sheetAssetId/frameOverrides({ [frameIndex]: {cx,cy,size} })를
-   저장하는지는 다르지만(캐스팅은 castingSheetAssetId/castingFrameOverrides,
-   이동은 walkSheets.<dir>.sheetAssetId/frameOverrides), 시트 규격과 슬롯
-   계산은 전부 이 하나를 공유한다. frameOverrides는 물고기의
-   fishIconOverrides와 같은 세밀영역조절 좌표계라 조회는 위 getFishCropStyle을
-   그대로 재사용한다(이미 시트/rect/표시크기만 받는 범용 함수). */
-const MOTION_SHEET_LAYOUT = { columns: 6, rows: 1, cellSize: 64, gap: 4 };
+/* ===== 모션 시트 규격 — 캐스팅·올리기·이동(4방향), 캐릭터의 동작 6가지를
+   한 장에 담는 6행×6열 격자 시트 하나를 전부 같이 쓴다(예전엔 캐스팅/이동
+   방향마다 시트를 따로 올렸는데, 업로드·세밀조정 UI를 하나로 통일했다).
+   행 = 동작 카테고리(MOTION_CATEGORIES 순서 고정: 캐스팅→올리기→위→아래→
+   왼쪽→오른쪽), 열 = 그 동작의 진행 순서(0~5, 6프레임). 물고기 아이콘
+   시트(FISH_SHEET_LAYOUT)와 달리 칸 크기·간격을 픽셀로 못박지 않는다 —
+   "사이즈 상관없음": 업로드한 이미지의 실제 가로/세로를 6등분해서 칸 위치를
+   구하므로 어떤 해상도를 올려도 항상 맞아떨어진다. AssetDB.getFishingConfig().
+   motionSheetAssetId가 시트를, motionFrameOverrides가
+   { [category]: { [frameIndex]: {cx,cy,size} } } 형태의 세밀영역조절
+   보정값(물고기의 fishIconOverrides와 같은 정규화 좌표계, 조회는 위
+   getFishCropStyle을 그대로 재사용)을 담는다. */
+const MOTION_CATEGORIES = ['cast', 'reel', 'up', 'down', 'left', 'right'];
+const MOTION_GRID_COLUMNS = 6;
 
-function getMotionSlotStyle(frameIndex, scale) {
-  scale = scale || 1;
-  const { columns, cellSize, gap } = MOTION_SHEET_LAYOUT;
-  const x = frameIndex * (cellSize + gap) * scale;
-  const sheetW = (columns * cellSize + (columns - 1) * gap) * scale;
-  const sheetH = cellSize * scale;
-  return {
-    backgroundPosition: `-${x}px 0px`,
-    backgroundSize: `${sheetW}px ${sheetH}px`,
-  };
-}
-
-function getMotionDefaultCropRect(frameIndex) {
-  const { columns, cellSize, gap } = MOTION_SHEET_LAYOUT;
-  const sheetW = columns * cellSize + (columns - 1) * gap;
-  const cxPx = frameIndex * (cellSize + gap) + cellSize / 2;
-  return { cx: cxPx / sheetW, cy: 0.5, size: cellSize / Math.min(sheetW, cellSize) };
+// row/col은 0-based(row = MOTION_CATEGORIES의 인덱스, col = 프레임 인덱스
+// 0~5). sheetW/sheetH는 실제 업로드된 시트의 로드된 자연 크기(naturalWidth/
+// Height) — 고정 스펙이 없으니 실제 크기를 알아야만 칸 위치를 구할 수
+// 있다. 정사각형이 아닌 칸(가로 6등분 폭 ≠ 세로 6등분 높이)이어도
+// getFishCropStyle 등 기존 크롭 도구는 항상 정사각형(cx,cy,size)만 다루므로,
+// 칸의 짧은 변에 맞춰 정사각형으로 잘라 칸 중앙에 배치한다.
+function getMotionGridDefaultCropRect(row, col, sheetW, sheetH) {
+  const cellW = sheetW / MOTION_GRID_COLUMNS;
+  const cellH = sheetH / MOTION_CATEGORIES.length;
+  const cxPx = col * cellW + cellW / 2;
+  const cyPx = row * cellH + cellH / 2;
+  const cellShort = Math.min(cellW, cellH);
+  return { cx: cxPx / sheetW, cy: cyPx / sheetH, size: cellShort / Math.min(sheetW, sheetH) };
 }
 
 // 실제 게임 플레이(dev/minigame-fishing/play/index.html)는 물고기 아이콘과
@@ -179,12 +177,10 @@ function getMotionDefaultCropRect(frameIndex) {
 // rect 하나를 진짜 정사각 PNG data URL로 구워낸다. image-rendering:pixelated
 // 대상이라 스무딩을 꺼서 도트 경계를 그대로 유지한다.
 //
-// 출력 캔버스는 원본 크롭 해상도(cropSize)를 그대로 쓴다 — 예전엔 항상
-// outputSize(기본 64px, MOTION_SHEET_LAYOUT.cellSize)로 강제 리샘플해서,
-// 원본 스펙(404×64px)보다 큰/고해상도 시트를 올려도 프레임마다 64×64로
-// 뭉개진 뒤 미리보기(96px 박스)/실제 플레이(84px 박스)에서 다시 확대되며
-// 흐리게/깨져 보였다. maxOutputSize는 극단적으로 큰 이미지의 data URL
-// 폭주만 막는 상한선일 뿐, 그 이하 크기는 원본 해상도 그대로 나간다.
+// 출력 캔버스는 원본 크롭 해상도(cropSize)를 그대로 쓴다 — 항상 고정
+// 픽셀로 강제 리샘플하면 고해상도 시트를 올려도 미리보기/실제 플레이에서
+// 다시 확대되며 흐리게/깨져 보인다. maxOutputSize는 극단적으로 큰 이미지의
+// data URL 폭주만 막는 상한선일 뿐, 그 이하 크기는 원본 해상도 그대로 나간다.
 const MOTION_FRAME_MAX_OUTPUT = 512;
 function cropRectToDataUrl(img, rect, maxOutputSize) {
   const shortSide = Math.min(img.naturalWidth, img.naturalHeight);
@@ -201,15 +197,16 @@ function cropRectToDataUrl(img, rect, maxOutputSize) {
   return c.toDataURL('image/png');
 }
 
-// 시트 1장 + (있으면) frameIndex별 frameOverrides로 최대 6개의 잘라낸
-// 프레임 data URL 배열을 만든다. 보정값이 없는 프레임은
-// getMotionDefaultCropRect의 이론적 그리드 위치를 쓴다. img는 이미 로드된
-// HTMLImageElement(naturalWidth/Height 확정된 상태)여야 한다.
-function buildMotionFrameDataUrls(img, overrides, maxOutputSize) {
+// 시트 1장 + 카테고리(행) + (있으면) frameIndex별 frameOverrides로 그 행의
+// 6칸을 잘라낸 프레임 data URL 배열을 만든다. 보정값이 없는 칸은
+// getMotionGridDefaultCropRect의 격자 위치(실제 시트 크기 기준)를 쓴다.
+// img는 이미 로드된 HTMLImageElement(naturalWidth/Height 확정된 상태)여야
+// 한다.
+function buildMotionCategoryFrameDataUrls(img, categoryRow, overrides, maxOutputSize) {
   overrides = overrides || {};
   const frames = [];
-  for (let i = 0; i < MOTION_SHEET_LAYOUT.columns; i++) {
-    const rect = overrides[i] || getMotionDefaultCropRect(i);
+  for (let i = 0; i < MOTION_GRID_COLUMNS; i++) {
+    const rect = overrides[i] || getMotionGridDefaultCropRect(categoryRow, i, img.naturalWidth, img.naturalHeight);
     frames.push(cropRectToDataUrl(img, rect, maxOutputSize));
   }
   return frames;

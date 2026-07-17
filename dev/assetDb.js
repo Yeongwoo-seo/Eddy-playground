@@ -1042,20 +1042,11 @@ const AssetDB = (() => {
   // 같은 단일 JSON blob 패턴을 그대로 쓴다.
   const fishingConfigCache = new Map(); // single entry keyed 'config'
   const FISHING_CONFIG_PATH = 'fishing-config/config.json';
-  // reelingFrames — 올리기 모션은 여전히 프레임을 한 장씩 따로 올리는 예전
-  // 방식(각 프레임이 독립된 AssetDB 이미지 id, 순서대로 배열).
-  //
-  // castingFrames — 더 이상 쓰지 않는 레거시 필드(캐스팅도 예전엔 같은
-  // 개별 업로드 방식이었음). 새 세이브는 항상 비어있고, 실제로는 아래
-  // castingSheetAssetId/castingFrameOverrides를 쓴다 — 기존 저장값을
-  // 마이그레이션하지 않고 그냥 무시한다(§신규 기능이라 실사용 데이터 없음).
-  //
-  // castingSheetAssetId — 캐스팅 모션 시트(dev/data/fishDefs.js의
-  // CASTING_SHEET_LAYOUT 규격: 404x64px, 가로 6칸, 64x64px 칸, 4px 간격)
-  // 자산 id. 물고기 아이콘 시트와 같은 패턴이지만 1행짜리 스트립이다.
-  // castingFrameOverrides — 세밀영역조절 보정, { [frameIndex]: {cx,cy,size} }
-  // (정규화 0~1, fishDefs.js의 getFishCropStyle 재사용). 보정 없는
-  // 프레임은 getCastingDefaultCropRect의 이론적 그리드 위치로 폴백한다.
+  // 예전엔 캐스팅/올리기/이동(4방향)이 각자 다른 업로드 방식(개별 프레임
+  // 배열이거나, 방향마다 따로 올리는 1행짜리 시트)을 썼다 — motionSheetAssetId/
+  // motionFrameOverrides(아래)로 하나로 통일하면서 그 필드들은 없앴다.
+  // 새 기능이라 실사용 데이터가 없어 기존 저장값을 마이그레이션하지 않고
+  // 그냥 무시한다.
   //
   // fishSheetAssetId — 물고기 종류 아이콘 스프라이트시트(FISH_SHEET_LAYOUT
   // 규격: 196x136px, 10열x7행, 16x16px 칸, 4px 간격) 자산 id. 업로드되면
@@ -1068,9 +1059,13 @@ const AssetDB = (() => {
   // {x,y} }(0~1, char-stage 박스 기준 정규화 좌표). 캐스팅 던지기 물리와
   // 현수선 낚싯줄 렌더링(play/index.html의 rodTipPxForFrame)이 이 값을
   // 쓴다 — 지정 안 한 프레임은 DEFAULT_ROD_TIP_FRAC으로 폴백.
-  // walkFrames — '이동' 탭의 방향별 걷기 프레임 자산 id 배열, { up, down,
-  // left, right }. 각 방향 배열 순서대로 재생된다(캐스팅/올리기 모션과
-  // 같은 프레임 배열 관례).
+  // motionSheetAssetId — '모션' 탭에 올린 6행×6열 스프라이트시트 자산 id.
+  // 캐스팅·올리기·이동(상/하/좌/우) 6가지 동작을 한 장에 담는다(행 순서
+  // 고정: dev/data/fishDefs.js의 MOTION_CATEGORIES 참고). 업로드한 이미지의
+  // 실제 크기를 6등분해서 칸 위치를 구하므로 해상도는 자유(사이즈 상관없음).
+  // motionFrameOverrides — 카테고리별 세밀영역조절 보정,
+  // { [category]: { [frameIndex]: {cx,cy,size} } }. 보정 없는 칸은
+  // getMotionGridDefaultCropRect의 격자 위치를 그대로 쓴다.
   // castGaugeAssetId — 캐스팅 세기 게이지(화면을 꾹 눌러 세기 조절할 때
   // 뜨는 바) 배경 그림 자산 id. castGaugeFillRegion({x,y,w,h}, 이 그림의
   // 원본 자연 크기 대비 0~1)이 그림 위 어디가 채워지는 부분인지 지정한다 —
@@ -1097,10 +1092,10 @@ const AssetDB = (() => {
   // 상호작용인지 적어둔다) — 셋 다 여러 개를 둘 수 있다.
   // heldFishPos — 낚시 성공 후 캐릭터가 물고기를 들고 있는 포즈일 때, 잡은
   // 물고기 아이콘이 캐릭터 기준(char-stage 박스, 0~1 정규화 좌표) 어디에
-  // 놓일지. "올리기 모션" 탭에서 올리기 마지막 프레임 위로 점을 찍어
+  // 놓일지. "모션" 탭 올리기 카테고리의 마지막 프레임 위로 점을 찍어
   // 지정한다(rodtip-marker와 같은 단일 포인트 피커). null이면
   // play/index.html의 기본값(DEFAULT_HELD_FISH_POS)으로 폴백한다.
-  const FISHING_CONFIG_DEFAULT = { castingFrames: [], reelingFrames: [], barDesign: {}, fishSheetAssetId: null, fishIconOverrides: {}, castingSheetAssetId: null, castingFrameOverrides: {}, castingFrameDurations: [], backgroundAssetId: null, castingFrameRodTips: {}, walkFrames: { up: [], down: [], left: [], right: [] }, walkSheets: { up: {}, down: {}, left: {}, right: {} }, walkMotion: { stepMs: 200, animFrameMs: 90 }, castPhysics: { gravityMps2: 9.8, vxScale: 1 }, itemPopup: { backgroundAssetId: null, iconPos: null, iconSizePx: 64 }, castGaugeAssetId: null, castGaugeFillRegion: null, fishableAreas: [], blockedAreas: [], interactionAreas: [], dialogueScene: { boxLayer: null, jisooLayer: null, youngwooLayer: null }, heldFishPos: null };
+  const FISHING_CONFIG_DEFAULT = { barDesign: {}, fishSheetAssetId: null, fishIconOverrides: {}, motionSheetAssetId: null, motionFrameOverrides: { cast: {}, reel: {}, up: {}, down: {}, left: {}, right: {} }, castingFrameDurations: [], backgroundAssetId: null, castingFrameRodTips: {}, walkMotion: { stepMs: 200, animFrameMs: 90 }, castPhysics: { gravityMps2: 9.8, vxScale: 1 }, itemPopup: { backgroundAssetId: null, iconPos: null, iconSizePx: 64 }, castGaugeAssetId: null, castGaugeFillRegion: null, fishableAreas: [], blockedAreas: [], interactionAreas: [], dialogueScene: { boxLayer: null, jisooLayer: null, youngwooLayer: null }, heldFishPos: null };
 
   async function getFishingConfig() {
     if (fishingConfigCache.has('config')) return fishingConfigCache.get('config');
