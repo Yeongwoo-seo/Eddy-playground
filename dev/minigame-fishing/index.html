@@ -37,6 +37,13 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .tab-panel.hidden{display:none}
 .hidden{display:none}
 
+/* ===== 모션 탭 안의 동작별 하부 탭 — 위 .tabs/.tab-btn 재사용하되 라벨이
+   짧아(① 캐스팅 등) 한 줄에 3개씩 배치. 렉 방지를 위해 한 번에 하나의
+   .motion-subpanel만 보이며, JS(selectMotionCategory)가 그 동작만
+   렌더링·재생한다. */
+.motion-subtabs{margin-bottom:20px}
+.motion-subtabs .tab-btn{min-width:calc(33.333% - 4px);font-size:11px;padding:9px 4px}
+
 .option-group{margin-bottom:26px}
 .option-label{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px}
 .option-desc{font-size:12.5px;color:var(--text-muted);margin-bottom:12px;line-height:1.5}
@@ -394,180 +401,205 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
       <input type="file" id="motionSheetFileInput" accept="image/png">
     </div>
 
-    <div class="motion-category-title">① 캐스팅</div>
-    <div class="option-group">
-      <div class="frame-preview-row">
-        <div class="frame-preview" id="motionCastPreview"></div>
-        <div class="frame-preview-label" id="motionCastPreviewLabel">프레임 없음 — 재생 미리보기</div>
+    <!-- ===== 동작별 하부 탭 — 6개 동작(캐스팅~오른쪽 이동)을 한 화면에 전부
+         렌더링하면 각자 재생 미리보기(setTimeout 체인)가 6개 동시에 돌아
+         렉이 걸린다(모션 탭이 이제 첫 화면 기본 탭이라 더 크게 체감된다).
+         지금은 한 번에 하나의 동작 패널만 DOM에 보이고, JS도 선택된 동작만
+         렌더링·재생한다(selectMotionCategory 참고) — 다른 동작으로 넘어갈
+         때 이전 동작의 재생 타이머를 멈춰서 안 보이는 탭이 계속 돌지
+         않게 한다. "이동 설정"(걷기 테스트 캐릭터)은 4방향 전부의 프레임이
+         필요해서 하부 탭 밖(아래, 공용 구간)에 그대로 둔다 —
+         ensureMoveTestFrameCache가 아직 안 열어본 방향의 프레임도 필요할
+         때만 조용히 계산해 채운다. -->
+    <div class="tabs motion-subtabs" id="motionSubtabsRow">
+      <button type="button" class="tab-btn active" data-motion-cat="cast">① 캐스팅</button>
+      <button type="button" class="tab-btn" data-motion-cat="reel">② 올리기</button>
+      <button type="button" class="tab-btn" data-motion-cat="up">③ 위로 이동</button>
+      <button type="button" class="tab-btn" data-motion-cat="down">④ 아래로 이동</button>
+      <button type="button" class="tab-btn" data-motion-cat="left">⑤ 왼쪽 이동</button>
+      <button type="button" class="tab-btn" data-motion-cat="right">⑥ 오른쪽 이동</button>
+    </div>
+
+    <div class="motion-subpanel" id="motionSubpanelCast">
+      <div class="option-group">
+        <div class="frame-preview-row">
+          <div class="frame-preview" id="motionCastPreview"></div>
+          <div class="frame-preview-label" id="motionCastPreviewLabel">프레임 없음 — 재생 미리보기</div>
+        </div>
+        <div class="frame-strip" id="motionCastFrameGrid"></div>
+        <button type="button" class="fish-sheet-btn" id="motionCastRowAdjustBtn" style="width:100%;margin-top:8px" disabled>📐 행 영역 조정</button>
       </div>
-      <div class="frame-strip" id="motionCastFrameGrid"></div>
-      <button type="button" class="fish-sheet-btn" id="motionCastRowAdjustBtn" style="width:100%;margin-top:8px" disabled>📐 행 영역 조정</button>
-    </div>
 
-    <div class="option-group">
-      <div class="option-label">낚시대 끝 지정</div>
-      <div class="option-desc">프레임마다 낚싯대 끝(줄이 시작하는 지점)을 지정하세요. 손을 떼서 캐스팅하는 순간부터 이 지점과 추 사이를 현수선(줄이 늘어진 곡선)으로 이어 그려요 — 애니메이션 동안은 그 프레임의 낚싯대 끝 지점을, 실제로 추가 날아가는 물리 계산은 손을 뗄 때 이미 화면에 보이던 프레임의 지점을 시작점으로 써요.</div>
-      <button type="button" class="fish-sheet-btn" id="rodtipEditBtn" style="width:100%" disabled>🎯 낚시대 끝 지정</button>
-    </div>
-
-    <!-- ===== 캐스팅 게이지 — 화면을 꾹 눌러 세기 조절할 때 뜨는 바(cast-power-wrap)
-         배경 그림 업로드 + "이 그림 위 어디가 채워지는 부분인지" 영역 지정.
-         업로드/영역 둘 다 비어있으면 기본 막대 게이지가 그대로 쓰인다. ===== -->
-    <div class="option-group">
-      <div class="option-label">캐스팅 게이지</div>
-      <div class="option-desc">화면을 꾹 눌러 세기를 조절할 때 보이는 게이지 그림이에요. 업로드한 뒤 "채움 영역 지정"으로 이 그림 위 어디가 채워지는 부분인지 표시하세요. 업로드하지 않으면 기본 막대 게이지로 표시돼요.</div>
-      <div class="frame-strip" id="castGaugeImageSlot"></div>
-      <button type="button" class="frame-add-btn hidden" id="castGaugeImageAddBtn">+ 캐스팅 게이지 이미지 업로드</button>
-      <input type="file" id="castGaugeImageFileInput" accept="image/*">
-      <button type="button" class="fish-sheet-btn hidden" id="castGaugeRegionEditBtn" style="width:100%;margin-top:4px">📐 채움 영역 지정</button>
-    </div>
-
-    <div class="option-group">
-      <div class="option-label">프레임 재생 속도</div>
-      <div class="option-desc">구간 너비를 드래그해서(표 칸 너비 늘리듯이) 그 프레임이 얼마나 오래 보일지 조절하세요. 전체 길이는 따로 초 단위로 설정할 수 있어요 — 바꾸면 각 프레임 길이가 비율대로 늘어나거나 줄어들어요.</div>
-      <div class="frame-timeline" id="castTimeline"></div>
-      <div class="timeline-total-row">
-        <span class="timeline-total-label">전체 길이</span>
-        <input type="number" id="castTotalDurationInput" min="0.1" max="10" step="0.05">
-        <span class="timeline-total-unit">초</span>
+      <div class="option-group">
+        <div class="option-label">낚시대 끝 지정</div>
+        <div class="option-desc">프레임마다 낚싯대 끝(줄이 시작하는 지점)을 지정하세요. 손을 떼서 캐스팅하는 순간부터 이 지점과 추 사이를 현수선(줄이 늘어진 곡선)으로 이어 그려요 — 애니메이션 동안은 그 프레임의 낚싯대 끝 지점을, 실제로 추가 날아가는 물리 계산은 손을 뗄 때 이미 화면에 보이던 프레임의 지점을 시작점으로 써요.</div>
+        <button type="button" class="fish-sheet-btn" id="rodtipEditBtn" style="width:100%" disabled>🎯 낚시대 끝 지정</button>
       </div>
-    </div>
 
-    <div class="option-group">
-      <div class="option-label">자유낙하 속도</div>
-      <div class="option-desc">추가 던져진 뒤 떨어지는 빠르기예요(중력가속도) — 실제 게임(play/index.html throwSinker)에 바로 반영돼요. 값이 클수록 빨리 떨어지고, 체공 시간(T)도 그만큼 짧아져요.</div>
-      <div class="range-row">
-        <input type="range" id="castGravityInput" min="4.9" max="29.4" step="0.1" value="9.8">
-        <div class="range-value" id="castGravityValue">9.8m/s²</div>
+      <!-- ===== 캐스팅 게이지 — 화면을 꾹 눌러 세기 조절할 때 뜨는 바(cast-power-wrap)
+           배경 그림 업로드 + "이 그림 위 어디가 채워지는 부분인지" 영역 지정.
+           업로드/영역 둘 다 비어있으면 기본 막대 게이지가 그대로 쓰인다. ===== -->
+      <div class="option-group">
+        <div class="option-label">캐스팅 게이지</div>
+        <div class="option-desc">화면을 꾹 눌러 세기를 조절할 때 보이는 게이지 그림이에요. 업로드한 뒤 "채움 영역 지정"으로 이 그림 위 어디가 채워지는 부분인지 표시하세요. 업로드하지 않으면 기본 막대 게이지로 표시돼요.</div>
+        <div class="frame-strip" id="castGaugeImageSlot"></div>
+        <button type="button" class="frame-add-btn hidden" id="castGaugeImageAddBtn">+ 캐스팅 게이지 이미지 업로드</button>
+        <input type="file" id="castGaugeImageFileInput" accept="image/*">
+        <button type="button" class="fish-sheet-btn hidden" id="castGaugeRegionEditBtn" style="width:100%;margin-top:4px">📐 채움 영역 지정</button>
       </div>
-    </div>
-    <div class="option-group">
-      <div class="option-label">수평 속도(v<sub>x</sub>) 배율</div>
-      <div class="option-desc">세기(게이지)로 정해지는 기본 수평 거리에 곱하는 배율이에요 — 이것도 실제 게임에 바로 반영돼요. 1배가 원래 거리이고, 키우면 같은 세기로도 더 멀리 날아가요.</div>
-      <div class="range-row">
-        <input type="range" id="castVxScaleInput" min="0.3" max="2.5" step="0.05" value="1">
-        <div class="range-value" id="castVxScaleValue">1.0배</div>
-      </div>
-    </div>
 
-    <!-- ===== 추 이동 모션 테스트 — 실제 게임(play/index.html throwSinker)과
-         같은 물리 공식(포물선, T는 1m 자유낙하 기준으로 고정)을 그대로 써서
-         궤적만 미리 확인하는 도구. v_x(수평 속도)만 슬라이더로 바꿔가며
-         "야구공 던지듯" 살짝 떴다 물로 떨어지는 모양을 다듬어볼 수 있다.
-         저장되는 값이 아니라 순수 미리보기라 AssetDB에 쓰지 않는다 — 위
-         자유낙하 속도/수평 속도 배율과 달리 이 미리보기는 자체 v_x
-         상수만 바꿔볼 뿐, 자유낙하 속도 슬라이더 값은 반영하지 않는다. ===== -->
-    <div class="option-group">
-      <div class="option-label">추 이동 모션 테스트</div>
-      <div class="option-desc">캐스팅할 때 추가 날아가는 궤적(야구공 던지듯 살짝 떴다 물로 떨어지는 포물선)을 미리 확인해요. 실제 게임 물리(체공시간 1m 자유낙하 기준)를 그대로 쓰고, 수평 속도(v_x)만 슬라이더로 바꿔볼 수 있어요. 궤적은 항상 x축으로 직진해요.</div>
-      <div class="sinker-test-stage" id="sinkerTestStage">
-        <svg class="sinker-test-svg" id="sinkerTestSvg">
-          <line class="sinker-test-water" id="sinkerTestWaterLine"></line>
-          <circle class="sinker-test-origin" id="sinkerTestOrigin" r="4"></circle>
-          <path class="sinker-test-path" id="sinkerTestPath"></path>
-          <circle class="sinker-test-dot" id="sinkerTestDot" r="6"></circle>
-        </svg>
+      <div class="option-group">
+        <div class="option-label">프레임 재생 속도</div>
+        <div class="option-desc">구간 너비를 드래그해서(표 칸 너비 늘리듯이) 그 프레임이 얼마나 오래 보일지 조절하세요. 전체 길이는 따로 초 단위로 설정할 수 있어요 — 바꾸면 각 프레임 길이가 비율대로 늘어나거나 줄어들어요.</div>
+        <div class="frame-timeline" id="castTimeline"></div>
+        <div class="timeline-total-row">
+          <span class="timeline-total-label">전체 길이</span>
+          <input type="number" id="castTotalDurationInput" min="0.1" max="10" step="0.05">
+          <span class="timeline-total-unit">초</span>
+        </div>
       </div>
-      <div class="range-row">
-        <input type="range" id="sinkerTestVxInput" min="300" max="3000" step="50" value="1600">
-        <div class="range-value" id="sinkerTestVxValue">v_x 1600px/s</div>
+
+      <div class="option-group">
+        <div class="option-label">자유낙하 속도</div>
+        <div class="option-desc">추가 던져진 뒤 떨어지는 빠르기예요(중력가속도) — 실제 게임(play/index.html throwSinker)에 바로 반영돼요. 값이 클수록 빨리 떨어지고, 체공 시간(T)도 그만큼 짧아져요.</div>
+        <div class="range-row">
+          <input type="range" id="castGravityInput" min="4.9" max="29.4" step="0.1" value="9.8">
+          <div class="range-value" id="castGravityValue">9.8m/s²</div>
+        </div>
       </div>
-      <button type="button" class="fish-sheet-btn" id="sinkerTestThrowBtn" style="width:100%;padding:18px;font-size:16px;border-radius:14px;margin-top:4px">🎣 던지기 테스트</button>
-    </div>
-
-    <div class="motion-category-title">② 올리기</div>
-    <div class="option-group">
-      <div class="frame-preview-row">
-        <div class="frame-preview" id="motionReelPreview"></div>
-        <div class="frame-preview-label" id="motionReelPreviewLabel">프레임 없음 — 재생 미리보기</div>
+      <div class="option-group">
+        <div class="option-label">수평 속도(v<sub>x</sub>) 배율</div>
+        <div class="option-desc">세기(게이지)로 정해지는 기본 수평 거리에 곱하는 배율이에요 — 이것도 실제 게임에 바로 반영돼요. 1배가 원래 거리이고, 키우면 같은 세기로도 더 멀리 날아가요.</div>
+        <div class="range-row">
+          <input type="range" id="castVxScaleInput" min="0.3" max="2.5" step="0.05" value="1">
+          <div class="range-value" id="castVxScaleValue">1.0배</div>
+        </div>
       </div>
-      <div class="frame-strip" id="motionReelFrameGrid"></div>
-      <button type="button" class="fish-sheet-btn" id="motionReelRowAdjustBtn" style="width:100%;margin-top:8px" disabled>📐 행 영역 조정</button>
-      <div class="option-desc">① 낚시대가 나타날 때: 1번 프레임. ② 잡아채기(낚시바)에서 캐치바를 올리는 버튼을 누르고 있는 동안: 2번→4번 프레임을 재생하고 4번에서 유지, 손을 떼면 4번→2번→1번 순서로 되돌아가요. ③ 낚시 성공 후 물고기가 딸려 올라오는 동안: 5번 프레임. ④ 물고기가 캐릭터에 도착한 뒤: 6번(마지막) 프레임이에요.</div>
-    </div>
 
-    <div class="option-group">
-      <div class="option-label">낚시대 끝 지정</div>
-      <div class="option-desc">올리기 1~4번 프레임마다 낚싯대 끝을 지정하세요. 낚시 성공 후 물고기가 딸려 올라올 때, 잡아채기(낚시바) 홀드/릴리즈 중, 캐스팅 취소로 추가 되돌아올 때 이 지점과 추/물고기 사이를 줄로 이어 그려요 — 캐스팅 때의 느슨한 현수선과 달리 팽팽하게 당겨진 상태예요. 1번(대기 포즈)은 살짝 처진 현수선이고, 4번(완전히 들어올린 포즈)으로 갈수록 점점 팽팽해져 완전한 직선이 돼요.</div>
-      <button type="button" class="fish-sheet-btn" id="reelRodtipEditBtn" style="width:100%" disabled>🎯 낚시대 끝 지정</button>
-    </div>
-
-    <div class="option-group">
-      <div class="option-label">낚시대 재생속도</div>
-      <div class="option-desc">잡아채기 중 캐치바를 누르고 있을 때/뗐을 때 낚싯대 프레임(2~4번)이 넘어가는 속도예요. 값이 작을수록 빠르게 움직여요.</div>
-      <div class="range-row">
-        <input type="range" id="reelHoldFrameMsInput" min="30" max="300" step="10" value="90">
-        <div class="range-value" id="reelHoldFrameMsValue">90ms</div>
+      <!-- ===== 추 이동 모션 테스트 — 실제 게임(play/index.html throwSinker)과
+           같은 물리 공식(포물선, T는 1m 자유낙하 기준으로 고정)을 그대로 써서
+           궤적만 미리 확인하는 도구. v_x(수평 속도)만 슬라이더로 바꿔가며
+           "야구공 던지듯" 살짝 떴다 물로 떨어지는 모양을 다듬어볼 수 있다.
+           저장되는 값이 아니라 순수 미리보기라 AssetDB에 쓰지 않는다 — 위
+           자유낙하 속도/수평 속도 배율과 달리 이 미리보기는 자체 v_x
+           상수만 바꿔볼 뿐, 자유낙하 속도 슬라이더 값은 반영하지 않는다. ===== -->
+      <div class="option-group">
+        <div class="option-label">추 이동 모션 테스트</div>
+        <div class="option-desc">캐스팅할 때 추가 날아가는 궤적(야구공 던지듯 살짝 떴다 물로 떨어지는 포물선)을 미리 확인해요. 실제 게임 물리(체공시간 1m 자유낙하 기준)를 그대로 쓰고, 수평 속도(v_x)만 슬라이더로 바꿔볼 수 있어요. 궤적은 항상 x축으로 직진해요.</div>
+        <div class="sinker-test-stage" id="sinkerTestStage">
+          <svg class="sinker-test-svg" id="sinkerTestSvg">
+            <line class="sinker-test-water" id="sinkerTestWaterLine"></line>
+            <circle class="sinker-test-origin" id="sinkerTestOrigin" r="4"></circle>
+            <path class="sinker-test-path" id="sinkerTestPath"></path>
+            <circle class="sinker-test-dot" id="sinkerTestDot" r="6"></circle>
+          </svg>
+        </div>
+        <div class="range-row">
+          <input type="range" id="sinkerTestVxInput" min="300" max="3000" step="50" value="1600">
+          <div class="range-value" id="sinkerTestVxValue">v_x 1600px/s</div>
+        </div>
+        <button type="button" class="fish-sheet-btn" id="sinkerTestThrowBtn" style="width:100%;padding:18px;font-size:16px;border-radius:14px;margin-top:4px">🎣 던지기 테스트</button>
       </div>
     </div>
 
-    <div class="motion-category-title">③ 위로 이동</div>
-    <div class="option-group">
-      <div class="option-desc">방향별 재생 속도는 이 방향의 걷기 프레임이 다음 프레임으로 얼마나 빨리 넘어가는지(미리보기·실제 게임 공통)를 정해요 — "이동" 탭의 걷기 애니메이션 전환 속도는 방향별로 따로 정하지 않았을 때 쓰는 기본값이에요. 프레임을 탭하면 시트 크롭을 조정하고, 개별 업로드한 프레임은 손을 대면 나오는 ✂로 그 프레임만 배경을 다시 제거하거나 ✕로 업로드를 취소할 수 있어요.</div>
-      <div class="frame-preview-row">
-        <div class="frame-preview" id="motionUpPreview"></div>
-        <div class="frame-preview-label" id="motionUpPreviewLabel">프레임 없음 — 재생 미리보기</div>
-        <button type="button" class="frame-upload-icon-btn" id="motionUpUploadBtn" title="개별 프레임 업로드">📤 개별 업로드</button>
-        <input type="file" id="motionUpUploadInput" accept="image/*" multiple>
+    <div class="motion-subpanel hidden" id="motionSubpanelReel">
+      <div class="option-group">
+        <div class="frame-preview-row">
+          <div class="frame-preview" id="motionReelPreview"></div>
+          <div class="frame-preview-label" id="motionReelPreviewLabel">프레임 없음 — 재생 미리보기</div>
+        </div>
+        <div class="frame-strip" id="motionReelFrameGrid"></div>
+        <button type="button" class="fish-sheet-btn" id="motionReelRowAdjustBtn" style="width:100%;margin-top:8px" disabled>📐 행 영역 조정</button>
+        <div class="option-desc">① 낚시대가 나타날 때: 1번 프레임. ② 잡아채기(낚시바)에서 캐치바를 올리는 버튼을 누르고 있는 동안: 2번→4번 프레임을 재생하고 4번에서 유지, 손을 떼면 4번→2번→1번 순서로 되돌아가요. ③ 낚시 성공 후 물고기가 딸려 올라오는 동안: 5번 프레임. ④ 물고기가 캐릭터에 도착한 뒤: 6번(마지막) 프레임이에요.</div>
       </div>
-      <div class="range-row">
-        <input type="range" id="motionUpSpeedInput" min="40" max="300" step="10" value="90">
-        <div class="range-value" id="motionUpSpeedValue">재생 속도 90ms</div>
+
+      <div class="option-group">
+        <div class="option-label">낚시대 끝 지정</div>
+        <div class="option-desc">올리기 1~4번 프레임마다 낚싯대 끝을 지정하세요. 낚시 성공 후 물고기가 딸려 올라올 때, 잡아채기(낚시바) 홀드/릴리즈 중, 캐스팅 취소로 추가 되돌아올 때 이 지점과 추/물고기 사이를 줄로 이어 그려요 — 캐스팅 때의 느슨한 현수선과 달리 팽팽하게 당겨진 상태예요. 1번(대기 포즈)은 살짝 처진 현수선이고, 4번(완전히 들어올린 포즈)으로 갈수록 점점 팽팽해져 완전한 직선이 돼요.</div>
+        <button type="button" class="fish-sheet-btn" id="reelRodtipEditBtn" style="width:100%" disabled>🎯 낚시대 끝 지정</button>
       </div>
-      <div class="frame-strip" id="motionUpFrameGrid"></div>
-      <button type="button" class="fish-sheet-btn" id="motionUpRowAdjustBtn" style="width:100%;margin-top:8px" disabled>📐 행 영역 조정</button>
-      <button type="button" class="fish-sheet-btn" id="motionUpCutoutAllBtn" style="width:100%;margin-top:8px" disabled>✂ 프레임 전체 배경 제거</button>
+
+      <div class="option-group">
+        <div class="option-label">낚시대 재생속도</div>
+        <div class="option-desc">잡아채기 중 캐치바를 누르고 있을 때/뗐을 때 낚싯대 프레임(2~4번)이 넘어가는 속도예요. 값이 작을수록 빠르게 움직여요.</div>
+        <div class="range-row">
+          <input type="range" id="reelHoldFrameMsInput" min="30" max="300" step="10" value="90">
+          <div class="range-value" id="reelHoldFrameMsValue">90ms</div>
+        </div>
+      </div>
     </div>
 
-    <div class="motion-category-title">④ 아래로 이동</div>
-    <div class="option-group">
-      <div class="frame-preview-row">
-        <div class="frame-preview" id="motionDownPreview"></div>
-        <div class="frame-preview-label" id="motionDownPreviewLabel">프레임 없음 — 재생 미리보기</div>
-        <button type="button" class="frame-upload-icon-btn" id="motionDownUploadBtn" title="개별 프레임 업로드">📤 개별 업로드</button>
-        <input type="file" id="motionDownUploadInput" accept="image/*" multiple>
+    <div class="motion-subpanel hidden" id="motionSubpanelUp">
+      <div class="option-group">
+        <div class="option-desc">방향별 재생 속도는 이 방향의 걷기 프레임이 다음 프레임으로 얼마나 빨리 넘어가는지(미리보기·실제 게임 공통)를 정해요 — 아래 "이동 설정"의 걷기 애니메이션 전환 속도는 방향별로 따로 정하지 않았을 때 쓰는 기본값이에요. 프레임을 탭하면 시트 크롭을 조정하고, 개별 업로드한 프레임은 손을 대면 나오는 ✂로 그 프레임만 배경을 다시 제거하거나 ✕로 업로드를 취소할 수 있어요.</div>
+        <div class="frame-preview-row">
+          <div class="frame-preview" id="motionUpPreview"></div>
+          <div class="frame-preview-label" id="motionUpPreviewLabel">프레임 없음 — 재생 미리보기</div>
+          <button type="button" class="frame-upload-icon-btn" id="motionUpUploadBtn" title="개별 프레임 업로드">📤 개별 업로드</button>
+          <input type="file" id="motionUpUploadInput" accept="image/*" multiple>
+        </div>
+        <div class="range-row">
+          <input type="range" id="motionUpSpeedInput" min="40" max="300" step="10" value="90">
+          <div class="range-value" id="motionUpSpeedValue">재생 속도 90ms</div>
+        </div>
+        <div class="frame-strip" id="motionUpFrameGrid"></div>
+        <button type="button" class="fish-sheet-btn" id="motionUpRowAdjustBtn" style="width:100%;margin-top:8px" disabled>📐 행 영역 조정</button>
+        <button type="button" class="fish-sheet-btn" id="motionUpCutoutAllBtn" style="width:100%;margin-top:8px" disabled>✂ 프레임 전체 배경 제거</button>
       </div>
-      <div class="range-row">
-        <input type="range" id="motionDownSpeedInput" min="40" max="300" step="10" value="90">
-        <div class="range-value" id="motionDownSpeedValue">재생 속도 90ms</div>
-      </div>
-      <div class="frame-strip" id="motionDownFrameGrid"></div>
-      <button type="button" class="fish-sheet-btn" id="motionDownRowAdjustBtn" style="width:100%;margin-top:8px" disabled>📐 행 영역 조정</button>
-      <button type="button" class="fish-sheet-btn" id="motionDownCutoutAllBtn" style="width:100%;margin-top:8px" disabled>✂ 프레임 전체 배경 제거</button>
     </div>
 
-    <div class="motion-category-title">⑤ 왼쪽 이동</div>
-    <div class="option-group">
-      <div class="frame-preview-row">
-        <div class="frame-preview" id="motionLeftPreview"></div>
-        <div class="frame-preview-label" id="motionLeftPreviewLabel">프레임 없음 — 재생 미리보기</div>
-        <button type="button" class="frame-upload-icon-btn" id="motionLeftUploadBtn" title="개별 프레임 업로드">📤 개별 업로드</button>
-        <input type="file" id="motionLeftUploadInput" accept="image/*" multiple>
+    <div class="motion-subpanel hidden" id="motionSubpanelDown">
+      <div class="option-group">
+        <div class="frame-preview-row">
+          <div class="frame-preview" id="motionDownPreview"></div>
+          <div class="frame-preview-label" id="motionDownPreviewLabel">프레임 없음 — 재생 미리보기</div>
+          <button type="button" class="frame-upload-icon-btn" id="motionDownUploadBtn" title="개별 프레임 업로드">📤 개별 업로드</button>
+          <input type="file" id="motionDownUploadInput" accept="image/*" multiple>
+        </div>
+        <div class="range-row">
+          <input type="range" id="motionDownSpeedInput" min="40" max="300" step="10" value="90">
+          <div class="range-value" id="motionDownSpeedValue">재생 속도 90ms</div>
+        </div>
+        <div class="frame-strip" id="motionDownFrameGrid"></div>
+        <button type="button" class="fish-sheet-btn" id="motionDownRowAdjustBtn" style="width:100%;margin-top:8px" disabled>📐 행 영역 조정</button>
+        <button type="button" class="fish-sheet-btn" id="motionDownCutoutAllBtn" style="width:100%;margin-top:8px" disabled>✂ 프레임 전체 배경 제거</button>
       </div>
-      <div class="range-row">
-        <input type="range" id="motionLeftSpeedInput" min="40" max="300" step="10" value="90">
-        <div class="range-value" id="motionLeftSpeedValue">재생 속도 90ms</div>
-      </div>
-      <div class="frame-strip" id="motionLeftFrameGrid"></div>
-      <button type="button" class="fish-sheet-btn" id="motionLeftRowAdjustBtn" style="width:100%;margin-top:8px" disabled>📐 행 영역 조정</button>
-      <button type="button" class="fish-sheet-btn" id="motionLeftCutoutAllBtn" style="width:100%;margin-top:8px" disabled>✂ 프레임 전체 배경 제거</button>
     </div>
 
-    <div class="motion-category-title">⑥ 오른쪽 이동</div>
-    <div class="option-group">
-      <div class="frame-preview-row">
-        <div class="frame-preview" id="motionRightPreview"></div>
-        <div class="frame-preview-label" id="motionRightPreviewLabel">프레임 없음 — 재생 미리보기</div>
-        <button type="button" class="frame-upload-icon-btn" id="motionRightUploadBtn" title="개별 프레임 업로드">📤 개별 업로드</button>
-        <input type="file" id="motionRightUploadInput" accept="image/*" multiple>
+    <div class="motion-subpanel hidden" id="motionSubpanelLeft">
+      <div class="option-group">
+        <div class="frame-preview-row">
+          <div class="frame-preview" id="motionLeftPreview"></div>
+          <div class="frame-preview-label" id="motionLeftPreviewLabel">프레임 없음 — 재생 미리보기</div>
+          <button type="button" class="frame-upload-icon-btn" id="motionLeftUploadBtn" title="개별 프레임 업로드">📤 개별 업로드</button>
+          <input type="file" id="motionLeftUploadInput" accept="image/*" multiple>
+        </div>
+        <div class="range-row">
+          <input type="range" id="motionLeftSpeedInput" min="40" max="300" step="10" value="90">
+          <div class="range-value" id="motionLeftSpeedValue">재생 속도 90ms</div>
+        </div>
+        <div class="frame-strip" id="motionLeftFrameGrid"></div>
+        <button type="button" class="fish-sheet-btn" id="motionLeftRowAdjustBtn" style="width:100%;margin-top:8px" disabled>📐 행 영역 조정</button>
+        <button type="button" class="fish-sheet-btn" id="motionLeftCutoutAllBtn" style="width:100%;margin-top:8px" disabled>✂ 프레임 전체 배경 제거</button>
       </div>
-      <div class="range-row">
-        <input type="range" id="motionRightSpeedInput" min="40" max="300" step="10" value="90">
-        <div class="range-value" id="motionRightSpeedValue">재생 속도 90ms</div>
+    </div>
+
+    <div class="motion-subpanel hidden" id="motionSubpanelRight">
+      <div class="option-group">
+        <div class="frame-preview-row">
+          <div class="frame-preview" id="motionRightPreview"></div>
+          <div class="frame-preview-label" id="motionRightPreviewLabel">프레임 없음 — 재생 미리보기</div>
+          <button type="button" class="frame-upload-icon-btn" id="motionRightUploadBtn" title="개별 프레임 업로드">📤 개별 업로드</button>
+          <input type="file" id="motionRightUploadInput" accept="image/*" multiple>
+        </div>
+        <div class="range-row">
+          <input type="range" id="motionRightSpeedInput" min="40" max="300" step="10" value="90">
+          <div class="range-value" id="motionRightSpeedValue">재생 속도 90ms</div>
+        </div>
+        <div class="frame-strip" id="motionRightFrameGrid"></div>
+        <button type="button" class="fish-sheet-btn" id="motionRightRowAdjustBtn" style="width:100%;margin-top:8px" disabled>📐 행 영역 조정</button>
+        <button type="button" class="fish-sheet-btn" id="motionRightCutoutAllBtn" style="width:100%;margin-top:8px" disabled>✂ 프레임 전체 배경 제거</button>
       </div>
-      <div class="frame-strip" id="motionRightFrameGrid"></div>
-      <button type="button" class="fish-sheet-btn" id="motionRightRowAdjustBtn" style="width:100%;margin-top:8px" disabled>📐 행 영역 조정</button>
-      <button type="button" class="fish-sheet-btn" id="motionRightCutoutAllBtn" style="width:100%;margin-top:8px" disabled>✂ 프레임 전체 배경 제거</button>
     </div>
 
     <div class="motion-category-title">이동 설정</div>
@@ -1035,6 +1067,13 @@ const el = {
   castGravityValue: document.getElementById('castGravityValue'),
   castVxScaleInput: document.getElementById('castVxScaleInput'),
   castVxScaleValue: document.getElementById('castVxScaleValue'),
+  motionSubtabsRow: document.getElementById('motionSubtabsRow'),
+  motionSubpanelCast: document.getElementById('motionSubpanelCast'),
+  motionSubpanelReel: document.getElementById('motionSubpanelReel'),
+  motionSubpanelUp: document.getElementById('motionSubpanelUp'),
+  motionSubpanelDown: document.getElementById('motionSubpanelDown'),
+  motionSubpanelLeft: document.getElementById('motionSubpanelLeft'),
+  motionSubpanelRight: document.getElementById('motionSubpanelRight'),
   motionCastPreview: document.getElementById('motionCastPreview'),
   motionCastPreviewLabel: document.getElementById('motionCastPreviewLabel'),
   motionCastFrameGrid: document.getElementById('motionCastFrameGrid'),
@@ -1498,14 +1537,12 @@ async function renderMotionFrameGrid(category, sheetAsset, sheetDims) {
   });
 }
 
-// 재생 미리보기(startPreviewLoop)는 frames[i].dataUrl 배열을 받는다 —
-// buildMotionCategoryFrameDataUrls(dev/data/fishDefs.js)의 출력을
-// { dataUrl } 형태로 감싸 넣어준다. 캐스팅만 프레임별 재생 속도(타임라인)
-// 설정이 있어 durations를 같이 넘긴다.
-async function renderMotionPreviewLoop(category, sheetAsset, sheetDims) {
-  const previewEl = el[motionElKey(category, 'Preview')];
-  const labelEl = el[motionElKey(category, 'PreviewLabel')];
-  if (!sheetAsset || !sheetDims) { motionFrameCache[category] = []; startPreviewLoop(previewEl, labelEl, []); return; }
+// motionFrameCache[category]를 채우는 순수 계산 부분만 따로 뗐다 —
+// renderMotionPreviewLoop(모션 탭의 재생 미리보기 DOM+애니메이션 루프)와
+// ensureMoveTestFrameCache("이동 설정" 걷기 테스트 캐릭터가 필요로 하는
+// 데이터만 조용히 채우는 용도, DOM/애니메이션 없음) 둘 다 이 함수만 공유한다.
+async function computeMotionFrameCache(category, sheetAsset, sheetDims) {
+  if (!sheetAsset || !sheetDims) { motionFrameCache[category] = []; return []; }
   const img = new Image();
   // crossOrigin은 img.src를 설정하기 *전에* 걸어야 의미가 있다 — sheetAsset.dataUrl은
   // Supabase Storage의 교차 출처 URL이라, 이게 없으면 buildMotionCategoryFrameDataUrls가
@@ -1533,36 +1570,99 @@ async function renderMotionPreviewLoop(category, sheetAsset, sheetDims) {
     }));
   }
   motionFrameCache[category] = urls;
+  return urls;
+}
+
+// 재생 미리보기(startPreviewLoop)는 frames[i].dataUrl 배열을 받는다 —
+// computeMotionFrameCache의 출력을 { dataUrl } 형태로 감싸 넣어준다.
+// 캐스팅만 프레임별 재생 속도(타임라인) 설정이 있어 durations를 같이 넘긴다.
+async function renderMotionPreviewLoop(category, sheetAsset, sheetDims) {
+  const previewEl = el[motionElKey(category, 'Preview')];
+  const labelEl = el[motionElKey(category, 'PreviewLabel')];
+  const urls = await computeMotionFrameCache(category, sheetAsset, sheetDims);
+  if (!urls.length) { startPreviewLoop(previewEl, labelEl, []); return; }
   const durations = category === 'cast'
     ? getCastFrameDurations()
     : (MOVE_CATEGORIES.includes(category) ? new Array(MOTION_GRID_COLUMNS).fill(getMotionPlaybackMs(category)) : null);
   startPreviewLoop(previewEl, labelEl, urls.map(u => ({ dataUrl: u })), durations);
 }
 
+// "이동 설정" 걷기 테스트 캐릭터(moveChar)는 motionFrameCache[dir](위/아래/
+// 왼쪽/오른쪽)이 채워져 있어야 실제 걷기 프레임을 보여준다. 렉 방지를 위해
+// 모션 탭은 이제 지금 보이는 동작만 계산하므로(renderMotionCategoryTab
+// 참고) 방향별 하부 탭을 한 번도 안 열었으면 비어 있을 수 있다 — 그 경우
+// 여기서 계산만 조용히 채운다(프레임 그리드 DOM이나 재생 애니메이션 루프는
+// 안 만든다). 이미 채워진 방향은 다시 계산하지 않는다.
+async function ensureMoveTestFrameCache() {
+  for (const category of MOVE_CATEGORIES) {
+    if (motionFrameCache[category].length) continue;
+    await computeMotionFrameCache(category, motionSheetAsset, motionSheetDims);
+  }
+}
+
+// 동작(카테고리) 6개를 한 화면에 전부 렌더링·재생하면 재생 미리보기
+// (startPreviewLoop의 setTimeout 체인)가 6개 동시에 돌아 렉이 걸린다 —
+// 지금은 하부 탭(motionSubtabsRow)으로 한 번에 하나의 동작만 화면에
+// 보이고, JS도 그 동작만 렌더링한다. activeMotionCategory가 지금 보이는
+// 동작이고, selectMotionCategory가 탭을 바꿀 때마다 이전 동작의 재생
+// 타이머를 멈추고 새 동작을 렌더링한다.
+let activeMotionCategory = 'cast';
+function motionSubpanelKey(category) {
+  return 'motionSubpanel' + category[0].toUpperCase() + category.slice(1);
+}
+
+async function renderMotionCategoryTab(category) {
+  await renderMotionFrameGrid(category, motionSheetAsset, motionSheetDims);
+  el[motionElKey(category, 'RowAdjustBtn')].disabled = !motionSheetAsset;
+  // 미리보기 생성(캔버스로 프레임을 잘라내는 작업)이 실패해도 아래 타임라인
+  // 렌더링까지 통째로 막히면 안 된다.
+  await renderMotionPreviewLoop(category, motionSheetAsset, motionSheetDims).catch((err) => {
+    motionFrameCache[category] = [];
+    startPreviewLoop(el[motionElKey(category, 'Preview')], el[motionElKey(category, 'PreviewLabel')], []);
+    DevDiag.show(MOTION_LABELS[category] + ' 미리보기 생성 실패: ' + (err && err.message ? err.message : err));
+  });
+  if (MOVE_CATEGORIES.includes(category)) {
+    el[motionElKey(category, 'CutoutAllBtn')].disabled = !motionFrameCache[category].some(Boolean);
+  }
+  if (category === 'cast') {
+    el.rodtipEditBtn.disabled = !motionFrameCache.cast.length;
+    renderCastTimeline();
+  } else if (category === 'reel') {
+    el.reelRodtipEditBtn.disabled = !motionFrameCache.reel.length;
+    updateHeldFishBtnState();
+  }
+}
+
+// 지금 보이는 동작 탭만 렌더링한다 — 시트 업로드/제거, 프레임 크롭 조정,
+// 개별 업로드·누끼 등 모션 관련 변경이 있을 때마다 불린다(전부 지금 보이는
+// 탭 안의 UI에서만 트리거되므로 activeMotionCategory만 다시 그리면 충분).
 async function renderMotionTab() {
   motionSheetAsset = await renderMotionSheetPreview();
   motionSheetDims = motionSheetAsset ? await loadImageDimensions(motionSheetAsset.dataUrl) : null;
   el.motionSheetFrame.style.setProperty('--motion-ar', motionSheetDims ? (motionSheetDims.width + '/' + motionSheetDims.height) : '1/1');
-  for (const category of MOTION_CATEGORIES) {
-    await renderMotionFrameGrid(category, motionSheetAsset, motionSheetDims);
-    el[motionElKey(category, 'RowAdjustBtn')].disabled = !motionSheetAsset;
-    // 미리보기 생성(캔버스로 프레임을 잘라내는 작업)이 실패해도 나머지
-    // 카테고리·아래 타임라인 렌더링까지 통째로 막히면 안 된다.
-    await renderMotionPreviewLoop(category, motionSheetAsset, motionSheetDims).catch((err) => {
-      motionFrameCache[category] = [];
-      startPreviewLoop(el[motionElKey(category, 'Preview')], el[motionElKey(category, 'PreviewLabel')], []);
-      DevDiag.show(MOTION_LABELS[category] + ' 미리보기 생성 실패: ' + (err && err.message ? err.message : err));
-    });
-    if (MOVE_CATEGORIES.includes(category)) {
-      el[motionElKey(category, 'CutoutAllBtn')].disabled = !motionFrameCache[category].some(Boolean);
-    }
-  }
-  el.rodtipEditBtn.disabled = !motionFrameCache.cast.length;
-  el.reelRodtipEditBtn.disabled = !motionFrameCache.reel.length;
-  updateHeldFishBtnState();
-  renderCastTimeline();
+  await renderMotionCategoryTab(activeMotionCategory);
   initMotionSpeedControls();
 }
+
+// 하부 탭을 바꾼다 — 떠나는 탭의 재생 미리보기 타이머부터 멈춘 뒤(빈
+// frames로 startPreviewLoop을 다시 불러 그 프리뷰 엘리먼트의
+// _animTimer를 정리) 새 탭을 보여주고 그 동작만 렌더링한다. 아직 한 번도
+// 렌더링한 적 없는 탭이라도(motionFrameCache가 비어 있어도) 상관없다 —
+// renderMotionCategoryTab이 처음부터 다시 채운다.
+function selectMotionCategory(category) {
+  if (category === activeMotionCategory) return;
+  startPreviewLoop(el[motionElKey(activeMotionCategory, 'Preview')], el[motionElKey(activeMotionCategory, 'PreviewLabel')], []);
+  el[motionSubpanelKey(activeMotionCategory)].classList.add('hidden');
+  activeMotionCategory = category;
+  el[motionSubpanelKey(category)].classList.remove('hidden');
+  el.motionSubtabsRow.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.motionCat === category);
+  });
+  renderMotionCategoryTab(category);
+}
+el.motionSubtabsRow.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => selectMotionCategory(btn.dataset.motionCat));
+});
 
 // 이동 방향별 "재생 속도" 슬라이더 — 값이 없으면 moveAnimMs(이동 탭 기본값)를
 // 보여준다. renderMotionTab이 fishingConfig를 다시 읽을 때마다(크롭 조정,
@@ -2977,6 +3077,7 @@ async function renderMoveTestStage() {
   }
   moveState.x = Math.min(moveState.x, moveState.maxX);
   moveState.y = Math.min(moveState.y, moveState.maxY);
+  await ensureMoveTestFrameCache();
   applyCharFrame(moveState.dir, 0);
   updateCharPosition();
 }
