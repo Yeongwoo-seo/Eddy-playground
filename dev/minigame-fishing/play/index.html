@@ -113,8 +113,11 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 
 /* 캐스팅 버튼 대신 화면을 꾹 눌러 세기(0~100, 왔다리갔다리)를 맞추고
    손을 떼면 그 순간 값으로 던진다(startPowerCharge/releasePowerAndCast) —
-   이 바는 누르고 있는 동안만 보인다. */
-.cast-power-wrap{position:absolute;left:50%;bottom:calc(30px + env(safe-area-inset-bottom,0));transform:translateX(-50%) scale(var(--casting-scale,1));z-index:5;width:220px;display:flex;flex-direction:column;align-items:center;gap:6px}
+   이 바는 누르고 있는 동안만 보인다. 위치(--cast-ui-left/--cast-ui-bottom)는
+   배치 편집 모드에서 드래그로 옮길 수 있다(layoutPrefs.casting.left/bottom,
+   startLayoutDrag 참고) — left는 %(가로는 화면 폭에 비례해야 자연스럽다),
+   bottom은 조이스틱/낚시 버튼과 같은 px 앵커다. */
+.cast-power-wrap{position:absolute;left:var(--cast-ui-left,50%);bottom:calc(var(--cast-ui-bottom,30px) + env(safe-area-inset-bottom,0));transform:translateX(-50%) scale(var(--casting-scale,1));z-index:5;width:220px;display:flex;flex-direction:column;align-items:center;gap:6px;touch-action:none}
 .cast-power-wrap.hidden{display:none}
 .cast-power-stage{position:relative;width:100%}
 .cast-power-track{width:100%;height:20px;border-radius:10px;background:rgba(5,20,28,.45);border:1px solid rgba(255,255,255,.35);overflow:hidden}
@@ -367,7 +370,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
     <label class="hidden" id="layoutBgZoomRow">배경화면 배율<input type="range" id="layoutBgZoom" min="0.6" max="2" step="0.05"></label>
     <button type="button" id="layoutEditDoneBtn">완료</button>
   </div>
-  <div class="layout-edit-hint hidden" id="layoutEditHint">조이스틱·낚시 버튼을 드래그해서 위치를 옮길 수 있어요</div>
+  <div class="layout-edit-hint hidden" id="layoutEditHint">조이스틱·낚시 버튼·캐스팅 게이지를 드래그해서 위치를 옮길 수 있어요</div>
   <div class="layout-drag-ghost hidden" id="layoutDragGhost"></div>
 
   <div class="item-popup" id="itemPopup">
@@ -2240,7 +2243,7 @@ let layoutPrefs = {
   fishBtn: { size: 114, right: 23, bottom: 82 }, // 요청한 스크린샷 실측 크기·위치로 기본값 고정
   heldFish: { size: 40 }, // 낚시 성공 후 캐릭터가 들고 있는 물고기 아이콘 크기(px) — .held-fish 기본값과 맞춤
   char: { scale: 1 }, // 캐릭터(.char-stage) 전체 배율 — --char-scale, char-stage의 transform:scale에 그대로 들어간다
-  casting: { scale: 1 }, // 캐스팅 파워바/잡아채기 낚시바/찌/입질 팝업/아이템 팝업/물고기 날아가는 연출을 한 번에 묶어 조절하는 배율 — --casting-scale과 각 요소의 JS 계산 transform에 곱해진다. 추 던지기 궤적(cast-svg)은 낚싯대 끝의 실제 화면 좌표에 맞춰야 해서 일부러 빼뒀다(비율만 바꾸면 궤적 시작점이 캐릭터 손끝에서 어긋나 보인다).
+  casting: { scale: 1, left: 50, bottom: 30 }, // 캐스팅 파워바/잡아채기 낚시바/찌/입질 팝업/아이템 팝업/물고기 날아가는 연출을 한 번에 묶어 조절하는 배율(scale) — --casting-scale과 각 요소의 JS 계산 transform에 곱해진다. 추 던지기 궤적(cast-svg)은 낚싯대 끝의 실제 화면 좌표에 맞춰야 해서 일부러 빼뒀다(비율만 바꾸면 궤적 시작점이 캐릭터 손끝에서 어긋나 보인다). left(%)/bottom(px)은 캐스팅 파워바(.cast-power-wrap)만의 위치 앵커 — 편집 모드에서 그 바를 직접 드래그해서 옮긴다(joystick/fishBtn과 같은 방식).
 };
 let layoutEditMode = false;
 let layoutDragTarget = null; // 'joystick' | 'fishBtn' | null
@@ -2275,6 +2278,8 @@ function applyLayoutPrefs() {
   root.setProperty('--held-fish-size', layoutPrefs.heldFish.size + 'px');
   root.setProperty('--char-scale', layoutPrefs.char.scale);
   root.setProperty('--casting-scale', layoutPrefs.casting.scale);
+  root.setProperty('--cast-ui-left', layoutPrefs.casting.left + '%');
+  root.setProperty('--cast-ui-bottom', layoutPrefs.casting.bottom + 'px');
 }
 // 조이스틱 반지름/데드존은 --joy-base-size에 비례해서 커진 원 크기에 맞게 매번 다시 계산한다(고정 상수 대신).
 function joystickRadiusPx() { return layoutPrefs.joystick.size * 0.4; }
@@ -2290,13 +2295,19 @@ function syncDragGhost(targetEl) {
   el.layoutDragGhost.style.width = rect.width + 'px';
   el.layoutDragGhost.style.height = rect.height + 'px';
 }
-function layoutDragTargetEl() { return layoutDragTarget === 'joystick' ? el.joystick : el.fishBtn; }
+function layoutDragTargetEl() {
+  if (layoutDragTarget === 'joystick') return el.joystick;
+  if (layoutDragTarget === 'fishBtn') return el.fishBtn;
+  return el.castPowerWrap;
+}
 function startLayoutDrag(target, e) {
   layoutDragTarget = target;
   layoutDragStartPointer = { x: e.clientX, y: e.clientY };
   layoutDragStartPos = target === 'joystick'
     ? { left: layoutPrefs.joystick.left, bottom: layoutPrefs.joystick.bottom }
-    : { right: layoutPrefs.fishBtn.right, bottom: layoutPrefs.fishBtn.bottom };
+    : target === 'fishBtn'
+    ? { right: layoutPrefs.fishBtn.right, bottom: layoutPrefs.fishBtn.bottom }
+    : { left: layoutPrefs.casting.left, bottom: layoutPrefs.casting.bottom };
   layoutDragTargetEl().classList.add('layout-drag-hide');
   el.layoutDragGhost.classList.remove('hidden');
   syncDragGhost(layoutDragTargetEl());
@@ -2308,9 +2319,15 @@ function updateLayoutDrag(e) {
   if (layoutDragTarget === 'joystick') {
     layoutPrefs.joystick.left = Math.max(0, layoutDragStartPos.left + dx);
     layoutPrefs.joystick.bottom = Math.max(0, layoutDragStartPos.bottom - dy); // 화면 y는 아래로 갈수록 커지지만 bottom%는 반대라 부호를 뒤집는다
-  } else {
+  } else if (layoutDragTarget === 'fishBtn') {
     layoutPrefs.fishBtn.right = Math.max(0, layoutDragStartPos.right - dx);
     layoutPrefs.fishBtn.bottom = Math.max(0, layoutDragStartPos.bottom - dy);
+  } else {
+    // 'casting' — 캐스팅 파워바는 left가 px 앵커가 아니라 %(화면 폭 비례)라
+    // 가로 이동값(dx px)을 프레임 폭 기준 %로 변환해 더한다.
+    const frameRect = el.frame.getBoundingClientRect();
+    layoutPrefs.casting.left = clamp(layoutDragStartPos.left + dx / frameRect.width * 100, 0, 100);
+    layoutPrefs.casting.bottom = Math.max(0, layoutDragStartPos.bottom - dy);
   }
   applyLayoutPrefs();
   syncDragGhost(layoutDragTargetEl());
@@ -2322,6 +2339,32 @@ function endLayoutDrag() {
   layoutDragTarget = null;
   saveLayoutPrefs();
 }
+// 캐스팅 파워바(.cast-power-wrap)는 평소엔 charging 상태에서만 보이고
+// 그 안에 인터랙션도 없다(손을 떼면 el.frame이 캐스팅을 처리) — 편집
+// 모드에 들어가면 idle인데도 강제로 띄워서(el.layoutEditBtn 핸들러 참고)
+// 미리보기 겸 드래그 대상으로 쓴다. 조이스틱/낚시 버튼과 같은 패턴으로
+// pointerdown에서 캡처를 잡고 startLayoutDrag('casting', e)를 부른다 —
+// 편집 모드가 아닐 때는 원래 인터랙션이 없으므로 아무 것도 하지 않는다.
+let castUiDragPointerId = null;
+el.castPowerWrap.addEventListener('pointerdown', (e) => {
+  if (!layoutEditMode) return;
+  e.stopPropagation();
+  castUiDragPointerId = e.pointerId;
+  el.castPowerWrap.setPointerCapture(e.pointerId);
+  startLayoutDrag('casting', e);
+});
+el.castPowerWrap.addEventListener('pointermove', (e) => {
+  if (!layoutEditMode || e.pointerId !== castUiDragPointerId) return;
+  updateLayoutDrag(e);
+});
+['pointerup', 'pointercancel', 'pointerleave'].forEach(evt => {
+  el.castPowerWrap.addEventListener(evt, (e) => {
+    if (!layoutEditMode || e.pointerId !== castUiDragPointerId) return;
+    e.stopPropagation();
+    endLayoutDrag();
+    castUiDragPointerId = null;
+  });
+});
 el.layoutEditBtn.addEventListener('pointerdown', (e) => {
   e.stopPropagation();
   if (gameState !== 'idle') return;
@@ -2329,6 +2372,7 @@ el.layoutEditBtn.addEventListener('pointerdown', (e) => {
   el.layoutEditBtn.classList.toggle('active', layoutEditMode);
   el.layoutEditPanel.classList.toggle('hidden', !layoutEditMode);
   el.layoutEditHint.classList.toggle('hidden', !layoutEditMode);
+  el.castPowerWrap.classList.toggle('hidden', !layoutEditMode); // 편집 중에만 위치 드래그용 미리보기로 띄운다
   if (layoutEditMode) {
     el.layoutJoySize.value = layoutPrefs.joystick.size;
     el.layoutFishSize.value = layoutPrefs.fishBtn.size;
@@ -2381,6 +2425,7 @@ el.layoutEditDoneBtn.addEventListener('click', (e) => {
   el.layoutEditBtn.classList.remove('active');
   el.layoutEditPanel.classList.add('hidden');
   el.layoutEditHint.classList.add('hidden');
+  el.castPowerWrap.classList.add('hidden'); // 편집용 미리보기 종료 — 평소처럼 charging 중에만 보인다
 });
 loadLayoutPrefs();
 applyLayoutPrefs();
