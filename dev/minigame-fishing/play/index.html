@@ -289,11 +289,11 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
    새로 만들고(el.stage에 추가) 도착하면 제거한다. */
 .fish-fly{position:absolute;z-index:7;width:44px;height:44px;border-radius:12px;background-repeat:no-repeat;image-rendering:pixelated;pointer-events:none;transform:translate(-50%,-50%) scale(var(--casting-scale,1));filter:drop-shadow(0 3px 6px rgba(0,0,0,.4));font-size:28px;display:flex;align-items:center;justify-content:center;box-sizing:border-box}
 
-/* ===== 아이템창 — 낚시 성공(물고기가 캐릭터에게 날아온 다음)에만 뜨는
+/* ===== 낚시 팝업 — 낚시 성공(물고기가 캐릭터에게 날아온 다음)에만 뜨는
    말풍선. 실패했을 때는 아무 화면도 뜨지 않고 그냥 대기 상태로 돌아간다
    (missReaction/endCatch 참고 — resetToIdle을 바로 호출). 배경(액자)
    그림과 아이콘/이름/설명 위치·크기는 dev/minigame-fishing/index.html의
-   "아이템창" 탭(itemPopup config)에서 지정한다.
+   "낚시 팝업" 탭(itemPopup config)에서 지정한다.
    전체 화면을 덮는 모달이 아니라 캐릭터(el.charStage) 바로 위에 뜨는
    말풍선이다 — 화면을 어둡게 가리지 않고, 위치는 showItemPopup이 매번
    캐릭터의 실제 화면 좌표를 기준으로 계산해 left/bottom 인라인 스타일로
@@ -343,7 +343,10 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .npc-menu-btn--close{background:rgba(255,255,255,.15);color:rgba(255,255,255,.85)}
 .npc-menu-btn:active{opacity:.8}
 
-.sell-fish-card{width:270px;max-height:70vh;background:rgba(8,16,22,.94);border:1px solid rgba(255,255,255,.18);border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:10px}
+.sell-fish-card{width:270px;max-height:70vh;background:rgba(8,16,22,.94);background-size:cover;background-position:center;border:1px solid rgba(255,255,255,.18);border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:10px}
+/* 아이템창 탭(dev/minigame-fishing/index.html)에서 배경(액자) 그림을
+   올리면 이 클래스가 붙어 기본 어두운 단색 대신 그 그림이 깔린다. */
+.sell-fish-card.sell-fish-card--has-bg{background-color:transparent}
 .sell-fish-title{text-align:center;font-size:16px;font-weight:700;color:#fff}
 .sell-fish-list{display:flex;flex-direction:column;gap:6px;max-height:38vh;overflow-y:auto}
 .sell-fish-empty{text-align:center;font-size:13px;color:rgba(255,255,255,.6);padding:10px 0}
@@ -447,11 +450,11 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
   <button type="button" class="fish-btn" id="fishBtn">🎣</button>
   <button type="button" class="layout-edit-btn" id="layoutEditBtn" aria-label="배치 편집">✎</button>
   <div class="layout-edit-panel hidden" id="layoutEditPanel">
-    <label>아이템창 크기<input type="range" id="layoutItemPopupScale" min="0.3" max="2" step="0.05"></label>
+    <label>낚시 팝업 크기<input type="range" id="layoutItemPopupScale" min="0.3" max="2" step="0.05"></label>
     <label class="hidden" id="layoutBgZoomRow">배경화면 배율<input type="range" id="layoutBgZoom" min="0.3" max="2" step="0.05"></label>
     <button type="button" class="secondary" id="layoutCastingPosBtn">🎯 캐스팅 게이지 위치 수정하기</button>
     <button type="button" class="secondary" id="layoutFishbarPosBtn">🎣 낚시바 위치 수정하기</button>
-    <button type="button" class="secondary" id="layoutItemPopupPosBtn">🎁 아이템창 미리보기</button>
+    <button type="button" class="secondary" id="layoutItemPopupPosBtn">🎁 낚시 팝업 미리보기</button>
     <button type="button" class="secondary" id="layoutCodeBtn">📋 코드보기</button>
     <button type="button" id="layoutEditDoneBtn">완료</button>
   </div>
@@ -583,7 +586,7 @@ function preloadWithRetry(url, retries, delayMs) {
 // CSS 변수와 같은 값을 RGB로 하드코딩해서 매 프레임 보간한다.
 const GAUGE_COLOR_STOPS = { red: [217, 65, 65], green: [62, 207, 107], capPct: 70 };
 
-// 물고기 등급 이름 색 — 아이템창(showItemPopup)에서 잡은 물고기 이름을
+// 물고기 등급 이름 색 — 낚시 팝업(showItemPopup)에서 잡은 물고기 이름을
 // 등급(fishDefs.js grade)에 따라 바로 알아볼 수 있게 한다.
 const GRADE_NAME_COLORS = { '일반': '#8B95A1', '레어': '#3B82F6', '희귀': '#A855F7', '전설': '#FFD12E' };
 function gaugeColorForProgress(pct) {
@@ -747,7 +750,7 @@ let zoneTrack = null; // { x, y, w, h } — 낚시바 기준 %
 // fishRegion을 아직 안 만든 기존 설정도 그대로 동작해야 하므로, 지정 안
 // 됐으면 zoneTrack을 그대로 따른다(예전 동작과 동일) — loadConfig 참고.
 let fishTrack = null; // { x, y, w, h } — 낚시바 기준 %
-let itemIconPos = { x: 0.5, y: 0.36 }; // 아이템창 카드 기준 0~1, dev/minigame-fishing/index.html 아이템창 탭에서 지정
+let itemIconPos = { x: 0.5, y: 0.36 }; // 낚시 팝업 카드 기준 0~1, dev/minigame-fishing/index.html 낚시 팝업 탭에서 지정
 let itemIconSizePx = 64;
 let itemNamePos = { x: 0.5, y: 0.66 };
 let itemMetaPos = { x: 0.5, y: 0.8 };
@@ -1152,6 +1155,7 @@ async function loadConfig() {
   if (characterIdleSheetsCfg.youngwoo && characterIdleSheetsCfg.youngwoo.assetId) ids.push(characterIdleSheetsCfg.youngwoo.assetId);
   const itemPopupCfg = cfg.itemPopup || {};
   if (itemPopupCfg.backgroundAssetId) ids.push(itemPopupCfg.backgroundAssetId);
+  if (cfg.itemWindowBackgroundAssetId) ids.push(cfg.itemWindowBackgroundAssetId);
   const dialogueSceneCfg = cfg.dialogueScene || {};
   DIALOGUE_INTRO_IMAGE_LAYERS.forEach(key => { if (dialogueSceneCfg[key] && dialogueSceneCfg[key].assetId) ids.push(dialogueSceneCfg[key].assetId); });
   if (dialogueSceneCfg.jisooPortraitAssetId) ids.push(dialogueSceneCfg.jisooPortraitAssetId);
@@ -1449,8 +1453,8 @@ async function loadConfig() {
     el.charFallback.classList.add('hidden');
   }
 
-  // 아이템창 — 낚시 성공 후(물고기가 캐릭터에게 날아온 다음) 뜨는 팝업의
-  // 배경/아이콘 위치·크기. dev/minigame-fishing/index.html의 "아이템창" 탭 설정.
+  // 낚시 팝업 — 낚시 성공 후(물고기가 캐릭터에게 날아온 다음) 뜨는
+  // 배경/아이콘 위치·크기. dev/minigame-fishing/index.html의 "낚시 팝업" 탭 설정.
   // 카드 종횡비(--item-ar)를 업로드한 배경 이미지의 실제 자연 크기로
   // 맞춰야 액자 그림이 잘리거나 늘어나지 않고 업로드한 그대로 보인다.
   const itemPopupBgAsset = itemPopupCfg.backgroundAssetId ? byId.get(itemPopupCfg.backgroundAssetId) : null;
@@ -1486,6 +1490,18 @@ async function loadConfig() {
   el.itemPopupMeta.style.left = (itemMetaPos.x * 100) + '%';
   el.itemPopupMeta.style.top = (itemMetaPos.y * 100) + '%';
   el.itemPopupMeta.style.fontSize = (itemPopupCfg.metaFontSizePx || 12) + 'px';
+
+  // 아이템창(물고기 팔기 카드) 배경 — dev/minigame-fishing/index.html의
+  // "아이템창" 탭 설정. 비어있으면 기본 어두운 단색 카드 그대로 쓴다.
+  const itemWindowBgAsset = cfg.itemWindowBackgroundAssetId ? byId.get(cfg.itemWindowBackgroundAssetId) : null;
+  if (itemWindowBgAsset) {
+    const itemWindowBgUrl = (await preloadWithRetry(itemWindowBgAsset.dataUrl, 3, 500)).url;
+    el.sellFishCard.style.backgroundImage = `url(${itemWindowBgUrl})`;
+    el.sellFishCard.classList.add('sell-fish-card--has-bg');
+  } else {
+    el.sellFishCard.style.backgroundImage = '';
+    el.sellFishCard.classList.remove('sell-fish-card--has-bg');
+  }
 
   preloadFishIcons();
 
@@ -2342,7 +2358,7 @@ function startCatching() {
   el.castSvg.classList.remove('hidden');
   renderCatchingReelLine();
   pendingCatchFish = pickCaughtFish();
-  // 아이템창을 화면 밖(left:-9999px)에서 이 시점에 미리 채워둬서, 실제
+  // 낚시 팝업을 화면 밖(left:-9999px)에서 이 시점에 미리 채워둬서, 실제
   // 공개(showItemPopup) 순간엔 위치만 옮기면 되게 한다 — populateItemPopup
   // 주석 참고.
   populateItemPopup(pendingCatchFish);
@@ -2465,7 +2481,7 @@ async function playReelThenResult() {
   el.castSvg.classList.add('hidden');
   const fishCaught = pendingCatchFish;
   caughtFishTally[fishCaught.id] = (caughtFishTally[fishCaught.id] || 0) + 1;
-  // 아이템창 내용(populateItemPopup)은 startCatching 때 이미 화면 밖에서
+  // 낚시 팝업 내용(populateItemPopup)은 startCatching 때 이미 화면 밖에서
   // 다 그려놨으니 지연 없이 뜰 준비는 끝났지만, 뜨는 시점 자체는 물고기가
   // 캐릭터에 실제로 도착한 다음이어야 자연스럽다(사용자 요청) — 그래서
   // flyFishToCharacter가 끝날 때까지 기다렸다가 showItemPopup을 부른다.
@@ -2579,13 +2595,13 @@ function positionFishbarRightOfCharacter() {
   el.fishbarPanel.style.transform = `translateY(-50%) scale(${scale})`;
 }
 
-/* ===== 아이템창 =====
+/* ===== 낚시 팝업 =====
    실패 시엔 아무 화면도 없이 그냥 대기로 돌아가고(missReaction/endCatch
    참고), 성공해서 물고기가 캐릭터에게 도착한 다음에만 이 팝업이 뜬다.
-   배경/아이콘 위치·크기는 dev/minigame-fishing/index.html의 "아이템창" 탭
+   배경/아이콘 위치·크기는 dev/minigame-fishing/index.html의 "낚시 팝업" 탭
    (itemPopup config, loadConfig에서 el.itemPopupCard/el.itemPopupIcon에
    이미 적용해둔 상태)을 그대로 쓴다. */
-// 아이템창 카드 폭 — .item-popup-card의 고정 width(220px, CSS)와 맞춰야
+// 낚시 팝업 카드 폭 — .item-popup-card의 고정 width(220px, CSS)와 맞춰야
 // 한다. 카드가 화면 밖으로 나가지 않도록 캐릭터 중심에 맞추되 좌우
 // ITEM_POPUP_MARGIN 안쪽으로 clamp한다(캐릭터가 화면 가장자리에 가까워도
 // 안전 — % 기반 위치만 쓰면 캐릭터가 가장자리에 있을 때 카드가 화면
@@ -2641,7 +2657,7 @@ function populateItemPopup(fishCaught) {
 
 // 캐릭터가 물고기를 들고 있는 자세(올리기 마지막 프레임 — playFrameSequence가
 // el.charImg를 이미 그 프레임에 남겨둔 상태) 위에 잡은 물고기 아이콘을
-// heldFishPos 자리에 겹쳐 그린다. 아이템창(showItemPopup)과 같은 타이밍에
+// heldFishPos 자리에 겹쳐 그린다. 낚시 팝업(showItemPopup)과 같은 타이밍에
 // 뜨고, resetToIdle에서 같이 사라진다.
 function showHeldFish(fishCaught) {
   el.heldFish.style.left = (heldFishPos.x * 100) + '%';
@@ -2784,7 +2800,7 @@ function stopMoveHold() {
    뜻이라, 안 누르고 있는 게 기본값이고 그 사이엔 왼쪽 아래 조이스틱
    (el.joystick)으로 캐릭터를 이동한다). 낚시 시작(idle→charging)뿐
    아니라 캐스팅(놓으면 던지기), 입질 반응, 잡아채기 중 홀드(캐스팅바를
-   밀어올리는 것), 입질 대기 중 조기 올리기, 아이템창 닫기까지 이 버튼
+   밀어올리는 것), 입질 대기 중 조기 올리기, 낚시 팝업 닫기까지 이 버튼
    하나로 전부 되게 handleActionPointerDown/Release를 el.frame(화면
    전체 — 기존처럼 어디를 눌러도 동작)과 el.fishBtn 양쪽에 같이 건다.
    다만 idle→charging(낚시 시작)만은 el.fishBtn 전용이다 — el.frame에도
@@ -2917,7 +2933,7 @@ let layoutPrefs = {
   char: { scale: 0.45, outline: 0 }, // 캐릭터(.char-stage) 전체 배율 — --char-scale, char-stage의 transform:scale에 그대로 들어간다. 배치 확정 값으로 기본값 고정
   casting: { scale: 0.55, left: 1, bottom: -20 }, // 캐스팅 파워바/찌/입질 팝업/아이템 팝업/물고기 날아가는 연출을 한 번에 묶어 조절하는 배율 — --casting-scale과 각 요소의 JS 계산 transform에 곱해진다. 추 던지기 궤적(cast-svg)은 낚싯대 끝의 실제 화면 좌표에 맞춰야 해서 일부러 빼뒀다(비율만 바꾸면 궤적 시작점이 캐릭터 손끝에서 어긋나 보인다). left/bottom은 더 이상 화면 기준 절대 위치가 아니라, 캐스팅 게이지(cast-power-wrap)가 뜨는 "캐릭터 머리 위" 기준점에서 얼마나 더 옮길지 정하는 오프셋이다(positionCastGaugeAboveCharacter 참고) — 배치 확정 값으로 기본값 고정.
   fishbar: { scale: 1, left: 0, top: 0 }, // 잡아채기 낚시바(fishbar-panel) 전용 배율·위치 — 예전엔 casting.scale을 같이 썼지만, 낚시바만 따로 크기/위치를 잡고 싶다는 요청으로 분리했다. left/top은 "캐릭터 오른쪽, 세로 중앙" 기준점(positionFishbarRightOfCharacter)에서 얼마나 더 옮길지 정하는 오프셋 — top인 이유는 그 함수가 bottom이 아니라 top으로 세로 위치를 잡기 때문(캐스팅 게이지 쪽 bottom과 부호 방향이 다르다). 배치 확정 값으로 기본값 고정.
-  itemPopup: { scale: 1 }, // 아이템창(.item-popup) 전용 배율 — casting.scale(전체 캐스팅 UI 묶음)에 곱해져 적용된다(positionItemPopupAboveCharacter). 아이템창만 따로 크기를 조절하고 싶다는 요청으로 추가.
+  itemPopup: { scale: 1 }, // 낚시 팝업(.item-popup) 전용 배율 — casting.scale(전체 캐스팅 UI 묶음)에 곱해져 적용된다(positionItemPopupAboveCharacter). 낚시 팝업만 따로 크기를 조절하고 싶다는 요청으로 추가.
 };
 let layoutEditMode = false;
 let layoutDragTarget = null; // 'joystick' | 'fishBtn' | 'casting' | 'fishbar' | null
@@ -2928,7 +2944,7 @@ let castingDragPointerId = null;
 let fishbarDragPointerId = null;
 let castingPosPreview = false; // 캐스팅 게이지는 평소 세기 조절 중에만 보여서, 위치를 드래그로 옮기려면 편집 중엔 강제로 보여줘야 한다(layoutCastingPosBtn).
 let fishbarPosPreview = false; // 낚시바도 마찬가지 — 평소엔 잡아채기(catching) 중에만 보여서, 위치를 드래그로 옮기려면 편집 중엔 강제로 보여줘야 한다(layoutFishbarPosBtn).
-let itemPopupPreview = false; // 아이템창도 마찬가지 — 평소엔 낚시 성공 직후에만 보여서, 크기 슬라이더 결과를 보려면 편집 중엔 강제로 띄워둬야 한다(layoutItemPopupPosBtn).
+let itemPopupPreview = false; // 낚시 팝업도 마찬가지 — 평소엔 낚시 성공 직후에만 보여서, 크기 슬라이더 결과를 보려면 편집 중엔 강제로 띄워둬야 한다(layoutItemPopupPosBtn).
 function loadLayoutPrefs() {
   try {
     const raw = localStorage.getItem(LAYOUT_PREFS_KEY);
@@ -3108,7 +3124,7 @@ el.fishbarPanel.addEventListener('pointermove', (e) => {
     fishbarDragPointerId = null;
   });
 });
-// 아이템창 미리보기 — 평소엔 낚시 성공 직후에만 보이는 요소라, 크기
+// 낚시 팝업 미리보기 — 평소엔 낚시 성공 직후에만 보이는 요소라, 크기
 // 슬라이더 결과를 확인하려면 먼저 이 버튼으로 강제로 띄워둬야 한다(위치는
 // 캐릭터 기준으로 자동 계산되는 값이라 드래그 대상은 아니다).
 el.layoutItemPopupPosBtn.addEventListener('click', (e) => {
