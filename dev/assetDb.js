@@ -1094,13 +1094,6 @@ const AssetDB = (() => {
   // itemPopup — 낚시 성공 시(물고기가 추에서 캐릭터로 날아온 다음) 뜨는
   // 아이템창 팝업의 디자인. backgroundAssetId(팝업 액자 그림) + iconPos(그
   // 그림 위 어디에 아이템 아이콘이 놓일지, 0~1 정규화 좌표) + iconSizePx.
-  // fishableAreas/blockedAreas/interactionAreas — 배경화면(backgroundAssetId)
-  // 위에 그리는 다각형 영역들, 각각 [{ id, points: [{x,y}, ...] }] (points는
-  // 배경 이미지 원본 크기 기준 0~1 정규화 좌표, "영역 설정" 탭의 폴리곤
-  // 에디터가 채운다). fishableAreas는 캐스팅해서 낚시할 수 있는 영역,
-  // blockedAreas는 캐릭터가 걸어 들어갈 수 없는 영역, interactionAreas는
-  // 상점/대화 등 게임에 필요한 상호작용 지점(각 항목에 label 필드로 어떤
-  // 상호작용인지 적어둔다) — 셋 다 여러 개를 둘 수 있다.
   // heldFishPos — 낚시 성공 후 캐릭터가 물고기를 들고 있는 포즈일 때, 잡은
   // 물고기 아이콘이 캐릭터 기준(char-stage 박스, 0~1 정규화 좌표) 어디에
   // 놓일지. "모션" 탭 올리기 카테고리의 마지막 프레임 위로 점을 찍어
@@ -1111,9 +1104,6 @@ const AssetDB = (() => {
   // IDLE_GRID_DIRS/buildIdleFrameDataUrls 참고). jisu가 비어있으면 캐스팅
   // 1번 프레임을 그대로 재사용하던 예전 idle 동작으로 폴백한다(play/index.html).
   // youngwoo는 NPC용이라 항상 down(정면) 프레임만 쓴다.
-  // youngwooNpcPos — 영우 NPC가 서 있는 위치, 배경화면(backgroundAssetId)
-  // 원본 크기 기준 0~1 정규화 좌표("영역 설정" 탭 다각형 점과 같은 좌표계).
-  // null이면 배경이 있어도 NPC를 그리지 않는다(위치 미지정).
   // motionPlaybackMs — 이동(위/아래/왼쪽/오른쪽) 각 방향별 걷기 프레임 전환
   // 속도(ms), { up, down, left, right }. walkMotion.animFrameMs(전체 방향
   // 공통 기본값)를 방향별로 재정의한다 — 값이 없는 방향은 여전히
@@ -1122,13 +1112,55 @@ const AssetDB = (() => {
   // 크롭 대신 개별 업로드한 사진(배경 자동 제거)으로 대체, { [dir]:
   // { [frameIndex]: assetId } }. 값이 있는 칸은 motionFrameOverrides(크롭
   // 좌표 보정)보다 우선한다.
-  const FISHING_CONFIG_DEFAULT = { barDesign: {}, fishSheetAssetId: null, fishIconOverrides: {}, motionSheetAssetId: null, motionFrameOverrides: { cast: {}, reel: {}, up: {}, down: {}, left: {}, right: {} }, motionRowOverrides: {}, motionFrameImageOverrides: { up: {}, down: {}, left: {}, right: {} }, motionPlaybackMs: { up: 90, down: 90, left: 90, right: 90 }, castingFrameDurations: [], backgroundAssetId: null, castingFrameRodTips: {}, reelFrameRodTips: {}, walkMotion: { stepMs: 200, animFrameMs: 90 }, castPhysics: { gravityMps2: 9.8, vxScale: 1 }, itemPopup: { backgroundAssetId: null, iconPos: null, iconSizePx: 64 }, castGaugeAssetId: null, castGaugeFillRegion: null, fishableAreas: [], blockedAreas: [], interactionAreas: [], dialogueScene: { boxLayer: null, jisooLayer: null, youngwooLayer: null }, heldFishPos: null, characterIdleSheets: { jisu: { assetId: null, overrides: {} }, youngwoo: { assetId: null, overrides: {} } }, youngwooNpcPos: null };
+  //
+  // ===== 화면(screens) — 배경화면 여러 장을 서로 이동 가능한 "화면"들로
+  // 두는 단위(§신규, 영역지정/화면 전환). 각 screen:
+  // { id, name, backgroundAssetId, fishableAreas, blockedAreas,
+  // interactionAreas, moveAreas, youngwooNpcPos }. fishableAreas/
+  // blockedAreas/interactionAreas/moveAreas는 그 화면의 배경화면
+  // (backgroundAssetId) 위에 그리는 다각형 영역들, 각각
+  // [{ id, points: [{x,y}, ...] }] (points는 배경 이미지 원본 크기 기준
+  // 0~1 정규화 좌표, "영역 설정" 탭의 폴리곤 에디터가 채운다).
+  // fishableAreas는 캐스팅해서 낚시할 수 있는 영역, blockedAreas는
+  // 캐릭터가 걸어 들어갈 수 없는 영역, interactionAreas는 상점·대화 등
+  // 게임에 필요한 상호작용 지점(각 항목에 label 필드로 어떤 상호작용인지
+  // 적어둔다), moveAreas는 캐릭터가 걸어 들어가면 다른 화면으로 이동하는
+  // 영역(각 항목에 targetScreenId + entryPoint({x,y}, 도착 화면 배경
+  // 원본 크기 기준 0~1 정규화 좌표)로 어느 화면 어디에서 다시 나타날지
+  // 지정) — 넷 다 화면마다 여러 개를 둘 수 있다. youngwooNpcPos — 영우
+  // NPC가 이 화면에 서 있는 위치, 배경화면 원본 크기 기준 0~1 정규화
+  // 좌표("영역 설정" 탭 다각형 점과 같은 좌표계). null이면 이 화면엔
+  // 영우가 나타나지 않는다.
+  // startScreenId — play/index.html이 처음 로드될 때 캐릭터가 서 있을
+  // 화면의 id. screens가 비어있으면(아직 화면을 하나도 안 만들었으면)
+  // 배경 없는 예전 기본 하늘/바다 그라데이션으로 폴백한다
+  // (play/index.html의 hasWorldBackground).
+  //
+  // 화면 개념이 생기기 전엔 backgroundAssetId/fishableAreas/blockedAreas/
+  // interactionAreas/youngwooNpcPos가 최상위 필드였다 — 아래
+  // getFishingConfig가 읽을 때 screens가 비어있고 이 레거시 필드 중
+  // backgroundAssetId가 남아있으면 화면 하나('screen-1')로 자동
+  // 변환한다. 최상위 필드 자체는 이제 FISHING_CONFIG_DEFAULT에 없지만,
+  // 예전에 저장된 JSON blob엔 여전히 남아있을 수 있어 병합 시 그대로
+  // 딸려온다.
+  const FISHING_CONFIG_DEFAULT = { barDesign: {}, fishSheetAssetId: null, fishIconOverrides: {}, motionSheetAssetId: null, motionFrameOverrides: { cast: {}, reel: {}, up: {}, down: {}, left: {}, right: {} }, motionRowOverrides: {}, motionFrameImageOverrides: { up: {}, down: {}, left: {}, right: {} }, motionPlaybackMs: { up: 90, down: 90, left: 90, right: 90 }, castingFrameDurations: [], castingFrameRodTips: {}, reelFrameRodTips: {}, walkMotion: { stepMs: 200, animFrameMs: 90 }, castPhysics: { gravityMps2: 9.8, vxScale: 1 }, itemPopup: { backgroundAssetId: null, iconPos: null, iconSizePx: 64 }, castGaugeAssetId: null, castGaugeFillRegion: null, screens: [], startScreenId: null, dialogueScene: { boxLayer: null, jisooLayer: null, youngwooLayer: null }, heldFishPos: null, characterIdleSheets: { jisu: { assetId: null, overrides: {} }, youngwoo: { assetId: null, overrides: {} } } };
+
+  function migrateLegacyFishingScreen(cfg) {
+    if ((cfg.screens && cfg.screens.length) || !cfg.backgroundAssetId) return cfg;
+    const screen = {
+      id: 'screen-1', name: '화면 1', backgroundAssetId: cfg.backgroundAssetId,
+      fishableAreas: cfg.fishableAreas || [], blockedAreas: cfg.blockedAreas || [],
+      interactionAreas: cfg.interactionAreas || [], moveAreas: [],
+      youngwooNpcPos: cfg.youngwooNpcPos || null,
+    };
+    return Object.assign({}, cfg, { screens: [screen], startScreenId: 'screen-1' });
+  }
 
   async function getFishingConfig() {
     if (fishingConfigCache.has('config')) return fishingConfigCache.get('config');
     const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${FISHING_CONFIG_PATH}?t=${Date.now()}`;
     try {
-      const cfg = Object.assign({}, FISHING_CONFIG_DEFAULT, (await fetchJsonBlob(url)) || {});
+      const cfg = migrateLegacyFishingScreen(Object.assign({}, FISHING_CONFIG_DEFAULT, (await fetchJsonBlob(url)) || {}));
       fishingConfigCache.set('config', cfg);
       return cfg;
     } catch (e) {
@@ -1138,7 +1170,7 @@ const AssetDB = (() => {
 
   async function setFishingConfig(patch) {
     const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${FISHING_CONFIG_PATH}?t=${Date.now()}`;
-    const current = await readCurrentForWrite(fishingConfigCache, 'config', url, FISHING_CONFIG_DEFAULT);
+    const current = migrateLegacyFishingScreen(await readCurrentForWrite(fishingConfigCache, 'config', url, FISHING_CONFIG_DEFAULT));
     const cfg = Object.assign({}, FISHING_CONFIG_DEFAULT, current, patch);
     const blob = new Blob([JSON.stringify(cfg)], { type: 'application/json' });
     const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${DEV_ASSETS_BUCKET}/${FISHING_CONFIG_PATH}`, {
