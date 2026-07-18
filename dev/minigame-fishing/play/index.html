@@ -49,7 +49,6 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .topbar{position:absolute;top:0;left:0;right:0;z-index:6;padding:calc(14px + env(safe-area-inset-top,0)) 16px 10px;display:flex;align-items:center;justify-content:space-between;pointer-events:none}
 .back-chip{pointer-events:auto;flex-shrink:0;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.4);border:1px solid rgba(10,40,50,.25);color:#0A2A3A;font-size:18px;font-weight:700;line-height:1;text-decoration:none}
 .back-chip:active{transform:scale(.92)}
-.count-chip{pointer-events:none;font-family:var(--mono);font-size:11.5px;font-weight:700;color:#0A2A3A;background:rgba(255,255,255,.45);border-radius:14px;padding:6px 12px}
 
 .stage{position:absolute;inset:0;z-index:1}
 
@@ -215,8 +214,6 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .layout-edit-panel button{margin-top:2px;padding:8px;border-radius:10px;border:none;background:rgba(232,116,30,.9);color:#fff;font-weight:700;font-size:13px}
 .layout-edit-panel button.secondary{background:rgba(255,255,255,.14)}
 .layout-edit-panel button.active{background:var(--cyan);color:#04181c}
-.layout-edit-hint{position:absolute;left:0;right:0;bottom:calc(18px + env(safe-area-inset-bottom,0));z-index:5;text-align:center;font-family:var(--mono);font-size:11px;color:rgba(255,255,255,.85);text-shadow:0 1px 4px rgba(0,0,0,.5);pointer-events:none}
-.layout-edit-hint.hidden{display:none}
 
 /* ===== 배치 코드 보기 — 편집 패널의 "코드보기" 버튼으로 연다. 지금
    layoutPrefs 값을 그대로 JS 리터럴로 보여줘서, 마음에 드는 배치를
@@ -390,7 +387,6 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
   <div class="preload-overlay" id="preloadOverlay"></div>
   <div class="topbar">
     <a class="back-chip" id="backChip" href="/dev/minigame-fishing/" aria-label="뒤로">‹</a>
-    <div class="count-chip" id="countChip">0마리</div>
   </div>
 
   <div class="bg-layer" id="bgLayer"></div>
@@ -463,7 +459,6 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
     <button type="button" class="secondary" id="layoutCodeBtn">📋 코드보기</button>
     <button type="button" id="layoutEditDoneBtn">완료</button>
   </div>
-  <div class="layout-edit-hint hidden" id="layoutEditHint">조이스틱·낚시 버튼·캐스팅 게이지(위치 수정하기 버튼으로 표시)를 드래그해서 위치를 옮길 수 있어요</div>
   <div class="layout-drag-ghost hidden" id="layoutDragGhost"></div>
   <div class="layout-code-overlay hidden" id="layoutCodeOverlay">
     <div class="layout-code-sheet">
@@ -655,7 +650,6 @@ const el = {
   layoutBgZoomRow: document.getElementById('layoutBgZoomRow'),
   layoutBgZoom: document.getElementById('layoutBgZoom'),
   layoutEditDoneBtn: document.getElementById('layoutEditDoneBtn'),
-  layoutEditHint: document.getElementById('layoutEditHint'),
   layoutDragGhost: document.getElementById('layoutDragGhost'),
   layoutCastingPosBtn: document.getElementById('layoutCastingPosBtn'),
   layoutFishbarPosBtn: document.getElementById('layoutFishbarPosBtn'),
@@ -665,7 +659,6 @@ const el = {
   layoutCodeCopyBtn: document.getElementById('layoutCodeCopyBtn'),
   layoutCodeCopyStatus: document.getElementById('layoutCodeCopyStatus'),
   layoutCodeCloseBtn: document.getElementById('layoutCodeCloseBtn'),
-  countChip: document.getElementById('countChip'),
   itemPopup: document.getElementById('itemPopup'),
   itemPopupCard: document.getElementById('itemPopupCard'),
   itemPopupIcon: document.getElementById('itemPopupIcon'),
@@ -782,9 +775,7 @@ let moveAreas = []; // 화면 이동 영역들, 각 { id, points, targetScreenId
 let screensList = [];
 let currentScreenId = null;
 let screenTransitioning = false; // true인 동안은 새 이동 트리거/조이스틱 입력을 막는다(triggerScreenTransition)
-let caughtCount = 0;
-// 아직 영우에게 안 판 물고기 — fishId(문자열) -> 마리 수. caughtCount(상단
-// 칩, 이번 판 누적 총 마릿수 표시)와 달리 팔면 비워진다(confirmSellFish).
+// 아직 영우에게 안 판 물고기 — fishId(문자열) -> 마리 수. 팔면 비워진다(confirmSellFish).
 let caughtFishTally = {};
 let gameState = 'idle'; // idle | charging | casting | waiting | bite | caught | catching | reeling | popup | dialogue | npcMenu | sellFish
 let biteTimer = null;
@@ -2480,8 +2471,6 @@ async function playReelThenResult() {
   // (reelLineSlack(4)===0)이 포물선으로 날아가는 물고기를 따라가면 부자연
   // 스러워 보였다(요청).
   el.castSvg.classList.add('hidden');
-  caughtCount++;
-  el.countChip.textContent = caughtCount + '마리';
   const fishCaught = pendingCatchFish;
   caughtFishTally[fishCaught.id] = (caughtFishTally[fishCaught.id] || 0) + 1;
   // 아이템창 내용(populateItemPopup)은 startCatching 때 이미 화면 밖에서
@@ -3047,7 +3036,6 @@ el.layoutEditBtn.addEventListener('pointerdown', (e) => {
   layoutEditMode = !layoutEditMode;
   el.layoutEditBtn.classList.toggle('active', layoutEditMode);
   el.layoutEditPanel.classList.toggle('hidden', !layoutEditMode);
-  el.layoutEditHint.classList.toggle('hidden', !layoutEditMode);
   if (layoutEditMode) {
     el.layoutJoySize.value = layoutPrefs.joystick.size;
     el.layoutFishSize.value = layoutPrefs.fishBtn.size;
@@ -3170,7 +3158,6 @@ el.layoutEditDoneBtn.addEventListener('click', (e) => {
   layoutEditMode = false;
   el.layoutEditBtn.classList.remove('active');
   el.layoutEditPanel.classList.add('hidden');
-  el.layoutEditHint.classList.add('hidden');
   castingPosPreview = false;
   el.layoutCastingPosBtn.classList.remove('active');
   if (gameState !== 'charging') el.castPowerWrap.classList.add('hidden');
