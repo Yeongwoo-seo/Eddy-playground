@@ -165,6 +165,8 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .rodtip-stage{position:relative;width:100%;max-width:280px;aspect-ratio:1/1;margin:0 auto;border-radius:12px;overflow:hidden;background:#000;touch-action:none;cursor:crosshair}
 .rodtip-stage img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;image-rendering:pixelated;pointer-events:none;-webkit-user-drag:none;-webkit-user-select:none;user-select:none}
 .rodtip-marker{position:absolute;width:18px;height:18px;margin-left:-9px;margin-top:-9px;border-radius:50%;background:rgba(89,184,200,.35);border:2px solid var(--cyan);pointer-events:none}
+.status-layout-marker{width:auto;height:auto;margin:0;transform:translate(-50%,-50%);border-radius:10px;padding:3px 8px;font-family:var(--mono);font-size:10px;font-weight:700;color:#04181c;background:rgba(89,184,200,.9);white-space:nowrap;left:50%;top:50%}
+.status-layout-marker.selected{background:var(--amber);border-color:var(--amber);color:#1a1206}
 
 /* ===== 추 이동 모션 테스트 — 캐스팅 탭의 미니 미리보기 스테이지. 낚싯대
    끝(origin, 고정 마커)에서 추(dot)가 v_x 슬라이더 값으로 포물선을 그리며
@@ -182,6 +184,7 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .frame-slot:active .frame-actions{opacity:1}
 .frame-mini-btn{width:20px;height:20px;border-radius:50%;border:none;background:rgba(255,255,255,.16);color:#fff;font-size:11px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .frame-mini-btn.danger{background:var(--signal-red)}
+.frame-slot[data-digit]{cursor:pointer}
 /* 모션 프레임 그리드 칸의 지우개 배지 — frame-mini-btn과 달리 항상 보인다
    (지우기 기능 자체가 눈에 안 띄면 못 찾을까봐). 지우기 보정이 저장돼
    있으면(marked) 시안색으로 표시해서 "이 프레임은 손댔다"를 알려준다. */
@@ -474,6 +477,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     <button class="tab-btn" data-tab="area">영역 설정</button>
     <button class="tab-btn" data-tab="dialogue">대화</button>
     <button class="tab-btn" data-tab="character">캐릭터</button>
+    <button class="tab-btn" data-tab="status">상태창</button>
   </div>
 
   <!-- ===== 모션 — 캐스팅·올리기·이동(4방향) 6가지 동작의 "프레임"을
@@ -911,6 +915,68 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     </div>
   </div>
 
+  <!-- ===== 상태창 — 플레이 화면 위쪽에 뜨는 상태 HUD(요일·날짜/시간/포인트/
+       화살표). 프레임·화살표는 castGaugeImageSlot과 같은 단일 슬롯 업로드
+       패턴(renderCastGaugeImageSlot 참고), 숫자글꼴은 0~9 각 자리를 같은
+       패턴으로 낱개 업로드한다. 레이아웃(요일·날짜/시간/포인트/화살표
+       밑부분 위치)은 heldFishPos 피커(단일 포인트 드래그)를 네 개로 늘린
+       버전 — statusLayoutPills로 지금 옮길 항목을 고르고 statusLayoutStage를
+       탭/드래그하면 그 항목의 마커만 움직인다. ===== -->
+  <div class="tab-panel hidden" id="panelStatus">
+    <div class="option-group">
+      <div class="option-label">상태창 프레임</div>
+      <div class="option-desc">상태창 배경 이미지를 올리세요. 요일·날짜, 시간, 포인트, 화살표는 이 이미지 위에 배치돼요.</div>
+      <div class="frame-strip" id="statusFrameSlot"></div>
+      <button type="button" class="frame-add-btn" id="statusFrameAddBtn">+ 상태창 이미지 업로드</button>
+      <input type="file" id="statusFrameFileInput" accept="image/*">
+    </div>
+
+    <div class="option-group">
+      <div class="option-label">화살표</div>
+      <div class="option-desc">하루(0~24시)를 반원(180°~360°)에 선형으로 매핑해 회전하는 화살표예요. 자정(0시)이면 180°(왼쪽 수평), 정오(12시)면 270°(위쪽), 다음날 자정(24시)이면 360°(오른쪽 수평)를 가리켜요. 이미지의 아래쪽 중앙이 회전축이에요.</div>
+      <div class="frame-strip" id="statusArrowSlot"></div>
+      <button type="button" class="frame-add-btn" id="statusArrowAddBtn">+ 화살표 이미지 업로드</button>
+      <input type="file" id="statusArrowFileInput" accept="image/*">
+    </div>
+
+    <div class="option-group">
+      <div class="option-label">숫자글꼴 (0~9)</div>
+      <div class="option-desc">포인트 숫자를 그릴 때 쓸 0~9 숫자 이미지를 자리마다 낱개로 올리세요. 탭하면 그 자리에 이미지를 올리거나 바꿀 수 있어요.</div>
+      <div class="frame-strip" id="statusNumberFontSlots"></div>
+      <input type="file" id="statusNumberFontFileInput" accept="image/*">
+      <div class="crop-size-row">
+        <div class="option-label">숫자 폭</div>
+        <div class="crop-size-controls">
+          <input type="range" id="statusNumberWidthInput" min="4" max="60" step="1" value="16">
+          <input type="number" id="statusNumberWidthNumberInput" min="4" max="60" step="1" value="16">
+          <span class="crop-size-unit">px</span>
+        </div>
+      </div>
+      <div class="crop-size-row">
+        <div class="option-label">숫자 높이</div>
+        <div class="crop-size-controls">
+          <input type="range" id="statusNumberHeightInput" min="4" max="80" step="1" value="22">
+          <input type="number" id="statusNumberHeightNumberInput" min="4" max="80" step="1" value="22">
+          <span class="crop-size-unit">px</span>
+        </div>
+      </div>
+      <div class="crop-size-row">
+        <div class="option-label">숫자 간격</div>
+        <div class="crop-size-controls">
+          <input type="range" id="statusNumberGapInput" min="0" max="20" step="1" value="2">
+          <input type="number" id="statusNumberGapNumberInput" min="0" max="20" step="1" value="2">
+          <span class="crop-size-unit">px</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="option-group">
+      <div class="option-label">레이아웃</div>
+      <div class="option-desc">상태창 이미지 위에서 요일·날짜, 시간, 포인트, 화살표 밑부분(회전축)의 위치를 지정하세요. 상태창 이미지를 먼저 올려야 열 수 있어요.</div>
+      <button type="button" class="fish-sheet-btn" id="statusLayoutEditBtn" style="width:100%" disabled>🧭 레이아웃 편집</button>
+    </div>
+  </div>
+
   <div class="save-note" id="saveNote">저장됐어요</div>
   <a class="test-btn" id="testBtn" href="/dev/minigame-fishing/play/">테스트하기</a>
 </div>
@@ -1118,6 +1184,31 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     <div class="crop-actions">
       <button type="button" class="crop-btn secondary" id="youngwooPosCancelBtn">취소</button>
       <button type="button" class="crop-btn primary" id="youngwooPosConfirmBtn">적용</button>
+    </div>
+  </div>
+</div>
+
+<!-- 상태창 레이아웃 — heldFishPos류 단일 포인트 피커를 네 개로 늘린 버전.
+     statusLayoutPills(option-pill 재사용)로 지금 옮길 항목(요일·날짜/시간/
+     포인트/화살표 밑부분)을 고르면 statusLayoutStage 탭/드래그가 그 항목의
+     마커만 옮긴다 — 네 마커를 한 번에 다 보여줘야 서로 겹치지 않게 배치하기
+     쉬워서, rodtip-marker에 라벨 텍스트를 더한 status-layout-marker로
+     구분한다(openStatusLayoutEditor 참고). -->
+<div class="crop-overlay hidden" id="statusLayoutOverlay">
+  <div class="crop-sheet">
+    <div class="crop-title">상태창 레이아웃</div>
+    <div class="crop-desc">옮길 항목을 고르고, 그림 위를 탭하거나 드래그해서 위치를 옮기세요.</div>
+    <div class="option-pills" id="statusLayoutPills"></div>
+    <div class="heldfish-stage" id="statusLayoutStage">
+      <img id="statusLayoutImg" alt="">
+      <div class="rodtip-marker status-layout-marker" id="statusLayoutMarkerDate">요일·날짜</div>
+      <div class="rodtip-marker status-layout-marker" id="statusLayoutMarkerTime">시간</div>
+      <div class="rodtip-marker status-layout-marker" id="statusLayoutMarkerPoints">포인트</div>
+      <div class="rodtip-marker status-layout-marker" id="statusLayoutMarkerArrow">화살표</div>
+    </div>
+    <div class="crop-actions">
+      <button type="button" class="crop-btn secondary" id="statusLayoutCancelBtn">취소</button>
+      <button type="button" class="crop-btn primary" id="statusLayoutConfirmBtn">적용</button>
     </div>
   </div>
 </div>
@@ -1399,6 +1490,32 @@ const el = {
   moveAreaMarker: document.getElementById('moveAreaMarker'),
   moveAreaCancelBtn: document.getElementById('moveAreaCancelBtn'),
   moveAreaConfirmBtn: document.getElementById('moveAreaConfirmBtn'),
+  panelStatus: document.getElementById('panelStatus'),
+  statusFrameSlot: document.getElementById('statusFrameSlot'),
+  statusFrameAddBtn: document.getElementById('statusFrameAddBtn'),
+  statusFrameFileInput: document.getElementById('statusFrameFileInput'),
+  statusArrowSlot: document.getElementById('statusArrowSlot'),
+  statusArrowAddBtn: document.getElementById('statusArrowAddBtn'),
+  statusArrowFileInput: document.getElementById('statusArrowFileInput'),
+  statusNumberFontSlots: document.getElementById('statusNumberFontSlots'),
+  statusNumberFontFileInput: document.getElementById('statusNumberFontFileInput'),
+  statusNumberWidthInput: document.getElementById('statusNumberWidthInput'),
+  statusNumberWidthNumberInput: document.getElementById('statusNumberWidthNumberInput'),
+  statusNumberHeightInput: document.getElementById('statusNumberHeightInput'),
+  statusNumberHeightNumberInput: document.getElementById('statusNumberHeightNumberInput'),
+  statusNumberGapInput: document.getElementById('statusNumberGapInput'),
+  statusNumberGapNumberInput: document.getElementById('statusNumberGapNumberInput'),
+  statusLayoutEditBtn: document.getElementById('statusLayoutEditBtn'),
+  statusLayoutOverlay: document.getElementById('statusLayoutOverlay'),
+  statusLayoutPills: document.getElementById('statusLayoutPills'),
+  statusLayoutStage: document.getElementById('statusLayoutStage'),
+  statusLayoutImg: document.getElementById('statusLayoutImg'),
+  statusLayoutMarkerDate: document.getElementById('statusLayoutMarkerDate'),
+  statusLayoutMarkerTime: document.getElementById('statusLayoutMarkerTime'),
+  statusLayoutMarkerPoints: document.getElementById('statusLayoutMarkerPoints'),
+  statusLayoutMarkerArrow: document.getElementById('statusLayoutMarkerArrow'),
+  statusLayoutCancelBtn: document.getElementById('statusLayoutCancelBtn'),
+  statusLayoutConfirmBtn: document.getElementById('statusLayoutConfirmBtn'),
 };
 
 // 카테고리 6개(motion-category-title/motionElKey는 이 파일 아래쪽에서
@@ -1412,7 +1529,7 @@ MOTION_CATEGORIES.forEach((category) => {
   });
 });
 
-const PANELS = { motion: el.panelMotion, area: el.panelArea, dialogue: el.panelDialogue, character: el.panelCharacter };
+const PANELS = { motion: el.panelMotion, area: el.panelArea, dialogue: el.panelDialogue, character: el.panelCharacter, status: el.panelStatus };
 el.tabsRow.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => selectTab(btn.dataset.tab));
 });
@@ -4694,6 +4811,272 @@ el.youngwooPosConfirmBtn.addEventListener('click', async () => {
   el.youngwooPosOverlay.classList.add('hidden');
 });
 
+/* ===== 상태창 — 프레임/화살표는 castGaugeImageSlot(renderCastGaugeImageSlot
+   참고)과 같은 단일 슬롯 업로드 패턴이고, 숫자글꼴은 0~9 자리마다 그
+   패턴을 반복한다. 저장 형태는 fishingConfig.statusWindow 한 덩어리인데
+   setFishingConfig가 최상위 키만 얕게(Object.assign) 병합하기 때문에,
+   그 안의 필드 하나만 바꿀 때도 patchStatusWindow가 기존 statusWindow
+   전체를 들고 와 합친 뒤 통째로 다시 저장한다(heldFishPos처럼 필드가
+   하나뿐인 값과 달리 하위 필드가 여럿이라 이 헬퍼가 필요하다). */
+const DEFAULT_STATUS_WINDOW = {
+  frameAssetId: null,
+  arrowAssetId: null,
+  numberFontAssetIds: {},
+  numberFontAdjust: { width: 16, height: 22, gap: 2 },
+  datePos: null,
+  timePos: null,
+  pointsPos: null,
+  arrowPivot: null,
+};
+const STATUS_DIGITS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+function currentStatusWindow() {
+  const sw = fishingConfig.statusWindow || {};
+  return Object.assign({}, DEFAULT_STATUS_WINDOW, sw, {
+    numberFontAssetIds: Object.assign({}, sw.numberFontAssetIds || {}),
+    numberFontAdjust: Object.assign({}, DEFAULT_STATUS_WINDOW.numberFontAdjust, sw.numberFontAdjust || {}),
+  });
+}
+async function patchStatusWindow(partial) {
+  const next = Object.assign({}, currentStatusWindow(), partial);
+  fishingConfig = await AssetDB.setFishingConfig({ statusWindow: next });
+  showSaveNote();
+  return fishingConfig.statusWindow;
+}
+
+// 상태창 프레임 — 단일 슬롯 업로드.
+async function renderStatusFrameSlot() {
+  const sw = currentStatusWindow();
+  el.statusFrameSlot.innerHTML = '';
+  if (sw.frameAssetId) {
+    el.statusFrameAddBtn.classList.add('hidden');
+    const asset = await AssetDB.getAsset(sw.frameAssetId).catch(() => null);
+    const slot = document.createElement('div');
+    slot.className = 'frame-slot';
+    slot.innerHTML = `${asset ? `<img src="${asset.dataUrl}" alt="">` : ''}
+      <div class="frame-actions"><button type="button" class="frame-mini-btn danger" data-act="del">✕</button></div>`;
+    slot.querySelector('[data-act=del]').addEventListener('click', async () => {
+      await patchStatusWindow({ frameAssetId: null });
+      renderStatusFrameSlot();
+    });
+    el.statusFrameSlot.appendChild(slot);
+  } else {
+    el.statusFrameAddBtn.classList.remove('hidden');
+  }
+  updateStatusLayoutBtnState();
+}
+el.statusFrameAddBtn.addEventListener('click', () => el.statusFrameFileInput.click());
+el.statusFrameFileInput.addEventListener('change', async () => {
+  const file = el.statusFrameFileInput.files[0];
+  el.statusFrameFileInput.value = '';
+  if (!file) return;
+  el.statusFrameAddBtn.disabled = true;
+  try {
+    const asset = await AssetDB.addAsset({ type: 'fishing-status-frame', name: file.name, blob: file });
+    await patchStatusWindow({ frameAssetId: asset.id });
+    renderStatusFrameSlot();
+  } finally {
+    el.statusFrameAddBtn.disabled = false;
+  }
+});
+
+// 화살표 — 상태창 프레임과 같은 단일 슬롯 업로드 패턴. 하루(0~24시)를
+// 180°~360°로 매핑해 회전하는 건 play/index.html 쪽 렌더링 몫이라 여기선
+// 이미지만 관리한다.
+async function renderStatusArrowSlot() {
+  const sw = currentStatusWindow();
+  el.statusArrowSlot.innerHTML = '';
+  if (sw.arrowAssetId) {
+    el.statusArrowAddBtn.classList.add('hidden');
+    const asset = await AssetDB.getAsset(sw.arrowAssetId).catch(() => null);
+    const slot = document.createElement('div');
+    slot.className = 'frame-slot';
+    slot.innerHTML = `${asset ? `<img src="${asset.dataUrl}" alt="">` : ''}
+      <div class="frame-actions"><button type="button" class="frame-mini-btn danger" data-act="del">✕</button></div>`;
+    slot.querySelector('[data-act=del]').addEventListener('click', async () => {
+      await patchStatusWindow({ arrowAssetId: null });
+      renderStatusArrowSlot();
+    });
+    el.statusArrowSlot.appendChild(slot);
+  } else {
+    el.statusArrowAddBtn.classList.remove('hidden');
+  }
+}
+el.statusArrowAddBtn.addEventListener('click', () => el.statusArrowFileInput.click());
+el.statusArrowFileInput.addEventListener('change', async () => {
+  const file = el.statusArrowFileInput.files[0];
+  el.statusArrowFileInput.value = '';
+  if (!file) return;
+  el.statusArrowAddBtn.disabled = true;
+  try {
+    const asset = await AssetDB.addAsset({ type: 'fishing-status-arrow', name: file.name, blob: file });
+    await patchStatusWindow({ arrowAssetId: asset.id });
+    renderStatusArrowSlot();
+  } finally {
+    el.statusArrowAddBtn.disabled = false;
+  }
+});
+
+// 숫자글꼴 — 0~9 슬롯 10개, 각자 위와 같은 단일 업로드 패턴이지만 파일
+// 입력을 하나 공유한다 — statusNumberFontUploadDigit로 지금 누른 자리를
+// 기억해뒀다가 change에서 그 자리에 저장한다.
+let statusNumberFontUploadDigit = null;
+function renderStatusNumberFontSlots() {
+  const sw = currentStatusWindow();
+  el.statusNumberFontSlots.innerHTML = '';
+  STATUS_DIGITS.forEach(digit => {
+    const assetId = sw.numberFontAssetIds[digit];
+    const slot = document.createElement('div');
+    slot.className = 'frame-slot';
+    slot.dataset.digit = digit;
+    slot.innerHTML = `<span class="frame-index">${digit}</span>
+      <div class="frame-actions">${assetId ? '<button type="button" class="frame-mini-btn danger" data-act="del">✕</button>' : ''}</div>`;
+    slot.addEventListener('click', (e) => {
+      if (e.target.closest('[data-act=del]')) return;
+      statusNumberFontUploadDigit = digit;
+      el.statusNumberFontFileInput.click();
+    });
+    const delBtn = slot.querySelector('[data-act=del]');
+    if (delBtn) {
+      delBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const next = Object.assign({}, sw.numberFontAssetIds);
+        delete next[digit];
+        await patchStatusWindow({ numberFontAssetIds: next });
+        renderStatusNumberFontSlots();
+      });
+    }
+    el.statusNumberFontSlots.appendChild(slot);
+    if (assetId) {
+      AssetDB.getAsset(assetId).then(asset => {
+        if (!asset) return;
+        const img = document.createElement('img');
+        img.src = asset.dataUrl;
+        img.alt = digit;
+        slot.insertBefore(img, slot.firstChild);
+      }).catch(() => {});
+    }
+  });
+}
+el.statusNumberFontFileInput.addEventListener('change', async () => {
+  const file = el.statusNumberFontFileInput.files[0];
+  el.statusNumberFontFileInput.value = '';
+  const digit = statusNumberFontUploadDigit;
+  statusNumberFontUploadDigit = null;
+  if (!file || digit == null) return;
+  const asset = await AssetDB.addAsset({ type: 'fishing-status-digit', name: file.name, blob: file });
+  const sw = currentStatusWindow();
+  const next = Object.assign({}, sw.numberFontAssetIds, { [digit]: asset.id });
+  await patchStatusWindow({ numberFontAssetIds: next });
+  renderStatusNumberFontSlots();
+});
+
+// 숫자 상세조정(폭/높이/간격) — 슬라이더/숫자 입력 쌍(motionRowHeightInput류와
+// 같은 패턴).
+function bindStatusNumberAdjustInput(rangeEl, numberEl, key) {
+  const commit = async (value) => {
+    rangeEl.value = value;
+    numberEl.value = value;
+    const sw = currentStatusWindow();
+    const next = Object.assign({}, sw.numberFontAdjust, { [key]: value });
+    await patchStatusWindow({ numberFontAdjust: next });
+  };
+  rangeEl.addEventListener('input', () => commit(Number(rangeEl.value)));
+  numberEl.addEventListener('change', () => commit(Number(numberEl.value)));
+}
+bindStatusNumberAdjustInput(el.statusNumberWidthInput, el.statusNumberWidthNumberInput, 'width');
+bindStatusNumberAdjustInput(el.statusNumberHeightInput, el.statusNumberHeightNumberInput, 'height');
+bindStatusNumberAdjustInput(el.statusNumberGapInput, el.statusNumberGapNumberInput, 'gap');
+function renderStatusNumberAdjustInputs() {
+  const adjust = currentStatusWindow().numberFontAdjust;
+  el.statusNumberWidthInput.value = adjust.width;
+  el.statusNumberWidthNumberInput.value = adjust.width;
+  el.statusNumberHeightInput.value = adjust.height;
+  el.statusNumberHeightNumberInput.value = adjust.height;
+  el.statusNumberGapInput.value = adjust.gap;
+  el.statusNumberGapNumberInput.value = adjust.gap;
+}
+
+/* ===== 상태창 레이아웃 — heldFishPos류 단일 포인트 드래그 패턴을 네
+   항목(요일·날짜/시간/포인트/화살표 밑부분)으로 늘렸다. statusLayoutPills로
+   지금 옮길 항목을 고르면(기본 요일·날짜) statusLayoutStage 탭/드래그가
+   그 항목의 좌표만 갱신한다 — 나머지 세 마커도 화면에 계속 보이지만
+   rodtip-marker가 pointer-events:none이라 드래그에 끼어들지 않는다. */
+const STATUS_LAYOUT_ITEMS = [
+  { id: 'date', label: '요일·날짜', markerKey: 'statusLayoutMarkerDate', configKey: 'datePos', defaultPos: { x: 0.28, y: 0.3 } },
+  { id: 'time', label: '시간', markerKey: 'statusLayoutMarkerTime', configKey: 'timePos', defaultPos: { x: 0.72, y: 0.3 } },
+  { id: 'points', label: '포인트', markerKey: 'statusLayoutMarkerPoints', configKey: 'pointsPos', defaultPos: { x: 0.5, y: 0.6 } },
+  { id: 'arrow', label: '화살표 밑부분', markerKey: 'statusLayoutMarkerArrow', configKey: 'arrowPivot', defaultPos: { x: 0.5, y: 0.85 } },
+];
+let statusLayoutDraft = {};
+let statusLayoutSelected = 'date';
+let statusLayoutDragging = false;
+function updateStatusLayoutBtnState() {
+  el.statusLayoutEditBtn.disabled = !currentStatusWindow().frameAssetId;
+}
+function renderStatusLayoutPills() {
+  el.statusLayoutPills.innerHTML = STATUS_LAYOUT_ITEMS.map(item =>
+    `<button type="button" class="option-pill${item.id === statusLayoutSelected ? ' active' : ''}" data-id="${item.id}">${item.label}</button>`
+  ).join('');
+  el.statusLayoutPills.querySelectorAll('.option-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      statusLayoutSelected = btn.dataset.id;
+      renderStatusLayoutPills();
+      renderStatusLayoutMarkers();
+    });
+  });
+}
+function renderStatusLayoutMarkers() {
+  STATUS_LAYOUT_ITEMS.forEach(item => {
+    const pos = statusLayoutDraft[item.configKey] || item.defaultPos;
+    const markerEl = el[item.markerKey];
+    markerEl.style.left = (pos.x * 100) + '%';
+    markerEl.style.top = (pos.y * 100) + '%';
+    markerEl.classList.toggle('selected', item.id === statusLayoutSelected);
+  });
+}
+async function openStatusLayoutEditor() {
+  const sw = currentStatusWindow();
+  if (!sw.frameAssetId) return;
+  statusLayoutDraft = { datePos: sw.datePos, timePos: sw.timePos, pointsPos: sw.pointsPos, arrowPivot: sw.arrowPivot };
+  statusLayoutSelected = 'date';
+  const asset = await AssetDB.getAsset(sw.frameAssetId).catch(() => null);
+  el.statusLayoutImg.src = asset ? asset.dataUrl : '';
+  const dims = asset ? await new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+    img.onerror = () => resolve(null);
+    img.src = asset.dataUrl;
+  }) : null;
+  el.statusLayoutStage.style.setProperty('--heldfish-ar', dims ? (dims.w + '/' + dims.h) : '2/1');
+  renderStatusLayoutPills();
+  renderStatusLayoutMarkers();
+  el.statusLayoutOverlay.classList.remove('hidden');
+}
+function updateStatusLayoutFromEvent(e) {
+  const item = STATUS_LAYOUT_ITEMS.find(i => i.id === statusLayoutSelected);
+  if (!item) return;
+  const rect = el.statusLayoutStage.getBoundingClientRect();
+  statusLayoutDraft[item.configKey] = {
+    x: clamp01((e.clientX - rect.left) / rect.width),
+    y: clamp01((e.clientY - rect.top) / rect.height),
+  };
+  renderStatusLayoutMarkers();
+}
+el.statusLayoutEditBtn.addEventListener('click', openStatusLayoutEditor);
+el.statusLayoutStage.addEventListener('pointerdown', (e) => { statusLayoutDragging = true; updateStatusLayoutFromEvent(e); });
+window.addEventListener('pointermove', (e) => { if (statusLayoutDragging) updateStatusLayoutFromEvent(e); });
+window.addEventListener('pointerup', () => { statusLayoutDragging = false; });
+el.statusLayoutCancelBtn.addEventListener('click', () => el.statusLayoutOverlay.classList.add('hidden'));
+el.statusLayoutConfirmBtn.addEventListener('click', async () => {
+  await patchStatusWindow({
+    datePos: statusLayoutDraft.datePos,
+    timePos: statusLayoutDraft.timePos,
+    pointsPos: statusLayoutDraft.pointsPos,
+    arrowPivot: statusLayoutDraft.arrowPivot,
+  });
+  el.statusLayoutOverlay.classList.add('hidden');
+});
+
 let saveNoteTimer = null;
 function showSaveNote() {
   el.saveNote.classList.add('show');
@@ -4706,6 +5089,10 @@ async function init() {
   fishingConfig = await AssetDB.getFishingConfig().catch(() => fishingConfig);
   renderScreenManager();
   renderCastGaugeImageSlot();
+  renderStatusFrameSlot();
+  renderStatusArrowSlot();
+  renderStatusNumberFontSlots();
+  renderStatusNumberAdjustInputs();
   renderCastPhysicsControls();
   renderReelMotionControls();
   renderMotionTab();
