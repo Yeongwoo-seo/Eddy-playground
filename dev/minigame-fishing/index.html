@@ -356,12 +356,16 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .move-dpad-right{grid-column:3;grid-row:2}
 .move-dpad-down{grid-column:2;grid-row:3}
 
-/* ===== 영역 설정 탭 — 배경 위에 다각형(낚시가능/이동불가/상호작용) 영역을
-   그리는 에디터. 스테이지 종횡비를 배경 이미지 자연 크기에 맞춰(--area-ar,
-   아이템창 --item-ar과 같은 패턴) object-fit:fill로 꽉 채우면, 탭 좌표를
-   0~1로 바꿀 때 letterbox(여백) 보정이 필요 없다. SVG는 viewBox="0 0 100 100"
-   퍼센트 좌표계라 저장된 정규화 좌표(0~1)에 그냥 100을 곱해 넣으면 된다. */
+/* ===== 영역 설정 탭 — 배경 위에 사각형(낚시가능/이동불가/상호작용/이동)
+   영역을 그리는 에디터. 실제로 그리는 곳은 전체화면 오버레이
+   (area-fs-overlay, §신규)고, 이 area-stage는 지금 뭐가 그려져 있는지
+   보여주기만 하는 읽기 전용 미리보기다(area-stage--preview). 스테이지
+   종횡비를 배경 이미지 자연 크기에 맞춰(--area-ar, 아이템창 --item-ar과
+   같은 패턴) object-fit:fill로 꽉 채우면, 탭 좌표를 0~1로 바꿀 때
+   letterbox(여백) 보정이 필요 없다. SVG는 viewBox="0 0 100 100" 퍼센트
+   좌표계라 저장된 정규화 좌표(0~1)에 그냥 100을 곱해 넣으면 된다. */
 .area-stage{position:relative;width:100%;max-width:400px;aspect-ratio:var(--area-ar,3/4);margin:0 auto 10px;background:#000;border-radius:12px;overflow:hidden;border:1px solid var(--divider);touch-action:none;cursor:crosshair}
+.area-stage--preview{cursor:default;pointer-events:none}
 .area-stage img{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;display:block;pointer-events:none;-webkit-user-select:none;user-select:none;-webkit-user-drag:none}
 .area-bg-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:16px;font-size:12px;color:var(--text-muted);font-family:var(--mono);line-height:1.6}
 .area-svg{position:absolute;inset:0;width:100%;height:100%}
@@ -370,12 +374,6 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .area-saved-polygon.kind-blocked{fill:var(--signal-red);stroke:var(--signal-red)}
 .area-saved-polygon.kind-interaction{fill:var(--amber);stroke:var(--amber)}
 .area-saved-polygon.kind-move{fill:var(--cyan);stroke:var(--cyan)}
-.area-draft-line{fill:rgba(89,184,200,.22);stroke:var(--cyan);stroke-width:.6;stroke-dasharray:1.5 1.2;vector-effect:non-scaling-stroke}
-.area-draft-line.hidden{display:none}
-.area-draft-point{fill:var(--cyan);stroke:#04181c;stroke-width:.4;vector-effect:non-scaling-stroke}
-.area-draft-hint{font-size:12px;color:var(--text-muted);margin-bottom:10px}
-.area-draft-actions{display:flex;gap:8px;margin-bottom:22px;flex-wrap:wrap}
-.area-draft-actions .fish-sheet-btn{flex:1;min-width:calc(33.33% - 6px)}
 .area-row{display:flex;align-items:center;gap:8px;padding:8px 2px;border-bottom:1px solid var(--divider)}
 .area-row:last-child{border-bottom:none}
 .area-row-swatch{width:12px;height:12px;border-radius:3px;flex-shrink:0}
@@ -384,6 +382,34 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .area-row-del{width:26px;height:26px;border-radius:50%;border:none;background:rgba(217,65,65,.16);color:var(--signal-red);font-size:13px;cursor:pointer;flex-shrink:0}
 .area-row-edit{width:26px;height:26px;border-radius:50%;border:none;background:rgba(89,184,200,.16);color:var(--cyan);font-size:12px;cursor:pointer;flex-shrink:0;margin-left:6px}
 .area-empty-note{font-size:12.5px;color:var(--text-muted);padding:8px 2px}
+
+/* ===== 전체화면 영역 지정(areaFsOverlay) =====
+   "🖥 전체화면에서 영역 지정" 버튼을 누르면 뜬다. crop-overlay(바텀시트)와
+   달리 뷰포트를 거의 다 채우는 진짜 전체화면 캔버스다 — 좁은 화면에서
+   사각형을 정밀하게 드래그하려면 탭 안 400px짜리 미리보기보다 훨씬 큰
+   면적이 필요해서. z-index를 crop-overlay(50)보다 낮게(45) 둔 게 핵심 —
+   "이동" 종류 사각형을 다 그리면 도착 화면/지점을 고르는
+   moveAreaOverlay(crop-overlay)가 이 위에 얹혀야 하기 때문이다. 스테이지
+   자체는 기존 area-stage와 똑같은 트릭(aspect-ratio를 배경 이미지와
+   맞춰서 letterbox 보정 없이 탭 좌표를 바로 0~1 비율로 씀)을 쓰되, 가운데
+   정렬 flex 컨테이너 안에서 뷰포트에 맞는 최대 크기로 커진다. */
+.area-fs-overlay{position:fixed;inset:0;z-index:45;background:#000;display:flex;flex-direction:column;touch-action:none}
+.area-fs-overlay.hidden{display:none}
+.area-fs-header{display:flex;align-items:center;gap:10px;padding:calc(12px + env(safe-area-inset-top,0)) 14px 10px;flex-wrap:wrap}
+.area-fs-close{flex-shrink:0;font-family:var(--mono);font-size:12.5px;font-weight:700;color:var(--text-primary);background:var(--surface-2);border:1px solid var(--divider);border-radius:10px;padding:9px 14px;cursor:pointer}
+.area-fs-header .option-pills{flex:1}
+.area-fs-desc{padding:0 14px 8px;font-size:12px;color:var(--text-muted)}
+.area-fs-stage-wrap{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:0 10px}
+/* width/height는 CSS가 아니라 fitAreaFsStage()가 매번 px로 직접 계산해
+   넣는다 — aspect-ratio만으로는 "이 flex item을 가로/세로 둘 다 넘치지
+   않는 한도에서 최대한 키우기"가 안 된다(스테이지의 유일한 자식인 img가
+   absolute라 자기 크기에 기여를 안 해 aspect-ratio의 기준 축 자체가 없어
+   0x0으로 접힘 — 실제로 겪은 버그). */
+.area-fs-stage{position:relative;max-width:100%;max-height:100%;background:#111;border-radius:10px;overflow:hidden;touch-action:none;cursor:crosshair}
+.area-fs-stage img{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;display:block;pointer-events:none;-webkit-user-select:none;user-select:none;-webkit-user-drag:none}
+.area-fs-hint{text-align:center;font-size:12.5px;color:var(--text-muted);padding:10px 14px calc(14px + env(safe-area-inset-bottom,0))}
+.area-draft-rect{fill:rgba(89,184,200,.24);stroke:var(--cyan);stroke-width:.6;stroke-dasharray:1.5 1.2;vector-effect:non-scaling-stroke}
+.area-draft-rect.hidden{display:none}
 
 /* ===== 화면(screens) — 배경화면 여러 장을 서로 이동 가능한 "화면"으로
    두는 단위(§신규, 영역지정/화면 전환). 탭이 아니라 tabsRow 바로 아래
@@ -797,21 +823,18 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
       <div class="option-desc" id="areaKindDesc"></div>
     </div>
     <div class="option-group">
-      <div class="area-stage" id="areaStage">
+      <!-- 여기 있는 area-stage는 이제 보기 전용(미리보기)이다 — 실제로
+           그리는 건 전체화면 오버레이(areaFsOverlay)에서 한다. 그래도
+           지금 화면/영역 종류에 저장된 사각형이 뭐가 있는지 탭 안에서
+           바로 보이면 편해서 그대로 남겨뒀다. -->
+      <div class="area-stage area-stage--preview" id="areaStage">
         <img id="areaBgImg" class="hidden" alt="">
         <div class="area-bg-empty" id="areaBgEmpty">아직 배경화면이 없어요</div>
         <svg class="area-svg" id="areaSvg" viewBox="0 0 100 100" preserveAspectRatio="none">
           <g id="areaSavedPolygons"></g>
-          <polyline class="area-draft-line hidden" id="areaDraftLine"></polyline>
-          <g id="areaDraftPoints"></g>
         </svg>
       </div>
-      <div class="area-draft-hint" id="areaDraftHint">탭해서 꼭짓점을 추가하세요 (3개 이상 찍고 완료)</div>
-      <div class="area-draft-actions">
-        <button type="button" class="fish-sheet-btn" id="areaDraftUndoBtn">↩ 점 취소</button>
-        <button type="button" class="fish-sheet-btn danger" id="areaDraftCancelBtn">✕ 그리기 취소</button>
-        <button type="button" class="fish-sheet-btn" id="areaDraftFinishBtn" disabled>✓ 완료</button>
-      </div>
+      <button type="button" class="fish-sheet-btn" id="areaFsOpenBtn" style="width:100%;margin-top:10px" disabled>🖥 전체화면에서 영역 지정</button>
     </div>
     <div class="option-group">
       <div class="option-label" id="areaListLabel">저장된 영역</div>
@@ -1122,14 +1145,16 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   </div>
 </div>
 
-<!-- 이동 영역 설정 — "영역 설정" 탭에서 영역 종류를 "이동"으로 두고
-     폴리곤을 완료하면 뜬다(openMoveAreaEditor). 도착 화면을 고르면 아래
-     스테이지가 그 화면의 배경화면으로 바뀌고, youngwooPosStage와 같은
-     단일 포인트 드래그 패턴(heldfish-stage/rodtip-marker 재사용)으로
-     도착 지점을 찍는다. 새 영역을 그리는 중이면 areaDraft(그린 폴리곤)를
-     그대로 들고 있다가 "적용"을 눌러야 실제로 저장한다 — 취소하면 폴리곤
-     자체도 버린다(저장된 영역 없이 그리기만 취소한 것처럼). 기존 영역의
-     도착지를 고칠 때는 폴리곤 없이 targetScreenId/entryPoint만 바꾼다. -->
+<!-- 이동 영역 설정 — 전체화면 영역 지정(areaFsOverlay)에서 영역 종류를
+     "이동"으로 두고 사각형을 드래그해서 그리면 그 위에 뜬다
+     (openMoveAreaEditor). 도착 화면을 고르면 아래 스테이지가 그 화면의
+     배경화면으로 바뀌고, youngwooPosStage와 같은 단일 포인트 드래그
+     패턴(heldfish-stage/rodtip-marker 재사용)으로 도착 지점을 찍는다. 새
+     영역을 그리는 중이면 moveAreaDraftPoints(방금 드래그로 그린 사각형
+     네 꼭짓점)를 그대로 들고 있다가 "적용"을 눌러야 실제로 저장한다 —
+     취소하면 그 사각형 자체도 버린다(애초에 저장된 적이 없으므로 그냥
+     버려두면 된다). 기존 영역의 도착지를 고칠 때는 새 사각형 없이
+     targetScreenId/entryPoint만 바꾼다. -->
 <div class="crop-overlay hidden" id="moveAreaOverlay">
   <div class="crop-sheet">
     <div class="crop-title">이동 영역 설정</div>
@@ -1145,6 +1170,31 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
       <button type="button" class="crop-btn primary" id="moveAreaConfirmBtn">적용</button>
     </div>
   </div>
+</div>
+
+<!-- 전체화면 영역 지정 — "영역 설정" 탭의 "🖥 전체화면에서 영역 지정"
+     버튼을 누르면 뜬다(openAreaFullscreen). 화면을 드래그해서 사각형을
+     그리면(pointerdown→move→up) 그 즉시 저장되고(이동 종류는
+     moveAreaOverlay로 이어짐), 오버레이는 닫지 않고 그대로 열어둬서 여러
+     개를 이어서 그릴 수 있다 — ✕ 닫기를 눌러야 나간다. 종류 pills는 탭
+     쪽(areaKindPills)과 상태를 공유한다(renderAreaKindPills가 둘 다 같이
+     그린다). -->
+<div class="area-fs-overlay hidden" id="areaFsOverlay">
+  <div class="area-fs-header">
+    <button type="button" class="area-fs-close" id="areaFsCloseBtn">✕ 닫기</button>
+    <div class="option-pills" id="areaFsKindPills"></div>
+  </div>
+  <div class="area-fs-desc" id="areaFsKindDesc"></div>
+  <div class="area-fs-stage-wrap">
+    <div class="area-fs-stage" id="areaFsStage">
+      <img id="areaFsBgImg" alt="">
+      <svg class="area-svg" id="areaFsSvg" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <g id="areaFsSavedPolygons"></g>
+        <rect class="area-draft-rect hidden" id="areaFsDraftRect"></rect>
+      </svg>
+    </div>
+  </div>
+  <div class="area-fs-hint" id="areaFsHint">화면을 드래그해서 사각형 영역을 그리세요 — 여러 개 이어서 그릴 수 있어요</div>
 </div>
 <script>
 if ('serviceWorker' in navigator) {
@@ -1327,12 +1377,6 @@ const el = {
   areaBgEmpty: document.getElementById('areaBgEmpty'),
   areaSvg: document.getElementById('areaSvg'),
   areaSavedPolygons: document.getElementById('areaSavedPolygons'),
-  areaDraftLine: document.getElementById('areaDraftLine'),
-  areaDraftPoints: document.getElementById('areaDraftPoints'),
-  areaDraftHint: document.getElementById('areaDraftHint'),
-  areaDraftUndoBtn: document.getElementById('areaDraftUndoBtn'),
-  areaDraftCancelBtn: document.getElementById('areaDraftCancelBtn'),
-  areaDraftFinishBtn: document.getElementById('areaDraftFinishBtn'),
   areaListLabel: document.getElementById('areaListLabel'),
   areaList: document.getElementById('areaList'),
   panelDialogue: document.getElementById('panelDialogue'),
@@ -1399,6 +1443,17 @@ const el = {
   moveAreaMarker: document.getElementById('moveAreaMarker'),
   moveAreaCancelBtn: document.getElementById('moveAreaCancelBtn'),
   moveAreaConfirmBtn: document.getElementById('moveAreaConfirmBtn'),
+  areaFsOpenBtn: document.getElementById('areaFsOpenBtn'),
+  areaFsOverlay: document.getElementById('areaFsOverlay'),
+  areaFsCloseBtn: document.getElementById('areaFsCloseBtn'),
+  areaFsKindPills: document.getElementById('areaFsKindPills'),
+  areaFsKindDesc: document.getElementById('areaFsKindDesc'),
+  areaFsStage: document.getElementById('areaFsStage'),
+  areaFsBgImg: document.getElementById('areaFsBgImg'),
+  areaFsSvg: document.getElementById('areaFsSvg'),
+  areaFsSavedPolygons: document.getElementById('areaFsSavedPolygons'),
+  areaFsDraftRect: document.getElementById('areaFsDraftRect'),
+  areaFsHint: document.getElementById('areaFsHint'),
 };
 
 // 카테고리 6개(motion-category-title/motionElKey는 이 파일 아래쪽에서
@@ -3893,41 +3948,53 @@ el.screenBgRemoveBtn.addEventListener('click', async () => {
 });
 
 /* ===== 영역 설정 탭 =====
-   지금 고른 화면(currentScreen())의 배경화면 위에 다각형 영역을 그린다.
+   지금 고른 화면(currentScreen())의 배경화면 위에 사각형 영역을 그린다.
    네 종류(낚시가능/이동불가/상호작용/이동) 각각 여러 개를 둘 수 있고, 그
    화면의 fishableAreas/blockedAreas/interactionAreas/moveAreas 배열에
-   { id, points: [{x,y}](0~1 정규화), label?(상호작용만),
-   targetScreenId?/entryPoint?(이동만) }로 저장된다. 탭 좌표 → 정규화 좌표
-   변환은 el.areaStage가 --area-ar로 배경 이미지와 정확히 같은 종횡비를
-   갖도록 만들어서(아이템창 --item-ar과 같은 패턴) letterbox 보정 없이
-   바로 stage 기준 비율로 계산할 수 있다. */
+   { id, points: [{x,y}](0~1 정규화, 사각형 네 꼭짓점), label?(상호작용만),
+   targetScreenId?/entryPoint?(이동만) }로 저장된다 — points를 그대로 두는
+   이유는 play/index.html의 isPointInPolygon(다각형 판정)이 사각형(꼭짓점
+   4개짜리 다각형)도 그대로 처리하므로 런타임 쪽은 손댈 필요가 없어서다.
+   실제로 그리는 화면은 이 탭이 아니라 전체화면 오버레이(areaFsOverlay,
+   §신규 — 좁은 탭 안 미리보기보다 훨씬 큰 면적에서 드래그해야 사각형을
+   정밀하게 그리기 편하다) — 여기 area-stage는 지금 뭐가 그려져 있는지
+   보여주기만 하는 읽기 전용 미리보기다. 탭 좌표 → 정규화 좌표 변환은
+   스테이지가 --area-ar로 배경 이미지와 정확히 같은 종횡비를 갖도록
+   만들어서(아이템창 --item-ar과 같은 패턴) letterbox 보정 없이 바로
+   stage 기준 비율로 계산할 수 있다(area-fs-stage도 같은 트릭, 다만 뷰포트
+   안에서 가운데 정렬로 최대한 커진다는 점만 다르다). */
 const AREA_KIND_OPTIONS = [
-  { id: 'fishable', label: '낚시가능', configKey: 'fishableAreas', desc: '캐스팅해서 낚시할 수 있는 영역이에요. 여러 개 그릴 수 있어요.' },
-  { id: 'blocked', label: '이동불가', configKey: 'blockedAreas', desc: '캐릭터가 걸어 들어갈 수 없는 영역이에요. 여러 개 그릴 수 있어요.' },
+  { id: 'fishable', label: '낚시가능', configKey: 'fishableAreas', desc: '캐스팅해서 낚시할 수 있는 영역이에요. 사각형을 여러 개 그릴 수 있어요.' },
+  { id: 'blocked', label: '이동불가', configKey: 'blockedAreas', desc: '캐릭터가 걸어 들어갈 수 없는 영역이에요. 사각형을 여러 개 그릴 수 있어요.' },
   { id: 'interaction', label: '상호작용', configKey: 'interactionAreas', desc: '상점·대화 등 게임에 필요한 상호작용 지점이에요. 라벨을 적어 어떤 상호작용인지 구분하세요.' },
-  { id: 'move', label: '이동', configKey: 'moveAreas', desc: '캐릭터가 여기 걸어 들어오면 다른 화면으로 이동해요. 영역을 다 그리면 도착 화면과 도착 지점을 물어봐요.' },
+  { id: 'move', label: '이동', configKey: 'moveAreas', desc: '캐릭터가 여기 걸어 들어오면 다른 화면으로 이동해요. 사각형을 그리면 도착 화면과 도착 지점을 물어봐요.' },
 ];
 let areaKind = 'fishable';
-let areaDraft = [];
 
 function areaKindOption(kind) { return AREA_KIND_OPTIONS.find(o => o.id === kind); }
 function getAreaList(kind) { const screen = currentScreen(); return (screen && screen[areaKindOption(kind).configKey]) || []; }
 const AREA_SWATCH_VAR = { fishable: '--green', blocked: '--signal-red', interaction: '--amber', move: '--cyan' };
 
+// 종류 pills는 탭 안(el.areaKindPills)과 전체화면 오버레이 안
+// (el.areaFsKindPills) 둘 다에 떠 있다 — 어느 쪽을 눌러도 같은 areaKind를
+// 공유하므로 둘 다 같이 다시 그린다(전체화면을 안 열었어도 hidden 상태인
+// DOM을 미리 채워두는 셈이라 비용은 무시할 만하다).
 function renderAreaKindPills() {
-  el.areaKindPills.innerHTML = AREA_KIND_OPTIONS.map(o =>
+  const html = AREA_KIND_OPTIONS.map(o =>
     `<button type="button" class="option-pill${o.id === areaKind ? ' active' : ''}" data-kind="${o.id}">${o.label}</button>`
   ).join('');
-  el.areaKindPills.querySelectorAll('[data-kind]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (btn.dataset.kind === areaKind) return;
-      areaKind = btn.dataset.kind;
-      areaDraft = [];
-      renderAreaKindPills();
-      el.areaKindDesc.textContent = areaKindOption(areaKind).desc;
-      renderAreaSavedPolygons();
-      renderAreaDraft();
-      renderAreaList();
+  [el.areaKindPills, el.areaFsKindPills].forEach(container => {
+    container.innerHTML = html;
+    container.querySelectorAll('[data-kind]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (btn.dataset.kind === areaKind) return;
+        areaKind = btn.dataset.kind;
+        renderAreaKindPills();
+        el.areaKindDesc.textContent = areaKindOption(areaKind).desc;
+        el.areaFsKindDesc.textContent = areaKindOption(areaKind).desc;
+        renderAreaSavedPolygons();
+        renderAreaList();
+      });
     });
   });
 }
@@ -3949,37 +4016,18 @@ async function renderAreaTab() {
     el.areaBgEmpty.textContent = screen ? '아직 배경화면이 없어요' : '먼저 위에서 화면을 고르거나 추가하세요';
     el.areaStage.style.removeProperty('--area-ar');
   }
+  el.areaFsOpenBtn.disabled = !(bgAsset && dims);
   renderAreaSavedPolygons();
-  renderAreaDraft();
   renderAreaList();
 }
 
 function renderAreaSavedPolygons() {
   const list = getAreaList(areaKind);
-  el.areaSavedPolygons.innerHTML = list.map(a =>
+  const html = list.map(a =>
     `<polygon class="area-saved-polygon kind-${areaKind}" points="${a.points.map(p => `${p.x * 100},${p.y * 100}`).join(' ')}"></polygon>`
   ).join('');
-}
-
-function renderAreaDraft() {
-  const hasBg = !!(currentScreen() && currentScreen().backgroundAssetId);
-  if (!hasBg) {
-    el.areaDraftHint.textContent = '아직 배경화면이 없어요';
-  } else if (!areaDraft.length) {
-    el.areaDraftHint.textContent = '탭해서 꼭짓점을 추가하세요 (3개 이상 찍고 완료)';
-  } else {
-    el.areaDraftHint.textContent = `${areaDraft.length}개 점 찍음 — 계속 탭하거나 완료를 누르세요`;
-  }
-  el.areaDraftFinishBtn.disabled = areaDraft.length < 3;
-  if (areaDraft.length) {
-    el.areaDraftLine.setAttribute('points', areaDraft.map(p => `${p.x * 100},${p.y * 100}`).join(' '));
-    el.areaDraftLine.classList.remove('hidden');
-  } else {
-    el.areaDraftLine.classList.add('hidden');
-  }
-  el.areaDraftPoints.innerHTML = areaDraft.map(p =>
-    `<circle class="area-draft-point" cx="${p.x * 100}" cy="${p.y * 100}" r="1.4"></circle>`
-  ).join('');
+  el.areaSavedPolygons.innerHTML = html;
+  el.areaFsSavedPolygons.innerHTML = html;
 }
 
 function renderAreaList() {
@@ -4031,51 +4079,106 @@ function renderAreaList() {
   });
 }
 
-function areaStageEventToFrac(e) {
-  const rect = el.areaStage.getBoundingClientRect();
+/* ===== 전체화면 영역 지정 =====
+   "🖥 전체화면에서 영역 지정" 버튼(el.areaFsOpenBtn)을 누르면 뜬다. 실제
+   그리기는 여기서만 한다 — 드래그 한 번(pointerdown→move→up)이 사각형
+   하나다. 최소 크기(AREA_MIN_RECT_FRAC)보다 작으면 실수 탭/클릭으로 보고
+   버린다. 완성되면 즉시 저장하고(이동 종류는 도착 화면/지점을 마저 물어야
+   해서 moveAreaOverlay로 이어짐) 오버레이는 열어둔 채로 둔다 — "여러 개
+   사각형으로 다중 지정"이 되려면 매번 다시 열지 않고 이어서 드래그할 수
+   있어야 하므로, ✕ 닫기를 눌러야만 실제로 닫힌다. */
+const AREA_MIN_RECT_FRAC = 0.02; // 드래그 사각형의 최소 폭/높이(스테이지 기준 0~1) — 더 작으면 버린다
+function areaFsStageEventToFrac(e) {
+  const rect = el.areaFsStage.getBoundingClientRect();
   return { x: clamp01((e.clientX - rect.left) / rect.width), y: clamp01((e.clientY - rect.top) / rect.height) };
 }
-el.areaStage.addEventListener('pointerdown', (e) => {
-  if (!(currentScreen() && currentScreen().backgroundAssetId)) return; // 배경 없이는 좌표 기준(--area-ar)이 없어 그릴 수 없다
-  areaDraft.push(areaStageEventToFrac(e));
-  renderAreaDraft();
+function renderAreaFsDraftRect(a, b) {
+  if (!a || !b) { el.areaFsDraftRect.classList.add('hidden'); return; }
+  el.areaFsDraftRect.setAttribute('x', Math.min(a.x, b.x) * 100);
+  el.areaFsDraftRect.setAttribute('y', Math.min(a.y, b.y) * 100);
+  el.areaFsDraftRect.setAttribute('width', Math.abs(a.x - b.x) * 100);
+  el.areaFsDraftRect.setAttribute('height', Math.abs(a.y - b.y) * 100);
+  el.areaFsDraftRect.classList.remove('hidden');
+}
+let areaFsAspectRatio = 3 / 4;
+// 뷰포트 안에서 스테이지를 가로/세로 어느 쪽도 넘치지 않는 한도까지
+// 최대한 키운다 — object-fit:contain을 div에 흉내낸 것과 같다. 오버레이를
+// 열 때 한 번, 그리고 열려 있는 동안 화면 회전/리사이즈될 때마다 다시
+// 계산한다(window resize 리스너, 아래).
+function fitAreaFsStage() {
+  const wrap = el.areaFsStage.parentElement;
+  const cs = getComputedStyle(wrap);
+  const wrapW = wrap.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  const wrapH = wrap.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+  let w = wrapW, h = w / areaFsAspectRatio;
+  if (h > wrapH) { h = wrapH; w = h * areaFsAspectRatio; }
+  el.areaFsStage.style.width = Math.max(1, w) + 'px';
+  el.areaFsStage.style.height = Math.max(1, h) + 'px';
+}
+window.addEventListener('resize', () => {
+  if (!el.areaFsOverlay.classList.contains('hidden')) fitAreaFsStage();
 });
-el.areaDraftUndoBtn.addEventListener('click', () => {
-  areaDraft.pop();
-  renderAreaDraft();
+async function openAreaFullscreen() {
+  const screen = currentScreen();
+  if (!screen || !screen.backgroundAssetId) return;
+  const bgAsset = await AssetDB.getAsset(screen.backgroundAssetId).catch(() => null);
+  if (!bgAsset) return;
+  const dims = await loadImageDimensions(bgAsset.dataUrl);
+  el.areaFsBgImg.src = bgAsset.dataUrl;
+  areaFsAspectRatio = dims ? (dims.width / dims.height) : 3 / 4;
+  el.areaFsKindDesc.textContent = areaKindOption(areaKind).desc;
+  renderAreaSavedPolygons();
+  el.areaFsOverlay.classList.remove('hidden');
+  fitAreaFsStage();
+}
+el.areaFsOpenBtn.addEventListener('click', openAreaFullscreen);
+el.areaFsCloseBtn.addEventListener('click', () => el.areaFsOverlay.classList.add('hidden'));
+
+let areaFsDragStart = null;
+el.areaFsStage.addEventListener('pointerdown', (e) => {
+  areaFsDragStart = areaFsStageEventToFrac(e);
+  el.areaFsStage.setPointerCapture(e.pointerId);
+  renderAreaFsDraftRect(areaFsDragStart, areaFsDragStart);
 });
-el.areaDraftCancelBtn.addEventListener('click', () => {
-  areaDraft = [];
-  renderAreaDraft();
+el.areaFsStage.addEventListener('pointermove', (e) => {
+  if (!areaFsDragStart) return;
+  renderAreaFsDraftRect(areaFsDragStart, areaFsStageEventToFrac(e));
 });
-el.areaDraftFinishBtn.addEventListener('click', async () => {
-  if (areaDraft.length < 3) return;
+el.areaFsStage.addEventListener('pointerup', async (e) => {
+  if (!areaFsDragStart) return;
+  const start = areaFsDragStart, end = areaFsStageEventToFrac(e);
+  areaFsDragStart = null;
+  renderAreaFsDraftRect(null, null);
+  const minX = Math.min(start.x, end.x), maxX = Math.max(start.x, end.x);
+  const minY = Math.min(start.y, end.y), maxY = Math.max(start.y, end.y);
+  if (maxX - minX < AREA_MIN_RECT_FRAC || maxY - minY < AREA_MIN_RECT_FRAC) return; // 너무 작은 드래그(실수 탭)는 버린다
+  const points = [{ x: minX, y: minY }, { x: maxX, y: minY }, { x: maxX, y: maxY }, { x: minX, y: maxY }];
   if (areaKind === 'move') {
-    // 이동 영역은 폴리곤만으론 안 끝난다 — 도착 화면/지점을 마저 정해야
-    // 실제로 저장된다(moveAreaConfirmBtn). 취소하면 이 폴리곤도 버려진다.
-    await openMoveAreaEditor({ points: areaDraft.slice() });
+    await openMoveAreaEditor({ points });
     return;
   }
   const kindOpt = areaKindOption(areaKind);
-  const newArea = { id: `area_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, points: areaDraft.slice() };
+  const newArea = { id: `area_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, points };
   if (areaKind === 'interaction') newArea.label = '';
   const next = getAreaList(areaKind).concat(newArea);
   await patchCurrentScreen({ [kindOpt.configKey]: next });
   showSaveNote();
-  areaDraft = [];
   renderAreaSavedPolygons();
-  renderAreaDraft();
   renderAreaList();
+});
+el.areaFsStage.addEventListener('pointercancel', () => {
+  areaFsDragStart = null;
+  renderAreaFsDraftRect(null, null);
 });
 renderAreaKindPills();
 
 /* ===== 이동 영역(moveAreas) 설정 =====
-   "영역 설정" 탭에서 폴리곤(이동 종류)을 완료하거나, 저장된 이동 영역
-   목록의 ✎ 버튼을 누르면 뜬다. youngwooPosStage와 완전히 같은 단일 포인트
-   드래그 패턴(heldfish-stage/rodtip-marker 재사용)으로 도착 지점을
+   전체화면 영역 지정에서 사각형(이동 종류)을 다 그리거나, 저장된 이동
+   영역 목록의 ✎ 버튼을 누르면 뜬다. youngwooPosStage와 완전히 같은 단일
+   포인트 드래그 패턴(heldfish-stage/rodtip-marker 재사용)으로 도착 지점을
    찍지만, 기준 이미지가 "지금 그리는 화면"이 아니라 도착 화면 select로
    고른 화면의 배경이라는 점이 다르다(도착 화면을 바꾸면 스테이지 배경도
-   같이 바뀐다). moveAreaDraftPoints가 있으면 "새 영역 만들기"(폴리곤은
+   같이 바뀐다). moveAreaDraftPoints가 있으면 "새 영역 만들기"(사각형은
    이미 그렸고 도착지만 정하면 됨), 없고 moveAreaEditingId만 있으면 "기존
    영역의 도착지 수정"이다. */
 let moveAreaDraftPoints = null;
@@ -4087,8 +4190,7 @@ async function openMoveAreaEditor(opts) {
   const others = screens().filter(s => s.id !== currentScreenId);
   if (!others.length) {
     alert('이동 영역을 만들려면 다른 화면이 하나 더 있어야 해요. 위에서 화면을 먼저 추가하세요.');
-    if (opts.points) { areaDraft = []; renderAreaDraft(); } // 방금 그린 폴리곤도 같이 버린다
-    return;
+    return; // 방금 드래그로 그린 사각형은 저장하지 않고 그냥 버려진다(moveAreaDraftPoints를 애초에 채우지 않았으므로)
   }
   moveAreaDraftPoints = opts.points || null;
   moveAreaEditingId = opts.id || null;
@@ -4138,9 +4240,7 @@ function closeMoveAreaEditor() {
   moveAreaEditingId = null;
 }
 el.moveAreaCancelBtn.addEventListener('click', () => {
-  const wasNew = !!moveAreaDraftPoints;
-  closeMoveAreaEditor();
-  if (wasNew) { areaDraft = []; renderAreaDraft(); } // 새로 그린 폴리곤은 저장 안 하고 버린다
+  closeMoveAreaEditor(); // moveAreaDraftPoints를 비우는 것으로 충분하다 — 방금 드래그로 그린 사각형은 애초에 저장된 적이 없다
 });
 el.moveAreaConfirmBtn.addEventListener('click', async () => {
   const targetScreenId = el.moveAreaTargetSelect.value;
@@ -4151,10 +4251,8 @@ el.moveAreaConfirmBtn.addEventListener('click', async () => {
     : list.concat({ id: `area_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, points: moveAreaDraftPoints, targetScreenId, entryPoint });
   await patchCurrentScreen({ moveAreas: next });
   showSaveNote();
-  areaDraft = [];
   closeMoveAreaEditor();
   renderAreaSavedPolygons();
-  renderAreaDraft();
   renderAreaList();
 });
 
