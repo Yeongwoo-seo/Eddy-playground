@@ -369,6 +369,7 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .area-saved-polygon.kind-fishable{fill:var(--green);stroke:var(--green)}
 .area-saved-polygon.kind-blocked{fill:var(--signal-red);stroke:var(--signal-red)}
 .area-saved-polygon.kind-interaction{fill:var(--amber);stroke:var(--amber)}
+.area-saved-polygon.kind-move{fill:var(--cyan);stroke:var(--cyan)}
 .area-draft-line{fill:rgba(89,184,200,.22);stroke:var(--cyan);stroke-width:.6;stroke-dasharray:1.5 1.2;vector-effect:non-scaling-stroke}
 .area-draft-line.hidden{display:none}
 .area-draft-point{fill:var(--cyan);stroke:#04181c;stroke-width:.4;vector-effect:non-scaling-stroke}
@@ -381,7 +382,26 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .area-row-label{flex:1;font-size:13.5px;color:var(--text-primary)}
 .area-row-label input{width:100%;background:var(--surface-1);border:1px solid var(--divider);border-radius:8px;padding:8px 10px;color:var(--text-primary);font-size:13.5px;font-family:var(--sans)}
 .area-row-del{width:26px;height:26px;border-radius:50%;border:none;background:rgba(217,65,65,.16);color:var(--signal-red);font-size:13px;cursor:pointer;flex-shrink:0}
+.area-row-edit{width:26px;height:26px;border-radius:50%;border:none;background:rgba(89,184,200,.16);color:var(--cyan);font-size:12px;cursor:pointer;flex-shrink:0;margin-left:6px}
 .area-empty-note{font-size:12.5px;color:var(--text-muted);padding:8px 2px}
+
+/* ===== 화면(screens) — 배경화면 여러 장을 서로 이동 가능한 "화면"으로
+   두는 단위(§신규, 영역지정/화면 전환). 탭이 아니라 tabsRow 바로 아래
+   항상 보이는 영역이다 — 모션(이동 테스트 미리보기)/영역 설정/캐릭터(영우
+   위치) 탭 셋 다 "지금 고른 화면"의 배경화면을 기준으로 동작하기 때문.
+   .screen-pill은 .option-pill을 그대로 쓰되 시작 화면 배지만 덧붙인다. */
+.screen-pill{position:relative}
+.screen-pill .screen-start-badge{margin-left:4px}
+.screen-actions-row{display:flex;gap:8px;margin:10px 0}
+.screen-actions-row .fish-sheet-btn:disabled{opacity:.4;cursor:default}
+
+/* ===== 이동 영역(moveAreas) 설정 시트 — 폴리곤을 다 그리면(영역 종류
+   "이동") crop-overlay와 같은 바텀시트 틀로 도착 화면 + 도착 지점을
+   고르게 한다. 도착 지점 피커는 youngwooPosStage와 완전히 같은 단일
+   포인트 드래그 패턴(heldfish-stage/rodtip-marker 재사용) — 다만 기준
+   이미지가 "지금 그리고 있는 화면"이 아니라 고른 도착 화면의 배경이다. */
+.movearea-target-select{width:100%;background:var(--surface-1);border:1px solid var(--divider);border-radius:10px;padding:11px 12px;color:var(--text-primary);font-size:13.5px;font-family:var(--sans);margin-bottom:14px}
+.movearea-entry-label{font-size:12px;color:var(--text-muted);margin-bottom:8px}
 
 /* ===== 아이템창 탭 — 낚시 성공 시(물고기가 추에서 캐릭터로 날아온 다음)
    뜨는 아이템창 팝업의 배경(액자) 그림 + 아이템 아이콘이 놓일 위치/크기.
@@ -424,6 +444,30 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   <div class="tag">Minigame · 설정</div>
   <div class="title">🎣 낚시</div>
   <div class="sub">캐스팅 → 입질 대기 → 낚시바로 잡아채기 → 올리기까지 이어지는 독립형 낚시 미니게임이에요. 아래 4개 탭에서 모션·영역·대화·캐릭터를 각각 설정해요.</div>
+
+  <!-- ===== 화면(screens) — 배경화면을 여러 장 올려서 화면 여러 개를
+       만들고, 서로 이동할 수 있게 하는 관리 영역. 탭 밖(tabsRow 위)에 항상
+       보인다 — 모션/영역 설정/캐릭터 탭이 전부 "지금 고른 화면"
+       (currentScreenId) 기준으로 배경/영역/영우 위치를 다루기 때문. ===== -->
+  <div class="option-group" id="screenManagerGroup">
+    <div class="option-label">화면</div>
+    <div class="option-desc">배경화면을 여러 장 올려서 화면 여러 개를 만들 수 있어요. 아래 "영역 설정" 탭에서 화면별로 낚시가능·이동불가·상호작용·이동 영역을 그리고, "이동" 영역으로 화면끼리 연결하세요.</div>
+    <div class="option-pills" id="screenPills"></div>
+    <div class="screen-actions-row">
+      <button type="button" class="fish-sheet-btn" id="addScreenBtn">+ 화면 추가</button>
+      <button type="button" class="fish-sheet-btn" id="renameScreenBtn" disabled>이름 변경</button>
+      <button type="button" class="fish-sheet-btn danger" id="deleteScreenBtn" disabled>✕ 화면 삭제</button>
+    </div>
+    <div class="fish-sheet-frame" id="screenBgFrame">
+      <div class="fish-sheet-empty" id="screenBgEmpty">화면을 먼저 추가하세요</div>
+    </div>
+    <div class="fish-sheet-actions">
+      <button type="button" class="fish-sheet-btn" id="screenBgUploadBtn" disabled>📤 배경화면 업로드</button>
+      <button type="button" class="fish-sheet-btn danger hidden" id="screenBgRemoveBtn">✕ 제거</button>
+      <button type="button" class="fish-sheet-btn" id="setStartScreenBtn" disabled>🚩 시작 화면으로</button>
+    </div>
+    <input type="file" id="screenBgFileInput" accept="image/*">
+  </div>
 
   <div class="tabs" id="tabsRow">
     <button class="tab-btn active" data-tab="motion">모션</button>
@@ -1058,11 +1102,11 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
 </div>
 
 <!-- 영우 위치 지정 — heldFishPosOverlay와 같은 바텀시트 틀 + 단일 포인트
-     마커(rodtip-marker 재사용)지만, 기준 이미지가 낚시바 디자인 탭의
-     배경화면(fishingConfig.backgroundAssetId)이다 — 영우가 실제로 서는
-     좌표계가 그 배경 원본 크기 기준 0~1(영역 설정 탭 다각형 점과 동일)이라
-     같은 이미지 위에서 지정해야 실제 게임(play/index.html)과 자리가
-     어긋나지 않는다. --heldfish-ar로 종횡비를 배경의 실제 자연 크기에 맞춘다. -->
+     마커(rodtip-marker 재사용)지만, 기준 이미지가 지금 고른 화면
+     (currentScreen())의 배경화면이다 — 영우가 실제로 서는 좌표계가 그
+     배경 원본 크기 기준 0~1(영역 설정 탭 다각형 점과 동일)이라 같은
+     이미지 위에서 지정해야 실제 게임(play/index.html)과 자리가 어긋나지
+     않는다. --heldfish-ar로 종횡비를 배경의 실제 자연 크기에 맞춘다. -->
 <div class="crop-overlay hidden" id="youngwooPosOverlay">
   <div class="crop-sheet">
     <div class="crop-title">영우 위치 지정</div>
@@ -1074,6 +1118,31 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     <div class="crop-actions">
       <button type="button" class="crop-btn secondary" id="youngwooPosCancelBtn">취소</button>
       <button type="button" class="crop-btn primary" id="youngwooPosConfirmBtn">적용</button>
+    </div>
+  </div>
+</div>
+
+<!-- 이동 영역 설정 — "영역 설정" 탭에서 영역 종류를 "이동"으로 두고
+     폴리곤을 완료하면 뜬다(openMoveAreaEditor). 도착 화면을 고르면 아래
+     스테이지가 그 화면의 배경화면으로 바뀌고, youngwooPosStage와 같은
+     단일 포인트 드래그 패턴(heldfish-stage/rodtip-marker 재사용)으로
+     도착 지점을 찍는다. 새 영역을 그리는 중이면 areaDraft(그린 폴리곤)를
+     그대로 들고 있다가 "적용"을 눌러야 실제로 저장한다 — 취소하면 폴리곤
+     자체도 버린다(저장된 영역 없이 그리기만 취소한 것처럼). 기존 영역의
+     도착지를 고칠 때는 폴리곤 없이 targetScreenId/entryPoint만 바꾼다. -->
+<div class="crop-overlay hidden" id="moveAreaOverlay">
+  <div class="crop-sheet">
+    <div class="crop-title">이동 영역 설정</div>
+    <div class="crop-desc">캐릭터가 이 영역에 들어가면 이동할 화면과, 그 화면 어디에서 다시 나타날지를 정하세요.</div>
+    <select class="movearea-target-select" id="moveAreaTargetSelect"></select>
+    <div class="movearea-entry-label" id="moveAreaEntryLabel">도착 지점 — 그림 위를 탭하거나 드래그해서 캐릭터가 나타날 위치를 옮기세요.</div>
+    <div class="heldfish-stage" id="moveAreaStage">
+      <img id="moveAreaImg" alt="">
+      <div class="rodtip-marker" id="moveAreaMarker"></div>
+    </div>
+    <div class="crop-actions">
+      <button type="button" class="crop-btn secondary" id="moveAreaCancelBtn">취소</button>
+      <button type="button" class="crop-btn primary" id="moveAreaConfirmBtn">적용</button>
     </div>
   </div>
 </div>
@@ -1313,6 +1382,23 @@ const el = {
   youngwooPosMarker: document.getElementById('youngwooPosMarker'),
   youngwooPosCancelBtn: document.getElementById('youngwooPosCancelBtn'),
   youngwooPosConfirmBtn: document.getElementById('youngwooPosConfirmBtn'),
+  screenPills: document.getElementById('screenPills'),
+  addScreenBtn: document.getElementById('addScreenBtn'),
+  renameScreenBtn: document.getElementById('renameScreenBtn'),
+  deleteScreenBtn: document.getElementById('deleteScreenBtn'),
+  screenBgFrame: document.getElementById('screenBgFrame'),
+  screenBgUploadBtn: document.getElementById('screenBgUploadBtn'),
+  screenBgRemoveBtn: document.getElementById('screenBgRemoveBtn'),
+  screenBgFileInput: document.getElementById('screenBgFileInput'),
+  setStartScreenBtn: document.getElementById('setStartScreenBtn'),
+  moveAreaOverlay: document.getElementById('moveAreaOverlay'),
+  moveAreaTargetSelect: document.getElementById('moveAreaTargetSelect'),
+  moveAreaEntryLabel: document.getElementById('moveAreaEntryLabel'),
+  moveAreaStage: document.getElementById('moveAreaStage'),
+  moveAreaImg: document.getElementById('moveAreaImg'),
+  moveAreaMarker: document.getElementById('moveAreaMarker'),
+  moveAreaCancelBtn: document.getElementById('moveAreaCancelBtn'),
+  moveAreaConfirmBtn: document.getElementById('moveAreaConfirmBtn'),
 };
 
 // 카테고리 6개(motion-category-title/motionElKey는 이 파일 아래쪽에서
@@ -3527,8 +3613,8 @@ const WALK_DIRS = ['up', 'down', 'left', 'right'];
    속도는 "이동 속도"(moveStepMs) 슬라이더 값을 그대로 쓰되, "타일 한 칸
    (MOVE_TILE_SIZE)을 이동하는 데 걸리는 시간"으로 해석해 px/ms 속도로
    환산한다 — 슬라이더 자체는 예전 그대로 두고 의미만 바뀐다. 배경은
-   fishingConfig.backgroundAssetId(영역 설정/캐릭터 탭과 공유하는 배경)를
-   그대로 재사용하되, /play/ 화면과 달리 background-size:cover로 축소하지
+   currentScreen().backgroundAssetId(영역 설정/캐릭터 탭과 공유하는, 지금
+   고른 화면의 배경)를 그대로 재사용하되, /play/ 화면과 달리 background-size:cover로 축소하지
    않고 .move-world의
    width/height를 이미지 원본 픽셀 크기로 지정해 원본 그대로 보여준다 —
    그 결과 배경이 좁은 .move-stage 뷰포트보다 커질 수 있으므로, 캐릭터가
@@ -3662,7 +3748,8 @@ function initMoveMotionControls() {
 }
 
 async function renderMoveTestStage() {
-  const bgId = fishingConfig.backgroundAssetId;
+  const screen = currentScreen();
+  const bgId = screen && screen.backgroundAssetId;
   const bgAsset = bgId ? await AssetDB.getAsset(bgId).catch(() => null) : null;
   const dims = bgAsset ? await loadImageDimensions(bgAsset.dataUrl) : null;
   if (bgAsset && dims) {
@@ -3686,24 +3773,146 @@ async function renderMoveTestStage() {
   updateCharPosition();
 }
 
+/* ===== 화면(screens) 관리 =====
+   배경화면 여러 장을 "화면"(screen) 여러 개로 두고 서로 이동할 수 있게
+   한다(§신규, 영역지정/화면 전환). fishingConfig.screens가 화면 목록,
+   각 screen은 { id, name, backgroundAssetId, fishableAreas, blockedAreas,
+   interactionAreas, moveAreas, youngwooNpcPos }를 자기 것으로 갖는다(예전
+   낚시바 디자인 탭의 fishingConfig.backgroundAssetId 하나짜리 구조를
+   화면마다 하나씩으로 늘린 것). currentScreenId가 "지금 편집 중인 화면"
+   — 모션 탭의 이동 테스트 미리보기, 영역 설정 탭, 캐릭터 탭(영우 위치)
+   셋 다 이 화면 기준으로 렌더링한다(탭 밖 screenPills로 always-visible하게
+   고르는 이유). */
+function screens() { return fishingConfig.screens || []; }
+function currentScreen() { return screens().find(s => s.id === currentScreenId) || null; }
+async function patchCurrentScreen(patch) {
+  const next = screens().map(s => s.id === currentScreenId ? Object.assign({}, s, patch) : s);
+  fishingConfig = await AssetDB.setFishingConfig({ screens: next });
+}
+let currentScreenId = null;
+
+function renderScreenManager() {
+  const list = screens();
+  if (!currentScreenId || !list.some(s => s.id === currentScreenId)) {
+    currentScreenId = (fishingConfig.startScreenId && list.some(s => s.id === fishingConfig.startScreenId))
+      ? fishingConfig.startScreenId : (list[0] ? list[0].id : null);
+  }
+  el.screenPills.innerHTML = list.length ? list.map(s =>
+    `<button type="button" class="option-pill screen-pill${s.id === currentScreenId ? ' active' : ''}" data-screen-id="${s.id}">${s.name}${s.id === fishingConfig.startScreenId ? ' <span class="screen-start-badge">🚩</span>' : ''}</button>`
+  ).join('') : '<div class="area-empty-note">아직 만든 화면이 없어요. "+ 화면 추가"로 시작하세요.</div>';
+  el.screenPills.querySelectorAll('[data-screen-id]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.dataset.screenId === currentScreenId) return;
+      currentScreenId = btn.dataset.screenId;
+      renderScreenManager();
+      renderMoveTestStage();
+      renderAreaTab();
+      renderCharacterTab();
+    });
+  });
+  el.renameScreenBtn.disabled = !currentScreenId;
+  el.deleteScreenBtn.disabled = !currentScreenId;
+  el.setStartScreenBtn.disabled = !currentScreenId || currentScreenId === fishingConfig.startScreenId;
+  renderScreenBgSlot();
+}
+
+async function renderScreenBgSlot() {
+  const screen = currentScreen();
+  el.screenBgUploadBtn.disabled = !screen;
+  if (!screen) {
+    el.screenBgFrame.innerHTML = '<div class="fish-sheet-empty">화면을 먼저 추가하세요</div>';
+    el.screenBgRemoveBtn.classList.add('hidden');
+    return;
+  }
+  if (screen.backgroundAssetId) {
+    const asset = await AssetDB.getAsset(screen.backgroundAssetId).catch(() => null);
+    el.screenBgFrame.innerHTML = asset ? `<img src="${asset.dataUrl}" alt="">` : '<div class="fish-sheet-empty">불러오지 못했어요</div>';
+    el.screenBgRemoveBtn.classList.remove('hidden');
+  } else {
+    el.screenBgFrame.innerHTML = '<div class="fish-sheet-empty">아직 배경화면이 없어요</div>';
+    el.screenBgRemoveBtn.classList.add('hidden');
+  }
+}
+
+async function afterScreenChange() {
+  showSaveNote();
+  renderScreenManager();
+  renderMoveTestStage();
+  renderAreaTab();
+  renderCharacterTab();
+}
+
+el.addScreenBtn.addEventListener('click', async () => {
+  const name = (prompt('새 화면 이름', `화면 ${screens().length + 1}`) || '').trim();
+  if (!name) return;
+  const id = `screen_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const newScreen = { id, name, backgroundAssetId: null, fishableAreas: [], blockedAreas: [], interactionAreas: [], moveAreas: [], youngwooNpcPos: null };
+  const patch = { screens: screens().concat(newScreen) };
+  if (!fishingConfig.startScreenId) patch.startScreenId = id; // 첫 화면은 자동으로 시작 화면
+  fishingConfig = await AssetDB.setFishingConfig(patch);
+  currentScreenId = id;
+  await afterScreenChange();
+});
+el.renameScreenBtn.addEventListener('click', async () => {
+  const screen = currentScreen();
+  if (!screen) return;
+  const name = (prompt('새 이름', screen.name) || '').trim();
+  if (!name || name === screen.name) return;
+  await patchCurrentScreen({ name });
+  await afterScreenChange();
+});
+el.deleteScreenBtn.addEventListener('click', async () => {
+  const screen = currentScreen();
+  if (!screen) return;
+  if (!confirm(`"${screen.name}" 화면을 삭제할까요? 이 화면의 영역·영우 위치도 같이 지워져요. 이 화면을 도착지로 하던 이동 영역은 남아있지만 더 이상 이동하지 않게 돼요.`)) return;
+  const next = screens().filter(s => s.id !== screen.id);
+  const patch = { screens: next };
+  if (fishingConfig.startScreenId === screen.id) patch.startScreenId = next[0] ? next[0].id : null;
+  fishingConfig = await AssetDB.setFishingConfig(patch);
+  currentScreenId = null;
+  await afterScreenChange();
+});
+el.setStartScreenBtn.addEventListener('click', async () => {
+  if (!currentScreenId) return;
+  fishingConfig = await AssetDB.setFishingConfig({ startScreenId: currentScreenId });
+  await afterScreenChange();
+});
+el.screenBgUploadBtn.addEventListener('click', () => el.screenBgFileInput.click());
+el.screenBgFileInput.addEventListener('change', async () => {
+  const file = el.screenBgFileInput.files[0];
+  el.screenBgFileInput.value = '';
+  if (!file || !currentScreenId) return;
+  const asset = await AssetDB.addAsset({ type: 'fishing-screen-background', name: file.name, blob: file });
+  await patchCurrentScreen({ backgroundAssetId: asset.id });
+  await afterScreenChange();
+});
+el.screenBgRemoveBtn.addEventListener('click', async () => {
+  if (!currentScreenId || !confirm('배경화면을 지울까요?')) return;
+  await patchCurrentScreen({ backgroundAssetId: null });
+  await afterScreenChange();
+});
+
 /* ===== 영역 설정 탭 =====
-   낚시바 디자인 탭에서 올린 배경화면(fishingConfig.backgroundAssetId) 위에
-   다각형 영역을 그린다. 세 종류(낚시가능/이동불가/상호작용) 각각 여러 개를
-   둘 수 있고, fishingConfig의 fishableAreas/blockedAreas/interactionAreas
-   배열에 { id, points: [{x,y}](0~1 정규화), label?(상호작용만) }로 저장된다.
-   탭 좌표 → 정규화 좌표 변환은 el.areaStage가 --area-ar로 배경 이미지와
-   정확히 같은 종횡비를 갖도록 만들어서(아이템창 --item-ar과 같은 패턴)
-   letterbox 보정 없이 바로 stage 기준 비율로 계산할 수 있다. */
+   지금 고른 화면(currentScreen())의 배경화면 위에 다각형 영역을 그린다.
+   네 종류(낚시가능/이동불가/상호작용/이동) 각각 여러 개를 둘 수 있고, 그
+   화면의 fishableAreas/blockedAreas/interactionAreas/moveAreas 배열에
+   { id, points: [{x,y}](0~1 정규화), label?(상호작용만),
+   targetScreenId?/entryPoint?(이동만) }로 저장된다. 탭 좌표 → 정규화 좌표
+   변환은 el.areaStage가 --area-ar로 배경 이미지와 정확히 같은 종횡비를
+   갖도록 만들어서(아이템창 --item-ar과 같은 패턴) letterbox 보정 없이
+   바로 stage 기준 비율로 계산할 수 있다. */
 const AREA_KIND_OPTIONS = [
   { id: 'fishable', label: '낚시가능', configKey: 'fishableAreas', desc: '캐스팅해서 낚시할 수 있는 영역이에요. 여러 개 그릴 수 있어요.' },
   { id: 'blocked', label: '이동불가', configKey: 'blockedAreas', desc: '캐릭터가 걸어 들어갈 수 없는 영역이에요. 여러 개 그릴 수 있어요.' },
   { id: 'interaction', label: '상호작용', configKey: 'interactionAreas', desc: '상점·대화 등 게임에 필요한 상호작용 지점이에요. 라벨을 적어 어떤 상호작용인지 구분하세요.' },
+  { id: 'move', label: '이동', configKey: 'moveAreas', desc: '캐릭터가 여기 걸어 들어오면 다른 화면으로 이동해요. 영역을 다 그리면 도착 화면과 도착 지점을 물어봐요.' },
 ];
 let areaKind = 'fishable';
 let areaDraft = [];
 
 function areaKindOption(kind) { return AREA_KIND_OPTIONS.find(o => o.id === kind); }
-function getAreaList(kind) { return fishingConfig[areaKindOption(kind).configKey] || []; }
+function getAreaList(kind) { const screen = currentScreen(); return (screen && screen[areaKindOption(kind).configKey]) || []; }
+const AREA_SWATCH_VAR = { fishable: '--green', blocked: '--signal-red', interaction: '--amber', move: '--cyan' };
 
 function renderAreaKindPills() {
   el.areaKindPills.innerHTML = AREA_KIND_OPTIONS.map(o =>
@@ -3725,7 +3934,8 @@ function renderAreaKindPills() {
 
 async function renderAreaTab() {
   el.areaKindDesc.textContent = areaKindOption(areaKind).desc;
-  const bgId = fishingConfig.backgroundAssetId;
+  const screen = currentScreen();
+  const bgId = screen && screen.backgroundAssetId;
   const bgAsset = bgId ? await AssetDB.getAsset(bgId).catch(() => null) : null;
   const dims = bgAsset ? await loadImageDimensions(bgAsset.dataUrl) : null;
   if (bgAsset && dims) {
@@ -3736,6 +3946,7 @@ async function renderAreaTab() {
   } else {
     el.areaBgImg.classList.add('hidden');
     el.areaBgEmpty.classList.remove('hidden');
+    el.areaBgEmpty.textContent = screen ? '아직 배경화면이 없어요' : '먼저 위에서 화면을 고르거나 추가하세요';
     el.areaStage.style.removeProperty('--area-ar');
   }
   renderAreaSavedPolygons();
@@ -3751,7 +3962,7 @@ function renderAreaSavedPolygons() {
 }
 
 function renderAreaDraft() {
-  const hasBg = !!fishingConfig.backgroundAssetId;
+  const hasBg = !!(currentScreen() && currentScreen().backgroundAssetId);
   if (!hasBg) {
     el.areaDraftHint.textContent = '아직 배경화면이 없어요';
   } else if (!areaDraft.length) {
@@ -3779,20 +3990,29 @@ function renderAreaList() {
     el.areaList.innerHTML = '<div class="area-empty-note">아직 그린 영역이 없어요.</div>';
     return;
   }
-  el.areaList.innerHTML = list.map((a, i) => `
+  el.areaList.innerHTML = list.map((a, i) => {
+    let labelHtml;
+    if (areaKind === 'interaction') {
+      labelHtml = `<input type="text" value="${(a.label || '').replace(/"/g, '&quot;')}" placeholder="예: 상점, 대화" data-label-id="${a.id}">`;
+    } else if (areaKind === 'move') {
+      const target = screens().find(s => s.id === a.targetScreenId);
+      labelHtml = `<span>영역 ${i + 1} → ${target ? target.name : '(삭제된 화면)'}</span> <button type="button" class="area-row-edit" data-edit-id="${a.id}">✎</button>`;
+    } else {
+      labelHtml = `영역 ${i + 1} (꼭짓점 ${a.points.length}개)`;
+    }
+    return `
     <div class="area-row" data-id="${a.id}">
-      <div class="area-row-swatch" style="background:var(${areaKind === 'fishable' ? '--green' : areaKind === 'blocked' ? '--signal-red' : '--amber'})"></div>
-      <div class="area-row-label">${areaKind === 'interaction'
-        ? `<input type="text" value="${(a.label || '').replace(/"/g, '&quot;')}" placeholder="예: 상점, 대화" data-label-id="${a.id}">`
-        : `영역 ${i + 1} (꼭짓점 ${a.points.length}개)`}</div>
+      <div class="area-row-swatch" style="background:var(${AREA_SWATCH_VAR[areaKind]})"></div>
+      <div class="area-row-label">${labelHtml}</div>
       <button type="button" class="area-row-del" data-del-id="${a.id}">✕</button>
     </div>
-  `).join('');
+  `;
+  }).join('');
   el.areaList.querySelectorAll('[data-del-id]').forEach(btn => {
     btn.addEventListener('click', async () => {
       const id = btn.dataset.delId;
       const next = getAreaList(areaKind).filter(a => a.id !== id);
-      fishingConfig = await AssetDB.setFishingConfig({ [kindOpt.configKey]: next });
+      await patchCurrentScreen({ [kindOpt.configKey]: next });
       showSaveNote();
       renderAreaSavedPolygons();
       renderAreaList();
@@ -3802,9 +4022,12 @@ function renderAreaList() {
     input.addEventListener('change', async () => {
       const id = input.dataset.labelId;
       const next = getAreaList(areaKind).map(a => a.id === id ? Object.assign({}, a, { label: input.value }) : a);
-      fishingConfig = await AssetDB.setFishingConfig({ [kindOpt.configKey]: next });
+      await patchCurrentScreen({ [kindOpt.configKey]: next });
       showSaveNote();
     });
+  });
+  el.areaList.querySelectorAll('[data-edit-id]').forEach(btn => {
+    btn.addEventListener('click', () => openMoveAreaEditor({ id: btn.dataset.editId }));
   });
 }
 
@@ -3813,7 +4036,7 @@ function areaStageEventToFrac(e) {
   return { x: clamp01((e.clientX - rect.left) / rect.width), y: clamp01((e.clientY - rect.top) / rect.height) };
 }
 el.areaStage.addEventListener('pointerdown', (e) => {
-  if (!fishingConfig.backgroundAssetId) return; // 배경 없이는 좌표 기준(--area-ar)이 없어 그릴 수 없다
+  if (!(currentScreen() && currentScreen().backgroundAssetId)) return; // 배경 없이는 좌표 기준(--area-ar)이 없어 그릴 수 없다
   areaDraft.push(areaStageEventToFrac(e));
   renderAreaDraft();
 });
@@ -3827,11 +4050,17 @@ el.areaDraftCancelBtn.addEventListener('click', () => {
 });
 el.areaDraftFinishBtn.addEventListener('click', async () => {
   if (areaDraft.length < 3) return;
+  if (areaKind === 'move') {
+    // 이동 영역은 폴리곤만으론 안 끝난다 — 도착 화면/지점을 마저 정해야
+    // 실제로 저장된다(moveAreaConfirmBtn). 취소하면 이 폴리곤도 버려진다.
+    await openMoveAreaEditor({ points: areaDraft.slice() });
+    return;
+  }
   const kindOpt = areaKindOption(areaKind);
   const newArea = { id: `area_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, points: areaDraft.slice() };
   if (areaKind === 'interaction') newArea.label = '';
   const next = getAreaList(areaKind).concat(newArea);
-  fishingConfig = await AssetDB.setFishingConfig({ [kindOpt.configKey]: next });
+  await patchCurrentScreen({ [kindOpt.configKey]: next });
   showSaveNote();
   areaDraft = [];
   renderAreaSavedPolygons();
@@ -3839,6 +4068,95 @@ el.areaDraftFinishBtn.addEventListener('click', async () => {
   renderAreaList();
 });
 renderAreaKindPills();
+
+/* ===== 이동 영역(moveAreas) 설정 =====
+   "영역 설정" 탭에서 폴리곤(이동 종류)을 완료하거나, 저장된 이동 영역
+   목록의 ✎ 버튼을 누르면 뜬다. youngwooPosStage와 완전히 같은 단일 포인트
+   드래그 패턴(heldfish-stage/rodtip-marker 재사용)으로 도착 지점을
+   찍지만, 기준 이미지가 "지금 그리는 화면"이 아니라 도착 화면 select로
+   고른 화면의 배경이라는 점이 다르다(도착 화면을 바꾸면 스테이지 배경도
+   같이 바뀐다). moveAreaDraftPoints가 있으면 "새 영역 만들기"(폴리곤은
+   이미 그렸고 도착지만 정하면 됨), 없고 moveAreaEditingId만 있으면 "기존
+   영역의 도착지 수정"이다. */
+let moveAreaDraftPoints = null;
+let moveAreaEditingId = null;
+let moveAreaEntryDraft = { x: 0.5, y: 0.5 };
+let moveAreaDragging = false;
+
+async function openMoveAreaEditor(opts) {
+  const others = screens().filter(s => s.id !== currentScreenId);
+  if (!others.length) {
+    alert('이동 영역을 만들려면 다른 화면이 하나 더 있어야 해요. 위에서 화면을 먼저 추가하세요.');
+    if (opts.points) { areaDraft = []; renderAreaDraft(); } // 방금 그린 폴리곤도 같이 버린다
+    return;
+  }
+  moveAreaDraftPoints = opts.points || null;
+  moveAreaEditingId = opts.id || null;
+  const existing = opts.id ? getAreaList('move').find(a => a.id === opts.id) : null;
+  const defaultTarget = (existing && existing.targetScreenId && others.some(s => s.id === existing.targetScreenId))
+    ? existing.targetScreenId : others[0].id;
+  el.moveAreaTargetSelect.innerHTML = others.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+  el.moveAreaTargetSelect.value = defaultTarget;
+  moveAreaEntryDraft = Object.assign({ x: 0.5, y: 0.5 }, existing ? existing.entryPoint : null);
+  await loadMoveAreaTargetBackground();
+  el.moveAreaOverlay.classList.remove('hidden');
+}
+async function loadMoveAreaTargetBackground() {
+  const target = screens().find(s => s.id === el.moveAreaTargetSelect.value);
+  const bgId = target && target.backgroundAssetId;
+  const bgAsset = bgId ? await AssetDB.getAsset(bgId).catch(() => null) : null;
+  const dims = bgAsset ? await loadImageDimensions(bgAsset.dataUrl) : null;
+  el.moveAreaImg.src = bgAsset ? bgAsset.dataUrl : '';
+  el.moveAreaStage.style.setProperty('--heldfish-ar', dims ? (dims.width + '/' + dims.height) : '1/1');
+  el.moveAreaEntryLabel.textContent = bgAsset
+    ? '도착 지점 — 그림 위를 탭하거나 드래그해서 캐릭터가 나타날 위치를 옮기세요.'
+    : '도착 화면에 아직 배경화면이 없어요 — 화면 가운데로 지정돼요.';
+  renderMoveAreaMarker();
+}
+function renderMoveAreaMarker() {
+  el.moveAreaMarker.style.left = (moveAreaEntryDraft.x * 100) + '%';
+  el.moveAreaMarker.style.top = (moveAreaEntryDraft.y * 100) + '%';
+}
+function updateMoveAreaEntryFromEvent(e) {
+  const rect = el.moveAreaStage.getBoundingClientRect();
+  moveAreaEntryDraft = {
+    x: clamp01((e.clientX - rect.left) / rect.width),
+    y: clamp01((e.clientY - rect.top) / rect.height),
+  };
+  renderMoveAreaMarker();
+}
+el.moveAreaTargetSelect.addEventListener('change', async () => {
+  moveAreaEntryDraft = { x: 0.5, y: 0.5 };
+  await loadMoveAreaTargetBackground();
+});
+el.moveAreaStage.addEventListener('pointerdown', (e) => { moveAreaDragging = true; updateMoveAreaEntryFromEvent(e); });
+window.addEventListener('pointermove', (e) => { if (moveAreaDragging) updateMoveAreaEntryFromEvent(e); });
+window.addEventListener('pointerup', () => { moveAreaDragging = false; });
+function closeMoveAreaEditor() {
+  el.moveAreaOverlay.classList.add('hidden');
+  moveAreaDraftPoints = null;
+  moveAreaEditingId = null;
+}
+el.moveAreaCancelBtn.addEventListener('click', () => {
+  const wasNew = !!moveAreaDraftPoints;
+  closeMoveAreaEditor();
+  if (wasNew) { areaDraft = []; renderAreaDraft(); } // 새로 그린 폴리곤은 저장 안 하고 버린다
+});
+el.moveAreaConfirmBtn.addEventListener('click', async () => {
+  const targetScreenId = el.moveAreaTargetSelect.value;
+  const entryPoint = moveAreaEntryDraft;
+  const list = getAreaList('move');
+  const next = moveAreaEditingId
+    ? list.map(a => a.id === moveAreaEditingId ? Object.assign({}, a, { targetScreenId, entryPoint }) : a)
+    : list.concat({ id: `area_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, points: moveAreaDraftPoints, targetScreenId, entryPoint });
+  await patchCurrentScreen({ moveAreas: next });
+  showSaveNote();
+  areaDraft = [];
+  closeMoveAreaEditor();
+  renderAreaSavedPolygons();
+  renderAreaDraft();
+  renderAreaList();
+});
 
 /* ===== 대화 탭 — PPT 슬라이드형 에디터. 오브젝트를 자유 배치하는 구조
    자체는 이전 낚시바 디자인 탭의 slide-stage/slide-layer와 같은 패턴이지만
@@ -4307,7 +4625,8 @@ async function renderIdleCharacter(character) {
 async function renderCharacterTab() {
   await renderIdleCharacter('jisu');
   await renderIdleCharacter('youngwoo');
-  el.youngwooPosEditBtn.disabled = !(fishingConfig.backgroundAssetId && idleFrameCache.youngwoo.down);
+  const screen = currentScreen();
+  el.youngwooPosEditBtn.disabled = !(screen && screen.backgroundAssetId && idleFrameCache.youngwoo.down);
 }
 
 ['jisu', 'youngwoo'].forEach((character) => {
@@ -4332,20 +4651,21 @@ async function renderCharacterTab() {
 });
 
 /* ===== 영우 위치 지정 =====
-   heldFishPos 피커와 같은 단일 포인트 드래그 패턴이지만, 기준 이미지가
-   낚시바 디자인 탭의 배경화면(fishingConfig.backgroundAssetId)이고 저장
-   좌표계도 그 배경 원본 크기 기준 0~1(영역 설정 탭 다각형 점, play/index.html의
+   heldFishPos 피커와 같은 단일 포인트 드래그 패턴이지만, 기준 이미지이
+   지금 고른 화면(currentScreen())의 배경화면이고 저장 좌표계도 그 배경
+   원본 크기 기준 0~1(영역 설정 탭 다각형 점, play/index.html의
    worldPosToImageFrac과 동일한 top-down 좌표계)이다 — 영우는 배경 위
    고정된 세계 좌표에 서 있는 NPC라, char-stage 기준이 아니라 배경 기준
-   좌표가 맞다. */
+   좌표가 맞다. 화면마다 따로 지정한다(그 화면의 youngwooNpcPos).*/
 let youngwooPosDraft = { x: 0.5, y: 0.5 };
 let youngwooPosDragging = false;
 async function openYoungwooPosEditor() {
-  if (!fishingConfig.backgroundAssetId || !idleFrameCache.youngwoo.down) return;
-  const bgAsset = await AssetDB.getAsset(fishingConfig.backgroundAssetId).catch(() => null);
+  const screen = currentScreen();
+  if (!screen || !screen.backgroundAssetId || !idleFrameCache.youngwoo.down) return;
+  const bgAsset = await AssetDB.getAsset(screen.backgroundAssetId).catch(() => null);
   if (!bgAsset) return;
   const dims = await loadImageDimensions(bgAsset.dataUrl);
-  youngwooPosDraft = Object.assign({ x: 0.5, y: 0.5 }, fishingConfig.youngwooNpcPos || {});
+  youngwooPosDraft = Object.assign({ x: 0.5, y: 0.5 }, screen.youngwooNpcPos || {});
   el.youngwooPosImg.src = bgAsset.dataUrl;
   el.youngwooPosStage.style.setProperty('--heldfish-ar', dims ? (dims.width + '/' + dims.height) : '1/1');
   renderYoungwooPosMarker();
@@ -4369,7 +4689,7 @@ window.addEventListener('pointermove', (e) => { if (youngwooPosDragging) updateY
 window.addEventListener('pointerup', () => { youngwooPosDragging = false; });
 el.youngwooPosCancelBtn.addEventListener('click', () => el.youngwooPosOverlay.classList.add('hidden'));
 el.youngwooPosConfirmBtn.addEventListener('click', async () => {
-  fishingConfig = await AssetDB.setFishingConfig({ youngwooNpcPos: youngwooPosDraft });
+  await patchCurrentScreen({ youngwooNpcPos: youngwooPosDraft });
   showSaveNote();
   el.youngwooPosOverlay.classList.add('hidden');
 });
@@ -4384,6 +4704,7 @@ function showSaveNote() {
 async function init() {
   renderPromptTabs();
   fishingConfig = await AssetDB.getFishingConfig().catch(() => fishingConfig);
+  renderScreenManager();
   renderCastGaugeImageSlot();
   renderCastPhysicsControls();
   renderReelMotionControls();

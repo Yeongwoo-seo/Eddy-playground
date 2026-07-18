@@ -774,6 +774,14 @@ let bgDims = null;
 let fishableAreas = []; // dev/minigame-fishing/index.html "영역 설정" 탭에서 그린 낚시가능 영역들
 let blockedAreas = []; // 이동 불가 영역들
 let interactionAreas = []; // 상호작용(상점/대화 등) 영역들, 각 { id, points, label }
+let moveAreas = []; // 화면 이동 영역들, 각 { id, points, targetScreenId, entryPoint }. applyScreen 참고.
+// screensList — fishingConfig.screens 전체(로드 한 번으로 캐시, 화면끼리
+// 서로 이동할 때마다 다시 안 불러온다). currentScreenId는 "지금 보고 있는
+// 화면"의 id — moveArea를 밟았을 때 targetScreenId로 이 목록에서 다음
+// screenDef를 찾아 applyScreen을 다시 호출한다(triggerScreenTransition).
+let screensList = [];
+let currentScreenId = null;
+let screenTransitioning = false; // true인 동안은 새 이동 트리거/조이스틱 입력을 막는다(triggerScreenTransition)
 let caughtCount = 0;
 // 아직 영우에게 안 판 물고기 — fishId(문자열) -> 마리 수. caughtCount(상단
 // 칩, 이번 판 누적 총 마릿수 표시)와 달리 팔면 비워진다(confirmSellFish).
@@ -1155,7 +1163,6 @@ async function loadConfig() {
   MOTION_CATEGORIES.forEach(category => {
     Object.values(motionFrameEraseOverrides[category] || {}).forEach(assetId => { if (assetId) ids.push(assetId); });
   });
-  if (cfg.backgroundAssetId) ids.push(cfg.backgroundAssetId);
   if (cfg.castGaugeAssetId) ids.push(cfg.castGaugeAssetId);
   const characterIdleSheetsCfg = cfg.characterIdleSheets || {};
   if (characterIdleSheetsCfg.jisu && characterIdleSheetsCfg.jisu.assetId) ids.push(characterIdleSheetsCfg.jisu.assetId);
@@ -1274,89 +1281,18 @@ async function loadConfig() {
     });
   }
 
-  // 배경화면 — el.frame 자체는 화면 크기 그대로 두고, background-position만
-  // 캐릭터 좌표에 맞춰 옮긴다("그 화면 사이즈에 맞게 로딩") — 배경 전체를
-  // 담은 거대한 DOM을 따로 만들어 옮기지 않는다. background-size는 auto라
-  // 항상 원본 픽셀 크기(1배율, 늘이거나 잘라내지 않음) 그대로 그려지고,
-  // background-position(updateCamera가 캐릭터 좌표 기준으로 매 프레임
-  // 계산)만 바뀌어 화면보다 큰 배경도 실제로 돌아다닐 수 있다 — 예전엔
-  // background-position:center로 고정해서 화면보다 큰 배경은 가운데 부분만
-  // 보이고 나머지로는 아예 이동할 수 없었다. 업로드가 없거나 자연 크기를
-  // 못 읽었으면 .frame CSS 기본값(하늘/바다 그라데이션)이 그대로 보이게
-  // 하고, 카메라가 움직이지 않는 예전 동작(좁은 범위 안 이동)으로 자연히
-  // 폴백한다.
-  const backgroundAsset = cfg.backgroundAssetId ? byId.get(cfg.backgroundAssetId) : null;
-  // 배경 자연 크기 — "영역 설정" 탭에서 그린 다각형(fishableAreas/
-  // blockedAreas/interactionAreas)이 이 크기 기준 0~1 정규화 좌표라,
-  // 캐릭터/추 착수 지점과 비교하려면 필요하고(worldPosToImageFrac/
-  // framePxToImageFrac 참고), 배경이 있을 땐 캐릭터가 돌아다닐 수 있는
-  // 전체 범위(worldSize)로도 그대로 쓴다.
-  bgDims = backgroundAsset ? await new Promise(resolve => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
-    img.onerror = () => resolve(null);
-    img.src = backgroundAsset.dataUrl;
-  }) : null;
-  fishableAreas = cfg.fishableAreas || [];
-  blockedAreas = cfg.blockedAreas || [];
-  interactionAreas = cfg.interactionAreas || [];
-
-  hasWorldBackground = !!(backgroundAsset && bgDims);
-  // 배경이 바뀔 때마다(재입장 등) 줌을 1배율로 되돌린다 — 슬라이더는
-  // 배경이 있을 때만 보이고, 없으면 숨긴다(effectiveBgZoom이 어차피 1로
-  // 강제하지만 슬라이더 자체를 숨겨 조작할 수 없게 한다).
-  bgZoom = 1;
-  el.layoutBgZoom.value = '1';
-  el.layoutBgZoomRow.classList.toggle('hidden', !hasWorldBackground);
-  refreshFrameRect();
-  worldSize = hasWorldBackground ? { w: bgDims.width, h: bgDims.height } : { w: frameRect.width, h: frameRect.height };
-  if (hasWorldBackground) {
-    // 카메라가 움직이는 정상 경로 — el.bgLayer에 원본 이미지를 원본 크기
-    // 그대로 얹고, updateCamera는 이 레이어를 transform으로만 민다(el.frame
-    // 자체는 CSS 기본 그라데이션을 그대로 유지 — 배경이 화면보다 작을 때
-    // 가장자리에 비쳐 보인다).
-    el.frame.style.backgroundImage = '';
-    el.bgLayer.style.backgroundImage = `url(${backgroundAsset.dataUrl})`;
-    el.bgLayer.style.backgroundRepeat = 'no-repeat';
-    el.bgLayer.style.display = '';
-    applyBgLayerSize();
-  } else {
-    // 배경이 없거나(그라데이션 폴백) 자연 크기를 못 읽은 예외 상황 —
-    // 카메라가 움직일 수 없으므로 el.bgLayer는 꺼두고 예전처럼 el.frame에
-    // auto+center로 정적으로 얹는다(카메라 계산 없이 최소한 보이게라도 함).
-    el.bgLayer.style.backgroundImage = '';
-    el.bgLayer.style.display = 'none';
-    el.frame.style.backgroundImage = backgroundAsset ? `url(${backgroundAsset.dataUrl})` : '';
-    el.frame.style.backgroundSize = 'auto';
-    el.frame.style.backgroundPosition = 'center';
-    el.frame.style.backgroundRepeat = backgroundAsset ? 'no-repeat' : '';
-  }
-  const wb = worldBounds();
-  if (!charWorldPos) {
-    // 예전 CSS 기본값(화면 정중앙)과 같은 자리에서 시작하되, 새 범위(wb)
-    // 안으로 clamp한다.
-    charWorldPos = { x: clamp(worldSize.w / 2, wb.minX, wb.maxX), y: clamp(worldSize.h / 2, wb.minY, wb.maxY) };
-  } else {
-    charWorldPos.x = clamp(charWorldPos.x, wb.minX, wb.maxX);
-    charWorldPos.y = clamp(charWorldPos.y, wb.minY, wb.maxY);
-  }
-
-  // 영우 NPC — youngwooNpcPos(배경 원본 크기 기준 0~1, top-down)를
-  // charWorldPos와 같은 세계 좌표 형식(px, 왼쪽/아래 기준)으로 환산한다.
-  // worldPosToImageFrac의 역변환(y = h*(1-frac.y))과 같은 식이다. 배경이
-  // 없으면(hasWorldBackground false) 좌표계 기준이 없으니 NPC를 그리지
-  // 않는다 — down 프레임이 없을 때도 마찬가지(영우는 항상 정면만 쓴다).
-  const youngwooNpcPos = cfg.youngwooNpcPos;
-  npcWorldPos = (hasWorldBackground && youngwooNpcPos) ? { x: youngwooNpcPos.x * bgDims.width, y: bgDims.height * (1 - youngwooNpcPos.y) } : null;
-  if (npcWorldPos && youngwooIdleFrameUrls.down) {
-    el.npcYoungwooImg.src = youngwooIdleFrameUrls.down;
-    el.npcYoungwooStage.classList.remove('hidden');
-  } else {
-    el.npcYoungwooStage.classList.add('hidden');
-  }
-
-  updateCamera();
+  // 화면(screens) — 배경화면 여러 장을 서로 걸어서 이동 가능한 화면으로
+  // 묶는 단위(§신규, 영역지정/화면 전환. dev/minigame-fishing/index.html
+  // "화면" 관리 참고). 배경/영역(낚시가능·이동불가·상호작용·이동)·영우
+  // 위치를 실제로 적용하는 로직은 화면을 걸어서 건널 때도 그대로
+  // 재사용해야 해서 applyScreen()으로 따로 뺐다(아래 정의,
+  // triggerScreenTransition이 이동 영역을 밟았을 때 다시 호출한다).
+  // screens가 비어있으면(아직 화면을 하나도 안 만들었으면) applyScreen(null)이
+  // 예전처럼 .frame 기본 하늘/바다 그라데이션 폴백으로 처리한다.
+  screensList = cfg.screens || [];
+  const startScreen = screensList.find(s => s.id === cfg.startScreenId) || screensList[0] || null;
+  currentScreenId = startScreen ? startScreen.id : null;
+  await applyScreen(startScreen, { isInitialLoad: true });
 
   // 낚시바 모듈 크기 — 설정 화면 슬라이드 에디터(dev/minigame-fishing/
   // index.html)의 슬라이드 실제 px 크기를 그대로 쓴다.
@@ -1580,6 +1516,148 @@ async function loadConfig() {
   }
 
   await preloadAllAssetImages;
+}
+
+/* ===== 화면 적용 =====
+   screenDef 하나(배경화면+낚시가능/이동불가/상호작용/이동 영역+영우 위치)를
+   실제로 화면에 반영한다 — 배경화면 로드부터 카메라/worldSize 재계산,
+   캐릭터 스폰 위치, 영우 NPC 배치까지 예전에 loadConfig()가 한 번만 하던
+   일 그대로다. loadConfig()의 최초 로드(시작 화면)와, 이동 영역을 밟아
+   화면을 건널 때(triggerScreenTransition, 도착 화면)가 이 함수 하나를
+   공유한다. opts.entryPoint(0~1, 도착 화면 배경 원본 크기 기준 top-down
+   정규화 좌표, 이동 영역의 entryPoint)가 있으면 그 지점에 캐릭터를
+   스폰한다 — 없으면(최초 로드, 또는 배경 없는 화면) 예전처럼 화면
+   정중앙에서 시작하거나(charWorldPos 최초 지정) 지금 위치를 새 범위로만
+   clamp한다. */
+async function applyScreen(screenDef, opts) {
+  opts = opts || {};
+  const backgroundAsset = (screenDef && screenDef.backgroundAssetId) ? await AssetDB.getAsset(screenDef.backgroundAssetId).catch(() => null) : null;
+  if (backgroundAsset) await preloadWithRetry(backgroundAsset.dataUrl, 3, 500);
+  // 배경 자연 크기 — "영역 설정" 탭에서 그린 다각형(fishableAreas/
+  // blockedAreas/interactionAreas/moveAreas)이 이 크기 기준 0~1 정규화
+  // 좌표라, 캐릭터/추 착수 지점과 비교하려면 필요하고(worldPosToImageFrac/
+  // framePxToImageFrac 참고), 배경이 있을 땐 캐릭터가 돌아다닐 수 있는
+  // 전체 범위(worldSize)로도 그대로 쓴다.
+  bgDims = backgroundAsset ? await new Promise(resolve => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    img.onerror = () => resolve(null);
+    img.src = backgroundAsset.dataUrl;
+  }) : null;
+  fishableAreas = (screenDef && screenDef.fishableAreas) || [];
+  blockedAreas = (screenDef && screenDef.blockedAreas) || [];
+  interactionAreas = (screenDef && screenDef.interactionAreas) || [];
+  moveAreas = (screenDef && screenDef.moveAreas) || [];
+
+  hasWorldBackground = !!(backgroundAsset && bgDims);
+  // 배경이 바뀔 때마다(재입장/화면 이동) 줌을 1배율로 되돌린다 — 슬라이더는
+  // 배경이 있을 때만 보이고, 없으면 숨긴다(effectiveBgZoom이 어차피 1로
+  // 강제하지만 슬라이더 자체를 숨겨 조작할 수 없게 한다).
+  bgZoom = 1;
+  el.layoutBgZoom.value = '1';
+  el.layoutBgZoomRow.classList.toggle('hidden', !hasWorldBackground);
+  refreshFrameRect();
+  worldSize = hasWorldBackground ? { w: bgDims.width, h: bgDims.height } : { w: frameRect.width, h: frameRect.height };
+  if (hasWorldBackground) {
+    // 카메라가 움직이는 정상 경로 — el.bgLayer에 원본 이미지를 원본 크기
+    // 그대로 얹고, updateCamera는 이 레이어를 transform으로만 민다(el.frame
+    // 자체는 CSS 기본 그라데이션을 그대로 유지 — 배경이 화면보다 작을 때
+    // 가장자리에 비쳐 보인다).
+    el.frame.style.backgroundImage = '';
+    el.bgLayer.style.backgroundImage = `url(${backgroundAsset.dataUrl})`;
+    el.bgLayer.style.backgroundRepeat = 'no-repeat';
+    el.bgLayer.style.display = '';
+    applyBgLayerSize();
+  } else {
+    // 배경이 없거나(그라데이션 폴백) 자연 크기를 못 읽은 예외 상황 —
+    // 카메라가 움직일 수 없으므로 el.bgLayer는 꺼두고 예전처럼 el.frame에
+    // auto+center로 정적으로 얹는다(카메라 계산 없이 최소한 보이게라도 함).
+    el.bgLayer.style.backgroundImage = '';
+    el.bgLayer.style.display = 'none';
+    el.frame.style.backgroundImage = backgroundAsset ? `url(${backgroundAsset.dataUrl})` : '';
+    el.frame.style.backgroundSize = 'auto';
+    el.frame.style.backgroundPosition = 'center';
+    el.frame.style.backgroundRepeat = backgroundAsset ? 'no-repeat' : '';
+  }
+  const wb = worldBounds();
+  if (opts.entryPoint && hasWorldBackground) {
+    // 이동 영역을 밟고 건너온 경우 — 도착 화면 위 지정된 지점(0~1)에서
+    // 다시 시작한다(worldPosToImageFrac의 역변환과 같은 식).
+    charWorldPos = {
+      x: clamp(opts.entryPoint.x * bgDims.width, wb.minX, wb.maxX),
+      y: clamp(bgDims.height * (1 - opts.entryPoint.y), wb.minY, wb.maxY),
+    };
+  } else if (!charWorldPos) {
+    // 예전 CSS 기본값(화면 정중앙)과 같은 자리에서 시작하되, 새 범위(wb)
+    // 안으로 clamp한다.
+    charWorldPos = { x: clamp(worldSize.w / 2, wb.minX, wb.maxX), y: clamp(worldSize.h / 2, wb.minY, wb.maxY) };
+  } else {
+    charWorldPos.x = clamp(charWorldPos.x, wb.minX, wb.maxX);
+    charWorldPos.y = clamp(charWorldPos.y, wb.minY, wb.maxY);
+  }
+
+  // 영우 NPC — youngwooNpcPos(배경 원본 크기 기준 0~1, top-down)를
+  // charWorldPos와 같은 세계 좌표 형식(px, 왼쪽/아래 기준)으로 환산한다.
+  // worldPosToImageFrac의 역변환(y = h*(1-frac.y))과 같은 식이다. 배경이
+  // 없으면(hasWorldBackground false) 좌표계 기준이 없으니 NPC를 그리지
+  // 않는다 — down 프레임이 없을 때도 마찬가지(영우는 항상 정면만 쓴다).
+  const youngwooNpcPos = screenDef && screenDef.youngwooNpcPos;
+  npcWorldPos = (hasWorldBackground && youngwooNpcPos) ? { x: youngwooNpcPos.x * bgDims.width, y: bgDims.height * (1 - youngwooNpcPos.y) } : null;
+  if (npcWorldPos && youngwooIdleFrameUrls.down) {
+    el.npcYoungwooImg.src = youngwooIdleFrameUrls.down;
+    el.npcYoungwooStage.classList.remove('hidden');
+  } else {
+    el.npcYoungwooStage.classList.add('hidden');
+  }
+
+  updateCamera();
+  // 화면이 바뀌면 이전 화면에서 뜨던 상호작용 배지를 그대로 이어받지
+  // 않는다 — 최초 로드는 loadConfig().then(...)이 끝에서 한 번
+  // checkInteractionArea()를 불러주므로 여기선 건너뛴다(중복 호출 방지).
+  activeInteractionAreaId = null;
+  el.interactionBadge.classList.add('hidden');
+  if (!opts.isInitialLoad) checkInteractionArea();
+}
+
+/* ===== 화면 이동(moveAreas) 트랜지션 =====
+   캐릭터가 이동 영역(moveArea)에 걸어 들어가면(checkMoveArea, moveTick에서
+   매 프레임 호출) 도착 화면으로 건너간다. "어두워졌다가 로딩 다 되면
+   밝아짐"은 이미 낚시 진입 자체(#preloadOverlay/revealGame)에 있던 연출을
+   그대로 재사용한다 — fade-out 클래스를 떼면 불투명(검정)으로, 다시 붙이면
+   투명으로 CSS 트랜지션(.9s)이 자연히 오간다. 어두운 동안 조이스틱을
+   막아야 하므로(screenTransitioning), stopMoveHold로 지금 하던 이동부터
+   끊는다 — moveTick은 moveHoldVec이 비면 그 프레임에서 스스로 멈춘다. */
+function screenById(id) { return screensList.find(s => s.id === id) || null; }
+async function triggerScreenTransition(moveArea) {
+  if (screenTransitioning) return;
+  const targetDef = screenById(moveArea.targetScreenId);
+  if (!targetDef) return;
+  screenTransitioning = true;
+  stopMoveHold();
+  el.preloadOverlay.classList.remove('hidden');
+  void el.preloadOverlay.offsetWidth; // display:none -> block 직후 곧바로 opacity를 바꾸면 트랜지션이 안 먹을 수 있어 강제로 리플로우 한 번 끼운다
+  await new Promise(resolve => {
+    el.preloadOverlay.addEventListener('transitionend', resolve, { once: true });
+    el.preloadOverlay.classList.remove('fade-out'); // opacity 0 -> 1, 어두워짐
+  });
+  currentScreenId = targetDef.id;
+  await applyScreen(targetDef, { entryPoint: moveArea.entryPoint });
+  await new Promise(resolve => {
+    el.preloadOverlay.addEventListener('transitionend', resolve, { once: true });
+    el.preloadOverlay.classList.add('fade-out'); // opacity 1 -> 0, 밝아짐
+  });
+  el.preloadOverlay.classList.add('hidden'); // revealGame()과 같은 마무리 — 트랜지션 끝나면 완전히 빼서 다시 그릴 일이 없게 한다
+  screenTransitioning = false;
+}
+// moveTick(캐릭터가 이동 중일 때 매 프레임)에서 checkInteractionArea와
+// 나란히 부른다 — 캐릭터가 이동 영역 다각형 안에 들어온 순간 트랜지션을
+// 튕긴다(triggerScreenTransition 자체 가드가 있어 여러 번 겹쳐 불려도
+// 안전하다).
+function checkMoveArea() {
+  if (screenTransitioning || !moveAreas.length) return;
+  const area = areaContaining(worldPosToImageFrac(charWorldPos.x, charWorldPos.y), moveAreas);
+  if (area) triggerScreenTransition(area);
 }
 
 // 프리로드 오버레이(#preloadOverlay, 정적 마크업이라 첫 페인트부터 검다)를
@@ -2701,10 +2779,11 @@ function moveTick(ts) {
   charWorldPos.y = nextY;
   updateCamera(); // 카메라 오프셋 재계산 + 캐릭터 화면 위치(left/bottom)까지 함께 반영한다
   checkInteractionArea();
-  moveRaf = requestAnimationFrame(moveTick);
+  checkMoveArea(); // 이동 영역(다른 화면으로 건너가는 영역)에 들어왔는지 — 들어왔으면 triggerScreenTransition이 알아서 이동을 끊는다(stopMoveHold)
+  if (moveHoldVec) moveRaf = requestAnimationFrame(moveTick); // checkMoveArea가 화면을 건너가며 이동을 끊었으면 다시 예약하지 않는다
 }
 function startMoveHold(dx, dy, spriteDir) {
-  if (gameState !== 'idle') return;
+  if (gameState !== 'idle' || screenTransitioning) return;
   moveHoldVec = { dx, dy };
   applyMoveSprite(spriteDir);
   if (!moveRaf) { moveLastT = 0; moveRaf = requestAnimationFrame(moveTick); }
