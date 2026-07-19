@@ -1,14 +1,15 @@
-// PWA scope covers the whole site — registered from schedule.html
-// (the installed start_url) with { scope: '.' }, so navigating to
-// planner.html/pack.html/arrival.html/secret.html stays inside the
-// standalone app instead of kicking out to the browser
-const CACHE_NAME = 'gangnangkong-tour-v6';
+// PWA scope covers the whole site — registered from schedule.html and
+// hangeoreum.html (each an independently installed home-screen app) with
+// { scope: '.' }, so navigating within either app's pages stays inside
+// the standalone app instead of kicking out to the browser
+const CACHE_NAME = 'gangnangkong-tour-v7';
 const APP_SHELL = [
   'schedule.html',
   'planner.html',
   'pack.html',
   'arrival.html',
   'secret.html',
+  'hangeoreum.html',
   'manifest.json',
   'icons/icon-192.png',
   'icons/icon-512.png',
@@ -59,17 +60,22 @@ self.addEventListener('fetch', event => {
   );
 });
 
-// background trip notifications, delivered by the gangnangkong-tour-push
-// Worker even while the app is fully closed — see worker/README.md
+// background notifications for both installed apps (강낭콩 투어 + 한걸음),
+// delivered by the shared gangnangkong-tour-push Worker even while the app
+// is fully closed — see worker/README.md. The Worker stamps title/icon/url
+// per app in the push payload, so this handler stays app-agnostic.
 self.addEventListener('push', event => {
   let data = {};
   try { data = event.data ? event.data.json() : {}; } catch (e) {}
   const title = data.title || '강낭콩 투어';
   const body = data.body || '';
-  event.waitUntil(self.registration.showNotification(title, { body, icon: 'icons/icon-192.png' }));
+  const options = { body, data: { url: data.url || 'schedule.html' } };
+  if (data.icon) options.icon = data.icon;
+  event.waitUntil(self.registration.showNotification(title, options));
 });
 
 self.addEventListener('notificationclick', event => {
   event.notification.close();
-  event.waitUntil(clients.openWindow('schedule.html'));
+  const url = (event.notification.data && event.notification.data.url) || 'schedule.html';
+  event.waitUntil(clients.openWindow(url));
 });

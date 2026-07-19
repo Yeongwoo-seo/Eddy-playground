@@ -407,6 +407,7 @@ async function load(){
 async function save(){
   mem=JSON.parse(JSON.stringify(S));
   try{await storeSet(KEY,JSON.stringify(S));}catch(e){}
+  syncPushRules();
 }
 
 /* ================= helpers ================= */
@@ -599,8 +600,12 @@ function reminderSettingsHTML(){
       <div class="tx">보스 방치 알림<small>무서운 일이 10시간 넘게 그대로면 딱 한 번, 부드럽게만 알려줘</small></div>
       <div class="sw"></div>
     </div>
+    <div style="font-size:12px;color:${pushActive?'var(--green)':'var(--soft)'};margin-top:14px">${pushActive?'🔔 앱이 꺼져 있어도 알림이 울려':'앱을 열어둔 상태에서만(또는 다시 열 때) 알림이 울려'}</div>
     <div class="rnote">
-      ⚠️ 아이폰 홈 화면에 저장해 쓰는 경우, 앱이 완전히 꺼져 있으면 진짜 잠금화면 알림은 애플 정책상 못 갈 수 있어. 대신 앱을 다시 열 때마다 놓친 리마인더를 바로 알려줄게.${notifSupported?'':' (이 브라우저는 알림 자체를 지원 안 해서 앱 안에서만 알려줄 수 있어.)'} 확실한 잠금화면 알림이 꼭 필요하면 아이폰 기본 미리 알림 앱을 같이 써도 좋아.
+      ${pushActive
+        ? '아이폰 홈 화면 앱으로 설치했다면 알림이 잠금화면에도 떠. 실제로 안 오면 설정 &gt; 알림에서 이 앱 알림이 켜져 있는지 확인해줘.'
+        : `⚠️ 아이폰 홈 화면에 저장해 쓰는 경우, 앱이 완전히 꺼져 있으면 진짜 잠금화면 알림은 애플 정책상 못 갈 수 있어. 대신 앱을 다시 열 때마다 놓친 리마인더를 바로 알려줄게.${notifSupported?'':' (이 브라우저는 알림 자체를 지원 안 해서 앱 안에서만 알려줄 수 있어.)'} 확실한 잠금화면 알림이 꼭 필요하면 아이폰 기본 미리 알림 앱을 같이 써도 좋아.`
+      }
     </div>
   </div>`;
 }
@@ -854,13 +859,109 @@ document.querySelectorAll('.veil').forEach(v=>{
   v.addEventListener('click',e=>{if(e.target===v)v.classList.remove('on');});
 });
 
+/* ================= push (background) notifications ================= */
+// Cloudflare Worker shared with the trip app's push feature — delivers
+// reminders via Web Push even when this app is fully closed. Leave
+// PUSH_API_URL blank to fall back to the foreground-only checks below.
+// See worker/README.md for one-time deploy steps.
+const PUSH_API_URL='';
+const VAPID_PUBLIC_KEY='BBVVH_C7elBHMMbAYAyrrrN0eLesVlhxEhjyjc4qUHuHhEqg3G4HHic36Zp5Wq-RPs2VVuWcFmESr7eO_kcssIs';
+let pushActive=false;
+
+function urlBase64ToUint8Array(base64String){
+  const padding='='.repeat((4 - base64String.length % 4) % 4);
+  const base64=(base64String + padding).replace(/-/g,'+').replace(/_/g,'/');
+  const raw=atob(base64);
+  const arr=new Uint8Array(raw.length);
+  for(let i=0;i<raw.length;i++) arr[i]=raw.charCodeAt(i);
+  return arr;
+}
+
+async function ensurePushSubscription(){
+  if(!PUSH_API_URL || !('serviceWorker' in navigator) || !('PushManager' in window)) return;
+  if(typeof Notification==='undefined' || Notification.permission!=='granted') return;
+  try{
+    const reg=await navigator.serviceWorker.ready;
+    let sub=await reg.pushManager.getSubscription();
+    if(!sub){
+      sub=await reg.pushManager.subscribe({
+        userVisibleOnly:true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+      });
+    }
+    await fetch(PUSH_API_URL+'/subscribe', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ app:'hangeoreum', subscription: sub.toJSON() })
+    });
+    pushActive=true;
+    syncPushRules();
+  }catch(e){
+    pushActive=false;
+  }
+}
+
+// next local occurrence of a "HH:mm" preset time, today if still ahead, else tomorrow
+function nextOccurrence(hhmm){
+  const [h,m]=hhmm.split(':').map(Number);
+  const d=new Date();
+  d.setHours(h,m,0,0);
+  if(d.getTime()<=Date.now())d.setDate(d.getDate()+1);
+  return d;
+}
+
+// one-shot rules for the Worker's cron to fire — always the *next* occurrence,
+// never one already past, so resyncing never re-arms something already sent
+function buildPushRules(){
+  const rules=[];
+  const R=S.reminders;
+  if(!R||!R.on)return rules;
+  PRESET_TIMES.forEach(p=>{
+    if(!R.slots||!R.slots[p.key])return;
+    const at=nextOccurrence(p.key);
+    rules.push({
+      id:'slot:'+p.key+':'+at.toISOString().slice(0,10),
+      content: NUDGE_PHRASES[Math.random()*NUDGE_PHRASES.length|0],
+      datetime: at.toISOString(),
+      fired:false
+    });
+  });
+  if(R.bossNudge){
+    const bossTask=S.tasks.find(t=>t.scary);
+    if(bossTask){
+      const at=new Date(Math.max(bossTask.lastSkip||0,bossTask.created||0)+10*3600000);
+      if(at.getTime()>Date.now()){
+        rules.push({
+          id:'boss:'+bossTask.id,
+          content:'그 보스, 아직 던전에 있어. 안 봐도 괜찮아 — 준비되면 와줘.',
+          datetime: at.toISOString(),
+          fired:false
+        });
+      }
+    }
+  }
+  return rules;
+}
+
+function syncPushRules(){
+  if(!PUSH_API_URL || !pushActive)return;
+  fetch(PUSH_API_URL+'/rules', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ app:'hangeoreum', rules: buildPushRules() })
+  }).catch(()=>{});
+}
+
 /* ================= reminders / notifications ================= */
 async function toggleReminders(){
   if(!S.reminders)S.reminders={on:false,slots:{},bossNudge:true,lastFired:{}};
   S.reminders.on=!S.reminders.on;
   if(S.reminders.on){
     if('Notification' in window){
-      try{ await Notification.requestPermission(); }catch(e){}
+      try{
+        const perm=await Notification.requestPermission();
+        if(perm==='granted')ensurePushSubscription();
+      }catch(e){}
     }
     toast('리마인더 켰어 🔔 조용히 지켜보고 있을게');
   }else{
@@ -887,6 +988,7 @@ function tryShowNotification(title,body){
   }catch(e){}
 }
 function maybeNudge(){
+  if(pushActive)return; // the Worker's scheduled push already covers this
   if(!S.reminders||!S.reminders.on)return;
   const now=new Date();
   const todayKey=today();
@@ -924,6 +1026,13 @@ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==
 window.addEventListener('pageshow',()=>maybeNudge());
 window.addEventListener('focus',()=>maybeNudge());
 
+// scope covers the whole site — shared with the trip app's service worker
+// (registered from schedule.html) so this app's push notifications work
+// even when installed as its own separate home-screen app
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js', { scope: '.' });
+}
+ensurePushSubscription();
 load();
 </script>
 </body>
