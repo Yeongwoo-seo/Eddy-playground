@@ -50,6 +50,17 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .bg-cutout-progress-bar{height:5px;border-radius:3px;background:rgba(255,255,255,.2);overflow:hidden}
 .bg-cutout-progress-fill{height:100%;background:var(--cyan);width:0%;transition:width .2s ease}
 
+/* 시작하기 버튼 크기 — 코너 핸들 드래그가 실기기 터치에서 먹통이 되는
+   경우가 있어(핸들이 <button> 안에 중첩된 자식이라 iOS Safari 등에서
+   히트테스트가 버튼 전체로 뭉개지는 사례가 보고됨), 숫자 입력을 항상
+   되는 대안 경로로 둔다. 드래그 핸들은 그대로 남겨둔다(되는 기기에서는
+   더 빠르므로). */
+.size-controls{position:absolute;top:calc(58px + env(safe-area-inset-top,0) + 20px);left:16px;right:16px;z-index:4;display:flex;gap:10px;justify-content:center}
+.size-field{display:flex;align-items:center;gap:6px;background:rgba(8,10,12,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:7px 10px}
+.size-field label{font-family:var(--mono);font-size:10.5px;color:rgba(255,255,255,.7);white-space:nowrap}
+.size-field input{width:44px;background:transparent;border:none;color:#fff;font-family:var(--mono);font-size:12.5px;text-align:right}
+.size-field input:focus{outline:none}
+
 /* Freely-positioned buttons: dragged to place, tapped to trigger. Position
    and width are stored as a fraction of the frame so they stay put across
    reloads and viewport sizes. */
@@ -97,6 +108,19 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
     <input type="file" id="bgInput" accept="image/jpeg,image/png,image/webp" style="display:none">
   </div>
   <div class="drag-hint">배경을 드래그하면 위치가 조정돼요</div>
+
+  <div class="size-controls" id="sizeControls">
+    <div class="size-field">
+      <label for="btnWidthInput">버튼 너비</label>
+      <input type="number" id="btnWidthInput" min="20" max="92" step="1">
+      <label for="btnWidthInput">%</label>
+    </div>
+    <div class="size-field">
+      <label for="btnHeightInput">버튼 높이</label>
+      <input type="number" id="btnHeightInput" min="6" max="50" step="1">
+      <label for="btnHeightInput">%</label>
+    </div>
+  </div>
 
   <button class="float-btn start" id="startBtn">
     <span class="btn-label">시작하기</span>
@@ -151,6 +175,8 @@ const el = {
   bgCutoutProgressText: document.getElementById('bgCutoutProgressText'),
   startBtn: document.getElementById('startBtn'),
   startResizeHandle: document.getElementById('startResizeHandle'),
+  btnWidthInput: document.getElementById('btnWidthInput'),
+  btnHeightInput: document.getElementById('btnHeightInput'),
   weekSelect: document.getElementById('weekSelect'),
   weekGrid: document.getElementById('weekGrid'),
   minigameSelect: document.getElementById('minigameSelect'),
@@ -411,6 +437,11 @@ function renderBtnPos() {
   el.startBtn.style.top = btnPos.start.y + '%';
   el.startBtn.style.width = btnPos.start.w + '%';
   el.startBtn.style.height = btnPos.start.h + '%';
+  // 입력 중(focus)에는 되쓰지 않는다 — 서버 pull이나 드래그로 값이 갱신될
+  // 때마다 이 필드를 덮어쓰면, 타이핑 도중 커서 위치가 튀거나 방금 친
+  // 숫자가 지워진다.
+  if (document.activeElement !== el.btnWidthInput) el.btnWidthInput.value = Math.round(btnPos.start.w);
+  if (document.activeElement !== el.btnHeightInput) el.btnHeightInput.value = Math.round(btnPos.start.h);
 }
 
 function saveBtnPos() {
@@ -491,6 +522,24 @@ function makeResizable(handleEl, posKey) {
 }
 
 makeResizable(el.startResizeHandle, 'start');
+
+// 코너 핸들 드래그의 확실히 되는 대안 — 숫자를 직접 입력해 너비/높이를
+// 바꾼다. resize 클램프 범위(20~92 / 6~50)와 동일한 min/max를 input에도
+// 걸어뒀다.
+el.btnWidthInput.addEventListener('input', () => {
+  const v = clamp(Number(el.btnWidthInput.value), 20, 92);
+  if (Number.isNaN(v)) return;
+  btnPos.start.w = v;
+  renderBtnPos();
+});
+el.btnWidthInput.addEventListener('change', saveBtnPos);
+el.btnHeightInput.addEventListener('input', () => {
+  const v = clamp(Number(el.btnHeightInput.value), 6, 50);
+  if (Number.isNaN(v)) return;
+  btnPos.start.h = v;
+  renderBtnPos();
+});
+el.btnHeightInput.addEventListener('change', saveBtnPos);
 
 renderBgPos();
 renderBtnPos();
