@@ -73,26 +73,34 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-// network-first: always prefer the latest deployed code when online,
-// only falling back to the cached app shell when offline. A stale
-// cached page could reference an old localStorage key or logic, which
-// looks exactly like "my data disappeared" to the user.
+// stale-while-revalidate: serve the cached copy immediately (so opening the
+// installed app renders instantly instead of blocking on a full network
+// round-trip every time), while a network fetch runs in the background to
+// refresh the cache for the *next* open. This used to be network-first —
+// always awaiting the network before showing anything — specifically to
+// avoid a stale page referencing an old localStorage key/logic. That's still
+// true here (a load right after a deploy can show one load's worth of stale
+// UI), but it self-heals on the very next open instead of making every
+// single open pay the network latency up front.
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   event.respondWith(
-    fetch(event.request).then(response => {
-      // response.ok is false for opaque responses (status 0) — which is
-      // exactly what a cross-origin no-cors load (e.g. a CSS
-      // background-image: url(...) hitting images.pexels.com) always comes
-      // back as. Skipping those here meant hotlinked photos were never
-      // actually written to the cache no matter how many times they'd
-      // loaded successfully — only same-origin/CORS responses were.
-      if (response.ok || response.type === 'opaque') {
-        const copy = response.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
-      }
-      return response;
-    }).catch(() => caches.match(event.request))
+    caches.match(event.request).then(cached => {
+      const networkFetch = fetch(event.request).then(response => {
+        // response.ok is false for opaque responses (status 0) — which is
+        // exactly what a cross-origin no-cors load (e.g. a CSS
+        // background-image: url(...) hitting images.pexels.com) always comes
+        // back as. Skipping those here meant hotlinked photos were never
+        // actually written to the cache no matter how many times they'd
+        // loaded successfully — only same-origin/CORS responses were.
+        if (response.ok || response.type === 'opaque') {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+        }
+        return response;
+      }).catch(() => cached);
+      return cached || networkFetch;
+    })
   );
 });
 
