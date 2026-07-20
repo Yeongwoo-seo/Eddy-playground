@@ -121,8 +121,11 @@ const WeekPreloader = (() => {
   // currently-equipped/story-locked outfit's asset key first, then the
   // base characterId as a fallback — preloading both is cheap insurance
   // against under-preloading, unlike a network round trip mid-scene.
-  function collectCharacterAssetIds(weekScenes) {
-    const ids = new Set();
+  // DevGameState.getCharacterAssetId is a server-backed (async) lookup, so
+  // every pair is queried in parallel and settled independently — one
+  // line's failed lookup must not stop the rest of the week from preloading.
+  async function collectCharacterAssetIds(weekScenes) {
+    const lookups = [];
     weekScenes.forEach(s => {
       (s.lines || []).forEach(line => {
         if (!line.characterId) return;
@@ -137,13 +140,16 @@ const WeekPreloader = (() => {
             if (resolution.characterId) resolvedCharacterId = resolution.characterId;
           } catch (e) { /* fall back to the base characterId below */ }
         }
-        const outfitAssetId = DevGameState.getCharacterAssetId(resolvedCharacterId, expression);
-        if (outfitAssetId) ids.add(outfitAssetId);
-        const baseAssetId = DevGameState.getCharacterAssetId(line.characterId, expression);
-        if (baseAssetId) ids.add(baseAssetId);
+        lookups.push((async () => DevGameState.getCharacterAssetId(resolvedCharacterId, expression))());
+        lookups.push((async () => DevGameState.getCharacterAssetId(line.characterId, expression))());
       });
     });
-    return [...ids];
+    const results = await Promise.allSettled(lookups);
+    return [...new Set(
+      results
+        .filter(r => r.status === 'fulfilled' && r.value)
+        .map(r => r.value)
+    )];
   }
 
   /* ===== Main entry point ===== */
@@ -177,7 +183,7 @@ const WeekPreloader = (() => {
       const backgroundIds = (await Promise.all(
         backgroundKeys.map(key => DevGameState.getBackgroundId(key).catch(() => null))
       )).filter(Boolean);
-      const characterIds = collectCharacterAssetIds(weekScenes);
+      const characterIds = await collectCharacterAssetIds(weekScenes);
       const assetIds = [...new Set([...backgroundIds, ...characterIds])];
 
       // total steps: 1 scene-location map fetch + 1 batched asset-metadata
