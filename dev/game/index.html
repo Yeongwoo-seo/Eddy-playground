@@ -53,6 +53,17 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .point-balance{font-family:var(--mono);font-size:11.5px;font-weight:700;letter-spacing:.02em;color:var(--amber);background:rgba(214,168,75,.14);border:1px solid rgba(214,168,75,.4);border-radius:20px;padding:8px 12px;white-space:nowrap}
 .point-balance.hidden{display:none}
 
+/* ===== 여행 만족도 / 영우 호감도 게이지 — 상시 표시, 연출용(스토리/엔딩에
+   관여하지 않음). 정확한 숫자보다 채움 정도만 읽히게 막대 위주로 표시. */
+.relation-gauges{display:flex;gap:6px}
+.relation-gauges.hidden{display:none}
+.gauge-pill{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:7px 10px}
+.gauge-icon{font-size:11px;line-height:1}
+.gauge-track{width:32px;height:5px;border-radius:3px;background:rgba(255,255,255,.14);overflow:hidden}
+.gauge-fill{height:100%;border-radius:3px;transition:width .3s cubic-bezier(.2,.8,.2,1)}
+.gauge-fill.satisfaction{background:var(--cyan)}
+.gauge-fill.affection{background:#E8749E}
+
 /* ===== Layer 2: Character ===== */
 .char-wrap{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;pointer-events:none;opacity:0;transition:opacity .2s ease}
 .char-img{max-height:78%;max-width:88%;object-fit:contain;object-position:bottom;transform:translateY(0)}
@@ -203,6 +214,10 @@ window.addEventListener('orientationchange', setVh100);
     <div style="display:flex;gap:8px;align-items:center">
       <span id="caseMenuMount"></span>
       <span class="point-balance hidden" id="pointBalance">P 0</span>
+      <span class="relation-gauges" id="relationGauges">
+        <span class="gauge-pill" title="여행 만족도"><span class="gauge-icon">✨</span><span class="gauge-track"><span class="gauge-fill satisfaction" id="satisfactionFill"></span></span></span>
+        <span class="gauge-pill" title="영우 호감도"><span class="gauge-icon">💛</span><span class="gauge-track"><span class="gauge-fill affection" id="affectionFill"></span></span></span>
+      </span>
       <a class="vn-btn" href="/dev/">← DEV</a>
     </div>
     <div style="display:flex;gap:8px">
@@ -296,6 +311,15 @@ window.addEventListener('orientationchange', setVh100);
       <button class="sheet-btn danger" id="btnResetEconomy">RESET ECONOMY/SHOP/WARDROBE</button>
     </div>
 
+    <div class="sheet-title">Dev · 관계 게이지 (연출용)</div>
+    <div class="sheet-grid">
+      <button class="sheet-btn" id="btnAddSatisfaction5">만족도 +5</button>
+      <button class="sheet-btn" id="btnSubSatisfaction5">만족도 −5</button>
+      <button class="sheet-btn" id="btnAddAffection5">호감도 +5</button>
+      <button class="sheet-btn" id="btnSubAffection5">호감도 −5</button>
+      <button class="sheet-btn danger" id="btnResetRelationship">RESET 게이지</button>
+    </div>
+
     <div class="sheet-title">Dev · 탐색 허브 (The Missing Key v1 §24)</div>
     <div class="sheet-grid">
       <button class="sheet-btn" id="btnOpenExplore">OPEN EXPLORE HUB</button>
@@ -333,6 +357,7 @@ if ('serviceWorker' in navigator) {
 <script src="/dev/caseFileState.js"></script>
 <script src="/dev/data/shopItems.js"></script>
 <script src="/dev/state/economyState.js"></script>
+<script src="/dev/state/relationshipState.js"></script>
 <script src="/dev/state/wardrobeState.js"></script>
 <script src="/dev/state/shopState.js"></script>
 <script src="/dev/data/locationDefs.js"></script>
@@ -409,12 +434,22 @@ const el = {
   evidenceSheetNotebookBtn: document.getElementById('evidenceSheetNotebookBtn'),
   bgmMount: document.getElementById('bgmMount'),
   pointBalance: document.getElementById('pointBalance'),
+  relationGauges: document.getElementById('relationGauges'),
+  satisfactionFill: document.getElementById('satisfactionFill'),
+  affectionFill: document.getElementById('affectionFill'),
 };
 
 function updatePointBalance() {
   const introduced = CaseFileState.hasFlag('pointsUiIntroduced');
   el.pointBalance.classList.toggle('hidden', !introduced || !!activeSceneData.hidePoints);
   if (introduced) el.pointBalance.textContent = 'P ' + EconomyState.getPoints();
+}
+
+// 포인트와 달리 첫 지급 전까지 숨기지 않는다 — 상시 표시로 결정된 연출용
+// 게이지라 0주차 첫 씬부터 바로 보여도 어색하지 않음(중립값 50에서 시작).
+function updateRelationshipGauges() {
+  el.satisfactionFill.style.width = RelationshipState.getSatisfaction() + '%';
+  el.affectionFill.style.width = RelationshipState.getAffection() + '%';
 }
 
 function setBackground(asset) {
@@ -756,6 +791,19 @@ function applyEffect(effect) {
     case 'spendPoints':
       EconomyState.spendPoints(effect.amount, { source: effect.source || activeSceneData.id });
       updatePointBalance();
+      break;
+
+    // 여행 만족도 / 영우 호감도 — 연출용 게이지(§ 위 relationshipState.js 참고).
+    // 수사 로직·엔딩 분기는 절대 이 값을 읽지 않는다.
+    case 'addSatisfaction':
+      RelationshipState.addSatisfaction(effect.amount);
+      if (effect.amount) caseMenu.notifySatisfaction(effect.amount);
+      updateRelationshipGauges();
+      break;
+    case 'addAffection':
+      RelationshipState.addAffection(effect.amount);
+      if (effect.amount) caseMenu.notifyAffection(effect.amount);
+      updateRelationshipGauges();
       break;
     case 'unlockShop':
       ShopState.unlockShop();
@@ -1418,6 +1466,28 @@ document.getElementById('btnResetEconomy').addEventListener('click', () => {
     updatePointBalance();
   }
 });
+document.getElementById('btnAddSatisfaction5').addEventListener('click', () => {
+  RelationshipState.addSatisfaction(5);
+  updateRelationshipGauges();
+});
+document.getElementById('btnSubSatisfaction5').addEventListener('click', () => {
+  RelationshipState.addSatisfaction(-5);
+  updateRelationshipGauges();
+});
+document.getElementById('btnAddAffection5').addEventListener('click', () => {
+  RelationshipState.addAffection(5);
+  updateRelationshipGauges();
+});
+document.getElementById('btnSubAffection5').addEventListener('click', () => {
+  RelationshipState.addAffection(-5);
+  updateRelationshipGauges();
+});
+document.getElementById('btnResetRelationship').addEventListener('click', () => {
+  if (confirm('여행 만족도·영우 호감도 게이지를 초기화할까요?')) {
+    RelationshipState.resetAll();
+    updateRelationshipGauges();
+  }
+});
 
 /* ===== Dev · 탐색 허브 (The Missing Key v1 §24) ===== */
 document.getElementById('btnOpenExplore').addEventListener('click', () => {
@@ -1479,6 +1549,7 @@ async function applyDialogueOverrides() {
     await WeekPreloader.ensureWeekLoaded(currentWeekId, weekScenes);
   }
   updatePointBalance();
+  updateRelationshipGauges();
   await applyDialogueOverrides();
   await applyBackground();
   applyBgm();

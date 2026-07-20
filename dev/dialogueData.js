@@ -367,17 +367,23 @@ const week0Scene002_3Lines = [
     choices: [
       {
         id: 'hunch-danger', label: '“왠지 불길한 느낌이 드는데...”',
-        effects: [{
-          type: 'addQuestion',
-          question: { id: 'question-key-hunch', title: '이 열쇠, 위험한 물건일까?', description: '지수는 열쇠에서 왠지 불길한 기운을 느꼈다.' },
-        }],
+        effects: [
+          {
+            type: 'addQuestion',
+            question: { id: 'question-key-hunch', title: '이 열쇠, 위험한 물건일까?', description: '지수는 열쇠에서 왠지 불길한 기운을 느꼈다.' },
+          },
+          { type: 'addSatisfaction', amount: -1 },
+        ],
       },
       {
         id: 'hunch-curious', label: '“그냥 순수하게 궁금한데?”',
-        effects: [{
-          type: 'addQuestion',
-          question: { id: 'question-key-hunch', title: '이 열쇠는 대체 누구 것일까?', description: '지수는 순수한 호기심을 느꼈다.' },
-        }],
+        effects: [
+          {
+            type: 'addQuestion',
+            question: { id: 'question-key-hunch', title: '이 열쇠는 대체 누구 것일까?', description: '지수는 순수한 호기심을 느꼈다.' },
+          },
+          { type: 'addSatisfaction', amount: 1 },
+        ],
       },
     ],
   },
@@ -804,11 +810,18 @@ const week0SceneShopIntroLines = [
     choices: [
       {
         id: 'shop-eager', label: '“일단 다 입어볼래요.”',
-        effects: [{ type: 'setFlag', key: 'shopIntroChoice', value: 'eager' }],
+        effects: [
+          { type: 'setFlag', key: 'shopIntroChoice', value: 'eager' },
+          { type: 'addSatisfaction', amount: 3 },
+        ],
       },
       {
         id: 'shop-cautious', label: '“오늘은 구경만 하고 나중에 살게요.”',
-        effects: [{ type: 'setFlag', key: 'shopIntroChoice', value: 'cautious' }],
+        effects: [
+          { type: 'setFlag', key: 'shopIntroChoice', value: 'cautious' },
+          { type: 'addSatisfaction', amount: 1 },
+          { type: 'addAffection', amount: 2 },
+        ],
       },
     ],
   },
