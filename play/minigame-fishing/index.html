@@ -554,6 +554,7 @@ if ('serviceWorker' in navigator) {
 <script>RealPlayMode.hideDevChrome();</script>
 <script src="/dev/assetDb.js"></script>
 <script src="/dev/data/fishDefs.js"></script>
+<script src="/dev/data/fishingDialogueScene.js"></script>
 <script src="/dev/state/economyState.js"></script>
 <script>
 /* =========================================================================
@@ -1817,14 +1818,21 @@ function revealGame() {
     el.preloadOverlay.classList.add('hidden');
   }, { once: true });
 }
-function renderDialogueIntro(dialogueScene, byId) {
+// 대사가 여러 줄(지수/영우 번갈아 말하는 티키타카, dev/minigame-fishing/
+// index.html "대화" 탭에서 편집)이라 화면을 탭할 때마다 다음 줄로 넘어가야
+// 한다 — 대화창/지수/영우 이미지(DIALOGUE_INTRO_IMAGE_LAYERS)는 줄이
+// 바뀌어도 그대로 두고, 초상화/이름/대사(그 줄의 speaker/text에 따라
+// 달라지는 부분)만 다시 그린다. dialogueIntro*는 그 진행 상태를 들고
+// 있는 모듈 전역 — 씬 진입마다 renderDialogueIntro가 새로 채운다.
+let dialogueIntroScene = null;
+let dialogueIntroById = null;
+let dialogueIntroLines = [];
+let dialogueIntroIndex = 0;
+function renderDialogueIntroFrame() {
+  const dialogueScene = dialogueIntroScene, byId = dialogueIntroById;
+  const line = dialogueIntroLines[dialogueIntroIndex] || null;
+  const speaker = line && line.speaker === 'youngwoo' ? 'youngwoo' : 'jisoo';
   el.dialogueIntro.innerHTML = '';
-  const hasAnyLayer = DIALOGUE_INTRO_LAYERS.some(key => dialogueScene[key]);
-  if (!hasAnyLayer) {
-    el.dialogueIntro.classList.add('hidden');
-    return false;
-  }
-  const speaker = dialogueScene.speaker === 'youngwoo' ? 'youngwoo' : 'jisoo';
   DIALOGUE_INTRO_LAYERS.forEach(key => {
     const data = dialogueScene[key];
     if (!data) return;
@@ -1845,7 +1853,7 @@ function renderDialogueIntro(dialogueScene, byId) {
     if (key === 'textLayer') {
       const textEl = document.createElement('div');
       textEl.className = 'dialogue-intro-text';
-      textEl.textContent = dialogueScene.text || '';
+      textEl.textContent = (line && line.text) || '';
       layerEl.appendChild(textEl);
       el.dialogueIntro.appendChild(layerEl);
       return;
@@ -1872,12 +1880,30 @@ function renderDialogueIntro(dialogueScene, byId) {
     }
     el.dialogueIntro.appendChild(layerEl);
   });
+}
+function renderDialogueIntro(dialogueScene, byId) {
+  const hasAnyLayer = DIALOGUE_INTRO_LAYERS.some(key => dialogueScene[key]);
+  if (!hasAnyLayer) {
+    el.dialogueIntro.innerHTML = '';
+    el.dialogueIntro.classList.add('hidden');
+    return false;
+  }
+  dialogueIntroScene = dialogueScene;
+  dialogueIntroById = byId;
+  dialogueIntroLines = fishingDialogueLines(dialogueScene);
+  dialogueIntroIndex = 0;
+  renderDialogueIntroFrame();
   el.dialogueIntro.classList.remove('hidden');
   return true;
 }
 el.dialogueIntro.addEventListener('pointerdown', (e) => {
   if (gameState !== 'dialogue') return;
   e.stopPropagation();
+  dialogueIntroIndex += 1;
+  if (dialogueIntroIndex < dialogueIntroLines.length) {
+    renderDialogueIntroFrame();
+    return;
+  }
   el.dialogueIntro.classList.add('hidden');
   gameState = 'idle';
 });

@@ -1561,6 +1561,129 @@ const AssetDB = (() => {
     return getPlayIconUrls();
   }
 
+  // ===== 캐릭터/씬 배정 맵 (작업 01: 서버 Storage API·DevGameState 비동기
+  // 전환) — 지금까지 DevGameState가 localStorage에만 두던 6개 배정 맵의
+  // 진짜 저장소. get*Map/set*Entry 한 쌍씩 아래 카탈로그들과 완전히 같은
+  // 단일 JSON blob 패턴(읽기: 캐시 → Storage GET → 실패 시 기존 캐시/{}
+  // 폴백, 쓰기: readCurrentForWrite로 최신 맵을 읽은 뒤 엔트리 하나만
+  // 갱신). DevGameState의 대응 getter/setter가 localStorage 캐시/폴백과
+  // 함께 이 API를 사용한다 — 아래 각 맵 정의 참고.
+  //
+  // getJsonBlobMap/saveJsonBlobMap/setJsonBlobEntry는 위 패턴을 그대로
+  // 옮긴 공용 헬퍼다 — 6개 맵 × (조회 + 단일 엔트리 저장 + 일괄 저장) 조합이
+  // 기존 카탈로그들처럼 손으로 다 풀어 쓰면 거의 동일한 코드가 18번
+  // 반복되므로, 이 여섯 맵에 한해서만 묶었다(기존 카탈로그 함수들은
+  // 건드리지 않음).
+  async function getJsonBlobMap(path, cache, cacheKey) {
+    if (cache.has(cacheKey)) return cache.get(cacheKey);
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${path}?t=${Date.now()}`;
+    try {
+      const map = (await fetchJsonBlob(url)) || {};
+      cache.set(cacheKey, map);
+      return map;
+    } catch (e) {
+      return cache.get(cacheKey) || {};
+    }
+  }
+
+  async function saveJsonBlobMap(path, cache, cacheKey, map, errorLabel) {
+    const blob = new Blob([JSON.stringify(map)], { type: 'application/json' });
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${DEV_ASSETS_BUCKET}/${path}`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'x-upsert': 'true',
+      },
+      body: blob,
+    });
+    if (!res.ok) throw new Error(`${errorLabel} 저장 실패 (${res.status}): ${await res.text()}`);
+    cache.set(cacheKey, map);
+    return map;
+  }
+
+  // 값이 null/undefined/빈 문자열이면 삭제 의미로 취급해 엔트리를 지운다
+  // (transform 같은 객체 값은 그대로 저장).
+  async function setJsonBlobEntry(path, cache, cacheKey, entryKey, value, errorLabel) {
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${path}?t=${Date.now()}`;
+    const current = await readCurrentForWrite(cache, cacheKey, url, {});
+    const map = Object.assign({}, current);
+    if (value === null || value === undefined || value === '') delete map[entryKey]; else map[entryKey] = value;
+    return saveJsonBlobMap(path, cache, cacheKey, map, errorLabel);
+  }
+
+  // 캐릭터 초상화 배정 — { [assetKey]: assetId }, assetKey는
+  // DevGameState._assetKey 결과와 동일한 포맷(characterKey[::outfit]::
+  // expression). _setCharacterAssetMap은 removeAllCharacterAssetRefs/
+  // migrateLocalAssignmentsToServerIfEmpty 전용 맵 단위 저장(개별 엔트리
+  // setter를 반복 호출해 요청이 과도해지는 것을 피하기 위함) — 공개 API
+  // 계약에 포함되지 않는다.
+  const characterAssetsCache = new Map(); // single entry keyed 'map'
+  const CHARACTER_ASSETS_PATH = 'character-assets/map.json';
+  async function getCharacterAssetMap() { return getJsonBlobMap(CHARACTER_ASSETS_PATH, characterAssetsCache, 'map'); }
+  async function setCharacterAssetEntry(entryKey, assetId) {
+    if (!entryKey) return characterAssetsCache.get('map') || {};
+    return setJsonBlobEntry(CHARACTER_ASSETS_PATH, characterAssetsCache, 'map', entryKey, assetId, '캐릭터 초상화 배정');
+  }
+  async function _setCharacterAssetMap(map) { return saveJsonBlobMap(CHARACTER_ASSETS_PATH, characterAssetsCache, 'map', map, '캐릭터 초상화 배정'); }
+
+  // 선택된 의상 배정 — { [characterId]: outfitId }.
+  const characterOutfitsCache = new Map();
+  const CHARACTER_OUTFITS_PATH = 'character-outfits/selection.json';
+  async function getCharacterOutfitMap() { return getJsonBlobMap(CHARACTER_OUTFITS_PATH, characterOutfitsCache, 'map'); }
+  async function setCharacterOutfitEntry(characterId, outfitId) {
+    if (!characterId) return characterOutfitsCache.get('map') || {};
+    return setJsonBlobEntry(CHARACTER_OUTFITS_PATH, characterOutfitsCache, 'map', characterId, outfitId, '선택 의상');
+  }
+  async function _setCharacterOutfitMap(map) { return saveJsonBlobMap(CHARACTER_OUTFITS_PATH, characterOutfitsCache, 'map', map, '선택 의상'); }
+
+  // 캐릭터 위치/스케일 배정 — { [transformKey]: {x,y,scale} }, transformKey는
+  // DevGameState._transformKeyFor 결과(주인공은 characterKey 그대로, 나머지
+  // 전원은 '__other__' 공용 키).
+  const characterTransformsCache = new Map();
+  const CHARACTER_TRANSFORMS_PATH = 'character-transforms/map.json';
+  async function getCharacterTransformMap() { return getJsonBlobMap(CHARACTER_TRANSFORMS_PATH, characterTransformsCache, 'map'); }
+  async function setCharacterTransformEntry(transformKey, transformOrNull) {
+    if (!transformKey) return characterTransformsCache.get('map') || {};
+    return setJsonBlobEntry(CHARACTER_TRANSFORMS_PATH, characterTransformsCache, 'map', transformKey, transformOrNull, '캐릭터 위치/스케일');
+  }
+  async function _setCharacterTransformMap(map) { return saveJsonBlobMap(CHARACTER_TRANSFORMS_PATH, characterTransformsCache, 'map', map, '캐릭터 위치/스케일'); }
+
+  // 씬별 BGM 배정 — { [sceneId]: soundId }. 사운드 카탈로그 자체(getSounds)
+  // 와는 별도로, "이 씬이 어느 사운드를 트는지"만 담는다.
+  const sceneBgmAssignCache = new Map();
+  const SCENE_BGM_ASSIGN_PATH = 'scene-bgm/map.json';
+  async function getSceneBgmMap() { return getJsonBlobMap(SCENE_BGM_ASSIGN_PATH, sceneBgmAssignCache, 'map'); }
+  async function setSceneBgmEntry(sceneId, soundId) {
+    if (!sceneId) return sceneBgmAssignCache.get('map') || {};
+    return setJsonBlobEntry(SCENE_BGM_ASSIGN_PATH, sceneBgmAssignCache, 'map', sceneId, soundId, '씬 BGM 배정');
+  }
+  async function _setSceneBgmMap(map) { return saveJsonBlobMap(SCENE_BGM_ASSIGN_PATH, sceneBgmAssignCache, 'map', map, '씬 BGM 배정'); }
+
+  // 장소별 배경 배정 — { [slotKey]: assetId }, slotKey는
+  // DevGameState._locationSlotKey 결과(`${locationId}::${variantId}`).
+  const locationBackgroundAssignCache = new Map();
+  const LOCATION_BACKGROUND_ASSIGN_PATH = 'location-backgrounds/map.json';
+  async function getLocationBackgroundMap() { return getJsonBlobMap(LOCATION_BACKGROUND_ASSIGN_PATH, locationBackgroundAssignCache, 'map'); }
+  async function setLocationBackgroundEntry(slotKey, assetId) {
+    if (!slotKey) return locationBackgroundAssignCache.get('map') || {};
+    return setJsonBlobEntry(LOCATION_BACKGROUND_ASSIGN_PATH, locationBackgroundAssignCache, 'map', slotKey, assetId, '장소별 배경 배정');
+  }
+  async function _setLocationBackgroundMap(map) { return saveJsonBlobMap(LOCATION_BACKGROUND_ASSIGN_PATH, locationBackgroundAssignCache, 'map', map, '장소별 배경 배정'); }
+
+  // 레거시 씬 배경 배정 — { [sceneId]: assetId }. 장소 카탈로그에 연결되지
+  // 않은 슬롯(미니게임/방탈출 배경, 또는 아직 장소가 배정되지 않은 일반
+  // 씬)이 직접 쓰는 배정 — DevGameState.getBackgroundId의 폴백 참고.
+  const legacyBackgroundAssignCache = new Map();
+  const LEGACY_BACKGROUND_ASSIGN_PATH = 'scene-backgrounds/map.json';
+  async function getLegacyBackgroundMap() { return getJsonBlobMap(LEGACY_BACKGROUND_ASSIGN_PATH, legacyBackgroundAssignCache, 'map'); }
+  async function setLegacyBackgroundEntry(sceneId, assetId) {
+    if (!sceneId) return legacyBackgroundAssignCache.get('map') || {};
+    return setJsonBlobEntry(LEGACY_BACKGROUND_ASSIGN_PATH, legacyBackgroundAssignCache, 'map', sceneId, assetId, '레거시 씬 배경 배정');
+  }
+  async function _setLegacyBackgroundMap(map) { return saveJsonBlobMap(LEGACY_BACKGROUND_ASSIGN_PATH, legacyBackgroundAssignCache, 'map', map, '레거시 씬 배경 배정'); }
+
   return {
     addAsset, getAssetsByType, getAsset, getAssetsByIds, deleteAsset, preloadImage,
     getSaveSlots, setSaveSlot,
@@ -1587,6 +1710,12 @@ const AssetDB = (() => {
     getFishingConfig, setFishingConfig,
     getEvidenceNotebookConfig, setEvidenceNotebookConfig,
     getPlayIconUrls, getPlayIconPreviewUrls, savePlayIcon,
+    getCharacterAssetMap, setCharacterAssetEntry, _setCharacterAssetMap,
+    getCharacterOutfitMap, setCharacterOutfitEntry, _setCharacterOutfitMap,
+    getCharacterTransformMap, setCharacterTransformEntry, _setCharacterTransformMap,
+    getSceneBgmMap, setSceneBgmEntry, _setSceneBgmMap,
+    getLocationBackgroundMap, setLocationBackgroundEntry, _setLocationBackgroundMap,
+    getLegacyBackgroundMap, setLegacyBackgroundEntry, _setLegacyBackgroundMap,
   };
 })();
 
@@ -1597,47 +1726,72 @@ const DevGameState = {
     outfits: 'mkDevSelectedOutfits', locationBackgrounds: 'mkDevLocationBackgrounds',
   },
 
+  // Reads a server-backed assignment map and, when the read succeeds,
+  // overwrites the localStorage cache with it (so a stale local value from
+  // another device doesn't linger) — otherwise falls back to whatever was
+  // already loaded from localStorage. Shared by every getter below so a
+  // network failure can't crash the whole play screen (§구현 범위 B
+  // Getter 규칙); setters don't use this since they always write
+  // localStorage first, unconditionally.
+  async _syncFromServer(storageKey, localMap, getServerMap) {
+    try {
+      const serverMap = await getServerMap();
+      if (serverMap && typeof serverMap === 'object') {
+        localStorage.setItem(storageKey, JSON.stringify(serverMap));
+        return serverMap;
+      }
+    } catch (e) { /* network failure — keep the localStorage cache */ }
+    return localMap;
+  },
+
   // Legacy scene-owned background slot map (sceneId -> assetId) — minigame
   // and room-search backgrounds stay on this exactly as before
   // (location-background-system §applies-to: "미니게임 배경은 이번 변경
   // 대상 아님"). An ordinary VN scene slot also lands here until it's been
   // assigned a location via /dev/upload's 배경 DB tab, so nothing goes blank
-  // mid-migration.
+  // mid-migration. AssetDB.getLegacyBackgroundMap()/setLegacyBackgroundEntry
+  // is now the real (multi-device) source of truth; localStorage stays as
+  // the same-tab-instant/offline-fallback cache.
   _loadBackgroundMap() {
     try { return JSON.parse(localStorage.getItem(this._keys.background)) || {}; }
     catch (e) { return {}; }
   },
-  getLegacyBackgroundId(sceneId) {
+  async getLegacyBackgroundId(sceneId) {
     if (!sceneId) return null;
-    return this._loadBackgroundMap()[sceneId] || null;
+    const map = await this._syncFromServer(this._keys.background, this._loadBackgroundMap(), () => AssetDB.getLegacyBackgroundMap());
+    return map[sceneId] || null;
   },
-  setLegacyBackgroundId(sceneId, assetId) {
+  async setLegacyBackgroundId(sceneId, assetId) {
     if (!sceneId) return;
     const map = this._loadBackgroundMap();
     if (assetId) map[sceneId] = assetId; else delete map[sceneId];
     localStorage.setItem(this._keys.background, JSON.stringify(map));
+    await AssetDB.setLegacyBackgroundEntry(sceneId, assetId || null);
   },
 
   // New location-owned assignment map (`${locationId}::${variantId}` ->
   // assetId) — every ordinary VN scene slot that's been pointed at a
   // catalog location (AssetDB.getSceneLocationMap/setSceneLocation) resolves
   // its photo through here instead, so scenes sharing one physical location
-  // share one upload.
+  // share one upload. AssetDB.getLocationBackgroundMap()/
+  // setLocationBackgroundEntry is the real (multi-device) source of truth.
   _loadLocationBackgroundMap() {
     try { return JSON.parse(localStorage.getItem(this._keys.locationBackgrounds)) || {}; }
     catch (e) { return {}; }
   },
   _locationSlotKey(locationId, variantId) { return `${locationId}::${variantId || 'default'}`; },
-  getLocationAssetId(locationId, variantId) {
+  async getLocationAssetId(locationId, variantId) {
     if (!locationId) return null;
-    return this._loadLocationBackgroundMap()[this._locationSlotKey(locationId, variantId)] || null;
+    const map = await this._syncFromServer(this._keys.locationBackgrounds, this._loadLocationBackgroundMap(), () => AssetDB.getLocationBackgroundMap());
+    return map[this._locationSlotKey(locationId, variantId)] || null;
   },
-  setLocationAssetId(locationId, variantId, assetId) {
+  async setLocationAssetId(locationId, variantId, assetId) {
     if (!locationId) return;
     const map = this._loadLocationBackgroundMap();
     const key = this._locationSlotKey(locationId, variantId);
     if (assetId) map[key] = assetId; else delete map[key];
     localStorage.setItem(this._keys.locationBackgrounds, JSON.stringify(map));
+    await AssetDB.setLocationBackgroundEntry(key, assetId || null);
   },
 
   // Which location (+variant) a scene background slot (backgroundKinds()'s
@@ -1663,8 +1817,8 @@ const DevGameState = {
   async getBackgroundId(sceneId) {
     if (!sceneId) return null;
     const locRef = await this.resolveSlotLocation(sceneId);
-    if (locRef && locRef.locationId) return this.getLocationAssetId(locRef.locationId, locRef.variantId);
-    return this.getLegacyBackgroundId(sceneId);
+    if (locRef && locRef.locationId) return await this.getLocationAssetId(locRef.locationId, locRef.variantId);
+    return await this.getLegacyBackgroundId(sceneId);
   },
   // Mirrors getBackgroundId's resolution: if the slot already points at a
   // location, the asset is assigned to that location (so every other scene
@@ -1674,12 +1828,19 @@ const DevGameState = {
     if (!sceneId) return;
     const locRef = await this.resolveSlotLocation(sceneId);
     if (locRef && locRef.locationId) {
-      this.setLocationAssetId(locRef.locationId, locRef.variantId, assetId);
+      await this.setLocationAssetId(locRef.locationId, locRef.variantId, assetId);
       return;
     }
-    this.setLegacyBackgroundId(sceneId, assetId);
+    await this.setLegacyBackgroundId(sceneId, assetId);
   },
-  removeAllBackgroundAssetRefs(assetId) {
+  // Removes every entry pointing at assetId from both the legacy and
+  // location-owned maps. Local removal always happens; the server-side
+  // cleanup is best-effort per map (a failed server read/write here doesn't
+  // undo the local removal already applied, and doesn't block the other
+  // map's cleanup) — reads the whole server map once and writes it back
+  // once via AssetDB's internal map-level setter instead of one request per
+  // removed entry.
+  async removeAllBackgroundAssetRefs(assetId) {
     const map = this._loadBackgroundMap();
     let changed = false;
     Object.keys(map).forEach(sceneId => { if (map[sceneId] === assetId) { delete map[sceneId]; changed = true; } });
@@ -1689,31 +1850,56 @@ const DevGameState = {
     let locChanged = false;
     Object.keys(locMap).forEach(key => { if (locMap[key] === assetId) { delete locMap[key]; locChanged = true; } });
     if (locChanged) localStorage.setItem(this._keys.locationBackgrounds, JSON.stringify(locMap));
+
+    try {
+      const serverMap = Object.assign({}, await AssetDB.getLegacyBackgroundMap());
+      let serverChanged = false;
+      Object.keys(serverMap).forEach(sceneId => { if (serverMap[sceneId] === assetId) { delete serverMap[sceneId]; serverChanged = true; } });
+      if (serverChanged) await AssetDB._setLegacyBackgroundMap(serverMap);
+    } catch (e) { /* best-effort server cleanup; local removal already applied */ }
+
+    try {
+      const serverLocMap = Object.assign({}, await AssetDB.getLocationBackgroundMap());
+      let serverLocChanged = false;
+      Object.keys(serverLocMap).forEach(key => { if (serverLocMap[key] === assetId) { delete serverLocMap[key]; serverLocChanged = true; } });
+      if (serverLocChanged) await AssetDB._setLocationBackgroundMap(serverLocMap);
+    } catch (e) { /* best-effort server cleanup; local removal already applied */ }
   },
 
   // Which AssetDB sound-catalog entry (a 'bgm'-kind one) plays as a scene's
-  // background music — same one-slot-per-scene, localStorage-backed pattern
-  // as the background map above. /play/game reads this on scene load; the
-  // catalog entry itself (videoId/start/end) lives in AssetDB.getSounds().
+  // background music — same one-slot-per-scene pattern as the background map
+  // above, now backed by AssetDB.getSceneBgmMap()/setSceneBgmEntry as the
+  // real (multi-device) source of truth. /play/game reads this on scene
+  // load; the catalog entry itself (videoId/start/end) lives in
+  // AssetDB.getSounds().
   _loadSceneBgmMap() {
     try { return JSON.parse(localStorage.getItem(this._keys.sceneBgm)) || {}; }
     catch (e) { return {}; }
   },
-  getSceneBgmId(sceneId) {
+  async getSceneBgmId(sceneId) {
     if (!sceneId) return null;
-    return this._loadSceneBgmMap()[sceneId] || null;
+    const map = await this._syncFromServer(this._keys.sceneBgm, this._loadSceneBgmMap(), () => AssetDB.getSceneBgmMap());
+    return map[sceneId] || null;
   },
-  setSceneBgmId(sceneId, soundId) {
+  async setSceneBgmId(sceneId, soundId) {
     if (!sceneId) return;
     const map = this._loadSceneBgmMap();
     if (soundId) map[sceneId] = soundId; else delete map[sceneId];
     localStorage.setItem(this._keys.sceneBgm, JSON.stringify(map));
+    await AssetDB.setSceneBgmEntry(sceneId, soundId || null);
   },
-  removeAllSceneBgmRefs(soundId) {
+  async removeAllSceneBgmRefs(soundId) {
     const map = this._loadSceneBgmMap();
     let changed = false;
     Object.keys(map).forEach(sceneId => { if (map[sceneId] === soundId) { delete map[sceneId]; changed = true; } });
     if (changed) localStorage.setItem(this._keys.sceneBgm, JSON.stringify(map));
+
+    try {
+      const serverMap = Object.assign({}, await AssetDB.getSceneBgmMap());
+      let serverChanged = false;
+      Object.keys(serverMap).forEach(sceneId => { if (serverMap[sceneId] === soundId) { delete serverMap[sceneId]; serverChanged = true; } });
+      if (serverChanged) await AssetDB._setSceneBgmMap(serverMap);
+    } catch (e) { /* best-effort server cleanup; local removal already applied */ }
   },
 
   // Minigame answer-area hotspot = { points: [{x,y}, ...] } — a free-form
@@ -1759,11 +1945,13 @@ const DevGameState = {
   // whichever outfit is currently selected via getSelectedOutfit. Falls back
   // first to that outfit's 'neutral' portrait, then to the no-outfit/legacy
   // slot, so a scene doesn't go blank just because one expression — or a
-  // newly added outfit — isn't fully registered yet.
-  getCharacterAssetId(characterKey, expression) {
+  // newly added outfit — isn't fully registered yet. Backed by
+  // AssetDB.getCharacterAssetMap()/setCharacterAssetEntry as the real
+  // (multi-device) source of truth.
+  async getCharacterAssetId(characterKey, expression) {
     if (!characterKey) return null;
-    const map = this._loadCharacterMap();
-    const outfit = this.getSelectedOutfit(characterKey);
+    const map = await this._syncFromServer(this._keys.characters, this._loadCharacterMap(), () => AssetDB.getCharacterAssetMap());
+    const outfit = await this.getSelectedOutfit(characterKey);
     if (outfit) {
       return map[this._assetKey(characterKey, outfit, expression)]
         || map[this._assetKey(characterKey, outfit, 'neutral')]
@@ -1779,25 +1967,33 @@ const DevGameState = {
   // above always resolves against the *selected* outfit, which is the right
   // behavior for /play/game but wrong for browsing a different outfit's
   // uploads in the editor).
-  getCharacterAssetIdForOutfit(characterKey, outfit, expression) {
+  async getCharacterAssetIdForOutfit(characterKey, outfit, expression) {
     if (!characterKey) return null;
-    const map = this._loadCharacterMap();
+    const map = await this._syncFromServer(this._keys.characters, this._loadCharacterMap(), () => AssetDB.getCharacterAssetMap());
     return map[this._assetKey(characterKey, outfit, expression)]
       || (outfit ? map[this._assetKey(characterKey, outfit, 'neutral')] : null)
       || null;
   },
-  setCharacterAssetId(characterKey, expression, assetId, outfit) {
+  async setCharacterAssetId(characterKey, expression, assetId, outfit) {
     if (!characterKey) return;
     const map = this._loadCharacterMap();
     const key = this._assetKey(characterKey, outfit, expression);
     if (assetId) map[key] = assetId; else delete map[key];
     localStorage.setItem(this._keys.characters, JSON.stringify(map));
+    await AssetDB.setCharacterAssetEntry(key, assetId || null);
   },
-  removeAllCharacterAssetRefs(assetId) {
+  async removeAllCharacterAssetRefs(assetId) {
     const map = this._loadCharacterMap();
     let changed = false;
     Object.keys(map).forEach(key => { if (map[key] === assetId) { delete map[key]; changed = true; } });
     if (changed) localStorage.setItem(this._keys.characters, JSON.stringify(map));
+
+    try {
+      const serverMap = Object.assign({}, await AssetDB.getCharacterAssetMap());
+      let serverChanged = false;
+      Object.keys(serverMap).forEach(key => { if (serverMap[key] === assetId) { delete serverMap[key]; serverChanged = true; } });
+      if (serverChanged) await AssetDB._setCharacterAssetMap(serverMap);
+    } catch (e) { /* best-effort server cleanup; local removal already applied */ }
   },
 
   // Which outfit id (from that character's `outfits` list in
@@ -1809,24 +2005,30 @@ const DevGameState = {
   // nothing. Returns null for a character with no `outfits` list at all —
   // that's the "no outfit dimension" case getCharacterAssetId above treats
   // the same as before this feature existed.
+  // Backed by AssetDB.getCharacterOutfitMap()/setCharacterOutfitEntry as the
+  // real (multi-device) source of truth.
   _loadOutfitMap() {
     try { return JSON.parse(localStorage.getItem(this._keys.outfits)) || {}; }
     catch (e) { return {}; }
   },
-  getSelectedOutfit(characterKey) {
+  async getSelectedOutfit(characterKey) {
     if (!characterKey) return null;
     const def = (typeof dialogueCharacters !== 'undefined') ? dialogueCharacters.find(c => c.id === characterKey) : null;
     if (!def || !def.outfits || !def.outfits.length) return null;
-    const saved = this._loadOutfitMap()[characterKey];
+    const map = await this._syncFromServer(this._keys.outfits, this._loadOutfitMap(), () => AssetDB.getCharacterOutfitMap());
+    const saved = map[characterKey];
     return (saved && def.outfits.includes(saved)) ? saved : def.outfits[0];
   },
-  setSelectedOutfit(characterKey, outfitId) {
+  async setSelectedOutfit(characterKey, outfitId) {
     if (!characterKey) return;
     const map = this._loadOutfitMap();
     if (outfitId) map[characterKey] = outfitId; else delete map[characterKey];
     localStorage.setItem(this._keys.outfits, JSON.stringify(map));
+    await AssetDB.setCharacterOutfitEntry(characterKey, outfitId || null);
   },
 
+  // Backed by AssetDB.getCharacterTransformMap()/setCharacterTransformEntry
+  // as the real (multi-device) source of truth.
   _loadTransformMap() {
     try { return JSON.parse(localStorage.getItem(this._keys.transforms)) || {}; }
     catch (e) { return {}; }
@@ -1840,17 +2042,60 @@ const DevGameState = {
     return (def && def.role === 'protagonist') ? characterKey : '__other__';
   },
   // CharacterTransform = { x, y, scale }.
-  getCharacterTransform(characterKey) {
+  async getCharacterTransform(characterKey) {
     const defaults = { x: 0, y: 0, scale: 1 };
     const key = this._transformKeyFor(characterKey);
     if (!key) return defaults;
-    return this._loadTransformMap()[key] || defaults;
+    const map = await this._syncFromServer(this._keys.transforms, this._loadTransformMap(), () => AssetDB.getCharacterTransformMap());
+    return map[key] || defaults;
   },
-  setCharacterTransform(characterKey, transform) {
+  async setCharacterTransform(characterKey, transform) {
     const key = this._transformKeyFor(characterKey);
     if (!key) return;
     const map = this._loadTransformMap();
     map[key] = transform;
     localStorage.setItem(this._keys.transforms, JSON.stringify(map));
+    await AssetDB.setCharacterTransformEntry(key, transform || null);
+  },
+
+  // 로컬 전용이던 6개 배정 맵을 서버(AssetDB) blob으로 1회 마이그레이션한다
+  // (작업 01 구현 범위 C). 맵별로 독립 판정하므로 한 맵의 실패가 나머지를
+  // 막지 않고, 서버에 이미 값이 있는 맵은 절대 덮어쓰지 않는다(멱등) — 두
+  // 번째 실행부터는 모든 맵이 skippedServerNotEmpty로만 떨어진다. 실행
+  // 진입점/배너 UI는 다른 작업(02)이 담당한다.
+  async migrateLocalAssignmentsToServerIfEmpty() {
+    const specs = [
+      { key: 'characters', loadLocal: () => this._loadCharacterMap(), getServerMap: () => AssetDB.getCharacterAssetMap(), saveServerMap: (m) => AssetDB._setCharacterAssetMap(m) },
+      { key: 'outfits', loadLocal: () => this._loadOutfitMap(), getServerMap: () => AssetDB.getCharacterOutfitMap(), saveServerMap: (m) => AssetDB._setCharacterOutfitMap(m) },
+      { key: 'transforms', loadLocal: () => this._loadTransformMap(), getServerMap: () => AssetDB.getCharacterTransformMap(), saveServerMap: (m) => AssetDB._setCharacterTransformMap(m) },
+      { key: 'sceneBgm', loadLocal: () => this._loadSceneBgmMap(), getServerMap: () => AssetDB.getSceneBgmMap(), saveServerMap: (m) => AssetDB._setSceneBgmMap(m) },
+      { key: 'locationBackgrounds', loadLocal: () => this._loadLocationBackgroundMap(), getServerMap: () => AssetDB.getLocationBackgroundMap(), saveServerMap: (m) => AssetDB._setLocationBackgroundMap(m) },
+      { key: 'background', loadLocal: () => this._loadBackgroundMap(), getServerMap: () => AssetDB.getLegacyBackgroundMap(), saveServerMap: (m) => AssetDB._setLegacyBackgroundMap(m) },
+    ];
+
+    const result = { migrated: [], skippedServerNotEmpty: [], skippedLocalEmpty: [], failed: [] };
+
+    for (const spec of specs) {
+      try {
+        const localMap = spec.loadLocal();
+        const localHasEntries = localMap && Object.keys(localMap).length > 0;
+        const serverMap = await spec.getServerMap();
+        const serverHasEntries = serverMap && Object.keys(serverMap).length > 0;
+        if (serverHasEntries) {
+          result.skippedServerNotEmpty.push(spec.key);
+          continue;
+        }
+        if (!localHasEntries) {
+          result.skippedLocalEmpty.push(spec.key);
+          continue;
+        }
+        await spec.saveServerMap(localMap);
+        result.migrated.push(spec.key);
+      } catch (error) {
+        result.failed.push({ key: spec.key, error });
+      }
+    }
+
+    return result;
   },
 };

@@ -52,8 +52,16 @@ const WardrobeState = {
   // beats (spec §5.5) — enforced by the caller (shop/wardrobe screens check
   // CaseFileState flags like 'interrogationActive'/'minigameActive' before
   // exposing the 착용 action), not here, so debug tools can still force it.
-  equipOutfit(outfitId) {
-    if (!wardrobeState.ownedOutfitIds.includes(outfitId)) return false;
+  //
+  // Async: DevGameState.setSelectedOutfit is part of the server-backed
+  // DevGameState API contract, so this applies the local equip optimistically
+  // and rolls it back if that sync fails — callers must await and check the
+  // returned `success` before showing an equip-succeeded state.
+  // result: { success: true } | { success: false, reason: 'notOwned' | 'syncFailed', error? }
+  async equipOutfit(outfitId) {
+    if (!wardrobeState.ownedOutfitIds.includes(outfitId)) return { success: false, reason: 'notOwned' };
+    const prevEquippedOutfitId = wardrobeState.equippedOutfitId;
+    const prevLastEquippedOutfitId = wardrobeState.lastEquippedOutfitId;
     wardrobeState.equippedOutfitId = outfitId;
     wardrobeState.lastEquippedOutfitId = outfitId;
     saveWardrobeState();
@@ -67,9 +75,16 @@ const WardrobeState = {
     // resolveOutfitForScene below).
     const def = shopItems[outfitId];
     if (def && def.vnOutfitId && typeof DevGameState !== 'undefined') {
-      DevGameState.setSelectedOutfit('jisoo', def.vnOutfitId);
+      try {
+        await DevGameState.setSelectedOutfit('jisoo', def.vnOutfitId);
+      } catch (err) {
+        wardrobeState.equippedOutfitId = prevEquippedOutfitId;
+        wardrobeState.lastEquippedOutfitId = prevLastEquippedOutfitId;
+        saveWardrobeState();
+        return { success: false, reason: 'syncFailed', error: err };
+      }
     }
-    return true;
+    return { success: true };
   },
   getEquippedOutfitId() { return wardrobeState.equippedOutfitId; },
   getEquippedOutfit() { return shopItems[wardrobeState.equippedOutfitId] || null; },

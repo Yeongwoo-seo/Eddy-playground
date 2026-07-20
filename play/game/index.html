@@ -487,7 +487,7 @@ let bgmUnlocked = false;
 let desiredBgmOn = CaseFileState.getSettings().bgm;
 
 async function applyBgm() {
-  const soundId = DevGameState.getSceneBgmId(activeSceneData.id);
+  const soundId = await DevGameState.getSceneBgmId(activeSceneData.id);
   if (!soundId) return;
   let sounds;
   try { sounds = await AssetDB.getSounds(); } catch (e) { return; }
@@ -526,8 +526,7 @@ async function preloadCharacterAssetsForLines(lines) {
     if (!l.characterId) return;
     pairs.set(`${l.characterId}::${l.expression || 'neutral'}`, l);
   });
-  const assetIds = new Set();
-  [...pairs.values()].forEach(l => {
+  const idLookups = await Promise.allSettled([...pairs.values()].map(async l => {
     const expression = l.expression || 'neutral';
     let resolvedCharacterId = l.characterId;
     if (typeof WardrobeState !== 'undefined') {
@@ -535,15 +534,22 @@ async function preloadCharacterAssetsForLines(lines) {
         const resolution = WardrobeState.resolveOutfitForScene(l.characterId, {
           outfitMode: activeSceneData.outfitMode, storyOutfitId: activeSceneData.storyOutfitId,
         });
-        if (resolution.hidden) return;
+        if (resolution.hidden) return [];
         if (resolution.characterId) resolvedCharacterId = resolution.characterId;
       } catch (e) { /* fall back to the base characterId below */ }
     }
-    const outfitAssetId = DevGameState.getCharacterAssetId(resolvedCharacterId, expression);
-    if (outfitAssetId) assetIds.add(outfitAssetId);
-    const baseAssetId = DevGameState.getCharacterAssetId(l.characterId, expression);
-    if (baseAssetId) assetIds.add(baseAssetId);
-  });
+    const [outfitAssetId, baseAssetId] = await Promise.all([
+      DevGameState.getCharacterAssetId(resolvedCharacterId, expression),
+      DevGameState.getCharacterAssetId(l.characterId, expression),
+    ]);
+    return [outfitAssetId, baseAssetId];
+  }));
+  const assetIds = new Set(
+    idLookups
+      .filter(r => r.status === 'fulfilled')
+      .flatMap(r => r.value)
+      .filter(Boolean)
+  );
   const assets = assetIds.size ? await AssetDB.getAssetsByIds([...assetIds]) : [];
   await Promise.all(assets.map(a => (a && a.dataUrl) ? AssetDB.preloadImage(a.dataUrl) : Promise.resolve()));
 }
@@ -590,10 +596,13 @@ async function applyCharacterForLine(characterId, expression) {
   }
   el.charWrap.style.opacity = '1';
   let asset = null;
-  const outfitAssetId = DevGameState.getCharacterAssetId(outfitResolution.characterId, expression);
+  const outfitAssetId = await DevGameState.getCharacterAssetId(outfitResolution.characterId, expression);
+  if (requestToken !== charRequestToken) return; // superseded by a later line change
   if (outfitAssetId) asset = await AssetDB.getAsset(outfitAssetId);
+  if (requestToken !== charRequestToken) return;
   if (!asset && outfitResolution.characterId !== characterId) {
-    const baseAssetId = DevGameState.getCharacterAssetId(characterId, expression);
+    const baseAssetId = await DevGameState.getCharacterAssetId(characterId, expression);
+    if (requestToken !== charRequestToken) return;
     asset = baseAssetId ? await AssetDB.getAsset(baseAssetId) : null;
   }
   if (requestToken !== charRequestToken) return; // superseded by a later line change
@@ -602,7 +611,9 @@ async function applyCharacterForLine(characterId, expression) {
   // DevGameState._transformKeyFor) — an outfit variant isn't a registered
   // dialogue character, so it has no transform entry of its own and isn't
   // meant to (position/scale is a per-character tune, not per-outfit).
-  applyTransformToImage(DevGameState.getCharacterTransform(characterId));
+  const transform = await DevGameState.getCharacterTransform(characterId);
+  if (requestToken !== charRequestToken) return; // stale transform must not move the new character's portrait
+  applyTransformToImage(transform);
 }
 
 function updateArrow(show) {

@@ -317,6 +317,14 @@ let lastPayload = null; // retained so "다시 시도" can resend without re-rea
 // lookup back to the 미니게임 얼굴 DB key (see updateMsgPortrait).
 const SPEAKER_TO_CHARACTER_KEY = { '지수': 'jisoo', '영우': 'youngwoo' };
 
+// DevGameState.getCharacterAssetId is part of the server-backed DevGameState
+// API contract — safeCall tolerates either today's synchronous localStorage
+// read or a future rejected/thrown server call, falling back to the portrait
+// placeholder below instead of taking this dev tool down.
+async function safeCall(fn) {
+  try { return await fn(); } catch (err) { console.error(err); return null; }
+}
+
 // Same 미니게임 얼굴 DB close-up crop minigame-eastwood's dlg-strip uses —
 // a dev only has to upload it once per character (/dev/upload's 미니게임
 // 얼굴 탭) and every minigame's dialogue box picks it up from here.
@@ -325,7 +333,8 @@ async function updateMsgPortrait(characterKey) {
   const requestToken = ++msgPortraitRequestToken;
   if (!characterKey) { el.msgPortraitWrap.classList.add('hidden'); return; }
   el.msgPortraitWrap.classList.remove('hidden');
-  const assetId = DevGameState.getCharacterAssetId(characterKey, MINIGAME_FACE_EXPRESSION);
+  const assetId = await safeCall(() => DevGameState.getCharacterAssetId(characterKey, MINIGAME_FACE_EXPRESSION));
+  if (requestToken !== msgPortraitRequestToken) return; // a later call already superseded this one
   const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
   if (requestToken !== msgPortraitRequestToken) return; // a later call already superseded this one
   if (asset && asset.dataUrl) {
