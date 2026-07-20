@@ -40,6 +40,12 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--sans);disp
 
 .empty-note{grid-column:1/-1;text-align:center;color:var(--text-muted);font-size:13px;padding:40px 0}
 .go-shop-btn{grid-column:1/-1;background:var(--amber);color:#191206;border:none;border-radius:12px;padding:14px;font-size:13.5px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:6px}
+
+.outfit-card[disabled]{opacity:.5;cursor:default}
+
+/* ===== Error toast (장착 서버 동기화 실패 등) ===== */
+.mk-toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0));transform:translateX(-50%) translateY(8px);z-index:30;background:rgba(58,13,13,.94);border:1px solid rgba(217,65,65,.45);color:#ffb4b4;border-radius:14px;padding:12px 18px;font-size:13px;line-height:1.5;text-align:center;max-width:86%;opacity:0;pointer-events:none;transition:opacity .25s ease,transform .25s ease}
+.mk-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
 </head>
 <body>
@@ -59,6 +65,8 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--sans);disp
   <div class="grid" id="grid"></div>
 </div>
 
+<div class="mk-toast" id="toast"></div>
+
 <script src="/dev/assetDb.js"></script>
 <script src="/dev/dialogueData.js"></script>
 <script src="/dev/caseFileData.js"></script>
@@ -74,10 +82,27 @@ const el = {
   previewPlaceholder: document.getElementById('previewPlaceholder'),
   previewName: document.getElementById('previewName'),
   grid: document.getElementById('grid'),
+  toast: document.getElementById('toast'),
 };
 
 function escapeHtml(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// DevGameState's outfit/character-asset lookups are part of the server-backed
+// API contract — this tolerates either today's synchronous localStorage reads
+// or a future rejected/thrown server call without taking the preview down,
+// falling back to "no asset found" either way.
+async function safeCall(fn) {
+  try { return await fn(); } catch (err) { console.error(err); return null; }
+}
+
+let toastTimer = null;
+function showToast(message) {
+  el.toast.textContent = message;
+  el.toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.toast.classList.remove('show'), 3400);
 }
 
 function goBack() {
@@ -90,16 +115,25 @@ el.backBtn.addEventListener('click', goBack);
 // with a plain label instead of a catalog lookup.
 function outfitLabel(id) { return (shopItems[id] && shopItems[id].name) || '기본 코디'; }
 
+// requestToken guards against a stale response: if the equipped outfit
+// changes again before this lookup resolves, the earlier call's late-arriving
+// asset must not overwrite the preview for the outfit equipped after it.
+let previewRequestToken = 0;
 async function updatePreview() {
+  const requestToken = ++previewRequestToken;
   const id = WardrobeState.getEquippedOutfitId();
   el.previewName.textContent = outfitLabel(id);
   const resolution = WardrobeState.resolveOutfitForScene('jisoo');
   let asset = null;
-  const assetId = DevGameState.getCharacterAssetId(resolution.characterId, 'neutral');
+  const assetId = await safeCall(() => DevGameState.getCharacterAssetId(resolution.characterId, 'neutral'));
+  if (requestToken !== previewRequestToken) return;
   if (assetId) asset = await AssetDB.getAsset(assetId).catch(() => null);
+  if (requestToken !== previewRequestToken) return;
   if (!asset && resolution.characterId !== 'jisoo') {
-    const baseId = DevGameState.getCharacterAssetId('jisoo', 'neutral');
+    const baseId = await safeCall(() => DevGameState.getCharacterAssetId('jisoo', 'neutral'));
+    if (requestToken !== previewRequestToken) return;
     asset = baseId ? await AssetDB.getAsset(baseId).catch(() => null) : null;
+    if (requestToken !== previewRequestToken) return;
   }
   if (asset && asset.dataUrl) {
     el.previewImg.src = asset.dataUrl;
@@ -125,13 +159,24 @@ function renderGrid() {
     `;
   }).join('') + (ShopState.isUnlocked() ? '<button class="go-shop-btn" id="goShopBtn">옷가게에서 더 보기</button>' : '');
 
-  el.grid.querySelectorAll('[data-equip]').forEach(btn => btn.addEventListener('click', () => {
-    WardrobeState.equipOutfit(btn.dataset.equip);
-    renderGrid();
-    updatePreview();
-  }));
+  el.grid.querySelectorAll('[data-equip]').forEach(btn => btn.addEventListener('click', () => handleEquipClick(btn.dataset.equip, btn)));
   const goShopBtn = document.getElementById('goShopBtn');
   if (goShopBtn) goShopBtn.addEventListener('click', () => { location.href = '/play/shop/'; });
+}
+
+// 저장 완료 전 중복 클릭 방지 — 실패 시엔 카드를 다시 그리지 않아(equip 자체가
+// WardrobeState.equipOutfit 내부에서 이미 롤백됨) 성공한 것처럼 보이지 않는다.
+async function handleEquipClick(itemId, btn) {
+  if (btn.disabled) return;
+  btn.disabled = true;
+  const result = await WardrobeState.equipOutfit(itemId);
+  if (!result.success) {
+    btn.disabled = false;
+    showToast('의상 장착 동기화에 실패했습니다. 다시 시도해주세요.');
+    return;
+  }
+  renderGrid();
+  updatePreview();
 }
 
 (function init() {
