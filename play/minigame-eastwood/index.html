@@ -338,7 +338,7 @@ async function initMap() {
   LoadingOverlay.show('지도 불러오는 중');
   // 지도형 미니게임 배경은 location-background-system 설계안 범위 밖 — 기존
   // 레거시 sceneId 직접 배정 방식 그대로.
-  const assetId = DevGameState.getLegacyBackgroundId(MINIGAME_ID);
+  const assetId = await DevGameState.getLegacyBackgroundId(MINIGAME_ID);
   const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
   const savedHotspots = await Promise.all(LOCATIONS.map((_, i) => DevGameState.getMinigameHotspot(MINIGAME_ID, i)))
     .then(hs => hs.map(hotspotToPoints));
@@ -479,7 +479,8 @@ el.mapStage.addEventListener('wheel', (e) => {
 let portraitRequestToken = 0;
 async function updatePortrait(characterKey, expression) {
   const requestToken = ++portraitRequestToken;
-  const assetId = DevGameState.getCharacterAssetId(characterKey, MINIGAME_FACE_EXPRESSION);
+  const assetId = await DevGameState.getCharacterAssetId(characterKey, MINIGAME_FACE_EXPRESSION);
+  if (requestToken !== portraitRequestToken) return;
   const asset = await AssetDB.getAsset(assetId).catch(() => null);
   if (requestToken !== portraitRequestToken) return;
   if (asset && asset.dataUrl) {
@@ -501,7 +502,8 @@ async function updateSuccessAvatar(characterId, expression) {
     return;
   }
   el.successCharWrap.classList.add('show');
-  const assetId = DevGameState.getCharacterAssetId(characterId, expression);
+  const assetId = await DevGameState.getCharacterAssetId(characterId, expression);
+  if (requestToken !== successAvatarRequestToken) return;
   const asset = await AssetDB.getAsset(assetId).catch(() => null);
   if (requestToken !== successAvatarRequestToken) return;
   if (asset && asset.dataUrl) {
@@ -513,7 +515,8 @@ async function updateSuccessAvatar(characterId, expression) {
     el.successCharImg.style.display = 'none';
     el.successCharPlaceholder.style.display = '';
   }
-  const t = DevGameState.getCharacterTransform(characterId);
+  const t = await DevGameState.getCharacterTransform(characterId);
+  if (requestToken !== successAvatarRequestToken) return;
   el.successCharImg.style.transform = `translate(${t.x}px, ${t.y}px) scale(${t.scale})`;
 }
 

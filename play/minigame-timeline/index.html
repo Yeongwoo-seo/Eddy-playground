@@ -271,7 +271,8 @@ function updateProgressUi() { el.progressN.textContent = placedCount; }
 let portraitRequestToken = 0;
 async function updatePortrait(characterKey) {
   const requestToken = ++portraitRequestToken;
-  const assetId = DevGameState.getCharacterAssetId(characterKey, MINIGAME_FACE_EXPRESSION);
+  const assetId = await DevGameState.getCharacterAssetId(characterKey, MINIGAME_FACE_EXPRESSION);
+  if (requestToken !== portraitRequestToken) return;
   const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
   if (requestToken !== portraitRequestToken) return; // a later call already superseded this one
   if (asset && asset.dataUrl) {
@@ -414,9 +415,10 @@ async function updateSuccessAvatar(characterId, expression) {
   const requestToken = ++successAvatarRequestToken;
   if (!characterId) { el.successCharWrap.classList.remove('show'); return; }
   el.successCharWrap.classList.add('show');
-  const assetId = DevGameState.getCharacterAssetId(characterId, expression);
-  const asset = await AssetDB.getAsset(assetId).catch(() => null);
+  const assetId = await DevGameState.getCharacterAssetId(characterId, expression);
   if (requestToken !== successAvatarRequestToken) return; // a later call already superseded this one
+  const asset = await AssetDB.getAsset(assetId).catch(() => null);
+  if (requestToken !== successAvatarRequestToken) return;
   if (asset && asset.dataUrl) {
     el.successCharImg.src = asset.dataUrl;
     el.successCharImg.style.display = '';
@@ -426,7 +428,8 @@ async function updateSuccessAvatar(characterId, expression) {
     el.successCharImg.style.display = 'none';
     el.successCharPlaceholder.style.display = '';
   }
-  const t = DevGameState.getCharacterTransform(characterId);
+  const t = await DevGameState.getCharacterTransform(characterId);
+  if (requestToken !== successAvatarRequestToken) return;
   el.successCharImg.style.transform = `translate(${t.x}px, ${t.y}px) scale(${t.scale})`;
 }
 
