@@ -779,7 +779,9 @@ function goSub(type){
 }
 
 function renderTabs(){
+  const wedBtn = curWeek===0 ? `<button class="sub-tab ${curSub==='wed'?'on':''}" onclick="goSub('wed')">수요일</button>` : '';
   document.getElementById('tabsWrap').innerHTML = `<div class="sub-tabs">
+    ${wedBtn}
     <button class="sub-tab ${curSub==='sat'?'on':''}" onclick="goSub('sat')">토요일</button>
     <button class="sub-tab ${curSub==='sun'?'on':''}" onclick="goSub('sun')">일요일</button>
   </div>`;
@@ -1168,7 +1170,7 @@ function planKey(){ return `${curWeek}-${curSub}`; }
 function renderPlaces(){
   const key=planKey();
   const places=data.plans[key]||[];
-  const subLabel=curSub==='sat'?'토요일':curSub==='sun'?'일요일':'평일';
+  const subLabel=curSub==='sat'?'토요일':curSub==='sun'?'일요일':curSub==='wed'?'수요일':'평일';
   if(!places.length) return `<div class="sub-empty">${subLabel}에 갈 곳을 추가해보세요</div>`;
   const routeBtn = places.length>1
     ? `<button class="route-btn" onclick="openRoute()">🧭 동선보기</button>`
