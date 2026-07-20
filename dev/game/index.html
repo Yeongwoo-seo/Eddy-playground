@@ -43,6 +43,11 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
    but cyan to read as "this is the player-facing preview", not a dev tool. */
 .vn-btn.auto{color:var(--cyan);border-color:rgba(89,184,200,.45);background:rgba(89,184,200,.16)}
 .vn-btn.auto.hidden{display:none}
+/* 우상단 "다음" 버튼 — el.frame 탭과 완전히 같은 동작(대사 스킵/다음 줄·선택지·
+   증거제시로 진행/마지막 줄이면 onComplete로 다음 씬 이동)을 명시적인 버튼으로도
+   제공한다. 화면 아무데나 탭해도 되는 el.frame 리스너와 별개로 존재 — 손 안 닿는
+   위치거나 "탭하면 넘어간다"는 걸 몰라도 이 버튼만 보고 계속 진행할 수 있게. */
+.vn-btn.next{color:var(--text-primary)}
 
 /* ===== Point balance (The Missing Key v1 §4.1/§6.1) — small badge next to
    the CASE FILE ☰ button. Hidden until the player has ever earned points
@@ -212,6 +217,7 @@ window.addEventListener('orientationchange', setVh100);
       <a class="vn-btn" href="/dev/">← DEV</a>
     </div>
     <div style="display:flex;gap:8px">
+      <button class="vn-btn next" id="nextBtn">다음 ▶</button>
       <button class="vn-btn auto hidden" id="autoplayBtn">AUTO ⏸ 정지</button>
       <button class="vn-btn dev" id="devBtn">DEV</button>
     </div>
@@ -384,6 +390,7 @@ const el = {
   speakerName: document.getElementById('speakerName'),
   dialogueText: document.getElementById('dialogueText'),
   tapArrow: document.getElementById('tapArrow'),
+  nextBtn: document.getElementById('nextBtn'),
   devBtn: document.getElementById('devBtn'),
   autoplayBtn: document.getElementById('autoplayBtn'),
   sheetOverlay: document.getElementById('sheetOverlay'),
@@ -1293,6 +1300,12 @@ function escapeHtml(s) {
 }
 
 el.frame.addEventListener('click', onTap);
+// el.frame's own click listener above already covers "tap anywhere" — this
+// duplicates the exact same onTap() call as an explicit top-right button
+// (see .vn-btn.next's comment) for players who don't tap the screen, and
+// stopPropagation keeps the click from also bubbling up into that frame
+// listener and double-advancing.
+el.nextBtn.addEventListener('click', (e) => { e.stopPropagation(); onTap(); });
 
 el.devBtn.addEventListener('click', async (e) => {
   e.stopPropagation();
