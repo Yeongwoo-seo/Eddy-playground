@@ -40,26 +40,48 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-// stale-while-revalidate: serve the cached copy immediately (so opening the
-// installed app renders instantly instead of blocking on a full network
-// round-trip — worse still with { cache: 'no-store' }, which also skips the
-// browser's own HTTP cache — before showing anything), while a network
-// fetch runs in the background to refresh the cache for the *next* open.
-// A load right after a deploy can show one load's worth of stale build, but
-// it self-heals on the very next open instead of making every single open
-// pay full network latency up front.
+// Splitting the fetch strategy by request type: stale-while-revalidate (v3's
+// approach) made the app open instantly, but it meant a deployed gameplay
+// fix wouldn't actually show up until the *next* full close/reopen — the
+// install-gate/week-select/minigame-select screen, and realPlayMode.js's
+// dev-chrome-hiding logic, kept serving whatever was cached from the
+// previous open for the entire current play session (installed PWA, but
+// gameplay fixes don't apply mid-session). Same root cause /dev/sw.js hit
+// and fixed with network-first (see its comment), which never got applied
+// here when /play/sw.js was switched to stale-while-revalidate for speed.
+//
+// Fix: only the large, rarely-changing static images (icons/splash screens)
+// keep stale-while-revalidate, since serving those from cache immediately is
+// what actually made app-open feel instant. Everything else — HTML, JS,
+// manifest.json — goes network-first with cache: 'no-store' (bypassing the
+// browser's own HTTP cache too, same as /dev/sw.js) so gameplay code is
+// always current for the session that's about to start, not the next one.
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
+
+  if (event.request.destination === 'image') {
+    event.respondWith(
+      caches.match(event.request).then(cached => {
+        const networkFetch = fetch(event.request).then(response => {
+          if (response.ok) {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+          }
+          return response;
+        }).catch(() => cached);
+        return cached || networkFetch;
+      })
+    );
+    return;
+  }
+
   event.respondWith(
-    caches.match(event.request).then(cached => {
-      const networkFetch = fetch(event.request).then(response => {
-        if (response.ok) {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
-        }
-        return response;
-      }).catch(() => cached);
-      return cached || networkFetch;
-    })
+    fetch(event.request, { cache: 'no-store' }).then(response => {
+      if (response.ok) {
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+      }
+      return response;
+    }).catch(() => caches.match(event.request))
   );
 });
