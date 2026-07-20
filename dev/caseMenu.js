@@ -705,8 +705,12 @@ function initCaseMenu(options) {
   // practice — a choice's effects array runs synchronously per line).
   function notifyHypothesis(text) { notifyToast('가설 저장됨', text); }
   function notifyFact(title) { notifyToast('추론 사실 생성', title); }
+  // 여행 만족도 / 영우 호감도 게이지 변화 — notifyPoints와 같은 목적의 짧은
+  // 토스트(연출용 게이지라 방향·크기만 확인시켜주면 충분).
+  function notifySatisfaction(amount) { notifyToast('여행 만족도', `${amount > 0 ? '+' : ''}${amount}`); }
+  function notifyAffection(amount) { notifyToast('영우 호감도', `${amount > 0 ? '+' : ''}${amount}`); }
 
-  return { open, close, isOpen, notifyNewQuestion, notifyHypothesis, notifyFact, notifyPoints, destroy: () => { root.remove(); toastEl.remove(); } };
+  return { open, close, isOpen, notifyNewQuestion, notifyHypothesis, notifyFact, notifyPoints, notifySatisfaction, notifyAffection, destroy: () => { root.remove(); toastEl.remove(); } };
 }
 
 // The Missing Key v1 §5.3 — "비활성 상태에서는 메뉴를 숨기지 말고 잠금 또는
