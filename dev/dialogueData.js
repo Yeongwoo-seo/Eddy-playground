@@ -100,21 +100,26 @@ const MINIGAME_FACE_EXPRESSION = 'minigame-face';
    this scene now needs. */
 const week0SceneFlightLines = [
   { id: 'line-001', speaker: '', text: '시드니 상공.\n착륙 10분 전.', characterId: null },
-  { id: 'line-002', speaker: '', text: '구름 아래로 도시의 윤곽이 천천히 드러났다.\n낯선 도로와 건물 사이로 아침 햇빛이 번졌다.', characterId: null },
-  { id: 'line-003', speaker: '지수', text: '와...', characterId: 'jisoo', expression: 'blank' },
-  { id: 'line-004', speaker: '지수', text: '진짜 다 왔다.', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-005', speaker: '', text: '기내에 착륙 안내방송이 흐른다.\n"곧 시드니 킹스포드 스미스 공항에 착륙하겠습니다."', characterId: null },
-  { id: 'line-006', speaker: '', text: '지수가 비행기 모드를 해제하자마자\n쌓여 있던 메시지가 한꺼번에 들어왔다.', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-007', speaker: '영우', text: '착륙했어??', characterId: 'youngwoo', expression: 'happy' },
-  { id: 'line-008', speaker: '영우', text: '나 도착층 B 출구 앞이야\n천천히 나와 ㅎㅎ', characterId: 'youngwoo', expression: 'neutral' },
-  { id: 'line-009', speaker: '지수', text: '오', characterId: 'jisoo', expression: 'smirk' },
-  { id: 'line-010', speaker: '지수', text: '이번엔 위치 설명이 정확한데요??', characterId: 'jisoo', expression: 'smirk' },
-  { id: 'line-011', speaker: '영우', text: '나 호주 살면서 성장했어', characterId: 'youngwoo', expression: 'smirk' },
-  { id: 'line-012', speaker: '지수', text: '아직 검증 전입니다\n서영우씨', characterId: 'jisoo', expression: 'suspicious' },
-  { id: 'line-013', speaker: '영우', text: 'ㅋㅎㅋㅎㅋㅎㅋㅎㅋㅎ\n일단 착륙부터 하세요 손님', characterId: 'youngwoo', expression: 'happy' },
-  { id: 'line-014', speaker: '지수', text: '가고 있잖아요오\n지금 하늘인데 어케 빨리 가!!!!', characterId: 'jisoo', expression: 'smirk' },
-  { id: 'line-015', speaker: '', text: '지수는 웃으며 폰을 내려놓았다.\n\n조금 전까지는 여행을 간다는 느낌뿐이었는데,\n이제는 정말 영우를 만나러 왔다는 실감이 났다.', characterId: 'jisoo', expression: 'soft' },
-  { id: 'line-016', speaker: '', text: '설렘 반, 긴장 반.\n\n시드니가 창밖에서 점점 가까워지고 있었다.', characterId: null },
+  { id: 'line-002', speaker: '', text: '구름 아래로 시드니의 아침이 조금씩 보이기 시작했다.', characterId: null },
+  { id: 'line-003', speaker: '', text: '창에 기댄 지수의 눈에\n낯선 나라의 낯선 아침 햇살이 비쳐 들었다.', characterId: 'jisoo', expression: 'blank' },
+  { id: 'line-004', speaker: '', text: '아홉 시간 반. 두 번의 기내식. 세 번쯤 깼다가 다시 잠든 시간.\n\n그리고 그보다 훨씬 긴, 영우 없이 보낸 여섯 달.', characterId: 'jisoo', expression: 'blank' },
+  { id: 'line-005', speaker: '', text: '실감이 안 났다.\n그냥 어느 순간 도착해 있을 것만 같았다.', characterId: 'jisoo', expression: 'blank' },
+  { id: 'line-006', speaker: '', text: '기내 안내 방송이 흘러나오고,\n좌석벨트 표시등에 불이 들어왔다.', characterId: null },
+  { id: 'line-007', speaker: '', text: '지수가 비행기 모드를 해제하자\n영우의 메시지가 한꺼번에 들어왔다.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-008', speaker: '영우', text: '착륙했어????', characterId: 'youngwoo', expression: 'happy' },
+  { id: 'line-009', speaker: '영우', text: '나 B 출구 앞이야\n천천히 나와 ㅎㅎㅎㅎㅎㅎ', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-010', speaker: '영우', text: '어제부터 계속 도착 시간 검색하고 있었다는 건\n안 비밀.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-011', speaker: '지수', text: '오.\n이번엔 위치 설명 정확한데요????', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-012', speaker: '영우', text: '나 호주 살면서 성장했어.', characterId: 'youngwoo', expression: 'smirk' },
+  { id: 'line-013', speaker: '지수', text: '아직 검증 전입니다\n서영우씨.', characterId: 'jisoo', expression: 'suspicious' },
+  { id: 'line-014', speaker: '영우', text: '일단 착륙부터 하세요 손님 ㅋㅎㅋㅎㅋㅎㅋㅎ', characterId: 'youngwoo', expression: 'happy' },
+  { id: 'line-015', speaker: '지수', text: '가고 있잖아요오!!!!\n지금 하늘인데 어케 빨리 가!!!!', characterId: 'jisoo', expression: 'annoyed' },
+  { id: 'line-016', speaker: '영우', text: '알써알써.\n안전하게 와요 손님.', characterId: 'youngwoo', expression: 'happy' },
+  { id: 'line-017', speaker: '영우', text: '진짜 조심히 와.\n기다리고 있을게.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-018', speaker: '지수', text: '...\n\n이따 봐요.', characterId: 'jisoo', pauseBeforeMs: 300, expression: 'soft' },
+  { id: 'line-019', speaker: '', text: '창밖으로 시드니 도심의 실루엣이\n구름 사이로 어렴풋이 드러났다.', characterId: null },
+  { id: 'line-020', speaker: '', text: '지수는 웃으며 휴대폰을 내려놓았다.\n\n여행지가 가까워진다는 느낌보다,\n영우가 가까워진다는 느낌이 먼저 들었다.', characterId: 'jisoo', expression: 'soft' },
+  { id: 'line-021', speaker: '', text: '비행기가 서서히 고도를 낮추기 시작했다.', characterId: null },
 ];
 
 // Pure stage-direction beats (no speaker) use characterId to say who, if
@@ -126,234 +131,183 @@ const week0Scene001Lines = [
     sceneTransition: { backgroundKey: 'week0-scene-flight--arrival', introLabel: 'SYDNEY', time: '09:30' },
   },
   { id: 'line-002', speaker: '', text: '긴 입국 절차를 마친 지수가\n캐리어를 끌고 도착층으로 나왔다.', characterId: null },
-  { id: 'line-003', speaker: '지수', text: 'B 출구...', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-004', speaker: '지수', text: 'B가 어디야.', characterId: 'jisoo', expression: 'suspicious' },
-  { id: 'line-005', speaker: '영우', text: '지수야아아!!!!', characterId: null },
-  { id: 'line-006', speaker: '', text: '익숙한 목소리에 지수가 고개를 든다.\n사람들 사이에서 영우가 한 손을 높이 흔들고 있었다.', characterId: 'jisoo', expression: 'shocked' },
-  { id: 'line-007', speaker: '지수', text: '헐.', characterId: 'jisoo', expression: 'shocked' },
-  { id: 'line-008', speaker: '지수', text: '영우우우우!!!!', characterId: 'jisoo', expression: 'happy' },
-  { id: 'line-009', speaker: '', text: '지수가 캐리어를 끌며 빠르게 다가간다.\n영우는 웃으면서 지수의 캐리어 손잡이를 받아 들었다.', characterId: null },
-  { id: 'line-010', speaker: '영우', text: '와\n진짜 왔네', characterId: 'youngwoo', expression: 'happy' },
-  { id: 'line-011', speaker: '지수', text: '그니까!!!!', characterId: 'jisoo', expression: 'happy' },
-  { id: 'line-012', speaker: '지수', text: '나 진짜 왔어 ㅋㅎㅋㅎㅋㅎㅋㅎㅋㅎ', characterId: 'jisoo', expression: 'happy' },
-  { id: 'line-013', speaker: '영우', text: 'ㅎㅎ\n너무 보고 싶었어', characterId: 'youngwoo', expression: 'soft' },
-  { id: 'line-014', speaker: '지수', text: '아니 왜저래애애', characterId: 'jisoo', expression: 'annoyed' },
-  { id: 'line-015', speaker: '지수', text: '도착하자마자 그러기 있어요?????', characterId: 'jisoo', expression: 'annoyed' },
-  { id: 'line-016', speaker: '영우', text: '보고 싶었으니까\n보고 싶었다고 하지', characterId: 'youngwoo', expression: 'smirk' },
-  { id: 'line-017', speaker: '지수', text: '미쳤나봐아아\n사람들 다 있자나!!!!', characterId: 'jisoo', expression: 'annoyed' },
-  { id: 'line-018', speaker: '', text: '지수가 영우의 팔을 가볍게 때린다.', characterId: 'jisoo', expression: 'smirk' },
-  { id: 'line-019', speaker: '지수', text: '바부야 👊', characterId: 'jisoo', expression: 'annoyed' },
-  { id: 'line-020', speaker: '영우', text: 'ㅋㅎㅋㅎㅋㅎㅋㅎㅋㅎ\n그래도 웃네', characterId: 'youngwoo', expression: 'happy' },
-  { id: 'line-021', speaker: '지수', text: '반가워서 봐주는 거예요.', characterId: 'jisoo', expression: 'smirk' },
-  { id: 'line-022', speaker: '영우', text: '오\n입국 첫날 특별사면이네', characterId: 'youngwoo', expression: 'smirk' },
-  { id: 'line-023', speaker: '지수', text: '마자.\n오늘만이에요.', characterId: 'jisoo', expression: 'happy' },
-  { id: 'line-024', speaker: '', text: '서로 얼굴을 보고 웃고 있는데도\n아직 화면 속 사람을 보는 것처럼 조금 낯설었다.', characterId: 'jisoo', expression: 'soft' },
-  { id: 'line-025', speaker: '영우', text: '왜 그렇게 봐?', characterId: 'youngwoo', expression: 'curious' },
-  { id: 'line-026', speaker: '지수', text: '그냥.', characterId: 'jisoo', expression: 'soft' },
-  { id: 'line-027', speaker: '지수', text: '맨날 폰 안에 있던 사람이\n진짜 앞에 있어서.', characterId: 'jisoo', expression: 'soft' },
-  { id: 'line-028', speaker: '영우', text: '나도 그래.', characterId: 'youngwoo', expression: 'soft' },
-  { id: 'line-029', speaker: '영우', text: '근데 화면보다 훨씬 좋다.', characterId: 'youngwoo', expression: 'soft' },
-  { id: 'line-030', speaker: '지수', text: '...', characterId: 'jisoo', pauseBeforeMs: 400, expression: 'blank' },
-  { id: 'line-031', speaker: '지수', text: '아 진짜\n오늘 왜 이래애.', characterId: 'jisoo', expression: 'annoyed' },
-  { id: 'line-032', speaker: '영우', text: '오늘만 특별사면이라며\n할 말 다 해야지', characterId: 'youngwoo', expression: 'smirk' },
-  { id: 'line-033', speaker: '지수', text: '취소할까.', characterId: 'jisoo', expression: 'smirk' },
-  { id: 'line-034', speaker: '영우', text: '아니\n벌써요?????', characterId: 'youngwoo', expression: 'shocked' },
-  { id: 'line-035', speaker: '지수', text: 'ㅋㅎㅋㅎㅋㅎㅋㅎㅋㅎ\n잘해요 그럼.', characterId: 'jisoo', expression: 'happy' },
-  { id: 'line-036', speaker: '영우', text: '네에\n최선을 다하겠습니다', characterId: 'youngwoo', expression: 'happy' },
-  { id: 'line-037', speaker: '', text: '두 사람은 도착층을 빠져나가기 시작했다.\n영우는 자연스럽게 캐리어를 끌고,\n지수는 그 옆에 바짝 붙어 걸었다.', characterId: null },
-  { id: 'line-038', speaker: '지수', text: '근데 영우.', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-039', speaker: '영우', text: '웅웅', characterId: 'youngwoo', expression: 'neutral' },
-  { id: 'line-040', speaker: '지수', text: '시드니 입국 서비스\n현재까지 별 다섯 개예요.', characterId: 'jisoo', expression: 'smirk' },
-  { id: 'line-041', speaker: '영우', text: '오\n캐리어 들어줘서?', characterId: 'youngwoo', expression: 'happy' },
-  { id: 'line-042', speaker: '지수', text: '그것도 있고.', characterId: 'jisoo', expression: 'smirk' },
-  { id: 'line-043', speaker: '지수', text: '마중 나온 사람이 마음에 들어서.', characterId: 'jisoo', expression: 'soft' },
-  { id: 'line-044', speaker: '영우', text: '아.', characterId: 'youngwoo', expression: 'blank' },
-  { id: 'line-045', speaker: '지수', text: '왜\n갑자기 조용해졌어????', characterId: 'jisoo', expression: 'smirk' },
-  { id: 'line-046', speaker: '영우', text: '아니\n그건 좀 반칙이지', characterId: 'youngwoo', expression: 'blank' },
-  { id: 'line-047', speaker: '지수', text: '헤헤\n내가 이겼다.', characterId: 'jisoo', expression: 'happy' },
-  { id: 'line-048', speaker: '영우', text: '이게 왜 승부야 ㅋㅎㅋㅎㅋㅎㅋㅎㅋㅎ', characterId: 'youngwoo', expression: 'happy' },
-  { id: 'line-049', speaker: '지수', text: '방금부터 승부였어요.', characterId: 'jisoo', expression: 'smirk' },
-  { id: 'line-050', speaker: '영우', text: '아 진짜 지수답네', characterId: 'youngwoo', expression: 'happy' },
-  { id: 'line-051', speaker: '지수', text: '칭찬이죠?', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-052', speaker: '영우', text: '웅.\n개칭찬.', characterId: 'youngwoo', expression: 'soft' },
-  { id: 'line-053', speaker: '지수', text: '야르.\n인정해드립니다.', characterId: 'jisoo', expression: 'happy' },
-  { id: 'line-054', speaker: '', text: '영우가 휴대폰으로 이동 경로를 확인한다.\n지수가 옆에서 화면을 슬쩍 들여다본다.', characterId: null },
-  { id: 'line-055', speaker: '지수', text: '잠만.', characterId: 'jisoo', expression: 'suspicious' },
-  { id: 'line-056', speaker: '영우', text: '왜?', characterId: 'youngwoo', expression: 'curious' },
-  { id: 'line-057', speaker: '지수', text: '아까부터 화면 왜 자꾸 빨리 꺼요?', characterId: 'jisoo', expression: 'suspicious' },
-  { id: 'line-058', speaker: '영우', text: '내가?', characterId: 'youngwoo', expression: 'blank' },
-  { id: 'line-059', speaker: '지수', text: '웅.\n뭐 숨기죠.', characterId: 'jisoo', expression: 'suspicious' },
-  { id: 'line-060', speaker: '영우', text: '아닌데.\n그냥 길 보는 건데.', characterId: 'youngwoo', expression: 'neutral' },
-  { id: 'line-061', speaker: '지수', text: '흐으음.', characterId: 'jisoo', expression: 'suspicious' },
-  { id: 'line-062', speaker: '영우', text: '왜\n입국 심사 한 번 더 받아야 돼?', characterId: 'youngwoo', expression: 'smirk' },
-  { id: 'line-063', speaker: '지수', text: '일단 보류.', characterId: 'jisoo', expression: 'smirk' },
-  { id: 'line-064', speaker: '지수', text: '근데 쌤 뭔가 있는 건 알아요.', characterId: 'jisoo', expression: 'suspicious' },
-  { id: 'line-065', speaker: '영우', text: '와\n벌써 시작이네', characterId: 'youngwoo', expression: 'happy' },
-  { id: 'line-066', speaker: '지수', text: '그러니까 잘 숨겨요.\n제가 찾아낼 거니까.', characterId: 'jisoo', expression: 'smirk' },
-  { id: 'line-067', speaker: '영우', text: '일단 숙소 가는 길부터 찾아내 주세요\n김탐정님', characterId: 'youngwoo', expression: 'smirk' },
-  { id: 'line-068', speaker: '지수', text: '오키.\n그건 제가 해드리죠.', characterId: 'jisoo', expression: 'happy' },
-  { id: 'line-069', speaker: '', text: '지수의 첫날은,\n아직까지는 평범한 여행에 가까웠다.', characterId: null },
+  { id: 'line-003', speaker: '', text: '낯선 언어의 안내 방송, 낯선 냄새의 공기.\n지수는 잠깐 걸음을 멈추고 주위를 둘러봤다.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-004', speaker: '', text: '사람들 사이에서 영우가 손을 높이 흔들었다.', characterId: 'jisoo', expression: 'shocked' },
+  { id: 'line-005', speaker: '지수', text: '영크크!!!!', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-006', speaker: '영우', text: '지수지수야!!!!', characterId: 'youngwoo', expression: 'happy' },
+  { id: 'line-007', speaker: '', text: '지수가 캐리어를 놓고 뛰어가\n영우를 와락 껴안았다.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-008', speaker: '지수', text: '와...\n진짜 오랜만이다.', characterId: 'jisoo', expression: 'soft' },
+  { id: 'line-009', speaker: '영우', text: '웅.\n진짜 오랜만이야.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-010', speaker: '', text: '한참을 그렇게 안고 있다가\n지수가 먼저 살짝 몸을 떼고 영우를 올려다봤다.', characterId: 'jisoo', expression: 'soft' },
+  { id: 'line-011', speaker: '지수', text: '뭐야.\n살짝 탔어요?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-012', speaker: '영우', text: '여기 해 진짜 세.\n적응하는 데 좀 걸렸어.', characterId: 'youngwoo', expression: 'smirk' },
+  { id: 'line-013', speaker: '지수', text: '그래도 잘생김은 여전하네요.', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-014', speaker: '영우', text: '오늘부터 갑자기 그런 말 하기예요?', characterId: 'youngwoo', expression: 'happy' },
+  { id: 'line-015', speaker: '지수', text: '오랜만이니까 서비스로.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-016', speaker: '영우', text: '비행 괜찮았어?\n많이 피곤해 보이는데.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-017', speaker: '지수', text: '피곤하긴 한데\n얼굴 보니까 좀 괜찮아졌어요.', characterId: 'jisoo', expression: 'soft' },
+  { id: 'line-018', speaker: '영우', text: '가방도 줘.', characterId: 'youngwoo', expression: 'neutral' },
+  { id: 'line-019', speaker: '지수', text: '이건 내가 들게.\n캐리어만 부탁해요.', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-020', speaker: '영우', text: '웅웅.\n천천히 가자.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-021', speaker: '지수', text: '그래도 첫날이니까\n바로 숙소만 가면 안 돼요.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-022', speaker: '영우', text: '그래서 잠깐 들를 데 있어.', characterId: 'youngwoo', expression: 'smirk' },
+  { id: 'line-023', speaker: '지수', text: '오오.\n뭔가 준비한 냄새가 나는데요????', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-024', speaker: '영우', text: '냄새까지 맡지 마세요, 손님.', characterId: 'youngwoo', expression: 'smirk' },
+  { id: 'line-025', speaker: '', text: '영우가 자연스럽게 캐리어를 받아 들고,\n지수는 그 옆에 붙어 공항역 표지판을 따라갔다.', characterId: null },
+  { id: 'line-026', speaker: '지수', text: '근데 우리 바로 숙소 가요?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-027', speaker: '영우', text: '아니.\n첫날인데 시드니 봐야지.', characterId: 'youngwoo', expression: 'smirk' },
+  { id: 'line-028', speaker: '지수', text: '헐.\n어디 가는데요????', characterId: 'jisoo', expression: 'shocked' },
+  { id: 'line-029', speaker: '영우', text: '서큘러키.\n오페라하우스랑 하버브리지 보러.', characterId: 'youngwoo', expression: 'happy' },
+  { id: 'line-030', speaker: '지수', text: '악 개쥬아아아!!!!', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-031', speaker: '영우', text: '대신 길 찾기는 지수가 해야 돼.', characterId: 'youngwoo', expression: 'smirk' },
+  { id: 'line-032', speaker: '지수', text: '왜 갑자기 조건이 붙어요????', characterId: 'jisoo', expression: 'annoyed' },
+  { id: 'line-033', speaker: '영우', text: '김지수 시드니 생존교육 1교시.', characterId: 'youngwoo', expression: 'smirk' },
+  { id: 'line-034', speaker: '지수', text: '오키.\n선생님 따라오세요.\n제가 모시겠습니다.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-035', speaker: '영우', text: '자신감은 완전 100점인데.', characterId: 'youngwoo', expression: 'smirk' },
+  { id: 'line-036', speaker: '지수', text: '실력은 이제부터 채워나가는 거죠.', characterId: 'jisoo', expression: 'happy' },
 ];
 
-/* OPERATION MK — WEEK 0 · SCENE 05 「진짜 같이 있네」
+/* OPERATION MK — WEEK 0 · SCENE 05 「낚시 수익 정산 · 진짜 같이 있네」 v08
    Dialogue Set: dialogue-week0-scene002-1
-   Scene: week0-scene-002-1 (Sydney Accommodation, 20:18)
-   Merged with week0SceneDinnerLines + week0SceneChargerLines below (no
-   minigame in between) into one registry entry — heading out to dinner and
-   back are both plain location changes now, carried by `sceneTransition`
-   markers on those arrays' first lines instead of separate scene-list
-   entries. The phone goes missing later that night, in the charger portion,
-   which still ends on its own minigame handoff. */
+   Scene: week0-scene-002-1 (Eastwood Accommodation, 13:40)
+   [v08 재편] 낚시 미니게임(week0-scene-circular-quay-minigame)의 "돌아가기"
+   버튼이 곧장 이 씬으로 돌아온다(SHOP_TUTORIAL_RETURN_SCENE, sceneRoutes.js).
+   낚시 정산 잡담으로 열어서 서큘러키 → 숙소 이동을 자연스럽게 이어 붙이고,
+   곧바로 기존 "여기야 / 진짜 같이 있네" 방 리빌 비트로 넘어간다 — 배경은
+   이 씬 고유의 기본 배경(week0-scene-002-1, 즉 숙소) 그대로라 별도
+   sceneTransition이 필요 없다. */
 const week0Scene002_1Lines = [
-  { id: 'line-001', speaker: '', text: '숙소.\n오후 8시 18분.', characterId: null },
-  { id: 'line-002', speaker: '', text: '공항에서 나온 뒤,\n두 사람은 짐을 맡기고 근처를 천천히 둘러봤다.\n\n긴 이동과 체크인까지 마치고 나서야\n드디어 예약한 방 앞에 도착했다.', characterId: null },
-  { id: 'line-003', speaker: '영우', text: '여기야.', characterId: 'youngwoo', expression: 'neutral' },
-  { id: 'line-004', speaker: '지수', text: '잠만.', characterId: 'jisoo', expression: 'suspicious' },
-  { id: 'line-005', speaker: '지수', text: '진짜 여기 맞아요?', characterId: 'jisoo', expression: 'suspicious' },
-  { id: 'line-006', speaker: '영우', text: '웅.\n왜?', characterId: 'youngwoo', expression: 'curious' },
-  { id: 'line-007', speaker: '지수', text: '생각보다 너무 좋은데????', characterId: 'jisoo', expression: 'shocked' },
-  { id: 'line-008', speaker: '영우', text: '그치.\n사진보다 괜찮지?', characterId: 'youngwoo', expression: 'happy' },
-  { id: 'line-009', speaker: '지수', text: '흐으음.', characterId: 'jisoo', expression: 'suspicious' },
-  { id: 'line-010', speaker: '영우', text: '그 표정 뭐야.', characterId: 'youngwoo', expression: 'curious' },
-  { id: 'line-011', speaker: '지수', text: '영우가 고른 숙소치고\n너무 완벽해서요.', characterId: 'jisoo', expression: 'smirk' },
-  { id: 'line-012', speaker: '영우', text: '아니 내가 평소에 뭘 어떻게 했길래!!!!', characterId: 'youngwoo', expression: 'annoyed' },
-  { id: 'line-013', speaker: '지수', text: 'ㅋㅎㅋㅎㅋㅎㅋㅎㅋㅎ\n칭찬이에요 칭찬.', characterId: 'jisoo', expression: 'happy' },
-  { id: 'line-014', speaker: '영우', text: '전혀 칭찬처럼 안 들렸는데요.', characterId: 'youngwoo', expression: 'smirk' },
-  { id: 'line-015', speaker: '지수', text: '중요한 건 결과죠.\n일단 들어가 봅시다.', characterId: 'jisoo', expression: 'smirk' },
-  { id: 'line-016', speaker: '', text: '영우가 카드키를 대고 문을 연다.', characterId: 'youngwoo', expression: 'neutral' },
-  { id: 'line-017', speaker: '지수', text: '헐.', characterId: 'jisoo', expression: 'shocked' },
-  { id: 'line-018', speaker: '지수', text: '우와아아아!!!!', characterId: 'jisoo', expression: 'happy' },
-  { id: 'line-019', speaker: '', text: '지수는 방 안으로 들어서자마자\n창가 쪽으로 빠르게 걸어갔다.', characterId: 'jisoo', expression: 'happy' },
-  { id: 'line-020', speaker: '영우', text: '지수야.\n캐리어는 두고 가지 그래.', characterId: 'youngwoo', expression: 'smirk' },
-  { id: 'line-021', speaker: '지수', text: '아.', characterId: 'jisoo', expression: 'blank' },
-  { id: 'line-022', speaker: '지수', text: '영우가 들고 있잖아요.', characterId: 'jisoo', expression: 'smirk' },
-  { id: 'line-023', speaker: '영우', text: '왜 이렇게 자연스러워?', characterId: 'youngwoo', expression: 'curious' },
-  { id: 'line-024', speaker: '지수', text: '적응 완료.', characterId: 'jisoo', expression: 'happy' },
-  { id: 'line-025', speaker: '영우', text: '입국한 지 하루도 안 됐는데 ㅋㅎㅋㅎㅋㅎㅋㅎㅋㅎ', characterId: 'youngwoo', expression: 'happy' },
-  { id: 'line-026', speaker: '지수', text: '영우 여기 와봐요.\n창문 진짜 크다.', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-027', speaker: '', text: '영우가 캐리어를 세워두고\n지수 옆으로 다가간다.', characterId: 'youngwoo', expression: 'neutral' },
-  { id: 'line-028', speaker: '지수', text: '이상하다.', characterId: 'jisoo', expression: 'soft' },
-  { id: 'line-029', speaker: '영우', text: '뭐가?', characterId: 'youngwoo', expression: 'curious' },
-  { id: 'line-030', speaker: '지수', text: '나 지금 시드니 숙소에 있고.', characterId: 'jisoo', expression: 'soft' },
-  { id: 'line-031', speaker: '지수', text: '옆에 영우 있고.', characterId: 'jisoo', expression: 'soft' },
-  { id: 'line-032', speaker: '지수', text: '진짜 같이 있네.', characterId: 'jisoo', expression: 'blank' },
-  { id: 'line-033', speaker: '영우', text: '그러게.', characterId: 'youngwoo', expression: 'soft' },
-  { id: 'line-034', speaker: '영우', text: '이제야 좀 실감 난다.', characterId: 'youngwoo', expression: 'soft' },
-  { id: 'line-035', speaker: '지수', text: '나도.', characterId: 'jisoo', expression: 'soft' },
-  { id: 'line-036', speaker: '', text: '두 사람은 잠시 말없이 창밖을 바라봤다.\n\n화면 너머로 수없이 상상했던 시간이\n아무렇지 않게 현실이 되어 있었다.', characterId: null },
-  { id: 'line-037', speaker: '영우', text: '근데 여행 첫날 평가\n몇 점이야?', characterId: 'youngwoo', expression: 'smirk' },
-  { id: 'line-038', speaker: '지수', text: '음.', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-039', speaker: '지수', text: '길찾기 A.\n\n숙소 A+.\n\n체력은 둘 다 C.', characterId: 'jisoo', expression: 'smirk' },
-  { id: 'line-040', speaker: '영우', text: '남자친구 항목은?', characterId: 'youngwoo', expression: 'curious' },
-  { id: 'line-041', speaker: '지수', text: '그건 아직 심사 중.', characterId: 'jisoo', expression: 'smirk' },
-  { id: 'line-042', speaker: '영우', text: '아니 왜!!!!', characterId: 'youngwoo', expression: 'annoyed' },
-  { id: 'line-043', speaker: '지수', text: 'ㅋㅎㅋㅎㅋㅎㅋㅎㅋㅎ\n반응이 너무 재밌어서.', characterId: 'jisoo', expression: 'happy' },
-  { id: 'line-044', speaker: '영우', text: '이의 신청합니다.', characterId: 'youngwoo', expression: 'smirk' },
-  { id: 'line-045', speaker: '지수', text: '그럼 지금은 A.', characterId: 'jisoo', expression: 'soft' },
-  { id: 'line-046', speaker: '영우', text: 'A+ 아니고?', characterId: 'youngwoo', expression: 'curious' },
-  { id: 'line-047', speaker: '지수', text: '욕심내면 내려가요.', characterId: 'jisoo', expression: 'smirk' },
-  { id: 'line-048', speaker: '영우', text: '네.\n조용히 있겠습니다.', characterId: 'youngwoo', expression: 'happy' },
-  { id: 'line-049', speaker: '지수', text: '구래구래.\n아주 좋아요.', characterId: 'jisoo', expression: 'happy' },
-  { id: 'line-050', speaker: '', text: '잠시 방에서 쉬고 난 뒤,\n두 사람은 늦은 저녁을 먹으러 다시 숙소를 나섰다.', characterId: null },
+  { id: 'line-001', speaker: '', text: '숙소.\n오후 1시 40분.', characterId: null },
+  { id: 'line-002', speaker: '', text: '낚시를 마친 두 사람은 사진을 한 번 더 확인한 뒤 서큘러키 역으로 향했다.\n열차를 타고 숙소로 이동해 체크인을 마치고,\n짐을 풀며 오늘 하루를 되짚었다.', characterId: null },
+  { id: 'line-003', speaker: '지수', text: '와.\n방금까지 진짜 낚시한 느낌이야.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-004', speaker: '영우', text: '재밌었지?', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-005', speaker: '지수', text: '웅.\n근데 영우가 이걸 만들었다는 게 제일 웃겨.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-006', speaker: '지수', text: '회사 다니면서 이런 것까지 언제 만들어요?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-007', speaker: '영우', text: '밤에 조금씩.\n주말에 조금씩.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-008', speaker: '지수', text: '잠은 잔 거예요?', characterId: 'jisoo', expression: 'suspicious' },
+  { id: 'line-009', speaker: '영우', text: '그건 넘어가고.', characterId: 'youngwoo', expression: 'smirk' },
+  { id: 'line-010', speaker: '지수', text: '아니 그게 제일 중요한 부분인데요!!!!', characterId: 'jisoo', expression: 'annoyed' },
+  { id: 'line-011', speaker: '영우', text: '옷 사려면\n앞으로 열심히 잡아야 합니다.', characterId: 'youngwoo', expression: 'smirk' },
+  { id: 'line-012', speaker: '지수', text: '갑자기 압박 면접 시작.', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-013', speaker: '영우', text: '오늘 수익 68P.', characterId: 'youngwoo', expression: 'happy' },
+  { id: 'line-014', speaker: '지수', text: '첫날 공동재산 생겼네.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-015', speaker: '영우', text: '지분은 반반.', characterId: 'youngwoo', expression: 'smirk' },
+  { id: 'line-016', speaker: '지수', text: '제가 잡았는데 왜 반반이에요?', characterId: 'jisoo', expression: 'suspicious' },
+  { id: 'line-017', speaker: '영우', text: '게임 만든 사람 지분.', characterId: 'youngwoo', expression: 'smirk' },
+  { id: 'line-018', speaker: '지수', text: '음.\n그럼 저 7, 영우 3.', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-019', speaker: '영우', text: '시작부터 불공정 계약이잖아!!!!', characterId: 'youngwoo', expression: 'annoyed' },
+  { id: 'line-020', speaker: '지수', text: 'ㅋㅎㅋㅎㅋㅎㅋㅎ\n이의 있으면 한 마리 더 잡아오세요.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-021', speaker: '영우', text: '오늘은 이만 쉽시다 사장님.', characterId: 'youngwoo', expression: 'happy' },
+  { id: 'line-022', speaker: '지수', text: '웅.\n이제 좀 피곤하다.', characterId: 'jisoo', expression: 'blank' },
+  { id: 'line-023', speaker: '영우', text: '거의 다 왔어.\n이 골목만 지나면 돼.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-024', speaker: '', text: '조용한 주택가 골목,\n작은 정원이 딸린 이층집 앞에서 영우가 걸음을 멈췄다.', characterId: null },
+  { id: 'line-025', speaker: '영우', text: '여기야.', characterId: 'youngwoo', expression: 'neutral' },
+  { id: 'line-026', speaker: '지수', text: '잠만.', characterId: 'jisoo', expression: 'suspicious' },
+  { id: 'line-027', speaker: '지수', text: '진짜 여기 맞아요?', characterId: 'jisoo', expression: 'suspicious' },
+  { id: 'line-028', speaker: '영우', text: '웅.\n왜?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-029', speaker: '지수', text: '생각보다 너무 좋은데????', characterId: 'jisoo', expression: 'shocked' },
+  { id: 'line-030', speaker: '영우', text: '그치.\n사진보다 괜찮지?', characterId: 'youngwoo', expression: 'happy' },
+  { id: 'line-031', speaker: '지수', text: '흐으음.', characterId: 'jisoo', expression: 'suspicious' },
+  { id: 'line-032', speaker: '영우', text: '그 표정 뭐야.', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-033', speaker: '지수', text: '영우가 고른 숙소치고\n너무 완벽해서요.', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-034', speaker: '영우', text: '아니 내가 평소에 뭘 어떻게 했길래!!!!', characterId: 'youngwoo', expression: 'annoyed' },
+  { id: 'line-035', speaker: '지수', text: 'ㅋㅎㅋㅎㅋㅎㅋㅎ\n칭찬이에요 칭찬.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-036', speaker: '', text: '현관문을 열자\n볕이 잘 드는 거실과 작은 부엌이 한눈에 들어왔다.', characterId: null },
+  { id: 'line-037', speaker: '지수', text: '와 진짜 좋다...', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-038', speaker: '영우', text: '여행 내내 여기서 지낼 거야.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-039', speaker: '지수', text: '너무 좋아서 실감이 안 나.', characterId: 'jisoo', expression: 'soft' },
+  { id: 'line-040', speaker: '', text: '두 사람은 짐을 내려놓고\n잠시 방 안을 둘러봤다.', characterId: null },
+  { id: 'line-041', speaker: '지수', text: '오늘 하루 진짜 알차게 놀았다.', characterId: 'jisoo', expression: 'soft' },
+  { id: 'line-042', speaker: '영우', text: '그러게.\n근데 지수 진짜 피곤해 보이는데.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-043', speaker: '지수', text: '조금?\n근데 아직 저녁도 안 먹었잖아.', characterId: 'jisoo', expression: 'blank' },
+  { id: 'line-044', speaker: '영우', text: '아 맞다.\n일단 뭐 좀 먹으러 나갔다 오자.', characterId: 'youngwoo', expression: 'neutral' },
+  { id: 'line-045', speaker: '지수', text: '웅.\n딱 가까운 데로만.', characterId: 'jisoo', expression: 'soft' },
 ];
 
-/* OPERATION MK — WEEK 0 · SCENE 06 「첫날 저녁」
+/* OPERATION MK — WEEK 0 · SCENE 06 「첫날 저녁」 v08
    Dialogue Set: dialogue-week0-scene-dinner
-   Scene: week0-scene-dinner (근처 식당, 21:10)
-   No mystery — per the brief, just food/photos/a short tired spat that
-   resolves fast. Merged into week0-scene-002-1 (see that scene's header
-   comment) — its first line below carries the sceneTransition into this
-   location. */
+   Scene: week0-scene-dinner (근처 식당, 14:20)
+   [v08 재편] 생활형 버전 취지에 맞춰 압축 — 사진 찍는 긴 리프 대신 피곤함/
+   배고픔 위주의 짧은 장면으로 줄였다. Merged into week0-scene-002-1 (see
+   that scene's header comment) — its first line below carries the
+   sceneTransition into this location. */
 const week0SceneDinnerLines = [
   {
-    id: 'line-001', speaker: '', text: '숙소 근처 작은 식당.\n오후 9시 10분.', characterId: null,
-    sceneTransition: { backgroundKey: 'week0-scene-002-1--dinner', introLabel: 'DINNER', time: '21:10' },
+    id: 'line-001', speaker: '', text: '숙소 근처 작은 식당.\n오후 2시 20분.', characterId: null,
+    sceneTransition: { backgroundKey: 'week0-scene-002-1--dinner', introLabel: 'DINNER', time: '14:20' },
   },
-  { id: 'line-002', speaker: '', text: '영우가 미리 찾아둔 식당은\n크지는 않았지만 따뜻한 조명과 음식 냄새로 가득했다.', characterId: null },
-  { id: 'line-003', speaker: '지수', text: '헐.\n여기 냄새 미쳤다.', characterId: 'jisoo', expression: 'happy' },
-  { id: 'line-004', speaker: '영우', text: '그치?\n여기 괜찮아 보여서 저장해놨어.', characterId: 'youngwoo', expression: 'happy' },
-  { id: 'line-005', speaker: '지수', text: '오늘 준비성 점수 계속 올라가는데요?', characterId: 'jisoo', expression: 'smirk' },
-  { id: 'line-006', speaker: '영우', text: 'A+ 가능합니까.', characterId: 'youngwoo', expression: 'smirk' },
-  { id: 'line-007', speaker: '지수', text: '일단 음식 먹어보고요.', characterId: 'jisoo', expression: 'smirk' },
-  { id: 'line-008', speaker: '영우', text: '평가가 엄격하네 진짜.', characterId: 'youngwoo', expression: 'happy' },
-  { id: 'line-009', speaker: '지수', text: '영우 뭐 먹을 거예요?', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-010', speaker: '영우', text: '나는 이거.\n지수는?', characterId: 'youngwoo', expression: 'neutral' },
-  { id: 'line-011', speaker: '지수', text: '저는 이거 먹고 싶은데\n영우 것도 먹고 싶어요.', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-012', speaker: '영우', text: '그럼 다른 거 두 개 시켜서 나눠 먹자.', characterId: 'youngwoo', expression: 'smirk' },
-  { id: 'line-013', speaker: '지수', text: '오.\n바로 A+.', characterId: 'jisoo', expression: 'happy' },
-  { id: 'line-014', speaker: '영우', text: '이렇게 쉬운 거였어?????', characterId: 'youngwoo', expression: 'happy' },
-  { id: 'line-015', speaker: '지수', text: '먹는 건 중요하니까요.', characterId: 'jisoo', expression: 'smirk' },
-  { id: 'line-016', speaker: '', text: '음식이 나오자\n지수는 여러 각도에서 사진을 찍기 시작했다.', characterId: 'jisoo', expression: 'happy' },
-  { id: 'line-017', speaker: '영우', text: '지수야.', characterId: 'youngwoo', expression: 'curious' },
-  { id: 'line-018', speaker: '지수', text: '웅.', characterId: 'jisoo', expression: 'neutral' },
-  { id: 'line-019', speaker: '영우', text: '음식 식기 전에\n사진 촬영이 끝날 가능성 있습니까?', characterId: 'youngwoo', expression: 'smirk' },
-  { id: 'line-020', speaker: '지수', text: '잠시만요.\n지금 여행 기록 중입니다.', characterId: 'jisoo', expression: 'smirk' },
-  { id: 'line-021', speaker: '영우', text: '음식의 생전 모습을 기록하는 건가요?', characterId: 'youngwoo', expression: 'smirk' },
-  { id: 'line-022', speaker: '지수', text: 'ㅋㅎㅋㅎㅋㅎㅋㅎㅋㅎ\n아 샤갈\n그렇게 말하니까 이상하잖아!!!!', characterId: 'jisoo', expression: 'happy' },
-  { id: 'line-023', speaker: '영우', text: '빨리 먹자 ㅋㅎㅋㅎㅋㅎㅋㅎㅋㅎ', characterId: 'youngwoo', expression: 'happy' },
-  { id: 'line-024', speaker: '', text: '두 사람은 서로의 접시를 자연스럽게 바꿔가며\n늦은 저녁을 먹었다.', characterId: null },
-  { id: 'line-025', speaker: '', text: '식사가 거의 끝날 무렵,\n영우가 조용해진 지수를 바라본다.', characterId: 'youngwoo', expression: 'curious' },
-  { id: 'line-026', speaker: '영우', text: '지수.\n많이 피곤하지?', characterId: 'youngwoo', expression: 'soft' },
-  { id: 'line-027', speaker: '지수', text: '조금?', characterId: 'jisoo', expression: 'blank' },
-  { id: 'line-028', speaker: '지수', text: '근데 괜찮아요.\n오늘 첫날인데 좀 더 놀고 싶어.', characterId: 'jisoo', expression: 'neutral' },
-  { id: 'line-029', speaker: '영우', text: '더 놀고 싶은 건 나도 그런데.', characterId: 'youngwoo', expression: 'soft' },
-  { id: 'line-030', speaker: '영우', text: '지금 눈이 반쯤 감겼어.', characterId: 'youngwoo', expression: 'soft' },
-  { id: 'line-031', speaker: '지수', text: '안 감겼는데.', characterId: 'jisoo', expression: 'suspicious' },
-  { id: 'line-032', speaker: '영우', text: '방금 거의 음식한테 인사하고 있었어.', characterId: 'youngwoo', expression: 'smirk' },
-  { id: 'line-033', speaker: '지수', text: '아니거든요오.', characterId: 'jisoo', expression: 'annoyed' },
-  { id: 'line-034', speaker: '영우', text: '그럼 숙소까지 조금만 걷고\n오늘은 들어가자.', characterId: 'youngwoo', expression: 'soft' },
-  { id: 'line-035', speaker: '지수', text: '음...', characterId: 'jisoo', pauseBeforeMs: 300, expression: 'blank' },
-  { id: 'line-036', speaker: '영우', text: '내일 아침부터 같이 있잖아.', characterId: 'youngwoo', expression: 'soft' },
-  { id: 'line-037', speaker: '지수', text: '웅.\n그건 마자.', characterId: 'jisoo', expression: 'soft' },
-  { id: 'line-038', speaker: '지수', text: '그럼 딱 10분만 걸어요.', characterId: 'jisoo', expression: 'neutral' },
-  { id: 'line-039', speaker: '영우', text: '오키.\n10분.', characterId: 'youngwoo', expression: 'happy' },
-  { id: 'line-040', speaker: '지수', text: '11분 되면 제가 벌금 받아요.', characterId: 'jisoo', expression: 'smirk' },
-  { id: 'line-041', speaker: '영우', text: '무슨 벌금?', characterId: 'youngwoo', expression: 'curious' },
-  { id: 'line-042', speaker: '지수', text: '내일 간식 사기.', characterId: 'jisoo', expression: 'smirk' },
-  { id: 'line-043', speaker: '영우', text: '그냥 내가 사고 싶다고 말해 ㅋㅎㅋㅎㅋㅎㅋㅎㅋㅎ', characterId: 'youngwoo', expression: 'happy' },
-  { id: 'line-044', speaker: '지수', text: '헤헤.\n들켰네.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-002', speaker: '', text: '늦은 점심을 겸한 식사였다.\n피곤해서인지 둘 다 말이 좀 줄었다.', characterId: null },
+  { id: 'line-003', speaker: '지수', text: '이거 냄새 완전 좋다.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-004', speaker: '영우', text: '그치.\n괜찮아 보여서 저장해놨었어.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-005', speaker: '지수', text: '오늘 준비성 점수 계속 올라가는데요.', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-006', speaker: '영우', text: '체력은 둘 다 바닥인데\n준비성만 늘었네.', characterId: 'youngwoo', expression: 'happy' },
+  { id: 'line-007', speaker: '지수', text: '근데 이거 리스트 저장한 거\n또 어디 있어요?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-008', speaker: '영우', text: '많아.\n한 달 넘게 모았어.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-009', speaker: '지수', text: '헐.\n진짜 한 달 전부터요?', characterId: 'jisoo', expression: 'shocked' },
+  { id: 'line-010', speaker: '영우', text: '지수 오면 어디부터 데려갈지\n계속 생각했었어.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-011', speaker: '지수', text: '...\n왜 그런 말을 밥 먹다가 해요.', characterId: 'jisoo', expression: 'soft' },
+  { id: 'line-012', speaker: '영우', text: '왜.\n이상해?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-013', speaker: '지수', text: '아니.\n좋아서 그래요.', characterId: 'jisoo', expression: 'soft' },
+  { id: 'line-014', speaker: '', text: '음식이 나오자\n두 사람은 별말 없이 한동안 먹는 데만 집중했다.', characterId: null },
+  { id: 'line-015', speaker: '지수', text: '아,\n이제 좀 살겠다.', characterId: 'jisoo', expression: 'soft' },
+  { id: 'line-016', speaker: '영우', text: '더 시킬까?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-017', speaker: '지수', text: '아니요.\n이제 배부른데 졸려요.', characterId: 'jisoo', expression: 'blank' },
+  { id: 'line-018', speaker: '영우', text: '숙소 가서 좀 쉬자.\n오늘 진짜 많이 걸었어.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-019', speaker: '지수', text: '웅.\n짧게 산책만 하고 들어가요.', characterId: 'jisoo', expression: 'soft' },
+  { id: 'line-020', speaker: '', text: '두 사람은 식사를 마치고\n숙소 쪽으로 천천히 걸어 돌아갔다.', characterId: null },
+  { id: 'line-021', speaker: '', text: '오후의 볕이 조금씩 옅어지고 있었다.\n\n걷는 동안, 지수는 몇 번이고 영우의 손을 고쳐 잡았다.', characterId: 'jisoo', expression: 'soft' },
 ];
 
-/* OPERATION MK — WEEK 0 · SCENE 07 「사라진 핸드폰」 v4
+/* OPERATION MK — WEEK 0 · SCENE 07 「사라진 핸드폰」 v08
    Dialogue Set: dialogue-week0-scene-charger
-   Scene: week0-scene-charger (Eastwood Accommodation, 22:30)
-   [v4 정정] The phone goes missing while unpacking to head back out — not
-   from a dropped charger cable revealing a glint under the bed. That framing
-   didn't match the real minigame: the phone is actually found in
+   Scene: week0-scene-charger (Eastwood Accommodation, 20:30)
+   [v08 재편] "다시 나갈 준비" 대신 밤에 충전기를 꽂으려다 폰이 없어진 걸
+   알아채는 자연스러운 동기로 바꿨다. The phone is actually found in
    kitchen-fridge-gap and the key in bedroom-right-vent (both only inside the
-   room-search minigame — see ROOM_SEARCH_CORE_ITEM_HOTSPOTS), so this scene
-   no longer pre-narrates a bedroom glint. The call-and-listen beat now leads
-   toward the kitchen, matching where the phone actually turns up. Ends on a
-   MINIGAME START beat — nextSceneId hands off to the existing point-and-click
-   phone-hunt scene, week0-scene-002-2. Merged into week0-scene-002-1 (see
-   that scene's header comment) — its first line below carries the
-   sceneTransition back into the accommodation, reusing that scene's own
-   default background key since it's the same room. */
+   room-search minigame — see ROOM_SEARCH_CORE_ITEM_HOTSPOTS), so the
+   call-and-listen beat below still leads toward the kitchen, matching where
+   the phone actually turns up. Ends on a MINIGAME START beat — nextSceneId
+   hands off to the existing point-and-click phone-hunt scene,
+   week0-scene-002-2. Merged into week0-scene-002-1 (see that scene's header
+   comment) — its first line below carries the sceneTransition back into the
+   accommodation, reusing that scene's own default background key since it's
+   the same room. */
 const week0SceneChargerLines = [
   {
-    id: 'line-001', speaker: '', text: '숙소.\n밤 10시 30분.', characterId: null,
-    sceneTransition: { backgroundKey: 'week0-scene-002-1', introLabel: 'EASTWOOD', time: '22:30' },
+    id: 'line-001', speaker: '', text: '숙소.\n밤 8시 30분.', characterId: null,
+    sceneTransition: { backgroundKey: 'week0-scene-002-1', introLabel: 'EASTWOOD', time: '20:30' },
   },
-  { id: 'line-002', speaker: '', text: '숙소로 돌아온 두 사람은\n짐을 풀고 다시 나갈 준비를 시작했다.', characterId: null },
-  { id: 'line-003', speaker: '영우', text: '지수야, 준비 다 됐어?', characterId: 'youngwoo', expression: 'curious' },
-  { id: 'line-004', speaker: '지수', text: '잠깐만요.\n폰 어디 뒀지.', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-005', speaker: '', text: '지수가 가방과 캐리어 주머니를 하나씩 뒤져본다.', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-006', speaker: '지수', text: '어?', characterId: 'jisoo', expression: 'blank' },
-  { id: 'line-007', speaker: '영우', text: '왜?', characterId: 'youngwoo', expression: 'curious' },
-  { id: 'line-008', speaker: '지수', text: '내 폰 어디 갔지????', characterId: 'jisoo', expression: 'shocked' },
-  { id: 'line-009', speaker: '영우', text: '엉?\n아까 들어올 때 들고 있었잖아.', characterId: 'youngwoo', expression: 'shocked' },
-  { id: 'line-010', speaker: '지수', text: '그러니까.\n분명 식당 나올 때까지는 들고 있었는데.', characterId: 'jisoo', expression: 'shocked' },
-  { id: 'line-011', speaker: '지수', text: '방 여기저기 다 뒤져봐야겠어요.', characterId: 'jisoo', expression: 'serious' },
-  { id: 'line-012', speaker: '영우', text: '웅웅.\n같이 찾아보자.', characterId: 'youngwoo', expression: 'soft' },
-  { id: 'line-013', speaker: '', text: '두 사람은 침대 밑, 서랍, 가방 속까지\n한참을 뒤졌지만 폰은 보이지 않았다.', characterId: null },
-  { id: 'line-014', speaker: '지수', text: '아 진짜 어디 갔지.', characterId: 'jisoo', expression: 'annoyed' },
-  { id: 'line-015', speaker: '영우', text: '내 폰으로 전화해볼게.\n소리라도 들리면 찾기 쉬울 거야.', characterId: 'youngwoo', expression: 'neutral' },
-  { id: 'line-016', speaker: '', text: '영우가 지수의 번호로 전화를 건다.\n\n잠시 뒤,\n어디선가 희미한 진동음이 울린다.', characterId: null },
-  { id: 'line-017', speaker: '지수', text: '어?\n소리 저쪽에서 나는 것 같은데?', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-018', speaker: '영우', text: '부엌 쪽 아니야?', characterId: 'youngwoo', expression: 'curious' },
-  { id: 'line-019', speaker: '지수', text: '어.\n맞는 것 같아요.', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-020', speaker: '영우', text: '같이 가서 찾아보자.', characterId: 'youngwoo', expression: 'neutral' },
-  { id: 'line-021', speaker: '', text: 'MINIGAME START', characterId: null },
+  { id: 'line-002', speaker: '', text: '오후 내내 낮잠과 짧은 산책으로 시간을 보낸 두 사람은\n다시 방으로 돌아와 침대에 걸터앉았다.', characterId: null },
+  { id: 'line-003', speaker: '지수', text: '오늘 하루 진짜 꽉 찼다.', characterId: 'jisoo', expression: 'soft' },
+  { id: 'line-004', speaker: '영우', text: '그치.\n비행기에서부터 쉴 틈이 없었네.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-005', speaker: '지수', text: '그래도 좋았어요.', characterId: 'jisoo', expression: 'soft' },
+  { id: 'line-006', speaker: '영우', text: '나도.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-007', speaker: '', text: '창밖은 이미 어두워져 있었다.\n가로등 불빛이 커튼 틈으로 희미하게 들어왔다.', characterId: null },
+  { id: 'line-008', speaker: '지수', text: '내일도 이렇게 계속 놀 거예요?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-009', speaker: '영우', text: '내일은 조금 여유 있게.\n오늘처럼 풀코스는 아니고.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-010', speaker: '지수', text: '다행이다.\n체력이 못 버틸 것 같았어요.', characterId: 'jisoo', expression: 'blank' },
+  { id: 'line-011', speaker: '', text: '지수가 충전기를 꽂으려고\n가방을 뒤적였다.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-012', speaker: '지수', text: '어?', characterId: 'jisoo', expression: 'blank' },
+  { id: 'line-013', speaker: '영우', text: '왜?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-014', speaker: '지수', text: '내 폰 어디 갔지????', characterId: 'jisoo', expression: 'shocked' },
+  { id: 'line-015', speaker: '영우', text: '엉?\n아까 식당 나올 때까지는 들고 있었잖아.', characterId: 'youngwoo', expression: 'shocked' },
+  { id: 'line-016', speaker: '지수', text: '그러니까.\n분명 있었는데.', characterId: 'jisoo', expression: 'shocked' },
+  { id: 'line-017', speaker: '지수', text: '가방 안에도 없고,\n주머니에도 없어요.', characterId: 'jisoo', expression: 'annoyed' },
+  { id: 'line-018', speaker: '지수', text: '방 여기저기 다 뒤져봐야겠어요.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-019', speaker: '영우', text: '웅웅.\n같이 찾아보자.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-020', speaker: '', text: '두 사람은 침대 밑, 서랍, 가방 속까지\n한참을 뒤졌지만 폰은 보이지 않았다.', characterId: null },
+  { id: 'line-021', speaker: '지수', text: '아 진짜 어디 갔지.', characterId: 'jisoo', expression: 'annoyed' },
+  { id: 'line-022', speaker: '영우', text: '식당에 두고 온 건 아니겠지?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-023', speaker: '지수', text: '거기서 결제할 때도 썼던 것 같은데.', characterId: 'jisoo', expression: 'blank' },
+  { id: 'line-024', speaker: '영우', text: '내 폰으로 전화해볼게.\n소리라도 들리면 찾기 쉬울 거야.', characterId: 'youngwoo', expression: 'neutral' },
+  { id: 'line-025', speaker: '', text: '영우가 지수의 번호로 전화를 걸었다.\n\n잠시 뒤,\n어디선가 희미한 진동음이 울렸다.', characterId: null },
+  { id: 'line-026', speaker: '지수', text: '어?\n소리 저쪽에서 나는 것 같은데?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-027', speaker: '영우', text: '부엌 쪽 아니야?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-028', speaker: '지수', text: '어.\n맞는 것 같아요.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-029', speaker: '영우', text: '다행이다.\n숙소 안에는 있는 거잖아.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-030', speaker: '지수', text: '웅.\n근데 왜 하필 부엌에 있지?', characterId: 'jisoo', expression: 'suspicious' },
+  { id: 'line-031', speaker: '영우', text: '같이 가서 찾아보자.', characterId: 'youngwoo', expression: 'neutral' },
+  { id: 'line-032', speaker: '', text: 'MINIGAME START', characterId: null },
 ];
 
 /* OPERATION MK — WEEK 0 · SCENE 08 「근데 이 열쇠 뭐지?」 v4
@@ -381,6 +335,9 @@ const week0Scene002_3Lines = [
   { id: 'line-004', speaker: '영우', text: '거긴 대체 어떻게 들어간 거야.', characterId: 'youngwoo', expression: 'curious' },
   { id: 'line-005', speaker: '지수', text: '그러니까요.\n저도 신기해요.', characterId: 'jisoo', expression: 'blank' },
   { id: 'line-006', speaker: '영우', text: 'ㅋㅎㅋㅎㅋㅎㅋㅎㅋㅎ\n아무튼 찾아서 다행이다', characterId: 'youngwoo', expression: 'happy' },
+  { id: 'line-006a', speaker: '지수', text: '아 근데 손전등이랑 옷걸이,\n지지대까지 다 동원했잖아요.', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-006b', speaker: '영우', text: '휴대폰 하나 찾는 데\n장비가 이렇게 많이 필요할 줄이야.', characterId: 'youngwoo', expression: 'happy' },
+  { id: 'line-006c', speaker: '지수', text: '숙소 탈출 게임인 줄.', characterId: 'jisoo', expression: 'smirk' },
   { id: 'line-007', speaker: '지수', text: '근데 찾다가 이것도 나왔어요.', characterId: 'jisoo', expression: 'curious' },
   { id: 'line-008', speaker: '', text: '지수가 손바닥 위에 올려둔 물건을\n영우에게 보여준다.', characterId: 'jisoo', expression: 'curious' },
   { id: 'line-009', speaker: '', text: '[ 낡은 황동 열쇠 ]', characterId: null },
@@ -410,23 +367,33 @@ const week0Scene002_3Lines = [
     choices: [
       {
         id: 'hunch-danger', label: '“왠지 불길한 느낌이 드는데...”',
-        effects: [{
-          type: 'addQuestion',
-          question: { id: 'question-key-hunch', title: '이 열쇠, 위험한 물건일까?', description: '지수는 열쇠에서 왠지 불길한 기운을 느꼈다.' },
-        }],
+        effects: [
+          {
+            type: 'addQuestion',
+            question: { id: 'question-key-hunch', title: '이 열쇠, 위험한 물건일까?', description: '지수는 열쇠에서 왠지 불길한 기운을 느꼈다.' },
+          },
+          { type: 'addSatisfaction', amount: -1 },
+        ],
       },
       {
         id: 'hunch-curious', label: '“그냥 순수하게 궁금한데?”',
-        effects: [{
-          type: 'addQuestion',
-          question: { id: 'question-key-hunch', title: '이 열쇠는 대체 누구 것일까?', description: '지수는 순수한 호기심을 느꼈다.' },
-        }],
+        effects: [
+          {
+            type: 'addQuestion',
+            question: { id: 'question-key-hunch', title: '이 열쇠는 대체 누구 것일까?', description: '지수는 순수한 호기심을 느꼈다.' },
+          },
+          { type: 'addSatisfaction', amount: 1 },
+        ],
       },
     ],
   },
   { id: 'line-021', speaker: '영우', text: '웅웅.\n사진부터 찍자.', characterId: 'youngwoo', expression: 'neutral' },
   { id: 'line-022', speaker: '영우', text: '그리고 숙소 관리자한테 물어보자.\n객실 비품이면 바로 돌려줘야 하니까.', characterId: 'youngwoo', expression: 'neutral' },
   { id: 'line-023', speaker: '지수', text: '오키.', characterId: 'jisoo', expression: 'neutral' },
+  { id: 'line-023a', speaker: '지수', text: '근데 지금 시간에 전화해도 돼요?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-023b', speaker: '영우', text: '조금 늦긴 했는데,\n분실물 얘기니까 급한 거로 쳐주지 않을까.', characterId: 'youngwoo', expression: 'neutral' },
+  { id: 'line-023c', speaker: '지수', text: '그래도 되려나.\n일단 문자로 먼저 남겨볼까요?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-023d', speaker: '영우', text: '음, 사진도 같이 보내야 하니까\n그냥 전화로 짧게 여쭤보고 문자로 사진 넘기자.', characterId: 'youngwoo', expression: 'neutral' },
   { id: 'line-024', speaker: '', text: '지수는 열쇠의 앞뒤를 촬영한 뒤,\n예약 확인서에 적힌 연락처를 찾았다.', characterId: null },
   { id: 'line-025', speaker: '지수', text: '어.\n잠만.', characterId: 'jisoo', expression: 'curious' },
   { id: 'line-026', speaker: '영우', text: '왜?', characterId: 'youngwoo', expression: 'curious' },
@@ -434,8 +401,15 @@ const week0Scene002_3Lines = [
   { id: 'line-028', speaker: '', text: '[ M. KOV... ]', characterId: null },
   { id: 'line-029', speaker: '지수', text: '영우.\n이 사람 이름도 M.K.로 시작하는데?', characterId: 'jisoo', expression: 'suspicious' },
   { id: 'line-030', speaker: '영우', text: '그러네.', characterId: 'youngwoo', expression: 'serious' },
+  { id: 'line-030a', speaker: '영우', text: '어디 보자...', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-030b', speaker: '', text: '영우가 지수의 화면을 넘겨받아\n연락처 전체 이름을 확인한다.', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-030c', speaker: '영우', text: '음.\n이름 전체는 저장이 안 돼 있어.', characterId: 'youngwoo', expression: 'serious' },
+  { id: 'line-030d', speaker: '지수', text: '예약 사이트에서 그냥 그렇게 넘어온 거겠죠?', characterId: 'jisoo', expression: 'suspicious' },
   { id: 'line-031', speaker: '영우', text: '근데 M이랑 K가 흔하긴 하니까\n일단 물어보자.', characterId: 'youngwoo', expression: 'neutral' },
   { id: 'line-032', speaker: '지수', text: '웅.\n나도 그 생각이야.', characterId: 'jisoo', expression: 'neutral' },
+  { id: 'line-032a', speaker: '지수', text: '근데 손이 왜 이렇게 떨리지.', characterId: 'jisoo', expression: 'blank' },
+  { id: 'line-032b', speaker: '영우', text: '별거 아닐 수도 있어.\n그냥 편하게 물어봐.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-032c', speaker: '지수', text: '웅.\n알겠어요.', characterId: 'jisoo', expression: 'neutral' },
   { id: 'line-033', speaker: '', text: '지수가 통화 버튼을 누른다.\n\n몇 번의 신호음 끝에\n낮고 잠긴 목소리가 들려왔다.', characterId: null },
 ];
 
@@ -452,7 +426,8 @@ const week0Scene002_3Lines = [
    literal name "Mika Kovac"/"미카 코바치" (written before this overhaul), which
    is now a continuity seam a future Week 2 pass should address. */
 const week0SceneFrontdeskLines = [
-  { id: 'line-001', speaker: '집주인', text: '여보세요?', characterId: null },
+  { id: 'line-001', speaker: '', text: '신호음이 두 번, 세 번 울렸다.\n지수는 숨을 한 번 고르고 휴대폰을 귀에 붙였다.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-001a', speaker: '집주인', text: '여보세요?', characterId: null },
   { id: 'line-002', speaker: '지수', text: '안녕하세요.\n지금 숙소에 묵고 있는 손님인데요.\n\n밤늦게 죄송해요.', characterId: 'jisoo', expression: 'neutral' },
   { id: 'line-003', speaker: '집주인', text: '괜찮습니다.\n무슨 일이시죠?', characterId: null },
   { id: 'line-004', speaker: '지수', text: '방을 정리하다가\n침대 밑에서 낡은 열쇠를 하나 발견했어요.', characterId: 'jisoo', expression: 'neutral' },
@@ -470,8 +445,13 @@ const week0SceneFrontdeskLines = [
   { id: 'line-012', speaker: '집주인', text: '그럴 수는 있겠네요.', characterId: null },
   { id: 'line-013', speaker: '집주인', text: '사진을 메시지로 보내주시겠어요?\n제가 청소 담당자와 이전 기록을 확인해 보겠습니다.', characterId: null },
   { id: 'line-014', speaker: '지수', text: '네.\n바로 보내드릴게요.', characterId: 'jisoo', expression: 'neutral' },
+  { id: 'line-014a', speaker: '', text: '지수가 통화 중에 사진 두 장을 문자로 전송했다.\n전송 완료를 알리는 짧은 진동이 울렸다.', characterId: 'jisoo', expression: 'neutral' },
+  { id: 'line-014b', speaker: '집주인', text: '네, 받았습니다.\n잠시만요.', characterId: null },
+  { id: 'line-014c', speaker: '', text: '수화기 너머로\n종이 넘기는 소리가 잠깐 들렸다.', characterId: 'jisoo', expression: 'curious' },
   { id: 'line-015', speaker: '집주인', text: '당장은 객실 시설과 관련된 열쇠는 아닌 것 같으니\n잃어버리지 않게 보관만 부탁드립니다.', characterId: null },
   { id: 'line-016', speaker: '집주인', text: '확인되는 게 있으면\n내일 연락드리겠습니다.', characterId: null },
+  { id: 'line-016a', speaker: '영우', text: '혹시 저희가 따로 여쭤볼 게 있으면\n이 번호로 다시 연락드려도 될까요?', characterId: 'youngwoo', expression: 'neutral' },
+  { id: 'line-016b', speaker: '집주인', text: '네, 편하실 때 연락 주세요.', characterId: null },
   { id: 'line-017', speaker: '지수', text: '알겠습니다.\n늦게 연락드려서 죄송해요.', characterId: 'jisoo', expression: 'soft' },
   { id: 'line-018', speaker: '집주인', text: '괜찮습니다.\n편안한 밤 보내세요.', characterId: null },
   { id: 'line-019', speaker: '', text: '통화가 종료된다.', characterId: null },
@@ -481,10 +461,15 @@ const week0SceneFrontdeskLines = [
   { id: 'line-023', speaker: '영우', text: 'M.K. 말했을 때\n잠깐 멈춘 거?', characterId: 'youngwoo', expression: 'serious' },
   { id: 'line-024', speaker: '지수', text: '웅.\n모른다는 사람 반응치고는\n한 번 더 확인하는 느낌이었어.', characterId: 'jisoo', expression: 'serious' },
   { id: 'line-025', speaker: '영우', text: '나도 조금 그렇게 들리긴 했어.', characterId: 'youngwoo', expression: 'serious' },
+  { id: 'line-025a', speaker: '지수', text: '종이 넘기는 소리도 좀 길었고.', characterId: 'jisoo', expression: 'suspicious' },
+  { id: 'line-025b', speaker: '영우', text: '단순히 기록 찾느라 그랬을 수도 있어.', characterId: 'youngwoo', expression: 'neutral' },
+  { id: 'line-025c', speaker: '지수', text: '그치.\n그럴 수도 있지.', characterId: 'jisoo', expression: 'neutral' },
   { id: 'line-026', speaker: '지수', text: '근데 목소리만 듣고\n숨기는 게 있다고 단정하진 말자.', characterId: 'jisoo', expression: 'serious' },
   { id: 'line-027', speaker: '영우', text: '오키.', characterId: 'youngwoo', expression: 'neutral' },
   { id: 'line-028', speaker: '영우', text: '내일 답 오는지 보고,\n안 오면 한 번 더 물어보자.', characterId: 'youngwoo', expression: 'neutral' },
   { id: 'line-029', speaker: '지수', text: '웅.\n그게 좋겠다.', characterId: 'jisoo', expression: 'neutral' },
+  { id: 'line-029a', speaker: '지수', text: '아, 근데 정작 원래 찾던 폰 얘기는\n한마디도 안 했네.', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-029b', speaker: '영우', text: '열쇠 임팩트가 너무 셌지.', characterId: 'youngwoo', expression: 'smirk' },
   { id: 'line-030', speaker: '', text: '영우가 책상 위에 있던 작은 투명 봉투를 가져온다.', characterId: 'youngwoo', expression: 'neutral' },
   { id: 'line-031', speaker: '영우', text: '여기 넣어두자.\n그냥 두면 또 어디 갔는지 찾을 것 같아.', characterId: 'youngwoo', expression: 'neutral' },
   { id: 'line-032', speaker: '지수', text: '아니 왜 저를 보면서 말해요.', characterId: 'jisoo', expression: 'annoyed' },
@@ -501,8 +486,11 @@ const week0SceneFrontdeskLines = [
    Scene: week0-scene-firstnight (Sydney Accommodation, 23:15)
    Closes out 0주차 — no nextSceneId, this is the last scene of the week. */
 const week0SceneFirstNightLines = [
-  { id: 'line-001', speaker: '', text: '숙소.\n밤 11시 15분.', characterId: null },
+  { id: 'line-001', speaker: '', text: '숙소.\n밤 9시 40분.', characterId: null },
   { id: 'line-002', speaker: '', text: '두 사람은 침대에 기대앉아\n다음 날 일정을 간단히 확인했다.\n\n투명 봉투에 든 열쇠는\n협탁 위에 조용히 놓여 있었다.', characterId: null },
+  { id: 'line-002a', speaker: '', text: '창밖으로 이웃집 개 짖는 소리가 한 번 들리다 멎었다.\n방 안은 다시 조용해졌다.', characterId: null },
+  { id: 'line-002b', speaker: '지수', text: '아 맞다.\n내일 답장 오면 저한테도 바로 알려줘요.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-002c', speaker: '영우', text: '당연하지.\n혼자 확인 안 해.', characterId: 'youngwoo', expression: 'soft' },
   { id: 'line-003', speaker: '지수', text: '내일은 뭐부터 해요?', characterId: 'jisoo', expression: 'curious' },
   { id: 'line-004', speaker: '영우', text: '아침 먹고 시티 쪽 가자.', characterId: 'youngwoo', expression: 'neutral' },
   { id: 'line-005', speaker: '영우', text: '지수 컨디션 괜찮으면\n오페라하우스 쪽까지 걷고.', characterId: 'youngwoo', expression: 'soft' },
@@ -533,12 +521,25 @@ const week0SceneFirstNightLines = [
   { id: 'line-030', speaker: '영우', text: '웅.', characterId: 'youngwoo', expression: 'neutral' },
   { id: 'line-031', speaker: '지수', text: '오늘 진짜 좋았어.', characterId: 'jisoo', expression: 'soft' },
   { id: 'line-032', speaker: '영우', text: '나도.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-032a', speaker: '', text: '지수는 무릎을 세우고 그 위에 턱을 얹은 채\n한동안 협탁 위의 열쇠를 바라봤다.', characterId: 'jisoo', expression: 'blank' },
+  { id: 'line-032b', speaker: '지수', text: '근데 이상하다.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-032c', speaker: '영우', text: '뭐가?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-032d', speaker: '지수', text: '분명 무섭거나 찝찝해야 하는데,\n이상하게 하나도 안 무서워요.', characterId: 'jisoo', expression: 'soft' },
+  { id: 'line-032e', speaker: '지수', text: '영우가 옆에 있어서 그런가.', characterId: 'jisoo', expression: 'soft' },
+  { id: 'line-032f', speaker: '영우', text: '...\n그런 말은 미리 예고하고 해줘.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-032g', speaker: '지수', text: '왜요.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-032h', speaker: '영우', text: '심장이 준비가 안 됐잖아.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-032i', speaker: '지수', text: 'ㅋㅎㅋㅎㅋㅎㅋㅎ\n뭐예요 그게.', characterId: 'jisoo', expression: 'happy' },
   { id: 'line-033', speaker: '지수', text: '아직도 좀 꿈 같긴 한데.', characterId: 'jisoo', expression: 'soft' },
   { id: 'line-034', speaker: '영우', text: '내일 일어나도 여기 있을게.', characterId: 'youngwoo', expression: 'soft' },
   { id: 'line-035', speaker: '지수', text: '...', characterId: 'jisoo', pauseBeforeMs: 400, expression: 'blank' },
   { id: 'line-036', speaker: '지수', text: '아 진짜아.\n마지막에 또 그러네.', characterId: 'jisoo', expression: 'annoyed' },
+  { id: 'line-036a', speaker: '영우', text: '왜.\n또 좋으면서.', characterId: 'youngwoo', expression: 'smirk' },
+  { id: 'line-036b', speaker: '지수', text: '아니거든요.', characterId: 'jisoo', expression: 'annoyed' },
+  { id: 'line-036c', speaker: '지수', text: '...\n조금 좋아요.', characterId: 'jisoo', pauseBeforeMs: 250, expression: 'soft' },
   { id: 'line-037', speaker: '영우', text: 'ㅎㅎ\n잘 자 지수야.', characterId: 'youngwoo', expression: 'happy' },
   { id: 'line-038', speaker: '지수', text: '웅.\n영우도 잘 자.', characterId: 'jisoo', expression: 'soft' },
+  { id: 'line-038a', speaker: '', text: '영우가 협탁 램프를 껐다.\n방 안이 어둑해지고, 창밖 가로등 빛만 옅게 남았다.', characterId: null },
   { id: 'line-039', speaker: '', text: '얼마 지나지 않아\n두 사람의 대화도 천천히 잦아들었다.', characterId: null },
   { id: 'line-040', speaker: '', text: '협탁 위,\n작은 황동 열쇠만이 조용히 남아 있었다.', characterId: null },
   { id: 'line-041', speaker: '', text: '[ M.K. ]', characterId: null },
@@ -567,6 +568,7 @@ const week0SceneFirstNightLines = [
    이어짐)가 벌어지는 곳이기도 하다. */
 const week0Scene001_2Lines = [
   { id: 'line-001', speaker: '', text: '공항 도착층을 빠져나온 두 사람은\n열차 표지판과 시드니 광역 지도가 있는 안내판 앞에 멈춰 섰다.', characterId: null },
+  { id: 'line-001a', speaker: '', text: '아침 시간대라 그런지 안내판 주변이 캐리어를 끄는 사람들로 붐볐다.', characterId: null },
   { id: 'line-002', speaker: '지수', text: '잠만.', characterId: 'jisoo', expression: 'curious' },
   { id: 'line-003', speaker: '지수', text: '우리 지금 시드니 어디쯤 있는 거예요?', characterId: 'jisoo', expression: 'curious' },
   { id: 'line-004', speaker: '영우', text: '여기.', characterId: 'youngwoo', expression: 'neutral' },
@@ -589,6 +591,8 @@ const week0Scene001_2Lines = [
   { id: 'line-021', speaker: '영우', text: '웅.\n한인 식당이랑 마트도 많아서 지내기 편해.', characterId: 'youngwoo', expression: 'soft' },
   { id: 'line-022', speaker: '지수', text: '헐.\n한국 음식 있어요?', characterId: 'jisoo', expression: 'happy' },
   { id: 'line-023', speaker: '영우', text: '지리 설명보다 반응이 훨씬 빠른데.', characterId: 'youngwoo', expression: 'smirk' },
+  { id: 'line-023a', speaker: '지수', text: '아니 비행기에서 기내식만 먹었더니\n진짜 김치찌개 생각이 계속 나서요.', characterId: 'jisoo', expression: 'blank' },
+  { id: 'line-023b', speaker: '영우', text: '숙소 근처에 괜찮은 데 있어.\n내일이라도 가자.', characterId: 'youngwoo', expression: 'soft' },
   { id: 'line-024', speaker: '지수', text: '먹는 건 중요하니까요.', characterId: 'jisoo', expression: 'happy' },
   { id: 'line-025', speaker: '지수', text: '근데 생각보다 서큘러키에서 가깝네????', characterId: 'jisoo', expression: 'shocked' },
   { id: 'line-026', speaker: '영우', text: '웅.\n그래서 오가기 편해.', characterId: 'youngwoo', expression: 'soft' },
@@ -604,6 +608,9 @@ const week0Scene001_2Lines = [
   { id: 'line-036', speaker: '영우', text: '웅.\n꽤 멀어서 출근할 때 좀 걸려.', characterId: 'youngwoo', expression: 'neutral' },
   { id: 'line-037', speaker: '지수', text: '헐.\n매일 그렇게 가요?', characterId: 'jisoo', expression: 'curious' },
   { id: 'line-038', speaker: '영우', text: '웅웅.\n그래도 이제 적응됐어.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-038a', speaker: '지수', text: '왕복으로 치면 시간 꽤 많이 뺏기겠다.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-038b', speaker: '영우', text: '그 시간에 이어폰 끼고\n지수한테 보낼 사진 리스트 정리했어.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-038c', speaker: '지수', text: '아 그게 그렇게 나온 거였구나.', characterId: 'jisoo', expression: 'soft' },
   { id: 'line-039', speaker: '지수', text: '오오.', characterId: 'jisoo', expression: 'smirk' },
   { id: 'line-040', speaker: '지수', text: '여기가 영우 출몰 지역이구나.', characterId: 'jisoo', expression: 'smirk' },
   { id: 'line-041', speaker: '영우', text: '출몰은 뭐야 ㅋㅎㅋㅎㅋㅎㅋㅎㅋㅎ', characterId: 'youngwoo', expression: 'happy' },
@@ -623,174 +630,205 @@ const week0Scene001_2Lines = [
   { id: 'line-055', speaker: '', text: 'MINIGAME START', characterId: null },
 ];
 
-/* OPERATION MK — WEEK 0 · SCENE 04 「열차 — 지도에서 현실로」 v4
+/* OPERATION MK — WEEK 0 · SCENE 03 「열차 — 지도에서 현실로」 v08
    Dialogue Set: dialogue-week0-scene-train
    Scene: week0-scene-train (Sydney Trains, 10:05)
    minigame-eastwood's GAME CLEAR redirect hands off here (not straight to
-   the accommodation scene) — this scene's opening lines are the minigame's
-   own "성공 시" exchange (지수/영우 문답). */
+   the shop scene) — this scene opens with a short callback to the just-
+   finished map minigame, then settles into v08's actual train-ride content
+   (tiredness/hunger banter). [v08 재편] nextSceneId now goes to
+   week0-scene-shop-intro instead of week0-scene-circular-quay — the "one
+   stop early at Circular Quay" beat that used to open the old
+   circular-quay scene is folded into this scene's own closing lines below,
+   since that's the geography that puts them right by 더 록스 골목 for the
+   shop discovery next. */
 const week0SceneTrainLines = [
-  { id: 'line-001', speaker: '지수', text: '오오오.\n이제 진짜 감 잡았어요!!!!', characterId: 'jisoo', expression: 'happy' },
-  { id: 'line-002', speaker: '영우', text: '그치?\n나중에 장소 이름 나와도\n대충 어느 쪽인지 알겠지?', characterId: 'youngwoo', expression: 'soft' },
-  { id: 'line-003', speaker: '지수', text: '웅웅.\n영우 생활반경 접수 완료.', characterId: 'jisoo', expression: 'smirk' },
-  { id: 'line-004', speaker: '영우', text: '말이 왜 무섭지.', characterId: 'youngwoo', expression: 'blank' },
-  { id: 'line-005', speaker: '지수', text: '헤헤.\n도망 못 가요 이제.', characterId: 'jisoo', expression: 'happy' },
-  { id: 'line-006', speaker: '', text: 'Sydney Trains 열차 안.\n오전 10시 05분.', characterId: null },
-  { id: 'line-007', speaker: '', text: '지도 위에서만 보던 장소들을 확인한 뒤,\n두 사람은 숙소 방향 열차에 자리를 잡았다.', characterId: null },
-  { id: 'line-008', speaker: '지수', text: '그러면 지금은\n공항에서 숙소 쪽으로 가는 중인 거죠?', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-009', speaker: '영우', text: '웅웅.', characterId: 'youngwoo', expression: 'neutral' },
-  { id: 'line-010', speaker: '영우', text: '조금 전 지도에서 본 것처럼\n서큘러키 방향으로 올라갔다가 서쪽으로 이동하는 거야.', characterId: 'youngwoo', expression: 'neutral' },
-  { id: 'line-011', speaker: '지수', text: '그리고 Eastwood가 숙소.', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-012', speaker: '지수', text: '거기서 훨씬 더 서쪽이 영우 일하는 Marayong.', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-013', speaker: '영우', text: '마자.\n진짜 잘 기억하네.', characterId: 'youngwoo', expression: 'happy' },
-  { id: 'line-014', speaker: '지수', text: '당연하죠.', characterId: 'jisoo', expression: 'smirk' },
-  { id: 'line-015', speaker: '지수', text: '여자친구가 남자친구 서식지를 파악하는 건\n기본입니다.', characterId: 'jisoo', expression: 'smirk' },
-  { id: 'line-016', speaker: '영우', text: '서식지 ㅋㅎㅋㅎㅋㅎㅋㅎㅋㅎ', characterId: 'youngwoo', expression: 'happy' },
-  { id: 'line-017', speaker: '지수', text: '근데 실제로 보니까\n지도보다 훨씬 넓다.', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-018', speaker: '영우', text: '시드니가 동네마다 분위기도 많이 달라.', characterId: 'youngwoo', expression: 'neutral' },
-  { id: 'line-019', speaker: '영우', text: '서큘러키는 항구 앞이라 관광지 느낌이고,\nEastwood는 좀 더 아기자기하고 한인 상권도 있어.', characterId: 'youngwoo', expression: 'neutral' },
-  { id: 'line-020', speaker: '지수', text: '그럼 영우 일하는 Marayong도\n비슷한 느낌이에요?', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-021', speaker: '영우', text: '아니.\n거긴 또 달라. 훨씬 조용하고 공업 지역 느낌이야.', characterId: 'youngwoo', expression: 'soft' },
-  { id: 'line-022', speaker: '지수', text: '신기하다.', characterId: 'jisoo', expression: 'soft' },
-  { id: 'line-023', speaker: '지수', text: '맨날 전화로만 듣던 데를\n지금 내가 지나가고 있네.', characterId: 'jisoo', expression: 'soft' },
-  { id: 'line-024', speaker: '영우', text: '그러게.', characterId: 'youngwoo', expression: 'soft' },
-  { id: 'line-025', speaker: '', text: '지수가 창밖으로 지나가는 역 이름을 하나씩 확인한다.', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-026', speaker: '지수', text: '숙소가 이렇게 편한 동네라니 완전 럭키.', characterId: 'jisoo', expression: 'happy' },
-  { id: 'line-027', speaker: '영우', text: '웅.\n나가면 바로 장도 보고 밥도 먹을 수 있어.', characterId: 'youngwoo', expression: 'happy' },
-  { id: 'line-028', speaker: '지수', text: '개쥬아.', characterId: 'jisoo', expression: 'happy' },
-  { id: 'line-029', speaker: '지수', text: '오늘 지리 수업 만족도 올라갔습니다.', characterId: 'jisoo', expression: 'smirk' },
-  { id: 'line-030', speaker: '영우', text: 'A+ 가능합니까.', characterId: 'youngwoo', expression: 'smirk' },
-  { id: 'line-031', speaker: '지수', text: '아직 실습 중이에요.', characterId: 'jisoo', expression: 'smirk' },
-  { id: 'line-032', speaker: '영우', text: '평가 진짜 오래 하네.', characterId: 'youngwoo', expression: 'annoyed' },
-  { id: 'line-033', speaker: '지수', text: 'ㅋㅎㅋㅎㅋㅎㅋㅎㅋㅎ\n끝까지 긴장하세요.', characterId: 'jisoo', expression: 'happy' },
-  { id: 'line-034', speaker: '', text: '열차가 지상 구간으로 들어서자\n낮은 주택과 작은 상점, 넓은 도로가 이어졌다.', characterId: null },
-  { id: 'line-035', speaker: '영우', text: '비행기는 괜찮았어?', characterId: 'youngwoo', expression: 'curious' },
-  { id: 'line-036', speaker: '지수', text: '중간까지는.', characterId: 'jisoo', expression: 'neutral' },
-  { id: 'line-037', speaker: '지수', text: '자다가 목이 이렇게 꺾여서\n옆사람이 한 번 쳐다봤어요.', characterId: 'jisoo', expression: 'smirk' },
-  { id: 'line-038', speaker: '영우', text: '어떻게 잤길래 ㅋㅎㅋㅎㅋㅎㅋㅎㅋㅎ', characterId: 'youngwoo', expression: 'shocked' },
-  { id: 'line-039', speaker: '지수', text: '몰라요.\n살기 위해 잔 거예요.', characterId: 'jisoo', expression: 'smirk' },
-  { id: 'line-040', speaker: '영우', text: '아구.\n진짜 고생했네.', characterId: 'youngwoo', expression: 'soft' },
-  { id: 'line-041', speaker: '지수', text: '그래도 오니까 좋다.', characterId: 'jisoo', expression: 'soft' },
-  { id: 'line-042', speaker: '지수', text: '영우는 어제 잠 좀 잤어요?', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-043', speaker: '영우', text: '음.', characterId: 'youngwoo', expression: 'blank' },
-  { id: 'line-044', speaker: '지수', text: '그 음 뭐야.', characterId: 'jisoo', expression: 'suspicious' },
-  { id: 'line-045', speaker: '영우', text: '평소보다는 일찍 잤지.', characterId: 'youngwoo', expression: 'neutral' },
-  { id: 'line-046', speaker: '지수', text: '몇 시.', characterId: 'jisoo', expression: 'suspicious' },
-  { id: 'line-047', speaker: '영우', text: '두 시쯤?', characterId: 'youngwoo', expression: 'blank' },
-  { id: 'line-048', speaker: '지수', text: '그게 일찍이에요?????', characterId: 'jisoo', expression: 'shocked' },
-  { id: 'line-049', speaker: '영우', text: '내 기준에는.', characterId: 'youngwoo', expression: 'smirk' },
-  { id: 'line-050', speaker: '지수', text: '아구 진짜.\n오늘 나 때문에 더 피곤한 거 아니에요?', characterId: 'jisoo', expression: 'soft' },
-  { id: 'line-051', speaker: '영우', text: '아니야.\n지수 와서 오히려 안 피곤해.', characterId: 'youngwoo', expression: 'soft' },
-  { id: 'line-052', speaker: '지수', text: '그건 지금 신나서 모르는 거고.', characterId: 'jisoo', expression: 'suspicious' },
-  { id: 'line-053', speaker: '지수', text: '숙소 가면 잠깐이라도 쉬어요.\n알겠죠?', characterId: 'jisoo', expression: 'soft' },
-  { id: 'line-054', speaker: '영우', text: '웅웅.\n지수도 같이.', characterId: 'youngwoo', expression: 'neutral' },
-  { id: 'line-055', speaker: '지수', text: '저는 감독할 건데요.', characterId: 'jisoo', expression: 'smirk' },
-  { id: 'line-056', speaker: '영우', text: '감독이 먼저 잘 것 같은데.', characterId: 'youngwoo', expression: 'smirk' },
-  { id: 'line-057', speaker: '지수', text: '아니거든요오.', characterId: 'jisoo', expression: 'annoyed' },
-  { id: 'line-058', speaker: '', text: '말은 그렇게 했지만,\n지수는 얼마 지나지 않아 창에 머리를 기댔다.', characterId: 'jisoo', expression: 'blank' },
-  { id: 'line-059', speaker: '영우', text: '지수야.', characterId: 'youngwoo', expression: 'soft' },
-  { id: 'line-060', speaker: '지수', text: '웅...', characterId: 'jisoo', expression: 'blank' },
-  { id: 'line-061', speaker: '영우', text: '조금만 자.\n도착하면 깨워줄게.', characterId: 'youngwoo', expression: 'soft' },
-  { id: 'line-062', speaker: '지수', text: 'ㅋㅎㅋㅎㅋㅎㅋㅎㅋㅎ\n아 완전 애기 취급.', characterId: 'jisoo', expression: 'happy' },
-  { id: 'line-063', speaker: '영우', text: '웅.\n오늘은 그래도 돼.', characterId: 'youngwoo', expression: 'soft' },
-  { id: 'line-064', speaker: '', text: '지수는 대답 대신\n영우의 소매 끝을 살짝 잡았다.', characterId: null },
-  { id: 'line-065', speaker: '', text: '지도 속 낯선 지명들은\n창밖의 실제 풍경으로 하나씩 바뀌고 있었다.', characterId: null },
+  { id: 'line-001', speaker: '지수', text: '오오.\n이제 좀 감 잡았어요.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-002', speaker: '영우', text: '그치.\n나중에 장소 이름 나와도 대충 알겠지?', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-003', speaker: '', text: 'Sydney Trains 열차 안.\n오전 10시 05분.', characterId: null },
+  { id: 'line-004', speaker: '', text: '공항역에서 열차에 오른 두 사람은 나란히 앉았다.\n지수는 노선도에서 Circular Quay를 찾아 손가락으로 짚었다.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-005', speaker: '지수', text: '공항에서 시티 쪽으로 올라가서\n여기서 내리는 거죠?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-006', speaker: '영우', text: '웅웅.\n완전 정확해.', characterId: 'youngwoo', expression: 'happy' },
+  { id: 'line-007', speaker: '지수', text: '야르~\n벌써 시드니 지리 접수 완료.', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-008', speaker: '영우', text: '아직 한 정거장도 안 갔는데요.', characterId: 'youngwoo', expression: 'smirk' },
+  { id: 'line-009', speaker: '지수', text: '자신감이 중요합니다.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-009a', speaker: '', text: '열차 안내 방송이 낯선 억양의 영어로 흘러나왔다.\n지수는 그 소리를 몇 초간 가만히 듣고 있었다.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-009b', speaker: '지수', text: '진짜 다른 나라구나.', characterId: 'jisoo', expression: 'soft' },
+  { id: 'line-009c', speaker: '영우', text: '이제 알았어?', characterId: 'youngwoo', expression: 'smirk' },
+  { id: 'line-009d', speaker: '지수', text: '머리로는 알았는데\n지금 실감이 확 나서요.', characterId: 'jisoo', expression: 'soft' },
+  { id: 'line-010', speaker: '', text: '열차가 지상 구간을 지나자\n낯선 건물과 도로가 창밖으로 빠르게 흘러갔다.', characterId: null },
+  { id: 'line-011', speaker: '영우', text: '비행기에서 좀 잤어?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-012', speaker: '지수', text: '자긴 잤는데\n목이 이렇게 꺾여서 옆사람이 쳐다봤어요.', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-013', speaker: '영우', text: '어떻게 잤길래 ㅋㅎㅋㅎㅋㅎㅋㅎ', characterId: 'youngwoo', expression: 'happy' },
+  { id: 'line-014', speaker: '지수', text: '살기 위해 잔 거예요.', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-015', speaker: '영우', text: '아구.\n진짜 고생했네.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-016', speaker: '지수', text: '영우는 어제 몇 시에 잤어요?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-017', speaker: '영우', text: '음.', characterId: 'youngwoo', expression: 'blank' },
+  { id: 'line-018', speaker: '지수', text: '그 음 뭐야.', characterId: 'jisoo', expression: 'suspicious' },
+  { id: 'line-019', speaker: '영우', text: '두 시쯤?', characterId: 'youngwoo', expression: 'blank' },
+  { id: 'line-020', speaker: '지수', text: '그게 일찍 잔 거예요?????', characterId: 'jisoo', expression: 'shocked' },
+  { id: 'line-021', speaker: '영우', text: '내 기준에는.', characterId: 'youngwoo', expression: 'smirk' },
+  { id: 'line-021a', speaker: '지수', text: '설레서 그런 거예요,\n아니면 그냥 원래 그래요?', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-021b', speaker: '영우', text: '둘 다.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-021c', speaker: '지수', text: '아 뭐야 그 대답 반칙이잖아요.', characterId: 'jisoo', expression: 'annoyed' },
+  { id: 'line-022', speaker: '지수', text: '숙소 가면 둘 다 좀 쉬어요.\n알겠죠?', characterId: 'jisoo', expression: 'soft' },
+  { id: 'line-023', speaker: '영우', text: '웅.\n근데 그 전에 데이트부터.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-024', speaker: '지수', text: '오.\n그 말은 좋다.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-024a', speaker: '', text: '열차가 지하 구간으로 들어서며\n창밖 풍경이 어둠으로 바뀌었다.', characterId: null },
+  { id: 'line-024b', speaker: '지수', text: '어.\n갑자기 캄캄해졌다.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-024c', speaker: '영우', text: '시티 들어가는 구간이야.\n이제 거의 다 왔어.', characterId: 'youngwoo', expression: 'neutral' },
+  { id: 'line-025', speaker: '', text: '안내방송에 Circular Quay가 들리자\n두 사람은 동시에 자리에서 일어났다.', characterId: null },
+  { id: 'line-026', speaker: '지수', text: '영우 가자!!!!', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-027', speaker: '영우', text: '캐리어 두고 갈 뻔했어 지수야.', characterId: 'youngwoo', expression: 'smirk' },
+  { id: 'line-028', speaker: '지수', text: '아.\n흥분해서 잠깐 잊음.', characterId: 'jisoo', expression: 'blank' },
+  { id: 'line-029', speaker: '영우', text: '여행 시작부터 짐 잃어버리면 안 됩니다.', characterId: 'youngwoo', expression: 'happy' },
 ];
 
-/* OPERATION MK — WEEK 0 · SCENE 「서큘러키 · 깜짝 낚시」
+/* OPERATION MK — WEEK 0 · SCENE 06 「서큘러키 · 사진과 낚시 제안」 v08
    Dialogue Set: dialogue-week0-scene-circular-quay
-   Scene: week0-scene-circular-quay (Circular Quay Waterfront, 10:35)
-   Inserted between week0-scene-train and week0-scene-shop-intro — pays off
-   minigame-eastwood's success-dialogue foreshadow ("이따 숙소 가는 길에 한
-   군데 들렀다 가자" / "가보면 알아", see that file's successLines) with an
-   actual detour: 영우 gets off one stop early at Circular Quay and surprises
-   지수 with fishing off the quay. Hands off into the standalone fishing
-   minigame (MINIGAME_ROUTES['week0-scene-circular-quay-minigame'] in
-   dev/data/sceneRoutes.js) instead of another VN scene. */
+   Scene: week0-scene-circular-quay (Circular Quay Waterfront, 11:00)
+   [v08 재편] 더 록스 옷가게(week0-scene-shop-intro/-visit) 다음 비트로
+   옮겨서, 사진 찍고 노는 관광 파트와 "돈 벌자" 낚시 제안을 한 씬에 담았다.
+   지수가 저번에 낚시 해보고 싶다고 했던 것도 함께 챙겨서, 옷값을 벌자는
+   동기와 지수의 오랜 바람을 같이 풀어주는 구조로 만들었다. Hands off into
+   the standalone fishing minigame (MINIGAME_ROUTES['week0-scene-circular-
+   quay-minigame'] in dev/data/sceneRoutes.js) instead of another VN scene. */
 const week0SceneCircularQuayLines = [
-  { id: 'line-001', speaker: '', text: 'Circular Quay 역.\n오전 10시 35분.', characterId: null },
-  { id: 'line-002', speaker: '지수', text: '음...\n벌써 도착했어요?', characterId: 'jisoo', expression: 'blank' },
-  { id: 'line-003', speaker: '영우', text: '아니, 아직.\n근데 여기서 잠깐만 내리자.', characterId: 'youngwoo', expression: 'soft' },
-  { id: 'line-004', speaker: '지수', text: '어?\n우리 숙소 이 역 아니잖아요.', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-005', speaker: '영우', text: '맞아.\n아까 말한 "한 군데" 여기야.', characterId: 'youngwoo', expression: 'smirk' },
-  { id: 'line-006', speaker: '지수', text: '아 그거!!!\n뭔데요 뭔데요.', characterId: 'jisoo', expression: 'shocked' },
-  { id: 'line-007', speaker: '영우', text: '일단 나와봐.', characterId: 'youngwoo', expression: 'soft' },
-  { id: 'line-008', speaker: '', text: '개찰구를 빠져나오자\n넓은 워터프론트가 펼쳐졌다.', characterId: null },
-  { id: 'line-009', speaker: '', text: '여러 척의 페리가 정박해 있고,\n저 멀리 오페라하우스의 흰 지붕과 하버브리지가 보였다.', characterId: null },
-  { id: 'line-010', speaker: '지수', text: '헐...\n대박, 여기 완전 그림이잖아요.', characterId: 'jisoo', expression: 'shocked' },
-  { id: 'line-011', speaker: '영우', text: '그치?\n아까 지도에서 본 데 맞지.', characterId: 'youngwoo', expression: 'happy' },
-  { id: 'line-012', speaker: '지수', text: '맞다!\n오페라하우스랑 하버브리지 여기서 보이는 데.', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-013', speaker: '', text: '지수가 난간 쪽으로 다가가다가,\n부두 끝에서 낚싯대를 드리운 사람들을 발견했다.', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-014', speaker: '지수', text: '어?\n저기 사람들 낚시해요?', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-015', speaker: '영우', text: '어.\n그게 오늘 서프라이즈야.', characterId: 'youngwoo', expression: 'smirk' },
-  { id: 'line-016', speaker: '지수', text: '네????', characterId: 'jisoo', expression: 'shocked' },
-  { id: 'line-017', speaker: '영우', text: '지수 저번에\n낚시 한번 해보고 싶다고 했었잖아.', characterId: 'youngwoo', expression: 'soft' },
-  { id: 'line-018', speaker: '지수', text: '그걸 기억하고 있었어요??', characterId: 'jisoo', expression: 'happy' },
-  { id: 'line-019', speaker: '영우', text: '당연하지.', characterId: 'youngwoo', expression: 'soft' },
-  { id: 'line-020', speaker: '지수', text: '완전 감동...\n근데 나 낚시 한 번도 안 해봤는데.', characterId: 'jisoo', expression: 'happy' },
-  { id: 'line-021', speaker: '영우', text: '괜찮아.\n내가 알려줄게.', characterId: 'youngwoo', expression: 'soft' },
-  { id: 'line-022', speaker: '지수', text: '오케이!\n첫 손님인 만큼 잘 부탁드립니다 선생님.', characterId: 'jisoo', expression: 'smirk' },
-  { id: 'line-023', speaker: '영우', text: '지리 수업 때보다\n더 잘 가르칠 자신 있음.', characterId: 'youngwoo', expression: 'smirk' },
-  { id: 'line-024', speaker: '', text: '[ 잠시 후 — 낚시 화면으로 이동합니다 ]', characterId: null },
+  { id: 'line-001', speaker: '', text: 'Circular Quay 워터프론트.\n오전 11시.', characterId: null },
+  { id: 'line-002', speaker: '', text: '워터프론트가 한눈에 펼쳐졌다.\n한쪽에는 오페라하우스, 반대쪽에는 하버브리지,\n앞쪽으로는 페리가 천천히 움직였다.', characterId: null },
+  { id: 'line-003', speaker: '지수', text: '헐....', characterId: 'jisoo', expression: 'shocked' },
+  { id: 'line-004', speaker: '지수', text: '영우.\n나 진짜 시드니 왔어.', characterId: 'jisoo', expression: 'soft' },
+  { id: 'line-005', speaker: '영우', text: '그러게.\n이제 좀 실감 나지?', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-006', speaker: '지수', text: '웅.\n사진에서 보던 게 다 여기 있자나.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-006a', speaker: '', text: '갈매기 몇 마리가 낮게 날아 지나갔다.\n바닷바람에서 짠 내가 났다.', characterId: null },
+  { id: 'line-006b', speaker: '지수', text: '바람 냄새까지 다르네요.', characterId: 'jisoo', expression: 'soft' },
+  { id: 'line-006c', speaker: '영우', text: '이게 진짜 바다 냄새야.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-007', speaker: '영우', text: '일단 사진 찍어줄게.\n저기 서봐.', characterId: 'youngwoo', expression: 'smirk' },
+  { id: 'line-008', speaker: '지수', text: '잠만.\n머리 괜찮아요?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-009', speaker: '영우', text: '예뻐.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-010', speaker: '지수', text: '아니 머리 물어봤자나아.', characterId: 'jisoo', expression: 'annoyed' },
+  { id: 'line-011', speaker: '영우', text: '머리도 예뻐.', characterId: 'youngwoo', expression: 'smirk' },
+  { id: 'line-012', speaker: '지수', text: '미쳤나봐아아.\n빨리 찍어요!!!!', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-013', speaker: '', text: '영우가 여러 장을 찍고\n지수에게 화면을 보여줬다.', characterId: null },
+  { id: 'line-014', speaker: '지수', text: '오.\n이거 개쥬아.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-015', speaker: '영우', text: '잠깐만,\n바람 덜 불 때 한 장만 더 찍자.', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-016', speaker: '지수', text: '웅웅.\n이번엔 같이 찍자.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-017', speaker: '', text: '두 사람은 오페라하우스, 하버브리지, 페리 선착장을\n배경으로 사진을 남겼다.', characterId: null },
+  { id: 'line-018', speaker: '지수', text: '잠만.\n표정 왜 이렇게 긴장했어요????', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-019', speaker: '영우', text: '여자친구가 찍어주니까\n잘 나오고 싶어서.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-020', speaker: '지수', text: '아 ㅋㅎㅋㅎㅋㅎㅋㅎ\n그럼 한 장 더. 이번엔 웃어요.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-021', speaker: '영우', text: '지수 보면 자동으로 웃는데.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-022', speaker: '지수', text: '왜저래애애.', characterId: 'jisoo', expression: 'annoyed' },
+  { id: 'line-022a', speaker: '', text: '지나가던 관광객이 둘의 사진을 보고\n엄지를 슬쩍 들어 보였다.', characterId: null },
+  { id: 'line-022b', speaker: '지수', text: '오오, 인정받았다.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-022c', speaker: '영우', text: '봐.\n내 촬영 실력 국제적으로 검증됨.', characterId: 'youngwoo', expression: 'smirk' },
+  { id: 'line-023', speaker: '', text: '한참 사진을 찍고 난 뒤\n두 사람은 난간에 기대 물을 바라봤다.', characterId: null },
+  { id: 'line-024', speaker: '', text: '가까운 부두에서\n낚싯대를 드리운 사람들이 보였다.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-025', speaker: '지수', text: '어?\n저기 낚시한다.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-026', speaker: '영우', text: '그러네.', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-027', speaker: '지수', text: '여기서도 잡혀요?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-028', speaker: '영우', text: '조금만 더 놀 힘 있어?', characterId: 'youngwoo', expression: 'smirk' },
+  { id: 'line-029', speaker: '지수', text: '웅.\n왜요?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-030', speaker: '영우', text: '저기서 낚시할 수 있대.\n아까 옷도 사고 싶다 했으니까,\n잡은 거 팔아서 돈 좀 벌어볼까?', characterId: 'youngwoo', expression: 'smirk' },
+  { id: 'line-031', speaker: '지수', text: '여행 와서 진짜 낚시로 옷값 버는 거예요?', characterId: 'jisoo', expression: 'shocked' },
+  { id: 'line-032', speaker: '영우', text: '게임이니까.', characterId: 'youngwoo', expression: 'happy' },
+  { id: 'line-033', speaker: '영우', text: '그리고 지수 저번에\n낚시 한번 해보고 싶다고 했었잖아.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-034', speaker: '지수', text: '그걸 기억하고 있었어요??', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-035', speaker: '영우', text: '당연하지.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-036', speaker: '지수', text: '완전 감동...\n근데 저 진짜 한 번도 안 해봤는데.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-036a', speaker: '지수', text: '낚싯대도 못 잡아봤고,\n미끼도 무서워요.', characterId: 'jisoo', expression: 'blank' },
+  { id: 'line-036b', speaker: '영우', text: '미끼는 화면 안에서만 있는 거라\n걱정 안 해도 돼.', characterId: 'youngwoo', expression: 'happy' },
+  { id: 'line-036c', speaker: '지수', text: '아 그러네.\n다행이다.', characterId: 'jisoo', expression: 'soft' },
+  { id: 'line-037', speaker: '영우', text: '괜찮아.\n내가 알려줄게.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-038', speaker: '지수', text: '오키.\n그럼 체력 괜찮을 때 한 판만.', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-039', speaker: '', text: '영우가 화면의 낚싯대 아이콘을 눌렀다.\n갑자기 픽셀 그래픽의 낚시 화면이 열렸다.', characterId: null },
+  { id: 'line-040', speaker: '지수', text: '잠만.\n이거 뭐야?????', characterId: 'jisoo', expression: 'shocked' },
+  { id: 'line-041', speaker: '영우', text: '낚시게임.', characterId: 'youngwoo', expression: 'smirk' },
+  { id: 'line-042', speaker: '지수', text: '아니 그건 보이는데\n왜 갑자기 게임이 나와요????', characterId: 'jisoo', expression: 'suspicious' },
+  { id: 'line-043', speaker: '영우', text: '내가 낚시하자고 했잖아.\n그래서 이거 만듦.', characterId: 'youngwoo', expression: 'smirk' },
+  { id: 'line-044', speaker: '지수', text: '에에 미쳤나봐!!!', characterId: 'jisoo', expression: 'shocked' },
+  { id: 'line-045', speaker: '지수', text: '진짜 이걸 만들었다고????', characterId: 'jisoo', expression: 'shocked' },
+  { id: 'line-046', speaker: '영우', text: '웅.\n스타듀밸리처럼 물고기 따라가면 돼.', characterId: 'youngwoo', expression: 'happy' },
+  { id: 'line-047', speaker: '지수', text: '아 진짜 영크크 미쳤어.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-048', speaker: '영우', text: '칭찬으로 듣겠습니다.', characterId: 'youngwoo', expression: 'smirk' },
+  { id: 'line-049', speaker: '지수', text: '칭찬 맞아요!!!!\n아니 근데 진짜 미쳤나봐.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-050', speaker: '', text: '[ 잠시 후 — 낚시 화면으로 이동합니다 ]', characterId: null },
 ];
 
-/* OPERATION MK — WEEK 0 · SCENE 「작은 편집숍」 (The Missing Key v1 §5.2/§11.3)
+/* OPERATION MK — WEEK 0 · SCENE 04 「더 록스 · 작은 편집숍 발견」 v08
    Dialogue Set: dialogue-week0-scene-shop-intro
-   Scene: week0-scene-shop-intro (Eastwood Street, 20:05)
-   Inserted between week0-scene-circular-quay(-minigame) and week0-scene-002-1
-   — 지도 미니게임에서 얻은 500P를 실제로 써 보는 첫 경험. 강제 구매는 없다
-   (§5.2 "강제 구매 여부"): 어느 쪽을 골라도 같은 상점 화면으로 이어지고,
-   튜토리얼은 구매 여부와 무관하게 완료된다. 실제 미리보기·구매는 대사가 아니라
-   /dev/shop/ 화면에서 일어난다 — hand-off는 기존 미니게임 라우팅과 같은
-   nextSceneId 패턴 (week0-scene-shop-visit, MINIGAME_ROUTES in
-   game/index.html) 을 쓴다. */
+   Scene: week0-scene-shop-intro (The Rocks Lane, 10:40)
+   [v08 재편] 더 록스 골목, 서큘러키에서 내린 직후로 시간·장소를 옮겼다
+   (예전엔 저녁 · Eastwood 숙소 근처였음) — 지도 미니게임에서 받은 500P를
+   써보는 첫 시도를 낚시/관광보다 먼저 배치해 v08의 동선(옷가게 발견 →
+   관광 → 낚시)을 그대로 따른다. 강제 구매는 없다(§5.2 "강제 구매 여부"):
+   어느 쪽을 골라도 같은 상점 화면으로 이어지고, 튜토리얼은 구매 여부와
+   무관하게 완료된다. 실제 미리보기·구매는 대사가 아니라 /dev/shop/ 화면에서
+   일어난다 — hand-off는 기존 미니게임 라우팅과 같은 nextSceneId 패턴
+   (week0-scene-shop-visit, MINIGAME_ROUTES in game/index.html) 을 쓴다. */
 const week0SceneShopIntroLines = [
-  { id: 'line-001', speaker: '', text: 'Eastwood 역 출구.\n저녁 8시 05분.', characterId: null },
-  { id: 'line-002', speaker: '', text: '역에서 나온 두 사람은\n숙소 쪽으로 천천히 걸었다.', characterId: null },
-  { id: 'line-003', speaker: '지수', text: '어? 저기 봐요.', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-004', speaker: '', text: '지수가 걸음을 멈추고\n작은 편집숍 쇼윈도를 가리켰다.', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-005', speaker: '영우', text: '아, 여기.\n출퇴근할 때 맨날 지나가는 덴데.', characterId: 'youngwoo', expression: 'neutral' },
-  { id: 'line-006', speaker: '영우', text: '한 번도 안 들어가봤어.', characterId: 'youngwoo', expression: 'neutral' },
-  { id: 'line-007', speaker: '지수', text: '저 원피스 예쁘다.', characterId: 'jisoo', expression: 'happy' },
-  { id: 'line-008', speaker: '지수', text: '이런 데 옷 진짜 내 스타일인데.', characterId: 'jisoo', expression: 'happy' },
-  { id: 'line-009', speaker: '영우', text: '그러고 보니까.', characterId: 'youngwoo', expression: 'curious' },
-  { id: 'line-010', speaker: '영우', text: '지수야, 아까 지도 게임 클리어했을 때\n뭐 떴는지 기억나?', characterId: 'youngwoo', expression: 'smirk' },
-  { id: 'line-011', speaker: '지수', text: '음?\n뭐 반짝하고 지나간 것 같긴 한데.', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-012', speaker: '영우', text: '포인트 500P 받았잖아.', characterId: 'youngwoo', expression: 'neutral' },
-  { id: 'line-013', speaker: '지수', text: '오!! 맞다.', characterId: 'jisoo', expression: 'shocked' },
-  { id: 'line-014', speaker: '지수', text: '근데 그거 어디다 써요?', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-015', speaker: '영우', text: '몰라.\n근데 딱 마침 옷가게가 있잖아.', characterId: 'youngwoo', expression: 'smirk' },
-  { id: 'line-016', speaker: '영우', text: '한번 들어가서 확인해볼까?', characterId: 'youngwoo', expression: 'smirk' },
-  { id: 'line-017', speaker: '지수', text: '오오오 콜.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-001', speaker: '', text: 'The Rocks 골목.\n오전 10시 40분.', characterId: null },
+  { id: 'line-002', speaker: '', text: '서큘러키 역에서 나온 두 사람은\n오페라하우스로 곧장 가지 않고 더 록스 골목 쪽으로 천천히 걸었다.', characterId: null },
+  { id: 'line-003', speaker: '', text: '오래된 벽돌 건물 사이,\n작은 편집숍 쇼윈도 앞에서 지수가 갑자기 멈춰 섰다.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-004', speaker: '지수', text: '잠만잠만.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-005', speaker: '영우', text: '왜?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-006', speaker: '지수', text: '저거 예쁘다.\n나 저런 거 완전 좋아하는데.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-006a', speaker: '영우', text: '캐리어 끌고 벌써 쇼핑 시동 걸리는 거예요?', characterId: 'youngwoo', expression: 'smirk' },
+  { id: 'line-006b', speaker: '지수', text: '눈은 못 참아요.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-007', speaker: '영우', text: '어디?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-008', speaker: '지수', text: '저 코디, 검정 가디건.\n가격만 살짝 볼까?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-009', speaker: '', text: '지수가 쇼윈도에 붙은 가격표를 확인했다.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-010', speaker: '지수', text: '음.\n생각보다 비싸다.', characterId: 'jisoo', expression: 'blank' },
+  { id: 'line-011', speaker: '영우', text: '얼마인데?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-012', speaker: '지수', text: '이 정도면\n지금 우리 포인트로는 못 사요.', characterId: 'jisoo', expression: 'blank' },
+  { id: 'line-013', speaker: '영우', text: '아,\n그러고 보니.', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-014', speaker: '영우', text: '지수야, 아까 지도 게임 클리어했을 때\n뭐 떴는지 기억나?', characterId: 'youngwoo', expression: 'smirk' },
+  { id: 'line-015', speaker: '지수', text: '음?\n뭐 반짝하고 지나간 것 같긴 한데.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-016', speaker: '영우', text: '포인트 500P 받았잖아.', characterId: 'youngwoo', expression: 'neutral' },
+  { id: 'line-017', speaker: '지수', text: '오!!\n맞다.', characterId: 'jisoo', expression: 'shocked' },
+  { id: 'line-018', speaker: '지수', text: '근데 그거로도 부족해요?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-019', speaker: '영우', text: '조금.\n근데 딱 마침 옷가게가 있으니까\n한번 들어가서 구경은 해볼까?', characterId: 'youngwoo', expression: 'smirk' },
+  { id: 'line-020', speaker: '지수', text: '오오 콜.\n사진 찍어두고 나중에 또 오면 되지.', characterId: 'jisoo', expression: 'happy' },
   {
-    id: 'line-017-transition',
+    id: 'line-020-transition',
     speaker: '', text: '두 사람은 편집숍 안으로 들어갔다.', characterId: null,
-    sceneTransition: { backgroundKey: 'week0-scene-shop-intro--interior', introLabel: 'EASTWOOD BOUTIQUE', time: '20:09' },
+    sceneTransition: { backgroundKey: 'week0-scene-shop-intro--interior', introLabel: 'THE ROCKS BOUTIQUE', time: '10:44' },
   },
-  { id: 'line-018', speaker: '', text: '작은 가게 안,\n행거에 코디 몇 벌이 세트로 걸려 있었다.', characterId: null },
-  { id: 'line-019', speaker: '지수', text: '와, 낱개로 안 팔고\n통으로 코디해서 걸어놨네.', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-020', speaker: '영우', text: '고르기 편하겠다.', characterId: 'youngwoo', expression: 'neutral' },
-  { id: 'line-021', speaker: '지수', text: '진짜 그러네.', characterId: 'jisoo', expression: 'smirk' },
-  { id: 'line-022', speaker: '영우', text: '점원 말로는\n태그에 붙은 가격이 그 포인트로 살 수 있는 거래.', characterId: 'youngwoo', expression: 'neutral' },
-  { id: 'line-023', speaker: '영우', text: '입어보고 마음에 들면 사면 되고,\n아니면 그냥 구경만 하고 나가도 되고.', characterId: 'youngwoo', expression: 'soft' },
-  { id: 'line-024', speaker: '지수', text: '오케이.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-028', speaker: '', text: '작은 가게 안,\n행거에 코디 몇 벌이 세트로 걸려 있었다.', characterId: null },
+  { id: 'line-028a', speaker: '', text: '문에 달린 작은 종이 짤랑거리며\n두 사람의 입장을 알렸다.', characterId: null },
+  { id: 'line-029', speaker: '지수', text: '와, 낱개로 안 팔고\n통으로 코디해서 걸어놨네.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-030', speaker: '영우', text: '고르기 편하겠다.', characterId: 'youngwoo', expression: 'neutral' },
+  { id: 'line-031', speaker: '지수', text: '진짜 그러네.', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-032', speaker: '영우', text: '점원 말로는\n태그에 붙은 가격이 그 포인트로 살 수 있는 거래.', characterId: 'youngwoo', expression: 'neutral' },
+  { id: 'line-033', speaker: '영우', text: '입어보고 마음에 들면 사면 되고,\n아니면 그냥 구경만 하고 나가도 되고.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-034', speaker: '지수', text: '오케이.', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-034a', speaker: '지수', text: '근데 영우는 안 골라요?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-034b', speaker: '영우', text: '난 나중에.\n오늘은 지수 보는 재미로 왔어.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-034c', speaker: '지수', text: '그런 말 은근슬쩍 넣지 마요.', characterId: 'jisoo', expression: 'annoyed' },
   {
-    id: 'line-024-choice', type: 'choice', speaker: '', text: '지수가 행거 앞에서 잠시 고민한다.', characterId: 'jisoo', expression: 'curious',
+    id: 'line-034-choice', type: 'choice', speaker: '', text: '지수가 행거 앞에서 잠시 고민한다.', characterId: 'jisoo', expression: 'curious',
     choices: [
       {
         id: 'shop-eager', label: '“일단 다 입어볼래요.”',
-        effects: [{ type: 'setFlag', key: 'shopIntroChoice', value: 'eager' }],
+        effects: [
+          { type: 'setFlag', key: 'shopIntroChoice', value: 'eager' },
+          { type: 'addSatisfaction', amount: 3 },
+        ],
       },
       {
         id: 'shop-cautious', label: '“오늘은 구경만 하고 나중에 살게요.”',
-        effects: [{ type: 'setFlag', key: 'shopIntroChoice', value: 'cautious' }],
+        effects: [
+          { type: 'setFlag', key: 'shopIntroChoice', value: 'cautious' },
+          { type: 'addSatisfaction', amount: 1 },
+          { type: 'addAffection', amount: 2 },
+        ],
       },
     ],
   },
-  { id: 'line-025', speaker: '영우', text: '천천히 봐.\n나 여기서 기다릴게.', characterId: 'youngwoo', expression: 'soft' },
-  { id: 'line-026', speaker: '', text: '[ 잠시 후 — 옷가게 화면으로 이동합니다 ]', characterId: null },
+  { id: 'line-035', speaker: '영우', text: '천천히 봐.\n나 여기서 기다릴게.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-036', speaker: '', text: '[ 잠시 후 — 옷가게 화면으로 이동합니다 ]', characterId: null },
   {
-    id: 'line-027', speaker: '', text: '지수는 행거를 하나씩 넘겨보기 시작했다.', characterId: null,
+    id: 'line-037', speaker: '', text: '지수는 행거를 하나씩 넘겨보기 시작했다.', characterId: null,
     // The Missing Key v1 §5.2 "강제 구매 여부" / §11.3 필수 상태 변경 —
     // 구매 여부와 무관하게 상점·옷장 메뉴는 여기서 확정 해금된다. 초기 재고
     // 2벌(§5.6)도 함께 열어, 다음 줄에서 넘어가는 실제 /dev/shop/ 화면에
@@ -998,7 +1036,7 @@ const week0Scenes = [
       { key: 'week0-scene-flight--arrival', label: 'Sydney Airport Arrival Area' },
     ],
     lines: mergeLines(week0SceneFlightLines, week0Scene001Lines),
-    // Hands off into 지하철 역 찾기 — a real playthrough (시작하기 on /play/test)
+    // Hands off into 지하철 역 찾기 — a real playthrough (시작하기 on /play/)
     // taps straight through the whole week instead of stopping here. Note
     // this also means the "UNKNOWN SIGNAL" foreshadow beat in game/index.html
     // (gated on !nextSceneId) no longer fires at this scene's end.
@@ -1044,18 +1082,47 @@ const week0Scenes = [
     introLabel: 'SYDNEY TRAINS',
     time: '10:05',
     lines: week0SceneTrainLines,
-    // Hands off into the Circular Quay detour (surprise fishing stop) instead
-    // of straight to the shop/accommodation now — see week0-scene-circular-
-    // quay's header comment.
-    nextSceneId: 'week0-scene-circular-quay',
+    // [v08 재편] Hands off straight into the shop-discovery beat now — the
+    // "get off one stop early at Circular Quay" reveal that used to open
+    // week0-scene-circular-quay is folded into this scene's own closing
+    // lines (see week0SceneTrainLines' header comment), since that's the
+    // geography that puts them right by 더 록스 골목 for the shop.
+    nextSceneId: 'week0-scene-shop-intro',
+  },
+  {
+    id: 'week0-scene-shop-intro',
+    order: 5,
+    name: '더 록스 · 작은 편집숍 발견',
+    location: 'The Rocks Lane',
+    introLabel: 'THE ROCKS',
+    time: '10:40',
+    locations: [
+      { key: 'week0-scene-shop-intro', label: 'The Rocks Lane' },
+      { key: 'week0-scene-shop-intro--interior', label: 'The Rocks Boutique Interior' },
+    ],
+    lines: week0SceneShopIntroLines,
+    // Hands off to the actual shop screen (a separate routed page, not a VN
+    // scene — spec §5.3 "상점은 모달이 아니라 별도 씬으로 처리") via the same
+    // MINIGAME_ROUTES handoff every other minigame uses. See
+    // dev/data/sceneRoutes.js for the SHOP_TUTORIAL_RETURN_SCENE wiring back
+    // into week0-scene-circular-quay.
+    nextSceneId: 'week0-scene-shop-visit',
+  },
+  {
+    id: 'week0-scene-shop-visit',
+    order: 6,
+    name: '옷가게 튜토리얼',
+    location: 'The Rocks Boutique',
+    time: '10:50',
+    route: '/dev/shop/',
   },
   {
     id: 'week0-scene-circular-quay',
-    order: 5,
-    name: '서큘러키 · 깜짝 낚시',
+    order: 7,
+    name: '서큘러키 · 사진과 낚시 제안',
     location: 'Circular Quay Waterfront',
     introLabel: 'CIRCULAR QUAY',
-    time: '10:35',
+    time: '11:00',
     lines: week0SceneCircularQuayLines,
     // Hands off to the standalone fishing minigame (a routed page, same
     // MINIGAME_ROUTES handoff every other minigame uses) — see
@@ -1064,51 +1131,28 @@ const week0Scenes = [
   },
   {
     id: 'week0-scene-circular-quay-minigame',
-    order: 6,
+    order: 8,
     name: '서큘러키 낚시',
     location: 'Circular Quay Waterfront',
-    time: '10:40',
+    time: '11:30',
     route: '/dev/minigame-fishing/play/',
-  },
-  {
-    id: 'week0-scene-shop-intro',
-    order: 7,
-    name: '작은 편집숍 · 옷가게 오픈',
-    location: 'Eastwood Street',
-    introLabel: 'EASTWOOD',
-    time: '20:05',
-    locations: [
-      { key: 'week0-scene-shop-intro', label: 'Eastwood Street' },
-      { key: 'week0-scene-shop-intro--interior', label: 'Eastwood Boutique Interior' },
-    ],
-    lines: week0SceneShopIntroLines,
-    // Hands off to the actual shop screen (a separate routed page, not a VN
-    // scene — spec §5.3 "상점은 모달이 아니라 별도 씬으로 처리") via the same
-    // MINIGAME_ROUTES handoff every other minigame uses. See game/index.html
-    // for the sessionStorage return-url wiring back to week0-scene-002-1.
-    nextSceneId: 'week0-scene-shop-visit',
-  },
-  {
-    id: 'week0-scene-shop-visit',
-    order: 8,
-    name: '옷가게 튜토리얼',
-    location: 'Eastwood Boutique',
-    time: '20:10',
-    route: '/dev/shop/',
   },
   {
     id: 'week0-scene-002-1',
     order: 9,
-    name: '진짜 같이 있네 · 첫날 저녁 · 떨어진 충전기',
+    name: '낚시 수익 정산 · 진짜 같이 있네 · 사라진 폰',
     location: 'Eastwood Accommodation',
     introLabel: 'EASTWOOD',
-    time: '20:18',
+    time: '13:40',
     // Merged week0-scene-002-1 + week0-scene-dinner + week0-scene-charger —
     // dinner and the trip back are plain location changes now (see
     // sceneTransition markers on week0SceneDinnerLines/week0SceneChargerLines'
     // first lines), not minigame boundaries, so they no longer need their
     // own registry entries. Still ends on charger's own minigame handoff —
-    // that has to stay the last beat of this entry.
+    // that has to stay the last beat of this entry. [v08 재편] Also picks up
+    // the fishing minigame's own "돌아가기" return (SHOP_TUTORIAL_RETURN_SCENE
+    // in sceneRoutes.js), opening on a quick profit-split banter before the
+    // existing room-reveal beat.
     locations: [
       { key: 'week0-scene-002-1', label: 'Eastwood Accommodation' },
       { key: 'week0-scene-002-1--dinner', label: 'Restaurant near Eastwood Accommodation' },
@@ -1123,7 +1167,7 @@ const week0Scenes = [
     order: 10,
     name: '핸드폰을 찾아라',
     location: 'Eastwood Accommodation',
-    time: '22:35',
+    time: '20:35',
     // No `lines` — this isn't a VN scene, it's the point-and-click minigame
     // itself. `route` overrides /dev/week0's default /dev/game/?scene=<id>
     // link so this entry opens the minigame page directly, letting it be
@@ -1136,7 +1180,7 @@ const week0Scenes = [
     name: '근데 이 열쇠 뭐지? · 집주인과의 통화 · 첫날 밤',
     location: 'Eastwood Accommodation',
     introLabel: 'EASTWOOD',
-    time: '22:41',
+    time: '20:40',
     // Reached from the phone-search minigame's GAME CLEAR redirect (hardcoded
     // in minigame-phone-search/index.html) — keeps this id even after the
     // merge below so that redirect still resolves.
@@ -1159,12 +1203,13 @@ const week0Scenes = [
 const week0SceneGroups = [
   { range: '#1-2', label: '공항 도착', sceneIds: ['week0-scene-flight'] },
   { range: '#3-5', label: '지하철 · 열차', sceneIds: ['week0-scene-001-2', 'week0-scene-001-2-minigame', 'week0-scene-train'] },
-  // 서큘러키 깜짝 낚시 — 열차와 옷가게 사이, 숙소로 가기 전 들르는 서프라이즈
-  // 정류장. minigame-eastwood의 성공 대사가 예고한 "한 군데"의 정체.
+  // [v08 재편] The Missing Key v1 §5.2 — 지도 미니게임에서 받은 500P를 처음
+  // 써보는 옷가게 발견 비트. 열차와 서큘러키 관광 사이로 옮겨왔다(더 록스
+  // 골목 = 서큘러키에서 내린 직후 걷는 길).
+  { range: 'NEW', label: '옷가게 발견', sceneIds: ['week0-scene-shop-intro', 'week0-scene-shop-visit'] },
+  // 서큘러키 사진 + 낚시 제안 — 옷값을 벌자는 동기와 지수의 오랜 낚시
+  // 바람을 한 씬에 담았다.
   { range: 'NEW', label: '서큘러키 · 낚시', sceneIds: ['week0-scene-circular-quay', 'week0-scene-circular-quay-minigame'] },
-  // The Missing Key v1 §5.2 — new shop-unlock beat, inserted between the
-  // train and the accommodation arrival.
-  { range: 'NEW', label: '옷가게 오픈', sceneIds: ['week0-scene-shop-intro', 'week0-scene-shop-visit'] },
   { range: '#6-12', label: '숙소 첫날', sceneIds: ['week0-scene-002-1', 'week0-scene-002-2', 'week0-scene-002-3'] },
 ];
 

@@ -370,6 +370,8 @@ window.addEventListener('resize', setVh100);
 window.addEventListener('orientationchange', setVh100);
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
 </script>
+<script src="/realPlayMode.js"></script>
+<script>RealPlayMode.hideDevChrome();</script>
 <script src="/dev/assetDb.js"></script>
 <script src="/dev/loadingOverlay.js"></script>
 <script src="/dev/dialogueData.js"></script>
@@ -645,7 +647,7 @@ function renderLocation() {
   if (!def) return Promise.resolve();
   setInvestigateMode(false); // a new location's canvas/hotspots start clean, not mid-투어 from wherever the player last toggled 조사 on
   const bgReady = applyLocationBackground(id);
-  renderLocationCharacters();
+  const charsReady = renderLocationCharacters();
 
   // A location can hand off back into the VN (spec §12.2's soft-gate) — e.g.
   // 빈티지 전시장 입구's enterSceneId leaves the hub for good and resumes
@@ -677,7 +679,10 @@ function renderLocation() {
     showLocationToast(def.name);
     lastToastedLocationId = id;
   }
-  return bgReady;
+  // moveTo's .move-fade only fades back in once this resolves (§신규, see
+  // performMove) — background만 기다리면 인물 초상/스테이지 그림이 아직
+  // 디코딩 중인 프레임이 암전 뒤에서 새어나올 수 있어 캐릭터 쪽도 같이 묶는다.
+  return Promise.all([bgReady, charsReady]);
 }
 
 // 장소명 토스트 (§신규) — hub-panel의 goal-line 자리를 차지하던 장소명을
@@ -877,14 +882,18 @@ async function renderLocationCharacters() {
   el.locCharacters.querySelectorAll('[data-char]').forEach(chip => {
     chip.addEventListener('click', () => selectLocationCharacter(chip.dataset.char));
   });
-  chars.forEach(async (charId) => {
+  const chipsReady = Promise.all(chars.map(async (charId) => {
     const assetId = DevGameState.getCharacterAssetId(charId, 'neutral');
     const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
+    if (asset && asset.dataUrl) await AssetDB.preloadImage(asset.dataUrl).catch(() => {});
     const host = document.getElementById(`locCharPortrait-${charId}`);
     if (host && asset && asset.dataUrl) host.innerHTML = `<img src="${asset.dataUrl}" alt="">`;
-  });
-  setLocCharStage(currentCharacterId);
+  }));
+  const stageReady = setLocCharStage(currentCharacterId);
   renderInterrogateBtn();
+  // renderLocation()이 이 promise를 move-fade 암전 해제 조건에 묶는다(§신규) —
+  // 초상/스테이지 그림 디코딩이 끝나기 전에 화면이 밝아지지 않게.
+  return Promise.all([chipsReady, stageReady]);
 }
 function selectLocationCharacter(charId) {
   if (charId === currentCharacterId) return;
@@ -950,6 +959,12 @@ async function setLocCharStage(charId) {
   const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
   if (token !== locCharStageToken) return;
   if (asset && asset.dataUrl) {
+    // Same defensive preloadImage() call applyLocationBackground makes — a
+    // data URL is already local, but its bitmap still needs decoding before
+    // paint is free, and that decode is what performMove's caller (moveTo)
+    // is actually waiting on to lift the move-fade cover.
+    await AssetDB.preloadImage(asset.dataUrl).catch(() => {});
+    if (token !== locCharStageToken) return;
     el.locCharStageImg.src = asset.dataUrl;
     el.locCharStage.classList.add('show');
   } else {

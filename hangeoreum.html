@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<title>한걸음 — 미루는 나를 위한 던전</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="한걸음">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#F2EFFA">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23463B78'/%3E%3Ctext x='50' y='66' font-size='54' text-anchor='middle'%3E%F0%9F%90%BE%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F2EFFA; --card:#FFFFFF; --ink:#38324E; --soft:#7A7390; --line:#E6E1F2;
+  --butter:#FFC44D; --butter-deep:#B87E10; --butter-soft:#FFF3D6;
+  --lav:#8D7ED8; --lav-deep:#463B78; --lav-soft:#EDE9FB;
+  --green:#4FA97F; --green-soft:#E2F3EA;
+  --boss:#E5484D; --boss-soft:#FCE4E4;
+  --r:22px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  font-family:"Pretendard Variable",Pretendard,-apple-system,sans-serif;
+  background:var(--bg); color:var(--ink);
+  max-width:460px; margin:0 auto; min-height:100dvh;
+  display:flex; flex-direction:column;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+body.shake{animation:shakeit .4s ease}
+.jua{font-family:'Jua',sans-serif;font-weight:400}
+button{font-family:inherit;border:none;cursor:pointer;background:none;color:inherit}
+input,textarea{font-family:inherit;font-size:16px;color:var(--ink)}
+
+/* ---------- header ---------- */
+header{padding:22px 22px 6px;display:flex;align-items:flex-start;justify-content:space-between}
+header .logo{font-size:22px;padding-top:4px}
+.lvpill{font-size:12px;background:var(--lav-deep);color:#fff;padding:6px 11px;border-radius:999px;display:flex;gap:4px;align-items:center;cursor:pointer}
+.spark{font-size:12.5px;color:var(--soft);background:var(--card);border:1px solid var(--line);
+  padding:6px 12px;border-radius:999px}
+.spark b{color:var(--butter-deep)}
+
+/* ---------- layout ---------- */
+main{flex:1;overflow-y:auto;padding:10px 22px 110px}
+.screen{display:none}
+.screen.on{display:block;animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ---------- one thing card ---------- */
+.hint{font-size:13.5px;color:var(--soft);margin:14px 2px 10px;line-height:1.5}
+.one{
+  background:var(--card);border-radius:28px;padding:30px 24px 24px;
+  box-shadow:0 10px 30px rgba(74,63,122,.10);
+  border:1px solid var(--line);
+}
+.one.boss{border-left:4px solid var(--boss)}
+.one .tag{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:5px 11px;border-radius:999px;margin-bottom:14px}
+.tag.normal{background:var(--lav-soft);color:var(--lav-deep)}
+.tag.scary{background:var(--boss);color:#fff}
+.hpbar{height:10px;background:var(--line);border-radius:999px;overflow:hidden;margin:2px 0 10px}
+.hpbar i{display:block;height:100%;background:var(--green);transition:width .4s}
+.one.boss .hpbar i{background:var(--boss)}
+.dots{font-size:15px;letter-spacing:3px;color:var(--lav);margin-bottom:8px}
+.dotlabel{font-size:11px;color:var(--soft);letter-spacing:0;margin-left:6px}
+.one .step{font-size:26px;line-height:1.35;word-break:keep-all}
+.one .orig{font-size:13.5px;color:var(--soft);margin-top:10px;word-break:keep-all}
+.one .orig span{text-decoration:underline dotted;text-underline-offset:3px}
+.trig{font-size:12.5px;color:var(--lav-deep);background:var(--lav-soft);display:inline-block;padding:5px 10px;border-radius:999px;margin-top:10px;word-break:keep-all}
+.btn-go{
+  width:100%;margin-top:22px;padding:19px;border-radius:20px;
+  background:var(--butter);color:#4A3400;font-size:19px;
+  box-shadow:0 6px 0 #E8AC28;transition:transform .08s,box-shadow .08s;
+}
+.btn-go:active{transform:translateY(4px);box-shadow:0 2px 0 #E8AC28}
+.btn-row{display:flex;gap:10px;margin-top:12px}
+.btn-ghost{
+  flex:1;padding:14px;border-radius:16px;font-size:14.5px;color:var(--soft);
+  background:var(--bg);border:1px solid var(--line);
+}
+.btn-ghost:active{background:var(--line)}
+
+.empty{
+  text-align:center;padding:60px 20px;color:var(--soft);line-height:1.7;font-size:15px;
+}
+.empty .big{font-size:44px;margin-bottom:14px}
+
+/* ---------- list ---------- */
+.section-t{font-size:14px;color:var(--soft);margin:20px 2px 10px;word-break:keep-all}
+.task{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+  padding:16px 18px;margin-bottom:10px;display:flex;gap:13px;align-items:flex-start;
+}
+.task .dot{width:12px;height:12px;border-radius:50%;margin-top:6px;flex:none}
+.dot.n{background:var(--lav)} .dot.s{background:var(--boss)}
+.task .body{flex:1;min-width:0}
+.task .name{font-size:15.5px;line-height:1.4;word-break:keep-all}
+.task .fs{font-size:13px;color:var(--soft);margin-top:4px;word-break:keep-all}
+.task .meta{font-size:12px;color:var(--lav-deep);margin-top:6px;word-break:keep-all}
+.task .del{color:var(--line);font-size:18px;padding:4px;margin:-4px}
+.task .del:active{color:var(--soft)}
+
+/* ---------- growth (character) ---------- */
+.lvcard{background:linear-gradient(160deg,var(--lav-deep),#5b4d99);color:#fff;border-radius:26px;padding:26px 20px;text-align:center;margin-bottom:6px}
+.petbig{font-size:52px;margin-bottom:6px}
+.lvtitle{font-size:14px;opacity:.85}
+.lvnum{font-family:'Jua';font-size:26px;margin:4px 0 14px}
+.xpbar{height:10px;background:rgba(255,255,255,.25);border-radius:999px;overflow:hidden;margin-bottom:6px}
+.xpbar i{display:block;height:100%;background:var(--butter)}
+.xpnum{font-size:12px;opacity:.8}
+.lvnote{font-size:12px;opacity:.8;margin-top:14px;line-height:1.6;word-break:keep-all}
+.skillgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px}
+.skill{padding:14px 10px;border-radius:16px;border:1px solid var(--line);background:var(--card);text-align:center}
+.skill.locked{opacity:.4;filter:grayscale(1)}
+.skill .ic{font-size:26px}
+.skill .nm{font-size:13px;margin-top:5px;font-weight:600}
+.skill .ds{font-size:11px;color:var(--soft);margin-top:3px;line-height:1.4;word-break:keep-all}
+.lootrow{display:flex;gap:12px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin-bottom:8px}
+.lootrow .em{font-size:22px}
+.lootrow .nm{font-size:14px;flex:1;word-break:keep-all}
+.lootrow .fr{font-size:11px;color:var(--soft)}
+.settingcard{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:20px;margin-bottom:10px}
+.settingcard .toggle{margin-bottom:0;background:var(--bg)}
+.chip.on2{background:var(--lav-deep);color:#fff}
+.rnote{font-size:11.5px;color:var(--soft);margin-top:16px;line-height:1.65;word-break:keep-all}
+
+/* ---------- log ---------- */
+.cheer{background:var(--green-soft);border-radius:var(--r);padding:18px 20px;font-size:15px;line-height:1.6;color:#22543D;word-break:keep-all}
+.log{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:15px 18px;margin-bottom:10px;display:flex;gap:12px;align-items:center}
+.log .em{font-size:20px}
+.log .t{font-size:14.5px;flex:1;word-break:keep-all}
+.log .when{font-size:12px;color:var(--soft)}
+
+/* ---------- tab bar ---------- */
+nav{
+  position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+  width:100%;max-width:460px;background:rgba(255,255,255,.92);backdrop-filter:blur(10px);
+  border-top:1px solid var(--line);display:flex;
+  padding:8px 6px calc(10px + env(safe-area-inset-bottom));
+}
+nav button{flex:1;padding:9px 0;font-size:12px;color:var(--soft);display:flex;flex-direction:column;gap:3px;align-items:center;border-radius:14px}
+nav button .i{font-size:19px}
+nav button.on{color:var(--lav-deep);background:var(--lav-soft)}
+.fab{
+  position:fixed;right:calc(50% - 218px);bottom:92px;width:58px;height:58px;border-radius:50%;
+  background:var(--lav-deep);color:#fff;font-size:28px;box-shadow:0 8px 22px rgba(70,59,120,.4);
+  display:flex;align-items:center;justify-content:center;z-index:5;
+}
+@media(max-width:470px){.fab{right:20px}}
+.fab:active{transform:scale(.94)}
+
+/* ---------- sheet / modal ---------- */
+.veil{position:fixed;inset:0;background:rgba(56,50,78,.45);z-index:20;display:none;align-items:flex-end;justify-content:center}
+.veil.on{display:flex}
+.sheet{
+  background:var(--card);width:100%;max-width:460px;border-radius:26px 26px 0 0;
+  padding:26px 22px calc(26px + env(safe-area-inset-bottom));
+  animation:up .28s cubic-bezier(.2,.9,.3,1);max-height:88dvh;overflow-y:auto;
+}
+@keyframes up{from{transform:translateY(60%)}to{transform:none}}
+.sheet h2{font-size:19px;margin-bottom:6px}
+.sheet .sub{font-size:13.5px;color:var(--soft);line-height:1.6;margin-bottom:18px;word-break:keep-all}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:13px;color:var(--soft);margin-bottom:7px}
+.field input{width:100%;padding:14px 15px;border:1.5px solid var(--line);border-radius:14px;background:var(--bg)}
+.field input:focus{outline:none;border-color:var(--lav)}
+.rowline{display:flex;gap:8px;margin-bottom:8px}
+.rowline input{flex:1;padding:12px 13px;border:1.5px solid var(--line);border-radius:12px;background:var(--bg)}
+.rowline input:focus{outline:none;border-color:var(--lav)}
+.rowline .rmv{color:var(--soft);font-size:16px;padding:4px 10px}
+.addrow{width:100%;padding:11px;border:1.5px dashed var(--line);border-radius:12px;color:var(--lav-deep);font-size:13.5px;margin-top:2px;margin-bottom:4px;background:var(--bg)}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}
+.chip{font-size:12.5px;padding:7px 12px;border-radius:999px;background:var(--lav-soft);color:var(--lav-deep)}
+.chip:active{background:var(--lav);color:#fff}
+.toggle{
+  display:flex;align-items:center;gap:12px;padding:14px 15px;border:1.5px solid var(--line);
+  border-radius:14px;margin-bottom:16px;background:var(--bg)
+}
+.toggle .tx{flex:1;font-size:14.5px;line-height:1.4}
+.toggle .tx small{display:block;color:var(--soft);font-size:12px;margin-top:2px}
+.sw{width:46px;height:27px;border-radius:999px;background:var(--line);position:relative;transition:.2s;flex:none}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.toggle.on{border-color:var(--boss)}
+.toggle.on .sw{background:var(--boss)}
+.toggle.on .sw::after{left:22px}
+.btn-main{width:100%;padding:16px;border-radius:16px;background:var(--lav-deep);color:#fff;font-size:16px;margin-top:6px}
+.btn-main:disabled{opacity:.35}
+.btn-sub{width:100%;padding:13px;font-size:14px;color:var(--soft);margin-top:6px}
+
+/* ---------- calm (boss intro) overlay ---------- */
+.calm{
+  position:fixed;inset:0;z-index:30;display:none;flex-direction:column;align-items:center;justify-content:center;
+  background:linear-gradient(160deg,#3E3663,#55498A 70%,#63549E);color:#F0EDFB;text-align:center;padding:36px;
+}
+.calm.on{display:flex}
+.breath{
+  width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.14);
+  display:flex;align-items:center;justify-content:center;margin-bottom:34px;
+  animation:breathe 7s ease-in-out infinite;
+}
+.breath::after{content:"";width:66px;height:66px;border-radius:50%;background:rgba(255,255,255,.25)}
+@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.35)}}
+@media(prefers-reduced-motion:reduce){.breath{animation:none}.screen.on{animation:none}body.shake{animation:none}}
+.calm h2{font-size:22px;line-height:1.5;margin-bottom:14px;word-break:keep-all}
+.calm p{font-size:15px;line-height:1.75;opacity:.85;word-break:keep-all;max-width:300px}
+.calm .step-q{margin:22px 0 4px;font-size:17px;background:rgba(255,255,255,.12);padding:14px 20px;border-radius:16px;word-break:keep-all}
+.calm .btn-go{background:var(--butter);max-width:300px}
+.calm .btn-sub{color:rgba(240,237,251,.7)}
+
+/* ---------- timer ---------- */
+.timerv{
+  position:fixed;inset:0;z-index:30;display:none;flex-direction:column;align-items:center;justify-content:center;
+  background:var(--bg);text-align:center;padding:36px;
+}
+.timerv.on{display:flex}
+.timerv .doing{font-size:14px;color:var(--soft);margin-bottom:8px}
+.timerv .tname{font-size:20px;line-height:1.4;max-width:320px;word-break:keep-all;margin-bottom:10px}
+.petline{font-size:13px;color:var(--soft);margin-bottom:22px}
+.clock{font-size:76px;letter-spacing:2px;color:var(--lav-deep);margin-bottom:8px}
+.timerv .note{font-size:13.5px;color:var(--soft);margin-bottom:40px;line-height:1.6}
+.timerv .btn-go{max-width:320px}
+.timerv .btn-sub{max-width:320px}
+
+/* ---------- after / result overlay ---------- */
+.after{position:fixed;inset:0;z-index:31;display:none;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);text-align:center;padding:36px}
+.after.on{display:flex}
+.after .big{font-size:56px;margin-bottom:16px}
+.after h2{font-size:23px;margin-bottom:10px;word-break:keep-all}
+.after p{font-size:14.5px;color:var(--soft);line-height:1.7;max-width:300px;margin-bottom:20px;word-break:keep-all}
+.after .btn-go,.after .btn-main,.after .btn-ghost{max-width:320px;width:100%}
+.after .btn-ghost{flex:none;margin-top:10px}
+.after .btn-main{margin-top:10px}
+.lvup{margin:6px auto 20px;padding:10px 18px;background:var(--butter-soft);color:var(--butter-deep);border-radius:14px;font-size:15px;display:inline-block;font-family:'Jua'}
+
+/* confetti + impact fx */
+.cf{position:fixed;top:-12px;font-size:20px;z-index:60;animation:fall 2.6s linear forwards;pointer-events:none}
+@keyframes fall{to{transform:translateY(105dvh) rotate(540deg);opacity:.4}}
+.flash{position:fixed;inset:0;z-index:80;pointer-events:none;background:radial-gradient(circle,rgba(255,255,255,.95),rgba(255,255,255,0) 60%);opacity:0;animation:flashpop .45s ease-out forwards}
+@keyframes flashpop{0%{opacity:.95}100%{opacity:0}}
+.popup-txt{position:fixed;left:50%;top:40%;transform:translate(-50%,0);z-index:81;font-family:'Jua',sans-serif;font-size:27px;color:var(--butter-deep);text-shadow:0 2px 0 #fff,0 0 18px rgba(255,196,77,.8);pointer-events:none;animation:popfloat 1s ease-out forwards;text-align:center;width:90%}
+@keyframes popfloat{0%{opacity:0;transform:translate(-50%,20px) scale(.8)}30%{opacity:1;transform:translate(-50%,-10px) scale(1.15)}100%{opacity:0;transform:translate(-50%,-60px) scale(1)}}
+@keyframes shakeit{10%,90%{transform:translate3d(-1px,0,0)}20%,80%{transform:translate3d(2px,0,0)}30%,50%,70%{transform:translate3d(-4px,0,0)}40%,60%{transform:translate3d(4px,0,0)}}
+
+.toast{
+  position:fixed;left:50%;transform:translateX(-50%);bottom:110px;background:var(--ink);color:#fff;
+  font-size:14px;padding:12px 20px;border-radius:999px;z-index:70;opacity:0;transition:.3s;pointer-events:none;
+  max-width:85%;text-align:center;word-break:keep-all;
+}
+.toast.on{opacity:1}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo jua">한걸음 🐾</div>
+  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+    <div class="lvpill" onclick="goTab('growth')">Lv.<span id="hdrLv">1</span> <span id="hdrPet">🥚</span></div>
+    <div class="spark" id="sparkBox">오늘 도전 <b id="sparkN">0</b>번</div>
+  </div>
+</header>
+
+<main>
+  <section class="screen on" id="sc-now">
+    <p class="hint" id="nowHint"></p>
+    <div id="oneWrap"></div>
+  </section>
+
+  <section class="screen" id="sc-list">
+    <div id="listWrap"></div>
+  </section>
+
+  <section class="screen" id="sc-growth">
+    <div id="growthWrap"></div>
+  </section>
+
+  <section class="screen" id="sc-log">
+    <div id="logWrap"></div>
+  </section>
+</main>
+
+<button class="fab" id="fabAdd" aria-label="퀘스트 추가">＋</button>
+
+<nav>
+  <button class="on" data-sc="now"><span class="i">☝️</span>지금</button>
+  <button data-sc="list"><span class="i">📚</span>목록</button>
+  <button data-sc="growth"><span class="i">⚔️</span>성장</button>
+  <button data-sc="log"><span class="i">🌱</span>기록</button>
+</nav>
+
+<!-- 추가 시트 -->
+<div class="veil" id="veilAdd">
+  <div class="sheet">
+    <h2>뭘 해야 해?</h2>
+    <p class="sub">일단 적어만 두면 돼. 지금 안 해도 괜찮아.</p>
+    <div class="field">
+      <label>할 일</label>
+      <input id="inName" placeholder="예: 밀린 이메일 답장하기" maxlength="60">
+    </div>
+    <div class="toggle" id="tgScary">
+      <div class="tx">생각만 해도 좀 무서운 일이야 (보스급)
+        <small>수습해야 하는 일, 미안하다고 해야 하는 일, 확인이 두려운 일</small>
+      </div>
+      <div class="sw"></div>
+    </div>
+    <div class="field">
+      <label id="fsLabel">첫 걸음들 (작을수록 좋아, 여러 개도 OK)</label>
+      <div id="addRows"></div>
+      <button type="button" class="addrow" id="btnAddRow">+ 걸음 추가</button>
+      <div class="chips" id="chipBox"></div>
+    </div>
+    <div class="field">
+      <label>만약 ~하면 시작한다 (선택)</label>
+      <input id="inTrigger" placeholder="예: 커피 다 마시면" maxlength="50">
+    </div>
+    <button class="btn-main" id="btnSave">퀘스트 등록</button>
+    <button class="btn-sub" id="btnCancelAdd">닫기</button>
+  </div>
+</div>
+
+<!-- 쪼개기 시트 -->
+<div class="veil" id="veilShrink">
+  <div class="sheet">
+    <h2>이 걸음, 더 잘게 쪼개보자 🫧</h2>
+    <p class="sub">네 잘못이 아니야. <b>걸음이 아직 너무 큰 거야.</b> 지금 걸음을 여러 개의 작은 걸음으로 나눠서 던전처럼 하나씩 깨보자.</p>
+    <div class="field">
+      <label>새 걸음들</label>
+      <div id="shrinkRows"></div>
+      <button type="button" class="addrow" id="btnAddShrinkRow">+ 걸음 추가</button>
+      <div class="chips" id="shrinkChips"></div>
+    </div>
+    <button class="btn-main" id="btnShrinkSave">던전 다시 짜기</button>
+    <button class="btn-sub" id="btnShrinkSkip">그냥 다음에 할래</button>
+  </div>
+</div>
+
+<!-- 안심 화면 (보스 조우) -->
+<div class="calm" id="calmView">
+  <div class="breath"></div>
+  <h2 id="calmTitle">숨 한 번 쉬고 들어가자</h2>
+  <p>지금부터 하는 건 <b>이 던전 전체가 아니야.</b><br>딱 이 한 걸음만 하면 돼. 확인만 해도 성공이야.<br>중간에 그만둬도 아무 일도 안 일어나.</p>
+  <div class="step-q" id="calmStep"></div>
+  <p style="font-size:12.5px;margin-bottom:26px">숨쉬기가 안 맞으면 좋아하는 노래 한 소절만 들어도 돼.<br>대부분의 보스는 열어보면 생각보다 작아.</p>
+  <button class="btn-go" id="btnCalmGo">준비됐어, 2분만</button>
+  <button class="btn-sub" id="btnCalmBack">아직이야, 돌아갈래</button>
+</div>
+
+<!-- 타이머 -->
+<div class="timerv" id="timerView">
+  <div class="doing" id="tvLabel">지금 하는 딱 한 걸음</div>
+  <div class="tname" id="tvName"></div>
+  <div class="petline"><span id="tvPet">🥚</span> 동료가 옆에서 같이 기다리고 있어</div>
+  <div class="clock jua" id="tvClock">5:00</div>
+  <div class="note">이 시간만 채우면 이미 잘한 거야.<br>시간은 대략적인 기준일 뿐이야.</div>
+  <button class="btn-go" id="btnFinishNow">이 걸음 클리어! ⚔️</button>
+  <button class="btn-sub" id="btnGiveUp">오늘은 여기까지 할래</button>
+</div>
+
+<!-- 결과 오버레이 (동적으로 채워짐) -->
+<div class="after" id="afterView"></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================= state ================= */
+const KEY='hangeoreum:v1';
+let S={tasks:[],log:[],starts:{},xp:0,loot:[]};
+let mem=null;
+const today=()=>new Date().toISOString().slice(0,10);
+
+/* Works both inside the Claude artifact sandbox (window.storage) and as a
+   standalone file/home-screen app on the phone (falls back to localStorage). */
+const hasClaudeStorage = (typeof window!=='undefined') && !!window.storage && typeof window.storage.get==='function';
+async function storeGet(key){
+  if(hasClaudeStorage){ return await window.storage.get(key); }
+  const v=localStorage.getItem(key);
+  return v!==null ? {key,value:v} : null;
+}
+async function storeSet(key,value){
+  if(hasClaudeStorage){ return await window.storage.set(key,value); }
+  localStorage.setItem(key,value);
+  return {key,value};
+}
+
+async function load(){
+  try{const r=await storeGet(KEY); if(r&&r.value)S=JSON.parse(r.value);}
+  catch(e){ if(mem)S=mem; }
+  if(!S.tasks)S.tasks=[];
+  if(!S.log)S.log=[];
+  if(!S.starts)S.starts={};
+  if(typeof S.xp!=='number')S.xp=0;
+  if(!S.loot)S.loot=[];
+  if(!S.reminders)S.reminders={on:false,slots:{},bossNudge:true,lastFired:{}};
+  if(!S.reminders.slots)S.reminders.slots={};
+  if(!S.reminders.lastFired)S.reminders.lastFired={};
+  if(typeof S.reminders.bossNudge!=='boolean')S.reminders.bossNudge=true;
+  S.tasks.forEach(t=>{
+    if(!t.steps){ t.steps=[{id:'s0'+t.id,text:t.step||t.name,done:false}]; delete t.step; }
+    if(typeof t.curStep!=='number')t.curStep=0;
+    if(typeof t.skips!=='number')t.skips=0;
+    if(typeof t.lastSkip!=='number')t.lastSkip=0;
+  });
+  render();
+  maybeNudge();
+}
+async function save(){
+  mem=JSON.parse(JSON.stringify(S));
+  try{await storeSet(KEY,JSON.stringify(S));}catch(e){}
+  syncPushRules();
+}
+
+/* ================= helpers ================= */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),2600);}
+function confetti(){
+  const ems=['🎉','✨','🌟','💛','🫧','🌱','⚔️'];
+  for(let i=0;i<28;i++){
+    const d=document.createElement('div');d.className='cf';
+    d.textContent=ems[Math.random()*ems.length|0];
+    d.style.left=Math.random()*100+'vw';
+    d.style.animationDelay=Math.random()*0.5+'s';
+    d.style.fontSize=(16+Math.random()*14)+'px';
+    document.body.appendChild(d);setTimeout(()=>d.remove(),3200);
+  }
+}
+function impactFX(kind){
+  const flash=document.createElement('div');flash.className='flash';document.body.appendChild(flash);
+  setTimeout(()=>flash.remove(),480);
+  const label = kind==='hit' ? '한 걸음 클리어! ⚔️' : kind==='defeat' ? '몬스터 처치! 🎉' : '보스 처치!! 👑';
+  const p=document.createElement('div');p.className='popup-txt';p.textContent=label;
+  if(kind!=='hit')p.style.color='var(--boss)';
+  document.body.appendChild(p); setTimeout(()=>p.remove(),1000);
+  document.body.classList.remove('shake'); void document.body.offsetWidth;
+  document.body.classList.add('shake'); setTimeout(()=>document.body.classList.remove('shake'),400);
+  if(navigator.vibrate){
+    if(kind==='hit') navigator.vibrate(40);
+    else if(kind==='defeat') navigator.vibrate([40,40,40,40,120]);
+    else navigator.vibrate([50,40,50,40,50,40,160]);
+  }
+  if(kind!=='hit') confetti();
+}
+function startsToday(){return S.starts[today()]||0}
+function bumpStart(){S.starts[today()]=startsToday()+1;}
+
+const HINTS=[
+  '목록 전부가 아니라, 이거 딱 하나만 생각하자.',
+  '완벽하게 안 해도 돼. 건드리기만 하면 이긴 거야.',
+  '5분만 하고 도망쳐도 돼. 진짜야.',
+  '어제 못 한 건 어제 일이고, 지금은 지금 일.',
+  '작게 시작한 사람이 결국 제일 멀리 가.',
+  '시작하는 것 자체가 이미 8할이야.'
+];
+
+/* ================= gamification tables ================= */
+function levelInfo(xp){
+  let level=1, need=60, acc=0;
+  while(xp>=acc+need){ acc+=need; level++; need=60+(level-1)*22; }
+  return {level, into:xp-acc, need, acc};
+}
+function petForLevel(l){ if(l>=15)return '🐉'; if(l>=11)return '🦅'; if(l>=8)return '🦉'; if(l>=5)return '🐥'; if(l>=3)return '🐣'; return '🥚'; }
+function titleForLevel(l){ if(l>=15)return '이 세계의 전설'; if(l>=11)return '전설의 모험가'; if(l>=8)return '베테랑 모험가'; if(l>=5)return '노련한 모험가'; if(l>=3)return '꾸준한 모험가'; return '이제 막 나선 모험가'; }
+const NORMAL_LOOT=[['🗺️','낡은 지도 조각'],['🧪','작은 회복 물약'],['💎','반짝이는 조약돌'],['🎖️','모험가의 배지'],['🕯️','작은 등불']];
+const BOSS_LOOT=[['🐲','용의 비늘'],['💍','전설의 반지'],['🔮','빛나는 결정'],['🗝️','오래된 열쇠'],['👑','작은 왕관 조각']];
+function randLoot(scary){const pool=scary?BOSS_LOOT:NORMAL_LOOT; return pool[Math.random()*pool.length|0];}
+const SKILLS=[
+ {lv:1,icon:'🗡️',name:'첫 걸음 베기',desc:'작은 행동 하나로 시작하는 법을 배웠어'},
+ {lv:2,icon:'🔍',name:'잘게 쪼개기',desc:'큰 일을 우스울 만큼 작은 조각으로 나누는 기술'},
+ {lv:3,icon:'🌬️',name:'진정 호흡',desc:'보스 앞에서 숨을 고르고 들어가는 기술'},
+ {lv:4,icon:'🤝',name:'동료 소환',desc:'혼자가 아니라는 감각이 시작을 도와준다는 걸 알게 됐어'},
+ {lv:5,icon:'🔗',name:'만약-그럼 주문',desc:'"이걸 하면 저걸 한다"는 계획이 개시를 쉽게 만든다는 걸 배웠어'},
+ {lv:7,icon:'❤️',name:'두 번째 심장',desc:'흐름을 탔을 때 이어서 한 걸음 더 가는 법'},
+ {lv:10,icon:'🛡️',name:'자기 연민의 방패',desc:'실패해도 나를 탓하지 않는 게 진짜 강함이라는 걸 배웠어'},
+];
+const PRESET_TIMES=[{key:'09:00',label:'아침 9시'},{key:'13:00',label:'점심 1시'},{key:'19:00',label:'저녁 7시'},{key:'21:30',label:'밤 9시반'}];
+const NUDGE_PHRASES=[
+  '던전에 몬스터가 기다리고 있어. 급한 거 아니야, 그냥 들러줘 🐾',
+  '5분만 볼래? 안 봐도 완전히 괜찮아.',
+  '한 걸음만 생각해보자. 나머진 나중 일이야.',
+  '동료가 옆에서 기다리고 있어 🥚',
+  '지금 아니어도 돼. 그냥 문 한번 열어볼래?'
+];
+const CHIPS_N=['앱/파일 열기만 하기','책상에 앉기','메모 한 줄 쓰기','타이머 켜고 쳐다보기'];
+const CHIPS_S=['그냥 열어서 읽기만 하기','뭐가 문제인지 한 줄로 적기','"미안, 늦었어" 첫 문장만 쓰기','상황 확인만 하고 닫기'];
+
+/* ================= render ================= */
+function render(){
+  const li=levelInfo(S.xp);
+  $('hdrLv').textContent=li.level;
+  $('hdrPet').textContent=petForLevel(li.level);
+  $('sparkN').textContent=startsToday();
+  renderNow(); renderList(); renderGrowth(); renderLog();
+}
+
+function pickTask(){
+  if(!S.tasks.length)return null;
+  const sorted=[...S.tasks].sort((a,b)=>(a.lastSkip||0)-(b.lastSkip||0)||(a.created-b.created));
+  return sorted[0];
+}
+
+function renderNow(){
+  const w=$('oneWrap'); const t=pickTask();
+  $('nowHint').textContent=HINTS[new Date().getDate()%HINTS.length];
+  if(!t){
+    w.innerHTML=`<div class="empty"><div class="big">🏕️</div>
+    지금은 던전이 비어 있어.<br>할 일이 생기면 <b>+</b>로 퀘스트를 등록해두고,<br>그때까진 그냥 쉬어도 돼.</div>`;
+    return;
+  }
+  const total=t.steps.length, doneCount=t.steps.filter(s=>s.done).length;
+  const cur=t.steps[t.curStep]||t.steps[total-1];
+  const hpPct=Math.max(6,Math.round((1-doneCount/total)*100));
+  const dots = total>1 ? t.steps.map((s,i)=> i<doneCount?'●':(i===doneCount?'◉':'○')).join(' ') : '';
+  w.innerHTML=`
+  <div class="one ${t.scary?'boss':''}">
+    <span class="tag ${t.scary?'scary':'normal'}">${t.scary?'🐲 보스 조우':'👾 몬스터 조우'}</span>
+    <div class="hpbar"><i style="width:${hpPct}%"></i></div>
+    ${dots?`<div class="dots">${dots}<span class="dotlabel">${doneCount}/${total}</span></div>`:''}
+    <div class="step jua">${esc(cur.text)}</div>
+    <div class="orig">원래 일: <span>${esc(t.name)}</span></div>
+    ${t.trigger?`<div class="trig">🔔 만약 ${esc(t.trigger)} 하면</div>`:''}
+    <button class="btn-go" onclick="beginTask('${t.id}')">⚔️ ${t.scary?'보스전 돌입 (2분)':'공격 시작 (5분)'}</button>
+    <div class="btn-row">
+      <button class="btn-ghost" onclick="skipTask('${t.id}')">지금은 못 해</button>
+      <button class="btn-ghost" onclick="openShrink('${t.id}')">더 쪼개기</button>
+    </div>
+  </div>`;
+}
+
+function renderList(){
+  const w=$('listWrap');
+  if(!S.tasks.length){
+    w.innerHTML=`<div class="empty"><div class="big">📭</div>던전 목록이 비었어. 홀가분하네!</div>`;return;
+  }
+  const scary=S.tasks.filter(t=>t.scary), norm=S.tasks.filter(t=>!t.scary);
+  const block=(arr)=>arr.map(t=>{
+    const total=t.steps.length, done=t.steps.filter(s=>s.done).length;
+    const cur=t.steps[t.curStep]||t.steps[total-1];
+    return `<div class="task">
+      <div class="dot ${t.scary?'s':'n'}"></div>
+      <div class="body">
+        <div class="name">${esc(t.name)}</div>
+        <div class="fs">🐾 ${esc(cur.text)}</div>
+        ${total>1?`<div class="meta">던전 ${done}/${total} 클리어</div>`:''}
+        ${t.trigger?`<div class="meta">🔔 만약 ${esc(t.trigger)} 하면</div>`:''}
+        <div class="meta"><u style="cursor:pointer" onclick="openShrink('${t.id}')">쪼개기</u></div>
+      </div>
+      <button class="del" onclick="delTask('${t.id}')" aria-label="삭제">✕</button>
+    </div>`;
+  }).join('');
+  let h='';
+  if(scary.length){h+=`<div class="section-t">🐲 보스 — 여기 있는 것만으로 이미 용감해</div>`+block(scary);}
+  if(norm.length){h+=`<div class="section-t">몬스터</div>`+block(norm);}
+  w.innerHTML=h;
+}
+
+function renderGrowth(){
+  const li=levelInfo(S.xp);
+  const pet=petForLevel(li.level), title=titleForLevel(li.level);
+  const pct=Math.max(4,Math.round(li.into/li.need*100));
+  let h=`
+  <div class="lvcard">
+    <div class="petbig">${pet}</div>
+    <div class="lvtitle">${title}</div>
+    <div class="lvnum">Lv.${li.level}</div>
+    <div class="xpbar"><i style="width:${pct}%"></i></div>
+    <div class="xpnum">${li.into} / ${li.need} XP</div>
+    <div class="lvnote">레벨은 절대 내려가지 않아. 하루 쉬어도 지금까지 쌓아온 건 그대로야.</div>
+  </div>
+  <div class="section-t">배운 기술 — 모든 기능은 이미 다 쓸 수 있어. 아래는 성장 기록이야.</div>
+  <div class="skillgrid">`;
+  h+=SKILLS.map(sk=>{
+    const unlocked=li.level>=sk.lv;
+    return `<div class="skill ${unlocked?'':'locked'}"><div class="ic">${sk.icon}</div><div class="nm">${sk.name}</div><div class="ds">${unlocked?sk.desc:'Lv.'+sk.lv+' 도달 시 기록'}</div></div>`;
+  }).join('');
+  h+=`</div><div class="section-t">전리품 가방 (${S.loot.length})</div>`;
+  if(!S.loot.length){
+    h+=`<div class="empty" style="padding:30px 10px"><div class="big">🎒</div>아직 전리품이 없어.<br>첫 몬스터를 처치해보자!</div>`;
+  }else{
+    h+=[...S.loot].reverse().slice(0,30).map(l=>`<div class="lootrow"><div class="em">${l.emoji}</div><div class="nm">${esc(l.name)}<div style="font-size:11px;color:var(--soft)">${esc(l.from)} 처치 보상</div></div><div class="fr">${l.date.slice(5)}</div></div>`).join('');
+  }
+  h+=reminderSettingsHTML();
+  $('growthWrap').innerHTML=h;
+}
+
+function reminderSettingsHTML(){
+  const R=S.reminders||{on:false,slots:{},bossNudge:true};
+  const chips=PRESET_TIMES.map(p=>`<button type="button" class="chip ${R.slots&&R.slots[p.key]?'on2':''}" onclick="toggleSlot('${p.key}')">${p.label}</button>`).join('');
+  const notifSupported = ('Notification' in window);
+  return `
+  <div class="section-t">🔔 알림 설정</div>
+  <div class="settingcard">
+    <div class="toggle ${R.on?'on':''}" onclick="toggleReminders()">
+      <div class="tx">부드러운 리마인더 켜기<small>하루 몇 번, 던전이 기다린다고 살짝만 알려줄게</small></div>
+      <div class="sw"></div>
+    </div>
+    <div style="font-size:13px;color:var(--soft);margin:14px 0 8px">언제 알려줄까? (너무 많으면 무시하게 되니까 1~2개 추천)</div>
+    <div class="chips">${chips}</div>
+    <div class="toggle ${R.bossNudge?'on':''}" style="margin-top:16px" onclick="toggleBossNudge()">
+      <div class="tx">보스 방치 알림<small>무서운 일이 10시간 넘게 그대로면 딱 한 번, 부드럽게만 알려줘</small></div>
+      <div class="sw"></div>
+    </div>
+    <div style="font-size:12px;color:${pushActive?'var(--green)':'var(--soft)'};margin-top:14px">${pushActive?'🔔 앱이 꺼져 있어도 알림이 울려':'앱을 열어둔 상태에서만(또는 다시 열 때) 알림이 울려'}</div>
+    <div class="rnote">
+      ${pushActive
+        ? '아이폰 홈 화면 앱으로 설치했다면 알림이 잠금화면에도 떠. 실제로 안 오면 설정 &gt; 알림에서 이 앱 알림이 켜져 있는지 확인해줘.'
+        : `⚠️ 아이폰 홈 화면에 저장해 쓰는 경우, 앱이 완전히 꺼져 있으면 진짜 잠금화면 알림은 애플 정책상 못 갈 수 있어. 대신 앱을 다시 열 때마다 놓친 리마인더를 바로 알려줄게.${notifSupported?'':' (이 브라우저는 알림 자체를 지원 안 해서 앱 안에서만 알려줄 수 있어.)'} 확실한 잠금화면 알림이 꼭 필요하면 아이폰 기본 미리 알림 앱을 같이 써도 좋아.`
+      }
+    </div>
+  </div>`;
+}
+
+function renderLog(){
+  const w=$('logWrap');
+  const tl=S.log.filter(l=>l.date===today());
+  const startedToday=tl.filter(l=>l.kind==='start').length;
+  const clearedToday=tl.filter(l=>l.kind==='step').length;
+  const defeatedToday=tl.filter(l=>l.kind==='done').length;
+  const totalDefeats=S.log.filter(l=>l.kind==='done').length;
+  let h='';
+  if(startedToday||clearedToday||defeatedToday){
+    h+=`<div class="cheer">🌱 오늘 <b>${startedToday}번 도전</b>${clearedToday?`, <b>${clearedToday}걸음 클리어</b>`:''}${defeatedToday?`, <b>${defeatedToday}마리 처치</b>`:''}! 지금까지 총 <b>${totalDefeats}마리</b>를 처치했어.</div><div class="section-t">오늘의 기록</div>`;
+  }else{
+    h+=`<div class="empty"><div class="big">🌙</div>오늘은 아직 기록이 없어.<br>없어도 하루는 굴러가. 조급해하지 말자.<br>지금까지 총 <b>${totalDefeats}마리</b> 처치함.</div>`;
+  }
+  h+=[...tl].reverse().map(l=>{
+    const em=l.kind==='done'?'✅':l.kind==='step'?'⚔️':l.kind==='start'?'▶️':l.kind==='brave'?'🫧':'⏱️';
+    return `<div class="log"><span class="em">${em}</span><span class="t">${esc(l.text)}</span><span class="when">${l.time}</span></div>`;
+  }).join('');
+  w.innerHTML=h;
+}
+
+function addLog(kind,text){
+  const d=new Date();
+  S.log.push({kind,text,date:today(),time:d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0')});
+  if(S.log.length>400)S.log=S.log.slice(-400);
+}
+
+/* ================= tabs ================= */
+function goTab(name){
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.sc===name));
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
+  $('sc-'+name).classList.add('on');
+}
+document.querySelectorAll('nav button').forEach(b=>{ b.onclick=()=>goTab(b.dataset.sc); });
+
+/* ================= add sheet (multi-step rows) ================= */
+let scaryOn=false;
+let addRows=[''];
+function fillOrPush(arr,text,redraw){
+  const idx=arr.findIndex(v=>!v.trim());
+  if(idx>=0)arr[idx]=text; else arr.push(text);
+  redraw();
+}
+function drawAddRows(){
+  $('addRows').innerHTML=addRows.map((v,i)=>`<div class="rowline"><input data-i="${i}" value="${esc(v)}" placeholder="걸음 ${i+1}" maxlength="60">${addRows.length>1?`<button type="button" class="rmv" onclick="rmAddRow(${i})">✕</button>`:''}</div>`).join('');
+  $('addRows').querySelectorAll('input').forEach(inp=>{ inp.oninput=()=>{addRows[+inp.dataset.i]=inp.value;}; });
+}
+function rmAddRow(i){ addRows.splice(i,1); if(!addRows.length)addRows=['']; drawAddRows(); }
+$('btnAddRow').onclick=()=>{ addRows.push(''); drawAddRows(); };
+function updateFsLabel(){ $('fsLabel').textContent=scaryOn?'첫 걸음들 (해결 말고 "확인"이면 충분해)':'첫 걸음들 (작을수록 좋아, 여러 개도 OK)'; }
+function drawChips(){
+  const arr=scaryOn?CHIPS_S:CHIPS_N;
+  $('chipBox').innerHTML=arr.map(c=>`<button type="button" class="chip">${c}</button>`).join('');
+  $('chipBox').querySelectorAll('.chip').forEach(c=>c.onclick=()=>{ fillOrPush(addRows,c.textContent,drawAddRows); });
+}
+$('tgScary').onclick=()=>{ scaryOn=!scaryOn; $('tgScary').classList.toggle('on',scaryOn); drawChips(); updateFsLabel(); };
+$('fabAdd').onclick=()=>{
+  scaryOn=false; $('tgScary').classList.remove('on');
+  addRows=['']; drawAddRows(); updateFsLabel(); drawChips();
+  $('inName').value=''; $('inTrigger').value='';
+  $('veilAdd').classList.add('on');
+  setTimeout(()=>$('inName').focus(),150);
+};
+$('btnCancelAdd').onclick=()=>$('veilAdd').classList.remove('on');
+$('btnSave').onclick=async()=>{
+  const name=$('inName').value.trim();
+  if(!name){toast('할 일을 한 줄만 적어줘');return;}
+  let steps=addRows.map(s=>s.trim()).filter(Boolean);
+  if(!steps.length)steps=[scaryOn?'그냥 열어서 읽기만 하기':name+' — 일단 시작만'];
+  const trig=$('inTrigger').value.trim();
+  const task={id:'t'+Date.now(),name,steps:steps.map((s,i)=>({id:'s'+i+Date.now(),text:s,done:false})),curStep:0,scary:scaryOn,skips:0,lastSkip:0,created:Date.now()};
+  if(trig)task.trigger=trig;
+  S.tasks.push(task);
+  addLog('add','퀘스트 등록: '+name+(steps.length>1?(' ('+steps.length+'단계 던전)'):''));
+  if(scaryOn)addLog('brave','보스로 등록함 (제일 어려운 일): '+name);
+  await save();
+  $('veilAdd').classList.remove('on');
+  render();
+  toast(steps.length>1?'던전 등록 완료! 하나씩 깨보자 ⚔️':'등록했어. 지금 안 해도 돼 🙂');
+};
+
+/* ================= skip / shrink ================= */
+async function skipTask(id){
+  const t=S.tasks.find(x=>x.id===id);if(!t)return;
+  t.skips++;t.lastSkip=Date.now();
+  await save();render();
+  if(t.skips>=3){openShrink(id);}
+  else toast('알겠어. 미룬 게 아니라 순서를 바꾼 거야.');
+}
+let shrinkId=null, shrinkRows=[''];
+function drawShrinkRows(){
+  $('shrinkRows').innerHTML=shrinkRows.map((v,i)=>`<div class="rowline"><input data-i="${i}" value="${esc(v)}" placeholder="걸음 ${i+1}" maxlength="60">${shrinkRows.length>1?`<button type="button" class="rmv" onclick="rmShrinkRow(${i})">✕</button>`:''}</div>`).join('');
+  $('shrinkRows').querySelectorAll('input').forEach(inp=>{ inp.oninput=()=>{shrinkRows[+inp.dataset.i]=inp.value;}; });
+}
+function rmShrinkRow(i){ shrinkRows.splice(i,1); if(!shrinkRows.length)shrinkRows=['']; drawShrinkRows(); }
+$('btnAddShrinkRow').onclick=()=>{ shrinkRows.push(''); drawShrinkRows(); };
+function openShrink(id){
+  shrinkId=id;const t=S.tasks.find(x=>x.id===id);if(!t)return;
+  if(t.curStep>=t.steps.length)t.curStep=t.steps.length-1;
+  const curText=t.steps[t.curStep]?t.steps[t.curStep].text:t.name;
+  shrinkRows=[curText,''];
+  drawShrinkRows();
+  const sug=t.scary?CHIPS_S:['관련 앱 열기만 하기','1분만 쳐다보기','필요한 물건 꺼내두기','한 문장만 쓰기'];
+  $('shrinkChips').innerHTML=sug.map(c=>`<button type="button" class="chip">${c}</button>`).join('');
+  $('shrinkChips').querySelectorAll('.chip').forEach(c=>c.onclick=()=>{ fillOrPush(shrinkRows,c.textContent,drawShrinkRows); });
+  $('veilShrink').classList.add('on');
+}
+$('btnShrinkSave').onclick=async()=>{
+  const t=S.tasks.find(x=>x.id===shrinkId);
+  if(!t){$('veilShrink').classList.remove('on');return;}
+  const vals=shrinkRows.map(s=>s.trim()).filter(Boolean);
+  if(!vals.length){toast('걸음을 최소 하나는 적어줘');return;}
+  const newPieces=vals.map((v,i)=>({id:'s'+Date.now()+i,text:v,done:false}));
+  const before=t.steps.slice(0,t.curStep);
+  const after=t.steps.slice(t.curStep+1);
+  t.steps=before.concat(newPieces).concat(after);
+  t.skips=0;t.lastSkip=0;
+  await save();render();
+  $('veilShrink').classList.remove('on');
+  toast('좋아, 훨씬 만만해졌어. '+vals.length+'개로 나눴어');
+};
+$('btnShrinkSkip').onclick=()=>{$('veilShrink').classList.remove('on');};
+
+async function delTask(id){
+  S.tasks=S.tasks.filter(t=>t.id!==id);await save();render();toast('지웠어');
+}
+
+/* ================= start / timer flow ================= */
+let curId=null,tLeft=0,tInt=null,lastDur=300;
+function beginTask(id){
+  curId=id;const t=S.tasks.find(x=>x.id===id);if(!t)return;
+  if(t.curStep==null)t.curStep=0;
+  if(t.scary){
+    $('calmStep').textContent='🐾 '+(t.steps[t.curStep]?t.steps[t.curStep].text:t.name);
+    $('calmView').classList.add('on');
+  }else{
+    startTimer(300);
+  }
+}
+$('btnCalmGo').onclick=()=>{$('calmView').classList.remove('on');startTimer(120);};
+$('btnCalmBack').onclick=()=>{
+  $('calmView').classList.remove('on');
+  toast('돌아온 것도 용기야. 여기 그대로 있을게.');
+};
+
+function startTimer(sec){
+  const t=S.tasks.find(x=>x.id===curId);if(!t)return;
+  lastDur=sec;
+  bumpStart();
+  S.xp+=5;
+  addLog('start','도전 시작: '+(t.steps[t.curStep]?t.steps[t.curStep].text:t.name)+' (+5XP)');
+  save();
+  tLeft=sec;
+  $('tvName').textContent=t.steps[t.curStep]?t.steps[t.curStep].text:t.name;
+  $('tvLabel').textContent=t.scary?'보스전 · 딱 이 걸음만':'지금 하는 딱 한 걸음';
+  $('tvPet').textContent=petForLevel(levelInfo(S.xp).level);
+  drawClock();
+  $('timerView').classList.add('on');
+  clearInterval(tInt);
+  tInt=setInterval(()=>{
+    tLeft--;drawClock();
+    if(tLeft<=0){clearInterval(tInt);timerRingOut();}
+  },1000);
+  render();
+}
+function drawClock(){
+  const m=Math.floor(tLeft/60),s=tLeft%60;
+  $('tvClock').textContent=m+':'+s.toString().padStart(2,'0');
+}
+
+function openAfterUI(html){ $('afterView').innerHTML=html; $('afterView').classList.add('on'); }
+function closeAfter(){ $('afterView').classList.remove('on'); }
+
+function timerRingOut(){
+  openAfterUI(`<div class="big">⏰</div><h2>시간이 다 됐어!</h2>
+  <p>이 걸음 다 했어? 시간은 대략적인 기준일 뿐, 더 걸려도 전혀 이상한 거 아니야.</p>
+  <button class="btn-go" onclick="clearCurrentStep()">다 했어, 클리어! ⚔️</button>
+  <button class="btn-main" onclick="extendTimer()">조금 더 필요해</button>
+  <button class="btn-ghost" onclick="giveUpSession()">오늘은 여기까지</button>`);
+}
+function extendTimer(){ closeAfter(); startTimer(lastDur); }
+
+function giveUpSession(){
+  closeAfter();
+  clearInterval(tInt);
+  $('timerView').classList.remove('on');
+  const t=S.tasks.find(x=>x.id===curId);
+  S.xp+=3;
+  addLog('start','시도함(멈춤): '+(t?(t.steps[t.curStep]?t.steps[t.curStep].text:t.name):'')+' (+3XP)');
+  save();render();
+  toast('시도한 것도 기록했어. +3XP 🌱');
+}
+
+function clearCurrentStep(){
+  closeAfter();
+  clearInterval(tInt);
+  $('timerView').classList.remove('on');
+  const t=S.tasks.find(x=>x.id===curId);if(!t)return;
+  const beforeLevel=levelInfo(S.xp).level;
+  const stepObj=t.steps[t.curStep];
+  if(stepObj)stepObj.done=true;
+  const stepXp=t.scary?18:10;
+  S.xp+=stepXp;
+  addLog('step',(t.scary?'보스 걸음 클리어: ':'걸음 클리어: ')+(stepObj?stepObj.text:'')+' (+'+stepXp+'XP)');
+  t.curStep++;
+  const remaining=t.steps.length-t.curStep;
+  let mode,loot=null,bonusXp=0;
+  if(remaining<=0){
+    mode='defeat';
+    bonusXp=t.scary?30:15;
+    S.xp+=bonusXp;
+    loot=randLoot(t.scary);
+    S.loot.push({emoji:loot[0],name:loot[1],from:t.name,date:today()});
+    addLog('done',(t.scary?'보스 처치! ':'몬스터 처치! ')+t.name+' (+'+bonusXp+'XP) · 전리품 '+loot[1]);
+    S.tasks=S.tasks.filter(x=>x.id!==t.id);
+  }else{
+    mode='partial';
+  }
+  const afterLevel=levelInfo(S.xp).level;
+  const leveled=afterLevel>beforeLevel;
+  save();
+  impactFX(mode==='defeat'?(t.scary?'boss-defeat':'defeat'):'hit');
+  render();
+  showResultUI(mode,{t,stepXp,bonusXp,loot,leveled,afterLevel});
+}
+function continueNextStep(){ closeAfter(); startTimer(lastDur); }
+
+function showResultUI(mode,ctx){
+  if(mode==='partial'){
+    openAfterUI(`<div class="big">⚔️</div><h2>걸음 클리어! (+${ctx.stepXp}XP)</h2>
+    <p>남은 걸음이 있어. 이어서 가도 되고, 여기서 멈춰도 완전히 괜찮아. 이미 깎아놓은 만큼은 그대로 남아있어.</p>
+    ${ctx.leveled?`<div class="lvup">🎉 레벨 업! Lv.${ctx.afterLevel}</div>`:''}
+    <button class="btn-go" onclick="continueNextStep()">바로 다음 걸음 ▶</button>
+    <button class="btn-ghost" onclick="closeAfter()">여기까지 (저장됨)</button>`);
+  }else{
+    const kindLabel=ctx.t.scary?'보스 처치!!':'몬스터 처치!';
+    openAfterUI(`<div class="big">${ctx.t.scary?'👑':'🎉'}</div><h2>${kindLabel}</h2>
+    <p>+${ctx.stepXp+ctx.bonusXp}XP 획득 · 전리품: ${ctx.loot[0]} ${esc(ctx.loot[1])}</p>
+    ${ctx.leveled?`<div class="lvup">레벨 업! Lv.${ctx.afterLevel} 🎉</div>`:''}
+    <button class="btn-go" onclick="closeAfter()">좋아, 계속할래!</button>`);
+  }
+}
+$('btnFinishNow').onclick=()=>clearCurrentStep();
+$('btnGiveUp').onclick=()=>giveUpSession();
+
+/* veils close on backdrop */
+document.querySelectorAll('.veil').forEach(v=>{
+  v.addEventListener('click',e=>{if(e.target===v)v.classList.remove('on');});
+});
+
+/* ================= push (background) notifications ================= */
+// Cloudflare Worker shared with the trip app's push feature — delivers
+// reminders via Web Push even when this app is fully closed. Leave
+// PUSH_API_URL blank to fall back to the foreground-only checks below.
+// See worker/README.md for one-time deploy steps.
+const PUSH_API_URL='';
+const VAPID_PUBLIC_KEY='BBVVH_C7elBHMMbAYAyrrrN0eLesVlhxEhjyjc4qUHuHhEqg3G4HHic36Zp5Wq-RPs2VVuWcFmESr7eO_kcssIs';
+let pushActive=false;
+
+function urlBase64ToUint8Array(base64String){
+  const padding='='.repeat((4 - base64String.length % 4) % 4);
+  const base64=(base64String + padding).replace(/-/g,'+').replace(/_/g,'/');
+  const raw=atob(base64);
+  const arr=new Uint8Array(raw.length);
+  for(let i=0;i<raw.length;i++) arr[i]=raw.charCodeAt(i);
+  return arr;
+}
+
+async function ensurePushSubscription(){
+  if(!PUSH_API_URL || !('serviceWorker' in navigator) || !('PushManager' in window)) return;
+  if(typeof Notification==='undefined' || Notification.permission!=='granted') return;
+  try{
+    const reg=await navigator.serviceWorker.ready;
+    let sub=await reg.pushManager.getSubscription();
+    if(!sub){
+      sub=await reg.pushManager.subscribe({
+        userVisibleOnly:true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+      });
+    }
+    await fetch(PUSH_API_URL+'/subscribe', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ app:'hangeoreum', subscription: sub.toJSON() })
+    });
+    pushActive=true;
+    syncPushRules();
+  }catch(e){
+    pushActive=false;
+  }
+}
+
+// next local occurrence of a "HH:mm" preset time, today if still ahead, else tomorrow
+function nextOccurrence(hhmm){
+  const [h,m]=hhmm.split(':').map(Number);
+  const d=new Date();
+  d.setHours(h,m,0,0);
+  if(d.getTime()<=Date.now())d.setDate(d.getDate()+1);
+  return d;
+}
+
+// one-shot rules for the Worker's cron to fire — always the *next* occurrence,
+// never one already past, so resyncing never re-arms something already sent
+function buildPushRules(){
+  const rules=[];
+  const R=S.reminders;
+  if(!R||!R.on)return rules;
+  PRESET_TIMES.forEach(p=>{
+    if(!R.slots||!R.slots[p.key])return;
+    const at=nextOccurrence(p.key);
+    rules.push({
+      id:'slot:'+p.key+':'+at.toISOString().slice(0,10),
+      content: NUDGE_PHRASES[Math.random()*NUDGE_PHRASES.length|0],
+      datetime: at.toISOString(),
+      fired:false
+    });
+  });
+  if(R.bossNudge){
+    const bossTask=S.tasks.find(t=>t.scary);
+    if(bossTask){
+      const at=new Date(Math.max(bossTask.lastSkip||0,bossTask.created||0)+10*3600000);
+      if(at.getTime()>Date.now()){
+        rules.push({
+          id:'boss:'+bossTask.id,
+          content:'그 보스, 아직 던전에 있어. 안 봐도 괜찮아 — 준비되면 와줘.',
+          datetime: at.toISOString(),
+          fired:false
+        });
+      }
+    }
+  }
+  return rules;
+}
+
+function syncPushRules(){
+  if(!PUSH_API_URL || !pushActive)return;
+  fetch(PUSH_API_URL+'/rules', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ app:'hangeoreum', rules: buildPushRules() })
+  }).catch(()=>{});
+}
+
+/* ================= reminders / notifications ================= */
+async function toggleReminders(){
+  if(!S.reminders)S.reminders={on:false,slots:{},bossNudge:true,lastFired:{}};
+  S.reminders.on=!S.reminders.on;
+  if(S.reminders.on){
+    if('Notification' in window){
+      try{
+        const perm=await Notification.requestPermission();
+        if(perm==='granted')ensurePushSubscription();
+      }catch(e){}
+    }
+    toast('리마인더 켰어 🔔 조용히 지켜보고 있을게');
+  }else{
+    toast('리마인더 껐어');
+  }
+  await save(); renderGrowth();
+}
+function toggleSlot(key){
+  if(!S.reminders)S.reminders={on:false,slots:{},bossNudge:true,lastFired:{}};
+  if(!S.reminders.slots)S.reminders.slots={};
+  S.reminders.slots[key]=!S.reminders.slots[key];
+  save(); renderGrowth();
+}
+function toggleBossNudge(){
+  if(!S.reminders)S.reminders={on:false,slots:{},bossNudge:true,lastFired:{}};
+  S.reminders.bossNudge=!S.reminders.bossNudge;
+  save(); renderGrowth();
+}
+function tryShowNotification(title,body){
+  try{
+    if('Notification' in window && Notification.permission==='granted'){
+      new Notification(title,{body});
+    }
+  }catch(e){}
+}
+function maybeNudge(){
+  if(pushActive)return; // the Worker's scheduled push already covers this
+  if(!S.reminders||!S.reminders.on)return;
+  const now=new Date();
+  const todayKey=today();
+  if(!S.reminders.lastFired)S.reminders.lastFired={};
+  if(!S.reminders.lastFired[todayKey])S.reminders.lastFired[todayKey]=[];
+  const fired=S.reminders.lastFired[todayKey];
+  const nowMin=now.getHours()*60+now.getMinutes();
+  const crossed=[];
+  PRESET_TIMES.forEach(p=>{
+    if(!S.reminders.slots||!S.reminders.slots[p.key])return;
+    const [h,m]=p.key.split(':').map(Number);
+    if(nowMin>=(h*60+m) && !fired.includes(p.key)){ crossed.push(p); fired.push(p.key); }
+  });
+  if(crossed.length){
+    save();
+    const phrase=NUDGE_PHRASES[Math.random()*NUDGE_PHRASES.length|0];
+    tryShowNotification('한걸음 🐾', phrase);
+    toast('⏰ '+crossed.map(c=>c.label).join(', ')+' · '+phrase);
+    if(navigator.vibrate)navigator.vibrate([30,20,30]);
+  }
+  if(S.reminders.bossNudge){
+    const bossTask=S.tasks.find(t=>t.scary);
+    if(bossTask){
+      const sinceMs=Date.now()-Math.max(bossTask.lastSkip||0,bossTask.created||0);
+      const flagKey='bossflag:'+bossTask.id;
+      if(sinceMs>=10*3600000 && !fired.includes(flagKey)){
+        fired.push(flagKey); save();
+        tryShowNotification('한걸음 🐾','그 보스, 아직 던전에 있어. 안 봐도 괜찮아 — 준비되면 와줘.');
+        toast('🐲 그 보스, 아직 기다리고 있어. 안 봐도 괜찮아.');
+      }
+    }
+  }
+}
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible')maybeNudge(); });
+window.addEventListener('pageshow',()=>maybeNudge());
+window.addEventListener('focus',()=>maybeNudge());
+
+// scope covers the whole site — shared with the trip app's service worker
+// (registered from schedule.html) so this app's push notifications work
+// even when installed as its own separate home-screen app
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js', { scope: '.' });
+}
+ensurePushSubscription();
+load();
+</script>
+</body>
+</html>

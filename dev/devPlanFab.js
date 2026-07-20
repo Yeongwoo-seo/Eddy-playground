@@ -3,6 +3,7 @@
 // Shares the devPlanNotes localStorage key with /dev/plan/index.html.
 (function () {
   if (window.__devPlanFabInit) return;
+  if (typeof RealPlayMode !== 'undefined' && RealPlayMode.isActive()) return;
   window.__devPlanFabInit = true;
 
   const STORAGE_KEY = 'devPlanNotes';

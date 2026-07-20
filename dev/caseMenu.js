@@ -22,6 +22,7 @@ function initCaseMenu(options) {
   const resolveMissionTitle = () => (typeof missionTitleOption === 'function' ? missionTitleOption() : missionTitleOption) || '';
   const currentSceneId = options.currentSceneId || null;
   const mountSelector = options.mountSelector || null;
+  const disabled = !!options.disabled;
 
   CaseFileState.recordSceneVisit(currentSceneId);
 
@@ -37,7 +38,7 @@ function initCaseMenu(options) {
   injectCaseMenuStyles();
   const root = buildCaseMenuDom();
   document.body.appendChild(root);
-  const menuBtn = injectMenuButton(mountSelector);
+  const menuBtn = injectMenuButton(mountSelector, disabled);
 
   const el = {
     root,
@@ -56,6 +57,7 @@ function initCaseMenu(options) {
   function isOpen() { return !root.classList.contains('cm-hidden'); }
 
   function open() {
+    if (disabled) return;
     nav = ['main']; ctx = {}; linkPicker = null;
     root.classList.remove('cm-hidden');
     render();
@@ -705,8 +707,12 @@ function initCaseMenu(options) {
   // practice — a choice's effects array runs synchronously per line).
   function notifyHypothesis(text) { notifyToast('가설 저장됨', text); }
   function notifyFact(title) { notifyToast('추론 사실 생성', title); }
+  // 여행 만족도 / 영우 호감도 게이지 변화 — notifyPoints와 같은 목적의 짧은
+  // 토스트(연출용 게이지라 방향·크기만 확인시켜주면 충분).
+  function notifySatisfaction(amount) { notifyToast('여행 만족도', `${amount > 0 ? '+' : ''}${amount}`); }
+  function notifyAffection(amount) { notifyToast('영우 호감도', `${amount > 0 ? '+' : ''}${amount}`); }
 
-  return { open, close, isOpen, notifyNewQuestion, notifyHypothesis, notifyFact, notifyPoints, destroy: () => { root.remove(); toastEl.remove(); } };
+  return { open, close, isOpen, notifyNewQuestion, notifyHypothesis, notifyFact, notifyPoints, notifySatisfaction, notifyAffection, destroy: () => { root.remove(); toastEl.remove(); } };
 }
 
 // The Missing Key v1 §5.3 — "비활성 상태에서는 메뉴를 숨기지 말고 잠금 또는
@@ -760,10 +766,11 @@ function formatSaveTime(ms) {
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
-function injectMenuButton(mountSelector) {
+function injectMenuButton(mountSelector, disabled) {
   const btn = document.createElement('button');
   btn.setAttribute('aria-label', 'CASE FILE 메뉴 열기');
   btn.textContent = '☰';
+  if (disabled) btn.disabled = true;
   const mount = mountSelector && document.querySelector(mountSelector);
   if (mount) {
     btn.className = 'cm-menu-btn cm-menu-btn-inline';
@@ -800,6 +807,7 @@ function injectCaseMenuStyles() {
   style.id = 'caseMenuStyles';
   style.textContent = `
     .cm-menu-btn{font-family:'IBM Plex Mono',ui-monospace,monospace;cursor:pointer;display:flex;align-items:center;justify-content:center;border:none;-webkit-tap-highlight-color:transparent}
+    .cm-menu-btn:disabled{opacity:.35;cursor:default}
     .cm-menu-btn-inline{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.06);border:1px solid rgba(89,184,200,.4);color:var(--cyan,#59B8C8);font-size:15px}
     .cm-menu-btn-floating{position:absolute;top:calc(env(safe-area-inset-top,0) + 12px);left:14px;width:48px;height:48px;border-radius:50%;background:rgba(8,10,12,.6);border:1px solid rgba(255,255,255,.14);color:#fff;font-size:18px;z-index:30}
 

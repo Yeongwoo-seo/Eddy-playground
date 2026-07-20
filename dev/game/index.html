@@ -53,6 +53,19 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .point-balance{font-family:var(--mono);font-size:11.5px;font-weight:700;letter-spacing:.02em;color:var(--amber);background:rgba(214,168,75,.14);border:1px solid rgba(214,168,75,.4);border-radius:20px;padding:8px 12px;white-space:nowrap}
 .point-balance.hidden{display:none}
 
+/* ===== 여행 만족도 / 영우 호감도 게이지 — 상시 표시, 연출용(스토리/엔딩에
+   관여하지 않음). 정확한 숫자보다 채움 정도만 읽히게 막대 위주로 표시.
+   화면 우상단에 세로 막대로 배치 — 컨테이너 자체는 배경 없이 투명하게 떠
+   있고(top bar 버튼열과 겹치지 않도록 그 아래로 내림), 각 막대만 보인다. */
+.relation-gauges{position:absolute;top:calc(58px + env(safe-area-inset-top,0));right:16px;z-index:6;display:flex;gap:10px;background:transparent}
+.relation-gauges.hidden{display:none}
+.gauge-pill{display:flex;flex-direction:column;align-items:center;gap:6px;background:transparent}
+.gauge-icon{font-size:12px;line-height:1}
+.gauge-track{width:6px;height:64px;border-radius:3px;background:rgba(255,255,255,.14);overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end}
+.gauge-fill{width:100%;border-radius:3px;transition:height .3s cubic-bezier(.2,.8,.2,1)}
+.gauge-fill.satisfaction{background:var(--cyan)}
+.gauge-fill.affection{background:#E8749E}
+
 /* ===== Layer 2: Character ===== */
 .char-wrap{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;pointer-events:none;opacity:0;transition:opacity .2s ease}
 .char-img{max-height:78%;max-width:88%;object-fit:contain;object-position:bottom;transform:translateY(0)}
@@ -136,19 +149,6 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .sheet-btn{background:var(--surface-2);color:var(--text-primary);border:1px solid var(--divider);border-radius:10px;padding:11px 8px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--mono)}
 .sheet-btn.danger{color:#D94141;border-color:rgba(217,65,65,.4)}
 
-/* ===== Floating popup: character transform (top-right, doesn't cover the character) ===== */
-.transform-popup{position:absolute;top:calc(52px + env(safe-area-inset-top,0));right:16px;z-index:10;width:190px;background:rgba(8,10,12,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:14px;box-shadow:0 8px 24px rgba(0,0,0,.4)}
-.transform-popup.hidden{display:none}
-.tp-title{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--text-muted);text-transform:uppercase;margin-bottom:10px}
-.tp-field{margin-bottom:10px}
-.tp-row{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10.5px;color:var(--text-secondary);text-transform:uppercase;margin-bottom:4px}
-.tp-val{color:var(--cyan);font-weight:600}
-.tp-field input[type=range]{width:100%;accent-color:var(--cyan)}
-.tp-confirm{width:100%;background:var(--cyan);color:#06181c;border:none;border-radius:8px;padding:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--mono);letter-spacing:.05em;margin-top:2px}
-.tp-confirm:disabled{opacity:.4;cursor:default}
-.transform-output{background:var(--surface-2);border:1px solid var(--divider);border-radius:8px;padding:8px 10px;font-family:var(--mono);font-size:10px;color:var(--cyan);margin-top:10px;white-space:pre-wrap;word-break:break-all}
-.transform-output.hidden{display:none}
-
 /* ===== Black overlay for minigame-start / autoplay-complete cards ===== */
 .intro-overlay{position:absolute;inset:0;z-index:9;background:#000;display:flex;align-items:center;justify-content:center;transition:opacity .5s ease}
 .intro-overlay.hidden{opacity:0;pointer-events:none}
@@ -158,9 +158,15 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
    밝아지는 fade dev/explore/index.html's moveTo() uses for hub moves, so a
    씬 안에서 onSceneTransition으로 장소가 바뀔 때도(playSceneTransition) 배경이
    바뀌는 컷이 그대로 드러나지 않는다. z-index 11 — transform-popup(10) 위,
-   sheet-overlay(20) 아래. */
-.move-fade{position:absolute;inset:0;z-index:11;background:#000;opacity:0;pointer-events:none;transition:opacity .28s ease}
+   sheet-overlay(20) 아래. 페이드 길이는 js의 MOVE_FADE_MS와 맞춰뒀다 — 여기
+   숫자만 따로 바꾸면 안 맞는다. */
+.move-fade{position:absolute;inset:0;z-index:11;background:#000;opacity:0;pointer-events:none;transition:opacity .6s cubic-bezier(0.2,0.8,0.2,1)}
 .move-fade.show{opacity:1;pointer-events:auto}
+/* 완전히 암전된 동안만 뜨는 장소명 타이핑 카드 — dialogueData.js의
+   sceneTransition.introLabel을 타자기로 보여준다. 예전엔 introLabel+time을
+   같이 typing했는데, 지금은 장소명(introLabel)만 — time은 의도적으로 뺐다. */
+.move-fade-label{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);text-align:center;font-family:var(--mono);color:#fff;font-size:20px;letter-spacing:.18em;opacity:0;transition:opacity .3s ease}
+.move-fade-label.show{opacity:1}
 
 /* ===== Closing beat: fade to black + a small unexplained flash ===== */
 .ending-fade .bg-layer{opacity:0}
@@ -207,28 +213,14 @@ window.addEventListener('orientationchange', setVh100);
     </div>
     <div style="display:flex;gap:8px">
       <button class="vn-btn auto hidden" id="autoplayBtn">AUTO ⏸ 정지</button>
-      <button class="vn-btn dev" id="transformBtn">POS</button>
       <button class="vn-btn dev" id="devBtn">DEV</button>
     </div>
   </div>
 
-  <div class="transform-popup hidden" id="transformPopup">
-    <div class="tp-title">Character Transform</div>
-    <div class="tp-field">
-      <div class="tp-row"><label>X</label><span class="tp-val" id="xVal">0</span></div>
-      <input type="range" id="xRange" min="-150" max="150" value="0">
-    </div>
-    <div class="tp-field">
-      <div class="tp-row"><label>Y</label><span class="tp-val" id="yVal">0</span></div>
-      <input type="range" id="yRange" min="-150" max="150" value="0">
-    </div>
-    <div class="tp-field">
-      <div class="tp-row"><label>Scale</label><span class="tp-val" id="scaleVal">1.00</span></div>
-      <input type="range" id="scaleRange" min="50" max="150" value="100">
-    </div>
-    <button class="tp-confirm" id="confirmTransformBtn">위치 확정</button>
-    <pre class="transform-output hidden" id="transformOutput"></pre>
-  </div>
+  <span class="relation-gauges" id="relationGauges">
+    <span class="gauge-pill" title="여행 만족도"><span class="gauge-icon">✨</span><span class="gauge-track"><span class="gauge-fill satisfaction" id="satisfactionFill"></span></span></span>
+    <span class="gauge-pill" title="영우 호감도"><span class="gauge-icon">💛</span><span class="gauge-track"><span class="gauge-fill affection" id="affectionFill"></span></span></span>
+  </span>
 
   <div class="bottom-stack" id="bottomStack">
     <div class="dlg-layer" id="dlgLayer">
@@ -246,7 +238,9 @@ window.addEventListener('orientationchange', setVh100);
     <div class="intro-card" id="introCard"></div>
   </div>
 
-  <div class="move-fade" id="moveFade"></div>
+  <div class="move-fade" id="moveFade">
+    <div class="move-fade-label" id="moveFadeLabel"></div>
+  </div>
 </div>
 
 <!-- Scene BGM (사운드 tab, /dev/upload) streams straight from YouTube's own
@@ -296,6 +290,15 @@ window.addEventListener('orientationchange', setVh100);
       <button class="sheet-btn danger" id="btnResetEconomy">RESET ECONOMY/SHOP/WARDROBE</button>
     </div>
 
+    <div class="sheet-title">Dev · 관계 게이지 (연출용)</div>
+    <div class="sheet-grid">
+      <button class="sheet-btn" id="btnAddSatisfaction5">만족도 +5</button>
+      <button class="sheet-btn" id="btnSubSatisfaction5">만족도 −5</button>
+      <button class="sheet-btn" id="btnAddAffection5">호감도 +5</button>
+      <button class="sheet-btn" id="btnSubAffection5">호감도 −5</button>
+      <button class="sheet-btn danger" id="btnResetRelationship">RESET 게이지</button>
+    </div>
+
     <div class="sheet-title">Dev · 탐색 허브 (The Missing Key v1 §24)</div>
     <div class="sheet-grid">
       <button class="sheet-btn" id="btnOpenExplore">OPEN EXPLORE HUB</button>
@@ -325,6 +328,8 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
 }
 </script>
+<script src="/realPlayMode.js"></script>
+<script>RealPlayMode.hideDevChrome();</script>
 <script src="/dev/assetDb.js"></script>
 <script src="/dev/youtubeSound.js"></script>
 <script src="/dev/loadingOverlay.js"></script>
@@ -333,6 +338,7 @@ if ('serviceWorker' in navigator) {
 <script src="/dev/caseFileState.js"></script>
 <script src="/dev/data/shopItems.js"></script>
 <script src="/dev/state/economyState.js"></script>
+<script src="/dev/state/relationshipState.js"></script>
 <script src="/dev/state/wardrobeState.js"></script>
 <script src="/dev/state/shopState.js"></script>
 <script src="/dev/data/locationDefs.js"></script>
@@ -384,20 +390,11 @@ const el = {
   sheetCloseBtn: document.getElementById('sheetCloseBtn'),
   bgSelect: document.getElementById('bgSelect'),
   uploadLink: document.getElementById('uploadLink'),
-  transformBtn: document.getElementById('transformBtn'),
-  transformPopup: document.getElementById('transformPopup'),
-  xRange: document.getElementById('xRange'),
-  yRange: document.getElementById('yRange'),
-  scaleRange: document.getElementById('scaleRange'),
-  xVal: document.getElementById('xVal'),
-  yVal: document.getElementById('yVal'),
-  scaleVal: document.getElementById('scaleVal'),
-  confirmTransformBtn: document.getElementById('confirmTransformBtn'),
-  transformOutput: document.getElementById('transformOutput'),
   introOverlay: document.getElementById('introOverlay'),
   introCard: document.getElementById('introCard'),
   unknownSignal: document.getElementById('unknownSignal'),
   moveFade: document.getElementById('moveFade'),
+  moveFadeLabel: document.getElementById('moveFadeLabel'),
   choiceLayer: document.getElementById('choiceLayer'),
   sceneDim: document.getElementById('sceneDim'),
   evidenceCta: document.getElementById('evidenceCta'),
@@ -409,12 +406,22 @@ const el = {
   evidenceSheetNotebookBtn: document.getElementById('evidenceSheetNotebookBtn'),
   bgmMount: document.getElementById('bgmMount'),
   pointBalance: document.getElementById('pointBalance'),
+  relationGauges: document.getElementById('relationGauges'),
+  satisfactionFill: document.getElementById('satisfactionFill'),
+  affectionFill: document.getElementById('affectionFill'),
 };
 
 function updatePointBalance() {
   const introduced = CaseFileState.hasFlag('pointsUiIntroduced');
   el.pointBalance.classList.toggle('hidden', !introduced || !!activeSceneData.hidePoints);
   if (introduced) el.pointBalance.textContent = 'P ' + EconomyState.getPoints();
+}
+
+// 포인트와 달리 첫 지급 전까지 숨기지 않는다 — 상시 표시로 결정된 연출용
+// 게이지라 0주차 첫 씬부터 바로 보여도 어색하지 않음(중립값 50에서 시작).
+function updateRelationshipGauges() {
+  el.satisfactionFill.style.height = RelationshipState.getSatisfaction() + '%';
+  el.affectionFill.style.height = RelationshipState.getAffection() + '%';
 }
 
 function setBackground(asset) {
@@ -597,13 +604,40 @@ function updateArrow(show) {
 // Mid-scene location change inside a merged, multi-location scene (see
 // dialogueData.js lines carrying a `sceneTransition` marker, e.g.
 // week0-scene-flight/week0-scene-002-1) — vnPlayer.js awaits this before
-// typing that line's text. Just swaps in the new location's background —
-// stored under its own virtual scene-id key, same one-slot-per-id pattern
-// minigameId already uses.
+// typing that line's text. Fades to black, types the new location's name
+// (transition.introLabel — not transition.time; that field still exists on
+// every sceneTransition marker but is deliberately left unused here, same
+// as before) while the screen is fully covered, swaps in the new
+// background (stored under its own virtual scene-id key, same
+// one-slot-per-id pattern minigameId already uses) behind it, then fades
+// back in.
+const MOVE_FADE_MS = 600; // matches .move-fade's CSS transition duration above
+const MOVE_LABEL_TYPE_SPEED_MS = 55;
+const MOVE_LABEL_HOLD_MS = 450; // beat to actually read the label once typed
+
+function typeMoveFadeLabel(text) {
+  return new Promise(resolve => {
+    el.moveFadeLabel.textContent = '';
+    if (!text) { resolve(); return; }
+    el.moveFadeLabel.classList.add('show');
+    let i = 0;
+    const timer = setInterval(() => {
+      i++;
+      el.moveFadeLabel.textContent = text.slice(0, i);
+      if (i >= text.length) {
+        clearInterval(timer);
+        setTimeout(resolve, MOVE_LABEL_HOLD_MS);
+      }
+    }, MOVE_LABEL_TYPE_SPEED_MS);
+  });
+}
+
 async function playSceneTransition(transition) {
   el.moveFade.classList.add('show');
-  await new Promise(r => setTimeout(r, 260));
+  await new Promise(r => setTimeout(r, MOVE_FADE_MS));
+  await typeMoveFadeLabel(transition.introLabel);
   await applyBackground(transition.backgroundKey);
+  el.moveFadeLabel.classList.remove('show');
   requestAnimationFrame(() => el.moveFade.classList.remove('show'));
 }
 
@@ -624,7 +658,7 @@ function playEndingSequence() {
 // (onComplete -> restart()) and gets this "UNKNOWN SIGNAL" foreshadowing
 // beat on every loop. Every other scene now chains into the next one via
 // nextSceneId (see dialogueData.js) so a real playthrough (시작하기 on
-// /play/test) taps straight through 0주차 instead of stopping at each
+// /play/) taps straight through 0주차 instead of stopping at each
 // scene boundary — that handoff skips this beat, since it's tonally
 // specific to 0주차's actual ending, not a generic one.
 //
@@ -639,7 +673,7 @@ function playEndingSequence() {
 // Most nextSceneId handoffs are into a minigame (MINIGAME_ROUTES above), but
 // a plain location change with no minigame in between — e.g.
 // week0-scene-flight -> week0-scene-001-2 — hands off straight to another
-// VN scene instead, so a real playthrough (시작하기 on /play/test) taps
+// VN scene instead, so a real playthrough (시작하기 on /play/) taps
 // through the whole week without stopping at every scene boundary.
 function playMinigameTransition(nextSceneId) {
   const route = MINIGAME_ROUTES[nextSceneId];
@@ -756,6 +790,19 @@ function applyEffect(effect) {
     case 'spendPoints':
       EconomyState.spendPoints(effect.amount, { source: effect.source || activeSceneData.id });
       updatePointBalance();
+      break;
+
+    // 여행 만족도 / 영우 호감도 — 연출용 게이지(§ 위 relationshipState.js 참고).
+    // 수사 로직·엔딩 분기는 절대 이 값을 읽지 않는다.
+    case 'addSatisfaction':
+      RelationshipState.addSatisfaction(effect.amount);
+      if (effect.amount) caseMenu.notifySatisfaction(effect.amount);
+      updateRelationshipGauges();
+      break;
+    case 'addAffection':
+      RelationshipState.addAffection(effect.amount);
+      if (effect.amount) caseMenu.notifyAffection(effect.amount);
+      updateRelationshipGauges();
       break;
     case 'unlockShop':
       ShopState.unlockShop();
@@ -995,8 +1042,6 @@ const player = createVNPlayer({
       el.frame.classList.remove('ending-fade');
       el.unknownSignal.classList.remove('show');
     }
-    // Keep the transform popup in sync if it's left open while tapping through lines.
-    if (!el.transformPopup.classList.contains('hidden')) loadTransformIntoSliders();
   },
   onTextUpdate: (text) => { el.dialogueText.textContent = text; },
   onArrow: (show) => {
@@ -1151,7 +1196,7 @@ function showAutoplayComplete() {
 // Text speed is applied by filling in each line's typingSpeedMs where the
 // scene data didn't already author one — vnPlayer.js itself reads
 // line.typingSpeedMs per line, so no change to the shared engine is needed.
-const TEXT_SPEED_MS = { slow: 45, normal: 28, fast: 14, instant: 1 };
+const TEXT_SPEED_MS = { slow: 58, normal: 36, fast: 18, instant: 1 };
 function applyTextSpeedSetting(lines) {
   const speedMs = TEXT_SPEED_MS[CaseFileState.getSettings().textSpeed] || TEXT_SPEED_MS.normal;
   return lines.map(l => Object.assign({}, l, { typingSpeedMs: l.typingSpeedMs || speedMs }));
@@ -1161,6 +1206,7 @@ const caseMenu = initCaseMenu({
   missionTitle: activeSceneData.name,
   currentSceneId: activeSceneData.id,
   mountSelector: '#caseMenuMount',
+  disabled: true,
   onSaveRequested: (slot) => {
     CaseFileState.saveSlot(slot, {
       sceneId: activeSceneData.id,
@@ -1245,44 +1291,6 @@ function fillSelect(selectEl, assets, selectedId) {
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
-
-function readSliderTransform() {
-  return { x: Number(el.xRange.value), y: Number(el.yRange.value), scale: Number(el.scaleRange.value) / 100 };
-}
-
-function updateSliderLabels(transform) {
-  el.xVal.textContent = transform.x;
-  el.yVal.textContent = transform.y;
-  el.scaleVal.textContent = transform.scale.toFixed(2);
-}
-
-// Sliders always edit the character currently on screen (the active line's characterId).
-function loadTransformIntoSliders() {
-  const characterId = activeLines[player.getState().index].characterId;
-  const transform = DevGameState.getCharacterTransform(characterId);
-  el.xRange.value = transform.x;
-  el.yRange.value = transform.y;
-  el.scaleRange.value = Math.round(transform.scale * 100);
-  updateSliderLabels(transform);
-  el.transformOutput.classList.add('hidden');
-  const disabled = !characterId;
-  [el.xRange, el.yRange, el.scaleRange, el.confirmTransformBtn].forEach(input => { input.disabled = disabled; });
-}
-
-[el.xRange, el.yRange, el.scaleRange].forEach(rangeEl => rangeEl.addEventListener('input', () => {
-  const transform = readSliderTransform();
-  updateSliderLabels(transform);
-  applyTransformToImage(transform);
-}));
-
-el.confirmTransformBtn.addEventListener('click', () => {
-  const characterId = activeLines[player.getState().index].characterId;
-  if (!characterId) return;
-  const transform = readSliderTransform();
-  DevGameState.setCharacterTransform(characterId, transform);
-  el.transformOutput.textContent = JSON.stringify({ characterId, ...transform }, null, 2);
-  el.transformOutput.classList.remove('hidden');
-});
 
 el.frame.addEventListener('click', onTap);
 
@@ -1418,6 +1426,28 @@ document.getElementById('btnResetEconomy').addEventListener('click', () => {
     updatePointBalance();
   }
 });
+document.getElementById('btnAddSatisfaction5').addEventListener('click', () => {
+  RelationshipState.addSatisfaction(5);
+  updateRelationshipGauges();
+});
+document.getElementById('btnSubSatisfaction5').addEventListener('click', () => {
+  RelationshipState.addSatisfaction(-5);
+  updateRelationshipGauges();
+});
+document.getElementById('btnAddAffection5').addEventListener('click', () => {
+  RelationshipState.addAffection(5);
+  updateRelationshipGauges();
+});
+document.getElementById('btnSubAffection5').addEventListener('click', () => {
+  RelationshipState.addAffection(-5);
+  updateRelationshipGauges();
+});
+document.getElementById('btnResetRelationship').addEventListener('click', () => {
+  if (confirm('여행 만족도·영우 호감도 게이지를 초기화할까요?')) {
+    RelationshipState.resetAll();
+    updateRelationshipGauges();
+  }
+});
 
 /* ===== Dev · 탐색 허브 (The Missing Key v1 §24) ===== */
 document.getElementById('btnOpenExplore').addEventListener('click', () => {
@@ -1431,16 +1461,6 @@ document.getElementById('btnMarkAllInteractionsNew').addEventListener('click', (
 document.getElementById('btnResetExploration').addEventListener('click', () => {
   if (confirm('탐색 허브 상태(장소·상호작용 진행도)를 초기화할까요?')) ExplorationState.resetAll();
 });
-
-el.transformBtn.addEventListener('click', (e) => {
-  e.stopPropagation();
-  const willShow = el.transformPopup.classList.contains('hidden');
-  if (willShow) loadTransformIntoSliders();
-  el.transformPopup.classList.toggle('hidden', !willShow);
-});
-// The popup floats over the tappable game frame — swallow clicks inside it
-// so dragging a slider or hitting 확정 doesn't also advance the dialogue.
-el.transformPopup.addEventListener('click', (e) => e.stopPropagation());
 
 // A ?line=<n> query param (written by 불러오기's cross-scene resume) means
 // this load is resuming a save mid-scene — replaying the full location-card
@@ -1479,6 +1499,7 @@ async function applyDialogueOverrides() {
     await WeekPreloader.ensureWeekLoaded(currentWeekId, weekScenes);
   }
   updatePointBalance();
+  updateRelationshipGauges();
   await applyDialogueOverrides();
   await applyBackground();
   applyBgm();
