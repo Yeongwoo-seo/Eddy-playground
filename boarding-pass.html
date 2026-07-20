@@ -121,17 +121,25 @@ const BUCKET = 'dev-assets';
 function segPath(segId) { return `boarding-pass/${segId}.pdf`; }
 function segPublicUrl(segId) { return `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${segPath(segId)}`; }
 
-// HEAD가 아니라 1바이트짜리 Range GET을 쓴다 — Supabase Storage의 public
-// object 라우트가 HEAD까지 지원하는지 보장이 안 돼서, 실제로 쓸 GET 경로와
-// 똑같이 동작이 확인된 방식으로 존재 여부를 확인한다.
+// HEAD나 Range 헤더는 안 쓴다 — HEAD는 Supabase Storage의 public object
+// 라우트가 지원하는지 보장이 안 되고, Range 같은 커스텀 헤더는 브라우저가
+// preflight(OPTIONS)를 먼저 보내는데 버킷 CORS 설정에 그 헤더가 허용돼
+// 있지 않으면 요청 자체가 막혀버린다(실제로 이것 때문에 상태 확인이 계속
+// 실패해서 탭해도 아무것도 안 열렸다). 그냥 GET을 보내고 본문은 필요 없을
+// 때 바로 취소해서, preflight 없이도 존재 여부만 가볍게 확인한다.
 async function remoteHead(segId) {
-  const res = await fetch(`${segPublicUrl(segId)}?t=${Date.now()}`, {
-    headers: { Range: 'bytes=0-0' },
-    cache: 'no-store',
-  });
-  if (res.status === 404 || res.status === 400) return null;
-  if (!res.ok) throw new Error(`상태 확인 실패 (${res.status})`);
-  return { updatedAt: res.headers.get('last-modified') };
+  const res = await fetch(`${segPublicUrl(segId)}?t=${Date.now()}`, { cache: 'no-store' });
+  if (res.status === 404 || res.status === 400) {
+    if (res.body) res.body.cancel().catch(() => {});
+    return null;
+  }
+  if (!res.ok) {
+    if (res.body) res.body.cancel().catch(() => {});
+    throw new Error(`상태 확인 실패 (${res.status})`);
+  }
+  const updatedAt = res.headers.get('last-modified');
+  if (res.body) res.body.cancel().catch(() => {});
+  return { updatedAt };
 }
 
 async function remoteFetchBlob(segId) {
