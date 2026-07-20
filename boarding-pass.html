@@ -20,58 +20,158 @@
 }
 html,body{height:100%}
 body{background:var(--bg);color:var(--black);font-family:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;display:flex;justify-content:center}
-.app{width:100%;max-width:500px;min-height:100vh;padding:16px 16px 40px;display:flex;flex-direction:column}
+body.sheet-open{overflow:hidden}
+.app{width:100%;max-width:500px;min-height:100vh;padding:16px 16px 40px}
 .hl{color:var(--primary)}
 
-.top-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 0 20px}
-.top-bar-left{display:flex;align-items:center;gap:12px;min-width:0}
+.top-bar{display:flex;align-items:center;gap:12px;padding:8px 0 20px}
 .back-btn{width:36px;height:36px;border-radius:50%;background:var(--white);box-shadow:0 2px 12px rgba(0,0,0,0.06);border:none;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--grey700);flex-shrink:0}
 .top-title{font-size:20px;font-weight:800}
-.reupload-btn{background:var(--grey100);color:var(--grey700);border:none;border-radius:20px;padding:8px 14px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0}
+.top-sub{font-size:13px;color:var(--grey500);font-weight:500;margin:-14px 0 18px 2px}
+
+.seg-card{background:var(--white);border-radius:20px;box-shadow:0 2px 12px rgba(0,0,0,0.06);overflow:hidden}
+.seg-item{display:flex;align-items:center;gap:12px;padding:16px;border-bottom:1px solid var(--grey100);cursor:pointer;font-family:inherit;background:none;border-left:none;border-right:none;border-top:none;width:100%;text-align:left}
+.seg-item:last-child{border-bottom:none}
+.seg-item:active{background:var(--grey100)}
+.seg-ic{font-size:20px;flex-shrink:0;width:26px;text-align:center}
+.seg-txt{flex:1;min-width:0}
+.seg-route{font-size:14.5px;font-weight:700}
+.seg-date{font-size:12px;color:var(--grey500);font-weight:600;margin-top:2px}
+.seg-status{font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:20px;flex-shrink:0}
+.seg-status.done{background:var(--primary-light);color:var(--primary)}
+.seg-status.pending{background:var(--grey100);color:var(--grey500)}
+.seg-arrow{color:var(--grey300);font-size:16px;flex-shrink:0}
+
+@keyframes sheetUp{from{transform:translateY(24px);opacity:0}to{transform:translateY(0);opacity:1}}
+.pdf-sheet-overlay{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,0.5);display:flex;align-items:flex-end;justify-content:center}
+.pdf-sheet{width:100%;max-width:500px;height:88vh;background:var(--white);border-radius:28px 28px 0 0;box-shadow:0 8px 32px rgba(0,0,0,0.12);display:flex;flex-direction:column;animation:sheetUp .3s cubic-bezier(.2,.8,.2,1)}
+.pdf-sheet-hdr{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:18px 18px 10px;flex-shrink:0}
+.pdf-sheet-title-wrap{min-width:0}
+.pdf-sheet-title{font-size:16px;font-weight:800}
+.pdf-sheet-date{font-size:12px;color:var(--grey500);font-weight:600;margin-top:2px}
+.pdf-sheet-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.reupload-btn{background:var(--grey100);color:var(--grey700);border:none;border-radius:20px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
 .reupload-btn:active{background:var(--grey300)}
-.hidden{display:none}
+.pdf-sheet-x{background:var(--grey100);color:var(--grey700);border:none;width:30px;height:30px;border-radius:50%;font-size:14px;cursor:pointer;flex-shrink:0}
+.pdf-sheet-body{flex:1;overflow:hidden;padding:0 16px 16px;display:flex;flex-direction:column;min-height:0}
 
 .empty-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:16px;padding:20px}
 .empty-ic{font-size:44px}
-.empty-title{font-size:16px;font-weight:700}
+.empty-title{font-size:15px;font-weight:700}
 .empty-sub{font-size:13px;color:var(--grey500);font-weight:500;line-height:1.6;max-width:300px}
 .upload-btn{background:var(--primary);color:#fff;border:none;border-radius:16px;padding:14px 28px;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit}
 .upload-btn:active{background:var(--primary-hover)}
 .upload-error{color:#D94141;font-size:12.5px;font-weight:600;margin-top:4px}
 
-.pdf-wrap{flex:1;background:var(--white);border-radius:20px;box-shadow:0 2px 12px rgba(0,0,0,0.06);overflow:hidden;display:flex}
-.pdf-wrap iframe{flex:1;width:100%;border:none;min-height:70vh}
-
-.file-name-row{font-size:11.5px;color:var(--grey500);font-weight:600;text-align:center;margin-top:10px}
+.pdf-wrap{flex:1;border-radius:16px;overflow:hidden;display:flex;min-height:0;background:var(--grey100)}
+.pdf-wrap iframe{flex:1;width:100%;border:none}
+.file-name-row{font-size:11.5px;color:var(--grey500);font-weight:600;text-align:center;margin-top:10px;flex-shrink:0}
 </style>
 </head>
 <body>
 <div class="app">
   <div class="top-bar">
-    <div class="top-bar-left">
-      <button class="back-btn" onclick="location.href='arrival.html'">←</button>
-      <div class="top-title">🎫 <span class="hl">탑승권</span></div>
-    </div>
-    <button class="reupload-btn hidden" id="reuploadBtn">다시 올리기</button>
+    <button class="back-btn" onclick="location.href='arrival.html'">←</button>
+    <div class="top-title">🎫 <span class="hl">탑승권</span></div>
   </div>
+  <div class="top-sub">구간을 눌러 PDF를 올리거나 확인해요</div>
 
-  <div id="content"></div>
-  <input type="file" id="fileInput" accept="application/pdf" style="display:none">
+  <div class="seg-card" id="segList"></div>
 </div>
+<div id="sheetRoot"></div>
+<input type="file" id="fileInput" accept="application/pdf" style="display:none">
 <script>
-const PDF_KEY = 'boardingPassPdfV1';
-const NAME_KEY = 'boardingPassNameV1';
-// localStorage's ~5MB quota has to cover the base64-encoded PDF (roughly
-// 1.37x the raw file size) plus everything else this app already stores
-// there, so a hard cap well under that keeps a big attachment from wiping
-// out other saved data (checklist, notification rules, etc).
-const MAX_PDF_BYTES = 4 * 1024 * 1024;
+// 왕복 경유 포함 4개 구간 — 서울-상하이-시드니(7.22 출발), 시드니-상하이-서울(8.17 귀국)
+const SEGMENTS = [
+  { id: 'sel-pvg', icon: '🛫', route: '서울 → 상하이', date: '' },
+  { id: 'pvg-syd', icon: '🛫', route: '상하이 → 시드니', date: '7.22' },
+  { id: 'syd-pvg', icon: '🛬', route: '시드니 → 상하이', date: '' },
+  { id: 'pvg-sel', icon: '🛬', route: '상하이 → 서울', date: '8.17' },
+];
+
+function pdfKey(id) { return `boardingPassPdfV1_${id}`; }
+function nameKey(id) { return `boardingPassNameV1_${id}`; }
 
 const el = {
-  content: document.getElementById('content'),
+  segList: document.getElementById('segList'),
+  sheetRoot: document.getElementById('sheetRoot'),
   fileInput: document.getElementById('fileInput'),
-  reuploadBtn: document.getElementById('reuploadBtn'),
 };
+
+let activeSegId = null;
+const MAX_PDF_BYTES = 4 * 1024 * 1024;
+
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function renderSegList() {
+  el.segList.innerHTML = SEGMENTS.map(seg => {
+    const has = !!localStorage.getItem(pdfKey(seg.id));
+    return `
+      <button type="button" class="seg-item" data-id="${seg.id}">
+        <div class="seg-ic">${seg.icon}</div>
+        <div class="seg-txt">
+          <div class="seg-route">${escapeHtml(seg.route)}</div>
+          ${seg.date ? `<div class="seg-date">${escapeHtml(seg.date)}</div>` : ''}
+        </div>
+        <div class="seg-status ${has ? 'done' : 'pending'}">${has ? '등록됨' : '미등록'}</div>
+        <div class="seg-arrow">›</div>
+      </button>
+    `;
+  }).join('');
+  el.segList.querySelectorAll('.seg-item').forEach(btn => {
+    btn.addEventListener('click', () => openSheet(btn.dataset.id));
+  });
+}
+
+function openSheet(segId) {
+  activeSegId = segId;
+  document.body.classList.add('sheet-open');
+  renderSheet();
+}
+function closeSheet() {
+  activeSegId = null;
+  document.body.classList.remove('sheet-open');
+  el.sheetRoot.innerHTML = '';
+}
+
+function renderSheet(errorText) {
+  const seg = SEGMENTS.find(s => s.id === activeSegId);
+  if (!seg) return;
+  const dataUrl = localStorage.getItem(pdfKey(seg.id));
+  const name = localStorage.getItem(nameKey(seg.id));
+  el.sheetRoot.innerHTML = `
+    <div class="pdf-sheet-overlay" onclick="if(event.target===this) closeSheet()">
+      <div class="pdf-sheet" onclick="event.stopPropagation()">
+        <div class="pdf-sheet-hdr">
+          <div class="pdf-sheet-title-wrap">
+            <div class="pdf-sheet-title">${seg.icon} ${escapeHtml(seg.route)}</div>
+            ${seg.date ? `<div class="pdf-sheet-date">${escapeHtml(seg.date)}</div>` : ''}
+          </div>
+          <div class="pdf-sheet-actions">
+            ${dataUrl ? `<button class="reupload-btn" onclick="el.fileInput.click()">다시 올리기</button>` : ''}
+            <button class="pdf-sheet-x" onclick="closeSheet()">✕</button>
+          </div>
+        </div>
+        <div class="pdf-sheet-body">
+          ${dataUrl ? `
+            <div class="pdf-wrap"><iframe src="${dataUrl}" title="탑승권 PDF"></iframe></div>
+            ${name ? `<div class="file-name-row">${escapeHtml(name)}</div>` : ''}
+          ` : `
+            <div class="empty-wrap">
+              <div class="empty-ic">${seg.icon}</div>
+              <div class="empty-title">아직 등록된 탑승권이 없어요</div>
+              <div class="empty-sub">이 구간의 항공권 PDF를 올려두면 언제든 바로 열어볼 수 있어요.<br>저장된 내용은 이 기기에만 남아요.</div>
+              <button class="upload-btn" onclick="el.fileInput.click()">📎 PDF 올리기</button>
+              ${errorText ? `<div class="upload-error">${escapeHtml(errorText)}</div>` : ''}
+            </div>
+          `}
+        </div>
+      </div>
+    </div>
+  `;
+}
 
 function fileToDataUrl(file) {
   return new Promise((resolve, reject) => {
@@ -82,61 +182,24 @@ function fileToDataUrl(file) {
   });
 }
 
-function renderEmpty(errorText) {
-  el.reuploadBtn.classList.add('hidden');
-  el.content.innerHTML = `
-    <div class="empty-wrap">
-      <div class="empty-ic">🎫</div>
-      <div class="empty-title">아직 등록된 탑승권이 없어요</div>
-      <div class="empty-sub">항공권 PDF를 올려두면 언제든 바로 열어볼 수 있어요.<br>여기 저장된 내용은 이 기기에만 남아요.</div>
-      <button class="upload-btn" onclick="el.fileInput.click()">📎 PDF 올리기</button>
-      ${errorText ? `<div class="upload-error">${errorText}</div>` : ''}
-    </div>
-  `;
-}
-
-function renderPdf(dataUrl, name) {
-  el.reuploadBtn.classList.remove('hidden');
-  el.content.innerHTML = `
-    <div class="pdf-wrap"><iframe src="${dataUrl}" title="탑승권 PDF"></iframe></div>
-    ${name ? `<div class="file-name-row">${escapeHtml(name)}</div>` : ''}
-  `;
-}
-
-function escapeHtml(s) {
-  return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-}
-
-function loadSaved() {
-  const dataUrl = localStorage.getItem(PDF_KEY);
-  if (dataUrl) renderPdf(dataUrl, localStorage.getItem(NAME_KEY));
-  else renderEmpty();
-}
-
 async function handleFile(file) {
-  if (!file) return;
-  if (file.type !== 'application/pdf') {
-    renderEmpty('PDF 파일만 올릴 수 있어요.');
-    return;
-  }
-  if (file.size > MAX_PDF_BYTES) {
-    renderEmpty(`파일이 너무 커요 (최대 ${Math.floor(MAX_PDF_BYTES / 1024 / 1024)}MB).`);
-    return;
-  }
+  if (!file || !activeSegId) return;
+  if (file.type !== 'application/pdf') { renderSheet('PDF 파일만 올릴 수 있어요.'); return; }
+  if (file.size > MAX_PDF_BYTES) { renderSheet(`파일이 너무 커요 (최대 ${Math.floor(MAX_PDF_BYTES / 1024 / 1024)}MB).`); return; }
   try {
     const dataUrl = await fileToDataUrl(file);
-    localStorage.setItem(PDF_KEY, dataUrl);
-    localStorage.setItem(NAME_KEY, file.name);
-    renderPdf(dataUrl, file.name);
+    localStorage.setItem(pdfKey(activeSegId), dataUrl);
+    localStorage.setItem(nameKey(activeSegId), file.name);
+    renderSheet();
+    renderSegList();
   } catch (err) {
-    renderEmpty('저장에 실패했어요: ' + (err && err.message ? err.message : err));
+    renderSheet('저장에 실패했어요: ' + (err && err.message ? err.message : err));
   }
 }
 
-el.fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
-el.reuploadBtn.addEventListener('click', () => el.fileInput.click());
+el.fileInput.addEventListener('change', (e) => { handleFile(e.target.files[0]); e.target.value = ''; });
 
-loadSaved();
+renderSegList();
 
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js', { scope: '.' });
