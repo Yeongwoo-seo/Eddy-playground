@@ -217,6 +217,7 @@ window.addEventListener('orientationchange', setVh100);
     </div>
     <div style="display:flex;gap:8px">
       <button class="vn-btn skip" id="skipBtn" aria-label="다음 상호작용">다음 ⏭</button>
+      <a class="vn-btn dev-settings-link" id="settingsLink" href="/dev/upload/" aria-label="설정">⚙ 설정</a>
       <button class="vn-btn auto hidden" id="autoplayBtn">AUTO ⏸ 정지</button>
       <button class="vn-btn dev" id="devBtn">DEV</button>
     </div>
@@ -391,6 +392,7 @@ const el = {
   tapArrow: document.getElementById('tapArrow'),
   devBtn: document.getElementById('devBtn'),
   skipBtn: document.getElementById('skipBtn'),
+  settingsLink: document.getElementById('settingsLink'),
   autoplayBtn: document.getElementById('autoplayBtn'),
   sheetOverlay: document.getElementById('sheetOverlay'),
   sheetCloseBtn: document.getElementById('sheetCloseBtn'),
@@ -1276,7 +1278,13 @@ const caseMenu = initCaseMenu({
   onOpenWardrobe: () => { storeShopReturnUrl(); location.href = '/play/wardrobe/'; },
 });
 
-el.uploadLink.href = `/dev/upload/?scene=${encodeURIComponent(activeSceneData.id)}`;
+// 실플레이 중에도 항상 보이는 상단 ⚙ 설정 chip — devBtn 시트 안의
+// uploadLink(디버그 시트를 열어야만 보임)와 같은 목적지를, 시트를 거치지
+// 않고 바로 갈 수 있게 topbar에 노출해둔다. 둘 다 같은 씬 id를 가리키므로
+// 한 번만 계산해서 같이 쓴다.
+const activeSceneSettingsUrl = `/dev/upload/?scene=${encodeURIComponent(activeSceneData.id)}`;
+el.uploadLink.href = activeSceneSettingsUrl;
+el.settingsLink.href = activeSceneSettingsUrl;
 
 // The Missing Key v1 §16.2 — 기존 세이브 마이그레이션. "이미 1주차를 완료한
 // 세이브"는 hasVisitedScene('week1-scene-002-3')로 판별하되(그 씬을 실제로

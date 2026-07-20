@@ -275,6 +275,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
       <span class="point-balance hidden" id="pointBalance">P 0</span>
     </div>
     <div style="display:flex;gap:8px">
+      <a class="vn-btn dev-settings-link" id="settingsLink" href="/dev/upload/?tab=hub" aria-label="설정">⚙ 설정</a>
       <button class="vn-btn" id="devBtn">DEV</button>
       <a class="vn-btn" href="/dev/">← DEV</a>
     </div>
@@ -432,6 +433,7 @@ const el = {
   dlgPanel: document.getElementById('dlgPanel'),
   interrogateBtn: document.getElementById('interrogateBtn'),
   devBtn: document.getElementById('devBtn'),
+  settingsLink: document.getElementById('settingsLink'),
   devSheet: document.getElementById('devSheet'),
   devSheetCloseBtn: document.getElementById('devSheetCloseBtn'),
   btnDevUnlockAllLocations: document.getElementById('btnDevUnlockAllLocations'),
@@ -2084,6 +2086,9 @@ async function preloadPhaseAssets(phaseId) {
   const bootLocation = params.get('location');
   const phaseChanged = !!bootPhase && ExplorationState.getCurrentPhase() !== bootPhase;
   if (bootPhase) ExplorationState.enterExplorationPhase(bootPhase);
+  // dev/phases의 설정 버튼과 같은 목적지(§'/dev/upload/?tab=hub&phase=') —
+  // 지금 있는 phase 기준으로 바로 그 phase의 탐색허브 탭으로 들어간다.
+  el.settingsLink.href = `/dev/upload/?tab=hub&phase=${encodeURIComponent(ExplorationState.getCurrentPhase() || '')}`;
   const [gameSettings] = await Promise.all([
     AssetDB.getGameSettings().catch(() => AssetDB.DEFAULT_GAME_SETTINGS),
     preloadPhaseAssets(ExplorationState.getCurrentPhase()),

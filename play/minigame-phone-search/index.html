@@ -167,6 +167,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
     <a class="vn-btn" href="/dev/">← DEV</a>
     <div style="display:flex;gap:8px">
       <button class="vn-btn skip" id="skipBtn" aria-label="다음 상호작용">다음 ⏭</button>
+      <a class="vn-btn dev-settings-link" id="settingsLink" href="/dev/upload/" aria-label="설정">⚙ 설정</a>
       <button class="vn-btn" id="devBtn">DEV</button>
     </div>
   </div>
@@ -550,6 +551,7 @@ const el = {
   frame: document.getElementById('frame'),
   devBtn: document.getElementById('devBtn'),
   skipBtn: document.getElementById('skipBtn'),
+  settingsLink: document.getElementById('settingsLink'),
   roomView: document.getElementById('roomView'),
   photoStage: document.getElementById('photoStage'),
   photoCanvas: document.getElementById('photoCanvas'),
@@ -579,6 +581,11 @@ const el = {
   sheetOverlay: document.getElementById('sheetOverlay'),
   sheetCloseBtn: document.getElementById('sheetCloseBtn'),
 };
+
+// dialogueData.js의 minigames 레지스트리가 이 미니게임의 실제 설정 화면
+// URL(방 배경 배정 등)을 이미 계산해두고 있으므로, 여기서 직접 다시
+// 조합하지 않고 그대로 가져다 쓴다.
+el.settingsLink.href = (minigames.find(m => m.id === 'week1-scene-002-2') || {}).setupUrl || '/dev/upload/';
 
 // Hardcoded LINES arrays here only ever carry a display speaker name
 // ('지수'/'영우'), not a dialogueData.js-style characterId — this is the
