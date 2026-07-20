@@ -111,10 +111,15 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
 }
 </script>
+<script src="/dev/assetDb.js"></script>
 <script>
-// Everything below is local-preview state for testers — no backend involved.
-// Background image/position and button placement persist in localStorage so
-// a layout arrangement survives a reload.
+// Background image is uploaded to AssetDB (Supabase Storage, same as every
+// other game background) and its assetId + bg/button position are saved to
+// AssetDB.getGameSettings()'s startScreen field — that's what makes this
+// screen look the same on every device instead of only the one it was set
+// up on. localStorage keeps a small local echo (public URL string + the
+// same position JSON) purely so this editor still paints instantly on
+// reload without waiting on a network round trip.
 const BG_IMG_KEY = 'mkDevStartScreenBg';
 const BG_POS_KEY = 'mkDevStartScreenBgPos';
 const BTN_POS_KEY = 'mkDevStartScreenBtnPos';
@@ -219,21 +224,79 @@ function applyBackground(dataUrl) {
   }
 }
 
+// AssetDB.getGameSettings()의 startScreen 필드가 이 화면의 진짜 원본이다 —
+// 로드 시 한 번 받아와 로컬 캐시(즉시 표시용)를 최신 값으로 덮어쓴다. 이
+// 편집기를 여는 사람은 항상 개발자 한 명뿐이라(플레이 중에는 아무도 이
+// 값을 쓰지 않는다) 저장 슬롯처럼 updatedAt을 비교할 필요 없이 "서버 값이
+// 항상 최신"으로 단순하게 다룬다.
+async function pullStartScreenFromServer() {
+  try {
+    const settings = await AssetDB.getGameSettings();
+    const s = settings.startScreen || {};
+    if (s.bgAssetId) {
+      const asset = await AssetDB.getAsset(s.bgAssetId);
+      if (asset && asset.dataUrl) {
+        localStorage.setItem(BG_IMG_KEY, asset.dataUrl);
+        applyBackground(asset.dataUrl);
+      }
+    } else {
+      localStorage.removeItem(BG_IMG_KEY);
+      applyBackground(null);
+    }
+    if (s.bgPos) {
+      bgPos = s.bgPos;
+      localStorage.setItem(BG_POS_KEY, JSON.stringify(bgPos));
+      renderBgPos();
+    }
+    if (s.btnPos) {
+      btnPos.start = s.btnPos;
+      localStorage.setItem(BTN_POS_KEY, JSON.stringify(btnPos));
+      renderBtnPos();
+    }
+  } catch (e) {
+    console.error('시작화면 설정을 서버에서 불러오지 못했습니다', e);
+  }
+}
+
+async function saveStartScreenPatch(patch) {
+  try {
+    const settings = await AssetDB.getGameSettings();
+    const merged = Object.assign({}, settings, {
+      startScreen: Object.assign({}, settings.startScreen, patch),
+    });
+    await AssetDB.setGameSettings(merged);
+  } catch (e) {
+    console.error('시작화면 설정을 서버에 저장하지 못했습니다', e);
+  }
+}
+
 el.bgUploadBtn.addEventListener('click', () => el.bgInput.click());
-el.bgInput.addEventListener('change', () => {
+el.bgInput.addEventListener('change', async () => {
   const file = el.bgInput.files && el.bgInput.files[0];
   if (!file || !file.type.startsWith('image/')) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    localStorage.setItem(BG_IMG_KEY, reader.result);
-    applyBackground(reader.result);
-  };
-  reader.readAsDataURL(file);
+  const originalLabel = el.bgUploadBtn.textContent;
+  el.bgUploadBtn.textContent = '업로드 중...';
+  try {
+    // 다른 배경 이미지들과 같은 경로(AssetDB → Supabase Storage) — 기기
+    // localStorage에만 base64로 남아있던 예전 방식과 달리 다른 기기에서도
+    // 같은 배경이 뜨게 하려는 것.
+    const asset = await AssetDB.addAsset({ type: 'startScreenBg', name: file.name, blob: file });
+    localStorage.setItem(BG_IMG_KEY, asset.dataUrl);
+    applyBackground(asset.dataUrl);
+    await saveStartScreenPatch({ bgAssetId: asset.id });
+  } catch (e) {
+    console.error('배경 업로드 실패', e);
+    alert('배경 업로드에 실패했습니다: ' + e.message);
+  } finally {
+    el.bgUploadBtn.textContent = originalLabel;
+    el.bgInput.value = '';
+  }
 });
 
-el.resetBgBtn.addEventListener('click', () => {
+el.resetBgBtn.addEventListener('click', async () => {
   localStorage.removeItem(BG_IMG_KEY);
   applyBackground(null);
+  await saveStartScreenPatch({ bgAssetId: null });
 });
 
 let bgDrag = null;
@@ -257,6 +320,7 @@ el.bgLayer.addEventListener('pointermove', (e) => {
   bgDrag = null;
   el.bgLayer.classList.remove('dragging');
   localStorage.setItem(BG_POS_KEY, JSON.stringify(bgPos));
+  saveStartScreenPatch({ bgPos });
 }));
 
 function clamp(v, min, max) { return Math.min(Math.max(v, min), max); }
@@ -282,6 +346,7 @@ function renderBtnPos() {
 
 function saveBtnPos() {
   localStorage.setItem(BTN_POS_KEY, JSON.stringify(btnPos));
+  saveStartScreenPatch({ btnPos: btnPos.start });
 }
 
 function makeDraggable(buttonEl, posKey, onTap) {
@@ -361,6 +426,7 @@ makeResizable(el.startResizeHandle, 'start');
 renderBgPos();
 renderBtnPos();
 applyBackground(localStorage.getItem(BG_IMG_KEY));
+pullStartScreenFromServer();
 </script>
 <script src="/dev/devPlanFab.js"></script>
 </body>

@@ -110,6 +110,7 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 <script src="/realPlayMode.js"></script>
+<script src="/dev/assetDb.js"></script>
 <script>
 const BG_IMG_KEY = 'mkDevStartScreenBg';
 const BG_POS_KEY = 'mkDevStartScreenBgPos';
@@ -129,10 +130,15 @@ function loadBgPos() {
   try { return Object.assign({ x: 50, y: 50 }, JSON.parse(localStorage.getItem(BG_POS_KEY))); }
   catch (e) { return { x: 50, y: 50 }; }
 }
-const bgPos = loadBgPos();
-el.bgLayer.style.backgroundPosition = `${bgPos.x}% ${bgPos.y}%`;
-const bgImg = localStorage.getItem(BG_IMG_KEY);
-if (bgImg) el.bgLayer.style.backgroundImage = `url("${bgImg}")`;
+function renderBg(pos, imgUrl) {
+  el.bgLayer.style.backgroundPosition = `${pos.x}% ${pos.y}%`;
+  el.bgLayer.style.backgroundImage = imgUrl ? `url("${imgUrl}")` : '';
+}
+// localStorage 캐시로 먼저 즉시 그린다(네트워크 왕복 없이) — /dev/start/에서
+// 이 기기로 마지막에 동기화됐던 값. 실제 원본은 AssetDB.getGameSettings()의
+// startScreen 필드(Supabase)라서, 아래에서 그 값을 받아오는 대로 다시 한 번
+// 덮어써 다른 기기에서 바꾼 배경도 뜨게 한다(#기기 간 배경 동기화).
+renderBg(loadBgPos(), localStorage.getItem(BG_IMG_KEY));
 
 function loadStartPos() {
   const defaults = { x: 50, y: 80, w: 46, h: 7 };
@@ -143,11 +149,38 @@ function loadStartPos() {
     return defaults;
   }
 }
-const startPos = loadStartPos();
-el.startBtn.style.left = startPos.x + '%';
-el.startBtn.style.top = startPos.y + '%';
-el.startBtn.style.width = startPos.w + '%';
-el.startBtn.style.height = startPos.h + '%';
+function renderStartPos(pos) {
+  el.startBtn.style.left = pos.x + '%';
+  el.startBtn.style.top = pos.y + '%';
+  el.startBtn.style.width = pos.w + '%';
+  el.startBtn.style.height = pos.h + '%';
+}
+renderStartPos(loadStartPos());
+
+(async () => {
+  try {
+    const settings = await AssetDB.getGameSettings();
+    const s = settings.startScreen || {};
+    let imgUrl = null;
+    if (s.bgAssetId) {
+      const asset = await AssetDB.getAsset(s.bgAssetId);
+      imgUrl = asset && asset.dataUrl;
+    }
+    const bgPos = Object.assign({ x: 50, y: 50 }, s.bgPos);
+    const startPos = Object.assign({ x: 50, y: 80, w: 46, h: 7 }, s.btnPos);
+    renderBg(bgPos, imgUrl);
+    renderStartPos(startPos);
+    // 로컬 캐시도 최신으로 갱신 — 다음에 오프라인이어도 이번에 받은 값으로
+    // 즉시 그릴 수 있게.
+    localStorage.setItem(BG_POS_KEY, JSON.stringify(bgPos));
+    localStorage.setItem(BTN_POS_KEY, JSON.stringify({ start: startPos }));
+    if (imgUrl) localStorage.setItem(BG_IMG_KEY, imgUrl);
+    else localStorage.removeItem(BG_IMG_KEY);
+  } catch (e) {
+    // 오프라인/네트워크 실패 — 위에서 이미 그려둔 로컬 캐시 그대로 유지.
+    console.error('시작화면 배경을 서버에서 불러오지 못했습니다', e);
+  }
+})();
 
 // Straight into 0주차's first scene, not the /dev/week0 scene picker — a
 // real player who picks 1주차 plays through the story from the top, not to

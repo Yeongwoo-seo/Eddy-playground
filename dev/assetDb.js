@@ -1002,13 +1002,26 @@ const AssetDB = (() => {
   // 아직 없을 때(첫 사용)의 기본값이다.
   const DEFAULT_GAME_SETTINGS = {
     moveFade: { durationMs: 520, holdMs: 210, x1: 0.2, y1: 0.8, x2: 0.2, y2: 1 },
+    // /dev/start/에서 고른 시작화면 배경 — 예전엔 localStorage(base64)에만
+    // 있어서 그 화면을 설정한 기기에서만 보였다. 다른 필드처럼 이미지 자체는
+    // AssetDB(Supabase Storage, type:'startScreenBg')에 올리고 여기엔 그
+    // assetId·위치만 둔다(/play/index.html이 읽어서 이미지를 가져옴).
+    startScreen: { bgAssetId: null, bgPos: { x: 50, y: 50 }, btnPos: { x: 50, y: 80, w: 46, h: 7 } },
   };
 
   async function getGameSettings() {
     if (gameSettingsCache.has('settings')) return gameSettingsCache.get('settings');
     const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${GAME_SETTINGS_PATH}?t=${Date.now()}`;
     try {
-      const settings = (await fetchJsonBlob(url)) || DEFAULT_GAME_SETTINGS;
+      // Object.assign이 아니라 얕은 필드별 병합 — 예전에 저장된 blob은
+      // startScreen 필드가 아예 없을 수 있으므로, 없으면 기본값으로 채워
+      // 새로 추가된 필드를 쓰는 코드가 undefined를 만나지 않게 한다.
+      const stored = await fetchJsonBlob(url);
+      const settings = stored
+        ? Object.assign({}, DEFAULT_GAME_SETTINGS, stored, {
+            startScreen: Object.assign({}, DEFAULT_GAME_SETTINGS.startScreen, stored.startScreen),
+          })
+        : DEFAULT_GAME_SETTINGS;
       gameSettingsCache.set('settings', settings);
       return settings;
     } catch (e) {
