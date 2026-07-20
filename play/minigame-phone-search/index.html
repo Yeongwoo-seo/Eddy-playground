@@ -7,11 +7,11 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <meta name="theme-color" content="#080A0C">
-<link rel="manifest" href="/dev/manifest.json">
+<link rel="manifest" href="/play/manifest.json">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="OPERATION MK DEV">
+<meta name="apple-mobile-web-app-title" content="Missing Key">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
 :root{
@@ -252,7 +252,7 @@ window.addEventListener('orientationchange', setVh100);
 // window/orientationchange above already cover real layout changes.
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
+  navigator.serviceWorker.register('/play/sw.js', { scope: '/play/' });
 }
 </script>
 <script src="/realPlayMode.js"></script>
@@ -932,7 +932,7 @@ function handlePhoneFound() {
       el.stamp.classList.add('show');
       setTimeout(() => {
         el.fadeOverlay.classList.add('show');
-        setTimeout(() => { location.href = '/dev/game/?scene=week0-scene-002-3'; }, 950);
+        setTimeout(() => { location.href = '/play/game/?scene=week0-scene-002-3'; }, 950);
       }, 1000);
     }, 700);
   }, 700);
@@ -1556,7 +1556,7 @@ async function loadCustomItemsAndRecipes() {
 }
 
 /* ===== Boot ===== */
-// dev/game/index.html never actually loads this scene id (it has no `lines`
+// play/game/index.html never actually loads this scene id (it has no `lines`
 // — MINIGAME_ROUTES and the scene's own `route` field both bypass it), so
 // this is the only place 숙소's map-location visit can be recorded for it.
 CaseFileState.recordSceneVisit('week0-scene-002-2');

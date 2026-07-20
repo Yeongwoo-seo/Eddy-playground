@@ -82,7 +82,7 @@ function escapeHtml(s) {
 
 function goBack() {
   const url = sessionStorage.getItem('mkShopReturnUrl');
-  location.href = url || '/dev/';
+  location.href = url || '/play/';
 }
 el.backBtn.addEventListener('click', goBack);
 
@@ -131,7 +131,7 @@ function renderGrid() {
     updatePreview();
   }));
   const goShopBtn = document.getElementById('goShopBtn');
-  if (goShopBtn) goShopBtn.addEventListener('click', () => { location.href = '/dev/shop/'; });
+  if (goShopBtn) goShopBtn.addEventListener('click', () => { location.href = '/play/shop/'; });
 }
 
 (function init() {

@@ -166,7 +166,7 @@ function escapeHtml(s) {
 
 function goBack() {
   const url = sessionStorage.getItem('mkShopReturnUrl');
-  location.href = url || '/dev/';
+  location.href = url || '/play/';
 }
 el.backBtn.addEventListener('click', goBack);
 

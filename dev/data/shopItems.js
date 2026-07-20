@@ -1,6 +1,6 @@
 /* OPERATION MK DEV — 옷가게 상품 카탈로그 (The Missing Key v1 §5.6/§14.4).
    Static catalog, same idiom as caseFileData.js: a plain object keyed by id,
-   read by shopState.js/dev/shop/index.html. 1차 구현 범위는 완성 코디
+   read by shopState.js/play/shop/index.html. 1차 구현 범위는 완성 코디
    프리셋만 판매 — 부위별 조합은 하지 않는다 (§5.1).
 
    Each item's art can come from two sources, tried in this order (see

@@ -2,10 +2,27 @@
 // it control anything outside that path) — keeps the real play environment
 // as its own installable app, independent of the /dev/ sandbox's service
 // worker and the 강낭콩 투어 PWA's.
-const CACHE_NAME = 'operation-mk-play-v4';
+const CACHE_NAME = 'operation-mk-play-v5';
 const APP_SHELL = [
   '/play/',
   '/play/manifest.json',
+  '/play/game/',
+  '/play/explore/',
+  '/play/minigame-eastwood/',
+  '/play/minigame-fishing/',
+  '/play/minigame-phone-search/',
+  '/play/minigame-photo-zoom/',
+  '/play/minigame-timeline/',
+  '/play/shop/',
+  '/play/wardrobe/',
+  '/dev/assetDb.js',
+  '/dev/loadingOverlay.js',
+  '/dev/dialogueData.js',
+  '/dev/dialoguePanel.js',
+  '/dev/caseFileData.js',
+  '/dev/caseFileState.js',
+  '/dev/caseMenu.js',
+  '/dev/vnPlayer.js',
   '/realPlayMode.js',
   '/icons/apple-touch-icon.png',
   '/icons/icon-192.png',

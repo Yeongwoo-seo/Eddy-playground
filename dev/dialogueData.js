@@ -38,14 +38,14 @@ const dialogueCharacters = [
   { id: 'sophie', name: '소피 첸', role: 'other', expressions: ['neutral', 'curious', 'shocked'] },
   { id: 'daniel-guide', name: '다니엘 리드', role: 'other', expressions: ['neutral', 'curious', 'serious'] },
   // §9.4 — 마틴 베일은 전화로만 등장해 얼굴이 없다. 인물 DB에 초상이
-  // 없으면 /dev/game이 자동으로 실루엣 placeholder를 보여주므로
+  // 없으면 /play/game이 자동으로 실루엣 placeholder를 보여주므로
   // expressions는 'neutral' 하나만 등록해도 문제없다.
   { id: 'martin', name: '마틴 베일', role: 'other', expressions: ['neutral'] },
 ];
 
 // Every dialogue line's `expression` field is one of these ids — 인물 DB
 // (character upload) registers one image per (character, expression) pair,
-// and /dev/game looks that pair up to pick the portrait for each line.
+// and /play/game looks that pair up to pick the portrait for each line.
 const dialogueExpressions = [
   { id: 'neutral', label: '기본' },
   { id: 'happy', label: '기쁨' },
@@ -64,7 +64,7 @@ const dialogueExpressions = [
 // registered the same way as the base (character, expression) pairs. Which
 // outfit is currently "worn" is set per-character in /dev/upload's 인물 DB
 // tab (DevGameState.getSelectedOutfit/setSelectedOutfit) and applies
-// globally — /dev/game just keeps asking for (characterId, expression) like
+// globally — /play/game just keeps asking for (characterId, expression) like
 // before, and AssetDB resolves that against whichever outfit is selected.
 const dialogueOutfits = [
   { id: 'outfit-01', label: '의상 1' },
@@ -763,7 +763,7 @@ const week0SceneCircularQuayLines = [
    써보는 첫 시도를 낚시/관광보다 먼저 배치해 v08의 동선(옷가게 발견 →
    관광 → 낚시)을 그대로 따른다. 강제 구매는 없다(§5.2 "강제 구매 여부"):
    어느 쪽을 골라도 같은 상점 화면으로 이어지고, 튜토리얼은 구매 여부와
-   무관하게 완료된다. 실제 미리보기·구매는 대사가 아니라 /dev/shop/ 화면에서
+   무관하게 완료된다. 실제 미리보기·구매는 대사가 아니라 /play/shop/ 화면에서
    일어난다 — hand-off는 기존 미니게임 라우팅과 같은 nextSceneId 패턴
    (week0-scene-shop-visit, MINIGAME_ROUTES in game/index.html) 을 쓴다. */
 const week0SceneShopIntroLines = [
@@ -831,7 +831,7 @@ const week0SceneShopIntroLines = [
     id: 'line-037', speaker: '', text: '지수는 행거를 하나씩 넘겨보기 시작했다.', characterId: null,
     // The Missing Key v1 §5.2 "강제 구매 여부" / §11.3 필수 상태 변경 —
     // 구매 여부와 무관하게 상점·옷장 메뉴는 여기서 확정 해금된다. 초기 재고
-    // 2벌(§5.6)도 함께 열어, 다음 줄에서 넘어가는 실제 /dev/shop/ 화면에
+    // 2벌(§5.6)도 함께 열어, 다음 줄에서 넘어가는 실제 /play/shop/ 화면에
     // 바로 상품이 채워져 있도록 한다.
     effects: [
       { type: 'unlockShop' },
@@ -845,7 +845,7 @@ const week0SceneShopIntroLines = [
 ];
 
 // week0-scene-shop-intro의 마무리 대사 — 상점 화면에서 돌아온 뒤 이어지는
-// 짧은 클로징. 실제 옷가게 UI(/dev/shop/)는 week0-scene-shop-visit이 라우팅해
+// 짧은 클로징. 실제 옷가게 UI(/play/shop/)는 week0-scene-shop-visit이 라우팅해
 // 처리하므로, 이 배열은 그 방문 *이후* 장면으로 별도 등록하지 않고
 // week0-scene-002-1(숙소 도착)이 자연스럽게 이어받는다 — 왼쪽 상단 메뉴
 // 설명은 옷가게 화면 자체의 최초 진입 안내로 대체한다(§11.3의 "왼쪽 상단
@@ -1003,7 +1003,7 @@ function mergeLines(...lineArrays) {
 }
 
 // Registry of testable Week 0 scenes — /dev/week0 lists these, each linking
-// to /dev/game/?scene=<id>. Covers the full 0주차 ARRIVAL arc (W0-S01~S10 in
+// to /play/game/?scene=<id>. Covers the full 0주차 ARRIVAL arc (W0-S01~S10 in
 // the story doc) — 비행기 오프닝부터 첫날 밤 마무리까지, including the M.K.
 // engraving reveal that seeds the entire 4-week mystery.
 //
@@ -1061,7 +1061,7 @@ const week0Scenes = [
     // hotspot slot per location on the shared map image. Eastwood is the
     // accommodation and Marayong is 영우's workplace (see this scene's
     // lines' header comment for why that's the reverse of the v3 draft).
-    // /dev/minigame-eastwood/ now implements the documented 3-stage design
+    // /play/minigame-eastwood/ now implements the documented 3-stage design
     // (라벨 배치 → 관계 연결 → 경로 확인, The Missing Key v1 §11.2) over these
     // same 4 hotspots, in this array's order.
     minigameStages: ['공항 (Sydney International Airport)', '서큘러키 (Circular Quay)', '숙소 (Eastwood)', '영우 근무지 (Marayong)'],
@@ -1072,7 +1072,7 @@ const week0Scenes = [
     name: '시드니 지리 파악 (미니게임)',
     location: 'Sydney Airport Station',
     time: '09:50',
-    route: '/dev/minigame-eastwood/',
+    route: '/play/minigame-eastwood/',
   },
   {
     id: 'week0-scene-train',
@@ -1114,7 +1114,7 @@ const week0Scenes = [
     name: '옷가게 튜토리얼',
     location: 'The Rocks Boutique',
     time: '10:50',
-    route: '/dev/shop/',
+    route: '/play/shop/',
   },
   {
     id: 'week0-scene-circular-quay',
@@ -1135,7 +1135,7 @@ const week0Scenes = [
     name: '서큘러키 낚시',
     location: 'Circular Quay Waterfront',
     time: '11:30',
-    route: '/dev/minigame-fishing/play/',
+    route: '/play/minigame-fishing/',
   },
   {
     id: 'week0-scene-002-1',
@@ -1169,10 +1169,10 @@ const week0Scenes = [
     location: 'Eastwood Accommodation',
     time: '20:35',
     // No `lines` — this isn't a VN scene, it's the point-and-click minigame
-    // itself. `route` overrides /dev/week0's default /dev/game/?scene=<id>
+    // itself. `route` overrides /dev/week0's default /play/game/?scene=<id>
     // link so this entry opens the minigame page directly, letting it be
     // tested standalone instead of only via week0-scene-charger's VN handoff.
-    route: '/dev/minigame-phone-search/',
+    route: '/play/minigame-phone-search/',
   },
   {
     id: 'week0-scene-002-3',
@@ -1284,7 +1284,7 @@ const week1Scene001Lines = [
 // 루프/전시장 발견 선택지 대사는 그대로 dev/data/interactionDefs.js의
 // 'w1-phase1-intro'(type:'phaseIntro')로 옮겨졌고, Phase 1(W1_TOURISM)에
 // 처음 진입할 때 탐색허브 안에서 자동 재생된다 — see performMove() in
-// dev/explore/index.html.
+// play/explore/index.html.
 
 /* OPERATION MK — WEEK 1 · SCENE 03 「증거 수집 · 전시장」
    Dialogue Set: dialogue-week1-scene003
@@ -3473,7 +3473,7 @@ const week1Scene013Lines = [
 ];
 
 // Registry of testable Week 1 scenes — /dev/week1 lists these, each linking
-// to /dev/game/?scene=<id>. Covers only the 1주차 main weekend arc
+// to /play/game/?scene=<id>. Covers only the 1주차 main weekend arc
 // ("사라진 K-01") — 평일 미니씬(W1-D1~D5)은 아직 미구현.
 //
 // ===== 1주차 장편 확장 v2 =====
@@ -3542,7 +3542,7 @@ const week1Scenes = [
     name: '사진 속 인물 찾기 (미니게임)',
     location: 'Pop-up Exhibition',
     time: '10:52',
-    route: '/dev/minigame-photo-zoom/',
+    route: '/play/minigame-photo-zoom/',
     // 7 burst-shot photos (dev/minigame-photo-zoom's own PHOTOS array, same
     // order/captions) — each is a one-off image, not a reusable 장소, so it
     // gets its own direct-upload photoSlot instead of a 장소 DB catalog entry
@@ -3707,7 +3707,7 @@ const week1Scenes = [
     name: '시간대 정리 (미니게임)',
     location: 'Café near Circular Quay',
     time: '11:55',
-    route: '/dev/minigame-timeline/',
+    route: '/play/minigame-timeline/',
   },
   {
     id: 'week1-scene-008a',
@@ -4122,7 +4122,7 @@ const week2Scene012Lines = [
 ];
 
 // Registry of testable Week 2 scenes — /dev/week2 lists these, each linking
-// to /dev/game/?scene=<id>. Covers only the 2주차 main weekend arc
+// to /play/game/?scene=<id>. Covers only the 2주차 main weekend arc
 // (W2-S01~S12, "존재하지 않는 여자") — 2주차 평일 미니씬(W2-D1~D5)은 아직 미구현.
 //
 // Grouped by location rather than by time slice — see the mergeLines note
@@ -4205,7 +4205,7 @@ const minigames = [
     id: 'week0-scene-001-2-minigame',
     name: '지하철 역 찾기',
     location: 'Sydney Airport Station',
-    route: '/dev/minigame-eastwood/',
+    route: '/play/minigame-eastwood/',
     setupUrl: '/dev/upload/?scene=week0-scene-001-2&kind=minigame&minigame=week0-scene-001-2-minigame',
   },
   {
@@ -4217,7 +4217,7 @@ const minigames = [
     id: 'fishing-minigame',
     name: '낚시',
     location: '독립형 미니게임 (스토리 미연동)',
-    route: '/dev/minigame-fishing/play/',
+    route: '/play/minigame-fishing/',
     setupUrl: '/dev/minigame-fishing/',
   },
   {
@@ -4250,7 +4250,7 @@ const minigames = [
     id: 'week1-scene-004-minigame',
     name: '사진 속 인물 찾기',
     location: 'Pop-up Exhibition',
-    route: '/dev/minigame-photo-zoom/',
+    route: '/play/minigame-photo-zoom/',
     setupUrl: '/dev/upload/?scene=week1-scene-004-minigame',
   },
   {
@@ -4259,8 +4259,8 @@ const minigames = [
     id: 'week1-scene-008-minigame',
     name: '시간대 정리',
     location: 'Café near Circular Quay',
-    route: '/dev/minigame-timeline/',
-    setupUrl: '/dev/minigame-timeline/',
+    route: '/play/minigame-timeline/',
+    setupUrl: '/play/minigame-timeline/',
   },
   {
     // Standalone logic-puzzle collection (레이튼풍 고난도 퀴즈 20종) — no
@@ -4285,7 +4285,7 @@ const minigames = [
     id: 'week0-scene-002-2',
     name: '핸드폰을 찾아라',
     location: 'Sydney Accommodation',
-    route: '/dev/minigame-phone-search/',
+    route: '/play/minigame-phone-search/',
     setupUrl: `/dev/upload/?scene=${roomSearchAreaSceneId(roomSearchAreas[0].id)}&minigame=week0-scene-002-2`,
     isEvidence: true,
   },
@@ -4584,7 +4584,7 @@ const week3Scene014Lines = [
 ];
 
 // Registry of testable Week 3 scenes — /dev/week3 lists these, each linking
-// to /dev/game/?scene=<id>. Covers only the 3주차 main weekend arc
+// to /play/game/?scene=<id>. Covers only the 3주차 main weekend arc
 // (W3-S01~S14, "사라진 원본 열쇠") — 3주차 평일 미니씬(W3-D1~D5)은 아직 미구현.
 //
 // Grouped by location rather than by time slice — see the mergeLines note
@@ -5037,7 +5037,7 @@ const week4Scene019Lines = [
 ];
 
 // Registry of testable Week 4 scenes — /dev/week4 lists these, each linking
-// to /dev/game/?scene=<id>. Covers only the 4주차 main arc (W4-S01~S19,
+// to /play/game/?scene=<id>. Covers only the 4주차 main arc (W4-S01~S19,
 // "M.K.는 미카 코바치인가" + NOT WHO, WHY 최종부) — 4주차 평일 미니씬
 // (W4-D1~D5)은 아직 미구현.
 //
@@ -5118,7 +5118,7 @@ const weeks = [
   { id: 'week4', label: '4주차', scenes: week4Scenes },
 ];
 
-// Combined lookup across every week's scenes — /dev/game resolves a
+// Combined lookup across every week's scenes — /play/game resolves a
 // requested ?scene= id against this instead of a single week's array, since
 // a scene can belong to any week. Per-week test pages (/dev/week0 ~
 // /dev/week4) still read their own week*Scenes array directly so their

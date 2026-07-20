@@ -2,9 +2,9 @@
    A sound entry is a YouTube video id + a [start, end) second range, not a
    downloaded/re-hosted audio file — ripping YouTube's own audio track would
    violate its Terms of Service, so this only ever streams straight from
-   YouTube's own embedded player (audio-only in practice: /dev/game mounts it
+   YouTube's own embedded player (audio-only in practice: /play/game mounts it
    1x1 and off-screen). Shared by /dev/upload's 사운드 tab (preview) and
-   /dev/game (scene BGM playback) so both go through the same loop/seek logic. */
+   /play/game (scene BGM playback) so both go through the same loop/seek logic. */
 
 function parseYouTubeId(url) {
   if (!url) return null;

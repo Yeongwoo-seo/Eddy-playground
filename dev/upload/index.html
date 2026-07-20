@@ -355,7 +355,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
        phase에서 mapPosition을 가진(=landmark급으로 이미 지정된) 위치들만
        고를 수 있고, 지도 그림을 탭하면 그 위치의 좌표를 저장한다(AssetDB
        map-pins — dev/data/locationDefs.js의 정적 mapPosition보다 우선해서
-       읽힘, see dev/explore/index.html openMoveMapSheet). 어떤 위치가 지도에
+       읽힘, see play/explore/index.html openMoveMapSheet). 어떤 위치가 지도에
        핀을 갖는지 자체는 여전히 locationDefs.js를 고쳐야 하는 코드 결정 —
        여기선 그 좌표만 시각적으로 조정한다. -->
   <div class="map-pin-panel hidden" id="mapPinPanel">
@@ -547,7 +547,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   <!-- 대사 tab — see selectType('dialogue') / renderDialoguePanel. The whole
        scene's script is one big text block — 화자(이름)/감정표현/텍스트를
        한 번에 통으로 고치고 저장 버튼 한 번으로 반영. AssetDB에 오버라이드로
-       저장되며(dialogueData.js의 static source는 안 건드림), /dev/game이
+       저장되며(dialogueData.js의 static source는 안 건드림), /play/game이
        로드 시 그 위에 덮어씀. -->
   <div class="dialogue-panel hidden" id="dialoguePanel">
     <div class="section-title" style="margin-top:0">대사</div>
@@ -564,7 +564,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
        구간(시작~종료)을 카탈로그에 저장해두면, 게임 실행 시 그 구간을 유튜브
        플레이어로 그대로 스트리밍 재생한다(파일을 내려받아 재호스팅하지 않음 —
        유튜브 이용약관상 오디오 추출/다운로드는 지원하지 않기로 함). BGM은
-       씬에 지정해두면 /dev/game이 그 씬 진입 시 자동 재생/루프하고, 효과음은
+       씬에 지정해두면 /play/game이 그 씬 진입 시 자동 재생/루프하고, 효과음은
        이 화면에서 미리듣기만 지원한다(게임 내 자동 트리거 연결은 범위 밖). -->
   <div class="sound-panel hidden" id="soundPanel">
     <div class="section-title" style="margin-top:0">사운드 등록</div>
@@ -741,7 +741,7 @@ let currentBgKind = 'scene'; // 'scene' | 'loc:N' | 'minigame' — see backgroun
 // (shopItems.js 상단 주석 참고), 실제 dialogueCharacters에는 넣지 않고 이
 // 페이지 안에서만 쓰는 별도 목록으로 합친다. dialogueCharacters 자체를
 // 건드리면 대사 작성/게임 렌더링 등 다른 곳에서도 "말할 수 있는 인물"로
-// 취급돼버리기 때문. expressions: ['neutral']만 두는 이유는 /dev/shop/의
+// 취급돼버리기 때문. expressions: ['neutral']만 두는 이유는 /play/shop/의
 // 미리보기가 항상 'neutral' 표정만 조회하기 때문(outfits: []는 옷 피커를
 // 숨겨서 옷 차원이 없는 일반 캐릭터와 동일하게 동작하게 한다).
 const shopOutfitPreviewCharacters = Object.values(shopItems)
@@ -773,7 +773,7 @@ let pendingFile = null;
 // it never needs a separate IndexedDB round-trip.
 let characterExpressionIndex = new Map();
 
-// Deep link from /dev/game's "+ 새 이미지 업로드" and from /dev/weekN's
+// Deep link from /play/game's "+ 새 이미지 업로드" and from /dev/weekN's
 // per-scene 설정 button — jump straight to that scene's background list
 // instead of making the tester re-pick week/scene. ?kind=minigame also
 // pre-selects the 미니게임 background sub-category, and ?kind=photo&index=N
@@ -827,7 +827,7 @@ const focusMinigame = (function () {
   return { entry, sceneIds, backHref: '/dev/minigames/', isEvidence: !!entry.isEvidence };
 })();
 
-// Plain ?scene=<id> deep link (from /dev/game's 업로드 link or a /dev/weekN
+// Plain ?scene=<id> deep link (from /play/game's 업로드 link or a /dev/weekN
 // 설정 button), as opposed to a ?minigame= focus — the week/scene are
 // already decided by whichever scene the dev tapped, so showing pickers
 // for "which week, which scene" again is just dead weight. Locks the
@@ -1287,7 +1287,7 @@ function hubLocationsForPhase(phase) {
   return Object.values(locationDefs).filter(loc => (loc.phases || []).includes(phase));
 }
 // phase-keyed 필드 (§신규 저작 관습, dev/data/locationDefs.js 상단 주석 참고) —
-// dev/explore/index.html의 resolveByPhase와 같은 로직(마커를 명시적으로
+// play/explore/index.html의 resolveByPhase와 같은 로직(마커를 명시적으로
 // 요구하는 이유도 그쪽 주석 참고 — mapPosition의 평범한 `{x,y}`까지
 // phase-keyed로 오인하지 않기 위함). mapPosition 등이 `{ __byPhase: true,
 // [phase]: value }` 객체로 저장된 장소(w1-hub-plaza/w1-adrian-spot)를 이
@@ -1298,7 +1298,7 @@ function resolveByPhase(value, phase) {
   return value;
 }
 // phaseMaps(dev/data/locationDefs.js) 항목도 배경 사진이 필요한 건 마찬가지라
-// (탐색허브 이동하기 화면의 지도 그림, dev/explore/index.html의
+// (탐색허브 이동하기 화면의 지도 그림, play/explore/index.html의
 // openMoveMapSheet) — locationDefs와 똑같은 사진 배정/AI 프롬프트 패널을
 // 재사용하도록, 위치 하나인 것처럼 보이는 가짜 def로 감싸 hub 피커에 끼워
 // 넣는다. 실제 locationDefs에는 없으므로 이동하기/조사하기 등 게임 로직에는
@@ -1318,7 +1318,7 @@ function currentHubLocation() {
 // interactionDefs.js 전체에서 이 장소+단계에 걸린 상호작용만 골라, 배경
 // 이미지에 실제로 그려 넣어야 할 요소를 뽑아낸다. 대사 첫 줄 중
 // characterId:null(내레이션)인 줄을 "이 상호작용이 뭘 보여주는 장면인지"의
-// 시각적 단서로 쓰고, 없으면 그냥 label을 쓴다 — dev/explore/index.html의
+// 시각적 단서로 쓰고, 없으면 그냥 label을 쓴다 — play/explore/index.html의
 // getInteractionsForLocation과 같은 필터 논리(단, 여긴 순수 조회용이라
 // ExplorationState의 상태(완료 여부 등)는 필요 없다).
 function hubLocationInteractions(locationId, phase) {
@@ -1388,7 +1388,7 @@ function buildHubLocationPrompt(locationId, phase) {
     ? interactions.map((def, i) => `- [배치: ${locPromptZoneFor(i, interactions.length)}] ${def.label || def.id}: ${interactionVisualCue(def)}`).join('\n')
     : '- (이 장소/단계에 걸린 상호작용 없음 — 특별히 필요한 요소 없음)';
   // 배경에서 빼야 하는 건 "이름 있는 주연"뿐이다 — 이 사람들은 표정별 누끼
-  // PNG가 따로 있어 게임이 그 위에 겹쳐 그린다(dev/game/index.html의
+  // PNG가 따로 있어 게임이 그 위에 겹쳐 그린다(play/game/index.html의
   // char-img transform 합성 참고). 위 요소 목록에 나오는 이름 없는 배경
   // 인물(예: "옆 건물 직원이 태그를 문에 갖다 댔다")은 반대로 별도 자산이
   // 전혀 없으므로 이 사진에 직접 그려 넣어야만 플레이어가 볼 수 있다 —
@@ -1442,7 +1442,7 @@ function renderHubPromptPanel() {
 /* ===== 지도 핀 편집기 — 지도(🗺) pseudo-location을 골랐을 때만 보인다.
    dev/data/locationDefs.js에 mapPosition이 있는(=이미 랜드마크급으로 지정된)
    위치만 고를 수 있고, 지도 그림을 탭하면 AssetDB.setMapPin으로 그 위치의
-   좌표 override를 저장한다 — dev/explore/index.html의 이동하기 지도가 이
+   좌표 override를 저장한다 — play/explore/index.html의 이동하기 지도가 이
    override를 mapPosition보다 우선해서 읽는다(location-background-system과
    같은 이유: 정적 코드를 고치지 않고 실제 그림 보면서 조정). ===== */
 let currentMapPinLocationId = null;
@@ -1543,7 +1543,7 @@ function renderHubPicker() {
 }
 
 // 장소별 사진 배정 완료 여부를 pill에 체크(✓)로 보여준다 — 실제 탐색허브
-// 화면(dev/explore/index.html applyLocationBackground)이 사진을 찾을 때 쓰는
+// 화면(play/explore/index.html applyLocationBackground)이 사진을 찾을 때 쓰는
 // 것과 같은 DevGameState.getBackgroundId 조회라, 여기서 체크가 뜨면 그
 // 화면에서도 실제로 사진이 나온다는 뜻이다. renderBgKindPicker의 배경 DB
 // ✓ 표시와 같은 패턴(조회가 비동기라 pill을 그리기 전에 먼저 await한다) —
@@ -2291,7 +2291,7 @@ async function saveAsset() {
       const record = await AssetDB.addAsset({ type: 'background', name: pendingFile.name, blob: pendingFile.blob, width: pendingFile.width, height: pendingFile.height, sceneId: currentHubLocationId });
       // 미니게임 배경과 같은 "새로 올리면 바로 사용 중" 관례 — activeBackgroundSceneId()
       // 가 currentType==='hub'일 때 currentHubLocationId를 그대로 돌려주므로 이 setter가
-      // dev/explore/index.html의 조회 키와 정확히 일치한다.
+      // play/explore/index.html의 조회 키와 정확히 일치한다.
       DevGameState.setLegacyBackgroundId(currentHubLocationId, record.id);
       clearPending();
       await refreshList();
@@ -3570,7 +3570,7 @@ async function removeAsset(type, id) {
    global (not per-scene, see AssetDB.getSounds), BGM entries can additionally
    be assigned to whichever scene the week/scene pickers above have selected
    (DevGameState.getSceneBgmId/setSceneBgmId — same localStorage-backed
-   pattern as background/character selection), which is what /dev/game reads
+   pattern as background/character selection), which is what /play/game reads
    to auto-play a scene's BGM. 효과음 entries only get catalog + preview here —
    there's no single natural in-game trigger point for them yet. ===== */
 let currentSoundKind = 'bgm'; // 'bgm' | 'sfx'
@@ -4464,7 +4464,7 @@ el.interactionSaveBtn.addEventListener('click', async () => {
 
 function applyFocusModeChrome() {
   if (!focusMinigame) {
-    // Plain ?scene=<id> deep link (from /dev/game's 업로드 link or a
+    // Plain ?scene=<id> deep link (from /play/game's 업로드 link or a
     // /dev/weekN 설정 button) — not a minigame focus, but the scene is
     // already decided, so selectType/renderScenePicker lock the week/scene
     // pickers via focusScene. Still surface a quick way back into the live
@@ -4472,11 +4472,11 @@ function applyFocusModeChrome() {
     if (deepLinkedSceneId) {
       // A route-only pseudo-scene (e.g. week1-scene-004-minigame's own
       // photoSlots entry — no `.lines`, just `route`) has no VN dialogue to
-      // resume into; /dev/game/?scene=<id> would 500 on it (activeLines
+      // resume into; /play/game/?scene=<id> would 500 on it (activeLines
       // reads .lines unconditionally). Send the FAB straight at its own
       // play route instead, same target the scene list's own ▶ button uses.
       const linkedScene = currentScene();
-      el.testFab.href = (linkedScene && linkedScene.route) ? linkedScene.route : `/dev/game/?scene=${encodeURIComponent(deepLinkedSceneId)}`;
+      el.testFab.href = (linkedScene && linkedScene.route) ? linkedScene.route : `/play/game/?scene=${encodeURIComponent(deepLinkedSceneId)}`;
       el.testFab.classList.remove('hidden');
       el.frame.classList.add('has-fab');
     }

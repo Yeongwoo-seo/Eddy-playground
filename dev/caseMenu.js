@@ -13,7 +13,7 @@
 
 function initCaseMenu(options) {
   options = options || {};
-  // missionTitle may be a plain string (dev/game's own scene name never
+  // missionTitle may be a plain string (play/game's own scene name never
   // changes mid-scene) or a function returning the current title (dev/
   // explore's hub moves between locations without ever re-initializing this
   // menu, so it needs to read the *current* one each time the menu opens —
@@ -149,7 +149,7 @@ function initCaseMenu(options) {
       if (options.onSettingChange) options.onSettingChange(key, value);
       render();
     } else if (action === 'replayLocation') {
-      location.href = `/dev/game/?scene=${encodeURIComponent(actionTarget.dataset.scene)}`;
+      location.href = `/play/game/?scene=${encodeURIComponent(actionTarget.dataset.scene)}`;
     } else if (action === 'openShop') {
       if (options.onOpenShop) options.onOpenShop();
     } else if (action === 'openWardrobe') {
@@ -283,7 +283,7 @@ function initCaseMenu(options) {
   // 종류만 평평한 리스트로 보여준다. ctx.evidenceFilter는 tab 전환처럼
   // pushView 없이 유지되는 값이라 (onBodyClick 참고) 증거 탭을 벗어났다
   // 돌아와도 마지막으로 고른 필터가 살아있다. (EVIDENCE_CATEGORY_ORDER는
-  // 모듈 최상단 — 탐색허브 증거 제시(dev/explore/index.html)도 같은 분류
+  // 모듈 최상단 — 탐색허브 증거 제시(play/explore/index.html)도 같은 분류
   // 순서를 쓴다.)
   function renderEvidenceTabBody() {
     const evidence = CaseFileState.getCaseEntries().filter(e => e.kind === 'evidence');
@@ -774,7 +774,7 @@ function evidenceStatusLabel(status) { return { new: '용도 불명', reviewed: 
 // new/reviewed(읽음 여부)라 아직 "확인 전" 의미로 보여준다. reviseTestimony
 // 이후에만 실제 인식론적 상태(수정/철회/모순/거짓/확인)로 바뀐다.
 function testimonyStatusLabel(status) { return { new: '확인 전', reviewed: '확인 전', unverified: '확인 전', active: '유효', revised: '수정됨', withdrawn: '철회됨', contradicted: '모순 발견', false: '거짓 판명', confirmed: '사실 확인' }[status] || status; }
-// 탐색허브 증거 제시 시트(dev/explore/index.html openEvidenceSheet)도 같은
+// 탐색허브 증거 제시 시트(play/explore/index.html openEvidenceSheet)도 같은
 // 분류/순서를 참조 — 둘 다 CaseFileState.getEvidence()의 category를 그룹핑
 // 하는 곳이라 여기서만 한 번 정의한다.
 const EVIDENCE_CATEGORY_ORDER = ['physical', 'photo', 'testimony', 'record', 'etc'];

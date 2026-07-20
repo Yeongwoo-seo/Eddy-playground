@@ -105,8 +105,8 @@ function setupHref(meta) {
 // phase's first scene.
 function playHref(meta) {
   if (!meta) return '#';
-  if (meta.mode === 'hub') return `/dev/explore/?phase=${encodeURIComponent(meta.phaseId)}&location=${encodeURIComponent(meta.startLocationId)}`;
-  return `/dev/game/?scene=${encodeURIComponent(meta.sceneId)}`;
+  if (meta.mode === 'hub') return `/play/explore/?phase=${encodeURIComponent(meta.phaseId)}&location=${encodeURIComponent(meta.startLocationId)}`;
+  return `/play/game/?scene=${encodeURIComponent(meta.sceneId)}`;
 }
 
 const weekListEl = document.getElementById('weekList');

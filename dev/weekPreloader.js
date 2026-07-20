@@ -1,5 +1,5 @@
 /* OPERATION MK DEV — per-week asset preloader.
-   /dev/game plays one week's scenes as a chain of full page navigations
+   /play/game plays one week's scenes as a chain of full page navigations
    (see game/index.html's nextSceneId handoff), each of which used to show
    LoadingOverlay's spinner while re-fetching that scene's background/
    portrait/dialogue-override/BGM data on its own — even for assets already
