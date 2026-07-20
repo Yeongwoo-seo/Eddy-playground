@@ -2,12 +2,14 @@
 // hangeoreum.html (each an independently installed home-screen app) with
 // { scope: '.' }, so navigating within either app's pages stays inside
 // the standalone app instead of kicking out to the browser
-const CACHE_NAME = 'gangnangkong-tour-v7';
+const CACHE_NAME = 'gangnangkong-tour-v8';
 const APP_SHELL = [
   'schedule.html',
   'planner.html',
   'pack.html',
   'arrival.html',
+  'arrival-guide.html',
+  'boarding-pass.html',
   'secret.html',
   'hangeoreum.html',
   'manifest.json',
