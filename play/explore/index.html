@@ -885,7 +885,7 @@ async function renderLocationCharacters() {
     chip.addEventListener('click', () => selectLocationCharacter(chip.dataset.char));
   });
   const chipsReady = Promise.all(chars.map(async (charId) => {
-    const assetId = DevGameState.getCharacterAssetId(charId, 'neutral');
+    const assetId = await Promise.resolve(DevGameState.getCharacterAssetId(charId, 'neutral')).catch(() => null);
     const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
     if (asset && asset.dataUrl) await AssetDB.preloadImage(asset.dataUrl).catch(() => {});
     const host = document.getElementById(`locCharPortrait-${charId}`);
@@ -957,7 +957,7 @@ async function setLocCharStage(charId) {
     if (token !== locCharStageToken) return;
   }
   if (!charId) { el.locCharStageImg.removeAttribute('src'); return; }
-  const assetId = DevGameState.getCharacterAssetId(charId, 'neutral');
+  const assetId = await Promise.resolve(DevGameState.getCharacterAssetId(charId, 'neutral')).catch(() => null);
   const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
   if (token !== locCharStageToken) return;
   if (asset && asset.dataUrl) {
@@ -1286,12 +1286,12 @@ function renderPresentTiles(characterId) {
       el.listSheet.classList.add('hidden');
       showToastLine(characterId, '음, 그 사람에 대해서는 딱히 할 말이 없는데.');
     }));
-    persons.forEach(async (p) => {
-      const assetId = DevGameState.getCharacterAssetId(p.id, 'neutral');
+    Promise.all(persons.map(async (p) => {
+      const assetId = await Promise.resolve(DevGameState.getCharacterAssetId(p.id, 'neutral')).catch(() => null);
       const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
       const host = document.querySelector(`[data-person-icon="${p.id}"]`);
       if (host && asset && asset.dataUrl) host.innerHTML = `<img src="${asset.dataUrl}" alt="" class="ces-icon-img">`;
-    });
+    }));
   } else {
     const ctx = {
       npcId: characterId, topicTags: [],
@@ -1433,7 +1433,7 @@ function showToastLine(characterId, text) {
 async function applyDialogueCharacter(characterId, expression) {
   const requestToken = ++locCharStageToken;
   if (!characterId) { el.locCharStage.classList.remove('show'); return; }
-  const assetId = DevGameState.getCharacterAssetId(characterId, expression);
+  const assetId = await Promise.resolve(DevGameState.getCharacterAssetId(characterId, expression)).catch(() => null);
   const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
   if (requestToken !== locCharStageToken) return;
   applyCharPosOffset(resolveCharPos(ExplorationState.getCurrentLocationId(), characterId));
@@ -1998,8 +1998,8 @@ el.frame.addEventListener('click', (e) => {
 // so preloading only the bare characterId would leave the *actual* asset
 // the scene shows still cold. Mirrors weekPreloader.js's own
 // collectCharacterAssetIds exactly (same fallback-to-base-id reasoning).
-function addSceneCharacterAssetIds(ids, scene) {
-  (scene.lines || []).forEach(line => {
+async function addSceneCharacterAssetIds(ids, scene) {
+  await Promise.all((scene.lines || []).map(async line => {
     if (!line.characterId) return;
     const expression = line.expression || 'neutral';
     let resolvedCharacterId = line.characterId;
@@ -2012,11 +2012,11 @@ function addSceneCharacterAssetIds(ids, scene) {
         if (resolution.characterId) resolvedCharacterId = resolution.characterId;
       } catch (e) { /* fall back to the base characterId below */ }
     }
-    const outfitAssetId = DevGameState.getCharacterAssetId(resolvedCharacterId, expression);
+    const outfitAssetId = await Promise.resolve(DevGameState.getCharacterAssetId(resolvedCharacterId, expression)).catch(() => null);
     if (outfitAssetId) ids.add(outfitAssetId);
-    const baseAssetId = DevGameState.getCharacterAssetId(line.characterId, expression);
+    const baseAssetId = await Promise.resolve(DevGameState.getCharacterAssetId(line.characterId, expression)).catch(() => null);
     if (baseAssetId) ids.add(baseAssetId);
-  });
+  }));
 }
 
 // Every character portrait a phase's hub content could show: each location's
@@ -2027,30 +2027,30 @@ function addSceneCharacterAssetIds(ids, scene) {
 // dialogueData scene uses (심문하기 등 — see playSceneInline), and every
 // person already on file (제시하기's 인물 탭 isn't scoped to a location, it
 // lists CaseFileState.getPersons() as-is).
-function collectPhaseCharacterAssetIds(phaseId, locationIds) {
+async function collectPhaseCharacterAssetIds(phaseId, locationIds) {
   const ids = new Set();
-  locationIds.forEach(id => {
-    (resolveByPhase(locationDefs[id].characters, phaseId) || []).forEach(charId => {
-      const assetId = DevGameState.getCharacterAssetId(charId, 'neutral');
+  await Promise.all(locationIds.map(async id => {
+    await Promise.all((resolveByPhase(locationDefs[id].characters, phaseId) || []).map(async charId => {
+      const assetId = await Promise.resolve(DevGameState.getCharacterAssetId(charId, 'neutral')).catch(() => null);
       if (assetId) ids.add(assetId);
-    });
-  });
-  Object.values(interactionDefs).forEach(def => {
+    }));
+  }));
+  await Promise.all(Object.values(interactionDefs).map(async def => {
     if (!(def.phases || []).includes(phaseId)) return;
-    (def.lines || []).forEach(line => {
+    await Promise.all((def.lines || []).map(async line => {
       if (!line.characterId) return;
-      const assetId = DevGameState.getCharacterAssetId(line.characterId, line.expression || 'neutral');
+      const assetId = await Promise.resolve(DevGameState.getCharacterAssetId(line.characterId, line.expression || 'neutral')).catch(() => null);
       if (assetId) ids.add(assetId);
-    });
+    }));
     if (def.type === 'scene' && def.sceneId && typeof allScenes !== 'undefined') {
       const scene = allScenes.find(s => s.id === def.sceneId);
-      if (scene) addSceneCharacterAssetIds(ids, scene);
+      if (scene) await addSceneCharacterAssetIds(ids, scene);
     }
-  });
-  (typeof CaseFileState !== 'undefined' ? CaseFileState.getPersons() : []).forEach(p => {
-    const assetId = DevGameState.getCharacterAssetId(p.id, 'neutral');
+  }));
+  await Promise.all((typeof CaseFileState !== 'undefined' ? CaseFileState.getPersons() : []).map(async p => {
+    const assetId = await Promise.resolve(DevGameState.getCharacterAssetId(p.id, 'neutral')).catch(() => null);
     if (assetId) ids.add(assetId);
-  });
+  }));
   return [...ids];
 }
 
@@ -2069,7 +2069,7 @@ async function preloadPhaseAssets(phaseId) {
     // 캐시라, 새 phase로 넘어오는 매 페이지 로드마다 다시 비어 있음) — 배경
     // 사진들과 함께 여기서 미리 데워 둔다.
     if (phaseMap) AssetDB.getMapPins().catch(() => {});
-    const characterAssetIds = collectPhaseCharacterAssetIds(phaseId, locationIds);
+    const characterAssetIds = await collectPhaseCharacterAssetIds(phaseId, locationIds);
     const assetIds = [...new Set([...backgroundIds, ...(mapAssetId ? [mapAssetId] : []), ...characterAssetIds])];
     const assets = assetIds.length ? await AssetDB.getAssetsByIds(assetIds) : [];
     await Promise.all(assets.map(a => (a && a.dataUrl) ? AssetDB.preloadImage(a.dataUrl) : Promise.resolve()));
