@@ -1944,7 +1944,7 @@ const caseMenu = initCaseMenu({
   currentSceneId: null,
   mountSelector: '#caseMenuMount',
   onSaveRequested: (slot) => {
-    CaseFileState.saveSlot(slot, {
+    return CaseFileState.saveSlot(slot, {
       sceneId: EXPLORE_HUB_SAVE_SENTINEL,
       lineIndex: 0,
       missionTitle: (locationDefs[ExplorationState.getCurrentLocationId()] || {}).name || '탐색',

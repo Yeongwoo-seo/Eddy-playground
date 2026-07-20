@@ -54,6 +54,25 @@ function initCaseMenu(options) {
   let ctx = {};
   let linkPicker = null; // Set of evidence ids currently checked, while question-detail's link picker is open
 
+  // 저장/불러오기 슬롯 목록은 이제 서버(AssetDB)와도 병합해야 해서 비동기다,
+  // 반면 render()는 전부 동기 함수라 매번 await할 수 없다 — prefetchCaseEntryMeta
+  // 위 주석과 같은 이유. CaseFileState.listSlotsLocalSync()로 즉시 그리고,
+  // 백그라운드에서 서버-병합본이 도착하면 여전히 저장/불러오기 화면이 열려
+  // 있을 때만 다시 그린다. pushView가 매 네비게이션마다 캐시를 비우므로
+  // "저장하기"/"불러오기"를 다시 열 때마다 최신 목록을 새로 받아온다.
+  let cachedSaveSlots = null;
+  let slotsRefreshInFlight = false;
+  function refreshSaveSlots() {
+    if (slotsRefreshInFlight) return;
+    slotsRefreshInFlight = true;
+    CaseFileState.listSlots().then(slots => {
+      slotsRefreshInFlight = false;
+      cachedSaveSlots = slots;
+      const top = nav[nav.length - 1];
+      if (isOpen() && (top === 'save' || top === 'load')) render();
+    }).catch(() => { slotsRefreshInFlight = false; });
+  }
+
   function isOpen() { return !root.classList.contains('cm-hidden'); }
 
   function open() {
@@ -71,7 +90,7 @@ function initCaseMenu(options) {
     if (nav.length > 1) { nav.pop(); linkPicker = null; render(); }
     else close();
   }
-  function pushView(view, newCtx) { nav.push(view); ctx = newCtx || {}; linkPicker = null; render(); }
+  function pushView(view, newCtx) { nav.push(view); ctx = newCtx || {}; linkPicker = null; cachedSaveSlots = null; render(); }
 
   menuBtn.addEventListener('click', (e) => { e.stopPropagation(); open(); });
   el.backdrop.addEventListener('click', close);
@@ -81,7 +100,7 @@ function initCaseMenu(options) {
 
   el.body.addEventListener('click', onBodyClick);
 
-  function onBodyClick(e) {
+  async function onBodyClick(e) {
     const tabSwitch = e.target.closest('[data-tab-switch]');
     if (tabSwitch) { ctx.tab = tabSwitch.dataset.tabSwitch; render(); return; }
     const evidenceFilter = e.target.closest('[data-evidence-filter]');
@@ -106,16 +125,17 @@ function initCaseMenu(options) {
       render();
     } else if (action === 'saveSlot') {
       const slot = Number(actionTarget.dataset.slot);
-      const existing = CaseFileState.listSlots()[slot - 1];
+      const existing = (cachedSaveSlots || CaseFileState.listSlotsLocalSync())[slot - 1];
       if (existing.occupied && !confirm(`슬롯 ${slot}에 이미 저장된 기록이 있습니다. 덮어쓸까요?`)) return;
-      if (options.onSaveRequested) options.onSaveRequested(slot);
+      if (options.onSaveRequested) await options.onSaveRequested(slot);
+      cachedSaveSlots = null;
       render();
     } else if (action === 'loadSlot') {
       const slot = Number(actionTarget.dataset.slot);
-      const existing = CaseFileState.listSlots()[slot - 1];
+      const existing = (cachedSaveSlots || CaseFileState.listSlotsLocalSync())[slot - 1];
       if (!existing.occupied) return;
       if (!confirm(`슬롯 ${slot}을 불러올까요? 현재 진행 상황과 다를 수 있습니다.`)) return;
-      const loaded = CaseFileState.loadSlot(slot);
+      const loaded = await CaseFileState.loadSlot(slot);
       if (loaded && options.onResumeToScene) options.onResumeToScene(loaded.sceneId, loaded.lineIndex || 0);
       close();
     } else if (action === 'setTextSpeed') {
@@ -628,7 +648,8 @@ function initCaseMenu(options) {
   }
 
   function renderSave() {
-    const slots = CaseFileState.listSlots();
+    const slots = cachedSaveSlots || CaseFileState.listSlotsLocalSync();
+    if (!cachedSaveSlots) refreshSaveSlots();
     const rows = slots.map(s => `
       <button class="cm-row" data-action="saveSlot" data-slot="${s.slotNum}">
         <div class="cm-row-main">
@@ -641,7 +662,8 @@ function initCaseMenu(options) {
   }
 
   function renderLoad() {
-    const slots = CaseFileState.listSlots();
+    const slots = cachedSaveSlots || CaseFileState.listSlotsLocalSync();
+    if (!cachedSaveSlots) refreshSaveSlots();
     const rows = slots.map(s => `
       <button class="cm-row"${s.occupied ? ` data-action="loadSlot" data-slot="${s.slotNum}"` : ' disabled'}>
         <div class="cm-row-main">

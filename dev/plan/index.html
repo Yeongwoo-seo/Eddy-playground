@@ -38,7 +38,7 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
     <div class="page-title">개발계획</div>
     <div class="save-status" id="saveStatus">&nbsp;</div>
   </div>
-  <div class="sub">이 기기에만 저장되는 메모입니다. 씬·미니게임 작업 순서나 남은 할 일을 자유롭게 적어두세요.</div>
+  <div class="sub">씬·미니게임 작업 순서나 남은 할 일을 자유롭게 적어두세요. 다른 기기에서도 이어서 볼 수 있게 서버에도 저장됩니다.</div>
   <div class="editor">
     <textarea class="plan-textarea" id="planText" placeholder="예)
 - [ ] week0 씬3 배경 교체
@@ -51,6 +51,7 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
 }
 </script>
+<script src="/dev/assetDb.js"></script>
 <script>
 const STORAGE_KEY = 'devPlanNotes';
 const textarea = document.getElementById('planText');
@@ -59,14 +60,28 @@ const status = document.getElementById('saveStatus');
 textarea.value = localStorage.getItem(STORAGE_KEY) || '';
 
 let saveTimer = null;
+function persist() {
+  localStorage.setItem(STORAGE_KEY, textarea.value);
+  AssetDB.setDevPlanNotes(textarea.value)
+    .then(() => { status.textContent = '저장됨'; })
+    .catch(() => { status.textContent = '저장됨 (이 기기만 · 서버 연결 실패)'; });
+}
 textarea.addEventListener('input', () => {
   status.textContent = '저장 중...';
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => {
-    localStorage.setItem(STORAGE_KEY, textarea.value);
-    status.textContent = '저장됨';
-  }, 400);
+  saveTimer = setTimeout(persist, 400);
 });
+
+// Pull down whatever was last saved from another device — only applied while
+// this textarea hasn't been touched yet, so a note the player is mid-typing
+// here never gets clobbered by an older/newer copy arriving from the server.
+let userHasEdited = false;
+textarea.addEventListener('input', () => { userHasEdited = true; }, { once: true });
+AssetDB.getDevPlanNotes().then(serverText => {
+  if (userHasEdited || serverText === null || serverText === textarea.value) return;
+  textarea.value = serverText;
+  localStorage.setItem(STORAGE_KEY, serverText);
+}).catch(() => {});
 </script>
 </body>
 </html>

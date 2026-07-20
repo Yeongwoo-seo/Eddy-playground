@@ -1242,8 +1242,116 @@ const AssetDB = (() => {
     return cfg;
   }
 
+  // 진행 저장 슬롯 (§16 "저장/불러오기 연동") — caseFileState.js가 만드는 슬롯
+  // 번들(caseState + economy/shop/wardrobe/exploration/relationship 스냅샷)
+  // 전체를 다른 카탈로그들과 같은 단일 JSON blob 패턴으로 보관한다. 예전엔
+  // localStorage(mkInvestigationSaveSlots_v1)에만 있어서 저장한 기기를 잃거나
+  // 브라우저 저장공간이 정리되면 진행 상황이 통째로 사라졌다 — 다른 기기/
+  // 재설치 후에도 이어할 수 있도록 서버에도 올려둔다. localStorage는 오프라인
+  // 폴백/즉시 표시용 캐시로 계속 같이 쓴다(caseFileState.js 참고).
+  const saveSlotsCache = new Map(); // single entry keyed 'slots'
+  const SAVE_SLOTS_PATH = 'player-save/slots.json';
+
+  async function getSaveSlots() {
+    if (saveSlotsCache.has('slots')) return saveSlotsCache.get('slots');
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${SAVE_SLOTS_PATH}?t=${Date.now()}`;
+    const map = (await fetchJsonBlob(url)) || {};
+    saveSlotsCache.set('slots', map);
+    return map;
+  }
+
+  async function setSaveSlot(slotNum, slotData) {
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${SAVE_SLOTS_PATH}?t=${Date.now()}`;
+    const current = await readCurrentForWrite(saveSlotsCache, 'slots', url, {});
+    const map = Object.assign({}, current);
+    if (slotData) map[slotNum] = slotData; else delete map[slotNum];
+    const blob = new Blob([JSON.stringify(map)], { type: 'application/json' });
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${DEV_ASSETS_BUCKET}/${SAVE_SLOTS_PATH}`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'x-upsert': 'true',
+      },
+      body: blob,
+    });
+    if (!res.ok) throw new Error(`저장 슬롯 업로드 실패 (${res.status}): ${await res.text()}`);
+    saveSlotsCache.set('slots', map);
+    return map;
+  }
+
+  // 플레이어 환경설정 (텍스트 속도/효과음/BGM/진동 — caseState.settings) —
+  // 위 저장 슬롯과 별개로 늘 즉시 반영돼야 하는 값이라 슬롯 저장(명시적
+  // "저장하기" 액션) 타이밍과 무관하게 바뀔 때마다 바로 올린다. 같은 단일
+  // JSON blob 패턴.
+  const playerSettingsCache = new Map(); // single entry keyed 'settings'
+  const PLAYER_SETTINGS_PATH = 'player-save/settings.json';
+
+  async function getPlayerSettings() {
+    if (playerSettingsCache.has('settings')) return playerSettingsCache.get('settings');
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${PLAYER_SETTINGS_PATH}?t=${Date.now()}`;
+    const settings = (await fetchJsonBlob(url)) || null;
+    if (settings) playerSettingsCache.set('settings', settings);
+    return settings;
+  }
+
+  async function setPlayerSettings(settings) {
+    const url = `${SUPABASE_URL}/storage/v1/object/${DEV_ASSETS_BUCKET}/${PLAYER_SETTINGS_PATH}`;
+    const blob = new Blob([JSON.stringify(settings)], { type: 'application/json' });
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'x-upsert': 'true',
+      },
+      body: blob,
+    });
+    if (!res.ok) throw new Error(`환경설정 업로드 실패 (${res.status}): ${await res.text()}`);
+    playerSettingsCache.set('settings', settings);
+    return settings;
+  }
+
+  // 개발계획 메모 (/dev/plan/, devPlanFab.js 플로팅 버튼 공용) — 예전엔
+  // "이 기기에만 저장되는 메모"였다(localStorage의 devPlanNotes 키). 다른
+  // 기기에서도 같은 메모를 보고/이어 쓸 수 있도록 서버에도 올린다.
+  const devPlanNotesCache = new Map(); // single entry keyed 'text'
+  const DEV_PLAN_NOTES_PATH = 'dev-plan/notes.json';
+
+  async function getDevPlanNotes() {
+    if (devPlanNotesCache.has('text')) return devPlanNotesCache.get('text');
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${DEV_PLAN_NOTES_PATH}?t=${Date.now()}`;
+    const data = await fetchJsonBlob(url);
+    const text = (data && typeof data.text === 'string') ? data.text : null;
+    if (text !== null) devPlanNotesCache.set('text', text);
+    return text;
+  }
+
+  async function setDevPlanNotes(text) {
+    const url = `${SUPABASE_URL}/storage/v1/object/${DEV_ASSETS_BUCKET}/${DEV_PLAN_NOTES_PATH}`;
+    const blob = new Blob([JSON.stringify({ text, updatedAt: Date.now() })], { type: 'application/json' });
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'x-upsert': 'true',
+      },
+      body: blob,
+    });
+    if (!res.ok) throw new Error(`개발계획 메모 업로드 실패 (${res.status}): ${await res.text()}`);
+    devPlanNotesCache.set('text', text);
+    return text;
+  }
+
   return {
     addAsset, getAssetsByType, getAsset, getAssetsByIds, deleteAsset, preloadImage,
+    getSaveSlots, setSaveSlot,
+    getPlayerSettings, setPlayerSettings,
+    getDevPlanNotes, setDevPlanNotes,
     getRoomHotspots, setRoomHotspot,
     getMinigameHotspot, setMinigameHotspot,
     getItems, setItem, getRecipes, setRecipes,
