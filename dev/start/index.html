@@ -138,7 +138,7 @@ const el = {
 // Straight into 0주차's first scene, not the /dev/week0 scene picker — same
 // entry point /play/'s 시작하기 uses, so positioning the button here
 // previews the real tap-through-the-whole-story flow, not a scene list.
-function goToRealStart() { location.href = '/dev/game/?scene=week0-scene-flight'; }
+function goToRealStart() { location.href = '/play/game/?scene=week0-scene-flight'; }
 
 // 게임 스타트(시작하기) → 검은 화면에 /schedule.html 홈과 같은 스타일의
 // 세로 카드 리스트(1~4주차 + 미니게임). /play/와 동일한 목록 —
@@ -154,8 +154,8 @@ const WEEK_TILES = [
 ];
 
 const WEEK1_MINIGAMES = [
-  { name: '사진 속 인물 찾기', route: '/dev/minigame-photo-zoom/' },
-  { name: '시간대 정리', route: '/dev/minigame-timeline/' },
+  { name: '사진 속 인물 찾기', route: '/play/minigame-photo-zoom/' },
+  { name: '시간대 정리', route: '/play/minigame-timeline/' },
 ];
 
 el.weekGrid.innerHTML = WEEK_TILES.map(t => `

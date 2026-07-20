@@ -33,7 +33,7 @@ function loadShopState() {
 let shopState = loadShopState();
 function saveShopState() { localStorage.setItem(SHOP_STATE_KEY, JSON.stringify(shopState)); }
 
-// unlockConditions vocabulary shared with dev/game/index.html's own
+// unlockConditions vocabulary shared with play/game/index.html's own
 // evaluateCondition — kept as its own small evaluator here (not imported
 // from game/index.html) so shop/wardrobe screens don't need the whole VN
 // engine loaded to compute what's for sale.

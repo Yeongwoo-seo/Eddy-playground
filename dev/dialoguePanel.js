@@ -15,7 +15,7 @@
    would misread as a block boundary. Saving parses the block back into
    lines by position and diffs each against dialogueData.js's static line
    to build one combined override object per changed line — the static
-   source itself is never touched, /dev/game merges the override over it
+   source itself is never touched, /play/game merges the override over it
    at load time. This only supports editing existing lines in place, not
    adding/removing/reordering them.
 

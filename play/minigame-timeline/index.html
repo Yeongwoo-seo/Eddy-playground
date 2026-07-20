@@ -7,11 +7,11 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <meta name="theme-color" content="#080A0C">
-<link rel="manifest" href="/dev/manifest.json">
+<link rel="manifest" href="/play/manifest.json">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="OPERATION MK DEV">
+<meta name="apple-mobile-web-app-title" content="Missing Key">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
 :root{
@@ -89,7 +89,7 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .success-name:empty{display:none}
 .success-text{flex:1;font-size:16px;line-height:1.65;color:#fff;white-space:pre-wrap;word-break:keep-all}
 .success-foot{display:flex;justify-content:flex-end;padding-top:6px}
-/* choice-btn 스타일/애니메이션을 dev/game·dev/explore의 choiceIn과 동일하게
+/* choice-btn 스타일/애니메이션을 play/game·play/explore의 choiceIn과 동일하게
    맞춘다 — 이 화면은 대화창이 화면 하단에 고정된 구조가 아니라 카드 하나가
    가운데 뜨는 구조라 선택지가 그 카드 안(success-dlg)에 그대로 이어지지만,
    버튼 자체의 생김새·페이드인 타이밍은 다른 두 플레이어와 같아야 한다. */
@@ -162,7 +162,7 @@ window.addEventListener('resize', setVh100);
 window.addEventListener('orientationchange', setVh100);
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
+  navigator.serviceWorker.register('/play/sw.js', { scope: '/play/' });
 }
 </script>
 <script src="/realPlayMode.js"></script>
@@ -489,7 +489,7 @@ function startSuccessDialogue() {
 
 function fadeOutAndRedirect() {
   el.fadeOverlay.classList.add('show');
-  setTimeout(() => { location.href = '/dev/game/?scene=week1-scene-009'; }, 950);
+  setTimeout(() => { location.href = '/play/game/?scene=week1-scene-009'; }, 950);
 }
 
 /* ===== Boot ===== */

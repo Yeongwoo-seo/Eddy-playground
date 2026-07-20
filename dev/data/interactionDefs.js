@@ -1,5 +1,5 @@
 /* OPERATION MK DEV — 상호작용 정의 (The Missing Key v1 §7.3/§7.4/§14.7).
-   Static catalog read by explorationState.js + dev/explore/index.html.
+   Static catalog read by explorationState.js + play/explore/index.html.
    First content slice: 1주차 Phase 1 관광 자유 탐색 (§12.2 "관광 자유 탐색
    상세"). Dialogue lines are authored inline here (not in dev/dialogueData.js)
    since this hub content doesn't correspond to any existing scripted scene —
@@ -28,7 +28,7 @@
 const interactionDefs = {
   // Phase 진입 시 자동 재생되는 도입 대화 (§신규) — 예전엔 week1-scene-002라는
   // 별도 VN 씬(dev/dialogueData.js, locationDefs.js의 w1-circular-quay.
-  // firstVisitSceneId로 /dev/game까지 갔다 오던 구조)이었지만, 탐색허브
+  // firstVisitSceneId로 /play/game까지 갔다 오던 구조)이었지만, 탐색허브
   // 진입 흐름 전체가 이미 허브 안에 있으므로 이 내용도 허브 네이티브
   // 콘텐츠로 옮겼다 — 대사/선택지/효과는 그대로, 그릇만 옮겨졌다(사진 포즈
   // 루프, 전시장 발견 선택지). type:'phaseIntro'는 탭으로 여는 topic/scene과
@@ -37,7 +37,7 @@ const interactionDefs = {
   // 뜬다. "지금 들어가요"/"조금 더 둘러보다 갈래요" 둘 다 결국 이 허브
   // 화면으로 이어지므로(더 이상 다른 페이지로 나가는 흐름이 아니므로),
   // 원래 wander-more 선택지에 있던 returnToExploration 이펙트는 뺐다 — see
-  // performMove()/playSceneInline() in dev/explore/index.html.
+  // performMove()/playSceneInline() in play/explore/index.html.
   'w1-phase1-intro': {
     id: 'w1-phase1-intro',
     type: 'phaseIntro',
@@ -143,7 +143,7 @@ const interactionDefs = {
     ],
   },
   // §12.3 하버 포토 미니게임 — a 'minigame'-type interaction hands off to a
-  // routed page instead of playing inline lines (see dev/explore/index.html's
+  // routed page instead of playing inline lines (see play/explore/index.html's
   // playInteraction). Points-bearing and reusable any number of times, but
   // only pays out once (EconomyState.claimReward inside the minigame itself).
   'w1ov-minigame-photo': {
@@ -490,9 +490,9 @@ const interactionDefs = {
      breaking flag dependencies inside content this careful; a coarse
      "visit = launch the whole scene" hand-off gets the free-order benefit
      spec §12.6 asks for with zero risk to the existing script.
-     type: 'scene' (§신규) — 이 hand-off은 더 이상 dev/game/index.html로
+     type: 'scene' (§신규) — 이 hand-off은 더 이상 play/game/index.html로
      완전히 페이지 이동하지 않는다. sceneId가 가리키는 씬(스크립트는 그대로)을
-     허브 자신의 하단 패널 안에서 인라인 재생한다 — see dev/explore/index.html
+     허브 자신의 하단 패널 안에서 인라인 재생한다 — see play/explore/index.html
      playSceneInline. */
   // Phase 진입 시 자동 재생되는 도입 대화 — w1-phase1-intro(위)와 같은
   // type:'phaseIntro' 패턴. week1-scene-005b(다니엘 최초 진술)의 마지막 줄
@@ -572,15 +572,15 @@ const interactionDefs = {
   },
   // isInterrogation (§신규) — the hub shows these as a floating "심문하기"
   // button above the bottom bar instead of burying them in the normal 대화
-  // topic list (see dev/explore/index.html renderInterrogateBtn/
+  // topic list (see play/explore/index.html renderInterrogateBtn/
   // getInterrogationInteraction) — 전화 걸기(w1reverify-martin-call 등, 아래)
   // 처럼 route를 갖는 다른 minigame형 hand-off와 구분하기 위한 플래그.
   //
   // type: 'scene' (심문 씬 허브 인라인 재생, §신규) — 예전엔 type:'minigame'
-  // + route로 dev/game/index.html이라는 별도 페이지로 완전히 이동했지만,
+  // + route로 play/game/index.html이라는 별도 페이지로 완전히 이동했지만,
   // 지금은 sceneId가 가리키는 dev/dialogueData.js의 스크립트(라운드·선택지·
   // 가설·미니게임 임베드 그대로)를 허브 자신의 하단 패널 안에서 재생한다
-  // (dev/explore/index.html playSceneInline) — 대화하기가 이미 인라인
+  // (play/explore/index.html playSceneInline) — 대화하기가 이미 인라인
   // 전환된 것과 같은 패턴. 씬 데이터/구조 자체는 전혀 손대지 않았고 오직
   // "어디서 재생되는가"만 바뀐 것이라, 씬이 사라지는 게 아니다.
   // Phase 4 "앞쪽 대화" — 용의자 chip을 눌렀을 때 심문하기(isInterrogation)와
@@ -605,7 +605,7 @@ const interactionDefs = {
   },
   // autoPlayOnFirstVisit (§신규) — 처음 만나는 용의자는 심문하기 버튼을
   // 누르지 않아도 그 장소에 처음 들어가는 순간 심문 씬이 자동 재생된다
-  // (findAutoInterrogation/performMove, dev/explore/index.html) — phaseIntro가
+  // (findAutoInterrogation/performMove, play/explore/index.html) — phaseIntro가
   // phase 단위로 "낯선 도입부는 자동 재생"하는 것과 같은 원칙을 장소 단위로
   // 적용한 것. 재방문(이미 state가 'new'가 아님) 이후엔 대화하기/심문하기
   // 버튼이 그대로 남아 다시 열어볼 수 있다. Phase 5 재검증의 isInterrogation
@@ -717,7 +717,7 @@ const interactionDefs = {
     type: 'minigame',
     label: '전화 걸기',
     icon: '📞',
-    route: '/dev/game/?scene=week1-scene-011b',
+    route: '/play/game/?scene=week1-scene-011b',
   },
 };
 
@@ -736,7 +736,7 @@ const interactionDefs = {
 const presentEvidenceRules = [
   // Phase 4(용의자 탐문) correct 룰 — 아직 실제 컨텐츠로 다듬어진 반응은
   // 아니고, 탐색허브 제시하기 시트의 "정답 제시(테스트용)" 버튼
-  // (presentTestCorrectAnswer, dev/explore/index.html)이 심문마다 곧바로
+  // (presentTestCorrectAnswer, play/explore/index.html)이 심문마다 곧바로
   // 시험해볼 correct 경로를 갖도록 임시로 채운 것 — 실제 심문 씬(006/
   // 007/008)이 이미 그 자체 증거 게이트로 진행되므로, 이 반응 자체는 여전히
   // 순수 부가 flavor(§8.2 원칙 그대로)다. 나중에 실제 스토리에 맞는
@@ -783,7 +783,7 @@ const defaultPresentReaction = { result: 'wrong', reactionText: '음... 이게 �
 // 1주차 Phase 1의 "필수 조사" 체크리스트(§10.2) — 관광 파트는 조사가 아니라
 // 자유도 중심이라 필수 fact는 없지만, §12.2의 전시장 진입 제안 조건(관광
 // 장소 2곳 이상 방문 또는 특정 인터랙션 완료)은 여기서 표현해 둔다. 실제
-// "제안" UI(소프트 게이트, §10.3)는 아직 dev/explore/index.html에 연결하지
+// "제안" UI(소프트 게이트, §10.3)는 아직 play/explore/index.html에 연결하지
 // 않음 — 후속 작업.
 const phaseGoals = {
   W1_TOURISM: {

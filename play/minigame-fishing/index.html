@@ -7,11 +7,11 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <meta name="theme-color" content="#0A2A3A">
-<link rel="manifest" href="/dev/manifest.json">
+<link rel="manifest" href="/play/manifest.json">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="OPERATION MK DEV">
+<meta name="apple-mobile-web-app-title" content="Missing Key">
 <style>
 /* 낚시 화면 전용 폰트 — 요청대로 산돌미생체 하나로 통일한다(아래 --mono/
    --sans 둘 다 이 폰트를 가리키게 해서, 기존에 모노스페이스/산세리프로
@@ -544,7 +544,7 @@ setVh100();
 window.addEventListener('resize', setVh100);
 window.addEventListener('orientationchange', setVh100);
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
+  navigator.serviceWorker.register('/play/sw.js', { scope: '/play/' });
 }
 </script>
 <script src="/realPlayMode.js"></script>
@@ -708,7 +708,7 @@ const el = {
 };
 
 // 스토리에서 넘어온 경우(week0-scene-circular-quay-minigame 등) 뒤로가기는
-// 낚시 설정 화면이 아니라 다음 씬으로 이어져야 한다 — /dev/shop/, /dev/wardrobe/
+// 낚시 설정 화면이 아니라 다음 씬으로 이어져야 한다 — /play/shop/, /play/wardrobe/
 // 와 같은 mkShopReturnUrl 계약(SHOP_TUTORIAL_RETURN_SCENE, dev/data/
 // sceneRoutes.js)을 그대로 재사용한다. 값이 없으면(=/dev/minigames 등에서 직접
 // 열었으면) 원래대로 설정 화면으로 돌아간다.
@@ -1137,7 +1137,7 @@ el.sellFishModal.addEventListener('pointerdown', (e) => {
    돌아가야 하지만, 그 모드 자체가 아직 없어 지금은 구현하지 않는다. */
 function handleQuit() {
   const nextScene = settingsParams.get('nextScene');
-  location.href = nextScene ? ('/dev/game/?scene=' + encodeURIComponent(nextScene)) : '/dev/minigame-fishing/';
+  location.href = nextScene ? ('/play/game/?scene=' + encodeURIComponent(nextScene)) : '/dev/minigame-fishing/';
 }
 
 // 낚시가능 영역(fishableAreas) 판정은 캐릭터가 아니라 "추(찌)가 실제로

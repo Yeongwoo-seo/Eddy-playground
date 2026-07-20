@@ -53,10 +53,10 @@ const DevDiag = (() => {
 })();
 
 const AssetDB = (() => {
-  // /dev/game re-requests the active character/background asset on every
+  // /play/game re-requests the active character/background asset on every
   // single dialogue line change, even when it's the same asset as before —
   // without a cache that's a Supabase round-trip per tap, which is exactly
-  // why lines were visibly slow to appear. Every /dev/game scene is its own
+  // why lines were visibly slow to appear. Every /play/game scene is its own
   // full page navigation (see game/index.html's nextSceneId handoff), so an
   // in-memory-only Map would restart empty on every single scene change —
   // re-paying that round trip for the *same* background/portrait dozens of
@@ -584,14 +584,14 @@ const AssetDB = (() => {
 
   // Seeds dialogueOverridesCache/soundsCache directly (no network, no
   // sessionStorage of their own) — used exclusively by WeekPreloader to
-  // replay its one bulk fetch's results into a fresh /dev/game page load, so
+  // replay its one bulk fetch's results into a fresh /play/game page load, so
   // getDialogueOverrides/getSounds see a warm cache instead of re-fetching
   // per scene. Deliberately *not* auto-persisted/hydrated the way `cache`
   // and `warmedImages` are above: dialogue overrides and the sound catalog
   // are cache-busted (`?t=${Date.now()}`) on purpose because /dev/upload's
   // editors expect every read there to reflect the latest save, and blanket
   // sessionStorage hydration would silently defeat that for any page, not
-  // just /dev/game.
+  // just /play/game.
   function primeDialogueOverrides(sceneId, map) {
     if (!sceneId || dialogueOverridesCache.has(sceneId)) return;
     dialogueOverridesCache.set(sceneId, normalizeDialogueOverrides(map || {}));
@@ -783,7 +783,7 @@ const AssetDB = (() => {
   // (그 위치가 지도에 핀을 찍을 "랜드마크급"인지 자체를 결정 — 코드 수정
   // 필요)이고, 이건 그 좌표를 실제 생성된 지도 그림을 보면서 미세 조정하기
   // 위한 override다. /dev/upload 탐색허브 탭의 지도 핀 편집기(renderMapPin
-  // Editor)가 여기 쓰고, dev/explore/index.html의 openMoveMapSheet가 여기
+  // Editor)가 여기 쓰고, play/explore/index.html의 openMoveMapSheet가 여기
   // 값이 있으면 locationDefs.js의 mapPosition보다 우선해서 읽는다.
   const mapPinsCache = new Map(); // single entry keyed 'positions'
   const MAP_PINS_PATH = 'map-pins/positions.json';
@@ -1474,7 +1474,7 @@ const DevGameState = {
 
   // Which AssetDB sound-catalog entry (a 'bgm'-kind one) plays as a scene's
   // background music — same one-slot-per-scene, localStorage-backed pattern
-  // as the background map above. /dev/game reads this on scene load; the
+  // as the background map above. /play/game reads this on scene load; the
   // catalog entry itself (videoId/start/end) lives in AssetDB.getSounds().
   _loadSceneBgmMap() {
     try { return JSON.parse(localStorage.getItem(this._keys.sceneBgm)) || {}; }
@@ -1558,7 +1558,7 @@ const DevGameState = {
   // check which asset is active for a specific outfit's slot regardless of
   // which outfit is currently selected for gameplay (getCharacterAssetId
   // above always resolves against the *selected* outfit, which is the right
-  // behavior for /dev/game but wrong for browsing a different outfit's
+  // behavior for /play/game but wrong for browsing a different outfit's
   // uploads in the editor).
   getCharacterAssetIdForOutfit(characterKey, outfit, expression) {
     if (!characterKey) return null;

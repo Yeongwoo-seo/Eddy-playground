@@ -1,15 +1,15 @@
 /* OPERATION MK DEV — 장소 정의 (The Missing Key v1 §7/§14.6).
    Static catalog, same idiom as caseFileData.js/shopItems.js. First content
    slice: 1주차 Phase 1 관광 자유 탐색 (§12.2) — the exploration hub's own
-   framework (explorationState.js, dev/explore/) is week/phase-agnostic, this
+   framework (explorationState.js, play/explore/) is week/phase-agnostic, this
    file is just its first real data.
 
    No hardcoded static asset paths — background/character art follows the
    same AssetDB upload pipeline every other scene uses (DevGameState.
    getBackgroundId(locationId) / AssetDB.getAsset), so a location's own `id`
    doubles as its background-asset key, exactly like a VN scene's `id` does
-   in dev/game/index.html. `firstVisitFlag` (optional) is set once, the first
-   time a location is actually entered — see dev/explore/index.html's
+   in play/game/index.html. `firstVisitFlag` (optional) is set once, the first
+   time a location is actually entered — see play/explore/index.html's
    moveTo() — so shop-catalog unlockConditions like
    outfit-w1-harbour-breiz/outfit-w1-rocks-vintage (dev/data/shopItems.js)
    have something real driving them.
@@ -21,7 +21,7 @@
 
    `investigateHotspots` (optional) — array of { x, y, interactionId }, x/y in
    % of the background image, read by 조사하기's toggle (see
-   renderInvestigateHotspots() in dev/explore/index.html) to place invisible
+   renderInvestigateHotspots() in play/explore/index.html) to place invisible
    tappable zones directly on the location's own pannable/zoomable #locCanvas
    (no visible marker — 조사하기 is a "look around and find it" tool, not a
    spoiler UI). interactionId can point at any existing interactionDefs entry
@@ -34,18 +34,18 @@
 
    `charPositions` (optional) — { [characterId]: { x, y } } in px, this
    location's own exception to the hub-wide standing position. Every hub
-   character otherwise stands at DEFAULT_HUB_CHAR_POS (dev/explore/index.html,
+   character otherwise stands at DEFAULT_HUB_CHAR_POS (play/explore/index.html,
    currently { x: 0, y: -150 }) — a location only needs this field for the
    rare spot where that shared default doesn't fit. Purely a static code
    value now (no runtime editor/override store backs it) — see
-   resolveCharPos() in dev/explore/index.html.
+   resolveCharPos() in play/explore/index.html.
 
    `mapPosition` (optional) — { x, y } in % over that phase's overview map
    image (phaseMaps below), for locations landmark-level enough to get their
    own pin on a city map (서큘러키/오페라/하버브리지/더 록스처럼 지도에서
    서로 다른 지점). A location reached only *within* another spot (가게/전시장
    입구 등, 골목 안쪽이라 지도에 따로 찍기 애매한 곳)는 이 필드를 생략한다 —
-   이동하기 시트(openMoveSheet, dev/explore/index.html)가 그런 위치는 지도
+   이동하기 시트(openMoveSheet, play/explore/index.html)가 그런 위치는 지도
    대신 그 아래 보통 리스트 줄로 보여준다.
 
    `exits` — 같은 phase 안에서 이동하기가 갈 수 있는 곳을 이 배열로 제한하던
@@ -62,7 +62,7 @@
 
    그래도 `characters`/`enterSceneId`/`enterSceneLabel`/`mapPosition`처럼 장소
    자체의 값이 phase마다 달라져야 하는 드문 경우엔, 평범한 값 대신
-   `{ __byPhase: true, [phase]: value }` 객체로 쓴다 — dev/explore/index.html의
+   `{ __byPhase: true, [phase]: value }` 객체로 쓴다 — play/explore/index.html의
    resolveByPhase(value, phase)가 현재 phase 기준으로 해석한다. `__byPhase`
    마커를 반드시 붙여야 한다 — mapPosition의 평범한 값 자체가 이미 `{x,y}`
    순수 객체라, 마커 없이 "배열 아닌 객체=phase-keyed"로만 판별하면 평범한
@@ -122,8 +122,8 @@ const locationDefs = {
     firstVisitFlag: 'visitedTheRocksBoutique',
     // A location can hand off to a routed page instead of showing hotspots —
     // the hub screen treats this exactly like game/index.html's minigame
-    // handoff (sessionStorage return-url, see dev/explore/index.html).
-    routeOnEnter: '/dev/shop/',
+    // handoff (sessionStorage return-url, see play/explore/index.html).
+    routeOnEnter: '/play/shop/',
   },
   'w1-exhibition-entrance': {
     id: 'w1-exhibition-entrance',
@@ -221,7 +221,7 @@ const locationDefs = {
     // x/y는 실제 사진이 아직 없어 잠정 배치한 값이라, /dev/upload로 진짜
     // 사진을 올린 뒤 눈으로 보고 다시 잡아야 한다(§파일 상단 investigateHotspots
     // 주석 참고). 마커가 안 보이는 순수 탭 존이라 icon은 안 쓴다(§신규 —
-    // dev/explore/index.html의 .investigate-hotspot 참고).
+    // play/explore/index.html의 .investigate-hotspot 참고).
     investigateHotspots: [
       { x: 50, y: 30, interactionId: 'w1as-topic-k01' },
       { x: 20, y: 55, interactionId: 'w1as-topic-camera' },
@@ -284,7 +284,7 @@ const locationDefs = {
 };
 
 /* ===== 지도 화면 (phase별 오버뷰) =====
-   이동하기 시트(openMoveSheet, dev/explore/index.html)가 exit 목록을 보여줄 때,
+   이동하기 시트(openMoveSheet, play/explore/index.html)가 exit 목록을 보여줄 때,
    그 phase에 여기 정의가 있으면 리스트 대신 지도 그림 위에 원형 핀 버튼을
    얹는다 — 위 locationDefs 항목들의 mapPosition이 핀 좌표. 지도 자체의 배경
    사진은 각 위치 사진과 같은 방식(DevGameState.getBackgroundId)으로 조회하며,

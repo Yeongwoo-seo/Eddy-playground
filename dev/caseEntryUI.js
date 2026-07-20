@@ -1,5 +1,5 @@
 /* OPERATION MK DEV — CaseEntry 제시 시트 공용 렌더 (§11 공용 컴포넌트).
-   dev/game/index.html(대화 중 제시 시트)과 dev/explore/index.html(탐색허브
+   play/game/index.html(대화 중 제시 시트)과 play/explore/index.html(탐색허브
    제시 시트)이 각각 따로 구현하던 필터/그룹핑 로직을 하나로 합친다.
    순수 HTML 문자열 생성만 담당 — 실제 DOM 교체와 이벤트 재바인딩은 호스트
    페이지가 기존에 쓰던 방식(innerHTML 교체 후 querySelectorAll로 재바인딩,
@@ -26,9 +26,9 @@ function presentSheetEntriesForTab(presentableEntries, ctx) {
 // 책임이고, 여기는 그 결과를 그대로 그린다.
 //
 // renderPresentGridHtml은 탭 바 없이 그리드+확인바만 그린다 — 호출부가
-// 자체 탭 바(예: dev/explore/index.html처럼 인물 탭을 하나 더 붙이는 경우)를
+// 자체 탭 바(예: play/explore/index.html처럼 인물 탭을 하나 더 붙이는 경우)를
 // 따로 그려야 할 때 재사용한다. 탭 바까지 포함한 완전한 시트가 필요하면
-// renderPresentSheetHtml을 쓴다(dev/game/index.html처럼 4탭이면 충분한 경우).
+// renderPresentSheetHtml을 쓴다(play/game/index.html처럼 4탭이면 충분한 경우).
 function renderPresentGridHtml(allEntries, ctx) {
   ctx = ctx || {};
   const activeTab = ctx.activeTab || 'related';

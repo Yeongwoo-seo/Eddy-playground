@@ -1,6 +1,6 @@
 /* OPERATION MK DEV — shared Visual Novel dialogue engine.
    Typewriter effect + tap-to-skip/tap-to-next, extracted out of
-   /dev/game so the Dialogue Editor's Preview uses the exact same
+   /play/game so the Dialogue Editor's Preview uses the exact same
    engine instead of a second, drifting implementation.
 
    Interactive detective-game additions (all opt-in per line, so any
@@ -105,7 +105,7 @@ function createVNPlayer({ onLineChange, onTextUpdate, onArrow, onComplete, onEff
       // text stayed visibly readable through it while the speaker name (set
       // by onLineChange above) had already switched to the new line's, and
       // then the whole dialogue box would jump/reset only once the overlay
-      // finished. See dev/game/index.html's playSceneTransition.
+      // finished. See play/game/index.html's playSceneTransition.
       onTextUpdate('');
       // A failed background/asset fetch inside onSceneTransition must not
       // leave isPausing stuck true forever — that permanently disables tap()
