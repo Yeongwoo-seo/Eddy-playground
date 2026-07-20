@@ -24,14 +24,16 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .tag{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px}
 .title{font-size:26px;font-weight:700;letter-spacing:-.2px;margin-bottom:10px}
 .sub{font-size:14px;color:var(--text-secondary);margin-bottom:32px;line-height:1.6}
-.week-list{display:flex;flex-direction:column;gap:14px}
-.week-btn{display:flex;align-items:center;gap:14px;background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:18px 20px;text-decoration:none;color:inherit;transition:transform .15s,background .15s}
-.week-btn:active{transform:scale(.98);background:var(--surface-2)}
-.week-num{font-family:var(--mono);font-size:13px;color:var(--cyan);flex-shrink:0}
-.week-txt{flex:1;min-width:0}
-.week-name{font-size:16px;font-weight:700}
-.week-meta{font-size:12.5px;color:var(--text-secondary);margin-top:3px;line-height:1.5;font-family:var(--mono)}
-.week-arrow{color:var(--text-muted);font-size:18px;flex-shrink:0}
+.week-list{display:flex;flex-direction:column;gap:16px}
+.week-card{position:relative;display:block;min-height:196px;border-radius:24px;overflow:hidden;text-decoration:none;color:inherit;background-size:cover;background-position:center;transition:transform .15s}
+.week-card:active{transform:scale(.98)}
+.week-card::before{content:'';position:absolute;inset:0;background:linear-gradient(to top, rgba(3,4,5,.88) 0%, rgba(3,4,5,.42) 48%, rgba(3,4,5,.05) 78%)}
+.week-icon{position:absolute;top:16px;left:16px;z-index:1;width:38px;height:38px;border-radius:50%;background:rgba(8,10,12,.55);border:1px solid rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;font-size:18px;backdrop-filter:blur(4px)}
+.week-body{position:absolute;left:20px;right:20px;bottom:18px;z-index:1}
+.week-card-num{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.08em;color:rgba(237,241,244,.65);margin-bottom:4px}
+.week-card-title{font-size:21px;font-weight:800;letter-spacing:-.2px;line-height:1.25;text-shadow:0 1px 6px rgba(0,0,0,.4)}
+.week-card-sub{font-size:13.5px;color:rgba(237,241,244,.82);margin-top:6px;line-height:1.5}
+.week-card-meta{font-family:var(--mono);font-size:11px;color:var(--cyan);margin-top:9px;letter-spacing:.03em}
 </style>
 </head>
 <body>
@@ -53,20 +55,21 @@ if ('serviceWorker' in navigator) {
 // week0UploadScenes, which also carries /dev/upload's room-search
 // pseudo-scenes) so the count shown here matches /dev/weekN's own list.
 const STORY_WEEKS = [
-  { id: 'week0', label: '0주차', title: 'ARRIVAL', desc: '재회와 황동 열쇠의 첫 발견', scenes: week0Scenes },
-  { id: 'week1', label: '1주차', title: '사라진 K-01', desc: '첫 사건, 그리고 M.K.라는 이름', scenes: week1Scenes },
-  { id: 'week2', label: '2주차', title: '존재하지 않는 여자', desc: '가짜 목격담과 두 번째 흔적', scenes: week2Scenes },
-  { id: 'week3', label: '3주차', title: '사라진 원본 열쇠', desc: '위조된 열쇠, 첫 직접 연락', scenes: week3Scenes },
-  { id: 'week4', label: '4주차', title: 'M.K.는 미카 코바치인가', desc: '대면, 붕괴, 그리고 최종 정체', scenes: week4Scenes },
+  { id: 'week0', label: '0주차', title: 'ARRIVAL', desc: '재회와 황동 열쇠의 첫 발견', scenes: week0Scenes, icon: '✈️', bg: 'linear-gradient(135deg,#233541 0%,#0e1319 65%,#080a0c 100%)' },
+  { id: 'week1', label: '1주차', title: '사라진 K-01', desc: '첫 사건, 그리고 M.K.라는 이름', scenes: week1Scenes, icon: '🔍', bg: 'linear-gradient(135deg,#2b2320 0%,#150f0d 65%,#080a0c 100%)' },
+  { id: 'week2', label: '2주차', title: '존재하지 않는 여자', desc: '가짜 목격담과 두 번째 흔적', scenes: week2Scenes, icon: '🕵️', bg: 'linear-gradient(135deg,#2a2233 0%,#140f19 65%,#080a0c 100%)' },
+  { id: 'week3', label: '3주차', title: '사라진 원본 열쇠', desc: '위조된 열쇠, 첫 직접 연락', scenes: week3Scenes, icon: '🗝️', bg: 'linear-gradient(135deg,#332c1c 0%,#17130a 65%,#080a0c 100%)' },
+  { id: 'week4', label: '4주차', title: 'M.K.는 미카 코바치인가', desc: '대면, 붕괴, 그리고 최종 정체', scenes: week4Scenes, icon: '🎭', bg: 'linear-gradient(135deg,#1c1c1f 0%,#0c0c0d 65%,#050506 100%)' },
 ];
 document.getElementById('weekList').innerHTML = STORY_WEEKS.map(w => `
-  <a class="week-btn" href="/dev/${w.id}/">
-    <div class="week-num">${w.label}</div>
-    <div class="week-txt">
-      <div class="week-name">${w.title}</div>
-      <div class="week-meta">${w.desc} · 씬 ${w.scenes.length}개</div>
+  <a class="week-card" href="/dev/${w.id}/" style="background-image:${w.bg}">
+    <div class="week-icon">${w.icon}</div>
+    <div class="week-body">
+      <div class="week-card-num">${w.label}</div>
+      <div class="week-card-title">${w.title}</div>
+      <div class="week-card-sub">${w.desc}</div>
+      <div class="week-card-meta">씬 ${w.scenes.length}개</div>
     </div>
-    <div class="week-arrow">›</div>
   </a>
 `).join('');
 </script>
