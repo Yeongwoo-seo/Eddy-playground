@@ -49,7 +49,7 @@
         <button class="dpf-refresh" aria-label="새로고침">⟳</button>
         <button class="dpf-close" aria-label="닫기">✕</button>
       </div>
-      <div class="dpf-sub">이 기기에만 저장되는 메모입니다.</div>
+      <div class="dpf-sub" id="dpfSub">이 기기에만 저장되는 메모입니다.</div>
       <textarea class="dpf-textarea" id="dpfText" placeholder="예)
 - [ ] week0 씬3 배경 교체
 - [ ] 폰 찾기 미니게임 정답 영역 재조정
@@ -67,15 +67,35 @@
 
   const textarea = modal.querySelector('#dpfText');
   const status = modal.querySelector('#dpfStatus');
+  const sub = modal.querySelector('#dpfSub');
   const backdrop = modal.querySelector('.dpf-backdrop');
   const refreshBtn = modal.querySelector('.dpf-refresh');
   const closeBtn = modal.querySelector('.dpf-close');
+
+  // Not every dev page that mounts this floating button also loads
+  // assetDb.js (see the pages' own <script> tags) — fall back to the old
+  // this-device-only behavior wherever AssetDB isn't around.
+  const hasAssetDb = typeof AssetDB !== 'undefined' && !!AssetDB.getDevPlanNotes;
+  if (hasAssetDb) sub.textContent = '다른 기기에서도 이어서 볼 수 있게 서버에도 저장됩니다.';
 
   function openModal() {
     textarea.value = localStorage.getItem(STORAGE_KEY) || '';
     status.textContent = ' ';
     modal.classList.add('dpf-show');
     setTimeout(() => textarea.focus(), 300);
+    // Pull down whatever was last saved from another device — only applied
+    // while nothing's been typed into this open of the panel yet, so a note
+    // being drafted right now never gets overwritten by an older/newer
+    // server copy arriving mid-type.
+    if (hasAssetDb) {
+      let editedThisOpen = false;
+      textarea.addEventListener('input', () => { editedThisOpen = true; }, { once: true });
+      AssetDB.getDevPlanNotes().then(serverText => {
+        if (editedThisOpen || serverText === null || serverText === textarea.value) return;
+        textarea.value = serverText;
+        localStorage.setItem(STORAGE_KEY, serverText);
+      }).catch(() => {});
+    }
   }
 
   function closeModal() {
@@ -139,6 +159,7 @@
   refreshBtn.addEventListener('click', () => {
     clearTimeout(saveTimer);
     localStorage.setItem(STORAGE_KEY, textarea.value);
+    if (hasAssetDb) AssetDB.setDevPlanNotes(textarea.value).catch(() => {});
     location.reload();
   });
   closeBtn.addEventListener('click', closeModal);
@@ -152,7 +173,13 @@
     clearTimeout(saveTimer);
     saveTimer = setTimeout(() => {
       localStorage.setItem(STORAGE_KEY, textarea.value);
-      status.textContent = '저장됨';
+      if (hasAssetDb) {
+        AssetDB.setDevPlanNotes(textarea.value)
+          .then(() => { status.textContent = '저장됨'; })
+          .catch(() => { status.textContent = '저장됨 (이 기기만 · 서버 연결 실패)'; });
+      } else {
+        status.textContent = '저장됨';
+      }
     }, 400);
   });
 })();

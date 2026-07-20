@@ -1208,7 +1208,7 @@ const caseMenu = initCaseMenu({
   mountSelector: '#caseMenuMount',
   disabled: true,
   onSaveRequested: (slot) => {
-    CaseFileState.saveSlot(slot, {
+    return CaseFileState.saveSlot(slot, {
       sceneId: activeSceneData.id,
       lineIndex: player.getState().index,
       missionTitle: activeSceneData.name,

@@ -93,8 +93,23 @@ function loadCaseState() {
   } catch (e) { return defaultCaseState(); }
 }
 
+const CASE_STATE_IS_FRESH_DEVICE = !localStorage.getItem(CASE_STATE_KEY);
 let caseState = loadCaseState();
 function saveCaseState() { localStorage.setItem(CASE_STATE_KEY, JSON.stringify(caseState)); }
+
+// New device / reinstalled / storage-cleared browser (no local case state at
+// all yet) — pull down whatever settings were last saved from another
+// device instead of starting from hardcoded defaults. Runs once at load;
+// deliberately skipped on a device that already has local state so it can't
+// stomp a setting the player just changed on THIS device with a stale
+// server copy (see setSetting above for the write side of this sync).
+if (CASE_STATE_IS_FRESH_DEVICE) {
+  AssetDB.getPlayerSettings().then(serverSettings => {
+    if (!serverSettings) return;
+    caseState.settings = Object.assign({}, caseState.settings, serverSettings);
+    saveCaseState();
+  }).catch(() => {});
+}
 
 function loadSaveSlots() {
   try {
@@ -354,10 +369,18 @@ const CaseFileState = {
      "불러오기" restores points/purchases/equipped outfit too, not just the
      investigation board. Guarded with typeof checks since pages that don't
      load those three scripts (most minigames, /dev/week0, etc.) still load
-     this file and must not throw on save/load. */
-  saveSlot(slotNum, extra) {
-    const slots = loadSaveSlots();
-    slots[slotNum] = Object.assign({
+     this file and must not throw on save/load.
+
+     Slots are now mirrored to AssetDB (Supabase) so a save survives losing
+     this device / this browser's storage getting cleared / reinstalling —
+     the same problem addAsset's header comment describes for images, just
+     for progress instead. localStorage stays as an immediate, offline-safe
+     local copy: saveSlot writes it first (a save must never be lost just
+     because the network call after it fails), and loadSlot/listSlots prefer
+     whichever copy (server vs local) has the newer updatedAt, since a slot
+     saved while offline can be locally newer than what's on the server. */
+  async saveSlot(slotNum, extra) {
+    const slot = Object.assign({
       caseState: JSON.parse(JSON.stringify(caseState)),
       economyState: (typeof EconomyState !== 'undefined') ? EconomyState.snapshot() : undefined,
       shopState: (typeof ShopState !== 'undefined') ? ShopState.snapshot() : undefined,
@@ -366,10 +389,19 @@ const CaseFileState = {
       relationshipState: (typeof RelationshipState !== 'undefined') ? RelationshipState.snapshot() : undefined,
       updatedAt: Date.now(),
     }, extra);
+    const slots = loadSaveSlots();
+    slots[slotNum] = slot;
     localStorage.setItem(CASE_SAVE_SLOTS_KEY, JSON.stringify(slots));
+    try { await AssetDB.setSaveSlot(slotNum, slot); }
+    catch (e) { /* offline/server unavailable — the local copy above still holds the save */ }
+    return slot;
   },
-  loadSlot(slotNum) {
-    const slot = loadSaveSlots()[slotNum];
+  async loadSlot(slotNum) {
+    const localSlot = loadSaveSlots()[slotNum] || null;
+    let serverSlot = null;
+    try { serverSlot = (await AssetDB.getSaveSlots())[slotNum] || null; }
+    catch (e) { /* offline/server unavailable — fall back to the local copy */ }
+    const slot = (serverSlot && (!localSlot || (serverSlot.updatedAt || 0) >= (localSlot.updatedAt || 0))) ? serverSlot : localSlot;
     if (!slot) return null;
     caseState = Object.assign(defaultCaseState(), slot.caseState, {
       settings: Object.assign(defaultCaseState().settings, (slot.caseState && slot.caseState.settings) || {}),
@@ -387,20 +419,55 @@ const CaseFileState = {
     if (typeof WardrobeState !== 'undefined' && slot.wardrobeState) WardrobeState.restore(slot.wardrobeState);
     if (typeof ExplorationState !== 'undefined' && slot.explorationState) ExplorationState.restore(slot.explorationState);
     if (typeof RelationshipState !== 'undefined' && slot.relationshipState) RelationshipState.restore(slot.relationshipState);
+    // slot came from local-only (server was behind or unreachable) — push it
+    // up so the server catches up instead of staying stale until next save.
+    if (slot === localSlot && (!serverSlot || (localSlot.updatedAt || 0) > (serverSlot.updatedAt || 0))) {
+      AssetDB.setSaveSlot(slotNum, localSlot).catch(() => {});
+    }
     return slot;
   },
-  listSlots() {
-    const slots = loadSaveSlots();
+  async listSlots() {
+    const localSlots = loadSaveSlots();
+    let serverSlots = {};
+    try { serverSlots = await AssetDB.getSaveSlots(); }
+    catch (e) { /* offline/server unavailable — fall back to local */ }
     const list = [];
-    for (let i = 1; i <= CASE_SAVE_SLOT_COUNT; i++) list.push(slots[i] ? Object.assign({ slotNum: i, occupied: true }, slots[i]) : { slotNum: i, occupied: false });
+    for (let i = 1; i <= CASE_SAVE_SLOT_COUNT; i++) {
+      const local = localSlots[i] || null;
+      const server = serverSlots[i] || null;
+      const slot = (server && (!local || (server.updatedAt || 0) >= (local.updatedAt || 0))) ? server : local;
+      list.push(slot ? Object.assign({ slotNum: i, occupied: true }, slot) : { slotNum: i, occupied: false });
+      // Backfill the server with a locally-newer slot it doesn't know about yet
+      // (e.g. saved while offline) — best-effort, doesn't block rendering the list.
+      if (local && slot === local && (!server || (local.updatedAt || 0) > (server.updatedAt || 0))) {
+        AssetDB.setSaveSlot(i, local).catch(() => {});
+      }
+    }
+    return list;
+  },
+  // Synchronous, local-only counterpart to listSlots — caseMenu.js's render()
+  // is all synchronous (a menu open/nav push can't await a network round
+  // trip), so the 저장/불러오기 screens paint instantly from this while a
+  // background listSlots() call refreshes them with the server-merged view.
+  listSlotsLocalSync() {
+    const localSlots = loadSaveSlots();
+    const list = [];
+    for (let i = 1; i <= CASE_SAVE_SLOT_COUNT; i++) list.push(localSlots[i] ? Object.assign({ slotNum: i, occupied: true }, localSlots[i]) : { slotNum: i, occupied: false });
     return list;
   },
 
-  /* ===== 설정 ===== */
+  /* ===== 설정 =====
+     textSpeed/sfx/bgm/vibration은 caseState 안에 있지만 저장 슬롯("저장하기"
+     명시적 액션)과 별개로, 바뀔 때마다 바로 서버에도 올라간다 — 다른
+     기기에서도 같은 환경설정으로 시작하기 위함. 부팅 시엔 이 기기에 caseState
+     저장 기록이 아예 없을 때(새 기기/재설치)만 서버 값으로 덮어써서, 이미
+     플레이 중인 기기의 방금 바꾼 설정을 부팅 타이밍에 되돌리는 일이 없게
+     한다. */
   getSettings() { return Object.assign({}, caseState.settings); },
   setSetting(key, value) {
     caseState.settings[key] = value;
     saveCaseState();
+    AssetDB.setPlayerSettings(caseState.settings).catch(() => {});
   },
 
   /* ===== 플래그 (interrogationState / investigationState 겸용, §22) ===== */
