@@ -50,6 +50,16 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .back-chip{pointer-events:auto;flex-shrink:0;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.4);border:1px solid rgba(10,40,50,.25);color:#0A2A3A;font-size:18px;font-weight:700;line-height:1;text-decoration:none}
 .back-chip:active{transform:scale(.92)}
 
+.status-window{position:absolute;top:calc(10px + env(safe-area-inset-top,0));right:calc(10px + env(safe-area-inset-right,0));z-index:6;width:120px;aspect-ratio:var(--status-ar,2/1);pointer-events:none}
+.status-window.hidden{display:none}
+.status-window-frame{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;display:block;pointer-events:none;user-select:none;-webkit-user-drag:none}
+.status-window-date,.status-window-time{position:absolute;transform:translate(-50%,-50%);font-family:var(--mono);font-size:9.5px;font-weight:700;color:#fff;white-space:nowrap;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+.status-window-points{position:absolute;transform:translate(-50%,-50%);display:flex;align-items:center;font-family:var(--mono);font-size:11px;font-weight:700;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+.status-window-points img{display:block;object-fit:contain}
+.status-window-points img+img{margin-left:var(--status-digit-gap,2px)}
+.status-window-arrow{position:absolute;left:0;top:0;transform-origin:50% 100%;transform:translate(-50%,-100%) rotate(var(--status-arrow-deg,270deg));pointer-events:none;user-select:none;-webkit-user-drag:none}
+.status-window-arrow.hidden{display:none}
+
 .stage{position:absolute;inset:0;z-index:1}
 
 /* 배경 전용 레이어 — el.frame(화면 크기 고정)의 background-position을 매
@@ -392,6 +402,20 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
     <a class="back-chip" id="backChip" href="/dev/minigame-fishing/" aria-label="뒤로">‹</a>
   </div>
 
+  <!-- ===== 상태창 — 요일·날짜/시간/포인트/화살표. dev/minigame-fishing/
+       index.html "상태창" 탭에서 올린 프레임 이미지 위에, 같은 탭
+       레이아웃 편집기로 지정한 좌표(0~1)에 각 요소를 얹는다. 포인트는
+       숫자글꼴(0~9 낱개 이미지)로, 화살표는 실제 벽시계 시각(0~24시)을
+       180°~360°로 선형 매핑해 회전한다(setupStatusWindow/updateStatusWindow
+       참고). 프레임을 안 올렸으면 통째로 숨긴다. ===== -->
+  <div class="status-window hidden" id="statusWindow">
+    <img class="status-window-frame" id="statusWindowFrameImg" alt="">
+    <div class="status-window-date" id="statusWindowDate"></div>
+    <div class="status-window-time" id="statusWindowTime"></div>
+    <div class="status-window-points" id="statusWindowPoints"></div>
+    <img class="status-window-arrow hidden" id="statusWindowArrowImg" alt="">
+  </div>
+
   <div class="bg-layer" id="bgLayer"></div>
 
   <div class="stage" id="stage">
@@ -603,6 +627,12 @@ const el = {
   backChip: document.getElementById('backChip'),
   frame: document.getElementById('frame'),
   preloadOverlay: document.getElementById('preloadOverlay'),
+  statusWindow: document.getElementById('statusWindow'),
+  statusWindowFrameImg: document.getElementById('statusWindowFrameImg'),
+  statusWindowDate: document.getElementById('statusWindowDate'),
+  statusWindowTime: document.getElementById('statusWindowTime'),
+  statusWindowPoints: document.getElementById('statusWindowPoints'),
+  statusWindowArrowImg: document.getElementById('statusWindowArrowImg'),
   bgLayer: document.getElementById('bgLayer'),
   stage: document.getElementById('stage'),
   charStage: document.getElementById('charStage'),
@@ -1066,6 +1096,7 @@ function confirmSellFish() {
   if (total <= 0) return;
   EconomyState.addPoints(total, { source: 'fishing-sell-fish' });
   caughtFishTally = {};
+  refreshStatusWindowPoints();
   vibrate(15);
   closeSellFishModal();
 }
@@ -1146,6 +1177,10 @@ async function loadConfig() {
     Object.values(motionFrameEraseOverrides[category] || {}).forEach(assetId => { if (assetId) ids.push(assetId); });
   });
   if (cfg.castGaugeAssetId) ids.push(cfg.castGaugeAssetId);
+  const statusWindowCfg = cfg.statusWindow || {};
+  if (statusWindowCfg.frameAssetId) ids.push(statusWindowCfg.frameAssetId);
+  if (statusWindowCfg.arrowAssetId) ids.push(statusWindowCfg.arrowAssetId);
+  Object.values(statusWindowCfg.numberFontAssetIds || {}).forEach(assetId => { if (assetId) ids.push(assetId); });
   const characterIdleSheetsCfg = cfg.characterIdleSheets || {};
   if (characterIdleSheetsCfg.jisu && characterIdleSheetsCfg.jisu.assetId) ids.push(characterIdleSheetsCfg.jisu.assetId);
   if (characterIdleSheetsCfg.youngwoo && characterIdleSheetsCfg.youngwoo.assetId) ids.push(characterIdleSheetsCfg.youngwoo.assetId);
@@ -1487,6 +1522,8 @@ async function loadConfig() {
   el.itemPopupMeta.style.top = (itemMetaPos.y * 100) + '%';
   el.itemPopupMeta.style.fontSize = (itemPopupCfg.metaFontSizePx || 12) + 'px';
 
+  await setupStatusWindow(statusWindowCfg, byId);
+
   // 아이템창(물고기 팔기 카드) 배경 — dev/minigame-fishing/index.html의
   // "아이템창" 탭 설정. 비어있으면 기본 어두운 단색 카드 그대로 쓴다.
   const itemWindowBgAsset = cfg.itemWindowBackgroundAssetId ? byId.get(cfg.itemWindowBackgroundAssetId) : null;
@@ -1511,6 +1548,108 @@ async function loadConfig() {
   }
 
   await preloadAllAssetImages;
+}
+
+/* ===== 상태창 — 요일·날짜/시간/포인트/화살표.
+   dev/minigame-fishing/index.html "상태창" 탭에서 올린 프레임 위에, 같은 탭
+   레이아웃 편집기로 지정한 좌표(0~1, statusWindowCfg.datePos/timePos/
+   pointsPos/arrowPivot)로 각 요소를 배치한다. 프레임을 안 올렸으면
+   el.statusWindow를 통째로 숨긴다. 포인트는 숫자글꼴(0~9 낱개 이미지)로
+   조립해 그리고, 숫자글꼴이 없는 자리는 그냥 빈칸으로 둔다(별도 폴백
+   폰트를 섞으면 자릿수마다 크기가 달라져 더 어색해서). 화살표는 실제
+   벽시계 시각을 0~24시 → 180°~360°로 선형 매핑해 회전한다(하루가 정확히
+   반원 하나). 시각·포인트는 setInterval로 매분 갱신하고, 포인트는
+   판매(confirmSellFish)처럼 즉시 바뀌는 지점에서도 refreshStatusWindowPoints를
+   따로 불러 바로 반영한다. */
+let statusWindowNumberFontUrls = {};
+let statusWindowNumberFontAdjust = { width: 16, height: 22, gap: 2 };
+let statusWindowUpdateTimer = null;
+async function setupStatusWindow(cfg, byId) {
+  clearInterval(statusWindowUpdateTimer);
+  statusWindowUpdateTimer = null;
+  const frameAsset = cfg.frameAssetId ? byId.get(cfg.frameAssetId) : null;
+  if (!frameAsset) {
+    el.statusWindow.classList.add('hidden');
+    return;
+  }
+  const frameUrl = (await preloadWithRetry(frameAsset.dataUrl, 3, 500)).url;
+  el.statusWindowFrameImg.src = frameUrl;
+  const frameDims = await new Promise(resolve => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+    img.onerror = () => resolve(null);
+    img.src = frameUrl;
+  });
+  el.statusWindow.style.setProperty('--status-ar', frameDims ? (frameDims.w + '/' + frameDims.h) : '2/1');
+
+  const arrowAsset = cfg.arrowAssetId ? byId.get(cfg.arrowAssetId) : null;
+  if (arrowAsset) {
+    el.statusWindowArrowImg.src = (await preloadWithRetry(arrowAsset.dataUrl, 3, 500)).url;
+    el.statusWindowArrowImg.classList.remove('hidden');
+    const pivot = cfg.arrowPivot || { x: 0.5, y: 0.85 };
+    el.statusWindowArrowImg.style.left = (pivot.x * 100) + '%';
+    el.statusWindowArrowImg.style.top = (pivot.y * 100) + '%';
+  } else {
+    el.statusWindowArrowImg.classList.add('hidden');
+  }
+
+  const datePos = cfg.datePos || { x: 0.28, y: 0.3 };
+  const timePos = cfg.timePos || { x: 0.72, y: 0.3 };
+  const pointsPos = cfg.pointsPos || { x: 0.5, y: 0.6 };
+  el.statusWindowDate.style.left = (datePos.x * 100) + '%';
+  el.statusWindowDate.style.top = (datePos.y * 100) + '%';
+  el.statusWindowTime.style.left = (timePos.x * 100) + '%';
+  el.statusWindowTime.style.top = (timePos.y * 100) + '%';
+  el.statusWindowPoints.style.left = (pointsPos.x * 100) + '%';
+  el.statusWindowPoints.style.top = (pointsPos.y * 100) + '%';
+
+  statusWindowNumberFontAdjust = Object.assign({ width: 16, height: 22, gap: 2 }, cfg.numberFontAdjust || {});
+  el.statusWindow.style.setProperty('--status-digit-gap', statusWindowNumberFontAdjust.gap + 'px');
+  const numberFontAssetIds = cfg.numberFontAssetIds || {};
+  const fontUrls = {};
+  await Promise.all(Object.keys(numberFontAssetIds).map(async digit => {
+    const asset = numberFontAssetIds[digit] ? byId.get(numberFontAssetIds[digit]) : null;
+    if (asset) fontUrls[digit] = (await preloadWithRetry(asset.dataUrl, 3, 500)).url;
+  }));
+  statusWindowNumberFontUrls = fontUrls;
+
+  el.statusWindow.classList.remove('hidden');
+  updateStatusWindowClock();
+  refreshStatusWindowPoints();
+  statusWindowUpdateTimer = setInterval(updateStatusWindowClock, 15000);
+}
+
+const STATUS_WINDOW_WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
+function updateStatusWindowClock() {
+  if (el.statusWindow.classList.contains('hidden')) return;
+  const now = new Date();
+  el.statusWindowDate.textContent = STATUS_WINDOW_WEEKDAYS[now.getDay()] + '. ' + now.getDate();
+  let hours = now.getHours();
+  const ampm = hours < 12 ? '오전' : '오후';
+  hours = hours % 12;
+  if (hours === 0) hours = 12;
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  el.statusWindowTime.textContent = hours + ':' + minutes + ' ' + ampm;
+  // 하루(0~24시)를 반원(180°~360°)에 선형 매핑 — 자정 180°(왼쪽 수평),
+  // 정오 270°(위쪽), 다음날 자정 360°(오른쪽 수평).
+  const hourFraction = now.getHours() + now.getMinutes() / 60;
+  const deg = 180 + (hourFraction / 24) * 180;
+  el.statusWindow.style.setProperty('--status-arrow-deg', deg + 'deg');
+}
+function refreshStatusWindowPoints() {
+  if (el.statusWindow.classList.contains('hidden')) return;
+  el.statusWindowPoints.innerHTML = '';
+  String(EconomyState.getPoints()).split('').forEach(ch => {
+    const url = statusWindowNumberFontUrls[ch];
+    if (!url) return;
+    const img = document.createElement('img');
+    img.src = url;
+    img.alt = ch;
+    img.style.width = statusWindowNumberFontAdjust.width + 'px';
+    img.style.height = statusWindowNumberFontAdjust.height + 'px';
+    el.statusWindowPoints.appendChild(img);
+  });
 }
 
 /* ===== 화면 적용 =====
