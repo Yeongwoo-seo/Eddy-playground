@@ -66,8 +66,12 @@ body.sheet-open{overflow:hidden}
 .upload-error{color:#D94141;font-size:12.5px;font-weight:600;margin-top:4px}
 .upload-progress{font-size:12.5px;color:var(--grey500);font-weight:600;margin-top:4px}
 
-.pdf-wrap{flex:1;border-radius:16px;overflow:hidden;display:flex;min-height:0;background:var(--grey100)}
-.pdf-wrap iframe{flex:1;width:100%;border:none}
+.pdf-wrap{flex:1;border-radius:16px;overflow-y:auto;overflow-x:hidden;min-height:0;background:var(--grey100)}
+.pdf-wrap iframe{width:100%;height:100%;border:none}
+.pdf-pages{display:flex;flex-direction:column;gap:8px;padding:8px}
+.pdf-pages canvas{width:100%;height:auto;display:block;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,0.06)}
+.pdf-loading,.pdf-error{padding:40px 16px;text-align:center;font-size:13px;color:var(--grey500);font-weight:600}
+.offline-note{background:var(--primary-light);color:var(--primary-hover);font-size:12px;font-weight:600;border-radius:12px;padding:8px 12px;margin-bottom:10px;flex-shrink:0;text-align:center}
 .file-name-row{font-size:11.5px;color:var(--grey500);font-weight:600;text-align:center;margin-top:10px;flex-shrink:0}
 </style>
 </head>
@@ -83,6 +87,7 @@ body.sheet-open{overflow:hidden}
 </div>
 <div id="sheetRoot"></div>
 <input type="file" id="fileInput" accept="application/pdf" style="display:none">
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@2.16.105/build/pdf.min.js" defer></script>
 <script>
 // 왕복 경유 포함 4개 구간 — 7.22 출국 2구간(서울-상하이, 상하이-시드니),
 // 8.17 귀국 2구간(시드니-상하이, 상하이-서울)으로 묶어서 보여준다.
@@ -98,11 +103,57 @@ const GROUPS = [
 ];
 const SEGMENTS = GROUPS.flatMap(g => g.segments.map(s => ({ ...s, date: g.date })));
 
-// IndexedDB instead of localStorage — real boarding-pass PDFs run 5MB+ each
-// and there are 4 of them, which blows past localStorage's ~5-10MB per-origin
-// quota (especially once base64-encoded, +33% on top). IndexedDB's quota is
-// effectively disk-sized, and storing the File/Blob directly (no base64
-// round-trip) also avoids that encoding overhead entirely.
+// 탑승권 PDF는 Supabase Storage(dev-assets 버킷 — planner.html/dev 페이지들과
+// 같은 프로젝트)에 올려서 같은 URL을 보는 사람이면 누구나 볼 수 있게 한다.
+// 브라우저 IndexedDB에만 저장하면 올린 사람 기기에서만 보였던 게 원래 문제.
+// 구간별 저장 경로를 boarding-pass/<segId>.pdf 로 고정해두면 재업로드가
+// 그냥 같은 경로를 덮어쓰는 것(upsert)이라, 목록/삭제 API 없이 GET/HEAD
+// 만으로 존재 확인과 조회가 끝난다.
+// IndexedDB는 계속 쓰지만 이제는 "오프라인 사본" 캐시 용도다 — sw.js가 이
+// 페이지를 프리캐시하는 이유도 기내 와이파이 없이 탑승권을 봐야 하는
+// 순간 때문이라, 서버에 닿지 않을 때는 마지막으로 받아둔 사본을 보여준다.
+const SUPABASE_URL = 'https://dhtstqnksjoyyshnhksv.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRodHN0cW5rc2pveXlzaG5oa3N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5NjIyNzQsImV4cCI6MjA5ODUzODI3NH0.FMZdCXntYJKxQeYNwfrsy1liJcHIkD2inJ4NzbwLzd4';
+const BUCKET = 'dev-assets';
+
+function segPath(segId) { return `boarding-pass/${segId}.pdf`; }
+function segPublicUrl(segId) { return `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${segPath(segId)}`; }
+
+// HEAD가 아니라 1바이트짜리 Range GET을 쓴다 — Supabase Storage의 public
+// object 라우트가 HEAD까지 지원하는지 보장이 안 돼서, 실제로 쓸 GET 경로와
+// 똑같이 동작이 확인된 방식으로 존재 여부를 확인한다.
+async function remoteHead(segId) {
+  const res = await fetch(`${segPublicUrl(segId)}?t=${Date.now()}`, {
+    headers: { Range: 'bytes=0-0' },
+    cache: 'no-store',
+  });
+  if (res.status === 404 || res.status === 400) return null;
+  if (!res.ok) throw new Error(`상태 확인 실패 (${res.status})`);
+  return { updatedAt: res.headers.get('last-modified') };
+}
+
+async function remoteFetchBlob(segId) {
+  const res = await fetch(`${segPublicUrl(segId)}?t=${Date.now()}`, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`다운로드 실패 (${res.status})`);
+  return res.blob();
+}
+
+async function remoteUpload(segId, file) {
+  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${segPath(segId)}`, {
+    method: 'POST',
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      'Content-Type': file.type || 'application/pdf',
+      'x-upsert': 'true',
+    },
+    body: file,
+  });
+  if (!res.ok) throw new Error(`업로드 실패 (${res.status}): ${await res.text()}`);
+}
+
+// 오프라인일 때 마지막으로 받아둔 사본을 보여주기 위한 캐시일 뿐 —
+// 진짜 저장소는 위 Supabase Storage 쪽이다.
 const DB_NAME = 'boardingPassDB';
 const STORE_NAME = 'pdfs';
 let dbPromise = null;
@@ -141,7 +192,8 @@ const el = {
 };
 
 let activeSegId = null;
-let activeObjectUrl = null; // revoked on every re-render so blob URLs don't pile up
+let activeObjectUrl = null; // pdf.js를 못 쓸 때의 iframe fallback에서만 쓰인다
+let sheetRenderToken = 0; // 겹쳐 들어오는 renderSheet 호출 중 가장 마지막 것만 그리게 막는다
 // Boarding-pass PDFs (often the full e-ticket, not just the pass page) run
 // a few MB each — 20MB comfortably covers that with headroom.
 const MAX_PDF_BYTES = 20 * 1024 * 1024;
@@ -150,9 +202,17 @@ function escapeHtml(s) {
   return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
+async function getSegStatus(segId) {
+  try {
+    return { has: !!(await remoteHead(segId)) };
+  } catch (e) {
+    return { has: !!(await dbGet(segId)) };
+  }
+}
+
 async function renderGroupList() {
-  const statuses = await Promise.all(SEGMENTS.map(seg => dbGet(seg.id)));
-  const statusById = new Map(SEGMENTS.map((seg, i) => [seg.id, !!statuses[i]]));
+  const statuses = await Promise.all(SEGMENTS.map(seg => getSegStatus(seg.id)));
+  const statusById = new Map(SEGMENTS.map((seg, i) => [seg.id, statuses[i].has]));
   el.groupList.innerHTML = GROUPS.map(g => `
     <div class="group">
       <div class="group-title"><span class="dday">${escapeHtml(g.date)}</span> · ${escapeHtml(g.label)}</div>
@@ -193,9 +253,29 @@ function closeSheet() {
 async function renderSheet(statusText) {
   const seg = SEGMENTS.find(s => s.id === activeSegId);
   if (!seg) return;
+  const myToken = ++sheetRenderToken;
+
+  let rec = null; // { blob, updatedAt }
+  let unreachable = false;
+  try {
+    const meta = await remoteHead(seg.id);
+    if (meta) {
+      const blob = await remoteFetchBlob(seg.id);
+      rec = { blob, updatedAt: meta.updatedAt };
+      dbSet(seg.id, rec).catch(() => {}); // 오프라인 사본 갱신 — 실패해도 화면엔 영향 없음
+    }
+  } catch (e) {
+    unreachable = true;
+    rec = await dbGet(seg.id);
+  }
+  if (myToken !== sheetRenderToken) return; // 그 사이 더 최신 렌더가 시작됨
+
   if (activeObjectUrl) { URL.revokeObjectURL(activeObjectUrl); activeObjectUrl = null; }
-  const rec = await dbGet(seg.id);
-  if (rec) activeObjectUrl = URL.createObjectURL(rec.blob);
+
+  const updatedLabel = rec && rec.updatedAt
+    ? new Date(rec.updatedAt).toLocaleString('ko-KR', { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+    : '';
+
   el.sheetRoot.innerHTML = `
     <div class="pdf-sheet-overlay" onclick="if(event.target===this) closeSheet()">
       <div class="pdf-sheet" onclick="event.stopPropagation()">
@@ -211,35 +291,85 @@ async function renderSheet(statusText) {
         </div>
         <div class="pdf-sheet-body">
           ${rec ? `
-            <div class="pdf-wrap"><iframe src="${activeObjectUrl}" title="탑승권 PDF"></iframe></div>
-            ${rec.name ? `<div class="file-name-row">${escapeHtml(rec.name)}</div>` : ''}
+            ${unreachable ? `<div class="offline-note">⚠️ 오프라인 상태라 마지막으로 저장된 사본을 보여드려요.</div>` : ''}
+            <div class="pdf-wrap"><div class="pdf-pages" id="pdfPages"><div class="pdf-loading">불러오는 중...</div></div></div>
+            ${updatedLabel ? `<div class="file-name-row">최근 업데이트 · ${escapeHtml(updatedLabel)}</div>` : ''}
           ` : `
             <div class="empty-wrap">
               <div class="empty-ic">${seg.icon}</div>
               <div class="empty-title">아직 등록된 탑승권이 없어요</div>
-              <div class="empty-sub">이 구간의 항공권 PDF를 올려두면 언제든 바로 열어볼 수 있어요.<br>저장된 내용은 이 기기에만 남아요.</div>
-              <button class="upload-btn" onclick="el.fileInput.click()">📎 PDF 올리기</button>
+              <div class="empty-sub">이 구간의 항공권 PDF를 올려두면 같이 보는 사람도 바로 확인할 수 있어요.<br>이 기기에는 오프라인용 사본도 함께 저장돼요.</div>
+              ${unreachable
+                ? `<div class="upload-error">지금은 오프라인이라 서버에 저장된 탑승권을 확인할 수 없어요. 인터넷에 연결한 뒤 다시 열어봐 주세요.</div>`
+                : `<button class="upload-btn" onclick="el.fileInput.click()">📎 PDF 올리기</button>`}
               ${statusText && statusText.error ? `<div class="upload-error">${escapeHtml(statusText.error)}</div>` : ''}
-              ${statusText && statusText.busy ? `<div class="upload-progress">저장하는 중...</div>` : ''}
+              ${statusText && statusText.busy ? `<div class="upload-progress">업로드하는 중...</div>` : ''}
             </div>
           `}
         </div>
       </div>
     </div>
   `;
+
+  if (rec) renderPdfIntoContainer(rec.blob, el.sheetRoot.querySelector('#pdfPages'), myToken);
+}
+
+// 탑승권 페이지는 대부분 landscape라, iframe에 그냥 맡기면 뷰어마다
+// 자르거나 확대해서 보여줘 전체가 안 보이는 게 원래 문제였다. pdf.js로
+// 캔버스에 직접 그려서 폭을 컨테이너에 맞추면(가로 맞춤) 어떤 브라우저에서든
+// 페이지 전체가 항상 보인다.
+async function renderPdfIntoContainer(blob, container, token) {
+  if (!container) return;
+  if (!window.pdfjsLib) {
+    // CDN을 못 불러왔을 때만 브라우저 기본 PDF 뷰어로 대체한다.
+    activeObjectUrl = URL.createObjectURL(blob);
+    container.innerHTML = `<iframe src="${activeObjectUrl}" title="탑승권 PDF"></iframe>`;
+    return;
+  }
+  if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@2.16.105/build/pdf.worker.min.js';
+  }
+  try {
+    const buf = await blob.arrayBuffer();
+    if (token !== sheetRenderToken) return;
+    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+    if (token !== sheetRenderToken) return;
+    container.innerHTML = '';
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    for (let i = 1; i <= pdf.numPages; i++) {
+      if (token !== sheetRenderToken) return;
+      const page = await pdf.getPage(i);
+      const width = container.clientWidth || 300;
+      const baseViewport = page.getViewport({ scale: 1 });
+      const fitScale = width / baseViewport.width;
+      const viewport = page.getViewport({ scale: fitScale * dpr });
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.ceil(viewport.width);
+      canvas.height = Math.ceil(viewport.height);
+      canvas.style.width = '100%';
+      canvas.style.height = 'auto';
+      container.appendChild(canvas);
+      await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+    }
+  } catch (e) {
+    if (token !== sheetRenderToken) return;
+    container.innerHTML = `<div class="pdf-error">탑승권을 표시하지 못했어요.</div>`;
+  }
 }
 
 async function handleFile(file) {
   if (!file || !activeSegId) return;
   if (file.type !== 'application/pdf') { renderSheet({ error: 'PDF 파일만 올릴 수 있어요.' }); return; }
   if (file.size > MAX_PDF_BYTES) { renderSheet({ error: `파일이 너무 커요 (최대 ${Math.floor(MAX_PDF_BYTES / 1024 / 1024)}MB).` }); return; }
+  const segId = activeSegId;
   try {
     renderSheet({ busy: true });
-    await dbSet(activeSegId, { name: file.name, blob: file });
+    await remoteUpload(segId, file);
+    await dbSet(segId, { blob: file, updatedAt: new Date().toISOString() });
     await renderSheet();
     await renderGroupList();
   } catch (err) {
-    renderSheet({ error: '저장에 실패했어요: ' + (err && err.message ? err.message : err) });
+    renderSheet({ error: '업로드에 실패했어요: ' + (err && err.message ? err.message : err) });
   }
 }
 
