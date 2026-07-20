@@ -297,6 +297,11 @@ input,button{font-family:inherit}
 /* ===== Asset manager ===== */
 .asset-thumb{width:64px;height:64px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden;background-size:cover;background-position:center;background-color:var(--surface-3);color:var(--text-muted)}
 label.btn{display:inline-flex}
+.asset-progress.hidden{display:none}
+.asset-progress{margin-top:10px}
+.asset-progress-text{font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-bottom:6px}
+.asset-progress-bar{height:5px;border-radius:3px;background:var(--surface-2);overflow:hidden}
+.asset-progress-fill{height:100%;background:var(--cyan);width:0%;transition:width .2s ease}
 
 .chrome-spacer{height:44px}
 
@@ -376,6 +381,63 @@ function handleAssetUpload(key, inputEl){
   reader.readAsDataURL(file);
 }
 function clearAsset(key){ delete assets[key]; saveAssets(); render(); }
+
+// AI 배경 제거(누끼) — 모듈은 페이지 로드 시 미리 받아두고, 버튼을 누른
+// 시점엔 준비 여부만 기다린다. 진행률은 라이브러리의 progress 콜백(모델
+// 다운로드/추론 단계별 current/total)을 그대로 프로그레스바에 반영한다.
+window.__removeBackgroundReady = import('https://cdn.jsdelivr.net/npm/@imgly/background-removal/+esm')
+  .then(mod => {
+    if (typeof mod.removeBackground !== 'function') {
+      throw new Error('모듈은 로드됐지만 removeBackground 함수를 찾지 못함 (exports: ' + Object.keys(mod).join(', ') + ')');
+    }
+    window.__removeBackground = mod.removeBackground;
+  })
+  .catch(err => { window.__removeBackgroundLoadError = err; });
+
+function blobToDataUrl(blob){
+  return new Promise((resolve, reject)=>{
+    const reader=new FileReader();
+    reader.onload=()=>resolve(reader.result);
+    reader.onerror=()=>reject(new Error('파일을 읽지 못했습니다.'));
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function removeAssetBackground(key){
+  const url=getAsset(key);
+  if(!url) return;
+  const btn=document.getElementById('cutoutBtn-'+key);
+  const progressWrap=document.getElementById('assetProgress-'+key);
+  const progressFill=document.getElementById('assetProgressFill-'+key);
+  const progressText=document.getElementById('assetProgressText-'+key);
+  const prevLabel=btn ? btn.textContent : '';
+  if(btn){ btn.disabled=true; btn.textContent='처리 중...'; }
+  if(progressWrap) progressWrap.classList.remove('hidden');
+  if(progressFill) progressFill.style.width='0%';
+  if(progressText) progressText.textContent='배경 제거 모듈 확인 중...';
+  try{
+    await window.__removeBackgroundReady;
+    if(!window.__removeBackground){
+      const reason=window.__removeBackgroundLoadError;
+      throw new Error('배경 제거 모듈 로드 실패: '+(reason && reason.message ? reason.message : '네트워크 또는 CDN 문제로 모듈을 불러오지 못했습니다.'));
+    }
+    const sourceBlob=await (await fetch(url)).blob();
+    const resultBlob=await window.__removeBackground(sourceBlob, {
+      progress:(k, current, total)=>{
+        const pct=total ? Math.round(current/total*100) : 0;
+        if(progressFill) progressFill.style.width=pct+'%';
+        if(progressText) progressText.textContent='배경 제거 중... '+pct+'%';
+      }
+    });
+    assets[key]=await blobToDataUrl(resultBlob);
+    saveAssets();
+    render();
+  }catch(err){
+    alert('배경 제거 실패: '+(err && err.message ? err.message : err));
+    if(btn){ btn.disabled=false; btn.textContent=prevLabel; }
+    if(progressWrap) progressWrap.classList.add('hidden');
+  }
+}
 
 /* =========================================================
    SCENE HEADER — VN-style background + character block
@@ -1604,7 +1666,12 @@ function assetCardHtml(a){
     </div>
     <div class="btn-row" style="margin-top:12px">
       <label class="btn btn-secondary btn-sm">UPLOAD<input type="file" accept="image/*" style="display:none" onchange="handleAssetUpload('${a.key}', this)"></label>
+      ${url? `<button class="btn btn-secondary btn-sm" id="cutoutBtn-${a.key}" onclick="removeAssetBackground('${a.key}')">배경 제거 (누끼)</button>` : ''}
       ${url? `<button class="btn btn-danger btn-sm" onclick="clearAsset('${a.key}')">REMOVE</button>` : ''}
+    </div>
+    <div class="asset-progress hidden" id="assetProgress-${a.key}">
+      <div class="asset-progress-text" id="assetProgressText-${a.key}"></div>
+      <div class="asset-progress-bar"><div class="asset-progress-fill" id="assetProgressFill-${a.key}"></div></div>
     </div>
   </div>`;
 }

@@ -64,6 +64,13 @@ pre.prompt-box{white-space:pre-wrap;font-family:var(--mono);font-size:11px;line-
 .preset-icon-chip{display:flex;align-items:center;gap:5px;background:var(--surface-2);border:1px solid var(--divider);border-radius:20px;padding:6px 11px;font-size:12px;color:var(--text-secondary);cursor:pointer;font-family:inherit}
 .preset-icon-chip .emoji{font-size:14px}
 .preset-icon-chip.active{border-color:rgba(89,184,200,.6);background:rgba(89,184,200,.14);color:var(--cyan)}
+.slot-cutout-btn{width:100%}
+.slot-cutout-btn[disabled]{opacity:.5;pointer-events:none}
+.slot-progress{margin-top:6px}
+.slot-progress.hidden{display:none}
+.slot-progress-text{font-size:9.5px;color:var(--text-muted);margin-bottom:4px}
+.slot-progress-bar{height:4px;border-radius:3px;background:var(--surface-3);overflow:hidden}
+.slot-progress-fill{height:100%;background:var(--cyan);width:0%;transition:width .2s ease}
 </style>
 </head>
 <body>
@@ -177,6 +184,61 @@ let sheetManifests = {};
 let selectedSheetId = null;
 let pendingMasterImg = null; // <img> currently loaded for slicing, per selected sheet
 let pendingSlots = null; // [{row,col,slot,canvas,blob}] after 분할 실행
+
+// AI 배경 제거(누끼) — 모듈은 페이지 로드 시 미리 받아두고, 버튼을 누른
+// 시점엔 준비 여부만 기다린다. 진행률은 라이브러리의 progress 콜백(모델
+// 다운로드/추론 단계별 current/total)을 그대로 프로그레스바에 반영한다.
+window.__removeBackgroundReady = import('https://cdn.jsdelivr.net/npm/@imgly/background-removal/+esm')
+  .then(mod => {
+    if (typeof mod.removeBackground !== 'function') {
+      throw new Error('모듈은 로드됐지만 removeBackground 함수를 찾지 못함 (exports: ' + Object.keys(mod).join(', ') + ')');
+    }
+    window.__removeBackground = mod.removeBackground;
+  })
+  .catch(err => { window.__removeBackgroundLoadError = err; });
+
+// 슬롯 캔버스에 직접 그려 넣는다 — approveSlot()이 그 시점의 캔버스 픽셀을
+// 그대로 업로드하므로 별도 저장 없이 바로 반영된다. 단, runAutoSlice()는
+// pendingMasterImg에서 매번 다시 자르므로(§기존 승인/거절 새로고침 로직),
+// 다른 슬롯을 승인/거절하면 이 슬롯의 배경 제거는 초기화된다 — 승인 전에
+// 적용하는 것을 권장.
+async function removeSlotBackground(slotNum) {
+  const s = pendingSlots && pendingSlots.find(x => x.slot === slotNum);
+  if (!s) return;
+  const btn = document.querySelector(`[data-slot-cell="${slotNum}"] .slot-cutout-btn`);
+  const progressWrap = document.getElementById('slotProgress-' + slotNum);
+  const progressFill = document.getElementById('slotProgressFill-' + slotNum);
+  const progressText = document.getElementById('slotProgressText-' + slotNum);
+  const prevLabel = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = '처리 중...'; }
+  if (progressWrap) progressWrap.classList.remove('hidden');
+  if (progressFill) progressFill.style.width = '0%';
+  if (progressText) progressText.textContent = '배경 제거 모듈 확인 중...';
+  try {
+    await window.__removeBackgroundReady;
+    if (!window.__removeBackground) {
+      const reason = window.__removeBackgroundLoadError;
+      throw new Error('배경 제거 모듈 로드 실패: ' + (reason && reason.message ? reason.message : '네트워크 또는 CDN 문제로 모듈을 불러오지 못했습니다.'));
+    }
+    const sourceBlob = await new Promise(resolve => s.canvas.toBlob(resolve, 'image/png'));
+    const resultBlob = await window.__removeBackground(sourceBlob, {
+      progress: (key, current, total) => {
+        const pct = total ? Math.round(current / total * 100) : 0;
+        if (progressFill) progressFill.style.width = pct + '%';
+        if (progressText) progressText.textContent = '배경 제거 중... ' + pct + '%';
+      }
+    });
+    const bitmap = await createImageBitmap(resultBlob);
+    const ctx = s.canvas.getContext('2d');
+    ctx.clearRect(0, 0, s.canvas.width, s.canvas.height);
+    ctx.drawImage(bitmap, 0, 0, s.canvas.width, s.canvas.height);
+  } catch (err) {
+    alert('배경 제거 실패: ' + (err && err.message ? err.message : err));
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = prevLabel; }
+    if (progressWrap) progressWrap.classList.add('hidden');
+  }
+}
 
 async function init() {
   allDefs = collectAllCaseDefinitions();
@@ -522,6 +584,17 @@ function runAutoSlice() {
   pendingSlots.forEach(s => {
     const cell = grid.querySelector(`[data-slot-cell="${s.slot}"]`);
     cell.insertBefore(s.canvas, cell.firstChild.nextSibling);
+    const cutoutBtn = document.createElement('button');
+    cutoutBtn.className = 'btn slot-cutout-btn';
+    cutoutBtn.style.cssText = 'font-size:11px;padding:7px';
+    cutoutBtn.textContent = '배경 제거';
+    cutoutBtn.addEventListener('click', () => removeSlotBackground(s.slot));
+    cell.appendChild(cutoutBtn);
+    const progressWrap = document.createElement('div');
+    progressWrap.className = 'slot-progress hidden';
+    progressWrap.id = 'slotProgress-' + s.slot;
+    progressWrap.innerHTML = `<div class="slot-progress-text" id="slotProgressText-${s.slot}"></div><div class="slot-progress-bar"><div class="slot-progress-fill" id="slotProgressFill-${s.slot}"></div></div>`;
+    cell.appendChild(progressWrap);
     const item = (manifest.items || []).find(it => it.slot === s.slot);
     if (!item) return;
     const status = document.createElement('div');
