@@ -125,7 +125,10 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 
   <div class="topbar">
     <a class="vn-btn" href="/dev/">← DEV</a>
-    <a class="vn-btn" href="/dev/upload/?scene=week0-scene-001-2&kind=minigame">지도 업로드</a>
+    <div style="display:flex;gap:8px">
+      <button class="vn-btn skip" id="skipBtn" aria-label="다음 상호작용">다음 ⏭</button>
+      <a class="vn-btn" href="/dev/upload/?scene=week0-scene-001-2&kind=minigame">지도 업로드</a>
+    </div>
   </div>
 
   <div class="phase-bar" id="phaseBar"></div>
@@ -806,6 +809,11 @@ function fadeOutAndRedirect() {
   el.fadeOverlay.classList.add('show');
   setTimeout(() => { location.href = '/play/game/?scene=week0-scene-train'; }, 950);
 }
+
+document.getElementById('skipBtn').addEventListener('click', (e) => {
+  e.stopPropagation();
+  fadeOutAndRedirect();
+});
 
 /* ===== Boot ===== */
 initMap().then((ready) => {

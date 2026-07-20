@@ -110,7 +110,10 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 <div class="frame" id="frame">
   <div class="topbar">
     <a class="vn-btn" href="/dev/">← DEV</a>
-    <div class="progress-pill">정리됨 <span class="n" id="progressN">0</span>/<span id="progressTotal">7</span></div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="vn-btn skip" id="skipBtn" aria-label="다음 상호작용">다음 ⏭</button>
+      <div class="progress-pill">정리됨 <span class="n" id="progressN">0</span>/<span id="progressTotal">7</span></div>
+    </div>
   </div>
 
   <div class="main" id="main">
@@ -227,6 +230,7 @@ const el = {
   successArrow: document.getElementById('successArrow'),
   successChoiceLayer: document.getElementById('successChoiceLayer'),
   fadeOverlay: document.getElementById('fadeOverlay'),
+  skipBtn: document.getElementById('skipBtn'),
 };
 
 function shuffle(arr) {
@@ -491,6 +495,8 @@ function fadeOutAndRedirect() {
   el.fadeOverlay.classList.add('show');
   setTimeout(() => { location.href = '/play/game/?scene=week1-scene-009'; }, 950);
 }
+
+el.skipBtn.addEventListener('click', (e) => { e.stopPropagation(); fadeOutAndRedirect(); });
 
 /* ===== Boot ===== */
 el.progressTotal.textContent = CARDS.length;
