@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>PWA 아이콘 · OPERATION MK DEV</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<meta name="theme-color" content="#080A0C">
+<link rel="manifest" href="/dev/manifest.json">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="OPERATION MK DEV">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#080A0C;--surface-1:#101419;--surface-2:#171C22;--surface-3:#1D242C;
+  --text-primary:#EDF1F4;--text-secondary:#929BA5;--text-muted:#5F6872;
+  --cyan:#59B8C8;--amber:#D6A84B;--green:#3ECF6B;--signal-red:#D94141;--divider:rgba(255,255,255,0.08);
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sans:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
+}
+html,body{height:100%}
+body{background:#050607;color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center;min-height:100dvh}
+.frame{width:100%;max-width:430px;min-height:100dvh;min-height:100vh;padding:calc(48px + env(safe-area-inset-top,0)) 20px calc(32px + env(safe-area-inset-bottom,0));display:flex;flex-direction:column}
+.back{font-family:var(--mono);font-size:12px;color:var(--text-muted);text-decoration:none;margin-bottom:18px;display:inline-flex;align-items:center;gap:4px;width:fit-content}
+.tag{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px}
+.title{font-size:26px;font-weight:700;letter-spacing:-.2px;margin-bottom:10px}
+.sub{font-size:14px;color:var(--text-secondary);margin-bottom:24px;line-height:1.6}
+
+.section-title{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;color:var(--text-muted);text-transform:uppercase;margin-bottom:10px}
+
+.current-row{display:flex;gap:14px;align-items:center;background:var(--surface-1);border:1px solid var(--divider);border-radius:16px;padding:14px 16px;margin-bottom:24px}
+.current-thumb-wrap{position:relative;width:56px;height:56px;flex-shrink:0}
+.current-thumb{width:56px;height:56px;border-radius:14px;object-fit:cover;background:var(--surface-3);display:block}
+.current-thumb.round{border-radius:50%}
+.current-body{flex:1;min-width:0}
+.current-label{font-size:13.5px;font-weight:700}
+.current-status{font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-top:3px}
+.current-status.live{color:var(--green)}
+
+.dropzone{border:1px dashed var(--divider);border-radius:16px;padding:32px 16px;display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer;background:var(--surface-1);margin-bottom:24px}
+.dropzone.drag{border-color:var(--cyan);background:rgba(89,184,200,.06)}
+.dropzone-icon{font-size:32px}
+.dropzone-text{font-family:var(--mono);font-size:12px;color:var(--text-muted);letter-spacing:.06em;text-align:center}
+.select-btn{font-family:var(--mono);font-size:12.5px;font-weight:700;color:var(--text-primary);background:var(--surface-2);border:1px solid var(--divider);border-radius:10px;padding:9px 16px;cursor:pointer}
+.select-btn:active{opacity:.8}
+input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;overflow:hidden}
+
+.editor.hidden{display:none}
+.crop-hint{font-size:12px;color:var(--text-muted);line-height:1.5;margin-bottom:12px}
+.crop-stage{position:relative;width:100%;aspect-ratio:1;border-radius:16px;overflow:hidden;background:#000;touch-action:none;margin-bottom:14px}
+.crop-stage img{position:absolute;-webkit-user-drag:none;user-select:none;pointer-events:none}
+.crop-zoom-row{margin-bottom:20px}
+.crop-zoom-row label{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--text-secondary);text-transform:uppercase;margin-bottom:6px}
+.crop-zoom-row input[type=range]{width:100%;accent-color:var(--cyan)}
+
+.preview-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+.preview-cell{display:flex;flex-direction:column;align-items:center;gap:6px}
+.preview-swatch{width:100%;aspect-ratio:1;border-radius:22%;overflow:hidden;background:var(--surface-3)}
+.preview-swatch.round{border-radius:50%}
+.preview-swatch.maskable{position:relative}
+.preview-swatch canvas{width:100%;height:100%;display:block}
+.preview-caption{font-family:var(--mono);font-size:9.5px;color:var(--text-muted);text-align:center;line-height:1.4}
+
+.action-row{display:flex;gap:8px;margin-bottom:16px}
+.primary-btn{flex:1;font-family:var(--mono);font-size:14px;font-weight:700;color:#04181c;background:var(--cyan);border:none;border-radius:14px;padding:14px;cursor:pointer;text-align:center}
+.primary-btn:active{opacity:.85}
+.primary-btn.disabled{opacity:.4;pointer-events:none}
+.secondary-btn{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--text-secondary);background:var(--surface-1);border:1px solid var(--divider);border-radius:14px;padding:14px 16px;cursor:pointer}
+.secondary-btn:active{opacity:.8}
+
+.status{margin-top:4px;padding:12px 14px;border-radius:12px;font-size:12.5px;line-height:1.5}
+.status.hidden{display:none}
+.status.busy{background:var(--surface-1);border:1px solid var(--divider);color:var(--text-secondary)}
+.status.error{background:rgba(217,65,65,.12);border:1px solid rgba(217,65,65,.35);color:var(--signal-red)}
+.status.ok{background:rgba(62,207,107,.12);border:1px solid rgba(62,207,107,.35);color:var(--green)}
+</style>
+</head>
+<body>
+<div class="frame">
+  <a class="back" href="/dev/upload/">‹ 데이터 설정</a>
+  <div class="tag">Operation MK · /play</div>
+  <div class="title">PWA 아이콘</div>
+  <div class="sub">사진을 올려 자르면 <b>/play</b>를 홈 화면에 설치했을 때 보이는 아이콘(안드로이드/데스크톱 + iOS)이 바뀝니다. 서버(Storage)의 고정 파일을 덮어쓰는 방식이라 다시 배포하지 않아도, 기기가 다음에 아이콘을 확인할 때 자동으로 반영돼요.</div>
+
+  <div class="section-title">현재 아이콘</div>
+  <div class="current-row" id="currentRow">
+    <div class="current-thumb-wrap"><img class="current-thumb" id="currentThumb" alt="현재 아이콘"></div>
+    <div class="current-body">
+      <div class="current-label">/play 홈 화면 아이콘</div>
+      <div class="current-status" id="currentStatus">확인 중...</div>
+    </div>
+  </div>
+
+  <div class="dropzone" id="dropzone">
+    <div class="dropzone-icon">🖼️</div>
+    <div class="dropzone-text">여기로 사진을 끌어놓거나<br>아래 버튼으로 선택하세요</div>
+    <button type="button" class="select-btn" id="selectBtn">이미지 선택</button>
+    <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp">
+  </div>
+
+  <div class="editor hidden" id="editor">
+    <div class="section-title">자르기</div>
+    <div class="crop-hint">드래그로 위치를 옮기고, 슬라이더로 확대/축소하세요. 정사각형 전체가 아이콘으로 쓰입니다.</div>
+    <div class="crop-stage" id="cropStage"><img id="cropImg" alt=""></div>
+    <div class="crop-zoom-row">
+      <label>확대/축소</label>
+      <input type="range" id="zoomInput" min="100" max="300" value="100">
+    </div>
+
+    <div class="section-title">미리보기</div>
+    <div class="preview-grid">
+      <div class="preview-cell">
+        <div class="preview-swatch"><canvas id="prevIcon192" width="192" height="192"></canvas></div>
+        <div class="preview-caption">홈 화면<br>(192)</div>
+      </div>
+      <div class="preview-cell">
+        <div class="preview-swatch"><canvas id="prevIcon512" width="512" height="512"></canvas></div>
+        <div class="preview-caption">홈 화면<br>(512)</div>
+      </div>
+      <div class="preview-cell">
+        <div class="preview-swatch round"><canvas id="prevMaskable" width="512" height="512"></canvas></div>
+        <div class="preview-caption">마스커블<br>(안전영역)</div>
+      </div>
+      <div class="preview-cell">
+        <div class="preview-swatch"><canvas id="prevApple" width="180" height="180"></canvas></div>
+        <div class="preview-caption">iOS<br>(180)</div>
+      </div>
+    </div>
+
+    <div class="action-row">
+      <button type="button" class="secondary-btn" id="cancelBtn">취소</button>
+      <button type="button" class="primary-btn" id="saveBtn">아이콘으로 저장</button>
+    </div>
+  </div>
+
+  <div class="status hidden" id="statusBox"></div>
+</div>
+
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
+}
+</script>
+<script src="/dev/assetDb.js"></script>
+<script>
+/* =========================================================================
+   /play PWA 아이콘 업로드 — dev/upload/index.html의 기존 selectType 탭
+   구조와는 다른, 정사각형 하나만 다루는 훨씬 단순한 상태머신이라
+   dev/upload/evidence-notebook, dev/upload/case-entries와 같은 이유로 별도
+   페이지로 분리했다.
+
+   저장 흐름: 원본 이미지를 정사각형으로 잘라(팬/줌) 4개 크기(홈 192/512,
+   마스커블 512, iOS 180)의 PNG를 캔버스로 만들고 AssetDB.savePlayIcon으로
+   Storage 고정 경로에 업로드한다. play/manifest.json의 icons와 play 하위
+   각 페이지의 apple-touch-icon이 이미 그 고정 URL을 직접 가리키고 있어서,
+   여기서 다시 올리기만 하면 코드 배포 없이 실제 설치 아이콘이 바뀐다.
+   ===== */
+
+const THEME_BG = '#080A0C'; // play/manifest.json의 background_color/theme_color와 동일 — 알파 있는 원본을 깔끔하게 채운다
+const MASKABLE_CONTENT_FRAC = 0.8; // 마스커블 안전영역 관례값(가장자리 ~10%는 마스크에 잘려도 되는 여백)
+
+const el = {
+  currentThumb: document.getElementById('currentThumb'),
+  currentStatus: document.getElementById('currentStatus'),
+  dropzone: document.getElementById('dropzone'),
+  selectBtn: document.getElementById('selectBtn'),
+  fileInput: document.getElementById('fileInput'),
+  editor: document.getElementById('editor'),
+  cropStage: document.getElementById('cropStage'),
+  cropImg: document.getElementById('cropImg'),
+  zoomInput: document.getElementById('zoomInput'),
+  prevIcon192: document.getElementById('prevIcon192'),
+  prevIcon512: document.getElementById('prevIcon512'),
+  prevMaskable: document.getElementById('prevMaskable'),
+  prevApple: document.getElementById('prevApple'),
+  cancelBtn: document.getElementById('cancelBtn'),
+  saveBtn: document.getElementById('saveBtn'),
+  statusBox: document.getElementById('statusBox'),
+};
+
+function setStatus(text, kind) {
+  if (!text) { el.statusBox.classList.add('hidden'); return; }
+  el.statusBox.textContent = text;
+  el.statusBox.classList.remove('hidden', 'busy', 'error', 'ok');
+  el.statusBox.classList.add(kind);
+}
+
+async function loadCurrentIcon() {
+  const urls = AssetDB.getPlayIconPreviewUrls();
+  const img = new Image();
+  img.onload = () => {
+    el.currentThumb.src = urls.icon192;
+    el.currentStatus.textContent = '업로드된 아이콘 사용 중';
+    el.currentStatus.classList.add('live');
+  };
+  img.onerror = () => {
+    el.currentThumb.src = '/icons/icon-192.png';
+    el.currentStatus.textContent = '아직 업로드된 아이콘이 없어요 (기본 아이콘 사용 중)';
+    el.currentStatus.classList.remove('live');
+  };
+  img.src = urls.icon192;
+}
+loadCurrentIcon();
+
+/* ===== 파일 선택 ===== */
+el.selectBtn.addEventListener('click', () => el.fileInput.click());
+el.dropzone.addEventListener('click', (e) => { if (e.target === el.selectBtn) return; el.fileInput.click(); });
+el.fileInput.addEventListener('change', () => {
+  const file = el.fileInput.files[0];
+  el.fileInput.value = '';
+  if (file) openEditor(file);
+});
+['dragenter', 'dragover'].forEach(evt => el.dropzone.addEventListener(evt, (e) => { e.preventDefault(); el.dropzone.classList.add('drag'); }));
+['dragleave', 'drop'].forEach(evt => el.dropzone.addEventListener(evt, (e) => { e.preventDefault(); el.dropzone.classList.remove('drag'); }));
+el.dropzone.addEventListener('drop', (e) => {
+  const file = e.dataTransfer.files && e.dataTransfer.files[0];
+  if (file) openEditor(file);
+});
+
+/* ===== 정사각형 팬/줌 편집기 =====
+   스테이지 전체(정사각형)가 곧 자르는 영역 — 인스타그램 프로필 사진
+   편집기와 같은 방식으로, 이미지의 짧은 변이 스테이지에 딱 맞도록
+   cover-fit한 뒤(baseScale) 줌 슬라이더로 그 위에 배율을 곱하고, 드래그로
+   위치(offset)를 옮긴다. dev/upload/index.html의 crop-box(이미지는 고정,
+   박스가 움직임)와 반대로 여기선 이미지 자체가 스테이지 안에서 움직인다 —
+   자르는 영역이 항상 스테이지 전체라 그게 더 단순하다. */
+let naturalW = 0, naturalH = 0;
+let baseScale = 1, scale = 1;
+let offsetX = 0, offsetY = 0;
+let dragPointerId = null, dragStart = null;
+
+function openEditor(file) {
+  const url = URL.createObjectURL(file);
+  el.cropImg.onload = () => {
+    naturalW = el.cropImg.naturalWidth;
+    naturalH = el.cropImg.naturalHeight;
+    el.zoomInput.value = 100;
+    el.editor.classList.remove('hidden');
+    fitStage();
+    el.editor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+  el.cropImg.src = url;
+}
+
+function stageSize() { return el.cropStage.clientWidth; }
+
+function fitStage() {
+  const size = stageSize();
+  baseScale = size / Math.min(naturalW, naturalH);
+  scale = baseScale * (Number(el.zoomInput.value) / 100);
+  offsetX = (size - naturalW * scale) / 2;
+  offsetY = (size - naturalH * scale) / 2;
+  clampOffset();
+  renderStage();
+}
+
+function clampOffset() {
+  const size = stageSize();
+  const minX = size - naturalW * scale, minY = size - naturalH * scale;
+  offsetX = Math.min(0, Math.max(offsetX, minX));
+  offsetY = Math.min(0, Math.max(offsetY, minY));
+}
+
+function renderStage() {
+  el.cropImg.style.width = (naturalW * scale) + 'px';
+  el.cropImg.style.height = (naturalH * scale) + 'px';
+  el.cropImg.style.left = offsetX + 'px';
+  el.cropImg.style.top = offsetY + 'px';
+  renderPreviews();
+}
+
+el.cropStage.addEventListener('pointerdown', (e) => {
+  if (!naturalW || dragPointerId !== null) return;
+  dragPointerId = e.pointerId;
+  el.cropStage.setPointerCapture(e.pointerId);
+  dragStart = { clientX: e.clientX, clientY: e.clientY, offsetX, offsetY };
+});
+el.cropStage.addEventListener('pointermove', (e) => {
+  if (e.pointerId !== dragPointerId) return;
+  offsetX = dragStart.offsetX + (e.clientX - dragStart.clientX);
+  offsetY = dragStart.offsetY + (e.clientY - dragStart.clientY);
+  clampOffset();
+  renderStage();
+});
+['pointerup', 'pointercancel'].forEach(evt => el.cropStage.addEventListener(evt, (e) => {
+  if (e.pointerId !== dragPointerId) return;
+  dragPointerId = null;
+  dragStart = null;
+}));
+
+el.zoomInput.addEventListener('input', () => {
+  const size = stageSize();
+  // 스테이지 중심이 가리키던 원본 이미지 좌표를 기억했다가, 배율이 바뀐
+  // 뒤에도 같은 좌표가 계속 중심에 오도록 offset을 다시 계산 — 슬라이더를
+  // 움직여도 지금 보고 있던 자리에서 확대/축소되게 하기 위함(그렇지 않으면
+  // 매번 이미지 좌상단 기준으로 튀어 보인다).
+  const centerImgX = (size / 2 - offsetX) / scale;
+  const centerImgY = (size / 2 - offsetY) / scale;
+  scale = baseScale * (Number(el.zoomInput.value) / 100);
+  offsetX = size / 2 - centerImgX * scale;
+  offsetY = size / 2 - centerImgY * scale;
+  clampOffset();
+  renderStage();
+});
+
+window.addEventListener('resize', () => { if (naturalW) fitStage(); });
+
+/* ===== 미리보기 / 실제 저장 파일 생성 =====
+   현재 팬/줌 상태를 원본 이미지 좌표계의 정사각형 영역(sx,sy,sSize)으로
+   환산해, 그 영역만 각 출력 캔버스에 그린다 — 화면에 그려진 DOM을 다시
+   캡처하는 대신 원본 이미지에서 직접 그려서 화질 손실이 없다. */
+function currentSourceRect() {
+  const size = stageSize();
+  return { sx: -offsetX / scale, sy: -offsetY / scale, sSize: size / scale };
+}
+
+function drawIconCanvas(canvas, src, contentFrac) {
+  const out = canvas.width; // width===height, 정사각형
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = THEME_BG;
+  ctx.fillRect(0, 0, out, out);
+  const contentSize = out * contentFrac;
+  const pad = (out - contentSize) / 2;
+  ctx.drawImage(el.cropImg, src.sx, src.sy, src.sSize, src.sSize, pad, pad, contentSize, contentSize);
+}
+
+function renderPreviews() {
+  if (!naturalW) return;
+  const src = currentSourceRect();
+  drawIconCanvas(el.prevIcon192, src, 1);
+  drawIconCanvas(el.prevIcon512, src, 1);
+  drawIconCanvas(el.prevMaskable, src, MASKABLE_CONTENT_FRAC);
+  drawIconCanvas(el.prevApple, src, 1);
+}
+
+function canvasToPngBlob(canvas) {
+  return new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+}
+
+/* ===== 취소 / 저장 ===== */
+el.cancelBtn.addEventListener('click', () => {
+  el.editor.classList.add('hidden');
+  el.cropImg.src = '';
+  naturalW = 0;
+  setStatus('', null);
+});
+
+el.saveBtn.addEventListener('click', async () => {
+  if (!naturalW) return;
+  el.saveBtn.classList.add('disabled');
+  setStatus('아이콘 저장 중...', 'busy');
+  try {
+    // 미리보기 캔버스는 이미 최종 해상도(192/512/512/180)라 그대로 blob화한다.
+    const [icon192, icon512, maskable512, appleTouch] = await Promise.all([
+      canvasToPngBlob(el.prevIcon192),
+      canvasToPngBlob(el.prevIcon512),
+      canvasToPngBlob(el.prevMaskable),
+      canvasToPngBlob(el.prevApple),
+    ]);
+    await AssetDB.savePlayIcon({ icon192, icon512, maskable512, appleTouch });
+    setStatus('저장했습니다. /play를 홈 화면에 설치해뒀다면, 기기가 다음에 아이콘을 확인할 때 반영돼요.', 'ok');
+    el.editor.classList.add('hidden');
+    el.cropImg.src = '';
+    naturalW = 0;
+    await loadCurrentIcon();
+  } catch (err) {
+    setStatus('저장 실패: ' + (err && err.message ? err.message : String(err)), 'error');
+  } finally {
+    el.saveBtn.classList.remove('disabled');
+  }
+});
+</script>
+<script src="/dev/devPlanFab.js"></script>
+</body>
+</html>

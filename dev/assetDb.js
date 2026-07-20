@@ -1493,6 +1493,74 @@ const AssetDB = (() => {
     return images;
   }
 
+  // ===== /play PWA 아이콘 =====
+  // dev/upload/app-icon/에서 이미지를 올리면 /play/manifest.json의 icons와
+  // 각 /play/*/index.html의 apple-touch-icon이 실제로 가리키는 고정 경로를
+  // 덮어쓴다 — icons/*.png처럼 git에 커밋된 파일이 아니라 Storage의 고정
+  // 경로 자체가 "정식 아이콘"이라, 여기서 다시 올리기만 하면 배포 없이도
+  // (브라우저가 다음에 manifest/아이콘을 재확인할 때) 설치된 PWA 아이콘이
+  // 바뀐다. 카탈로그 JSON 한 덩어리가 아니라 크기별 PNG 파일 자체가 고정
+  // 경로 오브젝트라, 다른 고정-경로 항목들(GAME_SETTINGS_PATH 등)과 같은
+  // x-upsert 패턴으로 덮어쓴다.
+  const PLAY_ICON_PATHS = {
+    icon192: 'app-icon/play-icon-192.png',
+    icon512: 'app-icon/play-icon-512.png',
+    maskable512: 'app-icon/play-icon-maskable-512.png',
+    appleTouch: 'app-icon/play-apple-touch-icon.png',
+  };
+
+  function playIconUrl(key, bust) {
+    const base = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${PLAY_ICON_PATHS[key]}`;
+    return bust ? `${base}?t=${Date.now()}` : base;
+  }
+
+  // manifest.json/apple-touch-icon이 실제로 박아두는, 캐시버스팅 없는 고정
+  // URL — 언제 마지막으로 올렸는지와 무관하게 항상 같은 값이라 정적 파일에
+  // 한 번만 적어두면 된다. 업로드 도구 쪽 미리보기는 이 함수 대신
+  // playIconUrl(key, true)로 매번 최신 파일을 강제로 다시 받는다.
+  function getPlayIconUrls() {
+    return {
+      icon192: playIconUrl('icon192'),
+      icon512: playIconUrl('icon512'),
+      maskable512: playIconUrl('maskable512'),
+      appleTouch: playIconUrl('appleTouch'),
+    };
+  }
+  function getPlayIconPreviewUrls() {
+    return {
+      icon192: playIconUrl('icon192', true),
+      icon512: playIconUrl('icon512', true),
+      maskable512: playIconUrl('maskable512', true),
+      appleTouch: playIconUrl('appleTouch', true),
+    };
+  }
+
+  async function uploadPlayIconFile(key, blob) {
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${DEV_ASSETS_BUCKET}/${PLAY_ICON_PATHS[key]}`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'image/png',
+        'x-upsert': 'true',
+      },
+      body: blob,
+    });
+    if (!res.ok) throw new Error(`아이콘 업로드 실패 (${key}, ${res.status}): ${await res.text()}`);
+  }
+
+  // blobs: { icon192, icon512, maskable512, appleTouch } (전부 PNG Blob) —
+  // 한 원본 이미지에서 한 번에 만들어지는 값들이라 부분 갱신 없이 항상 넷
+  // 다 함께 올린다.
+  async function savePlayIcon(blobs) {
+    await Promise.all(Object.keys(PLAY_ICON_PATHS).map(key => {
+      const blob = blobs[key];
+      if (!blob) throw new Error(`아이콘 저장 실패: ${key} 이미지가 없습니다`);
+      return uploadPlayIconFile(key, blob);
+    }));
+    return getPlayIconUrls();
+  }
+
   return {
     addAsset, getAssetsByType, getAsset, getAssetsByIds, deleteAsset, preloadImage,
     getSaveSlots, setSaveSlot,
@@ -1518,6 +1586,7 @@ const AssetDB = (() => {
     getGameSettings, setGameSettings, DEFAULT_GAME_SETTINGS,
     getFishingConfig, setFishingConfig,
     getEvidenceNotebookConfig, setEvidenceNotebookConfig,
+    getPlayIconUrls, getPlayIconPreviewUrls, savePlayIcon,
   };
 })();
 
