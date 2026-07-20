@@ -1,7 +1,7 @@
 // Scoped to /dev/ only (this file lives in dev/, so the browser won't let it
 // control anything outside that path) — keeps the OPERATION MK DEV sandbox as
 // its own installable app, independent of the 강낭콩 투어 PWA's service worker.
-const CACHE_NAME = 'operation-mk-dev-v25';
+const CACHE_NAME = 'operation-mk-dev-v26';
 const APP_SHELL = [
   '/dev/',
   '/dev/story/',
@@ -66,6 +66,17 @@ self.addEventListener('activate', event => {
 // reason deployed fixes kept appearing not to take effect.
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
+  // Only the dev sandbox's own same-origin files go through this
+  // network-first strategy. Cross-origin API calls (Supabase REST/storage,
+  // used by assetDb.js for every upload/list/hotspot request) must fall
+  // straight through to the browser's normal fetch path instead —
+  // re-fetching event.request here was breaking a second identical request
+  // to the same Supabase URL made in quick succession (e.g. saveAsset()'s
+  // refreshList() right after an upload) with "Failed to fetch", which
+  // silently broke every 정답 영역 지정(hotspot) flow that depends on the
+  // background list refreshing right after a save (지하철 지도 미니게임
+  // included).
+  if (new URL(event.request.url).origin !== location.origin) return;
   event.respondWith(
     fetch(event.request, { cache: 'no-store' }).then(response => {
       if (response.ok) {

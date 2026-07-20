@@ -487,7 +487,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
         </svg>
       </div>
     </div>
-    <div class="hotspot-zoom-hint">손가락(또는 휠)으로 확대·축소하고 이동하며 자유롭게 그릴 수 있어요</div>
+    <div class="hotspot-zoom-hint">핀치(또는 휠)로 확대·축소하고, 드래그로 사각형 영역을 그려요</div>
     <div class="hotspot-actions">
       <button class="hotspot-secondary-btn" id="hotspotLeftBtn"></button>
       <button class="crop-save-btn" id="hotspotRightBtn" style="border-radius:10px;padding:12px;font-family:var(--mono);font-weight:700;border:none"></button>
@@ -3248,9 +3248,11 @@ function renderHotspotActions() {
 
 function updateHotspotHint() {
   const n = hotspotState.points.length;
-  el.hotspotHint.textContent = n < 3
-    ? `이미지 확대/축소·이동은 손가락(또는 휠)으로, 정답 영역의 모서리는 탭으로 순서대로 찍으세요. (${n}개, 최소 3개 필요)`
-    : `${n}개 점을 찍었어요. 계속 찍거나 "완료"를 눌러 도형을 완성하세요.`;
+  el.hotspotHint.textContent = n === 0
+    ? '이미지 위를 드래그해서 사각형 영역을 그리세요. 다각형이 필요하면 탭으로 모서리를 하나씩 찍어도 돼요.'
+    : n < 3
+      ? `모서리를 탭으로 순서대로 찍으세요. (${n}개, 최소 3개 필요)`
+      : `${n}개 점을 찍었어요. 계속 찍거나 "완료"를 눌러 도형을 완성하세요.`;
 }
 
 el.hotspotLeftBtn.addEventListener('click', () => {
@@ -3286,13 +3288,20 @@ el.hotspotRightBtn.addEventListener('click', async () => {
   }
 });
 
-/* ===== Stage pan/zoom + point-adding + whole-shape drag =====
-   Single-finger drag pans the view, unless it starts inside the placed
-   polygon (then it moves the whole shape) or nothing has moved at release
-   while still picking (then it drops a new corner point). Pinch/wheel zoom
-   in for precise placement — same gesture set as the minigame canvases. */
+/* ===== Stage pan/zoom + rectangle-drag + point-adding + whole-shape drag =====
+   Starting a fresh shape (picking mode, no points yet) is a single-finger
+   drag from one corner to the opposite corner — released, it finalizes
+   straight into a 4-point rectangle (see hsRectDragStart below). A plain tap
+   there instead (no real movement) falls back to the old point-by-point
+   flow, for the rarer case where the target isn't an axis-aligned rectangle
+   (e.g. a room photo shot at an angle) — tap 3+ corners in order, then
+   "완료". Once a shape exists, single-finger drag either moves the whole
+   placed shape (starting inside it) or pans the view (starting outside it,
+   or while still adding extra corners to a multi-tap shape). Pinch/wheel
+   zoom in for precise placement — same gesture set as the minigame
+   canvases. */
 const hsPointers = new Map();
-let hsPanStart = null, hsPinchStartDist = 0, hsPinchStartScale = 1, hsMoved = false, hsDraggingShape = null;
+let hsPanStart = null, hsPinchStartDist = 0, hsPinchStartScale = 1, hsMoved = false, hsDraggingShape = null, hsRectDragStart = null;
 
 function hsDist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
 function hsMid(a, b) { return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; }
@@ -3304,6 +3313,15 @@ function isPointInPolygon(px, py, points) {
   }
   return inside;
 }
+function rectCornersFrom(a, b) {
+  const minX = Math.min(a.x, b.x), maxX = Math.max(a.x, b.x);
+  const minY = Math.min(a.y, b.y), maxY = Math.max(a.y, b.y);
+  return [{ x: minX, y: minY }, { x: maxX, y: minY }, { x: maxX, y: maxY }, { x: minX, y: maxY }];
+}
+function renderHotspotRectPreview(a, b) {
+  el.hotspotPolygon.setAttribute('points', rectCornersFrom(a, b).map(p => `${p.x},${p.y}`).join(' '));
+  el.hotspotPolygon.classList.remove('hidden');
+}
 
 el.hotspotStage.addEventListener('pointerdown', (e) => {
   if (!hotspotState) return;
@@ -3312,12 +3330,20 @@ el.hotspotStage.addEventListener('pointerdown', (e) => {
   hsMoved = false;
   if (hsPointers.size === 1) {
     const nat = hotspotScreenToNatural(e.clientX, e.clientY);
-    hsDraggingShape = (hotspotState.mode === 'placed' && isPointInPolygon(nat.x, nat.y, hotspotState.points))
-      ? { startNat: nat, origPoints: hotspotState.points.map(p => ({ x: p.x, y: p.y })) }
-      : null;
-    hsPanStart = { x: e.clientX, y: e.clientY, tx: hotspotState.tx, ty: hotspotState.ty };
+    if (hotspotState.mode === 'picking' && hotspotState.points.length === 0) {
+      hsRectDragStart = nat;
+      hsDraggingShape = null;
+      hsPanStart = null;
+    } else {
+      hsRectDragStart = null;
+      hsDraggingShape = (hotspotState.mode === 'placed' && isPointInPolygon(nat.x, nat.y, hotspotState.points))
+        ? { startNat: nat, origPoints: hotspotState.points.map(p => ({ x: p.x, y: p.y })) }
+        : null;
+      hsPanStart = { x: e.clientX, y: e.clientY, tx: hotspotState.tx, ty: hotspotState.ty };
+    }
   } else if (hsPointers.size === 2) {
     hsDraggingShape = null;
+    hsRectDragStart = null;
     const pts = [...hsPointers.values()];
     hsPinchStartDist = hsDist(pts[0], pts[1]);
     hsPinchStartScale = hotspotState.scale;
@@ -3326,7 +3352,11 @@ el.hotspotStage.addEventListener('pointerdown', (e) => {
 el.hotspotStage.addEventListener('pointermove', (e) => {
   if (!hotspotState || !hsPointers.has(e.pointerId)) return;
   hsPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-  if (hsPointers.size === 1 && hsDraggingShape) {
+  if (hsPointers.size === 1 && hsRectDragStart) {
+    const nat = hotspotScreenToNatural(e.clientX, e.clientY);
+    if (Math.abs(nat.x - hsRectDragStart.x) > 3 || Math.abs(nat.y - hsRectDragStart.y) > 3) hsMoved = true;
+    if (hsMoved) renderHotspotRectPreview(hsRectDragStart, nat);
+  } else if (hsPointers.size === 1 && hsDraggingShape) {
     const nat = hotspotScreenToNatural(e.clientX, e.clientY);
     const dx = nat.x - hsDraggingShape.startNat.x, dy = nat.y - hsDraggingShape.startNat.y;
     if (Math.abs(dx) + Math.abs(dy) > 1) hsMoved = true;
@@ -3358,7 +3388,19 @@ el.hotspotStage.addEventListener('pointermove', (e) => {
   hsPointers.delete(e.pointerId);
   if (hsPointers.size < 2) hsPinchStartDist = 0;
   if (hsPointers.size === 0) {
-    if (evt === 'pointerup' && !hsMoved && !hsDraggingShape && hotspotState && hotspotState.mode === 'picking' && hsPanStart) {
+    if (hsRectDragStart && hotspotState && hotspotState.mode === 'picking') {
+      if (evt === 'pointerup' && hsMoved) {
+        const nat = hotspotScreenToNatural(e.clientX, e.clientY);
+        startHotspotWithPoints(rectCornersFrom(hsRectDragStart, nat));
+      } else if (evt === 'pointerup') {
+        hotspotState.points.push(hsRectDragStart);
+        renderHotspotPickingGroup();
+        renderHotspotActions();
+        updateHotspotHint();
+      } else {
+        el.hotspotPolygon.classList.add('hidden'); // cancelled mid-drag preview
+      }
+    } else if (evt === 'pointerup' && !hsMoved && !hsDraggingShape && hotspotState && hotspotState.mode === 'picking' && hsPanStart) {
       const nat = hotspotScreenToNatural(hsPanStart.x, hsPanStart.y);
       hotspotState.points.push(nat);
       renderHotspotPickingGroup();
@@ -3367,6 +3409,7 @@ el.hotspotStage.addEventListener('pointermove', (e) => {
     }
     hsPanStart = null;
     hsDraggingShape = null;
+    hsRectDragStart = null;
   }
 }));
 el.hotspotStage.addEventListener('wheel', (e) => {
