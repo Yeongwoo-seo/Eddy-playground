@@ -346,6 +346,7 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
 }
 </script>
+<script src="/dev/assetDb.js"></script>
 <script>
 /* =========================================================================
    변신 마법 — 조합 퍼즐 미니게임.
@@ -831,6 +832,30 @@ function recordDiscovery(resultKey, grade) {
   if (GRADE_RANK[grade] > GRADE_RANK[entry.bestGrade]) entry.bestGrade = grade;
   collection[resultKey] = entry;
   saveCollection(collection);
+  // 예전엔 localStorage에만 있어서 기기를 바꾸면 도감이 리셋됐다 — 매번
+  // 서버에도 백업해 올린다(오프라인이면 무시, 로컬 값은 이미 저장됨).
+  AssetDB.setTransformCollection(collection).catch(() => {});
+}
+// 서버에 쌓인 도감(다른 기기 기록)을 받아와 로컬과 합친다 — 같은 결과키가
+// 둘 다에 있으면 더 큰 count/등급을 취해 이중 집계 없이 안전하게 합친다.
+function mergeCollectionInto(local, server) {
+  Object.keys(server || {}).forEach((key) => {
+    const s = server[key];
+    const l = local[key];
+    if (!l) { local[key] = s; return; }
+    l.count = Math.max(l.count, s.count);
+    if (GRADE_RANK[s.bestGrade] > GRADE_RANK[l.bestGrade]) l.bestGrade = s.bestGrade;
+  });
+  return local;
+}
+async function pullCollectionFromServer() {
+  try {
+    const server = await AssetDB.getTransformCollection();
+    const merged = mergeCollectionInto(loadCollection(), server);
+    saveCollection(merged);
+    AssetDB.setTransformCollection(merged).catch(() => {});
+    if (activeBookTab === 'found' && el.bookOverlay.classList.contains('show')) renderBookBody();
+  } catch (e) { /* 오프라인/서버 오류 — 로컬 도감 그대로 사용 */ }
 }
 
 /* ===== Evaluation (request doc §20) ===== */
@@ -1097,6 +1122,7 @@ updateCauldronColor();
 updatePowderButton();
 initSparkleField();
 renderWallStars();
+pullCollectionFromServer();
 </script>
 <script src="/realPlayMode.js"></script>
 <script>RealPlayMode.hideDevChrome();</script>

@@ -1360,11 +1360,148 @@ const AssetDB = (() => {
     return text;
   }
 
+  // 낚시 미니게임 배치 편집(§레이아웃 편집, play/minigame-fishing/index.html의
+  // layoutPrefs — 조이스틱/낚시버튼/캐릭터/캐스팅UI/낚시바/낚시팝업 크기·위치)
+  // — 예전엔 localStorage에만 있어서 편집한 기기에서만 그 배치로 보였다.
+  // dev/start/index.html의 시작화면 배치와 같은 이유로 서버에도 올린다.
+  // 이 화면도 개발자 한 명만 만지므로(플레이 중에는 아무도 이 값을 쓰지
+  // 않는다) 저장 슬롯처럼 최신값 비교 없이 "서버 값이 항상 최신"으로 다룬다.
+  const fishingLayoutPrefsCache = new Map(); // single entry keyed 'prefs'
+  const FISHING_LAYOUT_PREFS_PATH = 'fishing-config/layout-prefs.json';
+
+  async function getFishingLayoutPrefs() {
+    if (fishingLayoutPrefsCache.has('prefs')) return fishingLayoutPrefsCache.get('prefs');
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${FISHING_LAYOUT_PREFS_PATH}?t=${Date.now()}`;
+    const prefs = await fetchJsonBlob(url);
+    if (prefs) fishingLayoutPrefsCache.set('prefs', prefs);
+    return prefs;
+  }
+
+  async function setFishingLayoutPrefs(prefs) {
+    const url = `${SUPABASE_URL}/storage/v1/object/${DEV_ASSETS_BUCKET}/${FISHING_LAYOUT_PREFS_PATH}`;
+    const blob = new Blob([JSON.stringify(prefs)], { type: 'application/json' });
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'x-upsert': 'true',
+      },
+      body: blob,
+    });
+    if (!res.ok) throw new Error(`낚시 배치 설정 업로드 실패 (${res.status}): ${await res.text()}`);
+    fishingLayoutPrefsCache.set('prefs', prefs);
+    return prefs;
+  }
+
+  // 변신 마법 미니게임 도감(collection) — 결과 조합별로 지금까지 나온 최고
+  // 등급을 기록해 다음에도 참고할 수 있게 하는 플레이어 진행 기록. 예전엔
+  // localStorage에만 있어서 기기를 바꾸면 그동안 모은 도감이 다 사라졌다 —
+  // 이 게임엔 계정 개념이 없고 플레이어가 사실상 한 팀이라, 저장 슬롯 같은
+  // 기기별 최신값 비교 없이 늘 바로바로 서버에 병합해 올린다(환경설정과
+  // 같은 관례).
+  const transformCollectionCache = new Map(); // single entry keyed 'collection'
+  const TRANSFORM_COLLECTION_PATH = 'transform-config/collection.json';
+
+  async function getTransformCollection() {
+    if (transformCollectionCache.has('collection')) return transformCollectionCache.get('collection');
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${TRANSFORM_COLLECTION_PATH}?t=${Date.now()}`;
+    const collection = (await fetchJsonBlob(url)) || {};
+    transformCollectionCache.set('collection', collection);
+    return collection;
+  }
+
+  async function setTransformCollection(collection) {
+    const url = `${SUPABASE_URL}/storage/v1/object/${DEV_ASSETS_BUCKET}/${TRANSFORM_COLLECTION_PATH}`;
+    const blob = new Blob([JSON.stringify(collection)], { type: 'application/json' });
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'x-upsert': 'true',
+      },
+      body: blob,
+    });
+    if (!res.ok) throw new Error(`변신 마법 도감 업로드 실패 (${res.status}): ${await res.text()}`);
+    transformCollectionCache.set('collection', collection);
+    return collection;
+  }
+
+  // 수박 게임 미니게임 — 최고 기록(best)과 과일 사진(설정 화면에서 tier별로
+  // 올리는 사진, 예전엔 base64로 통째로 localStorage에 박혀 있어 기기 간
+  // 공유가 안 됐다). 사진 자체는 다른 이미지들처럼 addAsset으로 Storage에
+  // 올리고, 여기엔 tier(0~10) -> assetId 매핑만 담는다.
+  const watermelonBestCache = new Map(); // single entry keyed 'best'
+  const WATERMELON_BEST_PATH = 'watermelon-config/best.json';
+
+  async function getWatermelonBest() {
+    if (watermelonBestCache.has('best')) return watermelonBestCache.get('best');
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${WATERMELON_BEST_PATH}?t=${Date.now()}`;
+    const data = await fetchJsonBlob(url);
+    const best = (data && typeof data.best === 'number') ? data.best : 0;
+    watermelonBestCache.set('best', best);
+    return best;
+  }
+
+  async function setWatermelonBest(best) {
+    const url = `${SUPABASE_URL}/storage/v1/object/${DEV_ASSETS_BUCKET}/${WATERMELON_BEST_PATH}`;
+    const blob = new Blob([JSON.stringify({ best })], { type: 'application/json' });
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'x-upsert': 'true',
+      },
+      body: blob,
+    });
+    if (!res.ok) throw new Error(`수박 게임 최고기록 업로드 실패 (${res.status}): ${await res.text()}`);
+    watermelonBestCache.set('best', best);
+    return best;
+  }
+
+  const watermelonFruitImagesCache = new Map(); // single entry keyed 'images', { [tierIdx]: assetId }
+  const WATERMELON_FRUIT_IMAGES_PATH = 'watermelon-config/fruit-images.json';
+
+  async function getWatermelonFruitImages() {
+    if (watermelonFruitImagesCache.has('images')) return watermelonFruitImagesCache.get('images');
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${WATERMELON_FRUIT_IMAGES_PATH}?t=${Date.now()}`;
+    const images = (await fetchJsonBlob(url)) || {};
+    watermelonFruitImagesCache.set('images', images);
+    return images;
+  }
+
+  async function setWatermelonFruitImages(images) {
+    const url = `${SUPABASE_URL}/storage/v1/object/${DEV_ASSETS_BUCKET}/${WATERMELON_FRUIT_IMAGES_PATH}`;
+    const blob = new Blob([JSON.stringify(images)], { type: 'application/json' });
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'x-upsert': 'true',
+      },
+      body: blob,
+    });
+    if (!res.ok) throw new Error(`수박 게임 과일 사진 설정 업로드 실패 (${res.status}): ${await res.text()}`);
+    watermelonFruitImagesCache.set('images', images);
+    return images;
+  }
+
   return {
     addAsset, getAssetsByType, getAsset, getAssetsByIds, deleteAsset, preloadImage,
     getSaveSlots, setSaveSlot,
     getPlayerSettings, setPlayerSettings,
     getDevPlanNotes, setDevPlanNotes,
+    getFishingLayoutPrefs, setFishingLayoutPrefs,
+    getTransformCollection, setTransformCollection,
+    getWatermelonBest, setWatermelonBest,
+    getWatermelonFruitImages, setWatermelonFruitImages,
     getRoomHotspots, setRoomHotspot,
     getMinigameHotspot, setMinigameHotspot,
     getItems, setItem, getRecipes, setRecipes,

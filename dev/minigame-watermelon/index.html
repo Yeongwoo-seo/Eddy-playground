@@ -101,11 +101,15 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
 }
 </script>
+<script src="/dev/assetDb.js"></script>
 <script>
 /* ===== Per-fruit photo picker — each upload goes through the crop modal
-   below (pan/zoom, see CROP_RES) before being stored as a data URL per
-   tier in localStorage under FRUIT_IMAGE_KEY, read straight off there by
-   the play screen (dev/minigame-watermelon/play/). The fixed crop
+   below (pan/zoom, see CROP_RES), then uploads to AssetDB(Supabase Storage)
+   like every other image in this project so it shows up on any device — a
+   tierIdx -> assetId map goes to AssetDB.setWatermelonFruitImages, while the
+   resolved dataUrl is still cached in localStorage under FRUIT_IMAGE_KEY for
+   the play screen's instant-paint read (dev/minigame-watermelon/play/). The
+   fixed crop
    resolution keeps a full-size phone photo from blowing the localStorage
    quota, same goal as the fishing minigame's downscale-on-upload. ===== */
 const FRUIT_META = [
@@ -270,22 +274,57 @@ cropZoom.addEventListener('input', () => {
 });
 
 document.getElementById('cropCancelBtn').addEventListener('click', closeCropModal);
-document.getElementById('cropConfirmBtn').addEventListener('click', () => {
+document.getElementById('cropConfirmBtn').addEventListener('click', async () => {
   if (!cropState) return;
+  const tierIdx = cropState.tierIdx;
+  const confirmBtn = document.getElementById('cropConfirmBtn');
+  const originalLabel = confirmBtn.textContent;
+  confirmBtn.textContent = '업로드 중...';
+  confirmBtn.disabled = true;
   try {
-    images[cropState.tierIdx] = cropCanvas.toDataURL('image/jpeg', 0.85);
+    const dataUrl = cropCanvas.toDataURL('image/jpeg', 0.85);
+    const blob = await (await fetch(dataUrl)).blob();
+    const asset = await AssetDB.addAsset({ type: 'watermelonFruit', name: `tier-${tierIdx}.jpg`, blob });
+    images[tierIdx] = asset.dataUrl;
     saveImages(images);
-    updateRow(cropState.tierIdx);
+    updateRow(tierIdx);
+    fruitImageIds[tierIdx] = asset.id;
+    await AssetDB.setWatermelonFruitImages(fruitImageIds);
   } catch (err) {
     errorEl.textContent = (err && err.message) || '이미지 저장에 실패했어요.';
     errorEl.style.display = 'block';
+  } finally {
+    confirmBtn.textContent = originalLabel;
+    confirmBtn.disabled = false;
+    closeCropModal();
   }
-  closeCropModal();
 });
 
 let images = loadImages();
+let fruitImageIds = {}; // tierIdx -> AssetDB asset id, populated below from the server
 const listEl = document.getElementById('fruitList');
 const errorEl = document.getElementById('fruitError');
+
+// 서버(다른 기기)에 올라간 과일 사진을 받아와 로컬 캐시 위에 덮어쓴다 —
+// dev/start/index.html의 pullStartScreenFromServer와 같은 관례("이 화면은
+// 개발자 한 명만 만지므로 서버 값이 항상 최신").
+async function pullFruitImagesFromServer() {
+  try {
+    const ids = await AssetDB.getWatermelonFruitImages();
+    fruitImageIds = ids;
+    const tierIdxs = Object.keys(ids);
+    if (!tierIdxs.length) return;
+    const assets = await AssetDB.getAssetsByIds(Object.values(ids));
+    const assetById = {};
+    assets.forEach(a => { assetById[a.id] = a; });
+    tierIdxs.forEach((tierIdx) => {
+      const asset = assetById[ids[tierIdx]];
+      if (asset && asset.dataUrl) images[tierIdx] = asset.dataUrl;
+    });
+    saveImages(images);
+    renderList();
+  } catch (e) { /* 오프라인/서버 오류 — 로컬 캐시 값 그대로 사용 */ }
+}
 
 function rowHtml(tierIdx, meta) {
   const dataUrl = images[tierIdx];
@@ -342,15 +381,6 @@ window.__removeBackgroundReady = import('https://cdn.jsdelivr.net/npm/@imgly/bac
   })
   .catch(err => { window.__removeBackgroundLoadError = err; });
 
-function blobToDataUrl(blob) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(new Error('파일을 읽지 못했습니다.'));
-    reader.readAsDataURL(blob);
-  });
-}
-
 async function removeFruitBackground(tierIdx) {
   const dataUrl = images[tierIdx];
   if (!dataUrl) return;
@@ -379,9 +409,12 @@ async function removeFruitBackground(tierIdx) {
         progressText.textContent = '배경 제거 중... ' + pct + '%';
       }
     });
-    images[tierIdx] = await blobToDataUrl(resultBlob);
+    const asset = await AssetDB.addAsset({ type: 'watermelonFruit', name: `tier-${tierIdx}-cutout.png`, blob: resultBlob });
+    images[tierIdx] = asset.dataUrl;
     saveImages(images);
     updateRow(tierIdx);
+    fruitImageIds[tierIdx] = asset.id;
+    await AssetDB.setWatermelonFruitImages(fruitImageIds);
   } catch (err) {
     errorEl.textContent = '배경 제거 실패: ' + (err && err.message ? err.message : err);
     errorEl.style.display = 'block';
@@ -404,9 +437,12 @@ function onRemove(tierIdx) {
   delete images[tierIdx];
   saveImages(images);
   updateRow(tierIdx);
+  delete fruitImageIds[tierIdx];
+  AssetDB.setWatermelonFruitImages(fruitImageIds).catch(() => {});
 }
 
 renderList();
+pullFruitImagesFromServer();
 </script>
 <script src="/dev/devPlanFab.js"></script>
 </body>

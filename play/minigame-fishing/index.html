@@ -3090,22 +3090,41 @@ let fishbarDragPointerId = null;
 let castingPosPreview = false; // 캐스팅 게이지는 평소 세기 조절 중에만 보여서, 위치를 드래그로 옮기려면 편집 중엔 강제로 보여줘야 한다(layoutCastingPosBtn).
 let fishbarPosPreview = false; // 낚시바도 마찬가지 — 평소엔 잡아채기(catching) 중에만 보여서, 위치를 드래그로 옮기려면 편집 중엔 강제로 보여줘야 한다(layoutFishbarPosBtn).
 let itemPopupPreview = false; // 낚시 팝업도 마찬가지 — 평소엔 낚시 성공 직후에만 보여서, 크기 슬라이더 결과를 보려면 편집 중엔 강제로 띄워둬야 한다(layoutItemPopupPosBtn).
+function mergeLayoutPrefs(saved) {
+  if (!saved) return;
+  if (saved.joystick) Object.assign(layoutPrefs.joystick, saved.joystick);
+  if (saved.fishBtn) Object.assign(layoutPrefs.fishBtn, saved.fishBtn);
+  if (saved.heldFish) Object.assign(layoutPrefs.heldFish, saved.heldFish);
+  if (saved.char) Object.assign(layoutPrefs.char, saved.char);
+  if (saved.casting) Object.assign(layoutPrefs.casting, saved.casting);
+  if (saved.fishbar) Object.assign(layoutPrefs.fishbar, saved.fishbar);
+  if (saved.itemPopup) Object.assign(layoutPrefs.itemPopup, saved.itemPopup);
+}
 function loadLayoutPrefs() {
   try {
     const raw = localStorage.getItem(LAYOUT_PREFS_KEY);
-    if (!raw) return;
-    const saved = JSON.parse(raw);
-    if (saved.joystick) Object.assign(layoutPrefs.joystick, saved.joystick);
-    if (saved.fishBtn) Object.assign(layoutPrefs.fishBtn, saved.fishBtn);
-    if (saved.heldFish) Object.assign(layoutPrefs.heldFish, saved.heldFish);
-    if (saved.char) Object.assign(layoutPrefs.char, saved.char);
-    if (saved.casting) Object.assign(layoutPrefs.casting, saved.casting);
-    if (saved.fishbar) Object.assign(layoutPrefs.fishbar, saved.fishbar);
-    if (saved.itemPopup) Object.assign(layoutPrefs.itemPopup, saved.itemPopup);
+    if (raw) mergeLayoutPrefs(JSON.parse(raw));
   } catch (err) { /* 저장값이 깨졌으면 기본값 그대로 쓴다 */ }
+}
+// 서버에 마지막으로 올라간 배치(다른 기기에서 편집했을 수도 있는 값)를
+// 받아와 로컬 캐시 위에 덮어쓴다 — dev/start/index.html의
+// pullStartScreenFromServer와 같은 관례("이 화면은 개발자 한 명만 만지므로
+// 서버 값이 항상 최신"). 지금 막 드래그로 만지고 있는 중(layoutEditMode)엔
+// 뒤늦게 도착한 값이 진행 중인 편집을 덮어쓰면 안 되므로 건너뛴다.
+async function pullLayoutPrefsFromServer() {
+  try {
+    const saved = await AssetDB.getFishingLayoutPrefs();
+    if (!saved || layoutEditMode) return;
+    mergeLayoutPrefs(saved);
+    localStorage.setItem(LAYOUT_PREFS_KEY, JSON.stringify(layoutPrefs));
+    applyLayoutPrefs();
+    if (castingPosPreview) positionCastGaugeAboveCharacter();
+    if (fishbarPosPreview) positionFishbarRightOfCharacter();
+  } catch (err) { /* 오프라인/서버 오류 — 로컬 캐시 값 그대로 사용 */ }
 }
 function saveLayoutPrefs() {
   try { localStorage.setItem(LAYOUT_PREFS_KEY, JSON.stringify(layoutPrefs)); } catch (err) { /* 저장 실패해도 이번 세션 값은 그대로 쓸 수 있으니 무시 */ }
+  AssetDB.setFishingLayoutPrefs(layoutPrefs).catch(() => {});
 }
 function applyLayoutPrefs() {
   const root = document.documentElement.style;
@@ -3321,6 +3340,7 @@ el.layoutCodeCloseBtn.addEventListener('click', (e) => {
 });
 loadLayoutPrefs();
 applyLayoutPrefs();
+pullLayoutPrefsFromServer();
 
 // 오프라인이거나 Supabase 응답이 유난히 느려도 화면이 검게 영영 멈춰
 // 있으면 안 되니, loadConfig가 안 끝나도 이 시간이 지나면 강제로 밝힌다
