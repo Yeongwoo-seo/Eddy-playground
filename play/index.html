@@ -186,6 +186,8 @@ const WEEK_TILES = [
 const WEEK1_MINIGAMES = [
   { name: '사진 속 인물 찾기', route: '/dev/minigame-photo-zoom/' },
   { name: '시간대 정리', route: '/dev/minigame-timeline/' },
+  { name: '하버 포토 · 오페라하우스', route: '/dev/minigame-harbour-photo/?bg=opera' },
+  { name: '하버 포토 · 하버브릿지', route: '/dev/minigame-harbour-photo/?bg=bridge' },
 ];
 
 el.weekGrid.innerHTML = WEEK_TILES.map(t => `
@@ -288,6 +290,14 @@ if (shouldShowInstallGate()) {
     document.getElementById('iosGuide').style.display = 'block';
   }
   document.getElementById('installGate').classList.add('show');
+}
+
+// A week ending inside /dev/game (see its showWeekComplete) sends a real
+// player back here with ?weekComplete=1 instead of leaving them stuck on
+// the last line — land straight on the 주차 선택 화면 they picked "1주차"
+// from, skipping the 시작하기 tap screen they've already been through.
+if (!shouldShowInstallGate() && new URLSearchParams(location.search).get('weekComplete') === '1') {
+  showWeekSelect();
 }
 </script>
 </body>

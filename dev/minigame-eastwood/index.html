@@ -125,7 +125,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 
   <div class="topbar">
     <a class="vn-btn" href="/dev/">← DEV</a>
-    <a class="vn-btn" href="/dev/upload/?scene=week0-scene-001-2&kind=minigame">지도 업로드</a>
+    <a class="vn-btn" id="mapUploadBtn" href="/dev/upload/?scene=week0-scene-001-2&kind=minigame">지도 업로드</a>
   </div>
 
   <div class="phase-bar" id="phaseBar"></div>
@@ -183,7 +183,14 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 <script src="/realPlayMode.js"></script>
-<script>RealPlayMode.hideDevChrome();</script>
+<script>
+RealPlayMode.hideDevChrome();
+// hideDevChrome()'s selector only matches the "← DEV" link (exact
+// href="/dev/"), not this one — a real player could reach /dev/upload/
+// (the asset uploader) from here otherwise, since this is the first
+// minigame in the real week0 chain.
+if (RealPlayMode.isActive()) document.getElementById('mapUploadBtn').style.display = 'none';
+</script>
 <script src="/dev/assetDb.js"></script>
 <script src="/dev/loadingOverlay.js"></script>
 <script src="/dev/dialogueData.js"></script>

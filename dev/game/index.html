@@ -359,6 +359,20 @@ if ('serviceWorker' in navigator) {
 // /dev/game/ link still works.
 const gameParams = new URLSearchParams(location.search);
 const requestedSceneId = gameParams.get('scene');
+// Player-facing week gate — /play's own 주차 선택 화면 only unlocks week0/
+// week1 today (see WEEK_TILES in play/index.html); week2-4 already have
+// fully written dialogue (see dialogueData.js) but no story/minigame
+// routing built yet, so letting a real player jump straight to a week2-4
+// scene id via the URL bar would just spoil it instead of hitting the same
+// "다음 업데이트" wall /play shows. Dev testing (RealPlayMode not set) is
+// unaffected — /dev/week2~4 pickers still work normally.
+const REAL_PLAY_UNLOCKED_WEEKS = ['week0', 'week1'];
+if (RealPlayMode.isActive() && requestedSceneId) {
+  const requestedWeek = (requestedSceneId.match(/^(week\d+)-/) || [])[1];
+  if (requestedWeek && !REAL_PLAY_UNLOCKED_WEEKS.includes(requestedWeek)) {
+    location.href = '/play/';
+  }
+}
 const activeSceneData = allScenes.find(s => s.id === requestedSceneId) || allScenes[0];
 // ?autoplay=1 (set by each week's "플레이하기" button, see /dev/week1) — taps
 // itself through every line instead of waiting for the player, so a dev can
@@ -1106,7 +1120,21 @@ const player = createVNPlayer({
       }
       return;
     }
-    player.restart();
+    // Manual (tap-to-advance) play used to just player.restart() here
+    // whenever a scene had no nextSceneId — looping the same scene forever
+    // for any real player, since most plain week1 VN-to-VN beats were only
+    // ever meant to be walked manually via /dev/week1's order list, not
+    // authored with nextSceneId. Reuse the same order-based fallback
+    // autoplay already relies on (see findAutoplayFallbackNextScene) so a
+    // real playthrough advances the same way autoplay does; only when that
+    // finds nothing left (the actual last scene of the week) do we treat it
+    // as the week ending.
+    const fallback = findOrderFallbackNextScene(activeSceneData);
+    if (fallback) {
+      location.href = `/dev/game/?scene=${encodeURIComponent(fallback.id)}`;
+      return;
+    }
+    showWeekComplete();
   },
 });
 
@@ -1191,6 +1219,39 @@ function showAutoplayComplete() {
   el.introCard.textContent = '자동 재생 완료';
   el.introOverlay.classList.remove('hidden');
   setTimeout(() => { location.href = `/dev/${autoplayWeek}/`; }, 2200);
+}
+
+// Manual-play counterpart of findAutoplayFallbackNextScene — same "next
+// scene in this week by .order" lookup, but derives the week from the
+// scene's own id prefix (week0-scene-... -> 'week0') instead of the
+// ?week= URL param, since a manually-tapped scene was never necessarily
+// entered with that param set (autoplayWeek defaults to 'week1' otherwise,
+// which would silently search the wrong week's scene list).
+function findOrderFallbackNextScene(scene) {
+  const weekId = (scene.id.match(/^(week\d+)-/) || [])[1];
+  const week = weeks.find(w => w.id === weekId);
+  if (!week) return null;
+  const candidates = week.scenes
+    .filter(s => s.lines && s.lines.length && s.order > scene.order)
+    .sort((a, b) => a.order - b.order);
+  return candidates[0] || null;
+}
+
+// True end of a week (e.g. week1-scene-013, "1주차 엔딩") for a manually
+// tapped-through playthrough. A real player (RealPlayMode) goes back to
+// /play/'s own 주차 선택 화면 — the same list they picked "1주차" from — so
+// finishing loops back into the menu instead of stalling on the last line
+// forever. A dev testing directly through /dev/weekN/ (RealPlayMode not
+// set) goes back to that week's own scene list instead, mirroring
+// showAutoplayComplete's dev-facing target above.
+function showWeekComplete() {
+  el.frame.classList.add('ending-fade');
+  const weekId = (activeSceneData.id.match(/^(week\d+)-/) || [])[1] || 'week1';
+  const weekLabel = (weeks.find(w => w.id === weekId) || {}).label || '1주차';
+  el.introCard.textContent = `${weekLabel} 완료`;
+  el.introOverlay.classList.remove('hidden');
+  const dest = RealPlayMode.isActive() ? '/play/?weekComplete=1' : `/dev/${weekId}/`;
+  setTimeout(() => { location.href = dest; }, 2200);
 }
 
 // Text speed is applied by filling in each line's typingSpeedMs where the

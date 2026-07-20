@@ -16,7 +16,7 @@ const RealPlayMode = {
   isActive() { try { return sessionStorage.getItem(this.KEY) === '1'; } catch (e) { return false; } },
   hideDevChrome() {
     if (!this.isActive()) return;
-    document.querySelectorAll('a.vn-btn[href="/dev/"], #devBtn, #transformBtn, #caseMenuMount')
+    document.querySelectorAll('a.vn-btn[href="/dev/"], #devBtn, #caseMenuMount')
       .forEach(el => { el.style.display = 'none'; });
   },
 };

@@ -1190,6 +1190,12 @@ const week0Scenes = [
     // them now that the old lobby/front-desk trip was reworked into a phone
     // call from the room — see week0SceneFrontdeskLines' header comment).
     lines: mergeLines(week0Scene002_3Lines, week0SceneFrontdeskLines, week0SceneFirstNightLines),
+    // 0주차의 실제 마지막 씬 — 이 필드가 없으면 dev/game/index.html의
+    // onComplete가 갈 곳을 못 찾아 player.restart()로 같은 씬을 무한
+    // 재생한다. week0/week1은 dialogueData.js에서는 배열이 분리돼 있지만
+    // /play 기준으로는 하나의 "1주차"이므로, 다음 주차 목록으로 돌아가지
+    // 않고 곧장 1주차 본편(week1-scene-001)으로 이어준다.
+    nextSceneId: 'week1-scene-001',
   },
 ];
 

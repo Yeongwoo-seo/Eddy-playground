@@ -489,7 +489,11 @@ function startSuccessDialogue() {
 
 function fadeOutAndRedirect() {
   el.fadeOverlay.classList.add('show');
-  setTimeout(() => { location.href = '/dev/game/?scene=week1-scene-009'; }, 950);
+  // Was pointed at week1-scene-009 directly, skipping week1-scene-008a (the
+  // 클레어·다니엘·소피 재심문 beat) entirely — dialogueData.js's own comments
+  // ("timeline minigame -> 008a -> 009") and locationDefs.js document 008a as
+  // the intended next stop, so it was just never actually reached in play.
+  setTimeout(() => { location.href = '/dev/game/?scene=week1-scene-008a'; }, 950);
 }
 
 /* ===== Boot ===== */

@@ -109,6 +109,8 @@ window.addEventListener('resize', setVh100);
 window.addEventListener('orientationchange', setVh100);
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
 </script>
+<script src="/realPlayMode.js"></script>
+<script>RealPlayMode.hideDevChrome();</script>
 <script src="/dev/assetDb.js"></script>
 <script src="/dev/dialogueData.js"></script>
 <script src="/dev/caseFileData.js"></script>
