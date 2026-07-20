@@ -158,9 +158,15 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
    밝아지는 fade dev/explore/index.html's moveTo() uses for hub moves, so a
    씬 안에서 onSceneTransition으로 장소가 바뀔 때도(playSceneTransition) 배경이
    바뀌는 컷이 그대로 드러나지 않는다. z-index 11 — transform-popup(10) 위,
-   sheet-overlay(20) 아래. */
-.move-fade{position:absolute;inset:0;z-index:11;background:#000;opacity:0;pointer-events:none;transition:opacity .28s ease}
+   sheet-overlay(20) 아래. 페이드 길이는 js의 MOVE_FADE_MS와 맞춰뒀다 — 여기
+   숫자만 따로 바꾸면 안 맞는다. */
+.move-fade{position:absolute;inset:0;z-index:11;background:#000;opacity:0;pointer-events:none;transition:opacity .6s cubic-bezier(0.2,0.8,0.2,1)}
 .move-fade.show{opacity:1;pointer-events:auto}
+/* 완전히 암전된 동안만 뜨는 장소명 타이핑 카드 — dialogueData.js의
+   sceneTransition.introLabel을 타자기로 보여준다. 예전엔 introLabel+time을
+   같이 typing했는데, 지금은 장소명(introLabel)만 — time은 의도적으로 뺐다. */
+.move-fade-label{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);text-align:center;font-family:var(--mono);color:#fff;font-size:20px;letter-spacing:.18em;opacity:0;transition:opacity .3s ease}
+.move-fade-label.show{opacity:1}
 
 /* ===== Closing beat: fade to black + a small unexplained flash ===== */
 .ending-fade .bg-layer{opacity:0}
@@ -232,7 +238,9 @@ window.addEventListener('orientationchange', setVh100);
     <div class="intro-card" id="introCard"></div>
   </div>
 
-  <div class="move-fade" id="moveFade"></div>
+  <div class="move-fade" id="moveFade">
+    <div class="move-fade-label" id="moveFadeLabel"></div>
+  </div>
 </div>
 
 <!-- Scene BGM (사운드 tab, /dev/upload) streams straight from YouTube's own
@@ -386,6 +394,7 @@ const el = {
   introCard: document.getElementById('introCard'),
   unknownSignal: document.getElementById('unknownSignal'),
   moveFade: document.getElementById('moveFade'),
+  moveFadeLabel: document.getElementById('moveFadeLabel'),
   choiceLayer: document.getElementById('choiceLayer'),
   sceneDim: document.getElementById('sceneDim'),
   evidenceCta: document.getElementById('evidenceCta'),
@@ -595,13 +604,40 @@ function updateArrow(show) {
 // Mid-scene location change inside a merged, multi-location scene (see
 // dialogueData.js lines carrying a `sceneTransition` marker, e.g.
 // week0-scene-flight/week0-scene-002-1) — vnPlayer.js awaits this before
-// typing that line's text. Just swaps in the new location's background —
-// stored under its own virtual scene-id key, same one-slot-per-id pattern
-// minigameId already uses.
+// typing that line's text. Fades to black, types the new location's name
+// (transition.introLabel — not transition.time; that field still exists on
+// every sceneTransition marker but is deliberately left unused here, same
+// as before) while the screen is fully covered, swaps in the new
+// background (stored under its own virtual scene-id key, same
+// one-slot-per-id pattern minigameId already uses) behind it, then fades
+// back in.
+const MOVE_FADE_MS = 600; // matches .move-fade's CSS transition duration above
+const MOVE_LABEL_TYPE_SPEED_MS = 55;
+const MOVE_LABEL_HOLD_MS = 450; // beat to actually read the label once typed
+
+function typeMoveFadeLabel(text) {
+  return new Promise(resolve => {
+    el.moveFadeLabel.textContent = '';
+    if (!text) { resolve(); return; }
+    el.moveFadeLabel.classList.add('show');
+    let i = 0;
+    const timer = setInterval(() => {
+      i++;
+      el.moveFadeLabel.textContent = text.slice(0, i);
+      if (i >= text.length) {
+        clearInterval(timer);
+        setTimeout(resolve, MOVE_LABEL_HOLD_MS);
+      }
+    }, MOVE_LABEL_TYPE_SPEED_MS);
+  });
+}
+
 async function playSceneTransition(transition) {
   el.moveFade.classList.add('show');
-  await new Promise(r => setTimeout(r, 260));
+  await new Promise(r => setTimeout(r, MOVE_FADE_MS));
+  await typeMoveFadeLabel(transition.introLabel);
   await applyBackground(transition.backgroundKey);
+  el.moveFadeLabel.classList.remove('show');
   requestAnimationFrame(() => el.moveFade.classList.remove('show'));
 }
 
