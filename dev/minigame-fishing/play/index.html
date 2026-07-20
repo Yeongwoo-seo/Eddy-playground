@@ -2932,8 +2932,8 @@ let layoutPrefs = {
   heldFish: { size: 32 }, // 낚시 성공 후 캐릭터가 들고 있는 물고기 아이콘 크기(px) — .held-fish 기본값과 맞춤. 배치 확정 값으로 기본값 고정
   char: { scale: 0.45, outline: 0 }, // 캐릭터(.char-stage) 전체 배율 — --char-scale, char-stage의 transform:scale에 그대로 들어간다. 배치 확정 값으로 기본값 고정
   casting: { scale: 0.55, left: 1, bottom: -20 }, // 캐스팅 파워바/찌/입질 팝업/아이템 팝업/물고기 날아가는 연출을 한 번에 묶어 조절하는 배율 — --casting-scale과 각 요소의 JS 계산 transform에 곱해진다. 추 던지기 궤적(cast-svg)은 낚싯대 끝의 실제 화면 좌표에 맞춰야 해서 일부러 빼뒀다(비율만 바꾸면 궤적 시작점이 캐릭터 손끝에서 어긋나 보인다). left/bottom은 더 이상 화면 기준 절대 위치가 아니라, 캐스팅 게이지(cast-power-wrap)가 뜨는 "캐릭터 머리 위" 기준점에서 얼마나 더 옮길지 정하는 오프셋이다(positionCastGaugeAboveCharacter 참고) — 배치 확정 값으로 기본값 고정.
-  fishbar: { scale: 1, left: 0, top: 0 }, // 잡아채기 낚시바(fishbar-panel) 전용 배율·위치 — 예전엔 casting.scale을 같이 썼지만, 낚시바만 따로 크기/위치를 잡고 싶다는 요청으로 분리했다. left/top은 "캐릭터 오른쪽, 세로 중앙" 기준점(positionFishbarRightOfCharacter)에서 얼마나 더 옮길지 정하는 오프셋 — top인 이유는 그 함수가 bottom이 아니라 top으로 세로 위치를 잡기 때문(캐스팅 게이지 쪽 bottom과 부호 방향이 다르다). 배치 확정 값으로 기본값 고정.
-  itemPopup: { scale: 1 }, // 낚시 팝업(.item-popup) 전용 배율 — casting.scale(전체 캐스팅 UI 묶음)에 곱해져 적용된다(positionItemPopupAboveCharacter). 낚시 팝업만 따로 크기를 조절하고 싶다는 요청으로 추가.
+  fishbar: { scale: 1, left: -28, top: 5 }, // 잡아채기 낚시바(fishbar-panel) 전용 배율·위치 — 예전엔 casting.scale을 같이 썼지만, 낚시바만 따로 크기/위치를 잡고 싶다는 요청으로 분리했다. left/top은 "캐릭터 오른쪽, 세로 중앙" 기준점(positionFishbarRightOfCharacter)에서 얼마나 더 옮길지 정하는 오프셋 — top인 이유는 그 함수가 bottom이 아니라 top으로 세로 위치를 잡기 때문(캐스팅 게이지 쪽 bottom과 부호 방향이 다르다). 배치 확정 값으로 기본값 고정.
+  itemPopup: { scale: 1.6 }, // 낚시 팝업(.item-popup) 전용 배율 — casting.scale(전체 캐스팅 UI 묶음)에 곱해져 적용된다(positionItemPopupAboveCharacter). 낚시 팝업만 따로 크기를 조절하고 싶다는 요청으로 추가.
 };
 let layoutEditMode = false;
 let layoutDragTarget = null; // 'joystick' | 'fishBtn' | 'casting' | 'fishbar' | null
