@@ -880,7 +880,7 @@ let camOffset = { x: 0, y: 0 }; // 지금 카메라(화면)가 배경 원본 이
 // 에서만 이 배율을 곱하거나 나눠 화면에 보이는 배경 크기와 카메라 이동
 // 범위만 바꾼다 — 배경 미업로드 시(hasWorldBackground false)는
 // effectiveBgZoom()이 항상 1을 돌려줘 예전 폴백 동작과 완전히 같다.
-let bgZoom = 1;
+let bgZoom = 0.9;
 function effectiveBgZoom() { return hasWorldBackground ? bgZoom : 1; }
 // updateCamera는 이동 중 매 프레임(moveTick) 호출되므로, 그때마다
 // el.frame.getBoundingClientRect()를 다시 읽으면 매 프레임 강제 레이아웃
@@ -1135,14 +1135,16 @@ el.sellFishModal.addEventListener('pointerdown', (e) => {
 /* ===== 그만하기 =====
    낚시를 시작한 씬이 ?nextScene=<sceneId>로 넘어온 경우(다른 미니게임들과
    같은 관례 — dev/minigame-timeline/index.html의 하드코딩된 다음 씬
-   리다이렉트 참고) 그 씬으로 넘긴다. 아직 이 미니게임을 게임 씬 흐름에
-   연결하지 않은 상태(설정 화면에서 바로 "플레이 테스트"로 들어온 경우 등)
-   에서는 지금까지처럼 설정 화면(뒤로가기 칩과 같은 목적지)으로 돌아간다.
+   리다이렉트 참고) 그 씬으로 넘긴다. 지금 실제 진입 경로
+   (week0-scene-circular-quay-minigame)는 nextScene 없이 el.backChip과
+   같은 mkShopReturnUrl 계약으로 열리므로, nextScene이 없으면 el.backChip.href
+   (=sessionStorage의 mkShopReturnUrl, 그것도 없으면 설정 화면)로 넘긴다 —
+   그래야 스킵 버튼을 눌러도 설정 화면이 아니라 원래 스토리 씬으로 돌아간다.
    §추후 — "미니게임만 즐기기" 단독 실행 모드가 생기면 그때는 메인 메뉴로
    돌아가야 하지만, 그 모드 자체가 아직 없어 지금은 구현하지 않는다. */
 function handleQuit() {
   const nextScene = settingsParams.get('nextScene');
-  location.href = nextScene ? ('/play/game/?scene=' + encodeURIComponent(nextScene)) : '/dev/minigame-fishing/';
+  location.href = nextScene ? ('/play/game/?scene=' + encodeURIComponent(nextScene)) : el.backChip.href;
 }
 
 // 낚시가능 영역(fishableAreas) 판정은 캐릭터가 아니라 "추(찌)가 실제로
@@ -1697,8 +1699,8 @@ async function applyScreen(screenDef, opts) {
   moveAreas = (screenDef && screenDef.moveAreas) || [];
 
   hasWorldBackground = !!(backgroundAsset && bgDims);
-  // 배경이 바뀔 때마다(재입장/화면 이동) 줌을 1배율로 되돌린다.
-  bgZoom = 1;
+  // 배경이 바뀔 때마다(재입장/화면 이동) 줌을 90% 배율로 되돌린다.
+  bgZoom = 0.9;
   refreshFrameRect();
   worldSize = hasWorldBackground ? { w: bgDims.width, h: bgDims.height } : { w: frameRect.width, h: frameRect.height };
   if (hasWorldBackground) {
