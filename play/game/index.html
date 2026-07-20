@@ -52,7 +52,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
    the CASE FILE ☰ button. Hidden until the player has ever earned points
    (pointsUiIntroduced flag) and on any scene that opts to hide it (e.g. an
    interrogation scene setting hidePoints: true, per §6.1's "심문 화면에서는
-   포인트를 숨겨 추리에 집중시켜도 된다") so a fresh 0주차 save doesn't show a
+   포인트를 숨겨 추리에 집중시켜도 된다") so a fresh 1주차 save doesn't show a
    meaningless "P 0" before the map minigame even explains what it is. */
 .point-balance{font-family:var(--mono);font-size:11.5px;font-weight:700;letter-spacing:.02em;color:var(--amber);background:rgba(214,168,75,.14);border:1px solid rgba(214,168,75,.4);border-radius:20px;padding:8px 12px;white-space:nowrap}
 .point-balance.hidden{display:none}
@@ -358,21 +358,21 @@ if ('serviceWorker' in navigator) {
 <script src="/dev/travelTips.js"></script>
 <script src="/dev/weekPreloader.js"></script>
 <script>
-// /dev/week0 and /dev/week1 link here as /play/game/?scene=<id> — resolve
+// /dev/week1 and /dev/week2 link here as /play/game/?scene=<id> — resolve
 // against allScenes (every week's scenes combined) so a scene from any week
 // can be requested, falling back to the very first scene so a bare
 // /play/game/ link still works.
 const gameParams = new URLSearchParams(location.search);
 const requestedSceneId = gameParams.get('scene');
 const activeSceneData = allScenes.find(s => s.id === requestedSceneId) || allScenes[0];
-// ?autoplay=1 (set by each week's "플레이하기" button, see /dev/week1) — taps
+// ?autoplay=1 (set by each week's "플레이하기" button, see /dev/week2) — taps
 // itself through every line instead of waiting for the player, so a dev can
 // watch a whole week's dialogue cascade the way it actually plays out
 // instead of tapping through it line by line. ?week= carries the originating
 // week id through the nextSceneId chain purely so the completion card knows
 // which week list to link back to.
 const isAutoplay = gameParams.get('autoplay') === '1';
-const autoplayWeek = gameParams.get('week') || 'week1';
+const autoplayWeek = gameParams.get('week') || 'week2';
 // Clones every field (not a fixed whitelist) so interactive fields — id,
 // type, choices, effects, goto, evidenceIds, correctGoto, wrongText — reach
 // the player. A whitelist here previously dropped exactly those fields,
@@ -424,7 +424,7 @@ function updatePointBalance() {
 }
 
 // 포인트와 달리 첫 지급 전까지 숨기지 않는다 — 상시 표시로 결정된 연출용
-// 게이지라 0주차 첫 씬부터 바로 보여도 어색하지 않음(중립값 50에서 시작).
+// 게이지라 1주차 첫 씬부터 바로 보여도 어색하지 않음(중립값 50에서 시작).
 function updateRelationshipGauges() {
   el.satisfactionFill.style.height = RelationshipState.getSatisfaction() + '%';
   el.affectionFill.style.height = RelationshipState.getAffection() + '%';
@@ -609,7 +609,7 @@ function updateArrow(show) {
 
 // Mid-scene location change inside a merged, multi-location scene (see
 // dialogueData.js lines carrying a `sceneTransition` marker, e.g.
-// week0-scene-flight/week0-scene-002-1) — vnPlayer.js awaits this before
+// week1-scene-flight/week1-scene-002-1) — vnPlayer.js awaits this before
 // typing that line's text. Fades to black, types the new location's name
 // (transition.introLabel — not transition.time; that field still exists on
 // every sceneTransition marker but is deliberately left unused here, same
@@ -659,14 +659,14 @@ function playEndingSequence() {
   }, 900);
 }
 
-// week0-scene-002-3 (0주차's last scene, "0주차 종료.") is the only week0
+// week1-scene-002-3 (1주차's last scene, "1주차 종료.") is the only week1
 // scene left with no nextSceneId, so it's the only one that loops
 // (onComplete -> restart()) and gets this "UNKNOWN SIGNAL" foreshadowing
 // beat on every loop. Every other scene now chains into the next one via
 // nextSceneId (see dialogueData.js) so a real playthrough (시작하기 on
-// /play/) taps straight through 0주차 instead of stopping at each
+// /play/) taps straight through 1주차 instead of stopping at each
 // scene boundary — that handoff skips this beat, since it's tonally
-// specific to 0주차's actual ending, not a generic one.
+// specific to 1주차's actual ending, not a generic one.
 //
 // Each built minigame gets its own standalone page (not routed through
 // /play/game, since gameplay differs too much from tap-to-advance dialogue).
@@ -678,7 +678,7 @@ function playEndingSequence() {
 
 // Most nextSceneId handoffs are into a minigame (MINIGAME_ROUTES above), but
 // a plain location change with no minigame in between — e.g.
-// week0-scene-flight -> week0-scene-001-2 — hands off straight to another
+// week1-scene-flight -> week1-scene-001-2 — hands off straight to another
 // VN scene instead, so a real playthrough (시작하기 on /play/) taps
 // through the whole week without stopping at every scene boundary.
 function playMinigameTransition(nextSceneId) {
@@ -863,7 +863,7 @@ function applyEffect(effect) {
   }
 }
 
-// 1주차 장편 확장 v2 §22 — a choice's optional `condition` gates whether it's
+// 2주차 장편 확장 v2 §22 — a choice's optional `condition` gates whether it's
 // even offered: { hasEvidence: [...] } requires every id already in the case
 // file, { flags: [...] } requires every flag truthy (see CaseFileState.flags),
 // { personStatus: { personId: status } } requires an exact status match.
@@ -1133,7 +1133,7 @@ function onTap() {
    isPausing이 실제 비동기(Promise/setTimeout)로 풀리기 때문 — 동기 루프였다면
    그 대기가 끝나길 영원히 바쁘게 기다리게 된다. skipStepGuard는 다음
    nextSceneId가 없어 같은 씬이 restart()로 무한 루프하는 극단적인 경우(예:
-   0주차 마지막 씬)에 브라우저가 멈춘 것처럼 보이지 않도록 하는 안전장치. */
+   1주차 마지막 씬)에 브라우저가 멈춘 것처럼 보이지 않도록 하는 안전장치. */
 const SKIP_MAX_STEPS = 1000;
 let skipRunning = false;
 function skipToNextInteraction() {
@@ -1157,7 +1157,7 @@ function skipToNextInteraction() {
 }
 
 /* ===== Auto-play (?autoplay=1) — taps/chooses/presents-evidence on a timer
-   instead of waiting for the player, so "플레이하기" on /dev/week1 can show
+   instead of waiting for the player, so "플레이하기" on /dev/week2 can show
    the whole week cascading the way it actually plays out. Any real tap on
    the frame (onTap above) still works mid-autoplay and just advances early;
    the AUTO badge lets a dev drop back to manual play without navigating
@@ -1202,12 +1202,12 @@ el.autoplayBtn.addEventListener('click', (e) => {
   stopAutoplay();
 });
 
-// Only a handful of week1 scenes carry an authored nextSceneId today (the
+// Only a handful of week2 scenes carry an authored nextSceneId today (the
 // ones handing off into a minigame/탐문 허브 — see dialogueData.js); most
 // plain VN scenes don't chain to the next one yet, so the base engine just
 // loops in place once their last line is tapped through (see onComplete's
 // player.restart() below). Autoplay still wants to cascade through the rest
-// of the week in its authored order — the same #01..#NN order /dev/week1
+// of the week in its authored order — the same #01..#NN order /dev/week2
 // itself lists — so when a scene has no nextSceneId it falls back to "the
 // next scene in this week with the next-higher .order", instead of stopping
 // (or looping forever) at every one of those un-wired boundaries. Route-only
@@ -1278,17 +1278,17 @@ const caseMenu = initCaseMenu({
 
 el.uploadLink.href = `/dev/upload/?scene=${encodeURIComponent(activeSceneData.id)}`;
 
-// The Missing Key v1 §16.2 — 기존 세이브 마이그레이션. "이미 0주차를 완료한
-// 세이브"는 hasVisitedScene('week0-scene-002-3')로 판별하되(그 씬을 실제로
+// The Missing Key v1 §16.2 — 기존 세이브 마이그레이션. "이미 1주차를 완료한
+// 세이브"는 hasVisitedScene('week1-scene-002-3')로 판별하되(그 씬을 실제로
 // 클리어해야만 CaseFileState.recordSceneVisit로 기록되므로 신뢰 가능),
-// 지도 미니게임의 진짜 500P 보상(reward-week0-map-first-clear)을 이미 받은
-// 플레이어는 대상에서 제외한다 — 이번 업데이트 이후에 0주차를 정상적으로
+// 지도 미니게임의 진짜 500P 보상(reward-week1-map-first-clear)을 이미 받은
+// 플레이어는 대상에서 제외한다 — 이번 업데이트 이후에 1주차를 정상적으로
 // 플레이한 신규 세이브는 그 보상을 먼저 받으므로 절대 이 조건에 걸리지
 // 않는다. 별도 rewardId로 관리해 중복 보정 지급도 막는다.
 function applyMigrationCompensation() {
-  const alreadyEarnedRealReward = EconomyState.hasClaimedReward('reward-week0-map-first-clear');
-  if (!CaseFileState.hasVisitedScene('week0-scene-002-3') || alreadyEarnedRealReward) return;
-  const paid = EconomyState.claimReward('migration-v2-week0-map-compensation', 500, { source: 'migration-v2' });
+  const alreadyEarnedRealReward = EconomyState.hasClaimedReward('reward-week1-map-first-clear');
+  if (!CaseFileState.hasVisitedScene('week1-scene-002-3') || alreadyEarnedRealReward) return;
+  const paid = EconomyState.claimReward('migration-v2-week1-map-compensation', 500, { source: 'migration-v2' });
   if (paid > 0) {
     CaseFileState.setFlag('pointsUiIntroduced', true);
     updatePointBalance();
@@ -1362,8 +1362,8 @@ document.getElementById('btnOpenCaseMenu').addEventListener('click', () => {
 });
 document.getElementById('btnGiveKeyEvidence').addEventListener('click', () => {
   // Mirrors minigame-phone-search's own GIVE KEY shortcut — lets a scene
-  // reached directly from /dev/week0 (skipping the minigame) still be able
-  // to present the 낡은 열쇠 evidence, e.g. at week0-scene-002-3's landlord
+  // reached directly from /dev/week1 (skipping the minigame) still be able
+  // to present the 낡은 열쇠 evidence, e.g. at week1-scene-002-3's landlord
   // phone-call "증거 제시" beat.
   CaseFileState.addEvidence(EVIDENCE_UNKNOWN_KEY);
   CaseFileState.addQuestion(QUESTION_KEY_ORIGIN);
@@ -1499,7 +1499,7 @@ document.getElementById('btnOpenExplore').addEventListener('click', () => {
   storeShopReturnUrl();
   location.href = ExplorationState.getCurrentLocationId()
     ? `/play/explore/?phase=${encodeURIComponent(ExplorationState.getCurrentPhase() || '')}&location=${encodeURIComponent(ExplorationState.getCurrentLocationId())}`
-    : '/play/explore/?phase=W1_TOURISM&location=w1-circular-quay';
+    : '/play/explore/?phase=W2_TOURISM&location=w2-circular-quay';
 });
 document.getElementById('btnUnlockAllLocations').addEventListener('click', () => ExplorationState.debugUnlockAllLocations());
 document.getElementById('btnMarkAllInteractionsNew').addEventListener('click', () => ExplorationState.debugMarkAllInteractionsNew());

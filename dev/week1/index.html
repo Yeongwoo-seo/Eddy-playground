@@ -29,12 +29,9 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .scene-list{display:flex;flex-direction:column;gap:14px}
 .scene-group{display:flex;flex-direction:column;gap:14px}
 .scene-group + .scene-group{margin-top:8px}
-.group-header{display:flex;align-items:center;gap:8px;padding:0 2px}
+.group-header{display:flex;align-items:baseline;gap:8px;padding:0 2px}
 .group-range{font-family:var(--mono);font-size:12px;color:var(--amber);letter-spacing:.06em}
 .group-label{font-size:14px;font-weight:700;color:var(--text-secondary)}
-.group-mode{font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:.04em;border-radius:8px;padding:2.5px 6px;flex-shrink:0}
-.group-mode.hub{color:#06181c;background:var(--cyan)}
-.group-mode.scene{color:var(--text-muted);background:rgba(255,255,255,.08)}
 .scene-row{display:flex;align-items:stretch;gap:10px}
 .scene-btn{flex:1;min-width:0;display:flex;align-items:center;gap:14px;background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:18px 20px;text-decoration:none;color:inherit;transition:transform .15s,background .15s}
 .scene-btn:active{transform:scale(.98);background:var(--surface-2)}
@@ -48,14 +45,6 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .play-btn{flex-shrink:0;width:56px;display:flex;align-items:center;justify-content:center;background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;color:var(--cyan);font-size:19px;text-decoration:none;transition:transform .15s,background .15s}
 .play-btn:active{transform:scale(.94);background:var(--surface-2)}
 .empty{font-size:13px;color:var(--text-muted);padding:20px 0}
-/* Autoplay entry point — chains straight into /play/game with ?autoplay=1,
-   which taps/chooses/presents-evidence on a timer through every scene's
-   nextSceneId (see play/game/index.html) so this cascades the way the week
-   actually plays out, instead of a dev tapping through each scene by hand. */
-.autoplay-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-bottom:8px;background:rgba(89,184,200,.12);border:1px solid rgba(89,184,200,.35);border-radius:14px;padding:15px;color:var(--cyan);font-family:var(--mono);font-size:13px;font-weight:600;letter-spacing:.03em;text-decoration:none;transition:transform .15s,background .15s}
-.autoplay-btn:active{transform:scale(.98);background:rgba(89,184,200,.22)}
-.autoplay-btn.disabled{opacity:.4;pointer-events:none}
-.autoplay-hint{font-size:11.5px;color:var(--text-muted);line-height:1.5;margin-bottom:24px}
 </style>
 </head>
 <body>
@@ -64,11 +53,9 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
     <a class="back" href="/dev/story/">‹ 스토리</a>
     <a class="script-link" href="/dev/script/?week=week1">전체 대사보기</a>
   </div>
-  <a class="autoplay-btn" id="autoplayLink" href="#">▶ 1주차 전체 대사 자동 재생 (미리보기)</a>
-  <div class="autoplay-hint">탭 없이 자동으로 대사가 이어서 재생됩니다. 미니게임 구간에 닿으면 자동 재생이 멈춥니다. 실제 플레이는 <a href="/play/" style="color:var(--cyan)">/play/</a>에서 확인하세요.</div>
   <div class="tag">Operation MK</div>
   <div class="title">1주차</div>
-  <div class="sub">씬을 선택해서 개별로 테스트할 수 있습니다. <b>허브</b> 페이즈는 장소를 자유 순서로 오가고, <b>씬</b> 페이즈는 순차 진행됩니다.</div>
+  <div class="sub">씬을 선택해서 개별로 테스트할 수 있습니다.</div>
   <div class="scene-list" id="sceneList"></div>
 </div>
 <script>
@@ -88,14 +75,6 @@ function setupHref(s) {
   return entry ? entry.setupUrl : '/dev/upload/?scene=' + encodeURIComponent(s.id);
 }
 
-const autoplayLink = document.getElementById('autoplayLink');
-const autoplayFirstScene = week1Scenes.find(s => s.lines && s.lines.length);
-if (autoplayFirstScene) {
-  autoplayLink.href = `/play/game/?scene=${encodeURIComponent(autoplayFirstScene.id)}&autoplay=1&week=week1`;
-} else {
-  autoplayLink.classList.add('disabled');
-}
-
 function sceneRowHtml(s) {
   return `
     <div class="scene-row">
@@ -111,39 +90,24 @@ function sceneRowHtml(s) {
   `;
 }
 
-// Kept in sync with dev/phases/index.html's PHASE_HUB_META — hub phases let
-// you roam locations in any order (play/explore/), scene phases are the
-// original linear dialogue/minigame chain (play/game/).
-const PHASE_HUB_META = {
-  'PHASE 1': { mode: 'hub' },
-  'PHASE 2': { mode: 'scene' },
-  'PHASE 3': { mode: 'scene' },
-  'PHASE 4': { mode: 'hub' },
-  'PHASE 5': { mode: 'hub' },
-  'PHASE 6': { mode: 'scene' },
-};
-
 const list = document.getElementById('sceneList');
 if (!week1Scenes.length) {
   list.innerHTML = '<div class="empty">등록된 씬이 없습니다.</div>';
 } else {
   const byId = new Map(week1Scenes.map(s => [s.id, s]));
-  // week1SceneGroups (dialogueData.js) buckets the flat week1Scenes list into
-  // the Phase 1-6 investigation stages The Missing Key 문서가 쓰는 구분 —
-  // same pattern as week0SceneGroups.
-  list.innerHTML = week1SceneGroups.map(g => {
-    const meta = PHASE_HUB_META[g.range];
-    return `
+  // week1SceneGroups (dialogueData.js) buckets the flat week1Scenes list
+  // into the 3 narrative beats writers think in (#1-2/#3-5/#6-12) — a
+  // group's members can be a mix of merged VN scenes and standalone
+  // minigame entries, shown in play order under one header.
+  list.innerHTML = week1SceneGroups.map(g => `
     <div class="scene-group">
       <div class="group-header">
         <span class="group-range">${g.range}</span>
         <span class="group-label">${g.label}</span>
-        ${meta ? `<span class="group-mode ${meta.mode}">${meta.mode === 'hub' ? '허브' : '씬'}</span>` : ''}
       </div>
       ${g.sceneIds.map(id => byId.get(id)).filter(Boolean).map(sceneRowHtml).join('')}
     </div>
-  `;
-  }).join('');
+  `).join('');
 }
 </script>
 <script src="/dev/devPlanFab.js"></script>

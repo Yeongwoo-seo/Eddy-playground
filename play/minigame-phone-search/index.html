@@ -823,7 +823,7 @@ function handleBlind() {
 }
 function handleLeftVent() {
   if (state.selectedItemId === 'working-flashlight') { setMessage('먼지만 보인다.'); return; }
-  // 0주차 브리프의 "환풍기 한쪽의 녹슨 나사" 복선 — 지금은 아무 의미 없는 순수 플레이버 텍스트.
+  // 1주차 브리프의 "환풍기 한쪽의 녹슨 나사" 복선 — 지금은 아무 의미 없는 순수 플레이버 텍스트.
   setMessage(hasSearched('bedroom-left-vent') ? '여전히 안쪽이 어둡다.' : '환기구다.\n안쪽은 잘 보이지 않는다.\n한쪽 나사가 유독 녹슬어 있다.');
   markSearched('bedroom-left-vent');
 }
@@ -941,7 +941,7 @@ function handlePhoneFound() {
 
 function fadeOutAndRedirect() {
   el.fadeOverlay.classList.add('show');
-  setTimeout(() => { location.href = '/play/game/?scene=week0-scene-002-3'; }, 950);
+  setTimeout(() => { location.href = '/play/game/?scene=week1-scene-002-3'; }, 950);
 }
 
 /* ===== Photo-mode pan/zoom stage (ported from minigame-eastwood's map
@@ -1566,7 +1566,7 @@ async function loadCustomItemsAndRecipes() {
 // play/game/index.html never actually loads this scene id (it has no `lines`
 // — MINIGAME_ROUTES and the scene's own `route` field both bypass it), so
 // this is the only place 숙소's map-location visit can be recorded for it.
-CaseFileState.recordSceneVisit('week0-scene-002-2');
+CaseFileState.recordSceneVisit('week1-scene-002-2');
 renderItemGrid();
 updateLockState();
 (async function boot() {

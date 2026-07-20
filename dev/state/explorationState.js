@@ -14,7 +14,7 @@ const EXPLORATION_STATE_KEY = 'mkExplorationState_v1';
 
 function defaultExplorationState() {
   return {
-    currentWeek: 1,
+    currentWeek: 2,
     currentPhase: null,
     currentLocationId: null,
     unlockedLocationIds: [],

@@ -43,7 +43,7 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .phase-arrow{color:var(--text-muted);font-size:18px;flex-shrink:0;align-self:center}
 /* Setup(phase-btn) opens /dev/upload's 탐색허브/배경 tab pre-filtered to this
    phase — this is the shortcut past it, straight into a live playthrough of
-   whatever's already configured, same split as /dev/week1's scene rows. */
+   whatever's already configured, same split as /dev/week2's scene rows. */
 .play-btn{flex-shrink:0;width:56px;display:flex;align-items:center;justify-content:center;background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;color:var(--cyan);font-size:19px;text-decoration:none;transition:transform .15s,background .15s}
 .play-btn:active{transform:scale(.94);background:var(--surface-2)}
 .legend{margin-top:24px;font-size:11.5px;color:var(--text-muted);line-height:1.6;padding:14px 16px;background:var(--surface-1);border:1px solid var(--divider);border-radius:12px}
@@ -66,34 +66,34 @@ if ('serviceWorker' in navigator) {
 </script>
 <script src="/dev/dialogueData.js"></script>
 <script>
-// Which week1SceneGroups phases actually have an exploration-hub location
+// Which week2SceneGroups phases actually have an exploration-hub location
 // graph behind them (dev/data/locationDefs.js) vs. still play through the
-// original linear scene/minigame chain — see docs/dev-status-week0-week1.md
+// original linear scene/minigame chain — see docs/dev-status-week1-week2.md
 // ("Phase 2/3/6은 재확인 결과 허브 이관이 필요 없다고 판단"). Kept as an
 // explicit lookup (not inferred from locationDefs.js) since a phase can be
 // intentionally scene-mode forever, not just "not migrated yet".
 const PHASE_HUB_META = {
-  'PHASE 1': { mode: 'hub', phaseId: 'W1_TOURISM', startLocationId: 'w1-circular-quay', desc: '서큘러키 · 오페라하우스 · 하버브리지 · 더 록스를 자유롭게 오가며 관광' },
-  'PHASE 2': { mode: 'scene', sceneId: 'week1-scene-003', desc: '전시장 핫스팟 자유 조사 (미니게임)' },
-  'PHASE 3': { mode: 'scene', sceneId: 'week1-scene-004', desc: 'K-01 도난 확인부터 용의자 선별까지' },
-  'PHASE 4': { mode: 'hub', phaseId: 'W1_SUSPECT_INTERVIEWS', startLocationId: 'w1-hub-plaza', desc: '윤민아 · 애드리언 · 레오를 자유 순서로 탐문' },
-  'PHASE 5': { mode: 'hub', phaseId: 'W1_REVERIFICATION', startLocationId: 'w1-hub-plaza', desc: '윤민아 · 애드리언 · 마틴을 자유 순서로 재검증' },
-  'PHASE 6': { mode: 'scene', sceneId: 'week1-scene-012', desc: '사건 재구성부터 1주차 엔딩까지' },
+  'PHASE 1': { mode: 'hub', phaseId: 'W2_TOURISM', startLocationId: 'w2-circular-quay', desc: '서큘러키 · 오페라하우스 · 하버브리지 · 더 록스를 자유롭게 오가며 관광' },
+  'PHASE 2': { mode: 'scene', sceneId: 'week2-scene-003', desc: '전시장 핫스팟 자유 조사 (미니게임)' },
+  'PHASE 3': { mode: 'scene', sceneId: 'week2-scene-004', desc: 'K-01 도난 확인부터 용의자 선별까지' },
+  'PHASE 4': { mode: 'hub', phaseId: 'W2_SUSPECT_INTERVIEWS', startLocationId: 'w2-hub-plaza', desc: '윤민아 · 애드리언 · 레오를 자유 순서로 탐문' },
+  'PHASE 5': { mode: 'hub', phaseId: 'W2_REVERIFICATION', startLocationId: 'w2-hub-plaza', desc: '윤민아 · 애드리언 · 마틴을 자유 순서로 재검증' },
+  'PHASE 6': { mode: 'scene', sceneId: 'week2-scene-012', desc: '사건 재구성부터 2주차 엔딩까지' },
 };
 
 // Only weeks whose scenes are actually organized into PHASE groups show up
-// here — today that's just week1 (see dialogueData.js's week1SceneGroups).
-// Week 0 has its own flat scene list (already reachable from /dev/story/)
+// here — today that's just week2 (see dialogueData.js's week2SceneGroups).
+// Week 1 has its own flat scene list (already reachable from /dev/story/)
 // and weeks 2-4 aren't broken into phases yet, so there's nothing this page
 // could meaningfully link to for them.
 const WEEK_BLOCKS = [
-  { weekNum: '1주차', weekTitle: '사라진 K-01', groups: (typeof week1SceneGroups !== 'undefined') ? week1SceneGroups : [] },
+  { weekNum: '2주차', weekTitle: '사라진 K-01', groups: (typeof week2SceneGroups !== 'undefined') ? week2SceneGroups : [] },
 ];
 
 // 설정 — hub-mode phases jump into /dev/upload's 탐색허브 tab pre-filtered
 // to this phase (per-location backgrounds, see that tab's own picker);
 // scene-mode phases jump into the ordinary per-scene 배경/대사 editor, same
-// as /dev/week1's own setupHref.
+// as /dev/week2's own setupHref.
 function setupHref(meta) {
   if (!meta) return '/dev/upload/';
   if (meta.mode === 'hub') return `/dev/upload/?tab=hub&phase=${encodeURIComponent(meta.phaseId)}`;

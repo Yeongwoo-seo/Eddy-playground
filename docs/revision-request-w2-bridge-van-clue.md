@@ -1,7 +1,7 @@
 # 수정의뢰서 — 하버브리지 밴 클루 → 증거 전환 다듬기
 
 > 발신인: (작성자 본인)
-> 대상: 1주차 Phase 1 "사전 복선" 패턴 첫 회수 사례 (`w1bv-topic-van` → `w1sh-topic-van-recall`)
+> 대상: 2주차 Phase 1 "사전 복선" 패턴 첫 회수 사례 (`w2bv-topic-van` → `w2sh-topic-van-recall`)
 > 관련: PR #260 (main에 머지됨)
 > 목적: 지금 구현이 "일단 동작은 하는" 상태라, 실제로 플레이했을 때 매끄럽게 느껴지도록 검토/수정할 지점을 정리한다. 코드는 이미 반영돼 있으므로, 아래는 **다듬기 논의용**이지 새 기능 요청이 아니다.
 
@@ -9,16 +9,16 @@
 
 ## 1. 현재 구현 요약
 
-**Phase 1 (관광), 하버브리지 전망 구역** — `w1bv-topic-van`
+**Phase 1 (관광), 하버브리지 전망 구역** — `w2bv-topic-van`
 - 영우/지수가 시동 켠 채 서 있는 검은 밴을 발견
-- 효과: 의문점 `question-w1-bridge-van` 등록 + 플래그 `discoveredBridgeVan` 설정
+- 효과: 의문점 `question-w2-bridge-van` 등록 + 플래그 `discoveredBridgeVan` 설정
 
-**Phase 4 (용의자 탐문), 전시장 앞 광장** — `w1sh-topic-van-recall`
+**Phase 4 (용의자 탐문), 전시장 앞 광장** — `w2sh-topic-van-recall`
 - `discoveredBridgeVan` 플래그가 있어야만 등장 (영우 chip → 질문하기)
 - 영우: "어? 잠깐, 찍어놨었어" → 사진 속에서 밴 와이퍼에 끼워져 있던 배송 의뢰서 발견
 - 효과: 증거 `evidence-bridge-van-request-form`(E-C05) 등록 + 의문점 `resolved` 처리
 
-이 topic이 뜨려면 광장(`w1-suspect-hub`)에 영우 chip이 있어야 해서, `locationDefs.js`의 `characters: []` → `characters: ['youngwoo']`로 바꿨다.
+이 topic이 뜨려면 광장(`w2-suspect-hub`)에 영우 chip이 있어야 해서, `locationDefs.js`의 `characters: []` → `characters: ['youngwoo']`로 바꿨다.
 
 ---
 
@@ -26,7 +26,7 @@
 
 1. **회수가 완전히 수동이다.** 광장에 도착해도 자동 재생되지 않고, 플레이어가 영우 chip → 질문하기 목록에서 직접 찾아 눌러야 발동한다. 밴을 봤다는 걸 플레이어가 잊었다면 그냥 지나칠 수 있다.
 2. **"사실 찍어놨었어" retcon이 다소 작위적이다.** Phase 1 밴 씬 원문에는 사진을 찍는다는 언급이 전혀 없는데, 회수 시점에 갑자기 "찍어뒀다"고 한다. Phase 1 쪽 대사에 "그냥 한 장 찍어둘까" 같은 한 줄을 미리 심어두면 덜 뜬금없어질 수 있다.
-3. **광장에 영우를 추가한 파급 효과를 확인 안 함.** `w1-suspect-hub`가 원래 `characters: []`였던 게 "탐문 거점이라 일부러 아무도 없음"이라는 의도였을 가능성이 있다. 지도 카드의 "현재 아무도 없음" 문구가 영우 이름으로 바뀌는 것 등, 다른 화면에 미치는 영향을 확인해야 한다.
+3. **광장에 영우를 추가한 파급 효과를 확인 안 함.** `w2-suspect-hub`가 원래 `characters: []`였던 게 "탐문 거점이라 일부러 아무도 없음"이라는 의도였을 가능성이 있다. 지도 카드의 "현재 아무도 없음" 문구가 영우 이름으로 바뀌는 것 등, 다른 화면에 미치는 영향을 확인해야 한다.
 4. **나머지 3개 클루(오페라뷰/록스골목/전시장입구)와 비대칭.** 밴만 회수 지점이 생기고 나머지는 아직 없다. 플레이어가 "왜 이것만 나중에 풀리지?"라고 느낄 수 있어, 넷 다 언젠가 풀린다는 암시가 필요할 수도 있다.
 5. **의뢰서 문구의 노골성.** "물품: 소형 공예품 1점"이 K-01을 가리키는 게 너무 뻔한지/너무 애매한지는 실제 플레이 순서(이 회수가 레오의 "의뢰 메시지" 공개보다 먼저 오는지 나중인지)에 따라 체감이 달라진다.
 
@@ -36,9 +36,9 @@
 
 - [ ] 회수 방식: 광장 진입 시 자동 재생 vs 지금처럼 chip 수동 탐색 유지
 - [ ] Phase 1 밴 씬에 "사진 찍기" 복선 대사를 소급 추가할지
-- [ ] `w1-suspect-hub`에 영우를 넣은 게 다른 화면(지도 카드 등)에 미치는 영향 확인
+- [ ] `w2-suspect-hub`에 영우를 넣은 게 다른 화면(지도 카드 등)에 미치는 영향 확인
 - [ ] 나머지 3개 클루도 같은 주차 안에서 회수할지, 이후 주차로 넘길지
-- [ ] 의뢰서 문구(발신인 공란/수거 시각/물품명) 최종 확정 — 특히 레오 심문(week1-scene-008)의 "의뢰 메시지" 공개 시점과 순서 충돌은 없는지
+- [ ] 의뢰서 문구(발신인 공란/수거 시각/물품명) 최종 확정 — 특히 레오 심문(week2-scene-008)의 "의뢰 메시지" 공개 시점과 순서 충돌은 없는지
 
 ---
 
@@ -46,6 +46,6 @@
 
 - PR: #260 (머지됨)
 - 관련 파일:
-  - `dev/data/interactionDefs.js` — `w1bv-topic-van`, `w1sh-topic-van-recall`
-  - `dev/data/locationDefs.js` — `w1-suspect-hub`
+  - `dev/data/interactionDefs.js` — `w2bv-topic-van`, `w2sh-topic-van-recall`
+  - `dev/data/locationDefs.js` — `w2-suspect-hub`
   - `dev/explore/index.html` — `applyLocalEffect`(`setQuestionStatus`/`linkEvidenceToQuestion` 신규 지원)

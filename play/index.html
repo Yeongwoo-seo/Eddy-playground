@@ -182,10 +182,10 @@ renderStartPos(loadStartPos());
   }
 })();
 
-// Straight into 0주차's first scene, not the /dev/week0 scene picker — a
-// real player who picks 1주차 plays through the story from the top, not to
-// browse individual scenes for testing.
-function goToRealStart() { RealPlayMode.mark(); location.href = '/play/game/?scene=week0-scene-flight'; }
+// Straight into the prologue's first scene (internal week1, ARRIVAL), not
+// the /dev/week1 scene picker — a real player who picks 1주차 plays through
+// the story from the top, not to browse individual scenes for testing.
+function goToRealStart() { RealPlayMode.mark(); location.href = '/play/game/?scene=week1-scene-flight'; }
 
 // Same tap-feedback sequence as /dev/start/: hold the darken 0.2s, clear it,
 // pause 0.1s, then show the 주차 select screen — otherwise it appears before
@@ -206,7 +206,7 @@ el.startBtn.addEventListener('pointerdown', (e) => {
 
 // 게임 스타트 → 검은 화면에 /schedule.html 홈과 같은 스타일의 세로 카드
 // 리스트(1~4주차 + 미니게임). 2/3/4주차는 아직 구현되지 않아 ???로 잠가두고,
-// 1주차를 고르면 0주차부터 실제 스토리가 시작된다. 미니게임 버튼은 현재
+// 1주차를 고르면 프롤로그(내부 week1)부터 실제 스토리가 시작된다. 미니게임 버튼은 현재
 // 1주차 분량으로 구현된 미니게임만 다시 플레이할 수 있는 목록으로 이어진다.
 const WEEK_TILES = [
   { key: 'week1', emoji: '🔍', label: '1주차', desc: '사라진 K-01 — 수사가 시작돼요', locked: false },

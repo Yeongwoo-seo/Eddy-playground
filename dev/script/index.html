@@ -87,9 +87,9 @@ weekSelect.addEventListener('change', () => {
   location.href = `/dev/script/?week=${encodeURIComponent(weekSelect.value)}`;
 });
 
-// week0's `weeks[0].scenes` also carries /dev/upload's room-search
+// week1's `weeks[0].scenes` also carries /dev/upload's room-search
 // pseudo-scenes (no `.lines`) — filtering them out here leaves exactly the
-// same real scenes /dev/week0 itself lists.
+// same real scenes /dev/week1 itself lists.
 const scenesWithLines = week.scenes.filter(s => s.lines && s.lines.length);
 
 const jumpNav = document.getElementById('jumpNav');

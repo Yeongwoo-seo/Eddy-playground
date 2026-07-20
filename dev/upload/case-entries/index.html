@@ -415,7 +415,7 @@ function renderSheetList() {
   list.querySelectorAll('[data-sheet]').forEach(btn => btn.addEventListener('click', () => { selectedSheetId = btn.dataset.sheet; pendingMasterImg = null; pendingSlots = null; renderSheetDetail(); }));
 }
 document.getElementById('newSheetBtn').addEventListener('click', async () => {
-  const id = prompt('시트 ID (예: w1-physical-01)');
+  const id = prompt('시트 ID (예: w2-physical-01)');
   if (!id) return;
   if (sheetManifests[id]) { alert('이미 있는 시트 ID입니다.'); return; }
   const columns = 3, rows = 3;

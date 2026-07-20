@@ -18,7 +18,7 @@ function defaultCaseState() {
     visitedSceneIds: [],
     forceUnlockedLocationIds: [],
     inventoryItemIds: [],
-    // 1주차 장편 확장 v2 §22 — generic string-keyed bag backing both
+    // 2주차 장편 확장 v2 §22 — generic string-keyed bag backing both
     // interrogationState (e.g. 'wrong:leo-c1', 'round:leo') and
     // investigationState (e.g. 'hotspot:003:k01', 'optionalCount:003') so
     // authors don't need a bespoke schema per scene; see setFlag/getFlag/
@@ -76,19 +76,109 @@ function migrateEvidenceIds(evidenceList) {
   });
 }
 
+/* 주차 재번호화 마이그레이션 (2026-07) — 0주차/week0가 1주차/week1로,
+   1주차/week1가 2주차/week2로, 2주차/week2가 3주차/week3로 전부 밀렸다
+   (구 3주차 "사라진 원본 열쇠"는 이번 개편에서 완전히 삭제됨). 개편 전
+   id 체계로 저장된 기존 세이브를 새 체계로 옮겨준다.
+
+   isLegacyPreRenumberSave가 유일하게 기대는 신호는 'week0-' 접두 sceneId의
+   존재다 — 0주차(프롤로그)는 게임의 맨 처음이라 조금이라도 진행한 세이브는
+   반드시 이 접두어를 최소 하나는 갖고 있고, 개편 이후에는 'week0-'라는
+   접두어 자체가 다시는 생성되지 않으므로(새 프롤로그는 'week1-') 오탐 없이
+   "개편 전 세이브"만 골라낸다. 'week3-'만으로는 판별할 수 없다 — 개편 전
+   에는 삭제된 옛 3주차를, 개편 후에는 새 3주차(구 2주차)를 가리켜 의미가
+   달라지기 때문에 사용하지 않는다. */
+function isLegacyPreRenumberSave(caseStateRaw, sceneId) {
+  const visited = (caseStateRaw && caseStateRaw.visitedSceneIds) || [];
+  if (visited.some(id => typeof id === 'string' && id.startsWith('week0-'))) return true;
+  if (typeof sceneId === 'string' && sceneId.startsWith('week0-')) return true;
+  const flags = (caseStateRaw && caseStateRaw.flags) || {};
+  return Object.prototype.hasOwnProperty.call(flags, 'week0Completed')
+    || Object.prototype.hasOwnProperty.call(flags, 'week0MapMinigameCleared');
+}
+
+// 구 3주차(삭제됨)에 멈춰있던 세이브의 대체 재개 지점 — 새 3주차(구 2주차)
+// 종료 지점 바로 다음, 4주차 시작 씬으로 보낸다.
+const LEGACY_WEEK3_FALLBACK_SCENE_ID = 'week4-scene-001';
+
+function migrateLegacySceneId(id) {
+  if (typeof id !== 'string') return id;
+  if (id.startsWith('week0-')) return 'week1-' + id.slice('week0-'.length);
+  if (id.startsWith('week1-')) return 'week2-' + id.slice('week1-'.length);
+  if (id.startsWith('week2-')) return 'week3-' + id.slice('week2-'.length);
+  if (id.startsWith('week3-')) return null; // 구 3주차 — 삭제됨, 호출부에서 폴백 처리
+  return id;
+}
+function migrateLegacySceneIdList(ids) {
+  if (!Array.isArray(ids)) return ids;
+  return ids
+    .map(migrateLegacySceneId)
+    .filter(id => id !== null); // 구 3주차 방문 기록은 더 이상 참조할 콘텐츠가 없으므로 제거
+}
+// flags/reward id처럼 접두어가 아니라 문자열 중간에 주차 토큰이 박힌 값용.
+function migrateLegacyWeekToken(str) {
+  if (typeof str !== 'string') return str;
+  if (str.includes('week0')) return str.replace('week0', 'week1');
+  if (str.includes('week1')) return str.replace('week1', 'week2');
+  if (str.includes('week2')) return str.replace('week2', 'week3');
+  return str;
+}
+function migrateLegacyFlags(flags) {
+  const out = {};
+  Object.keys(flags || {}).forEach(key => { out[migrateLegacyWeekToken(key)] = flags[key]; });
+  return out;
+}
+// 탐색 허브 phase 상수(W1_TOURISM 등)·장소/토픽 id(w1-circular-quay,
+// w1cq-topic-ferries 등) 전용 — 개편 전에는 1주차(week1)만 이 체계를 썼으므로
+// 옮겨줄 옛 토큰도 W1_/w1- 하나뿐이다.
+function migrateLegacyPhaseOrLocationToken(str) {
+  if (typeof str !== 'string') return str;
+  if (/^W1_/.test(str)) return str.replace(/^W1_/, 'W2_');
+  if (/^w1[a-z]{2}-/.test(str)) return str.replace(/^w1([a-z]{2})-/, 'w2$1-');
+  if (/^w1-/.test(str)) return str.replace(/^w1-/, 'w2-');
+  return str;
+}
+function migrateLegacyExplorationSnapshot(snapshot) {
+  if (!snapshot || typeof snapshot !== 'object') return snapshot;
+  const out = Object.assign({}, snapshot);
+  if (out.currentPhase) out.currentPhase = migrateLegacyPhaseOrLocationToken(out.currentPhase);
+  if (out.currentLocationId) out.currentLocationId = migrateLegacyPhaseOrLocationToken(out.currentLocationId);
+  if (Array.isArray(out.unlockedLocationIds)) out.unlockedLocationIds = out.unlockedLocationIds.map(migrateLegacyPhaseOrLocationToken);
+  if (Array.isArray(out.visitedLocationIds)) out.visitedLocationIds = out.visitedLocationIds.map(migrateLegacyPhaseOrLocationToken);
+  if (Array.isArray(out.completedInteractionIds)) out.completedInteractionIds = out.completedInteractionIds.map(migrateLegacyPhaseOrLocationToken);
+  if (out.interactionOverrides && typeof out.interactionOverrides === 'object') {
+    const overrides = {};
+    Object.keys(out.interactionOverrides).forEach(key => { overrides[migrateLegacyPhaseOrLocationToken(key)] = out.interactionOverrides[key]; });
+    out.interactionOverrides = overrides;
+  }
+  return out;
+}
+function migrateLegacyEconomySnapshot(snapshot) {
+  if (!snapshot || typeof snapshot !== 'object') return snapshot;
+  const out = Object.assign({}, snapshot);
+  if (out.rewardClaims && typeof out.rewardClaims === 'object') {
+    const claims = {};
+    Object.keys(out.rewardClaims).forEach(key => { claims[migrateLegacyWeekToken(key)] = out.rewardClaims[key]; });
+    out.rewardClaims = claims;
+  }
+  return out;
+}
+
 function loadCaseState() {
   try {
     const raw = JSON.parse(localStorage.getItem(CASE_STATE_KEY));
     if (!raw || typeof raw !== 'object') return defaultCaseState();
+    const isLegacy = isLegacyPreRenumberSave(raw, null);
     return Object.assign(defaultCaseState(), raw, {
       settings: Object.assign(defaultCaseState().settings, raw.settings || {}),
-      flags: Object.assign({}, raw.flags || {}),
+      flags: isLegacy ? migrateLegacyFlags(raw.flags || {}) : Object.assign({}, raw.flags || {}),
       hypothesisDefs: Object.assign({}, raw.hypothesisDefs || {}),
       currentHypotheses: Object.assign({}, raw.currentHypotheses || {}),
       hypothesisHistory: Object.assign({}, raw.hypothesisHistory || {}),
       testimonyHistory: Object.assign({}, raw.testimonyHistory || {}),
       evidenceStages: Object.assign({}, raw.evidenceStages || {}),
       evidence: migrateEvidenceIds(raw.evidence || []),
+      visitedSceneIds: isLegacy ? migrateLegacySceneIdList(raw.visitedSceneIds || []) : (raw.visitedSceneIds || []),
     });
   } catch (e) { return defaultCaseState(); }
 }
@@ -258,7 +348,7 @@ const CaseFileState = {
   getPersons() { return caseState.persons.slice(); },
   // Unlike addPerson (add-once, no-ops on an existing id), this is how a
   // person's status/knownFacts/lies/unknowns actually change over the story
-  // (e.g. 1주차 §10-11: suspect -> cleared -> reopened -> involved). `patch`
+  // (e.g. 2주차 §10-11: suspect -> cleared -> reopened -> involved). `patch`
   // fields replace the matching arrays wholesale rather than merging, since
   // each interrogation stage re-states the full current picture rather than
   // appending to a stale one.
@@ -339,7 +429,7 @@ const CaseFileState = {
     saveCaseState();
   },
   // The Missing Key v1 §16.2 — migration compensation reads this to detect
-  // "already finished 0주차 before the economy system existed" (see
+  // "already finished 1주차 before the economy system existed" (see
   // game/index.html's applyMigrationCompensation) without needing a new flag
   // that old saves could never have set.
   hasVisitedScene(sceneId) { return caseState.visitedSceneIds.includes(sceneId); },
@@ -368,7 +458,7 @@ const CaseFileState = {
      but a save *slot* still needs to snapshot them alongside caseState so
      "불러오기" restores points/purchases/equipped outfit too, not just the
      investigation board. Guarded with typeof checks since pages that don't
-     load those three scripts (most minigames, /dev/week0, etc.) still load
+     load those three scripts (most minigames, /dev/week1, etc.) still load
      this file and must not throw on save/load.
 
      Slots are now mirrored to AssetDB (Supabase) so a save survives losing
@@ -403,21 +493,32 @@ const CaseFileState = {
     catch (e) { /* offline/server unavailable — fall back to the local copy */ }
     const slot = (serverSlot && (!localSlot || (serverSlot.updatedAt || 0) >= (localSlot.updatedAt || 0))) ? serverSlot : localSlot;
     if (!slot) return null;
+    const isLegacy = isLegacyPreRenumberSave(slot.caseState, slot.sceneId);
+    if (isLegacy) {
+      slot.sceneId = migrateLegacySceneId(slot.sceneId) || LEGACY_WEEK3_FALLBACK_SCENE_ID;
+    }
     caseState = Object.assign(defaultCaseState(), slot.caseState, {
       settings: Object.assign(defaultCaseState().settings, (slot.caseState && slot.caseState.settings) || {}),
-      flags: Object.assign({}, (slot.caseState && slot.caseState.flags) || {}),
+      flags: isLegacy ? migrateLegacyFlags((slot.caseState && slot.caseState.flags) || {}) : Object.assign({}, (slot.caseState && slot.caseState.flags) || {}),
       hypothesisDefs: Object.assign({}, (slot.caseState && slot.caseState.hypothesisDefs) || {}),
       currentHypotheses: Object.assign({}, (slot.caseState && slot.caseState.currentHypotheses) || {}),
       hypothesisHistory: Object.assign({}, (slot.caseState && slot.caseState.hypothesisHistory) || {}),
       testimonyHistory: Object.assign({}, (slot.caseState && slot.caseState.testimonyHistory) || {}),
       evidenceStages: Object.assign({}, (slot.caseState && slot.caseState.evidenceStages) || {}),
       evidence: migrateEvidenceIds((slot.caseState && slot.caseState.evidence) || []),
+      visitedSceneIds: isLegacy
+        ? migrateLegacySceneIdList((slot.caseState && slot.caseState.visitedSceneIds) || [])
+        : ((slot.caseState && slot.caseState.visitedSceneIds) || []),
     });
     saveCaseState();
-    if (typeof EconomyState !== 'undefined' && slot.economyState) EconomyState.restore(slot.economyState);
+    if (typeof EconomyState !== 'undefined' && slot.economyState) {
+      EconomyState.restore(isLegacy ? migrateLegacyEconomySnapshot(slot.economyState) : slot.economyState);
+    }
     if (typeof ShopState !== 'undefined' && slot.shopState) ShopState.restore(slot.shopState);
     if (typeof WardrobeState !== 'undefined' && slot.wardrobeState) WardrobeState.restore(slot.wardrobeState);
-    if (typeof ExplorationState !== 'undefined' && slot.explorationState) ExplorationState.restore(slot.explorationState);
+    if (typeof ExplorationState !== 'undefined' && slot.explorationState) {
+      ExplorationState.restore(isLegacy ? migrateLegacyExplorationSnapshot(slot.explorationState) : slot.explorationState);
+    }
     if (typeof RelationshipState !== 'undefined' && slot.relationshipState) RelationshipState.restore(slot.relationshipState);
     // slot came from local-only (server was behind or unreachable) — push it
     // up so the server catches up instead of staying stale until next save.

@@ -120,7 +120,7 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('/dev/sw.js',
 <script>
 /* ===== 하버 포토 미니게임 (The Missing Key v1 §12.3) — 비수사 미니게임,
    포인트 지급 가능. 촬영 결과 사진은 수사 증거로 쓰지 않으며, 전시장 사진
-   분석(week1-scene-004 계열, evidence-*)과 데이터 ID를 완전히 분리한다
+   분석(week2-scene-004 계열, evidence-*)과 데이터 ID를 완전히 분리한다
    (별도 페이지·별도 rewardId·CaseFileState 증거 등록 없음). */
 const BACKGROUNDS = [
   { id: 'opera', name: '오페라하우스', desc: '흰 돛 지붕을 배경으로.' },
@@ -265,7 +265,7 @@ function gradeFor(avg) {
   return 'C';
 }
 const GRADE_BONUS = { S: 150, A: 100, B: 50, C: 0 };
-const HARBOUR_PHOTO_REWARD_ID = 'reward-week1-harbour-photo-first-clear';
+const HARBOUR_PHOTO_REWARD_ID = 'reward-week2-harbour-photo-first-clear';
 
 function finishRounds() {
   const avg = roundScores.reduce((a, b) => a + b, 0) / roundScores.length;
@@ -275,7 +275,7 @@ function finishRounds() {
   const base = 250;
   const bonus = GRADE_BONUS[grade];
   const wanted = base + bonus;
-  const paid = EconomyState.claimReward(HARBOUR_PHOTO_REWARD_ID, wanted, { source: 'week1-harbour-photo', grade });
+  const paid = EconomyState.claimReward(HARBOUR_PHOTO_REWARD_ID, wanted, { source: 'week2-harbour-photo', grade });
   if (paid > 0) CaseFileState.setFlag('pointsUiIntroduced', true);
 
   el.rewardGrade.textContent = `등급 ${grade} · 평균 ${Math.round(avg)}점`;
@@ -288,7 +288,7 @@ function finishRounds() {
 
 el.rewardContinueBtn.addEventListener('click', () => {
   const returnUrl = sessionStorage.getItem('mkShopReturnUrl');
-  location.href = returnUrl || '/play/explore/?phase=W1_TOURISM';
+  location.href = returnUrl || '/play/explore/?phase=W2_TOURISM';
 });
 
 renderBgPick();

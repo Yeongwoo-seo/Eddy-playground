@@ -43,7 +43,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .photo-card.complete{border-color:rgba(214,168,75,.5)}
 .photo-card .check-badge{position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;background:var(--amber);color:#211703;font-size:13px;font-weight:700;display:none;align-items:center;justify-content:center;z-index:2}
 .photo-card.complete .check-badge{display:flex}
-/* A dev-uploaded photo (see /dev/upload/?scene=week1-scene-004-minigame)
+/* A dev-uploaded photo (see /dev/upload/?scene=week2-scene-004-minigame)
    fills the card behind the existing time/found-count overlay instead of the
    plain camera-icon placeholder — the scrim keeps that text legible on top
    of a busy photo. */
@@ -239,7 +239,7 @@ if ('serviceWorker' in navigator) {
 <script src="/dev/caseFileState.js"></script>
 <script src="/dev/vnPlayer.js"></script>
 <script>
-/* ===== 사진 속 인물 찾기 — week1-scene-004-minigame =====
+/* ===== 사진 속 인물 찾기 — week2-scene-004-minigame =====
    전시장 직원이 건넨 사진 6장. 각 사진은 K-01 진열장(고정 위치)과 그 주변의
    인물 몇 명으로 구성된 순수 CSS/DOM 씬(이미지 파일 없음 — char-placeholder류
    추상 인물 아이콘과 같은 방식). 사진마다 실제로 케이스 근처에 있던 인물
@@ -249,7 +249,7 @@ if ('serviceWorker' in navigator) {
    6장에 걸쳐 반복 등장하는 세 사람(윤민아/애드리언 콜/레오 박에 해당하는
    베이지 코트·네이비 수트·그레이 후드) + 인파 속에 딱 한 번 나오는 얼굴 없는
    인물, 총 8회 목격을 다 찾으면 완료. 이름은 아직 밝히지 않는다 —
-   week1-scene-006/007/008에서 실제로 만나기 전이라(아래 redirect는 이제 사진 분석 마무리 씬 week1-scene-004-review로 간다) 서술만 색/옷차림으로 한다. */
+   week2-scene-006/007/008에서 실제로 만나기 전이라(아래 redirect는 이제 사진 분석 마무리 씬 week2-scene-004-review로 간다) 서술만 색/옷차림으로 한다. */
 const CANVAS_W = 640, CANVAS_H = 860;
 // 8 people sightings + 4 required specialTargets (명찰 사진 / 렌즈 반사 /
 // 진열장 문 열림 / 빈 받침대) — §22 장편 확장 v2: "K-01 상태 변화" 발견이
@@ -291,7 +291,7 @@ const PHOTOS = [
     ],
     // specialTargets — §22 장편 확장 v2: K-01 상태 변화는 인물처럼 한 종류가
     // 아니라 존재/부분 가림/문 열림/빈 받침대 여러 단계로 나뉜다. 명찰
-    // 클로즈업은 나중에 week1-scene-009(레오 집중 심문)의 진입 조건으로도
+    // 클로즈업은 나중에 week2-scene-009(레오 집중 심문)의 진입 조건으로도
     // 쓰이는 evidence-k01-nameplate-photo를 준다.
     specialTargets: [
       {
@@ -317,7 +317,7 @@ const PHOTOS = [
       { tag: '관광객', cx: 540, cy: 260, w: 50, h: 108, correct: false },
       { tag: '관광객', cx: 130, cy: 720, w: 56, h: 120, correct: false },
     ],
-    // 1주차 장편 확장 v2 §10 Round 2 — 윤민아의 "사진은 안 찍었어요" 진술을
+    // 2주차 장편 확장 v2 §10 Round 2 — 윤민아의 "사진은 안 찍었어요" 진술을
     // 깨는 증거. 그녀 자신의 손에 들린 카메라 렌즈에 무언가 반사되어 있다.
     specialTargets: [
       {
@@ -366,7 +366,7 @@ const PHOTOS = [
   },
   {
     // 빈 받침대 — K-01 상태 변화의 마지막 단계. 사진 분석 미니게임을 완주해야만
-    // 나올 수 있는 필수 흐름이라(REQUIRED_TOTAL에 포함) week1-scene-009의
+    // 나올 수 있는 필수 흐름이라(REQUIRED_TOTAL에 포함) week2-scene-009의
     // C-3 게이트가 항상 통과 가능하다.
     time: '10:53', caption: '인파가 빠져나간 뒤, 케이스는 비어 있다', hasItem: false,
     figures: [
@@ -577,11 +577,11 @@ el.mapStage.addEventListener('wheel', (e) => {
 }, { passive: false });
 
 /* ===== Build a photo scene (background + case + figures) ===== */
-// Same key pattern as dialogueData.js's week1-scene-004-minigame.photoSlots
-// (see /dev/upload/?scene=week1-scene-004-minigame) — computed rather than
+// Same key pattern as dialogueData.js's week2-scene-004-minigame.photoSlots
+// (see /dev/upload/?scene=week2-scene-004-minigame) — computed rather than
 // stored per-PHOTOS-entry so the two never drift out of sync.
 function photoBackgroundKey(photoIdx) {
-  return `week1-scene-004-minigame-photo-${photoIdx + 1}`;
+  return `week2-scene-004-minigame-photo-${photoIdx + 1}`;
 }
 
 // A dev-uploaded photo (via the setup screen above) replaces the flat
@@ -610,7 +610,7 @@ async function loadPhotoBackground(photoIdx, bgEl) {
 // room-hotspot system minigame-exhibition-search/minigame-phone-search use,
 // via /dev/upload's "정답 영역 지정" editor keyed by photoBackgroundKey().
 // Only correct figures + specialTargets are markable there (see
-// week1-scene-004-minigame.photoSlots[i].hotspots in dialogueData.js) — this
+// week2-scene-004-minigame.photoSlots[i].hotspots in dialogueData.js) — this
 // minigame only needs their *tap area*, not full polygon hit-testing, so a
 // marked shape's bounding box is what actually drives layout/hit-testing
 // below; the free-form polygon points themselves are only used to derive it.
@@ -846,7 +846,7 @@ const REPEAT_FIND_LINES = {
   leo: { 2: ['영우', '이 사람도 두 번째... 근데 이게 마지막 사진이네.'] },
 };
 
-// 1주차 추리 개편 v2 — §5.4 "같은 인물 3회 태그 시 QUESTION_UNLOCKED"를 그대로
+// 2주차 추리 개편 v2 — §5.4 "같은 인물 3회 태그 시 QUESTION_UNLOCKED"를 그대로
 // 구현: 지수/영우가 결론("11분 공백이다" 같은)을 대신 말하지 않고, 플레이어가
 // 반복 목격을 스스로 만들어낸 순간에만 의문점이 뜬다.
 function unlockRepeatQuestionIfNeeded(personKey, count) {
@@ -1203,7 +1203,7 @@ function startSuccessDialogue() {
 
 function fadeOutAndRedirect() {
   el.fadeOverlay.classList.add('show');
-  setTimeout(() => { location.href = '/play/game/?scene=week1-scene-004-review'; }, 950);
+  setTimeout(() => { location.href = '/play/game/?scene=week2-scene-004-review'; }, 950);
 }
 
 document.querySelectorAll('.skip-next').forEach(btn => {
