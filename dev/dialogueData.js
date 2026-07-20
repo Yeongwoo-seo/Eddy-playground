@@ -1036,7 +1036,7 @@ const week0Scenes = [
       { key: 'week0-scene-flight--arrival', label: 'Sydney Airport Arrival Area' },
     ],
     lines: mergeLines(week0SceneFlightLines, week0Scene001Lines),
-    // Hands off into 지하철 역 찾기 — a real playthrough (시작하기 on /play/test)
+    // Hands off into 지하철 역 찾기 — a real playthrough (시작하기 on /play/)
     // taps straight through the whole week instead of stopping here. Note
     // this also means the "UNKNOWN SIGNAL" foreshadow beat in game/index.html
     // (gated on !nextSceneId) no longer fires at this scene's end.
