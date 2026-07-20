@@ -3,7 +3,7 @@
   "short_name": "Missing Key",
   "description": "OPERATION MK · 실제 플레이 환경",
   "start_url": "/play/test/",
-  "scope": "/play/",
+  "scope": "/",
   "id": "operation-mk-play",
   "display": "standalone",
   "orientation": "portrait",

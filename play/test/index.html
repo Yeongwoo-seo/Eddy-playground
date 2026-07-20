@@ -109,6 +109,7 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/play/sw.js', { scope: '/play/' });
 }
 </script>
+<script src="/realPlayMode.js"></script>
 <script>
 const BG_IMG_KEY = 'mkDevStartScreenBg';
 const BG_POS_KEY = 'mkDevStartScreenBgPos';
@@ -151,7 +152,7 @@ el.startBtn.style.height = startPos.h + '%';
 // Straight into 0주차's first scene, not the /dev/week0 scene picker — a
 // real player who picks 1주차 plays through the story from the top, not to
 // browse individual scenes for testing.
-function goToRealStart() { location.href = '/dev/game/?scene=week0-scene-flight'; }
+function goToRealStart() { RealPlayMode.mark(); location.href = '/dev/game/?scene=week0-scene-flight'; }
 
 // Same tap-feedback sequence as /dev/start/: hold the darken 0.2s, clear it,
 // pause 0.1s, then show the 주차 select screen — otherwise it appears before
@@ -222,7 +223,9 @@ el.minigameBackBtn.addEventListener('click', () => {
 
 el.minigameList.addEventListener('click', (e) => {
   const item = e.target.closest('.minigame-item');
-  if (item) location.href = item.dataset.route;
+  if (!item) return;
+  RealPlayMode.mark();
+  location.href = item.dataset.route;
 });
 
 /* =========================================================
