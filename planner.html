@@ -203,6 +203,14 @@ body.sheet-open{overflow:hidden}
 .acc-form-fetch-btn{background:var(--grey100);color:var(--grey700);border:none;border-radius:14px;padding:0 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap}
 .acc-form-fetch-btn:active{transform:scale(.96)}
 .acc-form-preview{width:100%;height:160px;border-radius:14px;object-fit:cover;background:var(--grey100)}
+.acc-cutout-btn{background:var(--grey100);color:var(--grey700);border:none;border-radius:12px;padding:9px 12px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:8px}
+.acc-cutout-btn:active{transform:scale(.96)}
+.acc-cutout-btn[disabled]{opacity:.5;pointer-events:none}
+.acc-cutout-progress{margin-top:8px}
+.acc-cutout-progress.hidden{display:none}
+.acc-cutout-progress-text{font-size:11.5px;color:var(--grey500);font-weight:600;margin-bottom:6px}
+.acc-cutout-progress-bar{height:5px;border-radius:3px;background:var(--grey100);overflow:hidden}
+.acc-cutout-progress-fill{height:100%;background:var(--primary);width:0%;transition:width .2s ease}
 .acc-form-save{background:var(--primary);color:#fff;border:none;border-radius:14px;padding:15px;font-weight:700;font-size:15px;cursor:pointer;margin-top:4px;font-family:inherit}
 .acc-form-save:active{background:var(--primary-hover)}
 .acc-form-label{font-size:12px;color:var(--grey500);font-weight:600;margin:2px 2px -2px}
@@ -1056,6 +1064,11 @@ function sheetEditHtml(weekIdx){
         </div>
         <input type="file" id="fImgFile" accept="image/*" style="display:none" onchange="handleImgUpload(event)">
         <img class="acc-form-preview" id="fPreview" src="${img}" style="${img?'':'display:none'}" onerror="this.style.display='none'">
+        <button class="acc-cutout-btn" id="fCutoutBtn" style="${img?'':'display:none'}" onclick="removeAccPhotoBackground()">배경 제거 (누끼)</button>
+        <div class="acc-cutout-progress hidden" id="fCutoutProgress">
+          <div class="acc-cutout-progress-text" id="fCutoutProgressText"></div>
+          <div class="acc-cutout-progress-bar"><div class="acc-cutout-progress-fill" id="fCutoutProgressFill"></div></div>
+        </div>
         <div class="acc-form-label">위치</div>
         <textarea id="fLoc" placeholder="사진 아래 보여줄 내용을 그대로 입력하세요 (위치, 숙소 소개 등)">${acc.location||''}</textarea>
         <div class="acc-form-label">세부사항</div>
@@ -1069,8 +1082,9 @@ function sheetEditHtml(weekIdx){
 function updateFormPreview(){
   const v=document.getElementById('fImg').value.trim();
   const img=document.getElementById('fPreview');
-  if(v){ img.src=normalizeImg(v); img.style.display='block'; }
-  else{ img.style.display='none'; }
+  const cutoutBtn=document.getElementById('fCutoutBtn');
+  if(v){ img.src=normalizeImg(v); img.style.display='block'; cutoutBtn.style.display='block'; }
+  else{ img.style.display='none'; cutoutBtn.style.display='none'; }
 }
 
 function scaledDims(w, h, maxDim){
@@ -1133,6 +1147,65 @@ async function handleImgUpload(event){
   }finally{
     btn.textContent=prevLabel;
     btn.disabled=false;
+  }
+}
+
+// AI 배경 제거(누끼) — 모듈은 페이지 로드 시 미리 받아두고, 버튼을 누른
+// 시점엔 준비 여부만 기다린다. 진행률은 라이브러리의 progress 콜백(모델
+// 다운로드/추론 단계별 current/total)을 그대로 프로그레스바에 반영한다.
+window.__removeBackgroundReady = import('https://cdn.jsdelivr.net/npm/@imgly/background-removal/+esm')
+  .then(mod => {
+    if (typeof mod.removeBackground !== 'function') {
+      throw new Error('모듈은 로드됐지만 removeBackground 함수를 찾지 못함 (exports: ' + Object.keys(mod).join(', ') + ')');
+    }
+    window.__removeBackground = mod.removeBackground;
+  })
+  .catch(err => { window.__removeBackgroundLoadError = err; });
+
+function blobToDataUrl(blob){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=()=>resolve(reader.result);
+    reader.onerror=()=>reject(new Error('파일을 읽지 못했습니다.'));
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function removeAccPhotoBackground(){
+  const dataUrl=document.getElementById('fImg').value.trim();
+  if(!dataUrl) return;
+  const btn=document.getElementById('fCutoutBtn');
+  const progressWrap=document.getElementById('fCutoutProgress');
+  const progressFill=document.getElementById('fCutoutProgressFill');
+  const progressText=document.getElementById('fCutoutProgressText');
+  const prevLabel=btn.textContent;
+  btn.disabled=true;
+  btn.textContent='처리 중...';
+  progressWrap.classList.remove('hidden');
+  progressFill.style.width='0%';
+  progressText.textContent='배경 제거 모듈 확인 중...';
+  try{
+    await window.__removeBackgroundReady;
+    if(!window.__removeBackground){
+      const reason=window.__removeBackgroundLoadError;
+      throw new Error('배경 제거 모듈 로드 실패: '+(reason && reason.message ? reason.message : '네트워크 또는 CDN 문제로 모듈을 불러오지 못했습니다.'));
+    }
+    const sourceBlob=await (await fetch(dataUrl)).blob();
+    const resultBlob=await window.__removeBackground(sourceBlob, {
+      progress:(key, current, total)=>{
+        const pct=total ? Math.round(current/total*100) : 0;
+        progressFill.style.width=pct+'%';
+        progressText.textContent='배경 제거 중... '+pct+'%';
+      }
+    });
+    document.getElementById('fImg').value=await blobToDataUrl(resultBlob);
+    updateFormPreview();
+  }catch(e){
+    alert('배경 제거 실패: '+(e && e.message ? e.message : e));
+  }finally{
+    btn.disabled=false;
+    btn.textContent=prevLabel;
+    progressWrap.classList.add('hidden');
   }
 }
 
