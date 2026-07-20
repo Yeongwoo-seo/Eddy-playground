@@ -25,6 +25,14 @@ html,body{height:100%}
 body{background:#050607;color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center;min-height:100dvh}
 .frame{width:100%;max-width:430px;min-height:100dvh;min-height:100vh;padding:calc(48px + env(safe-area-inset-top,0)) 20px calc(32px + env(safe-area-inset-bottom,0));display:flex;flex-direction:column}
 .back{font-family:var(--mono);font-size:12px;color:var(--text-muted);text-decoration:none;margin-bottom:18px;display:inline-flex;align-items:center;gap:4px;width:fit-content}
+.top-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.top-row .back{margin-bottom:0}
+/* Settings link to this minigame's dev editor (/dev/minigame-layton/) — same
+   destination as .back here (the puzzle list IS the editor), kept as a
+   separate top-right link so this page matches the other minigames'
+   back-left/settings-right layout and can be hidden in real play on its own. */
+.settings-link{font-family:var(--mono);font-size:11px;color:var(--text-muted);text-decoration:none;border:1px solid var(--divider);border-radius:20px;padding:7px 13px;flex-shrink:0}
+.settings-link:active{opacity:.75}
 .tag{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px}
 .title{font-size:22px;font-weight:700;letter-spacing:-.2px;margin-bottom:8px;line-height:1.35}
 .meta{font-family:var(--mono);font-size:11.5px;color:var(--text-secondary);margin-bottom:22px}
@@ -185,14 +193,20 @@ const frame = document.getElementById('frame');
 
 if (!puzzle) {
   frame.innerHTML = `
-    <a class="back" href="/dev/minigame-layton/">‹ 레이튼 퀴즈</a>
+    <div class="top-row">
+      <a class="back" href="/dev/minigame-layton/">‹ 레이튼 퀴즈</a>
+      <a class="settings-link dev-settings-link" href="/dev/minigame-layton/">설정</a>
+    </div>
     <div class="tag">Minigame · 레이튼 퀴즈</div>
     <div class="title">문제를 찾을 수 없어요</div>
     <div class="not-found">주소의 puzzle 값이 올바르지 않거나 아직 미개발인 문제예요. 목록으로 돌아가 플레이 가능한 문제를 선택해 주세요.</div>
   `;
 } else {
   frame.innerHTML = `
-    <a class="back" href="/dev/minigame-layton/">‹ 레이튼 퀴즈</a>
+    <div class="top-row">
+      <a class="back" href="/dev/minigame-layton/">‹ 레이튼 퀴즈</a>
+      <a class="settings-link dev-settings-link" href="/dev/minigame-layton/">설정</a>
+    </div>
     <div class="tag">Minigame · 레이튼 퀴즈</div>
     <div class="title">${puzzle.name}</div>
     <div class="meta">${puzzle.type} · 난이도 ${puzzle.difficulty} · 예상 ${puzzle.estTime}</div>
@@ -287,6 +301,8 @@ if (!puzzle) {
   });
 }
 </script>
+<script src="/realPlayMode.js"></script>
+<script>RealPlayMode.hideDevChrome();</script>
 <script src="/dev/devPlanFab.js"></script>
 </body>
 </html>

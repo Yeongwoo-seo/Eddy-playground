@@ -49,6 +49,12 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .topbar{position:absolute;top:0;left:0;right:0;z-index:6;padding:calc(14px + env(safe-area-inset-top,0)) 16px 10px;display:flex;align-items:center;justify-content:space-between;pointer-events:none}
 .back-chip{pointer-events:auto;flex-shrink:0;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.4);border:1px solid rgba(10,40,50,.25);color:#0A2A3A;font-size:18px;font-weight:700;line-height:1;text-decoration:none}
 .back-chip:active{transform:scale(.92)}
+/* Settings link to this minigame's dev editor (/dev/minigame-fishing/) —
+   z-index above .status-window (also 6, but painted later in the DOM) so
+   it stays tappable even when a scene has a status-window frame configured
+   in that top-right corner. */
+.settings-chip{pointer-events:auto;position:relative;z-index:7;flex-shrink:0;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.4);border:1px solid rgba(10,40,50,.25);color:#0A2A3A;font-size:15px;line-height:1;text-decoration:none}
+.settings-chip:active{transform:scale(.92)}
 
 .status-window{position:absolute;top:calc(10px + env(safe-area-inset-top,0));right:calc(10px + env(safe-area-inset-right,0));z-index:6;width:120px;aspect-ratio:var(--status-ar,2/1);pointer-events:none}
 .status-window.hidden{display:none}
@@ -400,6 +406,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
   <div class="preload-overlay" id="preloadOverlay"></div>
   <div class="topbar">
     <a class="back-chip" id="backChip" href="/dev/minigame-fishing/" aria-label="뒤로">‹</a>
+    <a class="settings-chip dev-settings-link" href="/dev/minigame-fishing/" aria-label="설정">⚙</a>
   </div>
 
   <!-- ===== 상태창 — 요일·날짜/시간/포인트/화살표. dev/minigame-fishing/
