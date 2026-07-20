@@ -622,7 +622,7 @@ function playEndingSequence() {
 // (onComplete -> restart()) and gets this "UNKNOWN SIGNAL" foreshadowing
 // beat on every loop. Every other scene now chains into the next one via
 // nextSceneId (see dialogueData.js) so a real playthrough (시작하기 on
-// /play/test) taps straight through 0주차 instead of stopping at each
+// /play/) taps straight through 0주차 instead of stopping at each
 // scene boundary — that handoff skips this beat, since it's tonally
 // specific to 0주차's actual ending, not a generic one.
 //
@@ -637,7 +637,7 @@ function playEndingSequence() {
 // Most nextSceneId handoffs are into a minigame (MINIGAME_ROUTES above), but
 // a plain location change with no minigame in between — e.g.
 // week0-scene-flight -> week0-scene-001-2 — hands off straight to another
-// VN scene instead, so a real playthrough (시작하기 on /play/test) taps
+// VN scene instead, so a real playthrough (시작하기 on /play/) taps
 // through the whole week without stopping at every scene boundary.
 function playMinigameTransition(nextSceneId) {
   const route = MINIGAME_ROUTES[nextSceneId];

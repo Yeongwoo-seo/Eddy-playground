@@ -1,6 +1,6 @@
 /* OPERATION MK — shared "real play" flag.
    Set once when a player actually enters the game through /play/'s own
-   install-gated start screen (see play/test/index.html's goToRealStart and
+   install-gated start screen (see play/index.html's goToRealStart and
    its minigame picker); read by every real-play-reachable page (dev/game,
    dev/explore, the routed minigames) to hide dev-only chrome — the "← DEV"
    link, the POS/DEV debug buttons, and the CASE FILE menu button, none of
