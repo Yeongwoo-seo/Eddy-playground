@@ -450,8 +450,6 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
   <button type="button" class="fish-btn" id="fishBtn">🎣</button>
   <button type="button" class="layout-edit-btn" id="layoutEditBtn" aria-label="배치 편집">✎</button>
   <div class="layout-edit-panel hidden" id="layoutEditPanel">
-    <label>낚시 팝업 크기<input type="range" id="layoutItemPopupScale" min="0.3" max="2" step="0.05"></label>
-    <label class="hidden" id="layoutBgZoomRow">배경화면 배율<input type="range" id="layoutBgZoom" min="0.3" max="2" step="0.05"></label>
     <button type="button" class="secondary" id="layoutCastingPosBtn">🎯 캐스팅 게이지 위치 수정하기</button>
     <button type="button" class="secondary" id="layoutFishbarPosBtn">🎣 낚시바 위치 수정하기</button>
     <button type="button" class="secondary" id="layoutItemPopupPosBtn">🎁 낚시 팝업 미리보기</button>
@@ -640,9 +638,6 @@ const el = {
   fishBtn: document.getElementById('fishBtn'),
   layoutEditBtn: document.getElementById('layoutEditBtn'),
   layoutEditPanel: document.getElementById('layoutEditPanel'),
-  layoutItemPopupScale: document.getElementById('layoutItemPopupScale'),
-  layoutBgZoomRow: document.getElementById('layoutBgZoomRow'),
-  layoutBgZoom: document.getElementById('layoutBgZoom'),
   layoutEditDoneBtn: document.getElementById('layoutEditDoneBtn'),
   layoutDragGhost: document.getElementById('layoutDragGhost'),
   layoutCastingPosBtn: document.getElementById('layoutCastingPosBtn'),
@@ -837,11 +832,10 @@ let worldSize = { w: 0, h: 0 }; // 캐릭터가 돌아다닐 수 있는 전체 �
 let hasWorldBackground = false;
 let charWorldPos = null; // { x, y } px, 배경 원본 이미지 기준(캐릭터 중심, y는 아래 기준) — loadConfig에서 처음 채워진다
 let camOffset = { x: 0, y: 0 }; // 지금 카메라(화면)가 배경 원본 이미지의 왼쪽/위에서 얼마나 떨어진 지점을 보여주고 있는지(top-down px, bgZoom이 적용된 스케일 기준) — updateCamera가 채운다. el.frame의 background-position, 캐릭터의 화면 left/bottom, framePxToImageFrac(추 착수 지점 등 화면 기준 좌표 변환)이 모두 이 값을 기준으로 삼는다.
-// 배경화면 줌 — 배치 편집 패널(el.layoutBgZoom)로 조절한다. 캐릭터의
-// "진짜" 좌표(charWorldPos)와 영역(다각형) 판정은 항상 원본 이미지 px
-// 기준으로 그대로 두고, updateCamera/framePxToImageFrac에서만 이 배율을
-// 곱하거나 나눠 화면에 보이는 배경 크기와 카메라 이동 범위만 바꾼다 —
-// 배경 미업로드 시(hasWorldBackground false)는 슬라이더가 숨겨지고
+// 배경화면 줌 — 캐릭터의 "진짜" 좌표(charWorldPos)와 영역(다각형) 판정은
+// 항상 원본 이미지 px 기준으로 그대로 두고, updateCamera/framePxToImageFrac
+// 에서만 이 배율을 곱하거나 나눠 화면에 보이는 배경 크기와 카메라 이동
+// 범위만 바꾼다 — 배경 미업로드 시(hasWorldBackground false)는
 // effectiveBgZoom()이 항상 1을 돌려줘 예전 폴백 동작과 완전히 같다.
 let bgZoom = 1;
 function effectiveBgZoom() { return hasWorldBackground ? bgZoom : 1; }
@@ -1550,12 +1544,8 @@ async function applyScreen(screenDef, opts) {
   moveAreas = (screenDef && screenDef.moveAreas) || [];
 
   hasWorldBackground = !!(backgroundAsset && bgDims);
-  // 배경이 바뀔 때마다(재입장/화면 이동) 줌을 1배율로 되돌린다 — 슬라이더는
-  // 배경이 있을 때만 보이고, 없으면 숨긴다(effectiveBgZoom이 어차피 1로
-  // 강제하지만 슬라이더 자체를 숨겨 조작할 수 없게 한다).
+  // 배경이 바뀔 때마다(재입장/화면 이동) 줌을 1배율로 되돌린다.
   bgZoom = 1;
-  el.layoutBgZoom.value = '1';
-  el.layoutBgZoomRow.classList.toggle('hidden', !hasWorldBackground);
   refreshFrameRect();
   worldSize = hasWorldBackground ? { w: bgDims.width, h: bgDims.height } : { w: frameRect.width, h: frameRect.height };
   if (hasWorldBackground) {
@@ -3048,8 +3038,6 @@ el.layoutEditBtn.addEventListener('pointerdown', (e) => {
   el.layoutEditBtn.classList.toggle('active', layoutEditMode);
   el.layoutEditPanel.classList.toggle('hidden', !layoutEditMode);
   if (layoutEditMode) {
-    el.layoutItemPopupScale.value = layoutPrefs.itemPopup.scale;
-    el.layoutBgZoom.value = bgZoom;
     stopMoveHold();
   } else {
     castingPosPreview = false;
@@ -3063,11 +3051,6 @@ el.layoutEditBtn.addEventListener('pointerdown', (e) => {
     if (gameState !== 'popup') el.itemPopup.style.left = '-9999px';
   }
 });
-el.layoutItemPopupScale.addEventListener('input', () => {
-  layoutPrefs.itemPopup.scale = Number(el.layoutItemPopupScale.value);
-  if (itemPopupPreview) positionItemPopupAboveCharacter();
-});
-el.layoutItemPopupScale.addEventListener('change', saveLayoutPrefs);
 // 캐스팅 게이지 위치 드래그 — fishBtn과 같은 패턴(편집 모드에서만 pointerdown이
 // startLayoutDrag로 빠진다)이지만, 게이지는 평소 세기 조절 중에만 보이는 요소라
 // 드래그 대상으로 삼으려면 먼저 이 버튼으로 강제로 띄워둬야 한다.
@@ -3137,17 +3120,6 @@ el.layoutItemPopupPosBtn.addEventListener('click', (e) => {
   } else {
     el.itemPopup.style.left = '-9999px';
   }
-});
-// 배경화면 배율 — 배경을 업로드했을 때만 이 행이 보인다(loadConfig가
-// layoutBgZoomRow의 hidden을 토글). 값이 바뀔 때마다 즉시 카메라를 다시
-// 계산해 확대/축소와 카메라 위치(camOffset)를 함께 반영한다(charWorldPos
-// 자체는 원본 좌표 그대로라 캐릭터가 걷는 로직/영역 판정엔 영향이 없다).
-// 배경별로 다시 맞춰야 하는 값이라 다른 배치값과 달리 localStorage에는
-// 저장하지 않는다(loadConfig가 배경을 새로 불러올 때마다 1배율로 리셋).
-el.layoutBgZoom.addEventListener('input', () => {
-  bgZoom = Number(el.layoutBgZoom.value);
-  applyBgLayerSize();
-  updateCamera();
 });
 el.layoutEditDoneBtn.addEventListener('click', (e) => {
   e.stopPropagation();
