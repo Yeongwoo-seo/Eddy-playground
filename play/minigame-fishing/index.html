@@ -406,7 +406,10 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
   <div class="preload-overlay" id="preloadOverlay"></div>
   <div class="topbar">
     <a class="back-chip" id="backChip" href="/dev/minigame-fishing/" aria-label="뒤로">‹</a>
-    <a class="settings-chip dev-settings-link" href="/dev/minigame-fishing/" aria-label="설정">⚙</a>
+    <div style="display:flex;gap:8px;pointer-events:none">
+      <button class="settings-chip" id="skipBtn" aria-label="다음 상호작용">⏭</button>
+      <a class="settings-chip dev-settings-link" href="/dev/minigame-fishing/" aria-label="설정">⚙</a>
+    </div>
   </div>
 
   <!-- ===== 상태창 — 요일·날짜/시간/포인트/화살표. dev/minigame-fishing/
@@ -632,6 +635,7 @@ function gaugeColorForProgress(pct) {
 
 const el = {
   backChip: document.getElementById('backChip'),
+  skipBtn: document.getElementById('skipBtn'),
   frame: document.getElementById('frame'),
   preloadOverlay: document.getElementById('preloadOverlay'),
   statusWindow: document.getElementById('statusWindow'),
@@ -1108,6 +1112,7 @@ function confirmSellFish() {
   closeSellFishModal();
 }
 
+el.skipBtn.addEventListener('pointerdown', (e) => { e.stopPropagation(); handleQuit(); });
 el.npcMenuSellBtn.addEventListener('pointerdown', (e) => { e.stopPropagation(); openSellFishModal(); });
 el.npcMenuQuitBtn.addEventListener('pointerdown', (e) => { e.stopPropagation(); handleQuit(); });
 el.npcMenuCloseBtn.addEventListener('pointerdown', (e) => { e.stopPropagation(); closeNpcMenu(); });

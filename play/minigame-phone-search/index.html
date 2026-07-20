@@ -165,7 +165,10 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 <div class="frame" id="frame">
   <div class="topbar">
     <a class="vn-btn" href="/dev/">← DEV</a>
-    <button class="vn-btn" id="devBtn">DEV</button>
+    <div style="display:flex;gap:8px">
+      <button class="vn-btn skip" id="skipBtn" aria-label="다음 상호작용">다음 ⏭</button>
+      <button class="vn-btn" id="devBtn">DEV</button>
+    </div>
   </div>
 
   <div class="room-view" id="roomView">
@@ -546,6 +549,7 @@ function setMessage(text) {
 const el = {
   frame: document.getElementById('frame'),
   devBtn: document.getElementById('devBtn'),
+  skipBtn: document.getElementById('skipBtn'),
   roomView: document.getElementById('roomView'),
   photoStage: document.getElementById('photoStage'),
   photoCanvas: document.getElementById('photoCanvas'),
@@ -930,12 +934,14 @@ function handlePhoneFound() {
     setTimeout(() => {
       playSuccessBeep();
       el.stamp.classList.add('show');
-      setTimeout(() => {
-        el.fadeOverlay.classList.add('show');
-        setTimeout(() => { location.href = '/play/game/?scene=week0-scene-002-3'; }, 950);
-      }, 1000);
+      setTimeout(fadeOutAndRedirect, 1000);
     }, 700);
   }, 700);
+}
+
+function fadeOutAndRedirect() {
+  el.fadeOverlay.classList.add('show');
+  setTimeout(() => { location.href = '/play/game/?scene=week0-scene-002-3'; }, 950);
 }
 
 /* ===== Photo-mode pan/zoom stage (ported from minigame-eastwood's map
@@ -1418,6 +1424,7 @@ function updateLockState() {
 
 /* ===== Dev debug sheet ===== */
 el.devBtn.addEventListener('click', () => el.sheetOverlay.classList.remove('hidden'));
+el.skipBtn.addEventListener('click', (e) => { e.stopPropagation(); fadeOutAndRedirect(); });
 el.sheetCloseBtn.addEventListener('click', () => el.sheetOverlay.classList.add('hidden'));
 el.sheetOverlay.addEventListener('click', (e) => { if (e.target === el.sheetOverlay) el.sheetOverlay.classList.add('hidden'); });
 
