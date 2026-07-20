@@ -2,7 +2,7 @@
 // hangeoreum.html (each an independently installed home-screen app) with
 // { scope: '.' }, so navigating within either app's pages stays inside
 // the standalone app instead of kicking out to the browser
-const CACHE_NAME = 'gangnangkong-tour-v8';
+const CACHE_NAME = 'gangnangkong-tour-v9';
 const APP_SHELL = [
   'schedule.html',
   'planner.html',
@@ -29,9 +29,37 @@ const APP_SHELL = [
   'icons/splash-1320x2868.jpg'
 ];
 
+// Hotlinked nav-card cover photos — the home screen (schedule.html) and
+// arrival.html's own sub-menu both show these on every visit, so they need
+// to survive offline (e.g. checking 탑승권 mid-flight with no signal), not
+// just whatever happened to load once. Precached separately from
+// APP_SHELL/cache.addAll: these are cross-origin, and cache.addAll aborts
+// the *entire* install if even one request in the batch fails, which would
+// take down offline support for the whole app over a single flaky photo.
+const PHOTO_SHELL = [
+  'https://images.pexels.com/photos/9186152/pexels-photo-9186152.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
+  'https://images.pexels.com/photos/20139504/pexels-photo-20139504.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
+  'https://images.pexels.com/photos/4062614/pexels-photo-4062614.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
+  'https://images.pexels.com/photos/15225161/pexels-photo-15225161.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
+  'https://images.pexels.com/photos/15225161/pexels-photo-15225161.jpeg?auto=compress&cs=tinysrgb&w=900&h=1400&fit=crop',
+  'https://images.pexels.com/photos/2069/pexels-photo-2069.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
+  'https://images.pexels.com/photos/7310015/pexels-photo-7310015.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
+];
+
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL))
+    caches.open(CACHE_NAME).then(async cache => {
+      await cache.addAll(APP_SHELL);
+      // Cache.add()/addAll() reject opaque responses outright (they check
+      // response.ok internally, which is always false for a 'no-cors'
+      // cross-origin fetch) — fetch + cache.put directly instead, which has
+      // no such check. allSettled so one failed/slow photo doesn't sink the
+      // rest of the install the way cache.addAll's all-or-nothing batching
+      // would.
+      await Promise.allSettled(
+        PHOTO_SHELL.map(url => fetch(url, { mode: 'no-cors' }).then(res => cache.put(url, res)))
+      );
+    })
   );
   self.skipWaiting();
 });
@@ -53,7 +81,13 @@ self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   event.respondWith(
     fetch(event.request).then(response => {
-      if (response.ok) {
+      // response.ok is false for opaque responses (status 0) — which is
+      // exactly what a cross-origin no-cors load (e.g. a CSS
+      // background-image: url(...) hitting images.pexels.com) always comes
+      // back as. Skipping those here meant hotlinked photos were never
+      // actually written to the cache no matter how many times they'd
+      // loaded successfully — only same-origin/CORS responses were.
+      if (response.ok || response.type === 'opaque') {
         const copy = response.clone();
         caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
       }
