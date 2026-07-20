@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>탑승권</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#E8741E">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="탑승권">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --primary:#E8741E;--primary-hover:#D4681A;--primary-light:#FFF3EB;
+  --bg:#F5F5F5;--white:#FFFFFF;
+  --grey100:#F2F4F6;--grey300:#D1D6DB;--grey500:#8B95A1;--grey700:#4E5968;--black:#191F28;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--black);font-family:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;display:flex;justify-content:center}
+.app{width:100%;max-width:500px;min-height:100vh;padding:16px 16px 40px;display:flex;flex-direction:column}
+.hl{color:var(--primary)}
+
+.top-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 0 20px}
+.top-bar-left{display:flex;align-items:center;gap:12px;min-width:0}
+.back-btn{width:36px;height:36px;border-radius:50%;background:var(--white);box-shadow:0 2px 12px rgba(0,0,0,0.06);border:none;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--grey700);flex-shrink:0}
+.top-title{font-size:20px;font-weight:800}
+.reupload-btn{background:var(--grey100);color:var(--grey700);border:none;border-radius:20px;padding:8px 14px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0}
+.reupload-btn:active{background:var(--grey300)}
+.hidden{display:none}
+
+.empty-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:16px;padding:20px}
+.empty-ic{font-size:44px}
+.empty-title{font-size:16px;font-weight:700}
+.empty-sub{font-size:13px;color:var(--grey500);font-weight:500;line-height:1.6;max-width:300px}
+.upload-btn{background:var(--primary);color:#fff;border:none;border-radius:16px;padding:14px 28px;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit}
+.upload-btn:active{background:var(--primary-hover)}
+.upload-error{color:#D94141;font-size:12.5px;font-weight:600;margin-top:4px}
+
+.pdf-wrap{flex:1;background:var(--white);border-radius:20px;box-shadow:0 2px 12px rgba(0,0,0,0.06);overflow:hidden;display:flex}
+.pdf-wrap iframe{flex:1;width:100%;border:none;min-height:70vh}
+
+.file-name-row{font-size:11.5px;color:var(--grey500);font-weight:600;text-align:center;margin-top:10px}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top-bar">
+    <div class="top-bar-left">
+      <button class="back-btn" onclick="location.href='arrival.html'">←</button>
+      <div class="top-title">🎫 <span class="hl">탑승권</span></div>
+    </div>
+    <button class="reupload-btn hidden" id="reuploadBtn">다시 올리기</button>
+  </div>
+
+  <div id="content"></div>
+  <input type="file" id="fileInput" accept="application/pdf" style="display:none">
+</div>
+<script>
+const PDF_KEY = 'boardingPassPdfV1';
+const NAME_KEY = 'boardingPassNameV1';
+// localStorage's ~5MB quota has to cover the base64-encoded PDF (roughly
+// 1.37x the raw file size) plus everything else this app already stores
+// there, so a hard cap well under that keeps a big attachment from wiping
+// out other saved data (checklist, notification rules, etc).
+const MAX_PDF_BYTES = 4 * 1024 * 1024;
+
+const el = {
+  content: document.getElementById('content'),
+  fileInput: document.getElementById('fileInput'),
+  reuploadBtn: document.getElementById('reuploadBtn'),
+};
+
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function renderEmpty(errorText) {
+  el.reuploadBtn.classList.add('hidden');
+  el.content.innerHTML = `
+    <div class="empty-wrap">
+      <div class="empty-ic">🎫</div>
+      <div class="empty-title">아직 등록된 탑승권이 없어요</div>
+      <div class="empty-sub">항공권 PDF를 올려두면 언제든 바로 열어볼 수 있어요.<br>여기 저장된 내용은 이 기기에만 남아요.</div>
+      <button class="upload-btn" onclick="el.fileInput.click()">📎 PDF 올리기</button>
+      ${errorText ? `<div class="upload-error">${errorText}</div>` : ''}
+    </div>
+  `;
+}
+
+function renderPdf(dataUrl, name) {
+  el.reuploadBtn.classList.remove('hidden');
+  el.content.innerHTML = `
+    <div class="pdf-wrap"><iframe src="${dataUrl}" title="탑승권 PDF"></iframe></div>
+    ${name ? `<div class="file-name-row">${escapeHtml(name)}</div>` : ''}
+  `;
+}
+
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function loadSaved() {
+  const dataUrl = localStorage.getItem(PDF_KEY);
+  if (dataUrl) renderPdf(dataUrl, localStorage.getItem(NAME_KEY));
+  else renderEmpty();
+}
+
+async function handleFile(file) {
+  if (!file) return;
+  if (file.type !== 'application/pdf') {
+    renderEmpty('PDF 파일만 올릴 수 있어요.');
+    return;
+  }
+  if (file.size > MAX_PDF_BYTES) {
+    renderEmpty(`파일이 너무 커요 (최대 ${Math.floor(MAX_PDF_BYTES / 1024 / 1024)}MB).`);
+    return;
+  }
+  try {
+    const dataUrl = await fileToDataUrl(file);
+    localStorage.setItem(PDF_KEY, dataUrl);
+    localStorage.setItem(NAME_KEY, file.name);
+    renderPdf(dataUrl, file.name);
+  } catch (err) {
+    renderEmpty('저장에 실패했어요: ' + (err && err.message ? err.message : err));
+  }
+}
+
+el.fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+el.reuploadBtn.addEventListener('click', () => el.fileInput.click());
+
+loadSaved();
+
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js', { scope: '.' });
+}
+</script>
+</body>
+</html>
