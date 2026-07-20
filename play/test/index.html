@@ -56,6 +56,20 @@ body{background:#000;display:flex;justify-content:center;min-height:100dvh}
 .minigame-item{background:#171C22;border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:16px 18px;color:#EDF1F4;font-weight:700;font-size:15px;text-align:center;cursor:pointer}
 .minigame-item:active{background:#232B34}
 .week-back{background:none;border:none;color:#929BA5;font-size:13px;padding:8px;cursor:pointer}
+
+/* Shown instead of the real start screen when this page wasn't launched from
+   its own /play/ home-screen icon — see the install-gate script below for
+   why display-mode:standalone alone can't tell that apart from being linked
+   into from the 강낭콩 투어 app, which is also standalone. */
+.install-gate{position:fixed;inset:0;z-index:200;background:#000;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+.install-gate.show{display:flex}
+.install-icon{font-size:44px;margin-bottom:18px}
+.install-title{color:#EDF1F4;font-size:20px;font-weight:700;letter-spacing:.04em}
+.install-desc{color:#929BA5;font-size:14px;margin-top:12px;line-height:1.6;max-width:280px}
+.install-btn{margin-top:28px;background:#EDF1F4;color:#080A0C;border:none;padding:14px 28px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;display:none;font-family:inherit}
+.install-btn:active{opacity:.85}
+.install-ios-guide{margin-top:28px;color:#929BA5;font-size:13px;line-height:1.8;max-width:280px;display:none}
+.install-ios-guide b{color:#EDF1F4}
 </style>
 </head>
 <body>
@@ -70,6 +84,16 @@ body{background:#000;display:flex;justify-content:center;min-height:100dvh}
   <div class="minigame-select" id="minigameSelect">
     <button class="week-back" id="minigameBackBtn">‹ 뒤로</button>
     <div class="minigame-list" id="minigameList"></div>
+  </div>
+</div>
+
+<div class="install-gate" id="installGate">
+  <div class="install-icon">🔑</div>
+  <div class="install-title">OPERATION MK</div>
+  <div class="install-desc">이 앱은 홈 화면에 설치한 뒤,<br>그 아이콘으로 열어야 시작할 수 있어요.</div>
+  <button class="install-btn" id="installBtn">홈 화면에 추가</button>
+  <div class="install-ios-guide" id="iosGuide">
+    Safari 하단의 <b>공유</b> 버튼을 누르고<br><b>홈 화면에 추가</b>를 선택해주세요.
   </div>
 </div>
 
@@ -187,6 +211,61 @@ el.minigameList.addEventListener('click', (e) => {
   const item = e.target.closest('.minigame-item');
   if (item) location.href = item.dataset.route;
 });
+
+/* =========================================================
+   INSTALL GATE — only a launch from /play/'s own home-screen
+   icon may enter the real start screen; anything else (a link
+   tapped from inside the already-installed 강낭콩 투어 app, or a
+   plain browser tab) sees an install prompt instead. Both apps
+   report display-mode:standalone once you're inside either
+   installed shell, so standalone alone can't tell them apart —
+   an icon launch is a fresh navigation with no document.referrer,
+   while a link tap always carries one. Once verified, the pass is
+   remembered so future icon launches don't depend on this check
+   racing correctly every time.
+   ========================================================= */
+const INSTALL_VERIFIED_KEY = 'mkPlayVerifiedInstalledV1';
+const isStandaloneDisplay = () =>
+  window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+const isIos = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
+
+function verifiedInstalled() {
+  try { return localStorage.getItem(INSTALL_VERIFIED_KEY) === '1'; } catch (e) { return false; }
+}
+function markVerifiedInstalled() {
+  try { localStorage.setItem(INSTALL_VERIFIED_KEY, '1'); } catch (e) {}
+}
+
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  document.getElementById('installBtn').style.display = 'inline-block';
+});
+
+document.getElementById('installBtn').addEventListener('click', async () => {
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+});
+
+function shouldShowInstallGate() {
+  if (verifiedInstalled()) return false;
+  const launchedFromOwnIcon = isStandaloneDisplay() && !document.referrer;
+  if (launchedFromOwnIcon) {
+    markVerifiedInstalled();
+    return false;
+  }
+  return true;
+}
+
+if (shouldShowInstallGate()) {
+  if (isIos() && !isStandaloneDisplay()) {
+    document.getElementById('iosGuide').style.display = 'block';
+  }
+  document.getElementById('installGate').classList.add('show');
+}
 </script>
 </body>
 </html>
