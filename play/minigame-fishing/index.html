@@ -880,7 +880,7 @@ let camOffset = { x: 0, y: 0 }; // 지금 카메라(화면)가 배경 원본 이
 // 에서만 이 배율을 곱하거나 나눠 화면에 보이는 배경 크기와 카메라 이동
 // 범위만 바꾼다 — 배경 미업로드 시(hasWorldBackground false)는
 // effectiveBgZoom()이 항상 1을 돌려줘 예전 폴백 동작과 완전히 같다.
-let bgZoom = 1;
+let bgZoom = 0.9;
 function effectiveBgZoom() { return hasWorldBackground ? bgZoom : 1; }
 // updateCamera는 이동 중 매 프레임(moveTick) 호출되므로, 그때마다
 // el.frame.getBoundingClientRect()를 다시 읽으면 매 프레임 강제 레이아웃
@@ -1697,8 +1697,8 @@ async function applyScreen(screenDef, opts) {
   moveAreas = (screenDef && screenDef.moveAreas) || [];
 
   hasWorldBackground = !!(backgroundAsset && bgDims);
-  // 배경이 바뀔 때마다(재입장/화면 이동) 줌을 1배율로 되돌린다.
-  bgZoom = 1;
+  // 배경이 바뀔 때마다(재입장/화면 이동) 줌을 90% 배율로 되돌린다.
+  bgZoom = 0.9;
   refreshFrameRect();
   worldSize = hasWorldBackground ? { w: bgDims.width, h: bgDims.height } : { w: frameRect.width, h: frameRect.height };
   if (hasWorldBackground) {
