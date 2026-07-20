@@ -1,4 +1,11 @@
 const STORAGE_KEY = 'lunchDepositState_v1';
+// same shared Supabase project as planner.html/boarding-pass.html — deposit
+// screenshots go to this bucket as real files instead of base64 strings
+// stuffed into localStorage, so a thumb doesn't just vanish if this device's
+// storage gets cleared or evicted.
+const SUPABASE_URL = 'https://dhtstqnksjoyyshnhksv.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRodHN0cW5rc2pveXlzaG5oa3N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5NjIyNzQsImV4cCI6MjA5ODUzODI3NH0.FMZdCXntYJKxQeYNwfrsy1liJcHIkD2inJ4NzbwLzd4';
+const SUPABASE_PHOTO_BUCKET = 'dev-assets';
 
 let state = { depositors: [], applicants: [], history: [] };
 
@@ -12,6 +19,12 @@ function loadState() {
     state.depositors = state.depositors || [];
     state.applicants = state.applicants || [];
     state.history = state.history || [];
+    // reset thumbnails uploaded before this switched to Storage — those are
+    // base64 strings saved straight into localStorage, so there's nothing to
+    // migrate; just clear them (the depositor/history entry itself stays).
+    state.depositors.forEach(d => { if (d.thumb && d.thumb.startsWith('data:')) d.thumb = ''; });
+    state.history.forEach(h => { if (h.thumb && h.thumb.startsWith('data:')) h.thumb = ''; });
+    saveState();
 }
 
 function saveState() {
@@ -58,8 +71,8 @@ function showOcrOverlay(show, text) {
     if (text) document.getElementById('ocrText').innerHTML = text;
 }
 
-// --- 이미지 리사이즈 ---
-function resizeImageToDataURL(file, maxDim, quality) {
+// --- 이미지 리사이즈 (Blob — 서버 업로드용) ---
+function resizeImageToBlob(file, maxDim, quality) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => {
@@ -75,7 +88,7 @@ function resizeImageToDataURL(file, maxDim, quality) {
                 canvas.width = width;
                 canvas.height = height;
                 canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-                resolve(canvas.toDataURL('image/jpeg', quality || 0.75));
+                canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('canvas toBlob failed')), 'image/jpeg', quality || 0.75);
             };
             img.onerror = reject;
             img.src = reader.result;
@@ -83,6 +96,23 @@ function resizeImageToDataURL(file, maxDim, quality) {
         reader.onerror = reject;
         reader.readAsDataURL(file);
     });
+}
+
+// --- 서버 업로드 (Supabase Storage) ---
+async function uploadDepositPhoto(blob) {
+    const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    const path = `deposit-photos/${id}.jpg`;
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_PHOTO_BUCKET}/${path}`, {
+        method: 'POST',
+        headers: {
+            apikey: SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+            'Content-Type': 'image/jpeg',
+        },
+        body: blob,
+    });
+    if (!res.ok) throw new Error(`이미지 업로드 실패 (${res.status})`);
+    return `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_PHOTO_BUCKET}/${path}`;
 }
 
 // --- OCR 결과에서 이름/금액 추측 ---
@@ -353,9 +383,10 @@ function renderAll() {
 async function processDepositFile(file) {
     let thumb = '';
     try {
-        thumb = await resizeImageToDataURL(file, 480, 0.75);
-        const ocrSource = await resizeImageToDataURL(file, 900, 0.85);
-        const result = await Tesseract.recognize(ocrSource, 'kor+eng');
+        const thumbBlob = await resizeImageToBlob(file, 480, 0.75);
+        thumb = await uploadDepositPhoto(thumbBlob);
+        const ocrBlob = await resizeImageToBlob(file, 900, 0.85);
+        const result = await Tesseract.recognize(ocrBlob, 'kor+eng');
         const text = result && result.data ? result.data.text : '';
         const name = guessNameFromText(text);
         const amount = guessAmountFromText(text);
@@ -371,7 +402,7 @@ async function processDepositFile(file) {
     } catch (err) {
         console.error('OCR failed', err);
         if (!thumb) {
-            try { thumb = await resizeImageToDataURL(file, 480, 0.75); } catch (e2) { thumb = ''; }
+            try { thumb = await uploadDepositPhoto(await resizeImageToBlob(file, 480, 0.75)); } catch (e2) { thumb = ''; }
         }
         const depositor = { id: genId(), name: '', amount: '', thumb, matched: false };
         state.depositors.unshift(depositor);

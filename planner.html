@@ -245,6 +245,11 @@ const SUPABASE_URL='https://dhtstqnksjoyyshnhksv.supabase.co';
 const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRodHN0cW5rc2pveXlzaG5oa3N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5NjIyNzQsImV4cCI6MjA5ODUzODI3NH0.FMZdCXntYJKxQeYNwfrsy1liJcHIkD2inJ4NzbwLzd4';
 const SUPABASE_TABLE='schedule_data';
 const SUPABASE_ROW_ID='trip';
+// accommodation photos go to Storage (same bucket boarding-pass.html already
+// uses for its PDFs) as real files instead of base64 strings embedded in the
+// schedule_data JSON row above — keeps that row small and each photo a plain
+// URL any device can just load.
+const SUPABASE_PHOTO_BUCKET='dev-assets';
 
 function toDate(s){const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d);}
 function fmt(d){const y=d.getFullYear(),m=d.getMonth()+1,day=d.getDate();return `${y}-${String(m).padStart(2,'0')}-${String(day).padStart(2,'0')}`;}
@@ -588,6 +593,14 @@ function loadData(){
   });
   d.themes=d.themes||{};
   d.weekdayArea=d.weekdayArea||{};
+  // reset accommodation photos uploaded before this switched to Storage —
+  // those are base64 strings baked straight into this JSON blob instead of
+  // real files, so there's nothing to migrate; just clear them and let the
+  // photo be re-uploaded through the new (server-storage) path.
+  Object.keys(d.accommodations||{}).forEach(k=>{
+    const acc=d.accommodations[k];
+    if(acc && typeof acc.image==='string' && acc.image.startsWith('data:')) acc.image='';
+  });
   return d;
 }
 function saveData(){
@@ -1078,21 +1091,21 @@ function scaledDims(w, h, maxDim){
   return w>h ? {w:maxDim, h:Math.round(h*maxDim/w)} : {w:Math.round(w*maxDim/h), h:maxDim};
 }
 
-function drawToJpeg(source, w, h, quality){
+function drawToJpegBlob(source, w, h, quality){
   const canvas=document.createElement('canvas');
   canvas.width=w; canvas.height=h;
   canvas.getContext('2d').drawImage(source,0,0,w,h);
-  return canvas.toDataURL('image/jpeg', quality);
+  return new Promise(resolve=>canvas.toBlob(resolve, 'image/jpeg', quality));
 }
 
 // card art only ever renders at a few hundred px, so a small target
-// keeps both the native decode and the base64 encode fast on mobile
+// keeps both the native decode and the upload fast on mobile
 function resizeImageFile(file, maxDim, quality){
   maxDim=maxDim||640; quality=quality||0.7;
   if('createImageBitmap' in window){
     return createImageBitmap(file).then(bitmap=>{
       const {w,h}=scaledDims(bitmap.width, bitmap.height, maxDim);
-      const out=drawToJpeg(bitmap, w, h, quality);
+      const out=drawToJpegBlob(bitmap, w, h, quality);
       bitmap.close && bitmap.close();
       return out;
     }).catch(()=>resizeImageFileLegacy(file, maxDim, quality));
@@ -1107,7 +1120,7 @@ function resizeImageFileLegacy(file, maxDim, quality){
       const img=new Image();
       img.onload=()=>{
         const {w,h}=scaledDims(img.width, img.height, maxDim);
-        resolve(drawToJpeg(img, w, h, quality));
+        drawToJpegBlob(img, w, h, quality).then(resolve, reject);
       };
       img.onerror=()=>reject(new Error('invalid image'));
       img.src=e.target.result;
@@ -1117,19 +1130,40 @@ function resizeImageFileLegacy(file, maxDim, quality){
   });
 }
 
+// uploads to the shared Storage bucket (see boarding-pass.html's remoteUpload
+// for the same pattern) and returns the public URL — this is what gets saved
+// as acc.image instead of a base64 string, so the photo is a real file any
+// device can load rather than dead weight baked into the schedule_data row.
+async function uploadAccPhoto(blob){
+  const id=`acc_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+  const path=`planner-photos/${id}.jpg`;
+  const res=await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_PHOTO_BUCKET}/${path}`, {
+    method:'POST',
+    headers:{
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      'Content-Type': 'image/jpeg',
+    },
+    body: blob,
+  });
+  if(!res.ok) throw new Error(`이미지 업로드 실패 (${res.status})`);
+  return `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_PHOTO_BUCKET}/${path}`;
+}
+
 async function handleImgUpload(event){
   const file=event.target.files[0];
   if(!file) return;
   const btn=document.getElementById('fUploadBtn');
   const prevLabel=btn.textContent;
-  btn.textContent='처리 중...';
+  btn.textContent='업로드 중...';
   btn.disabled=true;
   try{
-    const dataUrl=await resizeImageFile(file);
-    document.getElementById('fImg').value=dataUrl;
+    const blob=await resizeImageFile(file);
+    const url=await uploadAccPhoto(blob);
+    document.getElementById('fImg').value=url;
     updateFormPreview();
   }catch(e){
-    alert('이미지를 불러오지 못했어요');
+    alert('이미지 업로드에 실패했어요');
   }finally{
     btn.textContent=prevLabel;
     btn.disabled=false;
