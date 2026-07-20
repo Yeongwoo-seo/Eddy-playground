@@ -30,7 +30,8 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .sub{font-size:14px;color:var(--text-secondary);margin-bottom:28px;line-height:1.6}
 
 .fruit-list{display:flex;flex-direction:column;border-top:1px solid var(--divider)}
-.fruit-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--divider)}
+.fruit-item{border-bottom:1px solid var(--divider)}
+.fruit-row{display:flex;align-items:center;gap:12px;padding:12px 0}
 .fruit-preview{width:46px;height:46px;border-radius:50%;background:var(--surface-1);border:1px solid var(--divider);display:flex;align-items:center;justify-content:center;font-size:22px;overflow:hidden;flex-shrink:0}
 .fruit-preview img{width:100%;height:100%;object-fit:cover}
 .fruit-info{flex:1;min-width:0}
@@ -39,11 +40,18 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .fruit-actions{display:flex;gap:6px;flex-shrink:0}
 .fruit-btn{font-family:var(--mono);font-size:11.5px;font-weight:600;color:#04181c;background:var(--cyan);border:none;border-radius:12px;padding:9px 12px;cursor:pointer;white-space:nowrap}
 .fruit-btn:active{transform:scale(.95)}
-.fruit-remove{font-family:var(--mono);font-size:11.5px;color:var(--text-muted);background:none;border:1px solid var(--divider);border-radius:12px;padding:9px 10px;cursor:pointer;display:none}
-.fruit-remove.show{display:inline-block}
-.fruit-remove:active{opacity:.7}
+.fruit-remove,.fruit-cutout-btn{font-family:var(--mono);font-size:11.5px;color:var(--text-muted);background:none;border:1px solid var(--divider);border-radius:12px;padding:9px 10px;cursor:pointer;display:none}
+.fruit-remove.show,.fruit-cutout-btn.show{display:inline-block}
+.fruit-remove:active,.fruit-cutout-btn:active{opacity:.7}
+.fruit-cutout-btn{color:var(--cyan);border-color:rgba(89,184,200,.4)}
+.fruit-cutout-btn[disabled]{opacity:.5;pointer-events:none}
 .fruit-input-hidden{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 .fruit-error{font-size:11.5px;color:var(--signal-red);margin-top:6px;display:none}
+.fruit-progress{padding:0 0 12px}
+.fruit-progress.hidden{display:none}
+.fruit-progress-text{font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-bottom:6px}
+.fruit-progress-bar{height:5px;border-radius:3px;background:var(--surface-2);overflow:hidden}
+.fruit-progress-fill{height:100%;background:var(--cyan);width:0%;transition:width .2s ease}
 
 .test-btn{margin-top:24px;font-family:var(--mono);font-size:14.5px;font-weight:700;letter-spacing:.04em;color:#08110c;background:var(--green);border:none;border-radius:16px;padding:16px;cursor:pointer;text-align:center;text-decoration:none;display:block}
 .test-btn:active{opacity:.8}
@@ -282,16 +290,23 @@ const errorEl = document.getElementById('fruitError');
 function rowHtml(tierIdx, meta) {
   const dataUrl = images[tierIdx];
   return `
-    <div class="fruit-row">
-      <div class="fruit-preview" id="preview-${tierIdx}">${dataUrl ? `<img src="${dataUrl}" alt="">` : meta.emoji}</div>
-      <div class="fruit-info">
-        <div class="fruit-name">${meta.name} ${meta.emoji}</div>
-        <div class="fruit-status" id="status-${tierIdx}">${dataUrl ? '사진 설정됨' : '기본 이모지'}</div>
+    <div class="fruit-item">
+      <div class="fruit-row">
+        <div class="fruit-preview" id="preview-${tierIdx}">${dataUrl ? `<img src="${dataUrl}" alt="">` : meta.emoji}</div>
+        <div class="fruit-info">
+          <div class="fruit-name">${meta.name} ${meta.emoji}</div>
+          <div class="fruit-status" id="status-${tierIdx}">${dataUrl ? '사진 설정됨' : '기본 이모지'}</div>
+        </div>
+        <div class="fruit-actions">
+          <label class="fruit-btn" for="input-${tierIdx}">사진 설정</label>
+          <input type="file" id="input-${tierIdx}" accept="image/*" class="fruit-input-hidden" data-tier="${tierIdx}">
+          <button type="button" class="fruit-cutout-btn${dataUrl ? ' show' : ''}" id="cutout-${tierIdx}" data-tier="${tierIdx}">누끼</button>
+          <button type="button" class="fruit-remove${dataUrl ? ' show' : ''}" id="remove-${tierIdx}" data-tier="${tierIdx}">제거</button>
+        </div>
       </div>
-      <div class="fruit-actions">
-        <label class="fruit-btn" for="input-${tierIdx}">사진 설정</label>
-        <input type="file" id="input-${tierIdx}" accept="image/*" class="fruit-input-hidden" data-tier="${tierIdx}">
-        <button type="button" class="fruit-remove${dataUrl ? ' show' : ''}" id="remove-${tierIdx}" data-tier="${tierIdx}">제거</button>
+      <div class="fruit-progress hidden" id="fruitProgress-${tierIdx}">
+        <div class="fruit-progress-text" id="fruitProgressText-${tierIdx}"></div>
+        <div class="fruit-progress-bar"><div class="fruit-progress-fill" id="fruitProgressFill-${tierIdx}"></div></div>
       </div>
     </div>
   `;
@@ -302,6 +317,7 @@ function renderList() {
   FRUIT_META.forEach((meta, i) => {
     document.getElementById(`input-${i}`).addEventListener('change', (e) => onUpload(i, e));
     document.getElementById(`remove-${i}`).addEventListener('click', () => onRemove(i));
+    document.getElementById(`cutout-${i}`).addEventListener('click', () => removeFruitBackground(i));
   });
 }
 
@@ -311,6 +327,69 @@ function updateRow(tierIdx) {
   document.getElementById(`preview-${tierIdx}`).innerHTML = dataUrl ? `<img src="${dataUrl}" alt="">` : meta.emoji;
   document.getElementById(`status-${tierIdx}`).textContent = dataUrl ? '사진 설정됨' : '기본 이모지';
   document.getElementById(`remove-${tierIdx}`).classList.toggle('show', !!dataUrl);
+  document.getElementById(`cutout-${tierIdx}`).classList.toggle('show', !!dataUrl);
+}
+
+// AI 배경 제거(누끼) — 모듈은 페이지 로드 시 미리 받아두고, 버튼을 누른
+// 시점엔 준비 여부만 기다린다. 진행률은 라이브러리의 progress 콜백(모델
+// 다운로드/추론 단계별 current/total)을 그대로 프로그레스바에 반영한다.
+window.__removeBackgroundReady = import('https://cdn.jsdelivr.net/npm/@imgly/background-removal/+esm')
+  .then(mod => {
+    if (typeof mod.removeBackground !== 'function') {
+      throw new Error('모듈은 로드됐지만 removeBackground 함수를 찾지 못함 (exports: ' + Object.keys(mod).join(', ') + ')');
+    }
+    window.__removeBackground = mod.removeBackground;
+  })
+  .catch(err => { window.__removeBackgroundLoadError = err; });
+
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('파일을 읽지 못했습니다.'));
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function removeFruitBackground(tierIdx) {
+  const dataUrl = images[tierIdx];
+  if (!dataUrl) return;
+  const btn = document.getElementById(`cutout-${tierIdx}`);
+  const progressWrap = document.getElementById(`fruitProgress-${tierIdx}`);
+  const progressFill = document.getElementById(`fruitProgressFill-${tierIdx}`);
+  const progressText = document.getElementById(`fruitProgressText-${tierIdx}`);
+  const prevLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '처리 중...';
+  progressWrap.classList.remove('hidden');
+  progressFill.style.width = '0%';
+  progressText.textContent = '배경 제거 모듈 확인 중...';
+  errorEl.style.display = 'none';
+  try {
+    await window.__removeBackgroundReady;
+    if (!window.__removeBackground) {
+      const reason = window.__removeBackgroundLoadError;
+      throw new Error('배경 제거 모듈 로드 실패: ' + (reason && reason.message ? reason.message : '네트워크 또는 CDN 문제로 모듈을 불러오지 못했습니다.'));
+    }
+    const sourceBlob = await (await fetch(dataUrl)).blob();
+    const resultBlob = await window.__removeBackground(sourceBlob, {
+      progress: (key, current, total) => {
+        const pct = total ? Math.round(current / total * 100) : 0;
+        progressFill.style.width = pct + '%';
+        progressText.textContent = '배경 제거 중... ' + pct + '%';
+      }
+    });
+    images[tierIdx] = await blobToDataUrl(resultBlob);
+    saveImages(images);
+    updateRow(tierIdx);
+  } catch (err) {
+    errorEl.textContent = '배경 제거 실패: ' + (err && err.message ? err.message : err);
+    errorEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = prevLabel;
+    progressWrap.classList.add('hidden');
+  }
 }
 
 function onUpload(tierIdx, e) {
