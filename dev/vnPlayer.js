@@ -29,7 +29,7 @@
      own black-overlay/background-swap beat. Tapping is ignored for the
      duration, same as an in-flight pauseBeforeMs delay. */
 
-const DEFAULT_TYPING_SPEED_MS = 28;
+const DEFAULT_TYPING_SPEED_MS = 36;
 
 function createVNPlayer({ onLineChange, onTextUpdate, onArrow, onComplete, onEffect, onChoicePrompt, onEvidencePrompt, onEvidenceResult, onSceneTransition }) {
   let lines = [];

@@ -1158,7 +1158,7 @@ function showAutoplayComplete() {
 // Text speed is applied by filling in each line's typingSpeedMs where the
 // scene data didn't already author one — vnPlayer.js itself reads
 // line.typingSpeedMs per line, so no change to the shared engine is needed.
-const TEXT_SPEED_MS = { slow: 45, normal: 28, fast: 14, instant: 1 };
+const TEXT_SPEED_MS = { slow: 58, normal: 36, fast: 18, instant: 1 };
 function applyTextSpeedSetting(lines) {
   const speedMs = TEXT_SPEED_MS[CaseFileState.getSettings().textSpeed] || TEXT_SPEED_MS.normal;
   return lines.map(l => Object.assign({}, l, { typingSpeedMs: l.typingSpeedMs || speedMs }));
