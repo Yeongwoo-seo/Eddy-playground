@@ -29,6 +29,9 @@ body.sheet-open{overflow:hidden}
 .top-title{font-size:20px;font-weight:800}
 .top-sub{font-size:13px;color:var(--grey500);font-weight:500;margin:-14px 0 18px 2px}
 
+.group{margin-bottom:20px}
+.group-title{font-size:15px;font-weight:700;color:var(--grey700);margin-bottom:8px;padding-left:2px}
+.group-title .dday{color:var(--primary);font-weight:800}
 .seg-card{background:var(--white);border-radius:20px;box-shadow:0 2px 12px rgba(0,0,0,0.06);overflow:hidden}
 .seg-item{display:flex;align-items:center;gap:12px;padding:16px;border-bottom:1px solid var(--grey100);cursor:pointer;font-family:inherit;background:none;border-left:none;border-right:none;border-top:none;width:100%;text-align:left}
 .seg-item:last-child{border-bottom:none}
@@ -36,7 +39,6 @@ body.sheet-open{overflow:hidden}
 .seg-ic{font-size:20px;flex-shrink:0;width:26px;text-align:center}
 .seg-txt{flex:1;min-width:0}
 .seg-route{font-size:14.5px;font-weight:700}
-.seg-date{font-size:12px;color:var(--grey500);font-weight:600;margin-top:2px}
 .seg-status{font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:20px;flex-shrink:0}
 .seg-status.done{background:var(--primary-light);color:var(--primary)}
 .seg-status.pending{background:var(--grey100);color:var(--grey500)}
@@ -62,6 +64,7 @@ body.sheet-open{overflow:hidden}
 .upload-btn{background:var(--primary);color:#fff;border:none;border-radius:16px;padding:14px 28px;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit}
 .upload-btn:active{background:var(--primary-hover)}
 .upload-error{color:#D94141;font-size:12.5px;font-weight:600;margin-top:4px}
+.upload-progress{font-size:12.5px;color:var(--grey500);font-weight:600;margin-top:4px}
 
 .pdf-wrap{flex:1;border-radius:16px;overflow:hidden;display:flex;min-height:0;background:var(--grey100)}
 .pdf-wrap iframe{flex:1;width:100%;border:none}
@@ -76,51 +79,101 @@ body.sheet-open{overflow:hidden}
   </div>
   <div class="top-sub">구간을 눌러 PDF를 올리거나 확인해요</div>
 
-  <div class="seg-card" id="segList"></div>
+  <div id="groupList"></div>
 </div>
 <div id="sheetRoot"></div>
 <input type="file" id="fileInput" accept="application/pdf" style="display:none">
 <script>
-// 왕복 경유 포함 4개 구간 — 서울-상하이-시드니(7.22 출발), 시드니-상하이-서울(8.17 귀국)
-const SEGMENTS = [
-  { id: 'sel-pvg', icon: '🛫', route: '서울 → 상하이', date: '' },
-  { id: 'pvg-syd', icon: '🛫', route: '상하이 → 시드니', date: '7.22' },
-  { id: 'syd-pvg', icon: '🛬', route: '시드니 → 상하이', date: '' },
-  { id: 'pvg-sel', icon: '🛬', route: '상하이 → 서울', date: '8.17' },
+// 왕복 경유 포함 4개 구간 — 7.22 출국 2구간(서울-상하이, 상하이-시드니),
+// 8.17 귀국 2구간(시드니-상하이, 상하이-서울)으로 묶어서 보여준다.
+const GROUPS = [
+  { date: '7.22', label: '출국', segments: [
+    { id: 'sel-pvg', icon: '🛫', route: '서울 → 상하이' },
+    { id: 'pvg-syd', icon: '🛫', route: '상하이 → 시드니' },
+  ] },
+  { date: '8.17', label: '귀국', segments: [
+    { id: 'syd-pvg', icon: '🛬', route: '시드니 → 상하이' },
+    { id: 'pvg-sel', icon: '🛬', route: '상하이 → 서울' },
+  ] },
 ];
+const SEGMENTS = GROUPS.flatMap(g => g.segments.map(s => ({ ...s, date: g.date })));
 
-function pdfKey(id) { return `boardingPassPdfV1_${id}`; }
-function nameKey(id) { return `boardingPassNameV1_${id}`; }
+// IndexedDB instead of localStorage — real boarding-pass PDFs run 5MB+ each
+// and there are 4 of them, which blows past localStorage's ~5-10MB per-origin
+// quota (especially once base64-encoded, +33% on top). IndexedDB's quota is
+// effectively disk-sized, and storing the File/Blob directly (no base64
+// round-trip) also avoids that encoding overhead entirely.
+const DB_NAME = 'boardingPassDB';
+const STORE_NAME = 'pdfs';
+let dbPromise = null;
+function openDb() {
+  if (dbPromise) return dbPromise;
+  dbPromise = new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(STORE_NAME);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+  return dbPromise;
+}
+async function dbGet(id) {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const req = db.transaction(STORE_NAME, 'readonly').objectStore(STORE_NAME).get(id);
+    req.onsuccess = () => resolve(req.result || null);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function dbSet(id, value) {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    tx.objectStore(STORE_NAME).put(value, id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
 
 const el = {
-  segList: document.getElementById('segList'),
+  groupList: document.getElementById('groupList'),
   sheetRoot: document.getElementById('sheetRoot'),
   fileInput: document.getElementById('fileInput'),
 };
 
 let activeSegId = null;
-const MAX_PDF_BYTES = 4 * 1024 * 1024;
+let activeObjectUrl = null; // revoked on every re-render so blob URLs don't pile up
+// Boarding-pass PDFs (often the full e-ticket, not just the pass page) run
+// a few MB each — 20MB comfortably covers that with headroom.
+const MAX_PDF_BYTES = 20 * 1024 * 1024;
 
 function escapeHtml(s) {
   return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-function renderSegList() {
-  el.segList.innerHTML = SEGMENTS.map(seg => {
-    const has = !!localStorage.getItem(pdfKey(seg.id));
-    return `
-      <button type="button" class="seg-item" data-id="${seg.id}">
-        <div class="seg-ic">${seg.icon}</div>
-        <div class="seg-txt">
-          <div class="seg-route">${escapeHtml(seg.route)}</div>
-          ${seg.date ? `<div class="seg-date">${escapeHtml(seg.date)}</div>` : ''}
-        </div>
-        <div class="seg-status ${has ? 'done' : 'pending'}">${has ? '등록됨' : '미등록'}</div>
-        <div class="seg-arrow">›</div>
-      </button>
-    `;
-  }).join('');
-  el.segList.querySelectorAll('.seg-item').forEach(btn => {
+async function renderGroupList() {
+  const statuses = await Promise.all(SEGMENTS.map(seg => dbGet(seg.id)));
+  const statusById = new Map(SEGMENTS.map((seg, i) => [seg.id, !!statuses[i]]));
+  el.groupList.innerHTML = GROUPS.map(g => `
+    <div class="group">
+      <div class="group-title"><span class="dday">${escapeHtml(g.date)}</span> · ${escapeHtml(g.label)}</div>
+      <div class="seg-card">
+        ${g.segments.map(seg => {
+          const has = statusById.get(seg.id);
+          return `
+            <button type="button" class="seg-item" data-id="${seg.id}">
+              <div class="seg-ic">${seg.icon}</div>
+              <div class="seg-txt">
+                <div class="seg-route">${escapeHtml(seg.route)}</div>
+              </div>
+              <div class="seg-status ${has ? 'done' : 'pending'}">${has ? '등록됨' : '미등록'}</div>
+              <div class="seg-arrow">›</div>
+            </button>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `).join('');
+  el.groupList.querySelectorAll('.seg-item').forEach(btn => {
     btn.addEventListener('click', () => openSheet(btn.dataset.id));
   });
 }
@@ -134,37 +187,40 @@ function closeSheet() {
   activeSegId = null;
   document.body.classList.remove('sheet-open');
   el.sheetRoot.innerHTML = '';
+  if (activeObjectUrl) { URL.revokeObjectURL(activeObjectUrl); activeObjectUrl = null; }
 }
 
-function renderSheet(errorText) {
+async function renderSheet(statusText) {
   const seg = SEGMENTS.find(s => s.id === activeSegId);
   if (!seg) return;
-  const dataUrl = localStorage.getItem(pdfKey(seg.id));
-  const name = localStorage.getItem(nameKey(seg.id));
+  if (activeObjectUrl) { URL.revokeObjectURL(activeObjectUrl); activeObjectUrl = null; }
+  const rec = await dbGet(seg.id);
+  if (rec) activeObjectUrl = URL.createObjectURL(rec.blob);
   el.sheetRoot.innerHTML = `
     <div class="pdf-sheet-overlay" onclick="if(event.target===this) closeSheet()">
       <div class="pdf-sheet" onclick="event.stopPropagation()">
         <div class="pdf-sheet-hdr">
           <div class="pdf-sheet-title-wrap">
             <div class="pdf-sheet-title">${seg.icon} ${escapeHtml(seg.route)}</div>
-            ${seg.date ? `<div class="pdf-sheet-date">${escapeHtml(seg.date)}</div>` : ''}
+            <div class="pdf-sheet-date">${escapeHtml(seg.date)}</div>
           </div>
           <div class="pdf-sheet-actions">
-            ${dataUrl ? `<button class="reupload-btn" onclick="el.fileInput.click()">다시 올리기</button>` : ''}
+            ${rec ? `<button class="reupload-btn" onclick="el.fileInput.click()">다시 올리기</button>` : ''}
             <button class="pdf-sheet-x" onclick="closeSheet()">✕</button>
           </div>
         </div>
         <div class="pdf-sheet-body">
-          ${dataUrl ? `
-            <div class="pdf-wrap"><iframe src="${dataUrl}" title="탑승권 PDF"></iframe></div>
-            ${name ? `<div class="file-name-row">${escapeHtml(name)}</div>` : ''}
+          ${rec ? `
+            <div class="pdf-wrap"><iframe src="${activeObjectUrl}" title="탑승권 PDF"></iframe></div>
+            ${rec.name ? `<div class="file-name-row">${escapeHtml(rec.name)}</div>` : ''}
           ` : `
             <div class="empty-wrap">
               <div class="empty-ic">${seg.icon}</div>
               <div class="empty-title">아직 등록된 탑승권이 없어요</div>
               <div class="empty-sub">이 구간의 항공권 PDF를 올려두면 언제든 바로 열어볼 수 있어요.<br>저장된 내용은 이 기기에만 남아요.</div>
               <button class="upload-btn" onclick="el.fileInput.click()">📎 PDF 올리기</button>
-              ${errorText ? `<div class="upload-error">${escapeHtml(errorText)}</div>` : ''}
+              ${statusText && statusText.error ? `<div class="upload-error">${escapeHtml(statusText.error)}</div>` : ''}
+              ${statusText && statusText.busy ? `<div class="upload-progress">저장하는 중...</div>` : ''}
             </div>
           `}
         </div>
@@ -173,33 +229,23 @@ function renderSheet(errorText) {
   `;
 }
 
-function fileToDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
 async function handleFile(file) {
   if (!file || !activeSegId) return;
-  if (file.type !== 'application/pdf') { renderSheet('PDF 파일만 올릴 수 있어요.'); return; }
-  if (file.size > MAX_PDF_BYTES) { renderSheet(`파일이 너무 커요 (최대 ${Math.floor(MAX_PDF_BYTES / 1024 / 1024)}MB).`); return; }
+  if (file.type !== 'application/pdf') { renderSheet({ error: 'PDF 파일만 올릴 수 있어요.' }); return; }
+  if (file.size > MAX_PDF_BYTES) { renderSheet({ error: `파일이 너무 커요 (최대 ${Math.floor(MAX_PDF_BYTES / 1024 / 1024)}MB).` }); return; }
   try {
-    const dataUrl = await fileToDataUrl(file);
-    localStorage.setItem(pdfKey(activeSegId), dataUrl);
-    localStorage.setItem(nameKey(activeSegId), file.name);
-    renderSheet();
-    renderSegList();
+    renderSheet({ busy: true });
+    await dbSet(activeSegId, { name: file.name, blob: file });
+    await renderSheet();
+    await renderGroupList();
   } catch (err) {
-    renderSheet('저장에 실패했어요: ' + (err && err.message ? err.message : err));
+    renderSheet({ error: '저장에 실패했어요: ' + (err && err.message ? err.message : err) });
   }
 }
 
 el.fileInput.addEventListener('change', (e) => { handleFile(e.target.files[0]); e.target.value = ''; });
 
-renderSegList();
+renderGroupList();
 
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js', { scope: '.' });
