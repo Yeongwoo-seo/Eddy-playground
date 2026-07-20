@@ -1,6 +1,6 @@
-# 0주차 (ARRIVAL) — 스토리라인 & 대사
+# 1주차 (ARRIVAL) — 스토리라인 & 대사
 
-> 출처: `dev/dialogueData.js` (week0Scenes). 자동 생성 — 원본이 바뀌면 다시 뽑아야 합니다.
+> 출처: `dev/dialogueData.js` (week1Scenes). 자동 생성 — 원본이 바뀌면 다시 뽑아야 합니다.
 
 ## 줄거리 요약
 
@@ -14,26 +14,26 @@
 
 | # | id | 이름 |
 |---|---|---|
-| 1 | `week0-scene-flight` | 시드니 상공 · 진짜 왔네 |
-| 2 | `week0-scene-001-2` | 시드니 지리 파악 · 지하철 지도 튜토리얼 |
-| 3 | `week0-scene-001-2-minigame` | 시드니 지리 파악 (미니게임) |
-| 4 | `week0-scene-train` | 열차 — 지도에서 현실로 |
-| 5 | `week0-scene-shop-intro` | 더 록스 · 작은 편집숍 발견 |
-| 6 | `week0-scene-shop-visit` | 옷가게 튜토리얼 |
-| 7 | `week0-scene-circular-quay` | 서큘러키 · 사진과 낚시 제안 |
-| 8 | `week0-scene-circular-quay-minigame` | 서큘러키 낚시 |
-| 9 | `week0-scene-002-1` | 낚시 수익 정산 · 진짜 같이 있네 · 사라진 폰 |
-| 10 | `week0-scene-002-2` | 핸드폰을 찾아라 |
-| 11 | `week0-scene-002-3` | 근데 이 열쇠 뭐지? · 집주인과의 통화 · 첫날 밤 |
+| 1 | `week1-scene-flight` | 시드니 상공 · 진짜 왔네 |
+| 2 | `week1-scene-001-2` | 시드니 지리 파악 · 지하철 지도 튜토리얼 |
+| 3 | `week1-scene-001-2-minigame` | 시드니 지리 파악 (미니게임) |
+| 4 | `week1-scene-train` | 열차 — 지도에서 현실로 |
+| 5 | `week1-scene-shop-intro` | 더 록스 · 작은 편집숍 발견 |
+| 6 | `week1-scene-shop-visit` | 옷가게 튜토리얼 |
+| 7 | `week1-scene-circular-quay` | 서큘러키 · 사진과 낚시 제안 |
+| 8 | `week1-scene-circular-quay-minigame` | 서큘러키 낚시 |
+| 9 | `week1-scene-002-1` | 낚시 수익 정산 · 진짜 같이 있네 · 사라진 폰 |
+| 10 | `week1-scene-002-2` | 핸드폰을 찾아라 |
+| 11 | `week1-scene-002-3` | 근데 이 열쇠 뭐지? · 집주인과의 통화 · 첫날 밤 |
 
 ---
 
 ## 1. 시드니 상공 · 진짜 왔네
 
-- **id**: `week0-scene-flight`
+- **id**: `week1-scene-flight`
 - **장소**: In Flight
 - **시간**: 착륙 10분 전
-- **다음**: `week0-scene-001-2`
+- **다음**: `week1-scene-001-2`
 
 > 시드니 상공.  
 > 착륙 10분 전.
@@ -100,10 +100,10 @@
 
 ## 2. 시드니 지리 파악 · 지하철 지도 튜토리얼
 
-- **id**: `week0-scene-001-2`
+- **id**: `week1-scene-001-2`
 - **장소**: Sydney Airport Station
 - **시간**: 09:45
-- **다음**: `week0-scene-001-2-minigame`
+- **다음**: `week1-scene-001-2-minigame`
 
 > 공항 도착층을 빠져나온 두 사람은  
 > 열차 표지판과 시드니 광역 지도가 있는 안내판 앞에 멈춰 섰다.
@@ -207,7 +207,7 @@
 
 ## 3. 시드니 지리 파악 (미니게임)
 
-- **id**: `week0-scene-001-2-minigame`
+- **id**: `week1-scene-001-2-minigame`
 - **장소**: Sydney Airport Station
 - **시간**: 09:50
 - **미니게임/화면 전환**: `/dev/minigame-eastwood/` (대사 없음)
@@ -217,10 +217,10 @@
 
 ## 4. 열차 — 지도에서 현실로
 
-- **id**: `week0-scene-train`
+- **id**: `week1-scene-train`
 - **장소**: Sydney Trains
 - **시간**: 10:05
-- **다음**: `week0-scene-shop-intro`
+- **다음**: `week1-scene-shop-intro`
 
 **지수**: 오오.  
 이제 좀 감 잡았어요.
@@ -271,10 +271,10 @@
 
 ## 5. 더 록스 · 작은 편집숍 발견
 
-- **id**: `week0-scene-shop-intro`
+- **id**: `week1-scene-shop-intro`
 - **장소**: The Rocks Lane
 - **시간**: 10:40
-- **다음**: `week0-scene-shop-visit`
+- **다음**: `week1-scene-shop-visit`
 
 > The Rocks 골목.  
 > 오전 10시 40분.
@@ -339,7 +339,7 @@
 
 ## 6. 옷가게 튜토리얼
 
-- **id**: `week0-scene-shop-visit`
+- **id**: `week1-scene-shop-visit`
 - **장소**: The Rocks Boutique
 - **시간**: 10:50
 - **미니게임/화면 전환**: `/dev/shop/` (대사 없음)
@@ -349,10 +349,10 @@
 
 ## 7. 서큘러키 · 사진과 낚시 제안
 
-- **id**: `week0-scene-circular-quay`
+- **id**: `week1-scene-circular-quay`
 - **장소**: Circular Quay Waterfront
 - **시간**: 11:00
-- **다음**: `week0-scene-circular-quay-minigame`
+- **다음**: `week1-scene-circular-quay-minigame`
 
 > Circular Quay 워터프론트.  
 > 오전 11시.
@@ -442,7 +442,7 @@
 
 ## 8. 서큘러키 낚시
 
-- **id**: `week0-scene-circular-quay-minigame`
+- **id**: `week1-scene-circular-quay-minigame`
 - **장소**: Circular Quay Waterfront
 - **시간**: 11:30
 - **미니게임/화면 전환**: `/dev/minigame-fishing/play/` (대사 없음)
@@ -452,10 +452,10 @@
 
 ## 9. 낚시 수익 정산 · 진짜 같이 있네 · 사라진 폰
 
-- **id**: `week0-scene-002-1`
+- **id**: `week1-scene-002-1`
 - **장소**: Eastwood Accommodation
 - **시간**: 13:40
-- **다음**: `week0-scene-002-2`
+- **다음**: `week1-scene-002-2`
 
 > 숙소.  
 > 오후 1시 40분.
@@ -577,7 +577,7 @@
 
 ## 10. 핸드폰을 찾아라
 
-- **id**: `week0-scene-002-2`
+- **id**: `week1-scene-002-2`
 - **장소**: Eastwood Accommodation
 - **시간**: 20:35
 - **미니게임/화면 전환**: `/dev/minigame-phone-search/` (대사 없음)
@@ -587,7 +587,7 @@
 
 ## 11. 근데 이 열쇠 뭐지? · 집주인과의 통화 · 첫날 밤
 
-- **id**: `week0-scene-002-3`
+- **id**: `week1-scene-002-3`
 - **장소**: Eastwood Accommodation
 - **시간**: 20:40
 
@@ -774,6 +774,6 @@
 > 협탁 위,  
 > 작은 황동 열쇠만이 조용히 남아 있었다.
 > [ M.K. ]
-> 0주차 종료.
+> 1주차 종료.
 
 ---

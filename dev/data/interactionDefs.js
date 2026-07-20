@@ -1,6 +1,6 @@
 /* OPERATION MK DEV — 상호작용 정의 (The Missing Key v1 §7.3/§7.4/§14.7).
    Static catalog read by explorationState.js + play/explore/index.html.
-   First content slice: 1주차 Phase 1 관광 자유 탐색 (§12.2 "관광 자유 탐색
+   First content slice: 2주차 Phase 1 관광 자유 탐색 (§12.2 "관광 자유 탐색
    상세"). Dialogue lines are authored inline here (not in dev/dialogueData.js)
    since this hub content doesn't correspond to any existing scripted scene —
    it's genuinely new material for the free-roam beat the spec describes,
@@ -14,20 +14,20 @@
    location is reached), since Phase 1 tourism has no investigation gating
    yet by design (§12.2 — sightseeing is free-form).
 
-   "사전 복선" 패턴 (아래 w1ov-topic-crop 근처 주석 참고, 검토 답변서 반영판
+   "사전 복선" 패턴 (아래 w2ov-topic-crop 근처 주석 참고, 검토 답변서 반영판
    — 최초 버전은 "수상한 사람 4명"이었으나 실제 사건 타임라인과 안 맞는
    레드헤링이라 폐기됨) — 사건이 아직 일어나지 않은 자유 탐색 구간에서
    setFlag만으로 "봤다는 기억"만 남기는 재사용 가능한 관례. addQuestion은
    쓰지 않는다 — 넷 다 같은 무게의 CASE FILE 의문점으로 등록되면 플레이어가
    "이번 주차 안에 넷 다 풀리겠구나"라고 오해하게 된다. 대신 각 장소가 실제
    사건 구조(관계자 진술서 참고)의 서로 다른 한 조각을 조용히 미리 보여주고,
-   회수는 나중에(있다면) 그 조각이 이미 의미를 가진 시점에 일어난다. 1주차
+   회수는 나중에(있다면) 그 조각이 이미 의미를 가진 시점에 일어난다. 2주차
    전용이 아니라 이 파일/explorationState.js 구조 자체가 범용이므로, 다음
    주차에서 같은 성격의 구간을 쓸 때도 그대로 따라 쓰면 된다. */
 
 const interactionDefs = {
-  // Phase 진입 시 자동 재생되는 도입 대화 (§신규) — 예전엔 week1-scene-002라는
-  // 별도 VN 씬(dev/dialogueData.js, locationDefs.js의 w1-circular-quay.
+  // Phase 진입 시 자동 재생되는 도입 대화 (§신규) — 예전엔 week2-scene-002라는
+  // 별도 VN 씬(dev/dialogueData.js, locationDefs.js의 w2-circular-quay.
   // firstVisitSceneId로 /play/game까지 갔다 오던 구조)이었지만, 탐색허브
   // 진입 흐름 전체가 이미 허브 안에 있으므로 이 내용도 허브 네이티브
   // 콘텐츠로 옮겼다 — 대사/선택지/효과는 그대로, 그릇만 옮겨졌다(사진 포즈
@@ -38,10 +38,10 @@ const interactionDefs = {
   // 화면으로 이어지므로(더 이상 다른 페이지로 나가는 흐름이 아니므로),
   // 원래 wander-more 선택지에 있던 returnToExploration 이펙트는 뺐다 — see
   // performMove()/playSceneInline() in play/explore/index.html.
-  'w1-phase1-intro': {
-    id: 'w1-phase1-intro',
+  'w2-phase1-intro': {
+    id: 'w2-phase1-intro',
     type: 'phaseIntro',
-    phases: ['W1_TOURISM'],
+    phases: ['W2_TOURISM'],
     lines: [
       { id: 'line-001', speaker: '', text: 'Circular Quay.\n오전 10시 15분.', characterId: null },
       { id: 'line-002', speaker: '', text: '오페라하우스와 하버브리지가 한눈에 들어온다.', characterId: null },
@@ -101,11 +101,11 @@ const interactionDefs = {
       { id: 'line-017', speaker: '지수', text: '웅웅 잠깐만 보고 가요.', characterId: 'jisoo', expression: 'happy' },
     ],
   },
-  'w1cq-topic-ferries': {
-    id: 'w1cq-topic-ferries',
+  'w2cq-topic-ferries': {
+    id: 'w2cq-topic-ferries',
     characterId: 'youngwoo',
-    locationIds: ['w1-circular-quay'],
-    phases: ['W1_TOURISM'],
+    locationIds: ['w2-circular-quay'],
+    phases: ['W2_TOURISM'],
     type: 'topic',
     label: '페리 구경하기',
     lines: [
@@ -115,11 +115,11 @@ const interactionDefs = {
       { speaker: '영우', text: '담에 시간 맞으면 타러 가자.', characterId: 'youngwoo', expression: 'soft' },
     ],
   },
-  'w1cq-topic-buskers': {
-    id: 'w1cq-topic-buskers',
+  'w2cq-topic-buskers': {
+    id: 'w2cq-topic-buskers',
     characterId: 'youngwoo',
-    locationIds: ['w1-circular-quay'],
-    phases: ['W1_TOURISM'],
+    locationIds: ['w2-circular-quay'],
+    phases: ['W2_TOURISM'],
     type: 'topic',
     label: '버스커 구경하기',
     lines: [
@@ -129,11 +129,11 @@ const interactionDefs = {
       { speaker: '지수', text: '분위기 좋다.', characterId: 'jisoo', expression: 'soft' },
     ],
   },
-  'w1ov-topic-building': {
-    id: 'w1ov-topic-building',
+  'w2ov-topic-building': {
+    id: 'w2ov-topic-building',
     characterId: 'youngwoo',
-    locationIds: ['w1-opera-view'],
-    phases: ['W1_TOURISM'],
+    locationIds: ['w2-opera-view'],
+    phases: ['W2_TOURISM'],
     type: 'topic',
     label: '오페라하우스 감상하기',
     lines: [
@@ -146,37 +146,37 @@ const interactionDefs = {
   // routed page instead of playing inline lines (see play/explore/index.html's
   // playInteraction). Points-bearing and reusable any number of times, but
   // only pays out once (EconomyState.claimReward inside the minigame itself).
-  'w1ov-minigame-photo': {
-    id: 'w1ov-minigame-photo',
+  'w2ov-minigame-photo': {
+    id: 'w2ov-minigame-photo',
     characterId: 'youngwoo',
-    locationIds: ['w1-opera-view'],
-    phases: ['W1_TOURISM'],
+    locationIds: ['w2-opera-view'],
+    phases: ['W2_TOURISM'],
     type: 'minigame',
     label: '사진 찍기 (하버 포토)',
     icon: '📷',
     route: '/dev/minigame-harbour-photo/?bg=opera',
   },
-  // ===== "사전 복선" 패턴 (1주차 장편 확장 v3, 검토 답변서 반영판) =====
+  // ===== "사전 복선" 패턴 (2주차 장편 확장 v3, 검토 답변서 반영판) =====
   // 재사용 가능한 일반 패턴 — 특정 사건이 아직 일어나지 않은 자유 탐색
   // 단계(Phase)의 관광/탐색 장소마다 실제 사건 구조의 한 조각을 조용히
   // 미리 보여준다. addQuestion은 쓰지 않고 setFlag만 쓴다(§22 idiom) — "이건
   // 정답이다"라는 게임의 확언 없이, 그냥 지나가는 관광 디테일처럼 보이는 게
   // 핵심이다. 지수/영우 둘 다 결론을 내리지 않는다. 다음 주차들도 사건 발생
   // 전 자유 탐색 구간이 있다면 이 패턴(topic 상호작용 + setFlag 효과, id는
-  // 'w2-'/'w3-'/'w4-' 등 해당 주차 프리픽스)을 그대로 따라 쓰면 된다 — 1주차
+  // 'w2-'/'w3-'/'w4-' 등 해당 주차 프리픽스)을 그대로 따라 쓰면 된다 — 2주차
   // 전용 메커니즘이 아니라 이 파일/explorationState.js 어디에도 주차
   // 하드코딩이 없는 범용 구조다.
   //
   // 오페라하우스 — 사진 크롭 튜토리얼. 레오가 나중에 공개하는 "크롭된 참고
-  // 이미지"(evidence-leo-reference-image, week1-scene-008)가 윤민아의 원본
+  // 이미지"(evidence-leo-reference-image, week2-scene-008)가 윤민아의 원본
   // 사진에서 맥락(주변 인물·간판)만 잘려나간 것이었다는 걸, 플레이어가 여기서
   // 미리 "크롭하면 원본의 맥락이 사라진다"는 걸 직접 해봐서 체감하게 한다.
   // 사건 단서로 표시하면 안 되므로 flag만 남기고 question/evidence는 없다.
-  'w1ov-topic-crop': {
-    id: 'w1ov-topic-crop',
+  'w2ov-topic-crop': {
+    id: 'w2ov-topic-crop',
     characterId: 'youngwoo',
-    locationIds: ['w1-opera-view'],
-    phases: ['W1_TOURISM'],
+    locationIds: ['w2-opera-view'],
+    phases: ['W2_TOURISM'],
     type: 'topic',
     label: '사진 잘라보기',
     lines: [
@@ -187,11 +187,11 @@ const interactionDefs = {
     ],
     effects: [{ type: 'setFlag', key: 'completedW1CropTutorial', value: true }],
   },
-  'w1bv-topic-bridge': {
-    id: 'w1bv-topic-bridge',
+  'w2bv-topic-bridge': {
+    id: 'w2bv-topic-bridge',
     characterId: 'youngwoo',
-    locationIds: ['w1-bridge-view'],
-    phases: ['W1_TOURISM'],
+    locationIds: ['w2-bridge-view'],
+    phases: ['W2_TOURISM'],
     type: 'topic',
     label: '다리 구경하기',
     lines: [
@@ -201,11 +201,11 @@ const interactionDefs = {
       { speaker: '영우', text: '다음에 예약해서 같이 가자.', characterId: 'youngwoo', expression: 'soft' },
     ],
   },
-  'w1bv-topic-memory': {
-    id: 'w1bv-topic-memory',
+  'w2bv-topic-memory': {
+    id: 'w2bv-topic-memory',
     characterId: 'youngwoo',
-    locationIds: ['w1-bridge-view'],
-    phases: ['W1_TOURISM'],
+    locationIds: ['w2-bridge-view'],
+    phases: ['W2_TOURISM'],
     type: 'topic',
     label: '영우와 추억 이야기하기',
     lines: [
@@ -215,25 +215,25 @@ const interactionDefs = {
       { speaker: '지수', text: '...\n지금 진짜 반칙이에요.', characterId: 'jisoo', expression: 'blank', pauseBeforeMs: 400 },
     ],
   },
-  'w1bv-minigame-photo': {
-    id: 'w1bv-minigame-photo',
+  'w2bv-minigame-photo': {
+    id: 'w2bv-minigame-photo',
     characterId: 'youngwoo',
-    locationIds: ['w1-bridge-view'],
-    phases: ['W1_TOURISM'],
+    locationIds: ['w2-bridge-view'],
+    phases: ['W2_TOURISM'],
     type: 'minigame',
     label: '사진 찍기 (하버 포토)',
     icon: '📷',
     route: '/dev/minigame-harbour-photo/?bg=bridge',
   },
   // 하버브리지 — 대기 중인 서비스 밴. 범죄 영화처럼 강조하지 않고, 그냥
-  // 배경에 있는 밴으로 지나간다 — Phase 4의 w1sh-topic-van-recall(unlockCond:
+  // 배경에 있는 밴으로 지나간다 — Phase 4의 w2sh-topic-van-recall(unlockCond:
   // 이 flag + evidence-service-magnet-missing)에서만 선택적으로 회수되는
   // "선택형 보강 증거"로 취급한다(필수 아님).
-  'w1bv-topic-van': {
-    id: 'w1bv-topic-van',
+  'w2bv-topic-van': {
+    id: 'w2bv-topic-van',
     characterId: 'youngwoo',
-    locationIds: ['w1-bridge-view'],
-    phases: ['W1_TOURISM'],
+    locationIds: ['w2-bridge-view'],
+    phases: ['W2_TOURISM'],
     type: 'topic',
     label: '서비스 밴 발견하기',
     lines: [
@@ -244,11 +244,11 @@ const interactionDefs = {
     ],
     effects: [{ type: 'setFlag', key: 'discoveredBridgeVan', value: true }],
   },
-  'w1rl-topic-vintage': {
-    id: 'w1rl-topic-vintage',
+  'w2rl-topic-vintage': {
+    id: 'w2rl-topic-vintage',
     characterId: 'youngwoo',
-    locationIds: ['w1-the-rocks-lane'],
-    phases: ['W1_TOURISM'],
+    locationIds: ['w2-the-rocks-lane'],
+    phases: ['W2_TOURISM'],
     type: 'topic',
     label: '골목 구경하기',
     lines: [
@@ -257,11 +257,11 @@ const interactionDefs = {
       { speaker: '지수', text: '그래서 그런지 골목 느낌이 다르네.', characterId: 'jisoo', expression: 'curious' },
     ],
   },
-  'w1rl-topic-exhibition-spot': {
-    id: 'w1rl-topic-exhibition-spot',
+  'w2rl-topic-exhibition-spot': {
+    id: 'w2rl-topic-exhibition-spot',
     characterId: 'youngwoo',
-    locationIds: ['w1-the-rocks-lane'],
-    phases: ['W1_TOURISM'],
+    locationIds: ['w2-the-rocks-lane'],
+    phases: ['W2_TOURISM'],
     type: 'topic',
     label: '팝업 전시장 발견하기',
     lines: [
@@ -274,14 +274,14 @@ const interactionDefs = {
   // 더 록스 골목 — 서비스 자석으로 열리는 직원 통용문을 목격. 새 용의자를
   // 만들지 않고, 정상적인 직원의 평범한 출입 장면으로 처리한다. 레오가 실제로
   // 쓴 개방 수단(서비스 자석, evidence-service-magnet-missing —
-  // week1-scene-008/009a에서 이미 스크립트된 반전)을 사건 전에 미리 눈에
+  // week2-scene-008/009a에서 이미 스크립트된 반전)을 사건 전에 미리 눈에
   // 익혀두는 역할 — 별도 회수 지점은 없다(그 반전 자체가 이미 존재하는
   // 스토리이므로 이 파일에서 추가로 연결할 게 없음).
-  'w1rl-topic-magnet': {
-    id: 'w1rl-topic-magnet',
+  'w2rl-topic-magnet': {
+    id: 'w2rl-topic-magnet',
     characterId: 'youngwoo',
-    locationIds: ['w1-the-rocks-lane'],
-    phases: ['W1_TOURISM'],
+    locationIds: ['w2-the-rocks-lane'],
+    phases: ['W2_TOURISM'],
     type: 'topic',
     label: '직원 통용문 여는 모습 보기',
     lines: [
@@ -293,11 +293,11 @@ const interactionDefs = {
     ],
     effects: [{ type: 'setFlag', key: 'noticedServiceMagnet', value: true }],
   },
-  'w1ee-topic-outside': {
-    id: 'w1ee-topic-outside',
+  'w2ee-topic-outside': {
+    id: 'w2ee-topic-outside',
     characterId: 'youngwoo',
-    locationIds: ['w1-exhibition-entrance'],
-    phases: ['W1_TOURISM'],
+    locationIds: ['w2-exhibition-entrance'],
+    phases: ['W2_TOURISM'],
     type: 'topic',
     label: '입구에서 둘러보기',
     lines: [
@@ -307,17 +307,17 @@ const interactionDefs = {
     ],
   },
   // 전시장 입구 — Maker's Mark 안내문. 특정 인물을 등장시키지 않고 전시장
-  // 자체의 일반 교육용 패널로 처리한다. 마틴 베일 통화(week1-scene-011b)의
+  // 자체의 일반 교육용 패널로 처리한다. 마틴 베일 통화(week2-scene-011b)의
   // "의뢰인은 물건 전체보다 하단 각인을 원했다" 반전과, 이미 존재하는
   // evidence-k01-inscription-request(E-C03)/evidence-mk-inscription-focused
-  // -inquiries(E-MV5)의 밑밥. 그 반전과 질문(q-w1-request-purpose)은 이미
-  // week1-scene-011b에 스크립트돼 있으므로 여기서 새 question은 만들지
+  // -inquiries(E-MV5)의 밑밥. 그 반전과 질문(q-w2-request-purpose)은 이미
+  // week2-scene-011b에 스크립트돼 있으므로 여기서 새 question은 만들지
   // 않는다 — 순수하게 플레이어가 나중에 스스로 연결짓는 조용한 밑밥.
-  'w1ee-topic-provenance': {
-    id: 'w1ee-topic-provenance',
+  'w2ee-topic-provenance': {
+    id: 'w2ee-topic-provenance',
     characterId: 'youngwoo',
-    locationIds: ['w1-exhibition-entrance'],
-    phases: ['W1_TOURISM'],
+    locationIds: ['w2-exhibition-entrance'],
+    phases: ['W2_TOURISM'],
     type: 'topic',
     label: "Maker's Mark 안내문 읽기",
     lines: [
@@ -329,7 +329,7 @@ const interactionDefs = {
     effects: [{ type: 'setFlag', key: 'sawMakersMarkPlacard', value: true }],
   },
 
-  /* ===== w1-adrian-spot (전시장 보조 진열 구역) — W1_TOURISM 전용 자유 조사
+  /* ===== w2-adrian-spot (전시장 보조 진열 구역) — W2_TOURISM 전용 자유 조사
      10개 핫스팟 (§신규, 구 minigame-exhibition-search/HOTSPOTS 이식). 미니게임
      자체 UI(진행도 카운터, "다시 봐도 똑같다" 재방문 토스트, 3개 이상
      선택 관찰 시 보너스 증거)는 폐기했다 — 조사하기 자체가 이미 완료
@@ -338,15 +338,15 @@ const interactionDefs = {
      k01만 원래 대사 그대로 여러 줄(K01_DISCOVERY_LINES) 유지, 나머지 9개는
      원래 미니게임의 단문 관찰(line) 하나만 그대로 옮겼다 — 다른 페이즈의
      대화하기 topic들처럼 지수/영우 티키타카를 새로 지어 붙이지 않았다
-     (원본에 없던 내용이라). characterId는 이 파일의 다른 W1_TOURISM
-     topic들과 같은 관례로 'youngwoo'를 쓰지만, 이 phase의 w1-adrian-spot엔
+     (원본에 없던 내용이라). characterId는 이 파일의 다른 W2_TOURISM
+     topic들과 같은 관례로 'youngwoo'를 쓰지만, 이 phase의 w2-adrian-spot엔
      `characters`가 비어 있어(locationDefs.js) 대화하기 목록엔 뜨지 않고
      오직 조사하기 핫스팟으로만 열린다. */
-  'w1as-topic-k01': {
-    id: 'w1as-topic-k01',
+  'w2as-topic-k01': {
+    id: 'w2as-topic-k01',
     characterId: 'youngwoo',
-    locationIds: ['w1-adrian-spot'],
-    phases: ['W1_TOURISM'],
+    locationIds: ['w2-adrian-spot'],
+    phases: ['W2_TOURISM'],
     type: 'topic',
     label: '황동 장치 K-01 살펴보기',
     lines: [
@@ -371,38 +371,38 @@ const interactionDefs = {
       },
     }],
   },
-  'w1as-topic-camera': {
-    id: 'w1as-topic-camera',
+  'w2as-topic-camera': {
+    id: 'w2as-topic-camera',
     characterId: 'youngwoo',
-    locationIds: ['w1-adrian-spot'],
-    phases: ['W1_TOURISM'],
+    locationIds: ['w2-adrian-spot'],
+    phases: ['W2_TOURISM'],
     type: 'topic',
     label: '오래된 필름 카메라 살펴보기',
     lines: [{ speaker: '', text: '접이식 빈티지 카메라. 렌즈 캡이 없어 안쪽이 살짝 뿌옇다.', characterId: null }],
   },
-  'w1as-topic-watch': {
-    id: 'w1as-topic-watch',
+  'w2as-topic-watch': {
+    id: 'w2as-topic-watch',
     characterId: 'youngwoo',
-    locationIds: ['w1-adrian-spot'],
-    phases: ['W1_TOURISM'],
+    locationIds: ['w2-adrian-spot'],
+    phases: ['W2_TOURISM'],
     type: 'topic',
     label: '은제 회중시계 살펴보기',
     lines: [{ speaker: '', text: '은제 회중시계. 뒷면에 낯선 이니셜이 새겨져 있는데, 이 열쇠와는 다른 이니셜이다.', characterId: null }],
   },
-  'w1as-topic-desk': {
-    id: 'w1as-topic-desk',
+  'w2as-topic-desk': {
+    id: 'w2as-topic-desk',
     characterId: 'youngwoo',
-    locationIds: ['w1-adrian-spot'],
-    phases: ['W1_TOURISM'],
+    locationIds: ['w2-adrian-spot'],
+    phases: ['W2_TOURISM'],
     type: 'topic',
     label: '접수대 살펴보기',
     lines: [{ speaker: '', text: '접수대. 안내 책자와 방명록, 작은 태그 몇 개가 놓여 있다.', characterId: null }],
   },
-  'w1as-topic-tag': {
-    id: 'w1as-topic-tag',
+  'w2as-topic-tag': {
+    id: 'w2as-topic-tag',
     characterId: 'youngwoo',
-    locationIds: ['w1-adrian-spot'],
-    phases: ['W1_TOURISM'],
+    locationIds: ['w2-adrian-spot'],
+    phases: ['W2_TOURISM'],
     type: 'topic',
     label: '직원용 태그 살펴보기',
     lines: [{ speaker: '', text: '직원용 태그 — 접수대 오른쪽에 놓여 있다. 진열장을 정리할 때 쓰는 것 같다.', characterId: null }],
@@ -414,20 +414,20 @@ const interactionDefs = {
       },
     }],
   },
-  'w1as-topic-staffdoor': {
-    id: 'w1as-topic-staffdoor',
+  'w2as-topic-staffdoor': {
+    id: 'w2as-topic-staffdoor',
     characterId: 'youngwoo',
-    locationIds: ['w1-adrian-spot'],
-    phases: ['W1_TOURISM'],
+    locationIds: ['w2-adrian-spot'],
+    phases: ['W2_TOURISM'],
     type: 'topic',
     label: '직원 전용문 살펴보기',
     lines: [{ speaker: '', text: '직원 전용문. "관계자 외 출입 금지"라고 적혀 있다. 살짝 닫혀 있다.', characterId: null }],
   },
-  'w1as-topic-pamphlet': {
-    id: 'w1as-topic-pamphlet',
+  'w2as-topic-pamphlet': {
+    id: 'w2as-topic-pamphlet',
     characterId: 'youngwoo',
-    locationIds: ['w1-adrian-spot'],
-    phases: ['W1_TOURISM'],
+    locationIds: ['w2-adrian-spot'],
+    phases: ['W2_TOURISM'],
     type: 'topic',
     label: '안내 팸플릿 살펴보기',
     lines: [{ speaker: '', text: '안내 팸플릿. K-01 항목 옆에 "판매 불가 · 전시 전용" 표시가 있다.', characterId: null }],
@@ -439,11 +439,11 @@ const interactionDefs = {
       },
     }],
   },
-  'w1as-topic-guestbook': {
-    id: 'w1as-topic-guestbook',
+  'w2as-topic-guestbook': {
+    id: 'w2as-topic-guestbook',
     characterId: 'youngwoo',
-    locationIds: ['w1-adrian-spot'],
-    phases: ['W1_TOURISM'],
+    locationIds: ['w2-adrian-spot'],
+    phases: ['W2_TOURISM'],
     type: 'topic',
     label: '방문객 방명록 살펴보기',
     lines: [{ speaker: '', text: '오늘 자 방명록 어디에도 "레오"로 추정되는 이름이 없다.', characterId: null }],
@@ -455,11 +455,11 @@ const interactionDefs = {
       },
     }],
   },
-  'w1as-topic-ceiling': {
-    id: 'w1as-topic-ceiling',
+  'w2as-topic-ceiling': {
+    id: 'w2as-topic-ceiling',
     characterId: 'youngwoo',
-    locationIds: ['w1-adrian-spot'],
-    phases: ['W1_TOURISM'],
+    locationIds: ['w2-adrian-spot'],
+    phases: ['W2_TOURISM'],
     type: 'topic',
     label: '천장 보안카메라 살펴보기',
     lines: [{ speaker: '', text: '천장 보안카메라가 진열장 정면이 아니라 출입구 쪽을 향해 있다.', characterId: null }],
@@ -471,11 +471,11 @@ const interactionDefs = {
       },
     }],
   },
-  'w1as-topic-entrance': {
-    id: 'w1as-topic-entrance',
+  'w2as-topic-entrance': {
+    id: 'w2as-topic-entrance',
     characterId: 'youngwoo',
-    locationIds: ['w1-adrian-spot'],
-    phases: ['W1_TOURISM'],
+    locationIds: ['w2-adrian-spot'],
+    phases: ['W2_TOURISM'],
     type: 'topic',
     label: '출입구 주변 살펴보기',
     lines: [{ speaker: '', text: '사람들이 끊임없이 들고 난다. 바로 옆 골목엔 작은 카페가 보인다.', characterId: null }],
@@ -483,7 +483,7 @@ const interactionDefs = {
 
   /* ===== Phase 4 — 용의자 탐문 (§12.6) =====
      Each suspect's *entire* existing interrogation scene (already scripted,
-     multi-round, choice-heavy — see dev/dialogueData.js week1Scene006/007/
+     multi-round, choice-heavy — see dev/dialogueData.js week2Scene006/007/
      008Lines) is treated as one atomic hub interaction rather than being
      decomposed into topics. Decomposing a real interrogation's internal
      round/hint/hypothesis structure into hub topic-state nodes would risk
@@ -494,16 +494,16 @@ const interactionDefs = {
      완전히 페이지 이동하지 않는다. sceneId가 가리키는 씬(스크립트는 그대로)을
      허브 자신의 하단 패널 안에서 인라인 재생한다 — see play/explore/index.html
      playSceneInline. */
-  // Phase 진입 시 자동 재생되는 도입 대화 — w1-phase1-intro(위)와 같은
-  // type:'phaseIntro' 패턴. week1-scene-005b(다니엘 최초 진술)의 마지막 줄
+  // Phase 진입 시 자동 재생되는 도입 대화 — w2-phase1-intro(위)와 같은
+  // type:'phaseIntro' 패턴. week2-scene-005b(다니엘 최초 진술)의 마지막 줄
   // 바로 다음 순간이라, 인사/자기소개 없이 곧장 "이제 사진 속 세 사람을
   // 만나보자"는 정리 대사로 시작한다. Phase 1의 사진놀이 같은 선택지 루프는
   // 없다 — 관광의 들뜬 톤과 달리 탐문 phase는 차분하게 바로 자유 탐색으로
   // 넘어가는 편이 맞다.
-  'w1-phase4-intro': {
-    id: 'w1-phase4-intro',
+  'w2-phase4-intro': {
+    id: 'w2-phase4-intro',
     type: 'phaseIntro',
-    phases: ['W1_SUSPECT_INTERVIEWS'],
+    phases: ['W2_SUSPECT_INTERVIEWS'],
     lines: [
       { id: 'line-001', speaker: '', text: '전시장 앞 광장.', characterId: null },
       { id: 'line-002', speaker: '영우', text: '자, 정리해보자.\n사진에 찍힌 사람이 세 명이었지?', characterId: 'youngwoo', expression: 'serious' },
@@ -514,14 +514,14 @@ const interactionDefs = {
   },
   // Phase 4의 "앞쪽 대화" — Phase 1(관광 자유 탐색)이 모든 장소에 가벼운
   // 잡담용 topic을 깔아둔 것과 같은 목적으로, 탐문 거점에도 심문과 무관한
-  // ungated 플레이버 topic을 하나 둔다. w1-hub-plaza의 visualBrief(위
+  // ungated 플레이버 topic을 하나 둔다. w2-hub-plaza의 visualBrief(위
   // locationDefs.js)가 이미 "안내판이나 임시 표지판이 하나 정도 추가된"이라고
   // 적어둔 디테일을 그대로 대사로 옮긴 것 — 새 단서/플래그는 없다(순수 분위기).
-  'w1sh-topic-notice': {
-    id: 'w1sh-topic-notice',
+  'w2sh-topic-notice': {
+    id: 'w2sh-topic-notice',
     characterId: 'youngwoo',
-    locationIds: ['w1-hub-plaza'],
-    phases: ['W1_SUSPECT_INTERVIEWS'],
+    locationIds: ['w2-hub-plaza'],
+    phases: ['W2_SUSPECT_INTERVIEWS'],
     type: 'topic',
     label: '임시 안내판 읽기',
     lines: [
@@ -531,7 +531,7 @@ const interactionDefs = {
       { speaker: '영우', text: '그러니까 우리가 물어보러 온 거지.', characterId: 'youngwoo', expression: 'neutral' },
     ],
   },
-  // "사전 복선" 패턴의 유일한 회수 사례(선택형) — w1bv-topic-van(Phase 1,
+  // "사전 복선" 패턴의 유일한 회수 사례(선택형) — w2bv-topic-van(Phase 1,
   // 하버브리지)에서 심어둔 flag(discoveredBridgeVan)를 여기서 실제 증거로
   // 바꾼다. 다만 검토 답변서 §2.4 방침대로 "필수 증거"가 아니라 순수 보강
   // 증거로 — unlockConditions에 evidence-service-magnet-missing(레오 사건이
@@ -541,11 +541,11 @@ const interactionDefs = {
   // 이 topic 하나 때문이다. 나머지 3개(오페라뷰 크롭/록스골목 자석/전시장입구
   // 안내문)는 순수 flag만 남기고 회수 지점이 없다 — §신규 원칙대로 넷 다 같은
   // 무게로 취급하지 않는다.
-  'w1sh-topic-van-recall': {
-    id: 'w1sh-topic-van-recall',
+  'w2sh-topic-van-recall': {
+    id: 'w2sh-topic-van-recall',
     characterId: 'youngwoo',
-    locationIds: ['w1-hub-plaza'],
-    phases: ['W1_SUSPECT_INTERVIEWS'],
+    locationIds: ['w2-hub-plaza'],
+    phases: ['W2_SUSPECT_INTERVIEWS'],
     type: 'topic',
     label: '그 서비스 밴, 다시 생각해보기',
     unlockConditions: [
@@ -584,15 +584,15 @@ const interactionDefs = {
   // 전환된 것과 같은 패턴. 씬 데이터/구조 자체는 전혀 손대지 않았고 오직
   // "어디서 재생되는가"만 바뀐 것이라, 씬이 사라지는 게 아니다.
   // Phase 4 "앞쪽 대화" — 용의자 chip을 눌렀을 때 심문하기(isInterrogation)와
-  // 별개로 뜨는 가벼운 대화하기 topic. 실제 심문 씬(week1Scene006Lines)의
+  // 별개로 뜨는 가벼운 대화하기 topic. 실제 심문 씬(week2Scene006Lines)의
   // 오프닝("저기, 잠시만요" 등)과 겹치지 않도록, 다가가서 말 걸기 전 멀리서
   // 지켜보는 관찰 비트로만 구성한다 — Phase 1의 구경하기/관찰하기 topic들과
   // 같은 톤. 새 단서/플래그는 없다(순수 분위기).
   'w1suspect-mina-topic-watch': {
     id: 'w1suspect-mina-topic-watch',
     characterId: 'minah',
-    locationIds: ['w1-suspect-mina-spot'],
-    phases: ['W1_SUSPECT_INTERVIEWS'],
+    locationIds: ['w2-suspect-mina-spot'],
+    phases: ['W2_SUSPECT_INTERVIEWS'],
     type: 'topic',
     label: '윤민아 살펴보기',
     lines: [
@@ -615,22 +615,22 @@ const interactionDefs = {
   'w1suspect-mina-interview': {
     id: 'w1suspect-mina-interview',
     characterId: 'minah',
-    locationIds: ['w1-suspect-mina-spot'],
-    phases: ['W1_SUSPECT_INTERVIEWS'],
+    locationIds: ['w2-suspect-mina-spot'],
+    phases: ['W2_SUSPECT_INTERVIEWS'],
     type: 'scene',
     isInterrogation: true,
     autoPlayOnFirstVisit: true,
     label: '심문하기',
     icon: '🔍',
-    sceneId: 'week1-scene-006',
+    sceneId: 'week2-scene-006',
   },
   // 위 mina-topic-watch와 같은 목적 — 애드리언의 대화하기 chip에 뜨는 순수
-  // 관찰 비트, week1Scene007Lines의 실제 오프닝과는 겹치지 않는다.
+  // 관찰 비트, week2Scene007Lines의 실제 오프닝과는 겹치지 않는다.
   'w1suspect-adrian-topic-watch': {
     id: 'w1suspect-adrian-topic-watch',
     characterId: 'adrian',
-    locationIds: ['w1-adrian-spot'],
-    phases: ['W1_SUSPECT_INTERVIEWS'],
+    locationIds: ['w2-adrian-spot'],
+    phases: ['W2_SUSPECT_INTERVIEWS'],
     type: 'topic',
     label: '애드리언 콜 살펴보기',
     lines: [
@@ -644,22 +644,22 @@ const interactionDefs = {
   'w1suspect-adrian-interview': {
     id: 'w1suspect-adrian-interview',
     characterId: 'adrian',
-    locationIds: ['w1-adrian-spot'],
-    phases: ['W1_SUSPECT_INTERVIEWS'],
+    locationIds: ['w2-adrian-spot'],
+    phases: ['W2_SUSPECT_INTERVIEWS'],
     type: 'scene',
     isInterrogation: true,
     autoPlayOnFirstVisit: true,
     label: '심문하기',
     icon: '🔍',
-    sceneId: 'week1-scene-007',
+    sceneId: 'week2-scene-007',
   },
   // 위 두 topic과 같은 목적 — 레오의 대화하기 chip에 뜨는 순수 관찰 비트,
-  // week1Scene008Lines의 실제 오프닝과는 겹치지 않는다.
+  // week2Scene008Lines의 실제 오프닝과는 겹치지 않는다.
   'w1suspect-leo-topic-watch': {
     id: 'w1suspect-leo-topic-watch',
     characterId: 'leo',
-    locationIds: ['w1-suspect-leo-spot'],
-    phases: ['W1_SUSPECT_INTERVIEWS'],
+    locationIds: ['w2-suspect-leo-spot'],
+    phases: ['W2_SUSPECT_INTERVIEWS'],
     type: 'topic',
     label: '레오 박 살펴보기',
     lines: [
@@ -673,51 +673,51 @@ const interactionDefs = {
   'w1suspect-leo-interview': {
     id: 'w1suspect-leo-interview',
     characterId: 'leo',
-    locationIds: ['w1-suspect-leo-spot'],
-    phases: ['W1_SUSPECT_INTERVIEWS'],
+    locationIds: ['w2-suspect-leo-spot'],
+    phases: ['W2_SUSPECT_INTERVIEWS'],
     type: 'scene',
     isInterrogation: true,
     autoPlayOnFirstVisit: true,
     label: '심문하기',
     icon: '🔍',
-    sceneId: 'week1-scene-008',
+    sceneId: 'week2-scene-008',
   },
 
   /* ===== Phase 5 — 모순 재검증 (§12.8) =====
      Same coarse "visit = launch the whole existing scene" hand-off as Phase
-     4's suspect interviews — see dev/data/locationDefs.js's w1-reverify-*
+     4's suspect interviews — see dev/data/locationDefs.js's w2-reverify-*
      entries for the free-order rationale. */
   'w1reverify-mina-interview': {
     id: 'w1reverify-mina-interview',
     characterId: 'minah',
-    locationIds: ['w1-reverify-mina-spot'],
-    phases: ['W1_REVERIFICATION'],
+    locationIds: ['w2-reverify-mina-spot'],
+    phases: ['W2_REVERIFICATION'],
     type: 'scene',
     isInterrogation: true,
     label: '최종 심문하기',
     icon: '🔍',
-    sceneId: 'week1-scene-011',
+    sceneId: 'week2-scene-011',
   },
   'w1reverify-adrian-interview': {
     id: 'w1reverify-adrian-interview',
     characterId: 'adrian',
-    locationIds: ['w1-adrian-spot'],
-    phases: ['W1_REVERIFICATION'],
+    locationIds: ['w2-adrian-spot'],
+    phases: ['W2_REVERIFICATION'],
     type: 'scene',
     isInterrogation: true,
     label: '재심문하기',
     icon: '🔍',
-    sceneId: 'week1-scene-011a',
+    sceneId: 'week2-scene-011a',
   },
   'w1reverify-martin-call': {
     id: 'w1reverify-martin-call',
     characterId: 'martin',
-    locationIds: ['w1-reverify-martin-spot'],
-    phases: ['W1_REVERIFICATION'],
+    locationIds: ['w2-reverify-martin-spot'],
+    phases: ['W2_REVERIFICATION'],
     type: 'minigame',
     label: '전화 걸기',
     icon: '📞',
-    route: '/play/game/?scene=week1-scene-011b',
+    route: '/play/game/?scene=week2-scene-011b',
   },
 };
 
@@ -742,55 +742,55 @@ const presentEvidenceRules = [
   // 순수 부가 flavor(§8.2 원칙 그대로)다. 나중에 실제 스토리에 맞는
   // reactionText/evidenceId로 다듬으면 된다.
   {
-    characterId: 'minah', phase: 'W1_SUSPECT_INTERVIEWS', evidenceId: 'evidence-mina-illegal-photo', result: 'correct',
+    characterId: 'minah', phase: 'W2_SUSPECT_INTERVIEWS', evidenceId: 'evidence-mina-illegal-photo', result: 'correct',
     reactionText: '[테스트] 윤민아: "...그거 어디서 났어요?"',
   },
   {
-    characterId: 'adrian', phase: 'W1_SUSPECT_INTERVIEWS', evidenceId: 'evidence-adrian-sender', result: 'correct',
+    characterId: 'adrian', phase: 'W2_SUSPECT_INTERVIEWS', evidenceId: 'evidence-adrian-sender', result: 'correct',
     reactionText: '[테스트] 애드리언: "...그 계정, 어디서 찾으셨죠."',
   },
   {
-    characterId: 'leo', phase: 'W1_SUSPECT_INTERVIEWS', evidenceId: 'evidence-leo-bag-strap-shape', result: 'correct',
+    characterId: 'leo', phase: 'W2_SUSPECT_INTERVIEWS', evidenceId: 'evidence-leo-bag-strap-shape', result: 'correct',
     reactionText: '[테스트] 레오: "...가방 끈이 왜요?"',
   },
   {
-    characterId: 'minah', phase: 'W1_REVERIFICATION', evidenceId: 'evidence-mina-illegal-photo', result: 'correct',
+    characterId: 'minah', phase: 'W2_REVERIFICATION', evidenceId: 'evidence-mina-illegal-photo', result: 'correct',
     reactionText: '윤민아: "...그거 이미 말씀드렸잖아요. 또 그 얘기예요?"',
   },
   {
-    characterId: 'minah', phase: 'W1_REVERIFICATION', evidenceId: 'evidence-mina-photo-timestamps', result: 'partial',
+    characterId: 'minah', phase: 'W2_REVERIFICATION', evidenceId: 'evidence-mina-photo-timestamps', result: 'partial',
     reactionText: '윤민아: "그 시간에 사진 찍고 있었던 건 맞는데... 그게 왜요?"',
   },
   {
-    characterId: 'minah', phase: 'W1_REVERIFICATION', evidenceId: 'evidence-staff-tag-position-after', result: 'interesting',
+    characterId: 'minah', phase: 'W2_REVERIFICATION', evidenceId: 'evidence-staff-tag-position-after', result: 'interesting',
     reactionText: '윤민아: "태그요? 그런 건 관심 없었는데... 직원들이나 아는 거 아니에요?"',
   },
   {
-    characterId: 'adrian', phase: 'W1_REVERIFICATION', evidenceId: 'evidence-adrian-sender', result: 'correct',
+    characterId: 'adrian', phase: 'W2_REVERIFICATION', evidenceId: 'evidence-adrian-sender', result: 'correct',
     reactionText: '애드리언: "...그 계정, 어디서 찾으셨죠." (표정이 굳는다)',
   },
   {
-    characterId: 'adrian', phase: 'W1_REVERIFICATION', evidenceId: 'evidence-adrian-inquiry', result: 'partial',
+    characterId: 'adrian', phase: 'W2_REVERIFICATION', evidenceId: 'evidence-adrian-inquiry', result: 'partial',
     reactionText: '애드리언: "문의 메일이야 저 아니어도 여러 사람이 보냈을 텐데요."',
   },
   {
-    characterId: 'adrian', phase: 'W1_REVERIFICATION', evidenceId: 'evidence-mina-illegal-photo', result: 'blocked',
+    characterId: 'adrian', phase: 'W2_REVERIFICATION', evidenceId: 'evidence-mina-illegal-photo', result: 'blocked',
     reactionText: '애드리언: "그건 제가 아니라 그쪽 여성분 얘기 아닌가요? 저랑 무슨 상관이죠?"',
   },
 ];
 const defaultPresentReaction = { result: 'wrong', reactionText: '음... 이게 지금 왜 필요한지는 잘 모르겠는데.' };
 
-// 1주차 Phase 1의 "필수 조사" 체크리스트(§10.2) — 관광 파트는 조사가 아니라
+// 2주차 Phase 1의 "필수 조사" 체크리스트(§10.2) — 관광 파트는 조사가 아니라
 // 자유도 중심이라 필수 fact는 없지만, §12.2의 전시장 진입 제안 조건(관광
 // 장소 2곳 이상 방문 또는 특정 인터랙션 완료)은 여기서 표현해 둔다. 실제
 // "제안" UI(소프트 게이트, §10.3)는 아직 play/explore/index.html에 연결하지
 // 않음 — 후속 작업.
 const phaseGoals = {
-  W1_TOURISM: {
+  W2_TOURISM: {
     requiredFactIds: [],
     suggestNextConditions: [
       { type: 'visitedLocationsAtLeast', count: 2 },
-      { type: 'completedInteraction', id: 'w1rl-topic-exhibition-spot' },
+      { type: 'completedInteraction', id: 'w2rl-topic-exhibition-spot' },
     ],
   },
 };

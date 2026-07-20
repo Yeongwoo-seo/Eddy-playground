@@ -1,7 +1,7 @@
-/* OPERATION MK — WEEK 0 · SCENE 01 v4 「진짜 왔네」
-   Dialogue Set: dialogue-week0-scene001-v4
-   Scene: week0-scene-001 (Sydney Airport Arrival Area, 09:30)
-   Merged into week0-scene-flight (see that scene's header comment) — its
+/* OPERATION MK — WEEK 1 · SCENE 01 v4 「진짜 왔네」
+   Dialogue Set: dialogue-week1-scene001-v4
+   Scene: week1-scene-001 (Sydney Airport Arrival Area, 09:30)
+   Merged into week1-scene-flight (see that scene's header comment) — its
    first line below carries the sceneTransition into this location. */
 
 // role 'protagonist' gets its own dedicated CharacterTransform; every other
@@ -30,7 +30,7 @@ const dialogueCharacters = [
   { id: 'daniel', name: '다니엘 우', role: 'other', expressions: ['neutral', 'shocked', 'annoyed'] },
   { id: 'noah', name: '노아 리', role: 'other', expressions: ['neutral', 'curious', 'serious'] },
   { id: 'evelyn', name: '에블린 쇼', role: 'other', expressions: ['neutral', 'suspicious', 'shocked', 'serious'] },
-  // The Missing Key v4 §9 — 1주차 보조 증인 3명. 'daniel-guide'는 이미 쓰이는
+  // The Missing Key v4 §9 — 2주차 보조 증인 3명. 'daniel-guide'는 이미 쓰이는
   // 'daniel'(다니엘 우, 다른 인물)과 겹치지 않도록 별도 id를 쓴다. 마틴
   // 베일(§9.4)은 전화/음성으로만 등장하는 인물이라 이번 패스에서는 아직
   // 등록하지 않는다 — 해당 씬을 실제로 쓸 때 추가한다.
@@ -87,18 +87,18 @@ const dialogueOutfits = [
 // /dev/upload.
 const MINIGAME_FACE_EXPRESSION = 'minigame-face';
 
-/* OPERATION MK — WEEK 0 · SCENE 00 「시드니 상공」 v3
-   Dialogue Set: dialogue-week0-scene-flight
-   Scene: week0-scene-flight (In flight, 10 minutes before landing)
-   No mystery here — per the brief, 0주차 opens on anticipation and reunion,
+/* OPERATION MK — WEEK 1 · SCENE 00 「시드니 상공」 v3
+   Dialogue Set: dialogue-week1-scene-flight
+   Scene: week1-scene-flight (In flight, 10 minutes before landing)
+   No mystery here — per the brief, 1주차 opens on anticipation and reunion,
    not plot. This is purely the "지수 시점 오프닝 + 카톡" beat.
-   Merged with week0Scene001Lines below (both part of the same "도착" beat,
+   Merged with week1Scene001Lines below (both part of the same "도착" beat,
    no minigame in between) — the location change from In Flight to Sydney
    Airport Arrival Area is carried by a `sceneTransition` marker on that
-   array's first line instead of a scene-list split. See week0Scenes'
-   week0-scene-flight entry (locations: [...]) for the two background slots
+   array's first line instead of a scene-list split. See week1Scenes'
+   week1-scene-flight entry (locations: [...]) for the two background slots
    this scene now needs. */
-const week0SceneFlightLines = [
+const week1SceneFlightLines = [
   { id: 'line-001', speaker: '', text: '시드니 상공.\n착륙 10분 전.', characterId: null },
   { id: 'line-002', speaker: '', text: '구름 아래로 시드니의 아침이 조금씩 보이기 시작했다.', characterId: null },
   { id: 'line-003', speaker: '', text: '창에 기댄 지수의 눈에\n낯선 나라의 낯선 아침 햇살이 비쳐 들었다.', characterId: 'jisoo', expression: 'blank' },
@@ -125,10 +125,10 @@ const week0SceneFlightLines = [
 // Pure stage-direction beats (no speaker) use characterId to say who, if
 // anyone, stays on screen for that beat — keeps the portrait from flickering
 // out and back in across a beat with no line of its own.
-const week0Scene001Lines = [
+const week1Scene001Lines = [
   {
     id: 'line-001', speaker: '', text: '시드니 공항.\n오전 9시 30분.', characterId: null,
-    sceneTransition: { backgroundKey: 'week0-scene-flight--arrival', introLabel: 'SYDNEY', time: '09:30' },
+    sceneTransition: { backgroundKey: 'week1-scene-flight--arrival', introLabel: 'SYDNEY', time: '09:30' },
   },
   { id: 'line-002', speaker: '', text: '긴 입국 절차를 마친 지수가\n캐리어를 끌고 도착층으로 나왔다.', characterId: null },
   { id: 'line-003', speaker: '', text: '낯선 언어의 안내 방송, 낯선 냄새의 공기.\n지수는 잠깐 걸음을 멈추고 주위를 둘러봤다.', characterId: 'jisoo', expression: 'curious' },
@@ -167,16 +167,16 @@ const week0Scene001Lines = [
   { id: 'line-036', speaker: '지수', text: '실력은 이제부터 채워나가는 거죠.', characterId: 'jisoo', expression: 'happy' },
 ];
 
-/* OPERATION MK — WEEK 0 · SCENE 05 「낚시 수익 정산 · 진짜 같이 있네」 v08
-   Dialogue Set: dialogue-week0-scene002-1
-   Scene: week0-scene-002-1 (Eastwood Accommodation, 13:40)
-   [v08 재편] 낚시 미니게임(week0-scene-circular-quay-minigame)의 "돌아가기"
+/* OPERATION MK — WEEK 1 · SCENE 05 「낚시 수익 정산 · 진짜 같이 있네」 v08
+   Dialogue Set: dialogue-week1-scene002-1
+   Scene: week1-scene-002-1 (Eastwood Accommodation, 13:40)
+   [v08 재편] 낚시 미니게임(week1-scene-circular-quay-minigame)의 "돌아가기"
    버튼이 곧장 이 씬으로 돌아온다(SHOP_TUTORIAL_RETURN_SCENE, sceneRoutes.js).
    낚시 정산 잡담으로 열어서 서큘러키 → 숙소 이동을 자연스럽게 이어 붙이고,
    곧바로 기존 "여기야 / 진짜 같이 있네" 방 리빌 비트로 넘어간다 — 배경은
-   이 씬 고유의 기본 배경(week0-scene-002-1, 즉 숙소) 그대로라 별도
+   이 씬 고유의 기본 배경(week1-scene-002-1, 즉 숙소) 그대로라 별도
    sceneTransition이 필요 없다. */
-const week0Scene002_1Lines = [
+const week1Scene002_1Lines = [
   { id: 'line-001', speaker: '', text: '숙소.\n오후 1시 40분.', characterId: null },
   { id: 'line-002', speaker: '', text: '낚시를 마친 두 사람은 사진을 한 번 더 확인한 뒤 서큘러키 역으로 향했다.\n열차를 타고 숙소로 이동해 체크인을 마치고,\n짐을 풀며 오늘 하루를 되짚었다.', characterId: null },
   { id: 'line-003', speaker: '지수', text: '와.\n방금까지 진짜 낚시한 느낌이야.', characterId: 'jisoo', expression: 'happy' },
@@ -224,17 +224,17 @@ const week0Scene002_1Lines = [
   { id: 'line-045', speaker: '지수', text: '웅.\n딱 가까운 데로만.', characterId: 'jisoo', expression: 'soft' },
 ];
 
-/* OPERATION MK — WEEK 0 · SCENE 06 「첫날 저녁」 v08
-   Dialogue Set: dialogue-week0-scene-dinner
-   Scene: week0-scene-dinner (근처 식당, 14:20)
+/* OPERATION MK — WEEK 1 · SCENE 06 「첫날 저녁」 v08
+   Dialogue Set: dialogue-week1-scene-dinner
+   Scene: week1-scene-dinner (근처 식당, 14:20)
    [v08 재편] 생활형 버전 취지에 맞춰 압축 — 사진 찍는 긴 리프 대신 피곤함/
-   배고픔 위주의 짧은 장면으로 줄였다. Merged into week0-scene-002-1 (see
+   배고픔 위주의 짧은 장면으로 줄였다. Merged into week1-scene-002-1 (see
    that scene's header comment) — its first line below carries the
    sceneTransition into this location. */
-const week0SceneDinnerLines = [
+const week1SceneDinnerLines = [
   {
     id: 'line-001', speaker: '', text: '숙소 근처 작은 식당.\n오후 2시 20분.', characterId: null,
-    sceneTransition: { backgroundKey: 'week0-scene-002-1--dinner', introLabel: 'DINNER', time: '14:20' },
+    sceneTransition: { backgroundKey: 'week1-scene-002-1--dinner', introLabel: 'DINNER', time: '14:20' },
   },
   { id: 'line-002', speaker: '', text: '늦은 점심을 겸한 식사였다.\n피곤해서인지 둘 다 말이 좀 줄었다.', characterId: null },
   { id: 'line-003', speaker: '지수', text: '이거 냄새 완전 좋다.', characterId: 'jisoo', expression: 'happy' },
@@ -258,9 +258,9 @@ const week0SceneDinnerLines = [
   { id: 'line-021', speaker: '', text: '오후의 볕이 조금씩 옅어지고 있었다.\n\n걷는 동안, 지수는 몇 번이고 영우의 손을 고쳐 잡았다.', characterId: 'jisoo', expression: 'soft' },
 ];
 
-/* OPERATION MK — WEEK 0 · SCENE 07 「사라진 핸드폰」 v08
-   Dialogue Set: dialogue-week0-scene-charger
-   Scene: week0-scene-charger (Eastwood Accommodation, 20:30)
+/* OPERATION MK — WEEK 1 · SCENE 07 「사라진 핸드폰」 v08
+   Dialogue Set: dialogue-week1-scene-charger
+   Scene: week1-scene-charger (Eastwood Accommodation, 20:30)
    [v08 재편] "다시 나갈 준비" 대신 밤에 충전기를 꽂으려다 폰이 없어진 걸
    알아채는 자연스러운 동기로 바꿨다. The phone is actually found in
    kitchen-fridge-gap and the key in bedroom-right-vent (both only inside the
@@ -268,14 +268,14 @@ const week0SceneDinnerLines = [
    call-and-listen beat below still leads toward the kitchen, matching where
    the phone actually turns up. Ends on a MINIGAME START beat — nextSceneId
    hands off to the existing point-and-click phone-hunt scene,
-   week0-scene-002-2. Merged into week0-scene-002-1 (see that scene's header
+   week1-scene-002-2. Merged into week1-scene-002-1 (see that scene's header
    comment) — its first line below carries the sceneTransition back into the
    accommodation, reusing that scene's own default background key since it's
    the same room. */
-const week0SceneChargerLines = [
+const week1SceneChargerLines = [
   {
     id: 'line-001', speaker: '', text: '숙소.\n밤 8시 30분.', characterId: null,
-    sceneTransition: { backgroundKey: 'week0-scene-002-1', introLabel: 'EASTWOOD', time: '20:30' },
+    sceneTransition: { backgroundKey: 'week1-scene-002-1', introLabel: 'EASTWOOD', time: '20:30' },
   },
   { id: 'line-002', speaker: '', text: '오후 내내 낮잠과 짧은 산책으로 시간을 보낸 두 사람은\n다시 방으로 돌아와 침대에 걸터앉았다.', characterId: null },
   { id: 'line-003', speaker: '지수', text: '오늘 하루 진짜 꽉 찼다.', characterId: 'jisoo', expression: 'soft' },
@@ -310,25 +310,25 @@ const week0SceneChargerLines = [
   { id: 'line-032', speaker: '', text: 'MINIGAME START', characterId: null },
 ];
 
-/* OPERATION MK — WEEK 0 · SCENE 08 「근데 이 열쇠 뭐지?」 v4
-   Dialogue Set: dialogue-week0-scene002-3
-   Scene: week0-scene-002-3 (Eastwood Accommodation, right after the phone-hunt
+/* OPERATION MK — WEEK 1 · SCENE 08 「근데 이 열쇠 뭐지?」 v4
+   Dialogue Set: dialogue-week1-scene002-3
+   Scene: week1-scene-002-3 (Eastwood Accommodation, right after the phone-hunt
    minigame). Reached by minigame-phone-search/'s GAME CLEAR redirect, not by
    another scene's nextSceneId — see MINIGAME_ROUTES in game/index.html and
    the redirect at the bottom of minigame-phone-search/index.html. Narration/
    system beats use speaker:'' (no name shown), matching the convention used
-   throughout week0Scene001Lines/week0Scene002_1Lines. This is the M.K.
+   throughout week1Scene001Lines/week1Scene002_1Lines. This is the M.K.
    engraving reveal — the seed for the whole 4-week mystery — so it doesn't
    loop or dead-end; it ends deciding to call the landlord instead of going
-   down to a lobby (week0-scene-frontdesk, now a phone call — see that
+   down to a lobby (week1-scene-frontdesk, now a phone call — see that
    scene's own header comment).
    [v4 정정] Phone was found in the kitchen fridge gap (matches
    ROOM_SEARCH_CORE_ITEM_HOTSPOTS' 'jisu-phone': 'kitchen-fridge-gap'), not
-   tangled in the bed sheets — week0SceneChargerLines no longer sets up a
+   tangled in the bed sheets — week1SceneChargerLines no longer sets up a
    charger/under-bed mishap. The key is also a fresh reveal here (found via
    the vent + long-hook combo inside the minigame itself), not something
    glimpsed earlier in the VN dialogue. */
-const week0Scene002_3Lines = [
+const week1Scene002_3Lines = [
   { id: 'line-001', speaker: '지수', text: '찾았다!!!!', characterId: 'jisoo', expression: 'happy' },
   { id: 'line-002', speaker: '영우', text: '아 다행이다.', characterId: 'youngwoo', expression: 'happy' },
   { id: 'line-003', speaker: '지수', text: '냉장고 틈에 끼어 있었네.', characterId: 'jisoo', expression: 'blank' },
@@ -413,19 +413,19 @@ const week0Scene002_3Lines = [
   { id: 'line-033', speaker: '', text: '지수가 통화 버튼을 누른다.\n\n몇 번의 신호음 끝에\n낮고 잠긴 목소리가 들려왔다.', characterId: null },
 ];
 
-/* OPERATION MK — WEEK 0 · SCENE 09 「집주인과의 통화」 v3
-   Dialogue Set: dialogue-week0-scene-frontdesk
-   Scene: week0-scene-frontdesk (Sydney Accommodation, continues directly
-   from week0Scene002_3Lines — same call, same room, no location change).
+/* OPERATION MK — WEEK 1 · SCENE 09 「집주인과의 통화」 v3
+   Dialogue Set: dialogue-week1-scene-frontdesk
+   Scene: week1-scene-frontdesk (Sydney Accommodation, continues directly
+   from week1Scene002_3Lines — same call, same room, no location change).
    The landlord's hesitation on "M.K." is the seed for the whole 4-week
    mystery; per the brief it must NOT resolve into a full name here.
-   [1주차 추리 개편 v2] The full name is no longer revealed anywhere in Week 1
-   either (see week1-scene-007/009/011/013 in this file) — the overhaul brief
-   requires Week 1 to end with only the M.K. / MK_Consult account-level clue,
-   full identity deferred further out. week2-scene-012 onward still uses the
+   [2주차 추리 개편 v2] The full name is no longer revealed anywhere in Week 2
+   either (see week2-scene-007/009/011/013 in this file) — the overhaul brief
+   requires Week 2 to end with only the M.K. / MK_Consult account-level clue,
+   full identity deferred further out. week3-scene-012 onward still uses the
    literal name "Mika Kovac"/"미카 코바치" (written before this overhaul), which
-   is now a continuity seam a future Week 2 pass should address. */
-const week0SceneFrontdeskLines = [
+   is now a continuity seam a future Week 3 pass should address. */
+const week1SceneFrontdeskLines = [
   { id: 'line-001', speaker: '', text: '신호음이 두 번, 세 번 울렸다.\n지수는 숨을 한 번 고르고 휴대폰을 귀에 붙였다.', characterId: 'jisoo', expression: 'curious' },
   { id: 'line-001a', speaker: '집주인', text: '여보세요?', characterId: null },
   { id: 'line-002', speaker: '지수', text: '안녕하세요.\n지금 숙소에 묵고 있는 손님인데요.\n\n밤늦게 죄송해요.', characterId: 'jisoo', expression: 'neutral' },
@@ -481,11 +481,11 @@ const week0SceneFrontdeskLines = [
   { id: 'line-038', speaker: '', text: '[ ITEM ACQUIRED ]\n\nUNKNOWN KEY\n각인: M.K.', characterId: null },
 ];
 
-/* OPERATION MK — WEEK 0 · SCENE 10 「첫날 밤」
-   Dialogue Set: dialogue-week0-scene-firstnight
-   Scene: week0-scene-firstnight (Sydney Accommodation, 23:15)
-   Closes out 0주차 — no nextSceneId, this is the last scene of the week. */
-const week0SceneFirstNightLines = [
+/* OPERATION MK — WEEK 1 · SCENE 10 「첫날 밤」
+   Dialogue Set: dialogue-week1-scene-firstnight
+   Scene: week1-scene-firstnight (Sydney Accommodation, 23:15)
+   Closes out 1주차 — no nextSceneId, this is the last scene of the week. */
+const week1SceneFirstNightLines = [
   { id: 'line-001', speaker: '', text: '숙소.\n밤 9시 40분.', characterId: null },
   { id: 'line-002', speaker: '', text: '두 사람은 침대에 기대앉아\n다음 날 일정을 간단히 확인했다.\n\n투명 봉투에 든 열쇠는\n협탁 위에 조용히 놓여 있었다.', characterId: null },
   { id: 'line-002a', speaker: '', text: '창밖으로 이웃집 개 짖는 소리가 한 번 들리다 멎었다.\n방 안은 다시 조용해졌다.', characterId: null },
@@ -544,15 +544,15 @@ const week0SceneFirstNightLines = [
   { id: 'line-040', speaker: '', text: '협탁 위,\n작은 황동 열쇠만이 조용히 남아 있었다.', characterId: null },
   { id: 'line-041', speaker: '', text: '[ M.K. ]', characterId: null },
   {
-    id: 'line-042', speaker: '', text: '0주차 종료.', characterId: null,
+    id: 'line-042', speaker: '', text: '1주차 종료.', characterId: null,
     // The Missing Key v1 §5.6 — outfit-w0-night-walk 해금 조건.
-    effects: [{ type: 'setFlag', key: 'week0Completed', value: true }],
+    effects: [{ type: 'setFlag', key: 'week1Completed', value: true }],
   },
 ];
 
-/* OPERATION MK — WEEK 0 · SCENE 1-2 「시드니 지리 파악」 v4
-   Dialogue Set: dialogue-week0-scene001-2
-   Scene: week0-scene-001-2 (Sydney Airport arrivals concourse, map signage, 09:45)
+/* OPERATION MK — WEEK 1 · SCENE 1-2 「시드니 지리 파악」 v4
+   Dialogue Set: dialogue-week1-scene001-2
+   Scene: week1-scene-001-2 (Sydney Airport arrivals concourse, map signage, 09:45)
    Setup beat before the route-map minigame — teaches 서큘러키(Circular
    Quay)/공항/숙소(Eastwood)/영우 근무지(Marayong) as four map anchors instead
    of the old 3-stop station-name drill. nextSceneId hands off to that
@@ -560,13 +560,13 @@ const week0SceneFirstNightLines = [
    [v4 지리 정정] Eastwood is the accommodation (한인 상권이 가까워 지내기
    편한 곳) and Marayong is 영우's workplace — the reverse of the v3 draft,
    which had Marayong as the stay and a since-dropped Kings Park as the
-   workplace. minigameStages on this scene's week0Scenes registry entry
+   workplace. minigameStages on this scene's week1Scenes registry entry
    below now lists the 4 locations this setup dialogue teaches.
    [써큘러키 낚시 씬 추가] 시티(Sydney CBD)라는 뭉뚱그린 명칭 대신, 항구 바로
    앞의 실제 지명인 서큘러키(Circular Quay)를 두 번째 지점으로 쓴다 — 열차로
-   지나가는 실제 정류장이자, week0-scene-circular-quay(낚시 미니게임으로
+   지나가는 실제 정류장이자, week1-scene-circular-quay(낚시 미니게임으로
    이어짐)가 벌어지는 곳이기도 하다. */
-const week0Scene001_2Lines = [
+const week1Scene001_2Lines = [
   { id: 'line-001', speaker: '', text: '공항 도착층을 빠져나온 두 사람은\n열차 표지판과 시드니 광역 지도가 있는 안내판 앞에 멈춰 섰다.', characterId: null },
   { id: 'line-001a', speaker: '', text: '아침 시간대라 그런지 안내판 주변이 캐리어를 끄는 사람들로 붐볐다.', characterId: null },
   { id: 'line-002', speaker: '지수', text: '잠만.', characterId: 'jisoo', expression: 'curious' },
@@ -630,19 +630,19 @@ const week0Scene001_2Lines = [
   { id: 'line-055', speaker: '', text: 'MINIGAME START', characterId: null },
 ];
 
-/* OPERATION MK — WEEK 0 · SCENE 03 「열차 — 지도에서 현실로」 v08
-   Dialogue Set: dialogue-week0-scene-train
-   Scene: week0-scene-train (Sydney Trains, 10:05)
+/* OPERATION MK — WEEK 1 · SCENE 03 「열차 — 지도에서 현실로」 v08
+   Dialogue Set: dialogue-week1-scene-train
+   Scene: week1-scene-train (Sydney Trains, 10:05)
    minigame-eastwood's GAME CLEAR redirect hands off here (not straight to
    the shop scene) — this scene opens with a short callback to the just-
    finished map minigame, then settles into v08's actual train-ride content
    (tiredness/hunger banter). [v08 재편] nextSceneId now goes to
-   week0-scene-shop-intro instead of week0-scene-circular-quay — the "one
+   week1-scene-shop-intro instead of week1-scene-circular-quay — the "one
    stop early at Circular Quay" beat that used to open the old
    circular-quay scene is folded into this scene's own closing lines below,
    since that's the geography that puts them right by 더 록스 골목 for the
    shop discovery next. */
-const week0SceneTrainLines = [
+const week1SceneTrainLines = [
   { id: 'line-001', speaker: '지수', text: '오오.\n이제 좀 감 잡았어요.', characterId: 'jisoo', expression: 'happy' },
   { id: 'line-002', speaker: '영우', text: '그치.\n나중에 장소 이름 나와도 대충 알겠지?', characterId: 'youngwoo', expression: 'soft' },
   { id: 'line-003', speaker: '', text: 'Sydney Trains 열차 안.\n오전 10시 05분.', characterId: null },
@@ -684,16 +684,16 @@ const week0SceneTrainLines = [
   { id: 'line-029', speaker: '영우', text: '여행 시작부터 짐 잃어버리면 안 됩니다.', characterId: 'youngwoo', expression: 'happy' },
 ];
 
-/* OPERATION MK — WEEK 0 · SCENE 06 「서큘러키 · 사진과 낚시 제안」 v08
-   Dialogue Set: dialogue-week0-scene-circular-quay
-   Scene: week0-scene-circular-quay (Circular Quay Waterfront, 11:00)
-   [v08 재편] 더 록스 옷가게(week0-scene-shop-intro/-visit) 다음 비트로
+/* OPERATION MK — WEEK 1 · SCENE 06 「서큘러키 · 사진과 낚시 제안」 v08
+   Dialogue Set: dialogue-week1-scene-circular-quay
+   Scene: week1-scene-circular-quay (Circular Quay Waterfront, 11:00)
+   [v08 재편] 더 록스 옷가게(week1-scene-shop-intro/-visit) 다음 비트로
    옮겨서, 사진 찍고 노는 관광 파트와 "돈 벌자" 낚시 제안을 한 씬에 담았다.
    지수가 저번에 낚시 해보고 싶다고 했던 것도 함께 챙겨서, 옷값을 벌자는
    동기와 지수의 오랜 바람을 같이 풀어주는 구조로 만들었다. Hands off into
-   the standalone fishing minigame (MINIGAME_ROUTES['week0-scene-circular-
+   the standalone fishing minigame (MINIGAME_ROUTES['week1-scene-circular-
    quay-minigame'] in dev/data/sceneRoutes.js) instead of another VN scene. */
-const week0SceneCircularQuayLines = [
+const week1SceneCircularQuayLines = [
   { id: 'line-001', speaker: '', text: 'Circular Quay 워터프론트.\n오전 11시.', characterId: null },
   { id: 'line-002', speaker: '', text: '워터프론트가 한눈에 펼쳐졌다.\n한쪽에는 오페라하우스, 반대쪽에는 하버브리지,\n앞쪽으로는 페리가 천천히 움직였다.', characterId: null },
   { id: 'line-003', speaker: '지수', text: '헐....', characterId: 'jisoo', expression: 'shocked' },
@@ -755,9 +755,9 @@ const week0SceneCircularQuayLines = [
   { id: 'line-050', speaker: '', text: '[ 잠시 후 — 낚시 화면으로 이동합니다 ]', characterId: null },
 ];
 
-/* OPERATION MK — WEEK 0 · SCENE 04 「더 록스 · 작은 편집숍 발견」 v08
-   Dialogue Set: dialogue-week0-scene-shop-intro
-   Scene: week0-scene-shop-intro (The Rocks Lane, 10:40)
+/* OPERATION MK — WEEK 1 · SCENE 04 「더 록스 · 작은 편집숍 발견」 v08
+   Dialogue Set: dialogue-week1-scene-shop-intro
+   Scene: week1-scene-shop-intro (The Rocks Lane, 10:40)
    [v08 재편] 더 록스 골목, 서큘러키에서 내린 직후로 시간·장소를 옮겼다
    (예전엔 저녁 · Eastwood 숙소 근처였음) — 지도 미니게임에서 받은 500P를
    써보는 첫 시도를 낚시/관광보다 먼저 배치해 v08의 동선(옷가게 발견 →
@@ -765,8 +765,8 @@ const week0SceneCircularQuayLines = [
    어느 쪽을 골라도 같은 상점 화면으로 이어지고, 튜토리얼은 구매 여부와
    무관하게 완료된다. 실제 미리보기·구매는 대사가 아니라 /play/shop/ 화면에서
    일어난다 — hand-off는 기존 미니게임 라우팅과 같은 nextSceneId 패턴
-   (week0-scene-shop-visit, MINIGAME_ROUTES in game/index.html) 을 쓴다. */
-const week0SceneShopIntroLines = [
+   (week1-scene-shop-visit, MINIGAME_ROUTES in game/index.html) 을 쓴다. */
+const week1SceneShopIntroLines = [
   { id: 'line-001', speaker: '', text: 'The Rocks 골목.\n오전 10시 40분.', characterId: null },
   { id: 'line-002', speaker: '', text: '서큘러키 역에서 나온 두 사람은\n오페라하우스로 곧장 가지 않고 더 록스 골목 쪽으로 천천히 걸었다.', characterId: null },
   { id: 'line-003', speaker: '', text: '오래된 벽돌 건물 사이,\n작은 편집숍 쇼윈도 앞에서 지수가 갑자기 멈춰 섰다.', characterId: 'jisoo', expression: 'curious' },
@@ -792,7 +792,7 @@ const week0SceneShopIntroLines = [
   {
     id: 'line-020-transition',
     speaker: '', text: '두 사람은 편집숍 안으로 들어갔다.', characterId: null,
-    sceneTransition: { backgroundKey: 'week0-scene-shop-intro--interior', introLabel: 'THE ROCKS BOUTIQUE', time: '10:44' },
+    sceneTransition: { backgroundKey: 'week1-scene-shop-intro--interior', introLabel: 'THE ROCKS BOUTIQUE', time: '10:44' },
   },
   { id: 'line-028', speaker: '', text: '작은 가게 안,\n행거에 코디 몇 벌이 세트로 걸려 있었다.', characterId: null },
   { id: 'line-028a', speaker: '', text: '문에 달린 작은 종이 짤랑거리며\n두 사람의 입장을 알렸다.', characterId: null },
@@ -844,15 +844,15 @@ const week0SceneShopIntroLines = [
   },
 ];
 
-// week0-scene-shop-intro의 마무리 대사 — 상점 화면에서 돌아온 뒤 이어지는
-// 짧은 클로징. 실제 옷가게 UI(/play/shop/)는 week0-scene-shop-visit이 라우팅해
+// week1-scene-shop-intro의 마무리 대사 — 상점 화면에서 돌아온 뒤 이어지는
+// 짧은 클로징. 실제 옷가게 UI(/play/shop/)는 week1-scene-shop-visit이 라우팅해
 // 처리하므로, 이 배열은 그 방문 *이후* 장면으로 별도 등록하지 않고
-// week0-scene-002-1(숙소 도착)이 자연스럽게 이어받는다 — 왼쪽 상단 메뉴
+// week1-scene-002-1(숙소 도착)이 자연스럽게 이어받는다 — 왼쪽 상단 메뉴
 // 설명은 옷가게 화면 자체의 최초 진입 안내로 대체한다(§11.3의 "왼쪽 상단
 // 메뉴 설명" 비트는 실제 메뉴에 옷가게/옷장 카드가 새로 뜨는 것 자체가 그
 // 역할을 한다 — 별도 대사 없이도 CASE FILE 메뉴를 열면 바로 확인된다).
 
-// OPERATION MK — Week 0 Scene 2-2 room-search minigame's area/hotspot
+// OPERATION MK — Week 1 Scene 2-2 room-search minigame's area/hotspot
 // registry (v3 — "실제 4개 장소 이미지 기반" brief). Single source of truth
 // shared by minigame-phone-search/ (which hotspots exist and what they're
 // called) and /dev/upload (which lets a dev upload a real room photo per
@@ -865,7 +865,7 @@ const week0SceneShopIntroLines = [
 // the 4 real accommodation photos (주방/욕실/외부/침실) — no invented
 // furniture. Only IDs + display labels live here; per-hotspot flavor text,
 // item grants, and gating logic live in minigame-phone-search/index.html.
-const ROOM_SEARCH_MINIGAME_ID = 'week0-scene-002-2';
+const ROOM_SEARCH_MINIGAME_ID = 'week1-scene-002-2';
 const roomSearchAreas = [
   { id: 'kitchen', label: '주방', hotspots: [
     { id: 'kitchen-left-counter', label: '좌측 조리대' },
@@ -1002,12 +1002,12 @@ function mergeLines(...lineArrays) {
   return lineArrays.flat().map(line => ({ ...line, id: 'line-' + String(++n).padStart(3, '0') }));
 }
 
-// Registry of testable Week 0 scenes — /dev/week0 lists these, each linking
-// to /play/game/?scene=<id>. Covers the full 0주차 ARRIVAL arc (W0-S01~S10 in
+// Registry of testable Week 1 scenes — /dev/week1 lists these, each linking
+// to /play/game/?scene=<id>. Covers the full 1주차 ARRIVAL arc (W1-S01~S10 in
 // the story doc) — 비행기 오프닝부터 첫날 밤 마무리까지, including the M.K.
 // engraving reveal that seeds the entire 4-week mystery.
 //
-// Grouped into 3 beats (week0SceneGroups below: #1-2, #3-5, #6-12) rather
+// Grouped into 3 beats (week1SceneGroups below: #1-2, #3-5, #6-12) rather
 // than one entry per original scene/time-slice. A scene only keeps its own
 // registry entry when it hands off to a minigame (nextSceneId) — that
 // handoff always has to be the last beat of an entry, since a minigame is a
@@ -1020,42 +1020,42 @@ function mergeLines(...lineArrays) {
 // naming every background slot it now needs — one per location segment,
 // each its own virtual scene-id key, same one-slot-per-id pattern
 // minigameId already used for a scene's separate minigame background.
-const week0Scenes = [
+const week1Scenes = [
   {
-    id: 'week0-scene-flight',
+    id: 'week1-scene-flight',
     order: 1,
     name: '시드니 상공 · 진짜 왔네',
     location: 'In Flight',
     introLabel: 'IN FLIGHT',
     time: '착륙 10분 전',
-    // Merged week0-scene-flight + week0-scene-001 (no minigame between them) —
-    // week0Scene001Lines' first line carries the sceneTransition into the
+    // Merged week1-scene-flight + week1-scene-001 (no minigame between them) —
+    // week1Scene001Lines' first line carries the sceneTransition into the
     // second location below.
     locations: [
-      { key: 'week0-scene-flight', label: 'In Flight' },
-      { key: 'week0-scene-flight--arrival', label: 'Sydney Airport Arrival Area' },
+      { key: 'week1-scene-flight', label: 'In Flight' },
+      { key: 'week1-scene-flight--arrival', label: 'Sydney Airport Arrival Area' },
     ],
-    lines: mergeLines(week0SceneFlightLines, week0Scene001Lines),
+    lines: mergeLines(week1SceneFlightLines, week1Scene001Lines),
     // Hands off into 지하철 역 찾기 — a real playthrough (시작하기 on /play/)
     // taps straight through the whole week instead of stopping here. Note
     // this also means the "UNKNOWN SIGNAL" foreshadow beat in game/index.html
     // (gated on !nextSceneId) no longer fires at this scene's end.
-    nextSceneId: 'week0-scene-001-2',
+    nextSceneId: 'week1-scene-001-2',
   },
   {
-    id: 'week0-scene-001-2',
+    id: 'week1-scene-001-2',
     order: 2,
     name: '시드니 지리 파악 · 지하철 지도 튜토리얼',
     location: 'Sydney Airport Station',
     introLabel: 'SYDNEY',
     time: '09:45',
-    lines: week0Scene001_2Lines,
+    lines: week1Scene001_2Lines,
     // Hands off straight into the route-map minigame (not another VN scene) —
     // see MINIGAME_ROUTES in game/index.html. minigameId marks that this
     // scene has its own separate "미니게임" background slot in 배경 DB
     // (the route-map image), distinct from this scene's own VN background.
-    nextSceneId: 'week0-scene-001-2-minigame',
-    minigameId: 'week0-scene-001-2-minigame',
+    nextSceneId: 'week1-scene-001-2-minigame',
+    minigameId: 'week1-scene-001-2-minigame',
     // [v4 지리 정정] 4 map anchors the setup dialogue teaches, in the order it
     // introduces them — 배경 DB's 정답 영역 editor uses this to offer one
     // hotspot slot per location on the shared map image. Eastwood is the
@@ -1067,7 +1067,7 @@ const week0Scenes = [
     minigameStages: ['공항 (Sydney International Airport)', '서큘러키 (Circular Quay)', '숙소 (Eastwood)', '영우 근무지 (Marayong)'],
   },
   {
-    id: 'week0-scene-001-2-minigame',
+    id: 'week1-scene-001-2-minigame',
     order: 3,
     name: '시드니 지리 파악 (미니게임)',
     location: 'Sydney Airport Station',
@@ -1075,41 +1075,41 @@ const week0Scenes = [
     route: '/play/minigame-eastwood/',
   },
   {
-    id: 'week0-scene-train',
+    id: 'week1-scene-train',
     order: 4,
     name: '열차 — 지도에서 현실로',
     location: 'Sydney Trains',
     introLabel: 'SYDNEY TRAINS',
     time: '10:05',
-    lines: week0SceneTrainLines,
+    lines: week1SceneTrainLines,
     // [v08 재편] Hands off straight into the shop-discovery beat now — the
     // "get off one stop early at Circular Quay" reveal that used to open
-    // week0-scene-circular-quay is folded into this scene's own closing
-    // lines (see week0SceneTrainLines' header comment), since that's the
+    // week1-scene-circular-quay is folded into this scene's own closing
+    // lines (see week1SceneTrainLines' header comment), since that's the
     // geography that puts them right by 더 록스 골목 for the shop.
-    nextSceneId: 'week0-scene-shop-intro',
+    nextSceneId: 'week1-scene-shop-intro',
   },
   {
-    id: 'week0-scene-shop-intro',
+    id: 'week1-scene-shop-intro',
     order: 5,
     name: '더 록스 · 작은 편집숍 발견',
     location: 'The Rocks Lane',
     introLabel: 'THE ROCKS',
     time: '10:40',
     locations: [
-      { key: 'week0-scene-shop-intro', label: 'The Rocks Lane' },
-      { key: 'week0-scene-shop-intro--interior', label: 'The Rocks Boutique Interior' },
+      { key: 'week1-scene-shop-intro', label: 'The Rocks Lane' },
+      { key: 'week1-scene-shop-intro--interior', label: 'The Rocks Boutique Interior' },
     ],
-    lines: week0SceneShopIntroLines,
+    lines: week1SceneShopIntroLines,
     // Hands off to the actual shop screen (a separate routed page, not a VN
     // scene — spec §5.3 "상점은 모달이 아니라 별도 씬으로 처리") via the same
     // MINIGAME_ROUTES handoff every other minigame uses. See
     // dev/data/sceneRoutes.js for the SHOP_TUTORIAL_RETURN_SCENE wiring back
-    // into week0-scene-circular-quay.
-    nextSceneId: 'week0-scene-shop-visit',
+    // into week1-scene-circular-quay.
+    nextSceneId: 'week1-scene-shop-visit',
   },
   {
-    id: 'week0-scene-shop-visit',
+    id: 'week1-scene-shop-visit',
     order: 6,
     name: '옷가게 튜토리얼',
     location: 'The Rocks Boutique',
@@ -1117,20 +1117,20 @@ const week0Scenes = [
     route: '/play/shop/',
   },
   {
-    id: 'week0-scene-circular-quay',
+    id: 'week1-scene-circular-quay',
     order: 7,
     name: '서큘러키 · 사진과 낚시 제안',
     location: 'Circular Quay Waterfront',
     introLabel: 'CIRCULAR QUAY',
     time: '11:00',
-    lines: week0SceneCircularQuayLines,
+    lines: week1SceneCircularQuayLines,
     // Hands off to the standalone fishing minigame (a routed page, same
     // MINIGAME_ROUTES handoff every other minigame uses) — see
     // dev/data/sceneRoutes.js.
-    nextSceneId: 'week0-scene-circular-quay-minigame',
+    nextSceneId: 'week1-scene-circular-quay-minigame',
   },
   {
-    id: 'week0-scene-circular-quay-minigame',
+    id: 'week1-scene-circular-quay-minigame',
     order: 8,
     name: '서큘러키 낚시',
     location: 'Circular Quay Waterfront',
@@ -1138,15 +1138,15 @@ const week0Scenes = [
     route: '/play/minigame-fishing/',
   },
   {
-    id: 'week0-scene-002-1',
+    id: 'week1-scene-002-1',
     order: 9,
     name: '낚시 수익 정산 · 진짜 같이 있네 · 사라진 폰',
     location: 'Eastwood Accommodation',
     introLabel: 'EASTWOOD',
     time: '13:40',
-    // Merged week0-scene-002-1 + week0-scene-dinner + week0-scene-charger —
+    // Merged week1-scene-002-1 + week1-scene-dinner + week1-scene-charger —
     // dinner and the trip back are plain location changes now (see
-    // sceneTransition markers on week0SceneDinnerLines/week0SceneChargerLines'
+    // sceneTransition markers on week1SceneDinnerLines/week1SceneChargerLines'
     // first lines), not minigame boundaries, so they no longer need their
     // own registry entries. Still ends on charger's own minigame handoff —
     // that has to stay the last beat of this entry. [v08 재편] Also picks up
@@ -1154,28 +1154,28 @@ const week0Scenes = [
     // in sceneRoutes.js), opening on a quick profit-split banter before the
     // existing room-reveal beat.
     locations: [
-      { key: 'week0-scene-002-1', label: 'Eastwood Accommodation' },
-      { key: 'week0-scene-002-1--dinner', label: 'Restaurant near Eastwood Accommodation' },
+      { key: 'week1-scene-002-1', label: 'Eastwood Accommodation' },
+      { key: 'week1-scene-002-1--dinner', label: 'Restaurant near Eastwood Accommodation' },
     ],
-    lines: mergeLines(week0Scene002_1Lines, week0SceneDinnerLines, week0SceneChargerLines),
+    lines: mergeLines(week1Scene002_1Lines, week1SceneDinnerLines, week1SceneChargerLines),
     // Not a loop — this scene hands off to the point-and-click phone-hunt
-    // minigame (week0-scene-002-2). See MINIGAME_ROUTES in game/index.html.
-    nextSceneId: 'week0-scene-002-2',
+    // minigame (week1-scene-002-2). See MINIGAME_ROUTES in game/index.html.
+    nextSceneId: 'week1-scene-002-2',
   },
   {
-    id: 'week0-scene-002-2',
+    id: 'week1-scene-002-2',
     order: 10,
     name: '핸드폰을 찾아라',
     location: 'Eastwood Accommodation',
     time: '20:35',
     // No `lines` — this isn't a VN scene, it's the point-and-click minigame
-    // itself. `route` overrides /dev/week0's default /play/game/?scene=<id>
+    // itself. `route` overrides /dev/week1's default /play/game/?scene=<id>
     // link so this entry opens the minigame page directly, letting it be
-    // tested standalone instead of only via week0-scene-charger's VN handoff.
+    // tested standalone instead of only via week1-scene-charger's VN handoff.
     route: '/play/minigame-phone-search/',
   },
   {
-    id: 'week0-scene-002-3',
+    id: 'week1-scene-002-3',
     order: 11,
     name: '근데 이 열쇠 뭐지? · 집주인과의 통화 · 첫날 밤',
     location: 'Eastwood Accommodation',
@@ -1185,44 +1185,44 @@ const week0Scenes = [
     // in minigame-phone-search/index.html) — keeps this id even after the
     // merge below so that redirect still resolves.
     //
-    // Merged week0-scene-002-3 + week0-scene-frontdesk + week0-scene-firstnight
+    // Merged week1-scene-002-3 + week1-scene-frontdesk + week1-scene-firstnight
     // (all Sydney Accommodation, back to back, no minigame handoff between
     // them now that the old lobby/front-desk trip was reworked into a phone
-    // call from the room — see week0SceneFrontdeskLines' header comment).
-    lines: mergeLines(week0Scene002_3Lines, week0SceneFrontdeskLines, week0SceneFirstNightLines),
+    // call from the room — see week1SceneFrontdeskLines' header comment).
+    lines: mergeLines(week1Scene002_3Lines, week1SceneFrontdeskLines, week1SceneFirstNightLines),
   },
 ];
 
-// 0주차's 3 narrative beats — /dev/week0 groups week0Scenes under these
+// 1주차's 3 narrative beats — /dev/week1 groups week1Scenes under these
 // headers instead of one flat list, each range naming the original (pre-
 // merge) scene numbers it covers. A group's sceneIds list its member
 // registry entries in play order, minigames included in sequence alongside
 // the VN scenes around them — a minigame can never be folded into a single
 // `lines` array (it's a separate routed page), so it stays its own entry
 // even inside a group whose other members got merged.
-const week0SceneGroups = [
-  { range: '#1-2', label: '공항 도착', sceneIds: ['week0-scene-flight'] },
-  { range: '#3-5', label: '지하철 · 열차', sceneIds: ['week0-scene-001-2', 'week0-scene-001-2-minigame', 'week0-scene-train'] },
+const week1SceneGroups = [
+  { range: '#1-2', label: '공항 도착', sceneIds: ['week1-scene-flight'] },
+  { range: '#3-5', label: '지하철 · 열차', sceneIds: ['week1-scene-001-2', 'week1-scene-001-2-minigame', 'week1-scene-train'] },
   // [v08 재편] The Missing Key v1 §5.2 — 지도 미니게임에서 받은 500P를 처음
   // 써보는 옷가게 발견 비트. 열차와 서큘러키 관광 사이로 옮겨왔다(더 록스
   // 골목 = 서큘러키에서 내린 직후 걷는 길).
-  { range: 'NEW', label: '옷가게 발견', sceneIds: ['week0-scene-shop-intro', 'week0-scene-shop-visit'] },
+  { range: 'NEW', label: '옷가게 발견', sceneIds: ['week1-scene-shop-intro', 'week1-scene-shop-visit'] },
   // 서큘러키 사진 + 낚시 제안 — 옷값을 벌자는 동기와 지수의 오랜 낚시
   // 바람을 한 씬에 담았다.
-  { range: 'NEW', label: '서큘러키 · 낚시', sceneIds: ['week0-scene-circular-quay', 'week0-scene-circular-quay-minigame'] },
-  { range: '#6-12', label: '숙소 첫날', sceneIds: ['week0-scene-002-1', 'week0-scene-002-2', 'week0-scene-002-3'] },
+  { range: 'NEW', label: '서큘러키 · 낚시', sceneIds: ['week1-scene-circular-quay', 'week1-scene-circular-quay-minigame'] },
+  { range: '#6-12', label: '숙소 첫날', sceneIds: ['week1-scene-002-1', 'week1-scene-002-2', 'week1-scene-002-3'] },
 ];
 
-/* OPERATION MK — WEEK 1 · SCENE 01 「시티로 출발」
-   Dialogue Set: dialogue-week1-scene001
-   Scene: week1-scene-001 (Circular Quay 이동 중, 09:40)
+/* OPERATION MK — WEEK 2 · SCENE 01 「시티로 출발」
+   Dialogue Set: dialogue-week2-scene001
+   Scene: week2-scene-001 (Circular Quay 이동 중, 09:40)
 
-   ===== 1주차 장편 확장 v2 · §5 =====
+   ===== 2주차 장편 확장 v2 · §5 =====
    페이즈 A(여행 대화, 원래 내용 유지) + 페이즈 B(선택지 3회) 확장. 선택은
    전부 flag로만 남고(§22 investigationState/interrogationState와 같은 결의
    "가벼운 분기") 이후 대사를 크게 바꾸진 않는다 — 그 자체로 관계성/캐릭터
    플레이타임을 늘리는 것이 목적이라는 문서 §3의 취지에 맞춘 선택이다. */
-const week1Scene001Lines = [
+const week2Scene001Lines = [
   { id: 'line-001', speaker: '', text: '며칠째 이어진 여행.\n오늘은 시티로 나가는 날이다.', characterId: null },
   { id: 'line-002', speaker: '지수', text: '오늘 드디어 오페라하우스 가는 날이죠?', characterId: 'jisoo', expression: 'happy' },
   { id: 'line-003', speaker: '영우', text: '웅웅.\n서큘러키 쪽으로 쭉 걸을 거야.', characterId: 'youngwoo', expression: 'soft' },
@@ -1242,16 +1242,16 @@ const week1Scene001Lines = [
   {
     id: 'choice-plan', type: 'choice', speaker: '지수', text: '오늘 가장 먼저 하고 싶은 게 뭐예요?', characterId: 'jisoo', expression: 'curious',
     choices: [
-      { id: 'opera', label: '오페라하우스 사진부터', goto: 'plan-opera', effects: [{ type: 'setFlag', key: 'w1-first-pick', value: 'opera' }] },
-      { id: 'bridge', label: '하버브리지 쪽으로 걷기', goto: 'plan-bridge', effects: [{ type: 'setFlag', key: 'w1-first-pick', value: 'bridge' }] },
-      { id: 'cafe', label: '카페부터 가기', goto: 'plan-cafe', effects: [{ type: 'setFlag', key: 'w1-first-pick', value: 'cafe' }] },
+      { id: 'opera', label: '오페라하우스 사진부터', goto: 'plan-opera', effects: [{ type: 'setFlag', key: 'w2-first-pick', value: 'opera' }] },
+      { id: 'bridge', label: '하버브리지 쪽으로 걷기', goto: 'plan-bridge', effects: [{ type: 'setFlag', key: 'w2-first-pick', value: 'bridge' }] },
+      { id: 'cafe', label: '카페부터 가기', goto: 'plan-cafe', effects: [{ type: 'setFlag', key: 'w2-first-pick', value: 'cafe' }] },
     ],
   },
   { id: 'plan-opera', speaker: '영우', text: '역시. 그럴 줄 알았어.', characterId: 'youngwoo', expression: 'happy', goto: 'choice-pose' },
   { id: 'plan-bridge', speaker: '영우', text: '오, 오늘은 걷는 쪽이야?', characterId: 'youngwoo', expression: 'curious', goto: 'choice-pose' },
   { id: 'plan-cafe', speaker: '영우', text: '역시 카페부터. 지수답다.', characterId: 'youngwoo', expression: 'soft', goto: 'choice-pose' },
   {
-    // v4 §13.1 — this choice's flag (w1-photo-style) never had a downstream
+    // v4 §13.1 — this choice's flag (w2-photo-style) never had a downstream
     // read; each option already branches to its own goto with distinct
     // flavor text, so dropping the flag isn't a narrative loss, just dead
     // bookkeeping removed.
@@ -1280,34 +1280,34 @@ const week1Scene001Lines = [
   { id: 'line-018', speaker: '', text: '영우의 그 말은,\n오래가지 못했다.', characterId: 'youngwoo', expression: 'soft' },
 ];
 
-// week1-scene-002(관광객 모드)는 더 이상 별도 VN 씬이 아니다 — 사진 포즈
+// week2-scene-002(관광객 모드)는 더 이상 별도 VN 씬이 아니다 — 사진 포즈
 // 루프/전시장 발견 선택지 대사는 그대로 dev/data/interactionDefs.js의
-// 'w1-phase1-intro'(type:'phaseIntro')로 옮겨졌고, Phase 1(W1_TOURISM)에
+// 'w2-phase1-intro'(type:'phaseIntro')로 옮겨졌고, Phase 1(W2_TOURISM)에
 // 처음 진입할 때 탐색허브 안에서 자동 재생된다 — see performMove() in
 // play/explore/index.html.
 
-/* OPERATION MK — WEEK 1 · SCENE 03 「증거 수집 · 전시장」
-   Dialogue Set: dialogue-week1-scene003
-   Scene: week1-scene-003 (빈티지 팝업 전시장, 10:40)
+/* OPERATION MK — WEEK 2 · SCENE 03 「증거 수집 · 전시장」
+   Dialogue Set: dialogue-week2-scene003
+   Scene: week2-scene-003 (빈티지 팝업 전시장, 10:40)
 
    ===== 전시장 자유 조사 =====
    원래 여기 있던 10개 핫스팟 텍스트 선택지 루프는 한때
-   week1-scene-003-minigame(dev/minigame-exhibition-search, 전용 미니게임
+   week2-scene-003-minigame(dev/minigame-exhibition-search, 전용 미니게임
    페이지)으로 옮겨졌다가, §신규 재편으로 그 미니게임 자체를 없애고 다시
-   장소 기반으로 되돌렸다 — 이번엔 탐색 허브의 w1-adrian-spot(전시장 보조
-   진열 구역, Phase 4/5와 같은 장소를 W1_TOURISM에도 재사용)에 조사하기
-   핫스팟 10개로 이식했다(w1as-topic-*, dev/data/interactionDefs.js). K-01
+   장소 기반으로 되돌렸다 — 이번엔 탐색 허브의 w2-adrian-spot(전시장 보조
+   진열 구역, Phase 4/5와 같은 장소를 W2_TOURISM에도 재사용)에 조사하기
+   핫스팟 10개로 이식했다(w2as-topic-*, dev/data/interactionDefs.js). K-01
    발견 비트만 원래처럼 여러 줄 대사로 유지되고, 나머지 9개는 짧은 관찰
    한 줄씩이다. 이 VN 씬은 짧은 도입부만 담당하고 nextSceneId로 그 허브
-   장소에 곧장 내려준다(week1-scene-003-exhibition-return, see
+   장소에 곧장 내려준다(week2-scene-003-exhibition-return, see
    dev/data/sceneRoutes.js) — 조사 완료 여부는 강제하지 않으며(§20 게임오버
-   없음), w1-adrian-spot 자체의 enterSceneId("이제 안쪽으로 들어가자")로
-   week1-scene-004(도난 발생)로 넘어간다.
+   없음), w2-adrian-spot 자체의 enterSceneId("이제 안쪽으로 들어가자")로
+   week2-scene-004(도난 발생)로 넘어간다.
 
    허브로 넘어가기 직전, 입장 직후에 전시장 직원과 짧게 안내를 주고받고
    영우/지수 티키타카 한 소절을 끼워 넣는다(staff-greet-1~4, banter-1~9).
    flag/effect 없는 순수 텍스트 비트로, 허브 핸드오프에는 영향을 주지 않는다. */
-const week1Scene003Lines = [
+const week2Scene003Lines = [
   { id: 'line-001', speaker: '', text: '빈티지 팝업 전시장.\n오전 10시 40분.', characterId: null },
   { id: 'line-002', speaker: '', text: '작은 공간에 오래된 시계, 카메라, 금속 공예품들이\n유리 진열장 안에 나란히 놓여 있다.', characterId: null },
   { id: 'line-003', speaker: '지수', text: '오 여기 나름 알차네.', characterId: 'jisoo', expression: 'curious' },
@@ -1328,14 +1328,14 @@ const week1Scene003Lines = [
   { id: 'line-005', speaker: '지수', text: '웅웅, 하나씩 다 볼래요.', characterId: 'jisoo', expression: 'happy' },
 ];
 
-/* OPERATION MK — WEEK 1 · SCENE 04 「도난 발생 및 사진 분석」
-   Dialogue Set: dialogue-week1-scene004
-   Scene: week1-scene-004 (빈티지 팝업 전시장, 10:47)
+/* OPERATION MK — WEEK 2 · SCENE 04 「도난 발생 및 사진 분석」
+   Dialogue Set: dialogue-week2-scene004
+   Scene: week2-scene-004 (빈티지 팝업 전시장, 10:47)
    Ends on a MINIGAME START beat — nextSceneId hands off to the expanded
-   photo-zoom minigame (week1-scene-004-minigame), whose own completion then
-   redirects into week1-scene-004-review for the remaining 시간순 배열/시간
+   photo-zoom minigame (week2-scene-004-minigame), whose own completion then
+   redirects into week2-scene-004-review for the remaining 시간순 배열/시간
    범위 선택 단계 (§8 1~2단계, 5단계 — 3~4단계는 미니게임 자체가 담당). */
-const week1Scene004Lines = [
+const week2Scene004Lines = [
   { id: 'line-001', speaker: '', text: '같은 전시장.\n오전 10시 47분.', characterId: null },
   { id: 'line-002', speaker: '', text: '단체 관광객 무리가 빠져나가고 나서야\n전시장이 다시 조용해졌다.', characterId: null },
   { id: 'line-003', speaker: '클레어', text: '어...\n잠깐만요.', characterId: 'claire', expression: 'shocked' },
@@ -1369,11 +1369,11 @@ const week1Scene004Lines = [
   { id: 'line-031', speaker: '', text: 'MINIGAME START', characterId: null },
 ];
 
-/* OPERATION MK — WEEK 1 · SCENE 04-REVIEW 「사진 분석 마무리」
-   Dialogue Set: dialogue-week1-scene004-review
-   Scene: week1-scene-004-review (빈티지 팝업 전시장, 10:56)
+/* OPERATION MK — WEEK 2 · SCENE 04-REVIEW 「사진 분석 마무리」
+   Dialogue Set: dialogue-week2-scene004-review
+   Scene: week2-scene-004-review (빈티지 팝업 전시장, 10:56)
 
-   ===== 1주차 장편 확장 v2 · §8 =====
+   ===== 2주차 장편 확장 v2 · §8 =====
    photo-zoom 미니게임이 이제 2~4단계를 전부 담당한다 — 상태 변화/인물
    태그 찾기(기존)에 이어, 완료 즉시 미니게임 안에서 사진 7장을 뒤섞어
    시간순으로 다시 배치하는 실제 게임(order phase, PHOTOS 배열 순서가
@@ -1382,7 +1382,7 @@ const week1Scene004Lines = [
    씬에는 5단계(사건 발생 시간 선택)만 남는다 — "정답은 넓은 구간으로
    먼저 제시" 원칙대로 10:44~10:48 하나만 정답으로 두고 나머지는 오답
    처리한다. */
-const week1Scene004ReviewLines = [
+const week2Scene004ReviewLines = [
   { id: 'line-001', speaker: '', text: '전시장 한쪽.\n오전 10시 56분.', characterId: null },
   { id: 'line-002', speaker: '지수', text: '사진 순서는 방금 맞춰봤고.', characterId: 'jisoo', expression: 'serious' },
   { id: 'line-004', speaker: '영우', text: '그럼 이제, 실제로 없어진 시간대는 언제쯤일까?', characterId: 'youngwoo', expression: 'curious' },
@@ -1411,17 +1411,17 @@ const week1Scene004ReviewLines = [
   { id: 'line-007', speaker: '지수', text: '사진에 제일 많이 나온 사람부터 볼까요.', characterId: 'jisoo', expression: 'suspicious' },
 ];
 
-/* OPERATION MK — WEEK 1 · SCENE 05 「용의자 선별 및 현장 재조사」 (신규)
-   Dialogue Set: dialogue-week1-scene005
-   Scene: week1-scene-005 (빈티지 팝업 전시장, 11:00)
+/* OPERATION MK — WEEK 2 · SCENE 05 「용의자 선별 및 현장 재조사」 (신규)
+   Dialogue Set: dialogue-week2-scene005
+   Scene: week2-scene-005 (빈티지 팝업 전시장, 11:00)
 
-   ===== 1주차 장편 확장 v2 · §9 =====
+   ===== 2주차 장편 확장 v2 · §9 =====
    신규 씬. 단계 A(용의자 후보 선택, 반복 선택 루프) → 단계 B(현장 재조사,
    §18의 선택 조사 A/B/C를 여기 포함) → 단계 C(첫 가설 선택, 정답은 항상
    "아직 판단 불가"지만 고른 값은 flag로 남아 이후 지수 대사에 살짝
    반영된다). 선택 조사 evidence 중 일부는 이후 레오 집중 심문(Round 5)에서
    "정답 증거"의 대체 옵션으로도 인정된다(evidenceIds 배열에 같이 등재). */
-const week1Scene005Lines = [
+const week2Scene005Lines = [
   { id: 'line-001', speaker: '', text: '전시장 한쪽, 사람들이 빠져나간 자리.\n오전 11시.', characterId: null },
   { id: 'line-002', speaker: '지수', text: '자, 사진에 나온 사람들부터 다시 짚어볼게요.', characterId: 'jisoo', expression: 'serious' },
   {
@@ -1459,8 +1459,8 @@ const week1Scene005Lines = [
   { id: 'suspect-wrong', speaker: '영우', text: '음, 이분은 그냥 한 번 스쳐 지나간 것 같은데.', characterId: 'youngwoo', expression: 'blank', goto: 'suspect-menu' },
   { id: 'reexam-intro', speaker: '영우', text: '그럼 이제, 사건 전이랑 뭐가 달라졌는지 다시 한번 볼까?', characterId: 'youngwoo', expression: 'curious' },
   {
-    // 태그 위치/먼지 자국은 나중에 필수 심문 게이트(week1-scene-007 R4,
-    // week1-scene-009 R4/R5)의 유일하거나 핵심적인 근거라, 재조사 루프의
+    // 태그 위치/먼지 자국은 나중에 필수 심문 게이트(week2-scene-007 R4,
+    // week2-scene-009 R4/R5)의 유일하거나 핵심적인 근거라, 재조사 루프의
     // "선택" 항목이 아니라 여기서 먼저 확정적으로 보여준다 — 선택 조사(§18)는
     // 아래 reexam-menu 루프에만 남긴다.
     id: 'reexam-tag', speaker: '지수', text: '어? 태그 위치가 아까 봤을 때랑 다른데요.', characterId: 'jisoo', expression: 'suspicious',
@@ -1552,13 +1552,13 @@ const week1Scene005Lines = [
   },
   {
     // v4 §6/§7.1 — 두 개의 실제 의문점을 등록하고, 아래 두 선택은 정답/오답을
-    // 즉시 밝히지 않는 진짜 "가설"이 된다 (구 w1-first-hypothesis flag는
+    // 즉시 밝히지 않는 진짜 "가설"이 된다 (구 w2-first-hypothesis flag는
     // 아무 데서도 읽히지 않는 죽은 값이었다 — §13.1). 한 번만 등록하면 되므로
     // addQuestion은 이 소개 대사에 붙인다.
     id: 'hypothesis-intro', speaker: '지수', text: '자, 정리해볼게요.', characterId: 'jisoo', expression: 'serious',
     effects: [
-      { type: 'addQuestion', question: { id: 'q-w1-who-removed-k01', title: 'K-01을 직접 꺼낸 사람은 누구인가?', linkedEvidenceIds: ['evidence-staff-tag-position-after', 'evidence-case-dust-mark'] } },
-      { type: 'addQuestion', question: { id: 'q-w1-case-nature', title: '현재 사건의 성격은 무엇에 가까운가?', linkedEvidenceIds: [] } },
+      { type: 'addQuestion', question: { id: 'q-w2-who-removed-k01', title: 'K-01을 직접 꺼낸 사람은 누구인가?', linkedEvidenceIds: ['evidence-staff-tag-position-after', 'evidence-case-dust-mark'] } },
+      { type: 'addQuestion', question: { id: 'q-w2-case-nature', title: '현재 사건의 성격은 무엇에 가까운가?', linkedEvidenceIds: [] } },
     ],
   },
   {
@@ -1566,20 +1566,20 @@ const week1Scene005Lines = [
     revealCorrectness: false,
     choices: [
       { id: 'mina', label: '윤민아', goto: 'who-removed-any', effects: [
-        { type: 'setQuestionStatus', id: 'q-w1-who-removed-k01', status: 'investigating' },
-        { type: 'setHypothesis', questionId: 'q-w1-who-removed-k01', hypothesis: { id: 'hyp-mina-removed', questionId: 'q-w1-who-removed-k01', text: '윤민아가 K-01을 직접 꺼냈다.' } },
+        { type: 'setQuestionStatus', id: 'q-w2-who-removed-k01', status: 'investigating' },
+        { type: 'setHypothesis', questionId: 'q-w2-who-removed-k01', hypothesis: { id: 'hyp-mina-removed', questionId: 'q-w2-who-removed-k01', text: '윤민아가 K-01을 직접 꺼냈다.' } },
       ] },
       { id: 'adrian', label: '애드리언 콜', goto: 'who-removed-any', effects: [
-        { type: 'setQuestionStatus', id: 'q-w1-who-removed-k01', status: 'investigating' },
-        { type: 'setHypothesis', questionId: 'q-w1-who-removed-k01', hypothesis: { id: 'hyp-adrian-removed', questionId: 'q-w1-who-removed-k01', text: '애드리언이 K-01을 직접 꺼냈다.' } },
+        { type: 'setQuestionStatus', id: 'q-w2-who-removed-k01', status: 'investigating' },
+        { type: 'setHypothesis', questionId: 'q-w2-who-removed-k01', hypothesis: { id: 'hyp-adrian-removed', questionId: 'q-w2-who-removed-k01', text: '애드리언이 K-01을 직접 꺼냈다.' } },
       ] },
       { id: 'leo', label: '레오 박', goto: 'who-removed-any', effects: [
-        { type: 'setQuestionStatus', id: 'q-w1-who-removed-k01', status: 'investigating' },
-        { type: 'setHypothesis', questionId: 'q-w1-who-removed-k01', hypothesis: { id: 'hyp-leo-removed', questionId: 'q-w1-who-removed-k01', text: '레오가 K-01을 직접 꺼냈다.' } },
+        { type: 'setQuestionStatus', id: 'q-w2-who-removed-k01', status: 'investigating' },
+        { type: 'setHypothesis', questionId: 'q-w2-who-removed-k01', hypothesis: { id: 'hyp-leo-removed', questionId: 'q-w2-who-removed-k01', text: '레오가 K-01을 직접 꺼냈다.' } },
       ] },
       { id: 'unsure', label: '아직 모름', goto: 'who-removed-any', effects: [
-        { type: 'setQuestionStatus', id: 'q-w1-who-removed-k01', status: 'open' },
-        { type: 'setHypothesis', questionId: 'q-w1-who-removed-k01', hypothesis: { id: 'hyp-unknown-remover', questionId: 'q-w1-who-removed-k01', text: '아직 누구인지 확실하지 않다.' } },
+        { type: 'setQuestionStatus', id: 'q-w2-who-removed-k01', status: 'open' },
+        { type: 'setHypothesis', questionId: 'q-w2-who-removed-k01', hypothesis: { id: 'hyp-unknown-remover', questionId: 'q-w2-who-removed-k01', text: '아직 누구인지 확실하지 않다.' } },
       ] },
     ],
   },
@@ -1588,28 +1588,28 @@ const week1Scene005Lines = [
     id: 'hypothesis-choice', type: 'choice', mode: 'hypothesis', speaker: '', text: '현재 사건의 성격은 무엇에 가까운가?', characterId: null,
     revealCorrectness: false,
     choices: [
-      { id: 'impulse', label: '외부 방문객의 충동 절도', goto: 'hyp-any', effects: [{ type: 'setHypothesis', questionId: 'q-w1-case-nature', hypothesis: { id: 'hyp-case-impulse', questionId: 'q-w1-case-nature', text: '외부 방문객의 충동 절도다.' } }] },
-      { id: 'insider', label: '내부 직원의 계획적 절도', goto: 'hyp-any', effects: [{ type: 'setHypothesis', questionId: 'q-w1-case-nature', hypothesis: { id: 'hyp-case-insider', questionId: 'q-w1-case-nature', text: '내부 직원의 계획적 절도다.' } }] },
-      { id: 'commission', label: '누군가 특정 물건만 노린 의뢰형 사건', goto: 'hyp-any', effects: [{ type: 'setHypothesis', questionId: 'q-w1-case-nature', hypothesis: { id: 'hyp-case-commission', questionId: 'q-w1-case-nature', text: '누군가 특정 물건만 노린 의뢰형 사건이다.' } }] },
-      { id: 'unsure', label: '아직 판단 불가', goto: 'hyp-any', effects: [{ type: 'setHypothesis', questionId: 'q-w1-case-nature', hypothesis: { id: 'hyp-case-unsure', questionId: 'q-w1-case-nature', text: '아직 판단할 수 없다.' } }] },
+      { id: 'impulse', label: '외부 방문객의 충동 절도', goto: 'hyp-any', effects: [{ type: 'setHypothesis', questionId: 'q-w2-case-nature', hypothesis: { id: 'hyp-case-impulse', questionId: 'q-w2-case-nature', text: '외부 방문객의 충동 절도다.' } }] },
+      { id: 'insider', label: '내부 직원의 계획적 절도', goto: 'hyp-any', effects: [{ type: 'setHypothesis', questionId: 'q-w2-case-nature', hypothesis: { id: 'hyp-case-insider', questionId: 'q-w2-case-nature', text: '내부 직원의 계획적 절도다.' } }] },
+      { id: 'commission', label: '누군가 특정 물건만 노린 의뢰형 사건', goto: 'hyp-any', effects: [{ type: 'setHypothesis', questionId: 'q-w2-case-nature', hypothesis: { id: 'hyp-case-commission', questionId: 'q-w2-case-nature', text: '누군가 특정 물건만 노린 의뢰형 사건이다.' } }] },
+      { id: 'unsure', label: '아직 판단 불가', goto: 'hyp-any', effects: [{ type: 'setHypothesis', questionId: 'q-w2-case-nature', hypothesis: { id: 'hyp-case-unsure', questionId: 'q-w2-case-nature', text: '아직 판단할 수 없다.' } }] },
     ],
   },
   { id: 'hyp-any', speaker: '영우', text: '그럴듯한데, 아직은 뭐가 맞는지 모르겠다.', characterId: 'youngwoo', expression: 'blank' },
   { id: 'line-003', speaker: '지수', text: '맞아요.\n일단 한 명씩 직접 만나서 물어보죠.', characterId: 'jisoo', expression: 'serious' },
 ];
 
-/* OPERATION MK — WEEK 1 · SCENE 05a 「클레어 최초 진술」
-   Dialogue Set: dialogue-week1-scene005a
-   Scene: week1-scene-005a (Pop-up Exhibition 접수대, 11:05)
+/* OPERATION MK — WEEK 2 · SCENE 05a 「클레어 최초 진술」
+   Dialogue Set: dialogue-week2-scene005a
+   Scene: week2-scene-005a (Pop-up Exhibition 접수대, 11:05)
 
-   The Missing Key v4 §9.1 — 클레어는 이제 처음 등장(week1-scene-003의
+   The Missing Key v4 §9.1 — 클레어는 이제 처음 등장(week2-scene-003의
    staff-greet)부터 이름·초상으로 나오지만, 플레이어가 "클레어"라는 이름을
    실제로 듣는 건 이 씬이 처음이다 — line-003에서 자기소개를 받는다. 여기서
    밝히는 알리바이("사건 시간대 내내 접수대에 있었다")는 거짓이며, 이 씬에서는
    깨지지 않는다 — evidence-claire-alibi-statement로 증언만 등록해 두고,
-   실제 반박은 week1-scene-008a(재심문)에서 다니엘의 목격담과 충돌시켜
+   실제 반박은 week2-scene-008a(재심문)에서 다니엘의 목격담과 충돌시켜
    이뤄진다. */
-const week1Scene005aLines = [
+const week2Scene005aLines = [
   { id: 'line-001', speaker: '', text: '전시장 접수대.\n오전 11시 5분.', characterId: null },
   { id: 'line-002', speaker: '지수', text: '저희가 몇 가지만 여쭤봐도 될까요?', characterId: 'jisoo', expression: 'neutral' },
   {
@@ -1639,16 +1639,16 @@ const week1Scene005aLines = [
   { id: 'line-009', speaker: '지수', text: '네, 감사합니다. 혹시 더 여쭤볼 게 있으면 다시 올게요.', characterId: 'jisoo', expression: 'neutral' },
 ];
 
-/* OPERATION MK — WEEK 1 · SCENE 05b 「다니엘 최초 진술」
-   Dialogue Set: dialogue-week1-scene005b
-   Scene: week1-scene-005b (Pop-up Exhibition 앞, 11:07)
+/* OPERATION MK — WEEK 2 · SCENE 05b 「다니엘 최초 진술」
+   Dialogue Set: dialogue-week2-scene005b
+   Scene: week2-scene-005b (Pop-up Exhibition 앞, 11:07)
 
    The Missing Key v4 §9.3 — 관광 가이드 다니엘이 "회색 모자 관광객"이라는
    잘못된 네 번째 용의자를 만든다. 여기서 플레이어가 그 정체에 대한 가설을
    고르지만(§7.1과 같은 mode:'hypothesis' — 즉시 정답을 밝히지 않는다),
-   실제 해소는 week1-scene-008a에서 실루엣과 레오의 가방 끈을 연결해야
+   실제 해소는 week2-scene-008a에서 실루엣과 레오의 가방 끈을 연결해야
    이뤄진다. */
-const week1Scene005bLines = [
+const week2Scene005bLines = [
   { id: 'line-001', speaker: '', text: '전시장 앞 광장.\n오전 11시 7분.', characterId: null },
   { id: 'line-002', speaker: '', text: '깃발을 든 남자가 단체 관광객을 인솔하고 있었다.', characterId: null },
   { id: 'line-003', speaker: '영우', text: '저기, 잠시만요. 가이드분이세요?', characterId: 'youngwoo', expression: 'curious' },
@@ -1690,19 +1690,19 @@ const week1Scene005bLines = [
   {
     id: 'graycap-hypothesis', type: 'choice', mode: 'hypothesis', speaker: '', text: '현재 그 회색 모자 관광객의 정체로 가장 가능성 높은 것은?', characterId: null,
     revealCorrectness: false,
-    effects: [{ type: 'addQuestion', question: { id: 'q-w1-graycap-identity', title: '회색 모자를 쓴 관광객은 누구인가?', linkedEvidenceIds: ['evidence-daniel-graycap-sighting', 'evidence-daniel-silhouette-report'] } }],
+    effects: [{ type: 'addQuestion', question: { id: 'q-w2-graycap-identity', title: '회색 모자를 쓴 관광객은 누구인가?', linkedEvidenceIds: ['evidence-daniel-graycap-sighting', 'evidence-daniel-silhouette-report'] } }],
     choices: [
       { id: 'fourth-suspect', label: '단체 관광객 중 제4의 용의자', goto: 'graycap-any', effects: [
-        { type: 'setQuestionStatus', id: 'q-w1-graycap-identity', status: 'investigating' },
-        { type: 'setHypothesis', questionId: 'q-w1-graycap-identity', hypothesis: { id: 'hyp-graycap-fourth-suspect', questionId: 'q-w1-graycap-identity', text: '회색 모자 관광객은 단체와 무관한 제4의 용의자다.' } },
+        { type: 'setQuestionStatus', id: 'q-w2-graycap-identity', status: 'investigating' },
+        { type: 'setHypothesis', questionId: 'q-w2-graycap-identity', hypothesis: { id: 'hyp-graycap-fourth-suspect', questionId: 'q-w2-graycap-identity', text: '회색 모자 관광객은 단체와 무관한 제4의 용의자다.' } },
       ] },
       { id: 'is-leo', label: '레오 박이었을 것이다', goto: 'graycap-any', effects: [
-        { type: 'setQuestionStatus', id: 'q-w1-graycap-identity', status: 'investigating' },
-        { type: 'setHypothesis', questionId: 'q-w1-graycap-identity', hypothesis: { id: 'hyp-graycap-is-leo', questionId: 'q-w1-graycap-identity', text: '회색 모자 관광객은 레오 박이었다.' } },
+        { type: 'setQuestionStatus', id: 'q-w2-graycap-identity', status: 'investigating' },
+        { type: 'setHypothesis', questionId: 'q-w2-graycap-identity', hypothesis: { id: 'hyp-graycap-is-leo', questionId: 'q-w2-graycap-identity', text: '회색 모자 관광객은 레오 박이었다.' } },
       ] },
       { id: 'unsure', label: '아직 모름', goto: 'graycap-any', effects: [
-        { type: 'setQuestionStatus', id: 'q-w1-graycap-identity', status: 'open' },
-        { type: 'setHypothesis', questionId: 'q-w1-graycap-identity', hypothesis: { id: 'hyp-graycap-unsure', questionId: 'q-w1-graycap-identity', text: '아직 누구인지 확실하지 않다.' } },
+        { type: 'setQuestionStatus', id: 'q-w2-graycap-identity', status: 'open' },
+        { type: 'setHypothesis', questionId: 'q-w2-graycap-identity', hypothesis: { id: 'hyp-graycap-unsure', questionId: 'q-w2-graycap-identity', text: '아직 누구인지 확실하지 않다.' } },
       ] },
     ],
   },
@@ -1710,16 +1710,16 @@ const week1Scene005bLines = [
   { id: 'line-013', speaker: '지수', text: '감사합니다. 혹시 몰라서 여쭤봤어요.', characterId: 'jisoo', expression: 'soft' },
 ];
 
-/* OPERATION MK — WEEK 1 · SCENE 06 「윤민아 1차 심문」
-   Dialogue Set: dialogue-week1-scene006
-   Scene: week1-scene-006 (Pop-up Exhibition, 11:10)
+/* OPERATION MK — WEEK 2 · SCENE 06 「윤민아 1차 심문」
+   Dialogue Set: dialogue-week2-scene006
+   Scene: week2-scene-006 (Pop-up Exhibition, 11:10)
 
-   ===== 1주차 장편 확장 v2 · §10 =====
+   ===== 2주차 장편 확장 v2 · §10 =====
    4라운드로 확장: 체류시간(Round1) → 촬영여부(Round2) → 촬영목적(Round3) →
    삭제사진(Round4). Round4의 "그냥 넘어간다" 선택은 게임을 막지 않되
-   flag('mina-photo-recovery-skipped')를 남겨 week1-scene-011(최종 심문)에서
+   flag('mina-photo-recovery-skipped')를 남겨 week2-scene-011(최종 심문)에서
    자동으로 다시 등장한다 — 문서 §10 "넘어가도 이후 자동 재요청 가능"의 구현. */
-const week1Scene006Lines = [
+const week2Scene006Lines = [
   {
     id: 'line-001', speaker: '', text: '전시장 한쪽.\n오전 11시 10분.', characterId: null,
     effects: [{
@@ -1865,21 +1865,21 @@ const week1Scene006Lines = [
       fact: {
         id: 'fact-mina-continuous-photo-sequence', title: '윤민아는 사건 시간대 내내 촬영 중이었다.',
         sourceEvidenceIds: ['evidence-mina-illegal-photo', 'evidence-mina-photo-timestamps'],
-        relatedQuestionIds: ['q-w1-who-removed-k01'],
+        relatedQuestionIds: ['q-w2-who-removed-k01'],
         confidence: 'confirmed',
       },
     }],
   },
   {
     // The extra "그럼 지금까지의 판단은?" option only appears when the player's
-    // *current* hypothesis on q-w1-who-removed-k01 is actually hyp-mina-removed
-    // (via flagEquals on 'hyp:q-w1-who-removed-k01' — see caseFileState.js's
+    // *current* hypothesis on q-w2-who-removed-k01 is actually hyp-mina-removed
+    // (via flagEquals on 'hyp:q-w2-who-removed-k01' — see caseFileState.js's
     // setHypothesis). A player who guessed someone else, or "아직 모름", just
     // sees the plain continue option — nothing forces a reaction to a
     // contradiction that doesn't apply to them (§14.1).
     id: 'mina-contradiction-gate', type: 'choice', speaker: '영우', text: '이걸 보니까 다시 한번 생각해볼 필요가 있겠다.', characterId: 'youngwoo', expression: 'blank',
     choices: [
-      { id: 'confront', label: '그럼 지금까지의 판단은?', condition: { flagEquals: { key: 'hyp:q-w1-who-removed-k01', value: 'hyp-mina-removed' } }, goto: 'mina-hyp-collapse' },
+      { id: 'confront', label: '그럼 지금까지의 판단은?', condition: { flagEquals: { key: 'hyp:q-w2-who-removed-k01', value: 'hyp-mina-removed' } }, goto: 'mina-hyp-collapse' },
       { id: 'continue-plain', label: '일단 다음으로 넘어가기', goto: 'mina-end-7' },
     ],
   },
@@ -1891,8 +1891,8 @@ const week1Scene006Lines = [
       {
         id: 'discard', label: '윤민아 가설을 폐기한다', goto: 'mina-end-7',
         effects: [
-          { type: 'invalidateHypothesis', questionId: 'q-w1-who-removed-k01', factId: 'fact-mina-continuous-photo-sequence' },
-          { type: 'setQuestionStatus', id: 'q-w1-who-removed-k01', status: 'contradicted' },
+          { type: 'invalidateHypothesis', questionId: 'q-w2-who-removed-k01', factId: 'fact-mina-continuous-photo-sequence' },
+          { type: 'setQuestionStatus', id: 'q-w2-who-removed-k01', status: 'contradicted' },
         ],
       },
       { id: 'reserve', label: '판단을 보류한다', goto: 'mina-end-7' },
@@ -1902,15 +1902,15 @@ const week1Scene006Lines = [
   { id: 'mina-end-7', speaker: '', text: '[ 현재 판단: 윤민아 — 일부 해명 · 직접 절도 혐의 낮음 · 사진 유출 가능성 미확인 ]', characterId: null },
 ];
 
-/* OPERATION MK — WEEK 1 · SCENE 07 「애드리언 1차 심문」
-   Dialogue Set: dialogue-week1-scene007
-   Scene: week1-scene-007 (Pop-up Exhibition 접수대, 11:25)
+/* OPERATION MK — WEEK 2 · SCENE 07 「애드리언 1차 심문」
+   Dialogue Set: dialogue-week2-scene007
+   Scene: week2-scene-007 (Pop-up Exhibition 접수대, 11:25)
 
-   ===== 1주차 장편 확장 v2 · §11 =====
+   ===== 2주차 장편 확장 v2 · §11 =====
    4라운드로 확장. 실명은 여전히 노출하지 않는다(M.K. 계정명까지만).
    Round4는 문서 지시대로 "직접 모순으로 확정하지 않고 의문으로 남긴다" —
    question-adrian-tag는 이 씬 안에서 resolved되지 않고 unresolved로 남는다. */
-const week1Scene007Lines = [
+const week2Scene007Lines = [
   {
     id: 'line-001', speaker: '', text: '전시장 접수대 근처.\n오전 11시 25분.', characterId: null,
     effects: [{
@@ -2054,18 +2054,18 @@ const week1Scene007Lines = [
   { id: 'line-015', speaker: '', text: '[ 애드리언: 조사 필요 · 정보 유출 확인 · 직접 범행 미확인 ]', characterId: null },
 ];
 
-/* OPERATION MK — WEEK 1 · SCENE 08 「레오 1차 심문 및 타임라인」
-   Dialogue Set: dialogue-week1-scene008
-   Scene: week1-scene-008 (전시장 근처 카페, 11:40)
+/* OPERATION MK — WEEK 2 · SCENE 08 「레오 1차 심문 및 타임라인」
+   Dialogue Set: dialogue-week2-scene008
+   Scene: week2-scene-008 (전시장 근처 카페, 11:40)
 
-   ===== 1주차 장편 확장 v2 · §12 =====
+   ===== 2주차 장편 확장 v2 · §12 =====
    레오의 진술 6가지(입장시각/한바퀴구경/K-01몰랐음/바로카페이동/대화안함/
-   가방계속닫힘)를 명시적으로 다 진술시킨다 — 이후 week1-scene-009의
+   가방계속닫힘)를 명시적으로 다 진술시킨다 — 이후 week2-scene-009의
    여러 라운드가 이 6개를 하나씩 무너뜨리는 구조라, 여기서 전부 등장해야
    나중에 "본인이 스스로 한 말"로 되돌려 제시할 수 있다.
    Ends on a MINIGAME START beat — nextSceneId hands off to the expanded
-   5단계 timeline minigame (week1-scene-008-minigame). */
-const week1Scene008Lines = [
+   5단계 timeline minigame (week2-scene-008-minigame). */
+const week2Scene008Lines = [
   {
     id: 'line-001', speaker: '', text: '전시장 근처 카페.\n오전 11시 40분.', characterId: null,
     effects: [{
@@ -2101,7 +2101,7 @@ const week1Scene008Lines = [
   { id: 'line-027', speaker: '', text: '지수와 영우가 사진 속 시간과 레오의 진술을\n하나씩 시간축 위에 배치하기 시작했다.', characterId: 'jisoo', expression: 'serious' },
   {
     // The Missing Key v4 §9.2 — 소피는 처음엔 레오의 알리바이를 강화한다.
-    // 이 목격은 나중에 week1-scene-008a에서 모바일 선주문 기록과 함께
+    // 이 목격은 나중에 week2-scene-008a에서 모바일 선주문 기록과 함께
     // 뒤집힌다 — "거짓말과 착각이 다르다"는 것을 보여주는 지점이라, 소피
     // 본인은 거짓말을 하는 게 아니라 그냥 사람을 착각했을 뿐이다.
     id: 'line-028', speaker: '', text: '주문을 받으러 온 카페 직원이 옆에서 듣고 있었다.', characterId: null,
@@ -2127,9 +2127,9 @@ const week1Scene008Lines = [
   { id: 'line-033', speaker: '', text: 'MINIGAME START', characterId: null },
 ];
 
-/* OPERATION MK — WEEK 1 · SCENE 08a 「재심문 — 클레어·다니엘·소피」
-   Dialogue Set: dialogue-week1-scene008a
-   Scene: week1-scene-008a (Pop-up Exhibition, 12:00)
+/* OPERATION MK — WEEK 2 · SCENE 08a 「재심문 — 클레어·다니엘·소피」
+   Dialogue Set: dialogue-week2-scene008a
+   Scene: week2-scene-008a (Pop-up Exhibition, 12:00)
 
    The Missing Key v4 §10 ACT 3 (증언 충돌) — 세 보조 증인을 한 씬에서
    차례로 재확인한다.
@@ -2142,7 +2142,7 @@ const week1Scene008Lines = [
       그냥 확인만 하고 넘어간다.
    3) 소피: 같은 페어 연결 패턴 — "거짓말과 착각은 다르다"는 것을
       보여주며, 레오의 카페 알리바이를 붕괴시킨다. */
-const week1Scene008aLines = [
+const week2Scene008aLines = [
   { id: 'line-001', speaker: '', text: '전시장 앞.\n낮 12시.', characterId: null },
   { id: 'line-002', speaker: '영우', text: '레오씨 다시 만나기 전에, 아까 들은 얘기들부터 한번 맞춰볼까.', characterId: 'youngwoo', expression: 'curious' },
   { id: 'line-003', speaker: '지수', text: '네. 하나씩 짚어봐요.', characterId: 'jisoo', expression: 'serious' },
@@ -2189,7 +2189,7 @@ const week1Scene008aLines = [
         fact: {
           id: 'fact-claire-desk-unattended', title: '클레어는 사건 시간대에 접수대를 비웠다.',
           sourceEvidenceIds: ['evidence-claire-alibi-statement', 'evidence-empty-reception-photo'],
-          relatedQuestionIds: ['q-w1-who-removed-k01'],
+          relatedQuestionIds: ['q-w2-who-removed-k01'],
           confidence: 'confirmed',
         },
       },
@@ -2229,31 +2229,31 @@ const week1Scene008aLines = [
       fact: {
         id: 'fact-silhouette-matches-leo', title: '직원 전용문 근처 실루엣은 레오와 일치할 가능성이 높다.',
         sourceEvidenceIds: ['evidence-daniel-silhouette-report', 'evidence-leo-bag-strap-shape'],
-        relatedQuestionIds: ['q-w1-graycap-identity', 'q-w1-who-removed-k01'],
+        relatedQuestionIds: ['q-w2-graycap-identity', 'q-w2-who-removed-k01'],
         confidence: 'confirmed',
       },
     }],
   },
   {
     // "그럼 지금까지의 판단은?"은 플레이어가 실제로 hyp-graycap-fourth-suspect를
-    // 갖고 있을 때만 뜬다 — week1-scene-005b에서 레오나 아직 모름을 골랐다면
+    // 갖고 있을 때만 뜬다 — week2-scene-005b에서 레오나 아직 모름을 골랐다면
     // 애초에 무너뜨릴 가설이 없으므로 바로 확인만 하고 넘어간다.
     id: 'daniel-contradiction-gate', type: 'choice', speaker: '지수', text: '그럼 그 회색 모자 관광객은...', characterId: 'jisoo', expression: 'suspicious',
     choices: [
-      { id: 'confront', label: '그럼 제4의 용의자 가설은?', condition: { flagEquals: { key: 'hyp:q-w1-graycap-identity', value: 'hyp-graycap-fourth-suspect' } }, goto: 'daniel-hyp-collapse' },
+      { id: 'confront', label: '그럼 제4의 용의자 가설은?', condition: { flagEquals: { key: 'hyp:q-w2-graycap-identity', value: 'hyp-graycap-fourth-suspect' } }, goto: 'daniel-hyp-collapse' },
       { id: 'continue-plain', label: '레오였다는 쪽으로 정리한다', goto: 'daniel-resolve' },
     ],
   },
   {
     id: 'daniel-hyp-collapse', speaker: '', text: '[ 현재 가설과 충돌하는 사실이 발견되었습니다 ]\n현재 가설 — 제4의 용의자다.\n새 사실 — 실루엣은 레오와 일치한다.', characterId: null,
-    effects: [{ type: 'invalidateHypothesis', questionId: 'q-w1-graycap-identity', factId: 'fact-silhouette-matches-leo' }],
+    effects: [{ type: 'invalidateHypothesis', questionId: 'q-w2-graycap-identity', factId: 'fact-silhouette-matches-leo' }],
     goto: 'daniel-resolve',
   },
   {
     id: 'daniel-resolve', speaker: '영우', text: '그 회색 모자, 레오씨였나 보다.', characterId: 'youngwoo', expression: 'serious',
     effects: [
-      { type: 'setHypothesis', questionId: 'q-w1-graycap-identity', hypothesis: { id: 'hyp-graycap-is-leo', questionId: 'q-w1-graycap-identity', text: '회색 모자 관광객은 레오 박이었다.' } },
-      { type: 'setQuestionStatus', id: 'q-w1-graycap-identity', status: 'resolved', resolutionText: '실루엣의 가방 끈 모양이 레오와 일치해, 회색 모자 관광객은 레오 박이었던 것으로 확인됐다.' },
+      { type: 'setHypothesis', questionId: 'q-w2-graycap-identity', hypothesis: { id: 'hyp-graycap-is-leo', questionId: 'q-w2-graycap-identity', text: '회색 모자 관광객은 레오 박이었다.' } },
+      { type: 'setQuestionStatus', id: 'q-w2-graycap-identity', status: 'resolved', resolutionText: '실루엣의 가방 끈 모양이 레오와 일치해, 회색 모자 관광객은 레오 박이었던 것으로 확인됐다.' },
     ],
   },
 
@@ -2299,7 +2299,7 @@ const week1Scene008aLines = [
       fact: {
         id: 'fact-sophie-witness-was-not-leo', title: '소피가 10시 52분에 본 사람은 레오가 아니다.',
         sourceEvidenceIds: ['evidence-leo-mobile-preorder', 'evidence-cctv-reversed-strap-direction'],
-        relatedQuestionIds: ['question-leo-gap', 'q-w1-who-removed-k01'],
+        relatedQuestionIds: ['question-leo-gap', 'q-w2-who-removed-k01'],
         confidence: 'confirmed',
       },
     }],
@@ -2310,12 +2310,12 @@ const week1Scene008aLines = [
   { id: 'line-006', speaker: '지수', text: '네. 이제 진짜로 다시 만나봐야겠어요.', characterId: 'jisoo', expression: 'serious' },
 ];
 
-/* OPERATION MK — WEEK 1 · SCENE 09 「레오 집중 심문」
-   Dialogue Set: dialogue-week1-scene009
-   Scene: week1-scene-009 (Pop-up Exhibition, 12:05)
+/* OPERATION MK — WEEK 2 · SCENE 09 「레오 집중 심문」
+   Dialogue Set: dialogue-week2-scene009
+   Scene: week2-scene-009 (Pop-up Exhibition, 12:05)
 
-   ===== 1주차 장편 확장 v2 · §13 =====
-   1주차의 핵심 씬. 9라운드 전부 구현:
+   ===== 2주차 장편 확장 v2 · §13 =====
+   2주차의 핵심 씬. 9라운드 전부 구현:
    R1 시간오류 → R2 K-01 인지 → R3 촬영목적 → R4 물건접촉 → R5 진열장 개방
    수단 → R6 단순이동 주장 → R7 의뢰 메시지 공개 → R8 참고사진 비교(A 재부상
    트리거) → R9 물건 반출 여부 인정.
@@ -2325,7 +2325,7 @@ const week1Scene008aLines = [
    evidence-leo-bag-volume-change/evidence-cafe-cctv-bag-thicker는 R6/R9에서
    쓰이는데, 두 사람이 인터뷰 사이사이 확인해 둔 것으로 보고 씬 시작과
    동시에 자동 지급한다(놓칠 수 없게). */
-const week1Scene009Lines = [
+const week2Scene009Lines = [
   {
     id: 'gate', type: 'choice', speaker: '', text: '레오씨를 다시 추궁하기 전에 — 준비는 다 됐나요?', characterId: null,
     choices: [
@@ -2575,9 +2575,9 @@ const week1Scene009Lines = [
   { id: 'leo-end-4', speaker: '영우', text: '그냥 몰래 찍은 게 아니었나 보네.', characterId: 'youngwoo', expression: 'blank' },
 ];
 
-/* OPERATION MK — WEEK 1 · SCENE 09a 「현장 재검증 — 진열장은 어떻게 열렸는가」
-   Dialogue Set: dialogue-week1-scene009a
-   Scene: week1-scene-009a (Pop-up Exhibition, 12:15)
+/* OPERATION MK — WEEK 2 · SCENE 09a 「현장 재검증 — 진열장은 어떻게 열렸는가」
+   Dialogue Set: dialogue-week2-scene009a
+   Scene: week2-scene-009a (Pop-up Exhibition, 12:15)
 
    The Missing Key v4 §10 ACT 5 / §21-9 — 이 게임의 대표적인 "가설 붕괴"
    장면. 새 대형 화면 대신 scene005의 reexam-menu와 같은 선택 조사 루프를
@@ -2586,32 +2586,32 @@ const week1Scene009Lines = [
    골랐다면 그 가설이 실제 증거로 무너지는 걸 직접 본다. 최종 확정은
    scene012 blank-4에서 이뤄진다(§6.14와 같은 2단계 패턴: 여기서는
    investigating/contradicted로만 남긴다). */
-const week1Scene009aLines = [
+const week2Scene009aLines = [
   { id: 'line-001', speaker: '', text: '전시장 안쪽.\n낮 12시 15분.', characterId: null },
   { id: 'line-002', speaker: '영우', text: '레오씨가 직접 꺼낸 건 이제 확실한데.', characterId: 'youngwoo', expression: 'serious' },
   {
     id: 'line-003', speaker: '지수', text: '근데 진열장 자체는 어떻게 열렸을까요? 그건 아직 확실하지 않아요.', characterId: 'jisoo', expression: 'serious',
-    effects: [{ type: 'addQuestion', question: { id: 'q-w1-case-opening-method', title: '진열장은 어떻게 열렸는가?', linkedEvidenceIds: ['evidence-staff-lock-check-time', 'evidence-staff-tag-position-after'] } }],
+    effects: [{ type: 'addQuestion', question: { id: 'q-w2-case-opening-method', title: '진열장은 어떻게 열렸는가?', linkedEvidenceIds: ['evidence-staff-lock-check-time', 'evidence-staff-tag-position-after'] } }],
   },
   {
     id: 'opening-hypothesis', type: 'choice', mode: 'hypothesis', speaker: '', text: '현재 진열장이 열린 방법으로 가장 가능성 높은 것은?', characterId: null,
     revealCorrectness: false,
     choices: [
       { id: 'tag', label: '직원용 태그로 열었다 (관리 공백을 틈타)', goto: 'opening-any', effects: [
-        { type: 'setQuestionStatus', id: 'q-w1-case-opening-method', status: 'investigating' },
-        { type: 'setHypothesis', questionId: 'q-w1-case-opening-method', hypothesis: { id: 'hyp-opening-tag', questionId: 'q-w1-case-opening-method', text: '직원용 태그로 진열장을 열었다.' } },
+        { type: 'setQuestionStatus', id: 'q-w2-case-opening-method', status: 'investigating' },
+        { type: 'setHypothesis', questionId: 'q-w2-case-opening-method', hypothesis: { id: 'hyp-opening-tag', questionId: 'q-w2-case-opening-method', text: '직원용 태그로 진열장을 열었다.' } },
       ] },
       { id: 'already-open', label: '진열장이 원래 열려 있었다', goto: 'opening-any', effects: [
-        { type: 'setQuestionStatus', id: 'q-w1-case-opening-method', status: 'investigating' },
-        { type: 'setHypothesis', questionId: 'q-w1-case-opening-method', hypothesis: { id: 'hyp-opening-already-open', questionId: 'q-w1-case-opening-method', text: '진열장이 원래 열려 있었다.' } },
+        { type: 'setQuestionStatus', id: 'q-w2-case-opening-method', status: 'investigating' },
+        { type: 'setHypothesis', questionId: 'q-w2-case-opening-method', hypothesis: { id: 'hyp-opening-already-open', questionId: 'q-w2-case-opening-method', text: '진열장이 원래 열려 있었다.' } },
       ] },
       { id: 'other-tool', label: '다른 도구를 직원 구역에서 가져왔다', goto: 'opening-any', effects: [
-        { type: 'setQuestionStatus', id: 'q-w1-case-opening-method', status: 'investigating' },
-        { type: 'setHypothesis', questionId: 'q-w1-case-opening-method', hypothesis: { id: 'hyp-opening-other-tool', questionId: 'q-w1-case-opening-method', text: '다른 도구를 직원 구역에서 가져와 열었다.' } },
+        { type: 'setQuestionStatus', id: 'q-w2-case-opening-method', status: 'investigating' },
+        { type: 'setHypothesis', questionId: 'q-w2-case-opening-method', hypothesis: { id: 'hyp-opening-other-tool', questionId: 'q-w2-case-opening-method', text: '다른 도구를 직원 구역에서 가져와 열었다.' } },
       ] },
       { id: 'unsure', label: '아직 모름', goto: 'opening-any', effects: [
-        { type: 'setQuestionStatus', id: 'q-w1-case-opening-method', status: 'open' },
-        { type: 'setHypothesis', questionId: 'q-w1-case-opening-method', hypothesis: { id: 'hyp-opening-unsure', questionId: 'q-w1-case-opening-method', text: '아직 확실하지 않다.' } },
+        { type: 'setQuestionStatus', id: 'q-w2-case-opening-method', status: 'open' },
+        { type: 'setHypothesis', questionId: 'q-w2-case-opening-method', hypothesis: { id: 'hyp-opening-unsure', questionId: 'q-w2-case-opening-method', text: '아직 확실하지 않다.' } },
       ] },
     ],
   },
@@ -2716,7 +2716,7 @@ const week1Scene009aLines = [
       fact: {
         id: 'fact-tag-cannot-open-case', title: '진열장은 태그가 아니라 서비스 자석으로 열렸다.',
         sourceEvidenceIds: ['evidence-tag-scope-limited', 'evidence-service-magnet-missing'],
-        relatedQuestionIds: ['q-w1-case-opening-method'],
+        relatedQuestionIds: ['q-w2-case-opening-method'],
         confidence: 'confirmed',
       },
     }],
@@ -2726,7 +2726,7 @@ const week1Scene009aLines = [
     // 있었을 때만 "그럼 지금까지의 판단은?"이 뜬다.
     id: 'opening-contradiction-gate', type: 'choice', speaker: '영우', text: '...\n어, 이거 우리가 생각했던 거랑 다른데.', characterId: 'youngwoo', expression: 'shocked',
     choices: [
-      { id: 'confront', label: '그럼 지금까지의 판단은?', condition: { flagEquals: { key: 'hyp:q-w1-case-opening-method', value: 'hyp-opening-tag' } }, goto: 'opening-hyp-collapse' },
+      { id: 'confront', label: '그럼 지금까지의 판단은?', condition: { flagEquals: { key: 'hyp:q-w2-case-opening-method', value: 'hyp-opening-tag' } }, goto: 'opening-hyp-collapse' },
       { id: 'continue-plain', label: '그럼 자석 쪽으로 다시 정리해보자', goto: 'opening-resolve' },
     ],
   },
@@ -2737,7 +2737,7 @@ const week1Scene009aLines = [
       { id: 'keep', label: '그래도 태그 가설을 유지한다', goto: 'opening-resolve' },
       {
         id: 'discard', label: '태그 가설을 폐기한다', goto: 'opening-resolve',
-        effects: [{ type: 'invalidateHypothesis', questionId: 'q-w1-case-opening-method', factId: 'fact-tag-cannot-open-case' }],
+        effects: [{ type: 'invalidateHypothesis', questionId: 'q-w2-case-opening-method', factId: 'fact-tag-cannot-open-case' }],
       },
       { id: 'reserve', label: '판단을 보류한다', goto: 'opening-resolve' },
     ],
@@ -2745,26 +2745,26 @@ const week1Scene009aLines = [
   {
     id: 'opening-resolve', speaker: '지수', text: '태그는 직원 전용문만 열어요. 진열장을 연 건 이 서비스 자석이에요.', characterId: 'jisoo', expression: 'serious',
     effects: [
-      { type: 'setHypothesis', questionId: 'q-w1-case-opening-method', hypothesis: { id: 'hyp-opening-magnet', questionId: 'q-w1-case-opening-method', text: '직원 구역의 서비스 자석으로 진열장을 열었다.' } },
-      { type: 'setQuestionStatus', id: 'q-w1-case-opening-method', status: 'investigating' },
+      { type: 'setHypothesis', questionId: 'q-w2-case-opening-method', hypothesis: { id: 'hyp-opening-magnet', questionId: 'q-w2-case-opening-method', text: '직원 구역의 서비스 자석으로 진열장을 열었다.' } },
+      { type: 'setQuestionStatus', id: 'q-w2-case-opening-method', status: 'investigating' },
     ],
   },
   { id: 'line-006', speaker: '영우', text: '그럼 태그는... 그냥 클레어씨가 자리를 비운 틈에 옮겨진 거였네.', characterId: 'youngwoo', expression: 'curious' },
   { id: 'line-007', speaker: '지수', text: '네. 태그는 미끼였던 거예요. 진짜는 이 자석이었고요.', characterId: 'jisoo', expression: 'serious' },
 ];
 
-/* OPERATION MK — WEEK 1 · SCENE 10 「중간 추리 및 윤민아 재오픈」
-   Dialogue Set: dialogue-week1-scene010
-   Scene: week1-scene-010 (Pop-up Exhibition 앞, 12:20)
+/* OPERATION MK — WEEK 2 · SCENE 10 「중간 추리 및 윤민아 재오픈」
+   Dialogue Set: dialogue-week2-scene010
+   Scene: week2-scene-010 (Pop-up Exhibition 앞, 12:20)
 
-   ===== 1주차 장편 확장 v2 · §14 =====
+   ===== 2주차 장편 확장 v2 · §14 =====
    4개 질문을 choice 체인으로 재구성(오답은 짧은 반응 후 같은 질문으로).
    질문4의 정답은 "아직 판단 불가" — 확정하지 않는다. (이 씬 위쪽의 "scene005
    에서 고른 첫 가설이 있으면 콜백을 덧붙인다"는 기존 주석은 실제로 구현된
    적 없는 죽은 계획이었다 — v4 §13.1 정리 대상. scene005의 가설은 이제
-   q-w1-who-removed-k01/q-w1-case-nature 실제 의문점으로 추적되며, q1의
+   q-w2-who-removed-k01/q-w2-case-nature 실제 의문점으로 추적되며, q1의
    정답 확정 자체가 그 가설을 검증하는 역할을 한다.) */
-const week1Scene010Lines = [
+const week2Scene010Lines = [
   { id: 'line-001', speaker: '', text: '전시장 앞.\n낮 12시 20분.', characterId: null },
   { id: 'line-002', speaker: '지수', text: '지금까지 나온 거, 한번 임시로 정리해볼까요.', characterId: 'jisoo', expression: 'serious' },
   {
@@ -2783,8 +2783,8 @@ const week1Scene010Lines = [
     // 중간 단계를 보여준다.
     id: 'q1-correct', speaker: '영우', text: '레오. 본인이 직접 인정했으니까.', characterId: 'youngwoo', expression: 'serious',
     effects: [
-      { type: 'setHypothesis', questionId: 'q-w1-who-removed-k01', hypothesis: { id: 'hyp-leo-removed', questionId: 'q-w1-who-removed-k01', text: '레오가 K-01을 직접 꺼냈다.' } },
-      { type: 'setQuestionStatus', id: 'q-w1-who-removed-k01', status: 'investigating' },
+      { type: 'setHypothesis', questionId: 'q-w2-who-removed-k01', hypothesis: { id: 'hyp-leo-removed', questionId: 'q-w2-who-removed-k01', text: '레오가 K-01을 직접 꺼냈다.' } },
+      { type: 'setQuestionStatus', id: 'q-w2-who-removed-k01', status: 'investigating' },
     ],
   },
   {
@@ -2830,16 +2830,16 @@ const week1Scene010Lines = [
   { id: 'line-007', speaker: '', text: '[ 윤민아 — 재조사 필요 ]', characterId: null },
 ];
 
-/* OPERATION MK — WEEK 1 · SCENE 11 「윤민아 최종 심문」
-   Dialogue Set: dialogue-week1-scene011
-   Scene: week1-scene-011 (Circular Quay 편집숍 앞, 18:00)
+/* OPERATION MK — WEEK 2 · SCENE 11 「윤민아 최종 심문」
+   Dialogue Set: dialogue-week2-scene011
+   Scene: week2-scene-011 (Circular Quay 편집숍 앞, 18:00)
 
-   ===== 1주차 장편 확장 v2 · §15 =====
+   ===== 2주차 장편 확장 v2 · §15 =====
    8라운드로 확장: 사진보관→공유대상→이미지비교1~3→업로드시각→링크접근기록→
    최종진술. 마지막 진술은 문서 지시대로 "완전히 반박되지 않는다" — 강제
    자백으로 끝내지 않고 불확실성을 남긴다. scene006에서 사진 복구를
    건너뛰었다면(mina-photo-recovery-skipped) 여기서 자동으로 다시 요청한다. */
-const week1Scene011Lines = [
+const week2Scene011Lines = [
   { id: 'line-001', speaker: '', text: 'Circular Quay 편집숍 앞.\n오후 6시.', characterId: null },
   { id: 'line-002', speaker: '', text: '퇴근하려던 윤민아를 다시 붙잡았다.', characterId: null },
   { id: 'line-003', speaker: '윤민아', text: '또 무슨 일이세요?', characterId: 'minah', expression: 'annoyed' },
@@ -3015,16 +3015,16 @@ const week1Scene011Lines = [
   { id: 'mina-f8-11', speaker: '', text: '[ 현재 판단: 윤민아 — 사진 유출 확인 · 직접 절도는 부정 · 공모 여부 미확인 ]', characterId: null },
 ];
 
-/* OPERATION MK — WEEK 1 · SCENE 11a 「애드리언 재심문」
-   Dialogue Set: dialogue-week1-scene011a
-   Scene: week1-scene-011a (Pop-up Exhibition 접수대, 18:20)
+/* OPERATION MK — WEEK 2 · SCENE 11a 「애드리언 재심문」
+   Dialogue Set: dialogue-week2-scene011a
+   Scene: week2-scene-011a (Pop-up Exhibition 접수대, 18:20)
 
    The Missing Key v4 §10 ACT 7 — 현재 구조에서 애드리언이 007 이후로
    사라지는 문제를 해결한다. 윤민아 링크를 본 적 없다/레오를 모른다는
    두 진술은 깨지 않는다(실제로 사실이다) — 딱 하나, "M.K.와는 이번이
    처음이자 마지막 연락"이라는 부분만 증거 연결로 무너뜨린다. 애드리언의
    역할은 주범이 아니라 반복적으로 정보를 노출한 인물로 재정의된다. */
-const week1Scene011aLines = [
+const week2Scene011aLines = [
   { id: 'line-001', speaker: '', text: '전시장 접수대.\n오후 6시 20분.', characterId: null },
   { id: 'line-002', speaker: '지수', text: '애드리언씨, 몇 가지만 다시 여쭤볼게요.', characterId: 'jisoo', expression: 'serious' },
   { id: 'line-003', speaker: '애드리언 콜', text: '네, 말씀하세요.', characterId: 'adrian', expression: 'neutral' },
@@ -3075,7 +3075,7 @@ const week1Scene011aLines = [
       fact: {
         id: 'fact-adrian-repeat-contact', title: '애드리언은 예전에도 M.K. 계열 계정의 문의를 받은 적이 있다.',
         sourceEvidenceIds: ['evidence-adrian-tablet-history', 'evidence-adrian-sender'],
-        relatedQuestionIds: ['question-adrian-sender', 'q-w1-who-planned-event'],
+        relatedQuestionIds: ['question-adrian-sender', 'q-w2-who-planned-event'],
         confidence: 'confirmed',
       },
     }],
@@ -3099,18 +3099,18 @@ const week1Scene011aLines = [
   { id: 'line-017', speaker: '지수', text: '네. 본인도 모르게 계속 이용당하고 있었던 거예요.', characterId: 'jisoo', expression: 'serious' },
 ];
 
-/* OPERATION MK — WEEK 1 · SCENE 11b 「마틴 베일 통화」
-   Dialogue Set: dialogue-week1-scene011b
-   Scene: week1-scene-011b (전화 통화, 18:40)
+/* OPERATION MK — WEEK 2 · SCENE 11b 「마틴 베일 통화」
+   Dialogue Set: dialogue-week2-scene011b
+   Scene: week2-scene-011b (전화 통화, 18:40)
 
    The Missing Key v4 §9.4/§10 ACT 8 — K-01 출품자를 별도 캐릭터 일러스트
    없이 전화로만 등장시킨다. 카탈로그 제작연도 불일치·각인 선명도 변화는
    자동으로 지급하고(놓치면 안 되는 핵심 반전이라 §18과 같은 원칙), 판매
-   가능 여부/출품 당시 사진은 선택 조사로 남긴다. q-w1-request-purpose는
-   원래 week1-scene-012 blank-5에서 등록했지만, 실제로 이 미스터리가 처음
+   가능 여부/출품 당시 사진은 선택 조사로 남긴다. q-w2-request-purpose는
+   원래 week2-scene-012 blank-5에서 등록했지만, 실제로 이 미스터리가 처음
    드러나는 곳은 여기라서 addQuestion을 이 씬으로 옮겼다 — scene012는 이제
    상태 갱신만 한다. */
-const week1Scene011bLines = [
+const week2Scene011bLines = [
   { id: 'line-001', speaker: '', text: '숙소로 돌아가는 길.\n오후 6시 40분.', characterId: null },
   { id: 'line-002', speaker: '영우', text: 'K-01 원래 주인, 아직 연락 안 해봤지?', characterId: 'youngwoo', expression: 'curious' },
   { id: 'line-003', speaker: '지수', text: '맞다. 출품자 연락처가 팸플릿에 있었어요.', characterId: 'jisoo', expression: 'curious' },
@@ -3207,23 +3207,23 @@ const week1Scene011bLines = [
     effects: [
       {
         type: 'addQuestion',
-        question: { id: 'q-w1-request-purpose', title: '의뢰인은 왜 K-01의 하단 각인을 원했는가?', linkedEvidenceIds: ['evidence-k01-catalog-year-mismatch', 'evidence-k01-inscription-sharper', 'evidence-mk-inscription-focused-inquiries'] },
+        question: { id: 'q-w2-request-purpose', title: '의뢰인은 왜 K-01의 하단 각인을 원했는가?', linkedEvidenceIds: ['evidence-k01-catalog-year-mismatch', 'evidence-k01-inscription-sharper', 'evidence-mk-inscription-focused-inquiries'] },
       },
       {
-        type: 'setQuestionStatus', id: 'q-w1-request-purpose', status: 'provisional',
+        type: 'setQuestionStatus', id: 'q-w2-request-purpose', status: 'provisional',
         resolutionText: '제작 연도가 기록과 어긋나고, 각인이 예전보다 선명해졌으며, M.K.는 매번 각인만 물었다 — 각인 자체가 목적이었던 것 같지만, 왜인지는 아직 모른다.',
       },
       {
         type: 'addQuestion',
-        question: { id: 'q-w1-k01-authenticity', title: 'K-01은 정말 진품인가?', linkedEvidenceIds: ['evidence-k01-catalog-year-mismatch', 'evidence-k01-inscription-sharper'] },
+        question: { id: 'q-w2-k01-authenticity', title: 'K-01은 정말 진품인가?', linkedEvidenceIds: ['evidence-k01-catalog-year-mismatch', 'evidence-k01-inscription-sharper'] },
       },
-      { type: 'setQuestionStatus', id: 'q-w1-k01-authenticity', status: 'carried_over', resolutionText: '제작 연도 불일치와 각인 선명도 변화는 확인했지만, 진품 여부 자체를 가릴 방법은 아직 없다.' },
+      { type: 'setQuestionStatus', id: 'q-w2-k01-authenticity', status: 'carried_over', resolutionText: '제작 연도 불일치와 각인 선명도 변화는 확인했지만, 진품 여부 자체를 가릴 방법은 아직 없다.' },
       {
         type: 'addFact',
         fact: {
           id: 'fact-inscription-is-target', title: '의뢰의 진짜 목적은 K-01 전체가 아니라 하단 각인이다.',
           sourceEvidenceIds: ['evidence-k01-catalog-year-mismatch', 'evidence-mk-inscription-focused-inquiries'],
-          relatedQuestionIds: ['q-w1-request-purpose', 'q-w1-k01-authenticity'],
+          relatedQuestionIds: ['q-w2-request-purpose', 'q-w2-k01-authenticity'],
           confidence: 'confirmed',
         },
       },
@@ -3237,16 +3237,16 @@ const week1Scene011bLines = [
   { id: 'line-010', speaker: '지수', text: '네.\n일단 정리부터 해봐요.', characterId: 'jisoo', expression: 'serious' },
 ];
 
-/* OPERATION MK — WEEK 1 · SCENE 12 「사건 재구성」
-   Dialogue Set: dialogue-week1-scene012
-   Scene: week1-scene-012 (전시장 근처 카페, 19:00)
+/* OPERATION MK — WEEK 2 · SCENE 12 「사건 재구성」
+   Dialogue Set: dialogue-week2-scene012
+   Scene: week2-scene-012 (전시장 근처 카페, 19:00)
 
-   ===== 1주차 장편 확장 v2 · §16 =====
+   ===== 2주차 장편 확장 v2 · §16 =====
    빈칸 3개 → 6개로 확장(정보 유출 경로/참고사진 출처/실제 이동자/개방 수단/
    행동 목적/미해결 연결점) + 추가 반증 질문("왜 레오를 진범으로 확정할 수
    없는가?", 정답 2). 결론은 "레오=단순 범인"이 아니라 역할 분리 구조를
    그대로 유지한다. */
-const week1Scene012Lines = [
+const week2Scene012Lines = [
   { id: 'line-001', speaker: '', text: '전시장 근처 카페.\n오후 7시.', characterId: null },
   { id: 'line-002', speaker: '지수', text: '정리해볼까요.', characterId: 'jisoo', expression: 'serious' },
   { id: 'line-003', speaker: '영우', text: '정리가 될까 이게.', characterId: 'youngwoo', expression: 'blank' },
@@ -3284,19 +3284,19 @@ const week1Scene012Lines = [
   },
   { id: 'blank-3-wrong', speaker: '지수', text: '아니에요. 그 11분의 공백, 누구 거였죠?', characterId: 'jisoo', expression: 'suspicious', goto: 'blank-3' },
   {
-    // v4 §11 "최종 잠정 결론" — 이 재구성이 q-w1-who-removed-k01을 공식적으로
+    // v4 §11 "최종 잠정 결론" — 이 재구성이 q-w2-who-removed-k01을 공식적으로
     // 확정한다. 5장/6장에서 플레이어가 무엇을 가설로 골랐든(윤민아든, 아직
     // 모름이든) 상관없이 여기서 진짜 정답으로 덮어써, 잘못된 믿음을 계속
     // 고집한 플레이어도 엔딩에서는 올바른 결론을 보게 된다.
     id: 'blank-3-correct', speaker: '영우', text: '맞아, 레오씨가 직접 만지고 카페까지 들고 나왔어.', characterId: 'youngwoo', expression: 'serious',
     effects: [
-      { type: 'setHypothesis', questionId: 'q-w1-who-removed-k01', hypothesis: { id: 'hyp-leo-removed', questionId: 'q-w1-who-removed-k01', text: '레오가 K-01을 직접 꺼냈다.' } },
-      { type: 'setQuestionStatus', id: 'q-w1-who-removed-k01', status: 'resolved', resolutionText: '레오 박이 직접 K-01을 꺼내 반출했다.' },
+      { type: 'setHypothesis', questionId: 'q-w2-who-removed-k01', hypothesis: { id: 'hyp-leo-removed', questionId: 'q-w2-who-removed-k01', text: '레오가 K-01을 직접 꺼냈다.' } },
+      { type: 'setQuestionStatus', id: 'q-w2-who-removed-k01', status: 'resolved', resolutionText: '레오 박이 직접 K-01을 꺼내 반출했다.' },
     ],
   },
 
   {
-    // v4 §10 ACT5 / §21-9 — week1-scene-009a의 현장 재검증에서 태그 가설이
+    // v4 §10 ACT5 / §21-9 — week2-scene-009a의 현장 재검증에서 태그 가설이
     // 이미 뒤집혔다. "직원용 태그"는 이제 그럴듯해 보이지만 틀린 선택지고,
     // 정답은 서비스 자석이다 — 완료 기준 #9 "직원용 태그 가설이 한 번
     // 뒤집힌다"를 최종 재구성에도 반영한다.
@@ -3311,8 +3311,8 @@ const week1Scene012Lines = [
   {
     id: 'blank-4-correct', speaker: '지수', text: '맞아요. 태그는 미끼였고, 진열장을 연 건 직원 구역의 서비스 자석이었어요.', characterId: 'jisoo', expression: 'serious',
     effects: [
-      { type: 'setHypothesis', questionId: 'q-w1-case-opening-method', hypothesis: { id: 'hyp-opening-magnet', questionId: 'q-w1-case-opening-method', text: '직원 구역의 서비스 자석으로 진열장을 열었다.' } },
-      { type: 'setQuestionStatus', id: 'q-w1-case-opening-method', status: 'resolved', resolutionText: '진열장은 직원용 태그가 아니라, 직원 구역의 서비스 자석으로 열렸다.' },
+      { type: 'setHypothesis', questionId: 'q-w2-case-opening-method', hypothesis: { id: 'hyp-opening-magnet', questionId: 'q-w2-case-opening-method', text: '직원 구역의 서비스 자석으로 진열장을 열었다.' } },
+      { type: 'setQuestionStatus', id: 'q-w2-case-opening-method', status: 'resolved', resolutionText: '진열장은 직원용 태그가 아니라, 직원 구역의 서비스 자석으로 열렸다.' },
     ],
   },
 
@@ -3326,12 +3326,12 @@ const week1Scene012Lines = [
   },
   { id: 'blank-5-wrong', speaker: '지수', text: '아니에요. 팸플릿에도 판매 불가라고 적혀 있었잖아요.', characterId: 'jisoo', expression: 'suspicious', goto: 'blank-5' },
   {
-    // q-w1-request-purpose는 week1-scene-011b(마틴 베일 통화)에서 이미
+    // q-w2-request-purpose는 week2-scene-011b(마틴 베일 통화)에서 이미
     // 등록됐다 — 여기서는 레오/윤민아 양쪽 진술까지 더해 상태 텍스트만
     // 갱신한다.
     id: 'blank-5-correct', speaker: '영우', text: '맞아. 레오도, 윤민아씨도 결국 "의뢰받은 일"이었다고 했어.', characterId: 'youngwoo', expression: 'serious',
     effects: [{
-      type: 'setQuestionStatus', id: 'q-w1-request-purpose', status: 'provisional',
+      type: 'setQuestionStatus', id: 'q-w2-request-purpose', status: 'provisional',
       resolutionText: '레오도, 윤민아도 "의뢰받은 일"이었다고 인정했고, 마틴의 통화로 그 의뢰가 각인 자체를 노렸다는 것까지는 확인했다. 다만 왜 하필 각인인지는 아직 짐작뿐이다.',
     }],
   },
@@ -3368,14 +3368,14 @@ const week1Scene012Lines = [
   { id: 'rebuttal-wrong', speaker: '지수', text: '아니에요. 그건 이미 사실이 아니라고 확인됐잖아요.', characterId: 'jisoo', expression: 'suspicious', goto: 'rebuttal' },
   {
     // v4 §13.3 — question-case-solution(K-01이 어떻게 사라졌는가)이 통째로
-    // resolved인 것과 별개로, "이 계획을 설계한 사람"은 1주차 안에서
+    // resolved인 것과 별개로, "이 계획을 설계한 사람"은 2주차 안에서
     // 풀리지 않는다는 것을 별도 의문점으로 명시해 다음 주차로 이월한다.
     id: 'rebuttal-correct', speaker: '지수', text: '맞아요.\n레오는 손을 댄 사람이지, 이 계획을 짠 사람은 아니에요.', characterId: 'jisoo', expression: 'serious',
     effects: [{
       type: 'addQuestion',
-      question: { id: 'q-w1-who-planned-event', title: '이 사건을 설계한 사람은 누구인가?', linkedEvidenceIds: [] },
+      question: { id: 'q-w2-who-planned-event', title: '이 사건을 설계한 사람은 누구인가?', linkedEvidenceIds: [] },
     }, {
-      type: 'setQuestionStatus', id: 'q-w1-who-planned-event', status: 'carried_over',
+      type: 'setQuestionStatus', id: 'q-w2-who-planned-event', status: 'carried_over',
       resolutionText: '레오는 손을 댄 실행자일 뿐, 정보를 모으고 계획을 짠 사람은 아니다. 설계자는 아직 밝혀지지 않았다.',
     }],
   },
@@ -3386,18 +3386,18 @@ const week1Scene012Lines = [
   { id: 'line-008', speaker: '지수', text: '근데 이 셋을 하나로 묶은 사람은 아직 안 잡혔어요.', characterId: 'jisoo', expression: 'serious' },
 ];
 
-/* OPERATION MK — WEEK 1 · SCENE 13 「엔딩 및 장기 미스터리 등록」
-   Dialogue Set: dialogue-week1-scene013
-   Scene: week1-scene-013 (Sydney Accommodation, 21:40)
-   Closes out Week 1's main weekend arc — 1주차 평일 미니씬(W1-D1~D5)은 별도로
-   추가될 예정. No nextSceneId; ends on narration like week0-scene-001.
+/* OPERATION MK — WEEK 2 · SCENE 13 「엔딩 및 장기 미스터리 등록」
+   Dialogue Set: dialogue-week2-scene013
+   Scene: week2-scene-013 (Sydney Accommodation, 21:40)
+   Closes out Week 2's main weekend arc — 2주차 평일 미니씬(W2-D1~D5)은 별도로
+   추가될 예정. No nextSceneId; ends on narration like week1-scene-001.
 
-   ===== 1주차 장편 확장 v2 · §17 =====
+   ===== 2주차 장편 확장 v2 · §17 =====
    1.전시장 정리 → 2.탐정님/조수 대화 → 3.수사노트 정리 → 4.M.K. 연결점
    등록 → 5.후속 복선(공개 링크 접근 로그 재확인 — 애드리언 답장 후 4분,
    M.K. relay 계정). 동일 인물임은 확정하지 않는다. 실명·퍼센트 의심도는
    여전히 등장하지 않는다(§1.5/§13.3 원칙 유지). */
-const week1Scene013Lines = [
+const week2Scene013Lines = [
   { id: 'line-001', speaker: '', text: '전시장.\n오후 8시.', characterId: null },
   { id: 'line-002', speaker: '지수', text: '클레어씨, 저희가 파악한 건 이 정도예요.', characterId: 'jisoo', expression: 'serious' },
   { id: 'line-003', speaker: '클레어', text: '레오라는 분이... 정말요?', characterId: 'claire', expression: 'shocked' },
@@ -3447,14 +3447,14 @@ const week1Scene013Lines = [
           unknowns: ['정체 불명', '목적 불명', '사람인지 조직인지 불명'],
         },
       },
-      // v4 §8 1주차 종료 상태 — M.K. 정체는 "미해결"이 아니라 명시적으로
+      // v4 §8 2주차 종료 상태 — M.K. 정체는 "미해결"이 아니라 명시적으로
       // 다음 주차로 이월되는 상태다.
       { type: 'setQuestionStatus', id: 'question-mk-identity', status: 'carried_over', resolutionText: 'K-01 문의, 레오에게의 의뢰, 윤민아 링크 접근 모두 M.K. 계열의 이름이 등장했지만, 정체는 전혀 밝혀지지 않았다.' },
       {
         type: 'addQuestion',
-        question: { id: 'q-w1-where-is-k01', title: 'K-01은 지금 어디에 있는가?', linkedEvidenceIds: ['evidence-cafe-cctv-bag-thicker'] },
+        question: { id: 'q-w2-where-is-k01', title: 'K-01은 지금 어디에 있는가?', linkedEvidenceIds: ['evidence-cafe-cctv-bag-thicker'] },
       },
-      { type: 'setQuestionStatus', id: 'q-w1-where-is-k01', status: 'carried_over', resolutionText: '레오가 반출한 이후의 행방은 아직 쫓지 못했다.' },
+      { type: 'setQuestionStatus', id: 'q-w2-where-is-k01', status: 'carried_over', resolutionText: '레오가 반출한 이후의 행방은 아직 쫓지 못했다.' },
     ],
   },
   { id: 'line-037', speaker: '', text: '[ 미해결 연결점 ]\nM.K.\n— 정체 불명\n— K-01 문의와 연관\n— 사진 전달·의뢰 계정과 연관\n— 목적 불명', characterId: null },
@@ -3468,21 +3468,21 @@ const week1Scene013Lines = [
   { id: 'line-044', speaker: '지수', text: '아니요.', characterId: 'jisoo', expression: 'serious' },
   { id: 'line-045', speaker: '지수', text: '일단 오늘은 여기까지.\n내일부터 또 알아보죠, 조수님.', characterId: 'jisoo', expression: 'smirk' },
   { id: 'line-046', speaker: '영우', text: '넵, 탐정님.', characterId: 'youngwoo', expression: 'happy' },
-  { id: 'line-047', speaker: '', text: '지수의 1주차는,\n하나의 이름과 함께 저물었다.', characterId: null },
+  { id: 'line-047', speaker: '', text: '지수의 2주차는,\n하나의 이름과 함께 저물었다.', characterId: null },
   { id: 'line-048', speaker: '', text: '아직, 그 이름의 실체는 아무도 몰랐다.', characterId: null },
 ];
 
-// Registry of testable Week 1 scenes — /dev/week1 lists these, each linking
-// to /play/game/?scene=<id>. Covers only the 1주차 main weekend arc
-// ("사라진 K-01") — 평일 미니씬(W1-D1~D5)은 아직 미구현.
+// Registry of testable Week 2 scenes — /dev/week2 lists these, each linking
+// to /play/game/?scene=<id>. Covers only the 2주차 main weekend arc
+// ("사라진 K-01") — 평일 미니씬(W2-D1~D5)은 아직 미구현.
 //
-// ===== 1주차 장편 확장 v2 =====
+// ===== 2주차 장편 확장 v2 =====
 // §4 구조 개요대로 재배치: 003(순수 자유조사) → 004(도난+사진분석,
 // 004-minigame/004-review) → 005(신규: 용의자 선별+현장 재조사+첫 가설) →
 // 006(윤민아 4라운드) → 007(애드리언 4라운드) → 008(레오 1차+타임라인) →
 // 009(레오 집중 심문 9라운드) → 010(중간 추리+재오픈) → 011(윤민아 최종
 // 8라운드) → 012(사건 재구성 6칸) → 013(엔딩). VN→VN 전환은 기존 관례대로
-// nextSceneId를 쓰지 않고 /dev/week1의 순서 목록(order)으로만 안내하며,
+// nextSceneId를 쓰지 않고 /dev/week2의 순서 목록(order)으로만 안내하며,
 // nextSceneId는 미니게임 핸드오프(사진 분석/시간대 정리) 두 곳에만 남아있다.
 //
 // ===== The Missing Key v4 §9/§10 보조 증인 패스 =====
@@ -3494,38 +3494,38 @@ const week1Scene013Lines = [
 // 반전)를 추가했다. 새 캐릭터는 dialogueCharacters의 claire/sophie/
 // daniel-guide. 마틴 베일(전화 통화, §9.4)과 애드리언 재심문(§ACT7)은 아직
 // 이 패스에 없다 — 다음 작업으로 남는다.
-const week1Scenes = [
+const week2Scenes = [
   {
-    id: 'week1-scene-001',
+    id: 'week2-scene-001',
     order: 1,
     name: '시티로 출발',
     location: 'Circular Quay 이동 중',
     introLabel: 'SYDNEY',
     time: '09:40',
-    lines: week1Scene001Lines,
+    lines: week2Scene001Lines,
     // The Missing Key v1 §12.2 "최초 진입" — 시티 도착 후 곧장 탐색 허브로
     // 넘긴다. 관광객 모드(사진 포즈 루프·전시장 발견 선택지) 대사는
-    // interactionDefs.js의 'w1-phase1-intro'로 옮겨져 Phase 1 최초 진입 시
+    // interactionDefs.js의 'w2-phase1-intro'로 옮겨져 Phase 1 최초 진입 시
     // 허브 안에서 자동 재생된다 — 더 이상 이 파일의 별도 씬이 아니다.
-    nextSceneId: 'week1-hub-entry-tourism',
+    nextSceneId: 'week2-hub-entry-tourism',
   },
   {
-    id: 'week1-scene-003',
+    id: 'week2-scene-003',
     order: 3,
     name: '전시장 자유 조사',
     location: 'Pop-up Exhibition',
     introLabel: 'CIRCULAR QUAY',
     time: '10:40',
-    // Hands off into the exploration hub at w1-adrian-spot (전시장 보조 진열
+    // Hands off into the exploration hub at w2-adrian-spot (전시장 보조 진열
     // 구역) — see MINIGAME_ROUTES in game/index.html / dev/data/sceneRoutes.js.
     // The 10 evidence hotspots this used to lead into a standalone minigame
     // for now live there as investigateHotspots (§신규 재편, see
-    // locationDefs.js/interactionDefs.js's w1as-topic-*).
-    lines: week1Scene003Lines,
-    nextSceneId: 'week1-scene-003-exhibition-return',
+    // locationDefs.js/interactionDefs.js's w2as-topic-*).
+    lines: week2Scene003Lines,
+    nextSceneId: 'week2-scene-003-exhibition-return',
   },
   {
-    id: 'week1-scene-004',
+    id: 'week2-scene-004',
     order: 4,
     name: '도난 발생',
     location: 'Pop-up Exhibition',
@@ -3533,11 +3533,11 @@ const week1Scenes = [
     time: '10:47',
     // Hands off into the expanded photo-zoom minigame — see MINIGAME_ROUTES
     // in game/index.html.
-    lines: week1Scene004Lines,
-    nextSceneId: 'week1-scene-004-minigame',
+    lines: week2Scene004Lines,
+    nextSceneId: 'week2-scene-004-minigame',
   },
   {
-    id: 'week1-scene-004-minigame',
+    id: 'week2-scene-004-minigame',
     order: 6,
     name: '사진 속 인물 찾기 (미니게임)',
     location: 'Pop-up Exhibition',
@@ -3547,7 +3547,7 @@ const week1Scenes = [
     // order/captions) — each is a one-off image, not a reusable 장소, so it
     // gets its own direct-upload photoSlot instead of a 장소 DB catalog entry
     // (see backgroundKinds()/isOrdinaryBackgroundSlot() in dev/upload).
-    // /dev/upload/?scene=week1-scene-004-minigame lets a dev pick between all
+    // /dev/upload/?scene=week2-scene-004-minigame lets a dev pick between all
     // 7 and upload/replace each one; dev/minigame-photo-zoom/index.html reads
     // them back via DevGameState.getBackgroundId(key).
     //
@@ -3567,48 +3567,48 @@ const week1Scenes = [
     // exhibitionSearchHotspots only lists real answer spots.
     photoSlots: [
       {
-        key: 'week1-scene-004-minigame-photo-1', label: '① 10:41 · 한산한 전시장',
+        key: 'week2-scene-004-minigame-photo-1', label: '① 10:41 · 한산한 전시장',
         hotspots: [
           { id: 'fig-minah', label: '베이지 코트 여성' },
           { id: 'nameplate', label: 'K-01 명찰 사진' },
         ],
       },
       {
-        key: 'week1-scene-004-minigame-photo-2', label: '② 10:43 · 두 사람이 멈춰 선다',
+        key: 'week2-scene-004-minigame-photo-2', label: '② 10:43 · 두 사람이 멈춰 선다',
         hotspots: [
           { id: 'fig-adrian', label: '네이비 수트 남성' },
           { id: 'fig-leo', label: '그레이 후드 남성' },
         ],
       },
       {
-        key: 'week1-scene-004-minigame-photo-3', label: '③ 10:45 · 사진 찍는 손님',
+        key: 'week2-scene-004-minigame-photo-3', label: '③ 10:45 · 사진 찍는 손님',
         hotspots: [
           { id: 'fig-minah', label: '베이지 코트 여성' },
           { id: 'lens-reflection', label: '카메라 렌즈 반사' },
         ],
       },
       {
-        key: 'week1-scene-004-minigame-photo-4', label: '④ 10:47 · 단체 관광객 밀려듦',
+        key: 'week2-scene-004-minigame-photo-4', label: '④ 10:47 · 단체 관광객 밀려듦',
         hotspots: [
           { id: 'fig-leo', label: '그레이 후드 남성' },
           { id: 'fig-unknown', label: '얼굴이 안 보이는 인물' },
         ],
       },
       {
-        key: 'week1-scene-004-minigame-photo-5', label: '⑤ 10:48 · 진열장 문이 열려 있다',
+        key: 'week2-scene-004-minigame-photo-5', label: '⑤ 10:48 · 진열장 문이 열려 있다',
         hotspots: [
           { id: 'door-ajar', label: '진열장 문 열림' },
         ],
       },
       {
-        key: 'week1-scene-004-minigame-photo-6', label: '⑥ 10:50 · 인파 절정',
+        key: 'week2-scene-004-minigame-photo-6', label: '⑥ 10:50 · 인파 절정',
         hotspots: [
           { id: 'fig-adrian', label: '네이비 수트 남성' },
           { id: 'fig-minah', label: '베이지 코트 여성' },
         ],
       },
       {
-        key: 'week1-scene-004-minigame-photo-7', label: '⑦ 10:53 · 케이스가 비어 있다',
+        key: 'week2-scene-004-minigame-photo-7', label: '⑦ 10:53 · 케이스가 비어 있다',
         hotspots: [
           { id: 'empty-case', label: 'K-01 상태 변화 (빈 받침대)' },
         ],
@@ -3616,79 +3616,79 @@ const week1Scenes = [
     ],
   },
   {
-    id: 'week1-scene-004-review',
+    id: 'week2-scene-004-review',
     order: 7,
     name: '사진 분석 마무리',
     location: 'Pop-up Exhibition',
     introLabel: 'CIRCULAR QUAY',
     time: '10:56',
-    lines: week1Scene004ReviewLines,
+    lines: week2Scene004ReviewLines,
   },
   {
-    id: 'week1-scene-005',
+    id: 'week2-scene-005',
     order: 8,
     name: '용의자 선별 및 현장 재조사',
     location: 'Pop-up Exhibition',
     introLabel: 'CIRCULAR QUAY',
     time: '11:00',
-    lines: week1Scene005Lines,
+    lines: week2Scene005Lines,
   },
   {
-    id: 'week1-scene-005a',
+    id: 'week2-scene-005a',
     order: 9,
     name: '클레어 최초 진술',
     location: 'Pop-up Exhibition',
     introLabel: 'CIRCULAR QUAY',
     time: '11:05',
-    lines: week1Scene005aLines,
+    lines: week2Scene005aLines,
   },
   {
-    id: 'week1-scene-005b',
+    id: 'week2-scene-005b',
     order: 10,
     name: '다니엘 최초 진술',
     location: 'Pop-up Exhibition',
     introLabel: 'CIRCULAR QUAY',
     time: '11:07',
-    lines: week1Scene005bLines,
+    lines: week2Scene005bLines,
     // The Missing Key v1 §12.6 — 여기서부터 세 용의자를 자유 순서로 방문하는
-    // 탐색 허브로 넘어간다. week1-scene-006/007/008 자체(대사·라운드·choice
+    // 탐색 허브로 넘어간다. week2-scene-006/007/008 자체(대사·라운드·choice
     // 구조)는 전혀 건드리지 않았다 — hasn 확인해 보니 서로 조건 의존이 없어
     // (006의 유일한 내부 condition은 앞서 005에서 세운 가설을 참조할 뿐,
     // 007/008 완료 여부와는 무관) 그대로 병렬로 열어도 안전했다.
-    nextSceneId: 'week1-suspect-hub-entry',
+    nextSceneId: 'week2-suspect-hub-entry',
   },
   {
-    id: 'week1-scene-006',
+    id: 'week2-scene-006',
     order: 11,
     name: '윤민아 1차 심문',
     location: 'Pop-up Exhibition',
     introLabel: 'CIRCULAR QUAY',
     time: '11:10',
-    lines: week1Scene006Lines,
+    lines: week2Scene006Lines,
     // 완료 후 탐문 허브로 복귀 — 006/007은 그 자체로 다음 단계를 자동으로
     // 잠그지 않으므로(§ 위 주석) 안전하게 추가 가능. 레오(008)는 이미
     // 타임라인 미니게임으로 이어지는 기존 nextSceneId가 있어 손대지 않았다
     // (아래 008 항목 참고).
-    nextSceneId: 'week1-suspect-interview-return',
+    nextSceneId: 'week2-suspect-interview-return',
   },
   {
-    id: 'week1-scene-007',
+    id: 'week2-scene-007',
     order: 12,
     name: '애드리언 1차 심문',
     location: 'Pop-up Exhibition',
     introLabel: 'CIRCULAR QUAY',
     time: '11:25',
-    lines: week1Scene007Lines,
-    nextSceneId: 'week1-suspect-interview-return',
+    lines: week2Scene007Lines,
+    nextSceneId: 'week2-suspect-interview-return',
   },
   {
-    id: 'week1-scene-008',
+    id: 'week2-scene-008',
     order: 13,
     name: '레오 1차 심문 및 타임라인',
     location: 'Café near Circular Quay',
     introLabel: 'CIRCULAR QUAY',
     time: '11:40',
-    lines: week1Scene008Lines,
+    lines: week2Scene008Lines,
     // Hands off into the expanded 5단계 timeline minigame — see
     // MINIGAME_ROUTES in game/index.html. Deliberately left unchanged even
     // after wiring 006/007 back to the 탐문 허브 (§12.6): visiting 레오 is
@@ -3699,10 +3699,10 @@ const week1Scenes = [
     // 재검증 체인 takes back over. The timeline minigame's own CARDS data is
     // static (doesn't read prior evidence from 윤민아/애드리언), so this is
     // safe regardless of visit order.
-    nextSceneId: 'week1-scene-008-minigame',
+    nextSceneId: 'week2-scene-008-minigame',
   },
   {
-    id: 'week1-scene-008-minigame',
+    id: 'week2-scene-008-minigame',
     order: 14,
     name: '시간대 정리 (미니게임)',
     location: 'Café near Circular Quay',
@@ -3710,139 +3710,139 @@ const week1Scenes = [
     route: '/play/minigame-timeline/',
   },
   {
-    id: 'week1-scene-008a',
+    id: 'week2-scene-008a',
     order: 15,
     name: '재심문 — 클레어·다니엘·소피',
     location: 'Pop-up Exhibition',
     introLabel: 'CIRCULAR QUAY',
     time: '12:00',
-    lines: week1Scene008aLines,
+    lines: week2Scene008aLines,
   },
   {
-    id: 'week1-scene-009',
+    id: 'week2-scene-009',
     order: 16,
     name: '레오 집중 심문',
     location: 'Pop-up Exhibition',
     introLabel: 'CIRCULAR QUAY',
     time: '12:05',
-    lines: week1Scene009Lines,
+    lines: week2Scene009Lines,
   },
   {
-    id: 'week1-scene-009a',
+    id: 'week2-scene-009a',
     order: 17,
     name: '현장 재검증 — 진열장은 어떻게 열렸는가',
     location: 'Pop-up Exhibition',
     introLabel: 'CIRCULAR QUAY',
     time: '12:15',
-    lines: week1Scene009aLines,
+    lines: week2Scene009aLines,
   },
   {
-    id: 'week1-scene-010',
+    id: 'week2-scene-010',
     order: 18,
     name: '중간 추리 및 윤민아 재오픈',
     location: 'Pop-up Exhibition',
     introLabel: 'CIRCULAR QUAY',
     time: '12:20',
-    lines: week1Scene010Lines,
+    lines: week2Scene010Lines,
     // The Missing Key v1 §12.8 "재검증 단계" — 윤민아 재오픈 직후, 남은 재검증
     // 대상(윤민아 최종 심문/애드리언 재심문/마틴 베일 통화) 세 곳을 자유
     // 순서로 도는 허브로 넘긴다. 세 씬 모두 서로 참조하는 내부 condition이
     // 없음을 확인했다(011의 유일한 조건은 006에서 세운 플래그를 참조할 뿐).
     // 각 씬 자체의 대사·시각(18:00/18:20/18:40)은 그대로 유지 — 허브를
     // 거치더라도 각 씬 진입 시 인트로 카드가 시간대를 다시 알려준다.
-    nextSceneId: 'week1-reverify-hub-entry',
+    nextSceneId: 'week2-reverify-hub-entry',
   },
   {
-    id: 'week1-scene-011',
+    id: 'week2-scene-011',
     order: 19,
     name: '윤민아 최종 심문',
     location: 'Circular Quay 편집숍',
     introLabel: 'CIRCULAR QUAY',
     time: '18:00',
-    lines: week1Scene011Lines,
-    nextSceneId: 'week1-reverify-interview-return',
+    lines: week2Scene011Lines,
+    nextSceneId: 'week2-reverify-interview-return',
   },
   {
-    id: 'week1-scene-011a',
+    id: 'week2-scene-011a',
     order: 20,
     name: '애드리언 재심문',
     location: 'Pop-up Exhibition',
     introLabel: 'CIRCULAR QUAY',
     time: '18:20',
-    lines: week1Scene011aLines,
-    nextSceneId: 'week1-reverify-interview-return',
+    lines: week2Scene011aLines,
+    nextSceneId: 'week2-reverify-interview-return',
   },
   {
-    id: 'week1-scene-011b',
+    id: 'week2-scene-011b',
     order: 21,
     name: '마틴 베일 통화',
     location: 'Circular Quay 이동 중',
     introLabel: 'CIRCULAR QUAY',
     time: '18:40',
-    lines: week1Scene011bLines,
-    nextSceneId: 'week1-reverify-interview-return',
+    lines: week2Scene011bLines,
+    nextSceneId: 'week2-reverify-interview-return',
   },
   {
-    id: 'week1-scene-012',
+    id: 'week2-scene-012',
     order: 22,
     name: '사건 재구성',
     location: 'Café near Circular Quay',
     introLabel: 'CIRCULAR QUAY',
     time: '19:00',
-    lines: week1Scene012Lines,
+    lines: week2Scene012Lines,
   },
   {
-    id: 'week1-scene-013',
+    id: 'week2-scene-013',
     order: 23,
-    name: '1주차 엔딩 · M.K.라는 이름',
+    name: '2주차 엔딩 · M.K.라는 이름',
     location: 'Sydney Accommodation',
     introLabel: 'ACCOMMODATION',
     time: '21:40',
-    lines: week1Scene013Lines,
+    lines: week2Scene013Lines,
   },
 ];
 
-// week0SceneGroups와 같은 형태 — 1주차 23개 씬을 The Missing Key 문서가 쓰는
-// Phase 구분(1주차 Phase 1/4/5는 dev/data/interactionDefs.js의
-// W1_TOURISM/W1_SUSPECT_INTERVIEWS/W1_REVERIFICATION, Phase 6은
-// docs/dev-status-week0-week1.md의 "Phase 6(최종 추궁·재구성, 012~013)"과
+// week1SceneGroups와 같은 형태 — 2주차 23개 씬을 The Missing Key 문서가 쓰는
+// Phase 구분(2주차 Phase 1/4/5는 dev/data/interactionDefs.js의
+// W2_TOURISM/W2_SUSPECT_INTERVIEWS/W2_REVERIFICATION, Phase 6은
+// docs/dev-status-week1-week2.md의 "Phase 6(최종 추궁·재구성, 012~013)"과
 // 그대로 일치)으로 묶는다. Phase 2/3 경계는 도난 발생(004) 시점을 기준으로
 // 나눴고, 006~009a(첫 심문 라운드 + 보조 증인 재확인 + 레오 집중 심문 +
 // 현장 재검증)는 별도 Phase 번호가 스펙에 없어 전부 Phase 4(용의자 탐문)에
 // 묶었다 — Phase 5는 010(재검증 도입)부터 시작한다는 dev-status 문서 원문
 // 그대로.
-const week1SceneGroups = [
-  { range: 'PHASE 1', label: '관광 자유 탐색', sceneIds: ['week1-scene-001'] },
-  { range: 'PHASE 2', label: '전시장 자유 관람', sceneIds: ['week1-scene-003'] },
+const week2SceneGroups = [
+  { range: 'PHASE 1', label: '관광 자유 탐색', sceneIds: ['week2-scene-001'] },
+  { range: 'PHASE 2', label: '전시장 자유 관람', sceneIds: ['week2-scene-003'] },
   {
     range: 'PHASE 3', label: '도난 발생 · 초기 조사',
-    sceneIds: ['week1-scene-004', 'week1-scene-004-minigame', 'week1-scene-004-review', 'week1-scene-005', 'week1-scene-005a', 'week1-scene-005b'],
+    sceneIds: ['week2-scene-004', 'week2-scene-004-minigame', 'week2-scene-004-review', 'week2-scene-005', 'week2-scene-005a', 'week2-scene-005b'],
   },
   {
     range: 'PHASE 4', label: '용의자 탐문',
-    sceneIds: ['week1-scene-006', 'week1-scene-007', 'week1-scene-008', 'week1-scene-008-minigame', 'week1-scene-008a', 'week1-scene-009', 'week1-scene-009a'],
+    sceneIds: ['week2-scene-006', 'week2-scene-007', 'week2-scene-008', 'week2-scene-008-minigame', 'week2-scene-008a', 'week2-scene-009', 'week2-scene-009a'],
   },
   {
     range: 'PHASE 5', label: '모순 재검증',
-    sceneIds: ['week1-scene-010', 'week1-scene-011', 'week1-scene-011a', 'week1-scene-011b'],
+    sceneIds: ['week2-scene-010', 'week2-scene-011', 'week2-scene-011a', 'week2-scene-011b'],
   },
-  { range: 'PHASE 6', label: '최종 추궁 · 재구성', sceneIds: ['week1-scene-012', 'week1-scene-013'] },
+  { range: 'PHASE 6', label: '최종 추궁 · 재구성', sceneIds: ['week2-scene-012', 'week2-scene-013'] },
 ];
 
 
-// [1주차 추리 개편 v2 — 연속성 이음매 주의] Week 1 was reworked so no scene
+// [2주차 추리 개편 v2 — 연속성 이음매 주의] Week 2 was reworked so no scene
 // reveals the full name "Mika Kovac"/"미카 코바치" — it now ends knowing only
-// the M.K. / MK_Consult account. Everything below (Week 2 onward) was written
+// the M.K. / MK_Consult account. Everything below (Week 3 onward) was written
 // before that overhaul and already uses the full name from early on (e.g.
-// week2-scene-012's "미카 코바치" mentions, its suspect-card-with-percentage
-// beat). That mismatch is a known seam for a future Week 2+ overhaul pass —
-// not fixed here since this pass was scoped to Week 1 only.
+// week3-scene-012's "미카 코바치" mentions, its suspect-card-with-percentage
+// beat). That mismatch is a known seam for a future Week 3+ overhaul pass —
+// not fixed here since this pass was scoped to Week 2 only.
 
-/* OPERATION MK — WEEK 2 · SCENE 01 「아침 출발」
-   Dialogue Set: dialogue-week2-scene001
-   Scene: week2-scene-001 (Featherdale 이동 중, 08:20) */
-const week2Scene001Lines = [
-  { id: 'line-001', speaker: '', text: '2주차 첫째 날 아침.\n숙소를 나와 페더데일로 향하는 길.', characterId: null },
+/* OPERATION MK — WEEK 3 · SCENE 01 「아침 출발」
+   Dialogue Set: dialogue-week3-scene001
+   Scene: week3-scene-001 (Featherdale 이동 중, 08:20) */
+const week3Scene001Lines = [
+  { id: 'line-001', speaker: '', text: '3주차 첫째 날 아침.\n숙소를 나와 페더데일로 향하는 길.', characterId: null },
   { id: 'line-002', speaker: '영우', text: '오늘은 늦게 나온다 했더니, 그건 또 뭐야.', characterId: 'youngwoo', expression: 'curious' },
   { id: 'line-003', speaker: '지수', text: '수첩이요.', characterId: 'jisoo', expression: 'smirk' },
   { id: 'line-004', speaker: '영우', text: '수첩?', characterId: 'youngwoo', expression: 'curious' },
@@ -3862,10 +3862,10 @@ const week2Scene001Lines = [
   { id: 'line-018', speaker: '', text: '창밖으로 시드니 시내가 점점 멀어지고,\n초록이 짙어지기 시작했다.', characterId: null },
 ];
 
-/* OPERATION MK — WEEK 2 · SCENE 02 「Featherdale 데이트」
-   Dialogue Set: dialogue-week2-scene002
-   Scene: week2-scene-002 (Featherdale Wildlife Park, 10:00) */
-const week2Scene002Lines = [
+/* OPERATION MK — WEEK 3 · SCENE 02 「Featherdale 데이트」
+   Dialogue Set: dialogue-week3-scene002
+   Scene: week3-scene-002 (Featherdale Wildlife Park, 10:00) */
+const week3Scene002Lines = [
   { id: 'line-001', speaker: '', text: 'Featherdale Wildlife Park.\n오전 10시.', characterId: null },
   { id: 'line-002', speaker: '지수', text: '엄마야, 저기 코알라 봐요.', characterId: 'jisoo', expression: 'shocked' },
   { id: 'line-003', speaker: '영우', text: '진짜 자기만 하네.', characterId: 'youngwoo', expression: 'soft' },
@@ -3889,11 +3889,11 @@ const week2Scene002Lines = [
   { id: 'line-021', speaker: '영우', text: '알겠어, 알겠어.\n대신 이건 나만 볼게.', characterId: 'youngwoo', expression: 'happy' },
 ];
 
-/* OPERATION MK — WEEK 2 · SCENE 03 「고양잇과 동물 앞 농담」
-   Dialogue Set: dialogue-week2-scene003
-   Scene: week2-scene-003 (Featherdale Wildlife Park, 10:20)
+/* OPERATION MK — WEEK 3 · SCENE 03 「고양잇과 동물 앞 농담」
+   Dialogue Set: dialogue-week3-scene003
+   Scene: week3-scene-003 (Featherdale Wildlife Park, 10:20)
    무깽이 리마인드 #3 — 매우 짧게, 단서 처리 없이 지나가는 농담. */
-const week2Scene003Lines = [
+const week3Scene003Lines = [
   { id: 'line-001', speaker: '', text: '작은 우리 앞 표지판.\n"Spotted-tail Quoll (Native Cat)"', characterId: null },
   { id: 'line-002', speaker: '지수', text: '어? 얘 고양이과래요.', characterId: 'jisoo', expression: 'curious' },
   { id: 'line-003', speaker: '영우', text: '이름만 그런 거야.\n사실 유대류라던데.', characterId: 'youngwoo', expression: 'soft' },
@@ -3904,11 +3904,11 @@ const week2Scene003Lines = [
   { id: 'line-008', speaker: '', text: '둘은 잠깐 웃고는 다음 구역으로 걸음을 옮겼다.', characterId: null },
 ];
 
-/* OPERATION MK — WEEK 2 · SCENE 04 「투어 그룹 사람들」
-   Dialogue Set: dialogue-week2-scene004
-   Scene: week2-scene-004 (Featherdale Wildlife Park, 10:40)
+/* OPERATION MK — WEEK 3 · SCENE 04 「투어 그룹 사람들」
+   Dialogue Set: dialogue-week3-scene004
+   Scene: week3-scene-004 (Featherdale Wildlife Park, 10:40)
    여기서 자연스럽게 스친 소규모 단체 관광객 넷이 다음 씬의 목격자가 된다. */
-const week2Scene004Lines = [
+const week3Scene004Lines = [
   { id: 'line-001', speaker: '', text: '웜뱃 우리 앞.\n오전 10시 40분.', characterId: null },
   { id: 'line-002', speaker: '', text: '같은 자리에서 사진을 찍던 소규모 투어 그룹과 자리가 겹쳤다.', characterId: null },
   { id: 'line-003', speaker: '지수', text: '저희가 먼저 볼게요, 하시고 천천히 오세요.', characterId: 'jisoo', expression: 'happy' },
@@ -3924,10 +3924,10 @@ const week2Scene004Lines = [
   { id: 'line-013', speaker: '영우', text: '여행 오면 다들 좀 너그러워지잖아.', characterId: 'youngwoo', expression: 'soft' },
 ];
 
-/* OPERATION MK — WEEK 2 · SCENE 05 「분실된 메모리카드」
-   Dialogue Set: dialogue-week2-scene005
-   Scene: week2-scene-005 (Featherdale Wildlife Park, 11:15) */
-const week2Scene005Lines = [
+/* OPERATION MK — WEEK 3 · SCENE 05 「분실된 메모리카드」
+   Dialogue Set: dialogue-week3-scene005
+   Scene: week3-scene-005 (Featherdale Wildlife Park, 11:15) */
+const week3Scene005Lines = [
   { id: 'line-001', speaker: '', text: '캥거루 방목장 근처.\n오전 11시 15분.', characterId: null },
   { id: 'line-002', speaker: '', text: '아까 그 투어 그룹 쪽에서 다급한 목소리가 들렸다.', characterId: null },
   { id: 'line-003', speaker: '카메라 주인', text: '어, 어...\n제 카메라 메모리카드가 없어졌어요.', characterId: null },
@@ -3937,7 +3937,7 @@ const week2Scene005Lines = [
   { id: 'line-007', speaker: '카메라 주인', text: '그건 있어요.\n카드만요.', characterId: null },
   { id: 'line-008', speaker: '지수', text: '...', characterId: 'jisoo', pauseBeforeMs: 300, expression: 'suspicious' },
   { id: 'line-009', speaker: '영우', text: '지수야, 그 표정.', characterId: 'youngwoo', expression: 'blank' },
-  { id: 'line-010', speaker: '지수', text: '아뇨, 그냥.\n1주차 생각나서요.', characterId: 'jisoo', expression: 'blank' },
+  { id: 'line-010', speaker: '지수', text: '아뇨, 그냥.\n2주차 생각나서요.', characterId: 'jisoo', expression: 'blank' },
   { id: 'line-011', speaker: '', text: '주변에 있던 일행 세 명이 하나둘 다가왔다.', characterId: null },
   { id: 'line-012', speaker: '관광객 일행', text: '저희 다 같이 있었는데, 아무도 못 봤어요.', characterId: null },
   { id: 'line-013', speaker: '관광객 일행', text: '아, 잠깐만.\n아까 그 여자분 이상하지 않았어요?', characterId: null },
@@ -3950,13 +3950,13 @@ const week2Scene005Lines = [
   { id: 'line-020', speaker: '지수', text: '일단 한 분씩 따로 여쭤볼게요.', characterId: 'jisoo', expression: 'serious' },
 ];
 
-/* OPERATION MK — WEEK 2 · SCENE 06 「네 명의 같은 증언」
-   Dialogue Set: dialogue-week2-scene006
-   Scene: week2-scene-006 (Featherdale Wildlife Park, 11:30)
+/* OPERATION MK — WEEK 3 · SCENE 06 「네 명의 같은 증언」
+   Dialogue Set: dialogue-week3-scene006
+   Scene: week3-scene-006 (Featherdale Wildlife Park, 11:30)
    Ends on a MINIGAME START beat — nextSceneId hands off to a not-yet-built
-   증언 문장 겹치기 minigame, week2-scene-006-minigame. Result(표현이 비정상적으로
-   유사함을 확인)은 week2-scene-007이 열릴 때 이미 찾은 것으로 취급한다. */
-const week2Scene006Lines = [
+   증언 문장 겹치기 minigame, week3-scene-006-minigame. Result(표현이 비정상적으로
+   유사함을 확인)은 week3-scene-007이 열릴 때 이미 찾은 것으로 취급한다. */
+const week3Scene006Lines = [
   { id: 'line-001', speaker: '', text: '방목장 벤치.\n오전 11시 30분.', characterId: null },
   { id: 'line-002', speaker: '', text: '네 명을 한 명씩 따로 불러 같은 질문을 던졌다.', characterId: null },
   { id: 'line-003', speaker: '영우', text: '한 명씩 물어봤는데, 진술이 너무 비슷해.', characterId: 'youngwoo', expression: 'curious' },
@@ -3970,10 +3970,10 @@ const week2Scene006Lines = [
   { id: 'line-011', speaker: '', text: 'MINIGAME START', characterId: null },
 ];
 
-/* OPERATION MK — WEEK 2 · SCENE 07 「CCTV에 없는 여자」
-   Dialogue Set: dialogue-week2-scene007
-   Scene: week2-scene-007 (Featherdale 방문자센터, 13:00) */
-const week2Scene007Lines = [
+/* OPERATION MK — WEEK 3 · SCENE 07 「CCTV에 없는 여자」
+   Dialogue Set: dialogue-week3-scene007
+   Scene: week3-scene-007 (Featherdale 방문자센터, 13:00) */
+const week3Scene007Lines = [
   { id: 'line-001', speaker: '', text: 'Featherdale 방문자센터.\n낮 1시.', characterId: null },
   { id: 'line-002', speaker: '', text: '네 사람의 진술을 겹쳐보니 표현이 비정상적으로 일치했다.\n관리 직원에게 CCTV 확인을 부탁했다.', characterId: null },
   { id: 'line-003', speaker: '방문자센터 직원', text: '말씀하신 시간대, 다 돌려봤는데요.', characterId: null },
@@ -3994,10 +3994,10 @@ const week2Scene007Lines = [
   { id: 'line-018', speaker: '영우', text: '한 명씩 만나보자.', characterId: 'youngwoo', expression: 'serious' },
 ];
 
-/* OPERATION MK — WEEK 2 · SCENE 08 「이든 브룩스 조사」
-   Dialogue Set: dialogue-week2-scene008
-   Scene: week2-scene-008 (Featherdale Wildlife Park, 13:20) */
-const week2Scene008Lines = [
+/* OPERATION MK — WEEK 3 · SCENE 08 「이든 브룩스 조사」
+   Dialogue Set: dialogue-week3-scene008
+   Scene: week3-scene-008 (Featherdale Wildlife Park, 13:20) */
+const week3Scene008Lines = [
   { id: 'line-001', speaker: '', text: '조류 사육장 앞.\n오후 1시 20분.', characterId: null },
   { id: 'line-002', speaker: '지수', text: '이든 브룩스 님 맞으시죠?\n잠깐 여쭤볼 게 있어서요.', characterId: 'jisoo', expression: 'neutral' },
   { id: 'line-003', speaker: '이든 브룩스', text: '네? 아, 네.\n그 메모리카드 일이요?', characterId: 'ethan', expression: 'neutral' },
@@ -4017,10 +4017,10 @@ const week2Scene008Lines = [
   { id: 'line-017', speaker: '지수', text: '아뇨, 저희는 그쪽 담당 아니에요.\n걱정 마세요.', characterId: 'jisoo', expression: 'soft' },
 ];
 
-/* OPERATION MK — WEEK 2 · SCENE 09 「다니엘 우 조사」
-   Dialogue Set: dialogue-week2-scene009
-   Scene: week2-scene-009 (Featherdale Wildlife Park, 13:40) */
-const week2Scene009Lines = [
+/* OPERATION MK — WEEK 3 · SCENE 09 「다니엘 우 조사」
+   Dialogue Set: dialogue-week3-scene009
+   Scene: week3-scene-009 (Featherdale Wildlife Park, 13:40) */
+const week3Scene009Lines = [
   { id: 'line-001', speaker: '', text: '피크닉 테이블 근처.\n오후 1시 40분.', characterId: null },
   { id: 'line-002', speaker: '영우', text: '다니엘 우 님이세요?', characterId: 'youngwoo', expression: 'curious' },
   { id: 'line-003', speaker: '다니엘 우', text: '네, 맞아요.\n무슨 일이시죠.', characterId: 'daniel', expression: 'neutral' },
@@ -4040,14 +4040,14 @@ const week2Scene009Lines = [
   { id: 'line-017', speaker: '다니엘 우', text: '제발요.', characterId: 'daniel', expression: 'annoyed' },
 ];
 
-/* OPERATION MK — WEEK 2 · SCENE 10 「한소라 — 기억을 심은 사람」
-   Dialogue Set: dialogue-week2-scene010
-   Scene: week2-scene-010 (Featherdale Wildlife Park, 14:00)
+/* OPERATION MK — WEEK 3 · SCENE 10 「한소라 — 기억을 심은 사람」
+   Dialogue Set: dialogue-week3-scene010
+   Scene: week3-scene-010 (Featherdale Wildlife Park, 14:00)
    Ends on a MINIGAME START beat — nextSceneId hands off to a not-yet-built
-   대화 순서 재구성 minigame, week2-scene-010-minigame. 미니게임 결과(한소라가
+   대화 순서 재구성 minigame, week3-scene-010-minigame. 미니게임 결과(한소라가
    사건 전 각 목격자에게 서로 다른 특징을 심어 하나의 가짜 여성을 완성했다는 것)는
-   week2-scene-011이 열릴 때 이미 밝혀진 것으로 취급한다. */
-const week2Scene010Lines = [
+   week3-scene-011이 열릴 때 이미 밝혀진 것으로 취급한다. */
+const week3Scene010Lines = [
   { id: 'line-001', speaker: '', text: '기념품 가게 앞.\n오후 2시.', characterId: null },
   { id: 'line-002', speaker: '지수', text: '한소라 님이시죠?\n잠깐 여쭤볼게요.', characterId: 'jisoo', expression: 'neutral' },
   { id: 'line-003', speaker: '한소라', text: '아, 네.\n그 카드 없어진 거요?', characterId: 'sora', expression: 'neutral' },
@@ -4068,10 +4068,10 @@ const week2Scene010Lines = [
   { id: 'line-018', speaker: '', text: 'MINIGAME START', characterId: null },
 ];
 
-/* OPERATION MK — WEEK 2 · SCENE 11 「두 번째 추리」
-   Dialogue Set: dialogue-week2-scene011
-   Scene: week2-scene-011 (Featherdale Wildlife Park, 14:30) */
-const week2Scene011Lines = [
+/* OPERATION MK — WEEK 3 · SCENE 11 「두 번째 추리」
+   Dialogue Set: dialogue-week3-scene011
+   Scene: week3-scene-011 (Featherdale Wildlife Park, 14:30) */
+const week3Scene011Lines = [
   { id: 'line-001', speaker: '', text: '기념품 가게 뒤편.\n오후 2시 30분.', characterId: null },
   { id: 'line-002', speaker: '', text: '대화 순서를 다시 맞춰보니, 네 사람에게 각각 다른 특징을\n먼저 흘린 사람은 전부 한소라였다.', characterId: null },
   { id: 'line-003', speaker: '지수', text: '회색 코트는 첫 번째 분한테,\n은색 귀걸이는 두 번째 분한테.', characterId: 'jisoo', expression: 'serious' },
@@ -4092,12 +4092,12 @@ const week2Scene011Lines = [
   { id: 'line-018', speaker: '지수', text: '어...\n그거 뭐예요?', characterId: 'jisoo', expression: 'shocked' },
 ];
 
-/* OPERATION MK — WEEK 2 · SCENE 12 「미카의 두 번째 흔적」
-   Dialogue Set: dialogue-week2-scene012
-   Scene: week2-scene-012 (Sydney Accommodation, 21:00)
-   Closes out Week 2's main weekend arc — 2주차 평일 미니씬(W2-D1~D5)은 별도로
-   추가될 예정. No nextSceneId; ends on narration like week1-scene-011. */
-const week2Scene012Lines = [
+/* OPERATION MK — WEEK 3 · SCENE 12 「미카의 두 번째 흔적」
+   Dialogue Set: dialogue-week3-scene012
+   Scene: week3-scene-012 (Sydney Accommodation, 21:00)
+   Closes out Week 3's main weekend arc — 3주차 평일 미니씬(W3-D1~D5)은 별도로
+   추가될 예정. No nextSceneId; ends on narration like week2-scene-011. */
+const week3Scene012Lines = [
   { id: 'line-001', speaker: '', text: '숙소.\n밤 9시.', characterId: null },
   { id: 'line-002', speaker: '', text: '한소라가 얼결에 보여준 화면이 계속 마음에 걸렸다.\n숙소로 돌아와 사진을 다시 확인해봤다.', characterId: null },
   { id: 'line-003', speaker: '영우', text: '아까 그 알림, 뭐라고 찍혀 있었어?', characterId: 'youngwoo', expression: 'curious' },
@@ -4108,7 +4108,7 @@ const week2Scene012Lines = [
   { id: 'line-008', speaker: '영우', text: '근데 왜 하필 또 M.K.야.', characterId: 'youngwoo', expression: 'blank' },
   { id: 'line-009', speaker: '지수', text: '첨부돼 있던 계약서도 같이 보내주셨어요.', characterId: 'jisoo', expression: 'serious' },
   { id: 'line-010', speaker: '', text: '[ 문서 메타데이터 · 작성자: MKOVAC ]', characterId: null },
-  { id: 'line-011', speaker: '영우', text: '1주차 그 문의 메일이랑 똑같은 이름이잖아.', characterId: 'youngwoo', expression: 'shocked' },
+  { id: 'line-011', speaker: '영우', text: '2주차 그 문의 메일이랑 똑같은 이름이잖아.', characterId: 'youngwoo', expression: 'shocked' },
   { id: 'line-012', speaker: '지수', text: '웅.\n이번엔 도난이랑 상관도 없는데 또 나왔어요.', characterId: 'jisoo', expression: 'serious' },
   { id: 'line-013', speaker: '지수', text: '소라 님 사건은 소라 님 혼자 벌인 거고,\nM.K.는 그냥 사진을 사려고 한 것뿐이에요.', characterId: 'jisoo', expression: 'serious' },
   { id: 'line-014', speaker: '지수', text: '근데 그 사진 문의가 하필 이 동네, 이 시기에 왔어요.', characterId: 'jisoo', expression: 'serious' },
@@ -4118,79 +4118,79 @@ const week2Scene012Lines = [
   { id: 'line-018', speaker: '', text: '영우는 대답하지 못했다.', characterId: 'youngwoo', expression: 'blank' },
   { id: 'line-019', speaker: '지수', text: '용의자 카드 업데이트할게요.', characterId: 'jisoo', expression: 'smirk' },
   { id: 'line-020', speaker: '', text: '[ 용의자 카드 갱신 ]\n미카 코바치 — M.K. 가능성 65%', characterId: null },
-  { id: 'line-021', speaker: '', text: '지수의 2주차는,\n또 하나의 M.K.를 남기고 저물었다.', characterId: null },
+  { id: 'line-021', speaker: '', text: '지수의 3주차는,\n또 하나의 M.K.를 남기고 저물었다.', characterId: null },
 ];
 
-// Registry of testable Week 2 scenes — /dev/week2 lists these, each linking
-// to /play/game/?scene=<id>. Covers only the 2주차 main weekend arc
-// (W2-S01~S12, "존재하지 않는 여자") — 2주차 평일 미니씬(W2-D1~D5)은 아직 미구현.
+// Registry of testable Week 3 scenes — /dev/week3 lists these, each linking
+// to /play/game/?scene=<id>. Covers only the 3주차 main weekend arc
+// (W3-S01~S12, "존재하지 않는 여자") — 3주차 평일 미니씬(W3-D1~D5)은 아직 미구현.
 //
 // Grouped by location rather than by time slice — see the mergeLines note
-// above week0Scenes.
-const week2Scenes = [
+// above week1Scenes.
+const week3Scenes = [
   {
-    id: 'week2-scene-001',
+    id: 'week3-scene-001',
     order: 1,
     name: '아침 출발',
     location: 'Featherdale 이동 중',
     introLabel: 'FEATHERDALE',
     time: '08:20',
-    lines: week2Scene001Lines,
+    lines: week3Scene001Lines,
   },
   {
-    id: 'week2-scene-002',
+    id: 'week3-scene-002',
     order: 2,
     name: 'Featherdale 데이트 · 분실된 메모리카드',
     location: 'Featherdale Wildlife Park',
     introLabel: 'FEATHERDALE',
     time: '10:00',
-    // Merged week2-scene-002~006 (all Featherdale Wildlife Park, back to
+    // Merged week3-scene-002~006 (all Featherdale Wildlife Park, back to
     // back). Hands off into the (not yet built) 증언 문장 겹치기 minigame —
     // see MINIGAME_ROUTES in game/index.html. Falls back to a "MINIGAME
     // START" placeholder overlay until that route exists.
-    lines: mergeLines(week2Scene002Lines, week2Scene003Lines, week2Scene004Lines, week2Scene005Lines, week2Scene006Lines),
-    nextSceneId: 'week2-scene-006-minigame',
+    lines: mergeLines(week3Scene002Lines, week3Scene003Lines, week3Scene004Lines, week3Scene005Lines, week3Scene006Lines),
+    nextSceneId: 'week3-scene-006-minigame',
   },
   {
-    id: 'week2-scene-007',
+    id: 'week3-scene-007',
     order: 3,
     name: 'CCTV에 없는 여자',
     location: 'Featherdale 방문자센터',
     introLabel: 'FEATHERDALE',
     time: '13:00',
-    lines: week2Scene007Lines,
+    lines: week3Scene007Lines,
   },
   {
-    id: 'week2-scene-008',
+    id: 'week3-scene-008',
     order: 4,
     name: '이든 · 다니엘 · 한소라 조사',
     location: 'Featherdale Wildlife Park',
     introLabel: 'FEATHERDALE',
     time: '13:20',
-    // Merged week2-scene-008~010 (all Featherdale Wildlife Park, back to
+    // Merged week3-scene-008~010 (all Featherdale Wildlife Park, back to
     // back). Hands off into the (not yet built) 대화 순서 재구성 minigame
     // that surfaces 한소라's coached testimony — same placeholder fallback
     // as above.
-    lines: mergeLines(week2Scene008Lines, week2Scene009Lines, week2Scene010Lines),
-    nextSceneId: 'week2-scene-010-minigame',
+    lines: mergeLines(week3Scene008Lines, week3Scene009Lines, week3Scene010Lines),
+    nextSceneId: 'week3-scene-010-minigame',
   },
   {
-    id: 'week2-scene-011',
+    id: 'week3-scene-011',
     order: 5,
     name: '두 번째 추리',
     location: 'Featherdale Wildlife Park',
     introLabel: 'FEATHERDALE',
     time: '14:30',
-    lines: week2Scene011Lines,
+    lines: week3Scene011Lines,
   },
   {
-    id: 'week2-scene-012',
+    id: 'week3-scene-012',
     order: 6,
     name: '미카의 두 번째 흔적',
     location: 'Sydney Accommodation',
     introLabel: 'ACCOMMODATION',
     time: '21:00',
-    lines: week2Scene012Lines,
+    lines: week3Scene012Lines,
   },
 ];
 
@@ -4202,11 +4202,11 @@ const week2Scenes = [
 // starts the game. Keep `route` in sync with MINIGAME_ROUTES in game/index.html.
 const minigames = [
   {
-    id: 'week0-scene-001-2-minigame',
+    id: 'week1-scene-001-2-minigame',
     name: '지하철 역 찾기',
     location: 'Sydney Airport Station',
     route: '/play/minigame-eastwood/',
-    setupUrl: '/dev/upload/?scene=week0-scene-001-2&kind=minigame&minigame=week0-scene-001-2-minigame',
+    setupUrl: '/dev/upload/?scene=week1-scene-001-2&kind=minigame&minigame=week1-scene-001-2-minigame',
   },
   {
     // Standalone physics/AI minigame — no background image or hand-marked
@@ -4243,20 +4243,20 @@ const minigames = [
   },
   {
     // 7 burst-shot photos, each its own direct-upload photoSlot on the
-    // week1-scene-004-minigame entry itself (see its photoSlots comment in
-    // week1Scenes above) — setupUrl deep-links straight into /dev/upload's
+    // week2-scene-004-minigame entry itself (see its photoSlots comment in
+    // week2Scenes above) — setupUrl deep-links straight into /dev/upload's
     // background tab with that scene already selected, same plain ?scene=
     // pattern a non-minigame scene's own 설정 button uses.
-    id: 'week1-scene-004-minigame',
+    id: 'week2-scene-004-minigame',
     name: '사진 속 인물 찾기',
     location: 'Pop-up Exhibition',
     route: '/play/minigame-photo-zoom/',
-    setupUrl: '/dev/upload/?scene=week1-scene-004-minigame',
+    setupUrl: '/dev/upload/?scene=week2-scene-004-minigame',
   },
   {
     // Standalone tap-to-order timeline puzzle — same no-setup-screen
     // reasoning as above.
-    id: 'week1-scene-008-minigame',
+    id: 'week2-scene-008-minigame',
     name: '시간대 정리',
     location: 'Café near Circular Quay',
     route: '/play/minigame-timeline/',
@@ -4282,11 +4282,11 @@ const minigames = [
   // 남기고 배열/페이지 구분은 없앰 — /dev/upload의 focusMinigame이 이 플래그로
   // 아이템/상호작용 탭(§ applyFocusModeChrome)을 보여줄지 판단한다.
   {
-    id: 'week0-scene-002-2',
+    id: 'week1-scene-002-2',
     name: '핸드폰을 찾아라',
     location: 'Sydney Accommodation',
     route: '/play/minigame-phone-search/',
-    setupUrl: `/dev/upload/?scene=${roomSearchAreaSceneId(roomSearchAreas[0].id)}&minigame=week0-scene-002-2`,
+    setupUrl: `/dev/upload/?scene=${roomSearchAreaSceneId(roomSearchAreas[0].id)}&minigame=week1-scene-002-2`,
     isEvidence: true,
   },
   {
@@ -4300,382 +4300,6 @@ const minigames = [
     location: '독립형 테스트 (스토리 미연동)',
     route: '/dev/minigame-item-scan/',
     setupUrl: '/dev/minigame-item-scan/',
-  },
-];
-
-/* OPERATION MK — WEEK 3 · SCENE 01 「숙소 — 지금까지 정리」
-   Dialogue Set: dialogue-week3-scene001
-   Scene: week3-scene-001 (Sydney Accommodation, 09:00) */
-const week3Scene001Lines = [
-  { id: 'line-001', speaker: '', text: '숙소.\n오전 9시.', characterId: null },
-  { id: 'line-002', speaker: '', text: '3주차 첫날, 지수는 벽에 그동안의 단서를 하나씩 붙이기 시작했다.', characterId: null },
-  { id: 'line-003', speaker: '지수', text: 'M.K. 열쇠, M. KOV... 봉투, Mika Kovac 문의, MK_Consult.', characterId: 'jisoo', expression: 'serious' },
-  { id: 'line-004', speaker: '지수', text: 'KOVAC 문자열, M. Kovac 사진 문의, MKOVAC 메타데이터.', characterId: 'jisoo', expression: 'serious' },
-  { id: 'line-005', speaker: '영우', text: '이렇게 늘어놓으니까 진짜 많다.', characterId: 'youngwoo', expression: 'curious' },
-  { id: 'line-006', speaker: '지수', text: '이게 미카 아니면 누군데.', characterId: 'jisoo', expression: 'suspicious' },
-  { id: 'line-007', speaker: '영우', text: '문제는 왜 우리 근처에 있냐는 거지.', characterId: 'youngwoo', expression: 'blank' },
-  { id: 'line-008', speaker: '지수', text: '...\n그건 저도 모르겠어요.', characterId: 'jisoo', pauseBeforeMs: 300, expression: 'blank' },
-  { id: 'line-009', speaker: '영우', text: '오늘은 일단 좀 쉬자.\n본다이 가기로 했잖아.', characterId: 'youngwoo', expression: 'soft' },
-  { id: 'line-010', speaker: '지수', text: '웅웅.\n오늘 하루는 진짜 그냥 놀 거예요.', characterId: 'jisoo', expression: 'happy' },
-];
-
-/* OPERATION MK — WEEK 3 · SCENE 02 「Bondi — 그냥 놀자」
-   Dialogue Set: dialogue-week3-scene002
-   Scene: week3-scene-002 (Bondi Beach, 11:00)
-   미스터리 없음 — 브리프대로 하루 정도 사건을 잊는 낭만 파트. */
-const week3Scene002Lines = [
-  { id: 'line-001', speaker: '', text: 'Bondi Beach.\n오전 11시.', characterId: null },
-  { id: 'line-002', speaker: '지수', text: '바다다아!', characterId: 'jisoo', expression: 'happy' },
-  { id: 'line-003', speaker: '영우', text: '뛰지 마, 넘어져.', characterId: 'youngwoo', expression: 'soft' },
-  { id: 'line-004', speaker: '', text: '지수는 이미 신발을 벗어던지고 모래사장을 가로지르고 있었다.', characterId: null },
-  { id: 'line-005', speaker: '지수', text: '사진 찍어줘요!', characterId: 'jisoo', expression: 'happy' },
-  { id: 'line-006', speaker: '영우', text: '벌써 몇 장째야.', characterId: 'youngwoo', expression: 'smirk' },
-  { id: 'line-007', speaker: '지수', text: '오늘은 사건 얘기 안 하기로 했잖아요.\n대신 사진은 무제한.', characterId: 'jisoo', expression: 'smirk' },
-  { id: 'line-008', speaker: '영우', text: '그런 규칙이 어딨어 ㅋㅋㅋ', characterId: 'youngwoo', expression: 'happy' },
-  { id: 'line-009', speaker: '', text: '둘은 파도 앞에서 한참을 장난치며 놀았다.', characterId: null },
-  { id: 'line-010', speaker: '지수', text: '아 진짜 오랜만에 아무 생각이 없다.', characterId: 'jisoo', expression: 'soft' },
-  { id: 'line-011', speaker: '영우', text: '그치.\n오늘은 그냥 이렇게 있자.', characterId: 'youngwoo', expression: 'soft' },
-  { id: 'line-012', speaker: '', text: '한참 뒤, 둘은 짐을 챙겨두었던 자리로 돌아왔다.', characterId: null },
-];
-
-/* OPERATION MK — WEEK 3 · SCENE 03 「황동 열쇠 실종」
-   Dialogue Set: dialogue-week3-scene003
-   Scene: week3-scene-003 (Bondi Beach, 12:30) */
-const week3Scene003Lines = [
-  { id: 'line-001', speaker: '', text: 'Bondi Beach, 짐을 둔 자리.\n낮 12시 30분.', characterId: null },
-  { id: 'line-002', speaker: '지수', text: '가방 좀 열어볼게요.', characterId: 'jisoo', expression: 'neutral' },
-  { id: 'line-003', speaker: '', text: '지수가 가방을 뒤적이다 멈춘다.', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-004', speaker: '지수', text: '어?', characterId: 'jisoo', expression: 'shocked' },
-  { id: 'line-005', speaker: '영우', text: '왜?', characterId: 'youngwoo', expression: 'curious' },
-  { id: 'line-006', speaker: '지수', text: '지갑 있고, 폰 있고, 선크림도 있는데.', characterId: 'jisoo', expression: 'shocked' },
-  { id: 'line-007', speaker: '지수', text: '열쇠가 없어요.', characterId: 'jisoo', expression: 'shocked' },
-  { id: 'line-008', speaker: '영우', text: '그 M.K. 열쇠?', characterId: 'youngwoo', expression: 'shocked' },
-  { id: 'line-009', speaker: '지수', text: '웅.\n다른 건 다 그대로인데 그것만요.', characterId: 'jisoo', expression: 'suspicious' },
-  { id: 'line-010', speaker: '영우', text: '단순 분실이면 다른 것도 없어져야 정상 아니야?', characterId: 'youngwoo', expression: 'curious' },
-  { id: 'line-011', speaker: '지수', text: '그러니까요.\n딱 그것만 가져갔어요.', characterId: 'jisoo', expression: 'suspicious' },
-  { id: 'line-012', speaker: '영우', text: '...\n오늘은 사건 얘기 안 하기로 했는데.', characterId: 'youngwoo', pauseBeforeMs: 300, expression: 'blank' },
-  { id: 'line-013', speaker: '지수', text: '얘기가 저를 찾아온 거예요.', characterId: 'jisoo', expression: 'serious' },
-];
-
-/* OPERATION MK — WEEK 3 · SCENE 04 「Bondi 동선 재구성」
-   Dialogue Set: dialogue-week3-scene004
-   Scene: week3-scene-004 (Bondi Beach, 12:40)
-   Ends on a MINIGAME START beat — nextSceneId hands off to a not-yet-built
-   결제/사진 시각 · 벤치/탈의공간/카페 동선 재구성 minigame,
-   week3-scene-004-minigame. */
-const week3Scene004Lines = [
-  { id: 'line-001', speaker: '', text: 'Bondi Beach 산책로.\n낮 12시 40분.', characterId: null },
-  { id: 'line-002', speaker: '지수', text: '오늘 우리 동선부터 한번 정리해봐요.', characterId: 'jisoo', expression: 'serious' },
-  { id: 'line-003', speaker: '영우', text: '카페에서 결제하고, 사진 찍고, 벤치에 앉았다가,\n탈의 공간 갔다 왔잖아.', characterId: 'youngwoo', expression: 'neutral' },
-  { id: 'line-004', speaker: '지수', text: '그 사이 어느 순간에 가방을 손 뻗을 거리에 안 뒀는지가 중요해요.', characterId: 'jisoo', expression: 'serious' },
-  { id: 'line-005', speaker: '영우', text: '결제 영수증에 시간 찍혀 있을 거야.', characterId: 'youngwoo', expression: 'soft' },
-  { id: 'line-006', speaker: '지수', text: '사진 찍은 시간도 있고요.', characterId: 'jisoo', expression: 'serious' },
-  { id: 'line-007', speaker: '영우', text: '그럼 그 시간들이랑 우리가 어디 있었는지를 겹쳐보자.', characterId: 'youngwoo', expression: 'serious' },
-  { id: 'line-008', speaker: '지수', text: '단순 분실이면 이렇게까지 안 맞아떨어질 텐데.', characterId: 'jisoo', expression: 'suspicious' },
-  { id: 'line-009', speaker: '', text: '지수가 영수증과 사진, 기억나는 동선을\n하나씩 시간 순서에 맞춰 배치하기 시작했다.', characterId: 'jisoo', expression: 'serious' },
-  { id: 'line-010', speaker: '', text: 'MINIGAME START', characterId: null },
-];
-
-/* OPERATION MK — WEEK 3 · SCENE 05 「사진 속 검은 재킷」
-   Dialogue Set: dialogue-week3-scene005
-   Scene: week3-scene-005 (Bondi Beach, 13:10)
-   Ends on a MINIGAME START beat — nextSceneId hands off to a not-yet-built
-   1주차/3주차 사진 실루엣 비교 minigame, week3-scene-005-minigame. */
-const week3Scene005Lines = [
-  { id: 'line-001', speaker: '', text: 'Bondi Beach 산책로.\n오후 1시 10분.', characterId: null },
-  { id: 'line-002', speaker: '', text: '동선을 다시 맞춰보니, 탈의 공간에 다녀온 5분 사이\n가방이 손이 안 닿는 곳에 있었다.', characterId: null },
-  { id: 'line-003', speaker: '영우', text: '그 5분 사이에 누가 지나갔는지가 관건이네.', characterId: 'youngwoo', expression: 'serious' },
-  { id: 'line-004', speaker: '지수', text: '그때 찍은 사진들 배경에 사람들 있을 거예요.', characterId: 'jisoo', expression: 'serious' },
-  { id: 'line-005', speaker: '', text: '지수가 그 시간대 사진들을 확대해서 살펴본다.', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-006', speaker: '지수', text: '...\n잠깐.', characterId: 'jisoo', pauseBeforeMs: 300, expression: 'shocked' },
-  { id: 'line-007', speaker: '영우', text: '왜?', characterId: 'youngwoo', expression: 'curious' },
-  { id: 'line-008', speaker: '지수', text: '이 재킷, 1주차 전시장 사진에서 본 그 실루엣 아니에요?', characterId: 'jisoo', expression: 'shocked' },
-  { id: 'line-009', speaker: '영우', text: '설마.\n한번 나란히 놓고 보자.', characterId: 'youngwoo', expression: 'shocked' },
-  { id: 'line-010', speaker: '', text: '지수가 1주차 전시장 사진과 방금 찍은 사진을 나란히 띄운다.', characterId: 'jisoo', expression: 'serious' },
-  { id: 'line-011', speaker: '', text: 'MINIGAME START', characterId: null },
-];
-
-/* OPERATION MK — WEEK 3 · SCENE 06 「Fish Market — 노아 리」
-   Dialogue Set: dialogue-week3-scene006
-   Scene: week3-scene-006 (Sydney Fish Market, 16:00) */
-const week3Scene006Lines = [
-  { id: 'line-001', speaker: '', text: 'Sydney Fish Market 근처, 공예품 가판.\n오후 4시.', characterId: null },
-  { id: 'line-002', speaker: '', text: '재킷 절개선, 은색 USB 케이스, 왼손 시계까지\n1주차 사진 속 인물과 동일했다.', characterId: null },
-  { id: 'line-003', speaker: '지수', text: '저기, 실례합니다.\n금속 공예 하시는 분 맞으시죠?', characterId: 'jisoo', expression: 'neutral' },
-  { id: 'line-004', speaker: '노아 리', text: '네, 맞아요.\n뭐 도와드릴까요?', characterId: 'noah', expression: 'neutral' },
-  { id: 'line-005', speaker: '', text: '지수가 사라졌던 열쇠 사진을 보여준다.', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-006', speaker: '지수', text: '이 열쇠, 혹시 봐주실 수 있어요?', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-007', speaker: '노아 리', text: '음...', characterId: 'noah', pauseBeforeMs: 300, expression: 'curious' },
-  { id: 'line-008', speaker: '노아 리', text: '이거 오래된 거 아니에요.', characterId: 'noah', expression: 'serious' },
-  { id: 'line-009', speaker: '영우', text: '네?\n딱 봐도 낡았는데요.', characterId: 'youngwoo', expression: 'curious' },
-  { id: 'line-010', speaker: '노아 리', text: '겉만 그렇게 보이게 만든 거예요.\n표면 처리가 딱 그 방식이에요.', characterId: 'noah', expression: 'serious' },
-  { id: 'line-011', speaker: '지수', text: '그게 무슨 말이에요?', characterId: 'jisoo', expression: 'suspicious' },
-  { id: 'line-012', speaker: '노아 리', text: '제대로 확인해봐도 될까요?\n좀 더 자세히 볼게요.', characterId: 'noah', expression: 'neutral' },
-];
-
-/* OPERATION MK — WEEK 3 · SCENE 07 「낡게 만든 열쇠」
-   Dialogue Set: dialogue-week3-scene007
-   Scene: week3-scene-007 (Sydney Fish Market, 16:20)
-   브리프가 명시한 "미카 진범설의 가장 강한 물리 증거" 장면. */
-const week3Scene007Lines = [
-  { id: 'line-001', speaker: '', text: 'Sydney Fish Market 근처, 공예품 가판.\n오후 4시 20분.', characterId: null },
-  { id: 'line-002', speaker: '노아 리', text: '역시 그렇네요.', characterId: 'noah', expression: 'serious' },
-  { id: 'line-003', speaker: '지수', text: '뭐가요?', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-004', speaker: '노아 리', text: '인공 산화 처리예요.\n녹슬어 보이게 화학약품으로 처리한 거고, 가공 자체는 최근이에요.', characterId: 'noah', expression: 'serious' },
-  { id: 'line-005', speaker: '영우', text: '그럼 이거 맞춤 제작이라는 거예요?', characterId: 'youngwoo', expression: 'shocked' },
-  { id: 'line-006', speaker: '노아 리', text: '네, 각인 방식 보면 확실해요.\n저희 업계에서 흔히 쓰는 방식이거든요.', characterId: 'noah', expression: 'serious' },
-  { id: 'line-007', speaker: '지수', text: '어디서 만든 건지 알 수 있어요?', characterId: 'jisoo', expression: 'serious' },
-  { id: 'line-008', speaker: '노아 리', text: '저희 쪽 업계 주문망에 비슷한 요청이 있었는지 한번 찾아볼게요.', characterId: 'noah', expression: 'neutral' },
-  { id: 'line-009', speaker: '', text: '노아가 태블릿으로 주문 기록을 뒤진다.', characterId: 'noah', expression: 'curious' },
-  { id: 'line-010', speaker: '노아 리', text: '...\n찾았어요.', characterId: 'noah', pauseBeforeMs: 400, expression: 'serious' },
-  { id: 'line-011', speaker: '', text: '[ 주문 담당: M. KOVAC / CLIENT CONFIDENTIAL ]', characterId: null },
-  { id: 'line-012', speaker: '지수', text: '...', characterId: 'jisoo', pauseBeforeMs: 500, expression: 'shocked' },
-  { id: 'line-013', speaker: '영우', text: '이건 진짜 물건이잖아.\n각인, 주문 기록, 다 남아 있어.', characterId: 'youngwoo', expression: 'shocked' },
-  { id: 'line-014', speaker: '지수', text: '이 열쇠, 처음부터 진짜 낡은 게 아니었어요.', characterId: 'jisoo', expression: 'serious' },
-  { id: 'line-015', speaker: '지수', text: '미카 코바치가 일부러 만들어서 우리한테 흘린 거예요.', characterId: 'jisoo', expression: 'serious' },
-  { id: 'line-016', speaker: '노아 리', text: '도움이 되셨다니 다행이네요.\n근데 이거, 좀 불안하실 것 같은데요.', characterId: 'noah', expression: 'curious' },
-  { id: 'line-017', speaker: '영우', text: '...\n그러게요.', characterId: 'youngwoo', pauseBeforeMs: 400, expression: 'blank' },
-];
-
-/* OPERATION MK — WEEK 3 · SCENE 08 「지수와 영우의 갈등」
-   Dialogue Set: dialogue-week3-scene008
-   Scene: week3-scene-008 (Sydney Fish Market 근처 부두, 17:00) */
-const week3Scene008Lines = [
-  { id: 'line-001', speaker: '', text: 'Fish Market 근처 부두.\n오후 5시.', characterId: null },
-  { id: 'line-002', speaker: '지수', text: '이거 이제 진짜 무서워요.', characterId: 'jisoo', expression: 'suspicious' },
-  { id: 'line-003', speaker: '영우', text: '그래서 하는 말인데, 이제 경찰에 말하는 게 어때.', characterId: 'youngwoo', expression: 'serious' },
-  { id: 'line-004', speaker: '지수', text: '뭐라고요?\nM.K.가 우리 여행마다 나온다고요?', characterId: 'jisoo', expression: 'suspicious' },
-  { id: 'line-005', speaker: '영우', text: '그거 말고 뭐라고 설명해.', characterId: 'youngwoo', expression: 'annoyed' },
-  { id: 'line-006', speaker: '지수', text: '증거라고는 이니셜 몇 개랑 맞춤 제작 열쇠 하나예요.', characterId: 'jisoo', expression: 'annoyed' },
-  { id: 'line-007', speaker: '영우', text: '그래도 이건 우리 동선을 안다는 거잖아.', characterId: 'youngwoo', expression: 'annoyed' },
-  { id: 'line-008', speaker: '지수', text: '그러니까 제가 더 파야죠.', characterId: 'jisoo', expression: 'annoyed' },
-  { id: 'line-009', speaker: '영우', text: '지수야, 이거 게임 아니야.', characterId: 'youngwoo', expression: 'serious' },
-  { id: 'line-010', speaker: '지수', text: '누가 게임이래요.', characterId: 'jisoo', expression: 'annoyed' },
-  { id: 'line-011', speaker: '영우', text: '요즘 계속 이 얘기만 하잖아.\n나는 그냥 지수가 걱정돼서 그래.', characterId: 'youngwoo', expression: 'blank' },
-  { id: 'line-012', speaker: '지수', text: '...', characterId: 'jisoo', pauseBeforeMs: 400, expression: 'blank' },
-  { id: 'line-013', speaker: '지수', text: '저도 알아요.\n근데 여기까지 와서 그냥 덮을 순 없잖아요.', characterId: 'jisoo', expression: 'blank' },
-  { id: 'line-014', speaker: '영우', text: '...', characterId: 'youngwoo', pauseBeforeMs: 400, expression: 'blank' },
-  { id: 'line-015', speaker: '', text: '둘 다 한동안 말이 없었다.', characterId: null },
-];
-
-/* OPERATION MK — WEEK 3 · SCENE 09 「고래 투어 — 화해」
-   Dialogue Set: dialogue-week3-scene009
-   Scene: week3-scene-009 (Whale Watching Boat, 다음날 09:30)
-   브리프대로 말보다 행동으로 화해하는 파트 — 갈등을 억지로 봉합하는 대사 없이 지나간다. */
-const week3Scene009Lines = [
-  { id: 'line-001', speaker: '', text: 'Whale Watching 보트.\n다음날 오전 9시 30분.', characterId: null },
-  { id: 'line-002', speaker: '', text: '어젯밤의 어색함이 아직 남은 채로, 둘은 나란히 뱃머리에 서 있었다.', characterId: null },
-  { id: 'line-003', speaker: '영우', text: '춥지 않아?', characterId: 'youngwoo', expression: 'soft' },
-  { id: 'line-004', speaker: '지수', text: '괜찮아요.', characterId: 'jisoo', expression: 'blank' },
-  { id: 'line-005', speaker: '', text: '멀리서 물기둥이 솟아오른다.', characterId: null },
-  { id: 'line-006', speaker: '지수', text: '어! 저기!', characterId: 'jisoo', expression: 'shocked' },
-  { id: 'line-007', speaker: '지수', text: '영우야, 여기 와봐요!\n빨리!', characterId: 'jisoo', expression: 'happy' },
-  { id: 'line-008', speaker: '', text: '지수가 반사적으로 영우의 손을 잡아끈다.', characterId: null },
-  { id: 'line-009', speaker: '영우', text: '와...', characterId: 'youngwoo', expression: 'shocked' },
-  { id: 'line-010', speaker: '', text: '고래가 수면 위로 몸을 반쯤 드러냈다 사라졌다.', characterId: null },
-  { id: 'line-011', speaker: '지수', text: '봤어요?? 봤어요??', characterId: 'jisoo', expression: 'happy' },
-  { id: 'line-012', speaker: '영우', text: '봤어, 봤어.', characterId: 'youngwoo', expression: 'happy' },
-  { id: 'line-013', speaker: '', text: '둘은 한참을 그렇게 손을 잡은 채 바다만 바라봤다.\n사과의 말은 필요 없었다.', characterId: null },
-];
-
-/* OPERATION MK — WEEK 3 · SCENE 10 「첫 직접 연락」
-   Dialogue Set: dialogue-week3-scene010
-   Scene: week3-scene-010 (Whale Watching Boat, 11:00) */
-const week3Scene010Lines = [
-  { id: 'line-001', speaker: '', text: 'Whale Watching 보트, 갑판.\n오전 11시.', characterId: null },
-  { id: 'line-002', speaker: '', text: '지수의 폰이 짧게 진동한다.', characterId: null },
-  { id: 'line-003', speaker: '지수', text: '어?', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-004', speaker: '영우', text: '왜?', characterId: 'youngwoo', expression: 'curious' },
-  { id: 'line-005', speaker: '', text: '[ 발신: M.K. ]', characterId: null },
-  { id: 'line-006', speaker: '지수', text: '...', characterId: 'jisoo', pauseBeforeMs: 500, expression: 'shocked' },
-  { id: 'line-007', speaker: '영우', text: '뭐야, 왜 그래.', characterId: 'youngwoo', expression: 'curious' },
-  { id: 'line-008', speaker: '지수', text: '이거 봐요.', characterId: 'jisoo', expression: 'shocked' },
-  { id: 'line-009', speaker: '', text: '[ You are looking for the wrong person. ]', characterId: null },
-  { id: 'line-010', speaker: '영우', text: '...\n뭐라는 거야 이게.', characterId: 'youngwoo', pauseBeforeMs: 400, expression: 'blank' },
-  { id: 'line-011', speaker: '지수', text: '틀린 사람을 찾고 있다는 거잖아요.', characterId: 'jisoo', expression: 'suspicious' },
-  { id: 'line-012', speaker: '영우', text: '들켰다는 거 아니야?\n그래서 다른 사람 보라고 흔드는 거고.', characterId: 'youngwoo', expression: 'curious' },
-  { id: 'line-013', speaker: '지수', text: '그럴 수도 있죠.', characterId: 'jisoo', expression: 'suspicious' },
-  { id: 'line-014', speaker: '지수', text: '근데 미카가 자기 자신 아니라고 할 이유가 있나?', characterId: 'jisoo', expression: 'suspicious' },
-  { id: 'line-015', speaker: '영우', text: '당연히 있지, 들키기 싫으니까.', characterId: 'youngwoo', expression: 'annoyed' },
-  { id: 'line-016', speaker: '지수', text: '...\n그런가.', characterId: 'jisoo', pauseBeforeMs: 300, expression: 'blank' },
-  { id: 'line-017', speaker: '지수', text: '일단 이 메시지, 어디서 온 건지 추적해볼게요.', characterId: 'jisoo', expression: 'serious' },
-];
-
-/* OPERATION MK — WEEK 3 · SCENE 11 「발신 흔적」
-   Dialogue Set: dialogue-week3-scene011
-   Scene: week3-scene-011 (숙소, 20:00)
-   Ends on a MINIGAME START beat — nextSceneId hands off to a not-yet-built
-   네트워크 경로 단순 추적 minigame, week3-scene-011-minigame. */
-const week3Scene011Lines = [
-  { id: 'line-001', speaker: '', text: '숙소.\n밤 8시.', characterId: null },
-  { id: 'line-002', speaker: '지수', text: '메시지 발신 경로, 한번 따라가볼게요.', characterId: 'jisoo', expression: 'serious' },
-  { id: 'line-003', speaker: '영우', text: '그런 것도 할 수 있어?', characterId: 'youngwoo', expression: 'curious' },
-  { id: 'line-004', speaker: '지수', text: '완전히는 안 되겠지만, 중간에 거쳐간 경로 정도는요.', characterId: 'jisoo', expression: 'serious' },
-  { id: 'line-005', speaker: '영우', text: '검색해보니까 이런 거 관련 공개 툴이 있긴 하더라.', characterId: 'youngwoo', expression: 'neutral' },
-  { id: 'line-006', speaker: '지수', text: '한번 넣어볼게요.', characterId: 'jisoo', expression: 'serious' },
-  { id: 'line-007', speaker: '', text: '지수가 발신 경로를 한 단계씩 추적하기 시작했다.', characterId: 'jisoo', expression: 'serious' },
-  { id: 'line-008', speaker: '', text: 'MINIGAME START', characterId: null },
-];
-
-/* OPERATION MK — WEEK 3 · SCENE 12 「Aquarium — 에블린 쇼」
-   Dialogue Set: dialogue-week3-scene012
-   Scene: week3-scene-012 (SEA LIFE Sydney Aquarium, 다음날 14:00) */
-const week3Scene012Lines = [
-  { id: 'line-001', speaker: '', text: 'SEA LIFE Sydney Aquarium.\n다음날 오후 2시.', characterId: null },
-  { id: 'line-002', speaker: '', text: '추적 끝에 나온 중간 릴레이 노드 하나가\n과거 미카가 썼던 보안 서비스와 일치했다.', characterId: null },
-  { id: 'line-003', speaker: '', text: '그 서비스를 소개해준 사람이 지금 이 수족관에서 일한다는 정보를 얻었다.', characterId: null },
-  { id: 'line-004', speaker: '지수', text: '에블린 쇼 님 맞으실까요?', characterId: 'jisoo', expression: 'neutral' },
-  { id: 'line-005', speaker: '에블린 쇼', text: '네, 맞는데요.\n무슨 일이시죠?', characterId: 'evelyn', expression: 'neutral' },
-  { id: 'line-006', speaker: '영우', text: '익명 의뢰 중개 쪽 일 하신 적 있으시다고 들어서요.', characterId: 'youngwoo', expression: 'curious' },
-  { id: 'line-007', speaker: '에블린 쇼', text: '...\n누구한테 들으셨어요?', characterId: 'evelyn', expression: 'suspicious' },
-  { id: 'line-008', speaker: '지수', text: '혹시 M.K.라는 이름, 들어보신 적 있으세요?', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-009', speaker: '에블린 쇼', text: '...', characterId: 'evelyn', pauseBeforeMs: 500, expression: 'neutral' },
-  { id: 'line-010', speaker: '에블린 쇼', text: 'M.K.?\n그 여자, 직접 본 적 있어요.', characterId: 'evelyn', expression: 'serious' },
-  { id: 'line-011', speaker: '지수', text: '...\n미카 코바치요?', characterId: 'jisoo', pauseBeforeMs: 400, expression: 'shocked' },
-  { id: 'line-012', speaker: '에블린 쇼', text: '...', characterId: 'evelyn', pauseBeforeMs: 500, expression: 'neutral' },
-  { id: 'line-013', speaker: '영우', text: '왜 대답을 안 하세요?', characterId: 'youngwoo', expression: 'curious' },
-  { id: 'line-014', speaker: '에블린 쇼', text: '아니, 그냥.\n오랜만에 그 이름 들으니까.', characterId: 'evelyn', expression: 'neutral' },
-  { id: 'line-015', speaker: '에블린 쇼', text: '자리 좀 옮겨서 얘기할까요.', characterId: 'evelyn', expression: 'neutral' },
-];
-
-/* OPERATION MK — WEEK 3 · SCENE 13 「가짜 목격 증언」
-   Dialogue Set: dialogue-week3-scene013
-   Scene: week3-scene-013 (SEA LIFE Sydney Aquarium 카페, 14:20)
-   브리프 명시 사항: 에블린은 실제로 얼굴을 선명하게 본 적이 없다는 사실은
-   여기서 밝히지 않는다 — 4주차에 가서야 드러난다. */
-const week3Scene013Lines = [
-  { id: 'line-001', speaker: '', text: 'Aquarium 내 카페.\n오후 2시 20분.', characterId: null },
-  { id: 'line-002', speaker: '에블린 쇼', text: '몇 년 전에 딱 한 번 마주친 적 있어요.', characterId: 'evelyn', expression: 'neutral' },
-  { id: 'line-003', speaker: '지수', text: '어떤 사람이었어요?', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-004', speaker: '에블린 쇼', text: '검은 재킷 입고 있었고, 동유럽 억양이 있었어요.', characterId: 'evelyn', expression: 'serious' },
-  { id: 'line-005', speaker: '에블린 쇼', text: '은색 케이스를 항상 들고 다녔고, 왼손에 시계를 찼었어요.', characterId: 'evelyn', expression: 'serious' },
-  { id: 'line-006', speaker: '영우', text: '...', characterId: 'youngwoo', pauseBeforeMs: 400, expression: 'shocked' },
-  { id: 'line-007', speaker: '지수', text: '검은 재킷, 은색 케이스, 왼손 시계.', characterId: 'jisoo', expression: 'shocked' },
-  { id: 'line-008', speaker: '지수', text: '지금까지 저희가 본 사진이랑 완전히 똑같아요.', characterId: 'jisoo', expression: 'shocked' },
-  { id: 'line-009', speaker: '에블린 쇼', text: '그렇겠죠.\nM.K.면 항상 그런 모습이었으니까.', characterId: 'evelyn', expression: 'neutral' },
-  { id: 'line-010', speaker: '영우', text: '확실한 거죠?\n직접 보셨다는 거.', characterId: 'youngwoo', expression: 'curious' },
-  { id: 'line-011', speaker: '에블린 쇼', text: '네, 확실해요.', characterId: 'evelyn', expression: 'neutral' },
-  { id: 'line-012', speaker: '지수', text: '이제 진짜 다 맞아떨어지네요.', characterId: 'jisoo', expression: 'serious' },
-  { id: 'line-013', speaker: '에블린 쇼', text: '조심하세요.\n그 사람 근처엔 안 가는 게 나아요.', characterId: 'evelyn', expression: 'suspicious' },
-  { id: 'line-014', speaker: '', text: '지수는 그 말을 오래 곱씹게 될 줄, 아직 몰랐다.', characterId: null },
-];
-
-/* OPERATION MK — WEEK 3 · SCENE 14 「열쇠의 귀환」
-   Dialogue Set: dialogue-week3-scene014
-   Scene: week3-scene-014 (Sydney Accommodation, 22:00)
-   Closes out Week 3's main weekend arc — 3주차 평일 미니씬(W3-D1~D5)은 별도로
-   추가될 예정. No nextSceneId; ends on the "NOT WHO. WHY." note per brief §8. */
-const week3Scene014Lines = [
-  { id: 'line-001', speaker: '', text: '숙소.\n밤 10시.', characterId: null },
-  { id: 'line-002', speaker: '', text: '방으로 들어온 두 사람은 협탁 위를 보고 그대로 멈춰 섰다.', characterId: null },
-  { id: 'line-003', speaker: '지수', text: '...', characterId: 'jisoo', pauseBeforeMs: 500, expression: 'shocked' },
-  { id: 'line-004', speaker: '영우', text: '이거.', characterId: 'youngwoo', expression: 'shocked' },
-  { id: 'line-005', speaker: '', text: '협탁 한가운데, 사라졌던 열쇠가 돌아와 있었다.', characterId: null },
-  { id: 'line-006', speaker: '지수', text: '문은 분명 잠겨 있었잖아요.', characterId: 'jisoo', expression: 'shocked' },
-  { id: 'line-007', speaker: '영우', text: '...', characterId: 'youngwoo', pauseBeforeMs: 400, expression: 'blank' },
-  { id: 'line-008', speaker: '', text: '열쇠 옆에 작은 종이 한 장이 놓여 있다.', characterId: null },
-  { id: 'line-009', speaker: '', text: '[ NOT WHO. ]\n[ WHY. ]', characterId: null },
-  { id: 'line-010', speaker: '', text: '하단에 작은 서명.', characterId: null },
-  { id: 'line-011', speaker: '', text: '[ M.K. ]', characterId: null },
-  { id: 'line-012', speaker: '지수', text: '...\n미카가 우리 갖고 노는 거야.', characterId: 'jisoo', pauseBeforeMs: 400, expression: 'suspicious' },
-  { id: 'line-013', speaker: '영우', text: '아니면 진짜로 하고 싶은 말이 있는 걸 수도 있고.', characterId: 'youngwoo', expression: 'serious' },
-  { id: 'line-014', speaker: '지수', text: '...\n어느 쪽이든, 다음 주엔 끝내야겠어요.', characterId: 'jisoo', expression: 'serious' },
-  { id: 'line-015', speaker: '', text: '지수의 3주차는,\nWHY라는 질문 하나를 남기고 저물었다.', characterId: null },
-];
-
-// Registry of testable Week 3 scenes — /dev/week3 lists these, each linking
-// to /play/game/?scene=<id>. Covers only the 3주차 main weekend arc
-// (W3-S01~S14, "사라진 원본 열쇠") — 3주차 평일 미니씬(W3-D1~D5)은 아직 미구현.
-//
-// Grouped by location rather than by time slice — see the mergeLines note
-// above week0Scenes.
-const week3Scenes = [
-  {
-    id: 'week3-scene-001',
-    order: 1,
-    name: '숙소 — 지금까지 정리',
-    location: 'Sydney Accommodation',
-    introLabel: 'ACCOMMODATION',
-    time: '09:00',
-    lines: week3Scene001Lines,
-  },
-  {
-    id: 'week3-scene-002',
-    order: 2,
-    name: 'Bondi — 그냥 놀자 · 황동 열쇠 실종',
-    location: 'Bondi Beach',
-    introLabel: 'BONDI BEACH',
-    time: '11:00',
-    // Merged week3-scene-002~004 (all Bondi Beach, back to back). Hands off
-    // into the (not yet built) 동선 재구성 minigame — see MINIGAME_ROUTES in
-    // game/index.html. Falls back to a "MINIGAME START" placeholder overlay
-    // until that route exists.
-    lines: mergeLines(week3Scene002Lines, week3Scene003Lines, week3Scene004Lines),
-    nextSceneId: 'week3-scene-004-minigame',
-  },
-  {
-    id: 'week3-scene-005',
-    order: 3,
-    name: '사진 속 검은 재킷',
-    location: 'Bondi Beach',
-    introLabel: 'BONDI BEACH',
-    time: '13:10',
-    lines: week3Scene005Lines,
-    // Hands off into the (not yet built) 실루엣 비교 minigame — same
-    // placeholder fallback as above.
-    nextSceneId: 'week3-scene-005-minigame',
-  },
-  {
-    id: 'week3-scene-006',
-    order: 4,
-    name: 'Fish Market — 노아 리 · 지수와 영우의 갈등',
-    location: 'Sydney Fish Market',
-    introLabel: 'FISH MARKET',
-    time: '16:00',
-    // Merged week3-scene-006~008 (all Sydney Fish Market, back to back).
-    lines: mergeLines(week3Scene006Lines, week3Scene007Lines, week3Scene008Lines),
-  },
-  {
-    id: 'week3-scene-009',
-    order: 5,
-    name: '고래 투어 — 화해 · 첫 직접 연락',
-    location: 'Whale Watching Boat',
-    introLabel: 'WHALE WATCHING',
-    time: '09:30',
-    // Merged week3-scene-009 + 010 (both Whale Watching Boat, back to back).
-    lines: mergeLines(week3Scene009Lines, week3Scene010Lines),
-  },
-  {
-    id: 'week3-scene-011',
-    order: 6,
-    name: '발신 흔적',
-    location: 'Sydney Accommodation',
-    introLabel: 'ACCOMMODATION',
-    time: '20:00',
-    lines: week3Scene011Lines,
-    // Hands off into the (not yet built) 네트워크 경로 추적 minigame — same
-    // placeholder fallback as above.
-    nextSceneId: 'week3-scene-011-minigame',
-  },
-  {
-    id: 'week3-scene-012',
-    order: 7,
-    name: 'Aquarium — 에블린 쇼 · 가짜 목격 증언',
-    location: 'SEA LIFE Sydney Aquarium',
-    introLabel: 'AQUARIUM',
-    time: '14:00',
-    // Merged week3-scene-012 + 013 (both SEA LIFE Sydney Aquarium, back to
-    // back).
-    lines: mergeLines(week3Scene012Lines, week3Scene013Lines),
-  },
-  {
-    id: 'week3-scene-014',
-    order: 8,
-    name: '열쇠의 귀환',
-    location: 'Sydney Accommodation',
-    introLabel: 'ACCOMMODATION',
-    time: '22:00',
-    lines: week3Scene014Lines,
   },
 ];
 
@@ -4770,13 +4394,21 @@ const week4Scene005Lines = [
    Dialogue Set: dialogue-week4-scene006
    Scene: week4-scene-006 (폐업한 공유 작업실, 11:45)
    플레이어 확신 100% — 하지만 미카가 그대로 인정한다는 것 자체가
-   최종 반전을 값싸지 않게 만드는 장치. */
+   최종 반전을 값싸지 않게 만드는 장치.
+   TODO(주차 재번호화, 구 3주차 삭제): line-006의 "3주차, 제 열쇠는 맞춤
+   제작이었고..."는 삭제된 구 3주차(황동 열쇠 실종/발신 흔적 추적) 내용을
+   가리키는 채로 남아있고, 바로 다음 line-007의 "발신 경로 추적" 전개도 그
+   단서에 의존한다 — 이 리캡 대사 자체를 다시 써야 함. 참고로 line-005도
+   (한소라 사진 문의, 새 3주차 = 구 2주차의 실제 콘텐츠) 이제 똑같이
+   "3주차"라고 말하므로, line-005/006이 서로 다른 걸 가리키면서 같은
+   번호를 말하는 모순이 생겼다 — line-003("2주차")/005("3주차")는 번호
+   통일 스크립트로 정상적으로 이동된 것이고, 문제는 line-006 하나뿐. */
 const week4Scene006Lines = [
   { id: 'line-001', speaker: '', text: '같은 작업실.\n오전 11시 45분.', characterId: null },
   { id: 'line-002', speaker: '지수', text: '처음부터 순서대로 말씀드릴게요.', characterId: 'jisoo', expression: 'serious' },
-  { id: 'line-003', speaker: '지수', text: '1주차, 황동 물건을 찾는 문의가 애드리언 콜한테 갔어요.\n발신인 Mika Kovac.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-003', speaker: '지수', text: '2주차, 황동 물건을 찾는 문의가 애드리언 콜한테 갔어요.\n발신인 Mika Kovac.', characterId: 'jisoo', expression: 'serious' },
   { id: 'line-004', speaker: '지수', text: '레오 박이 그 일감을 받았고, 중개 계정은 MK_Consult였고요.', characterId: 'jisoo', expression: 'serious' },
-  { id: 'line-005', speaker: '지수', text: '2주차, 한소라한테 사진 구매 문의가 갔어요.\n발신 M. Kovac, 메타데이터 작성자 MKOVAC.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-005', speaker: '지수', text: '3주차, 한소라한테 사진 구매 문의가 갔어요.\n발신 M. Kovac, 메타데이터 작성자 MKOVAC.', characterId: 'jisoo', expression: 'serious' },
   { id: 'line-006', speaker: '지수', text: '3주차, 제 열쇠는 맞춤 제작이었고\n주문 담당은 M. KOVAC이었어요.', characterId: 'jisoo', expression: 'serious' },
   { id: 'line-007', speaker: '지수', text: '발신 경로 추적하니까 당신이 예전에 쓰던 보안 릴레이가 나왔고,\n그게 이 동네로 좁혀졌어요.', characterId: 'jisoo', expression: 'serious' },
   { id: 'line-008', speaker: '지수', text: '그리고 방금, 이 자리에서 MK 폴더를 찾았어요.', characterId: 'jisoo', expression: 'serious' },
@@ -4859,7 +4491,9 @@ const week4Scene010Lines = [
 
 /* OPERATION MK — WEEK 4 · SCENE 11 「질문 전환」
    Dialogue Set: dialogue-week4-scene011
-   Scene: week4-scene-011 (폐업한 공유 작업실, 12:20) */
+   Scene: week4-scene-011 (폐업한 공유 작업실, 12:20)
+   TODO(주차 재번호화, 구 3주차 삭제): line-002의 "3주차에 받았던 종이"는
+   삭제된 구 3주차 소품을 가리킴 — 후속 수정 필요. */
 const week4Scene011Lines = [
   { id: 'line-001', speaker: '', text: '같은 작업실.\n낮 12시 20분.', characterId: null },
   { id: 'line-002', speaker: '', text: '지수가 3주차에 받았던 종이를 다시 꺼내 든다.', characterId: 'jisoo', expression: 'serious' },
@@ -4878,11 +4512,11 @@ const week4Scene011Lines = [
    Scene: week4-scene-012 (폐업한 공유 작업실, 12:30) */
 const week4Scene012Lines = [
   { id: 'line-001', speaker: '', text: '같은 작업실.\n낮 12시 30분.', characterId: null },
-  { id: 'line-002', speaker: '미카 코바치', text: '1주차 K-01, 그건 도난을 원한 게 아니었어요.', characterId: 'mika', expression: 'neutral' },
+  { id: 'line-002', speaker: '미카 코바치', text: '2주차 K-01, 그건 도난을 원한 게 아니었어요.', characterId: 'mika', expression: 'neutral' },
   { id: 'line-003', speaker: '미카 코바치', text: '비슷한 황동 물건이 맞는지 확인하고, 사진만 확보하면 되는 일이었어요.', characterId: 'mika', expression: 'neutral' },
   { id: 'line-004', speaker: '영우', text: '근데 레오 씨가 욕심을 냈고.', characterId: 'youngwoo', expression: 'blank' },
   { id: 'line-005', speaker: '미카 코바치', text: '맞아요.\n그쪽 사정으로 일이 커진 거예요.', characterId: 'mika', expression: 'neutral' },
-  { id: 'line-006', speaker: '지수', text: '2주차 메모리카드는요?', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-006', speaker: '지수', text: '3주차 메모리카드는요?', characterId: 'jisoo', expression: 'curious' },
   { id: 'line-007', speaker: '미카 코바치', text: '기억 조작 같은 건 필요 없었어요.\n그냥 특정 시간대 원본 사진이 필요했을 뿐이에요.', characterId: 'mika', expression: 'neutral' },
   { id: 'line-008', speaker: '영우', text: '한소라 씨가 자기 사정 때문에 범죄를 만든 거고.', characterId: 'youngwoo', expression: 'blank' },
   { id: 'line-009', speaker: '미카 코바치', text: '네.\n그것도 제 의도랑은 상관없는 일이었어요.', characterId: 'mika', expression: 'neutral' },
@@ -5021,14 +4655,14 @@ const week4Scene018Lines = [
 /* OPERATION MK — WEEK 4 · SCENE 19 「12초」
    Dialogue Set: dialogue-week4-scene019
    Scene: week4-scene-019 (Sydney Accommodation, 빈 방)
-   엔딩 컷 — 0주차부터 있던 녹슨 나사가 떨어지며 K-02가 등장한다.
+   엔딩 컷 — 1주차부터 있던 녹슨 나사가 떨어지며 K-02가 등장한다.
    No nextSceneId; ends 4주차 and the whole 시즌. */
 const week4Scene019Lines = [
   { id: 'line-001', speaker: '', text: '숙소, 빈 방.', characterId: null },
   { id: 'line-002', speaker: '', text: '문이 닫힌다.', characterId: null },
   { id: 'line-003', speaker: '', text: '정적.', characterId: null },
   { id: 'line-004', speaker: '', text: '환풍기가 멈춘다.', characterId: null },
-  { id: 'line-005', speaker: '', text: '0주차부터 있던 녹슨 나사가 떨어진다.', characterId: null },
+  { id: 'line-005', speaker: '', text: '1주차부터 있던 녹슨 나사가 떨어진다.', characterId: null },
   { id: 'line-006', speaker: '', text: '작은 금속음.', characterId: null },
   { id: 'line-007', speaker: '', text: '환풍구 안쪽에서, 작은 황동 열쇠 하나가 굴러떨어진다.', characterId: null },
   { id: 'line-008', speaker: '', text: '태그.', characterId: null },
@@ -5042,7 +4676,7 @@ const week4Scene019Lines = [
 // (W4-D1~D5)은 아직 미구현.
 //
 // Grouped by location rather than by time slice — see the mergeLines note
-// above week0Scenes. The Former Shared Workspace confrontation (원래
+// above week1Scenes. The Former Shared Workspace confrontation (원래
 // week4-scene-004~016, 13 beats) never leaves that one room, so it's now a
 // single long entry — a not-yet-built minigame never interrupts it.
 const week4Scenes = [
@@ -5103,16 +4737,15 @@ const week4Scenes = [
 //
 // /dev/upload's picker gets one extra pseudo-scene per room-search area
 // (`roomHotspots` marks it as such) so a dev can upload that area's photo
-// and mark its hotspots — /dev/week0's list reads week0Scenes directly, not
+// and mark its hotspots — /dev/week1's list reads week1Scenes directly, not
 // weeks, so these stay invisible there and don't clutter the scene list.
-const week0UploadScenes = week0Scenes.concat(roomSearchAreas.map(area => ({
+const week1UploadScenes = week1Scenes.concat(roomSearchAreas.map(area => ({
   id: roomSearchAreaSceneId(area.id),
   name: `핸드폰찾기 · ${area.label}`,
   roomHotspots: area.hotspots,
 })));
 const weeks = [
-  { id: 'week0', label: '0주차', scenes: week0UploadScenes },
-  { id: 'week1', label: '1주차', scenes: week1Scenes },
+  { id: 'week1', label: '1주차', scenes: week1UploadScenes },
   { id: 'week2', label: '2주차', scenes: week2Scenes },
   { id: 'week3', label: '3주차', scenes: week3Scenes },
   { id: 'week4', label: '4주차', scenes: week4Scenes },
@@ -5120,7 +4753,7 @@ const weeks = [
 
 // Combined lookup across every week's scenes — /play/game resolves a
 // requested ?scene= id against this instead of a single week's array, since
-// a scene can belong to any week. Per-week test pages (/dev/week0 ~
+// a scene can belong to any week. Per-week test pages (/dev/week1 ~
 // /dev/week4) still read their own week*Scenes array directly so their
 // listing stays scoped to just that week.
-const allScenes = week0Scenes.concat(week1Scenes).concat(week2Scenes).concat(week3Scenes).concat(week4Scenes);
+const allScenes = week1Scenes.concat(week2Scenes).concat(week3Scenes).concat(week4Scenes);

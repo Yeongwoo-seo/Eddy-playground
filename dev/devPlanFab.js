@@ -51,7 +51,7 @@
       </div>
       <div class="dpf-sub" id="dpfSub">이 기기에만 저장되는 메모입니다.</div>
       <textarea class="dpf-textarea" id="dpfText" placeholder="예)
-- [ ] week0 씬3 배경 교체
+- [ ] week1 씬3 배경 교체
 - [ ] 폰 찾기 미니게임 정답 영역 재조정
 - [ ] 업로드 화면 크롭 UX 다듬기"></textarea>
     </div>

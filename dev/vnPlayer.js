@@ -23,7 +23,7 @@
      next line) once a correct id is presented.
    - line.sceneTransition: marks a line as the start of a new location
      inside a merged, multi-location scene (see dialogueData.js's
-     week0-scene-flight/week0-scene-002-1 for authored examples). Before
+     week1-scene-flight/week1-scene-002-1 for authored examples). Before
      typing the line's text, the engine calls onSceneTransition(transition,
      line) and waits for it (a Promise) — the host uses this to play its
      own black-overlay/background-swap beat. Tapping is ignored for the

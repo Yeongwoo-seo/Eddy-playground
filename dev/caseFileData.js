@@ -9,39 +9,39 @@
 // "6 total" shape without pretending content exists that hasn't been written
 // yet. mapX/mapY are rough placement percentages for a future Sydney map graphic.
 const caseMapLocations = [
-  // week0-scene-flight now also covers week0-scene-001 (진짜 왔네, merged —
-  // see week0Scenes in dialogueData.js), hence the id mismatch with this
+  // week1-scene-flight now also covers week1-scene-001 (진짜 왔네, merged —
+  // see week1Scenes in dialogueData.js), hence the id mismatch with this
   // location's own name.
-  { id: 'airport', name: '공항', mapX: 12, mapY: 70, relatedSceneIds: ['week0-scene-flight'] },
-  { id: 'station', name: '지하철 역', mapX: 30, mapY: 55, relatedSceneIds: ['week0-scene-001-2', 'week0-scene-001-2-minigame', 'week0-scene-train'] },
+  { id: 'airport', name: '공항', mapX: 12, mapY: 70, relatedSceneIds: ['week1-scene-flight'] },
+  { id: 'station', name: '지하철 역', mapX: 30, mapY: 55, relatedSceneIds: ['week1-scene-001-2', 'week1-scene-001-2-minigame', 'week1-scene-train'] },
   {
     id: 'accommodation', name: '숙소', mapX: 50, mapY: 40,
     relatedSceneIds: [
-      // week0-scene-dinner + week0-scene-charger merged into week0-scene-002-1;
-      // week0-scene-frontdesk (now a landlord phone call, no more lobby trip)
-      // and week0-scene-firstnight merged into week0-scene-002-3 — see
-      // week0Scenes in dialogueData.js.
-      'week0-scene-002-1', 'week0-scene-002-2', 'week0-scene-002-3',
-      'week1-scene-013',
+      // week1-scene-dinner + week1-scene-charger merged into week1-scene-002-1;
+      // week1-scene-frontdesk (now a landlord phone call, no more lobby trip)
+      // and week1-scene-firstnight merged into week1-scene-002-3 — see
+      // week1Scenes in dialogueData.js.
+      'week1-scene-002-1', 'week1-scene-002-2', 'week1-scene-002-3',
+      'week2-scene-013',
     ],
   },
   {
     id: 'circular-quay', name: 'Circular Quay', mapX: 62, mapY: 30,
     relatedSceneIds: [
-      // 1주차 장편 확장 v2 — 003(순수 자유조사)/004(도난+사진분석,
+      // 2주차 장편 확장 v2 — 003(순수 자유조사)/004(도난+사진분석,
       // 004-minigame/004-review)/005(신규: 용의자 선별+현장 재조사)로
       // 재배치됐다. A 재오픈(010), 최종 심문(011), 사건 재구성(012)도 모두
       // Circular Quay 권역이라 여기 포함. 엔딩(013)만 숙소라 위
-      // accommodation 항목으로 옮겨졌다 — see week1Scenes in dialogueData.js.
+      // accommodation 항목으로 옮겨졌다 — see week2Scenes in dialogueData.js.
       // v4 §9/§10 — 클레어/다니엘 최초 진술(005a/005b), 재심문(008a), 현장
       // 재검증(009a), 애드리언 재심문(011a), 마틴 베일 통화(011b)도 전부
       // 같은 권역이라 여기 추가.
-      'week1-scene-001', 'week1-scene-003',
-      'week1-scene-004', 'week1-scene-004-minigame', 'week1-scene-004-review', 'week1-scene-005',
-      'week1-scene-005a', 'week1-scene-005b',
-      'week1-scene-006', 'week1-scene-007', 'week1-scene-008', 'week1-scene-008-minigame',
-      'week1-scene-008a', 'week1-scene-009', 'week1-scene-009a', 'week1-scene-010', 'week1-scene-011',
-      'week1-scene-011a', 'week1-scene-011b', 'week1-scene-012',
+      'week2-scene-001', 'week2-scene-003',
+      'week2-scene-004', 'week2-scene-004-minigame', 'week2-scene-004-review', 'week2-scene-005',
+      'week2-scene-005a', 'week2-scene-005b',
+      'week2-scene-006', 'week2-scene-007', 'week2-scene-008', 'week2-scene-008-minigame',
+      'week2-scene-008a', 'week2-scene-009', 'week2-scene-009a', 'week2-scene-010', 'week2-scene-011',
+      'week2-scene-011a', 'week2-scene-011b', 'week2-scene-012',
     ],
   },
   { id: 'opera-house', name: 'Opera House', mapX: 70, mapY: 22, relatedSceneIds: [] },

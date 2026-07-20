@@ -127,7 +127,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
     <a class="vn-btn" href="/dev/">← DEV</a>
     <div style="display:flex;gap:8px">
       <button class="vn-btn skip" id="skipBtn" aria-label="다음 상호작용">다음 ⏭</button>
-      <a class="vn-btn" href="/dev/upload/?scene=week0-scene-001-2&kind=minigame">지도 업로드</a>
+      <a class="vn-btn" href="/dev/upload/?scene=week1-scene-001-2&kind=minigame">지도 업로드</a>
     </div>
   </div>
 
@@ -209,9 +209,9 @@ if ('serviceWorker' in navigator) {
    already listed all 4 stops, so /dev/upload already offers 4 hotspot slots;
    only this page's gameplay logic needed rebuilding.
    [써큘러키 낚시 씬 추가] 2번째 지점을 뭉뚱그린 "시티" 대신 실제 정류장인
-   서큘러키(Circular Quay)로 바꿨다 — week0-scene-circular-quay(낚시 미니게임)
+   서큘러키(Circular Quay)로 바꿨다 — week1-scene-circular-quay(낚시 미니게임)
    가 그 지점에서 실제로 벌어지는 곳이다. */
-const MINIGAME_ID = 'week0-scene-001-2-minigame';
+const MINIGAME_ID = 'week1-scene-001-2-minigame';
 const HOTSPOT_MIN_FR = 0.035; // floor on tap-target size so a careless hotspot still stays easy to hit
 
 const LOCATIONS = [
@@ -762,11 +762,11 @@ function handleAllStagesComplete() {
 
 /* ===== Reward screen (The Missing Key v1 §4.5/§11.2) — 500P,
    first_clear_only so replaying this minigame never pays out twice (§4.4). */
-const MAP_REWARD_ID = 'reward-week0-map-first-clear';
+const MAP_REWARD_ID = 'reward-week1-map-first-clear';
 function showRewardScreen() {
   const alreadyClaimed = EconomyState.hasClaimedReward(MAP_REWARD_ID);
-  const paid = EconomyState.claimReward(MAP_REWARD_ID, 500, { source: 'week0-map-tutorial' });
-  CaseFileState.setFlag('week0MapMinigameCleared', true);
+  const paid = EconomyState.claimReward(MAP_REWARD_ID, 500, { source: 'week1-map-tutorial' });
+  CaseFileState.setFlag('week1MapMinigameCleared', true);
   if (paid > 0) CaseFileState.setFlag('pointsUiIntroduced', true);
   el.dlgStrip.classList.add('hidden');
   el.rewardBase.textContent = '+500P';
@@ -807,7 +807,7 @@ function startSuccessDialogue() {
 
 function fadeOutAndRedirect() {
   el.fadeOverlay.classList.add('show');
-  setTimeout(() => { location.href = '/play/game/?scene=week0-scene-train'; }, 950);
+  setTimeout(() => { location.href = '/play/game/?scene=week1-scene-train'; }, 950);
 }
 
 document.getElementById('skipBtn').addEventListener('click', (e) => {

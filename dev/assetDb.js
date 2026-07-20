@@ -412,7 +412,7 @@ const AssetDB = (() => {
 
   // Evidence-collection item catalog — { [itemId]: { name, icon, imageAssetId,
   // hotspotId, message } } per evidence-collection id (e.g.
-  // 'week0-scene-002-2'). Same per-scene JSON-blob-in-Storage pattern as
+  // 'week1-scene-002-2'). Same per-scene JSON-blob-in-Storage pattern as
   // room hotspots above. `hotspotId` is which hotspot (across every area of
   // that evidence collection) grants this item on tap — null/absent means
   // the item isn't a simple hotspot pickup (a core-route item, or a
@@ -822,7 +822,7 @@ const AssetDB = (() => {
     return map;
   }
 
-  // 씬 배경 슬롯(위 backgroundKinds()의 sceneId key, 예: 'week0-scene-002-1')
+  // 씬 배경 슬롯(위 backgroundKinds()의 sceneId key, 예: 'week1-scene-002-1')
   // → { locationId, variantId } 배정. dialogueData.js는 정적 스크립트 파일이라
   // /dev/upload에서 직접 고쳐 쓸 수 없으므로, "이 슬롯이 어느 장소인지"는 코드가
   // 아니라 이 blob에 저장된다 — 장소 카탈로그 자체와 같은 이유(§확정된 결정
@@ -1525,7 +1525,7 @@ const DevGameState = {
   setMinigameHotspot(sceneId, stageIndex, hotspot) { return AssetDB.setMinigameHotspot(sceneId, stageIndex, hotspot); },
 
   // Room-search minigame variant of the hotspot above — a single background
-  // image (one per area, e.g. 'week0-scene-002-2-kitchen') can hold several
+  // image (one per area, e.g. 'week1-scene-002-2-kitchen') can hold several
   // independently-marked, named tap targets instead of just one, since a
   // room photo has multiple things to investigate.
   // { [hotspotId]: {points:[{x,y},...]} } (or an older {x1,y1,x2,y2}

@@ -176,7 +176,7 @@ if ('serviceWorker' in navigator) {
 <script src="/dev/caseFileState.js"></script>
 <script src="/dev/vnPlayer.js"></script>
 <script>
-/* ===== 시간대 정리 — week1-scene-008-minigame =====
+/* ===== 시간대 정리 — week2-scene-008-minigame =====
    레오 박의 진술과 사진 기록을 시간 순서대로 배치하는 탭 기반 정렬 퍼즐.
    카드에는 일부러 시각을 적지 않는다 — 지금까지 대사로만 접한 내용(인파가
    몰리기 전/후, 레오의 진술)을 근거로 순서를 추론해야 한다. 7장을 전부
@@ -188,7 +188,7 @@ const PX_PER_MIN = 22;
 const SLOT_HEIGHT = 64;
 
 // True chronological order == array order (pool below is shuffled for display).
-// 1주차 장편 확장 v2 §12 — 카페 주문/결제를 별도 카드로 분리해 5단계
+// 2주차 장편 확장 v2 §12 — 카페 주문/결제를 별도 카드로 분리해 5단계
 // (입장→체류→공백→퇴장 진술→카페 주문/결제)를 한 미니게임 안에서 다 짚도록 확장.
 const CARDS = [
   { id: 'c1', timeMinutes: 41, timeLabel: '10:41', type: '사진', text: '아직 한산한 전시장. 베이지 코트를 입은 여성이 K-01 앞에 서 있다.' },
@@ -398,7 +398,7 @@ function grantGapEvidence() {
     description: '레오 박으로 추정되는 손님의 커피 주문(10:59)과 카드 결제(11:02) 시각. 주문과 결제 사이 3분의 텀이 있다.',
     discoveredLocationText: 'Café near Circular Quay · 시간대 정리',
   });
-  // 증거 DB 노트 v1.1 §5.4 — dialogueData.js의 week1-scene-009(line-002)도
+  // 증거 DB 노트 v1.1 §5.4 — dialogueData.js의 week2-scene-009(line-002)도
   // 같은 id로 addQuestion을 호출하지만, 그 씬은 이 미니게임의 산출물
   // (evidence-leo-timeline-gap)이 있어야만 진입 가능한 후속 씬이라 이
   // 등록이 항상 먼저 실행된다 — addQuestion은 addEvidence와 동일하게 id
@@ -431,7 +431,7 @@ async function updateSuccessAvatar(characterId, expression) {
 }
 
 // 마지막 choice — §12 장편 확장 v2 "공백 동안 이동 가능한 장소 선택". 정답을
-// 확정하지 않는 가설 단계라(실제 답은 week1-scene-009에서 밝혀짐) 어떤 선택도
+// 확정하지 않는 가설 단계라(실제 답은 week2-scene-009에서 밝혀짐) 어떤 선택도
 // 틀리지 않는다 — 고른 장소만 flag로 남겨 나중에 지수 대사가 참조할 수 있게 한다.
 const successLines = [
   { speaker: '영우', text: '어디?', characterId: 'youngwoo', expression: 'curious' },
@@ -493,7 +493,7 @@ function startSuccessDialogue() {
 
 function fadeOutAndRedirect() {
   el.fadeOverlay.classList.add('show');
-  setTimeout(() => { location.href = '/play/game/?scene=week1-scene-009'; }, 950);
+  setTimeout(() => { location.href = '/play/game/?scene=week2-scene-009'; }, 950);
 }
 
 el.skipBtn.addEventListener('click', (e) => { e.stopPropagation(); fadeOutAndRedirect(); });

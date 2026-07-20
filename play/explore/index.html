@@ -396,7 +396,7 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('/play/sw.js'
    pages, so hub state (current location, open sheet) stays trivially in
    sync without round-tripping through sessionStorage the way the shop
    hand-off does. Content is read entirely from locationDefs/interactionDefs
-   + ExplorationState — this file has no hardcoded Week 1 knowledge beyond
+   + ExplorationState — this file has no hardcoded Week 2 knowledge beyond
    the initial ?phase=/&location= boot params. */
 
 // ?phase=/&location= boot params are applied from init() at the bottom of
@@ -651,9 +651,9 @@ function renderLocation() {
 
   // A location can hand off back into the VN (spec §12.2's soft-gate) — e.g.
   // 빈티지 전시장 입구's enterSceneId leaves the hub for good and resumes
-  // week1-scene-003, unlike an `exits` chip which just moves within the hub.
+  // week2-scene-003, unlike an `exits` chip which just moves within the hub.
   // enterSceneId/enterSceneLabel can be phase-keyed (§신규 저작 관습) — e.g.
-  // w1-hub-plaza only offers "사건을 재구성한다" during W1_REVERIFICATION.
+  // w2-hub-plaza only offers "사건을 재구성한다" during W2_REVERIFICATION.
   const phase = ExplorationState.getCurrentPhase();
   const enterSceneId = resolveByPhase(def.enterSceneId, phase);
   el.enterSceneBtn.classList.toggle('hidden', !enterSceneId);
@@ -751,7 +751,7 @@ function moveTo(locationId) {
 }
 
 // The one interactionDefs entry (if any) that auto-plays the moment a phase
-// is entered for the first time — see the 'w1-phase1-intro' entry's own
+// is entered for the first time — see the 'w2-phase1-intro' entry's own
 // comment in dev/data/interactionDefs.js for why this replaced the old
 // firstVisitSceneId/dialogueData.js scene approach.
 function findPhaseIntro(phaseId) {
@@ -762,7 +762,7 @@ function findPhaseIntro(phaseId) {
 // 순간 심문 씬이 자동 재생된다 — phaseIntro와 같은 "낯선 도입부는 자동
 // 재생" 원칙을 phase 단위가 아니라 장소 단위로 적용한 것(§신규,
 // autoPlayOnFirstVisit — see interactionDefs.js의 w1suspect-*-interview 항목
-// 주석). 위치가 여러 phase에 걸쳐 재사용되는 경우(w1-adrian-spot 등)가 있어
+// 주석). 위치가 여러 phase에 걸쳐 재사용되는 경우(w2-adrian-spot 등)가 있어
 // ExplorationState.isLocationVisited(위치 단위)로는 "이번 phase에서 처음"을
 // 구분할 수 없으므로, phaseIntro와 똑같이 그 interaction 자신의 state로
 // 판별한다 — 한 번 재생되면 completeInteraction으로 'new'를 벗어나 다시는
@@ -797,7 +797,7 @@ async function performMove(locationId) {
   await renderLocation();
   showView('location');
   // Phase 최초 진입 시 자동 재생되는 도입 대화 (§신규, 예전 firstVisitSceneId
-  // 자리를 대신함— see interactionDefs.js의 'w1-phase1-intro' 주석) —
+  // 자리를 대신함— see interactionDefs.js의 'w2-phase1-intro' 주석) —
   // 특정 장소가 아니라 phase 단위로 "이미 봤는지"를 추적하므로
   // completeInteraction 여부로 판별한다. 허브가 이미 렌더링된 뒤 그 위에
   // 대화 패널을 띄우는 것이라 (playInteraction과 동일한 순서), 끝나면
@@ -1134,8 +1134,8 @@ async function openMoveMapSheet(phaseMap, mapDests, listDests) {
   // 탭의 지도 핀 편집기가 저장한 override(AssetDB.getMapPins)가 있으면 그게
   // 우선한다 — 코드 수정 없이 실제 생성된 지도 그림 보면서 미세 조정 가능.
   const pinOverrides = await AssetDB.getMapPins().catch(() => ({}));
-  // mapPosition can be phase-keyed (§신규 저작 관습) — e.g. w1-hub-plaza/
-  // w1-adrian-spot need different coordinates on the two different phase map
+  // mapPosition can be phase-keyed (§신규 저작 관습) — e.g. w2-hub-plaza/
+  // w2-adrian-spot need different coordinates on the two different phase map
   // images. pinOverrides itself isn't phase-aware yet (keyed by plain
   // location id in /dev/upload's 지도 핀 편집기), so a manually-tuned override
   // still applies to every phase that location appears in.
@@ -1542,7 +1542,7 @@ function currentHubUrl() {
 
 /* =====================================================================
    심문 씬 인라인 재생 (§신규) — 예전엔 심문하기가 play/game/index.html로
-   완전히 이동해서 그 씬(week1-scene-006 등)을 재생했지만, 이제 같은 씬
+   완전히 이동해서 그 씬(week2-scene-006 등)을 재생했지만, 이제 같은 씬
    데이터(dev/dialogueData.js, 손대지 않음)를 이 허브의 하단 패널 위에서
    그대로 재생한다. 아래 evaluateCondition/applyEffect는 play/game/index.html
    것과 같은 로직의 사본이다 — 심문 씬이 선택지 condition과 setHypothesis/
@@ -1553,7 +1553,7 @@ function currentHubUrl() {
    더 큰 리팩터라 이번 1차 구현 범위 밖으로 남겨둔다.
    ===================================================================== */
 
-// 1주차 장편 확장 v2 §22 — a choice's optional `condition` gates whether
+// 2주차 장편 확장 v2 §22 — a choice's optional `condition` gates whether
 // it's even offered. Mirrors play/game/index.html's evaluateCondition exactly.
 function evaluateCondition(cond) {
   if (!cond) return true;
@@ -1824,8 +1824,8 @@ function showEvidenceToast(text, correct) {
 
 // A finished interrogation scene's nextSceneId (see dev/dialogueData.js)
 // almost always resolves through MINIGAME_ROUTES (dev/data/sceneRoutes.js)
-// back to this same hub (e.g. week1-suspect-interview-return ->
-// w1-hub-plaza) — those cases move in place instead of a full page
+// back to this same hub (e.g. week2-suspect-interview-return ->
+// w2-hub-plaza) — those cases move in place instead of a full page
 // reload, since we never actually left the hub. A route to a real
 // standalone page (e.g. the timeline minigame) still navigates away, same
 // hand-off contract playInteraction's type:'minigame' branch already uses.
@@ -2093,8 +2093,8 @@ async function preloadPhaseAssets(phaseId) {
   // than one phase in play: a returning player already has *some*
   // currentLocationId left over from an earlier phase (e.g. still parked at
   // a Phase 1 tourism spot), so the original "only if nothing set yet" check
-  // silently no-oped every phase handoff (week1-scene-005b -> 탐문 허브,
-  // week1-scene-010 -> 재검증 허브, ...) past the very first one — it just
+  // silently no-oped every phase handoff (week2-scene-005b -> 탐문 허브,
+  // week2-scene-010 -> 재검증 허브, ...) past the very first one — it just
   // re-rendered the stale old location instead of moving into the new phase.
   // Only ever hit in real continuous play, not the fresh-profile Playwright
   // runs used to test each phase in isolation, which is how it went unnoticed.
