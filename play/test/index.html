@@ -227,15 +227,23 @@ el.minigameList.addEventListener('click', (e) => {
 
 /* =========================================================
    INSTALL GATE — only a launch from /play/'s own home-screen
-   icon may enter the real start screen; anything else (a link
-   tapped from inside the already-installed 강낭콩 투어 app, or a
-   plain browser tab) sees an install prompt instead. Both apps
-   report display-mode:standalone once you're inside either
-   installed shell, so standalone alone can't tell them apart —
-   an icon launch is a fresh navigation with no document.referrer,
-   while a link tap always carries one. Once verified, the pass is
-   remembered so future icon launches don't depend on this check
-   racing correctly every time.
+   icon may enter the real start screen; a plain browser tab sees
+   an install prompt instead. This used to also require an empty
+   document.referrer (on the theory that a link tap, e.g. from
+   inside the already-installed 강낭콩 투어 app, always carries one
+   while an icon launch never does) to tell apart from the other
+   app, which also reports display-mode:standalone. That extra
+   condition was too fragile: whenever referrer was non-empty for
+   *any* reason on a real standalone launch (OS/webview quirks that
+   have nothing to do with which app launched it), the gate showed
+   with no way out — no install button (beforeinstallprompt never
+   fires once already installed) and no iOS guide (only shown when
+   NOT standalone) — a permanent dead end for an actual player.
+   display-mode:standalone alone is reliable enough proof of "opened
+   from a home-screen icon" (a plain browser tab is never standalone
+   regardless of referrer), so that's the only check now. Once
+   verified, the pass is remembered so this doesn't need to
+   re-evaluate every launch.
    ========================================================= */
 const INSTALL_VERIFIED_KEY = 'mkPlayVerifiedInstalledV1';
 const isStandaloneDisplay = () =>
@@ -265,8 +273,7 @@ document.getElementById('installBtn').addEventListener('click', async () => {
 
 function shouldShowInstallGate() {
   if (verifiedInstalled()) return false;
-  const launchedFromOwnIcon = isStandaloneDisplay() && !document.referrer;
-  if (launchedFromOwnIcon) {
+  if (isStandaloneDisplay()) {
     markVerifiedInstalled();
     return false;
   }
@@ -274,7 +281,7 @@ function shouldShowInstallGate() {
 }
 
 if (shouldShowInstallGate()) {
-  if (isIos() && !isStandaloneDisplay()) {
+  if (isIos()) {
     document.getElementById('iosGuide').style.display = 'block';
   }
   document.getElementById('installGate').classList.add('show');
