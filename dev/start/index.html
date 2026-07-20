@@ -41,6 +41,15 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .reset-bg-link{position:absolute;left:50%;bottom:calc(10px + env(safe-area-inset-bottom,0));transform:translateX(-50%);z-index:3;font-family:var(--mono);font-size:11px;color:var(--text-muted);background:rgba(8,10,12,.5);border:none;border-radius:12px;padding:5px 10px;cursor:pointer;text-decoration:underline}
 .reset-bg-link.hidden{display:none}
 
+.bg-cutout-btn{position:absolute;left:50%;bottom:calc(38px + env(safe-area-inset-bottom,0));transform:translateX(-50%);z-index:3;font-family:var(--mono);font-size:11px;letter-spacing:.05em;color:#fff;background:rgba(8,10,12,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:8px 13px;cursor:pointer}
+.bg-cutout-btn.hidden{display:none}
+.bg-cutout-btn[disabled]{opacity:.5;pointer-events:none}
+.bg-cutout-progress{position:absolute;left:50%;bottom:calc(38px + env(safe-area-inset-bottom,0));transform:translateX(-50%);z-index:3;width:200px;max-width:80vw}
+.bg-cutout-progress.hidden{display:none}
+.bg-cutout-progress-text{font-family:var(--mono);font-size:10px;color:rgba(255,255,255,.8);text-align:center;margin-bottom:6px;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+.bg-cutout-progress-bar{height:5px;border-radius:3px;background:rgba(255,255,255,.2);overflow:hidden}
+.bg-cutout-progress-fill{height:100%;background:var(--cyan);width:0%;transition:width .2s ease}
+
 /* Freely-positioned buttons: dragged to place, tapped to trigger. Position
    and width are stored as a fraction of the frame so they stay put across
    reloads and viewport sizes. */
@@ -95,6 +104,11 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
   </button>
 
   <button class="reset-bg-link hidden" id="resetBgBtn">기본 배경으로 초기화</button>
+  <button class="bg-cutout-btn hidden" id="bgCutoutBtn">배경 제거 (누끼)</button>
+  <div class="bg-cutout-progress hidden" id="bgCutoutProgress">
+    <div class="bg-cutout-progress-text" id="bgCutoutProgressText"></div>
+    <div class="bg-cutout-progress-bar"><div class="bg-cutout-progress-fill" id="bgCutoutProgressFill"></div></div>
+  </div>
 
   <div class="week-select" id="weekSelect">
     <div class="week-grid" id="weekGrid"></div>
@@ -131,6 +145,10 @@ const el = {
   bgUploadBtn: document.getElementById('bgUploadBtn'),
   bgInput: document.getElementById('bgInput'),
   resetBgBtn: document.getElementById('resetBgBtn'),
+  bgCutoutBtn: document.getElementById('bgCutoutBtn'),
+  bgCutoutProgress: document.getElementById('bgCutoutProgress'),
+  bgCutoutProgressFill: document.getElementById('bgCutoutProgressFill'),
+  bgCutoutProgressText: document.getElementById('bgCutoutProgressText'),
   startBtn: document.getElementById('startBtn'),
   startResizeHandle: document.getElementById('startResizeHandle'),
   weekSelect: document.getElementById('weekSelect'),
@@ -217,10 +235,12 @@ function applyBackground(dataUrl) {
     el.bgLayer.classList.remove('placeholder');
     el.bgLayer.style.backgroundImage = `url("${dataUrl}")`;
     el.resetBgBtn.classList.remove('hidden');
+    el.bgCutoutBtn.classList.remove('hidden');
   } else {
     el.bgLayer.classList.add('placeholder');
     el.bgLayer.style.backgroundImage = '';
     el.resetBgBtn.classList.add('hidden');
+    el.bgCutoutBtn.classList.add('hidden');
   }
 }
 
@@ -297,6 +317,54 @@ el.resetBgBtn.addEventListener('click', async () => {
   localStorage.removeItem(BG_IMG_KEY);
   applyBackground(null);
   await saveStartScreenPatch({ bgAssetId: null });
+});
+
+// AI 배경 제거(누끼) — 모듈은 페이지 로드 시 미리 받아두고, 버튼을 누른
+// 시점엔 준비 여부만 기다린다. 진행률은 라이브러리의 progress 콜백(모델
+// 다운로드/추론 단계별 current/total)을 그대로 프로그레스바에 반영한다.
+window.__removeBackgroundReady = import('https://cdn.jsdelivr.net/npm/@imgly/background-removal/+esm')
+  .then(mod => {
+    if (typeof mod.removeBackground !== 'function') {
+      throw new Error('모듈은 로드됐지만 removeBackground 함수를 찾지 못함 (exports: ' + Object.keys(mod).join(', ') + ')');
+    }
+    window.__removeBackground = mod.removeBackground;
+  })
+  .catch(err => { window.__removeBackgroundLoadError = err; });
+
+el.bgCutoutBtn.addEventListener('click', async () => {
+  const dataUrl = localStorage.getItem(BG_IMG_KEY);
+  if (!dataUrl) return;
+  const prevLabel = el.bgCutoutBtn.textContent;
+  el.bgCutoutBtn.disabled = true;
+  el.bgCutoutBtn.textContent = '처리 중...';
+  el.bgCutoutProgress.classList.remove('hidden');
+  el.bgCutoutProgressFill.style.width = '0%';
+  el.bgCutoutProgressText.textContent = '배경 제거 모듈 확인 중...';
+  try {
+    await window.__removeBackgroundReady;
+    if (!window.__removeBackground) {
+      const reason = window.__removeBackgroundLoadError;
+      throw new Error('배경 제거 모듈 로드 실패: ' + (reason && reason.message ? reason.message : '네트워크 또는 CDN 문제로 모듈을 불러오지 못했습니다.'));
+    }
+    const sourceBlob = await (await fetch(dataUrl)).blob();
+    const resultBlob = await window.__removeBackground(sourceBlob, {
+      progress: (key, current, total) => {
+        const pct = total ? Math.round(current / total * 100) : 0;
+        el.bgCutoutProgressFill.style.width = pct + '%';
+        el.bgCutoutProgressText.textContent = '배경 제거 중... ' + pct + '%';
+      }
+    });
+    const asset = await AssetDB.addAsset({ type: 'startScreenBg', name: 'bg-cutout.png', blob: resultBlob });
+    localStorage.setItem(BG_IMG_KEY, asset.dataUrl);
+    applyBackground(asset.dataUrl);
+    await saveStartScreenPatch({ bgAssetId: asset.id });
+  } catch (e) {
+    alert('배경 제거 실패: ' + (e && e.message ? e.message : e));
+  } finally {
+    el.bgCutoutBtn.disabled = false;
+    el.bgCutoutBtn.textContent = prevLabel;
+    el.bgCutoutProgress.classList.add('hidden');
+  }
 });
 
 let bgDrag = null;
