@@ -39,12 +39,38 @@ body{background:#000;display:flex;justify-content:center;min-height:100dvh}
 
 .hit-zone{position:absolute;transform:translate(-50%,-50%);background:transparent;border:none;padding:0;touch-action:none;cursor:pointer;transition:background-color .1s}
 .hit-zone.pressed{background:rgba(0,0,0,.55)}
+
+/* 게임 스타트 → 주차 선택 화면. 검은 배경에 둥근 네모 5개(1~4주차 + 미니게임).
+   2/3/4주차는 아직 구현되지 않아 ???로 잠가둔다. */
+.week-select{position:absolute;inset:0;z-index:10;background:#000;display:none;flex-direction:column;align-items:center;justify-content:center;padding:24px;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+.week-select.show{display:flex}
+.week-grid{display:flex;flex-wrap:wrap;justify-content:center;gap:16px;max-width:360px}
+.week-tile{width:96px;height:96px;border-radius:20px;background:#171C22;border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;color:#EDF1F4;font-weight:700;font-size:15px;text-align:center}
+.week-tile.active{cursor:pointer}
+.week-tile.active:active{background:#232B34;transform:scale(.96)}
+.week-tile.locked{color:#5F6872;background:#101419;pointer-events:none}
+
+.minigame-select{position:absolute;inset:0;z-index:11;background:#000;display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+.minigame-select.show{display:flex}
+.minigame-list{display:flex;flex-direction:column;gap:12px;width:100%;max-width:340px}
+.minigame-item{background:#171C22;border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:16px 18px;color:#EDF1F4;font-weight:700;font-size:15px;text-align:center;cursor:pointer}
+.minigame-item:active{background:#232B34}
+.week-back{background:none;border:none;color:#929BA5;font-size:13px;padding:8px;cursor:pointer}
 </style>
 </head>
 <body>
 <div class="frame" id="frame">
   <div class="bg-layer" id="bgLayer"></div>
   <button class="hit-zone" id="startBtn" aria-label="시작하기"></button>
+
+  <div class="week-select" id="weekSelect">
+    <div class="week-grid" id="weekGrid"></div>
+  </div>
+
+  <div class="minigame-select" id="minigameSelect">
+    <button class="week-back" id="minigameBackBtn">‹ 뒤로</button>
+    <div class="minigame-list" id="minigameList"></div>
+  </div>
 </div>
 
 <script>
@@ -60,6 +86,11 @@ const BTN_POS_KEY = 'mkDevStartScreenBtnPos';
 const el = {
   bgLayer: document.getElementById('bgLayer'),
   startBtn: document.getElementById('startBtn'),
+  weekSelect: document.getElementById('weekSelect'),
+  weekGrid: document.getElementById('weekGrid'),
+  minigameSelect: document.getElementById('minigameSelect'),
+  minigameList: document.getElementById('minigameList'),
+  minigameBackBtn: document.getElementById('minigameBackBtn'),
 };
 
 function loadBgPos() {
@@ -87,13 +118,13 @@ el.startBtn.style.width = startPos.w + '%';
 el.startBtn.style.height = startPos.h + '%';
 
 // Straight into 0주차's first scene, not the /dev/week0 scene picker — a
-// real player taps 시작하기 to play through the story from the top, not to
+// real player who picks 1주차 plays through the story from the top, not to
 // browse individual scenes for testing.
 function goToRealStart() { location.href = '/dev/game/?scene=week0-scene-flight'; }
 
 // Same tap-feedback sequence as /dev/start/: hold the darken 0.2s, clear it,
-// pause 0.1s, then navigate — otherwise navigation fires before the darken
-// is ever seen.
+// pause 0.1s, then show the 주차 select screen — otherwise it appears before
+// the darken is ever seen.
 let pressedTimer = null;
 el.startBtn.addEventListener('pointerdown', (e) => {
   el.startBtn.setPointerCapture(e.pointerId);
@@ -104,9 +135,58 @@ el.startBtn.addEventListener('pointerdown', (e) => {
   clearTimeout(pressedTimer);
   pressedTimer = setTimeout(() => {
     el.startBtn.classList.remove('pressed');
-    setTimeout(goToRealStart, 100);
+    setTimeout(showWeekSelect, 100);
   }, 200);
 }));
+
+// 게임 스타트 → 검은 화면에 둥근 네모 5개(1~4주차 + 미니게임). 2/3/4주차는
+// 아직 구현되지 않아 ???로 잠가두고, 1주차를 고르면 0주차부터 실제 스토리가
+// 시작된다. 미니게임 버튼은 현재 1주차 분량으로 구현된 미니게임만 다시
+// 플레이할 수 있는 목록으로 이어진다.
+const WEEK_TILES = [
+  { key: 'week1', label: '1주차', locked: false },
+  { key: 'week2', label: '2주차', locked: true },
+  { key: 'week3', label: '3주차', locked: true },
+  { key: 'week4', label: '4주차', locked: true },
+  { key: 'minigame', label: '미니게임', locked: false },
+];
+
+const WEEK1_MINIGAMES = [
+  { name: '사진 속 인물 찾기', route: '/dev/minigame-photo-zoom/' },
+  { name: '시간대 정리', route: '/dev/minigame-timeline/' },
+];
+
+el.weekGrid.innerHTML = WEEK_TILES.map(t => `
+  <div class="week-tile ${t.locked ? 'locked' : 'active'}" data-key="${t.key}">${t.locked ? '???' : t.label}</div>
+`).join('');
+
+el.minigameList.innerHTML = WEEK1_MINIGAMES.map(m => `
+  <div class="minigame-item" data-route="${m.route}">${m.name}</div>
+`).join('');
+
+function showWeekSelect() { el.weekSelect.classList.add('show'); }
+
+function showMinigameSelect() {
+  el.weekSelect.classList.remove('show');
+  el.minigameSelect.classList.add('show');
+}
+
+el.weekGrid.addEventListener('click', (e) => {
+  const tile = e.target.closest('.week-tile.active');
+  if (!tile) return;
+  if (tile.dataset.key === 'week1') goToRealStart();
+  else if (tile.dataset.key === 'minigame') showMinigameSelect();
+});
+
+el.minigameBackBtn.addEventListener('click', () => {
+  el.minigameSelect.classList.remove('show');
+  el.weekSelect.classList.add('show');
+});
+
+el.minigameList.addEventListener('click', (e) => {
+  const item = e.target.closest('.minigame-item');
+  if (item) location.href = item.dataset.route;
+});
 </script>
 </body>
 </html>
