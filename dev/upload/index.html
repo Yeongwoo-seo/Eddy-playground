@@ -29,6 +29,14 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .back-btn{width:36px;height:36px;border-radius:50%;background:var(--surface-1);border:1px solid var(--divider);color:var(--text-primary);display:flex;align-items:center;justify-content:center;text-decoration:none;flex-shrink:0}
 .page-title{font-size:19px;font-weight:700}
 
+.migration-banner{background:var(--surface-1);border:1px solid var(--divider);border-radius:14px;padding:14px 16px;margin-bottom:18px;font-size:12.5px;line-height:1.6;white-space:pre-wrap}
+.migration-banner.hidden{display:none}
+.migration-banner.success{border-color:rgba(29,184,71,.4);color:#8fe3a6}
+.migration-banner.error{border-color:rgba(217,65,65,.4);color:#ffb4b4}
+.migration-retry-btn{display:block;margin-top:10px;background:var(--surface-2);border:1px solid var(--divider);color:var(--text-primary);padding:9px 14px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--mono)}
+.migration-retry-btn.hidden{display:none}
+.migration-retry-btn:disabled{opacity:.5;cursor:default}
+
 .tabs{display:flex;gap:8px;margin-bottom:18px}
 .tab-btn{flex:1;padding:12px;border-radius:10px;background:var(--surface-1);border:1px solid var(--divider);color:var(--text-secondary);font-size:13px;font-weight:600;font-family:var(--mono);letter-spacing:.05em;cursor:pointer}
 .tab-btn.active{background:var(--surface-3);color:var(--cyan);border-color:rgba(89,184,200,.4)}
@@ -257,6 +265,13 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   <div class="topbar">
     <a class="back-btn" id="backBtn" href="/dev/">←</a>
     <div class="page-title" id="pageTitle">데이터 설정</div>
+  </div>
+
+  <!-- 기존 주 작업 기기에 로컬로만 남아있던 배정을 서버로 올리는 1회성
+       마이그레이션 결과 배너 — see runMigrationCheck() below. -->
+  <div class="migration-banner hidden" id="migrationBanner">
+    <div id="migrationBannerText"></div>
+    <button class="migration-retry-btn hidden" id="migrationRetryBtn">다시 시도</button>
   </div>
 
   <div class="tabs" id="tabsRow">
@@ -842,6 +857,9 @@ const el = {
   frame: document.getElementById('frame'),
   backBtn: document.getElementById('backBtn'),
   pageTitle: document.getElementById('pageTitle'),
+  migrationBanner: document.getElementById('migrationBanner'),
+  migrationBannerText: document.getElementById('migrationBannerText'),
+  migrationRetryBtn: document.getElementById('migrationRetryBtn'),
   tabsRow: document.getElementById('tabsRow'),
   testFab: document.getElementById('testFab'),
   tabBackground: document.getElementById('tabBackground'),
@@ -1609,13 +1627,16 @@ function updateBackgroundModeChrome() {
   el.assetList.classList.toggle('hidden', ordinary);
 }
 
+let bgLocationAssignToken = 0;
 async function renderBgLocationAssign() {
   if (!isOrdinaryBackgroundSlot() || !currentOrdinarySlotReady()) return;
+  const token = ++bgLocationAssignToken;
   const sceneId = activeBackgroundSceneId();
   await loadLocationsCatalog();
   let sceneLocMap = {};
   try { sceneLocMap = await AssetDB.getSceneLocationMap(); }
   catch (err) { DevDiag.show('장소 배정 정보를 불러오지 못했습니다: ' + (err && err.message ? err.message : err)); }
+  if (token !== bgLocationAssignToken) return;
   const assigned = sceneLocMap[sceneId] || null;
   const loc = assigned && assigned.locationId ? locationsCatalog[assigned.locationId] : null;
   const variantLabel = loc && assigned.variantId && assigned.variantId !== 'default'
@@ -1662,13 +1683,15 @@ async function renderBgLocationAssign() {
     });
   }
 
-  const previewAssetId = loc ? DevGameState.getLocationAssetId(loc.id, assigned.variantId) : null;
+  const previewAssetId = loc ? await DevGameState.getLocationAssetId(loc.id, assigned.variantId) : null;
+  if (token !== bgLocationAssignToken) return;
   if (previewAssetId) {
     try {
       const asset = await AssetDB.getAsset(previewAssetId);
+      if (token !== bgLocationAssignToken) return;
       if (asset) { el.bgLocationPreviewImg.src = asset.dataUrl; el.bgLocationPreviewPanel.classList.remove('hidden'); }
       else el.bgLocationPreviewPanel.classList.add('hidden');
-    } catch (err) { el.bgLocationPreviewPanel.classList.add('hidden'); }
+    } catch (err) { if (token === bgLocationAssignToken) el.bgLocationPreviewPanel.classList.add('hidden'); }
   } else {
     el.bgLocationPreviewPanel.classList.add('hidden');
   }
@@ -2137,13 +2160,17 @@ function renderCharPicker() {
   });
 }
 
-function renderOutfitPicker() {
+let outfitPickerToken = 0;
+async function renderOutfitPicker() {
   const outfits = allowedOutfits();
   const show = currentType === 'character' && outfits.length > 0;
   el.outfitPicker.classList.toggle('hidden', !show);
   if (!show) return;
   if (!outfits.some(o => o.id === currentOutfit)) currentOutfit = outfits[0].id;
-  const activeOutfit = DevGameState.getSelectedOutfit(currentCharacterKey);
+  const token = ++outfitPickerToken;
+  const characterKey = currentCharacterKey;
+  const activeOutfit = await DevGameState.getSelectedOutfit(characterKey);
+  if (token !== outfitPickerToken) return;
   el.outfitPickerPills.innerHTML = outfits.map(o =>
     `<button class="pill${o.id === currentOutfit ? ' active' : ''}" data-key="${o.id}">${escapeHtml(o.label)}${o.id === activeOutfit ? ' 👗' : ''}</button>`
   ).join('');
@@ -2160,9 +2187,15 @@ function renderOutfitPicker() {
   el.outfitApplyBtn.disabled = isActiveOutfit;
 }
 
-el.outfitApplyBtn.addEventListener('click', () => {
-  DevGameState.setSelectedOutfit(currentCharacterKey, currentOutfit);
-  renderOutfitPicker();
+el.outfitApplyBtn.addEventListener('click', async () => {
+  el.outfitApplyBtn.disabled = true;
+  try {
+    await DevGameState.setSelectedOutfit(currentCharacterKey, currentOutfit);
+    await renderOutfitPicker();
+  } catch (err) {
+    DevDiag.show('의상 적용 실패: ' + (err && err.message ? err.message : err));
+    el.outfitApplyBtn.disabled = false;
+  }
 });
 
 function renderExprPicker() {
@@ -2274,52 +2307,57 @@ function renderPreview(url) {
 // autoRegisterCharacterPhoto without ever showing a save button.
 async function saveAsset() {
   if (!pendingFile) return;
-  if (currentType === 'location') {
-    if (!currentLocationId) return;
-    try {
-      const record = await AssetDB.addAsset({ type: 'background', name: pendingFile.name, blob: pendingFile.blob, width: pendingFile.width, height: pendingFile.height, locationId: currentLocationId, variantId: currentVariantId });
-      // Same "newest upload becomes active" convenience as the legacy
-      // per-scene flow below and character uploads already have.
-      DevGameState.setLocationAssetId(currentLocationId, currentVariantId, record.id);
-      clearPending();
-      await refreshList();
-    } catch (err) {
-      DevDiag.show('이미지 저장 실패: ' + (err && err.message ? err.message : err));
-    }
-    return;
-  }
-  if (currentType === 'hub') {
-    if (!currentHubLocationId) return;
-    try {
-      const record = await AssetDB.addAsset({ type: 'background', name: pendingFile.name, blob: pendingFile.blob, width: pendingFile.width, height: pendingFile.height, sceneId: currentHubLocationId });
-      // 미니게임 배경과 같은 "새로 올리면 바로 사용 중" 관례 — activeBackgroundSceneId()
-      // 가 currentType==='hub'일 때 currentHubLocationId를 그대로 돌려주므로 이 setter가
-      // play/explore/index.html의 조회 키와 정확히 일치한다.
-      DevGameState.setLegacyBackgroundId(currentHubLocationId, record.id);
-      clearPending();
-      await refreshList();
-      renderHubLocationPicker(); // pill의 ✓ 표시를 바로 갱신
-    } catch (err) {
-      DevDiag.show('이미지 저장 실패: ' + (err && err.message ? err.message : err));
-    }
-    return;
-  }
-  if (!currentScene()) return;
+  el.saveBtn.disabled = true;
   try {
-    const record = await AssetDB.addAsset({ type: 'background', name: pendingFile.name, blob: pendingFile.blob, width: pendingFile.width, height: pendingFile.height, sceneId: activeBackgroundSceneId() });
-    // The newest upload becomes the active background automatically — same
-    // as character uploads already do below. Without this, "uploaded" and
-    // "the game actually shows it" were two separate steps (upload, then a
-    // second "사용" tap in the list below), and skipping the second step
-    // looked exactly like the upload had silently failed. Only reachable for
-    // 미니게임 kind now, which never has a location assignment, so the
-    // legacy sync setter is the right one here.
-    DevGameState.setLegacyBackgroundId(activeBackgroundSceneId(), record.id);
-    clearPending();
-    await refreshList();
-    renderHotspotSection();
-  } catch (err) {
-    DevDiag.show('이미지 저장 실패: ' + (err && err.message ? err.message : err));
+    if (currentType === 'location') {
+      if (!currentLocationId) return;
+      try {
+        const record = await AssetDB.addAsset({ type: 'background', name: pendingFile.name, blob: pendingFile.blob, width: pendingFile.width, height: pendingFile.height, locationId: currentLocationId, variantId: currentVariantId });
+        // Same "newest upload becomes active" convenience as the legacy
+        // per-scene flow below and character uploads already have.
+        await DevGameState.setLocationAssetId(currentLocationId, currentVariantId, record.id);
+        clearPending();
+        await refreshList();
+      } catch (err) {
+        DevDiag.show('이미지 저장 실패: ' + (err && err.message ? err.message : err));
+      }
+      return;
+    }
+    if (currentType === 'hub') {
+      if (!currentHubLocationId) return;
+      try {
+        const record = await AssetDB.addAsset({ type: 'background', name: pendingFile.name, blob: pendingFile.blob, width: pendingFile.width, height: pendingFile.height, sceneId: currentHubLocationId });
+        // 미니게임 배경과 같은 "새로 올리면 바로 사용 중" 관례 — activeBackgroundSceneId()
+        // 가 currentType==='hub'일 때 currentHubLocationId를 그대로 돌려주므로 이 setter가
+        // play/explore/index.html의 조회 키와 정확히 일치한다.
+        await DevGameState.setLegacyBackgroundId(currentHubLocationId, record.id);
+        clearPending();
+        await refreshList();
+        renderHubLocationPicker(); // pill의 ✓ 표시를 바로 갱신
+      } catch (err) {
+        DevDiag.show('이미지 저장 실패: ' + (err && err.message ? err.message : err));
+      }
+      return;
+    }
+    if (!currentScene()) return;
+    try {
+      const record = await AssetDB.addAsset({ type: 'background', name: pendingFile.name, blob: pendingFile.blob, width: pendingFile.width, height: pendingFile.height, sceneId: activeBackgroundSceneId() });
+      // The newest upload becomes the active background automatically — same
+      // as character uploads already do below. Without this, "uploaded" and
+      // "the game actually shows it" were two separate steps (upload, then a
+      // second "사용" tap in the list below), and skipping the second step
+      // looked exactly like the upload had silently failed. Only reachable for
+      // 미니게임 kind now, which never has a location assignment, so the
+      // legacy sync setter is the right one here.
+      await DevGameState.setLegacyBackgroundId(activeBackgroundSceneId(), record.id);
+      clearPending();
+      await refreshList();
+      renderHotspotSection();
+    } catch (err) {
+      DevDiag.show('이미지 저장 실패: ' + (err && err.message ? err.message : err));
+    }
+  } finally {
+    el.saveBtn.disabled = false;
   }
 }
 
@@ -2451,7 +2489,7 @@ async function autoRegisterCharacterPhoto(file, url, img) {
     // Only one photo per (character, [outfit,] expression) is actually
     // rendered — the newest upload for this slot becomes the active one
     // automatically.
-    DevGameState.setCharacterAssetId(currentCharacterKey, currentExpression, record.id, outfit);
+    await DevGameState.setCharacterAssetId(currentCharacterKey, currentExpression, record.id, outfit);
   } catch (err) {
     // Nothing was registered yet at this point, so it's safe to send the
     // user back to the manual editor to retry with the same photo.
@@ -2635,7 +2673,7 @@ async function confirmBatchSave() {
       const outfitLabel = outfit ? dialogueOutfits.find(o => o.id === outfit).label + ' ' : '';
       const name = `${item.fileName} (${outfitLabel}${exprLabel}).png`;
       const record = await AssetDB.addAsset({ type: 'character', name, blob: cropBlob, width: croppedImg.naturalWidth, height: croppedImg.naturalHeight, characterKey: currentCharacterKey, expression: item.expression, outfit });
-      DevGameState.setCharacterAssetId(currentCharacterKey, item.expression, record.id, outfit);
+      await DevGameState.setCharacterAssetId(currentCharacterKey, item.expression, record.id, outfit);
       item.saved = true;
     } catch (err) {
       DevDiag.show(`저장 실패 (${item.fileName}): ` + (err && err.message ? err.message : err));
@@ -2819,7 +2857,7 @@ el.cropSaveBtn.addEventListener('click', async () => {
       // Only one photo per (character, [outfit,] expression) is actually
       // rendered — the newest upload for this slot becomes the active one
       // automatically.
-      DevGameState.setCharacterAssetId(currentCharacterKey, currentExpression, record.id, outfit);
+      await DevGameState.setCharacterAssetId(currentCharacterKey, currentExpression, record.id, outfit);
       await refreshList();
     }
     clearPending();
@@ -3081,7 +3119,9 @@ function renderHotspotSection() {
   loadHotspotEditor();
 }
 
+let hotspotEditorToken = 0;
 async function loadHotspotEditor() {
+  const token = ++hotspotEditorToken;
   const scene = currentScene();
   const sceneId = activeBackgroundSceneId();
   // Snapshot the outgoing view before hotspotState gets replaced below.
@@ -3091,8 +3131,10 @@ async function loadHotspotEditor() {
   // Room-search/minigame hotspot backgrounds stay scene-owned (out of scope
   // for the location-background-system change), so the legacy sync lookup
   // is the correct one here.
-  const assetId = DevGameState.getLegacyBackgroundId(sceneId);
+  const assetId = await DevGameState.getLegacyBackgroundId(sceneId);
+  if (token !== hotspotEditorToken) return;
   const asset = assetId ? await AssetDB.getAsset(assetId) : null;
+  if (token !== hotspotEditorToken) return;
   if (!asset) {
     hotspotState = null;
     el.hotspotStage.style.visibility = 'hidden';
@@ -3496,30 +3538,36 @@ async function refreshList() {
     : (currentType === 'background' || currentType === 'hub')
       ? all.filter(a => a.sceneId === activeBackgroundSceneId())
       : all.filter(a => a.characterKey === currentCharacterKey && a.expression === currentExpression && (a.outfit || null) === outfitFilter);
-  renderList(filtered);
+  await renderList(filtered);
 }
 
-function renderList(assets) {
+let renderListToken = 0;
+async function renderList(assets) {
   if (!assets.length) {
     el.assetList.innerHTML = '<div class="empty-note">아직 업로드한 이미지가 없습니다.</div>';
     return;
   }
+  const token = ++renderListToken;
+  // refreshList의 filter를 거쳐 여기 도착한 assets는 전부 같은 배정 키(장소DB의
+  // locationId/variantId, 배경/허브의 sceneId, 또는 인물DB의 characterKey+
+  // expression+outfit)를 공유하므로, "사용 중" 자산 id는 첫 항목 기준으로 딱
+  // 한 번만 조회하면 나머지 전부에 그대로 적용된다.
+  const first = assets[0];
+  const activeAssetId = currentType === 'location'
+    ? await DevGameState.getLocationAssetId(first.locationId, first.variantId)
+    : first.type === 'background'
+      ? await DevGameState.getLegacyBackgroundId(first.sceneId)
+      : await DevGameState.getCharacterAssetIdForOutfit(first.characterKey, first.outfit || null, first.expression);
+  if (token !== renderListToken) return;
   el.assetList.innerHTML = assets.map(a => {
     const url = a.dataUrl;
-    // 미니게임 kind 배경만 이 목록에 뜨므로(일반 슬롯은 dropzone/목록 자체가
-    // 숨겨진다 — updateBackgroundModeChrome) a.type === 'background'일 때는
-    // 항상 레거시 sceneId 기준 동기 조회로 충분하다.
-    const isActive = currentType === 'location'
-      ? DevGameState.getLocationAssetId(a.locationId, a.variantId) === a.id
-      : a.type === 'background'
-        ? DevGameState.getLegacyBackgroundId(a.sceneId) === a.id
-        : DevGameState.getCharacterAssetIdForOutfit(a.characterKey, a.outfit || null, a.expression) === a.id;
+    const isActive = activeAssetId === a.id;
     const tag = isActive ? '<span class="asset-tag">사용 중</span><br>' : '';
     const useAction = currentType === 'location'
-      ? `useAsLocationPhoto('${a.id}')`
+      ? `useAsLocationPhoto('${a.id}', this)`
       : a.type === 'background'
-        ? `useAsBackground('${a.id}')`
-        : `useAsCharacter('${a.id}')`;
+        ? `useAsBackground('${a.id}', this)`
+        : `useAsCharacter('${a.id}', this)`;
     return `<div class="asset-card">
       <img class="asset-thumb" src="${url}" data-url="${url}" onclick="previewAsset(this.dataset.url)">
       <div class="asset-info">
@@ -3543,30 +3591,52 @@ function previewAsset(url) {
 // Only reachable for 미니게임 kind now (ordinary slots hide this list — see
 // updateBackgroundModeChrome), which never carries a location assignment, so
 // the legacy sync setter is the correct one here.
-function useAsBackground(id) {
-  DevGameState.setLegacyBackgroundId(activeBackgroundSceneId(), id);
-  refreshList();
-  renderBgKindPicker();
-  renderHotspotSection();
+async function useAsBackground(id, btn) {
+  if (btn) btn.disabled = true;
+  try {
+    await DevGameState.setLegacyBackgroundId(activeBackgroundSceneId(), id);
+    await refreshList();
+    renderBgKindPicker();
+    renderHotspotSection();
+  } catch (err) {
+    DevDiag.show('배경 지정 실패: ' + (err && err.message ? err.message : err));
+    if (btn) btn.disabled = false;
+  }
 }
 
-function useAsLocationPhoto(id) {
-  DevGameState.setLocationAssetId(currentLocationId, currentVariantId, id);
-  refreshList();
+async function useAsLocationPhoto(id, btn) {
+  if (btn) btn.disabled = true;
+  try {
+    await DevGameState.setLocationAssetId(currentLocationId, currentVariantId, id);
+    await refreshList();
+  } catch (err) {
+    DevDiag.show('사진 지정 실패: ' + (err && err.message ? err.message : err));
+    if (btn) btn.disabled = false;
+  }
 }
 
-function useAsCharacter(id) {
-  DevGameState.setCharacterAssetId(currentCharacterKey, currentExpression, id, activeOutfitForFilter());
-  refreshList();
+async function useAsCharacter(id, btn) {
+  if (btn) btn.disabled = true;
+  try {
+    await DevGameState.setCharacterAssetId(currentCharacterKey, currentExpression, id, activeOutfitForFilter());
+    await refreshList();
+  } catch (err) {
+    DevDiag.show('사진 지정 실패: ' + (err && err.message ? err.message : err));
+    if (btn) btn.disabled = false;
+  }
 }
 
 async function removeAsset(type, id) {
   if (!confirm('이 이미지를 삭제할까요?')) return;
-  await AssetDB.deleteAsset(id);
-  if (type === 'background') DevGameState.removeAllBackgroundAssetRefs(id);
-  if (type === 'character') DevGameState.removeAllCharacterAssetRefs(id);
-  await refreshList();
-  renderHotspotSection();
+  try {
+    await AssetDB.deleteAsset(id);
+    if (type === 'background') await DevGameState.removeAllBackgroundAssetRefs(id);
+    if (type === 'character') await DevGameState.removeAllCharacterAssetRefs(id);
+    await refreshList();
+    renderHotspotSection();
+  } catch (err) {
+    DevDiag.show('삭제 실패: ' + (err && err.message ? err.message : err));
+  }
 }
 
 /* ===== 사운드 tab — see selectType('sound') / renderSoundPanel. Catalog is
@@ -3931,14 +4001,18 @@ async function renderSoundPanel() {
   renderSoundList();
 }
 
-function renderSoundList() {
+let renderSoundListToken = 0;
+async function renderSoundList() {
   const entries = Object.keys(soundsCatalog).map(id => Object.assign({ id }, soundsCatalog[id]));
   if (!entries.length) {
     el.soundList.innerHTML = '<div class="empty-note">아직 등록한 사운드가 없습니다.</div>';
     return;
   }
+  const token = ++renderSoundListToken;
+  const activeSceneBgmId = await DevGameState.getSceneBgmId(currentSceneId);
+  if (token !== renderSoundListToken) return;
   el.soundList.innerHTML = entries.map(s => {
-    const isSceneBgm = s.kind === 'bgm' && DevGameState.getSceneBgmId(currentSceneId) === s.id;
+    const isSceneBgm = s.kind === 'bgm' && activeSceneBgmId === s.id;
     const tag = isSceneBgm ? '<span class="asset-tag">이 씬 BGM</span><br>' : '';
     const range = s.end ? `${s.start}s ~ ${s.end}s` : `${s.start}s ~ (끝까지)`;
     const bgmAction = s.kind === 'bgm'
@@ -3977,23 +4051,31 @@ function editSound(id) {
   el.soundPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-function assignSceneBgm(id) {
-  DevGameState.setSceneBgmId(currentSceneId, id);
-  renderSoundList();
+async function assignSceneBgm(id) {
+  try {
+    await DevGameState.setSceneBgmId(currentSceneId, id);
+    await renderSoundList();
+  } catch (err) {
+    DevDiag.show('씬 BGM 지정 실패: ' + (err && err.message ? err.message : err));
+  }
 }
-function unassignSceneBgm() {
-  DevGameState.setSceneBgmId(currentSceneId, null);
-  renderSoundList();
+async function unassignSceneBgm() {
+  try {
+    await DevGameState.setSceneBgmId(currentSceneId, null);
+    await renderSoundList();
+  } catch (err) {
+    DevDiag.show('씬 BGM 지정 해제 실패: ' + (err && err.message ? err.message : err));
+  }
 }
 
 async function deleteSoundEntry(id) {
   if (!confirm('이 사운드를 삭제할까요?')) return;
   try {
     await AssetDB.deleteSound(id);
-    DevGameState.removeAllSceneBgmRefs(id);
+    await DevGameState.removeAllSceneBgmRefs(id);
     delete soundsCatalog[id];
     if (editingSoundId === id) resetSoundForm();
-    renderSoundList();
+    await renderSoundList();
   } catch (err) {
     DevDiag.show('사운드 삭제 실패: ' + (err && err.message ? err.message : err));
   }
@@ -4543,6 +4625,67 @@ if (deepLinkedHubTab && !focusMinigame && !focusScene) el.backBtn.href = '/dev/p
 selectType(deepLinkedHubTab && !focusMinigame && !focusScene ? 'hub'
   : (fromDataMenu && !focusMinigame && !focusScene) ? deepLinkedType
   : 'background');
+
+// ===== 기존 주 작업 기기 localStorage 배정을 서버로 올리는 1회성 마이그레이션
+// (§ location-background-system). DevGameState.migrateLocalAssignmentsToServerIfEmpty()
+// 는 멱등적 — 서버 맵이 비어있고 로컬 맵에 값이 있을 때만 push하므로 페이지를
+// 새로고침해도 안전하다. 반환값은 { migrated, skipped, failed } 형태로, 각각
+// _keys(background/characters/transforms/sceneBgm/outfits/locationBackgrounds)의
+// 키 이름 배열이라고 가정한다 — skipped(이미 서버에 있어 건너뜀)는 실패로 취급하지
+// 않는다.
+const MIGRATION_KEY_LABELS = {
+  characters: '캐릭터', outfits: '의상', transforms: '위치/스케일',
+  locationBackgrounds: '장소 배경', sceneBgm: '씬 BGM', background: '레거시 배경',
+};
+function migrationLabel(key) { return MIGRATION_KEY_LABELS[key] || key; }
+
+function showMigrationBanner(kind, message, showRetry) {
+  el.migrationBanner.classList.remove('hidden', 'success', 'error');
+  el.migrationBanner.classList.add(kind);
+  el.migrationBannerText.textContent = message;
+  el.migrationRetryBtn.classList.toggle('hidden', !showRetry);
+}
+function hideMigrationBanner() {
+  el.migrationBanner.classList.add('hidden');
+}
+
+let migrationCheckInFlight = false;
+async function runMigrationCheck() {
+  if (migrationCheckInFlight) return;
+  migrationCheckInFlight = true;
+  el.migrationRetryBtn.disabled = true;
+  try {
+    const result = await DevGameState.migrateLocalAssignmentsToServerIfEmpty();
+    const migrated = (result && result.migrated) || [];
+    const failed = (result && result.failed) || [];
+    if (failed.length) {
+      showMigrationBanner('error',
+        `일부 배정의 서버 이전에 실패했습니다: ${failed.map(migrationLabel).join(', ')}\n로컬 데이터는 유지되어 있습니다. 다시 시도해 주세요.`,
+        true);
+      console.warn('[마이그레이션] 부분 실패:', result);
+    } else if (migrated.length) {
+      showMigrationBanner('success',
+        `기존 로컬 배정 ${migrated.length}개 항목을 서버로 이전했습니다:\n${migrated.map(migrationLabel).join(', ')}`,
+        false);
+      console.info('[마이그레이션] 완료:', result);
+    } else {
+      // 옮길 것이 없었음 (서버에 이미 다 있거나, 로컬에도 아무 배정이 없음) —
+      // 조용히 넘어가되 콘솔에는 남긴다.
+      hideMigrationBanner();
+      console.info('[마이그레이션] 이전할 로컬 배정이 없습니다 (이미 서버에 있거나 로컬에도 없음).');
+    }
+  } catch (err) {
+    showMigrationBanner('error',
+      '로컬 배정을 서버로 이전하는 중 오류가 발생했습니다: ' + (err && err.message ? err.message : err) + '\n로컬 데이터는 유지되어 있습니다. 다시 시도해 주세요.',
+      true);
+    console.error('[마이그레이션] 실패:', err);
+  } finally {
+    migrationCheckInFlight = false;
+    el.migrationRetryBtn.disabled = false;
+  }
+}
+el.migrationRetryBtn.addEventListener('click', runMigrationCheck);
+runMigrationCheck();
 </script>
 <script src="/dev/devPlanFab.js"></script>
 </body>
