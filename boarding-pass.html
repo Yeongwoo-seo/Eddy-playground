@@ -66,17 +66,14 @@ body.sheet-open{overflow:hidden}
 .upload-error{color:#D94141;font-size:12.5px;font-weight:600;margin-top:4px}
 .upload-progress{font-size:12.5px;color:var(--grey500);font-weight:600;margin-top:4px}
 
-.pdf-wrap{flex:1;border-radius:16px;overflow:auto;min-height:0;background:var(--grey100)}
+.pdf-wrap{position:relative;flex:1;border-radius:16px;overflow:auto;min-height:0;background:var(--grey100);touch-action:pan-x pan-y}
 .pdf-wrap iframe{width:100%;height:100%;border:none}
-.pdf-pages{display:flex;flex-direction:column;gap:8px;padding:8px}
+.pdf-pages{display:flex;flex-direction:column;gap:8px;padding:8px;transform-origin:0 0}
 .pdf-pages canvas{display:block;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,0.06)}
 .pdf-loading,.pdf-error{padding:40px 16px;text-align:center;font-size:13px;color:var(--grey500);font-weight:600}
 .offline-note{background:var(--primary-light);color:var(--primary-hover);font-size:12px;font-weight:600;border-radius:12px;padding:8px 12px;margin-bottom:10px;flex-shrink:0;text-align:center}
-.zoom-ctrl{flex-shrink:0;display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-bottom:8px}
-.zoom-btn{width:30px;height:30px;border-radius:50%;border:none;background:var(--white);box-shadow:0 2px 12px rgba(0,0,0,0.06);color:var(--grey700);font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit}
-.zoom-btn:active{background:var(--grey100)}
-.zoom-btn:disabled{opacity:.4;cursor:default}
-.zoom-label{font-size:11.5px;font-weight:700;color:var(--grey500);min-width:36px;text-align:center}
+.zoom-label{position:absolute;top:10px;right:10px;background:rgba(25,31,40,0.72);color:#fff;font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:20px;pointer-events:none;opacity:0;transition:opacity .2s}
+.zoom-label.show{opacity:1}
 .file-name-row{font-size:11.5px;color:var(--grey500);font-weight:600;text-align:center;margin-top:10px;flex-shrink:0}
 </style>
 </head>
@@ -199,9 +196,10 @@ const el = {
 let activeSegId = null;
 let activeObjectUrl = null; // pdf.js를 못 쓸 때의 iframe fallback에서만 쓰인다
 let sheetRenderToken = 0; // 겹쳐 들어오는 renderSheet 호출 중 가장 마지막 것만 그리게 막는다
-let currentRenderBlob = null; // 확대 버튼을 눌렀을 때 다시 렌더링할 때 쓰는 현재 PDF
+let currentRenderBlob = null; // 핀치로 확대한 뒤 다시 렌더링할 때 쓰는 현재 PDF
 let pdfZoom = 1;
-const ZOOM_MIN = 1, ZOOM_MAX = 3, ZOOM_STEP = 0.5;
+let pinch = null; // 두 손가락 확대 제스처 진행 중 상태
+const ZOOM_MIN = 1, ZOOM_MAX = 3;
 // Boarding-pass PDFs (often the full e-ticket, not just the pass page) run
 // a few MB each — 20MB comfortably covers that with headroom.
 const MAX_PDF_BYTES = 20 * 1024 * 1024;
@@ -301,12 +299,10 @@ async function renderSheet(statusText) {
         <div class="pdf-sheet-body">
           ${rec ? `
             ${unreachable ? `<div class="offline-note">⚠️ 오프라인 상태라 마지막으로 저장된 사본을 보여드려요.</div>` : ''}
-            <div class="zoom-ctrl">
-              <button type="button" class="zoom-btn" id="zoomOutBtn" onclick="setZoom(pdfZoom - ZOOM_STEP)" ${pdfZoom <= ZOOM_MIN ? 'disabled' : ''}>－</button>
-              <div class="zoom-label" id="zoomLabel">${Math.round(pdfZoom * 100)}%</div>
-              <button type="button" class="zoom-btn" id="zoomInBtn" onclick="setZoom(pdfZoom + ZOOM_STEP)" ${pdfZoom >= ZOOM_MAX ? 'disabled' : ''}>＋</button>
+            <div class="pdf-wrap" id="pdfWrap">
+              <div class="pdf-pages" id="pdfPages"><div class="pdf-loading">불러오는 중...</div></div>
+              <div class="zoom-label" id="zoomLabel"></div>
             </div>
-            <div class="pdf-wrap"><div class="pdf-pages" id="pdfPages"><div class="pdf-loading">불러오는 중...</div></div></div>
             ${updatedLabel ? `<div class="file-name-row">최근 업데이트 · ${escapeHtml(updatedLabel)}</div>` : ''}
           ` : `
             <div class="empty-wrap">
@@ -327,29 +323,69 @@ async function renderSheet(statusText) {
 
   if (rec) {
     currentRenderBlob = rec.blob;
+    const wrapEl = el.sheetRoot.querySelector('#pdfWrap');
     const pagesEl = el.sheetRoot.querySelector('#pdfPages');
     pagesEl.addEventListener('dblclick', () => setZoom(pdfZoom > 1 ? 1 : 2));
+    attachPinchHandlers(wrapEl, pagesEl);
     renderPdfIntoContainer(rec.blob, pagesEl, myToken, pdfZoom);
   }
 }
 
-function updateZoomLabel() {
+let zoomLabelHideTimer = null;
+function showZoomLabel(zoomValue) {
   const label = el.sheetRoot.querySelector('#zoomLabel');
-  if (label) label.textContent = `${Math.round(pdfZoom * 100)}%`;
-  const outBtn = el.sheetRoot.querySelector('#zoomOutBtn');
-  const inBtn = el.sheetRoot.querySelector('#zoomInBtn');
-  if (outBtn) outBtn.disabled = pdfZoom <= ZOOM_MIN;
-  if (inBtn) inBtn.disabled = pdfZoom >= ZOOM_MAX;
+  if (!label) return;
+  label.textContent = `${Math.round((zoomValue != null ? zoomValue : pdfZoom) * 100)}%`;
+  label.classList.add('show');
+  clearTimeout(zoomLabelHideTimer);
+  zoomLabelHideTimer = setTimeout(() => label.classList.remove('show'), 900);
 }
 
 function setZoom(z) {
   pdfZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(z * 100) / 100));
-  updateZoomLabel();
+  showZoomLabel();
   const pagesEl = el.sheetRoot.querySelector('#pdfPages');
   if (pagesEl && currentRenderBlob) {
-    const myToken = ++sheetRenderToken; // 빠르게 연달아 누를 때 오래된 렌더가 나중에 덮어쓰지 않게
+    const myToken = ++sheetRenderToken; // 겹쳐서 들어오면 오래된 렌더가 나중에 덮어쓰지 않게
     renderPdfIntoContainer(currentRenderBlob, pagesEl, myToken, pdfZoom);
   }
+}
+
+// 두 손가락 핀치로 확대/축소한다. 손가락이 움직이는 동안은 CSS transform으로만
+// 반응해서 버벅이지 않게 하고, 손을 떼는 순간에만 pdf.js로 실제 배율에 맞춰
+// 다시 그려서 확대해도 바코드/QR이 흐려지지 않게 한다.
+function attachPinchHandlers(wrapEl, pagesEl) {
+  function touchDist(t0, t1) {
+    return Math.hypot(t0.clientX - t1.clientX, t0.clientY - t1.clientY);
+  }
+  wrapEl.addEventListener('touchstart', (e) => {
+    if (e.touches.length !== 2) { pinch = null; return; }
+    const rect = pagesEl.getBoundingClientRect();
+    const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+    const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+    pagesEl.style.transformOrigin = `${midX}px ${midY}px`;
+    pinch = { startDist: touchDist(e.touches[0], e.touches[1]), startZoom: pdfZoom, liveZoom: pdfZoom };
+  }, { passive: true });
+
+  wrapEl.addEventListener('touchmove', (e) => {
+    if (!pinch || e.touches.length !== 2) return;
+    e.preventDefault(); // 브라우저가 자체적으로 페이지를 확대하려는 것을 막는다
+    const d = touchDist(e.touches[0], e.touches[1]);
+    const raw = pinch.startZoom * (d / pinch.startDist);
+    pinch.liveZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, raw));
+    pagesEl.style.transform = `scale(${pinch.liveZoom / pdfZoom})`;
+    showZoomLabel(pinch.liveZoom);
+  }, { passive: false });
+
+  function endPinch() {
+    if (!pinch) return;
+    const liveZoom = pinch.liveZoom;
+    pinch = null;
+    pagesEl.style.transform = '';
+    if (liveZoom !== pdfZoom) setZoom(liveZoom);
+  }
+  wrapEl.addEventListener('touchend', endPinch);
+  wrapEl.addEventListener('touchcancel', endPinch);
 }
 
 // 탑승권 페이지는 대부분 landscape라, iframe에 그냥 맡기면 뷰어마다
