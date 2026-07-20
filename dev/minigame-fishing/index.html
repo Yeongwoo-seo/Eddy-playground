@@ -388,6 +388,19 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .area-row-edit{width:26px;height:26px;border-radius:50%;border:none;background:rgba(89,184,200,.16);color:var(--cyan);font-size:12px;cursor:pointer;flex-shrink:0;margin-left:6px}
 .area-empty-note{font-size:12.5px;color:var(--text-muted);padding:8px 2px}
 
+/* ===== 대화 줄 목록 — .area-row와 같은 톤(스와치+라벨+삭제)이지만 클릭으로
+   "지금 편집 중인 줄"을 고를 수 있어야 해서(.selected) 별도 클래스로 둔다.
+   화자 스와치 색은 임의 배정(지수=cyan, 영우=amber) — 다른 화면의
+   region 강조색 배정(gaugeRegion=amber)과 같은 원칙. */
+.dialogue-line-row{display:flex;align-items:center;gap:8px;padding:8px;border-radius:10px;border:1px solid var(--divider);margin-bottom:6px;cursor:pointer}
+.dialogue-line-row.selected{border-color:var(--cyan);background:rgba(89,184,200,.1)}
+.dialogue-line-speaker{font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.02em;padding:3px 7px;border-radius:20px;flex-shrink:0}
+.dialogue-line-speaker.jisoo{color:#04181c;background:var(--cyan)}
+.dialogue-line-speaker.youngwoo{color:#1a1206;background:var(--amber)}
+.dialogue-line-preview{flex:1;font-size:13px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dialogue-line-row .area-row-edit{margin-left:0;font-size:10px}
+.dialogue-line-row .area-row-edit:disabled{opacity:.3;cursor:default}
+
 /* ===== 화면(screens) — 배경화면 여러 장을 서로 이동 가능한 "화면"으로
    두는 단위(§신규, 영역지정/화면 전환). 탭이 아니라 tabsRow 바로 아래
    항상 보이는 영역이다 — 모션(이동 테스트 미리보기)/영역 설정/캐릭터(영우
@@ -866,10 +879,12 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     </div>
 
     <div class="option-group">
-      <div class="option-label">화자 · 대사</div>
-      <div class="option-desc">지금 대화 장면에서 말하는 사람을 고르고 대사를 입력하세요. "이름 영역"엔 고른 사람 이름이, "대화 영역"엔 아래 텍스트가 표시돼요.</div>
-      <div class="option-pills" id="dialogueSpeakerPills"></div>
-      <textarea class="dialogue-text-input" id="dialogueTextInput" placeholder="대사를 입력하세요" rows="3"></textarea>
+      <div class="option-label">대사 (여러 줄 · 티키타카)</div>
+      <div class="option-desc">지수·영우가 번갈아 말하는 여러 줄의 대사를 순서대로 넣을 수 있어요. 실제 플레이에서는 화면을 탭할 때마다 다음 줄로 넘어가고, 마지막 줄 다음 탭에서 낚시가 시작돼요. 아래 목록에서 줄을 고르면 그 줄의 화자·대사를 아래에서 고칠 수 있어요.</div>
+      <div id="dialogueLineList"></div>
+      <button type="button" class="fish-sheet-btn" id="addDialogueLineBtn" style="width:100%;margin-top:4px">+ 대사 줄 추가</button>
+      <div class="option-pills" id="dialogueSpeakerPills" style="margin-top:16px"></div>
+      <textarea class="dialogue-text-input" id="dialogueTextInput" placeholder="왼쪽에서 대사 줄을 고르거나 추가하세요" rows="3"></textarea>
     </div>
   </div>
 
@@ -1282,6 +1297,7 @@ window.__removeBackgroundReady = import('https://cdn.jsdelivr.net/npm/@imgly/bac
 </script>
 <script src="/dev/assetDb.js"></script>
 <script src="/dev/data/fishDefs.js"></script>
+<script src="/dev/data/fishingDialogueScene.js"></script>
 <script>
 /* =========================================================================
    낚시 미니게임 설정 화면. 4개 탭:
@@ -1464,6 +1480,8 @@ const el = {
   addYoungwooPortraitBtn: document.getElementById('addYoungwooPortraitBtn'),
   removeYoungwooPortraitBtn: document.getElementById('removeYoungwooPortraitBtn'),
   youngwooPortraitFileInput: document.getElementById('youngwooPortraitFileInput'),
+  dialogueLineList: document.getElementById('dialogueLineList'),
+  addDialogueLineBtn: document.getElementById('addDialogueLineBtn'),
   dialogueSpeakerPills: document.getElementById('dialogueSpeakerPills'),
   dialogueTextInput: document.getElementById('dialogueTextInput'),
   heldFishPosEditBtn: document.getElementById('heldFishPosEditBtn'),
@@ -4346,10 +4364,19 @@ el.moveAreaConfirmBtn.addEventListener('click', async () => {
    boxLayer/jisooLayer/youngwooLayer는 이미지 레이어(kind:'image')지만,
    portraitLayer/nameLayer/textLayer는 자리만 잡아두는 region이다 — 실제
    내용(초상화 사진은 jisooPortraitAssetId/youngwooPortraitAssetId, 이름/
-   대사 텍스트는 speaker/text)은 이 세 영역과 별개로 아래 "초상화 이미지"/
-   "화자 · 대사"에서 정하고, 지금 화자(speaker)에 따라 어느 쪽 내용을
-   보여줄지만 바뀐다(다른 미니게임들의 공용 대화창(msg-panel)과 같은 원칙 —
-   초상화/이름/대사 영역은 하나씩만 두고 화자에 따라 내용만 바뀐다). */
+   대사 텍스트는 지금 편집 중인 대사 줄)은 이 세 영역과 별개로 아래 "초상화
+   이미지"/"대사"에서 정하고, 그 줄의 화자에 따라 어느 쪽 내용을 보여줄지만
+   바뀐다(다른 미니게임들의 공용 대화창(msg-panel)과 같은 원칙 — 초상화/
+   이름/대사 영역은 하나씩만 두고 화자에 따라 내용만 바뀐다).
+
+   대사는 한 줄이 아니라 지수/영우가 번갈아 말하는 여러 줄(scene.lines,
+   [{id,speaker,text}])을 담을 수 있다 — 실제 플레이(play/minigame-fishing/
+   index.html)는 탭할 때마다 다음 줄로 넘어가는 티키타카 카드로 재생한다.
+   에디터는 목록에서 고른 줄(selectedDialogueLineId) 하나를 아래 화자 필/
+   텍스트란으로 편집하고, 위 슬라이드 미리보기도 그 줄 기준으로 그린다.
+   scene.lines가 없고 예전 scene.speaker/scene.text만 있는 낡은 설정은
+   fishingDialogueLines(dev/data/fishingDialogueScene.js)가 한 줄짜리
+   lines로 합성해준다 — 그대로 저장하면 새 형식으로 자연스럽게 넘어간다. */
 const DIALOGUE_LAYER_ORDER = ['boxLayer', 'jisooLayer', 'youngwooLayer', 'portraitLayer', 'nameLayer', 'textLayer']; // z-order
 const DIALOGUE_LAYER_META = {
   boxLayer: { kind: 'image', label: '대화창' },
@@ -4361,15 +4388,124 @@ const DIALOGUE_LAYER_META = {
 };
 const DIALOGUE_SPEAKER_OPTIONS = [{ id: 'jisoo', label: '지수' }, { id: 'youngwoo', label: '영우' }];
 let selectedDialogueLayerId = null;
+let selectedDialogueLineId = null;
 function dialogueSceneOf() { return fishingConfig.dialogueScene || {}; }
+function dialogueLinesOf() { return fishingDialogueLines(dialogueSceneOf()); }
 async function patchDialogueScene(patch) {
   fishingConfig = await AssetDB.setFishingConfig({ dialogueScene: Object.assign({}, fishingConfig.dialogueScene, patch) });
   showSaveNote();
   return fishingConfig.dialogueScene;
 }
+function patchDialogueLines(lines) { return patchDialogueScene({ lines }); }
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+// 목록/줄 삭제 등으로 선택된 줄이 없어졌을 때 첫 줄(있으면)로 되돌린다.
+function ensureSelectedDialogueLine() {
+  const lines = dialogueLinesOf();
+  if (!lines.some(l => l.id === selectedDialogueLineId)) {
+    selectedDialogueLineId = lines.length ? lines[0].id : null;
+  }
+}
+function renderDialogueLineList() {
+  const lines = dialogueLinesOf();
+  ensureSelectedDialogueLine();
+  if (!lines.length) {
+    el.dialogueLineList.innerHTML = '<div class="area-empty-note">아직 대사가 없어요. "+ 대사 줄 추가"로 시작하세요.</div>';
+    return;
+  }
+  el.dialogueLineList.innerHTML = lines.map((l, i) => {
+    const speaker = l.speaker === 'youngwoo' ? 'youngwoo' : 'jisoo';
+    const label = speaker === 'youngwoo' ? '영우' : '지수';
+    const preview = escapeHtml((l.text || '(빈 대사)').replace(/\n/g, ' '));
+    return `
+    <div class="dialogue-line-row${l.id === selectedDialogueLineId ? ' selected' : ''}" data-id="${l.id}">
+      <span class="dialogue-line-speaker ${speaker}">${label}</span>
+      <span class="dialogue-line-preview">${preview}</span>
+      <button type="button" class="area-row-edit" data-move-up="${l.id}"${i === 0 ? ' disabled' : ''}>▲</button>
+      <button type="button" class="area-row-edit" data-move-down="${l.id}"${i === lines.length - 1 ? ' disabled' : ''}>▼</button>
+      <button type="button" class="area-row-del" data-del-id="${l.id}">✕</button>
+    </div>`;
+  }).join('');
+  el.dialogueLineList.querySelectorAll('.dialogue-line-row').forEach(row => {
+    row.addEventListener('click', (e) => {
+      if (e.target.closest('button')) return;
+      selectedDialogueLineId = row.dataset.id;
+      renderDialogueLineList();
+      renderDialogueLineEditor();
+      renderDialogueSlideStage();
+    });
+  });
+  el.dialogueLineList.querySelectorAll('[data-move-up]').forEach(btn => btn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    await moveDialogueLine(btn.dataset.moveUp, -1);
+  }));
+  el.dialogueLineList.querySelectorAll('[data-move-down]').forEach(btn => btn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    await moveDialogueLine(btn.dataset.moveDown, 1);
+  }));
+  el.dialogueLineList.querySelectorAll('[data-del-id]').forEach(btn => btn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    await patchDialogueLines(dialogueLinesOf().filter(l => l.id !== btn.dataset.delId));
+    renderDialogueLineList();
+    renderDialogueLineEditor();
+    renderDialogueSlideStage();
+  }));
+}
+async function moveDialogueLine(id, dir) {
+  const lines = dialogueLinesOf().slice();
+  const i = lines.findIndex(l => l.id === id);
+  const j = i + dir;
+  if (i === -1 || j < 0 || j >= lines.length) return;
+  [lines[i], lines[j]] = [lines[j], lines[i]];
+  await patchDialogueLines(lines);
+  renderDialogueLineList();
+  renderDialogueSlideStage();
+}
+function renderDialogueLineEditor() {
+  const line = dialogueLinesOf().find(l => l.id === selectedDialogueLineId) || null;
+  el.dialogueTextInput.value = line ? (line.text || '') : '';
+  el.dialogueTextInput.disabled = !line;
+  el.dialogueSpeakerPills.classList.toggle('hidden', !line);
+  const speaker = line && line.speaker === 'youngwoo' ? 'youngwoo' : 'jisoo';
+  el.dialogueSpeakerPills.innerHTML = DIALOGUE_SPEAKER_OPTIONS.map(o =>
+    `<button type="button" class="option-pill${o.id === speaker ? ' active' : ''}" data-id="${o.id}">${o.label}</button>`
+  ).join('');
+  el.dialogueSpeakerPills.querySelectorAll('.option-pill').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!selectedDialogueLineId) return;
+      const next = dialogueLinesOf().map(l => l.id === selectedDialogueLineId ? Object.assign({}, l, { speaker: btn.dataset.id }) : l);
+      await patchDialogueLines(next);
+      renderDialogueLineList();
+      renderDialogueLineEditor();
+      renderDialogueSlideStage();
+    });
+  });
+}
+el.addDialogueLineBtn.addEventListener('click', async () => {
+  const lines = dialogueLinesOf();
+  const last = lines[lines.length - 1];
+  const nextSpeaker = last && last.speaker === 'youngwoo' ? 'jisoo' : 'youngwoo';
+  const id = 'line-' + Date.now();
+  await patchDialogueLines(lines.concat([{ id, speaker: lines.length ? nextSpeaker : 'jisoo', text: '' }]));
+  selectedDialogueLineId = id;
+  renderDialogueLineList();
+  renderDialogueLineEditor();
+  renderDialogueSlideStage();
+  el.dialogueTextInput.focus();
+});
+el.dialogueTextInput.addEventListener('change', async () => {
+  if (!selectedDialogueLineId) return;
+  const next = dialogueLinesOf().map(l => l.id === selectedDialogueLineId ? Object.assign({}, l, { text: el.dialogueTextInput.value }) : l);
+  await patchDialogueLines(next);
+  renderDialogueLineList();
+  renderDialogueSlideStage();
+});
 async function renderDialogueSlideStage() {
   const scene = dialogueSceneOf();
-  const speaker = scene.speaker === 'youngwoo' ? 'youngwoo' : 'jisoo';
+  ensureSelectedDialogueLine();
+  const previewLine = dialogueLinesOf().find(l => l.id === selectedDialogueLineId) || null;
+  const speaker = previewLine && previewLine.speaker === 'youngwoo' ? 'youngwoo' : 'jisoo';
   el.dialogueSlideStage.innerHTML = '';
   for (const id of DIALOGUE_LAYER_ORDER) {
     const data = scene[id];
@@ -4404,7 +4540,7 @@ async function renderDialogueSlideStage() {
       preview.className = 'dialogue-text-preview';
       preview.textContent = id === 'nameLayer'
         ? (speaker === 'youngwoo' ? '영우' : '지수')
-        : (scene.text || '대사가 여기에 표시돼요');
+        : ((previewLine && previewLine.text) || '대사가 여기에 표시돼요');
       layerEl.appendChild(preview);
     }
     const label = document.createElement('span');
@@ -4614,25 +4750,6 @@ el.removeYoungwooPortraitBtn.addEventListener('click', async () => {
   await patchDialogueScene({ youngwooPortraitAssetId: null });
   renderDialogueSlideStage();
 });
-function renderDialogueSpeakerPills() {
-  const scene = dialogueSceneOf();
-  const speaker = scene.speaker === 'youngwoo' ? 'youngwoo' : 'jisoo';
-  el.dialogueSpeakerPills.innerHTML = DIALOGUE_SPEAKER_OPTIONS.map(o =>
-    `<button type="button" class="option-pill${o.id === speaker ? ' active' : ''}" data-id="${o.id}">${o.label}</button>`
-  ).join('');
-  el.dialogueSpeakerPills.querySelectorAll('.option-pill').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      await patchDialogueScene({ speaker: btn.dataset.id });
-      renderDialogueSpeakerPills();
-      renderDialogueSlideStage();
-    });
-  });
-}
-el.dialogueTextInput.addEventListener('change', async () => {
-  await patchDialogueScene({ text: el.dialogueTextInput.value });
-  renderDialogueSlideStage();
-});
-
 /* ===== 물고기 들기 위치 지정 =====
    itemPos 피커와 같은 단일 포인트 드래그 패턴이지만, 기준 이미지가 모션
    탭 "올리기" 카테고리의 마지막 프레임(motionFrameCache.reel, 이미 정사각
@@ -5159,8 +5276,8 @@ async function init() {
   renderMotionTab();
   initMoveMotionControls();
   renderMoveTestStage();
-  el.dialogueTextInput.value = (fishingConfig.dialogueScene && fishingConfig.dialogueScene.text) || '';
-  renderDialogueSpeakerPills();
+  renderDialogueLineList();
+  renderDialogueLineEditor();
   renderDialogueSlideStage();
 }
 init();
