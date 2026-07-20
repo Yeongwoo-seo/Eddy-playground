@@ -230,7 +230,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 
   <div class="topbar">
     <a class="vn-btn" href="/dev/">← DEV</a>
-    <a class="vn-btn" href="/dev/minigame-transform/">설정</a>
+    <a class="vn-btn dev-settings-link" href="/dev/minigame-transform/">설정</a>
   </div>
 
   <div class="sparkle-field" id="sparkleField"></div>
@@ -1098,6 +1098,8 @@ updatePowderButton();
 initSparkleField();
 renderWallStars();
 </script>
+<script src="/realPlayMode.js"></script>
+<script>RealPlayMode.hideDevChrome();</script>
 <script src="/dev/devPlanFab.js"></script>
 </body>
 </html>
