@@ -3,9 +3,12 @@
    install-gated start screen (see play/index.html's goToRealStart and
    its minigame picker); read by every real-play-reachable page (play/game,
    play/explore, the routed minigames) to hide dev-only chrome — the "← DEV"
-   link, each scene/feature/minigame's "설정" link into its dev editor
-   page, the POS/DEV debug buttons, and the CASE FILE menu button, none of
-   which are meant for a real player.
+   link, the POS/DEV debug buttons (asset selectors, fake-evidence
+   shortcuts), and the CASE FILE menu button, none of which are meant for a
+   real player. Each scene/feature/minigame's own "설정" link into its dev
+   editor page (.dev-settings-link) is deliberately NOT in the hide list —
+   Eddy still wants one-tap access into layout/asset tuning while doing a
+   real install-and-play pass, not just from /dev/.
 
    sessionStorage, not localStorage: a fresh app launch (icon tap) should
    always start clean, and a developer testing through /dev/ on the same
@@ -17,11 +20,7 @@ const RealPlayMode = {
   isActive() { try { return sessionStorage.getItem(this.KEY) === '1'; } catch (e) { return false; } },
   hideDevChrome() {
     if (!this.isActive()) return;
-    // .dev-settings-link marks each play page's own "설정" link into its
-    // dev editor page (e.g. play/minigame-fishing/'s ⚙ chip → /dev/
-    // minigame-fishing/) — a shared marker class rather than matching by
-    // href or visual button class, since those vary page to page.
-    document.querySelectorAll('a.vn-btn[href="/dev/"], .dev-settings-link, #devBtn, #transformBtn, #caseMenuMount')
+    document.querySelectorAll('a.vn-btn[href="/dev/"], #devBtn, #transformBtn, #caseMenuMount')
       .forEach(el => { el.style.display = 'none'; });
   },
 };
