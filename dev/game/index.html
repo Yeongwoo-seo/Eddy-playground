@@ -54,13 +54,15 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .point-balance.hidden{display:none}
 
 /* ===== 여행 만족도 / 영우 호감도 게이지 — 상시 표시, 연출용(스토리/엔딩에
-   관여하지 않음). 정확한 숫자보다 채움 정도만 읽히게 막대 위주로 표시. */
-.relation-gauges{display:flex;gap:6px}
+   관여하지 않음). 정확한 숫자보다 채움 정도만 읽히게 막대 위주로 표시.
+   화면 우상단에 세로 막대로 배치 — 컨테이너 자체는 배경 없이 투명하게 떠
+   있고(top bar 버튼열과 겹치지 않도록 그 아래로 내림), 각 막대만 보인다. */
+.relation-gauges{position:absolute;top:calc(58px + env(safe-area-inset-top,0));right:16px;z-index:6;display:flex;gap:10px;background:transparent}
 .relation-gauges.hidden{display:none}
-.gauge-pill{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:7px 10px}
-.gauge-icon{font-size:11px;line-height:1}
-.gauge-track{width:32px;height:5px;border-radius:3px;background:rgba(255,255,255,.14);overflow:hidden}
-.gauge-fill{height:100%;border-radius:3px;transition:width .3s cubic-bezier(.2,.8,.2,1)}
+.gauge-pill{display:flex;flex-direction:column;align-items:center;gap:6px;background:transparent}
+.gauge-icon{font-size:12px;line-height:1}
+.gauge-track{width:6px;height:64px;border-radius:3px;background:rgba(255,255,255,.14);overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end}
+.gauge-fill{width:100%;border-radius:3px;transition:height .3s cubic-bezier(.2,.8,.2,1)}
 .gauge-fill.satisfaction{background:var(--cyan)}
 .gauge-fill.affection{background:#E8749E}
 
@@ -147,19 +149,6 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .sheet-btn{background:var(--surface-2);color:var(--text-primary);border:1px solid var(--divider);border-radius:10px;padding:11px 8px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--mono)}
 .sheet-btn.danger{color:#D94141;border-color:rgba(217,65,65,.4)}
 
-/* ===== Floating popup: character transform (top-right, doesn't cover the character) ===== */
-.transform-popup{position:absolute;top:calc(52px + env(safe-area-inset-top,0));right:16px;z-index:10;width:190px;background:rgba(8,10,12,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:14px;box-shadow:0 8px 24px rgba(0,0,0,.4)}
-.transform-popup.hidden{display:none}
-.tp-title{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--text-muted);text-transform:uppercase;margin-bottom:10px}
-.tp-field{margin-bottom:10px}
-.tp-row{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10.5px;color:var(--text-secondary);text-transform:uppercase;margin-bottom:4px}
-.tp-val{color:var(--cyan);font-weight:600}
-.tp-field input[type=range]{width:100%;accent-color:var(--cyan)}
-.tp-confirm{width:100%;background:var(--cyan);color:#06181c;border:none;border-radius:8px;padding:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--mono);letter-spacing:.05em;margin-top:2px}
-.tp-confirm:disabled{opacity:.4;cursor:default}
-.transform-output{background:var(--surface-2);border:1px solid var(--divider);border-radius:8px;padding:8px 10px;font-family:var(--mono);font-size:10px;color:var(--cyan);margin-top:10px;white-space:pre-wrap;word-break:break-all}
-.transform-output.hidden{display:none}
-
 /* ===== Black overlay for minigame-start / autoplay-complete cards ===== */
 .intro-overlay{position:absolute;inset:0;z-index:9;background:#000;display:flex;align-items:center;justify-content:center;transition:opacity .5s ease}
 .intro-overlay.hidden{opacity:0;pointer-events:none}
@@ -214,36 +203,18 @@ window.addEventListener('orientationchange', setVh100);
     <div style="display:flex;gap:8px;align-items:center">
       <span id="caseMenuMount"></span>
       <span class="point-balance hidden" id="pointBalance">P 0</span>
-      <span class="relation-gauges" id="relationGauges">
-        <span class="gauge-pill" title="여행 만족도"><span class="gauge-icon">✨</span><span class="gauge-track"><span class="gauge-fill satisfaction" id="satisfactionFill"></span></span></span>
-        <span class="gauge-pill" title="영우 호감도"><span class="gauge-icon">💛</span><span class="gauge-track"><span class="gauge-fill affection" id="affectionFill"></span></span></span>
-      </span>
       <a class="vn-btn" href="/dev/">← DEV</a>
     </div>
     <div style="display:flex;gap:8px">
       <button class="vn-btn auto hidden" id="autoplayBtn">AUTO ⏸ 정지</button>
-      <button class="vn-btn dev" id="transformBtn">POS</button>
       <button class="vn-btn dev" id="devBtn">DEV</button>
     </div>
   </div>
 
-  <div class="transform-popup hidden" id="transformPopup">
-    <div class="tp-title">Character Transform</div>
-    <div class="tp-field">
-      <div class="tp-row"><label>X</label><span class="tp-val" id="xVal">0</span></div>
-      <input type="range" id="xRange" min="-150" max="150" value="0">
-    </div>
-    <div class="tp-field">
-      <div class="tp-row"><label>Y</label><span class="tp-val" id="yVal">0</span></div>
-      <input type="range" id="yRange" min="-150" max="150" value="0">
-    </div>
-    <div class="tp-field">
-      <div class="tp-row"><label>Scale</label><span class="tp-val" id="scaleVal">1.00</span></div>
-      <input type="range" id="scaleRange" min="50" max="150" value="100">
-    </div>
-    <button class="tp-confirm" id="confirmTransformBtn">위치 확정</button>
-    <pre class="transform-output hidden" id="transformOutput"></pre>
-  </div>
+  <span class="relation-gauges" id="relationGauges">
+    <span class="gauge-pill" title="여행 만족도"><span class="gauge-icon">✨</span><span class="gauge-track"><span class="gauge-fill satisfaction" id="satisfactionFill"></span></span></span>
+    <span class="gauge-pill" title="영우 호감도"><span class="gauge-icon">💛</span><span class="gauge-track"><span class="gauge-fill affection" id="affectionFill"></span></span></span>
+  </span>
 
   <div class="bottom-stack" id="bottomStack">
     <div class="dlg-layer" id="dlgLayer">
@@ -409,16 +380,6 @@ const el = {
   sheetCloseBtn: document.getElementById('sheetCloseBtn'),
   bgSelect: document.getElementById('bgSelect'),
   uploadLink: document.getElementById('uploadLink'),
-  transformBtn: document.getElementById('transformBtn'),
-  transformPopup: document.getElementById('transformPopup'),
-  xRange: document.getElementById('xRange'),
-  yRange: document.getElementById('yRange'),
-  scaleRange: document.getElementById('scaleRange'),
-  xVal: document.getElementById('xVal'),
-  yVal: document.getElementById('yVal'),
-  scaleVal: document.getElementById('scaleVal'),
-  confirmTransformBtn: document.getElementById('confirmTransformBtn'),
-  transformOutput: document.getElementById('transformOutput'),
   introOverlay: document.getElementById('introOverlay'),
   introCard: document.getElementById('introCard'),
   unknownSignal: document.getElementById('unknownSignal'),
@@ -448,8 +409,8 @@ function updatePointBalance() {
 // 포인트와 달리 첫 지급 전까지 숨기지 않는다 — 상시 표시로 결정된 연출용
 // 게이지라 0주차 첫 씬부터 바로 보여도 어색하지 않음(중립값 50에서 시작).
 function updateRelationshipGauges() {
-  el.satisfactionFill.style.width = RelationshipState.getSatisfaction() + '%';
-  el.affectionFill.style.width = RelationshipState.getAffection() + '%';
+  el.satisfactionFill.style.height = RelationshipState.getSatisfaction() + '%';
+  el.affectionFill.style.height = RelationshipState.getAffection() + '%';
 }
 
 function setBackground(asset) {
@@ -1043,8 +1004,6 @@ const player = createVNPlayer({
       el.frame.classList.remove('ending-fade');
       el.unknownSignal.classList.remove('show');
     }
-    // Keep the transform popup in sync if it's left open while tapping through lines.
-    if (!el.transformPopup.classList.contains('hidden')) loadTransformIntoSliders();
   },
   onTextUpdate: (text) => { el.dialogueText.textContent = text; },
   onArrow: (show) => {
@@ -1209,6 +1168,7 @@ const caseMenu = initCaseMenu({
   missionTitle: activeSceneData.name,
   currentSceneId: activeSceneData.id,
   mountSelector: '#caseMenuMount',
+  disabled: true,
   onSaveRequested: (slot) => {
     CaseFileState.saveSlot(slot, {
       sceneId: activeSceneData.id,
@@ -1293,44 +1253,6 @@ function fillSelect(selectEl, assets, selectedId) {
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
-
-function readSliderTransform() {
-  return { x: Number(el.xRange.value), y: Number(el.yRange.value), scale: Number(el.scaleRange.value) / 100 };
-}
-
-function updateSliderLabels(transform) {
-  el.xVal.textContent = transform.x;
-  el.yVal.textContent = transform.y;
-  el.scaleVal.textContent = transform.scale.toFixed(2);
-}
-
-// Sliders always edit the character currently on screen (the active line's characterId).
-function loadTransformIntoSliders() {
-  const characterId = activeLines[player.getState().index].characterId;
-  const transform = DevGameState.getCharacterTransform(characterId);
-  el.xRange.value = transform.x;
-  el.yRange.value = transform.y;
-  el.scaleRange.value = Math.round(transform.scale * 100);
-  updateSliderLabels(transform);
-  el.transformOutput.classList.add('hidden');
-  const disabled = !characterId;
-  [el.xRange, el.yRange, el.scaleRange, el.confirmTransformBtn].forEach(input => { input.disabled = disabled; });
-}
-
-[el.xRange, el.yRange, el.scaleRange].forEach(rangeEl => rangeEl.addEventListener('input', () => {
-  const transform = readSliderTransform();
-  updateSliderLabels(transform);
-  applyTransformToImage(transform);
-}));
-
-el.confirmTransformBtn.addEventListener('click', () => {
-  const characterId = activeLines[player.getState().index].characterId;
-  if (!characterId) return;
-  const transform = readSliderTransform();
-  DevGameState.setCharacterTransform(characterId, transform);
-  el.transformOutput.textContent = JSON.stringify({ characterId, ...transform }, null, 2);
-  el.transformOutput.classList.remove('hidden');
-});
 
 el.frame.addEventListener('click', onTap);
 
@@ -1501,16 +1423,6 @@ document.getElementById('btnMarkAllInteractionsNew').addEventListener('click', (
 document.getElementById('btnResetExploration').addEventListener('click', () => {
   if (confirm('탐색 허브 상태(장소·상호작용 진행도)를 초기화할까요?')) ExplorationState.resetAll();
 });
-
-el.transformBtn.addEventListener('click', (e) => {
-  e.stopPropagation();
-  const willShow = el.transformPopup.classList.contains('hidden');
-  if (willShow) loadTransformIntoSliders();
-  el.transformPopup.classList.toggle('hidden', !willShow);
-});
-// The popup floats over the tappable game frame — swallow clicks inside it
-// so dragging a slider or hitting 확정 doesn't also advance the dialogue.
-el.transformPopup.addEventListener('click', (e) => e.stopPropagation());
 
 // A ?line=<n> query param (written by 불러오기's cross-scene resume) means
 // this load is resuming a save mid-scene — replaying the full location-card
