@@ -55,8 +55,17 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .preview-row:last-of-type{border-bottom:none}
 .preview-label{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--text-muted);text-transform:uppercase}
 .preview-value{color:var(--text-primary);font-weight:500;text-align:right;max-width:60%;word-break:break-all}
-.save-btn{width:100%;margin-top:16px;background:var(--cyan);color:#06181c;border:none;border-radius:10px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--mono);letter-spacing:.04em}
-.save-btn:active{opacity:.85}
+.save-btn{position:relative;overflow:hidden;width:100%;margin-top:16px;background:var(--cyan);color:#06181c;border:none;border-radius:10px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--mono);letter-spacing:.04em;transition:transform .12s cubic-bezier(.2,.8,.2,1),opacity .12s}
+.save-btn:active{transform:scale(.97);opacity:.85}
+.save-btn.loading{cursor:default;pointer-events:none}
+.save-btn.loading .save-btn-label{opacity:.45}
+.save-btn-bar{display:none;position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(6,24,28,.18);overflow:hidden}
+.save-btn.loading .save-btn-bar{display:block}
+.save-btn-bar::after{content:'';position:absolute;top:0;bottom:0;left:-40%;width:40%;background:#06181c;animation:save-btn-sweep 1s cubic-bezier(.2,.8,.2,1) infinite}
+@keyframes save-btn-sweep{
+  0%{left:-40%}
+  100%{left:100%}
+}
 
 .editor-panel{background:var(--surface-1);border:1px solid var(--divider);border-radius:14px;padding:16px;margin-bottom:24px}
 .editor-panel.hidden{display:none}
@@ -422,7 +431,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     <div class="preview-row"><span class="preview-label">Type</span><span class="preview-value" id="previewType"></span></div>
     <div class="preview-row"><span class="preview-label">File</span><span class="preview-value" id="previewFile"></span></div>
     <div class="preview-row"><span class="preview-label">Size</span><span class="preview-value" id="previewSize"></span></div>
-    <button class="save-btn" id="saveBtn">SAVE BACKGROUND</button>
+    <button class="save-btn" id="saveBtn"><span class="save-btn-label">SAVE BACKGROUND</span><span class="save-btn-bar"></span></button>
   </div>
 
   <div class="editor-panel hidden" id="charEditorPanel">
@@ -2266,39 +2275,55 @@ function renderPreview(url) {
 // 미니게임 얼굴/아이템 uploads go through the crop editor below, which saves
 // the framing itself, and 인물 DB uploads register themselves via
 // autoRegisterCharacterPhoto without ever showing a save button.
+// Toggles SAVE BACKGROUND's loading state (indeterminate bar + disabled) —
+// AssetDB.addAsset uploads to Supabase storage and inserts a row, so this
+// can take a moment on a slow connection; without this the button gave no
+// feedback while that network round trip was in flight.
+function setSaveBtnLoading(isLoading) {
+  el.saveBtn.classList.toggle('loading', isLoading);
+  el.saveBtn.disabled = isLoading;
+}
+
 async function saveAsset() {
   if (!pendingFile) return;
   if (currentType === 'location') {
     if (!currentLocationId) return;
+    setSaveBtnLoading(true);
     try {
       const record = await AssetDB.addAsset({ type: 'background', name: pendingFile.name, blob: pendingFile.blob, width: pendingFile.width, height: pendingFile.height, locationId: currentLocationId, variantId: currentVariantId });
       // Same "newest upload becomes active" convenience as the legacy
       // per-scene flow below and character uploads already have.
-      DevGameState.setLocationAssetId(currentLocationId, currentVariantId, record.id);
+      await DevGameState.setLocationAssetId(currentLocationId, currentVariantId, record.id);
       clearPending();
       await refreshList();
     } catch (err) {
       DevDiag.show('이미지 저장 실패: ' + (err && err.message ? err.message : err));
+    } finally {
+      setSaveBtnLoading(false);
     }
     return;
   }
   if (currentType === 'hub') {
     if (!currentHubLocationId) return;
+    setSaveBtnLoading(true);
     try {
       const record = await AssetDB.addAsset({ type: 'background', name: pendingFile.name, blob: pendingFile.blob, width: pendingFile.width, height: pendingFile.height, sceneId: currentHubLocationId });
       // 미니게임 배경과 같은 "새로 올리면 바로 사용 중" 관례 — activeBackgroundSceneId()
       // 가 currentType==='hub'일 때 currentHubLocationId를 그대로 돌려주므로 이 setter가
       // play/explore/index.html의 조회 키와 정확히 일치한다.
-      DevGameState.setLegacyBackgroundId(currentHubLocationId, record.id);
+      await DevGameState.setLegacyBackgroundId(currentHubLocationId, record.id);
       clearPending();
       await refreshList();
       renderHubLocationPicker(); // pill의 ✓ 표시를 바로 갱신
     } catch (err) {
       DevDiag.show('이미지 저장 실패: ' + (err && err.message ? err.message : err));
+    } finally {
+      setSaveBtnLoading(false);
     }
     return;
   }
   if (!currentScene()) return;
+  setSaveBtnLoading(true);
   try {
     const record = await AssetDB.addAsset({ type: 'background', name: pendingFile.name, blob: pendingFile.blob, width: pendingFile.width, height: pendingFile.height, sceneId: activeBackgroundSceneId() });
     // The newest upload becomes the active background automatically — same
@@ -2308,12 +2333,14 @@ async function saveAsset() {
     // looked exactly like the upload had silently failed. Only reachable for
     // 미니게임 kind now, which never has a location assignment, so the
     // legacy sync setter is the right one here.
-    DevGameState.setLegacyBackgroundId(activeBackgroundSceneId(), record.id);
+    await DevGameState.setLegacyBackgroundId(activeBackgroundSceneId(), record.id);
     clearPending();
     await refreshList();
     renderHotspotSection();
   } catch (err) {
     DevDiag.show('이미지 저장 실패: ' + (err && err.message ? err.message : err));
+  } finally {
+    setSaveBtnLoading(false);
   }
 }
 
@@ -3490,24 +3517,31 @@ async function refreshList() {
     : (currentType === 'background' || currentType === 'hub')
       ? all.filter(a => a.sceneId === activeBackgroundSceneId())
       : all.filter(a => a.characterKey === currentCharacterKey && a.expression === currentExpression && (a.outfit || null) === outfitFilter);
-  renderList(filtered);
+  await renderList(filtered);
 }
 
-function renderList(assets) {
+// DevGameState's background/location/character "which asset is active"
+// getters are async (server-backed, see assetDb.js) — this used to compare
+// their return value (a Promise) directly against a.id, which is never
+// true, so nothing ever showed as "사용 중" and the 사용 button never
+// visibly took effect. Every asset in `assets` already shares the same slot
+// (see refreshList's filter — one scene/one location+variant/one
+// character+outfit+expression), so the "currently active" id for that slot
+// only needs to be looked up once, not per asset.
+async function renderList(assets) {
   if (!assets.length) {
     el.assetList.innerHTML = '<div class="empty-note">아직 업로드한 이미지가 없습니다.</div>';
     return;
   }
+  const first = assets[0];
+  const activeId = currentType === 'location'
+    ? await DevGameState.getLocationAssetId(first.locationId, first.variantId)
+    : first.type === 'background'
+      ? await DevGameState.getLegacyBackgroundId(first.sceneId)
+      : await DevGameState.getCharacterAssetIdForOutfit(first.characterKey, first.outfit || null, first.expression);
   el.assetList.innerHTML = assets.map(a => {
     const url = a.dataUrl;
-    // 미니게임 kind 배경만 이 목록에 뜨므로(일반 슬롯은 dropzone/목록 자체가
-    // 숨겨진다 — updateBackgroundModeChrome) a.type === 'background'일 때는
-    // 항상 레거시 sceneId 기준 동기 조회로 충분하다.
-    const isActive = currentType === 'location'
-      ? DevGameState.getLocationAssetId(a.locationId, a.variantId) === a.id
-      : a.type === 'background'
-        ? DevGameState.getLegacyBackgroundId(a.sceneId) === a.id
-        : DevGameState.getCharacterAssetIdForOutfit(a.characterKey, a.outfit || null, a.expression) === a.id;
+    const isActive = activeId === a.id;
     const tag = isActive ? '<span class="asset-tag">사용 중</span><br>' : '';
     const useAction = currentType === 'location'
       ? `useAsLocationPhoto('${a.id}')`
@@ -3536,29 +3570,31 @@ function previewAsset(url) {
 
 // Only reachable for 미니게임 kind now (ordinary slots hide this list — see
 // updateBackgroundModeChrome), which never carries a location assignment, so
-// the legacy sync setter is the correct one here.
-function useAsBackground(id) {
-  DevGameState.setLegacyBackgroundId(activeBackgroundSceneId(), id);
-  refreshList();
+// the legacy sync setter is the correct one here. Awaits the (server-backed,
+// async) setter before refreshing so the list re-renders against the write
+// that actually landed, instead of racing it.
+async function useAsBackground(id) {
+  await DevGameState.setLegacyBackgroundId(activeBackgroundSceneId(), id);
+  await refreshList();
   renderBgKindPicker();
   renderHotspotSection();
 }
 
-function useAsLocationPhoto(id) {
-  DevGameState.setLocationAssetId(currentLocationId, currentVariantId, id);
-  refreshList();
+async function useAsLocationPhoto(id) {
+  await DevGameState.setLocationAssetId(currentLocationId, currentVariantId, id);
+  await refreshList();
 }
 
-function useAsCharacter(id) {
-  DevGameState.setCharacterAssetId(currentCharacterKey, currentExpression, id, activeOutfitForFilter());
-  refreshList();
+async function useAsCharacter(id) {
+  await DevGameState.setCharacterAssetId(currentCharacterKey, currentExpression, id, activeOutfitForFilter());
+  await refreshList();
 }
 
 async function removeAsset(type, id) {
   if (!confirm('이 이미지를 삭제할까요?')) return;
   await AssetDB.deleteAsset(id);
-  if (type === 'background') DevGameState.removeAllBackgroundAssetRefs(id);
-  if (type === 'character') DevGameState.removeAllCharacterAssetRefs(id);
+  if (type === 'background') await DevGameState.removeAllBackgroundAssetRefs(id);
+  if (type === 'character') await DevGameState.removeAllCharacterAssetRefs(id);
   await refreshList();
   renderHotspotSection();
 }
