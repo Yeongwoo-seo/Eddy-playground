@@ -1202,11 +1202,14 @@ function closeSellFishModal() {
 // ===== 판매 동전 연출 =====
 // 판매하기(전부 팔기)를 누르면 판 금액에 비례한 개수의 동전이 그 버튼
 // 근처에서 무작위 위치로 튀어나와, 상태창 포인트 숫자(el.statusWindowDigits)
-// 쪽으로 등속도(이징 없는 선형 보간)로 날아가 도착하면 사라진다.
-// animateStatusWindowPointsTo(카운트업)와 비슷한 시간(SELL_COIN_DURATION_MS)
-// 동안 움직여서, 숫자가 다 올라갈 때쯤 동전도 다 도착한 것처럼 보이게
-// 맞췄다. 상태창을 아직 안 올렸으면(el.statusWindow 숨김) 도착 지점이
-// 없으니 아예 만들지 않는다.
+// 쪽으로 등가속도로 날아가 도착하면 사라진다. 정지 상태(v0=0)에서
+// 일정한 가속도로만 움직이면 위치는 시간의 제곱에 비례하므로
+// (거리 D를 시간 T에 이동 — D=0.5*a*T², 임의 시점 t의 이동 거리는
+// D*(t/T)²), 진행률 t 대신 t*t로 보간한다 — 처음엔 느리게 출발했다가
+// 점점 빨라져 도착 직전이 가장 빠르다. animateStatusWindowPointsTo
+// (카운트업)와 비슷한 시간(SELL_COIN_DURATION_MS) 동안 움직여서, 숫자가
+// 다 올라갈 때쯤 동전도 다 도착한 것처럼 보이게 맞췄다. 상태창을 아직
+// 안 올렸으면(el.statusWindow 숨김) 도착 지점이 없으니 아예 만들지 않는다.
 const SELL_COIN_MIN_COUNT = 3;
 const SELL_COIN_MAX_COUNT = 14;
 const SELL_COIN_VALUE_PER_COIN = 8; // 이 값(P)마다 동전 1개꼴 — 위 min/max로 clamp
@@ -1237,9 +1240,10 @@ function spawnSellCoins(total) {
       let start = null;
       function frame(ts) {
         if (start === null) start = ts;
-        const t = Math.min((ts - start) / SELL_COIN_DURATION_MS, 1); // 등속도 — 이징 없이 그대로 선형 보간
-        coinEl.style.left = (startX + (targetX - startX) * t) + 'px';
-        coinEl.style.top = (startY + (targetY - startY) * t) + 'px';
+        const t = Math.min((ts - start) / SELL_COIN_DURATION_MS, 1);
+        const accelFrac = t * t; // 등가속도(v0=0) — 이동 거리는 시간의 제곱에 비례
+        coinEl.style.left = (startX + (targetX - startX) * accelFrac) + 'px';
+        coinEl.style.top = (startY + (targetY - startY) * accelFrac) + 'px';
         if (t < 1) { requestAnimationFrame(frame); return; }
         coinEl.remove();
       }
