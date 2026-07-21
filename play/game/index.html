@@ -437,6 +437,33 @@ function updatePointBalance() {
   if (introduced) el.pointBalance.textContent = 'P ' + EconomyState.getPoints();
 }
 
+// ===== 화면 밖 페인트 워밍 (낚시 미니게임 preloadFishIcons와 같은 기법) =====
+// AssetDB.preloadImage(new Image().decode())는 디코드까지만 끝내둘 뿐이라,
+// el.bgLayer/el.charImg처럼 실제로 화면에 그려지는 건 여전히 그 순간
+// 처음 일어난다 — WeekPreloader/preloadCharacterAssetsForLines로 미리
+// 디코드해둬도 배경/캐릭터가 바뀌는 순간 살짝 밀리는 느낌이 남았다.
+// 씬이 열리기 전(또는 암전 뒤)에 실제 <img>로 화면 밖(-9999px)에 한 번
+// 그려 페인트까지 끝내두면, 실제 전환은 이미 그려둔 같은 url을 그대로
+// 옮기는 것뿐이라 즉시 뜬다.
+function getPaintWarmHost() {
+  let host = document.getElementById('paintWarmHost');
+  if (!host) {
+    host = document.createElement('div');
+    host.id = 'paintWarmHost';
+    host.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:0;height:0;overflow:hidden;pointer-events:none';
+    host.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(host);
+  }
+  return host;
+}
+function paintWarm(dataUrl) {
+  if (!dataUrl) return;
+  const img = document.createElement('img');
+  img.src = dataUrl;
+  img.alt = '';
+  getPaintWarmHost().appendChild(img);
+}
+
 // 포인트와 달리 첫 지급 전까지 숨기지 않는다 — 상시 표시로 결정된 연출용
 // 게이지라 1주차 첫 씬부터 바로 보여도 어색하지 않음(중립값 50에서 시작).
 function updateRelationshipGauges() {
@@ -479,7 +506,10 @@ async function applyBackground(backgroundKey) {
   try {
     const bgId = await DevGameState.getBackgroundId(backgroundKey || activeSceneData.id);
     bgAsset = await AssetDB.getAsset(bgId);
-    if (bgAsset) await AssetDB.preloadImage(bgAsset.dataUrl);
+    if (bgAsset) {
+      await AssetDB.preloadImage(bgAsset.dataUrl);
+      paintWarm(bgAsset.dataUrl);
+    }
   } catch (err) {
     console.error('applyBackground failed, falling back to placeholder', err);
     bgAsset = null;
@@ -565,7 +595,30 @@ async function preloadCharacterAssetsForLines(lines) {
       .filter(Boolean)
   );
   const assets = assetIds.size ? await AssetDB.getAssetsByIds([...assetIds]) : [];
-  await Promise.all(assets.map(a => (a && a.dataUrl) ? AssetDB.preloadImage(a.dataUrl) : Promise.resolve()));
+  await Promise.all(assets.map(async (a) => {
+    if (!a || !a.dataUrl) return;
+    await AssetDB.preloadImage(a.dataUrl);
+    paintWarm(a.dataUrl);
+  }));
+}
+
+// scene.locations로 씬 안에서(playSceneTransition) 옮겨갈 수 있는 배경들을
+// 씬이 열리기 전에 화면 밖에서 미리 그려 둔다 — preloadCharacterAssetsForLines와
+// 같은 이유, 같은 시점(introOverlay가 아직 덮여 있는 init() 동안)에 돈다.
+async function preloadSceneBackgrounds() {
+  const keys = (activeSceneData.locations && activeSceneData.locations.length)
+    ? activeSceneData.locations.map(l => l.key)
+    : [activeSceneData.id];
+  const bgIds = (await Promise.all(
+    keys.map(k => DevGameState.getBackgroundId(k).catch(() => null))
+  )).filter(Boolean);
+  if (!bgIds.length) return;
+  const assets = await AssetDB.getAssetsByIds([...new Set(bgIds)]);
+  await Promise.all(assets.map(async (a) => {
+    if (!a || !a.dataUrl) return;
+    await AssetDB.preloadImage(a.dataUrl);
+    paintWarm(a.dataUrl);
+  }));
 }
 
 function applyTransformToImage(transform) {
@@ -1596,6 +1649,7 @@ async function applyDialogueOverrides() {
   await applyBackground();
   applyBgm();
   await preloadCharacterAssetsForLines(activeLines);
+  await preloadSceneBackgrounds();
   el.introOverlay.classList.add('hidden');
   player.load(applyTextSpeedSetting(activeLines), resumeLineIndex || 0);
 })();
