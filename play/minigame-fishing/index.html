@@ -349,39 +349,50 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .item-popup-name{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;font-size:16px;font-weight:700;color:#000}
 .item-popup-meta{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;font-family:var(--mono);font-size:12px;color:#000}
 
-/* ===== 영우 NPC 메뉴 — 대화 인트로(.dialogue-intro)와 같은 전체화면
-   반투명 오버레이 + 배경 탭으로 닫기 규칙을 그대로 따른다. */
-.npc-menu{position:absolute;inset:0;z-index:21;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center}
-.npc-menu.hidden{display:none}
+/* ===== 아이템창 — 판매(영우 NPC)와 별개인, 잡은 물고기를 보여주기만
+   하는 상시 HUD. 배경(액자) 이미지의 실제 종횡비를 그대로 따른다
+   (--item-window-ar, renderItemWindow이 채운다) — item-popup-card와
+   같은 이유로 aspect-ratio를 씀. 너비는 CSS 고정값(200px)이라 슬롯 픽셀
+   크기도 이 값 기준으로 계산할 수 있다(ITEM_WINDOW_WIDTH 참고). */
+.item-window{position:absolute;top:calc(52px + env(safe-area-inset-top,0));left:50%;transform:translateX(-50%);z-index:7;width:200px;aspect-ratio:var(--item-window-ar,4/1);pointer-events:none}
+.item-window.hidden{display:none}
+.item-window-frame{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;display:block;pointer-events:none;user-select:none;-webkit-user-drag:none}
+.item-window-slots{position:absolute;inset:0}
+/* 슬롯 하나 — 위치·크기는 renderItemWindow가 computeItemIconGridRects로
+   계산해 인라인으로 채운다(itemIconGrid 설정, dev 에디터 "아이템 칸
+   배치"와 같은 계산). 탭하면 이름·등급·가격을 보여준다(itemWindowDesc). */
+.item-window-slot{position:absolute;transform:translate(-50%,-50%);border-radius:8px;background-repeat:no-repeat;image-rendering:pixelated;pointer-events:auto;cursor:pointer}
+.item-window-desc{position:absolute;z-index:10;transform:translate(-50%,0);background:rgba(8,16,22,.95);color:#fff;font-family:var(--mono);font-size:11px;font-weight:700;padding:5px 10px;border-radius:10px;white-space:nowrap;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.item-window-desc.hidden{display:none}
+
+/* ===== 영우 NPC 메뉴 / 물고기 팔기 — 대화 인트로(.dialogue-intro)와 같은
+   전체화면 반투명 오버레이 + 배경 탭으로 닫기 규칙을 그대로 따른다. */
+.npc-menu,.sell-fish{position:absolute;inset:0;z-index:21;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center}
+.npc-menu.hidden,.sell-fish.hidden{display:none}
 .npc-menu-card{width:240px;background:rgba(8,16,22,.92);border:1px solid rgba(255,255,255,.18);border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:10px}
 .npc-menu-title{text-align:center;font-size:17px;font-weight:700;color:#fff;margin-bottom:6px}
 .npc-menu-btn{padding:12px;border-radius:14px;border:none;font-size:14px;font-weight:700;color:#fff;font-family:inherit}
+.npc-menu-btn--sell{background:rgba(62,207,107,.85)}
 .npc-menu-btn--quit{background:rgba(217,65,65,.85)}
 .npc-menu-btn--close{background:rgba(255,255,255,.15);color:rgba(255,255,255,.85)}
 .npc-menu-btn:active{opacity:.8}
 
-/* ===== 아이템창(물고기 팔기) — 예전엔 영우 NPC한테 말 걸어야만 뜨는
-   전체화면 모달이었는데, 영우 위치와 무관하게 화면 상단 중앙에 항상 떠
-   있는 HUD로 바꿨다(요청) — 잡을 때마다(renderSellFishList) 목록이 그
-   자리에서 바로 갱신되고, 팔기도 아무 때나 이 자리에서 바로 할 수 있다.
-   더 이상 "여닫는" 모달이 아니라 닫기 버튼도 뺐다. */
-.sell-fish{position:absolute;top:calc(52px + env(safe-area-inset-top,0));left:50%;transform:translateX(-50%);z-index:7}
-.sell-fish.hidden{display:none}
-.sell-fish-card{width:200px;max-height:34vh;background:rgba(8,16,22,.94);background-size:cover;background-position:center;border:1px solid rgba(255,255,255,.18);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:6px}
+.sell-fish-card{width:270px;max-height:70vh;background:rgba(8,16,22,.94);background-size:cover;background-position:center;border:1px solid rgba(255,255,255,.18);border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:10px}
 /* 아이템창 탭(dev/minigame-fishing/index.html)에서 배경(액자) 그림을
    올리면 이 클래스가 붙어 기본 어두운 단색 대신 그 그림이 깔린다. */
 .sell-fish-card.sell-fish-card--has-bg{background-color:transparent}
-.sell-fish-title{text-align:center;font-size:13px;font-weight:700;color:#fff}
-.sell-fish-list{display:flex;flex-direction:column;gap:4px;max-height:16vh;overflow-y:auto}
-.sell-fish-empty{text-align:center;font-size:12px;color:rgba(255,255,255,.6);padding:6px 0}
-.sell-fish-row{display:flex;align-items:center;gap:6px;font-size:12px;color:#fff}
+.sell-fish-title{text-align:center;font-size:16px;font-weight:700;color:#fff}
+.sell-fish-list{display:flex;flex-direction:column;gap:6px;max-height:38vh;overflow-y:auto}
+.sell-fish-empty{text-align:center;font-size:13px;color:rgba(255,255,255,.6);padding:10px 0}
+.sell-fish-row{display:flex;align-items:center;gap:8px;font-size:13px;color:#fff}
 .sell-fish-name{flex:1;font-weight:600}
 .sell-fish-qty{color:rgba(255,255,255,.6)}
-.sell-fish-value{font-family:var(--mono);font-weight:700;color:#FFD12E;min-width:40px;text-align:right}
-.sell-fish-total{text-align:right;font-size:13px;font-weight:800;color:#fff;border-top:1px solid rgba(255,255,255,.15);padding-top:6px}
-.sell-fish-confirm{padding:9px;border-radius:12px;border:none;font-size:13px;font-weight:700;color:#fff;background:rgba(62,207,107,.85);font-family:inherit}
+.sell-fish-value{font-family:var(--mono);font-weight:700;color:#FFD12E;min-width:44px;text-align:right}
+.sell-fish-total{text-align:right;font-size:15px;font-weight:800;color:#fff;border-top:1px solid rgba(255,255,255,.15);padding-top:8px}
+.sell-fish-confirm{padding:12px;border-radius:14px;border:none;font-size:14px;font-weight:700;color:#fff;background:rgba(62,207,107,.85);font-family:inherit}
 .sell-fish-confirm:disabled{background:rgba(255,255,255,.12);color:rgba(255,255,255,.4)}
-.sell-fish-confirm:active{opacity:.8}
+.sell-fish-close{padding:10px;border-radius:14px;border:none;font-size:13px;font-weight:700;color:rgba(255,255,255,.85);background:rgba(255,255,255,.15);font-family:inherit}
+.sell-fish-confirm:active,.sell-fish-close:active{opacity:.8}
 
 /* ===== 대화 인트로 — 낚시 시작 전 지수/영우 대화 장면. dev/minigame-fishing/
    index.html "대화" 탭의 슬라이드 에디터와 같은 0~1 비율 좌표계를 그대로
@@ -537,29 +548,42 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
     </div>
   </div>
 
+  <!-- ===== 아이템창 — 판매(물고기 팔기, 영우 NPC 메뉴)와는 완전히 별개로,
+       이번 판에서 잡은 물고기를 그냥 보여주기만 하는 상시 표시(요청).
+       화면 상단 중앙에 항상 뜨고, dev 에디터 "아이템창" 탭에서 올린 배경
+       (액자) 이미지 위에 "아이템 칸 배치"로 지정한 8칸 그리드
+       (itemIconGrid, computeItemIconGridRects와 같은 계산) 자리에 지금
+       잡은 물고기 아이콘을 순서대로 채운다(renderItemWindow). 배경을
+       안 올렸으면(에디터에서도 그리드 편집 자체가 잠겨 있다) 통째로
+       숨긴다 — 보여줄 칸 자리 기준이 없어서다. 칸을 탭하면 그 물고기
+       이름·등급·가격을 짧게 보여준다(itemWindowDesc). ===== -->
+  <div class="item-window hidden" id="itemWindow">
+    <img class="item-window-frame" id="itemWindowFrameImg" alt="">
+    <div class="item-window-slots" id="itemWindowSlots"></div>
+  </div>
+  <div class="item-window-desc hidden" id="itemWindowDesc"></div>
+
   <!-- ===== 영우 NPC 메뉴 — NPC 근처(npcWorldPos 반경 안, checkInteractionArea/
        isNearYoungwoo)에서 idle 상태 화면을 탭하면 뜬다. 대화 인트로
        (.dialogue-intro)와 같은 관례로, 카드 밖(반투명 배경)을 탭하면 그냥
        닫힌다 — 카드/버튼은 자체 pointerdown에서 stopPropagation해 그 탭이
-       배경 닫기로 새지 않게 한다. "물고기 팔기"는 더 이상 여기 없다 — 아래
-       아이템창(.sell-fish) 참고. -->
+       배경 닫기로 새지 않게 한다. -->
   <div class="npc-menu hidden" id="npcMenu">
     <div class="npc-menu-card" id="npcMenuCard">
       <div class="npc-menu-title">영우</div>
+      <button type="button" class="npc-menu-btn npc-menu-btn--sell" id="npcMenuSellBtn">물고기 팔기</button>
       <button type="button" class="npc-menu-btn npc-menu-btn--quit" id="npcMenuQuitBtn">그만하기</button>
       <button type="button" class="npc-menu-btn npc-menu-btn--close" id="npcMenuCloseBtn">닫기</button>
     </div>
   </div>
 
-  <!-- ===== 아이템창(물고기 팔기) — 영우한테 말 걸어야 뜨던 모달이 아니라,
-       화면 상단 중앙에 항상 떠 있는 HUD다(요청). 잡을 때마다
-       renderSellFishList가 그 자리에서 목록/합계를 새로 그린다. ===== -->
-  <div class="sell-fish" id="sellFishModal">
+  <div class="sell-fish hidden" id="sellFishModal">
     <div class="sell-fish-card" id="sellFishCard">
       <div class="sell-fish-title">물고기 팔기</div>
       <div class="sell-fish-list" id="sellFishList"></div>
       <div class="sell-fish-total" id="sellFishTotal">총 0P</div>
       <button type="button" class="sell-fish-confirm" id="sellFishConfirmBtn">전부 팔기</button>
+      <button type="button" class="sell-fish-close" id="sellFishCloseBtn">닫기</button>
     </div>
   </div>
 
@@ -738,10 +762,15 @@ const el = {
   itemPopupIcon: document.getElementById('itemPopupIcon'),
   itemPopupName: document.getElementById('itemPopupName'),
   itemPopupMeta: document.getElementById('itemPopupMeta'),
+  itemWindow: document.getElementById('itemWindow'),
+  itemWindowFrameImg: document.getElementById('itemWindowFrameImg'),
+  itemWindowSlots: document.getElementById('itemWindowSlots'),
+  itemWindowDesc: document.getElementById('itemWindowDesc'),
   dialogueIntro: document.getElementById('dialogueIntro'),
   dialogueIntroInner: document.getElementById('dialogueIntroInner'),
   npcMenu: document.getElementById('npcMenu'),
   npcMenuCard: document.getElementById('npcMenuCard'),
+  npcMenuSellBtn: document.getElementById('npcMenuSellBtn'),
   npcMenuQuitBtn: document.getElementById('npcMenuQuitBtn'),
   npcMenuCloseBtn: document.getElementById('npcMenuCloseBtn'),
   sellFishModal: document.getElementById('sellFishModal'),
@@ -749,6 +778,7 @@ const el = {
   sellFishList: document.getElementById('sellFishList'),
   sellFishTotal: document.getElementById('sellFishTotal'),
   sellFishConfirmBtn: document.getElementById('sellFishConfirmBtn'),
+  sellFishCloseBtn: document.getElementById('sellFishCloseBtn'),
 };
 
 // 스토리에서 넘어온 경우(week1-scene-circular-quay-minigame 등) 뒤로가기는
@@ -822,6 +852,15 @@ let gaugeImageUrl = null; // 잡아채기 게이지 채움 이미지 — 없으�
 let fishSheetUrl = null;
 let fishSheetDims = null; // { width, height } of the *actual* loaded sheet — needed to turn a fishIconOverrides rect (normalized 0~1) into pixel background-position/size, see getFishCropStyle in fishDefs.js
 let fishIconOverrides = {};
+// 아이템창(상시 표시, .item-window) — dev/minigame-fishing/index.html
+// "아이템창" 탭에서 올린 배경(액자) 이미지와, 그 위에 지정한 8칸 그리드
+// (itemIconGrid). 배경 이미지 자체가 sell-fish-card 배경으로도 같이
+// 쓰이지만(loadConfig), 여기 아이템창은 판매(영우 NPC)와 별개로 그
+// 이미지를 프레임 삼아 항상 화면에 떠 있다. 배경을 안 올렸으면(에디터도
+// 그리드 편집을 잠가둠) 보여줄 칸 자리 기준이 없어 통째로 숨긴다.
+let itemWindowBgUrl = null;
+let itemWindowBgDims = null; // { width, height } — 배경 이미지 원본 크기, 그리드 계산 기준
+let itemIconGrid = null; // { cx, cy, size, gap } — 없으면 DEFAULT_ITEM_ICON_GRID
 let zoneSizePct = 28;
 // castPhysics — dev/minigame-fishing/index.html '캐스팅 모션' 탭의 던지기
 // 물리 슬라이더 값, throwSinker에서 자유낙하 가속도/수평속도 배율로 쓴다.
@@ -858,7 +897,7 @@ let currentScreenId = null;
 let screenTransitioning = false; // true인 동안은 새 이동 트리거/조이스틱 입력을 막는다(triggerScreenTransition)
 // 아직 영우에게 안 판 물고기 — fishId(문자열) -> 마리 수. 팔면 비워진다(confirmSellFish).
 let caughtFishTally = {};
-let gameState = 'idle'; // idle | charging | casting | waiting | bite | caught | catching | reeling | popup | dialogue | npcMenu
+let gameState = 'idle'; // idle | charging | casting | waiting | bite | caught | catching | reeling | popup | dialogue | npcMenu | sellFish
 let biteTimer = null;
 let reactionTimer = null;
 let holding = false;
@@ -1101,11 +1140,11 @@ function checkInteractionArea() {
 
 /* ===== 영우 NPC 메뉴 =====
    NPC 반경 안(activeInteractionAreaId === YOUNGWOO_NPC_INTERACTION_ID)에서
-   idle 상태 화면을 탭하면(handleActionPointerDown) 뜬다. "그만하기"는
-   낚시를 끝내고 다음 씬으로 넘긴다(handleQuit) — 대화 인트로와 같은
-   관례로 카드 밖(반투명 배경)을 탭하면 그냥 닫힌다. 물고기 팔기는 더
-   이상 여기 없다 — 아이템창(sell-fish)이 화면 상단에 항상 떠 있어서
-   영우를 찾아갈 필요 없이 아무 때나 바로 판다. */
+   idle 상태 화면을 탭하면(handleActionPointerDown) 뜬다. "물고기 팔기"는
+   이번 판에서 잡아 아직 안 판 물고기(caughtFishTally)를 전부 포인트로
+   바꾸고(EconomyState), "그만하기"는 낚시를 끝내고 다음 씬으로 넘긴다
+   (handleQuit) — 대화 인트로와 같은 관례로 카드 밖(반투명 배경)을 탭하면
+   그냥 닫힌다. */
 function openNpcMenu() {
   gameState = 'npcMenu';
   el.npcMenu.classList.remove('hidden');
@@ -1115,11 +1154,6 @@ function closeNpcMenu() {
   el.npcMenu.classList.add('hidden');
 }
 
-/* ===== 아이템창(물고기 팔기) =====
-   예전엔 영우한테 말 걸어야만 뜨는 모달이었는데, 화면 상단 중앙에 항상
-   떠 있는 HUD로 바꿨다(요청) — 그래서 "열고 닫는" 함수 대신, 잡을
-   때마다(playReelThenResult)와 팔고 난 뒤(confirmSellFish) 그 자리에서
-   목록/합계만 다시 그리면 된다. */
 function totalCaughtFishValue() {
   return Object.entries(caughtFishTally).reduce((sum, [id, qty]) => {
     const def = getFishDef(id);
@@ -1145,17 +1179,29 @@ function renderSellFishList() {
   el.sellFishTotal.textContent = `총 ${total}P`;
   el.sellFishConfirmBtn.disabled = total <= 0;
 }
+function openSellFishModal() {
+  gameState = 'sellFish';
+  renderSellFishList();
+  el.npcMenu.classList.add('hidden');
+  el.sellFishModal.classList.remove('hidden');
+}
+function closeSellFishModal() {
+  gameState = 'idle';
+  el.sellFishModal.classList.add('hidden');
+}
 function confirmSellFish() {
   const total = totalCaughtFishValue();
   if (total <= 0) return;
   EconomyState.addPoints(total, { source: 'fishing-sell-fish' });
   caughtFishTally = {};
   refreshStatusWindowPoints();
+  renderItemWindow(); // 아이템창도 같은 caughtFishTally를 보여주므로 판매 후 같이 비운다
   vibrate(15);
-  renderSellFishList();
+  closeSellFishModal();
 }
 
 el.skipBtn.addEventListener('pointerdown', (e) => { e.stopPropagation(); handleQuit(); });
+el.npcMenuSellBtn.addEventListener('pointerdown', (e) => { e.stopPropagation(); openSellFishModal(); });
 el.npcMenuQuitBtn.addEventListener('pointerdown', (e) => { e.stopPropagation(); handleQuit(); });
 el.npcMenuCloseBtn.addEventListener('pointerdown', (e) => { e.stopPropagation(); closeNpcMenu(); });
 el.npcMenuCard.addEventListener('pointerdown', (e) => e.stopPropagation());
@@ -1165,10 +1211,14 @@ el.npcMenu.addEventListener('pointerdown', (e) => {
   closeNpcMenu();
 });
 
-// 아이템창은 화면 위에 항상 떠 있는 HUD라, 탭이 뒤(el.frame)로 새서
-// 캐스팅을 건드리지 않게만 막으면 된다 — 조이스틱/낚시버튼과 같은 패턴.
 el.sellFishConfirmBtn.addEventListener('pointerdown', (e) => { e.stopPropagation(); confirmSellFish(); });
+el.sellFishCloseBtn.addEventListener('pointerdown', (e) => { e.stopPropagation(); closeSellFishModal(); });
 el.sellFishCard.addEventListener('pointerdown', (e) => e.stopPropagation());
+el.sellFishModal.addEventListener('pointerdown', (e) => {
+  if (gameState !== 'sellFish') return;
+  e.stopPropagation();
+  closeSellFishModal();
+});
 
 /* ===== 그만하기 =====
    낚시를 시작한 씬이 ?nextScene=<sceneId>로 넘어온 경우(다른 미니게임들과
@@ -1576,17 +1626,30 @@ async function loadConfig() {
 
   await setupStatusWindow(statusWindowCfg, byId);
 
-  // 아이템창(물고기 팔기 카드) 배경 — dev/minigame-fishing/index.html의
-  // "아이템창" 탭 설정. 비어있으면 기본 어두운 단색 카드 그대로 쓴다.
+  // 아이템창 배경(액자) — dev/minigame-fishing/index.html의 "아이템창" 탭
+  // 설정. 판매 모달(sell-fish-card)의 배경으로도 쓰고, 화면 상단 상시
+  // 표시(item-window)의 프레임/그리드 기준 이미지로도 같은 에셋을 쓴다.
   const itemWindowBgAsset = cfg.itemWindowBackgroundAssetId ? byId.get(cfg.itemWindowBackgroundAssetId) : null;
   if (itemWindowBgAsset) {
-    const itemWindowBgUrl = (await preloadWithRetry(itemWindowBgAsset.dataUrl, 3, 500)).url;
+    itemWindowBgUrl = (await preloadWithRetry(itemWindowBgAsset.dataUrl, 3, 500)).url;
     el.sellFishCard.style.backgroundImage = `url(${itemWindowBgUrl})`;
     el.sellFishCard.classList.add('sell-fish-card--has-bg');
+    el.itemWindowFrameImg.src = itemWindowBgUrl;
+    itemWindowBgDims = await new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+      img.onerror = () => resolve(null);
+      img.src = itemWindowBgUrl;
+    });
+    if (itemWindowBgDims) el.itemWindow.style.setProperty('--item-window-ar', itemWindowBgDims.width + '/' + itemWindowBgDims.height);
   } else {
     el.sellFishCard.style.backgroundImage = '';
     el.sellFishCard.classList.remove('sell-fish-card--has-bg');
+    itemWindowBgUrl = null;
+    itemWindowBgDims = null;
   }
+  itemIconGrid = cfg.itemIconGrid || null;
+  renderItemWindow();
 
   preloadFishIcons();
 
@@ -2137,6 +2200,104 @@ el.dialogueIntro.addEventListener('pointerdown', (e) => {
   el.joystick.classList.remove('hidden');
   el.fishBtn.classList.remove('hidden');
 });
+
+/* ===== 아이템창 8칸 그리드 =====
+   dev/minigame-fishing/index.html의 computeItemIconGridRects와 똑같은
+   계산이다 — 배경(액자) 이미지 위에 칸 크기(size)·칸 사이 간격(gap)·
+   전체 중심(cx,cy) 네 값만으로 8칸을 한 줄로 나란히 배치한다. size/gap은
+   이미지 짧은 변(shortSide) 기준 정규화값이라 getFishCropStyle과 같은
+   단위를 쓴다. */
+const ITEM_ICON_GRID_COLUMNS = 8;
+const DEFAULT_ITEM_ICON_GRID = { cx: 0.5, cy: 0.5, size: 0.1, gap: 0.02 };
+function computeItemIconGridRects(grid, sheetW, sheetH) {
+  const shortSide = Math.min(sheetW, sheetH);
+  const cellPx = grid.size * shortSide;
+  const gapPx = grid.gap * shortSide;
+  const totalWidthPx = ITEM_ICON_GRID_COLUMNS * cellPx + (ITEM_ICON_GRID_COLUMNS - 1) * gapPx;
+  const centerXpx = grid.cx * sheetW;
+  const startXpx = centerXpx - totalWidthPx / 2 + cellPx / 2;
+  const cyPx = grid.cy * sheetH;
+  const rects = [];
+  for (let i = 0; i < ITEM_ICON_GRID_COLUMNS; i++) {
+    const cxPx = startXpx + i * (cellPx + gapPx);
+    rects.push({ cx: cxPx / sheetW, cy: cyPx / sheetH, size: grid.size });
+  }
+  return rects;
+}
+
+// 아이템창 배경 폭(.item-window의 CSS 고정 width)과 맞춰야 한다 — 슬롯의
+// 실제 렌더 픽셀 크기(getFishCropStyle의 displaySize 인자)를 DOM 측정 없이
+// 이 상수로 바로 계산한다(positionCastGaugeAboveCharacter류와 같은 패턴).
+const ITEM_WINDOW_WIDTH = 200;
+let selectedItemWindowFishId = null;
+function hideItemWindowDesc() {
+  selectedItemWindowFishId = null;
+  el.itemWindowDesc.classList.add('hidden');
+}
+// 칸을 탭하면 이름·등급·가격을 그 칸 바로 아래에 짧게 띄운다 — 같은 칸을
+// 다시 탭하면 닫히고, 다른 칸을 탭하면 그쪽으로 옮겨간다.
+function toggleItemWindowDesc(def, slotEl) {
+  if (selectedItemWindowFishId === def.id) { hideItemWindowDesc(); return; }
+  selectedItemWindowFishId = def.id;
+  el.itemWindowDesc.textContent = `${def.name} · ${def.grade} · ${def.value}P`;
+  const slotRect = slotEl.getBoundingClientRect();
+  const frameRect = el.frame.getBoundingClientRect();
+  el.itemWindowDesc.style.left = (slotRect.left + slotRect.width / 2 - frameRect.left) + 'px';
+  el.itemWindowDesc.style.top = (slotRect.bottom - frameRect.top + 6) + 'px';
+  el.itemWindowDesc.classList.remove('hidden');
+}
+// 이번 판에서 잡은(caughtFishTally qty>0) 물고기 종을 id 오름차순으로
+// 8칸에 순서대로 채운다 — 판매(영우 NPC)와 무관하게, 잡을 때마다
+// (playReelThenResult) 그리고 설정 로드 직후 한 번(loadConfig) 다시
+// 부른다. 배경(itemWindowBgUrl/Dims)이 없으면 칸 자리 기준이 없어 통째로
+// 숨긴다 — dev 에디터도 배경을 올려야만 그리드 편집이 풀린다.
+function renderItemWindow() {
+  if (!itemWindowBgUrl || !itemWindowBgDims) { el.itemWindow.classList.add('hidden'); return; }
+  el.itemWindow.classList.remove('hidden');
+  const grid = itemIconGrid || DEFAULT_ITEM_ICON_GRID;
+  const rects = computeItemIconGridRects(grid, itemWindowBgDims.width, itemWindowBgDims.height);
+  const shortSide = Math.min(itemWindowBgDims.width, itemWindowBgDims.height);
+  const caughtIds = Object.entries(caughtFishTally)
+    .filter(([, qty]) => qty > 0)
+    .map(([id]) => id)
+    .sort((a, b) => Number(a) - Number(b));
+  el.itemWindowSlots.innerHTML = '';
+  hideItemWindowDesc();
+  rects.forEach((rect, i) => {
+    const fishId = caughtIds[i];
+    if (!fishId) return; // 아직 그 칸까지 잡지 못했으면 빈 칸으로 둔다
+    const def = getFishDef(fishId);
+    if (!def) return;
+    const widthPct = (rect.size * shortSide / itemWindowBgDims.width) * 100;
+    const heightPct = (rect.size * shortSide / itemWindowBgDims.height) * 100;
+    const slotEl = document.createElement('div');
+    slotEl.className = 'item-window-slot';
+    slotEl.style.left = (rect.cx * 100) + '%';
+    slotEl.style.top = (rect.cy * 100) + '%';
+    slotEl.style.width = widthPct + '%';
+    slotEl.style.height = heightPct + '%';
+    if (fishSheetUrl) {
+      const override = fishIconOverrides[def.id];
+      const boxSizePx = (widthPct / 100) * ITEM_WINDOW_WIDTH;
+      const style = (override && fishSheetDims)
+        ? getFishCropStyle(override, fishSheetDims.width, fishSheetDims.height, boxSizePx)
+        : getFishSlotStyle(def.slot, 3.5);
+      slotEl.style.backgroundImage = `url('${fishSheetUrl}')`;
+      slotEl.style.backgroundPosition = style.backgroundPosition;
+      slotEl.style.backgroundSize = style.backgroundSize;
+    } else {
+      slotEl.style.display = 'flex';
+      slotEl.style.alignItems = 'center';
+      slotEl.style.justifyContent = 'center';
+      slotEl.textContent = '🐟';
+    }
+    slotEl.addEventListener('pointerdown', (e) => {
+      e.stopPropagation();
+      toggleItemWindowDesc(def, slotEl);
+    });
+    el.itemWindowSlots.appendChild(slotEl);
+  });
+}
 
 // 잡은 물고기 아이콘(overlayFishIcon)은 endRun에서 처음 그 fishId의
 // background-position으로 그릴 때가 돼서야 브라우저가 그 위치를 실제로
@@ -2885,7 +3046,7 @@ async function playReelThenResult() {
   el.castSvg.classList.add('hidden');
   const fishCaught = pendingCatchFish;
   caughtFishTally[fishCaught.id] = (caughtFishTally[fishCaught.id] || 0) + 1;
-  renderSellFishList(); // 상단에 항상 떠 있는 아이템창을 방금 잡은 물고기까지 반영해 바로 갱신한다
+  renderItemWindow(); // 판매(영우 NPC)와 별개로, 상단 아이템창을 방금 잡은 물고기까지 반영해 바로 갱신한다
   // 낚시 팝업 내용(populateItemPopup)은 startCatching 때 이미 화면 밖에서
   // 다 그려놨으니 지연 없이 뜰 준비는 끝났지만, 뜨는 시점 자체는 물고기가
   // 캐릭터에 실제로 도착한 다음이어야 자연스럽다(사용자 요청) — 그래서
@@ -3212,6 +3373,7 @@ function stopMoveHold() {
    걸면 이동 중 화면 탭이 다시 캐스팅을 트리거해버려 조이스틱 이동 UX가
    깨진다. */
 function handleActionPointerDown() {
+  hideItemWindowDesc(); // 게임 화면 아무 데나 탭하면 열려 있던 아이템창 설명도 닫는다
   if (gameState === 'bite') { handleReactionTap(); return; }
   if (gameState === 'catching') { holding = true; playReelHoldSeq(REEL_HOLD_UP_SEQ); return; }
   if (gameState === 'waiting') { abortWaitingReel(); return; }
@@ -3771,7 +3933,6 @@ setTimeout(revealGame, 8000);
 
 loadConfig().then(() => {
   checkInteractionArea(); // 초기 스폰 위치가 이미 상호작용 영역 안일 수도 있으니 로드 직후 한 번 확인
-  renderSellFishList(); // 화면 상단에 항상 떠 있는 아이템창 초기 상태(보통 "팔 수 있는 물고기가 없어요")를 채운다
   playGameStartIntro(); // 페이드인 -> 카메라 인트로(우상단->우하단->좌하단->좌상단->캐릭터 위치) -> 지수 대화 순으로 이어진다
 });
 </script>
