@@ -2043,7 +2043,7 @@ const DevGameState = {
   },
   // CharacterTransform = { x, y, scale }.
   async getCharacterTransform(characterKey) {
-    const defaults = { x: 0, y: 0, scale: 1 };
+    const defaults = { x: 0, y: 84, scale: 1 };
     const key = this._transformKeyFor(characterKey);
     if (!key) return defaults;
     const map = await this._syncFromServer(this._keys.transforms, this._loadTransformMap(), () => AssetDB.getCharacterTransformMap());
