@@ -1,4 +1,4 @@
-/* OPERATION MK DEV — 포인트(P) 경제 상태.
+/* MISSING KEY DEV — 포인트(P) 경제 상태.
    Same idiom as CaseFileState (caseFileState.js): a plain global object, one
    JSON blob in localStorage, defensive Object.assign-onto-defaults on load.
    Kept in its own file/key (The Missing Key v1 §14.1) so save migration can

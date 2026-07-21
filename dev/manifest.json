@@ -1,6 +1,6 @@
 {
-  "name": "OPERATION MK DEV",
-  "short_name": "MK DEV",
+  "name": "MISSING KEY DEV",
+  "short_name": "KEY DEV",
   "description": "비주얼노벨 대화 UX + 배경/캐릭터 업로드 개발용 페이지",
   "start_url": "/dev/",
   "scope": "/dev/",

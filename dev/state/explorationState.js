@@ -1,4 +1,4 @@
-/* OPERATION MK DEV — 탐색 허브 상태 (The Missing Key v1 §7/§14.5).
+/* MISSING KEY DEV — 탐색 허브 상태 (The Missing Key v1 §7/§14.5).
    Same idiom as caseFileState.js/economyState.js. Depends on
    dev/data/locationDefs.js + dev/data/interactionDefs.js (content) and
    caseFileState.js (CaseFileState — evidence/facts/flags drive unlock and

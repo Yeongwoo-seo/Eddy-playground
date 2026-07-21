@@ -1,4 +1,4 @@
-/* OPERATION MK DEV — shared Visual Novel dialogue engine.
+/* MISSING KEY DEV — shared Visual Novel dialogue engine.
    Typewriter effect + tap-to-skip/tap-to-next, extracted out of
    /play/game so the Dialogue Editor's Preview uses the exact same
    engine instead of a second, drifting implementation.

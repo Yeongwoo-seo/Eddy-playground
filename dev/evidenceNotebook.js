@@ -1,4 +1,4 @@
-/* OPERATION MK DEV — 증거수첩(수사 노트) 전체화면 UI (증거 DB 노트 v1.1).
+/* MISSING KEY DEV — 증거수첩(수사 노트) 전체화면 UI (증거 DB 노트 v1.1).
 
    기존 증거 정의(dialogueData.js/interactionDefs.js/미니게임의 addEvidence,
    58곳)와 CaseEntryModel(그룹 병합·관련도·게이트 감사)은 절대 건드리지

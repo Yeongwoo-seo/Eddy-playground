@@ -1,4 +1,4 @@
-/* OPERATION MK DEV — 옷장 상태 (The Missing Key v1 §5.5/§14.3).
+/* MISSING KEY DEV — 옷장 상태 (The Missing Key v1 §5.5/§14.3).
    Same idiom as caseFileState.js/economyState.js. Depends on shopItems.js
    (catalog, for resolveCharacterAssetKey) being loaded first. */
 

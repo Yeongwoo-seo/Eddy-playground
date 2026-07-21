@@ -1,4 +1,4 @@
-/* OPERATION MK — WEEK 1 · SCENE 01 v4 「진짜 왔네」
+/* MISSING KEY — WEEK 1 · SCENE 01 v4 「진짜 왔네」
    Dialogue Set: dialogue-week1-scene001-v4
    Scene: week1-scene-001 (Sydney Airport Arrival Area, 09:30)
    Merged into week1-scene-flight (see that scene's header comment) — its
@@ -87,7 +87,7 @@ const dialogueOutfits = [
 // /dev/upload.
 const MINIGAME_FACE_EXPRESSION = 'minigame-face';
 
-/* OPERATION MK — WEEK 1 · SCENE 00 「시드니 상공」 v3
+/* MISSING KEY — WEEK 1 · SCENE 00 「시드니 상공」 v3
    Dialogue Set: dialogue-week1-scene-flight
    Scene: week1-scene-flight (In flight, 10 minutes before landing)
    No mystery here — per the brief, 1주차 opens on anticipation and reunion,
@@ -167,7 +167,7 @@ const week1Scene001Lines = [
   { id: 'line-036', speaker: '지수', text: '실력은 이제부터 채워나가는 거죠.', characterId: 'jisoo', expression: 'happy' },
 ];
 
-/* OPERATION MK — WEEK 1 · SCENE 05 「낚시 수익 정산 · 진짜 같이 있네」 v08
+/* MISSING KEY — WEEK 1 · SCENE 05 「낚시 수익 정산 · 진짜 같이 있네」 v08
    Dialogue Set: dialogue-week1-scene002-1
    Scene: week1-scene-002-1 (Eastwood Accommodation, 13:40)
    [v08 재편] 낚시 미니게임(week1-scene-circular-quay-minigame)의 "돌아가기"
@@ -224,7 +224,7 @@ const week1Scene002_1Lines = [
   { id: 'line-045', speaker: '지수', text: '웅.\n딱 가까운 데로만.', characterId: 'jisoo', expression: 'soft' },
 ];
 
-/* OPERATION MK — WEEK 1 · SCENE 06 「첫날 저녁」 v08
+/* MISSING KEY — WEEK 1 · SCENE 06 「첫날 저녁」 v08
    Dialogue Set: dialogue-week1-scene-dinner
    Scene: week1-scene-dinner (근처 식당, 14:20)
    [v08 재편] 생활형 버전 취지에 맞춰 압축 — 사진 찍는 긴 리프 대신 피곤함/
@@ -258,7 +258,7 @@ const week1SceneDinnerLines = [
   { id: 'line-021', speaker: '', text: '오후의 볕이 조금씩 옅어지고 있었다.\n\n걷는 동안, 지수는 몇 번이고 영우의 손을 고쳐 잡았다.', characterId: 'jisoo', expression: 'soft' },
 ];
 
-/* OPERATION MK — WEEK 1 · SCENE 07 「사라진 핸드폰」 v08
+/* MISSING KEY — WEEK 1 · SCENE 07 「사라진 핸드폰」 v08
    Dialogue Set: dialogue-week1-scene-charger
    Scene: week1-scene-charger (Eastwood Accommodation, 20:30)
    [v08 재편] "다시 나갈 준비" 대신 밤에 충전기를 꽂으려다 폰이 없어진 걸
@@ -310,7 +310,7 @@ const week1SceneChargerLines = [
   { id: 'line-032', speaker: '', text: 'MINIGAME START', characterId: null },
 ];
 
-/* OPERATION MK — WEEK 1 · SCENE 08 「근데 이 열쇠 뭐지?」 v4
+/* MISSING KEY — WEEK 1 · SCENE 08 「근데 이 열쇠 뭐지?」 v4
    Dialogue Set: dialogue-week1-scene002-3
    Scene: week1-scene-002-3 (Eastwood Accommodation, right after the phone-hunt
    minigame). Reached by minigame-phone-search/'s GAME CLEAR redirect, not by
@@ -413,7 +413,7 @@ const week1Scene002_3Lines = [
   { id: 'line-033', speaker: '', text: '지수가 통화 버튼을 누른다.\n\n몇 번의 신호음 끝에\n낮고 잠긴 목소리가 들려왔다.', characterId: null },
 ];
 
-/* OPERATION MK — WEEK 1 · SCENE 09 「집주인과의 통화」 v3
+/* MISSING KEY — WEEK 1 · SCENE 09 「집주인과의 통화」 v3
    Dialogue Set: dialogue-week1-scene-frontdesk
    Scene: week1-scene-frontdesk (Sydney Accommodation, continues directly
    from week1Scene002_3Lines — same call, same room, no location change).
@@ -481,7 +481,7 @@ const week1SceneFrontdeskLines = [
   { id: 'line-038', speaker: '', text: '[ ITEM ACQUIRED ]\n\nUNKNOWN KEY\n각인: M.K.', characterId: null },
 ];
 
-/* OPERATION MK — WEEK 1 · SCENE 10 「첫날 밤」
+/* MISSING KEY — WEEK 1 · SCENE 10 「첫날 밤」
    Dialogue Set: dialogue-week1-scene-firstnight
    Scene: week1-scene-firstnight (Sydney Accommodation, 23:15)
    Closes out 1주차 — no nextSceneId, this is the last scene of the week. */
@@ -550,7 +550,7 @@ const week1SceneFirstNightLines = [
   },
 ];
 
-/* OPERATION MK — WEEK 1 · SCENE 1-2 「시드니 지리 파악」 v4
+/* MISSING KEY — WEEK 1 · SCENE 1-2 「시드니 지리 파악」 v4
    Dialogue Set: dialogue-week1-scene001-2
    Scene: week1-scene-001-2 (Sydney Airport arrivals concourse, map signage, 09:45)
    Setup beat before the route-map minigame — teaches 서큘러키(Circular
@@ -630,7 +630,7 @@ const week1Scene001_2Lines = [
   { id: 'line-055', speaker: '', text: 'MINIGAME START', characterId: null },
 ];
 
-/* OPERATION MK — WEEK 1 · SCENE 03 「열차 — 지도에서 현실로」 v08
+/* MISSING KEY — WEEK 1 · SCENE 03 「열차 — 지도에서 현실로」 v08
    Dialogue Set: dialogue-week1-scene-train
    Scene: week1-scene-train (Sydney Trains, 10:05)
    minigame-eastwood's GAME CLEAR redirect hands off here (not straight to
@@ -684,7 +684,7 @@ const week1SceneTrainLines = [
   { id: 'line-029', speaker: '영우', text: '여행 시작부터 짐 잃어버리면 안 됩니다.', characterId: 'youngwoo', expression: 'happy' },
 ];
 
-/* OPERATION MK — WEEK 1 · SCENE 06 「서큘러키 · 사진과 낚시 제안」 v08
+/* MISSING KEY — WEEK 1 · SCENE 06 「서큘러키 · 사진과 낚시 제안」 v08
    Dialogue Set: dialogue-week1-scene-circular-quay
    Scene: week1-scene-circular-quay (Circular Quay Waterfront, 11:00)
    [v08 재편] 더 록스 옷가게(week1-scene-shop-intro/-visit) 다음 비트로
@@ -755,7 +755,7 @@ const week1SceneCircularQuayLines = [
   { id: 'line-050', speaker: '', text: '[ 잠시 후 — 낚시 화면으로 이동합니다 ]', characterId: null },
 ];
 
-/* OPERATION MK — WEEK 1 · SCENE 04 「더 록스 · 작은 편집숍 발견」 v08
+/* MISSING KEY — WEEK 1 · SCENE 04 「더 록스 · 작은 편집숍 발견」 v08
    Dialogue Set: dialogue-week1-scene-shop-intro
    Scene: week1-scene-shop-intro (The Rocks Lane, 10:40)
    [v08 재편] 더 록스 골목, 서큘러키에서 내린 직후로 시간·장소를 옮겼다
@@ -852,7 +852,7 @@ const week1SceneShopIntroLines = [
 // 메뉴 설명" 비트는 실제 메뉴에 옷가게/옷장 카드가 새로 뜨는 것 자체가 그
 // 역할을 한다 — 별도 대사 없이도 CASE FILE 메뉴를 열면 바로 확인된다).
 
-// OPERATION MK — Week 1 Scene 2-2 room-search minigame's area/hotspot
+// MISSING KEY — Week 1 Scene 2-2 room-search minigame's area/hotspot
 // registry (v3 — "실제 4개 장소 이미지 기반" brief). Single source of truth
 // shared by minigame-phone-search/ (which hotspots exist and what they're
 // called) and /dev/upload (which lets a dev upload a real room photo per
@@ -1213,7 +1213,7 @@ const week1SceneGroups = [
   { range: '#6-12', label: '숙소 첫날', sceneIds: ['week1-scene-002-1', 'week1-scene-002-2', 'week1-scene-002-3'] },
 ];
 
-/* OPERATION MK — WEEK 2 · SCENE 01 「시티로 출발」
+/* MISSING KEY — WEEK 2 · SCENE 01 「시티로 출발」
    Dialogue Set: dialogue-week2-scene001
    Scene: week2-scene-001 (Circular Quay 이동 중, 09:40)
 
@@ -1286,7 +1286,7 @@ const week2Scene001Lines = [
 // 처음 진입할 때 탐색허브 안에서 자동 재생된다 — see performMove() in
 // play/explore/index.html.
 
-/* OPERATION MK — WEEK 2 · SCENE 03 「증거 수집 · 전시장」
+/* MISSING KEY — WEEK 2 · SCENE 03 「증거 수집 · 전시장」
    Dialogue Set: dialogue-week2-scene003
    Scene: week2-scene-003 (빈티지 팝업 전시장, 10:40)
 
@@ -1328,7 +1328,7 @@ const week2Scene003Lines = [
   { id: 'line-005', speaker: '지수', text: '웅웅, 하나씩 다 볼래요.', characterId: 'jisoo', expression: 'happy' },
 ];
 
-/* OPERATION MK — WEEK 2 · SCENE 04 「도난 발생 및 사진 분석」
+/* MISSING KEY — WEEK 2 · SCENE 04 「도난 발생 및 사진 분석」
    Dialogue Set: dialogue-week2-scene004
    Scene: week2-scene-004 (빈티지 팝업 전시장, 10:47)
    Ends on a MINIGAME START beat — nextSceneId hands off to the expanded
@@ -1369,7 +1369,7 @@ const week2Scene004Lines = [
   { id: 'line-031', speaker: '', text: 'MINIGAME START', characterId: null },
 ];
 
-/* OPERATION MK — WEEK 2 · SCENE 04-REVIEW 「사진 분석 마무리」
+/* MISSING KEY — WEEK 2 · SCENE 04-REVIEW 「사진 분석 마무리」
    Dialogue Set: dialogue-week2-scene004-review
    Scene: week2-scene-004-review (빈티지 팝업 전시장, 10:56)
 
@@ -1411,7 +1411,7 @@ const week2Scene004ReviewLines = [
   { id: 'line-007', speaker: '지수', text: '사진에 제일 많이 나온 사람부터 볼까요.', characterId: 'jisoo', expression: 'suspicious' },
 ];
 
-/* OPERATION MK — WEEK 2 · SCENE 05 「용의자 선별 및 현장 재조사」 (신규)
+/* MISSING KEY — WEEK 2 · SCENE 05 「용의자 선별 및 현장 재조사」 (신규)
    Dialogue Set: dialogue-week2-scene005
    Scene: week2-scene-005 (빈티지 팝업 전시장, 11:00)
 
@@ -1598,7 +1598,7 @@ const week2Scene005Lines = [
   { id: 'line-003', speaker: '지수', text: '맞아요.\n일단 한 명씩 직접 만나서 물어보죠.', characterId: 'jisoo', expression: 'serious' },
 ];
 
-/* OPERATION MK — WEEK 2 · SCENE 05a 「클레어 최초 진술」
+/* MISSING KEY — WEEK 2 · SCENE 05a 「클레어 최초 진술」
    Dialogue Set: dialogue-week2-scene005a
    Scene: week2-scene-005a (Pop-up Exhibition 접수대, 11:05)
 
@@ -1639,7 +1639,7 @@ const week2Scene005aLines = [
   { id: 'line-009', speaker: '지수', text: '네, 감사합니다. 혹시 더 여쭤볼 게 있으면 다시 올게요.', characterId: 'jisoo', expression: 'neutral' },
 ];
 
-/* OPERATION MK — WEEK 2 · SCENE 05b 「다니엘 최초 진술」
+/* MISSING KEY — WEEK 2 · SCENE 05b 「다니엘 최초 진술」
    Dialogue Set: dialogue-week2-scene005b
    Scene: week2-scene-005b (Pop-up Exhibition 앞, 11:07)
 
@@ -1710,7 +1710,7 @@ const week2Scene005bLines = [
   { id: 'line-013', speaker: '지수', text: '감사합니다. 혹시 몰라서 여쭤봤어요.', characterId: 'jisoo', expression: 'soft' },
 ];
 
-/* OPERATION MK — WEEK 2 · SCENE 06 「윤민아 1차 심문」
+/* MISSING KEY — WEEK 2 · SCENE 06 「윤민아 1차 심문」
    Dialogue Set: dialogue-week2-scene006
    Scene: week2-scene-006 (Pop-up Exhibition, 11:10)
 
@@ -1902,7 +1902,7 @@ const week2Scene006Lines = [
   { id: 'mina-end-7', speaker: '', text: '[ 현재 판단: 윤민아 — 일부 해명 · 직접 절도 혐의 낮음 · 사진 유출 가능성 미확인 ]', characterId: null },
 ];
 
-/* OPERATION MK — WEEK 2 · SCENE 07 「애드리언 1차 심문」
+/* MISSING KEY — WEEK 2 · SCENE 07 「애드리언 1차 심문」
    Dialogue Set: dialogue-week2-scene007
    Scene: week2-scene-007 (Pop-up Exhibition 접수대, 11:25)
 
@@ -2054,7 +2054,7 @@ const week2Scene007Lines = [
   { id: 'line-015', speaker: '', text: '[ 애드리언: 조사 필요 · 정보 유출 확인 · 직접 범행 미확인 ]', characterId: null },
 ];
 
-/* OPERATION MK — WEEK 2 · SCENE 08 「레오 1차 심문 및 타임라인」
+/* MISSING KEY — WEEK 2 · SCENE 08 「레오 1차 심문 및 타임라인」
    Dialogue Set: dialogue-week2-scene008
    Scene: week2-scene-008 (전시장 근처 카페, 11:40)
 
@@ -2127,7 +2127,7 @@ const week2Scene008Lines = [
   { id: 'line-033', speaker: '', text: 'MINIGAME START', characterId: null },
 ];
 
-/* OPERATION MK — WEEK 2 · SCENE 08a 「재심문 — 클레어·다니엘·소피」
+/* MISSING KEY — WEEK 2 · SCENE 08a 「재심문 — 클레어·다니엘·소피」
    Dialogue Set: dialogue-week2-scene008a
    Scene: week2-scene-008a (Pop-up Exhibition, 12:00)
 
@@ -2310,7 +2310,7 @@ const week2Scene008aLines = [
   { id: 'line-006', speaker: '지수', text: '네. 이제 진짜로 다시 만나봐야겠어요.', characterId: 'jisoo', expression: 'serious' },
 ];
 
-/* OPERATION MK — WEEK 2 · SCENE 09 「레오 집중 심문」
+/* MISSING KEY — WEEK 2 · SCENE 09 「레오 집중 심문」
    Dialogue Set: dialogue-week2-scene009
    Scene: week2-scene-009 (Pop-up Exhibition, 12:05)
 
@@ -2575,7 +2575,7 @@ const week2Scene009Lines = [
   { id: 'leo-end-4', speaker: '영우', text: '그냥 몰래 찍은 게 아니었나 보네.', characterId: 'youngwoo', expression: 'blank' },
 ];
 
-/* OPERATION MK — WEEK 2 · SCENE 09a 「현장 재검증 — 진열장은 어떻게 열렸는가」
+/* MISSING KEY — WEEK 2 · SCENE 09a 「현장 재검증 — 진열장은 어떻게 열렸는가」
    Dialogue Set: dialogue-week2-scene009a
    Scene: week2-scene-009a (Pop-up Exhibition, 12:15)
 
@@ -2753,7 +2753,7 @@ const week2Scene009aLines = [
   { id: 'line-007', speaker: '지수', text: '네. 태그는 미끼였던 거예요. 진짜는 이 자석이었고요.', characterId: 'jisoo', expression: 'serious' },
 ];
 
-/* OPERATION MK — WEEK 2 · SCENE 10 「중간 추리 및 윤민아 재오픈」
+/* MISSING KEY — WEEK 2 · SCENE 10 「중간 추리 및 윤민아 재오픈」
    Dialogue Set: dialogue-week2-scene010
    Scene: week2-scene-010 (Pop-up Exhibition 앞, 12:20)
 
@@ -2830,7 +2830,7 @@ const week2Scene010Lines = [
   { id: 'line-007', speaker: '', text: '[ 윤민아 — 재조사 필요 ]', characterId: null },
 ];
 
-/* OPERATION MK — WEEK 2 · SCENE 11 「윤민아 최종 심문」
+/* MISSING KEY — WEEK 2 · SCENE 11 「윤민아 최종 심문」
    Dialogue Set: dialogue-week2-scene011
    Scene: week2-scene-011 (Circular Quay 편집숍 앞, 18:00)
 
@@ -3015,7 +3015,7 @@ const week2Scene011Lines = [
   { id: 'mina-f8-11', speaker: '', text: '[ 현재 판단: 윤민아 — 사진 유출 확인 · 직접 절도는 부정 · 공모 여부 미확인 ]', characterId: null },
 ];
 
-/* OPERATION MK — WEEK 2 · SCENE 11a 「애드리언 재심문」
+/* MISSING KEY — WEEK 2 · SCENE 11a 「애드리언 재심문」
    Dialogue Set: dialogue-week2-scene011a
    Scene: week2-scene-011a (Pop-up Exhibition 접수대, 18:20)
 
@@ -3099,7 +3099,7 @@ const week2Scene011aLines = [
   { id: 'line-017', speaker: '지수', text: '네. 본인도 모르게 계속 이용당하고 있었던 거예요.', characterId: 'jisoo', expression: 'serious' },
 ];
 
-/* OPERATION MK — WEEK 2 · SCENE 11b 「마틴 베일 통화」
+/* MISSING KEY — WEEK 2 · SCENE 11b 「마틴 베일 통화」
    Dialogue Set: dialogue-week2-scene011b
    Scene: week2-scene-011b (전화 통화, 18:40)
 
@@ -3237,7 +3237,7 @@ const week2Scene011bLines = [
   { id: 'line-010', speaker: '지수', text: '네.\n일단 정리부터 해봐요.', characterId: 'jisoo', expression: 'serious' },
 ];
 
-/* OPERATION MK — WEEK 2 · SCENE 12 「사건 재구성」
+/* MISSING KEY — WEEK 2 · SCENE 12 「사건 재구성」
    Dialogue Set: dialogue-week2-scene012
    Scene: week2-scene-012 (전시장 근처 카페, 19:00)
 
@@ -3386,7 +3386,7 @@ const week2Scene012Lines = [
   { id: 'line-008', speaker: '지수', text: '근데 이 셋을 하나로 묶은 사람은 아직 안 잡혔어요.', characterId: 'jisoo', expression: 'serious' },
 ];
 
-/* OPERATION MK — WEEK 2 · SCENE 13 「엔딩 및 장기 미스터리 등록」
+/* MISSING KEY — WEEK 2 · SCENE 13 「엔딩 및 장기 미스터리 등록」
    Dialogue Set: dialogue-week2-scene013
    Scene: week2-scene-013 (Sydney Accommodation, 21:40)
    Closes out Week 2's main weekend arc — 2주차 평일 미니씬(W2-D1~D5)은 별도로
@@ -3838,7 +3838,7 @@ const week2SceneGroups = [
 // beat). That mismatch is a known seam for a future Week 3+ overhaul pass —
 // not fixed here since this pass was scoped to Week 2 only.
 
-/* OPERATION MK — WEEK 3 · SCENE 01 「아침 출발」
+/* MISSING KEY — WEEK 3 · SCENE 01 「아침 출발」
    Dialogue Set: dialogue-week3-scene001
    Scene: week3-scene-001 (Featherdale 이동 중, 08:20) */
 const week3Scene001Lines = [
@@ -3862,7 +3862,7 @@ const week3Scene001Lines = [
   { id: 'line-018', speaker: '', text: '창밖으로 시드니 시내가 점점 멀어지고,\n초록이 짙어지기 시작했다.', characterId: null },
 ];
 
-/* OPERATION MK — WEEK 3 · SCENE 02 「Featherdale 데이트」
+/* MISSING KEY — WEEK 3 · SCENE 02 「Featherdale 데이트」
    Dialogue Set: dialogue-week3-scene002
    Scene: week3-scene-002 (Featherdale Wildlife Park, 10:00) */
 const week3Scene002Lines = [
@@ -3889,7 +3889,7 @@ const week3Scene002Lines = [
   { id: 'line-021', speaker: '영우', text: '알겠어, 알겠어.\n대신 이건 나만 볼게.', characterId: 'youngwoo', expression: 'happy' },
 ];
 
-/* OPERATION MK — WEEK 3 · SCENE 03 「고양잇과 동물 앞 농담」
+/* MISSING KEY — WEEK 3 · SCENE 03 「고양잇과 동물 앞 농담」
    Dialogue Set: dialogue-week3-scene003
    Scene: week3-scene-003 (Featherdale Wildlife Park, 10:20)
    무깽이 리마인드 #3 — 매우 짧게, 단서 처리 없이 지나가는 농담. */
@@ -3904,7 +3904,7 @@ const week3Scene003Lines = [
   { id: 'line-008', speaker: '', text: '둘은 잠깐 웃고는 다음 구역으로 걸음을 옮겼다.', characterId: null },
 ];
 
-/* OPERATION MK — WEEK 3 · SCENE 04 「투어 그룹 사람들」
+/* MISSING KEY — WEEK 3 · SCENE 04 「투어 그룹 사람들」
    Dialogue Set: dialogue-week3-scene004
    Scene: week3-scene-004 (Featherdale Wildlife Park, 10:40)
    여기서 자연스럽게 스친 소규모 단체 관광객 넷이 다음 씬의 목격자가 된다. */
@@ -3924,7 +3924,7 @@ const week3Scene004Lines = [
   { id: 'line-013', speaker: '영우', text: '여행 오면 다들 좀 너그러워지잖아.', characterId: 'youngwoo', expression: 'soft' },
 ];
 
-/* OPERATION MK — WEEK 3 · SCENE 05 「분실된 메모리카드」
+/* MISSING KEY — WEEK 3 · SCENE 05 「분실된 메모리카드」
    Dialogue Set: dialogue-week3-scene005
    Scene: week3-scene-005 (Featherdale Wildlife Park, 11:15) */
 const week3Scene005Lines = [
@@ -3950,7 +3950,7 @@ const week3Scene005Lines = [
   { id: 'line-020', speaker: '지수', text: '일단 한 분씩 따로 여쭤볼게요.', characterId: 'jisoo', expression: 'serious' },
 ];
 
-/* OPERATION MK — WEEK 3 · SCENE 06 「네 명의 같은 증언」
+/* MISSING KEY — WEEK 3 · SCENE 06 「네 명의 같은 증언」
    Dialogue Set: dialogue-week3-scene006
    Scene: week3-scene-006 (Featherdale Wildlife Park, 11:30)
    Ends on a MINIGAME START beat — nextSceneId hands off to a not-yet-built
@@ -3970,7 +3970,7 @@ const week3Scene006Lines = [
   { id: 'line-011', speaker: '', text: 'MINIGAME START', characterId: null },
 ];
 
-/* OPERATION MK — WEEK 3 · SCENE 07 「CCTV에 없는 여자」
+/* MISSING KEY — WEEK 3 · SCENE 07 「CCTV에 없는 여자」
    Dialogue Set: dialogue-week3-scene007
    Scene: week3-scene-007 (Featherdale 방문자센터, 13:00) */
 const week3Scene007Lines = [
@@ -3994,7 +3994,7 @@ const week3Scene007Lines = [
   { id: 'line-018', speaker: '영우', text: '한 명씩 만나보자.', characterId: 'youngwoo', expression: 'serious' },
 ];
 
-/* OPERATION MK — WEEK 3 · SCENE 08 「이든 브룩스 조사」
+/* MISSING KEY — WEEK 3 · SCENE 08 「이든 브룩스 조사」
    Dialogue Set: dialogue-week3-scene008
    Scene: week3-scene-008 (Featherdale Wildlife Park, 13:20) */
 const week3Scene008Lines = [
@@ -4017,7 +4017,7 @@ const week3Scene008Lines = [
   { id: 'line-017', speaker: '지수', text: '아뇨, 저희는 그쪽 담당 아니에요.\n걱정 마세요.', characterId: 'jisoo', expression: 'soft' },
 ];
 
-/* OPERATION MK — WEEK 3 · SCENE 09 「다니엘 우 조사」
+/* MISSING KEY — WEEK 3 · SCENE 09 「다니엘 우 조사」
    Dialogue Set: dialogue-week3-scene009
    Scene: week3-scene-009 (Featherdale Wildlife Park, 13:40) */
 const week3Scene009Lines = [
@@ -4040,7 +4040,7 @@ const week3Scene009Lines = [
   { id: 'line-017', speaker: '다니엘 우', text: '제발요.', characterId: 'daniel', expression: 'annoyed' },
 ];
 
-/* OPERATION MK — WEEK 3 · SCENE 10 「한소라 — 기억을 심은 사람」
+/* MISSING KEY — WEEK 3 · SCENE 10 「한소라 — 기억을 심은 사람」
    Dialogue Set: dialogue-week3-scene010
    Scene: week3-scene-010 (Featherdale Wildlife Park, 14:00)
    Ends on a MINIGAME START beat — nextSceneId hands off to a not-yet-built
@@ -4068,7 +4068,7 @@ const week3Scene010Lines = [
   { id: 'line-018', speaker: '', text: 'MINIGAME START', characterId: null },
 ];
 
-/* OPERATION MK — WEEK 3 · SCENE 11 「두 번째 추리」
+/* MISSING KEY — WEEK 3 · SCENE 11 「두 번째 추리」
    Dialogue Set: dialogue-week3-scene011
    Scene: week3-scene-011 (Featherdale Wildlife Park, 14:30) */
 const week3Scene011Lines = [
@@ -4092,7 +4092,7 @@ const week3Scene011Lines = [
   { id: 'line-018', speaker: '지수', text: '어...\n그거 뭐예요?', characterId: 'jisoo', expression: 'shocked' },
 ];
 
-/* OPERATION MK — WEEK 3 · SCENE 12 「미카의 두 번째 흔적」
+/* MISSING KEY — WEEK 3 · SCENE 12 「미카의 두 번째 흔적」
    Dialogue Set: dialogue-week3-scene012
    Scene: week3-scene-012 (Sydney Accommodation, 21:00)
    Closes out Week 3's main weekend arc — 3주차 평일 미니씬(W3-D1~D5)은 별도로
@@ -4303,7 +4303,7 @@ const minigames = [
   },
 ];
 
-/* OPERATION MK — WEEK 4 · SCENE 01 「마지막 주 아침」
+/* MISSING KEY — WEEK 4 · SCENE 01 「마지막 주 아침」
    Dialogue Set: dialogue-week4-scene001
    Scene: week4-scene-001 (Sydney Accommodation, 09:00) */
 const week4Scene001Lines = [
@@ -4320,7 +4320,7 @@ const week4Scene001Lines = [
   { id: 'line-011', speaker: '지수', text: '이번 주엔 끝내요, 진짜로.', characterId: 'jisoo', expression: 'serious' },
 ];
 
-/* OPERATION MK — WEEK 4 · SCENE 02 「The Rocks 이동」
+/* MISSING KEY — WEEK 4 · SCENE 02 「The Rocks 이동」
    Dialogue Set: dialogue-week4-scene002
    Scene: week4-scene-002 (The Rocks 이동 중, 10:00) */
 const week4Scene002Lines = [
@@ -4336,7 +4336,7 @@ const week4Scene002Lines = [
   { id: 'line-010', speaker: '지수', text: '저도요.\n근데 여기까지 왔으니까.', characterId: 'jisoo', expression: 'serious' },
 ];
 
-/* OPERATION MK — WEEK 4 · SCENE 03 「첫 보관함」
+/* MISSING KEY — WEEK 4 · SCENE 03 「첫 보관함」
    Dialogue Set: dialogue-week4-scene003
    Scene: week4-scene-003 (The Rocks 공용 보관함, 10:30)
    Ends on a MINIGAME START beat — nextSceneId hands off to a not-yet-built
@@ -4351,7 +4351,7 @@ const week4Scene003Lines = [
   { id: 'line-007', speaker: '', text: 'MINIGAME START', characterId: null },
 ];
 
-/* OPERATION MK — WEEK 4 · SCENE 04 「포렌식 작업실 흔적」
+/* MISSING KEY — WEEK 4 · SCENE 04 「포렌식 작업실 흔적」
    Dialogue Set: dialogue-week4-scene004
    Scene: week4-scene-004 (폐업한 공유 작업실, 11:30) */
 const week4Scene004Lines = [
@@ -4372,7 +4372,7 @@ const week4Scene004Lines = [
   { id: 'line-015', speaker: '', text: '그때, 작업실 입구에서 인기척이 들렸다.', characterId: null },
 ];
 
-/* OPERATION MK — WEEK 4 · SCENE 05 「미카 코바치 등장」
+/* MISSING KEY — WEEK 4 · SCENE 05 「미카 코바치 등장」
    Dialogue Set: dialogue-week4-scene005
    Scene: week4-scene-005 (폐업한 공유 작업실, 11:35)
    첫 실물 대면 — 그녀는 도망치지 않는다. */
@@ -4390,7 +4390,7 @@ const week4Scene005Lines = [
   { id: 'line-011', speaker: '미카 코바치', text: '앉아서 얘기할까요.\n어차피 오늘 끝낼 거잖아요, 그쪽도.', characterId: 'mika', expression: 'neutral' },
 ];
 
-/* OPERATION MK — WEEK 4 · SCENE 06 「지수의 추리 제시」
+/* MISSING KEY — WEEK 4 · SCENE 06 「지수의 추리 제시」
    Dialogue Set: dialogue-week4-scene006
    Scene: week4-scene-006 (폐업한 공유 작업실, 11:45)
    플레이어 확신 100% — 하지만 미카가 그대로 인정한다는 것 자체가
@@ -4417,7 +4417,7 @@ const week4Scene006Lines = [
   { id: 'line-011', speaker: '미카 코바치', text: '맞아요.', characterId: 'mika', expression: 'neutral' },
 ];
 
-/* OPERATION MK — WEEK 4 · SCENE 07 「가짜 진범 고백」
+/* MISSING KEY — WEEK 4 · SCENE 07 「가짜 진범 고백」
    Dialogue Set: dialogue-week4-scene007
    Scene: week4-scene-007 (폐업한 공유 작업실, 11:50)
    미카는 실제로 관여한 것들을 전부 인정한다 — 거짓 단서가 아니라 진짜
@@ -4437,7 +4437,7 @@ const week4Scene007Lines = [
   { id: 'line-012', speaker: '미카 코바치', text: '근데 그게 제가 다라는 뜻은 아니에요.', characterId: 'mika', expression: 'serious' },
 ];
 
-/* OPERATION MK — WEEK 4 · SCENE 08 「한 문장으로 붕괴」
+/* MISSING KEY — WEEK 4 · SCENE 08 「한 문장으로 붕괴」
    Dialogue Set: dialogue-week4-scene008
    Scene: week4-scene-008 (폐업한 공유 작업실, 11:55) */
 const week4Scene008Lines = [
@@ -4453,7 +4453,7 @@ const week4Scene008Lines = [
   { id: 'line-010', speaker: '미카 코바치', text: '그걸 저도 몰라서 이러고 있는 거예요, 몇 달째.', characterId: 'mika', expression: 'serious' },
 ];
 
-/* OPERATION MK — WEEK 4 · SCENE 09 「미카의 진실」
+/* MISSING KEY — WEEK 4 · SCENE 09 「미카의 진실」
    Dialogue Set: dialogue-week4-scene009
    Scene: week4-scene-009 (폐업한 공유 작업실, 12:05) */
 const week4Scene009Lines = [
@@ -4470,7 +4470,7 @@ const week4Scene009Lines = [
   { id: 'line-011', speaker: '미카 코바치', text: '그런 것 같아요.', characterId: 'mika', expression: 'serious' },
 ];
 
-/* OPERATION MK — WEEK 4 · SCENE 10 「플레이어 추리의 재평가」
+/* MISSING KEY — WEEK 4 · SCENE 10 「플레이어 추리의 재평가」
    Dialogue Set: dialogue-week4-scene010
    Scene: week4-scene-010 (폐업한 공유 작업실, 12:15)
    브리프의 핵심 감정 비트 — "속은 게 아니라 한 층 부족했을 뿐"이라는 걸
@@ -4489,7 +4489,7 @@ const week4Scene010Lines = [
   { id: 'line-011', speaker: '미카 코바치', text: '그건 저도 궁금해요, 진심으로.', characterId: 'mika', expression: 'serious' },
 ];
 
-/* OPERATION MK — WEEK 4 · SCENE 11 「질문 전환」
+/* MISSING KEY — WEEK 4 · SCENE 11 「질문 전환」
    Dialogue Set: dialogue-week4-scene011
    Scene: week4-scene-011 (폐업한 공유 작업실, 12:20)
    TODO(주차 재번호화, 구 3주차 삭제): line-002의 "3주차에 받았던 종이"는
@@ -4507,7 +4507,7 @@ const week4Scene011Lines = [
   { id: 'line-010', speaker: '미카 코바치', text: '그거, 같이 다시 짚어볼래요?\n제가 처리했던 의뢰들 기준으로.', characterId: 'mika', expression: 'neutral' },
 ];
 
-/* OPERATION MK — WEEK 4 · SCENE 12 「세 사건 재해석」
+/* MISSING KEY — WEEK 4 · SCENE 12 「세 사건 재해석」
    Dialogue Set: dialogue-week4-scene012
    Scene: week4-scene-012 (폐업한 공유 작업실, 12:30) */
 const week4Scene012Lines = [
@@ -4525,7 +4525,7 @@ const week4Scene012Lines = [
   { id: 'line-012', speaker: '미카 코바치', text: '그래서 다른 귀중품은 손도 안 댄 거고요.', characterId: 'mika', expression: 'neutral' },
 ];
 
-/* OPERATION MK — WEEK 4 · SCENE 13 「M.K.의 목적어」
+/* MISSING KEY — WEEK 4 · SCENE 13 「M.K.의 목적어」
    Dialogue Set: dialogue-week4-scene013
    Scene: week4-scene-013 (폐업한 공유 작업실, 12:40) */
 const week4Scene013Lines = [
@@ -4543,7 +4543,7 @@ const week4Scene013Lines = [
   { id: 'line-012', speaker: '영우', text: '아니야, 아무것도.', characterId: 'youngwoo', expression: 'blank' },
 ];
 
-/* OPERATION MK — WEEK 4 · SCENE 14 「무깽이 연결」
+/* MISSING KEY — WEEK 4 · SCENE 14 「무깽이 연결」
    Dialogue Set: dialogue-week4-scene014
    Scene: week4-scene-014 (폐업한 공유 작업실, 12:50)
    브리프의 "무깽이 리마인드 #5이자 첫 강한 연결" — 여기서 처음으로
@@ -4564,7 +4564,7 @@ const week4Scene014Lines = [
   { id: 'line-013', speaker: '영우', text: '이 이름...\n내가 쓴 적 있어.', characterId: 'youngwoo', expression: 'blank' },
 ];
 
-/* OPERATION MK — WEEK 4 · SCENE 15 「최종 정체」
+/* MISSING KEY — WEEK 4 · SCENE 15 「최종 정체」
    Dialogue Set: dialogue-week4-scene015
    Scene: week4-scene-015 (폐업한 공유 작업실, 13:00)
    영우가 직접 설명하는 최종 캐논 — 무깽이 관련 자동화 계정이
@@ -4586,7 +4586,7 @@ const week4Scene015Lines = [
   { id: 'line-014', speaker: '미카 코바치', text: '그쪽 고양이랑 연결된 이름이기도 해요.\n셋 다 참이에요.', characterId: 'mika', expression: 'neutral' },
 ];
 
-/* OPERATION MK — WEEK 4 · SCENE 16 「감정 반전」
+/* MISSING KEY — WEEK 4 · SCENE 16 「감정 반전」
    Dialogue Set: dialogue-week4-scene016
    Scene: week4-scene-016 (폐업한 공유 작업실, 13:10)
    브리프 지정 순서: 황당함 → 안 믿김 → 웃음 → 영우 타박 → 뒤늦은 뭉클함. */
@@ -4616,7 +4616,7 @@ const week4Scene016Lines = [
   { id: 'line-023', speaker: '미카 코바치', text: '아니에요.\n오히려 저도 후련하네요, 몇 달 만에.', characterId: 'mika', expression: 'neutral' },
 ];
 
-/* OPERATION MK — WEEK 4 · SCENE 17 「마지막 영상」
+/* MISSING KEY — WEEK 4 · SCENE 17 「마지막 영상」
    Dialogue Set: dialogue-week4-scene017
    Scene: week4-scene-017 (Sydney Accommodation, 20:00)
    거창한 편집 없이 평범한 무깽이 영상 하나로 끝맺는다. */
@@ -4634,7 +4634,7 @@ const week4Scene017Lines = [
   { id: 'line-011', speaker: '', text: '거대했던 미스터리의 끝이,\n너무 평범해서 오히려 마음이 놓였다.', characterId: null },
 ];
 
-/* OPERATION MK — WEEK 4 · SCENE 18 「다음 날 체크아웃」
+/* MISSING KEY — WEEK 4 · SCENE 18 「다음 날 체크아웃」
    Dialogue Set: dialogue-week4-scene018
    Scene: week4-scene-018 (Sydney Accommodation, 다음날 10:00) */
 const week4Scene018Lines = [
@@ -4652,7 +4652,7 @@ const week4Scene018Lines = [
   { id: 'line-012', speaker: '', text: '둘은 캐리어를 끌고 방을 나섰다.', characterId: null },
 ];
 
-/* OPERATION MK — WEEK 4 · SCENE 19 「12초」
+/* MISSING KEY — WEEK 4 · SCENE 19 「12초」
    Dialogue Set: dialogue-week4-scene019
    Scene: week4-scene-019 (Sydney Accommodation, 빈 방)
    엔딩 컷 — 1주차부터 있던 녹슨 나사가 떨어지며 K-02가 등장한다.

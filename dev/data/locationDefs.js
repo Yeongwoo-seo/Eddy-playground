@@ -1,4 +1,4 @@
-/* OPERATION MK DEV — 장소 정의 (The Missing Key v1 §7/§14.6).
+/* MISSING KEY DEV — 장소 정의 (The Missing Key v1 §7/§14.6).
    Static catalog, same idiom as caseFileData.js/shopItems.js. First content
    slice: 2주차 Phase 1 관광 자유 탐색 (§12.2) — the exploration hub's own
    framework (explorationState.js, play/explore/) is week/phase-agnostic, this

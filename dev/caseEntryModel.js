@@ -1,4 +1,4 @@
-/* OPERATION MK DEV — CaseEntry normalization layer (증거·증언·추리 메모 재설계).
+/* MISSING KEY DEV — CaseEntry normalization layer (증거·증언·추리 메모 재설계).
    Pure data functions, no DOM. Sits between CaseFileState (evidence[]/
    questions[], untouched — see caseFileState.js header) and the render
    layer (caseEntryUI.js + caseMenu.js/game/explore's present sheets).

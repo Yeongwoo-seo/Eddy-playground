@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>OPERATION MK · 특수 능력 테스트</title>
+<title>MISSING KEY · 특수 능력 테스트</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <meta name="theme-color" content="#080A0C">
@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="OPERATION MK DEV">
+<meta name="apple-mobile-web-app-title" content="MISSING KEY DEV">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
 :root{
@@ -185,7 +185,7 @@ if ('serviceWorker' in navigator) {
 <script src="/dev/caseFileState.js"></script>
 <script src="/dev/vnPlayer.js"></script>
 <script>
-/* OPERATION MK — 「특수 능력 테스트」 evidence-collection entry.
+/* MISSING KEY — 「특수 능력 테스트」 evidence-collection entry.
    Player uploads a photo -> it's downscaled client-side and sent straight
    from the browser to the Anthropic Messages API (vision + a forced tool
    call) to find physical objects and return a bounding box + investigation
@@ -262,7 +262,7 @@ const DETECT_ITEMS_TOOL = {
   },
 };
 
-const DETECT_ITEMS_SYSTEM_PROMPT = `당신은 한국어 형사/추리 비주얼노벨 게임 "OPERATION MK"의 물품 인식 기능을 담당합니다.
+const DETECT_ITEMS_SYSTEM_PROMPT = `당신은 한국어 형사/추리 비주얼노벨 게임 "MISSING KEY"의 물품 인식 기능을 담당합니다.
 업로드된 사진을 분석해 뚜렷하게 구분되는 실제 물체를 최대 8개까지 찾아 report_detected_items 도구로 보고하세요.
 
 규칙:

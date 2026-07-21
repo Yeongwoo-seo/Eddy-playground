@@ -1,4 +1,4 @@
-/* OPERATION MK DEV — 낚시 미니게임 물고기 종류 카탈로그.
+/* MISSING KEY DEV — 낚시 미니게임 물고기 종류 카탈로그.
    Static catalog, same idiom as shopItems.js: a plain object keyed by id,
    read by /dev/minigame-fishing (설정 화면의 '물고기 종류' 탭)와 play/index.html
    (낚시 성공 시 어떤 물고기가 잡혔는지 고르는 로직).

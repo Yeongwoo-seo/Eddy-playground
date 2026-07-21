@@ -1,4 +1,4 @@
-/* OPERATION MK DEV — 낚시 미니게임 시작 전 대화 장면(dialogueScene)의 대사
+/* MISSING KEY DEV — 낚시 미니게임 시작 전 대화 장면(dialogueScene)의 대사
    줄 목록을 정규화한다. 여러 줄(지수/영우가 번갈아 말하는 티키타카)을 지원하기
    전에는 scene.speaker/scene.text 딱 한 쌍만 있었다(#465) — 그 시절 저장된
    fishingConfig가 여전히 남아있을 수 있으므로, scene.lines가 없으면 그
