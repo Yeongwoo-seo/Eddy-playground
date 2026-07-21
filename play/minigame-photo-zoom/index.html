@@ -1165,7 +1165,6 @@ let successAvatarRequestToken = 0;
 async function updateSuccessAvatar(characterId, expression) {
   const requestToken = ++successAvatarRequestToken;
   if (!characterId) { el.successCharWrap.classList.remove('show'); return; }
-  el.successCharWrap.classList.add('show');
   const assetId = await DevGameState.getCharacterAssetId(characterId, expression);
   if (requestToken !== successAvatarRequestToken) return; // a later call already superseded this one
   const asset = await AssetDB.getAsset(assetId).catch(() => null);
@@ -1181,7 +1180,10 @@ async function updateSuccessAvatar(characterId, expression) {
   }
   const t = await DevGameState.getCharacterTransform(characterId);
   if (requestToken !== successAvatarRequestToken) return;
+  // Position is applied before the reveal so the character never flashes at
+  // the untransformed (0,0) spot while its saved position is still loading.
   el.successCharImg.style.transform = `translate(${t.x}px, ${t.y}px) scale(${t.scale})`;
+  el.successCharWrap.classList.add('show');
 }
 
 const successLines = [
