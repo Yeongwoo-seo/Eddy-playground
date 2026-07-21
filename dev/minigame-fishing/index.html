@@ -299,6 +299,8 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .fbregion-box.draft{border-color:var(--cyan);background:rgba(89,184,200,.18)}
 .fbregion-box-label{font-family:var(--mono);font-size:10.5px;font-weight:700;color:#050607;background:var(--amber);padding:2px 5px;border-radius:0 0 4px 0}
 .fbregion-box.draft .fbregion-box-label{background:var(--cyan)}
+.item-icon-grid-boxes{position:absolute;inset:0;pointer-events:none}
+.item-icon-grid-box{position:absolute;border:2px solid var(--cyan);background:rgba(89,184,200,.18);border-radius:4px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:10px;font-weight:700;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9)}
 
 /* ===== 영역 설정 전체화면 에디터(areafs-*) — .fbregion-*와 같은 전체화면
    틀이지만, fbregion은 이미지 너비를 스테이지에 맞추고 세로로만 훑어보는
@@ -1031,9 +1033,9 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     </div>
 
     <div class="option-group">
-      <div class="option-label">아이템 칸 위치 (8칸)</div>
-      <div class="option-desc">아이템을 낱개로 올리는 게 아니라, 위 배경(액자) 이미지 안에서 잡은 물고기가 표시될 8개 칸의 위치·크기를 지정해요. 칸을 탭하면 배경 이미지 위에서 위치/크기를 조절할 수 있어요. 배경 이미지를 먼저 올려야 지정할 수 있어요.</div>
-      <div class="frame-strip" id="itemIconSlots"></div>
+      <div class="option-label">아이템 칸 배치 (8칸 일렬)</div>
+      <div class="option-desc">아이템을 칸마다 따로 올리는 게 아니라, 위 배경(액자) 이미지 안에 잡은 물고기가 표시될 8개 칸을 한 줄로 나란히 배치해요. 칸 하나하나가 아니라 칸 크기·간격·전체 위치를 한 번에 조절해요. 배경 이미지를 먼저 올려야 열 수 있어요.</div>
+      <button type="button" class="fish-sheet-btn" id="itemIconGridEditBtn" style="width:100%" disabled>🔲 아이템 칸 배치 편집</button>
     </div>
   </div>
 
@@ -1325,6 +1327,42 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     </div>
   </div>
 </div>
+
+<!-- ===== 아이템 칸 배치 — 8칸을 하나하나 따로 조정하는 대신, 칸 크기·칸
+     사이 간격·전체 위치(중심) 세 값만으로 8칸을 한 줄로 나란히 계산해서
+     배치한다(computeItemIconGridRects). heldFishPos류 드래그로 그리드
+     전체 위치를 옮기고, 아래 크기/간격 슬라이더는 statusNumberGapInput류
+     슬라이더+숫자 입력 쌍을 재사용한다. -->
+<div class="crop-overlay hidden" id="itemIconGridOverlay">
+  <div class="crop-sheet">
+    <div class="crop-title">아이템 칸 배치</div>
+    <div class="crop-desc">그림을 드래그해서 8칸 전체 위치를 옮기고, 아래 슬라이더로 칸 크기와 칸 사이 간격을 조절하세요.</div>
+    <div class="heldfish-stage" id="itemIconGridStage">
+      <img id="itemIconGridImg" alt="">
+      <div class="item-icon-grid-boxes" id="itemIconGridBoxes"></div>
+    </div>
+    <div class="crop-size-row">
+      <div class="option-label">칸 크기</div>
+      <div class="crop-size-controls">
+        <input type="range" id="itemIconGridSizeInput" min="1" max="100" step="1" value="40">
+        <input type="number" id="itemIconGridSizeNumberInput" min="1" max="100" step="1" value="40">
+        <span class="crop-size-unit">px</span>
+      </div>
+    </div>
+    <div class="crop-size-row">
+      <div class="option-label">칸 간격</div>
+      <div class="crop-size-controls">
+        <input type="range" id="itemIconGridGapInput" min="0" max="100" step="1" value="8">
+        <input type="number" id="itemIconGridGapNumberInput" min="0" max="100" step="1" value="8">
+        <span class="crop-size-unit">px</span>
+      </div>
+    </div>
+    <div class="crop-actions">
+      <button type="button" class="crop-btn secondary" id="itemIconGridCancelBtn">취소</button>
+      <button type="button" class="crop-btn primary" id="itemIconGridConfirmBtn">적용</button>
+    </div>
+  </div>
+</div>
 <script>
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
@@ -1554,7 +1592,17 @@ const el = {
   itemWindowBgCutoutBtn: document.getElementById('itemWindowBgCutoutBtn'),
   itemWindowBgRemoveBtn: document.getElementById('itemWindowBgRemoveBtn'),
   itemWindowBgFileInput: document.getElementById('itemWindowBgFileInput'),
-  itemIconSlots: document.getElementById('itemIconSlots'),
+  itemIconGridEditBtn: document.getElementById('itemIconGridEditBtn'),
+  itemIconGridOverlay: document.getElementById('itemIconGridOverlay'),
+  itemIconGridStage: document.getElementById('itemIconGridStage'),
+  itemIconGridImg: document.getElementById('itemIconGridImg'),
+  itemIconGridBoxes: document.getElementById('itemIconGridBoxes'),
+  itemIconGridSizeInput: document.getElementById('itemIconGridSizeInput'),
+  itemIconGridSizeNumberInput: document.getElementById('itemIconGridSizeNumberInput'),
+  itemIconGridGapInput: document.getElementById('itemIconGridGapInput'),
+  itemIconGridGapNumberInput: document.getElementById('itemIconGridGapNumberInput'),
+  itemIconGridCancelBtn: document.getElementById('itemIconGridCancelBtn'),
+  itemIconGridConfirmBtn: document.getElementById('itemIconGridConfirmBtn'),
   jisuIdleSheetFrame: document.getElementById('jisuIdleSheetFrame'),
   jisuIdleSheetEmpty: document.getElementById('jisuIdleSheetEmpty'),
   jisuIdleSheetUploadBtn: document.getElementById('jisuIdleSheetUploadBtn'),
@@ -2989,7 +3037,7 @@ el.itemWindowBgFileInput.addEventListener('change', async () => {
     fishingConfig = await AssetDB.setFishingConfig({ itemWindowBackgroundAssetId: asset.id });
     showSaveNote();
     renderItemWindowBg();
-    renderItemIconSlots();
+    updateItemIconGridBtnState();
   } finally {
     el.itemWindowBgUploadBtn.disabled = false;
   }
@@ -3009,7 +3057,7 @@ el.itemWindowBgCutoutBtn.addEventListener('click', async () => {
     fishingConfig = await AssetDB.setFishingConfig({ itemWindowBackgroundAssetId: newAsset.id });
     showSaveNote();
     renderItemWindowBg();
-    renderItemIconSlots();
+    updateItemIconGridBtnState();
   } catch (err) {
     DevDiag.show('아이템창 배경 제거 실패: ' + (err && err.message ? err.message : err));
   } finally {
@@ -3018,64 +3066,113 @@ el.itemWindowBgCutoutBtn.addEventListener('click', async () => {
 });
 el.itemWindowBgRemoveBtn.addEventListener('click', async () => {
   if (!confirm('배경화면을 지울까요?')) return;
-  // 배경을 지우면 그 배경 기준으로 잡아뒀던 칸 위치도 같이 지운다 — 새
+  // 배경을 지우면 그 배경 기준으로 잡아뒀던 칸 배치도 같이 지운다 — 새
   // 배경을 올렸을 때 엉뚱한 자리를 가리키지 않게(모션 시트 제거와 같은 원칙).
-  fishingConfig = await AssetDB.setFishingConfig({ itemWindowBackgroundAssetId: null, itemIconSlotRects: null });
+  fishingConfig = await AssetDB.setFishingConfig({ itemWindowBackgroundAssetId: null, itemIconGrid: null });
   showSaveNote();
   renderItemWindowBg();
-  renderItemIconSlots();
+  updateItemIconGridBtnState();
 });
 
-// ===== 아이템 칸 위치 8칸 — 아이템 아이콘을 낱개로 업로드하는 게 아니라,
-// 위 아이템창 배경(itemWindowBackgroundAssetId) 이미지 안에서 실제로 잡은
-// 물고기가 표시될 8개 칸의 위치·크기(정규화 cx/cy/size)만 지정한다 —
-// idle/모션 시트와 같은 "시트 하나 + 칸별 크롭 rect" 관례(getFishCropStyle로
-// 미리보기, 새 이미지를 굽지 않는다). 조정 안 한 칸은
-// getItemIconGridDefaultCropRect의 8등분(1행) 기본 위치를 쓴다.
-const ITEM_ICON_SLOT_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8'];
+// ===== 아이템 칸 배치(8x1) — 8칸을 하나하나 따로 조정하는 대신, 칸
+// 크기·칸 사이 간격·전체 위치(중심 cx/cy) 네 값만 지정하면 8칸이 한 줄로
+// 나란히 계산된다(computeItemIconGridRects) — idle/모션 시트와 같은
+// "시트 하나 + 정규화 cx/cy/size" 관례를 그대로 따라 getFishCropStyle로
+// 미리보기하고, 새 이미지는 굽지 않는다.
 const ITEM_ICON_GRID_COLUMNS = 8;
-function getItemIconGridDefaultCropRect(index, sheetW, sheetH) {
-  const cellW = sheetW / ITEM_ICON_GRID_COLUMNS;
-  const cxPx = index * cellW + cellW / 2;
-  const cyPx = sheetH / 2;
-  const cellShort = Math.min(cellW, sheetH);
-  return { cx: cxPx / sheetW, cy: cyPx / sheetH, size: cellShort / Math.min(sheetW, sheetH) };
-}
-async function setItemIconSlotRect(slotKey, rect) {
-  const next = Object.assign({}, fishingConfig.itemIconSlotRects, { [slotKey]: rect });
-  fishingConfig = await AssetDB.setFishingConfig({ itemIconSlotRects: next });
-}
-async function renderItemIconSlots() {
-  const bgAssetId = fishingConfig.itemWindowBackgroundAssetId;
-  el.itemIconSlots.innerHTML = '';
-  if (!bgAssetId) {
-    el.itemIconSlots.innerHTML = '<div class="fish-sheet-empty" style="position:static;padding:12px 0">배경 이미지를 먼저 올리세요</div>';
-    return;
+const DEFAULT_ITEM_ICON_GRID = { cx: 0.5, cy: 0.5, size: 0.1, gap: 0.02 };
+// size/gap은 짧은 변(shortSide) 기준 정규화값 — cropRect.size와 같은 단위라
+// getFishCropStyle을 그대로 재사용할 수 있다.
+function computeItemIconGridRects(grid, sheetW, sheetH) {
+  const shortSide = Math.min(sheetW, sheetH);
+  const cellPx = grid.size * shortSide;
+  const gapPx = grid.gap * shortSide;
+  const totalWidthPx = ITEM_ICON_GRID_COLUMNS * cellPx + (ITEM_ICON_GRID_COLUMNS - 1) * gapPx;
+  const centerXpx = grid.cx * sheetW;
+  const startXpx = centerXpx - totalWidthPx / 2 + cellPx / 2;
+  const cyPx = grid.cy * sheetH;
+  const rects = [];
+  for (let i = 0; i < ITEM_ICON_GRID_COLUMNS; i++) {
+    const cxPx = startXpx + i * (cellPx + gapPx);
+    rects.push({ cx: cxPx / sheetW, cy: cyPx / sheetH, size: grid.size });
   }
+  return rects;
+}
+function currentItemIconGrid() {
+  return Object.assign({}, DEFAULT_ITEM_ICON_GRID, fishingConfig.itemIconGrid || {});
+}
+
+let itemIconGridDraft = Object.assign({}, DEFAULT_ITEM_ICON_GRID);
+let itemIconGridDims = null; // 편집기가 열려있는 동안의 배경 에셋 원본 크기
+let itemIconGridDragging = false;
+function updateItemIconGridBtnState() {
+  el.itemIconGridEditBtn.disabled = !fishingConfig.itemWindowBackgroundAssetId;
+}
+function renderItemIconGridBoxes() {
+  if (!itemIconGridDims) return;
+  const shortSide = Math.min(itemIconGridDims.width, itemIconGridDims.height);
+  const widthPct = (itemIconGridDraft.size * shortSide / itemIconGridDims.width) * 100;
+  const heightPct = (itemIconGridDraft.size * shortSide / itemIconGridDims.height) * 100;
+  const rects = computeItemIconGridRects(itemIconGridDraft, itemIconGridDims.width, itemIconGridDims.height);
+  el.itemIconGridBoxes.innerHTML = rects.map((rect, i) => {
+    const leftPct = rect.cx * 100 - widthPct / 2;
+    const topPct = rect.cy * 100 - heightPct / 2;
+    return `<div class="item-icon-grid-box" style="left:${leftPct}%;top:${topPct}%;width:${widthPct}%;height:${heightPct}%">${i + 1}</div>`;
+  }).join('');
+}
+async function openItemIconGridEditor() {
+  const bgAssetId = fishingConfig.itemWindowBackgroundAssetId;
+  if (!bgAssetId) return;
   const asset = await AssetDB.getAsset(bgAssetId).catch(() => null);
   const dims = asset ? await loadImageDimensions(asset.dataUrl) : null;
-  if (!asset || !dims) {
-    el.itemIconSlots.innerHTML = '<div class="fish-sheet-empty" style="position:static;padding:12px 0">불러오지 못했어요</div>';
-    return;
-  }
-  const overrides = fishingConfig.itemIconSlotRects || {};
-  ITEM_ICON_SLOT_KEYS.forEach((slotKey, i) => {
-    const rect = overrides[slotKey] || getItemIconGridDefaultCropRect(i, dims.width, dims.height);
-    const style = getFishCropStyle(rect, dims.width, dims.height, 64);
-    const slot = document.createElement('div');
-    slot.className = 'frame-slot';
-    slot.dataset.slot = slotKey;
-    slot.style.backgroundImage = `url('${asset.dataUrl}')`;
-    slot.style.backgroundPosition = style.backgroundPosition;
-    slot.style.backgroundSize = style.backgroundSize;
-    slot.style.backgroundRepeat = 'no-repeat';
-    slot.innerHTML = `<span class="frame-index">${slotKey}${overrides[slotKey] ? ' ✓' : ''}</span>`;
-    slot.addEventListener('click', () => {
-      openCropAdjuster(asset.dataUrl, rect, null, (newRect) => setItemIconSlotRect(slotKey, newRect).then(renderItemIconSlots));
-    });
-    el.itemIconSlots.appendChild(slot);
-  });
+  if (!asset || !dims) return;
+  itemIconGridDims = dims;
+  itemIconGridDraft = currentItemIconGrid();
+  el.itemIconGridImg.src = asset.dataUrl;
+  el.itemIconGridStage.style.setProperty('--heldfish-ar', dims.width + '/' + dims.height);
+  const shortSide = Math.min(dims.width, dims.height);
+  el.itemIconGridSizeInput.max = shortSide;
+  el.itemIconGridSizeNumberInput.max = shortSide;
+  el.itemIconGridGapInput.max = Math.round(shortSide / 2);
+  el.itemIconGridGapNumberInput.max = Math.round(shortSide / 2);
+  const sizePx = Math.round(itemIconGridDraft.size * shortSide);
+  const gapPx = Math.round(itemIconGridDraft.gap * shortSide);
+  el.itemIconGridSizeInput.value = sizePx;
+  el.itemIconGridSizeNumberInput.value = sizePx;
+  el.itemIconGridGapInput.value = gapPx;
+  el.itemIconGridGapNumberInput.value = gapPx;
+  renderItemIconGridBoxes();
+  el.itemIconGridOverlay.classList.remove('hidden');
 }
+function updateItemIconGridPosFromEvent(e) {
+  const rect = el.itemIconGridStage.getBoundingClientRect();
+  itemIconGridDraft.cx = clamp01((e.clientX - rect.left) / rect.width);
+  itemIconGridDraft.cy = clamp01((e.clientY - rect.top) / rect.height);
+  renderItemIconGridBoxes();
+}
+function bindItemIconGridSizeInput(rangeEl, numberEl, key) {
+  const commit = (px) => {
+    rangeEl.value = px;
+    numberEl.value = px;
+    const shortSide = Math.min(itemIconGridDims.width, itemIconGridDims.height);
+    itemIconGridDraft[key] = px / shortSide;
+    renderItemIconGridBoxes();
+  };
+  rangeEl.addEventListener('input', () => commit(Number(rangeEl.value)));
+  numberEl.addEventListener('change', () => commit(Number(numberEl.value)));
+}
+bindItemIconGridSizeInput(el.itemIconGridSizeInput, el.itemIconGridSizeNumberInput, 'size');
+bindItemIconGridSizeInput(el.itemIconGridGapInput, el.itemIconGridGapNumberInput, 'gap');
+el.itemIconGridEditBtn.addEventListener('click', openItemIconGridEditor);
+el.itemIconGridStage.addEventListener('pointerdown', (e) => { itemIconGridDragging = true; updateItemIconGridPosFromEvent(e); });
+window.addEventListener('pointermove', (e) => { if (itemIconGridDragging) updateItemIconGridPosFromEvent(e); });
+window.addEventListener('pointerup', () => { itemIconGridDragging = false; });
+el.itemIconGridCancelBtn.addEventListener('click', () => el.itemIconGridOverlay.classList.add('hidden'));
+el.itemIconGridConfirmBtn.addEventListener('click', async () => {
+  fishingConfig = await AssetDB.setFishingConfig({ itemIconGrid: itemIconGridDraft });
+  showSaveNote();
+  el.itemIconGridOverlay.classList.add('hidden');
+});
 
 /* ===== 세밀영역조절(범용) 전체화면 편집기 — evidence-notebook의
    evn-* 편집기와 완전히 같은 pan/draw 좌표 수학(스케일=스테이지 폭/원본 폭,
@@ -5706,7 +5803,7 @@ async function init() {
   renderStatusNumberFontSlots();
   renderStatusNumberAdjustInputs();
   renderItemWindowBg();
-  renderItemIconSlots();
+  updateItemIconGridBtnState();
   renderCastPhysicsControls();
   renderReelMotionControls();
   renderMotionTab();

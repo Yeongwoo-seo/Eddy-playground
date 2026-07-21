@@ -1111,6 +1111,11 @@ const AssetDB = (() => {
   // 보여주고 파는 창, play/index.html의 물고기 팔기 기능 그대로 재사용 —
   // 영우 NPC 메뉴 → "물고기 팔기"에서 연다) 카드의 배경(액자) 그림. 비어있으면
   // 기존 어두운 단색 카드(.sell-fish-card 기본 배경)가 그대로 쓰인다.
+  // itemIconGrid — 위 배경 이미지 안에서 8개 아이템 칸이 한 줄로 나란히
+  // 놓일 자리. 칸마다 따로 저장하지 않고 { cx, cy, size, gap }(전체 중심
+  // 위치 + 칸 크기 + 칸 사이 간격, size/gap은 배경 이미지 짧은 변 기준
+  // 정규화값) 네 값만 저장해 8칸 위치를 계산해서 구한다
+  // (computeItemIconGridRects 참고). null이면 DEFAULT_ITEM_ICON_GRID로 폴백.
   // heldFishPos — 낚시 성공 후 캐릭터가 물고기를 들고 있는 포즈일 때, 잡은
   // 물고기 아이콘이 캐릭터 기준(char-stage 박스, 0~1 정규화 좌표) 어디에
   // 놓일지. "모션" 탭 올리기 카테고리의 마지막 프레임 위로 점을 찍어
@@ -1160,7 +1165,7 @@ const AssetDB = (() => {
   // 변환한다. 최상위 필드 자체는 이제 FISHING_CONFIG_DEFAULT에 없지만,
   // 예전에 저장된 JSON blob엔 여전히 남아있을 수 있어 병합 시 그대로
   // 딸려온다.
-  const FISHING_CONFIG_DEFAULT = { barDesign: {}, fishSheetAssetId: null, fishIconOverrides: {}, motionSheetAssetId: null, motionFrameOverrides: { cast: {}, reel: {}, up: {}, down: {}, left: {}, right: {} }, motionRowOverrides: {}, motionFrameImageOverrides: { up: {}, down: {}, left: {}, right: {} }, motionPlaybackMs: { up: 90, down: 90, left: 90, right: 90 }, castingFrameDurations: [], castingFrameRodTips: {}, reelFrameRodTips: {}, walkMotion: { stepMs: 200, animFrameMs: 90 }, castPhysics: { gravityMps2: 9.8, vxScale: 1 }, itemPopup: { backgroundAssetId: null, iconPos: null, iconSizePx: 64 }, itemWindowBackgroundAssetId: null, castGaugeAssetId: null, castGaugeFillRegion: null, screens: [], startScreenId: null, dialogueScene: { boxLayer: null, jisooLayer: null, youngwooLayer: null }, heldFishPos: null, characterIdleSheets: { jisu: { assetId: null, overrides: {} }, youngwoo: { assetId: null, overrides: {} } }, statusWindow: { frameAssetId: null, arrowAssetId: null, numberFontAssetIds: {}, numberFontAdjust: { width: 16, height: 22, gap: 2 }, datePos: null, timePos: null, pointsPos: null, arrowPivot: null } };
+  const FISHING_CONFIG_DEFAULT = { barDesign: {}, fishSheetAssetId: null, fishIconOverrides: {}, motionSheetAssetId: null, motionFrameOverrides: { cast: {}, reel: {}, up: {}, down: {}, left: {}, right: {} }, motionRowOverrides: {}, motionFrameImageOverrides: { up: {}, down: {}, left: {}, right: {} }, motionPlaybackMs: { up: 90, down: 90, left: 90, right: 90 }, castingFrameDurations: [], castingFrameRodTips: {}, reelFrameRodTips: {}, walkMotion: { stepMs: 200, animFrameMs: 90 }, castPhysics: { gravityMps2: 9.8, vxScale: 1 }, itemPopup: { backgroundAssetId: null, iconPos: null, iconSizePx: 64 }, itemWindowBackgroundAssetId: null, itemIconGrid: null, castGaugeAssetId: null, castGaugeFillRegion: null, screens: [], startScreenId: null, dialogueScene: { boxLayer: null, jisooLayer: null, youngwooLayer: null }, heldFishPos: null, characterIdleSheets: { jisu: { assetId: null, overrides: {} }, youngwoo: { assetId: null, overrides: {} } }, statusWindow: { frameAssetId: null, arrowAssetId: null, numberFontAssetIds: {}, numberFontAdjust: { width: 16, height: 22, gap: 2 }, datePos: null, timePos: null, pointsPos: null, arrowPivot: null } };
 
   function migrateLegacyFishingScreen(cfg) {
     if ((cfg.screens && cfg.screens.length) || !cfg.backgroundAssetId) return cfg;
