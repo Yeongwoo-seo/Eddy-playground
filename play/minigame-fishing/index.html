@@ -1555,12 +1555,13 @@ async function loadConfig() {
 
   // 대화 인트로 — 대화창/지수/영우 중 하나라도 배치돼 있으면 idle로 바로
   // 들어가는 대신 이 장면부터 보여준다(설정한 게 하나도 없으면 기존처럼
-  // 곧장 idle). renderDialogueIntro가 실제로 뭔가 그렸을 때만 gameState를
-  // 바꿔야, 오래된(빈) 설정을 가진 세션에서 화면이 검게 가려진 채 아무
-  // 반응도 없는 상태로 남는 일이 없다.
-  if (renderDialogueIntro(dialogueSceneCfg, byId)) {
-    gameState = 'dialogue';
-  }
+  // 곧장 idle). 여기서 바로 그리지 않고 설정만 담아두는 이유는
+  // playGameStartIntro(카메라 인트로)가 끝난 뒤에야 실제로 그려야 하기
+  // 때문 — renderDialogueIntro는 뭔가 그렸을 때만 true를 돌려주므로 그때
+  // gameState를 바꾼다(오래된 빈 설정에서 화면이 검게 가려진 채 아무
+  // 반응도 없는 상태로 남는 일이 없게).
+  pendingDialogueSceneCfg = dialogueSceneCfg;
+  pendingDialogueById = byId;
 
   await preloadAllAssetImages;
 }
@@ -1808,15 +1809,106 @@ function checkMoveArea() {
 // 프리로드 오버레이(#preloadOverlay, 정적 마크업이라 첫 페인트부터 검다)를
 // 서서히 걷어낸다 — loadConfig()가 이미지 자산을 전부 디코드하고 나서만
 // 호출된다. transitionend에서 .hidden을 붙여 트랜지션이 끝난 뒤엔 완전히
-// 빼서(레이아웃/페인트에서 제외) 다시 그릴 일이 없게 한다.
+// 빼서(레이아웃/페인트에서 제외) 다시 그릴 일이 없게 한다. 게임 시작
+// 연출(카메라 인트로)이 화면 전환(triggerScreenTransition, 기본 .9s)보다
+// 눈에 띄게 느린 페이드로 열려야 해서 이 첫 번째 걷어냄만 트랜지션
+// 시간을 인라인으로 늘려두고, 끝나면 다시 비워 이후 화면 전환은 CSS
+// 기본값(.9s)으로 돌아가게 한다. Promise를 돌려줘 카메라 인트로가 페이드가
+// 끝난 뒤에 시작하도록 이어붙일 수 있다.
+const GAME_START_FADE_MS = 2600;
 let gameRevealed = false;
+let gameRevealedPromise = null;
 function revealGame() {
-  if (gameRevealed) return;
+  if (gameRevealed) return gameRevealedPromise || Promise.resolve();
   gameRevealed = true;
+  el.preloadOverlay.style.transitionDuration = GAME_START_FADE_MS + 'ms';
+  gameRevealedPromise = new Promise(resolve => {
+    el.preloadOverlay.addEventListener('transitionend', () => {
+      el.preloadOverlay.classList.add('hidden');
+      el.preloadOverlay.style.transitionDuration = '';
+      resolve();
+    }, { once: true });
+  });
   el.preloadOverlay.classList.add('fade-out');
-  el.preloadOverlay.addEventListener('transitionend', () => {
-    el.preloadOverlay.classList.add('hidden');
-  }, { once: true });
+  return gameRevealedPromise;
+}
+
+/* ===== 게임 시작 카메라 인트로 =====
+   페이드인이 끝나면 곧장 캐릭터 위치로 카메라를 잡는 대신, 배경 지도를
+   한 바퀴 훑어 보여주는 연출용 카메라를 먼저 재생한다: 우상단에서
+   시작 -> 천천히 아래로 -> 맨 밑에서 왼쪽으로 -> 왼쪽 끝에서 위로 ->
+   다시 아래로 절반쯤 내려와 지수 대화를 시작한다(순서는 사용자 요청
+   그대로). 연출 동안은 캐릭터/영우 NPC를 감추고(실제 스폰 위치와 안
+   맞으니) el.bgLayer를 직접 옮긴다 — updateCamera()는 charWorldPos
+   기준이라 이 연출에는 안 쓴다. 연출이 끝나면 updateCamera()로 원래
+   카메라로 되돌리고 나서 캐릭터를 다시 보여준다. */
+function cameraIntroWaypoints() {
+  const zoom = effectiveBgZoom();
+  const scaledW = worldSize.w * zoom, scaledH = worldSize.h * zoom;
+  const camXmax = Math.max(0, scaledW - frameRect.width);
+  const camYmax = Math.max(0, scaledH - frameRect.height);
+  return [
+    { x: camXmax, y: 0 },         // 1. 우상단에서 시작
+    { x: camXmax, y: camYmax },   // 2. 천천히 아래로 이동
+    { x: 0, y: camYmax },         // 3. 맨밑 도달시 왼쪽
+    { x: 0, y: 0 },               // 4. 왼쪽 도달시 위쪽
+    { x: 0, y: camYmax / 2 },     // 5. 그러고 내려옴. 중간까지감
+  ];
+}
+function easeInOutSine(t) { return -(Math.cos(Math.PI * t) - 1) / 2; }
+function tweenBgLayerTo(from, to, durationMs) {
+  return new Promise(resolve => {
+    if (from.x === to.x && from.y === to.y) { resolve(); return; }
+    const start = performance.now();
+    function step(now) {
+      const t = Math.min(1, (now - start) / durationMs);
+      const e = easeInOutSine(t);
+      const x = from.x + (to.x - from.x) * e;
+      const y = from.y + (to.y - from.y) * e;
+      el.bgLayer.style.transform = `translate3d(${-x}px, ${-y}px, 0)`;
+      if (t < 1) requestAnimationFrame(step); else resolve();
+    }
+    requestAnimationFrame(step);
+  });
+}
+const CAMERA_INTRO_LEG_MS = [3400, 1700, 1700, 1300]; // 아래로(천천히)/왼쪽으로/위로/중간까지
+async function playCameraIntroPan() {
+  const points = cameraIntroWaypoints();
+  el.bgLayer.style.transform = `translate3d(${-points[0].x}px, ${-points[0].y}px, 0)`;
+  for (let i = 0; i < CAMERA_INTRO_LEG_MS.length; i++) {
+    await tweenBgLayerTo(points[i], points[i + 1], CAMERA_INTRO_LEG_MS[i]);
+  }
+}
+// 낚시 진입 자체의 연출 — 페이드인(revealGame) 다음 카메라 인트로를
+// 재생하고, 끝나면 실제 대화 인트로(있으면)로 넘긴다. 인트로가 도는 동안
+// 입력을 막아야 해서 dialogueIntro 박스가 아직 없어도 gameState부터
+// 'dialogue'로 미리 걸어둔다 — startMoveHold/startPowerCharge 등은 이미
+// gameState==='idle'일 때만 반응하는 기존 가드를 그대로 쓴다.
+async function playGameStartIntro() {
+  gameState = 'dialogue';
+  // 8초 안전장치(setTimeout(revealGame,...))가 응답이 느려 이미 화면을
+  // 밝혀놨다면, 이제 와서 다시 우상단으로 튀었다가 훑는 건 오히려
+  // 어색하니 카메라 인트로는 건너뛴다.
+  const canPan = !gameRevealed && hasWorldBackground;
+  const npcWasVisible = !el.npcYoungwooStage.classList.contains('hidden');
+  if (canPan) {
+    const start = cameraIntroWaypoints()[0];
+    el.bgLayer.style.transform = `translate3d(${-start.x}px, ${-start.y}px, 0)`;
+    el.charStage.style.visibility = 'hidden';
+    el.npcYoungwooStage.classList.add('hidden');
+  }
+  await revealGame();
+  if (canPan) {
+    await playCameraIntroPan();
+    updateCamera();
+    el.charStage.style.visibility = '';
+    if (npcWasVisible) el.npcYoungwooStage.classList.remove('hidden');
+  }
+  if (renderDialogueIntro(pendingDialogueSceneCfg || {}, pendingDialogueById || new Map())) {
+    gameState = 'dialogue';
+  } else {
+    gameState = 'idle';
+  }
 }
 // 대사가 여러 줄(지수/영우 번갈아 말하는 티키타카, dev/minigame-fishing/
 // index.html "대화" 탭에서 편집)이라 화면을 탭할 때마다 다음 줄로 넘어가야
@@ -1824,6 +1916,11 @@ function revealGame() {
 // 바뀌어도 그대로 두고, 초상화/이름/대사(그 줄의 speaker/text에 따라
 // 달라지는 부분)만 다시 그린다. dialogueIntro*는 그 진행 상태를 들고
 // 있는 모듈 전역 — 씬 진입마다 renderDialogueIntro가 새로 채운다.
+// 로드 시점엔 renderDialogueIntro를 바로 부르지 않고 대화 씬 설정만
+// 담아뒀다가(loadConfig 참고), 카메라 인트로(playGameStartIntro)가 끝난
+// 뒤에야 실제로 그린다.
+let pendingDialogueSceneCfg = null;
+let pendingDialogueById = null;
 let dialogueIntroScene = null;
 let dialogueIntroById = null;
 let dialogueIntroLines = [];
@@ -3407,7 +3504,7 @@ setTimeout(revealGame, 8000);
 
 loadConfig().then(() => {
   checkInteractionArea(); // 초기 스폰 위치가 이미 상호작용 영역 안일 수도 있으니 로드 직후 한 번 확인
-  revealGame();
+  playGameStartIntro(); // 페이드인 -> 카메라 인트로(우상단->아래->왼쪽->위->중간) -> 지수 대화 순으로 이어진다
 });
 </script>
 <script src="/dev/devPlanFab.js"></script>
