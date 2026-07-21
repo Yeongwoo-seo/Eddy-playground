@@ -12,9 +12,9 @@ const DEFAULT_DIALOGUE_LINES = [
   { id: 'default-5', speaker: 'jisoo', text: '에에 미쳤나봐!!!' },
   { id: 'default-6', speaker: 'jisoo', text: '진짜 이걸 만들었다고????' },
   { id: 'default-7', speaker: 'youngwoo', text: '웅.\n스타듀밸리처럼 물고기 따라가면 돼.' },
-  { id: 'default-8', speaker: 'jisoo', text: '아 진짜 영크크 미쳤어.' },
+  { id: 'default-8', speaker: 'jisoo', text: '이 정도면 거의 개발자예요\n서영우씨.' },
   { id: 'default-9', speaker: 'youngwoo', text: '칭찬으로 듣겠습니다.' },
-  { id: 'default-10', speaker: 'jisoo', text: '칭찬 맞아요!!!!\n아니 근데 진짜 미쳤나봐.' },
+  { id: 'default-10', speaker: 'jisoo', text: '칭찬 맞아요!!!!\n아니 근데 진짜 미쳤나봐 ㅋㅎㅋㅎㅋㅎㅋㅎㅋㅎ' },
 ];
 
 /* MISSING KEY DEV — 낚시 미니게임 시작 전 대화 장면(dialogueScene)의 대사
