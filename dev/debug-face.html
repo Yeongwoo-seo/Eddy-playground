@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>미니게임 얼굴 진단</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#111;color:#eee;padding:16px;line-height:1.6;font-size:13px}
+h2{font-size:16px}
+.row{border:1px solid #444;border-radius:10px;padding:12px;margin-bottom:12px}
+.ok{color:#4f8}
+.bad{color:#f66}
+img{max-width:120px;max-height:120px;border:1px solid #888;border-radius:8px;display:block;margin-top:6px}
+pre{white-space:pre-wrap;word-break:break-all;background:#000;padding:8px;border-radius:6px;font-size:11px}
+</style>
+</head>
+<body>
+<h2>미니게임 얼굴 진단</h2>
+<div id="out">불러오는 중...</div>
+<script src="/dev/assetDb.js"></script>
+<script src="/dev/dialogueData.js"></script>
+<script>
+async function run() {
+  const out = document.getElementById('out');
+  out.innerHTML = '';
+  const keys = dialogueCharacters.map(c => c.id);
+  for (const key of keys) {
+    const box = document.createElement('div');
+    box.className = 'row';
+    let html = `<b>${key}</b><br>`;
+    try {
+      const assetId = await DevGameState.getCharacterAssetId(key, MINIGAME_FACE_EXPRESSION);
+      html += `assetId: <pre>${assetId || '(null)'}</pre>`;
+      if (!assetId) {
+        html += '<span class="bad">→ character-assets/map.json에 이 캐릭터의 미니게임 얼굴 키가 없음 (업로드가 저장 안 됐거나 다른 키로 저장됨)</span>';
+        box.innerHTML = html;
+        out.appendChild(box);
+        continue;
+      }
+      const asset = await AssetDB.getAsset(assetId).catch(e => ({ __error: e.message }));
+      html += `dev_assets row: <pre>${JSON.stringify(asset, null, 2)}</pre>`;
+      if (!asset || asset.__error) {
+        html += '<span class="bad">→ assetId는 있는데 dev_assets 테이블에 해당 row가 없음 (업로드 중 DB insert가 실패했을 가능성)</span>';
+        box.innerHTML = html;
+        out.appendChild(box);
+        continue;
+      }
+      if (!asset.dataUrl) {
+        html += '<span class="bad">→ row는 있는데 url 필드가 비어있음</span>';
+        box.innerHTML = html;
+        out.appendChild(box);
+        continue;
+      }
+      const imgId = 'img_' + key;
+      const statusId = 'status_' + key;
+      html += `<img id="${imgId}" src="${asset.dataUrl}"><div id="${statusId}">이미지 로딩 중...</div>`;
+      box.innerHTML = html;
+      out.appendChild(box);
+      const img = document.getElementById(imgId);
+      const status = document.getElementById(statusId);
+      img.onload = () => { status.textContent = `로딩 성공 (${img.naturalWidth}×${img.naturalHeight}px)`; status.className = 'ok'; };
+      img.onerror = () => { status.textContent = '→ 이미지 URL 요청 자체가 실패함 (깨진 URL / CORS / 파일 삭제됨)'; status.className = 'bad'; };
+      continue;
+    } catch (e) {
+      html += `<span class="bad">에러: ${e.message}</span>`;
+    }
+    box.innerHTML = html;
+    out.appendChild(box);
+  }
+}
+run();
+</script>
+</body>
+</html>
