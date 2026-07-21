@@ -71,9 +71,21 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .gauge-fill.affection{background:#E8749E}
 
 /* ===== Layer 2: Character ===== */
-.char-wrap{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;pointer-events:none;opacity:0;transition:opacity .2s ease}
-.char-img{max-height:78%;max-width:88%;object-fit:contain;object-position:bottom;transform:translateY(0)}
-.char-placeholder{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:46%;height:62%;opacity:.4;display:flex;align-items:flex-end;justify-content:center;color:var(--text-secondary)}
+/* bottom is kept in sync with .dlg-layer's actual rendered height by
+   syncCharWrapBottom (a ResizeObserver on #dlgLayer) — so the character's
+   feet (align-items:flex-end) land right at the dialogue box's top edge
+   instead of the screen bottom, which used to hide the lower portion of the
+   character behind the box (.bottom-stack's z-index:3 sits above char-wrap).
+   26vh here is just the initial guess (.dlg-layer's own min-height) before
+   the observer's first measurement runs. */
+.char-wrap{position:absolute;top:0;left:0;right:0;bottom:26vh;display:flex;align-items:flex-end;justify-content:center;pointer-events:none;opacity:0;transition:opacity .2s ease,bottom .3s cubic-bezier(0.2,0.8,0.2,1)}
+/* max-height/height are in vh, not % — char-wrap's own box height now
+   shrinks to make room for the dialogue box above (see .char-wrap), and a %
+   here would resolve against that shrunk box, quietly scaling the character
+   down every time the dialogue box grows. vh keeps the size anchored to the
+   true viewport height regardless of how tall .dlg-layer currently is. */
+.char-img{max-height:78vh;max-width:88%;object-fit:contain;object-position:bottom;transform:translateY(0)}
+.char-placeholder{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:46%;height:62vh;opacity:.4;display:flex;align-items:flex-end;justify-content:center;color:var(--text-secondary)}
 .char-placeholder svg{width:100%;height:100%}
 
 /* ===== Layer 3: Dialogue ===== */
@@ -941,6 +953,19 @@ function syncChoiceLayerBottom() {
 window.addEventListener('resize', () => {
   if (!el.choiceLayer.classList.contains('hidden')) syncChoiceLayerBottom();
 });
+
+// Keeps .char-wrap's bottom glued to .dlg-layer's actual rendered height —
+// same "real height, not a vh guess" reasoning as syncChoiceLayerBottom
+// above, so the character's feet sit right at the dialogue box's top edge
+// instead of the fixed 26vh default. A ResizeObserver (not just the
+// window 'resize' listener syncChoiceLayerBottom uses) because .dlg-layer's
+// height also changes from things that aren't a viewport resize — new
+// dialogue text wrapping to more/fewer lines, or .has-interactive's 48vh
+// jump — and the character has to track those too.
+function syncCharWrapBottom() {
+  el.charWrap.style.bottom = el.dlgLayer.offsetHeight + 'px';
+}
+new ResizeObserver(syncCharWrapBottom).observe(el.dlgLayer);
 
 // Choices render as a floating panel over a dimmed scene, centered in the
 // area above the dialogue box (see .choice-layer/.scene-dim) — not appended
