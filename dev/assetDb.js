@@ -23,15 +23,25 @@ const DEV_ASSETS_TABLE = 'dev_assets';
 // silently — Safari's remote inspector isn't always within reach mid-test.
 const DevDiag = (() => {
   let bannerEl = null;
+  let textEl = null;
   function show(message) {
     if (!bannerEl) {
       bannerEl = document.createElement('div');
       bannerEl.id = 'devDiagBanner';
-      bannerEl.style.cssText = 'position:fixed;left:12px;right:12px;bottom:12px;z-index:9999;background:#3a0d0d;color:#ffb4b4;border:1px solid #d94141;border-radius:10px;padding:12px 14px;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11.5px;line-height:1.5;white-space:pre-wrap;word-break:break-all;box-shadow:0 8px 24px rgba(0,0,0,.4)';
-      bannerEl.addEventListener('click', () => bannerEl.remove());
+      // bottom:12px는 조이스틱 등 화면 하단 조작 UI와 겹친다 — 배너 자체는
+      // pointer-events:none으로 밑에 깔린 터치 입력을 그대로 통과시키고,
+      // 닫기는 우측 상단의 작은 × 버튼(pointer-events:auto)로만 받는다.
+      bannerEl.style.cssText = 'position:fixed;left:12px;right:12px;top:12px;z-index:9999;background:#3a0d0d;color:#ffb4b4;border:1px solid #d94141;border-radius:10px;padding:12px 34px 12px 14px;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11.5px;line-height:1.5;white-space:pre-wrap;word-break:break-all;box-shadow:0 8px 24px rgba(0,0,0,.4);pointer-events:none';
+      textEl = document.createElement('span');
+      bannerEl.appendChild(textEl);
+      const closeBtn = document.createElement('div');
+      closeBtn.textContent = '×';
+      closeBtn.style.cssText = 'position:absolute;top:6px;right:8px;width:24px;height:24px;line-height:24px;text-align:center;font-size:16px;pointer-events:auto;cursor:pointer';
+      closeBtn.addEventListener('click', () => bannerEl.remove());
+      bannerEl.appendChild(closeBtn);
       document.body.appendChild(bannerEl);
     }
-    bannerEl.textContent = 'DEV ERROR (탭하면 닫힘): ' + message;
+    textEl.textContent = 'DEV ERROR (우측 ×를 탭하면 닫힘): ' + message;
   }
   window.addEventListener('error', (e) => show(e.message || String(e.error)));
   window.addEventListener('unhandledrejection', (e) => {
