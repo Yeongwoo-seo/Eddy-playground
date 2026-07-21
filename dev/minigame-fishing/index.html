@@ -1029,10 +1029,9 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     </div>
 
     <div class="option-group">
-      <div class="option-label">아이템 아이콘 (8칸)</div>
-      <div class="option-desc">아이템창에 표시할 아이템 아이콘을 최대 8개까지 낱개로 올리세요. 칸을 탭하면 그 자리에 이미지를 올리거나 바꿀 수 있어요.</div>
+      <div class="option-label">아이템 칸 위치 (8칸)</div>
+      <div class="option-desc">아이템을 낱개로 올리는 게 아니라, 위 배경(액자) 이미지 안에서 잡은 물고기가 표시될 8개 칸의 위치·크기를 지정해요. 칸을 탭하면 배경 이미지 위에서 위치/크기를 조절할 수 있어요. 배경 이미지를 먼저 올려야 지정할 수 있어요.</div>
       <div class="frame-strip" id="itemIconSlots"></div>
-      <input type="file" id="itemIconFileInput" accept="image/*">
     </div>
   </div>
 
@@ -1554,7 +1553,6 @@ const el = {
   itemWindowBgRemoveBtn: document.getElementById('itemWindowBgRemoveBtn'),
   itemWindowBgFileInput: document.getElementById('itemWindowBgFileInput'),
   itemIconSlots: document.getElementById('itemIconSlots'),
-  itemIconFileInput: document.getElementById('itemIconFileInput'),
   jisuIdleSheetFrame: document.getElementById('jisuIdleSheetFrame'),
   jisuIdleSheetEmpty: document.getElementById('jisuIdleSheetEmpty'),
   jisuIdleSheetUploadBtn: document.getElementById('jisuIdleSheetUploadBtn'),
@@ -2989,6 +2987,7 @@ el.itemWindowBgFileInput.addEventListener('change', async () => {
     fishingConfig = await AssetDB.setFishingConfig({ itemWindowBackgroundAssetId: asset.id });
     showSaveNote();
     renderItemWindowBg();
+    renderItemIconSlots();
   } finally {
     el.itemWindowBgUploadBtn.disabled = false;
   }
@@ -3008,6 +3007,7 @@ el.itemWindowBgCutoutBtn.addEventListener('click', async () => {
     fishingConfig = await AssetDB.setFishingConfig({ itemWindowBackgroundAssetId: newAsset.id });
     showSaveNote();
     renderItemWindowBg();
+    renderItemIconSlots();
   } catch (err) {
     DevDiag.show('아이템창 배경 제거 실패: ' + (err && err.message ? err.message : err));
   } finally {
@@ -3016,69 +3016,64 @@ el.itemWindowBgCutoutBtn.addEventListener('click', async () => {
 });
 el.itemWindowBgRemoveBtn.addEventListener('click', async () => {
   if (!confirm('배경화면을 지울까요?')) return;
-  fishingConfig = await AssetDB.setFishingConfig({ itemWindowBackgroundAssetId: null });
+  // 배경을 지우면 그 배경 기준으로 잡아뒀던 칸 위치도 같이 지운다 — 새
+  // 배경을 올렸을 때 엉뚱한 자리를 가리키지 않게(모션 시트 제거와 같은 원칙).
+  fishingConfig = await AssetDB.setFishingConfig({ itemWindowBackgroundAssetId: null, itemIconSlotRects: null });
   showSaveNote();
   renderItemWindowBg();
+  renderItemIconSlots();
 });
 
-// ===== 아이템 아이콘 8칸 — 숫자글꼴(0~9) 슬롯과 같은 패턴(하나의 파일
-// 입력을 공유하고, 지금 누른 칸 번호를 itemIconUploadSlot에 기억해뒀다가
-// change에서 그 칸에 저장한다). itemWindowBackgroundAssetId처럼
-// fishingConfig 최상위에 flat 객체({ '1': assetId, ... })로 저장한다 —
-// setFishingConfig가 얕은 병합이라 한 칸만 바꿔도 매번 8칸 전체를 다시
-// 만들어 넘긴다.
+// ===== 아이템 칸 위치 8칸 — 아이템 아이콘을 낱개로 업로드하는 게 아니라,
+// 위 아이템창 배경(itemWindowBackgroundAssetId) 이미지 안에서 실제로 잡은
+// 물고기가 표시될 8개 칸의 위치·크기(정규화 cx/cy/size)만 지정한다 —
+// idle/모션 시트와 같은 "시트 하나 + 칸별 크롭 rect" 관례(getFishCropStyle로
+// 미리보기, 새 이미지를 굽지 않는다). 조정 안 한 칸은
+// getItemIconGridDefaultCropRect의 8등분(1행) 기본 위치를 쓴다.
 const ITEM_ICON_SLOT_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8'];
-let itemIconUploadSlot = null;
-function renderItemIconSlots() {
-  const iconAssetIds = fishingConfig.itemIconAssetIds || {};
+const ITEM_ICON_GRID_COLUMNS = 8;
+function getItemIconGridDefaultCropRect(index, sheetW, sheetH) {
+  const cellW = sheetW / ITEM_ICON_GRID_COLUMNS;
+  const cxPx = index * cellW + cellW / 2;
+  const cyPx = sheetH / 2;
+  const cellShort = Math.min(cellW, sheetH);
+  return { cx: cxPx / sheetW, cy: cyPx / sheetH, size: cellShort / Math.min(sheetW, sheetH) };
+}
+async function setItemIconSlotRect(slotKey, rect) {
+  const next = Object.assign({}, fishingConfig.itemIconSlotRects, { [slotKey]: rect });
+  fishingConfig = await AssetDB.setFishingConfig({ itemIconSlotRects: next });
+}
+async function renderItemIconSlots() {
+  const bgAssetId = fishingConfig.itemWindowBackgroundAssetId;
   el.itemIconSlots.innerHTML = '';
-  ITEM_ICON_SLOT_KEYS.forEach(slotKey => {
-    const assetId = iconAssetIds[slotKey];
+  if (!bgAssetId) {
+    el.itemIconSlots.innerHTML = '<div class="fish-sheet-empty" style="position:static;padding:12px 0">배경 이미지를 먼저 올리세요</div>';
+    return;
+  }
+  const asset = await AssetDB.getAsset(bgAssetId).catch(() => null);
+  const dims = asset ? await loadImageDimensions(asset.dataUrl) : null;
+  if (!asset || !dims) {
+    el.itemIconSlots.innerHTML = '<div class="fish-sheet-empty" style="position:static;padding:12px 0">불러오지 못했어요</div>';
+    return;
+  }
+  const overrides = fishingConfig.itemIconSlotRects || {};
+  ITEM_ICON_SLOT_KEYS.forEach((slotKey, i) => {
+    const rect = overrides[slotKey] || getItemIconGridDefaultCropRect(i, dims.width, dims.height);
+    const style = getFishCropStyle(rect, dims.width, dims.height, 64);
     const slot = document.createElement('div');
     slot.className = 'frame-slot';
     slot.dataset.slot = slotKey;
-    slot.innerHTML = `<span class="frame-index">${slotKey}</span>
-      <div class="frame-actions">${assetId ? '<button type="button" class="frame-mini-btn danger" data-act="del">✕</button>' : ''}</div>`;
-    slot.addEventListener('click', (e) => {
-      if (e.target.closest('[data-act=del]')) return;
-      itemIconUploadSlot = slotKey;
-      el.itemIconFileInput.click();
+    slot.style.backgroundImage = `url('${asset.dataUrl}')`;
+    slot.style.backgroundPosition = style.backgroundPosition;
+    slot.style.backgroundSize = style.backgroundSize;
+    slot.style.backgroundRepeat = 'no-repeat';
+    slot.innerHTML = `<span class="frame-index">${slotKey}${overrides[slotKey] ? ' ✓' : ''}</span>`;
+    slot.addEventListener('click', () => {
+      openCropAdjuster(asset.dataUrl, rect, null, (newRect) => setItemIconSlotRect(slotKey, newRect).then(renderItemIconSlots));
     });
-    const delBtn = slot.querySelector('[data-act=del]');
-    if (delBtn) {
-      delBtn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        const next = Object.assign({}, iconAssetIds);
-        delete next[slotKey];
-        fishingConfig = await AssetDB.setFishingConfig({ itemIconAssetIds: next });
-        showSaveNote();
-        renderItemIconSlots();
-      });
-    }
     el.itemIconSlots.appendChild(slot);
-    if (assetId) {
-      AssetDB.getAsset(assetId).then(asset => {
-        if (!asset) return;
-        const img = document.createElement('img');
-        img.src = asset.dataUrl;
-        img.alt = slotKey;
-        slot.insertBefore(img, slot.firstChild);
-      }).catch(() => {});
-    }
   });
 }
-el.itemIconFileInput.addEventListener('change', async () => {
-  const file = el.itemIconFileInput.files[0];
-  el.itemIconFileInput.value = '';
-  const slotKey = itemIconUploadSlot;
-  itemIconUploadSlot = null;
-  if (!file || slotKey == null) return;
-  const asset = await AssetDB.addAsset({ type: 'fishing-item-icon', name: file.name, blob: file });
-  const next = Object.assign({}, fishingConfig.itemIconAssetIds, { [slotKey]: asset.id });
-  fishingConfig = await AssetDB.setFishingConfig({ itemIconAssetIds: next });
-  showSaveNote();
-  renderItemIconSlots();
-});
 
 /* ===== 세밀영역조절(범용) 전체화면 편집기 — evidence-notebook의
    evn-* 편집기와 완전히 같은 pan/draw 좌표 수학(스케일=스테이지 폭/원본 폭,
