@@ -413,6 +413,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     <div class="picker-label">옷</div>
     <div class="picker-pills" id="outfitPickerPills"></div>
     <button class="hotspot-secondary-btn" id="outfitRenameBtn" style="margin-top:8px;width:100%;border-radius:10px;padding:9px;font-family:var(--mono);font-weight:700">이 옷 이름 변경</button>
+    <button class="hotspot-secondary-btn" id="outfitDescribeBtn" style="margin-top:8px;width:100%;border-radius:10px;padding:9px;font-family:var(--mono);font-weight:700">이 옷 부연설명 수정</button>
     <button class="week-dialogue-all-btn" id="outfitApplyBtn" style="margin-top:8px;width:100%;padding:9px;border-radius:10px"></button>
   </div>
   <div class="picker hidden" id="exprPicker">
@@ -973,6 +974,7 @@ const el = {
   outfitPicker: document.getElementById('outfitPicker'),
   outfitPickerPills: document.getElementById('outfitPickerPills'),
   outfitRenameBtn: document.getElementById('outfitRenameBtn'),
+  outfitDescribeBtn: document.getElementById('outfitDescribeBtn'),
   outfitApplyBtn: document.getElementById('outfitApplyBtn'),
   exprPicker: document.getElementById('exprPicker'),
   exprPickerPills: document.getElementById('exprPickerPills'),
@@ -2185,6 +2187,18 @@ el.outfitRenameBtn.addEventListener('click', async () => {
     await renderOutfitPicker();
   } catch (err) {
     DevDiag.show('옷 이름 변경 실패: ' + (err && err.message ? err.message : err));
+  }
+});
+
+el.outfitDescribeBtn.addEventListener('click', async () => {
+  if (!currentOutfit) return;
+  const descOverrides = await DevGameState.getOutfitDescriptionMap();
+  const description = prompt('새 옷 부연설명', descOverrides[currentOutfit] || '');
+  if (description == null) return;
+  try {
+    await DevGameState.setOutfitDescription(currentOutfit, description.trim());
+  } catch (err) {
+    DevDiag.show('옷 부연설명 수정 실패: ' + (err && err.message ? err.message : err));
   }
 });
 

@@ -1689,6 +1689,25 @@ const AssetDB = (() => {
   }
   function getOutfitNamesCached() { return outfitNamesSyncCache || {}; }
 
+  // 옷 부연설명 오버라이드 — { [vnOutfitId]: description }. 옷 이름 오버라이드와
+  // 같은 패턴(위 outfitNamesCache 참고) — /dev/upload 인물 DB 탭 "부연설명 수정"으로
+  // 재정의한 값만 담고, 재정의가 없으면 shopItems.js의 정적 description으로
+  // 폴백한다 — getOutfitDescription(dialogueData.js)/getShopItemDescription
+  // (shopItems.js) 참고.
+  const outfitDescriptionsCache = new Map();
+  const OUTFIT_DESCRIPTIONS_PATH = 'outfit-descriptions/map.json';
+  async function getOutfitDescriptionMap() { return getJsonBlobMap(OUTFIT_DESCRIPTIONS_PATH, outfitDescriptionsCache, 'map'); }
+  async function setOutfitDescriptionEntry(outfitId, description) {
+    if (!outfitId) return outfitDescriptionsCache.get('map') || {};
+    return setJsonBlobEntry(OUTFIT_DESCRIPTIONS_PATH, outfitDescriptionsCache, 'map', outfitId, description, '옷 부연설명');
+  }
+  let outfitDescriptionsSyncCache = null;
+  async function prefetchOutfitDescriptions() {
+    outfitDescriptionsSyncCache = await getOutfitDescriptionMap().catch(() => ({}));
+    return outfitDescriptionsSyncCache;
+  }
+  function getOutfitDescriptionsCached() { return outfitDescriptionsSyncCache || {}; }
+
   // 캐릭터 위치/스케일 배정 — { [transformKey]: {x,y,scale} }, transformKey는
   // DevGameState._transformKeyFor 결과(주인공은 characterKey 그대로, 나머지
   // 전원은 '__other__' 공용 키).
@@ -1764,6 +1783,7 @@ const AssetDB = (() => {
     getCharacterAssetMap, setCharacterAssetEntry, _setCharacterAssetMap,
     getCharacterOutfitMap, setCharacterOutfitEntry, _setCharacterOutfitMap,
     getOutfitNameMap, setOutfitNameEntry, prefetchOutfitNames, getOutfitNamesCached,
+    getOutfitDescriptionMap, setOutfitDescriptionEntry, prefetchOutfitDescriptions, getOutfitDescriptionsCached,
     getCharacterTransformMap, setCharacterTransformEntry, _setCharacterTransformMap,
     getSceneBgmMap, setSceneBgmEntry, _setSceneBgmMap,
     getLocationBackgroundMap, setLocationBackgroundEntry, _setLocationBackgroundMap,
@@ -1776,7 +1796,7 @@ const DevGameState = {
     background: 'mkDevSelectedBackgrounds', characters: 'mkDevSelectedCharacters',
     transforms: 'mkDevCharacterTransforms', sceneBgm: 'mkDevSceneBgm',
     outfits: 'mkDevSelectedOutfits', locationBackgrounds: 'mkDevLocationBackgrounds',
-    outfitNames: 'mkDevOutfitNames',
+    outfitNames: 'mkDevOutfitNames', outfitDescriptions: 'mkDevOutfitDescriptions',
   },
 
   // Reads a server-backed assignment map and, when the read succeeds,
@@ -2132,6 +2152,27 @@ const DevGameState = {
     if (trimmed) map[outfitId] = trimmed; else delete map[outfitId];
     localStorage.setItem(this._keys.outfitNames, JSON.stringify(map));
     await AssetDB.setOutfitNameEntry(outfitId, trimmed || null);
+  },
+
+  // 옷 부연설명 오버라이드 — /dev/upload 인물 DB 탭 "부연설명 수정"에서만 쓴다.
+  // 옷 이름 오버라이드(위)와 같은 패턴 — AssetDB.getOutfitDescriptionMap()/
+  // setOutfitDescriptionEntry가 실제(다중 기기) 저장소, 옷가게 화면은
+  // AssetDB.prefetchOutfitDescriptions()/getOutfitDescriptionsCached()(동기
+  // 캐시)를 쓴다.
+  _loadOutfitDescriptionMap() {
+    try { return JSON.parse(localStorage.getItem(this._keys.outfitDescriptions)) || {}; }
+    catch (e) { return {}; }
+  },
+  async getOutfitDescriptionMap() {
+    return await this._syncFromServer(this._keys.outfitDescriptions, this._loadOutfitDescriptionMap(), () => AssetDB.getOutfitDescriptionMap());
+  },
+  async setOutfitDescription(outfitId, description) {
+    if (!outfitId) return;
+    const map = this._loadOutfitDescriptionMap();
+    const trimmed = (description || '').trim();
+    if (trimmed) map[outfitId] = trimmed; else delete map[outfitId];
+    localStorage.setItem(this._keys.outfitDescriptions, JSON.stringify(map));
+    await AssetDB.setOutfitDescriptionEntry(outfitId, trimmed || null);
   },
 
   // Backed by AssetDB.getCharacterTransformMap()/setCharacterTransformEntry

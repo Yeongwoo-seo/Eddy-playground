@@ -358,7 +358,7 @@ function renderUnlockedCard(item) {
       <div class="item-thumb">${thumbUrl ? `<img src="${thumbUrl}" alt="">` : '👗'}</div>
       <div class="item-body">
         <div class="item-name">${escapeHtml(getShopItemName(item))}${item.isNew ? '<span class="item-new-badge">NEW</span>' : ''}</div>
-        <div class="item-desc">${escapeHtml(item.description || '')}</div>
+        <div class="item-desc">${escapeHtml(getShopItemDescription(item))}</div>
         <div class="item-meta">
           <span class="item-price">${item.price}P</span>
           <span class="item-rarity">${RARITY_LABEL[item.rarity] || item.rarity}</span>
@@ -445,7 +445,7 @@ el.wearNowBtn.addEventListener('click', async () => {
 (async function init() {
   updateHeaderPoints();
   renderTabs();
-  await Promise.all([safeCall(() => AssetDB.prefetchOutfitNames()), loadItemThumbs()]);
+  await Promise.all([safeCall(() => AssetDB.prefetchOutfitNames()), safeCall(() => AssetDB.prefetchOutfitDescriptions()), loadItemThumbs()]);
   renderList();
   updatePreview();
   loadPreviewLocationBackground();

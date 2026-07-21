@@ -92,6 +92,16 @@ function getOutfitLabel(outfitId) {
   return def ? def.label : outfitId;
 }
 
+// 옷 부연설명 오버라이드 — /dev/upload 인물 DB 탭 "부연설명 수정"으로 재정의한
+// 값이 있으면 그걸 우선 반환한다(getOutfitLabel과 같은 패턴). 재정의가 없으면
+// 빈 문자열로 폴백 — 옷가게 카탈로그의 정적 description은 getShopItemDescription
+// (shopItems.js)에서 이 함수를 먼저 확인한 뒤 자체 폴백으로 쓴다.
+function getOutfitDescription(outfitId) {
+  if (!outfitId) return '';
+  const overrides = (typeof AssetDB !== 'undefined') ? AssetDB.getOutfitDescriptionsCached() : {};
+  return overrides[outfitId] || '';
+}
+
 // Sentinel "expression" a minigame face photo is stored/looked up under in
 // the same (character, expression) asset map 인물 DB uses — not a real mood,
 // just one dedicated square close-up per character for small in-minigame
@@ -237,38 +247,22 @@ const week1Scene002_1Lines = [
   { id: 'line-045', speaker: '지수', text: '웅.\n딱 가까운 데로만.', characterId: 'jisoo', expression: 'soft' },
 ];
 
-/* MISSING KEY — WEEK 1 · SCENE 06 「첫날 저녁」 v08
+/* MISSING KEY — WEEK 1 · SCENE 06 「첫날 저녁」 v09
    Dialogue Set: dialogue-week1-scene-dinner
    Scene: week1-scene-dinner (근처 식당, 14:20)
-   [v08 재편] 생활형 버전 취지에 맞춰 압축 — 사진 찍는 긴 리프 대신 피곤함/
-   배고픔 위주의 짧은 장면으로 줄였다. Merged into week1-scene-002-1 (see
-   that scene's header comment) — its first line below carries the
-   sceneTransition into this location. */
+   [v09 재편] 저녁 식사 장면 자체는 들어내고, 저녁 먹으러 나갔다 온 사이
+   폰을 잃어버렸다는 사실로 바로 넘어가는 짧은 전환부만 남겼다 — 뒤이은
+   week1SceneChargerLines의 "폰이 없어진 걸 알아채는" 비트로 곧장 이어진다.
+   sceneTransition은 여전히 필요하다(식당 배경/시간 표시가 이 전환의
+   유일한 목적). Merged into week1-scene-002-1 (see that scene's header
+   comment) — its first line below carries the sceneTransition into this
+   location. */
 const week1SceneDinnerLines = [
   {
     id: 'line-001', speaker: '', text: '숙소 근처 작은 식당.\n오후 2시 20분.', characterId: null,
     sceneTransition: { backgroundKey: 'week1-scene-002-1--dinner', introLabel: 'DINNER', time: '14:20' },
   },
-  { id: 'line-002', speaker: '', text: '늦은 점심을 겸한 식사였다.\n피곤해서인지 둘 다 말이 좀 줄었다.', characterId: null },
-  { id: 'line-003', speaker: '지수', text: '이거 냄새 완전 좋다.', characterId: 'jisoo', expression: 'happy' },
-  { id: 'line-004', speaker: '영우', text: '그치.\n괜찮아 보여서 저장해놨었어.', characterId: 'youngwoo', expression: 'soft' },
-  { id: 'line-005', speaker: '지수', text: '오늘 준비성 점수 계속 올라가는데요.', characterId: 'jisoo', expression: 'smirk' },
-  { id: 'line-006', speaker: '영우', text: '체력은 둘 다 바닥인데\n준비성만 늘었네.', characterId: 'youngwoo', expression: 'happy' },
-  { id: 'line-007', speaker: '지수', text: '근데 이거 리스트 저장한 거\n또 어디 있어요?', characterId: 'jisoo', expression: 'curious' },
-  { id: 'line-008', speaker: '영우', text: '많아.\n한 달 넘게 모았어.', characterId: 'youngwoo', expression: 'soft' },
-  { id: 'line-009', speaker: '지수', text: '헐.\n진짜 한 달 전부터요?', characterId: 'jisoo', expression: 'shocked' },
-  { id: 'line-010', speaker: '영우', text: '지수 오면 어디부터 데려갈지\n계속 생각했었어.', characterId: 'youngwoo', expression: 'soft' },
-  { id: 'line-011', speaker: '지수', text: '...\n왜 그런 말을 밥 먹다가 해요.', characterId: 'jisoo', expression: 'soft' },
-  { id: 'line-012', speaker: '영우', text: '왜.\n이상해?', characterId: 'youngwoo', expression: 'curious' },
-  { id: 'line-013', speaker: '지수', text: '아니.\n좋아서 그래요.', characterId: 'jisoo', expression: 'soft' },
-  { id: 'line-014', speaker: '', text: '음식이 나오자\n두 사람은 별말 없이 한동안 먹는 데만 집중했다.', characterId: null },
-  { id: 'line-015', speaker: '지수', text: '아,\n이제 좀 살겠다.', characterId: 'jisoo', expression: 'soft' },
-  { id: 'line-016', speaker: '영우', text: '더 시킬까?', characterId: 'youngwoo', expression: 'curious' },
-  { id: 'line-017', speaker: '지수', text: '아니요.\n이제 배부른데 졸려요.', characterId: 'jisoo', expression: 'blank' },
-  { id: 'line-018', speaker: '영우', text: '숙소 가서 좀 쉬자.\n오늘 진짜 많이 걸었어.', characterId: 'youngwoo', expression: 'soft' },
-  { id: 'line-019', speaker: '지수', text: '웅.\n짧게 산책만 하고 들어가요.', characterId: 'jisoo', expression: 'soft' },
-  { id: 'line-020', speaker: '', text: '두 사람은 식사를 마치고\n숙소 쪽으로 천천히 걸어 돌아갔다.', characterId: null },
-  { id: 'line-021', speaker: '', text: '오후의 볕이 조금씩 옅어지고 있었다.\n\n걷는 동안, 지수는 몇 번이고 영우의 손을 고쳐 잡았다.', characterId: 'jisoo', expression: 'soft' },
+  { id: 'line-002', speaker: '', text: '늦은 점심을 겸한 저녁을 간단히 먹고,\n두 사람은 숙소 쪽으로 천천히 걸어 돌아갔다.', characterId: null },
 ];
 
 /* MISSING KEY — WEEK 1 · SCENE 07 「사라진 핸드폰」 v08

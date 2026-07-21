@@ -161,3 +161,15 @@ function getShopItemName(item) {
   if (item.vnOutfitId && typeof getOutfitLabel === 'function') return getOutfitLabel(item.vnOutfitId);
   return item.name;
 }
+
+// 상품의 실제 표시 부연설명 — getShopItemName과 같은 패턴. 이 상품의 실제 옷
+// (vnOutfitId)에 /dev/upload에서 지정된 부연설명이 있으면 그걸 우선 보여주고,
+// 없으면 이 카탈로그의 정적 description으로 폴백한다.
+function getShopItemDescription(item) {
+  if (!item) return '';
+  if (item.vnOutfitId && typeof getOutfitDescription === 'function') {
+    const override = getOutfitDescription(item.vnOutfitId);
+    if (override) return override;
+  }
+  return item.description || '';
+}
