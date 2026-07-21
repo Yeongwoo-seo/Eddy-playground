@@ -1030,7 +1030,7 @@ const AssetDB = (() => {
   }
 
   async function setGameSettings(settings) {
-    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${GAME_SETTINGS_PATH}`;
+    const url = `${SUPABASE_URL}/storage/v1/object/${DEV_ASSETS_BUCKET}/${GAME_SETTINGS_PATH}`;
     const blob = new Blob([JSON.stringify(settings)], { type: 'application/json' });
     const res = await fetch(url, {
       method: 'POST',
