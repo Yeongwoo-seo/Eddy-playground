@@ -2055,13 +2055,13 @@ const DevGameState = {
     try { return JSON.parse(localStorage.getItem(this._keys.transforms)) || {}; }
     catch (e) { return {}; }
   },
-  // The protagonist gets their own dedicated transform; every other
-  // character shares one common default (tune it on any of them, it applies
-  // to all) — see the `role` field on dialogueCharacters in dialogueData.js.
+  // Every character — protagonist included — shares one common transform,
+  // so all character heights stay unified within a scene (tune it on any of
+  // them, it applies to all). Previously the protagonist (role
+  // 'protagonist' in dialogueData.js) got her own dedicated entry, which let
+  // her height drift out of sync with the other characters' shared default.
   _transformKeyFor(characterKey) {
-    if (!characterKey) return null;
-    const def = (typeof dialogueCharacters !== 'undefined') ? dialogueCharacters.find(c => c.id === characterKey) : null;
-    return (def && def.role === 'protagonist') ? characterKey : '__other__';
+    return characterKey ? '__other__' : null;
   },
   // CharacterTransform = { x, y, scale }.
   async getCharacterTransform(characterKey) {
