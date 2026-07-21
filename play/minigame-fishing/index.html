@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>MISSING KEY · 낚시</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Gaegu:wght@700&display=swap">
 <meta name="theme-color" content="#0A2A3A">
 <link rel="manifest" href="/play/manifest.json">
 <link rel="apple-touch-icon" href="https://dhtstqnksjoyyshnhksv.supabase.co/storage/v1/object/public/dev-assets/app-icon/play-apple-touch-icon.png">
@@ -393,7 +393,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
    .dialogue-intro-layer img 규칙을 안 타고 여기서 따로 그린다. */
 .dialogue-intro-layer.dialogue-portrait-layer img{object-fit:cover;border-radius:8px}
 .dialogue-intro-name{width:100%;height:100%;display:flex;align-items:center;color:#fff;font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-shadow:0 1px 3px rgba(0,0,0,.6)}
-.dialogue-intro-text{width:100%;height:100%;color:#fff;font-size:14px;line-height:1.5;white-space:pre-wrap;overflow:hidden;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+.dialogue-intro-text{width:100%;height:100%;color:#662504;font-family:'Gaegu',var(--sans);font-weight:700;font-size:17px;line-height:1.5;white-space:pre-wrap;overflow:hidden}
 </style>
 </head>
 <body>
@@ -1828,6 +1828,29 @@ let dialogueIntroScene = null;
 let dialogueIntroById = null;
 let dialogueIntroLines = [];
 let dialogueIntroIndex = 0;
+// 대사가 한 글자씩 타이핑되어 나오는 연출 — vnPlayer.js의 typeText와 같은
+// 방식(setInterval로 slice 늘려가며 채움). 탭이 타이핑 도중 들어오면(아래
+// pointerdown 핸들러) 다음 줄로 넘기는 대신 그 자리에서 바로 완성한다.
+const DIALOGUE_INTRO_TYPING_MS = 40;
+let dialogueIntroTypingTimer = null;
+let dialogueIntroTypingEl = null;
+let dialogueIntroFullText = '';
+function typeDialogueIntroText(textEl, text) {
+  clearInterval(dialogueIntroTypingTimer);
+  dialogueIntroTypingEl = textEl;
+  dialogueIntroFullText = text;
+  textEl.textContent = '';
+  if (!text) { dialogueIntroTypingTimer = null; return; }
+  let i = 0;
+  dialogueIntroTypingTimer = setInterval(() => {
+    i++;
+    textEl.textContent = text.slice(0, i);
+    if (i >= text.length) {
+      clearInterval(dialogueIntroTypingTimer);
+      dialogueIntroTypingTimer = null;
+    }
+  }, DIALOGUE_INTRO_TYPING_MS);
+}
 function renderDialogueIntroFrame() {
   const dialogueScene = dialogueIntroScene, byId = dialogueIntroById;
   const line = dialogueIntroLines[dialogueIntroIndex] || null;
@@ -1853,9 +1876,9 @@ function renderDialogueIntroFrame() {
     if (key === 'textLayer') {
       const textEl = document.createElement('div');
       textEl.className = 'dialogue-intro-text';
-      textEl.textContent = (line && line.text) || '';
       layerEl.appendChild(textEl);
       el.dialogueIntro.appendChild(layerEl);
+      typeDialogueIntroText(textEl, (line && line.text) || '');
       return;
     }
     if (key === 'portraitLayer') {
@@ -1884,6 +1907,8 @@ function renderDialogueIntroFrame() {
 function renderDialogueIntro(dialogueScene, byId) {
   const hasAnyLayer = DIALOGUE_INTRO_LAYERS.some(key => dialogueScene[key]);
   if (!hasAnyLayer) {
+    clearInterval(dialogueIntroTypingTimer);
+    dialogueIntroTypingTimer = null;
     el.dialogueIntro.innerHTML = '';
     el.dialogueIntro.classList.add('hidden');
     return false;
@@ -1899,6 +1924,12 @@ function renderDialogueIntro(dialogueScene, byId) {
 el.dialogueIntro.addEventListener('pointerdown', (e) => {
   if (gameState !== 'dialogue') return;
   e.stopPropagation();
+  if (dialogueIntroTypingTimer) {
+    clearInterval(dialogueIntroTypingTimer);
+    dialogueIntroTypingTimer = null;
+    if (dialogueIntroTypingEl) dialogueIntroTypingEl.textContent = dialogueIntroFullText;
+    return;
+  }
   dialogueIntroIndex += 1;
   if (dialogueIntroIndex < dialogueIntroLines.length) {
     renderDialogueIntroFrame();
