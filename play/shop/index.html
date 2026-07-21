@@ -27,7 +27,7 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--sans);disp
 .header-points{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--amber)}
 
 /* ===== Preview panel ===== */
-.preview-panel{position:relative;height:220px;background:linear-gradient(160deg,#171c22 0%,#0d1114 60%,#080a0c 100%);display:flex;align-items:flex-end;justify-content:center;overflow:hidden;border-bottom:1px solid var(--divider)}
+.preview-panel{position:relative;height:220px;background:linear-gradient(160deg,#171c22 0%,#0d1114 60%,#080a0c 100%);background-size:cover;background-position:center;display:flex;align-items:flex-end;justify-content:center;overflow:hidden;border-bottom:1px solid var(--divider)}
 .preview-img{max-height:100%;max-width:70%;object-fit:contain}
 .preview-placeholder{padding-bottom:24px;color:var(--text-muted);font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-align:center}
 .preview-label{position:absolute;top:12px;left:14px;font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--text-muted);text-transform:uppercase}
@@ -92,7 +92,7 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--sans);disp
     <div class="header-points" id="headerPoints">P 0</div>
   </div>
 
-  <div class="preview-panel">
+  <div class="preview-panel" id="previewPanel">
     <div class="preview-label" id="previewLabel">미리보기</div>
     <img class="preview-img" id="previewImg" style="display:none" alt="">
     <div class="preview-placeholder" id="previewPlaceholder">이미지 없음<br>(업로드 전)</div>
@@ -150,6 +150,7 @@ let pendingPurchaseId = null;
 const el = {
   backBtn: document.getElementById('backBtn'),
   headerPoints: document.getElementById('headerPoints'),
+  previewPanel: document.getElementById('previewPanel'),
   previewImg: document.getElementById('previewImg'),
   previewPlaceholder: document.getElementById('previewPlaceholder'),
   previewLabel: document.getElementById('previewLabel'),
@@ -196,6 +197,21 @@ function goBack() {
 el.backBtn.addEventListener('click', goBack);
 
 function updateHeaderPoints() { el.headerPoints.textContent = 'P ' + EconomyState.getPoints(); }
+
+// 지수가 서 있는 미리보기 패널이 빈 그라디언트뿐이라 배경이 붕 떠 보였던
+// 문제 — 이 옷가게가 실제로 자리한 장소(더 록스 옷가게, play/explore의
+// w2-the-rocks-boutique)의 배정 사진을 그대로 가져와 배경으로 깐다. 별도
+// 이미지를 새로 업로드할 필요 없이 탐색허브와 같은 사진을 공유(§신규).
+// 아직 사진이 배정되지 않았다면 CSS의 기본 그라디언트로 조용히 폴백한다.
+const SHOP_LOCATION_ID = 'w2-the-rocks-boutique';
+async function loadPreviewLocationBackground() {
+  const assetId = await safeCall(() => DevGameState.getBackgroundId(SHOP_LOCATION_ID));
+  const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
+  if (!asset || !asset.dataUrl) return;
+  await AssetDB.preloadImage(asset.dataUrl).catch(() => {});
+  el.previewPanel.style.backgroundImage =
+    `linear-gradient(180deg, rgba(8,10,12,.25) 0%, rgba(8,10,12,.72) 100%), url("${asset.dataUrl}")`;
+}
 
 // requestToken guards against a fast preview-switch race: if the user taps
 // 입어보기 on a second item before the first item's asset lookups resolve,
@@ -404,6 +420,7 @@ el.wearNowBtn.addEventListener('click', async () => {
   renderTabs();
   renderList();
   updatePreview();
+  loadPreviewLocationBackground();
 })();
 </script>
 </body>
