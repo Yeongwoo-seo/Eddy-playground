@@ -1867,25 +1867,24 @@ function revealGame() {
 }
 
 /* ===== 게임 시작 카메라 인트로 =====
-   페이드인이 끝나면 곧장 캐릭터 위치로 카메라를 잡는 대신, 배경 지도를
-   한 바퀴 훑어 보여주는 연출용 카메라를 먼저 재생한다: 우상단에서
-   시작 -> 천천히 아래로 -> 맨 밑에서 왼쪽으로 -> 왼쪽 끝에서 위로 ->
-   다시 아래로 절반쯤 내려와 지수 대화를 시작한다(순서는 사용자 요청
-   그대로). 연출 동안은 캐릭터/영우 NPC를 감추고(실제 스폰 위치와 안
-   맞으니) el.bgLayer를 직접 옮긴다 — updateCamera()는 charWorldPos
+   페이드인이 끝나면 곧장 캐릭터 위치로 카메라를 잡는 대신, 좌상단에서
+   시작해 지수/영우가 실제로 서 있는 위치까지 훑어가는 연출용 카메라를
+   먼저 재생한다. 도착 지점은 updateCamera()와 같은 공식으로 계산해
+   camOffset과 정확히 일치시킨다 — 연출이 끝난 뒤 updateCamera()를 불러도
+   카메라가 튀지 않는다. 연출 동안은 캐릭터/영우 NPC를 감추고(아직 그
+   위치에 없으니) el.bgLayer를 직접 옮긴다 — updateCamera()는 charWorldPos
    기준이라 이 연출에는 안 쓴다. 연출이 끝나면 updateCamera()로 원래
    카메라로 되돌리고 나서 캐릭터를 다시 보여준다. */
 function cameraIntroWaypoints() {
   const zoom = effectiveBgZoom();
   const scaledW = worldSize.w * zoom, scaledH = worldSize.h * zoom;
-  const camXmax = Math.max(0, scaledW - frameRect.width);
-  const camYmax = Math.max(0, scaledH - frameRect.height);
+  const charXScaled = charWorldPos.x * zoom;
+  const charYFromTopScaled = (worldSize.h - charWorldPos.y) * zoom;
+  const camX = clamp(charXScaled - frameRect.width / 2, 0, Math.max(0, scaledW - frameRect.width));
+  const camY = clamp(charYFromTopScaled - frameRect.height / 2, 0, Math.max(0, scaledH - frameRect.height));
   return [
-    { x: camXmax, y: 0 },         // 1. 우상단에서 시작
-    { x: camXmax, y: camYmax },   // 2. 천천히 아래로 이동
-    { x: 0, y: camYmax },         // 3. 맨밑 도달시 왼쪽
-    { x: 0, y: 0 },               // 4. 왼쪽 도달시 위쪽
-    { x: 0, y: camYmax / 2 },     // 5. 그러고 내려옴. 중간까지감
+    { x: 0, y: 0 },   // 좌상단에서 시작
+    { x: camX, y: camY }, // 지수 캐릭터의 실제 시작 위치까지
   ];
 }
 function easeInOutSine(t) { return -(Math.cos(Math.PI * t) - 1) / 2; }
@@ -1904,7 +1903,7 @@ function tweenBgLayerTo(from, to, durationMs) {
     requestAnimationFrame(step);
   });
 }
-const CAMERA_INTRO_LEG_MS = [3400, 1700, 1700, 1300]; // 아래로(천천히)/왼쪽으로/위로/중간까지
+const CAMERA_INTRO_LEG_MS = [3400]; // 좌상단 -> 캐릭터 위치, 한 구간
 async function playCameraIntroPan() {
   const points = cameraIntroWaypoints();
   el.bgLayer.style.transform = `translate3d(${-points[0].x}px, ${-points[0].y}px, 0)`;
@@ -1920,7 +1919,7 @@ async function playCameraIntroPan() {
 async function playGameStartIntro() {
   gameState = 'dialogue';
   // 8초 안전장치(setTimeout(revealGame,...))가 응답이 느려 이미 화면을
-  // 밝혀놨다면, 이제 와서 다시 우상단으로 튀었다가 훑는 건 오히려
+  // 밝혀놨다면, 이제 와서 다시 좌상단으로 튀었다가 훑는 건 오히려
   // 어색하니 카메라 인트로는 건너뛴다.
   const canPan = !gameRevealed && hasWorldBackground;
   const npcWasVisible = !el.npcYoungwooStage.classList.contains('hidden');
@@ -1932,10 +1931,18 @@ async function playGameStartIntro() {
   }
   await revealGame();
   if (canPan) {
+    // 패닝이 끝난 뒤(도착 지점)가 아니라 절반쯤 지났을 때 지수/영우를
+    // 먼저 보여준다 — 화면 위 위치(left/bottom)는 applyScreen()의
+    // updateCamera() 호출로 이미 최종 값이 세팅돼 있고(패닝은 el.bgLayer만
+    // 옮기고 캐릭터는 안 건드림) 그 값이 바로 도착 지점 기준이라, 미리
+    // 풀어도 엉뚱한 자리에 나타나지 않는다.
+    const panMs = CAMERA_INTRO_LEG_MS.reduce((sum, ms) => sum + ms, 0);
+    setTimeout(() => {
+      el.charStage.style.visibility = '';
+      if (npcWasVisible) el.npcYoungwooStage.classList.remove('hidden');
+    }, panMs / 2);
     await playCameraIntroPan();
     updateCamera();
-    el.charStage.style.visibility = '';
-    if (npcWasVisible) el.npcYoungwooStage.classList.remove('hidden');
   }
   if (renderDialogueIntro(pendingDialogueSceneCfg || {}, pendingDialogueById || new Map())) {
     gameState = 'dialogue';
@@ -3660,7 +3667,7 @@ setTimeout(revealGame, 8000);
 
 loadConfig().then(() => {
   checkInteractionArea(); // 초기 스폰 위치가 이미 상호작용 영역 안일 수도 있으니 로드 직후 한 번 확인
-  playGameStartIntro(); // 페이드인 -> 카메라 인트로(우상단->아래->왼쪽->위->중간) -> 지수 대화 순으로 이어진다
+  playGameStartIntro(); // 페이드인 -> 카메라 인트로(좌상단->캐릭터 위치) -> 지수 대화 순으로 이어진다
 });
 </script>
 <script src="/dev/devPlanFab.js"></script>
