@@ -4267,9 +4267,8 @@ const minigames = [
     // photo/hotspot setup either, so setupUrl === route just like
     // photo-zoom/timeline above. route lands on the puzzle picker itself
     // (dev/minigame-layton/) rather than a single play page, since picking
-    // which of the 20 puzzles to play IS the entry point; only 3 are
-    // developed today and link onward to dev/minigame-layton/play/, the
-    // rest show as 미개발 in the list.
+    // which of the 20 puzzles to play IS the entry point; all 20 are
+    // developed and link onward to dev/minigame-layton/play/.
     id: 'layton-minigame',
     name: '레이튼 퀴즈',
     location: '독립형 미니게임 (스토리 미연동)',
