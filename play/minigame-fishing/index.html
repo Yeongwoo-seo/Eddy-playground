@@ -1717,9 +1717,10 @@ function refreshStatusWindowPoints() {
    화면을 건널 때(triggerScreenTransition, 도착 화면)가 이 함수 하나를
    공유한다. opts.entryPoint(0~1, 도착 화면 배경 원본 크기 기준 top-down
    정규화 좌표, 이동 영역의 entryPoint)가 있으면 그 지점에 캐릭터를
-   스폰한다 — 없으면(최초 로드, 또는 배경 없는 화면) 예전처럼 화면
-   정중앙에서 시작하거나(charWorldPos 최초 지정) 지금 위치를 새 범위로만
-   clamp한다. */
+   스폰한다 — 없으면(최초 로드, 또는 배경 없는 화면) screenDef.jisuStartPos
+   (같은 0~1 top-down 좌표계, "캐릭터" 탭에서 지정)가 있는 지점에서
+   시작하고, 그마저 없으면 예전처럼 화면 정중앙에서 시작하거나(charWorldPos
+   최초 지정) 지금 위치를 새 범위로만 clamp한다. */
 async function applyScreen(screenDef, opts) {
   opts = opts || {};
   const backgroundAsset = (screenDef && screenDef.backgroundAssetId) ? await AssetDB.getAsset(screenDef.backgroundAssetId).catch(() => null) : null;
@@ -1776,9 +1777,14 @@ async function applyScreen(screenDef, opts) {
       y: clamp(bgDims.height * (1 - opts.entryPoint.y), wb.minY, wb.maxY),
     };
   } else if (!charWorldPos) {
-    // 예전 CSS 기본값(화면 정중앙)과 같은 자리에서 시작하되, 새 범위(wb)
-    // 안으로 clamp한다.
-    charWorldPos = { x: clamp(worldSize.w / 2, wb.minX, wb.maxX), y: clamp(worldSize.h / 2, wb.minY, wb.maxY) };
+    // 최초 로드 — 화면(screenDef)에 지정된 지수 시작 위치(jisuStartPos,
+    // dev/minigame-fishing/index.html "캐릭터" 탭)가 있으면 거기서
+    // 시작하고, 없으면 예전 CSS 기본값(화면 정중앙)과 같은 자리에서
+    // 시작한다. 둘 다 새 범위(wb) 안으로 clamp한다.
+    const jisuStartPos = screenDef && screenDef.jisuStartPos;
+    charWorldPos = (jisuStartPos && hasWorldBackground)
+      ? { x: clamp(jisuStartPos.x * bgDims.width, wb.minX, wb.maxX), y: clamp(bgDims.height * (1 - jisuStartPos.y), wb.minY, wb.maxY) }
+      : { x: clamp(worldSize.w / 2, wb.minX, wb.maxX), y: clamp(worldSize.h / 2, wb.minY, wb.maxY) };
   } else {
     charWorldPos.x = clamp(charWorldPos.x, wb.minX, wb.maxX);
     charWorldPos.y = clamp(charWorldPos.y, wb.minY, wb.maxY);
