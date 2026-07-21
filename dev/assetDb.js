@@ -1610,7 +1610,19 @@ const AssetDB = (() => {
     const current = await readCurrentForWrite(cache, cacheKey, url, {});
     const map = Object.assign({}, current);
     if (value === null || value === undefined || value === '') delete map[entryKey]; else map[entryKey] = value;
-    return saveJsonBlobMap(path, cache, cacheKey, map, errorLabel);
+    // Publish the new map to the cache immediately, before the POST below
+    // resolves — otherwise a concurrent getJsonBlobMap (e.g. advancing
+    // dialogue while a character-transform save is still in flight) reads
+    // the stale pre-write cache and visibly snaps the value back to old,
+    // then forward to new once the save actually lands.
+    const previous = cache.has(cacheKey) ? cache.get(cacheKey) : current;
+    cache.set(cacheKey, map);
+    try {
+      return await saveJsonBlobMap(path, cache, cacheKey, map, errorLabel);
+    } catch (e) {
+      cache.set(cacheKey, previous);
+      throw e;
+    }
   }
 
   // 캐릭터 초상화 배정 — { [assetKey]: assetId }, assetKey는
