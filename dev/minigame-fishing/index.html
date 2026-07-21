@@ -271,6 +271,24 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .dialogue-text-preview{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:4px;font-size:11px;font-weight:600;color:var(--text-primary);text-align:center;overflow:hidden;pointer-events:none;word-break:keep-all}
 .dialogue-text-input{width:100%;background:var(--surface-1);border:1px solid var(--divider);border-radius:8px;padding:8px 10px;color:var(--text-primary);font-size:13.5px;font-family:var(--sans);margin-top:10px;resize:vertical;box-sizing:border-box}
 
+/* ===== 상태창 조립 전체화면 — areafs-* 틀(영역 설정 에디터와 같은 닫기/제목
+   topbar) 안에 slide-layer 자유배치 스테이지를 얹는다. 프레임 이미지의
+   실제 종횡비(--status-assemble-ar)에 맞춰 화면 안에서 최대한 크게 보여준다
+   (openStatusAssembleEditor 참고). 요일·날짜/시간/화살표는 항상 하나뿐인
+   고정 레이어라 이동만 되고, 숫자 자리(.status-assemble-digit)만 개수가
+   가변이라 점선 테두리로 "아직 실제 값이 없는 자리"라는 걸 보여준다(숫자
+   글꼴을 올렸으면 실제 잘라낸 숫자 이미지를 예시로 보여준다). */
+.status-assemble-stage-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:16px;overflow:hidden;min-height:0}
+.status-assemble-stage{position:relative;background:var(--surface-1);border:1px solid var(--divider);border-radius:10px;overflow:hidden;touch-action:none;max-width:100%;max-height:100%;width:min(94vw,480px);aspect-ratio:var(--status-assemble-ar,2/1)}
+.status-assemble-stage-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;pointer-events:none;user-select:none}
+.status-assemble-layer{position:absolute;transform:translate(-50%,-50%);touch-action:none;cursor:grab;display:flex;align-items:center;justify-content:center}
+.status-assemble-layer.selected{outline:2px solid var(--green);outline-offset:3px}
+.status-assemble-text{white-space:nowrap;color:#000;font-family:var(--sans);font-weight:700;pointer-events:none}
+.status-assemble-arrow-img{display:block;pointer-events:none;user-select:none;max-width:60px}
+.status-assemble-digit{border:1px dashed var(--cyan);border-radius:4px;box-sizing:border-box;color:var(--text-muted);font-family:var(--mono);font-size:10px;image-rendering:pixelated}
+.status-assemble-panel{border-top:1px solid var(--divider);padding:12px 16px calc(14px + env(safe-area-inset-bottom,0));flex-shrink:0}
+.status-assemble-panel-label{font-size:13px;color:var(--text-secondary);margin-bottom:8px;font-weight:600}
+
 /* ===== 세밀영역조절(범용) 전체화면 편집기 — dev/upload/evidence-notebook/
    index.html의 영역지정 편집기(evn-*)와 완전히 같은 pan/draw 제스처 패턴을
    재사용한다: 라벨(배지)을 고르지 않은 채 드래그하면 화면을 세로로
@@ -954,10 +972,12 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   <!-- ===== 상태창 — 플레이 화면 위쪽에 뜨는 상태 HUD(요일·날짜/시간/포인트/
        화살표). 프레임·화살표는 castGaugeImageSlot과 같은 단일 슬롯 업로드
        패턴(renderCastGaugeImageSlot 참고), 숫자글꼴은 0~9 각 자리를 같은
-       패턴으로 낱개 업로드한다. 레이아웃(요일·날짜/시간/포인트/화살표
-       밑부분 위치)은 heldFishPos 피커(단일 포인트 드래그)를 네 개로 늘린
-       버전 — statusLayoutPills로 지금 옮길 항목을 고르고 statusLayoutStage를
-       탭/드래그하면 그 항목의 마커만 움직인다. ===== -->
+       패턴으로 낱개 업로드한다. 배치는 "🧩 상태창 조립" 전체화면 에디터
+       (statusAssembleOverlay, openStatusAssembleEditor 참고)에서 낚시바/
+       대화 탭과 같은 slide-layer 자유배치로 한다 — 요일·날짜/시간/화살표는
+       항상 하나뿐인 고정 레이어(텍스트는 검은색·그림자 없음, 글자 크기도
+       여기서 키울 수 있다), 포인트 숫자는 자리마다(digitPositions) 따로
+       위치를 지정하는 가변 개수 레이어다. ===== -->
   <div class="tab-panel hidden" id="panelStatus">
     <div class="option-group">
       <div class="option-label">상태창 프레임</div>
@@ -1004,20 +1024,18 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
           <span class="crop-size-unit">px</span>
         </div>
       </div>
-      <div class="crop-size-row">
-        <div class="option-label">숫자 간격</div>
-        <div class="crop-size-controls">
-          <input type="range" id="statusNumberGapInput" min="0" max="20" step="1" value="2">
-          <input type="number" id="statusNumberGapNumberInput" min="0" max="20" step="1" value="2">
-          <span class="crop-size-unit">px</span>
-        </div>
-      </div>
     </div>
 
+    <!-- ===== 조립 — 낚시바/대화 탭과 같은 "실제 구성요소를 화면 위에 자유
+         배치" 방식을, 상태창은 작은 HUD 소품이라 전체화면(statusAssembleOverlay)
+         하나로 몰아서 연다(openStatusAssembleEditor). 요일·날짜/시간/화살표
+         (있으면)/숫자 자리는 항상 실제 미리보기(글꼴 텍스트, 실제 업로드한
+         숫자글꼴 이미지)로 보여주고 드래그로 옮긴다 — 숫자 자리만 개수가
+         가변이라 "+ 숫자 자리"로 늘리고 선택 후 삭제할 수 있다. ===== -->
     <div class="option-group">
-      <div class="option-label">레이아웃</div>
-      <div class="option-desc">상태창 이미지 위에서 요일·날짜, 시간, 포인트, 화살표 밑부분(회전축)의 위치를 지정하세요. 상태창 이미지를 먼저 올려야 열 수 있어요.</div>
-      <button type="button" class="fish-sheet-btn" id="statusLayoutEditBtn" style="width:100%" disabled>🧭 레이아웃 편집</button>
+      <div class="option-label">조립</div>
+      <div class="option-desc">요일·날짜, 시간, 화살표, 포인트 숫자 자리를 실제 모습 그대로 화면 위에서 자유롭게 배치하세요. 글씨 크기도 여기서 조절해요. 상태창 이미지를 먼저 올려야 열 수 있어요.</div>
+      <button type="button" class="fish-sheet-btn" id="statusAssembleBtn" style="width:100%" disabled>🧩 상태창 조립</button>
     </div>
   </div>
 
@@ -1286,28 +1304,37 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   </div>
 </div>
 
-<!-- 상태창 레이아웃 — heldFishPos류 단일 포인트 피커를 네 개로 늘린 버전.
-     statusLayoutPills(option-pill 재사용)로 지금 옮길 항목(요일·날짜/시간/
-     포인트/화살표 밑부분)을 고르면 statusLayoutStage 탭/드래그가 그 항목의
-     마커만 옮긴다 — 네 마커를 한 번에 다 보여줘야 서로 겹치지 않게 배치하기
-     쉬워서, rodtip-marker에 라벨 텍스트를 더한 status-layout-marker로
-     구분한다(openStatusLayoutEditor 참고). -->
-<div class="crop-overlay hidden" id="statusLayoutOverlay">
-  <div class="crop-sheet">
-    <div class="crop-title">상태창 레이아웃</div>
-    <div class="crop-desc">옮길 항목을 고르고, 그림 위를 탭하거나 드래그해서 위치를 옮기세요.</div>
-    <div class="option-pills" id="statusLayoutPills"></div>
-    <div class="heldfish-stage" id="statusLayoutStage">
-      <img id="statusLayoutImg" alt="">
-      <div class="rodtip-marker status-layout-marker" id="statusLayoutMarkerDate">요일·날짜</div>
-      <div class="rodtip-marker status-layout-marker" id="statusLayoutMarkerTime">시간</div>
-      <div class="rodtip-marker status-layout-marker" id="statusLayoutMarkerPoints">포인트</div>
-      <div class="rodtip-marker status-layout-marker" id="statusLayoutMarkerArrow">화살표</div>
+<!-- ===== 상태창 조립 — 전체화면(openStatusAssembleEditor). areafs-* 전체화면
+     틀(닫기/제목, 영역 설정 에디터와 같은 패턴)에 낚시바/대화 탭과 같은
+     slide-layer 자유배치를 얹는다. 요일·날짜/시간(status-assemble-text,
+     실제 예시 문구를 검은 글씨·그림자 없이 미리보여준다)/화살표(있으면,
+     status-assemble-arrow)는 항상 하나씩 존재하는 고정 레이어라 드래그만
+     되고, 숫자 자리(status-assemble-digit, 실제 업로드한 숫자글꼴로 예시
+     숫자를 잘라 보여준다)는 개수가 가변이라 상단 "+ 숫자 자리"로 늘리고
+     선택 후 하단 패널의 삭제 버튼으로 뺄 수 있다. 선택한 레이어가 요일·날짜/
+     시간이면 하단 패널에 글자 크기 슬라이더가 뜬다(statusAssembleFontSizeRow) —
+     숫자 자리는 크기가 아니라 위치만 여기서 다루고, 실제 크기는 위 "숫자
+     폭/높이" 슬라이더(모든 자리 공통)를 그대로 쓴다. ===== -->
+<div class="areafs hidden" id="statusAssembleOverlay">
+  <div class="areafs-topbar">
+    <button type="button" class="areafs-close-btn" id="statusAssembleCloseBtn">✕</button>
+    <div class="areafs-title">상태창 조립</div>
+    <button type="button" class="fish-sheet-btn" id="addStatusDigitBtn" style="flex:0 0 auto;padding:9px 14px;width:auto">+ 숫자 자리</button>
+  </div>
+  <div class="areafs-hint">몸통을 드래그해서 옮기세요. 요일·날짜/시간을 선택하면 아래에서 글자 크기를 키울 수 있어요. 숫자 자리는 배열 순서(왼쪽부터 추가한 순서)가 높은 자리부터예요 — 실제 포인트 자릿수가 이보다 적으면 앞자리는 빈칸으로 남아요.</div>
+  <div class="status-assemble-stage-wrap">
+    <div class="status-assemble-stage" id="statusAssembleStage"></div>
+  </div>
+  <div class="status-assemble-panel hidden" id="statusAssemblePanel">
+    <div class="status-assemble-panel-label" id="statusAssemblePanelLabel"></div>
+    <div class="crop-size-row hidden" id="statusAssembleFontSizeRow">
+      <div class="crop-size-controls">
+        <input type="range" id="statusAssembleFontSizeInput" min="8" max="40" step="0.5" value="9.5">
+        <input type="number" id="statusAssembleFontSizeNumberInput" min="8" max="40" step="0.5" value="9.5">
+        <span class="crop-size-unit">px</span>
+      </div>
     </div>
-    <div class="crop-actions">
-      <button type="button" class="crop-btn secondary" id="statusLayoutCancelBtn">취소</button>
-      <button type="button" class="crop-btn primary" id="statusLayoutConfirmBtn">적용</button>
-    </div>
+    <button type="button" class="fish-sheet-btn danger hidden" id="deleteStatusDigitBtn" style="width:100%;margin-top:10px">✕ 이 숫자 자리 삭제</button>
   </div>
 </div>
 
@@ -1339,7 +1366,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
 <!-- ===== 아이템 칸 배치 — 8칸을 하나하나 따로 조정하는 대신, 칸 크기·칸
      사이 간격·전체 위치(중심) 세 값만으로 8칸을 한 줄로 나란히 계산해서
      배치한다(computeItemIconGridRects). heldFishPos류 드래그로 그리드
-     전체 위치를 옮기고, 아래 크기/간격 슬라이더는 statusNumberGapInput류
+     전체 위치를 옮기고, 아래 크기/간격 슬라이더는 statusNumberWidthInput류
      슬라이더+숫자 입력 쌍을 재사용한다. -->
 <div class="crop-overlay hidden" id="itemIconGridOverlay">
   <div class="crop-sheet">
@@ -1665,19 +1692,17 @@ const el = {
   statusNumberWidthNumberInput: document.getElementById('statusNumberWidthNumberInput'),
   statusNumberHeightInput: document.getElementById('statusNumberHeightInput'),
   statusNumberHeightNumberInput: document.getElementById('statusNumberHeightNumberInput'),
-  statusNumberGapInput: document.getElementById('statusNumberGapInput'),
-  statusNumberGapNumberInput: document.getElementById('statusNumberGapNumberInput'),
-  statusLayoutEditBtn: document.getElementById('statusLayoutEditBtn'),
-  statusLayoutOverlay: document.getElementById('statusLayoutOverlay'),
-  statusLayoutPills: document.getElementById('statusLayoutPills'),
-  statusLayoutStage: document.getElementById('statusLayoutStage'),
-  statusLayoutImg: document.getElementById('statusLayoutImg'),
-  statusLayoutMarkerDate: document.getElementById('statusLayoutMarkerDate'),
-  statusLayoutMarkerTime: document.getElementById('statusLayoutMarkerTime'),
-  statusLayoutMarkerPoints: document.getElementById('statusLayoutMarkerPoints'),
-  statusLayoutMarkerArrow: document.getElementById('statusLayoutMarkerArrow'),
-  statusLayoutCancelBtn: document.getElementById('statusLayoutCancelBtn'),
-  statusLayoutConfirmBtn: document.getElementById('statusLayoutConfirmBtn'),
+  statusAssembleBtn: document.getElementById('statusAssembleBtn'),
+  statusAssembleOverlay: document.getElementById('statusAssembleOverlay'),
+  statusAssembleCloseBtn: document.getElementById('statusAssembleCloseBtn'),
+  statusAssembleStage: document.getElementById('statusAssembleStage'),
+  addStatusDigitBtn: document.getElementById('addStatusDigitBtn'),
+  statusAssemblePanel: document.getElementById('statusAssemblePanel'),
+  statusAssemblePanelLabel: document.getElementById('statusAssemblePanelLabel'),
+  statusAssembleFontSizeRow: document.getElementById('statusAssembleFontSizeRow'),
+  statusAssembleFontSizeInput: document.getElementById('statusAssembleFontSizeInput'),
+  statusAssembleFontSizeNumberInput: document.getElementById('statusAssembleFontSizeNumberInput'),
+  deleteStatusDigitBtn: document.getElementById('deleteStatusDigitBtn'),
 };
 
 // 카테고리 6개(motion-category-title/motionElKey는 이 파일 아래쪽에서
@@ -5478,10 +5503,10 @@ const DEFAULT_STATUS_WINDOW = {
   arrowAssetId: null,
   numberFontSheetAssetId: null,
   numberFontOverrides: {},
-  numberFontAdjust: { width: 16, height: 22, gap: 2 },
+  numberFontAdjust: { width: 16, height: 22 },
   datePos: null,
   timePos: null,
-  pointsPos: null,
+  digitPositions: [],
   arrowPivot: null,
 };
 function currentStatusWindow() {
@@ -5489,6 +5514,7 @@ function currentStatusWindow() {
   return Object.assign({}, DEFAULT_STATUS_WINDOW, sw, {
     numberFontOverrides: Object.assign({}, sw.numberFontOverrides || {}),
     numberFontAdjust: Object.assign({}, DEFAULT_STATUS_WINDOW.numberFontAdjust, sw.numberFontAdjust || {}),
+    digitPositions: (sw.digitPositions || DEFAULT_STATUS_WINDOW.digitPositions).slice(),
   });
 }
 async function patchStatusWindow(partial) {
@@ -5576,7 +5602,7 @@ async function renderStatusFrameSlot() {
   } else {
     el.statusFrameAddBtn.classList.remove('hidden');
   }
-  updateStatusLayoutBtnState();
+  updateStatusAssembleBtnState();
 }
 el.statusFrameAddBtn.addEventListener('click', () => el.statusFrameFileInput.click());
 el.statusFrameFileInput.addEventListener('change', async () => {
@@ -5742,8 +5768,9 @@ el.statusNumberFontSheetRemoveBtn.addEventListener('click', async () => {
   renderStatusNumberFontTab();
 });
 
-// 숫자 상세조정(폭/높이/간격) — 슬라이더/숫자 입력 쌍(motionRowHeightInput류와
-// 같은 패턴).
+// 숫자 상세조정(폭/높이) — 슬라이더/숫자 입력 쌍(motionRowHeightInput류와
+// 같은 패턴). 간격은 더 이상 없다 — 자리마다 위치를 직접 지정하는
+// digitPositions(아래 "조립")가 그 역할을 대신한다.
 function bindStatusNumberAdjustInput(rangeEl, numberEl, key) {
   const commit = async (value) => {
     rangeEl.value = value;
@@ -5757,97 +5784,238 @@ function bindStatusNumberAdjustInput(rangeEl, numberEl, key) {
 }
 bindStatusNumberAdjustInput(el.statusNumberWidthInput, el.statusNumberWidthNumberInput, 'width');
 bindStatusNumberAdjustInput(el.statusNumberHeightInput, el.statusNumberHeightNumberInput, 'height');
-bindStatusNumberAdjustInput(el.statusNumberGapInput, el.statusNumberGapNumberInput, 'gap');
 function renderStatusNumberAdjustInputs() {
   const adjust = currentStatusWindow().numberFontAdjust;
   el.statusNumberWidthInput.value = adjust.width;
   el.statusNumberWidthNumberInput.value = adjust.width;
   el.statusNumberHeightInput.value = adjust.height;
   el.statusNumberHeightNumberInput.value = adjust.height;
-  el.statusNumberGapInput.value = adjust.gap;
-  el.statusNumberGapNumberInput.value = adjust.gap;
 }
 
-/* ===== 상태창 레이아웃 — heldFishPos류 단일 포인트 드래그 패턴을 네
-   항목(요일·날짜/시간/포인트/화살표 밑부분)으로 늘렸다. statusLayoutPills로
-   지금 옮길 항목을 고르면(기본 요일·날짜) statusLayoutStage 탭/드래그가
-   그 항목의 좌표만 갱신한다 — 나머지 세 마커도 화면에 계속 보이지만
-   rodtip-marker가 pointer-events:none이라 드래그에 끼어들지 않는다. */
-const STATUS_LAYOUT_ITEMS = [
-  { id: 'date', label: '요일·날짜', markerKey: 'statusLayoutMarkerDate', configKey: 'datePos', defaultPos: { x: 0.28, y: 0.3 } },
-  { id: 'time', label: '시간', markerKey: 'statusLayoutMarkerTime', configKey: 'timePos', defaultPos: { x: 0.72, y: 0.3 } },
-  { id: 'points', label: '포인트', markerKey: 'statusLayoutMarkerPoints', configKey: 'pointsPos', defaultPos: { x: 0.5, y: 0.6 } },
-  { id: 'arrow', label: '화살표 밑부분', markerKey: 'statusLayoutMarkerArrow', configKey: 'arrowPivot', defaultPos: { x: 0.5, y: 0.85 } },
-];
-let statusLayoutDraft = {};
-let statusLayoutSelected = 'date';
-let statusLayoutDragging = false;
-function updateStatusLayoutBtnState() {
-  el.statusLayoutEditBtn.disabled = !currentStatusWindow().frameAssetId;
+/* ===== 상태창 조립 — 낚시바/대화 탭과 같은 slide-layer 자유배치를, 상태창은
+   작은 HUD 소품이라 전체화면(statusAssembleOverlay) 하나로 몰아서 연다.
+   레이어 id 체계: 'dateLayer' | 'timeLayer'(둘 다 항상 존재, 실제 예시
+   문구를 검은 글씨·그림자 없이 미리보여주고 글자 크기도 조절) | 'arrowLayer'
+   (화살표 이미지를 올렸을 때만 존재) | `digit-${index}`(digitPositions
+   배열 인덱스, getStatusDigitPositions@fishDefs.js 참고 — 개수가 가변이라
+   "+ 숫자 자리"로 늘리고 선택 후 삭제할 수 있다). statusAssembleLayerPos/
+   setStatusAssembleLayerPos가 이 id 체계와 fishingConfig.statusWindow의
+   실제 필드(datePos/timePos/arrowPivot/digitPositions) 사이를 변환한다. */
+let selectedStatusAssembleLayerId = null;
+function updateStatusAssembleBtnState() {
+  el.statusAssembleBtn.disabled = !currentStatusWindow().frameAssetId;
 }
-function renderStatusLayoutPills() {
-  el.statusLayoutPills.innerHTML = STATUS_LAYOUT_ITEMS.map(item =>
-    `<button type="button" class="option-pill${item.id === statusLayoutSelected ? ' active' : ''}" data-id="${item.id}">${item.label}</button>`
-  ).join('');
-  el.statusLayoutPills.querySelectorAll('.option-pill').forEach(btn => {
-    btn.addEventListener('click', () => {
-      statusLayoutSelected = btn.dataset.id;
-      renderStatusLayoutPills();
-      renderStatusLayoutMarkers();
-    });
-  });
+function statusAssembleLayerPos(sw, id) {
+  if (id === 'dateLayer') return sw.datePos || { x: 0.28, y: 0.3, fontSize: 9.5 };
+  if (id === 'timeLayer') return sw.timePos || { x: 0.72, y: 0.3, fontSize: 9.5 };
+  if (id === 'arrowLayer') return sw.arrowPivot || { x: 0.5, y: 0.85 };
+  const m = /^digit-(\d+)$/.exec(id);
+  if (m) return getStatusDigitPositions(sw)[Number(m[1])] || { x: 0.5, y: 0.6 };
+  return { x: 0.5, y: 0.5 };
 }
-function renderStatusLayoutMarkers() {
-  STATUS_LAYOUT_ITEMS.forEach(item => {
-    const pos = statusLayoutDraft[item.configKey] || item.defaultPos;
-    const markerEl = el[item.markerKey];
-    markerEl.style.left = (pos.x * 100) + '%';
-    markerEl.style.top = (pos.y * 100) + '%';
-    markerEl.classList.toggle('selected', item.id === statusLayoutSelected);
-  });
-}
-async function openStatusLayoutEditor() {
+async function setStatusAssembleLayerPos(id, patch) {
   const sw = currentStatusWindow();
-  if (!sw.frameAssetId) return;
-  statusLayoutDraft = { datePos: sw.datePos, timePos: sw.timePos, pointsPos: sw.pointsPos, arrowPivot: sw.arrowPivot };
-  statusLayoutSelected = 'date';
-  const asset = await AssetDB.getAsset(sw.frameAssetId).catch(() => null);
-  el.statusLayoutImg.src = asset ? asset.dataUrl : '';
-  const dims = asset ? await new Promise(resolve => {
-    const img = new Image();
-    img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
-    img.onerror = () => resolve(null);
-    img.src = asset.dataUrl;
-  }) : null;
-  el.statusLayoutStage.style.setProperty('--heldfish-ar', dims ? (dims.w + '/' + dims.h) : '2/1');
-  renderStatusLayoutPills();
-  renderStatusLayoutMarkers();
-  el.statusLayoutOverlay.classList.remove('hidden');
+  const merged = Object.assign({}, statusAssembleLayerPos(sw, id), patch);
+  if (id === 'dateLayer') return patchStatusWindow({ datePos: merged });
+  if (id === 'timeLayer') return patchStatusWindow({ timePos: merged });
+  if (id === 'arrowLayer') return patchStatusWindow({ arrowPivot: merged });
+  const m = /^digit-(\d+)$/.exec(id);
+  if (m) {
+    const list = getStatusDigitPositions(sw).slice();
+    list[Number(m[1])] = merged;
+    return patchStatusWindow({ digitPositions: list });
+  }
 }
-function updateStatusLayoutFromEvent(e) {
-  const item = STATUS_LAYOUT_ITEMS.find(i => i.id === statusLayoutSelected);
-  if (!item) return;
-  const rect = el.statusLayoutStage.getBoundingClientRect();
-  statusLayoutDraft[item.configKey] = {
-    x: clamp01((e.clientX - rect.left) / rect.width),
-    y: clamp01((e.clientY - rect.top) / rect.height),
-  };
-  renderStatusLayoutMarkers();
+// 숫자 자리 예시 미리보기 — getFishCropStyle(fishDefs.js)은 정사각형 표시
+// 칸 하나만 다루는데, 숫자 자리는 폭·높이가 다른 직사각(numberFontAdjust)일
+// 수 있어서(실제 플레이도 정사각으로 잘라낸 원본을 그 직사각 칸에 늘려
+// 그린다) x/y 배율을 따로 계산하는 버전이 하나 더 필요하다.
+function statusAssembleDigitBgStyle(rect, sheetW, sheetH, boxW, boxH) {
+  const shortSide = Math.min(sheetW, sheetH);
+  const cropSize = rect.size * shortSide;
+  const scaleX = boxW / cropSize, scaleY = boxH / cropSize;
+  const x = (rect.cx * sheetW - cropSize / 2) * scaleX;
+  const y = (rect.cy * sheetH - cropSize / 2) * scaleY;
+  return { backgroundPosition: `-${x}px -${y}px`, backgroundSize: `${sheetW * scaleX}px ${sheetH * scaleY}px` };
 }
-el.statusLayoutEditBtn.addEventListener('click', openStatusLayoutEditor);
-el.statusLayoutStage.addEventListener('pointerdown', (e) => { statusLayoutDragging = true; updateStatusLayoutFromEvent(e); });
-window.addEventListener('pointermove', (e) => { if (statusLayoutDragging) updateStatusLayoutFromEvent(e); });
-window.addEventListener('pointerup', () => { statusLayoutDragging = false; });
-el.statusLayoutCancelBtn.addEventListener('click', () => el.statusLayoutOverlay.classList.add('hidden'));
-el.statusLayoutConfirmBtn.addEventListener('click', async () => {
-  await patchStatusWindow({
-    datePos: statusLayoutDraft.datePos,
-    timePos: statusLayoutDraft.timePos,
-    pointsPos: statusLayoutDraft.pointsPos,
-    arrowPivot: statusLayoutDraft.arrowPivot,
+function attachStatusAssembleLayerMove(layerEl, id) {
+  let pointerId = null, start = null, startPos = null;
+  layerEl.addEventListener('pointerdown', (e) => {
+    e.stopPropagation();
+    if (selectedStatusAssembleLayerId !== id) {
+      selectedStatusAssembleLayerId = id;
+      renderStatusAssembleStage();
+      return;
+    }
+    pointerId = e.pointerId;
+    layerEl.setPointerCapture(pointerId);
+    start = { x: e.clientX, y: e.clientY };
+    startPos = statusAssembleLayerPos(currentStatusWindow(), id);
+    layerEl._pendingPos = null;
   });
-  el.statusLayoutOverlay.classList.add('hidden');
+  layerEl.addEventListener('pointermove', (e) => {
+    if (e.pointerId !== pointerId) return;
+    const stageRect = el.statusAssembleStage.getBoundingClientRect();
+    const x = clamp01(startPos.x + (e.clientX - start.x) / stageRect.width);
+    const y = clamp01(startPos.y + (e.clientY - start.y) / stageRect.height);
+    layerEl.style.left = (x * 100) + '%';
+    layerEl.style.top = (y * 100) + '%';
+    layerEl._pendingPos = { x, y };
+  });
+  ['pointerup', 'pointercancel'].forEach(evt => layerEl.addEventListener(evt, async (e) => {
+    if (e.pointerId !== pointerId) return;
+    pointerId = null;
+    if (layerEl._pendingPos) {
+      const pos = layerEl._pendingPos;
+      layerEl._pendingPos = null;
+      await setStatusAssembleLayerPos(id, pos);
+    }
+  }));
+}
+function renderStatusAssembleTextLayer(id, sampleText) {
+  const sw = currentStatusWindow();
+  const pos = statusAssembleLayerPos(sw, id);
+  const layerEl = document.createElement('div');
+  layerEl.className = 'status-assemble-layer' + (selectedStatusAssembleLayerId === id ? ' selected' : '');
+  layerEl.style.left = (pos.x * 100) + '%';
+  layerEl.style.top = (pos.y * 100) + '%';
+  const textEl = document.createElement('div');
+  textEl.className = 'status-assemble-text';
+  textEl.style.fontSize = (pos.fontSize || 9.5) + 'px';
+  textEl.textContent = sampleText;
+  layerEl.appendChild(textEl);
+  attachStatusAssembleLayerMove(layerEl, id);
+  el.statusAssembleStage.appendChild(layerEl);
+}
+async function renderStatusAssembleStage() {
+  const sw = currentStatusWindow();
+  el.statusAssembleStage.innerHTML = '';
+  if (sw.frameAssetId) {
+    const asset = await AssetDB.getAsset(sw.frameAssetId).catch(() => null);
+    if (asset) {
+      const bg = document.createElement('img');
+      bg.className = 'status-assemble-stage-bg';
+      bg.src = asset.dataUrl;
+      bg.alt = '';
+      el.statusAssembleStage.appendChild(bg);
+      const dims = await loadImageDimensions(asset.dataUrl);
+      el.statusAssembleStage.style.setProperty('--status-assemble-ar', dims ? (dims.width + '/' + dims.height) : '2/1');
+    }
+  }
+  renderStatusAssembleTextLayer('dateLayer', '월. 15');
+  renderStatusAssembleTextLayer('timeLayer', '3:45 오후');
+  if (sw.arrowAssetId) {
+    const asset = await AssetDB.getAsset(sw.arrowAssetId).catch(() => null);
+    const pos = statusAssembleLayerPos(sw, 'arrowLayer');
+    const layerEl = document.createElement('div');
+    layerEl.className = 'status-assemble-layer' + (selectedStatusAssembleLayerId === 'arrowLayer' ? ' selected' : '');
+    layerEl.style.left = (pos.x * 100) + '%';
+    layerEl.style.top = (pos.y * 100) + '%';
+    if (asset) {
+      const img = document.createElement('img');
+      img.className = 'status-assemble-arrow-img';
+      img.src = asset.dataUrl;
+      img.alt = '';
+      layerEl.appendChild(img);
+    }
+    attachStatusAssembleLayerMove(layerEl, 'arrowLayer');
+    el.statusAssembleStage.appendChild(layerEl);
+  }
+  const slots = getStatusDigitPositions(sw);
+  const fontAsset = sw.numberFontSheetAssetId ? await AssetDB.getAsset(sw.numberFontSheetAssetId).catch(() => null) : null;
+  const fontDims = fontAsset ? await loadImageDimensions(fontAsset.dataUrl) : null;
+  const sampleDigits = '1234567890';
+  slots.forEach((pos, i) => {
+    const id = 'digit-' + i;
+    const layerEl = document.createElement('div');
+    layerEl.className = 'status-assemble-layer' + (selectedStatusAssembleLayerId === id ? ' selected' : '');
+    layerEl.style.left = (pos.x * 100) + '%';
+    layerEl.style.top = (pos.y * 100) + '%';
+    const digitEl = document.createElement('div');
+    digitEl.className = 'status-assemble-digit';
+    digitEl.style.width = sw.numberFontAdjust.width + 'px';
+    digitEl.style.height = sw.numberFontAdjust.height + 'px';
+    const sampleDigit = sampleDigits[i % sampleDigits.length];
+    if (fontAsset && fontDims) {
+      const rect = sw.numberFontOverrides[sampleDigit] || getStatusNumberFontDefaultCropRect(STATUS_NUMBER_FONT_DIGITS.indexOf(sampleDigit), fontDims.width, fontDims.height);
+      const style = statusAssembleDigitBgStyle(rect, fontDims.width, fontDims.height, sw.numberFontAdjust.width, sw.numberFontAdjust.height);
+      digitEl.style.backgroundImage = `url('${fontAsset.dataUrl}')`;
+      digitEl.style.backgroundPosition = style.backgroundPosition;
+      digitEl.style.backgroundSize = style.backgroundSize;
+      digitEl.style.backgroundRepeat = 'no-repeat';
+      digitEl.style.border = 'none';
+    } else {
+      digitEl.textContent = sampleDigit;
+    }
+    layerEl.appendChild(digitEl);
+    attachStatusAssembleLayerMove(layerEl, id);
+    el.statusAssembleStage.appendChild(layerEl);
+  });
+  renderStatusAssemblePanel();
+}
+function renderStatusAssemblePanel() {
+  const id = selectedStatusAssembleLayerId;
+  if (!id) {
+    el.statusAssemblePanel.classList.add('hidden');
+    return;
+  }
+  el.statusAssemblePanel.classList.remove('hidden');
+  const isText = id === 'dateLayer' || id === 'timeLayer';
+  const isDigit = /^digit-/.test(id);
+  el.statusAssemblePanelLabel.textContent = id === 'dateLayer' ? '요일·날짜'
+    : id === 'timeLayer' ? '시간'
+    : id === 'arrowLayer' ? '화살표'
+    : `숫자 자리 ${Number(id.slice(6)) + 1} (왼쪽부터 ${Number(id.slice(6)) + 1}번째로 높은 자리)`;
+  el.statusAssembleFontSizeRow.classList.toggle('hidden', !isText);
+  if (isText) {
+    const pos = statusAssembleLayerPos(currentStatusWindow(), id);
+    el.statusAssembleFontSizeInput.value = pos.fontSize || 9.5;
+    el.statusAssembleFontSizeNumberInput.value = pos.fontSize || 9.5;
+  }
+  el.deleteStatusDigitBtn.classList.toggle('hidden', !isDigit);
+}
+function commitStatusAssembleFontSize(value) {
+  const id = selectedStatusAssembleLayerId;
+  if (id !== 'dateLayer' && id !== 'timeLayer') return;
+  el.statusAssembleFontSizeInput.value = value;
+  el.statusAssembleFontSizeNumberInput.value = value;
+  const textEl = el.statusAssembleStage.querySelector('.status-assemble-layer.selected .status-assemble-text');
+  if (textEl) textEl.style.fontSize = value + 'px'; // 슬라이더를 드래그하는 동안은 전체 재조립(비동기 에셋 재조회) 없이 이 텍스트만 바로 갱신
+  setStatusAssembleLayerPos(id, { fontSize: value });
+}
+el.statusAssembleFontSizeInput.addEventListener('input', () => commitStatusAssembleFontSize(Number(el.statusAssembleFontSizeInput.value)));
+el.statusAssembleFontSizeNumberInput.addEventListener('change', () => commitStatusAssembleFontSize(Number(el.statusAssembleFontSizeNumberInput.value)));
+el.addStatusDigitBtn.addEventListener('click', async () => {
+  const list = getStatusDigitPositions(currentStatusWindow()).slice();
+  const last = list[list.length - 1] || { x: 0.5, y: 0.6 };
+  list.push({ x: clamp01(last.x + 0.12), y: last.y });
+  await patchStatusWindow({ digitPositions: list });
+  selectedStatusAssembleLayerId = 'digit-' + (list.length - 1);
+  renderStatusAssembleStage();
 });
+el.deleteStatusDigitBtn.addEventListener('click', async () => {
+  const m = /^digit-(\d+)$/.exec(selectedStatusAssembleLayerId || '');
+  if (!m) return;
+  const list = getStatusDigitPositions(currentStatusWindow()).slice();
+  list.splice(Number(m[1]), 1);
+  await patchStatusWindow({ digitPositions: list });
+  selectedStatusAssembleLayerId = null;
+  renderStatusAssembleStage();
+});
+el.statusAssembleStage.addEventListener('pointerdown', (e) => {
+  if (e.target !== el.statusAssembleStage) return;
+  if (!selectedStatusAssembleLayerId) return;
+  selectedStatusAssembleLayerId = null;
+  renderStatusAssembleStage();
+});
+async function openStatusAssembleEditor() {
+  if (!currentStatusWindow().frameAssetId) return;
+  selectedStatusAssembleLayerId = null;
+  await renderStatusAssembleStage();
+  el.statusAssembleOverlay.classList.remove('hidden');
+}
+el.statusAssembleBtn.addEventListener('click', openStatusAssembleEditor);
+el.statusAssembleCloseBtn.addEventListener('click', () => el.statusAssembleOverlay.classList.add('hidden'));
 
 let saveNoteTimer = null;
 function showSaveNote() {
