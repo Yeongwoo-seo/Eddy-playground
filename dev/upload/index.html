@@ -1668,7 +1668,7 @@ async function renderBgLocationAssign() {
     });
   }
 
-  const previewAssetId = loc ? DevGameState.getLocationAssetId(loc.id, assigned.variantId) : null;
+  const previewAssetId = loc ? await DevGameState.getLocationAssetId(loc.id, assigned.variantId) : null;
   if (previewAssetId) {
     try {
       const asset = await AssetDB.getAsset(previewAssetId);
@@ -2143,13 +2143,13 @@ function renderCharPicker() {
   });
 }
 
-function renderOutfitPicker() {
+async function renderOutfitPicker() {
   const outfits = allowedOutfits();
   const show = currentType === 'character' && outfits.length > 0;
   el.outfitPicker.classList.toggle('hidden', !show);
   if (!show) return;
   if (!outfits.some(o => o.id === currentOutfit)) currentOutfit = outfits[0].id;
-  const activeOutfit = DevGameState.getSelectedOutfit(currentCharacterKey);
+  const activeOutfit = await DevGameState.getSelectedOutfit(currentCharacterKey);
   el.outfitPickerPills.innerHTML = outfits.map(o =>
     `<button class="pill${o.id === currentOutfit ? ' active' : ''}" data-key="${o.id}">${escapeHtml(o.label)}${o.id === activeOutfit ? ' 👗' : ''}</button>`
   ).join('');
@@ -3106,7 +3106,7 @@ async function loadHotspotEditor() {
   // Room-search/minigame hotspot backgrounds stay scene-owned (out of scope
   // for the location-background-system change), so the legacy sync lookup
   // is the correct one here.
-  const assetId = DevGameState.getLegacyBackgroundId(sceneId);
+  const assetId = await DevGameState.getLegacyBackgroundId(sceneId);
   const asset = assetId ? await AssetDB.getAsset(assetId) : null;
   if (!asset) {
     hotspotState = null;
@@ -3974,14 +3974,15 @@ async function renderSoundPanel() {
   renderSoundList();
 }
 
-function renderSoundList() {
+async function renderSoundList() {
   const entries = Object.keys(soundsCatalog).map(id => Object.assign({ id }, soundsCatalog[id]));
   if (!entries.length) {
     el.soundList.innerHTML = '<div class="empty-note">아직 등록한 사운드가 없습니다.</div>';
     return;
   }
-  el.soundList.innerHTML = entries.map(s => {
-    const isSceneBgm = s.kind === 'bgm' && DevGameState.getSceneBgmId(currentSceneId) === s.id;
+  const sceneBgmId = await DevGameState.getSceneBgmId(currentSceneId);
+  const cards = entries.map(s => {
+    const isSceneBgm = s.kind === 'bgm' && sceneBgmId === s.id;
     const tag = isSceneBgm ? '<span class="asset-tag">이 씬 BGM</span><br>' : '';
     const range = s.end ? `${s.start}s ~ ${s.end}s` : `${s.start}s ~ (끝까지)`;
     const bgmAction = s.kind === 'bgm'
@@ -4003,6 +4004,7 @@ function renderSoundList() {
       </div>
     </div>`;
   }).join('');
+  el.soundList.innerHTML = cards;
 }
 
 function editSound(id) {
