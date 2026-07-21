@@ -965,6 +965,22 @@ function applyBgLayerSize() {
 // 안에서 움직인다. frameRect는 리사이즈/회전 때만 갱신되는 캐시값이다
 // (refreshFrameRect) — 이동 중 매 프레임 getBoundingClientRect()를
 // 다시 읽으면 그 자체로 강제 reflow가 걸려 끊겨 보인다.
+// 카메라 오프셋(camX,camY)이 주어졌을 때 캐릭터/영우 NPC를 화면 위 그
+// 자리에 맞춰 두는 부분만 뽑아둔 것 — updateCamera(실제 카메라, 매 프레임)
+// 뿐 아니라 playCameraIntroPan(연출용 카메라)에서도 그대로 재사용한다.
+function positionCharacterStages(camX, camY) {
+  const zoom = effectiveBgZoom();
+  const charXScaled = charWorldPos.x * zoom;
+  const charYFromTopScaled = (worldSize.h - charWorldPos.y) * zoom;
+  el.charStage.style.left = (charXScaled - camX) + 'px';
+  el.charStage.style.bottom = (frameRect.height - charYFromTopScaled + camY) + 'px';
+  if (npcWorldPos) {
+    const npcXScaled = npcWorldPos.x * zoom;
+    const npcYFromTopScaled = (worldSize.h - npcWorldPos.y) * zoom;
+    el.npcYoungwooStage.style.left = (npcXScaled - camX) + 'px';
+    el.npcYoungwooStage.style.bottom = (frameRect.height - npcYFromTopScaled + camY) + 'px';
+  }
+}
 function updateCamera() {
   const zoom = effectiveBgZoom();
   const scaledW = worldSize.w * zoom, scaledH = worldSize.h * zoom;
@@ -976,14 +992,7 @@ function updateCamera() {
   if (hasWorldBackground) {
     el.bgLayer.style.transform = `translate3d(${-camX}px, ${-camY}px, 0)`;
   }
-  el.charStage.style.left = (charXScaled - camX) + 'px';
-  el.charStage.style.bottom = (frameRect.height - charYFromTopScaled + camY) + 'px';
-  if (npcWorldPos) {
-    const npcXScaled = npcWorldPos.x * zoom;
-    const npcYFromTopScaled = (worldSize.h - npcWorldPos.y) * zoom;
-    el.npcYoungwooStage.style.left = (npcXScaled - camX) + 'px';
-    el.npcYoungwooStage.style.bottom = (frameRect.height - npcYFromTopScaled + camY) + 'px';
-  }
+  positionCharacterStages(camX, camY);
 }
 
 // 화면 크기가 바뀌면(회전, 리사이즈) — 배경 미업로드 폴백 모드에서는
@@ -1759,9 +1768,19 @@ async function applyScreen(screenDef, opts) {
       y: clamp(bgDims.height * (1 - opts.entryPoint.y), wb.minY, wb.maxY),
     };
   } else if (!charWorldPos) {
-    // 예전 CSS 기본값(화면 정중앙)과 같은 자리에서 시작하되, 새 범위(wb)
-    // 안으로 clamp한다.
-    charWorldPos = { x: clamp(worldSize.w / 2, wb.minX, wb.maxX), y: clamp(worldSize.h / 2, wb.minY, wb.maxY) };
+    // 최초 스폰 — dev/minigame-fishing/index.html "캐릭터" 탭에서 지정한
+    // 지수 시작점(jisuSpawnPos, youngwooNpcPos와 같은 배경 원본 0~1
+    // top-down 좌표계)이 있으면 그 자리에서, 없으면 예전 CSS 기본값
+    // (화면 정중앙)과 같은 자리에서 시작하되 새 범위(wb) 안으로 clamp한다.
+    const jisuSpawnPos = screenDef && screenDef.jisuSpawnPos;
+    if (hasWorldBackground && jisuSpawnPos) {
+      charWorldPos = {
+        x: clamp(jisuSpawnPos.x * bgDims.width, wb.minX, wb.maxX),
+        y: clamp(bgDims.height * (1 - jisuSpawnPos.y), wb.minY, wb.maxY),
+      };
+    } else {
+      charWorldPos = { x: clamp(worldSize.w / 2, wb.minX, wb.maxX), y: clamp(worldSize.h / 2, wb.minY, wb.maxY) };
+    }
   } else {
     charWorldPos.x = clamp(charWorldPos.x, wb.minX, wb.maxX);
     charWorldPos.y = clamp(charWorldPos.y, wb.minY, wb.maxY);
@@ -1880,27 +1899,46 @@ function cameraIntroWaypoints() {
   ];
 }
 function easeInOutSine(t) { return -(Math.cos(Math.PI * t) - 1) / 2; }
-function tweenBgLayerTo(from, to, durationMs) {
+// onFrame(x,y)이 있으면 배경뿐 아니라 그 프레임의 카메라 오프셋으로
+// 캐릭터/영우도 같이 그린다 — 5번 구간(마지막 leg, 지수/영우가 나타나는
+// 순간)에서 positionCharacterStages를 실제 카메라(updateCamera)와 똑같은
+// 방식으로 매 프레임 맞춰주기 위해서다.
+function tweenBgLayerTo(from, to, durationMs, onFrame) {
   return new Promise(resolve => {
-    if (from.x === to.x && from.y === to.y) { resolve(); return; }
+    function paint(x, y) {
+      el.bgLayer.style.transform = `translate3d(${-x}px, ${-y}px, 0)`;
+      if (onFrame) onFrame(x, y);
+    }
+    if (from.x === to.x && from.y === to.y) { paint(to.x, to.y); resolve(); return; }
     const start = performance.now();
     function step(now) {
       const t = Math.min(1, (now - start) / durationMs);
       const e = easeInOutSine(t);
       const x = from.x + (to.x - from.x) * e;
       const y = from.y + (to.y - from.y) * e;
-      el.bgLayer.style.transform = `translate3d(${-x}px, ${-y}px, 0)`;
+      paint(x, y);
       if (t < 1) requestAnimationFrame(step); else resolve();
     }
     requestAnimationFrame(step);
   });
 }
 const CAMERA_INTRO_LEG_MS = [3400, 1700, 1700, 1300]; // 아래로(천천히)/왼쪽으로/위로/중간까지
-async function playCameraIntroPan() {
+// revealCharacters — 사용자가 요청한 "5번(왼쪽 위 -> 중간까지 내려옴)
+// 시작할 때 지수/영우 캐릭터 로딩"을 구현한다: 마지막 구간 시작 직전에
+// 한 번 호출해 지수 시작점(jisuSpawnPos)/영우 위치(youngwooNpcPos)
+// 기준으로 캐릭터를 그 프레임 카메라 자리에 맞춰 세워두고 보여준 다음,
+// 그 구간이 진행되는 동안은 onFrame으로 계속 카메라를 따라가게 한다.
+async function playCameraIntroPan(revealCharacters) {
   const points = cameraIntroWaypoints();
+  const lastLeg = CAMERA_INTRO_LEG_MS.length - 1;
   el.bgLayer.style.transform = `translate3d(${-points[0].x}px, ${-points[0].y}px, 0)`;
   for (let i = 0; i < CAMERA_INTRO_LEG_MS.length; i++) {
-    await tweenBgLayerTo(points[i], points[i + 1], CAMERA_INTRO_LEG_MS[i]);
+    const onFrame = i === lastLeg ? positionCharacterStages : null;
+    if (i === lastLeg && revealCharacters) {
+      positionCharacterStages(points[i].x, points[i].y); // 보여주기 전에 먼저 그 자리로 맞춰, 잘못된 자리에서 한 프레임 번쩍이지 않게 한다
+      revealCharacters();
+    }
+    await tweenBgLayerTo(points[i], points[i + 1], CAMERA_INTRO_LEG_MS[i], onFrame);
   }
 }
 // 낚시 진입 자체의 연출 — 페이드인(revealGame) 다음 카메라 인트로를
@@ -1923,10 +1961,11 @@ async function playGameStartIntro() {
   }
   await revealGame();
   if (canPan) {
-    await playCameraIntroPan();
+    await playCameraIntroPan(() => {
+      el.charStage.style.visibility = '';
+      if (npcWasVisible) el.npcYoungwooStage.classList.remove('hidden');
+    });
     updateCamera();
-    el.charStage.style.visibility = '';
-    if (npcWasVisible) el.npcYoungwooStage.classList.remove('hidden');
   }
   if (renderDialogueIntro(pendingDialogueSceneCfg || {}, pendingDialogueById || new Map())) {
     gameState = 'dialogue';
