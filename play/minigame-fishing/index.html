@@ -1824,22 +1824,34 @@ function animateStatusWindowPointsTo(toValue) {
    (같은 0~1 top-down 좌표계, "캐릭터" 탭에서 지정)가 있는 지점에서
    시작하고, 그마저 없으면 예전처럼 화면 정중앙에서 시작하거나(charWorldPos
    최초 지정) 지금 위치를 새 범위로만 clamp한다. */
+// 화면 전환 중(applyScreen) 배경 메타데이터/이미지를 네트워크로 새로
+// 가져온다 — 모바일에서 연결이 불안정하면 fetch나 이미지 로드가 응답도
+// 에러도 없이 그냥 멈춰버릴 수 있는데, 그러면 이 await가 영영 안 풀려
+// triggerScreenTransition 전체가 멈추고 screenTransitioning이 계속
+// true인 채로 굳어버린다(조이스틱 계속 막힘) — waitFadeTransition과 같은
+// 이유로, 상한 시간을 씌워 응답이 없어도 반드시 진행되게(폴백값으로) 한다.
+function withTimeout(promise, timeoutMs, fallbackValue) {
+  return Promise.race([
+    promise,
+    new Promise(resolve => setTimeout(() => resolve(fallbackValue), timeoutMs)),
+  ]);
+}
 async function applyScreen(screenDef, opts) {
   opts = opts || {};
-  const backgroundAsset = (screenDef && screenDef.backgroundAssetId) ? await AssetDB.getAsset(screenDef.backgroundAssetId).catch(() => null) : null;
+  const backgroundAsset = (screenDef && screenDef.backgroundAssetId) ? await withTimeout(AssetDB.getAsset(screenDef.backgroundAssetId).catch(() => null), 5000, null) : null;
   if (backgroundAsset) await preloadWithRetry(backgroundAsset.dataUrl, 3, 500);
   // 배경 자연 크기 — "영역 설정" 탭에서 그린 다각형(fishableAreas/
   // blockedAreas/interactionAreas/moveAreas)이 이 크기 기준 0~1 정규화
   // 좌표라, 캐릭터/추 착수 지점과 비교하려면 필요하고(worldPosToImageFrac/
   // framePxToImageFrac 참고), 배경이 있을 땐 캐릭터가 돌아다닐 수 있는
   // 전체 범위(worldSize)로도 그대로 쓴다.
-  bgDims = backgroundAsset ? await new Promise(resolve => {
+  bgDims = backgroundAsset ? await withTimeout(new Promise(resolve => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
     img.onerror = () => resolve(null);
     img.src = backgroundAsset.dataUrl;
-  }) : null;
+  }), 5000, null) : null;
   fishableAreas = (screenDef && screenDef.fishableAreas) || [];
   blockedAreas = (screenDef && screenDef.blockedAreas) || [];
   interactionAreas = (screenDef && screenDef.interactionAreas) || [];
