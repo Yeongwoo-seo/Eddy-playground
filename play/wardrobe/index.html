@@ -124,7 +124,9 @@ async function loadOwnedThumbs() {
   const entries = await Promise.all(WardrobeState.getOwnedOutfitIds().map(async id => {
     const item = shopItems[id];
     if (!item || !item.vnOutfitId) return [id, null];
-    const assetId = await safeCall(() => DevGameState.getCharacterAssetIdForOutfit(item.characterId || 'jisoo', item.vnOutfitId, 'neutral'));
+    // …Any (not the strict 'neutral'-only lookup) — see loadItemThumbs in
+    // play/shop/index.html for why.
+    const assetId = await safeCall(() => DevGameState.getCharacterAssetIdForOutfitAny(item.characterId || 'jisoo', item.vnOutfitId));
     if (!assetId) return [id, null];
     const asset = await AssetDB.getAsset(assetId).catch(() => null);
     return [id, (asset && asset.dataUrl) || null];
