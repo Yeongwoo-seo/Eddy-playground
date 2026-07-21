@@ -65,7 +65,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .dlg-panel.hidden{display:none}
 .dlg-name{font-size:15px;font-weight:700;color:var(--cyan);margin-bottom:8px}
 .dlg-name:empty{display:none}
-.dlg-text{font-size:16px;line-height:1.65;color:#fff;white-space:pre-wrap;word-break:keep-all;cursor:pointer;transition:color .2s ease}
+.dlg-text{font-size:16px;line-height:1.65;color:#fff;white-space:pre-wrap;word-break:keep-all;cursor:pointer;transition:color .2s ease;max-height:34vh;overflow-y:auto}
 .dlg-text.is-question{color:var(--cyan)}
 .dlg-foot{display:flex;justify-content:flex-end;padding-top:6px}
 .dlg-arrow{font-size:13px;color:var(--text-secondary);visibility:hidden}
@@ -1549,6 +1549,7 @@ function setDialogueMode(on) {
 function playInteractionLines(lines, onComplete) {
   setDialogueMode(true);
   currentDialoguePlayer = createVNPlayer({
+    pageFit: { textEl: el.dlgText },
     onLineChange: (line) => { el.dlgName.textContent = line.speaker || ''; applyDialogueCharacter(line.characterId, line.expression); },
     onTextUpdate: (text) => { el.dlgText.textContent = text; },
     onArrow: (show) => el.dlgArrow.classList.toggle('show', show),
@@ -1930,6 +1931,7 @@ function playSceneInline(sceneIdOrData, interactionId) {
   const lines = sceneData.lines.map(l => Object.assign({}, l));
   setDialogueMode(true);
   currentDialoguePlayer = createVNPlayer({
+    pageFit: { textEl: el.dlgText },
     onLineChange: (line) => {
       // A choice's effects (onEffect below) can end the scene outright —
       // e.g. returnToExploration — before vnPlayer's own choose() finishes

@@ -136,7 +136,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .msg-body-wrap{flex:1;min-width:0;min-height:20vh;display:flex;flex-direction:column}
 .msg-name{font-size:15px;font-weight:700;color:var(--cyan);margin-bottom:8px}
 .msg-name:empty{display:none}
-.msg-text{flex:1;font-size:16px;line-height:1.65;color:#fff;white-space:pre-wrap;word-break:keep-all}
+.msg-text{flex:1;font-size:16px;line-height:1.65;color:#fff;white-space:pre-wrap;word-break:keep-all;max-height:34vh;overflow-y:auto}
 .msg-foot{display:flex;justify-content:flex-end;padding-top:6px}
 .msg-arrow{font-size:13px;color:var(--text-secondary);visibility:hidden}
 @keyframes arrowBob{0%,100%{transform:translateY(0)}50%{transform:translateY(4px)}}
@@ -629,6 +629,7 @@ function queueDialogue(lines, onComplete) {
   el.msgLayer.classList.add('show');
   el.inventoryBar.classList.add('hidden'); // both dock at the bottom edge — dialogue takes priority
   const player = createVNPlayer({
+    pageFit: { textEl: el.msgText },
     onLineChange: (line) => {
       el.msgName.textContent = line.speaker || '';
       updateMsgPortrait(SPEAKER_TO_CHARACTER_KEY[line.speaker] || null);

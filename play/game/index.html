@@ -1213,6 +1213,7 @@ if (el.evidenceSheetNotebookBtn) {
 }
 
 const player = createVNPlayer({
+  pageFit: { textEl: el.dialogueText },
   onLineChange: (line, index, total) => {
     clearInteractiveLayers();
     el.speakerName.textContent = line.speaker || '';

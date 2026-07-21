@@ -95,7 +95,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .success-dlg{position:relative;margin:0 16px calc(16px + env(safe-area-inset-bottom,0));background:rgba(5,7,10,.9);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.1);border-radius:18px;box-shadow:0 8px 28px rgba(0,0,0,.35);padding:18px 20px;min-height:22vh;display:flex;flex-direction:column}
 .success-name{font-size:15px;font-weight:700;color:var(--cyan);margin-bottom:8px}
 .success-name:empty{display:none}
-.success-text{flex:1;font-size:16px;line-height:1.65;color:#fff;white-space:pre-wrap;word-break:keep-all}
+.success-text{flex:1;font-size:16px;line-height:1.65;color:#fff;white-space:pre-wrap;word-break:keep-all;max-height:34vh;overflow-y:auto}
 .success-foot{display:flex;justify-content:flex-end;padding-top:6px}
 .success-arrow{font-size:13px;color:var(--text-secondary);visibility:hidden}
 @keyframes arrowBob{0%,100%{transform:translateY(0)}50%{transform:translateY(4px)}}
@@ -796,6 +796,7 @@ const successLines = [
 function startSuccessDialogue() {
   el.successLayer.classList.add('show');
   const player = createVNPlayer({
+    pageFit: { textEl: el.successText },
     onLineChange: (line) => {
       el.successName.textContent = line.speaker || '';
       updateSuccessAvatar(line.characterId, line.expression);

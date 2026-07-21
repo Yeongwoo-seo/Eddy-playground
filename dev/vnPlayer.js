@@ -27,11 +27,22 @@
      typing the line's text, the engine calls onSceneTransition(transition,
      line) and waits for it (a Promise) — the host uses this to play its
      own black-overlay/background-swap beat. Tapping is ignored for the
-     duration, same as an in-flight pauseBeforeMs delay. */
+     duration, same as an in-flight pauseBeforeMs delay.
+   - pageFit (constructor option, not a per-line field): { textEl, boundsEl }.
+     When given, a line's text is paginated to fit boundsEl (defaults to
+     textEl itself) instead of letting the box grow/scroll to hold it all at
+     once — textEl is the exact DOM node the host's onTextUpdate writes into,
+     so measuring against it (temporarily, restored before any paint) reads
+     the box's real, already-applied CSS cap. A tap on a page that isn't the
+     line's last just reveals the next page of the SAME line (no
+     onLineChange/effects re-fire, no goto) — only the last page's tap falls
+     through to the normal advance/choice/evidence behavior. Omit pageFit to
+     keep the old no-pagination behavior (box grows/scrolls, all in one
+     page). */
 
 const DEFAULT_TYPING_SPEED_MS = 36;
 
-function createVNPlayer({ onLineChange, onTextUpdate, onArrow, onComplete, onEffect, onChoicePrompt, onEvidencePrompt, onEvidenceResult, onSceneTransition }) {
+function createVNPlayer({ onLineChange, onTextUpdate, onArrow, onComplete, onEffect, onChoicePrompt, onEvidencePrompt, onEvidenceResult, onSceneTransition, pageFit }) {
   let lines = [];
   let idIndex = new Map();
   let currentIndex = 0;
@@ -40,12 +51,59 @@ function createVNPlayer({ onLineChange, onTextUpdate, onArrow, onComplete, onEff
   let isPausing = false;
   let awaitingChoice = false;
   let awaitingEvidence = false;
+  let pages = [''];
+  let pageIndex = 0;
+  let awaitingPageBreak = false;
+
+  // Splits `fullText` into page-sized chunks that each fit inside
+  // pageFit.boundsEl, by binary-searching (via temporary, restored writes to
+  // pageFit.textEl) for the longest prefix that doesn't overflow, then
+  // backing off to the nearest word/line boundary so a page never ends
+  // mid-word. No-op (single page) when pageFit wasn't supplied.
+  function paginate(fullText) {
+    if (!fullText) return [''];
+    if (!pageFit || !pageFit.textEl) return [fullText];
+    const textEl = pageFit.textEl;
+    const boundsEl = pageFit.boundsEl || textEl;
+    const prevText = textEl.textContent;
+    function fits(candidate) {
+      textEl.textContent = candidate;
+      return boundsEl.scrollHeight <= boundsEl.clientHeight + 1;
+    }
+    const result = [];
+    let remaining = fullText;
+    let guard = 0;
+    while (remaining.length && guard++ < 500) {
+      if (fits(remaining)) { result.push(remaining); break; }
+      let lo = 1, hi = remaining.length;
+      while (lo < hi) {
+        const mid = Math.ceil((lo + hi) / 2);
+        if (fits(remaining.slice(0, mid))) lo = mid; else hi = mid - 1;
+      }
+      let cut = lo;
+      if (cut < remaining.length) {
+        const boundary = Math.max(remaining.lastIndexOf('\n', cut - 1), remaining.lastIndexOf(' ', cut - 1));
+        if (boundary > 0) cut = boundary + 1;
+      }
+      result.push(remaining.slice(0, cut).replace(/[ \t]+$/, ''));
+      remaining = remaining.slice(cut).replace(/^[ \t\n]+/, '');
+    }
+    textEl.textContent = prevText;
+    return result.length ? result : [fullText];
+  }
 
   // Called once a line's text has finished typing (either naturally or via
   // an instant-complete tap) — decides whether the line hands control to a
   // choice/evidence prompt or shows the normal tap-to-advance arrow.
   function handleTypingDone(line) {
     isTyping = false;
+    if (pageIndex < pages.length - 1) {
+      // More pages left in this same line — pause for a tap that reveals
+      // the next page instead of falling through to advance/choice/evidence.
+      awaitingPageBreak = true;
+      onArrow(true);
+      return;
+    }
     if (line.type === 'choice') {
       awaitingChoice = true;
       if (onChoicePrompt) onChoicePrompt(line.choices || [], line);
@@ -94,8 +152,17 @@ function createVNPlayer({ onLineChange, onTextUpdate, onArrow, onComplete, onEff
     const line = lines[index];
     awaitingChoice = false;
     awaitingEvidence = false;
+    awaitingPageBreak = false;
     onLineChange(line, index, lines.length);
     if (line.effects && onEffect) onEffect(line.effects, line);
+    // Paginate only after onLineChange/effects ran — they can change the
+    // speaker name, portrait, or has-interactive-style box chrome, all of
+    // which shrink or grow the space actually available to the text. Measuring
+    // before they run (e.g. against a still-empty, collapsed name row) reads
+    // more room than the box will really have once they land, letting a page
+    // overflow the instant the name appears.
+    pages = paginate(line.text || '');
+    pageIndex = 0;
     if (line.sceneTransition && onSceneTransition) {
       isPausing = true;
       onArrow(false);
@@ -116,10 +183,10 @@ function createVNPlayer({ onLineChange, onTextUpdate, onArrow, onComplete, onEff
         console.error('sceneTransition failed, continuing scene anyway', err);
       }).then(() => {
         isPausing = false;
-        typeText(line.text || '', line.typingSpeedMs, line);
+        typeText(pages[pageIndex], line.typingSpeedMs, line);
       });
     } else {
-      typeText(line.text || '', line.typingSpeedMs, line);
+      typeText(pages[pageIndex], line.typingSpeedMs, line);
     }
   }
 
@@ -131,6 +198,9 @@ function createVNPlayer({ onLineChange, onTextUpdate, onArrow, onComplete, onEff
     isPausing = false;
     awaitingChoice = false;
     awaitingEvidence = false;
+    awaitingPageBreak = false;
+    pages = [''];
+    pageIndex = 0;
     if (!lines.length) return;
     showLine(Math.min(startIndex || 0, lines.length - 1));
   }
@@ -146,8 +216,14 @@ function createVNPlayer({ onLineChange, onTextUpdate, onArrow, onComplete, onEff
     if (isTyping) {
       const line = lines[currentIndex];
       clearInterval(typingTimer);
-      onTextUpdate(line.text || '');
+      onTextUpdate(pages[pageIndex]);
       handleTypingDone(line);
+      return;
+    }
+    if (awaitingPageBreak) {
+      awaitingPageBreak = false;
+      pageIndex++;
+      typeText(pages[pageIndex], lines[currentIndex].typingSpeedMs, lines[currentIndex]);
       return;
     }
     if (awaitingChoice || awaitingEvidence) return;
