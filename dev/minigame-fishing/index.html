@@ -500,7 +500,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
        (currentScreenId) 기준으로 배경/영역/영우 위치를 다루기 때문. ===== -->
   <div class="option-group" id="screenManagerGroup">
     <div class="option-label">화면</div>
-    <div class="option-desc">배경화면을 여러 장 올려서 화면 여러 개를 만들 수 있어요. 아래 "영역 설정" 탭에서 화면별로 낚시가능·이동불가·상호작용·이동 영역을 그리고, "이동" 영역으로 화면끼리 연결하세요.</div>
+    <div class="option-desc">배경화면을 여러 장 올려서 화면 여러 개를 만들 수 있어요. 아래 "영역 설정" 탭에서 화면별로 낚시가능·이동불가·상호작용·이동 영역을 그리고, "이동" 영역으로 화면끼리 연결하세요. 배경을 새로 안 올리고 같은 화면 안에서 두 지점을 오가게 할 수도 있어요(이동 영역의 도착 화면을 "이 화면"으로 두면 됨).</div>
     <div class="option-pills" id="screenPills"></div>
     <div class="screen-actions-row">
       <button type="button" class="fish-sheet-btn" id="addScreenBtn">+ 화면 추가</button>
@@ -4237,12 +4237,21 @@ const AREA_KIND_OPTIONS = [
   { id: 'fishable', label: '낚시가능', configKey: 'fishableAreas', desc: '캐스팅해서 낚시할 수 있는 영역이에요. 여러 개 그릴 수 있어요.' },
   { id: 'blocked', label: '이동불가', configKey: 'blockedAreas', desc: '캐릭터가 걸어 들어갈 수 없는 영역이에요. 여러 개 그릴 수 있어요.' },
   { id: 'interaction', label: '상호작용', configKey: 'interactionAreas', desc: '상점·대화 등 게임에 필요한 상호작용 지점이에요. 라벨을 적어 어떤 상호작용인지 구분하세요.' },
-  { id: 'move', label: '이동', configKey: 'moveAreas', desc: '캐릭터가 여기 걸어 들어오면 다른 화면으로 이동해요. 영역을 다 그리면 도착 화면과 도착 지점을 물어봐요.' },
+  { id: 'move', label: '이동', configKey: 'moveAreas', desc: '캐릭터가 여기 걸어 들어오면 다른 화면(또는 같은 화면의 다른 지점)으로 이동해요. 영역을 다 그리면 도착 화면과 도착 지점을 물어봐요. 도착 화면으로 "이 화면"을 고르면 반대 방향 이동 영역도 자동으로 만들어져 상호이동돼요.' },
 ];
 let areaKind = 'fishable';
 
 function areaKindOption(kind) { return AREA_KIND_OPTIONS.find(o => o.id === kind); }
 function getAreaList(kind) { const screen = currentScreen(); return (screen && screen[areaKindOption(kind).configKey]) || []; }
+// 이동 영역을 지울 때 짝(pairId, 같은 화면 상호이동의 반대 방향 영역)도
+// 같이 지운다 — 안 지우면 한쪽만 남아 도착 지점 없는 반쪽짜리 이동이 된다.
+function removeAreaAndPair(list, id) {
+  const target = list.find(a => a.id === id);
+  const ids = new Set([id]);
+  if (target && target.pairId) ids.add(target.pairId);
+  list.forEach(a => { if (a.pairId === id) ids.add(a.id); });
+  return list.filter(a => !ids.has(a.id));
+}
 const AREA_SWATCH_VAR = { fishable: '--green', blocked: '--signal-red', interaction: '--amber', move: '--cyan' };
 
 function renderAreaKindPills() {
@@ -4284,8 +4293,10 @@ function renderAreaList() {
     if (areaKind === 'interaction') {
       labelHtml = `<input type="text" value="${(a.label || '').replace(/"/g, '&quot;')}" placeholder="예: 상점, 대화" data-label-id="${a.id}">`;
     } else if (areaKind === 'move') {
+      const isSelfLoop = a.targetScreenId === currentScreenId;
       const target = screens().find(s => s.id === a.targetScreenId);
-      labelHtml = `<span>영역 ${i + 1} → ${target ? target.name : '(삭제된 화면)'}</span> <button type="button" class="area-row-edit" data-edit-id="${a.id}">✎</button>`;
+      const targetLabel = isSelfLoop ? '같은 화면의 다른 지점' : (target ? target.name : '(삭제된 화면)');
+      labelHtml = `<span>영역 ${i + 1} → ${targetLabel}${a.pairId ? ' (상호이동)' : ''}</span> <button type="button" class="area-row-edit" data-edit-id="${a.id}">✎</button>`;
     } else {
       labelHtml = `영역 ${i + 1} (꼭짓점 ${a.points.length}개)`;
     }
@@ -4300,7 +4311,7 @@ function renderAreaList() {
   el.areaList.querySelectorAll('[data-del-id]').forEach(btn => {
     btn.addEventListener('click', async () => {
       const id = btn.dataset.delId;
-      const next = getAreaList(areaKind).filter(a => a.id !== id);
+      const next = removeAreaAndPair(getAreaList(areaKind), id);
       await patchCurrentScreen({ [kindOpt.configKey]: next });
       showSaveNote();
       renderAreaFsSavedBoxes();
@@ -4408,7 +4419,7 @@ function renderAreaFsSavedBoxes() {
       if (!confirm('이 영역을 지울까요?')) return;
       const id = btn.dataset.delFsId;
       const kindOpt = areaKindOption(areaKind);
-      const next = getAreaList(areaKind).filter(a => a.id !== id);
+      const next = removeAreaAndPair(getAreaList(areaKind), id);
       await patchCurrentScreen({ [kindOpt.configKey]: next });
       showSaveNote();
       renderAreaFsSavedBoxes();
@@ -4584,24 +4595,35 @@ el.areaFsCloseBtn.addEventListener('click', closeAreaFsEditor);
    select로 고른 화면의 배경이라는 점이 다르다(도착 화면을 바꾸면 스테이지
    배경도 같이 바뀐다). moveAreaDraftPoints가 있으면 "새 영역 만들기"(사각형은
    이미 그렸고 도착지만 정하면 됨), 없고 moveAreaEditingId만 있으면 "기존
-   영역의 도착지 수정"이다. */
+   영역의 도착지 수정"이다.
+
+   도착 화면 select에는 다른 화면들과 함께 "지금 이 화면"도 포함된다 —
+   배경화면을 새로 안 올리고 같은 배경 위 다른 지점으로만 순간이동하고
+   싶을 때 쓴다(재생 쪽 triggerScreenTransition은 targetScreenId가 현재
+   화면이어도 그대로 동작한다 — 배경을 다시 그리고 새 지점에 캐릭터를
+   놓을 뿐이라 이미 있는 fade-out/fade-in 연출이 자연히 재사용된다).
+   "이 화면"을 도착지로 새로 만들 때는(수정이 아니라) 반대 방향 이동
+   영역도 같이 자동 생성해 A→B, B→A 상호이동이 한 번에 되게 한다
+   (pairId로 서로를 가리켜서, 하나를 지우면 짝도 같이 지운다 —
+   removeAreaAndPair 참고). */
 let moveAreaDraftPoints = null;
 let moveAreaEditingId = null;
 let moveAreaEntryDraft = { x: 0.5, y: 0.5 };
 let moveAreaDragging = false;
 
 async function openMoveAreaEditor(opts) {
+  const selfScreen = currentScreen();
+  if (!selfScreen) return;
   const others = screens().filter(s => s.id !== currentScreenId);
-  if (!others.length) {
-    alert('이동 영역을 만들려면 다른 화면이 하나 더 있어야 해요. 위에서 화면을 먼저 추가하세요.');
-    return;
-  }
+  const selectable = [selfScreen].concat(others);
   moveAreaDraftPoints = opts.points || null;
   moveAreaEditingId = opts.id || null;
   const existing = opts.id ? getAreaList('move').find(a => a.id === opts.id) : null;
-  const defaultTarget = (existing && existing.targetScreenId && others.some(s => s.id === existing.targetScreenId))
-    ? existing.targetScreenId : others[0].id;
-  el.moveAreaTargetSelect.innerHTML = others.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+  const defaultTarget = (existing && existing.targetScreenId && selectable.some(s => s.id === existing.targetScreenId))
+    ? existing.targetScreenId : selfScreen.id;
+  el.moveAreaTargetSelect.innerHTML = selectable.map(s =>
+    `<option value="${s.id}">${s.id === currentScreenId ? '🔁 이 화면 (같은 배경, 다른 지점)' : s.name}</option>`
+  ).join('');
   el.moveAreaTargetSelect.value = defaultTarget;
   moveAreaEntryDraft = Object.assign({ x: 0.5, y: 0.5 }, existing ? existing.entryPoint : null);
   await loadMoveAreaTargetBackground();
@@ -4646,13 +4668,44 @@ function closeMoveAreaEditor() {
 el.moveAreaCancelBtn.addEventListener('click', () => {
   closeMoveAreaEditor(); // 새로 그린 사각형이 있었어도 config에 넣은 적이 없으니 그냥 사라진다
 });
+function makeAreaId() { return `area_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`; }
+// 사각형(points, 0~1 정규화 꼭짓점 4개)의 중심점 — 상호이동 쌍을 만들 때
+// 반대편 도착 지점(entryPoint)으로 쓴다.
+function areaCenterOf(points) {
+  const b = areaFsBoundsOf(points);
+  return { x: b.x0 + b.w / 2, y: b.y0 + b.h / 2 };
+}
+// 같은 화면 상호이동의 반대 방향 트리거 영역 — 도착 지점(center) 둘레에
+// 원래 영역과 같은 크기의 사각형을 그려준다(0~1 범위로 clamp).
+function makeCenteredRectPoints(center, w, h) {
+  const x0 = clamp01(center.x - w / 2), x1 = clamp01(center.x + w / 2);
+  const y0 = clamp01(center.y - h / 2), y1 = clamp01(center.y + h / 2);
+  return [{ x: x0, y: y0 }, { x: x1, y: y0 }, { x: x1, y: y1 }, { x: x0, y: y1 }];
+}
 el.moveAreaConfirmBtn.addEventListener('click', async () => {
   const targetScreenId = el.moveAreaTargetSelect.value;
   const entryPoint = moveAreaEntryDraft;
   const list = getAreaList('move');
-  const next = moveAreaEditingId
-    ? list.map(a => a.id === moveAreaEditingId ? Object.assign({}, a, { targetScreenId, entryPoint }) : a)
-    : list.concat({ id: `area_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, points: moveAreaDraftPoints, targetScreenId, entryPoint });
+  let next;
+  if (moveAreaEditingId) {
+    next = list.map(a => a.id === moveAreaEditingId ? Object.assign({}, a, { targetScreenId, entryPoint }) : a);
+  } else {
+    const newArea = { id: makeAreaId(), points: moveAreaDraftPoints, targetScreenId, entryPoint };
+    if (targetScreenId === currentScreenId) {
+      const bounds = areaFsBoundsOf(moveAreaDraftPoints);
+      const reverseArea = {
+        id: makeAreaId(),
+        points: makeCenteredRectPoints(entryPoint, bounds.w, bounds.h),
+        targetScreenId: currentScreenId,
+        entryPoint: areaCenterOf(moveAreaDraftPoints),
+        pairId: newArea.id,
+      };
+      newArea.pairId = reverseArea.id;
+      next = list.concat(newArea, reverseArea);
+    } else {
+      next = list.concat(newArea);
+    }
+  }
   await patchCurrentScreen({ moveAreas: next });
   showSaveNote();
   closeMoveAreaEditor();
