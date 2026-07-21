@@ -2206,6 +2206,14 @@ function clearPending() {
 const BG_MAX_DIMENSION = 1600;
 const BG_JPEG_QUALITY = 0.85;
 
+// 미니게임 얼굴은 모든 미니게임에서 56px짜리 작은 초상화 칸에만 쓰이는데,
+// 폰 카메라 원본(수천 px)을 정사각형으로 자르기만 하고 그대로 저장하면 그
+// 해상도 그대로(수 MB PNG) 서버에 올라간다 — 느린 네트워크에서는 다운로드가
+// 끝나기 전에 다음 대사로 넘어가버려 "얼굴이 안 뜬다"로 보이고, 일부 기기는
+// 큰 캔버스 자체를 못 그려 빈 이미지가 저장되기도 한다. 원본 해상도가 몇이든
+// 늘 이 크기로 축소해 저장하면 이 문제가 원천적으로 없어진다.
+const MINIGAME_FACE_MAX_DIMENSION = 320;
+
 function resizeImageToBlob(img, maxDim, quality) {
   const scale = Math.min(1, maxDim / Math.max(img.naturalWidth, img.naturalHeight));
   const w = Math.max(1, Math.round(img.naturalWidth * scale));
@@ -2786,11 +2794,12 @@ el.cropBox.addEventListener('pointermove', (e) => {
 el.cropZoom.addEventListener('input', () => updateCropBoxFromZoom(false));
 el.cropEnterBtn.addEventListener('click', enterCropMode);
 
-function cropImageElementToBlob(imgEl, x, y, w, h) {
+function cropImageElementToBlob(imgEl, x, y, w, h, maxDim) {
   return new Promise((resolve) => {
+    const scale = maxDim ? Math.min(1, maxDim / Math.max(w, h)) : 1;
     const canvas = document.createElement('canvas');
-    canvas.width = Math.max(1, Math.round(w));
-    canvas.height = Math.max(1, Math.round(h));
+    canvas.width = Math.max(1, Math.round(w * scale));
+    canvas.height = Math.max(1, Math.round(h * scale));
     canvas.getContext('2d').drawImage(imgEl, x, y, w, h, 0, 0, canvas.width, canvas.height);
     canvas.toBlob(resolve, 'image/png');
   });
@@ -2814,7 +2823,7 @@ el.cropSaveBtn.addEventListener('click', async () => {
   const natW = s.boxW / s.imgScale;
   const natH = s.boxH / s.imgScale;
   try {
-    const cropBlob = await cropImageElementToBlob(el.cropImg, natX, natY, natW, natH);
+    const cropBlob = await cropImageElementToBlob(el.cropImg, natX, natY, natW, natH, imageEditorTarget === 'minigameFace' ? MINIGAME_FACE_MAX_DIMENSION : undefined);
     const croppedImg = await loadImageFromBlob(cropBlob);
     lastCropSettingsByType[imageEditorTarget] = {
       zoom: Number(el.cropZoom.value),
