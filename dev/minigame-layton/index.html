@@ -22,28 +22,67 @@
   --sans:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
 }
 html,body{height:100%}
-body{background:#050607;color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center;min-height:100dvh}
+body{
+  background:
+    radial-gradient(circle at 8px 8px, rgba(89,184,200,0.05) 1px, transparent 1px),
+    #050607;
+  background-size: 24px 24px;
+  color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center;min-height:100dvh;
+}
 .frame{width:100%;max-width:430px;min-height:100dvh;min-height:100vh;padding:calc(48px + env(safe-area-inset-top,0)) 20px calc(32px + env(safe-area-inset-bottom,0));display:flex;flex-direction:column}
 .back{font-family:var(--mono);font-size:12px;color:var(--text-muted);text-decoration:none;margin-bottom:18px;display:inline-flex;align-items:center;gap:4px;width:fit-content}
-.tag{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px}
-.title{font-size:26px;font-weight:700;letter-spacing:-.2px;margin-bottom:10px}
-.sub{font-size:14px;color:var(--text-secondary);margin-bottom:24px;line-height:1.6}
+.tag{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--cyan);text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.tag::before{content:'';width:14px;height:1px;background:var(--cyan);opacity:.6}
+.title{font-size:26px;font-weight:800;letter-spacing:-.2px;margin-bottom:10px}
+.sub{font-size:14px;color:var(--text-secondary);margin-bottom:20px;line-height:1.6}
 
-.progress-note{font-family:var(--mono);font-size:11.5px;color:var(--cyan);background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:10px 14px;margin-bottom:22px}
+/* ===== 진행도 — localStorage(mkLaytonSolved)에 실제로 푼 문제 id를
+   저장해 두고, 정적 "developed" 표시 대신 실제 클리어 상태를 보여준다.
+   원형 게이지 + 퍼센트 텍스트로 "게임 진행률"처럼 보이게. ===== */
+.progress-card{display:flex;align-items:center;gap:16px;background:var(--surface-1);border:1px solid var(--divider);border-radius:16px;padding:14px 18px;margin-bottom:24px}
+.progress-ring{flex-shrink:0;width:52px;height:52px}
+.progress-ring circle{fill:none;stroke-width:5}
+.progress-ring .track{stroke:var(--surface-2)}
+.progress-ring .fill{stroke:var(--cyan);stroke-linecap:round;transform:rotate(-90deg);transform-origin:50% 50%;transition:stroke-dashoffset .6s cubic-bezier(0.2,0.8,0.2,1)}
+.progress-text{flex:1}
+.progress-num{font-family:var(--mono);font-size:18px;font-weight:700;color:var(--cyan)}
+.progress-label{font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-top:2px;letter-spacing:.04em}
 
-.group-label{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase;margin:20px 0 10px}
+.group-label{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--text-muted);text-transform:uppercase;margin:22px 0 10px;display:flex;align-items:center;gap:8px}
 .group-label:first-of-type{margin-top:0}
+.group-label::after{content:'';flex:1;height:1px;background:var(--divider)}
 
 .puzzle-list{display:flex;flex-direction:column;gap:10px}
-.puzzle-item{display:flex;align-items:center;gap:12px;background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:14px 16px;text-decoration:none;color:inherit}
-a.puzzle-item:active{transform:scale(.98);background:var(--surface-2)}
-.puzzle-item.locked{opacity:.5}
-.puzzle-idx{font-family:var(--mono);font-size:12px;color:var(--text-muted);flex-shrink:0;width:26px}
+.puzzle-item{
+  position:relative;display:flex;align-items:center;gap:13px;background:var(--surface-1);
+  border:1px solid var(--divider);border-radius:14px;padding:14px 16px;text-decoration:none;color:inherit;
+  overflow:hidden;opacity:0;transform:translateY(6px);
+  animation:puzzle-in .38s cubic-bezier(0.2,0.8,0.2,1) forwards;
+}
+@keyframes puzzle-in{to{opacity:1;transform:translateY(0)}}
+a.puzzle-item{transition:transform .15s cubic-bezier(0.2,0.8,0.2,1),background .15s,box-shadow .15s}
+a.puzzle-item:active{transform:scale(.97);background:var(--surface-2)}
+.puzzle-item.solved{border-color:rgba(62,207,107,0.35)}
+.puzzle-item.solved::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--green)}
+
+.puzzle-idx{
+  font-family:var(--mono);font-size:11px;font-weight:700;color:var(--text-muted);flex-shrink:0;
+  width:34px;height:34px;border-radius:10px;background:var(--surface-2);border:1px solid var(--divider);
+  display:flex;align-items:center;justify-content:center;letter-spacing:-.02em;
+}
+.puzzle-item.solved .puzzle-idx{color:var(--green);border-color:rgba(62,207,107,0.35)}
+.puzzle-item.locked{opacity:.5;animation:puzzle-in .38s cubic-bezier(0.2,0.8,0.2,1) forwards}
+
 .puzzle-info{flex:1;min-width:0}
-.puzzle-name{font-size:14.5px;font-weight:600}
-.puzzle-meta{font-family:var(--mono);font-size:11px;color:var(--text-secondary);margin-top:3px}
-.puzzle-badge{font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.03em;border-radius:8px;padding:5px 8px;flex-shrink:0;white-space:nowrap}
+.puzzle-name{font-size:14.5px;font-weight:600;line-height:1.35}
+.puzzle-meta{font-family:var(--mono);font-size:10.5px;color:var(--text-secondary);margin-top:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.diff-pips{display:inline-flex;gap:2px;flex-shrink:0}
+.diff-pips span{width:5px;height:5px;border-radius:50%;background:var(--divider)}
+.diff-pips span.on{background:var(--amber)}
+
+.puzzle-badge{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.03em;border-radius:8px;padding:6px 9px;flex-shrink:0;white-space:nowrap}
 .puzzle-badge.play{background:var(--cyan);color:#04181c}
+.puzzle-badge.solved{background:rgba(62,207,107,0.14);color:var(--green);border:1px solid rgba(62,207,107,0.3)}
 .puzzle-badge.locked{background:var(--surface-2);color:var(--text-muted)}
 </style>
 </head>
@@ -52,8 +91,17 @@ a.puzzle-item:active{transform:scale(.98);background:var(--surface-2)}
   <a class="back" href="/dev/minigames/">‹ DEV</a>
   <div class="tag">Minigame · 레이튼 퀴즈</div>
   <div class="title">🧩 레이튼풍 고난도 퀴즈</div>
-  <div class="sub">체감 난이도 7~8의 두뇌 퍼즐 20종, 전부 입력만으로 정답을 검증할 수 있도록 구현했어요.</div>
-  <div class="progress-note">현재 플레이 가능: 20 / 20</div>
+  <div class="sub">체감 난이도 7~8의 두뇌 퍼즐 20종, 전부 입력만으로 정답을 검증할 수 있어요.</div>
+  <div class="progress-card" id="progressCard">
+    <svg class="progress-ring" viewBox="0 0 52 52">
+      <circle class="track" cx="26" cy="26" r="22"></circle>
+      <circle class="fill" id="progressFill" cx="26" cy="26" r="22" stroke-dasharray="138.2" stroke-dashoffset="138.2"></circle>
+    </svg>
+    <div class="progress-text">
+      <div class="progress-num" id="progressNum">0 / 20 해결</div>
+      <div class="progress-label">CASE PROGRESS</div>
+    </div>
+  </div>
   <div id="listRoot"></div>
 </div>
 <script>
@@ -95,27 +143,59 @@ const LAYTON_PUZZLES = [
   ]},
 ];
 
+// play/index.html이 정답을 맞히면 이 키에 id를 추가한다 — 두 페이지가
+// 공유하는 유일한 진행도 저장소라 키 이름을 바꾸면 둘 다 같이 고쳐야 한다.
+function getSolvedSet() {
+  try {
+    return new Set(JSON.parse(localStorage.getItem('mkLaytonSolved') || '[]'));
+  } catch (e) {
+    return new Set();
+  }
+}
+
+function pipsHtml(difficulty) {
+  let out = '';
+  for (let i = 1; i <= 8; i++) out += `<span class="${i <= difficulty ? 'on' : ''}"></span>`;
+  return `<span class="diff-pips">${out}</span>`;
+}
+
+const solved = getSolvedSet();
+const totalCount = LAYTON_PUZZLES.reduce((n, s) => n + s.items.length, 0);
+const solvedCount = LAYTON_PUZZLES.reduce((n, s) => n + s.items.filter(p => solved.has(p.id)).length, 0);
+
+document.getElementById('progressNum').textContent = `${solvedCount} / ${totalCount} 해결`;
+const RING_CIRCUMFERENCE = 138.2;
+document.getElementById('progressFill').style.strokeDashoffset =
+  String(RING_CIRCUMFERENCE * (1 - solvedCount / totalCount));
+
 const root = document.getElementById('listRoot');
+let rowIndex = 0;
 root.innerHTML = LAYTON_PUZZLES.map(section => `
   <div class="group-label">${section.group}</div>
   <div class="puzzle-list">
-    ${section.items.map(p => p.developed ? `
-      <a class="puzzle-item" href="/dev/minigame-layton/play/?puzzle=${p.id}">
+    ${section.items.map((p, i) => {
+      const isSolved = solved.has(p.id);
+      const delay = (rowIndex++ * 0.04).toFixed(2);
+      return p.developed ? `
+      <a class="puzzle-item${isSolved ? ' solved' : ''}" style="animation-delay:${delay}s" href="/dev/minigame-layton/play/?puzzle=${p.id}">
+        <div class="puzzle-idx">${isSolved ? '✓' : String(i + 1).padStart(2, '0')}</div>
         <div class="puzzle-info">
           <div class="puzzle-name">${p.name}</div>
-          <div class="puzzle-meta">${p.type} · 난이도 ${p.difficulty}</div>
+          <div class="puzzle-meta">${p.type} ${pipsHtml(p.difficulty)}</div>
         </div>
-        <div class="puzzle-badge play">PLAY</div>
+        <div class="puzzle-badge ${isSolved ? 'solved' : 'play'}">${isSolved ? 'SOLVED' : 'PLAY'}</div>
       </a>
     ` : `
-      <div class="puzzle-item locked">
+      <div class="puzzle-item locked" style="animation-delay:${delay}s">
+        <div class="puzzle-idx">${String(i + 1).padStart(2, '0')}</div>
         <div class="puzzle-info">
           <div class="puzzle-name">${p.name}</div>
-          <div class="puzzle-meta">${p.type} · 난이도 ${p.difficulty}</div>
+          <div class="puzzle-meta">${p.type} ${pipsHtml(p.difficulty)}</div>
         </div>
         <div class="puzzle-badge locked">미개발</div>
       </div>
-    `).join('')}
+    `;
+    }).join('')}
   </div>
 `).join('');
 </script>
