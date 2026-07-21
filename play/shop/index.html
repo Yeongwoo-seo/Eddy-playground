@@ -192,7 +192,11 @@ async function safeCall(fn) {
 async function loadItemThumbs() {
   const entries = await Promise.all(Object.values(shopItems).map(async item => {
     if (!item.vnOutfitId) return [item.id, null];
-    const assetId = await safeCall(() => DevGameState.getCharacterAssetIdForOutfit(item.characterId || 'jisoo', item.vnOutfitId, 'neutral'));
+    // …Any (not the strict 'neutral'-only lookup) — a thumbnail just needs to
+    // show the outfit, so an outfit that only has a non-neutral portrait
+    // uploaded so far should still get a real photo instead of the emoji
+    // placeholder.
+    const assetId = await safeCall(() => DevGameState.getCharacterAssetIdForOutfitAny(item.characterId || 'jisoo', item.vnOutfitId));
     if (!assetId) return [item.id, null];
     const asset = await AssetDB.getAsset(assetId).catch(() => null);
     return [item.id, (asset && asset.dataUrl) || null];
@@ -252,7 +256,11 @@ async function updatePreview(outfitId) {
   if (!isEquipped) {
     const item = shopItems[id];
     if (item && item.vnOutfitId) {
-      const vnAssetId = await safeCall(() => DevGameState.getCharacterAssetIdForOutfit('jisoo', item.vnOutfitId, 'neutral'));
+      // …Any so 입어보기 still shows the outfit even when only a non-neutral
+      // portrait has been uploaded for it so far (see
+      // getCharacterAssetIdForOutfitAny in assetDb.js) — otherwise this fell
+      // straight to the "no asset found" placeholder below.
+      const vnAssetId = await safeCall(() => DevGameState.getCharacterAssetIdForOutfitAny('jisoo', item.vnOutfitId));
       if (requestToken !== previewRequestToken) return;
       asset = vnAssetId ? await AssetDB.getAsset(vnAssetId).catch(() => null) : null;
       if (requestToken !== previewRequestToken) return;

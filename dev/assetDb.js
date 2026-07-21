@@ -2022,6 +2022,29 @@ const DevGameState = {
       || (outfit ? map[this._assetKey(characterKey, outfit, 'neutral')] : null)
       || null;
   },
+  // getCharacterAssetIdForOutfit above only ever resolves to that outfit's
+  // 'neutral' portrait — right for /play/game dialogue (every outfit is
+  // uploaded with a 'neutral' shot first per the upload workflow), but too
+  // strict for a plain "what does this outfit look like" lookup (옷가게 카드/
+  // 옷장 썸네일, 입어보기 preview): an outfit that only has non-neutral
+  // portraits uploaded so far should still show *something* there instead of
+  // silently falling back to the placeholder. Prefers 'neutral' when it
+  // exists, otherwise the first other expression (dialogueExpressions order)
+  // uploaded under that outfit, otherwise any asset at all under it.
+  async getCharacterAssetIdForOutfitAny(characterKey, outfit) {
+    if (!characterKey || !outfit) return null;
+    const map = await this._syncFromServer(this._keys.characters, this._loadCharacterMap(), () => AssetDB.getCharacterAssetMap());
+    const neutralId = map[this._assetKey(characterKey, outfit, 'neutral')];
+    if (neutralId) return neutralId;
+    const prefix = `${characterKey}::${outfit}::`;
+    const expressionOrder = (typeof dialogueExpressions !== 'undefined') ? dialogueExpressions.map(x => x.id) : [];
+    for (const expr of expressionOrder) {
+      const id = map[prefix + expr];
+      if (id) return id;
+    }
+    const anyKey = Object.keys(map).find(k => k.startsWith(prefix) && map[k]);
+    return anyKey ? map[anyKey] : null;
+  },
   async setCharacterAssetId(characterKey, expression, assetId, outfit) {
     if (!characterKey) return;
     const map = this._loadCharacterMap();
