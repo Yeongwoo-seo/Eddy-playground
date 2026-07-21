@@ -297,3 +297,33 @@ function buildIdleFrameDataUrls(img, overrides, maxOutputSize) {
   return out;
 }
 
+/* ===== 상태창 숫자글꼴 시트 규격 — 포인트 숫자를 그릴 0~9 숫자 이미지를
+   한 장(1행×10열, 왼쪽부터 0→9 순서)에 담는다. idle 시트(IDLE_GRID_DIRS/
+   buildIdleFrameDataUrls)와 같은 관례 — 칸 크기·간격은 못박지 않고 업로드한
+   실제 가로/세로를 10등분해서 칸 위치를 구한다. AssetDB.getFishingConfig().
+   statusWindow.numberFontSheetAssetId가 시트를, numberFontOverrides가
+   { [digit]: {cx,cy,size} } 형태의 세밀영역조절 보정값(다른 시트들과 같은
+   정규화 좌표계)을 담는다. */
+const STATUS_NUMBER_FONT_DIGITS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+const STATUS_NUMBER_FONT_COLUMNS = STATUS_NUMBER_FONT_DIGITS.length;
+
+function getStatusNumberFontDefaultCropRect(index, sheetW, sheetH) {
+  const cellW = sheetW / STATUS_NUMBER_FONT_COLUMNS;
+  const cxPx = index * cellW + cellW / 2;
+  const cyPx = sheetH / 2;
+  const cellShort = Math.min(cellW, sheetH);
+  return { cx: cxPx / sheetW, cy: cyPx / sheetH, size: cellShort / Math.min(sheetW, sheetH) };
+}
+
+// 시트 1장 + (있으면) digit별 overrides로 10칸을 잘라 { '0': dataUrl, ...,
+// '9': dataUrl } 맵을 만든다. img는 이미 로드된 HTMLImageElement여야 한다.
+function buildStatusNumberFontFrameDataUrls(img, overrides, maxOutputSize) {
+  overrides = overrides || {};
+  const out = {};
+  STATUS_NUMBER_FONT_DIGITS.forEach((digit, i) => {
+    const rect = overrides[digit] || getStatusNumberFontDefaultCropRect(i, img.naturalWidth, img.naturalHeight);
+    out[digit] = cropRectToDataUrl(img, rect, maxOutputSize);
+  });
+  return out;
+}
+

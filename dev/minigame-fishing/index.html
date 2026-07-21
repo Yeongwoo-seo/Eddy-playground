@@ -977,9 +977,17 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
 
     <div class="option-group">
       <div class="option-label">숫자글꼴 (0~9)</div>
-      <div class="option-desc">포인트 숫자를 그릴 때 쓸 0~9 숫자 이미지를 자리마다 낱개로 올리세요. 탭하면 그 자리에 이미지를 올리거나 바꿀 수 있어요.</div>
+      <div class="option-desc">포인트 숫자를 그릴 0~9 숫자가 왼쪽부터 순서대로 나란히 있는 이미지 한 장을 올리세요. 실제 가로폭을 10등분해서 자리를 나누고, 칸이 어긋나면 아래 칸을 탭해 하나씩 맞출 수 있어요.</div>
+      <div class="fish-sheet-frame" id="statusNumberFontSheetFrame">
+        <div class="fish-sheet-empty" id="statusNumberFontSheetEmpty">아직 업로드된 시트가 없어요<br>업로드하기 전까진 포인트 숫자가 안 보여요</div>
+      </div>
+      <div class="fish-sheet-actions">
+        <button type="button" class="fish-sheet-btn" id="statusNumberFontSheetUploadBtn">📤 시트 업로드</button>
+        <button type="button" class="fish-sheet-btn hidden" id="statusNumberFontSheetCutoutBtn">✂ 배경 제거</button>
+        <button type="button" class="fish-sheet-btn danger hidden" id="statusNumberFontSheetRemoveBtn">✕ 제거</button>
+      </div>
+      <input type="file" id="statusNumberFontSheetFileInput" accept="image/*">
       <div class="frame-strip" id="statusNumberFontSlots"></div>
-      <input type="file" id="statusNumberFontFileInput" accept="image/*">
       <div class="crop-size-row">
         <div class="option-label">숫자 폭</div>
         <div class="crop-size-controls">
@@ -1646,8 +1654,13 @@ const el = {
   statusArrowSlot: document.getElementById('statusArrowSlot'),
   statusArrowAddBtn: document.getElementById('statusArrowAddBtn'),
   statusArrowFileInput: document.getElementById('statusArrowFileInput'),
+  statusNumberFontSheetFrame: document.getElementById('statusNumberFontSheetFrame'),
+  statusNumberFontSheetEmpty: document.getElementById('statusNumberFontSheetEmpty'),
+  statusNumberFontSheetUploadBtn: document.getElementById('statusNumberFontSheetUploadBtn'),
+  statusNumberFontSheetCutoutBtn: document.getElementById('statusNumberFontSheetCutoutBtn'),
+  statusNumberFontSheetRemoveBtn: document.getElementById('statusNumberFontSheetRemoveBtn'),
+  statusNumberFontSheetFileInput: document.getElementById('statusNumberFontSheetFileInput'),
   statusNumberFontSlots: document.getElementById('statusNumberFontSlots'),
-  statusNumberFontFileInput: document.getElementById('statusNumberFontFileInput'),
   statusNumberWidthInput: document.getElementById('statusNumberWidthInput'),
   statusNumberWidthNumberInput: document.getElementById('statusNumberWidthNumberInput'),
   statusNumberHeightInput: document.getElementById('statusNumberHeightInput'),
@@ -5446,30 +5459,35 @@ el.youngwooPosConfirmBtn.addEventListener('click', async () => {
 });
 
 /* ===== 상태창 — 프레임/화살표는 castGaugeImageSlot(renderCastGaugeImageSlot
-   참고)과 같은 단일 슬롯 업로드 UI 패턴이고, 숫자글꼴은 0~9 자리마다 그
-   패턴을 반복한다. 다만 castGaugeImageSlot(막대 게이지 배경, 배경을 그대로
-   둬야 함)과 달리 이 셋은 플레이 화면 위에 얹는 HUD 소품이라 모션 프레임과
-   같은 이유로 업로드 즉시 배경을 자동으로 투명하게 만든다
-   (removeBackgroundOrFallback). 저장 형태는 fishingConfig.statusWindow
-   한 덩어리인데 setFishingConfig가 최상위 키만 얕게(Object.assign)
-   병합하기 때문에, 그 안의 필드 하나만 바꿀 때도 patchStatusWindow가 기존
-   statusWindow 전체를 들고 와 합친 뒤 통째로 다시 저장한다(heldFishPos처럼
-   필드가 하나뿐인 값과 달리 하위 필드가 여럿이라 이 헬퍼가 필요하다). */
+   참고)과 같은 단일 슬롯 업로드 UI 패턴이고, 숫자글꼴은 idle/모션 시트와
+   같은 "시트 하나 + 칸별 크롭 rect" 관례(STATUS_NUMBER_FONT_DIGITS/
+   buildStatusNumberFontFrameDataUrls@fishDefs.js, openIdleFrameCropAdjuster와
+   같은 패턴의 세밀영역조절)를 따른다 — 0~9가 왼쪽부터 나란한 이미지 한
+   장을 올리면 실제 가로폭을 10등분해서 자리를 자동으로 나누고,
+   numberFontOverrides로 칸별 위치를 보정한다. 다만 castGaugeImageSlot(막대
+   게이지 배경, 배경을 그대로 둬야 함)과 달리 이 셋은 플레이 화면 위에
+   얹는 HUD 소품이라 모션 프레임과 같은 이유로 업로드 즉시 배경을 자동으로
+   투명하게 만든다(removeBackgroundOrFallback). 저장 형태는
+   fishingConfig.statusWindow 한 덩어리인데 setFishingConfig가 최상위
+   키만 얕게(Object.assign) 병합하기 때문에, 그 안의 필드 하나만 바꿀
+   때도 patchStatusWindow가 기존 statusWindow 전체를 들고 와 합친 뒤
+   통째로 다시 저장한다(heldFishPos처럼 필드가 하나뿐인 값과 달리 하위
+   필드가 여럿이라 이 헬퍼가 필요하다). */
 const DEFAULT_STATUS_WINDOW = {
   frameAssetId: null,
   arrowAssetId: null,
-  numberFontAssetIds: {},
+  numberFontSheetAssetId: null,
+  numberFontOverrides: {},
   numberFontAdjust: { width: 16, height: 22, gap: 2 },
   datePos: null,
   timePos: null,
   pointsPos: null,
   arrowPivot: null,
 };
-const STATUS_DIGITS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
 function currentStatusWindow() {
   const sw = fishingConfig.statusWindow || {};
   return Object.assign({}, DEFAULT_STATUS_WINDOW, sw, {
-    numberFontAssetIds: Object.assign({}, sw.numberFontAssetIds || {}),
+    numberFontOverrides: Object.assign({}, sw.numberFontOverrides || {}),
     numberFontAdjust: Object.assign({}, DEFAULT_STATUS_WINDOW.numberFontAdjust, sw.numberFontAdjust || {}),
   });
 }
@@ -5519,22 +5537,20 @@ async function cutoutStatusArrow(btn) {
     if (btn) btn.disabled = false;
   }
 }
-async function cutoutStatusDigit(digit, btn) {
+async function cutoutStatusNumberFontSheet(btn) {
   const sw = currentStatusWindow();
-  const assetId = sw.numberFontAssetIds[digit];
-  if (!assetId) return;
-  const asset = await AssetDB.getAsset(assetId).catch(() => null);
+  if (!sw.numberFontSheetAssetId) return;
+  const asset = await AssetDB.getAsset(sw.numberFontSheetAssetId).catch(() => null);
   if (!asset) return;
   if (btn) btn.disabled = true;
   try {
     const srcBlob = await dataUrlToBlob(asset.dataUrl);
     const resultBlob = await removeBackgroundOrFallback(srcBlob);
-    const newAsset = await AssetDB.addAsset({ type: 'fishing-status-digit', name: `status-digit-${digit}-cutout.png`, blob: resultBlob });
-    const next = Object.assign({}, sw.numberFontAssetIds, { [digit]: newAsset.id });
-    await patchStatusWindow({ numberFontAssetIds: next });
-    renderStatusNumberFontSlots();
+    const newAsset = await AssetDB.addAsset({ type: 'fishing-status-number-font-sheet', name: 'status-number-font-cutout.png', blob: resultBlob });
+    await patchStatusWindow({ numberFontSheetAssetId: newAsset.id });
+    renderStatusNumberFontTab();
   } catch (err) {
-    DevDiag.show(`숫자(${digit}) 배경 제거 실패: ` + (err && err.message ? err.message : err));
+    DevDiag.show('숫자글꼴 배경 제거 실패: ' + (err && err.message ? err.message : err));
   } finally {
     if (btn) btn.disabled = false;
   }
@@ -5617,66 +5633,113 @@ el.statusArrowFileInput.addEventListener('change', async () => {
   }
 });
 
-// 숫자글꼴 — 0~9 슬롯 10개, 각자 위와 같은 단일 업로드 패턴이지만 파일
-// 입력을 하나 공유한다 — statusNumberFontUploadDigit로 지금 누른 자리를
-// 기억해뒀다가 change에서 그 자리에 저장한다.
-let statusNumberFontUploadDigit = null;
-function renderStatusNumberFontSlots() {
+// 숫자글꼴 — jisu/youngwoo idle 시트(renderIdleSheetPreview/
+// renderIdleFrameGrid/openIdleFrameCropAdjuster/confirmIdleFrameCrop)와
+// 완전히 같은 "시트 하나 + 칸별 크롭 rect" 패턴을, 방향 4칸 대신 숫자
+// 10칸(STATUS_NUMBER_FONT_DIGITS@fishDefs.js)에 적용한다. 시트를 새로
+// 올리거나 지우면 그 시트 기준으로 잡아뒀던 칸 보정도 같이 초기화한다
+// (idle 시트 제거와 같은 원칙 — 새 시트에 엉뚱한 좌표가 남지 않게).
+let statusNumberFontSheetAsset = null;
+let statusNumberFontSheetDims = null;
+async function renderStatusNumberFontSheetPreview() {
   const sw = currentStatusWindow();
-  el.statusNumberFontSlots.innerHTML = '';
-  STATUS_DIGITS.forEach(digit => {
-    const assetId = sw.numberFontAssetIds[digit];
-    const slot = document.createElement('div');
-    slot.className = 'frame-slot';
-    slot.dataset.digit = digit;
-    slot.innerHTML = `<span class="frame-index">${digit}</span>
-      ${assetId ? '<div class="frame-actions"><button type="button" class="frame-mini-btn" data-act="cutout" title="배경 제거">✂</button><button type="button" class="frame-mini-btn danger" data-act="del">✕</button></div>' : ''}`;
-    slot.addEventListener('click', (e) => {
-      if (e.target.closest('[data-act]')) return;
-      statusNumberFontUploadDigit = digit;
-      el.statusNumberFontFileInput.click();
+  el.statusNumberFontSheetFrame.querySelectorAll('img').forEach(img => img.remove());
+  const asset = sw.numberFontSheetAssetId ? await AssetDB.getAsset(sw.numberFontSheetAssetId).catch(() => null) : null;
+  if (!asset) {
+    el.statusNumberFontSheetEmpty.classList.remove('hidden');
+    el.statusNumberFontSheetCutoutBtn.classList.add('hidden');
+    el.statusNumberFontSheetRemoveBtn.classList.add('hidden');
+    el.statusNumberFontSheetFrame.style.removeProperty('--motion-ar');
+    return null;
+  }
+  el.statusNumberFontSheetEmpty.classList.add('hidden');
+  el.statusNumberFontSheetCutoutBtn.classList.remove('hidden');
+  el.statusNumberFontSheetRemoveBtn.classList.remove('hidden');
+  const img = document.createElement('img');
+  img.src = asset.dataUrl;
+  img.alt = '';
+  el.statusNumberFontSheetFrame.appendChild(img);
+  return asset;
+}
+function renderStatusNumberFontGrid(sheetAsset, sheetDims) {
+  const sw = currentStatusWindow();
+  const overrides = sw.numberFontOverrides || {};
+  const cells = STATUS_NUMBER_FONT_DIGITS.map((digit, i) => {
+    const override = overrides[digit];
+    const rect = override || (sheetDims ? getStatusNumberFontDefaultCropRect(i, sheetDims.width, sheetDims.height) : null);
+    const iconStyle = (sheetAsset && rect)
+      ? (() => {
+          const style = getFishCropStyle(rect, sheetDims.width, sheetDims.height, 64);
+          return `background-image:url('${sheetAsset.dataUrl}');background-position:${style.backgroundPosition};background-size:${style.backgroundSize};background-repeat:no-repeat;image-rendering:pixelated`;
+        })()
+      : '';
+    return `
+      <div class="frame-slot${sheetAsset && rect ? ' fish-icon-tappable' : ''}" style="${iconStyle}" data-digit="${digit}">
+        <span class="frame-index">${digit}${override ? ' ✓' : ''}</span>
+      </div>
+    `;
+  });
+  el.statusNumberFontSlots.innerHTML = cells.join('');
+  if (sheetAsset && sheetDims) {
+    el.statusNumberFontSlots.querySelectorAll('[data-digit]').forEach(cellEl => {
+      cellEl.addEventListener('click', () => openStatusNumberFontCropAdjuster(cellEl.dataset.digit, sheetAsset, sheetDims));
     });
-    const cutoutBtn = slot.querySelector('[data-act=cutout]');
-    if (cutoutBtn) {
-      cutoutBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        cutoutStatusDigit(digit, cutoutBtn);
-      });
-    }
-    const delBtn = slot.querySelector('[data-act=del]');
-    if (delBtn) {
-      delBtn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        const next = Object.assign({}, sw.numberFontAssetIds);
-        delete next[digit];
-        await patchStatusWindow({ numberFontAssetIds: next });
-        renderStatusNumberFontSlots();
-      });
-    }
-    el.statusNumberFontSlots.appendChild(slot);
-    if (assetId) {
-      AssetDB.getAsset(assetId).then(asset => {
-        if (!asset) return;
-        const img = document.createElement('img');
-        img.src = asset.dataUrl;
-        img.alt = digit;
-        slot.insertBefore(img, slot.firstChild);
-      }).catch(() => {});
+  }
+}
+function openStatusNumberFontCropAdjuster(digit, sheetAsset, sheetDims) {
+  const overrides = currentStatusWindow().numberFontOverrides || {};
+  const index = STATUS_NUMBER_FONT_DIGITS.indexOf(digit);
+  const existingRect = overrides[digit] || (sheetDims ? getStatusNumberFontDefaultCropRect(index, sheetDims.width, sheetDims.height) : { cx: 0.5, cy: 0.5, size: 0.1 });
+  const eraseTarget = { assetType: 'fishing-status-number-font-sheet', save: (assetId) => patchStatusWindow({ numberFontSheetAssetId: assetId }) };
+  openCropAdjuster(sheetAsset.dataUrl, existingRect, null, (rect) => confirmStatusNumberFontCrop(rect, digit), null, null, null, eraseTarget);
+}
+// 모든 자리가 같은 숫자글꼴이라 크롭 크기(size)가 자리마다 다르면 숫자가
+// 자리마다 커졌다 작아졌다 하는 것처럼 보인다 — idle 시트의
+// confirmIdleFrameCrop과 같은 원칙으로, 한 자리의 크기를 바꾸면 나머지
+// 9자리도 같은 크기로 맞추고 위치(cx/cy)는 자리마다 그대로 둔다.
+async function confirmStatusNumberFontCrop(rect, digit) {
+  const current = currentStatusWindow().numberFontOverrides || {};
+  const dims = statusNumberFontSheetDims;
+  const overrides = {};
+  STATUS_NUMBER_FONT_DIGITS.forEach((d, i) => {
+    if (d === digit) {
+      overrides[d] = rect;
+    } else {
+      const existing = current[d] || (dims ? getStatusNumberFontDefaultCropRect(i, dims.width, dims.height) : null);
+      overrides[d] = existing ? Object.assign({}, existing, { size: rect.size }) : Object.assign({ cx: 0.5, cy: 0.5 }, { size: rect.size });
     }
   });
+  await patchStatusWindow({ numberFontOverrides: overrides });
+  renderStatusNumberFontTab();
 }
-el.statusNumberFontFileInput.addEventListener('change', async () => {
-  const file = el.statusNumberFontFileInput.files[0];
-  el.statusNumberFontFileInput.value = '';
-  const digit = statusNumberFontUploadDigit;
-  statusNumberFontUploadDigit = null;
-  if (!file || digit == null) return;
-  const blob = await removeBackgroundOrFallback(file); // 숫자 글꼴도 소품 이미지라 배경을 투명하게 만든다
-  const asset = await AssetDB.addAsset({ type: 'fishing-status-digit', name: file.name, blob });
-  const sw = currentStatusWindow();
-  const next = Object.assign({}, sw.numberFontAssetIds, { [digit]: asset.id });
-  await patchStatusWindow({ numberFontAssetIds: next });
-  renderStatusNumberFontSlots();
+async function renderStatusNumberFontTab() {
+  const asset = await renderStatusNumberFontSheetPreview();
+  const dims = asset ? await loadImageDimensions(asset.dataUrl) : null;
+  el.statusNumberFontSheetFrame.style.setProperty('--motion-ar', dims ? (dims.width + '/' + dims.height) : '4/1');
+  statusNumberFontSheetAsset = asset;
+  statusNumberFontSheetDims = dims;
+  renderStatusNumberFontGrid(asset, dims);
+}
+el.statusNumberFontSheetUploadBtn.addEventListener('click', () => el.statusNumberFontSheetFileInput.click());
+el.statusNumberFontSheetFileInput.addEventListener('change', async () => {
+  const file = el.statusNumberFontSheetFileInput.files[0];
+  el.statusNumberFontSheetFileInput.value = '';
+  if (!file) return;
+  el.statusNumberFontSheetUploadBtn.disabled = true;
+  try {
+    const blob = await removeBackgroundOrFallback(file); // 숫자 글꼴도 소품 이미지라 배경을 투명하게 만든다
+    const asset = await AssetDB.addAsset({ type: 'fishing-status-number-font-sheet', name: file.name, blob });
+    await patchStatusWindow({ numberFontSheetAssetId: asset.id, numberFontOverrides: {} });
+    renderStatusNumberFontTab();
+  } finally {
+    el.statusNumberFontSheetUploadBtn.disabled = false;
+  }
+});
+el.statusNumberFontSheetCutoutBtn.addEventListener('click', (e) => cutoutStatusNumberFontSheet(e.currentTarget));
+el.statusNumberFontSheetRemoveBtn.addEventListener('click', async () => {
+  if (!confirm('숫자글꼴 시트를 지울까요?')) return;
+  await patchStatusWindow({ numberFontSheetAssetId: null, numberFontOverrides: {} });
+  renderStatusNumberFontTab();
 });
 
 // 숫자 상세조정(폭/높이/간격) — 슬라이더/숫자 입력 쌍(motionRowHeightInput류와
@@ -5800,7 +5863,7 @@ async function init() {
   renderCastGaugeImageSlot();
   renderStatusFrameSlot();
   renderStatusArrowSlot();
-  renderStatusNumberFontSlots();
+  renderStatusNumberFontTab();
   renderStatusNumberAdjustInputs();
   renderItemWindowBg();
   updateItemIconGridBtnState();
