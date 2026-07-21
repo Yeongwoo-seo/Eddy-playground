@@ -3149,6 +3149,8 @@ function applyMoveSprite(spriteDir) {
 }
 // 이동 불가 영역(blockedAreas)이 있으면 후보 위치가 그 안에 들어가는지
 // 검사한다 — bgDims를 못 읽었으면(배경 없음) 판정 근거가 없으니 항상 허용.
+// 낚시가능 영역과 겹쳐도 이동 판정은 그대로 blockedAreas를 따른다 — 겹친
+// 자리는 "낚시는 되지만 캐릭터는 걸어 들어갈 수 없는" 자리다.
 function isPositionBlocked(x, y) {
   if (!blockedAreas.length) return false;
   return isInsideAnyArea(worldPosToImageFrac(x, y), blockedAreas);
