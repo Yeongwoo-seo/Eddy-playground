@@ -79,6 +79,19 @@ const dialogueOutfits = [
   { id: 'outfit-10', label: '굿바이 시드니 코디' },
 ];
 
+// 위 기본 라벨을 /dev/upload 인물 DB 탭 "이름 변경"으로 재정의한 값이 있으면
+// 그걸 우선 반환한다 — AssetDB.prefetchOutfitNames()로 미리 채워 둔 동기
+// 캐시(AssetDB.getOutfitNamesCached())를 읽으므로, 옷가게/옷장처럼 목록을
+// 동기로 반복 렌더링하는 화면에서도 서버 왕복 없이 쓸 수 있다. prefetch를 아직
+// 안 했거나 재정의가 없으면 dialogueOutfits의 기본 라벨로 조용히 폴백한다.
+function getOutfitLabel(outfitId) {
+  if (!outfitId) return '';
+  const overrides = (typeof AssetDB !== 'undefined') ? AssetDB.getOutfitNamesCached() : {};
+  if (overrides[outfitId]) return overrides[outfitId];
+  const def = dialogueOutfits.find(o => o.id === outfitId);
+  return def ? def.label : outfitId;
+}
+
 // Sentinel "expression" a minigame face photo is stored/looked up under in
 // the same (character, expression) asset map 인물 DB uses — not a real mood,
 // just one dedicated square close-up per character for small in-minigame
@@ -761,17 +774,11 @@ const week1SceneCircularQuayLines = [
   { id: 'line-036c', speaker: '지수', text: '아 그러네.\n다행이다.', characterId: 'jisoo', expression: 'soft' },
   { id: 'line-037', speaker: '영우', text: '괜찮아.\n내가 알려줄게.', characterId: 'youngwoo', expression: 'soft' },
   { id: 'line-038', speaker: '지수', text: '오키.\n그럼 체력 괜찮을 때 한 판만.', characterId: 'jisoo', expression: 'smirk' },
+  // [circularkey-fishing-surprise-effect] 지수가 픽셀 낚시 화면을 보고
+  // 놀라는 티키타카(구 line-040~line-049, "이거 뭐야?????" ~ "진짜 미쳤나봐")는
+  // 이 VN 씬에서 빼서 낚시 미니게임 자체의 시작 전 대화 인트로로 옮겼다 —
+  // see dev/data/fishingDialogueScene.js의 DEFAULT_DIALOGUE_LINES.
   { id: 'line-039', speaker: '', text: '영우가 화면의 낚싯대 아이콘을 눌렀다.\n갑자기 픽셀 그래픽의 낚시 화면이 열렸다.', characterId: null },
-  { id: 'line-040', speaker: '지수', text: '잠만.\n이거 뭐야?????', characterId: 'jisoo', expression: 'shocked' },
-  { id: 'line-041', speaker: '영우', text: '낚시게임.', characterId: 'youngwoo', expression: 'smirk' },
-  { id: 'line-042', speaker: '지수', text: '아니 그건 보이는데\n왜 갑자기 게임이 나와요????', characterId: 'jisoo', expression: 'suspicious' },
-  { id: 'line-043', speaker: '영우', text: '내가 낚시하자고 했잖아.\n그래서 이거 만듦.', characterId: 'youngwoo', expression: 'smirk' },
-  { id: 'line-044', speaker: '지수', text: '에에 미쳤나봐!!!', characterId: 'jisoo', expression: 'shocked' },
-  { id: 'line-045', speaker: '지수', text: '진짜 이걸 만들었다고????', characterId: 'jisoo', expression: 'shocked' },
-  { id: 'line-046', speaker: '영우', text: '웅.\n스타듀밸리처럼 물고기 따라가면 돼.', characterId: 'youngwoo', expression: 'happy' },
-  { id: 'line-047', speaker: '지수', text: '아 진짜 영크크 미쳤어.', characterId: 'jisoo', expression: 'happy' },
-  { id: 'line-048', speaker: '영우', text: '칭찬으로 듣겠습니다.', characterId: 'youngwoo', expression: 'smirk' },
-  { id: 'line-049', speaker: '지수', text: '칭찬 맞아요!!!!\n아니 근데 진짜 미쳤나봐.', characterId: 'jisoo', expression: 'happy' },
   { id: 'line-050', speaker: '', text: '[ 잠시 후 — 낚시 화면으로 이동합니다 ]', characterId: null },
 ];
 

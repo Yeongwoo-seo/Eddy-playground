@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>옷(코디) 사진 진단</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#111;color:#eee;padding:16px;line-height:1.6;font-size:13px}
+h2{font-size:16px}
+h3{font-size:14px;margin:20px 0 8px}
+.row{border:1px solid #444;border-radius:10px;padding:12px;margin-bottom:12px}
+.ok{color:#4f8}
+.bad{color:#f66}
+img{max-width:120px;max-height:120px;border:1px solid #888;border-radius:8px;display:block;margin-top:6px}
+pre{white-space:pre-wrap;word-break:break-all;background:#000;padding:8px;border-radius:6px;font-size:11px}
+</style>
+</head>
+<body>
+<h2>옷(코디) 사진 진단</h2>
+<p>옷가게/옷장 썸네일이 이모지로 남는 옷의 실제 저장 상태를 확인합니다 — 지수(jisoo)의 outfit-01~10 각각에 대해 (1) character-assets 맵에 키 자체가 있는지, (2) neutral 표정이 있는지, (3) getCharacterAssetIdForOutfitAny가 실제로 무엇을 찾는지, (4) 그 사진이 로딩되는지 보여줍니다.</p>
+<div id="out">불러오는 중...</div>
+<script src="/dev/assetDb.js"></script>
+<script src="/dev/dialogueData.js"></script>
+<script>
+async function run() {
+  const out = document.getElementById('out');
+  out.innerHTML = '';
+  const character = dialogueCharacters.find(c => c.id === 'jisoo');
+  const outfits = (character && character.outfits) || [];
+  const map = await AssetDB.getCharacterAssetMap();
+  const allKeys = Object.keys(map || {});
+
+  const summary = document.createElement('div');
+  summary.className = 'row';
+  summary.innerHTML = `<b>character-assets 맵 전체 키 수: ${allKeys.length}</b><br>` +
+    `<pre>${allKeys.filter(k => k.startsWith('jisoo::')).sort().join('\n') || '(jisoo:: 로 시작하는 키 없음)'}</pre>`;
+  out.appendChild(summary);
+
+  for (const outfit of outfits) {
+    const box = document.createElement('div');
+    box.className = 'row';
+    const label = (typeof getOutfitLabel === 'function') ? getOutfitLabel(outfit) : outfit;
+    let html = `<h3>${outfit} — ${label}</h3>`;
+
+    const prefix = `jisoo::${outfit}::`;
+    const matchingKeys = allKeys.filter(k => k.startsWith(prefix));
+    html += `이 옷 아래 저장된 키: <pre>${matchingKeys.length ? matchingKeys.join('\n') : '(없음 — 이 옷 슬롯엔 아무 표정도 저장 안 됨)'}</pre>`;
+
+    const neutralAssetId = await DevGameState.getCharacterAssetIdForOutfit('jisoo', outfit, 'neutral');
+    html += `getCharacterAssetIdForOutfit(neutral only): <pre>${neutralAssetId || '(null)'}</pre>`;
+
+    const anyAssetId = await DevGameState.getCharacterAssetIdForOutfitAny('jisoo', outfit);
+    html += `getCharacterAssetIdForOutfitAny (실제 옷가게/옷장이 쓰는 함수): <pre>${anyAssetId || '(null) → 썸네일이 이모지로 남는 이유'}</pre>`;
+
+    box.innerHTML = html;
+    out.appendChild(box);
+
+    if (!anyAssetId) continue;
+
+    const asset = await AssetDB.getAsset(anyAssetId).catch(e => ({ __error: e.message }));
+    const assetHtml = document.createElement('div');
+    assetHtml.innerHTML = `dev_assets row: <pre>${JSON.stringify(asset, null, 2)}</pre>`;
+    box.appendChild(assetHtml);
+
+    if (!asset || asset.__error || !asset.dataUrl) {
+      const bad = document.createElement('div');
+      bad.className = 'bad';
+      bad.textContent = '→ assetId는 맵에 있는데 dev_assets row가 없거나 url이 비어있음';
+      box.appendChild(bad);
+      continue;
+    }
+
+    const imgId = 'img_' + outfit;
+    const statusId = 'status_' + outfit;
+    const imgWrap = document.createElement('div');
+    imgWrap.innerHTML = `<img id="${imgId}" src="${asset.dataUrl}"><div id="${statusId}">이미지 로딩 중...</div>`;
+    box.appendChild(imgWrap);
+    const img = document.getElementById(imgId);
+    const status = document.getElementById(statusId);
+    img.onload = () => { status.textContent = `로딩 성공 (${img.naturalWidth}×${img.naturalHeight}px)`; status.className = 'ok'; };
+    img.onerror = () => { status.textContent = '→ 이미지 URL 요청 자체가 실패함 (깨진 URL / CORS / 파일 삭제됨)'; status.className = 'bad'; };
+  }
+}
+run();
+</script>
+</body>
+</html>

@@ -297,3 +297,63 @@ function buildIdleFrameDataUrls(img, overrides, maxOutputSize) {
   return out;
 }
 
+/* ===== 상태창 숫자글꼴 시트 규격 — 포인트 숫자를 그릴 0~9 숫자 이미지를
+   한 장(1행×10열, 왼쪽부터 0→9 순서)에 담는다. idle 시트(IDLE_GRID_DIRS/
+   buildIdleFrameDataUrls)와 같은 관례 — 칸 크기·간격은 못박지 않고 업로드한
+   실제 가로/세로를 10등분해서 칸 위치를 구한다. AssetDB.getFishingConfig().
+   statusWindow.numberFontSheetAssetId가 시트를, numberFontOverrides가
+   { [digit]: {cx,cy,size} } 형태의 세밀영역조절 보정값(다른 시트들과 같은
+   정규화 좌표계)을 담는다. */
+const STATUS_NUMBER_FONT_DIGITS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+const STATUS_NUMBER_FONT_COLUMNS = STATUS_NUMBER_FONT_DIGITS.length;
+
+function getStatusNumberFontDefaultCropRect(index, sheetW, sheetH) {
+  const cellW = sheetW / STATUS_NUMBER_FONT_COLUMNS;
+  const cxPx = index * cellW + cellW / 2;
+  const cyPx = sheetH / 2;
+  const cellShort = Math.min(cellW, sheetH);
+  return { cx: cxPx / sheetW, cy: cyPx / sheetH, size: cellShort / Math.min(sheetW, sheetH) };
+}
+
+// 시트 1장 + (있으면) digit별 overrides로 10칸을 잘라 { '0': dataUrl, ...,
+// '9': dataUrl } 맵을 만든다. img는 이미 로드된 HTMLImageElement여야 한다.
+function buildStatusNumberFontFrameDataUrls(img, overrides, maxOutputSize) {
+  overrides = overrides || {};
+  const out = {};
+  STATUS_NUMBER_FONT_DIGITS.forEach((digit, i) => {
+    const rect = overrides[digit] || getStatusNumberFontDefaultCropRect(i, img.naturalWidth, img.naturalHeight);
+    out[digit] = cropRectToDataUrl(img, rect, maxOutputSize);
+  });
+  return out;
+}
+
+/* ===== 상태창 숫자 자리(digitPositions) — 포인트 전체를 한 점(pointsPos) 기준
+   가로 flex row로 늘어놓던 예전 방식 대신, 자리마다(1의 자리, 10의 자리 …)
+   위치를 따로 지정한다(dev "상태창 조립" 참고, statusWindow.digitPositions =
+   [{x,y}, ...], 배열 순서 = 왼쪽부터 높은 자리). 아직 한 번도 조립하지 않은
+   설정(digitPositions가 비어있음)은 예전 pointsPos(또는 기본 중앙)를 기준으로
+   자리 수만큼 임시로 늘어놓아 보여준다 — 조립 화면에서 자리 하나라도 옮기면
+   그때부터 실제 digitPositions가 저장되어 이 임시값은 더 이상 쓰이지 않는다. */
+function getStatusDigitPositions(sw, count) {
+  if (sw.digitPositions && sw.digitPositions.length) return sw.digitPositions;
+  count = count || 4;
+  const center = sw.pointsPos || { x: 0.5, y: 0.6 };
+  const step = 0.15;
+  const start = -((count - 1) / 2) * step;
+  const out = [];
+  for (let i = 0; i < count; i++) out.push({ x: center.x + start + i * step, y: center.y });
+  return out;
+}
+
+// 실제 포인트 값 문자열(str)을 slotCount개의 자리(오른쪽 정렬, 남는 앞자리는
+// 빈칸)에 배정한다. { digit, slotIndex }[] — slotIndex는 digitPositions 배열의
+// 인덱스와 그대로 대응된다. str이 slotCount보다 길면 앞자리(높은 자리)가
+// 잘려나간다(자리를 더 추가하지 않는 한 자릿수가 넘치는 값은 표시하지 않음).
+function alignStatusDigitsToSlots(str, slotCount) {
+  const digits = String(str).split('');
+  const start = Math.max(0, digits.length - slotCount);
+  const shown = digits.slice(start);
+  const offset = slotCount - shown.length;
+  return shown.map((digit, i) => ({ digit, slotIndex: offset + i }));
+}
+

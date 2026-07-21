@@ -1111,6 +1111,11 @@ const AssetDB = (() => {
   // 보여주고 파는 창, play/index.html의 물고기 팔기 기능 그대로 재사용 —
   // 영우 NPC 메뉴 → "물고기 팔기"에서 연다) 카드의 배경(액자) 그림. 비어있으면
   // 기존 어두운 단색 카드(.sell-fish-card 기본 배경)가 그대로 쓰인다.
+  // itemIconGrid — 위 배경 이미지 안에서 8개 아이템 칸이 한 줄로 나란히
+  // 놓일 자리. 칸마다 따로 저장하지 않고 { cx, cy, size, gap }(전체 중심
+  // 위치 + 칸 크기 + 칸 사이 간격, size/gap은 배경 이미지 짧은 변 기준
+  // 정규화값) 네 값만 저장해 8칸 위치를 계산해서 구한다
+  // (computeItemIconGridRects 참고). null이면 DEFAULT_ITEM_ICON_GRID로 폴백.
   // heldFishPos — 낚시 성공 후 캐릭터가 물고기를 들고 있는 포즈일 때, 잡은
   // 물고기 아이콘이 캐릭터 기준(char-stage 박스, 0~1 정규화 좌표) 어디에
   // 놓일지. "모션" 탭 올리기 카테고리의 마지막 프레임 위로 점을 찍어
@@ -1160,7 +1165,7 @@ const AssetDB = (() => {
   // 변환한다. 최상위 필드 자체는 이제 FISHING_CONFIG_DEFAULT에 없지만,
   // 예전에 저장된 JSON blob엔 여전히 남아있을 수 있어 병합 시 그대로
   // 딸려온다.
-  const FISHING_CONFIG_DEFAULT = { barDesign: {}, fishSheetAssetId: null, fishIconOverrides: {}, motionSheetAssetId: null, motionFrameOverrides: { cast: {}, reel: {}, up: {}, down: {}, left: {}, right: {} }, motionRowOverrides: {}, motionFrameImageOverrides: { up: {}, down: {}, left: {}, right: {} }, motionPlaybackMs: { up: 90, down: 90, left: 90, right: 90 }, castingFrameDurations: [], castingFrameRodTips: {}, reelFrameRodTips: {}, walkMotion: { stepMs: 200, animFrameMs: 90 }, castPhysics: { gravityMps2: 9.8, vxScale: 1 }, itemPopup: { backgroundAssetId: null, iconPos: null, iconSizePx: 64 }, itemWindowBackgroundAssetId: null, castGaugeAssetId: null, castGaugeFillRegion: null, screens: [], startScreenId: null, dialogueScene: { boxLayer: null, jisooLayer: null, youngwooLayer: null }, heldFishPos: null, characterIdleSheets: { jisu: { assetId: null, overrides: {} }, youngwoo: { assetId: null, overrides: {} } }, statusWindow: { frameAssetId: null, arrowAssetId: null, numberFontAssetIds: {}, numberFontAdjust: { width: 16, height: 22, gap: 2 }, datePos: null, timePos: null, pointsPos: null, arrowPivot: null } };
+  const FISHING_CONFIG_DEFAULT = { barDesign: {}, fishSheetAssetId: null, fishIconOverrides: {}, motionSheetAssetId: null, motionFrameOverrides: { cast: {}, reel: {}, up: {}, down: {}, left: {}, right: {} }, motionRowOverrides: {}, motionFrameImageOverrides: { up: {}, down: {}, left: {}, right: {} }, motionPlaybackMs: { up: 90, down: 90, left: 90, right: 90 }, castingFrameDurations: [], castingFrameRodTips: {}, reelFrameRodTips: {}, walkMotion: { stepMs: 200, animFrameMs: 90 }, castPhysics: { gravityMps2: 9.8, vxScale: 1 }, itemPopup: { backgroundAssetId: null, iconPos: null, iconSizePx: 64 }, itemWindowBackgroundAssetId: null, itemIconGrid: null, castGaugeAssetId: null, castGaugeFillRegion: null, screens: [], startScreenId: null, dialogueScene: { boxLayer: null, jisooLayer: null, youngwooLayer: null }, heldFishPos: null, characterIdleSheets: { jisu: { assetId: null, overrides: {} }, youngwoo: { assetId: null, overrides: {} } }, statusWindow: { frameAssetId: null, arrowAssetId: null, numberFontSheetAssetId: null, numberFontOverrides: {}, numberFontAdjust: { width: 16, height: 22, gap: 2 }, datePos: null, timePos: null, pointsPos: null, arrowPivot: null } };
 
   function migrateLegacyFishingScreen(cfg) {
     if ((cfg.screens && cfg.screens.length) || !cfg.backgroundAssetId) return cfg;
@@ -1650,6 +1655,30 @@ const AssetDB = (() => {
   }
   async function _setCharacterOutfitMap(map) { return saveJsonBlobMap(CHARACTER_OUTFITS_PATH, characterOutfitsCache, 'map', map, '선택 의상'); }
 
+  // 옷 이름(라벨) 오버라이드 — { [vnOutfitId]: name }. dialogueData.js의
+  // dialogueOutfits 기본 라벨을 /dev/upload 인물 DB 탭 "이름 변경"으로 재정의한
+  // 값만 담는다(재정의가 없는 옷은 이 맵에 아예 없다 — 기본 라벨을 그대로
+  // 쓴다는 뜻). 옷가게/옷장(§옷가게 데이터를 실제 옷과 연동)도 shopItems.js의
+  // 정적 name 대신 여기 값을 우선해서 보여준다 — getOutfitLabel(dialogueData.js)/
+  // getShopItemName(shopItems.js) 참고.
+  const outfitNamesCache = new Map();
+  const OUTFIT_NAMES_PATH = 'outfit-names/map.json';
+  async function getOutfitNameMap() { return getJsonBlobMap(OUTFIT_NAMES_PATH, outfitNamesCache, 'map'); }
+  async function setOutfitNameEntry(outfitId, name) {
+    if (!outfitId) return outfitNamesCache.get('map') || {};
+    return setJsonBlobEntry(OUTFIT_NAMES_PATH, outfitNamesCache, 'map', outfitId, name, '옷 이름');
+  }
+  // 옷가게/옷장 화면은 카드 목록을 동기 함수로 그리므로(구매/장착마다 다시
+  // 그림), 매번 서버 왕복 없이 읽을 수 있는 캐시가 필요하다 — getCaseEntryMeta의
+  // prefetchCaseEntryMeta/getCaseEntryMetaCached와 같은 패턴. 각 화면의
+  // init()이 시작할 때 한 번 prefetchOutfitNames()를 호출해 둔다.
+  let outfitNamesSyncCache = null;
+  async function prefetchOutfitNames() {
+    outfitNamesSyncCache = await getOutfitNameMap().catch(() => ({}));
+    return outfitNamesSyncCache;
+  }
+  function getOutfitNamesCached() { return outfitNamesSyncCache || {}; }
+
   // 캐릭터 위치/스케일 배정 — { [transformKey]: {x,y,scale} }, transformKey는
   // DevGameState._transformKeyFor 결과(주인공은 characterKey 그대로, 나머지
   // 전원은 '__other__' 공용 키).
@@ -1724,6 +1753,7 @@ const AssetDB = (() => {
     getPlayIconUrls, getPlayIconPreviewUrls, savePlayIcon,
     getCharacterAssetMap, setCharacterAssetEntry, _setCharacterAssetMap,
     getCharacterOutfitMap, setCharacterOutfitEntry, _setCharacterOutfitMap,
+    getOutfitNameMap, setOutfitNameEntry, prefetchOutfitNames, getOutfitNamesCached,
     getCharacterTransformMap, setCharacterTransformEntry, _setCharacterTransformMap,
     getSceneBgmMap, setSceneBgmEntry, _setSceneBgmMap,
     getLocationBackgroundMap, setLocationBackgroundEntry, _setLocationBackgroundMap,
@@ -1736,6 +1766,7 @@ const DevGameState = {
     background: 'mkDevSelectedBackgrounds', characters: 'mkDevSelectedCharacters',
     transforms: 'mkDevCharacterTransforms', sceneBgm: 'mkDevSceneBgm',
     outfits: 'mkDevSelectedOutfits', locationBackgrounds: 'mkDevLocationBackgrounds',
+    outfitNames: 'mkDevOutfitNames',
   },
 
   // Reads a server-backed assignment map and, when the read succeeds,
@@ -1996,6 +2027,29 @@ const DevGameState = {
       || (outfit ? map[this._assetKey(characterKey, outfit, 'neutral')] : null)
       || null;
   },
+  // getCharacterAssetIdForOutfit above only ever resolves to that outfit's
+  // 'neutral' portrait — right for /play/game dialogue (every outfit is
+  // uploaded with a 'neutral' shot first per the upload workflow), but too
+  // strict for a plain "what does this outfit look like" lookup (옷가게 카드/
+  // 옷장 썸네일, 입어보기 preview): an outfit that only has non-neutral
+  // portraits uploaded so far should still show *something* there instead of
+  // silently falling back to the placeholder. Prefers 'neutral' when it
+  // exists, otherwise the first other expression (dialogueExpressions order)
+  // uploaded under that outfit, otherwise any asset at all under it.
+  async getCharacterAssetIdForOutfitAny(characterKey, outfit) {
+    if (!characterKey || !outfit) return null;
+    const map = await this._syncFromServer(this._keys.characters, this._loadCharacterMap(), () => AssetDB.getCharacterAssetMap());
+    const neutralId = map[this._assetKey(characterKey, outfit, 'neutral')];
+    if (neutralId) return neutralId;
+    const prefix = `${characterKey}::${outfit}::`;
+    const expressionOrder = (typeof dialogueExpressions !== 'undefined') ? dialogueExpressions.map(x => x.id) : [];
+    for (const expr of expressionOrder) {
+      const id = map[prefix + expr];
+      if (id) return id;
+    }
+    const anyKey = Object.keys(map).find(k => k.startsWith(prefix) && map[k]);
+    return anyKey ? map[anyKey] : null;
+  },
   async setCharacterAssetId(characterKey, expression, assetId, outfit) {
     if (!characterKey) return;
     const map = this._loadCharacterMap();
@@ -2047,6 +2101,27 @@ const DevGameState = {
     if (outfitId) map[characterKey] = outfitId; else delete map[characterKey];
     localStorage.setItem(this._keys.outfits, JSON.stringify(map));
     await AssetDB.setCharacterOutfitEntry(characterKey, outfitId || null);
+  },
+
+  // 옷 이름(라벨) 오버라이드 — /dev/upload 인물 DB 탭 "이름 변경"에서만 쓴다.
+  // 옷가게/옷장 화면은 매 렌더마다 이걸 기다릴 수 없으므로 대신
+  // AssetDB.prefetchOutfitNames()/getOutfitNamesCached()(동기 캐시)를 쓴다 —
+  // getOutfitLabel(dialogueData.js) 참고. AssetDB.getOutfitNameMap()/
+  // setOutfitNameEntry가 실제(다중 기기) 저장소.
+  _loadOutfitNameMap() {
+    try { return JSON.parse(localStorage.getItem(this._keys.outfitNames)) || {}; }
+    catch (e) { return {}; }
+  },
+  async getOutfitNameMap() {
+    return await this._syncFromServer(this._keys.outfitNames, this._loadOutfitNameMap(), () => AssetDB.getOutfitNameMap());
+  },
+  async setOutfitName(outfitId, name) {
+    if (!outfitId) return;
+    const map = this._loadOutfitNameMap();
+    const trimmed = (name || '').trim();
+    if (trimmed) map[outfitId] = trimmed; else delete map[outfitId];
+    localStorage.setItem(this._keys.outfitNames, JSON.stringify(map));
+    await AssetDB.setOutfitNameEntry(outfitId, trimmed || null);
   },
 
   // Backed by AssetDB.getCharacterTransformMap()/setCharacterTransformEntry

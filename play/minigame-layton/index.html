@@ -22,13 +22,7 @@
   --sans:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
 }
 html,body{height:100%}
-body{
-  background:
-    radial-gradient(circle at 8px 8px, rgba(89,184,200,0.05) 1px, transparent 1px),
-    #050607;
-  background-size: 24px 24px;
-  color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center;min-height:100dvh;
-}
+body{background:#050607;color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center;min-height:100dvh}
 .frame{width:100%;max-width:430px;min-height:100dvh;min-height:100vh;padding:calc(48px + env(safe-area-inset-top,0)) 20px calc(32px + env(safe-area-inset-bottom,0));display:flex;flex-direction:column}
 .back{font-family:var(--mono);font-size:12px;color:var(--text-muted);text-decoration:none;margin-bottom:18px;display:inline-flex;align-items:center;gap:4px;width:fit-content}
 .top-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
@@ -40,16 +34,10 @@ body{
 .settings-link{font-family:var(--mono);font-size:11px;color:var(--text-muted);text-decoration:none;border:1px solid var(--divider);border-radius:20px;padding:7px 13px;flex-shrink:0}
 .settings-link:active{opacity:.75}
 .tag{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px}
-.title-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
-.puzzle-num-chip{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--cyan);background:rgba(89,184,200,0.1);border:1px solid rgba(89,184,200,0.3);border-radius:8px;padding:3px 8px;flex-shrink:0}
-.solved-chip{font-family:var(--mono);font-size:10.5px;font-weight:700;color:var(--green);background:rgba(62,207,107,0.12);border:1px solid rgba(62,207,107,0.32);border-radius:8px;padding:3px 8px;flex-shrink:0}
-.title{font-size:22px;font-weight:700;letter-spacing:-.2px;line-height:1.35}
-.meta{font-family:var(--mono);font-size:11.5px;color:var(--text-secondary);margin-bottom:22px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.diff-pips{display:inline-flex;gap:2px}
-.diff-pips span{width:5px;height:5px;border-radius:50%;background:var(--divider)}
-.diff-pips span.on{background:var(--amber)}
+.title{font-size:22px;font-weight:700;letter-spacing:-.2px;margin-bottom:8px;line-height:1.35}
+.meta{font-family:var(--mono);font-size:11.5px;color:var(--text-secondary);margin-bottom:22px}
 
-.card{background:var(--surface-1);border:1px solid var(--divider);border-radius:16px;padding:18px 18px;margin-bottom:16px;transition:box-shadow .2s}
+.card{background:var(--surface-1);border:1px solid var(--divider);border-radius:16px;padding:18px 18px;margin-bottom:16px}
 .card-label{font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--text-muted);text-transform:uppercase;margin-bottom:10px}
 .statement{font-size:14.5px;line-height:1.75;color:var(--text-primary);white-space:pre-line}
 
@@ -61,47 +49,20 @@ body{
 .dot-grid span{width:8px;height:8px;border-radius:50%;background:var(--text-secondary);justify-self:center}
 
 .answer-row{display:flex;gap:10px}
-.answer-input{flex:1;min-width:0;font-family:var(--mono);font-size:16px;letter-spacing:.06em;background:var(--surface-2);border:1px solid var(--divider);border-radius:12px;padding:13px 14px;color:var(--text-primary);transition:border-color .2s}
+.answer-input{flex:1;min-width:0;font-family:var(--mono);font-size:16px;letter-spacing:.06em;background:var(--surface-2);border:1px solid var(--divider);border-radius:12px;padding:13px 14px;color:var(--text-primary)}
 .answer-input:focus{outline:none;border-color:var(--cyan)}
-.submit-btn{flex-shrink:0;font-family:var(--mono);font-size:13.5px;font-weight:700;color:#04181c;background:var(--cyan);border:none;border-radius:12px;padding:0 18px;cursor:pointer;transition:transform .12s}
+.submit-btn{flex-shrink:0;font-family:var(--mono);font-size:13.5px;font-weight:700;color:#04181c;background:var(--cyan);border:none;border-radius:12px;padding:0 18px;cursor:pointer}
 .submit-btn:active{transform:scale(.96)}
 
-/* ===== 정답 카드 피드백 애니메이션 — 오답은 흔들림, 정답은 카드 테두리
-   pulse + 작은 confetti 파편으로 "그냥 페이지"가 아니라 반응하는 게임
-   화면처럼 보이게 한다. ===== */
-@keyframes shake{
-  10%,90%{transform:translateX(-1px)}
-  20%,80%{transform:translateX(2px)}
-  30%,50%,70%{transform:translateX(-5px)}
-  40%,60%{transform:translateX(5px)}
-}
-#answerCard.shake{animation:shake .4s cubic-bezier(.36,.07,.19,.97)}
-#answerCard.solved{border-color:rgba(62,207,107,0.4)}
-@keyframes solved-pulse{
-  0%{box-shadow:0 0 0 0 rgba(62,207,107,0.45)}
-  70%{box-shadow:0 0 0 16px rgba(62,207,107,0)}
-  100%{box-shadow:0 0 0 0 rgba(62,207,107,0)}
-}
-#answerCard.pulse{animation:solved-pulse .6s ease}
-.confetti-layer{position:relative;height:0;overflow:visible}
-.confetti-dot{position:absolute;left:50%;top:0;width:6px;height:6px;border-radius:50%;pointer-events:none;
-  animation:confetti-burst .7s cubic-bezier(0.2,0.8,0.2,1) forwards}
-@keyframes confetti-burst{
-  0%{transform:translate(-50%,0) scale(1);opacity:1}
-  100%{transform:translate(var(--dx),var(--dy)) scale(.4);opacity:0}
-}
-
 .feedback{margin-top:12px;font-family:var(--mono);font-size:12.5px;font-weight:600;display:none}
-.feedback.show{display:block;animation:hint-in .25s cubic-bezier(0.2,0.8,0.2,1)}
+.feedback.show{display:block}
 .feedback.correct{color:var(--green)}
 .feedback.wrong{color:var(--signal-red)}
 
 .hint-list{display:flex;flex-direction:column;gap:8px}
-.hint-btn{text-align:left;font-family:var(--mono);font-size:12px;color:var(--text-secondary);background:var(--surface-2);border:1px solid var(--divider);border-radius:10px;padding:11px 13px;cursor:pointer;transition:background .15s}
+.hint-btn{text-align:left;font-family:var(--mono);font-size:12px;color:var(--text-secondary);background:var(--surface-2);border:1px solid var(--divider);border-radius:10px;padding:11px 13px;cursor:pointer}
 .hint-btn:active{opacity:.75}
 .hint-text{font-size:13px;line-height:1.6;color:var(--text-primary);padding:11px 13px;background:var(--surface-2);border:1px solid var(--divider);border-radius:10px}
-@keyframes hint-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
-.hint-list .hint-btn,.hint-list .hint-text{animation:hint-in .3s cubic-bezier(0.2,0.8,0.2,1)}
 
 .reveal-btn{width:100%;margin-top:4px;font-family:var(--mono);font-size:12px;color:var(--text-muted);background:none;border:1px dashed var(--divider);border-radius:10px;padding:11px;cursor:pointer}
 .reveal-btn:active{opacity:.7}
@@ -116,6 +77,65 @@ body{
 .next-link{margin-top:8px;text-align:center;font-family:var(--mono);font-size:12.5px;color:var(--cyan);text-decoration:none;padding:12px}
 
 .not-found{font-size:14px;color:var(--text-secondary);line-height:1.7}
+
+/* ===== Game-feel additions ===== */
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 600px 400px at 50% -10%, rgba(89,184,200,.10), transparent 60%),
+    repeating-linear-gradient(180deg, rgba(255,255,255,.012) 0px, rgba(255,255,255,.012) 1px, transparent 1px, transparent 3px);
+}
+.frame{position:relative;z-index:1}
+
+@keyframes fadeSlideUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.top-row,.tag,.title,.meta,.stat-row{animation:fadeSlideUp .5s cubic-bezier(.2,.8,.2,1) both}
+.tag{animation-delay:.03s}
+.title{animation-delay:.06s}
+.meta{animation-delay:.09s}
+.stat-row{animation-delay:.12s}
+.card{animation:fadeSlideUp .5s cubic-bezier(.2,.8,.2,1) both}
+.card:nth-of-type(1){animation-delay:.16s}
+.card:nth-of-type(2){animation-delay:.22s}
+.card:nth-of-type(3){animation-delay:.28s}
+
+.stat-row{display:flex;gap:8px;margin-bottom:22px;flex-wrap:wrap}
+.stat-chip{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:11px;color:var(--text-secondary);background:var(--surface-1);border:1px solid var(--divider);border-radius:20px;padding:7px 12px;transition:border-color .3s}
+.stat-chip .stat-label{color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;font-size:10px}
+.stat-chip .stat-val{color:var(--text-primary);font-weight:600}
+#timerChip .stat-val{color:var(--cyan)}
+#attemptsChip.has-miss{border-color:rgba(217,65,65,.35)}
+#attemptsChip.has-miss .stat-val{color:var(--signal-red)}
+.diff-meter{display:inline-flex;gap:2px}
+.diff-meter span{width:5px;height:9px;border-radius:1px;background:var(--divider)}
+.diff-meter span.on{background:var(--diff-color,var(--cyan))}
+
+.brief-card{position:relative}
+.brief-card::before,.brief-card::after{content:'';position:absolute;width:10px;height:10px;border:1px solid rgba(89,184,200,.45);pointer-events:none}
+.brief-card::before{top:-1px;left:-1px;border-right:none;border-bottom:none}
+.brief-card::after{bottom:-1px;right:-1px;border-left:none;border-top:none}
+
+.answer-row{position:relative}
+.answer-row.shake{animation:shakeX .4s}
+@keyframes shakeX{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(3px)}30%,50%,70%{transform:translateX(-5px)}40%,60%{transform:translateX(5px)}}
+.answer-input.flash-wrong{border-color:var(--signal-red);box-shadow:0 0 0 3px rgba(217,65,65,.15)}
+.answer-input.flash-correct{border-color:var(--green);box-shadow:0 0 0 3px rgba(62,207,107,.15)}
+
+.feedback{display:flex;align-items:center;gap:6px}
+.feedback.correct{animation:popIn .35s cubic-bezier(.2,.8,.2,1)}
+.feedback.wrong{animation:shakeX .4s}
+@keyframes popIn{0%{opacity:0;transform:scale(.85)}100%{opacity:1;transform:scale(1)}}
+
+.clear-stamp{display:none;align-items:center;gap:8px;margin-top:14px;padding:10px 14px;border:1px solid rgba(62,207,107,.4);border-radius:12px;background:rgba(62,207,107,.08);color:var(--green);font-family:var(--mono);font-weight:700;font-size:12.5px;letter-spacing:.02em}
+.clear-stamp.show{display:flex;animation:stampIn .45s cubic-bezier(.2,.8,.2,1) forwards}
+@keyframes stampIn{0%{opacity:0;transform:rotate(-10deg) scale(.6)}70%{opacity:1;transform:rotate(2deg) scale(1.06)}100%{opacity:1;transform:rotate(-2deg) scale(1)}}
+
+.hint-btn{display:flex;align-items:center;gap:8px}
+.hint-text{display:flex;align-items:flex-start;gap:8px;border-left:2px solid var(--cyan);border-top-left-radius:2px;border-bottom-left-radius:2px;animation:fadeSlideUp .4s cubic-bezier(.2,.8,.2,1)}
+.hint-text .hint-num{flex-shrink:0;font-family:var(--mono);font-size:10px;color:var(--cyan);font-weight:700;background:rgba(89,184,200,.12);border-radius:6px;padding:2px 6px;margin-top:1px;white-space:nowrap}
+
+.reveal-btn{display:flex;align-items:center;justify-content:center;gap:6px;color:var(--amber);border-color:rgba(214,168,75,.3)}
+.reveal-btn.decoding{opacity:.6;pointer-events:none}
+
+.solved-ribbon{display:inline-block;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.08em;color:#04181c;background:var(--green);border-radius:8px;padding:3px 8px;margin-bottom:10px}
 </style>
 </head>
 <body>
@@ -127,11 +147,11 @@ if ('serviceWorker' in navigator) {
 </script>
 <script>
 /* ===== 레이튼 퀴즈 플레이 화면(실플레이용) — dev/minigame-layton/play/
-   와 완전히 동일한 20문제 채점 엔진을 그대로 복제해 왔다(퍼즐 콘텐츠가
-   갈라지지 않도록 두 파일을 함께 고칠 것). dev 쪽은 20문제를 자유롭게
-   골라보는 편집/QA용, 이 파일은 스토리에서 특정 puzzle=id로 진입해 그
-   문제 하나만 푸는 실플레이용이라는 점만 다르다 — 그래서 상단 back
-   버튼이 목록이 아니라 sessionStorage의 mkShopReturnUrl(원래 씬)로
+   와 완전히 동일한 20문제 채점 엔진을 그대로 복제해 왔다(퍼즐 콘텐츠·
+   연출이 갈라지지 않도록 두 파일을 함께 고칠 것). dev 쪽은 20문제를
+   자유롭게 골라보는 편집/QA용, 이 파일은 스토리에서 특정 puzzle=id로
+   진입해 그 문제 하나만 푸는 실플레이용이라는 점만 다르다 — 그래서 상단
+   back 버튼이 목록이 아니라 sessionStorage의 mkShopReturnUrl(원래 씬)로
    돌아간다(낚시 미니게임과 같은 계약, dev/data/sceneRoutes.js 참고). ===== */
 function normalizeDigits(raw) {
   return (raw || '').replace(/[^0-9]/g, '');
@@ -734,57 +754,8 @@ const PUZZLES = {
   },
 };
 
-// 목록 화면(dev/minigame-layton/)의 LAYTON_PUZZLES 순서를 그대로 복제한
-// id 목록 — "No.07 / 20" 같은 번호 배지와 진행도 저장을 위해 이 페이지도
-// 전체 순번을 알아야 하지만, 두 파일이 하나의 배열을 import할 빌드 단계가
-// 없는 정적 페이지라 순서만 별도로 유지한다(퍼즐이 추가되면 양쪽 다 갱신).
-const PUZZLE_ORDER = [
-  'pz-h01', 'pz-h02', 'pz-h05', 'pz-h13', 'pz-h19',
-  'pz-h03', 'pz-h04', 'pz-h07', 'pz-h09', 'pz-h12', 'pz-h17', 'pz-h18',
-  'pz-h06', 'pz-h08', 'pz-h10', 'pz-h11', 'pz-h14', 'pz-h15', 'pz-h16', 'pz-h20',
-];
-
-function getSolvedSet() {
-  try {
-    return new Set(JSON.parse(localStorage.getItem('mkLaytonSolved') || '[]'));
-  } catch (e) {
-    return new Set();
-  }
-}
-
-function markSolved(id) {
-  const set = getSolvedSet();
-  if (set.has(id)) return false;
-  set.add(id);
-  localStorage.setItem('mkLaytonSolved', JSON.stringify([...set]));
-  return true;
-}
-
-function pipsHtml(difficulty) {
-  let out = '';
-  for (let i = 1; i <= 8; i++) out += `<span class="${i <= difficulty ? 'on' : ''}"></span>`;
-  return `<span class="diff-pips">${out}</span>`;
-}
-
-function burstConfetti(layer) {
-  const colors = ['var(--cyan)', 'var(--amber)', 'var(--green)'];
-  for (let i = 0; i < 10; i++) {
-    const dot = document.createElement('span');
-    dot.className = 'confetti-dot';
-    const angle = (Math.PI * 2 * i) / 10 + Math.random() * 0.4;
-    const dist = 40 + Math.random() * 30;
-    dot.style.setProperty('--dx', `${Math.cos(angle) * dist}px`);
-    dot.style.setProperty('--dy', `${Math.sin(angle) * dist - 10}px`);
-    dot.style.background = colors[i % colors.length];
-    dot.style.animationDelay = `${Math.random() * 0.08}s`;
-    layer.appendChild(dot);
-    dot.addEventListener('animationend', () => dot.remove());
-  }
-}
-
 const params = new URLSearchParams(location.search);
-const puzzleId = params.get('puzzle');
-const puzzle = PUZZLES[puzzleId];
+const puzzle = PUZZLES[params.get('puzzle')];
 const frame = document.getElementById('frame');
 
 // 낚시 미니게임(play/minigame-fishing)과 같은 계약 — 스토리에서 nextSceneId로
@@ -803,36 +774,33 @@ if (!puzzle) {
     <div class="not-found">주소의 puzzle 값이 올바르지 않거나 아직 미개발인 문제예요. 돌아가서 다시 시도해 주세요.</div>
   `;
 } else {
-  const alreadySolved = getSolvedSet().has(puzzleId);
-  const orderIdx = PUZZLE_ORDER.indexOf(puzzleId);
-  const numLabel = orderIdx >= 0 ? `No. ${String(orderIdx + 1).padStart(2, '0')} / ${PUZZLE_ORDER.length}` : '';
-
   frame.innerHTML = `
     <div class="top-row">
       <a class="back" href="${RETURN_URL}">‹ 돌아가기</a>
       <a class="settings-link dev-settings-link" href="/dev/minigame-layton/">설정</a>
     </div>
     <div class="tag">Minigame · 레이튼 퀴즈</div>
-    <div class="title-row">
-      ${numLabel ? `<span class="puzzle-num-chip">${numLabel}</span>` : ''}
-      ${alreadySolved ? '<span class="solved-chip">✓ SOLVED</span>' : ''}
-    </div>
     <div class="title">${puzzle.name}</div>
-    <div class="meta">${puzzle.type} · ${pipsHtml(puzzle.difficulty)} 난이도 ${puzzle.difficulty} · 예상 ${puzzle.estTime}</div>
+    <div class="meta">${puzzle.type} · 예상 ${puzzle.estTime}</div>
+    <div class="stat-row">
+      <div class="stat-chip"><span class="stat-label">난이도</span><span class="diff-meter" id="diffMeter"></span></div>
+      <div class="stat-chip" id="timerChip"><span class="stat-label">경과</span><span class="stat-val" id="timerVal">00:00</span></div>
+      <div class="stat-chip" id="attemptsChip"><span class="stat-label">시도</span><span class="stat-val" id="attemptsVal">0</span></div>
+    </div>
 
-    <div class="card">
+    <div class="card brief-card">
       <div class="card-label">문제</div>
       <div class="statement">${puzzle.statementHtml}</div>
     </div>
 
-    <div class="card" id="answerCard">
+    <div class="card">
       <div class="card-label">정답 입력</div>
-      <div class="answer-row">
+      <div class="answer-row" id="answerRow">
         <input class="answer-input" id="answerInput" type="text" inputmode="${puzzle.inputMode}" maxlength="${puzzle.maxLength}" placeholder="${puzzle.inputPlaceholder}">
         <button class="submit-btn" id="submitBtn">확인</button>
       </div>
       <div class="feedback" id="feedback"></div>
-      <div class="confetti-layer" id="confettiLayer"></div>
+      <div class="clear-stamp" id="clearStamp">🏆 미션 성공 — 아래에서 풀이를 확인해 보세요</div>
     </div>
 
     <div class="card" id="hintCard">
@@ -840,22 +808,23 @@ if (!puzzle) {
       <div class="hint-list" id="hintList"></div>
     </div>
 
-    <button class="reveal-btn" id="revealBtn">정답과 풀이 바로 보기</button>
+    <button class="reveal-btn" id="revealBtn">⚠ 정답과 풀이 바로 보기</button>
 
-    <div class="card" id="solutionCard" style="display:none">
+    <div class="card solution-card" id="solutionCard" style="display:none">
+      <span class="solved-ribbon">CASE CLOSED</span>
       <div class="card-label">상세 풀이</div>
       <div class="solution-answer" id="solutionAnswer"></div>
       <div class="solution" id="solutionText"></div>
-      <button class="reset-btn" id="resetBtn">다시 풀어보기</button>
+      <button class="reset-btn" id="resetBtn">↺ 다시 풀어보기</button>
       <a class="next-link" href="${RETURN_URL}">‹ 돌아가기</a>
     </div>
   `;
 
-  const answerCard = document.getElementById('answerCard');
   const answerInput = document.getElementById('answerInput');
+  const answerRow = document.getElementById('answerRow');
   const submitBtn = document.getElementById('submitBtn');
   const feedback = document.getElementById('feedback');
-  const confettiLayer = document.getElementById('confettiLayer');
+  const clearStamp = document.getElementById('clearStamp');
   const hintList = document.getElementById('hintList');
   const hintCard = document.getElementById('hintCard');
   const revealBtn = document.getElementById('revealBtn');
@@ -863,12 +832,39 @@ if (!puzzle) {
   const solutionAnswer = document.getElementById('solutionAnswer');
   const solutionText = document.getElementById('solutionText');
   const resetBtn = document.getElementById('resetBtn');
+  const diffMeter = document.getElementById('diffMeter');
+  const timerVal = document.getElementById('timerVal');
+  const attemptsVal = document.getElementById('attemptsVal');
+  const attemptsChip = document.getElementById('attemptsChip');
 
   let hintsShown = 0;
+  let attempts = 0;
+  let elapsedSec = 0;
+  let timerInterval = null;
+  let solved = false;
+
+  /* ===== HUD: difficulty meter + live solve timer — the same "game 상태 표시"
+     pattern the item-scan minigame's progress pill uses, so this puzzle screen
+     reads as a mission in progress rather than a static form. ===== */
+  function renderDiffMeter() {
+    const diff = puzzle.difficulty;
+    const tier = diff <= 5 ? 'var(--cyan)' : diff <= 7 ? 'var(--amber)' : 'var(--signal-red)';
+    diffMeter.innerHTML = Array.from({ length: 10 }, (_, i) =>
+      `<span class="${i < diff ? 'on' : ''}" style="--diff-color:${tier}"></span>`
+    ).join('');
+  }
+  renderDiffMeter();
+
+  function pad2(n) { return String(n).padStart(2, '0'); }
+  function updateTimerDisplay() { timerVal.textContent = pad2(Math.floor(elapsedSec / 60)) + ':' + pad2(elapsedSec % 60); }
+  function startTimer() { stopTimer(); timerInterval = setInterval(() => { elapsedSec++; updateTimerDisplay(); }, 1000); }
+  function stopTimer() { if (timerInterval) { clearInterval(timerInterval); timerInterval = null; } }
+  startTimer();
+
   function renderHints() {
     hintList.innerHTML = puzzle.hints.map((h, i) => {
-      if (i < hintsShown) return `<div class="hint-text" style="animation-delay:${(i * 0.05).toFixed(2)}s">힌트 ${i + 1}. ${h}</div>`;
-      if (i === hintsShown) return `<button class="hint-btn" data-hint="${i}">힌트 ${i + 1} 보기</button>`;
+      if (i < hintsShown) return `<div class="hint-text"><span class="hint-num">HINT ${i + 1}</span><span>${h}</span></div>`;
+      if (i === hintsShown) return `<button class="hint-btn" data-hint="${i}">🔒 힌트 ${i + 1} 잠금 해제</button>`;
       return '';
     }).join('');
     hintList.querySelectorAll('.hint-btn').forEach(btn => {
@@ -886,41 +882,59 @@ if (!puzzle) {
   }
 
   function checkAnswer() {
+    if (solved) return;
     const raw = puzzle.normalize(answerInput.value);
     feedback.classList.remove('correct', 'wrong');
+    answerInput.classList.remove('flash-correct', 'flash-wrong');
     feedback.classList.add('show');
-    answerCard.classList.remove('shake', 'pulse');
     if (raw && raw === puzzle.answer) {
+      solved = true;
+      stopTimer();
       feedback.classList.add('correct');
-      const isNew = markSolved(puzzleId);
-      feedback.textContent = isNew ? '정답이에요! 아래에서 풀이를 확인해 보세요.' : '정답이에요! (이미 해결한 문제예요)';
-      answerCard.classList.add('solved');
-      void answerCard.offsetWidth; // restart the pulse keyframe if solved twice in a row
-      answerCard.classList.add('pulse');
-      if (isNew) burstConfetti(confettiLayer);
+      feedback.textContent = '✔ 정답이에요! 아래에서 풀이를 확인해 보세요.';
+      answerInput.classList.add('flash-correct');
+      clearStamp.classList.add('show');
       showSolution();
     } else {
+      attempts++;
+      attemptsVal.textContent = attempts;
+      attemptsChip.classList.add('has-miss');
       feedback.classList.add('wrong');
-      feedback.textContent = '아직 정답이 아니에요. 힌트를 참고해 보세요.';
-      void answerCard.offsetWidth;
-      answerCard.classList.add('shake');
+      feedback.textContent = '✕ 아직 정답이 아니에요. 힌트를 참고해 보세요.';
+      answerInput.classList.add('flash-wrong');
+      answerRow.classList.remove('shake');
+      void answerRow.offsetWidth;
+      answerRow.classList.add('shake');
     }
   }
 
   submitBtn.addEventListener('click', checkAnswer);
   answerInput.addEventListener('keydown', e => { if (e.key === 'Enter') checkAnswer(); });
-  revealBtn.addEventListener('click', showSolution);
+  revealBtn.addEventListener('click', () => {
+    stopTimer();
+    revealBtn.classList.add('decoding');
+    revealBtn.textContent = '해독 중...';
+    setTimeout(showSolution, 450);
+  });
   resetBtn.addEventListener('click', () => {
     answerInput.value = '';
     hintsShown = 0;
     renderHints();
     feedback.classList.remove('show', 'correct', 'wrong');
-    answerCard.classList.remove('shake', 'pulse', 'solved');
-    confettiLayer.innerHTML = '';
+    answerInput.classList.remove('flash-correct', 'flash-wrong');
+    clearStamp.classList.remove('show');
     solutionCard.style.display = 'none';
     hintCard.style.display = 'block';
     revealBtn.style.display = 'block';
-    answerInput.focus();
+    revealBtn.classList.remove('decoding');
+    revealBtn.textContent = '⚠ 정답과 풀이 바로 보기';
+    attempts = 0;
+    attemptsVal.textContent = '0';
+    attemptsChip.classList.remove('has-miss');
+    elapsedSec = 0;
+    updateTimerDisplay();
+    solved = false;
+    startTimer();
   });
 }
 </script>

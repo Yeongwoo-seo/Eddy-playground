@@ -180,8 +180,10 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .frame-slot{position:relative;width:64px;height:64px;border-radius:10px;background:var(--surface-1);border:1px solid var(--divider);overflow:hidden;display:flex;align-items:center;justify-content:center}
 .frame-slot img{width:100%;height:100%;object-fit:cover;display:block}
 .frame-slot .frame-index{position:absolute;top:2px;left:4px;font-family:var(--mono);font-size:9px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9)}
-.frame-slot .frame-actions{position:absolute;inset:0;background:rgba(5,7,10,.55);display:flex;align-items:center;justify-content:center;gap:4px;opacity:0}
-.frame-slot:active .frame-actions{opacity:1}
+/* 예전엔 opacity:0 + :active로만 드러났는데, 터치는 touchstart 시점 대상이
+   고정돼서(그때는 버튼이 투명) 탭해도 버튼까지 안 눌렸다 — 모바일에선 사실상
+   못 누르는 버튼이었다. frame-erase-btn처럼 항상 보이게 바꿔 해결. */
+.frame-slot .frame-actions{position:absolute;inset:0;background:rgba(5,7,10,.55);display:flex;align-items:center;justify-content:center;gap:4px}
 .frame-mini-btn{width:20px;height:20px;border-radius:50%;border:none;background:rgba(255,255,255,.16);color:#fff;font-size:11px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .frame-mini-btn.danger{background:var(--signal-red)}
 .frame-slot[data-digit]{cursor:pointer}
@@ -269,6 +271,27 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .dialogue-text-preview{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:4px;font-size:11px;font-weight:600;color:var(--text-primary);text-align:center;overflow:hidden;pointer-events:none;word-break:keep-all}
 .dialogue-text-input{width:100%;background:var(--surface-1);border:1px solid var(--divider);border-radius:8px;padding:8px 10px;color:var(--text-primary);font-size:13.5px;font-family:var(--sans);margin-top:10px;resize:vertical;box-sizing:border-box}
 
+/* ===== 상태창 조립 전체화면 — areafs-* 틀(영역 설정 에디터와 같은 닫기/제목
+   topbar) 안에 slide-layer 자유배치 스테이지를 얹는다. 프레임 이미지의
+   실제 종횡비(--status-assemble-ar)에 맞춰 화면 안에서 최대한 크게 보여준다
+   (openStatusAssembleEditor 참고). 요일·날짜/시간/화살표는 항상 하나뿐인
+   고정 레이어라 이동만 되고, 숫자 자리(.status-assemble-digit)만 개수가
+   가변이라 점선 테두리로 "아직 실제 값이 없는 자리"라는 걸 보여준다(숫자
+   글꼴을 올렸으면 실제 잘라낸 숫자 이미지를 예시로 보여준다). */
+.status-assemble-stage-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto;min-height:0}
+.status-assemble-stage{position:relative;background:var(--surface-1);border:1px solid var(--divider);border-radius:10px;overflow:hidden;touch-action:pan-x pan-y;max-width:100%;max-height:100%;width:min(94vw,480px);aspect-ratio:var(--status-assemble-ar,2/1);flex-shrink:0;transform:scale(var(--status-assemble-zoom,1));transform-origin:center center}
+.status-assemble-stage-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;pointer-events:none;user-select:none}
+.status-assemble-layer{position:absolute;transform:translate(-50%,-50%);touch-action:none;cursor:grab;display:flex;align-items:center;justify-content:center}
+.status-assemble-layer.selected{outline:2px solid var(--green);outline-offset:3px}
+.status-assemble-layer.multi-selected{outline:2px solid var(--amber);outline-offset:3px}
+.status-assemble-text{white-space:nowrap;color:#000;font-family:var(--sans);font-weight:700;pointer-events:none}
+.status-assemble-arrow-img{display:block;pointer-events:none;user-select:none;max-width:60px}
+.status-assemble-digit{border:1px dashed var(--cyan);border-radius:4px;box-sizing:border-box;color:var(--text-muted);font-family:var(--mono);font-size:10px;image-rendering:pixelated}
+.status-assemble-panel{border-top:1px solid var(--divider);padding:12px 16px calc(14px + env(safe-area-inset-bottom,0));flex-shrink:0;min-height:96px;box-sizing:border-box}
+.status-assemble-panel-label{font-size:13px;color:var(--text-secondary);margin-bottom:8px;font-weight:600}
+.status-assemble-align-row{display:flex;gap:8px}
+#statusDigitMultiSelectBtn.active{color:#04181c;background:var(--amber);border-color:var(--amber)}
+
 /* ===== 세밀영역조절(범용) 전체화면 편집기 — dev/upload/evidence-notebook/
    index.html의 영역지정 편집기(evn-*)와 완전히 같은 pan/draw 제스처 패턴을
    재사용한다: 라벨(배지)을 고르지 않은 채 드래그하면 화면을 세로로
@@ -297,6 +320,46 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .fbregion-box.draft{border-color:var(--cyan);background:rgba(89,184,200,.18)}
 .fbregion-box-label{font-family:var(--mono);font-size:10.5px;font-weight:700;color:#050607;background:var(--amber);padding:2px 5px;border-radius:0 0 4px 0}
 .fbregion-box.draft .fbregion-box-label{background:var(--cyan)}
+.item-icon-grid-boxes{position:absolute;inset:0;pointer-events:none}
+.item-icon-grid-box{position:absolute;border:2px solid var(--cyan);background:rgba(89,184,200,.18);border-radius:4px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:10px;font-weight:700;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9)}
+
+/* ===== 영역 설정 전체화면 에디터(areafs-*) — .fbregion-*와 같은 전체화면
+   틀이지만, fbregion은 이미지 너비를 스테이지에 맞추고 세로로만 훑어보는
+   pan만 있던 반면 여긴 pinch-zoom까지 필요하다. #areaFsWorld를 배경 이미지
+   자연 크기 그대로 두고 transform: translate(pan) scale(baseScale*scale)만
+   바꿔서 확대/이동한다(baseScale=스테이지에 꽉 채우는 기본 배율, scale=
+   거기서 더 확대하는 배율). 저장된 사각형·그리는 중인 사각형은 전부
+   #areaFsWorld의 자식으로 0~100% 좌표에 얹어서 이미지와 같이 확대/이동
+   되게 한다. 손가락 1개 드래그=새 사각형 그리기, 2개=핀치줌+이동(핀치
+   시작 시점의 중점 아래 있던 이미지 좌표가 계속 손가락 중점 아래 있도록
+   pan을 같이 보정), 데스크톱은 휠(커서 기준 확대)과 +/-/리셋 버튼으로도
+   확대할 수 있다. 사각형이라 꼭짓점 4개짜리 다각형(points)으로 저장돼
+   기존 다각형 데이터·play/index.html의 범용 point-in-polygon 판정
+   (isInsideAnyArea)과 그대로 호환된다. */
+.areafs{position:fixed;inset:0;z-index:400;background:#050607;display:flex;flex-direction:column}
+.areafs.hidden{display:none}
+.areafs-topbar{display:flex;align-items:center;gap:10px;padding:calc(14px + env(safe-area-inset-top,0)) 16px 12px;border-bottom:1px solid var(--divider);flex-shrink:0}
+.areafs-close-btn{width:32px;height:32px;border-radius:50%;background:var(--surface-1);border:1px solid var(--divider);color:var(--text-primary);font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.areafs-close-btn:active{opacity:.8}
+.areafs-title{flex:1;font-size:15px;font-weight:700}
+.areafs-zoom-controls{display:flex;align-items:center;gap:4px;flex-shrink:0}
+.areafs-zoom-btn{font-family:var(--mono);font-size:12.5px;font-weight:700;color:var(--text-primary);background:var(--surface-1);border:1px solid var(--divider);border-radius:8px;padding:7px 9px;cursor:pointer;min-width:38px;text-align:center}
+.areafs-zoom-btn:active{opacity:.8}
+.areafs-kind-row{display:flex;gap:8px;overflow-x:auto;padding:12px 16px;border-bottom:1px solid var(--divider);flex-shrink:0}
+.areafs-kind-btn{font-family:var(--sans);font-size:13px;font-weight:600;white-space:nowrap;color:var(--text-secondary);background:var(--surface-1);border:1px solid var(--divider);border-radius:20px;padding:9px 14px;cursor:pointer;flex-shrink:0}
+.areafs-kind-btn.active{color:#04181c;background:var(--kind-color,var(--cyan));border-color:var(--kind-color,var(--cyan))}
+.areafs-hint{padding:8px 16px;font-size:12.5px;color:var(--text-muted);line-height:1.5;flex-shrink:0}
+.areafs-stage{position:relative;flex:1;overflow:hidden;touch-action:none;background:#020304}
+.areafs-world{position:absolute;left:0;top:0;transform-origin:0 0}
+.areafs-world img{display:block;width:100%;height:100%;pointer-events:none;-webkit-user-select:none;user-select:none;-webkit-user-drag:none}
+.areafs-box{position:absolute;border:2px solid var(--cyan);background:rgba(89,184,200,.18);border-radius:3px;pointer-events:none}
+.areafs-box.kind-fishable{border-color:var(--green);background:rgba(62,207,107,.18)}
+.areafs-box.kind-blocked{border-color:var(--signal-red);background:rgba(217,65,65,.18)}
+.areafs-box.kind-interaction{border-color:var(--amber);background:rgba(214,168,75,.18)}
+.areafs-box.kind-move{border-color:var(--cyan);background:rgba(89,184,200,.18)}
+.areafs-box-del{position:absolute;right:-9px;top:-9px;width:22px;height:22px;border-radius:50%;border:none;background:#050607;color:var(--text-primary);font-size:11px;display:flex;align-items:center;justify-content:center;cursor:pointer;pointer-events:auto}
+.areafs-draft-box{border-style:dashed}
+.areafs-draft-box.hidden{display:none}
 
 /* ===== 물고기 종류 탭 ===== */
 .fish-sheet-frame{position:relative;width:196px;height:136px;max-width:100%;margin:0 auto;background-image:repeating-conic-gradient(var(--surface-2) 0% 25%, var(--surface-1) 0% 50%);background-size:16px 16px;border-radius:10px;border:1px solid var(--divider);overflow:hidden}
@@ -359,26 +422,15 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .move-dpad-right{grid-column:3;grid-row:2}
 .move-dpad-down{grid-column:2;grid-row:3}
 
-/* ===== 영역 설정 탭 — 배경 위에 다각형(낚시가능/이동불가/상호작용) 영역을
-   그리는 에디터. 스테이지 종횡비를 배경 이미지 자연 크기에 맞춰(--area-ar,
-   낚시 팝업 --item-ar과 같은 패턴) object-fit:fill로 꽉 채우면, 탭 좌표를
-   0~1로 바꿀 때 letterbox(여백) 보정이 필요 없다. SVG는 viewBox="0 0 100 100"
-   퍼센트 좌표계라 저장된 정규화 좌표(0~1)에 그냥 100을 곱해 넣으면 된다. */
-.area-stage{position:relative;width:100%;max-width:400px;aspect-ratio:var(--area-ar,3/4);margin:0 auto 10px;background:#000;border-radius:12px;overflow:hidden;border:1px solid var(--divider);touch-action:none;cursor:crosshair}
-.area-stage img{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;display:block;pointer-events:none;-webkit-user-select:none;user-select:none;-webkit-user-drag:none}
-.area-bg-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:16px;font-size:12px;color:var(--text-muted);font-family:var(--mono);line-height:1.6}
-.area-svg{position:absolute;inset:0;width:100%;height:100%}
-.area-saved-polygon{fill-opacity:.22;stroke-width:.6;vector-effect:non-scaling-stroke}
-.area-saved-polygon.kind-fishable{fill:var(--green);stroke:var(--green)}
-.area-saved-polygon.kind-blocked{fill:var(--signal-red);stroke:var(--signal-red)}
-.area-saved-polygon.kind-interaction{fill:var(--amber);stroke:var(--amber)}
-.area-saved-polygon.kind-move{fill:var(--cyan);stroke:var(--cyan)}
-.area-draft-line{fill:rgba(89,184,200,.22);stroke:var(--cyan);stroke-width:.6;stroke-dasharray:1.5 1.2;vector-effect:non-scaling-stroke}
-.area-draft-line.hidden{display:none}
-.area-draft-point{fill:var(--cyan);stroke:#04181c;stroke-width:.4;vector-effect:non-scaling-stroke}
-.area-draft-hint{font-size:12px;color:var(--text-muted);margin-bottom:10px}
-.area-draft-actions{display:flex;gap:8px;margin-bottom:22px;flex-wrap:wrap}
-.area-draft-actions .fish-sheet-btn{flex:1;min-width:calc(33.33% - 6px)}
+/* ===== 영역 설정 탭 — "🖐 전체화면에서 영역 그리기" 버튼(.area-open-btn)을
+   누르면 #areaFsOverlay(전체화면 pinch-zoom 드래그 에디터, .fbregion-*
+   전체화면 틀을 확대/이동까지 되도록 확장한 것 — 아래 areafs-* 스타일과
+   그 옆 JS 주석 참고)가 뜬다. 이 탭 안에는 영역 종류 고르기(설명 확인용)와
+   저장된 영역 목록만 남기고, 실제로 다각형을 찍던 작은 스테이지는 없앴다. */
+.area-open-btn{width:100%;font-family:var(--mono);font-size:14px;font-weight:700;color:#04181c;background:var(--cyan);border:none;border-radius:14px;padding:14px;cursor:pointer;text-align:center;margin-top:14px}
+.area-open-btn:active{opacity:.85}
+.area-open-btn:disabled{opacity:.35;cursor:default}
+.area-open-note{font-size:12px;color:var(--text-muted);margin-top:8px;text-align:center;min-height:14px}
 .area-row{display:flex;align-items:center;gap:8px;padding:8px 2px;border-bottom:1px solid var(--divider)}
 .area-row:last-child{border-bottom:none}
 .area-row-swatch{width:12px;height:12px;border-radius:3px;flex-shrink:0}
@@ -410,6 +462,7 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .screen-pill .screen-start-badge{margin-left:4px}
 .screen-actions-row{display:flex;gap:8px;margin:10px 0}
 .screen-actions-row .fish-sheet-btn:disabled{opacity:.4;cursor:default}
+.status-assemble-align-row .fish-sheet-btn:disabled{opacity:.4;cursor:default}
 
 /* ===== 이동 영역(moveAreas) 설정 시트 — 폴리곤을 다 그리면(영역 종류
    "이동") crop-overlay와 같은 바텀시트 틀로 도착 화면 + 도착 지점을
@@ -418,6 +471,10 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
    이미지가 "지금 그리고 있는 화면"이 아니라 고른 도착 화면의 배경이다. */
 .movearea-target-select{width:100%;background:var(--surface-1);border:1px solid var(--divider);border-radius:10px;padding:11px 12px;color:var(--text-primary);font-size:13.5px;font-family:var(--sans);margin-bottom:14px}
 .movearea-entry-label{font-size:12px;color:var(--text-muted);margin-bottom:8px}
+/* 이동 영역 종류로 사각형을 그리면 영역 설정 전체화면(.areafs, z-index:400)
+   위에 이 시트가 떠야 도착 화면/지점을 마저 고를 수 있다 — 이 시트가 쓰는
+   .crop-overlay 기본 z-index(50)보다 위로 개별 지정한다. */
+#moveAreaOverlay{z-index:450}
 
 /* ===== 낚시 팝업 탭 — 낚시 성공 시(물고기가 추에서 캐릭터로 날아온 다음)
    뜨는 낚시 팝업의 배경(액자) 그림 + 아이템 아이콘이 놓일 위치/크기.
@@ -467,7 +524,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
        (currentScreenId) 기준으로 배경/영역/영우 위치를 다루기 때문. ===== -->
   <div class="option-group" id="screenManagerGroup">
     <div class="option-label">화면</div>
-    <div class="option-desc">배경화면을 여러 장 올려서 화면 여러 개를 만들 수 있어요. 아래 "영역 설정" 탭에서 화면별로 낚시가능·이동불가·상호작용·이동 영역을 그리고, "이동" 영역으로 화면끼리 연결하세요.</div>
+    <div class="option-desc">배경화면을 여러 장 올려서 화면 여러 개를 만들 수 있어요. 아래 "영역 설정" 탭에서 화면별로 낚시가능·이동불가·상호작용·이동 영역을 그리고, "이동" 영역으로 화면끼리 연결하세요. 배경을 새로 안 올리고 같은 화면 안에서 두 지점을 오가게 할 수도 있어요(이동 영역의 도착 화면을 "이 화면"으로 두면 됨).</div>
     <div class="option-pills" id="screenPills"></div>
     <div class="screen-actions-row">
       <button type="button" class="fish-sheet-btn" id="addScreenBtn">+ 화면 추가</button>
@@ -803,33 +860,18 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   </div>
 
 
-  <!-- ===== 영역 설정 — 낚시바 디자인 탭의 배경화면 위에 다각형 영역을
-       그린다. 세 가지 종류(낚시가능/이동불가/상호작용)를 탭으로 오가며
-       각각 여러 개 그릴 수 있다. 배경 이미지가 스테이지를 정확히 꽉
-       채우도록(--area-ar을 이미지 자연 크기로 맞춤) 그려서, 탭 좌표를
-       0~1 정규화 좌표로 바꾸는 데 별도 letterbox 보정이 필요 없다. ===== -->
+  <!-- ===== 영역 설정 — 실제로 그리는 화면은 여기 없다. 아래 버튼이 여는
+       전체화면 에디터(#areaFsOverlay, 이 파일 아래쪽에 마크업이 따로 있다)
+       에서 배경을 확대/이동하며 드래그로 사각형 영역을 그린다. 이 탭에는
+       영역 종류 고르기(설명 확인용 + 저장된 영역 목록 필터)와 저장된 영역
+       목록(라벨 수정/삭제/이동 영역 도착지 수정)만 남긴다. ===== -->
   <div class="tab-panel hidden" id="panelArea">
     <div class="option-group">
       <div class="option-label">영역 종류</div>
       <div class="option-pills" id="areaKindPills"></div>
       <div class="option-desc" id="areaKindDesc"></div>
-    </div>
-    <div class="option-group">
-      <div class="area-stage" id="areaStage">
-        <img id="areaBgImg" class="hidden" alt="">
-        <div class="area-bg-empty" id="areaBgEmpty">아직 배경화면이 없어요</div>
-        <svg class="area-svg" id="areaSvg" viewBox="0 0 100 100" preserveAspectRatio="none">
-          <g id="areaSavedPolygons"></g>
-          <polyline class="area-draft-line hidden" id="areaDraftLine"></polyline>
-          <g id="areaDraftPoints"></g>
-        </svg>
-      </div>
-      <div class="area-draft-hint" id="areaDraftHint">탭해서 꼭짓점을 추가하세요 (3개 이상 찍고 완료)</div>
-      <div class="area-draft-actions">
-        <button type="button" class="fish-sheet-btn" id="areaDraftUndoBtn">↩ 점 취소</button>
-        <button type="button" class="fish-sheet-btn danger" id="areaDraftCancelBtn">✕ 그리기 취소</button>
-        <button type="button" class="fish-sheet-btn" id="areaDraftFinishBtn" disabled>✓ 완료</button>
-      </div>
+      <button type="button" class="area-open-btn" id="areaOpenFsBtn">🖐 전체화면에서 영역 그리기</button>
+      <div class="area-open-note" id="areaOpenFsNote"></div>
     </div>
     <div class="option-group">
       <div class="option-label" id="areaListLabel">저장된 영역</div>
@@ -929,15 +971,23 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
       <div class="option-desc">배경화면 위, 영우가 서 있을 자리를 지정하세요. 배경화면과 영우 idle 시트를 둘 다 있어야 지정할 수 있고, 지정하지 않으면 영우는 화면에 나타나지 않아요.</div>
       <button type="button" class="fish-sheet-btn" id="youngwooPosEditBtn" style="width:100%" disabled>📍 영우 위치 지정</button>
     </div>
+
+    <div class="option-group">
+      <div class="option-label">지수 시작 위치</div>
+      <div class="option-desc">이 화면이 게임 시작 화면일 때, 지수가 처음 서 있을 자리를 지정하세요. 배경화면이 있어야 지정할 수 있고, 지정하지 않으면 예전처럼 화면 정중앙에서 시작해요.</div>
+      <button type="button" class="fish-sheet-btn" id="jisuStartPosEditBtn" style="width:100%" disabled>📍 지수 시작 위치 지정</button>
+    </div>
   </div>
 
   <!-- ===== 상태창 — 플레이 화면 위쪽에 뜨는 상태 HUD(요일·날짜/시간/포인트/
        화살표). 프레임·화살표는 castGaugeImageSlot과 같은 단일 슬롯 업로드
        패턴(renderCastGaugeImageSlot 참고), 숫자글꼴은 0~9 각 자리를 같은
-       패턴으로 낱개 업로드한다. 레이아웃(요일·날짜/시간/포인트/화살표
-       밑부분 위치)은 heldFishPos 피커(단일 포인트 드래그)를 네 개로 늘린
-       버전 — statusLayoutPills로 지금 옮길 항목을 고르고 statusLayoutStage를
-       탭/드래그하면 그 항목의 마커만 움직인다. ===== -->
+       패턴으로 낱개 업로드한다. 배치는 "🧩 상태창 조립" 전체화면 에디터
+       (statusAssembleOverlay, openStatusAssembleEditor 참고)에서 낚시바/
+       대화 탭과 같은 slide-layer 자유배치로 한다 — 요일·날짜/시간/화살표는
+       항상 하나뿐인 고정 레이어(텍스트는 검은색·그림자 없음, 글자 크기도
+       여기서 키울 수 있다), 포인트 숫자는 자리마다(digitPositions) 따로
+       위치를 지정하는 가변 개수 레이어다. ===== -->
   <div class="tab-panel hidden" id="panelStatus">
     <div class="option-group">
       <div class="option-label">상태창 프레임</div>
@@ -957,9 +1007,17 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
 
     <div class="option-group">
       <div class="option-label">숫자글꼴 (0~9)</div>
-      <div class="option-desc">포인트 숫자를 그릴 때 쓸 0~9 숫자 이미지를 자리마다 낱개로 올리세요. 탭하면 그 자리에 이미지를 올리거나 바꿀 수 있어요.</div>
+      <div class="option-desc">포인트 숫자를 그릴 0~9 숫자가 왼쪽부터 순서대로 나란히 있는 이미지 한 장을 올리세요. 실제 가로폭을 10등분해서 자리를 나누고, 칸이 어긋나면 아래 칸을 탭해 하나씩 맞출 수 있어요.</div>
+      <div class="fish-sheet-frame" id="statusNumberFontSheetFrame">
+        <div class="fish-sheet-empty" id="statusNumberFontSheetEmpty">아직 업로드된 시트가 없어요<br>업로드하기 전까진 포인트 숫자가 안 보여요</div>
+      </div>
+      <div class="fish-sheet-actions">
+        <button type="button" class="fish-sheet-btn" id="statusNumberFontSheetUploadBtn">📤 시트 업로드</button>
+        <button type="button" class="fish-sheet-btn hidden" id="statusNumberFontSheetCutoutBtn">✂ 배경 제거</button>
+        <button type="button" class="fish-sheet-btn danger hidden" id="statusNumberFontSheetRemoveBtn">✕ 제거</button>
+      </div>
+      <input type="file" id="statusNumberFontSheetFileInput" accept="image/*">
       <div class="frame-strip" id="statusNumberFontSlots"></div>
-      <input type="file" id="statusNumberFontFileInput" accept="image/*">
       <div class="crop-size-row">
         <div class="option-label">숫자 폭</div>
         <div class="crop-size-controls">
@@ -976,20 +1034,18 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
           <span class="crop-size-unit">px</span>
         </div>
       </div>
-      <div class="crop-size-row">
-        <div class="option-label">숫자 간격</div>
-        <div class="crop-size-controls">
-          <input type="range" id="statusNumberGapInput" min="0" max="20" step="1" value="2">
-          <input type="number" id="statusNumberGapNumberInput" min="0" max="20" step="1" value="2">
-          <span class="crop-size-unit">px</span>
-        </div>
-      </div>
     </div>
 
+    <!-- ===== 조립 — 낚시바/대화 탭과 같은 "실제 구성요소를 화면 위에 자유
+         배치" 방식을, 상태창은 작은 HUD 소품이라 전체화면(statusAssembleOverlay)
+         하나로 몰아서 연다(openStatusAssembleEditor). 요일·날짜/시간/화살표
+         (있으면)/숫자 자리는 항상 실제 미리보기(글꼴 텍스트, 실제 업로드한
+         숫자글꼴 이미지)로 보여주고 드래그로 옮긴다 — 숫자 자리만 개수가
+         가변이라 "+ 숫자 자리"로 늘리고 선택 후 삭제할 수 있다. ===== -->
     <div class="option-group">
-      <div class="option-label">레이아웃</div>
-      <div class="option-desc">상태창 이미지 위에서 요일·날짜, 시간, 포인트, 화살표 밑부분(회전축)의 위치를 지정하세요. 상태창 이미지를 먼저 올려야 열 수 있어요.</div>
-      <button type="button" class="fish-sheet-btn" id="statusLayoutEditBtn" style="width:100%" disabled>🧭 레이아웃 편집</button>
+      <div class="option-label">조립</div>
+      <div class="option-desc">요일·날짜, 시간, 화살표, 포인트 숫자 자리를 실제 모습 그대로 화면 위에서 자유롭게 배치하세요. 글씨 크기도 여기서 조절해요. 상태창 이미지를 먼저 올려야 열 수 있어요.</div>
+      <button type="button" class="fish-sheet-btn" id="statusAssembleBtn" style="width:100%" disabled>🧩 상태창 조립</button>
     </div>
   </div>
 
@@ -1006,9 +1062,16 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
       </div>
       <div class="fish-sheet-actions">
         <button type="button" class="fish-sheet-btn" id="itemWindowBgUploadBtn">📤 배경화면 업로드</button>
+        <button type="button" class="fish-sheet-btn hidden" id="itemWindowBgCutoutBtn">✂ 배경 제거</button>
         <button type="button" class="fish-sheet-btn danger hidden" id="itemWindowBgRemoveBtn">✕ 제거</button>
       </div>
       <input type="file" id="itemWindowBgFileInput" accept="image/*">
+    </div>
+
+    <div class="option-group">
+      <div class="option-label">아이템 칸 배치 (8칸 일렬)</div>
+      <div class="option-desc">아이템을 칸마다 따로 올리는 게 아니라, 위 배경(액자) 이미지 안에 잡은 물고기가 표시될 8개 칸을 한 줄로 나란히 배치해요. 칸 하나하나가 아니라 칸 크기·간격·전체 위치를 한 번에 조절해요. 배경 이미지를 먼저 올려야 열 수 있어요.</div>
+      <button type="button" class="fish-sheet-btn" id="itemIconGridEditBtn" style="width:100%" disabled>🔲 아이템 칸 배치 편집</button>
     </div>
   </div>
 
@@ -1182,6 +1245,34 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   </div>
 </div>
 
+<!-- ===== 영역 설정 전체화면 에디터 — "영역 설정" 탭의 "🖐 전체화면에서
+     영역 그리기" 버튼으로 연다(openAreaFsEditor). 배경을 두 손가락으로
+     확대/이동하고 한 손가락 드래그로 사각형을 그려 지금 고른 영역 종류
+     (areaFsKindRow, 위 탭의 areaKind와 같은 변수 공유)에 저장한다. 이동
+     종류는 사각형을 다 그리면 이 위에 moveAreaOverlay(도착 화면/지점 시트)
+     가 한 번 더 뜬다 — CSS에서 #moveAreaOverlay만 이 오버레이보다 높은
+     z-index를 준 이유. ===== -->
+<div class="areafs hidden" id="areaFsOverlay">
+  <div class="areafs-topbar">
+    <button type="button" class="areafs-close-btn" id="areaFsCloseBtn">✕</button>
+    <div class="areafs-title">영역 설정</div>
+    <div class="areafs-zoom-controls">
+      <button type="button" class="areafs-zoom-btn" id="areaFsZoomOutBtn">–</button>
+      <button type="button" class="areafs-zoom-btn" id="areaFsZoomResetBtn">100%</button>
+      <button type="button" class="areafs-zoom-btn" id="areaFsZoomInBtn">+</button>
+    </div>
+  </div>
+  <div class="areafs-kind-row" id="areaFsKindRow"></div>
+  <div class="areafs-hint" id="areaFsHint"></div>
+  <div class="areafs-stage" id="areaFsStage">
+    <div class="areafs-world" id="areaFsWorld">
+      <img id="areaFsImg" alt="">
+      <div id="areaFsSavedBoxes"></div>
+      <div class="areafs-box areafs-draft-box hidden" id="areaFsDraftBox"></div>
+    </div>
+  </div>
+</div>
+
 <!-- 물고기 들기 위치 지정 — 낚시대 끝 지정과 같은 바텀시트 틀 + 단일
      포인트 마커(rodtip-stage/rodtip-marker 클래스 재사용)지만, 기준
      이미지가 올리기 모션의 마지막 프레임이라 별도 오버레이를 쓴다
@@ -1223,39 +1314,78 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   </div>
 </div>
 
-<!-- 상태창 레이아웃 — heldFishPos류 단일 포인트 피커를 네 개로 늘린 버전.
-     statusLayoutPills(option-pill 재사용)로 지금 옮길 항목(요일·날짜/시간/
-     포인트/화살표 밑부분)을 고르면 statusLayoutStage 탭/드래그가 그 항목의
-     마커만 옮긴다 — 네 마커를 한 번에 다 보여줘야 서로 겹치지 않게 배치하기
-     쉬워서, rodtip-marker에 라벨 텍스트를 더한 status-layout-marker로
-     구분한다(openStatusLayoutEditor 참고). -->
-<div class="crop-overlay hidden" id="statusLayoutOverlay">
+<!-- 지수 시작 위치 지정 — youngwooPosOverlay와 완전히 같은 틀(같은 배경
+     이미지, 같은 0~1 top-down 좌표계)이지만, 이 화면이 게임 시작 화면일 때
+     지수(플레이어)가 처음 스폰될 위치를 정한다(화면의 jisuStartPos). 지정하지
+     않으면 play/index.html의 applyScreen()이 예전처럼 화면 정중앙에서
+     시작한다. -->
+<div class="crop-overlay hidden" id="jisuStartPosOverlay">
   <div class="crop-sheet">
-    <div class="crop-title">상태창 레이아웃</div>
-    <div class="crop-desc">옮길 항목을 고르고, 그림 위를 탭하거나 드래그해서 위치를 옮기세요.</div>
-    <div class="option-pills" id="statusLayoutPills"></div>
-    <div class="heldfish-stage" id="statusLayoutStage">
-      <img id="statusLayoutImg" alt="">
-      <div class="rodtip-marker status-layout-marker" id="statusLayoutMarkerDate">요일·날짜</div>
-      <div class="rodtip-marker status-layout-marker" id="statusLayoutMarkerTime">시간</div>
-      <div class="rodtip-marker status-layout-marker" id="statusLayoutMarkerPoints">포인트</div>
-      <div class="rodtip-marker status-layout-marker" id="statusLayoutMarkerArrow">화살표</div>
+    <div class="crop-title">지수 시작 위치 지정</div>
+    <div class="crop-desc">배경화면이에요 — 그림 위를 탭하거나 드래그해서 지수가 처음 서 있을 위치를 옮기세요.</div>
+    <div class="heldfish-stage" id="jisuStartPosStage">
+      <img id="jisuStartPosImg" alt="">
+      <div class="rodtip-marker" id="jisuStartPosMarker"></div>
     </div>
     <div class="crop-actions">
-      <button type="button" class="crop-btn secondary" id="statusLayoutCancelBtn">취소</button>
-      <button type="button" class="crop-btn primary" id="statusLayoutConfirmBtn">적용</button>
+      <button type="button" class="crop-btn secondary" id="jisuStartPosCancelBtn">취소</button>
+      <button type="button" class="crop-btn primary" id="jisuStartPosConfirmBtn">적용</button>
     </div>
   </div>
 </div>
 
-<!-- 이동 영역 설정 — "영역 설정" 탭에서 영역 종류를 "이동"으로 두고
-     폴리곤을 완료하면 뜬다(openMoveAreaEditor). 도착 화면을 고르면 아래
-     스테이지가 그 화면의 배경화면으로 바뀌고, youngwooPosStage와 같은
-     단일 포인트 드래그 패턴(heldfish-stage/rodtip-marker 재사용)으로
-     도착 지점을 찍는다. 새 영역을 그리는 중이면 areaDraft(그린 폴리곤)를
-     그대로 들고 있다가 "적용"을 눌러야 실제로 저장한다 — 취소하면 폴리곤
-     자체도 버린다(저장된 영역 없이 그리기만 취소한 것처럼). 기존 영역의
-     도착지를 고칠 때는 폴리곤 없이 targetScreenId/entryPoint만 바꾼다. -->
+<!-- ===== 상태창 조립 — 전체화면(openStatusAssembleEditor). areafs-* 전체화면
+     틀(닫기/제목, 영역 설정 에디터와 같은 패턴)에 낚시바/대화 탭과 같은
+     slide-layer 자유배치를 얹는다. 요일·날짜/시간(status-assemble-text,
+     실제 예시 문구를 검은 글씨·그림자 없이 미리보여준다)/화살표(있으면,
+     status-assemble-arrow)는 항상 하나씩 존재하는 고정 레이어라 드래그만
+     되고, 숫자 자리(status-assemble-digit, 실제 업로드한 숫자글꼴로 예시
+     숫자를 잘라 보여준다)는 개수가 가변이라 상단 "+ 숫자 자리"로 늘리고
+     선택 후 하단 패널의 삭제 버튼으로 뺄 수 있다. 선택한 레이어가 요일·날짜/
+     시간이면 하단 패널에 글자 크기 슬라이더가 뜬다(statusAssembleFontSizeRow) —
+     숫자 자리는 크기가 아니라 위치만 여기서 다루고, 실제 크기는 위 "숫자
+     폭/높이" 슬라이더(모든 자리 공통)를 그대로 쓴다. ===== -->
+<div class="areafs hidden" id="statusAssembleOverlay">
+  <div class="areafs-topbar">
+    <button type="button" class="areafs-close-btn" id="statusAssembleCloseBtn">✕</button>
+    <div class="areafs-title">상태창 조립</div>
+    <button type="button" class="fish-sheet-btn" id="statusDigitMultiSelectBtn" style="flex:0 0 auto;padding:9px 14px;width:auto">☐ 다중 선택</button>
+    <button type="button" class="fish-sheet-btn" id="addStatusDigitBtn" style="flex:0 0 auto;padding:9px 14px;width:auto">+ 숫자 자리</button>
+  </div>
+  <div class="areafs-hint" id="statusAssembleHint">몸통을 드래그해서 옮기세요. 요일·날짜/시간을 선택하면 아래에서 글자 크기를 키울 수 있어요. 숫자 자리는 배열 순서(왼쪽부터 추가한 순서)가 높은 자리부터예요 — 실제 포인트 자릿수가 이보다 적으면 앞자리는 빈칸으로 남아요.</div>
+  <div class="areafs-zoom-controls" style="justify-content:center;padding:6px 16px 0">
+    <button type="button" class="areafs-zoom-btn" id="statusAssembleZoomOutBtn">–</button>
+    <button type="button" class="areafs-zoom-btn" id="statusAssembleZoomResetBtn">100%</button>
+    <button type="button" class="areafs-zoom-btn" id="statusAssembleZoomInBtn">+</button>
+  </div>
+  <div class="status-assemble-stage-wrap" id="statusAssembleStageWrap">
+    <div class="status-assemble-stage" id="statusAssembleStage"></div>
+  </div>
+  <div class="status-assemble-panel" id="statusAssemblePanel">
+    <div class="status-assemble-panel-label" id="statusAssemblePanelLabel">레이어를 탭해서 선택하세요</div>
+    <div class="crop-size-row hidden" id="statusAssembleFontSizeRow">
+      <div class="crop-size-controls">
+        <input type="range" id="statusAssembleFontSizeInput" min="8" max="40" step="0.5" value="9.5">
+        <input type="number" id="statusAssembleFontSizeNumberInput" min="8" max="40" step="0.5" value="9.5">
+        <span class="crop-size-unit">px</span>
+      </div>
+    </div>
+    <button type="button" class="fish-sheet-btn danger hidden" id="deleteStatusDigitBtn" style="width:100%;margin-top:10px">✕ 이 숫자 자리 삭제</button>
+    <div class="status-assemble-align-row hidden" id="statusAssembleAlignRow">
+      <button type="button" class="fish-sheet-btn" id="statusAssembleDistributeBtn">↔ 가로 간격 일정하게</button>
+      <button type="button" class="fish-sheet-btn" id="statusAssembleAlignYBtn">↕ 세로 중앙 맞춤</button>
+    </div>
+  </div>
+</div>
+
+<!-- 이동 영역 설정 — 영역 설정 전체화면 에디터에서 영역 종류를 "이동"으로
+     두고 사각형을 다 그리면 뜬다(openMoveAreaEditor, moveAreaDraftPoints에
+     그 사각형의 네 꼭짓점을 들고 있는다). 도착 화면을 고르면 아래 스테이지가
+     그 화면의 배경화면으로 바뀌고, youngwooPosStage와 같은 단일 포인트
+     드래그 패턴(heldfish-stage/rodtip-marker 재사용)으로 도착 지점을
+     찍는다. "적용"을 눌러야 실제로 저장하고, 취소하면 방금 그린 사각형도
+     같이 버린다(저장된 영역 없이 그리기만 취소한 것처럼) — 기존 영역의
+     도착지를 고칠 때는 사각형 없이 targetScreenId/entryPoint만 바꾼다. -->
 <div class="crop-overlay hidden" id="moveAreaOverlay">
   <div class="crop-sheet">
     <div class="crop-title">이동 영역 설정</div>
@@ -1269,6 +1399,42 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     <div class="crop-actions">
       <button type="button" class="crop-btn secondary" id="moveAreaCancelBtn">취소</button>
       <button type="button" class="crop-btn primary" id="moveAreaConfirmBtn">적용</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 아이템 칸 배치 — 8칸을 하나하나 따로 조정하는 대신, 칸 크기·칸
+     사이 간격·전체 위치(중심) 세 값만으로 8칸을 한 줄로 나란히 계산해서
+     배치한다(computeItemIconGridRects). heldFishPos류 드래그로 그리드
+     전체 위치를 옮기고, 아래 크기/간격 슬라이더는 statusNumberWidthInput류
+     슬라이더+숫자 입력 쌍을 재사용한다. -->
+<div class="crop-overlay hidden" id="itemIconGridOverlay">
+  <div class="crop-sheet">
+    <div class="crop-title">아이템 칸 배치</div>
+    <div class="crop-desc">그림을 드래그해서 8칸 전체 위치를 옮기고, 아래 슬라이더로 칸 크기와 칸 사이 간격을 조절하세요.</div>
+    <div class="heldfish-stage" id="itemIconGridStage">
+      <img id="itemIconGridImg" alt="">
+      <div class="item-icon-grid-boxes" id="itemIconGridBoxes"></div>
+    </div>
+    <div class="crop-size-row">
+      <div class="option-label">칸 크기</div>
+      <div class="crop-size-controls">
+        <input type="range" id="itemIconGridSizeInput" min="1" max="100" step="1" value="40">
+        <input type="number" id="itemIconGridSizeNumberInput" min="1" max="100" step="1" value="40">
+        <span class="crop-size-unit">px</span>
+      </div>
+    </div>
+    <div class="crop-size-row">
+      <div class="option-label">칸 간격</div>
+      <div class="crop-size-controls">
+        <input type="range" id="itemIconGridGapInput" min="0" max="100" step="1" value="8">
+        <input type="number" id="itemIconGridGapNumberInput" min="0" max="100" step="1" value="8">
+        <span class="crop-size-unit">px</span>
+      </div>
+    </div>
+    <div class="crop-actions">
+      <button type="button" class="crop-btn secondary" id="itemIconGridCancelBtn">취소</button>
+      <button type="button" class="crop-btn primary" id="itemIconGridConfirmBtn">적용</button>
     </div>
   </div>
 </div>
@@ -1449,19 +1615,22 @@ const el = {
   panelArea: document.getElementById('panelArea'),
   areaKindPills: document.getElementById('areaKindPills'),
   areaKindDesc: document.getElementById('areaKindDesc'),
-  areaStage: document.getElementById('areaStage'),
-  areaBgImg: document.getElementById('areaBgImg'),
-  areaBgEmpty: document.getElementById('areaBgEmpty'),
-  areaSvg: document.getElementById('areaSvg'),
-  areaSavedPolygons: document.getElementById('areaSavedPolygons'),
-  areaDraftLine: document.getElementById('areaDraftLine'),
-  areaDraftPoints: document.getElementById('areaDraftPoints'),
-  areaDraftHint: document.getElementById('areaDraftHint'),
-  areaDraftUndoBtn: document.getElementById('areaDraftUndoBtn'),
-  areaDraftCancelBtn: document.getElementById('areaDraftCancelBtn'),
-  areaDraftFinishBtn: document.getElementById('areaDraftFinishBtn'),
+  areaOpenFsBtn: document.getElementById('areaOpenFsBtn'),
+  areaOpenFsNote: document.getElementById('areaOpenFsNote'),
   areaListLabel: document.getElementById('areaListLabel'),
   areaList: document.getElementById('areaList'),
+  areaFsOverlay: document.getElementById('areaFsOverlay'),
+  areaFsCloseBtn: document.getElementById('areaFsCloseBtn'),
+  areaFsZoomOutBtn: document.getElementById('areaFsZoomOutBtn'),
+  areaFsZoomResetBtn: document.getElementById('areaFsZoomResetBtn'),
+  areaFsZoomInBtn: document.getElementById('areaFsZoomInBtn'),
+  areaFsKindRow: document.getElementById('areaFsKindRow'),
+  areaFsHint: document.getElementById('areaFsHint'),
+  areaFsStage: document.getElementById('areaFsStage'),
+  areaFsWorld: document.getElementById('areaFsWorld'),
+  areaFsImg: document.getElementById('areaFsImg'),
+  areaFsSavedBoxes: document.getElementById('areaFsSavedBoxes'),
+  areaFsDraftBox: document.getElementById('areaFsDraftBox'),
   panelDialogue: document.getElementById('panelDialogue'),
   dialogueSlideStage: document.getElementById('dialogueSlideStage'),
   addDialogueBoxBtn: document.getElementById('addDialogueBoxBtn'),
@@ -1495,8 +1664,20 @@ const el = {
   panelItemWindow: document.getElementById('panelItemWindow'),
   itemWindowBgFrame: document.getElementById('itemWindowBgFrame'),
   itemWindowBgUploadBtn: document.getElementById('itemWindowBgUploadBtn'),
+  itemWindowBgCutoutBtn: document.getElementById('itemWindowBgCutoutBtn'),
   itemWindowBgRemoveBtn: document.getElementById('itemWindowBgRemoveBtn'),
   itemWindowBgFileInput: document.getElementById('itemWindowBgFileInput'),
+  itemIconGridEditBtn: document.getElementById('itemIconGridEditBtn'),
+  itemIconGridOverlay: document.getElementById('itemIconGridOverlay'),
+  itemIconGridStage: document.getElementById('itemIconGridStage'),
+  itemIconGridImg: document.getElementById('itemIconGridImg'),
+  itemIconGridBoxes: document.getElementById('itemIconGridBoxes'),
+  itemIconGridSizeInput: document.getElementById('itemIconGridSizeInput'),
+  itemIconGridSizeNumberInput: document.getElementById('itemIconGridSizeNumberInput'),
+  itemIconGridGapInput: document.getElementById('itemIconGridGapInput'),
+  itemIconGridGapNumberInput: document.getElementById('itemIconGridGapNumberInput'),
+  itemIconGridCancelBtn: document.getElementById('itemIconGridCancelBtn'),
+  itemIconGridConfirmBtn: document.getElementById('itemIconGridConfirmBtn'),
   jisuIdleSheetFrame: document.getElementById('jisuIdleSheetFrame'),
   jisuIdleSheetEmpty: document.getElementById('jisuIdleSheetEmpty'),
   jisuIdleSheetUploadBtn: document.getElementById('jisuIdleSheetUploadBtn'),
@@ -1516,6 +1697,13 @@ const el = {
   youngwooPosMarker: document.getElementById('youngwooPosMarker'),
   youngwooPosCancelBtn: document.getElementById('youngwooPosCancelBtn'),
   youngwooPosConfirmBtn: document.getElementById('youngwooPosConfirmBtn'),
+  jisuStartPosEditBtn: document.getElementById('jisuStartPosEditBtn'),
+  jisuStartPosOverlay: document.getElementById('jisuStartPosOverlay'),
+  jisuStartPosStage: document.getElementById('jisuStartPosStage'),
+  jisuStartPosImg: document.getElementById('jisuStartPosImg'),
+  jisuStartPosMarker: document.getElementById('jisuStartPosMarker'),
+  jisuStartPosCancelBtn: document.getElementById('jisuStartPosCancelBtn'),
+  jisuStartPosConfirmBtn: document.getElementById('jisuStartPosConfirmBtn'),
   screenPills: document.getElementById('screenPills'),
   addScreenBtn: document.getElementById('addScreenBtn'),
   renameScreenBtn: document.getElementById('renameScreenBtn'),
@@ -1540,25 +1728,37 @@ const el = {
   statusArrowSlot: document.getElementById('statusArrowSlot'),
   statusArrowAddBtn: document.getElementById('statusArrowAddBtn'),
   statusArrowFileInput: document.getElementById('statusArrowFileInput'),
+  statusNumberFontSheetFrame: document.getElementById('statusNumberFontSheetFrame'),
+  statusNumberFontSheetEmpty: document.getElementById('statusNumberFontSheetEmpty'),
+  statusNumberFontSheetUploadBtn: document.getElementById('statusNumberFontSheetUploadBtn'),
+  statusNumberFontSheetCutoutBtn: document.getElementById('statusNumberFontSheetCutoutBtn'),
+  statusNumberFontSheetRemoveBtn: document.getElementById('statusNumberFontSheetRemoveBtn'),
+  statusNumberFontSheetFileInput: document.getElementById('statusNumberFontSheetFileInput'),
   statusNumberFontSlots: document.getElementById('statusNumberFontSlots'),
-  statusNumberFontFileInput: document.getElementById('statusNumberFontFileInput'),
   statusNumberWidthInput: document.getElementById('statusNumberWidthInput'),
   statusNumberWidthNumberInput: document.getElementById('statusNumberWidthNumberInput'),
   statusNumberHeightInput: document.getElementById('statusNumberHeightInput'),
   statusNumberHeightNumberInput: document.getElementById('statusNumberHeightNumberInput'),
-  statusNumberGapInput: document.getElementById('statusNumberGapInput'),
-  statusNumberGapNumberInput: document.getElementById('statusNumberGapNumberInput'),
-  statusLayoutEditBtn: document.getElementById('statusLayoutEditBtn'),
-  statusLayoutOverlay: document.getElementById('statusLayoutOverlay'),
-  statusLayoutPills: document.getElementById('statusLayoutPills'),
-  statusLayoutStage: document.getElementById('statusLayoutStage'),
-  statusLayoutImg: document.getElementById('statusLayoutImg'),
-  statusLayoutMarkerDate: document.getElementById('statusLayoutMarkerDate'),
-  statusLayoutMarkerTime: document.getElementById('statusLayoutMarkerTime'),
-  statusLayoutMarkerPoints: document.getElementById('statusLayoutMarkerPoints'),
-  statusLayoutMarkerArrow: document.getElementById('statusLayoutMarkerArrow'),
-  statusLayoutCancelBtn: document.getElementById('statusLayoutCancelBtn'),
-  statusLayoutConfirmBtn: document.getElementById('statusLayoutConfirmBtn'),
+  statusAssembleBtn: document.getElementById('statusAssembleBtn'),
+  statusAssembleOverlay: document.getElementById('statusAssembleOverlay'),
+  statusAssembleCloseBtn: document.getElementById('statusAssembleCloseBtn'),
+  statusAssembleStageWrap: document.getElementById('statusAssembleStageWrap'),
+  statusAssembleStage: document.getElementById('statusAssembleStage'),
+  statusAssembleZoomOutBtn: document.getElementById('statusAssembleZoomOutBtn'),
+  statusAssembleZoomResetBtn: document.getElementById('statusAssembleZoomResetBtn'),
+  statusAssembleZoomInBtn: document.getElementById('statusAssembleZoomInBtn'),
+  addStatusDigitBtn: document.getElementById('addStatusDigitBtn'),
+  statusDigitMultiSelectBtn: document.getElementById('statusDigitMultiSelectBtn'),
+  statusAssembleHint: document.getElementById('statusAssembleHint'),
+  statusAssemblePanel: document.getElementById('statusAssemblePanel'),
+  statusAssemblePanelLabel: document.getElementById('statusAssemblePanelLabel'),
+  statusAssembleFontSizeRow: document.getElementById('statusAssembleFontSizeRow'),
+  statusAssembleFontSizeInput: document.getElementById('statusAssembleFontSizeInput'),
+  statusAssembleFontSizeNumberInput: document.getElementById('statusAssembleFontSizeNumberInput'),
+  deleteStatusDigitBtn: document.getElementById('deleteStatusDigitBtn'),
+  statusAssembleAlignRow: document.getElementById('statusAssembleAlignRow'),
+  statusAssembleDistributeBtn: document.getElementById('statusAssembleDistributeBtn'),
+  statusAssembleAlignYBtn: document.getElementById('statusAssembleAlignYBtn'),
 };
 
 // 카테고리 6개(motion-category-title/motionElKey는 이 파일 아래쪽에서
@@ -2912,9 +3112,11 @@ async function renderItemWindowBg() {
   if (fishingConfig.itemWindowBackgroundAssetId) {
     const asset = await AssetDB.getAsset(fishingConfig.itemWindowBackgroundAssetId).catch(() => null);
     el.itemWindowBgFrame.innerHTML = asset ? `<img src="${asset.dataUrl}" alt="">` : '<div class="fish-sheet-empty">불러오지 못했어요</div>';
+    el.itemWindowBgCutoutBtn.classList.toggle('hidden', !asset);
     el.itemWindowBgRemoveBtn.classList.remove('hidden');
   } else {
     el.itemWindowBgFrame.innerHTML = '<div class="fish-sheet-empty">아직 배경화면이 없어요</div>';
+    el.itemWindowBgCutoutBtn.classList.add('hidden');
     el.itemWindowBgRemoveBtn.classList.add('hidden');
   }
 }
@@ -2929,15 +3131,141 @@ el.itemWindowBgFileInput.addEventListener('change', async () => {
     fishingConfig = await AssetDB.setFishingConfig({ itemWindowBackgroundAssetId: asset.id });
     showSaveNote();
     renderItemWindowBg();
+    updateItemIconGridBtnState();
   } finally {
     el.itemWindowBgUploadBtn.disabled = false;
   }
 });
+// 이미 올려둔 배경을 통째로 다시 배경 제거한다 — motionSheetCutoutBtn과 같은
+// 패턴(itemWindowBackgroundAssetId 자리에 새 에셋으로 덮어쓴다).
+el.itemWindowBgCutoutBtn.addEventListener('click', async () => {
+  const assetId = fishingConfig.itemWindowBackgroundAssetId;
+  if (!assetId) return;
+  const asset = await AssetDB.getAsset(assetId).catch(() => null);
+  if (!asset) return;
+  el.itemWindowBgCutoutBtn.disabled = true;
+  try {
+    const srcBlob = await dataUrlToBlob(asset.dataUrl);
+    const resultBlob = await removeBackgroundOrFallback(srcBlob);
+    const newAsset = await AssetDB.addAsset({ type: 'fishing-item-window-background', name: 'item-window-bg-cutout.png', blob: resultBlob });
+    fishingConfig = await AssetDB.setFishingConfig({ itemWindowBackgroundAssetId: newAsset.id });
+    showSaveNote();
+    renderItemWindowBg();
+    updateItemIconGridBtnState();
+  } catch (err) {
+    DevDiag.show('아이템창 배경 제거 실패: ' + (err && err.message ? err.message : err));
+  } finally {
+    el.itemWindowBgCutoutBtn.disabled = false;
+  }
+});
 el.itemWindowBgRemoveBtn.addEventListener('click', async () => {
   if (!confirm('배경화면을 지울까요?')) return;
-  fishingConfig = await AssetDB.setFishingConfig({ itemWindowBackgroundAssetId: null });
+  // 배경을 지우면 그 배경 기준으로 잡아뒀던 칸 배치도 같이 지운다 — 새
+  // 배경을 올렸을 때 엉뚱한 자리를 가리키지 않게(모션 시트 제거와 같은 원칙).
+  fishingConfig = await AssetDB.setFishingConfig({ itemWindowBackgroundAssetId: null, itemIconGrid: null });
   showSaveNote();
   renderItemWindowBg();
+  updateItemIconGridBtnState();
+});
+
+// ===== 아이템 칸 배치(8x1) — 8칸을 하나하나 따로 조정하는 대신, 칸
+// 크기·칸 사이 간격·전체 위치(중심 cx/cy) 네 값만 지정하면 8칸이 한 줄로
+// 나란히 계산된다(computeItemIconGridRects) — idle/모션 시트와 같은
+// "시트 하나 + 정규화 cx/cy/size" 관례를 그대로 따라 getFishCropStyle로
+// 미리보기하고, 새 이미지는 굽지 않는다.
+const ITEM_ICON_GRID_COLUMNS = 8;
+const DEFAULT_ITEM_ICON_GRID = { cx: 0.5, cy: 0.5, size: 0.1, gap: 0.02 };
+// size/gap은 짧은 변(shortSide) 기준 정규화값 — cropRect.size와 같은 단위라
+// getFishCropStyle을 그대로 재사용할 수 있다.
+function computeItemIconGridRects(grid, sheetW, sheetH) {
+  const shortSide = Math.min(sheetW, sheetH);
+  const cellPx = grid.size * shortSide;
+  const gapPx = grid.gap * shortSide;
+  const totalWidthPx = ITEM_ICON_GRID_COLUMNS * cellPx + (ITEM_ICON_GRID_COLUMNS - 1) * gapPx;
+  const centerXpx = grid.cx * sheetW;
+  const startXpx = centerXpx - totalWidthPx / 2 + cellPx / 2;
+  const cyPx = grid.cy * sheetH;
+  const rects = [];
+  for (let i = 0; i < ITEM_ICON_GRID_COLUMNS; i++) {
+    const cxPx = startXpx + i * (cellPx + gapPx);
+    rects.push({ cx: cxPx / sheetW, cy: cyPx / sheetH, size: grid.size });
+  }
+  return rects;
+}
+function currentItemIconGrid() {
+  return Object.assign({}, DEFAULT_ITEM_ICON_GRID, fishingConfig.itemIconGrid || {});
+}
+
+let itemIconGridDraft = Object.assign({}, DEFAULT_ITEM_ICON_GRID);
+let itemIconGridDims = null; // 편집기가 열려있는 동안의 배경 에셋 원본 크기
+let itemIconGridDragging = false;
+function updateItemIconGridBtnState() {
+  el.itemIconGridEditBtn.disabled = !fishingConfig.itemWindowBackgroundAssetId;
+}
+function renderItemIconGridBoxes() {
+  if (!itemIconGridDims) return;
+  const shortSide = Math.min(itemIconGridDims.width, itemIconGridDims.height);
+  const widthPct = (itemIconGridDraft.size * shortSide / itemIconGridDims.width) * 100;
+  const heightPct = (itemIconGridDraft.size * shortSide / itemIconGridDims.height) * 100;
+  const rects = computeItemIconGridRects(itemIconGridDraft, itemIconGridDims.width, itemIconGridDims.height);
+  el.itemIconGridBoxes.innerHTML = rects.map((rect, i) => {
+    const leftPct = rect.cx * 100 - widthPct / 2;
+    const topPct = rect.cy * 100 - heightPct / 2;
+    return `<div class="item-icon-grid-box" style="left:${leftPct}%;top:${topPct}%;width:${widthPct}%;height:${heightPct}%">${i + 1}</div>`;
+  }).join('');
+}
+async function openItemIconGridEditor() {
+  const bgAssetId = fishingConfig.itemWindowBackgroundAssetId;
+  if (!bgAssetId) return;
+  const asset = await AssetDB.getAsset(bgAssetId).catch(() => null);
+  const dims = asset ? await loadImageDimensions(asset.dataUrl) : null;
+  if (!asset || !dims) return;
+  itemIconGridDims = dims;
+  itemIconGridDraft = currentItemIconGrid();
+  el.itemIconGridImg.src = asset.dataUrl;
+  el.itemIconGridStage.style.setProperty('--heldfish-ar', dims.width + '/' + dims.height);
+  const shortSide = Math.min(dims.width, dims.height);
+  el.itemIconGridSizeInput.max = shortSide;
+  el.itemIconGridSizeNumberInput.max = shortSide;
+  el.itemIconGridGapInput.max = Math.round(shortSide / 2);
+  el.itemIconGridGapNumberInput.max = Math.round(shortSide / 2);
+  const sizePx = Math.round(itemIconGridDraft.size * shortSide);
+  const gapPx = Math.round(itemIconGridDraft.gap * shortSide);
+  el.itemIconGridSizeInput.value = sizePx;
+  el.itemIconGridSizeNumberInput.value = sizePx;
+  el.itemIconGridGapInput.value = gapPx;
+  el.itemIconGridGapNumberInput.value = gapPx;
+  renderItemIconGridBoxes();
+  el.itemIconGridOverlay.classList.remove('hidden');
+}
+function updateItemIconGridPosFromEvent(e) {
+  const rect = el.itemIconGridStage.getBoundingClientRect();
+  itemIconGridDraft.cx = clamp01((e.clientX - rect.left) / rect.width);
+  itemIconGridDraft.cy = clamp01((e.clientY - rect.top) / rect.height);
+  renderItemIconGridBoxes();
+}
+function bindItemIconGridSizeInput(rangeEl, numberEl, key) {
+  const commit = (px) => {
+    rangeEl.value = px;
+    numberEl.value = px;
+    const shortSide = Math.min(itemIconGridDims.width, itemIconGridDims.height);
+    itemIconGridDraft[key] = px / shortSide;
+    renderItemIconGridBoxes();
+  };
+  rangeEl.addEventListener('input', () => commit(Number(rangeEl.value)));
+  numberEl.addEventListener('change', () => commit(Number(numberEl.value)));
+}
+bindItemIconGridSizeInput(el.itemIconGridSizeInput, el.itemIconGridSizeNumberInput, 'size');
+bindItemIconGridSizeInput(el.itemIconGridGapInput, el.itemIconGridGapNumberInput, 'gap');
+el.itemIconGridEditBtn.addEventListener('click', openItemIconGridEditor);
+el.itemIconGridStage.addEventListener('pointerdown', (e) => { itemIconGridDragging = true; updateItemIconGridPosFromEvent(e); });
+window.addEventListener('pointermove', (e) => { if (itemIconGridDragging) updateItemIconGridPosFromEvent(e); });
+window.addEventListener('pointerup', () => { itemIconGridDragging = false; });
+el.itemIconGridCancelBtn.addEventListener('click', () => el.itemIconGridOverlay.classList.add('hidden'));
+el.itemIconGridConfirmBtn.addEventListener('click', async () => {
+  fishingConfig = await AssetDB.setFishingConfig({ itemIconGrid: itemIconGridDraft });
+  showSaveNote();
+  el.itemIconGridOverlay.classList.add('hidden');
 });
 
 /* ===== 세밀영역조절(범용) 전체화면 편집기 — evidence-notebook의
@@ -3972,7 +4300,7 @@ async function renderMoveTestStage() {
    배경화면 여러 장을 "화면"(screen) 여러 개로 두고 서로 이동할 수 있게
    한다(§신규, 영역지정/화면 전환). fishingConfig.screens가 화면 목록,
    각 screen은 { id, name, backgroundAssetId, fishableAreas, blockedAreas,
-   interactionAreas, moveAreas, youngwooNpcPos }를 자기 것으로 갖는다(예전
+   interactionAreas, moveAreas, youngwooNpcPos, jisuStartPos }를 자기 것으로 갖는다(예전
    낚시바 디자인 탭의 fishingConfig.backgroundAssetId 하나짜리 구조를
    화면마다 하나씩으로 늘린 것). currentScreenId가 "지금 편집 중인 화면"
    — 모션 탭의 이동 테스트 미리보기, 영역 설정 탭, 캐릭터 탭(영우 위치)
@@ -4041,7 +4369,7 @@ el.addScreenBtn.addEventListener('click', async () => {
   const name = (prompt('새 화면 이름', `화면 ${screens().length + 1}`) || '').trim();
   if (!name) return;
   const id = `screen_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-  const newScreen = { id, name, backgroundAssetId: null, fishableAreas: [], blockedAreas: [], interactionAreas: [], moveAreas: [], youngwooNpcPos: null };
+  const newScreen = { id, name, backgroundAssetId: null, fishableAreas: [], blockedAreas: [], interactionAreas: [], moveAreas: [], youngwooNpcPos: null, jisuStartPos: null };
   const patch = { screens: screens().concat(newScreen) };
   if (!fishingConfig.startScreenId) patch.startScreenId = id; // 첫 화면은 자동으로 시작 화면
   fishingConfig = await AssetDB.setFishingConfig(patch);
@@ -4059,7 +4387,7 @@ el.renameScreenBtn.addEventListener('click', async () => {
 el.deleteScreenBtn.addEventListener('click', async () => {
   const screen = currentScreen();
   if (!screen) return;
-  if (!confirm(`"${screen.name}" 화면을 삭제할까요? 이 화면의 영역·영우 위치도 같이 지워져요. 이 화면을 도착지로 하던 이동 영역은 남아있지만 더 이상 이동하지 않게 돼요.`)) return;
+  if (!confirm(`"${screen.name}" 화면을 삭제할까요? 이 화면의 영역·영우 위치·지수 시작 위치도 같이 지워져요. 이 화면을 도착지로 하던 이동 영역은 남아있지만 더 이상 이동하지 않게 돼요.`)) return;
   const next = screens().filter(s => s.id !== screen.id);
   const patch = { screens: next };
   if (fishingConfig.startScreenId === screen.id) patch.startScreenId = next[0] ? next[0].id : null;
@@ -4088,25 +4416,33 @@ el.screenBgRemoveBtn.addEventListener('click', async () => {
 });
 
 /* ===== 영역 설정 탭 =====
-   지금 고른 화면(currentScreen())의 배경화면 위에 다각형 영역을 그린다.
+   지금 고른 화면(currentScreen())의 배경화면 위에 사각형 영역을 그린다.
    네 종류(낚시가능/이동불가/상호작용/이동) 각각 여러 개를 둘 수 있고, 그
    화면의 fishableAreas/blockedAreas/interactionAreas/moveAreas 배열에
-   { id, points: [{x,y}](0~1 정규화), label?(상호작용만),
-   targetScreenId?/entryPoint?(이동만) }로 저장된다. 탭 좌표 → 정규화 좌표
-   변환은 el.areaStage가 --area-ar로 배경 이미지와 정확히 같은 종횡비를
-   갖도록 만들어서(낚시 팝업 --item-ar과 같은 패턴) letterbox 보정 없이
-   바로 stage 기준 비율로 계산할 수 있다. */
+   { id, points: [{x,y}](0~1 정규화, 사각형 네 꼭짓점), label?(상호작용만),
+   targetScreenId?/entryPoint?(이동만) }로 저장된다. 실제로 그리는 동작은
+   전체화면 에디터(#areaFsOverlay, 아래 "영역 설정 전체화면 에디터" 구간)가
+   맡고, 여기서는 종류 고르기(areaKind, 전체화면과 공유하는 변수)와 저장된
+   영역 목록만 다룬다. */
 const AREA_KIND_OPTIONS = [
   { id: 'fishable', label: '낚시가능', configKey: 'fishableAreas', desc: '캐스팅해서 낚시할 수 있는 영역이에요. 여러 개 그릴 수 있어요.' },
   { id: 'blocked', label: '이동불가', configKey: 'blockedAreas', desc: '캐릭터가 걸어 들어갈 수 없는 영역이에요. 여러 개 그릴 수 있어요.' },
   { id: 'interaction', label: '상호작용', configKey: 'interactionAreas', desc: '상점·대화 등 게임에 필요한 상호작용 지점이에요. 라벨을 적어 어떤 상호작용인지 구분하세요.' },
-  { id: 'move', label: '이동', configKey: 'moveAreas', desc: '캐릭터가 여기 걸어 들어오면 다른 화면으로 이동해요. 영역을 다 그리면 도착 화면과 도착 지점을 물어봐요.' },
+  { id: 'move', label: '이동', configKey: 'moveAreas', desc: '캐릭터가 여기 걸어 들어오면 다른 화면(또는 같은 화면의 다른 지점)으로 이동해요. 영역을 다 그리면 도착 화면과 도착 지점을 물어봐요. 도착 화면으로 "이 화면"을 고르면 반대 방향 이동 영역도 자동으로 만들어져 상호이동돼요.' },
 ];
 let areaKind = 'fishable';
-let areaDraft = [];
 
 function areaKindOption(kind) { return AREA_KIND_OPTIONS.find(o => o.id === kind); }
 function getAreaList(kind) { const screen = currentScreen(); return (screen && screen[areaKindOption(kind).configKey]) || []; }
+// 이동 영역을 지울 때 짝(pairId, 같은 화면 상호이동의 반대 방향 영역)도
+// 같이 지운다 — 안 지우면 한쪽만 남아 도착 지점 없는 반쪽짜리 이동이 된다.
+function removeAreaAndPair(list, id) {
+  const target = list.find(a => a.id === id);
+  const ids = new Set([id]);
+  if (target && target.pairId) ids.add(target.pairId);
+  list.forEach(a => { if (a.pairId === id) ids.add(a.id); });
+  return list.filter(a => !ids.has(a.id));
+}
 const AREA_SWATCH_VAR = { fishable: '--green', blocked: '--signal-red', interaction: '--amber', move: '--cyan' };
 
 function renderAreaKindPills() {
@@ -4117,64 +4453,22 @@ function renderAreaKindPills() {
     btn.addEventListener('click', () => {
       if (btn.dataset.kind === areaKind) return;
       areaKind = btn.dataset.kind;
-      areaDraft = [];
       renderAreaKindPills();
       el.areaKindDesc.textContent = areaKindOption(areaKind).desc;
-      renderAreaSavedPolygons();
-      renderAreaDraft();
       renderAreaList();
     });
   });
 }
 
-async function renderAreaTab() {
+function renderAreaTab() {
   el.areaKindDesc.textContent = areaKindOption(areaKind).desc;
   const screen = currentScreen();
-  const bgId = screen && screen.backgroundAssetId;
-  const bgAsset = bgId ? await AssetDB.getAsset(bgId).catch(() => null) : null;
-  const dims = bgAsset ? await loadImageDimensions(bgAsset.dataUrl) : null;
-  if (bgAsset && dims) {
-    el.areaBgImg.src = bgAsset.dataUrl;
-    el.areaBgImg.classList.remove('hidden');
-    el.areaBgEmpty.classList.add('hidden');
-    el.areaStage.style.setProperty('--area-ar', dims.width + '/' + dims.height);
-  } else {
-    el.areaBgImg.classList.add('hidden');
-    el.areaBgEmpty.classList.remove('hidden');
-    el.areaBgEmpty.textContent = screen ? '아직 배경화면이 없어요' : '먼저 위에서 화면을 고르거나 추가하세요';
-    el.areaStage.style.removeProperty('--area-ar');
-  }
-  renderAreaSavedPolygons();
-  renderAreaDraft();
+  const hasBg = !!(screen && screen.backgroundAssetId);
+  el.areaOpenFsBtn.disabled = !hasBg;
+  el.areaOpenFsNote.textContent = !screen
+    ? '먼저 위에서 화면을 고르거나 추가하세요'
+    : (hasBg ? '' : '먼저 위 "화면" 배경화면을 올리세요');
   renderAreaList();
-}
-
-function renderAreaSavedPolygons() {
-  const list = getAreaList(areaKind);
-  el.areaSavedPolygons.innerHTML = list.map(a =>
-    `<polygon class="area-saved-polygon kind-${areaKind}" points="${a.points.map(p => `${p.x * 100},${p.y * 100}`).join(' ')}"></polygon>`
-  ).join('');
-}
-
-function renderAreaDraft() {
-  const hasBg = !!(currentScreen() && currentScreen().backgroundAssetId);
-  if (!hasBg) {
-    el.areaDraftHint.textContent = '아직 배경화면이 없어요';
-  } else if (!areaDraft.length) {
-    el.areaDraftHint.textContent = '탭해서 꼭짓점을 추가하세요 (3개 이상 찍고 완료)';
-  } else {
-    el.areaDraftHint.textContent = `${areaDraft.length}개 점 찍음 — 계속 탭하거나 완료를 누르세요`;
-  }
-  el.areaDraftFinishBtn.disabled = areaDraft.length < 3;
-  if (areaDraft.length) {
-    el.areaDraftLine.setAttribute('points', areaDraft.map(p => `${p.x * 100},${p.y * 100}`).join(' '));
-    el.areaDraftLine.classList.remove('hidden');
-  } else {
-    el.areaDraftLine.classList.add('hidden');
-  }
-  el.areaDraftPoints.innerHTML = areaDraft.map(p =>
-    `<circle class="area-draft-point" cx="${p.x * 100}" cy="${p.y * 100}" r="1.4"></circle>`
-  ).join('');
 }
 
 function renderAreaList() {
@@ -4190,8 +4484,10 @@ function renderAreaList() {
     if (areaKind === 'interaction') {
       labelHtml = `<input type="text" value="${(a.label || '').replace(/"/g, '&quot;')}" placeholder="예: 상점, 대화" data-label-id="${a.id}">`;
     } else if (areaKind === 'move') {
+      const isSelfLoop = a.targetScreenId === currentScreenId;
       const target = screens().find(s => s.id === a.targetScreenId);
-      labelHtml = `<span>영역 ${i + 1} → ${target ? target.name : '(삭제된 화면)'}</span> <button type="button" class="area-row-edit" data-edit-id="${a.id}">✎</button>`;
+      const targetLabel = isSelfLoop ? '같은 화면의 다른 지점' : (target ? target.name : '(삭제된 화면)');
+      labelHtml = `<span>영역 ${i + 1} → ${targetLabel}${a.pairId ? ' (상호이동)' : ''}</span> <button type="button" class="area-row-edit" data-edit-id="${a.id}">✎</button>`;
     } else {
       labelHtml = `영역 ${i + 1} (꼭짓점 ${a.points.length}개)`;
     }
@@ -4206,10 +4502,10 @@ function renderAreaList() {
   el.areaList.querySelectorAll('[data-del-id]').forEach(btn => {
     btn.addEventListener('click', async () => {
       const id = btn.dataset.delId;
-      const next = getAreaList(areaKind).filter(a => a.id !== id);
+      const next = removeAreaAndPair(getAreaList(areaKind), id);
       await patchCurrentScreen({ [kindOpt.configKey]: next });
       showSaveNote();
-      renderAreaSavedPolygons();
+      renderAreaFsSavedBoxes();
       renderAreaList();
     });
   });
@@ -4225,72 +4521,300 @@ function renderAreaList() {
     btn.addEventListener('click', () => openMoveAreaEditor({ id: btn.dataset.editId }));
   });
 }
+renderAreaKindPills();
 
-function areaStageEventToFrac(e) {
-  const rect = el.areaStage.getBoundingClientRect();
-  return { x: clamp01((e.clientX - rect.left) / rect.width), y: clamp01((e.clientY - rect.top) / rect.height) };
+/* ===== 영역 설정 전체화면 에디터 =====
+   openAreaFsEditor()가 areaKind가 가리키는 종류(전체화면 안 kind row와
+   바깥 탭의 kind pills가 같은 변수를 공유)의 배경 위에 손가락 1개 드래그로
+   사각형을 그린다. 손가락 2개(또는 데스크톱 휠/버튼)로는 확대·이동만
+   한다 — #areaFsWorld를 배경 이미지 자연 크기 그대로 두고 translate+scale
+   변환만 걸어서, 저장된 사각형·그리는 중인 사각형도 같은 월드의 자식으로
+   0~100% 좌표에 얹어두면 이미지와 함께 확대/이동된다(그래서 zoom/pan
+   갱신 시 사각형 좌표를 따로 다시 계산할 필요가 없다). */
+let areaFsScale = 1; // baseScale 위에 추가로 곱하는 확대 배율(1~AREA_FS_MAX_ZOOM)
+let areaFsBaseScale = 1; // 스테이지에 이미지를 꽉 채우는 기본 배율(원본 자연 크기 기준)
+let areaFsPanX = 0, areaFsPanY = 0; // 스테이지 좌표계 기준 픽셀 팬
+let areaFsNaturalW = 0, areaFsNaturalH = 0;
+const areaFsPointers = new Map(); // pointerId → 마지막 clientX/Y (핀치 판정용)
+let areaFsGestureMode = null; // 'draw' | 'pinch'
+let areaFsDrawPointerId = null;
+let areaFsDrawStartFrac = null;
+let areaFsPinch = null; // { startDist, startScale, startPanX, startPanY, startMidX, startMidY }
+const AREA_FS_MAX_ZOOM = 6;
+
+function areaFsClampScale(s) { return Math.min(AREA_FS_MAX_ZOOM, Math.max(1, s)); }
+function areaFsClampPan() {
+  const stageW = el.areaFsStage.clientWidth, stageH = el.areaFsStage.clientHeight;
+  const s = areaFsBaseScale * areaFsScale;
+  const renderedW = areaFsNaturalW * s, renderedH = areaFsNaturalH * s;
+  areaFsPanX = renderedW <= stageW ? (stageW - renderedW) / 2 : Math.min(0, Math.max(stageW - renderedW, areaFsPanX));
+  areaFsPanY = renderedH <= stageH ? (stageH - renderedH) / 2 : Math.min(0, Math.max(stageH - renderedH, areaFsPanY));
 }
-el.areaStage.addEventListener('pointerdown', (e) => {
-  if (!(currentScreen() && currentScreen().backgroundAssetId)) return; // 배경 없이는 좌표 기준(--area-ar)이 없어 그릴 수 없다
-  areaDraft.push(areaStageEventToFrac(e));
-  renderAreaDraft();
+function areaFsApplyTransform() {
+  areaFsClampPan();
+  el.areaFsWorld.style.transform = `translate(${areaFsPanX}px, ${areaFsPanY}px) scale(${areaFsBaseScale * areaFsScale})`;
+}
+function areaFsFitToStage() {
+  const stageW = el.areaFsStage.clientWidth, stageH = el.areaFsStage.clientHeight;
+  areaFsBaseScale = Math.min(stageW / areaFsNaturalW, stageH / areaFsNaturalH);
+  areaFsScale = 1;
+  areaFsPanX = (stageW - areaFsNaturalW * areaFsBaseScale) / 2;
+  areaFsPanY = (stageH - areaFsNaturalH * areaFsBaseScale) / 2;
+  areaFsApplyTransform();
+  updateAreaFsZoomLabel();
+}
+function updateAreaFsZoomLabel() { el.areaFsZoomResetBtn.textContent = Math.round(areaFsScale * 100) + '%'; }
+window.addEventListener('resize', () => {
+  if (areaFsNaturalW && !el.areaFsOverlay.classList.contains('hidden')) areaFsFitToStage();
 });
-el.areaDraftUndoBtn.addEventListener('click', () => {
-  areaDraft.pop();
-  renderAreaDraft();
-});
-el.areaDraftCancelBtn.addEventListener('click', () => {
-  areaDraft = [];
-  renderAreaDraft();
-});
-el.areaDraftFinishBtn.addEventListener('click', async () => {
-  if (areaDraft.length < 3) return;
+
+function renderAreaFsKindRow() {
+  el.areaFsKindRow.innerHTML = AREA_KIND_OPTIONS.map(o =>
+    `<button type="button" class="areafs-kind-btn${o.id === areaKind ? ' active' : ''}" style="--kind-color:var(${AREA_SWATCH_VAR[o.id]})" data-kind="${o.id}">${o.label}</button>`
+  ).join('');
+  el.areaFsKindRow.querySelectorAll('[data-kind]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.dataset.kind === areaKind) return;
+      areaKind = btn.dataset.kind;
+      renderAreaFsKindRow();
+      updateAreaFsHint();
+      renderAreaFsSavedBoxes();
+      renderAreaKindPills();
+      renderAreaList();
+    });
+  });
+}
+function updateAreaFsHint() {
+  el.areaFsHint.textContent = `${areaKindOption(areaKind).desc} 손가락(또는 마우스)으로 드래그해서 사각형 영역을 그리세요 — 두 손가락으로는 확대·이동만 해요.`;
+}
+
+function areaFsBoundsOf(points) {
+  const xs = points.map(p => p.x), ys = points.map(p => p.y);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+  return { x0, y0, w: x1 - x0, h: y1 - y0 };
+}
+function renderAreaFsSavedBoxes() {
+  const list = getAreaList(areaKind);
+  el.areaFsSavedBoxes.innerHTML = list.map(a => {
+    const b = areaFsBoundsOf(a.points);
+    return `<div class="areafs-box kind-${areaKind}" style="left:${b.x0 * 100}%;top:${b.y0 * 100}%;width:${b.w * 100}%;height:${b.h * 100}%">
+      <button type="button" class="areafs-box-del" data-del-fs-id="${a.id}">✕</button>
+    </div>`;
+  }).join('');
+  el.areaFsSavedBoxes.querySelectorAll('[data-del-fs-id]').forEach(btn => {
+    // 삭제 배지 위에서 포인터를 누르면 stage의 pointerdown(그리기 시작)으로
+    // 안 번지게 막아야 실수로 작은 드래프트 사각형이 같이 생기지 않는다.
+    btn.addEventListener('pointerdown', (e) => e.stopPropagation());
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if (!confirm('이 영역을 지울까요?')) return;
+      const id = btn.dataset.delFsId;
+      const kindOpt = areaKindOption(areaKind);
+      const next = removeAreaAndPair(getAreaList(areaKind), id);
+      await patchCurrentScreen({ [kindOpt.configKey]: next });
+      showSaveNote();
+      renderAreaFsSavedBoxes();
+      renderAreaList();
+    });
+  });
+}
+
+function areaFsShowDraftBox(start, cur) {
+  const x0 = Math.min(start.x, cur.x), x1 = Math.max(start.x, cur.x);
+  const y0 = Math.min(start.y, cur.y), y1 = Math.max(start.y, cur.y);
+  el.areaFsDraftBox.className = `areafs-box areafs-draft-box kind-${areaKind}`;
+  el.areaFsDraftBox.style.left = (x0 * 100) + '%';
+  el.areaFsDraftBox.style.top = (y0 * 100) + '%';
+  el.areaFsDraftBox.style.width = ((x1 - x0) * 100) + '%';
+  el.areaFsDraftBox.style.height = ((y1 - y0) * 100) + '%';
+}
+function areaFsHideDraftBox() { el.areaFsDraftBox.classList.add('hidden'); }
+
+function areaFsEventToFrac(clientX, clientY) {
+  const rect = el.areaFsStage.getBoundingClientRect();
+  const s = areaFsBaseScale * areaFsScale;
+  const imgX = (clientX - rect.left - areaFsPanX) / s;
+  const imgY = (clientY - rect.top - areaFsPanY) / s;
+  return { x: clamp01(imgX / areaFsNaturalW), y: clamp01(imgY / areaFsNaturalH) };
+}
+
+async function areaFsFinishDraw(start, cur) {
+  areaFsHideDraftBox();
+  const x0 = Math.min(start.x, cur.x), x1 = Math.max(start.x, cur.x);
+  const y0 = Math.min(start.y, cur.y), y1 = Math.max(start.y, cur.y);
+  if (x1 - x0 < 0.015 || y1 - y0 < 0.015) return; // 오탭 수준의 작은 드래그는 무시
+  const points = [{ x: x0, y: y0 }, { x: x1, y: y0 }, { x: x1, y: y1 }, { x: x0, y: y1 }];
   if (areaKind === 'move') {
-    // 이동 영역은 폴리곤만으론 안 끝난다 — 도착 화면/지점을 마저 정해야
-    // 실제로 저장된다(moveAreaConfirmBtn). 취소하면 이 폴리곤도 버려진다.
-    await openMoveAreaEditor({ points: areaDraft.slice() });
+    // 이동 영역은 사각형만으론 안 끝난다 — 도착 화면/지점을 마저 정해야
+    // 실제로 저장된다(moveAreaConfirmBtn). 그 시트를 취소하면 이 사각형도 버려진다.
+    await openMoveAreaEditor({ points });
     return;
   }
   const kindOpt = areaKindOption(areaKind);
-  const newArea = { id: `area_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, points: areaDraft.slice() };
+  const newArea = { id: `area_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, points };
   if (areaKind === 'interaction') newArea.label = '';
   const next = getAreaList(areaKind).concat(newArea);
   await patchCurrentScreen({ [kindOpt.configKey]: next });
   showSaveNote();
-  areaDraft = [];
-  renderAreaSavedPolygons();
-  renderAreaDraft();
+  renderAreaFsSavedBoxes();
   renderAreaList();
+}
+
+el.areaFsStage.addEventListener('pointerdown', (e) => {
+  if (!areaFsNaturalW) return;
+  el.areaFsStage.setPointerCapture(e.pointerId);
+  areaFsPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (areaFsPointers.size >= 2) {
+    areaFsGestureMode = 'pinch';
+    areaFsDrawPointerId = null;
+    areaFsDrawStartFrac = null;
+    areaFsHideDraftBox();
+    const pts = Array.from(areaFsPointers.values()).slice(0, 2);
+    const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+    areaFsPinch = {
+      startDist: dist, startScale: areaFsScale, startPanX: areaFsPanX, startPanY: areaFsPanY,
+      startMidX: (pts[0].x + pts[1].x) / 2, startMidY: (pts[0].y + pts[1].y) / 2,
+    };
+  } else {
+    areaFsGestureMode = 'draw';
+    areaFsDrawPointerId = e.pointerId;
+    areaFsDrawStartFrac = areaFsEventToFrac(e.clientX, e.clientY);
+    el.areaFsDraftBox.classList.remove('hidden');
+    areaFsShowDraftBox(areaFsDrawStartFrac, areaFsDrawStartFrac);
+  }
 });
-renderAreaKindPills();
+el.areaFsStage.addEventListener('pointermove', (e) => {
+  if (!areaFsPointers.has(e.pointerId)) return;
+  areaFsPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (areaFsGestureMode === 'pinch' && areaFsPinch) {
+    const pts = Array.from(areaFsPointers.values()).slice(0, 2);
+    const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+    const midX = (pts[0].x + pts[1].x) / 2, midY = (pts[0].y + pts[1].y) / 2;
+    const rect = el.areaFsStage.getBoundingClientRect();
+    const newScale = areaFsClampScale(areaFsPinch.startScale * (dist / areaFsPinch.startDist));
+    // 핀치 시작 시점의 중점 아래 있던 이미지 좌표가 계속 지금 중점 아래
+    // 있도록 pan을 같이 보정한다(그래야 확대와 이동이 자연스럽게 겹친다).
+    const s0 = areaFsBaseScale * areaFsPinch.startScale;
+    const anchorImgX = (areaFsPinch.startMidX - rect.left - areaFsPinch.startPanX) / s0;
+    const anchorImgY = (areaFsPinch.startMidY - rect.top - areaFsPinch.startPanY) / s0;
+    const s1 = areaFsBaseScale * newScale;
+    areaFsScale = newScale;
+    areaFsPanX = (midX - rect.left) - anchorImgX * s1;
+    areaFsPanY = (midY - rect.top) - anchorImgY * s1;
+    areaFsApplyTransform();
+    updateAreaFsZoomLabel();
+  } else if (areaFsGestureMode === 'draw' && e.pointerId === areaFsDrawPointerId) {
+    areaFsShowDraftBox(areaFsDrawStartFrac, areaFsEventToFrac(e.clientX, e.clientY));
+  }
+});
+function areaFsPointerEnd(e) {
+  if (!areaFsPointers.has(e.pointerId)) return;
+  const wasDraw = areaFsGestureMode === 'draw' && e.pointerId === areaFsDrawPointerId;
+  const startFrac = areaFsDrawStartFrac;
+  areaFsPointers.delete(e.pointerId);
+  if (wasDraw) {
+    areaFsDrawPointerId = null;
+    areaFsDrawStartFrac = null;
+    areaFsFinishDraw(startFrac, areaFsEventToFrac(e.clientX, e.clientY));
+  }
+  if (areaFsPointers.size < 2) { areaFsGestureMode = null; areaFsPinch = null; }
+}
+['pointerup', 'pointercancel'].forEach(evt => el.areaFsStage.addEventListener(evt, areaFsPointerEnd));
+
+function areaFsZoomAround(anchorStageX, anchorStageY, newScale) {
+  const s0 = areaFsBaseScale * areaFsScale;
+  const anchorImgX = (anchorStageX - areaFsPanX) / s0, anchorImgY = (anchorStageY - areaFsPanY) / s0;
+  const s1 = areaFsBaseScale * newScale;
+  areaFsScale = newScale;
+  areaFsPanX = anchorStageX - anchorImgX * s1;
+  areaFsPanY = anchorStageY - anchorImgY * s1;
+  areaFsApplyTransform();
+  updateAreaFsZoomLabel();
+}
+el.areaFsStage.addEventListener('wheel', (e) => {
+  if (!areaFsNaturalW) return;
+  e.preventDefault();
+  const rect = el.areaFsStage.getBoundingClientRect();
+  const newScale = areaFsClampScale(areaFsScale * Math.exp(-e.deltaY * 0.0015));
+  areaFsZoomAround(e.clientX - rect.left, e.clientY - rect.top, newScale);
+}, { passive: false });
+el.areaFsZoomInBtn.addEventListener('click', () => {
+  areaFsZoomAround(el.areaFsStage.clientWidth / 2, el.areaFsStage.clientHeight / 2, areaFsClampScale(areaFsScale * 1.35));
+});
+el.areaFsZoomOutBtn.addEventListener('click', () => {
+  areaFsZoomAround(el.areaFsStage.clientWidth / 2, el.areaFsStage.clientHeight / 2, areaFsClampScale(areaFsScale / 1.35));
+});
+el.areaFsZoomResetBtn.addEventListener('click', () => areaFsFitToStage());
+
+async function openAreaFsEditor() {
+  const screen = currentScreen();
+  if (!screen || !screen.backgroundAssetId) return;
+  const bgAsset = await AssetDB.getAsset(screen.backgroundAssetId).catch(() => null);
+  if (!bgAsset) return;
+  renderAreaFsKindRow();
+  updateAreaFsHint();
+  el.areaFsOverlay.classList.remove('hidden');
+  areaFsNaturalW = 0;
+  areaFsNaturalH = 0;
+  el.areaFsImg.src = bgAsset.dataUrl;
+  const onLoad = () => {
+    areaFsNaturalW = el.areaFsImg.naturalWidth;
+    areaFsNaturalH = el.areaFsImg.naturalHeight;
+    el.areaFsWorld.style.width = areaFsNaturalW + 'px';
+    el.areaFsWorld.style.height = areaFsNaturalH + 'px';
+    areaFsFitToStage();
+    renderAreaFsSavedBoxes();
+  };
+  if (el.areaFsImg.complete && el.areaFsImg.naturalWidth) onLoad();
+  else el.areaFsImg.onload = onLoad;
+}
+function closeAreaFsEditor() {
+  el.areaFsOverlay.classList.add('hidden');
+  areaFsPointers.clear();
+  areaFsGestureMode = null;
+  areaFsPinch = null;
+  areaFsHideDraftBox();
+}
+el.areaOpenFsBtn.addEventListener('click', openAreaFsEditor);
+el.areaFsCloseBtn.addEventListener('click', closeAreaFsEditor);
 
 /* ===== 이동 영역(moveAreas) 설정 =====
-   "영역 설정" 탭에서 폴리곤(이동 종류)을 완료하거나, 저장된 이동 영역
-   목록의 ✎ 버튼을 누르면 뜬다. youngwooPosStage와 완전히 같은 단일 포인트
-   드래그 패턴(heldfish-stage/rodtip-marker 재사용)으로 도착 지점을
-   찍지만, 기준 이미지가 "지금 그리는 화면"이 아니라 도착 화면 select로
-   고른 화면의 배경이라는 점이 다르다(도착 화면을 바꾸면 스테이지 배경도
-   같이 바뀐다). moveAreaDraftPoints가 있으면 "새 영역 만들기"(폴리곤은
+   영역 설정 전체화면 에디터에서 이동 종류로 사각형을 다 그리거나, 저장된
+   이동 영역 목록의 ✎ 버튼을 누르면 뜬다. youngwooPosStage와 완전히 같은
+   단일 포인트 드래그 패턴(heldfish-stage/rodtip-marker 재사용)으로 도착
+   지점을 찍지만, 기준 이미지가 "지금 그리는 화면"이 아니라 도착 화면
+   select로 고른 화면의 배경이라는 점이 다르다(도착 화면을 바꾸면 스테이지
+   배경도 같이 바뀐다). moveAreaDraftPoints가 있으면 "새 영역 만들기"(사각형은
    이미 그렸고 도착지만 정하면 됨), 없고 moveAreaEditingId만 있으면 "기존
-   영역의 도착지 수정"이다. */
+   영역의 도착지 수정"이다.
+
+   도착 화면 select에는 다른 화면들과 함께 "지금 이 화면"도 포함된다 —
+   배경화면을 새로 안 올리고 같은 배경 위 다른 지점으로만 순간이동하고
+   싶을 때 쓴다(재생 쪽 triggerScreenTransition은 targetScreenId가 현재
+   화면이어도 그대로 동작한다 — 배경을 다시 그리고 새 지점에 캐릭터를
+   놓을 뿐이라 이미 있는 fade-out/fade-in 연출이 자연히 재사용된다).
+   "이 화면"을 도착지로 새로 만들 때는(수정이 아니라) 반대 방향 이동
+   영역도 같이 자동 생성해 A→B, B→A 상호이동이 한 번에 되게 한다
+   (pairId로 서로를 가리켜서, 하나를 지우면 짝도 같이 지운다 —
+   removeAreaAndPair 참고). */
 let moveAreaDraftPoints = null;
 let moveAreaEditingId = null;
 let moveAreaEntryDraft = { x: 0.5, y: 0.5 };
 let moveAreaDragging = false;
 
 async function openMoveAreaEditor(opts) {
+  const selfScreen = currentScreen();
+  if (!selfScreen) return;
   const others = screens().filter(s => s.id !== currentScreenId);
-  if (!others.length) {
-    alert('이동 영역을 만들려면 다른 화면이 하나 더 있어야 해요. 위에서 화면을 먼저 추가하세요.');
-    if (opts.points) { areaDraft = []; renderAreaDraft(); } // 방금 그린 폴리곤도 같이 버린다
-    return;
-  }
+  const selectable = [selfScreen].concat(others);
   moveAreaDraftPoints = opts.points || null;
   moveAreaEditingId = opts.id || null;
   const existing = opts.id ? getAreaList('move').find(a => a.id === opts.id) : null;
-  const defaultTarget = (existing && existing.targetScreenId && others.some(s => s.id === existing.targetScreenId))
-    ? existing.targetScreenId : others[0].id;
-  el.moveAreaTargetSelect.innerHTML = others.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+  const defaultTarget = (existing && existing.targetScreenId && selectable.some(s => s.id === existing.targetScreenId))
+    ? existing.targetScreenId : selfScreen.id;
+  el.moveAreaTargetSelect.innerHTML = selectable.map(s =>
+    `<option value="${s.id}">${s.id === currentScreenId ? '🔁 이 화면 (같은 배경, 다른 지점)' : s.name}</option>`
+  ).join('');
   el.moveAreaTargetSelect.value = defaultTarget;
   moveAreaEntryDraft = Object.assign({ x: 0.5, y: 0.5 }, existing ? existing.entryPoint : null);
   await loadMoveAreaTargetBackground();
@@ -4333,23 +4857,50 @@ function closeMoveAreaEditor() {
   moveAreaEditingId = null;
 }
 el.moveAreaCancelBtn.addEventListener('click', () => {
-  const wasNew = !!moveAreaDraftPoints;
-  closeMoveAreaEditor();
-  if (wasNew) { areaDraft = []; renderAreaDraft(); } // 새로 그린 폴리곤은 저장 안 하고 버린다
+  closeMoveAreaEditor(); // 새로 그린 사각형이 있었어도 config에 넣은 적이 없으니 그냥 사라진다
 });
+function makeAreaId() { return `area_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`; }
+// 사각형(points, 0~1 정규화 꼭짓점 4개)의 중심점 — 상호이동 쌍을 만들 때
+// 반대편 도착 지점(entryPoint)으로 쓴다.
+function areaCenterOf(points) {
+  const b = areaFsBoundsOf(points);
+  return { x: b.x0 + b.w / 2, y: b.y0 + b.h / 2 };
+}
+// 같은 화면 상호이동의 반대 방향 트리거 영역 — 도착 지점(center) 둘레에
+// 원래 영역과 같은 크기의 사각형을 그려준다(0~1 범위로 clamp).
+function makeCenteredRectPoints(center, w, h) {
+  const x0 = clamp01(center.x - w / 2), x1 = clamp01(center.x + w / 2);
+  const y0 = clamp01(center.y - h / 2), y1 = clamp01(center.y + h / 2);
+  return [{ x: x0, y: y0 }, { x: x1, y: y0 }, { x: x1, y: y1 }, { x: x0, y: y1 }];
+}
 el.moveAreaConfirmBtn.addEventListener('click', async () => {
   const targetScreenId = el.moveAreaTargetSelect.value;
   const entryPoint = moveAreaEntryDraft;
   const list = getAreaList('move');
-  const next = moveAreaEditingId
-    ? list.map(a => a.id === moveAreaEditingId ? Object.assign({}, a, { targetScreenId, entryPoint }) : a)
-    : list.concat({ id: `area_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, points: moveAreaDraftPoints, targetScreenId, entryPoint });
+  let next;
+  if (moveAreaEditingId) {
+    next = list.map(a => a.id === moveAreaEditingId ? Object.assign({}, a, { targetScreenId, entryPoint }) : a);
+  } else {
+    const newArea = { id: makeAreaId(), points: moveAreaDraftPoints, targetScreenId, entryPoint };
+    if (targetScreenId === currentScreenId) {
+      const bounds = areaFsBoundsOf(moveAreaDraftPoints);
+      const reverseArea = {
+        id: makeAreaId(),
+        points: makeCenteredRectPoints(entryPoint, bounds.w, bounds.h),
+        targetScreenId: currentScreenId,
+        entryPoint: areaCenterOf(moveAreaDraftPoints),
+        pairId: newArea.id,
+      };
+      newArea.pairId = reverseArea.id;
+      next = list.concat(newArea, reverseArea);
+    } else {
+      next = list.concat(newArea);
+    }
+  }
   await patchCurrentScreen({ moveAreas: next });
   showSaveNote();
-  areaDraft = [];
   closeMoveAreaEditor();
-  renderAreaSavedPolygons();
-  renderAreaDraft();
+  renderAreaFsSavedBoxes();
   renderAreaList();
 });
 
@@ -4921,6 +5472,7 @@ async function renderCharacterTab() {
   await renderIdleCharacter('youngwoo');
   const screen = currentScreen();
   el.youngwooPosEditBtn.disabled = !(screen && screen.backgroundAssetId && idleFrameCache.youngwoo.down);
+  el.jisuStartPosEditBtn.disabled = !(screen && screen.backgroundAssetId);
 }
 
 ['jisu', 'youngwoo'].forEach((character) => {
@@ -4988,29 +5540,81 @@ el.youngwooPosConfirmBtn.addEventListener('click', async () => {
   el.youngwooPosOverlay.classList.add('hidden');
 });
 
+/* ===== 지수 시작 위치 지정 =====
+   youngwooPosStage와 완전히 같은 단일 포인트 드래그 패턴·좌표계(배경 원본
+   크기 기준 0~1, top-down) — 다만 이 화면이 게임 시작 화면일 때만 실제로
+   쓰인다(play/index.html의 applyScreen이 charWorldPos를 처음 잡을 때
+   화면 정중앙 대신 이 값을 쓴다). 화면마다 따로 지정한다(그 화면의
+   jisuStartPos). */
+let jisuStartPosDraft = { x: 0.5, y: 0.5 };
+let jisuStartPosDragging = false;
+async function openJisuStartPosEditor() {
+  const screen = currentScreen();
+  if (!screen || !screen.backgroundAssetId) return;
+  const bgAsset = await AssetDB.getAsset(screen.backgroundAssetId).catch(() => null);
+  if (!bgAsset) return;
+  const dims = await loadImageDimensions(bgAsset.dataUrl);
+  jisuStartPosDraft = Object.assign({ x: 0.5, y: 0.5 }, screen.jisuStartPos || {});
+  el.jisuStartPosImg.src = bgAsset.dataUrl;
+  el.jisuStartPosStage.style.setProperty('--heldfish-ar', dims ? (dims.width + '/' + dims.height) : '1/1');
+  renderJisuStartPosMarker();
+  el.jisuStartPosOverlay.classList.remove('hidden');
+}
+function renderJisuStartPosMarker() {
+  el.jisuStartPosMarker.style.left = (jisuStartPosDraft.x * 100) + '%';
+  el.jisuStartPosMarker.style.top = (jisuStartPosDraft.y * 100) + '%';
+}
+function updateJisuStartPosFromEvent(e) {
+  const rect = el.jisuStartPosStage.getBoundingClientRect();
+  jisuStartPosDraft = {
+    x: clamp01((e.clientX - rect.left) / rect.width),
+    y: clamp01((e.clientY - rect.top) / rect.height),
+  };
+  renderJisuStartPosMarker();
+}
+el.jisuStartPosEditBtn.addEventListener('click', openJisuStartPosEditor);
+el.jisuStartPosStage.addEventListener('pointerdown', (e) => { jisuStartPosDragging = true; updateJisuStartPosFromEvent(e); });
+window.addEventListener('pointermove', (e) => { if (jisuStartPosDragging) updateJisuStartPosFromEvent(e); });
+window.addEventListener('pointerup', () => { jisuStartPosDragging = false; });
+el.jisuStartPosCancelBtn.addEventListener('click', () => el.jisuStartPosOverlay.classList.add('hidden'));
+el.jisuStartPosConfirmBtn.addEventListener('click', async () => {
+  await patchCurrentScreen({ jisuStartPos: jisuStartPosDraft });
+  showSaveNote();
+  el.jisuStartPosOverlay.classList.add('hidden');
+});
+
 /* ===== 상태창 — 프레임/화살표는 castGaugeImageSlot(renderCastGaugeImageSlot
-   참고)과 같은 단일 슬롯 업로드 패턴이고, 숫자글꼴은 0~9 자리마다 그
-   패턴을 반복한다. 저장 형태는 fishingConfig.statusWindow 한 덩어리인데
-   setFishingConfig가 최상위 키만 얕게(Object.assign) 병합하기 때문에,
-   그 안의 필드 하나만 바꿀 때도 patchStatusWindow가 기존 statusWindow
-   전체를 들고 와 합친 뒤 통째로 다시 저장한다(heldFishPos처럼 필드가
-   하나뿐인 값과 달리 하위 필드가 여럿이라 이 헬퍼가 필요하다). */
+   참고)과 같은 단일 슬롯 업로드 UI 패턴이고, 숫자글꼴은 idle/모션 시트와
+   같은 "시트 하나 + 칸별 크롭 rect" 관례(STATUS_NUMBER_FONT_DIGITS/
+   buildStatusNumberFontFrameDataUrls@fishDefs.js, openIdleFrameCropAdjuster와
+   같은 패턴의 세밀영역조절)를 따른다 — 0~9가 왼쪽부터 나란한 이미지 한
+   장을 올리면 실제 가로폭을 10등분해서 자리를 자동으로 나누고,
+   numberFontOverrides로 칸별 위치를 보정한다. 다만 castGaugeImageSlot(막대
+   게이지 배경, 배경을 그대로 둬야 함)과 달리 이 셋은 플레이 화면 위에
+   얹는 HUD 소품이라 모션 프레임과 같은 이유로 업로드 즉시 배경을 자동으로
+   투명하게 만든다(removeBackgroundOrFallback). 저장 형태는
+   fishingConfig.statusWindow 한 덩어리인데 setFishingConfig가 최상위
+   키만 얕게(Object.assign) 병합하기 때문에, 그 안의 필드 하나만 바꿀
+   때도 patchStatusWindow가 기존 statusWindow 전체를 들고 와 합친 뒤
+   통째로 다시 저장한다(heldFishPos처럼 필드가 하나뿐인 값과 달리 하위
+   필드가 여럿이라 이 헬퍼가 필요하다). */
 const DEFAULT_STATUS_WINDOW = {
   frameAssetId: null,
   arrowAssetId: null,
-  numberFontAssetIds: {},
-  numberFontAdjust: { width: 16, height: 22, gap: 2 },
+  numberFontSheetAssetId: null,
+  numberFontOverrides: {},
+  numberFontAdjust: { width: 16, height: 22 },
   datePos: null,
   timePos: null,
-  pointsPos: null,
+  digitPositions: [],
   arrowPivot: null,
 };
-const STATUS_DIGITS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
 function currentStatusWindow() {
   const sw = fishingConfig.statusWindow || {};
   return Object.assign({}, DEFAULT_STATUS_WINDOW, sw, {
-    numberFontAssetIds: Object.assign({}, sw.numberFontAssetIds || {}),
+    numberFontOverrides: Object.assign({}, sw.numberFontOverrides || {}),
     numberFontAdjust: Object.assign({}, DEFAULT_STATUS_WINDOW.numberFontAdjust, sw.numberFontAdjust || {}),
+    digitPositions: (sw.digitPositions || DEFAULT_STATUS_WINDOW.digitPositions).slice(),
   });
 }
 async function patchStatusWindow(partial) {
@@ -5018,6 +5622,64 @@ async function patchStatusWindow(partial) {
   fishingConfig = await AssetDB.setFishingConfig({ statusWindow: next });
   showSaveNote();
   return fishingConfig.statusWindow;
+}
+
+// 상태창 이미지 3종(프레임/화살표/숫자글꼴) 각각의 "✂ 배경 제거" — 아이템창
+// 배경의 cutoutItemWindowBg와 같은 패턴(이미 올려둔 이미지를 다시 불러와
+// AI 배경 제거 후 같은 자리에 새 에셋으로 덮어쓴다).
+async function cutoutStatusFrame(btn) {
+  const sw = currentStatusWindow();
+  if (!sw.frameAssetId) return;
+  const asset = await AssetDB.getAsset(sw.frameAssetId).catch(() => null);
+  if (!asset) return;
+  if (btn) btn.disabled = true;
+  try {
+    const srcBlob = await dataUrlToBlob(asset.dataUrl);
+    const resultBlob = await removeBackgroundOrFallback(srcBlob);
+    const newAsset = await AssetDB.addAsset({ type: 'fishing-status-frame', name: 'status-frame-cutout.png', blob: resultBlob });
+    await patchStatusWindow({ frameAssetId: newAsset.id });
+    renderStatusFrameSlot();
+  } catch (err) {
+    DevDiag.show('상태창 프레임 배경 제거 실패: ' + (err && err.message ? err.message : err));
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+async function cutoutStatusArrow(btn) {
+  const sw = currentStatusWindow();
+  if (!sw.arrowAssetId) return;
+  const asset = await AssetDB.getAsset(sw.arrowAssetId).catch(() => null);
+  if (!asset) return;
+  if (btn) btn.disabled = true;
+  try {
+    const srcBlob = await dataUrlToBlob(asset.dataUrl);
+    const resultBlob = await removeBackgroundOrFallback(srcBlob);
+    const newAsset = await AssetDB.addAsset({ type: 'fishing-status-arrow', name: 'status-arrow-cutout.png', blob: resultBlob });
+    await patchStatusWindow({ arrowAssetId: newAsset.id });
+    renderStatusArrowSlot();
+  } catch (err) {
+    DevDiag.show('화살표 배경 제거 실패: ' + (err && err.message ? err.message : err));
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+async function cutoutStatusNumberFontSheet(btn) {
+  const sw = currentStatusWindow();
+  if (!sw.numberFontSheetAssetId) return;
+  const asset = await AssetDB.getAsset(sw.numberFontSheetAssetId).catch(() => null);
+  if (!asset) return;
+  if (btn) btn.disabled = true;
+  try {
+    const srcBlob = await dataUrlToBlob(asset.dataUrl);
+    const resultBlob = await removeBackgroundOrFallback(srcBlob);
+    const newAsset = await AssetDB.addAsset({ type: 'fishing-status-number-font-sheet', name: 'status-number-font-cutout.png', blob: resultBlob });
+    await patchStatusWindow({ numberFontSheetAssetId: newAsset.id });
+    renderStatusNumberFontTab();
+  } catch (err) {
+    DevDiag.show('숫자글꼴 배경 제거 실패: ' + (err && err.message ? err.message : err));
+  } finally {
+    if (btn) btn.disabled = false;
+  }
 }
 
 // 상태창 프레임 — 단일 슬롯 업로드.
@@ -5030,7 +5692,8 @@ async function renderStatusFrameSlot() {
     const slot = document.createElement('div');
     slot.className = 'frame-slot';
     slot.innerHTML = `${asset ? `<img src="${asset.dataUrl}" alt="">` : ''}
-      <div class="frame-actions"><button type="button" class="frame-mini-btn danger" data-act="del">✕</button></div>`;
+      <div class="frame-actions"><button type="button" class="frame-mini-btn" data-act="cutout" title="배경 제거">✂</button><button type="button" class="frame-mini-btn danger" data-act="del">✕</button></div>`;
+    slot.querySelector('[data-act=cutout]').addEventListener('click', (e) => cutoutStatusFrame(e.currentTarget));
     slot.querySelector('[data-act=del]').addEventListener('click', async () => {
       await patchStatusWindow({ frameAssetId: null });
       renderStatusFrameSlot();
@@ -5039,7 +5702,7 @@ async function renderStatusFrameSlot() {
   } else {
     el.statusFrameAddBtn.classList.remove('hidden');
   }
-  updateStatusLayoutBtnState();
+  updateStatusAssembleBtnState();
 }
 el.statusFrameAddBtn.addEventListener('click', () => el.statusFrameFileInput.click());
 el.statusFrameFileInput.addEventListener('change', async () => {
@@ -5048,7 +5711,8 @@ el.statusFrameFileInput.addEventListener('change', async () => {
   if (!file) return;
   el.statusFrameAddBtn.disabled = true;
   try {
-    const asset = await AssetDB.addAsset({ type: 'fishing-status-frame', name: file.name, blob: file });
+    const blob = await removeBackgroundOrFallback(file); // 플레이 화면 위에 얹는 HUD 프레임이라 나머지 소품 이미지처럼 배경을 투명하게 만든다
+    const asset = await AssetDB.addAsset({ type: 'fishing-status-frame', name: file.name, blob });
     await patchStatusWindow({ frameAssetId: asset.id });
     renderStatusFrameSlot();
   } finally {
@@ -5068,7 +5732,8 @@ async function renderStatusArrowSlot() {
     const slot = document.createElement('div');
     slot.className = 'frame-slot';
     slot.innerHTML = `${asset ? `<img src="${asset.dataUrl}" alt="">` : ''}
-      <div class="frame-actions"><button type="button" class="frame-mini-btn danger" data-act="del">✕</button></div>`;
+      <div class="frame-actions"><button type="button" class="frame-mini-btn" data-act="cutout" title="배경 제거">✂</button><button type="button" class="frame-mini-btn danger" data-act="del">✕</button></div>`;
+    slot.querySelector('[data-act=cutout]').addEventListener('click', (e) => cutoutStatusArrow(e.currentTarget));
     slot.querySelector('[data-act=del]').addEventListener('click', async () => {
       await patchStatusWindow({ arrowAssetId: null });
       renderStatusArrowSlot();
@@ -5085,7 +5750,8 @@ el.statusArrowFileInput.addEventListener('change', async () => {
   if (!file) return;
   el.statusArrowAddBtn.disabled = true;
   try {
-    const asset = await AssetDB.addAsset({ type: 'fishing-status-arrow', name: file.name, blob: file });
+    const blob = await removeBackgroundOrFallback(file); // 바늘 아이콘도 프레임과 같은 이유로 배경을 투명하게 만든다
+    const asset = await AssetDB.addAsset({ type: 'fishing-status-arrow', name: file.name, blob });
     await patchStatusWindow({ arrowAssetId: asset.id });
     renderStatusArrowSlot();
   } finally {
@@ -5093,62 +5759,118 @@ el.statusArrowFileInput.addEventListener('change', async () => {
   }
 });
 
-// 숫자글꼴 — 0~9 슬롯 10개, 각자 위와 같은 단일 업로드 패턴이지만 파일
-// 입력을 하나 공유한다 — statusNumberFontUploadDigit로 지금 누른 자리를
-// 기억해뒀다가 change에서 그 자리에 저장한다.
-let statusNumberFontUploadDigit = null;
-function renderStatusNumberFontSlots() {
+// 숫자글꼴 — jisu/youngwoo idle 시트(renderIdleSheetPreview/
+// renderIdleFrameGrid/openIdleFrameCropAdjuster/confirmIdleFrameCrop)와
+// 완전히 같은 "시트 하나 + 칸별 크롭 rect" 패턴을, 방향 4칸 대신 숫자
+// 10칸(STATUS_NUMBER_FONT_DIGITS@fishDefs.js)에 적용한다. 시트를 새로
+// 올리거나 지우면 그 시트 기준으로 잡아뒀던 칸 보정도 같이 초기화한다
+// (idle 시트 제거와 같은 원칙 — 새 시트에 엉뚱한 좌표가 남지 않게).
+let statusNumberFontSheetAsset = null;
+let statusNumberFontSheetDims = null;
+async function renderStatusNumberFontSheetPreview() {
   const sw = currentStatusWindow();
-  el.statusNumberFontSlots.innerHTML = '';
-  STATUS_DIGITS.forEach(digit => {
-    const assetId = sw.numberFontAssetIds[digit];
-    const slot = document.createElement('div');
-    slot.className = 'frame-slot';
-    slot.dataset.digit = digit;
-    slot.innerHTML = `<span class="frame-index">${digit}</span>
-      <div class="frame-actions">${assetId ? '<button type="button" class="frame-mini-btn danger" data-act="del">✕</button>' : ''}</div>`;
-    slot.addEventListener('click', (e) => {
-      if (e.target.closest('[data-act=del]')) return;
-      statusNumberFontUploadDigit = digit;
-      el.statusNumberFontFileInput.click();
+  el.statusNumberFontSheetFrame.querySelectorAll('img').forEach(img => img.remove());
+  const asset = sw.numberFontSheetAssetId ? await AssetDB.getAsset(sw.numberFontSheetAssetId).catch(() => null) : null;
+  if (!asset) {
+    el.statusNumberFontSheetEmpty.classList.remove('hidden');
+    el.statusNumberFontSheetCutoutBtn.classList.add('hidden');
+    el.statusNumberFontSheetRemoveBtn.classList.add('hidden');
+    el.statusNumberFontSheetFrame.style.removeProperty('--motion-ar');
+    return null;
+  }
+  el.statusNumberFontSheetEmpty.classList.add('hidden');
+  el.statusNumberFontSheetCutoutBtn.classList.remove('hidden');
+  el.statusNumberFontSheetRemoveBtn.classList.remove('hidden');
+  const img = document.createElement('img');
+  img.src = asset.dataUrl;
+  img.alt = '';
+  el.statusNumberFontSheetFrame.appendChild(img);
+  return asset;
+}
+function renderStatusNumberFontGrid(sheetAsset, sheetDims) {
+  const sw = currentStatusWindow();
+  const overrides = sw.numberFontOverrides || {};
+  const cells = STATUS_NUMBER_FONT_DIGITS.map((digit, i) => {
+    const override = overrides[digit];
+    const rect = override || (sheetDims ? getStatusNumberFontDefaultCropRect(i, sheetDims.width, sheetDims.height) : null);
+    const iconStyle = (sheetAsset && rect)
+      ? (() => {
+          const style = getFishCropStyle(rect, sheetDims.width, sheetDims.height, 64);
+          return `background-image:url('${sheetAsset.dataUrl}');background-position:${style.backgroundPosition};background-size:${style.backgroundSize};background-repeat:no-repeat;image-rendering:pixelated`;
+        })()
+      : '';
+    return `
+      <div class="frame-slot${sheetAsset && rect ? ' fish-icon-tappable' : ''}" style="${iconStyle}" data-digit="${digit}">
+        <span class="frame-index">${digit}${override ? ' ✓' : ''}</span>
+      </div>
+    `;
+  });
+  el.statusNumberFontSlots.innerHTML = cells.join('');
+  if (sheetAsset && sheetDims) {
+    el.statusNumberFontSlots.querySelectorAll('[data-digit]').forEach(cellEl => {
+      cellEl.addEventListener('click', () => openStatusNumberFontCropAdjuster(cellEl.dataset.digit, sheetAsset, sheetDims));
     });
-    const delBtn = slot.querySelector('[data-act=del]');
-    if (delBtn) {
-      delBtn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        const next = Object.assign({}, sw.numberFontAssetIds);
-        delete next[digit];
-        await patchStatusWindow({ numberFontAssetIds: next });
-        renderStatusNumberFontSlots();
-      });
-    }
-    el.statusNumberFontSlots.appendChild(slot);
-    if (assetId) {
-      AssetDB.getAsset(assetId).then(asset => {
-        if (!asset) return;
-        const img = document.createElement('img');
-        img.src = asset.dataUrl;
-        img.alt = digit;
-        slot.insertBefore(img, slot.firstChild);
-      }).catch(() => {});
+  }
+}
+function openStatusNumberFontCropAdjuster(digit, sheetAsset, sheetDims) {
+  const overrides = currentStatusWindow().numberFontOverrides || {};
+  const index = STATUS_NUMBER_FONT_DIGITS.indexOf(digit);
+  const existingRect = overrides[digit] || (sheetDims ? getStatusNumberFontDefaultCropRect(index, sheetDims.width, sheetDims.height) : { cx: 0.5, cy: 0.5, size: 0.1 });
+  const eraseTarget = { assetType: 'fishing-status-number-font-sheet', save: (assetId) => patchStatusWindow({ numberFontSheetAssetId: assetId }) };
+  openCropAdjuster(sheetAsset.dataUrl, existingRect, null, (rect) => confirmStatusNumberFontCrop(rect, digit), null, null, null, eraseTarget);
+}
+// 모든 자리가 같은 숫자글꼴이라 크롭 크기(size)가 자리마다 다르면 숫자가
+// 자리마다 커졌다 작아졌다 하는 것처럼 보인다 — idle 시트의
+// confirmIdleFrameCrop과 같은 원칙으로, 한 자리의 크기를 바꾸면 나머지
+// 9자리도 같은 크기로 맞추고 위치(cx/cy)는 자리마다 그대로 둔다.
+async function confirmStatusNumberFontCrop(rect, digit) {
+  const current = currentStatusWindow().numberFontOverrides || {};
+  const dims = statusNumberFontSheetDims;
+  const overrides = {};
+  STATUS_NUMBER_FONT_DIGITS.forEach((d, i) => {
+    if (d === digit) {
+      overrides[d] = rect;
+    } else {
+      const existing = current[d] || (dims ? getStatusNumberFontDefaultCropRect(i, dims.width, dims.height) : null);
+      overrides[d] = existing ? Object.assign({}, existing, { size: rect.size }) : Object.assign({ cx: 0.5, cy: 0.5 }, { size: rect.size });
     }
   });
+  await patchStatusWindow({ numberFontOverrides: overrides });
+  renderStatusNumberFontTab();
 }
-el.statusNumberFontFileInput.addEventListener('change', async () => {
-  const file = el.statusNumberFontFileInput.files[0];
-  el.statusNumberFontFileInput.value = '';
-  const digit = statusNumberFontUploadDigit;
-  statusNumberFontUploadDigit = null;
-  if (!file || digit == null) return;
-  const asset = await AssetDB.addAsset({ type: 'fishing-status-digit', name: file.name, blob: file });
-  const sw = currentStatusWindow();
-  const next = Object.assign({}, sw.numberFontAssetIds, { [digit]: asset.id });
-  await patchStatusWindow({ numberFontAssetIds: next });
-  renderStatusNumberFontSlots();
+async function renderStatusNumberFontTab() {
+  const asset = await renderStatusNumberFontSheetPreview();
+  const dims = asset ? await loadImageDimensions(asset.dataUrl) : null;
+  el.statusNumberFontSheetFrame.style.setProperty('--motion-ar', dims ? (dims.width + '/' + dims.height) : '4/1');
+  statusNumberFontSheetAsset = asset;
+  statusNumberFontSheetDims = dims;
+  renderStatusNumberFontGrid(asset, dims);
+}
+el.statusNumberFontSheetUploadBtn.addEventListener('click', () => el.statusNumberFontSheetFileInput.click());
+el.statusNumberFontSheetFileInput.addEventListener('change', async () => {
+  const file = el.statusNumberFontSheetFileInput.files[0];
+  el.statusNumberFontSheetFileInput.value = '';
+  if (!file) return;
+  el.statusNumberFontSheetUploadBtn.disabled = true;
+  try {
+    const blob = await removeBackgroundOrFallback(file); // 숫자 글꼴도 소품 이미지라 배경을 투명하게 만든다
+    const asset = await AssetDB.addAsset({ type: 'fishing-status-number-font-sheet', name: file.name, blob });
+    await patchStatusWindow({ numberFontSheetAssetId: asset.id, numberFontOverrides: {} });
+    renderStatusNumberFontTab();
+  } finally {
+    el.statusNumberFontSheetUploadBtn.disabled = false;
+  }
+});
+el.statusNumberFontSheetCutoutBtn.addEventListener('click', (e) => cutoutStatusNumberFontSheet(e.currentTarget));
+el.statusNumberFontSheetRemoveBtn.addEventListener('click', async () => {
+  if (!confirm('숫자글꼴 시트를 지울까요?')) return;
+  await patchStatusWindow({ numberFontSheetAssetId: null, numberFontOverrides: {} });
+  renderStatusNumberFontTab();
 });
 
-// 숫자 상세조정(폭/높이/간격) — 슬라이더/숫자 입력 쌍(motionRowHeightInput류와
-// 같은 패턴).
+// 숫자 상세조정(폭/높이) — 슬라이더/숫자 입력 쌍(motionRowHeightInput류와
+// 같은 패턴). 간격은 더 이상 없다 — 자리마다 위치를 직접 지정하는
+// digitPositions(아래 "조립")가 그 역할을 대신한다.
 function bindStatusNumberAdjustInput(rangeEl, numberEl, key) {
   const commit = async (value) => {
     rangeEl.value = value;
@@ -5162,97 +5884,410 @@ function bindStatusNumberAdjustInput(rangeEl, numberEl, key) {
 }
 bindStatusNumberAdjustInput(el.statusNumberWidthInput, el.statusNumberWidthNumberInput, 'width');
 bindStatusNumberAdjustInput(el.statusNumberHeightInput, el.statusNumberHeightNumberInput, 'height');
-bindStatusNumberAdjustInput(el.statusNumberGapInput, el.statusNumberGapNumberInput, 'gap');
 function renderStatusNumberAdjustInputs() {
   const adjust = currentStatusWindow().numberFontAdjust;
   el.statusNumberWidthInput.value = adjust.width;
   el.statusNumberWidthNumberInput.value = adjust.width;
   el.statusNumberHeightInput.value = adjust.height;
   el.statusNumberHeightNumberInput.value = adjust.height;
-  el.statusNumberGapInput.value = adjust.gap;
-  el.statusNumberGapNumberInput.value = adjust.gap;
 }
 
-/* ===== 상태창 레이아웃 — heldFishPos류 단일 포인트 드래그 패턴을 네
-   항목(요일·날짜/시간/포인트/화살표 밑부분)으로 늘렸다. statusLayoutPills로
-   지금 옮길 항목을 고르면(기본 요일·날짜) statusLayoutStage 탭/드래그가
-   그 항목의 좌표만 갱신한다 — 나머지 세 마커도 화면에 계속 보이지만
-   rodtip-marker가 pointer-events:none이라 드래그에 끼어들지 않는다. */
-const STATUS_LAYOUT_ITEMS = [
-  { id: 'date', label: '요일·날짜', markerKey: 'statusLayoutMarkerDate', configKey: 'datePos', defaultPos: { x: 0.28, y: 0.3 } },
-  { id: 'time', label: '시간', markerKey: 'statusLayoutMarkerTime', configKey: 'timePos', defaultPos: { x: 0.72, y: 0.3 } },
-  { id: 'points', label: '포인트', markerKey: 'statusLayoutMarkerPoints', configKey: 'pointsPos', defaultPos: { x: 0.5, y: 0.6 } },
-  { id: 'arrow', label: '화살표 밑부분', markerKey: 'statusLayoutMarkerArrow', configKey: 'arrowPivot', defaultPos: { x: 0.5, y: 0.85 } },
-];
-let statusLayoutDraft = {};
-let statusLayoutSelected = 'date';
-let statusLayoutDragging = false;
-function updateStatusLayoutBtnState() {
-  el.statusLayoutEditBtn.disabled = !currentStatusWindow().frameAssetId;
+/* ===== 상태창 조립 — 낚시바/대화 탭과 같은 slide-layer 자유배치를, 상태창은
+   작은 HUD 소품이라 전체화면(statusAssembleOverlay) 하나로 몰아서 연다.
+   레이어 id 체계: 'dateLayer' | 'timeLayer'(둘 다 항상 존재, 실제 예시
+   문구를 검은 글씨·그림자 없이 미리보여주고 글자 크기도 조절) | 'arrowLayer'
+   (화살표 이미지를 올렸을 때만 존재) | `digit-${index}`(digitPositions
+   배열 인덱스, getStatusDigitPositions@fishDefs.js 참고 — 개수가 가변이라
+   "+ 숫자 자리"로 늘리고 선택 후 삭제할 수 있다). statusAssembleLayerPos/
+   setStatusAssembleLayerPos가 이 id 체계와 fishingConfig.statusWindow의
+   실제 필드(datePos/timePos/arrowPivot/digitPositions) 사이를 변환한다. */
+let selectedStatusAssembleLayerId = null;
+// 숫자 자리 다중 선택 — 토글 버튼(statusDigitMultiSelectBtn)으로 켜고 끄는
+// 별도 모드다. 켜져 있는 동안엔 숫자 자리를 탭해도 드래그를 시작하지 않고
+// selectedStatusDigitIds(Set of 'digit-N')에 넣었다 뺐다만 한다(다른 레이어
+// 종류는 이 모드와 무관하게 그대로 단일 선택+드래그). 2개 이상 고르면
+// 패널에 "세로 중앙 맞춤"(y좌표를 평균으로 통일)이, 3개 이상이면 "가로 간격
+// 일정하게"(맨 왼쪽·오른쪽은 그대로 두고 사이를 등간격으로 재배치)가 뜬다.
+let statusDigitMultiSelectMode = false;
+let selectedStatusDigitIds = new Set();
+const STATUS_ASSEMBLE_DEFAULT_HINT = '몸통을 드래그해서 옮기세요. 요일·날짜/시간을 선택하면 아래에서 글자 크기를 키울 수 있어요. 숫자 자리는 배열 순서(왼쪽부터 추가한 순서)가 높은 자리부터예요 — 실제 포인트 자릿수가 이보다 적으면 앞자리는 빈칸으로 남아요.';
+const STATUS_ASSEMBLE_MULTI_HINT = '숫자 자리를 탭해서 여러 개 고르세요. 선택된 자리를 드래그하면 선택된 것들이 한번에 같이 움직여요. 2개 이상 고르면 세로 중앙 맞춤을, 3개 이상 고르면 가로 간격을 일정하게 정리할 수 있어요.';
+function updateStatusAssembleBtnState() {
+  el.statusAssembleBtn.disabled = !currentStatusWindow().frameAssetId;
 }
-function renderStatusLayoutPills() {
-  el.statusLayoutPills.innerHTML = STATUS_LAYOUT_ITEMS.map(item =>
-    `<button type="button" class="option-pill${item.id === statusLayoutSelected ? ' active' : ''}" data-id="${item.id}">${item.label}</button>`
-  ).join('');
-  el.statusLayoutPills.querySelectorAll('.option-pill').forEach(btn => {
-    btn.addEventListener('click', () => {
-      statusLayoutSelected = btn.dataset.id;
-      renderStatusLayoutPills();
-      renderStatusLayoutMarkers();
-    });
-  });
+function setStatusDigitMultiSelectMode(on) {
+  statusDigitMultiSelectMode = on;
+  selectedStatusDigitIds.clear();
+  el.statusDigitMultiSelectBtn.classList.toggle('active', on);
+  el.statusDigitMultiSelectBtn.textContent = on ? '✓ 다중 선택 중' : '☐ 다중 선택';
+  el.statusAssembleHint.textContent = on ? STATUS_ASSEMBLE_MULTI_HINT : STATUS_ASSEMBLE_DEFAULT_HINT;
+  if (on) selectedStatusAssembleLayerId = null;
+  renderStatusAssembleStage();
 }
-function renderStatusLayoutMarkers() {
-  STATUS_LAYOUT_ITEMS.forEach(item => {
-    const pos = statusLayoutDraft[item.configKey] || item.defaultPos;
-    const markerEl = el[item.markerKey];
-    markerEl.style.left = (pos.x * 100) + '%';
-    markerEl.style.top = (pos.y * 100) + '%';
-    markerEl.classList.toggle('selected', item.id === statusLayoutSelected);
-  });
+function toggleStatusDigitMultiSelect(id, layerEl) {
+  if (selectedStatusDigitIds.has(id)) selectedStatusDigitIds.delete(id);
+  else selectedStatusDigitIds.add(id);
+  layerEl.classList.toggle('multi-selected', selectedStatusDigitIds.has(id));
+  renderStatusAssemblePanel();
 }
-async function openStatusLayoutEditor() {
+function statusAssembleLayerPos(sw, id) {
+  if (id === 'dateLayer') return sw.datePos || { x: 0.28, y: 0.3, fontSize: 9.5 };
+  if (id === 'timeLayer') return sw.timePos || { x: 0.72, y: 0.3, fontSize: 9.5 };
+  if (id === 'arrowLayer') return sw.arrowPivot || { x: 0.5, y: 0.85 };
+  const m = /^digit-(\d+)$/.exec(id);
+  if (m) return getStatusDigitPositions(sw)[Number(m[1])] || { x: 0.5, y: 0.6 };
+  return { x: 0.5, y: 0.5 };
+}
+async function setStatusAssembleLayerPos(id, patch) {
   const sw = currentStatusWindow();
-  if (!sw.frameAssetId) return;
-  statusLayoutDraft = { datePos: sw.datePos, timePos: sw.timePos, pointsPos: sw.pointsPos, arrowPivot: sw.arrowPivot };
-  statusLayoutSelected = 'date';
-  const asset = await AssetDB.getAsset(sw.frameAssetId).catch(() => null);
-  el.statusLayoutImg.src = asset ? asset.dataUrl : '';
-  const dims = asset ? await new Promise(resolve => {
-    const img = new Image();
-    img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
-    img.onerror = () => resolve(null);
-    img.src = asset.dataUrl;
-  }) : null;
-  el.statusLayoutStage.style.setProperty('--heldfish-ar', dims ? (dims.w + '/' + dims.h) : '2/1');
-  renderStatusLayoutPills();
-  renderStatusLayoutMarkers();
-  el.statusLayoutOverlay.classList.remove('hidden');
+  const merged = Object.assign({}, statusAssembleLayerPos(sw, id), patch);
+  if (id === 'dateLayer') return patchStatusWindow({ datePos: merged });
+  if (id === 'timeLayer') return patchStatusWindow({ timePos: merged });
+  if (id === 'arrowLayer') return patchStatusWindow({ arrowPivot: merged });
+  const m = /^digit-(\d+)$/.exec(id);
+  if (m) {
+    const list = getStatusDigitPositions(sw).slice();
+    list[Number(m[1])] = merged;
+    return patchStatusWindow({ digitPositions: list });
+  }
 }
-function updateStatusLayoutFromEvent(e) {
-  const item = STATUS_LAYOUT_ITEMS.find(i => i.id === statusLayoutSelected);
-  if (!item) return;
-  const rect = el.statusLayoutStage.getBoundingClientRect();
-  statusLayoutDraft[item.configKey] = {
-    x: clamp01((e.clientX - rect.left) / rect.width),
-    y: clamp01((e.clientY - rect.top) / rect.height),
-  };
-  renderStatusLayoutMarkers();
+// 숫자 자리 예시 미리보기 — getFishCropStyle(fishDefs.js)은 정사각형 표시
+// 칸 하나만 다루는데, 숫자 자리는 폭·높이가 다른 직사각(numberFontAdjust)일
+// 수 있어서(실제 플레이도 정사각으로 잘라낸 원본을 그 직사각 칸에 늘려
+// 그린다) x/y 배율을 따로 계산하는 버전이 하나 더 필요하다.
+function statusAssembleDigitBgStyle(rect, sheetW, sheetH, boxW, boxH) {
+  const shortSide = Math.min(sheetW, sheetH);
+  const cropSize = rect.size * shortSide;
+  const scaleX = boxW / cropSize, scaleY = boxH / cropSize;
+  const x = (rect.cx * sheetW - cropSize / 2) * scaleX;
+  const y = (rect.cy * sheetH - cropSize / 2) * scaleY;
+  return { backgroundPosition: `-${x}px -${y}px`, backgroundSize: `${sheetW * scaleX}px ${sheetH * scaleY}px` };
 }
-el.statusLayoutEditBtn.addEventListener('click', openStatusLayoutEditor);
-el.statusLayoutStage.addEventListener('pointerdown', (e) => { statusLayoutDragging = true; updateStatusLayoutFromEvent(e); });
-window.addEventListener('pointermove', (e) => { if (statusLayoutDragging) updateStatusLayoutFromEvent(e); });
-window.addEventListener('pointerup', () => { statusLayoutDragging = false; });
-el.statusLayoutCancelBtn.addEventListener('click', () => el.statusLayoutOverlay.classList.add('hidden'));
-el.statusLayoutConfirmBtn.addEventListener('click', async () => {
-  await patchStatusWindow({
-    datePos: statusLayoutDraft.datePos,
-    timePos: statusLayoutDraft.timePos,
-    pointsPos: statusLayoutDraft.pointsPos,
-    arrowPivot: statusLayoutDraft.arrowPivot,
+// 선택만 바뀔 땐 renderStatusAssembleStage()(전체 DOM 재생성 + 에셋 재조회)를
+// 부르지 않는다 — 그 방식은 선택할 때마다 스테이지가 통째로 비워졌다 다시
+// 그려져 화면이 깜빡였고, 첫 탭이 "선택"만 하고 끝나버려(pointerId를 못 잡음)
+// 실제 드래그는 두 번째 탭부터만 먹혀 이동도 잘 안 됐다. 이제 선택 표시는
+// 클래스 토글로만 하고, 같은 pointerdown 안에서 곧바로 드래그 추적까지
+// 시작해 "누르자마자 선택되고 그대로 끌 수 있게" 한다.
+function selectStatusAssembleLayer(id) {
+  if (selectedStatusAssembleLayerId === id) return;
+  selectedStatusAssembleLayerId = id;
+  el.statusAssembleStage.querySelectorAll('.status-assemble-layer').forEach(layerEl => {
+    layerEl.classList.toggle('selected', layerEl.dataset.layerId === id);
   });
-  el.statusLayoutOverlay.classList.add('hidden');
+  renderStatusAssemblePanel();
+}
+function deselectStatusAssembleLayer() {
+  if (!selectedStatusAssembleLayerId) return;
+  selectedStatusAssembleLayerId = null;
+  el.statusAssembleStage.querySelectorAll('.status-assemble-layer.selected').forEach(layerEl => layerEl.classList.remove('selected'));
+  renderStatusAssemblePanel();
+}
+const STATUS_ASSEMBLE_DRAG_THRESHOLD = 4; // px — 다중 선택된 자리를 살짝만 누르면 탭(선택 해제)으로, 이 이상 밀면 드래그(그룹 이동)로 본다
+function attachStatusAssembleLayerMove(layerEl, id) {
+  layerEl.dataset.layerId = id;
+  let pointerId = null, start = null, startPos = null;
+  // 다중 선택 모드 전용 — 이미 선택된 자리를 누르면 즉시 토글하지 않고 뒀다가,
+  // 그대로 떼면(움직임 없으면) 탭으로 보고 선택 해제, 밀면 드래그로 보고
+  // 그 순간 선택돼 있던 자리 전부를 같은 델타만큼 같이 옮긴다(multiDragFrom
+  // 이 각 자리의 드래그 시작 위치를 들고 있는다). 아직 선택 안 된 자리는
+  // 누르자마자 선택만 되고(기존과 동일) 그 프레스로는 드래그하지 않는다.
+  let multiDragFrom = null, multiDidDrag = false;
+  layerEl.addEventListener('pointerdown', (e) => {
+    e.stopPropagation();
+    if (statusDigitMultiSelectMode && /^digit-/.test(id)) {
+      if (!selectedStatusDigitIds.has(id)) {
+        toggleStatusDigitMultiSelect(id, layerEl);
+        return;
+      }
+      pointerId = e.pointerId;
+      layerEl.setPointerCapture(pointerId);
+      start = { x: e.clientX, y: e.clientY };
+      multiDidDrag = false;
+      const sw = currentStatusWindow();
+      multiDragFrom = new Map();
+      selectedStatusDigitIds.forEach(sid => multiDragFrom.set(sid, statusAssembleLayerPos(sw, sid)));
+      return;
+    }
+    selectStatusAssembleLayer(id);
+    pointerId = e.pointerId;
+    layerEl.setPointerCapture(pointerId);
+    start = { x: e.clientX, y: e.clientY };
+    startPos = statusAssembleLayerPos(currentStatusWindow(), id);
+    layerEl._pendingPos = null;
+  });
+  layerEl.addEventListener('pointermove', (e) => {
+    if (e.pointerId !== pointerId) return;
+    const stageRect = el.statusAssembleStage.getBoundingClientRect();
+    if (statusDigitMultiSelectMode && /^digit-/.test(id)) {
+      if (!multiDragFrom) return;
+      const dxPx = e.clientX - start.x, dyPx = e.clientY - start.y;
+      if (!multiDidDrag) {
+        if (Math.hypot(dxPx, dyPx) < STATUS_ASSEMBLE_DRAG_THRESHOLD) return;
+        multiDidDrag = true;
+      }
+      const dx = dxPx / stageRect.width, dy = dyPx / stageRect.height;
+      const pending = {};
+      multiDragFrom.forEach((pos, sid) => {
+        const nx = clamp01(pos.x + dx), ny = clamp01(pos.y + dy);
+        pending[sid] = { x: nx, y: ny };
+        const sel = el.statusAssembleStage.querySelector(`.status-assemble-layer[data-layer-id="${sid}"]`);
+        if (sel) { sel.style.left = nx * 100 + '%'; sel.style.top = ny * 100 + '%'; }
+      });
+      layerEl._pendingMultiPos = pending;
+      return;
+    }
+    const x = clamp01(startPos.x + (e.clientX - start.x) / stageRect.width);
+    const y = clamp01(startPos.y + (e.clientY - start.y) / stageRect.height);
+    layerEl.style.left = (x * 100) + '%';
+    layerEl.style.top = (y * 100) + '%';
+    layerEl._pendingPos = { x, y };
+  });
+  ['pointerup', 'pointercancel'].forEach(evt => layerEl.addEventListener(evt, async (e) => {
+    if (e.pointerId !== pointerId) return;
+    pointerId = null;
+    if (statusDigitMultiSelectMode && /^digit-/.test(id)) {
+      if (multiDidDrag && layerEl._pendingMultiPos) {
+        const pending = layerEl._pendingMultiPos;
+        layerEl._pendingMultiPos = null;
+        const sw = currentStatusWindow();
+        const list = getStatusDigitPositions(sw).slice();
+        Object.keys(pending).forEach(sid => {
+          const m = /^digit-(\d+)$/.exec(sid);
+          if (m) list[Number(m[1])] = Object.assign({}, list[Number(m[1])], pending[sid]);
+        });
+        await patchStatusWindow({ digitPositions: list });
+        renderStatusAssembleStage();
+      } else if (!multiDidDrag) {
+        toggleStatusDigitMultiSelect(id, layerEl);
+      }
+      multiDragFrom = null;
+      multiDidDrag = false;
+      return;
+    }
+    if (layerEl._pendingPos) {
+      const pos = layerEl._pendingPos;
+      layerEl._pendingPos = null;
+      await setStatusAssembleLayerPos(id, pos);
+    }
+  }));
+}
+function renderStatusAssembleTextLayer(id, sampleText) {
+  const sw = currentStatusWindow();
+  const pos = statusAssembleLayerPos(sw, id);
+  const layerEl = document.createElement('div');
+  layerEl.className = 'status-assemble-layer' + (selectedStatusAssembleLayerId === id ? ' selected' : '');
+  layerEl.style.left = (pos.x * 100) + '%';
+  layerEl.style.top = (pos.y * 100) + '%';
+  const textEl = document.createElement('div');
+  textEl.className = 'status-assemble-text';
+  textEl.style.fontSize = (pos.fontSize || 9.5) + 'px';
+  textEl.textContent = sampleText;
+  layerEl.appendChild(textEl);
+  attachStatusAssembleLayerMove(layerEl, id);
+  el.statusAssembleStage.appendChild(layerEl);
+}
+async function renderStatusAssembleStage() {
+  const sw = currentStatusWindow();
+  el.statusAssembleStage.innerHTML = '';
+  if (sw.frameAssetId) {
+    const asset = await AssetDB.getAsset(sw.frameAssetId).catch(() => null);
+    if (asset) {
+      const bg = document.createElement('img');
+      bg.className = 'status-assemble-stage-bg';
+      bg.src = asset.dataUrl;
+      bg.alt = '';
+      el.statusAssembleStage.appendChild(bg);
+      const dims = await loadImageDimensions(asset.dataUrl);
+      el.statusAssembleStage.style.setProperty('--status-assemble-ar', dims ? (dims.width + '/' + dims.height) : '2/1');
+    }
+  }
+  renderStatusAssembleTextLayer('dateLayer', '월. 15');
+  renderStatusAssembleTextLayer('timeLayer', '3:45 오후');
+  if (sw.arrowAssetId) {
+    const asset = await AssetDB.getAsset(sw.arrowAssetId).catch(() => null);
+    const pos = statusAssembleLayerPos(sw, 'arrowLayer');
+    const layerEl = document.createElement('div');
+    layerEl.className = 'status-assemble-layer' + (selectedStatusAssembleLayerId === 'arrowLayer' ? ' selected' : '');
+    layerEl.style.left = (pos.x * 100) + '%';
+    layerEl.style.top = (pos.y * 100) + '%';
+    if (asset) {
+      const img = document.createElement('img');
+      img.className = 'status-assemble-arrow-img';
+      img.src = asset.dataUrl;
+      img.alt = '';
+      layerEl.appendChild(img);
+    }
+    attachStatusAssembleLayerMove(layerEl, 'arrowLayer');
+    el.statusAssembleStage.appendChild(layerEl);
+  }
+  const slots = getStatusDigitPositions(sw);
+  const fontAsset = sw.numberFontSheetAssetId ? await AssetDB.getAsset(sw.numberFontSheetAssetId).catch(() => null) : null;
+  const fontDims = fontAsset ? await loadImageDimensions(fontAsset.dataUrl) : null;
+  const sampleDigits = '1234567890';
+  slots.forEach((pos, i) => {
+    const id = 'digit-' + i;
+    const layerEl = document.createElement('div');
+    layerEl.className = 'status-assemble-layer' + (selectedStatusAssembleLayerId === id ? ' selected' : '') + (selectedStatusDigitIds.has(id) ? ' multi-selected' : '');
+    layerEl.style.left = (pos.x * 100) + '%';
+    layerEl.style.top = (pos.y * 100) + '%';
+    const digitEl = document.createElement('div');
+    digitEl.className = 'status-assemble-digit';
+    digitEl.style.width = sw.numberFontAdjust.width + 'px';
+    digitEl.style.height = sw.numberFontAdjust.height + 'px';
+    const sampleDigit = sampleDigits[i % sampleDigits.length];
+    if (fontAsset && fontDims) {
+      const rect = sw.numberFontOverrides[sampleDigit] || getStatusNumberFontDefaultCropRect(STATUS_NUMBER_FONT_DIGITS.indexOf(sampleDigit), fontDims.width, fontDims.height);
+      const style = statusAssembleDigitBgStyle(rect, fontDims.width, fontDims.height, sw.numberFontAdjust.width, sw.numberFontAdjust.height);
+      digitEl.style.backgroundImage = `url('${fontAsset.dataUrl}')`;
+      digitEl.style.backgroundPosition = style.backgroundPosition;
+      digitEl.style.backgroundSize = style.backgroundSize;
+      digitEl.style.backgroundRepeat = 'no-repeat';
+      digitEl.style.border = 'none';
+    } else {
+      digitEl.textContent = sampleDigit;
+    }
+    layerEl.appendChild(digitEl);
+    attachStatusAssembleLayerMove(layerEl, id);
+    el.statusAssembleStage.appendChild(layerEl);
+  });
+  renderStatusAssemblePanel();
+}
+function renderStatusAssemblePanel() {
+  if (statusDigitMultiSelectMode) {
+    const n = selectedStatusDigitIds.size;
+    el.statusAssembleFontSizeRow.classList.add('hidden');
+    el.deleteStatusDigitBtn.classList.add('hidden');
+    el.statusAssemblePanelLabel.textContent = n === 0 ? '숫자 자리를 탭해서 선택하세요' : `숫자 자리 ${n}개 선택됨`;
+    el.statusAssembleAlignRow.classList.remove('hidden'); // 개수와 무관하게 항상 자리를 차지해야 2개/3개 문턱을 넘을 때마다 패널 높이가 바뀌어 스테이지가 튀는 걸 막는다 — 버튼은 disabled로만 막는다
+    el.statusAssembleAlignYBtn.disabled = n < 2;
+    el.statusAssembleDistributeBtn.disabled = n < 3;
+    return;
+  }
+  el.statusAssembleAlignRow.classList.add('hidden');
+  const id = selectedStatusAssembleLayerId;
+  if (!id) {
+    el.statusAssemblePanelLabel.textContent = '레이어를 탭해서 선택하세요';
+    el.statusAssembleFontSizeRow.classList.add('hidden');
+    el.deleteStatusDigitBtn.classList.add('hidden');
+    return;
+  }
+  const isText = id === 'dateLayer' || id === 'timeLayer';
+  const isDigit = /^digit-/.test(id);
+  el.statusAssemblePanelLabel.textContent = id === 'dateLayer' ? '요일·날짜'
+    : id === 'timeLayer' ? '시간'
+    : id === 'arrowLayer' ? '화살표'
+    : `숫자 자리 ${Number(id.slice(6)) + 1} (왼쪽부터 ${Number(id.slice(6)) + 1}번째로 높은 자리)`;
+  el.statusAssembleFontSizeRow.classList.toggle('hidden', !isText);
+  if (isText) {
+    const pos = statusAssembleLayerPos(currentStatusWindow(), id);
+    el.statusAssembleFontSizeInput.value = pos.fontSize || 9.5;
+    el.statusAssembleFontSizeNumberInput.value = pos.fontSize || 9.5;
+  }
+  el.deleteStatusDigitBtn.classList.toggle('hidden', !isDigit);
+}
+function commitStatusAssembleFontSize(value) {
+  const id = selectedStatusAssembleLayerId;
+  if (id !== 'dateLayer' && id !== 'timeLayer') return;
+  el.statusAssembleFontSizeInput.value = value;
+  el.statusAssembleFontSizeNumberInput.value = value;
+  const textEl = el.statusAssembleStage.querySelector('.status-assemble-layer.selected .status-assemble-text');
+  if (textEl) textEl.style.fontSize = value + 'px'; // 슬라이더를 드래그하는 동안은 전체 재조립(비동기 에셋 재조회) 없이 이 텍스트만 바로 갱신
+  setStatusAssembleLayerPos(id, { fontSize: value });
+}
+el.statusAssembleFontSizeInput.addEventListener('input', () => commitStatusAssembleFontSize(Number(el.statusAssembleFontSizeInput.value)));
+el.statusAssembleFontSizeNumberInput.addEventListener('change', () => commitStatusAssembleFontSize(Number(el.statusAssembleFontSizeNumberInput.value)));
+el.addStatusDigitBtn.addEventListener('click', async () => {
+  const list = getStatusDigitPositions(currentStatusWindow()).slice();
+  const last = list[list.length - 1] || { x: 0.5, y: 0.6 };
+  list.push({ x: clamp01(last.x + 0.12), y: last.y });
+  await patchStatusWindow({ digitPositions: list });
+  if (statusDigitMultiSelectMode) selectedStatusDigitIds.add('digit-' + (list.length - 1));
+  else selectedStatusAssembleLayerId = 'digit-' + (list.length - 1);
+  renderStatusAssembleStage();
 });
+el.deleteStatusDigitBtn.addEventListener('click', async () => {
+  const m = /^digit-(\d+)$/.exec(selectedStatusAssembleLayerId || '');
+  if (!m) return;
+  const list = getStatusDigitPositions(currentStatusWindow()).slice();
+  list.splice(Number(m[1]), 1);
+  await patchStatusWindow({ digitPositions: list });
+  selectedStatusAssembleLayerId = null;
+  renderStatusAssembleStage();
+});
+el.statusAssembleStage.addEventListener('pointerdown', (e) => {
+  if (e.target !== el.statusAssembleStage) return;
+  if (statusDigitMultiSelectMode) {
+    if (selectedStatusDigitIds.size === 0) return;
+    selectedStatusDigitIds.clear();
+    renderStatusAssembleStage();
+    return;
+  }
+  deselectStatusAssembleLayer();
+});
+el.statusDigitMultiSelectBtn.addEventListener('click', () => setStatusDigitMultiSelectMode(!statusDigitMultiSelectMode));
+el.statusAssembleAlignYBtn.addEventListener('click', async () => {
+  if (selectedStatusDigitIds.size < 2) return;
+  const sw = currentStatusWindow();
+  const list = getStatusDigitPositions(sw).slice();
+  const ids = Array.from(selectedStatusDigitIds);
+  const avgY = ids.reduce((sum, id) => sum + statusAssembleLayerPos(sw, id).y, 0) / ids.length;
+  ids.forEach(id => {
+    const m = /^digit-(\d+)$/.exec(id);
+    list[Number(m[1])] = Object.assign({}, list[Number(m[1])], { y: avgY });
+  });
+  await patchStatusWindow({ digitPositions: list });
+  renderStatusAssembleStage();
+});
+el.statusAssembleDistributeBtn.addEventListener('click', async () => {
+  if (selectedStatusDigitIds.size < 3) return;
+  const sw = currentStatusWindow();
+  const list = getStatusDigitPositions(sw).slice();
+  const ids = Array.from(selectedStatusDigitIds).sort((a, b) => statusAssembleLayerPos(sw, a).x - statusAssembleLayerPos(sw, b).x);
+  const minX = statusAssembleLayerPos(sw, ids[0]).x;
+  const maxX = statusAssembleLayerPos(sw, ids[ids.length - 1]).x;
+  const step = (maxX - minX) / (ids.length - 1);
+  ids.forEach((id, i) => {
+    const m = /^digit-(\d+)$/.exec(id);
+    list[Number(m[1])] = Object.assign({}, list[Number(m[1])], { x: clamp01(minX + step * i) });
+  });
+  await patchStatusWindow({ digitPositions: list });
+  renderStatusAssembleStage();
+});
+
+// ===== 상태창 조립 줌 — 작은 HUD 소품이라 1배로는 숫자 자리 하나하나를
+// 정밀하게 맞추기 어려워서 추가한다. transform:scale이라 스테이지의
+// 실제 레이아웃 크기(퍼센트 좌표 기준)는 그대로고, 드래그 계산은 매번
+// getBoundingClientRect()(변환 반영된 값)를 다시 읽으므로 확대 배율과
+// 무관하게 좌표 계산이 그대로 맞는다.
+const STATUS_ASSEMBLE_MIN_ZOOM = 1, STATUS_ASSEMBLE_MAX_ZOOM = 3, STATUS_ASSEMBLE_ZOOM_STEP = 0.25;
+let statusAssembleZoom = 1;
+function setStatusAssembleZoom(z) {
+  statusAssembleZoom = Math.min(STATUS_ASSEMBLE_MAX_ZOOM, Math.max(STATUS_ASSEMBLE_MIN_ZOOM, z));
+  el.statusAssembleStage.style.setProperty('--status-assemble-zoom', statusAssembleZoom);
+  el.statusAssembleZoomResetBtn.textContent = Math.round(statusAssembleZoom * 100) + '%';
+}
+el.statusAssembleZoomOutBtn.addEventListener('click', () => setStatusAssembleZoom(statusAssembleZoom - STATUS_ASSEMBLE_ZOOM_STEP));
+el.statusAssembleZoomInBtn.addEventListener('click', () => setStatusAssembleZoom(statusAssembleZoom + STATUS_ASSEMBLE_ZOOM_STEP));
+el.statusAssembleZoomResetBtn.addEventListener('click', () => setStatusAssembleZoom(1));
+el.statusAssembleStageWrap.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  setStatusAssembleZoom(statusAssembleZoom + (e.deltaY < 0 ? STATUS_ASSEMBLE_ZOOM_STEP : -STATUS_ASSEMBLE_ZOOM_STEP));
+}, { passive: false });
+async function openStatusAssembleEditor() {
+  if (!currentStatusWindow().frameAssetId) return;
+  selectedStatusAssembleLayerId = null;
+  statusDigitMultiSelectMode = false;
+  selectedStatusDigitIds.clear();
+  el.statusDigitMultiSelectBtn.classList.remove('active');
+  el.statusDigitMultiSelectBtn.textContent = '☐ 다중 선택';
+  el.statusAssembleHint.textContent = STATUS_ASSEMBLE_DEFAULT_HINT;
+  setStatusAssembleZoom(1);
+  await renderStatusAssembleStage();
+  el.statusAssembleOverlay.classList.remove('hidden');
+}
+el.statusAssembleBtn.addEventListener('click', openStatusAssembleEditor);
+el.statusAssembleCloseBtn.addEventListener('click', () => el.statusAssembleOverlay.classList.add('hidden'));
 
 let saveNoteTimer = null;
 function showSaveNote() {
@@ -5268,9 +6303,10 @@ async function init() {
   renderCastGaugeImageSlot();
   renderStatusFrameSlot();
   renderStatusArrowSlot();
-  renderStatusNumberFontSlots();
+  renderStatusNumberFontTab();
   renderStatusNumberAdjustInputs();
   renderItemWindowBg();
+  updateItemIconGridBtnState();
   renderCastPhysicsControls();
   renderReelMotionControls();
   renderMotionTab();

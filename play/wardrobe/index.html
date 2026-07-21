@@ -112,8 +112,27 @@ function goBack() {
 el.backBtn.addEventListener('click', goBack);
 
 // 'outfit-default' has no shopItems entry (it's not for sale) — displayed
-// with a plain label instead of a catalog lookup.
-function outfitLabel(id) { return (shopItems[id] && shopItems[id].name) || '기본 코디'; }
+// with a plain label instead of a catalog lookup. Otherwise defers to
+// getShopItemName so a rename in /dev/upload shows up here too (§옷가게
+// 데이터를 실제 옷과 연동).
+function outfitLabel(id) { return (shopItems[id] && getShopItemName(shopItems[id])) || '기본 코디'; }
+
+// 보유한 옷의 실제 업로드 사진을 카드 썸네일로 미리 읽어 둔다 — 옷가게 카드와
+// 같은 lookup.
+let ownedThumbUrls = {};
+async function loadOwnedThumbs() {
+  const entries = await Promise.all(WardrobeState.getOwnedOutfitIds().map(async id => {
+    const item = shopItems[id];
+    if (!item || !item.vnOutfitId) return [id, null];
+    // …Any (not the strict 'neutral'-only lookup) — see loadItemThumbs in
+    // play/shop/index.html for why.
+    const assetId = await safeCall(() => DevGameState.getCharacterAssetIdForOutfitAny(item.characterId || 'jisoo', item.vnOutfitId));
+    if (!assetId) return [id, null];
+    const asset = await AssetDB.getAsset(assetId).catch(() => null);
+    return [id, (asset && asset.dataUrl) || null];
+  }));
+  ownedThumbUrls = Object.fromEntries(entries);
+}
 
 // requestToken guards against a stale response: if the equipped outfit
 // changes again before this lookup resolves, the earlier call's late-arriving
@@ -150,9 +169,10 @@ function renderGrid() {
   const equippedId = WardrobeState.getEquippedOutfitId();
   el.grid.innerHTML = owned.map(id => {
     const active = id === equippedId;
+    const thumbUrl = ownedThumbUrls[id];
     return `
       <button class="outfit-card${active ? ' active' : ''}" data-equip="${id}">
-        <div class="outfit-thumb">👗</div>
+        <div class="outfit-thumb">${thumbUrl ? `<img src="${thumbUrl}" alt="">` : '👗'}</div>
         <div class="outfit-name">${escapeHtml(outfitLabel(id))}</div>
         ${active ? '<div class="outfit-tag">착용 중</div>' : ''}
       </button>
@@ -179,7 +199,8 @@ async function handleEquipClick(itemId, btn) {
   updatePreview();
 }
 
-(function init() {
+(async function init() {
+  await Promise.all([safeCall(() => AssetDB.prefetchOutfitNames()), loadOwnedThumbs()]);
   renderGrid();
   updatePreview();
 })();
