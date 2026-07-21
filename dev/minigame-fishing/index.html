@@ -5911,7 +5911,7 @@ let selectedStatusAssembleLayerId = null;
 let statusDigitMultiSelectMode = false;
 let selectedStatusDigitIds = new Set();
 const STATUS_ASSEMBLE_DEFAULT_HINT = '몸통을 드래그해서 옮기세요. 요일·날짜/시간을 선택하면 아래에서 글자 크기를 키울 수 있어요. 숫자 자리는 배열 순서(왼쪽부터 추가한 순서)가 높은 자리부터예요 — 실제 포인트 자릿수가 이보다 적으면 앞자리는 빈칸으로 남아요.';
-const STATUS_ASSEMBLE_MULTI_HINT = '숫자 자리를 탭해서 여러 개 고르세요. 2개 이상 고르면 세로 중앙 맞춤을, 3개 이상 고르면 가로 간격을 일정하게 정리할 수 있어요.';
+const STATUS_ASSEMBLE_MULTI_HINT = '숫자 자리를 탭해서 여러 개 고르세요. 선택된 자리를 드래그하면 선택된 것들이 한번에 같이 움직여요. 2개 이상 고르면 세로 중앙 맞춤을, 3개 이상 고르면 가로 간격을 일정하게 정리할 수 있어요.';
 function updateStatusAssembleBtnState() {
   el.statusAssembleBtn.disabled = !currentStatusWindow().frameAssetId;
 }
@@ -5983,13 +5983,30 @@ function deselectStatusAssembleLayer() {
   el.statusAssembleStage.querySelectorAll('.status-assemble-layer.selected').forEach(layerEl => layerEl.classList.remove('selected'));
   renderStatusAssemblePanel();
 }
+const STATUS_ASSEMBLE_DRAG_THRESHOLD = 4; // px — 다중 선택된 자리를 살짝만 누르면 탭(선택 해제)으로, 이 이상 밀면 드래그(그룹 이동)로 본다
 function attachStatusAssembleLayerMove(layerEl, id) {
   layerEl.dataset.layerId = id;
   let pointerId = null, start = null, startPos = null;
+  // 다중 선택 모드 전용 — 이미 선택된 자리를 누르면 즉시 토글하지 않고 뒀다가,
+  // 그대로 떼면(움직임 없으면) 탭으로 보고 선택 해제, 밀면 드래그로 보고
+  // 그 순간 선택돼 있던 자리 전부를 같은 델타만큼 같이 옮긴다(multiDragFrom
+  // 이 각 자리의 드래그 시작 위치를 들고 있는다). 아직 선택 안 된 자리는
+  // 누르자마자 선택만 되고(기존과 동일) 그 프레스로는 드래그하지 않는다.
+  let multiDragFrom = null, multiDidDrag = false;
   layerEl.addEventListener('pointerdown', (e) => {
     e.stopPropagation();
     if (statusDigitMultiSelectMode && /^digit-/.test(id)) {
-      toggleStatusDigitMultiSelect(id, layerEl);
+      if (!selectedStatusDigitIds.has(id)) {
+        toggleStatusDigitMultiSelect(id, layerEl);
+        return;
+      }
+      pointerId = e.pointerId;
+      layerEl.setPointerCapture(pointerId);
+      start = { x: e.clientX, y: e.clientY };
+      multiDidDrag = false;
+      const sw = currentStatusWindow();
+      multiDragFrom = new Map();
+      selectedStatusDigitIds.forEach(sid => multiDragFrom.set(sid, statusAssembleLayerPos(sw, sid)));
       return;
     }
     selectStatusAssembleLayer(id);
@@ -6002,6 +6019,24 @@ function attachStatusAssembleLayerMove(layerEl, id) {
   layerEl.addEventListener('pointermove', (e) => {
     if (e.pointerId !== pointerId) return;
     const stageRect = el.statusAssembleStage.getBoundingClientRect();
+    if (statusDigitMultiSelectMode && /^digit-/.test(id)) {
+      if (!multiDragFrom) return;
+      const dxPx = e.clientX - start.x, dyPx = e.clientY - start.y;
+      if (!multiDidDrag) {
+        if (Math.hypot(dxPx, dyPx) < STATUS_ASSEMBLE_DRAG_THRESHOLD) return;
+        multiDidDrag = true;
+      }
+      const dx = dxPx / stageRect.width, dy = dyPx / stageRect.height;
+      const pending = {};
+      multiDragFrom.forEach((pos, sid) => {
+        const nx = clamp01(pos.x + dx), ny = clamp01(pos.y + dy);
+        pending[sid] = { x: nx, y: ny };
+        const sel = el.statusAssembleStage.querySelector(`.status-assemble-layer[data-layer-id="${sid}"]`);
+        if (sel) { sel.style.left = nx * 100 + '%'; sel.style.top = ny * 100 + '%'; }
+      });
+      layerEl._pendingMultiPos = pending;
+      return;
+    }
     const x = clamp01(startPos.x + (e.clientX - start.x) / stageRect.width);
     const y = clamp01(startPos.y + (e.clientY - start.y) / stageRect.height);
     layerEl.style.left = (x * 100) + '%';
@@ -6011,6 +6046,25 @@ function attachStatusAssembleLayerMove(layerEl, id) {
   ['pointerup', 'pointercancel'].forEach(evt => layerEl.addEventListener(evt, async (e) => {
     if (e.pointerId !== pointerId) return;
     pointerId = null;
+    if (statusDigitMultiSelectMode && /^digit-/.test(id)) {
+      if (multiDidDrag && layerEl._pendingMultiPos) {
+        const pending = layerEl._pendingMultiPos;
+        layerEl._pendingMultiPos = null;
+        const sw = currentStatusWindow();
+        const list = getStatusDigitPositions(sw).slice();
+        Object.keys(pending).forEach(sid => {
+          const m = /^digit-(\d+)$/.exec(sid);
+          if (m) list[Number(m[1])] = Object.assign({}, list[Number(m[1])], pending[sid]);
+        });
+        await patchStatusWindow({ digitPositions: list });
+        renderStatusAssembleStage();
+      } else if (!multiDidDrag) {
+        toggleStatusDigitMultiSelect(id, layerEl);
+      }
+      multiDragFrom = null;
+      multiDidDrag = false;
+      return;
+    }
     if (layerEl._pendingPos) {
       const pos = layerEl._pendingPos;
       layerEl._pendingPos = null;
