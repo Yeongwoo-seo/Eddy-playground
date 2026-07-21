@@ -2490,8 +2490,11 @@ async function autoRegisterCharacterPhoto(file, url, img) {
     const record = await AssetDB.addAsset({ type: 'character', name, blob: cropBlob, width: croppedImg.naturalWidth, height: croppedImg.naturalHeight, characterKey: currentCharacterKey, expression: currentExpression, outfit });
     // Only one photo per (character, [outfit,] expression) is actually
     // rendered — the newest upload for this slot becomes the active one
-    // automatically.
-    DevGameState.setCharacterAssetId(currentCharacterKey, currentExpression, record.id, outfit);
+    // automatically. Awaited so a server-write failure surfaces as
+    // '자동 등록 실패' below instead of silently leaving the slot only in
+    // this device's localStorage (see the batch-save fix for the fuller
+    // race-condition story).
+    await DevGameState.setCharacterAssetId(currentCharacterKey, currentExpression, record.id, outfit);
   } catch (err) {
     // Nothing was registered yet at this point, so it's safe to send the
     // user back to the manual editor to retry with the same photo.
@@ -2675,7 +2678,14 @@ async function confirmBatchSave() {
       const outfitLabel = outfit ? getOutfitLabel(outfit) + ' ' : '';
       const name = `${item.fileName} (${outfitLabel}${exprLabel}).png`;
       const record = await AssetDB.addAsset({ type: 'character', name, blob: cropBlob, width: croppedImg.naturalWidth, height: croppedImg.naturalHeight, characterKey: currentCharacterKey, expression: item.expression, outfit });
-      DevGameState.setCharacterAssetId(currentCharacterKey, item.expression, record.id, outfit);
+      // Awaited — this loop saves many photos in a row, and
+      // setCharacterAssetId's server write is a read-modify-write against one
+      // shared JSON map (character-assets/map.json). Without awaiting here,
+      // the next iteration's read could start before this write lands,
+      // silently dropping this entry when the later write overwrites the
+      // whole map — the photo stays visible in this device's localStorage
+      // but never reaches the server, exactly the bug this fixes.
+      await DevGameState.setCharacterAssetId(currentCharacterKey, item.expression, record.id, outfit);
       item.saved = true;
     } catch (err) {
       DevDiag.show(`저장 실패 (${item.fileName}): ` + (err && err.message ? err.message : err));
@@ -2859,8 +2869,10 @@ el.cropSaveBtn.addEventListener('click', async () => {
       const record = await AssetDB.addAsset({ type: 'character', name, blob: cropBlob, width: croppedImg.naturalWidth, height: croppedImg.naturalHeight, characterKey: currentCharacterKey, expression: currentExpression, outfit });
       // Only one photo per (character, [outfit,] expression) is actually
       // rendered — the newest upload for this slot becomes the active one
-      // automatically.
-      DevGameState.setCharacterAssetId(currentCharacterKey, currentExpression, record.id, outfit);
+      // automatically. Awaited so a server-write failure surfaces via the
+      // catch below instead of silently leaving the slot only in this
+      // device's localStorage.
+      await DevGameState.setCharacterAssetId(currentCharacterKey, currentExpression, record.id, outfit);
       await refreshList();
     }
     clearPending();
