@@ -2346,7 +2346,7 @@ async function releasePowerAndCast() {
   // 화면에 실제로 보이는 최종 프레임의 낚싯대 끝과 일치한다.
   lastRodTipPt = rodTip;
   if (throwResult.blocked) {
-    // 추가 낚시가능 영역 안에 떨어지면 낚시가 진행되지 않는다 — 캐스팅
+    // 추가 낚시가능 영역 밖에 떨어지면 낚시가 진행되지 않는다 — 캐스팅
     // 취소. 착수 지점에서 바로 사라지는 대신, 올리기 4번 프레임을 유지한
     // 채 추가 낚싯대 끝(캐릭터)으로 되감겨 돌아오는 걸 보여준 뒤에야
     // 대기 상태로 되돌린다. 되감기는 캐스팅 프레임이 아니라 올리기 4번
@@ -2492,11 +2492,11 @@ function throwSinker(power, origin, frameRect, getRodTip) {
       // 문제가 있었다. 두 프로미스가 모두 끝난 뒤(releasePowerAndCast의
       // Promise.all 다음)에야 최종 프레임 기준으로 확정한다.
       // 낚시가능 영역 판정은 캐릭터가 아니라 추가 실제로 착수한 지점
-      // 기준이다 — 그 지점이 fishableAreas 안이면 낚시가 진행되지 않는다
+      // 기준이다 — 그 지점이 fishableAreas 밖이면 낚시가 진행되지 않는다
       // (호출부 releasePowerAndCast가 blocked를 보고 waitForBite 대신
       // 바로 idle로 되돌린다).
       const landingFrac = framePxToImageFrac(origin.x + finalDx, waterY);
-      const blocked = fishableAreas.length > 0 && isInsideAnyArea(landingFrac, fishableAreas);
+      const blocked = fishableAreas.length > 0 && !isInsideAnyArea(landingFrac, fishableAreas);
       // flightMs — 이번 캐스팅이 날아간(=취소까지 걸린) 시간. 캐스팅 취소 시
       // reelSinkerBack이 되감기 이동시간으로 그대로 재사용해서, 날아간
       // 시간만큼 되돌아오게 한다(왕복 대칭).
