@@ -87,7 +87,7 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .success-dlg{position:relative;margin:0 16px calc(16px + env(safe-area-inset-bottom,0));background:rgba(5,7,10,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.1);border-radius:18px;box-shadow:0 8px 28px rgba(0,0,0,.35);padding:18px 20px;min-height:22vh;display:flex;flex-direction:column}
 .success-name{font-size:15px;font-weight:700;color:var(--cyan);margin-bottom:8px}
 .success-name:empty{display:none}
-.success-text{flex:1;font-size:16px;line-height:1.65;color:#fff;white-space:pre-wrap;word-break:keep-all}
+.success-text{flex:1;font-size:16px;line-height:1.65;color:#fff;white-space:pre-wrap;word-break:keep-all;max-height:34vh;overflow-y:auto}
 .success-foot{display:flex;justify-content:flex-end;padding-top:6px}
 /* choice-btn 스타일/애니메이션을 play/game·play/explore의 choiceIn과 동일하게
    맞춘다 — 이 화면은 대화창이 화면 하단에 고정된 구조가 아니라 카드 하나가
@@ -476,6 +476,7 @@ let successPlayer = null;
 function startSuccessDialogue() {
   el.successLayer.classList.add('show');
   successPlayer = createVNPlayer({
+    pageFit: { textEl: el.successText },
     onLineChange: (line) => {
       el.successName.textContent = line.speaker || '';
       updateSuccessAvatar(line.characterId, line.expression);
