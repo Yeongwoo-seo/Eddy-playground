@@ -412,6 +412,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   <div class="picker hidden" id="outfitPicker">
     <div class="picker-label">옷</div>
     <div class="picker-pills" id="outfitPickerPills"></div>
+    <button class="hotspot-secondary-btn" id="outfitRenameBtn" style="margin-top:8px;width:100%;border-radius:10px;padding:9px;font-family:var(--mono);font-weight:700">이 옷 이름 변경</button>
     <button class="week-dialogue-all-btn" id="outfitApplyBtn" style="margin-top:8px;width:100%;padding:9px;border-radius:10px"></button>
   </div>
   <div class="picker hidden" id="exprPicker">
@@ -971,6 +972,7 @@ const el = {
   charPickerPills: document.getElementById('charPickerPills'),
   outfitPicker: document.getElementById('outfitPicker'),
   outfitPickerPills: document.getElementById('outfitPickerPills'),
+  outfitRenameBtn: document.getElementById('outfitRenameBtn'),
   outfitApplyBtn: document.getElementById('outfitApplyBtn'),
   exprPicker: document.getElementById('exprPicker'),
   exprPickerPills: document.getElementById('exprPickerPills'),
@@ -2150,8 +2152,9 @@ async function renderOutfitPicker() {
   if (!show) return;
   if (!outfits.some(o => o.id === currentOutfit)) currentOutfit = outfits[0].id;
   const activeOutfit = await DevGameState.getSelectedOutfit(currentCharacterKey);
+  const nameOverrides = await DevGameState.getOutfitNameMap();
   el.outfitPickerPills.innerHTML = outfits.map(o =>
-    `<button class="pill${o.id === currentOutfit ? ' active' : ''}" data-key="${o.id}">${escapeHtml(o.label)}${o.id === activeOutfit ? ' 👗' : ''}</button>`
+    `<button class="pill${o.id === currentOutfit ? ' active' : ''}" data-key="${o.id}">${escapeHtml(nameOverrides[o.id] || o.label)}${o.id === activeOutfit ? ' 👗' : ''}</button>`
   ).join('');
   el.outfitPickerPills.querySelectorAll('.pill').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -2169,6 +2172,20 @@ async function renderOutfitPicker() {
 el.outfitApplyBtn.addEventListener('click', () => {
   DevGameState.setSelectedOutfit(currentCharacterKey, currentOutfit);
   renderOutfitPicker();
+});
+
+el.outfitRenameBtn.addEventListener('click', async () => {
+  if (!currentOutfit) return;
+  const def = dialogueOutfits.find(o => o.id === currentOutfit);
+  const nameOverrides = await DevGameState.getOutfitNameMap();
+  const label = prompt('새 옷 이름', nameOverrides[currentOutfit] || (def ? def.label : ''));
+  if (label == null || !label.trim()) return;
+  try {
+    await DevGameState.setOutfitName(currentOutfit, label.trim());
+    await renderOutfitPicker();
+  } catch (err) {
+    DevDiag.show('옷 이름 변경 실패: ' + (err && err.message ? err.message : err));
+  }
 });
 
 function renderExprPicker() {
@@ -2468,7 +2485,7 @@ async function autoRegisterCharacterPhoto(file, url, img) {
     el.bgRemoveBtn.textContent = '자동 처리 중: 등록...';
     const exprLabel = dialogueExpressions.find(x => x.id === currentExpression).label;
     const outfit = activeOutfitForFilter();
-    const outfitLabel = outfit ? dialogueOutfits.find(o => o.id === outfit).label + ' ' : '';
+    const outfitLabel = outfit ? getOutfitLabel(outfit) + ' ' : '';
     const name = `${sourceFileBaseName} (${outfitLabel}${exprLabel}).png`;
     const record = await AssetDB.addAsset({ type: 'character', name, blob: cropBlob, width: croppedImg.naturalWidth, height: croppedImg.naturalHeight, characterKey: currentCharacterKey, expression: currentExpression, outfit });
     // Only one photo per (character, [outfit,] expression) is actually
@@ -2655,7 +2672,7 @@ async function confirmBatchSave() {
       lastCropSettingsByType.character = { zoom: box.zoom, fracX: box.fracX, fracY: box.fracY };
       const exprLabel = dialogueExpressions.find(x => x.id === item.expression).label;
       const outfit = activeOutfitForFilter();
-      const outfitLabel = outfit ? dialogueOutfits.find(o => o.id === outfit).label + ' ' : '';
+      const outfitLabel = outfit ? getOutfitLabel(outfit) + ' ' : '';
       const name = `${item.fileName} (${outfitLabel}${exprLabel}).png`;
       const record = await AssetDB.addAsset({ type: 'character', name, blob: cropBlob, width: croppedImg.naturalWidth, height: croppedImg.naturalHeight, characterKey: currentCharacterKey, expression: item.expression, outfit });
       DevGameState.setCharacterAssetId(currentCharacterKey, item.expression, record.id, outfit);
@@ -2836,7 +2853,7 @@ el.cropSaveBtn.addEventListener('click', async () => {
       await saveCroppedEvidenceImage(cropBlob, croppedImg);
     } else {
       const outfit = imageEditorTarget === 'character' ? activeOutfitForFilter() : null;
-      const outfitLabel = outfit ? dialogueOutfits.find(o => o.id === outfit).label + ' ' : '';
+      const outfitLabel = outfit ? getOutfitLabel(outfit) + ' ' : '';
       const exprLabel = imageEditorTarget === 'minigameFace' ? '미니게임 얼굴' : dialogueExpressions.find(x => x.id === currentExpression).label;
       const name = `${sourceFileBaseName} (${outfitLabel}${exprLabel}).png`;
       const record = await AssetDB.addAsset({ type: 'character', name, blob: cropBlob, width: croppedImg.naturalWidth, height: croppedImg.naturalHeight, characterKey: currentCharacterKey, expression: currentExpression, outfit });
@@ -4597,6 +4614,10 @@ if (deepLinkedHubTab && !focusMinigame && !focusScene) el.backBtn.href = '/dev/p
 selectType(deepLinkedHubTab && !focusMinigame && !focusScene ? 'hub'
   : (fromDataMenu && !focusMinigame && !focusScene) ? deepLinkedType
   : 'background');
+// 옷 이름 오버라이드를 동기 캐시에 미리 채워 둔다 — getOutfitLabel(옷 피커 아래
+// 파일명 생성 3곳)이 렌더 도중 서버 왕복 없이 최신 이름을 읽을 수 있도록.
+// 완료 전에 그려지는 첫 파일명 정도는 기본 라벨로 조용히 폴백해도 무해하다.
+AssetDB.prefetchOutfitNames();
 </script>
 <script src="/dev/devPlanFab.js"></script>
 </body>

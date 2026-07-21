@@ -146,6 +146,10 @@ const TABS = [
 let activeTab = 'all';
 let previewOutfitId = null; // '입어보기' — temporary preview, doesn't change equippedOutfitId
 let pendingPurchaseId = null;
+// vnOutfitId가 있는 상품의 실제 업로드 사진 dataUrl — item.id -> dataUrl.
+// init()에서 한 번 채워 두고 카드 썸네일에 그대로 쓴다(§옷가게 데이터를 실제
+// 옷과 연동): 이전엔 모든 카드가 👗 이모지 하나뿐이었다.
+let itemThumbUrls = {};
 
 const el = {
   backBtn: document.getElementById('backBtn'),
@@ -180,6 +184,20 @@ function escapeHtml(s) {
 // down, falling back to "no asset found" either way.
 async function safeCall(fn) {
   try { return await fn(); } catch (err) { console.error(err); return null; }
+}
+
+// 각 상품이 실제로 걸친 옷(vnOutfitId)의 업로드 사진을 카드 썸네일로 미리
+// 읽어 둔다 — 미리보기 패널과 같은 lookup을 카드 목록 전체에 대해 한 번에
+// 돌리는 것뿐이라 별도 캐시 없이도 충분히 가볍다.
+async function loadItemThumbs() {
+  const entries = await Promise.all(Object.values(shopItems).map(async item => {
+    if (!item.vnOutfitId) return [item.id, null];
+    const assetId = await safeCall(() => DevGameState.getCharacterAssetIdForOutfit(item.characterId || 'jisoo', item.vnOutfitId, 'neutral'));
+    if (!assetId) return [item.id, null];
+    const asset = await AssetDB.getAsset(assetId).catch(() => null);
+    return [item.id, (asset && asset.dataUrl) || null];
+  }));
+  itemThumbUrls = Object.fromEntries(entries);
 }
 
 let toastTimer = null;
@@ -326,11 +344,12 @@ async function handleEquipClick(itemId, btn) {
 
 function renderUnlockedCard(item) {
   const equipped = item.owned && WardrobeState.getEquippedOutfitId() === item.id;
+  const thumbUrl = itemThumbUrls[item.id];
   return `
     <div class="item-card">
-      <div class="item-thumb">👗</div>
+      <div class="item-thumb">${thumbUrl ? `<img src="${thumbUrl}" alt="">` : '👗'}</div>
       <div class="item-body">
-        <div class="item-name">${escapeHtml(item.name)}${item.isNew ? '<span class="item-new-badge">NEW</span>' : ''}</div>
+        <div class="item-name">${escapeHtml(getShopItemName(item))}${item.isNew ? '<span class="item-new-badge">NEW</span>' : ''}</div>
         <div class="item-desc">${escapeHtml(item.description || '')}</div>
         <div class="item-meta">
           <span class="item-price">${item.price}P</span>
@@ -352,7 +371,7 @@ function renderLockedCard(item) {
     <div class="item-card locked">
       <div class="item-thumb">🔒</div>
       <div class="item-body">
-        <div class="item-name">${escapeHtml(item.name)}</div>
+        <div class="item-name">${escapeHtml(getShopItemName(item))}</div>
         <div class="lock-reason">${describeUnlockCondition(item)}</div>
       </div>
     </div>
@@ -376,7 +395,7 @@ function openConfirm(itemId) {
   pendingPurchaseId = itemId;
   const balance = EconomyState.getPoints();
   const after = balance - item.price;
-  el.confirmTitle.textContent = `'${item.name}'을(를) ${item.price}P에 구매할까요?`;
+  el.confirmTitle.textContent = `'${getShopItemName(item)}'을(를) ${item.price}P에 구매할까요?`;
   el.confirmBalance.textContent = `${balance}P`;
   el.confirmAfter.textContent = `${after}P`;
   const short = after < 0;
@@ -396,7 +415,7 @@ el.confirmBuyBtn.addEventListener('click', () => {
   updateHeaderPoints();
   renderList();
   const item = shopItems[itemId];
-  el.wearTitle.textContent = `'${item.name}'을(를) 구매했습니다. 지금 착용할까요?`;
+  el.wearTitle.textContent = `'${getShopItemName(item)}'을(를) 구매했습니다. 지금 착용할까요?`;
   el.wearOverlay.dataset.itemId = itemId;
   el.wearOverlay.classList.remove('hidden');
 });
@@ -415,9 +434,10 @@ el.wearNowBtn.addEventListener('click', async () => {
   if (!result.success) showToast('구매는 완료됐지만 의상 장착 동기화에 실패했습니다. 옷장에서 다시 시도해주세요.');
 });
 
-(function init() {
+(async function init() {
   updateHeaderPoints();
   renderTabs();
+  await Promise.all([safeCall(() => AssetDB.prefetchOutfitNames()), loadItemThumbs()]);
   renderList();
   updatePreview();
   loadPreviewLocationBackground();
