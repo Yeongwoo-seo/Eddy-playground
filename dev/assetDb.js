@@ -1951,6 +1951,16 @@ const DevGameState = {
   async getCharacterAssetId(characterKey, expression) {
     if (!characterKey) return null;
     const map = await this._syncFromServer(this._keys.characters, this._loadCharacterMap(), () => AssetDB.getCharacterAssetMap());
+    // The minigame-face sentinel (dialogueData.js's MINIGAME_FACE_EXPRESSION)
+    // is always uploaded with no outfit — it's one dedicated close-up per
+    // character, not a per-outfit portrait. It must be looked up directly
+    // instead of going through the outfit branch below, otherwise a
+    // character with outfits (e.g. jisoo) resolves to that outfit's
+    // 'neutral' dialogue portrait before ever reaching the real
+    // no-outfit/minigame-face slot.
+    if (expression === 'minigame-face') {
+      return map[this._assetKey(characterKey, null, expression)] || null;
+    }
     const outfit = await this.getSelectedOutfit(characterKey);
     if (outfit) {
       return map[this._assetKey(characterKey, outfit, expression)]
