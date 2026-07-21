@@ -30,12 +30,6 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .topbar{position:absolute;top:0;left:0;right:0;z-index:6;padding:calc(14px + env(safe-area-inset-top,0)) 16px 14px;display:flex;justify-content:space-between;align-items:center;pointer-events:none}
 .vn-btn{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:#fff;background:rgba(8,10,12,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:9px 14px;cursor:pointer;text-decoration:none;display:inline-block;pointer-events:auto}
 
-/* ===== Phase indicator ===== */
-.phase-bar{position:absolute;top:calc(52px + env(safe-area-inset-top,0));left:0;right:0;z-index:6;display:flex;justify-content:center;gap:8px;pointer-events:none}
-.phase-pill{font-family:var(--mono);font-size:10px;letter-spacing:.05em;color:var(--text-muted);background:rgba(8,10,12,.6);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:5px 10px}
-.phase-pill.active{color:var(--cyan);border-color:rgba(89,184,200,.5);background:rgba(89,184,200,.1)}
-.phase-pill.done{color:var(--amber);border-color:rgba(214,168,75,.4)}
-
 /* ===== Map stage ===== */
 .map-stage{position:absolute;inset:0;overflow:hidden;touch-action:none;background:radial-gradient(circle at 30% 20%,#141a20 0%,#0a0d10 70%)}
 .map-canvas{position:absolute;top:0;left:0;transform-origin:0 0;will-change:transform}
@@ -50,21 +44,15 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .tap-wrong-ring{position:absolute;border-radius:50%;border:3px solid var(--signal-red);opacity:.9;pointer-events:none;animation:tapWrongFade 420ms ease forwards}
 @keyframes tapWrongFade{0%{transform:scale(.6);opacity:.9}100%{transform:scale(1.4);opacity:0}}
 
-/* ===== Placed pin tags (spec §11.2 Stage 1 result — a label locked onto its spot) ===== */
+/* ===== Placed pin tags (a label locked onto its spot) ===== */
 .pin-tag{position:absolute;transform:translate(-50%,-130%);font-family:var(--mono);font-size:11px;font-weight:700;color:#06181c;background:var(--cyan);border-radius:8px;padding:4px 8px;white-space:nowrap;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,.4)}
-.pin-tag.selectable{pointer-events:auto;cursor:pointer;background:var(--surface-2);color:var(--text-primary);border:1px solid rgba(255,255,255,.2)}
-.pin-tag.selected{background:var(--amber);color:#191206}
-
-/* ===== Connection lines (Stage 2) ===== */
-.connect-svg{position:absolute;top:0;left:0;pointer-events:none;overflow:visible}
-.connect-line{stroke:var(--amber);stroke-width:4;stroke-linecap:round;opacity:.85}
 
 /* ===== Final-stop stamp ===== */
 .stamp{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(.85);z-index:7;font-family:var(--mono);font-size:34px;font-weight:700;letter-spacing:.14em;color:var(--cyan);text-shadow:0 0 24px rgba(89,184,200,.6);opacity:0;pointer-events:none}
 .stamp.show{animation:stampPop 1.1s ease-out forwards}
 @keyframes stampPop{0%{opacity:0;transform:translate(-50%,-50%) scale(.7)}18%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}30%{transform:translate(-50%,-50%) scale(1)}75%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) scale(1)}}
 
-/* ===== Label tray (Stage 1 — select a label chip, then tap its spot on the map) ===== */
+/* ===== Label tray (select a label chip, then tap its spot on the map) ===== */
 .label-tray{position:absolute;left:16px;right:16px;bottom:calc(122px + env(safe-area-inset-bottom,0));z-index:5;display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
 .label-tray.hidden{display:none}
 .label-chip{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--text-primary);background:rgba(8,10,12,.85);border:1px solid rgba(255,255,255,.16);border-radius:20px;padding:9px 14px;cursor:pointer}
@@ -113,8 +101,6 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
       <a class="vn-btn dev-settings-link" href="/dev/upload/?scene=week1-scene-001-2&kind=minigame&minigame=week1-scene-001-2-minigame" aria-label="설정">⚙ 설정</a>
     </div>
   </div>
-
-  <div class="phase-bar" id="phaseBar"></div>
 
   <div class="stamp" id="stamp"></div>
 
@@ -168,16 +154,15 @@ if ('serviceWorker' in navigator) {
 <script src="/dev/state/wardrobeState.js"></script>
 <script src="/dev/state/shopState.js"></script>
 <script>
-/* ===== Route-map minigame (The Missing Key v1 §11.2) — rebuilt from the
-   original 3-stop "tap stations in order" design into the documented 3-stage
-   flow over 4 stops (공항/서큘러키/숙소=Eastwood/영우 직장=Marayong):
-     Stage 1 라벨 배치 — pick a label chip, tap its spot on the map (any order)
-     Stage 2 관계 연결 — tap two placed pins to wire each of the 3 real legs
-     Stage 3 이동 경로 확인 — tap all 4 pins in the correct travel order
+/* ===== Route-map minigame — simplified single-stage design: pick a label
+   chip, tap its spot on the map, for each of the 4 stops
+   (공항/서큘러키/숙소=Eastwood/영우 직장=Marayong). All 4 placed (any order) ->
+   clear. The earlier 3-stage build (라벨 배치 → 관계 연결 → 이동 경로 확인) was
+   cut down to just the label-placement stage per design direction — finding
+   the 4 stations is the whole game now, no connect/route-order follow-up.
    Map image + hand-marked hotspots (배경 DB → 미니게임, /dev/upload) are
    unchanged infrastructure — this scene's own minigameStages (dialogueData.js)
-   already listed all 4 stops, so /dev/upload already offers 4 hotspot slots;
-   only this page's gameplay logic needed rebuilding.
+   already listed all 4 stops, so /dev/upload already offers 4 hotspot slots.
    [써큘러키 낚시 씬 추가] 2번째 지점을 뭉뚱그린 "시티" 대신 실제 정류장인
    서큘러키(Circular Quay)로 바꿨다 — week1-scene-circular-quay(낚시 미니게임)
    가 그 지점에서 실제로 벌어지는 곳이다. */
@@ -190,30 +175,13 @@ const LOCATIONS = [
   { id: 'eastwood', label: '숙소 (Eastwood)' },
   { id: 'marayong', label: '영우 직장 (Marayong)' },
 ];
-// 공항 → 서큘러키 → 숙소 → 영우 직장 — both Stage 2's 3 valid legs and Stage 3's
-// required tap order are derived from this single sequence.
-const ROUTE_ORDER = [0, 1, 2, 3];
-const REQUIRED_LEGS = ROUTE_ORDER.slice(0, -1).map((_, i) => [ROUTE_ORDER[i], ROUTE_ORDER[i + 1]]);
 
-const PHASES = [
-  { id: 'label', title: 'STAGE 1 · 라벨 배치' },
-  { id: 'connect', title: 'STAGE 2 · 관계 연결' },
-  { id: 'route', title: 'STAGE 3 · 경로 확인' },
-];
-let phaseIndex = 0;
 let CANVAS_W = 0, CANVAS_H = 0;
 let hotspots = null; // [{x,y}, ...][4] — one free-form polygon per location, index-aligned with LOCATIONS
 let mapImageGlowEls = [], mapImagePulseEls = [], pinCenters = [];
 
-// Stage 1
 let placedIds = new Set();
 let selectedChipId = null;
-// Stage 2
-let connectedLegs = new Set(); // 'i-j' (i<j) strings
-let connectFromIndex = null;
-let connectSvg = null;
-// Stage 3
-let routeProgress = 0;
 
 function hotspotToPoints(h) {
   if (!h) return null;
@@ -234,7 +202,6 @@ const el = {
   frame: document.getElementById('frame'),
   mapStage: document.getElementById('mapStage'),
   mapCanvas: document.getElementById('mapCanvas'),
-  phaseBar: document.getElementById('phaseBar'),
   stamp: document.getElementById('stamp'),
   labelTray: document.getElementById('labelTray'),
   dlgStrip: document.getElementById('dlgStrip'),
@@ -252,13 +219,6 @@ const el = {
   fadeOverlay: document.getElementById('fadeOverlay'),
 };
 
-function renderPhaseBar() {
-  el.phaseBar.innerHTML = PHASES.map((p, i) => {
-    const cls = i < phaseIndex ? 'done' : (i === phaseIndex ? 'active' : '');
-    return `<span class="phase-pill ${cls}">${p.title}</span>`;
-  }).join('');
-}
-
 /* ===== Build the map ===== */
 function buildImageMap(url) {
   const img = document.createElement('img');
@@ -267,12 +227,6 @@ function buildImageMap(url) {
   img.draggable = false;
   Object.assign(img.style, { position: 'absolute', left: '0', top: '0', width: CANVAS_W + 'px', height: CANVAS_H + 'px' });
   el.mapCanvas.appendChild(img);
-
-  connectSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  connectSvg.setAttribute('class', 'connect-svg');
-  connectSvg.setAttribute('width', CANVAS_W);
-  connectSvg.setAttribute('height', CANVAS_H);
-  el.mapCanvas.appendChild(connectSvg);
 
   mapImageGlowEls = [];
   mapImagePulseEls = [];
@@ -317,7 +271,6 @@ async function initMap() {
   await AssetDB.preloadImage(asset.dataUrl);
   buildImageMap(asset.dataUrl);
   fitToStage();
-  renderPhaseBar();
   updateMissionLine();
   renderLabelTray();
   LoadingOverlay.hide();
@@ -330,14 +283,7 @@ function showMissingMapNotice() {
 }
 
 function updateMissionLine() {
-  const phase = PHASES[phaseIndex];
-  if (phase.id === 'label') {
-    el.dlgMission.textContent = `라벨 배치 (${placedIds.size}/${LOCATIONS.length})`;
-  } else if (phase.id === 'connect') {
-    el.dlgMission.textContent = `관계 연결 (${connectedLegs.size}/${REQUIRED_LEGS.length})`;
-  } else {
-    el.dlgMission.textContent = `경로 확인 (${routeProgress}/${ROUTE_ORDER.length})`;
-  }
+  el.dlgMission.textContent = `라벨 배치 (${placedIds.size}/${LOCATIONS.length})`;
 }
 
 /* ===== Pan + pinch/wheel zoom (unchanged from the original build) ===== */
@@ -477,7 +423,6 @@ function preloadMinigameFaces() {
 /* ===== Game state ===== */
 let wrongClickCount = 0;
 let isCompleted = false;
-let isStageTransition = false;
 let hintTimers = [];
 
 function scheduleHints() {
@@ -488,22 +433,16 @@ function scheduleHints() {
 }
 function clearHintTimers() { hintTimers.forEach(clearTimeout); hintTimers = []; }
 
-// Which location index the current phase most wants glowed for a level-3 hint.
+// Which location index the currently-selected chip most wants glowed for a level-3 hint.
 function currentHintTargetIndex() {
-  const phase = PHASES[phaseIndex].id;
-  if (phase === 'label') return selectedChipId ? LOCATIONS.findIndex(l => l.id === selectedChipId) : -1;
-  if (phase === 'connect') {
-    const leg = REQUIRED_LEGS.find(([a, b]) => !connectedLegs.has(a + '-' + b));
-    return leg ? (connectFromIndex === leg[0] ? leg[1] : leg[0]) : -1;
-  }
-  return routeProgress < ROUTE_ORDER.length ? ROUTE_ORDER[routeProgress] : -1;
+  return selectedChipId ? LOCATIONS.findIndex(l => l.id === selectedChipId) : -1;
 }
 
 function triggerHint(level) {
-  if (isCompleted || isStageTransition) return;
+  if (isCompleted) return;
   if (level === 1) {
     say('jisoo', 'curious', '지수', '영우…\n힌트 하나만 주면 안 돼?');
-    setTimeout(() => { if (!isCompleted && !isStageTransition) say('youngwoo', 'soft', '영우', '지도 잘 보고 찾아봐.'); }, 1600);
+    setTimeout(() => { if (!isCompleted) say('youngwoo', 'soft', '영우', '지도 잘 보고 찾아봐.'); }, 1600);
   } else if (level === 2) {
     say('jisoo', 'curious', '지수', '음…\n이 근처인가…?');
   } else if (level === 3) {
@@ -528,8 +467,7 @@ function reactWrong() {
   else say('jisoo', 'annoyed', '지수', '아 나 진짜 길치라니까;;;;');
 }
 
-/* ===== Hit-testing (shared by all 3 phases) — which of the 4 locations, if
-   any, contains this tap. ===== */
+/* ===== Hit-testing — which of the 4 locations, if any, contains this tap. ===== */
 function hitTestLocation(point) {
   for (let i = 0; i < hotspots.length; i++) {
     const pts = hotspots[i].map(p => ({ x: p.x * CANVAS_W, y: p.y * CANVAS_H }));
@@ -541,9 +479,9 @@ function hitTestLocation(point) {
   return -1;
 }
 
-/* ===== Stage 1 — 라벨 배치 ===== */
+/* ===== 라벨 배치 — pick a chip, tap its spot on the map (any order) ===== */
 function renderLabelTray() {
-  el.labelTray.classList.toggle('hidden', PHASES[phaseIndex].id !== 'label');
+  el.labelTray.classList.remove('hidden');
   el.labelTray.innerHTML = LOCATIONS.map(loc => {
     if (placedIds.has(loc.id)) return '';
     const selected = selectedChipId === loc.id;
@@ -586,101 +524,18 @@ function handleLabelTap(point) {
   wrongClickCount = 0;
 
   if (placedIds.size === LOCATIONS.length) {
-    advancePhase(['오, 네 곳 다 이름표 붙였다!', '이제 어느 순서로 가는지 연결해보자.']);
-  } else {
-    scheduleHints();
-  }
-}
-
-/* ===== Stage 2 — 관계 연결 ===== */
-function legKey(a, b) { return Math.min(a, b) + '-' + Math.max(a, b); }
-function isValidLeg(a, b) { return REQUIRED_LEGS.some(([x, y]) => (x === a && y === b) || (x === b && y === a)); }
-
-function drawConnectLine(a, b) {
-  const p1 = pinCenters[a], p2 = pinCenters[b];
-  const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-  line.setAttribute('class', 'connect-line');
-  line.setAttribute('x1', p1.x); line.setAttribute('y1', p1.y);
-  line.setAttribute('x2', p2.x); line.setAttribute('y2', p2.y);
-  connectSvg.appendChild(line);
-}
-
-function handleConnectTap(point) {
-  const idx = hitTestLocation(point);
-  if (idx === -1) { flashWrongAtPoint(point); return; }
-  if (connectFromIndex === null) {
-    connectFromIndex = idx;
-    say('jisoo', 'curious', '지수', `${LOCATIONS[idx].label}에서... 다음은 어디로 갈까?`);
-    return;
-  }
-  if (connectFromIndex === idx) { connectFromIndex = null; return; } // tapped the same pin twice — cancel
-  const key = legKey(connectFromIndex, idx);
-  if (connectedLegs.has(key) || !isValidLeg(connectFromIndex, idx)) {
-    flashWrongAtPoint(point);
-    reactWrong();
-    connectFromIndex = null;
-    return;
-  }
-  connectedLegs.add(key);
-  drawConnectLine(connectFromIndex, idx);
-  playSuccessBeep();
-  connectFromIndex = null;
-  wrongClickCount = 0;
-  updateMissionLine();
-
-  if (connectedLegs.size === REQUIRED_LEGS.length) {
-    advancePhase(['좋아, 세 구간 다 연결했어.', '마지막으로 실제 이동 순서대로 눌러보자.']);
-  } else {
-    scheduleHints();
-  }
-}
-
-/* ===== Stage 3 — 이동 경로 확인 ===== */
-function handleRouteTap(point) {
-  const idx = hitTestLocation(point);
-  if (idx === -1) { flashWrongAtPoint(point); return; }
-  if (idx !== ROUTE_ORDER[routeProgress]) { flashWrongAtPoint(point); reactWrong(); return; }
-  markStationSuccess(idx);
-  playSuccessBeep();
-  routeProgress++;
-  wrongClickCount = 0;
-  updateMissionLine();
-  if (routeProgress === ROUTE_ORDER.length) {
-    handleAllStagesComplete();
+    clearHintTimers();
+    say('jisoo', 'happy', '지수', '오, 네 곳 다 이름표 붙였다!');
+    setTimeout(() => { if (!isCompleted) say('youngwoo', 'happy', '영우', '잘 찾았어.\n이제 실제로 가보자.'); }, 1400);
+    setTimeout(completeGame, 2400);
   } else {
     scheduleHints();
   }
 }
 
 function onImageTap(point) {
-  if (isCompleted || isStageTransition || !hotspots) return;
-  const phase = PHASES[phaseIndex].id;
-  if (phase === 'label') handleLabelTap(point);
-  else if (phase === 'connect') handleConnectTap(point);
-  else handleRouteTap(point);
-}
-
-function advancePhase(banterLines) {
-  clearHintTimers();
-  isStageTransition = true;
-  let t = 0;
-  const speakers = [
-    { char: 'jisoo', expr: 'happy', name: '지수' },
-    { char: 'youngwoo', expr: 'happy', name: '영우' },
-  ];
-  banterLines.forEach((text, i) => {
-    setTimeout(() => say(speakers[i % 2].char, speakers[i % 2].expr, speakers[i % 2].name, text), t);
-    t += 1600;
-  });
-  setTimeout(() => {
-    phaseIndex++;
-    connectFromIndex = null;
-    isStageTransition = false;
-    renderPhaseBar();
-    renderLabelTray();
-    updateMissionLine();
-    scheduleHints();
-  }, t + 300);
+  if (isCompleted || !hotspots) return;
+  handleLabelTap(point);
 }
 
 function markStationSuccess(index) {
@@ -703,7 +558,7 @@ function playSuccessBeep() {
   } catch (e) { /* audio unavailable — not critical to gameplay */ }
 }
 
-function handleAllStagesComplete() {
+function completeGame() {
   clearHintTimers();
   isCompleted = true;
   el.stamp.textContent = 'SYDNEY MAP CLEAR';
@@ -751,7 +606,7 @@ document.getElementById('skipBtn').addEventListener('click', (e) => {
 initMap().then((ready) => {
   if (!ready) return;
   say('jisoo', 'curious', '지수', '음... 어디부터 붙이지?');
-  setTimeout(() => { if (!isCompleted && !isStageTransition) say('youngwoo', 'soft', '영우', '아래 이름표 하나 골라서\n지도 위에 맞는 자리를 찾아봐.'); }, 2200);
+  setTimeout(() => { if (!isCompleted) say('youngwoo', 'soft', '영우', '아래 이름표 하나 골라서\n지도 위에 맞는 자리를 찾아봐.'); }, 2200);
   scheduleHints();
 });
 </script>
