@@ -1907,6 +1907,27 @@ async function applyScreen(screenDef, opts) {
    막아야 하므로(screenTransitioning), stopMoveHold로 지금 하던 이동부터
    끊는다 — moveTick은 moveHoldVec이 비면 그 프레임에서 스스로 멈춘다. */
 function screenById(id) { return screensList.find(s => s.id === id) || null; }
+// transitionend 이벤트에만 기대면(특히 같은 배경으로 되돌아오는 같은 화면
+// 상호이동처럼 브라우저가 트랜지션을 안 그리고 넘어가는 경우가 있으면)
+// 그 이벤트가 영영 안 와서 아래 await가 멈춰버리고, screenTransitioning이
+// true인 채로 굳어 조이스틱 이동이 계속 안 먹는다 — CSS 기본 지속시간(.9s)
+// 보다 넉넉한 타임아웃을 같이 race시켜 이벤트가 안 오더라도 반드시
+// 진행되게 한다.
+function waitFadeTransition(elm, timeoutMs) {
+  return new Promise(resolve => {
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      elm.removeEventListener('transitionend', onEnd);
+      clearTimeout(timer);
+      resolve();
+    };
+    const onEnd = (e) => { if (e.target === elm) finish(); };
+    elm.addEventListener('transitionend', onEnd);
+    const timer = setTimeout(finish, timeoutMs);
+  });
+}
 // 도착 지점이 (같은 화면 상호이동처럼) 도착 화면의 다른 이동 영역 안에
 // 그대로 떨어지는 경우가 있다 — 그 영역은 캐릭터가 한 번 밖으로 나가기
 // 전까지 checkMoveArea가 트리거로 치지 않는다(안 그러면 도착하자마자 같은
@@ -1918,22 +1939,21 @@ async function triggerScreenTransition(moveArea) {
   if (!targetDef) return;
   screenTransitioning = true;
   stopMoveHold();
-  el.preloadOverlay.classList.remove('hidden');
-  void el.preloadOverlay.offsetWidth; // display:none -> block 직후 곧바로 opacity를 바꾸면 트랜지션이 안 먹을 수 있어 강제로 리플로우 한 번 끼운다
-  await new Promise(resolve => {
-    el.preloadOverlay.addEventListener('transitionend', resolve, { once: true });
+  try {
+    el.preloadOverlay.classList.remove('hidden');
+    void el.preloadOverlay.offsetWidth; // display:none -> block 직후 곧바로 opacity를 바꾸면 트랜지션이 안 먹을 수 있어 강제로 리플로우 한 번 끼운다
     el.preloadOverlay.classList.remove('fade-out'); // opacity 0 -> 1, 어두워짐
-  });
-  currentScreenId = targetDef.id;
-  await applyScreen(targetDef, { entryPoint: moveArea.entryPoint });
-  const landedArea = areaContaining(worldPosToImageFrac(charWorldPos.x, charWorldPos.y), moveAreas);
-  suppressMoveAreaId = landedArea ? landedArea.id : null;
-  await new Promise(resolve => {
-    el.preloadOverlay.addEventListener('transitionend', resolve, { once: true });
+    await waitFadeTransition(el.preloadOverlay, 1000);
+    currentScreenId = targetDef.id;
+    await applyScreen(targetDef, { entryPoint: moveArea.entryPoint });
+    const landedArea = areaContaining(worldPosToImageFrac(charWorldPos.x, charWorldPos.y), moveAreas);
+    suppressMoveAreaId = landedArea ? landedArea.id : null;
     el.preloadOverlay.classList.add('fade-out'); // opacity 1 -> 0, 밝아짐
-  });
-  el.preloadOverlay.classList.add('hidden'); // revealGame()과 같은 마무리 — 트랜지션 끝나면 완전히 빼서 다시 그릴 일이 없게 한다
-  screenTransitioning = false;
+    await waitFadeTransition(el.preloadOverlay, 1000);
+    el.preloadOverlay.classList.add('hidden'); // revealGame()과 같은 마무리 — 트랜지션 끝나면 완전히 빼서 다시 그릴 일이 없게 한다
+  } finally {
+    screenTransitioning = false; // 위에서 무슨 일이 있었든(타임아웃 포함) 조이스틱은 반드시 다시 풀린다
+  }
 }
 // moveTick(캐릭터가 이동 중일 때 매 프레임)에서 checkInteractionArea와
 // 나란히 부른다 — 캐릭터가 이동 영역 다각형 안에 들어온 순간 트랜지션을
