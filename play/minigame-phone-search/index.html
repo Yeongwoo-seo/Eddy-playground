@@ -600,7 +600,8 @@ async function updateMsgPortrait(characterKey) {
   const requestToken = ++msgPortraitRequestToken;
   if (!characterKey) { el.msgPortraitWrap.classList.add('hidden'); return; }
   el.msgPortraitWrap.classList.remove('hidden');
-  const assetId = DevGameState.getCharacterAssetId(characterKey, MINIGAME_FACE_EXPRESSION);
+  const assetId = await DevGameState.getCharacterAssetId(characterKey, MINIGAME_FACE_EXPRESSION);
+  if (requestToken !== msgPortraitRequestToken) return;
   const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
   if (requestToken !== msgPortraitRequestToken) return; // a later call already superseded this one
   if (asset && asset.dataUrl) {
@@ -1170,19 +1171,27 @@ el.photoStage.addEventListener('wheel', (e) => {
 /* ===== Area loading + rendering ===== */
 let currentMode = 'grid'; // 'grid' | 'photo'
 
+// Bumped on every loadArea/switchArea call so a slower, superseded call can
+// tell it's stale (e.g. the player moved to a second area before a first
+// area's fetch finished) and bail out instead of overwriting the newer
+// area's currentMode/currentHotspots/canvas or clobbering the fade overlay.
+let areaLoadToken = 0;
+
 // Every area's photo/hotspots are already fetched into AssetDB's own caches
 // up front (see preloadAllAreas, called once at boot) — getAsset/
 // getRoomHotspots/preloadImage below all resolve from cache instantly by
 // the time this runs again for an area switch, no network wait, so no
 // per-call loading state is needed here (see switchArea for the quick
 // blackout transition that plays instead).
-async function loadArea(area) {
+async function loadArea(area, token) {
+  if (token === undefined) token = ++areaLoadToken;
   const sceneId = roomSearchAreaSceneId(area.id);
   // 방탈출류 room-search 배경은 location-background-system 설계안 범위 밖 —
   // 기존 레거시 sceneId 직접 배정 방식 그대로.
-  const assetId = DevGameState.getLegacyBackgroundId(sceneId);
+  const assetId = await DevGameState.getLegacyBackgroundId(sceneId);
   const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
   const hotspots = await DevGameState.getRoomHotspots(sceneId);
+  if (token !== areaLoadToken) return; // a newer area switch already superseded this one
   if (asset && asset.dataUrl && Object.keys(hotspots).length) {
     currentMode = 'photo';
     currentHotspots = {};
@@ -1193,6 +1202,7 @@ async function loadArea(area) {
     CANVAS_W = asset.width;
     CANVAS_H = asset.height;
     await AssetDB.preloadImage(asset.dataUrl);
+    if (token !== areaLoadToken) return;
     buildPhotoCanvas(asset.dataUrl);
   } else {
     currentMode = 'grid';
@@ -1220,8 +1230,8 @@ async function preloadAllAreas() {
   await Promise.all(roomSearchAreas.map(async (area) => {
     const sceneId = roomSearchAreaSceneId(area.id);
     // 방탈출류 room-search 배경은 location-background-system 설계안 범위 밖 —
-  // 기존 레거시 sceneId 직접 배정 방식 그대로.
-  const assetId = DevGameState.getLegacyBackgroundId(sceneId);
+    // 기존 레거시 sceneId 직접 배정 방식 그대로.
+    const assetId = await DevGameState.getLegacyBackgroundId(sceneId);
     const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
     await DevGameState.getRoomHotspots(sceneId).catch(() => ({}));
     if (asset && asset.dataUrl) await AssetDB.preloadImage(asset.dataUrl);
@@ -1232,12 +1242,18 @@ async function preloadAllAreas() {
 // A player-initiated area switch: everything's already cached (see
 // preloadAllAreas), so instead of a loading state, it just plays a quick
 // blackout — fade to black, swap the content underneath, fade back in —
-// like a scene cut rather than a fetch.
+// like a scene cut rather than a fetch. Shares areaLoadToken with loadArea
+// so a stale switch (superseded by a second, faster move before this one's
+// fade-in finished) skips fading the overlay back out from under the newer
+// switch's own fade sequence.
 async function switchArea(area) {
+  const token = ++areaLoadToken;
   el.fadeOverlay.classList.add('fast', 'show');
   await new Promise(resolve => setTimeout(resolve, 180));
-  await loadArea(area);
+  await loadArea(area, token);
+  if (token !== areaLoadToken) return;
   await new Promise(resolve => requestAnimationFrame(resolve));
+  if (token !== areaLoadToken) return;
   el.fadeOverlay.classList.remove('show');
   setTimeout(() => el.fadeOverlay.classList.remove('fast'), 180);
 }
