@@ -382,10 +382,10 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
    index.html "대화" 탭의 슬라이드 에디터와 같은 0~1 비율 좌표계를 그대로
    재사용해 대화창/지수/영우 이미지를 겹쳐 그린다(.dialogue-intro-layer
    img가 object-fit:fill인 것도 그 에디터의 .slide-layer img와 맞춘 것 —
-   에디터에서 본 자리·크기 그대로 재생 화면에도 나온다). 화면 전체를
-   덮는 반투명 배경 위에 탭 한 번이면(대사 텍스트가 아직 없어서) 바로
-   사라지고 낚시가 시작된다. */
-.dialogue-intro{position:absolute;inset:0;z-index:20;background:rgba(0,0,0,.45);cursor:pointer}
+   에디터에서 본 자리·크기 그대로 재생 화면에도 나온다). 화면을 어둡게
+   가리지 않고 배경이 그대로 보이는 채로, 화면 아무 데나 탭하면(대사
+   텍스트가 아직 없어서) 바로 사라지고 낚시가 시작된다. */
+.dialogue-intro{position:absolute;inset:0;z-index:20;cursor:pointer}
 .dialogue-intro.hidden{display:none}
 /* 배치 편집(layoutPrefs.dialogueBox)이 대화창/이름/대사/초상화 레이어
    전체를 하나의 그룹으로 옮기고 키울 수 있도록 감싸는 안쪽 래퍼 — 바깥
@@ -494,6 +494,9 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
   <button type="button" class="fish-btn" id="fishBtn">🎣</button>
   <button type="button" class="layout-edit-btn" id="layoutEditBtn" aria-label="배치 편집">✎</button>
   <div class="layout-edit-panel hidden" id="layoutEditPanel">
+    <label id="bgZoomLabel" class="hidden">배경화면 확대
+      <input type="range" id="bgZoomRange" min="0.5" max="2" step="0.02" value="0.9">
+    </label>
     <button type="button" class="secondary" id="layoutCastingPosBtn">🎯 캐스팅 게이지 위치 수정하기</button>
     <button type="button" class="secondary" id="layoutFishbarPosBtn">🎣 낚시바 위치 수정하기</button>
     <button type="button" class="secondary" id="layoutItemPopupPosBtn">🎁 낚시 팝업 미리보기</button>
@@ -703,6 +706,8 @@ const el = {
   fishBtn: document.getElementById('fishBtn'),
   layoutEditBtn: document.getElementById('layoutEditBtn'),
   layoutEditPanel: document.getElementById('layoutEditPanel'),
+  bgZoomLabel: document.getElementById('bgZoomLabel'),
+  bgZoomRange: document.getElementById('bgZoomRange'),
   layoutEditDoneBtn: document.getElementById('layoutEditDoneBtn'),
   layoutDragGhost: document.getElementById('layoutDragGhost'),
   layoutCastingPosBtn: document.getElementById('layoutCastingPosBtn'),
@@ -1724,9 +1729,10 @@ function refreshStatusWindowPoints() {
    화면을 건널 때(triggerScreenTransition, 도착 화면)가 이 함수 하나를
    공유한다. opts.entryPoint(0~1, 도착 화면 배경 원본 크기 기준 top-down
    정규화 좌표, 이동 영역의 entryPoint)가 있으면 그 지점에 캐릭터를
-   스폰한다 — 없으면(최초 로드, 또는 배경 없는 화면) 예전처럼 화면
-   정중앙에서 시작하거나(charWorldPos 최초 지정) 지금 위치를 새 범위로만
-   clamp한다. */
+   스폰한다 — 없으면(최초 로드, 또는 배경 없는 화면) screenDef.jisuStartPos
+   (같은 0~1 top-down 좌표계, "캐릭터" 탭에서 지정)가 있는 지점에서
+   시작하고, 그마저 없으면 예전처럼 화면 정중앙에서 시작하거나(charWorldPos
+   최초 지정) 지금 위치를 새 범위로만 clamp한다. */
 async function applyScreen(screenDef, opts) {
   opts = opts || {};
   const backgroundAsset = (screenDef && screenDef.backgroundAssetId) ? await AssetDB.getAsset(screenDef.backgroundAssetId).catch(() => null) : null;
@@ -1783,9 +1789,14 @@ async function applyScreen(screenDef, opts) {
       y: clamp(bgDims.height * (1 - opts.entryPoint.y), wb.minY, wb.maxY),
     };
   } else if (!charWorldPos) {
-    // 예전 CSS 기본값(화면 정중앙)과 같은 자리에서 시작하되, 새 범위(wb)
-    // 안으로 clamp한다.
-    charWorldPos = { x: clamp(worldSize.w / 2, wb.minX, wb.maxX), y: clamp(worldSize.h / 2, wb.minY, wb.maxY) };
+    // 최초 로드 — 화면(screenDef)에 지정된 지수 시작 위치(jisuStartPos,
+    // dev/minigame-fishing/index.html "캐릭터" 탭)가 있으면 거기서
+    // 시작하고, 없으면 예전 CSS 기본값(화면 정중앙)과 같은 자리에서
+    // 시작한다. 둘 다 새 범위(wb) 안으로 clamp한다.
+    const jisuStartPos = screenDef && screenDef.jisuStartPos;
+    charWorldPos = (jisuStartPos && hasWorldBackground)
+      ? { x: clamp(jisuStartPos.x * bgDims.width, wb.minX, wb.maxX), y: clamp(bgDims.height * (1 - jisuStartPos.y), wb.minY, wb.maxY) }
+      : { x: clamp(worldSize.w / 2, wb.minX, wb.maxX), y: clamp(worldSize.h / 2, wb.minY, wb.maxY) };
   } else {
     charWorldPos.x = clamp(charWorldPos.x, wb.minX, wb.maxX);
     charWorldPos.y = clamp(charWorldPos.y, wb.minY, wb.maxY);
@@ -1961,18 +1972,13 @@ async function playGameStartIntro() {
   }
   await revealGame();
   if (canPan) {
-    // 패닝이 끝난 뒤(도착 지점)가 아니라 절반쯤 지났을 때 지수/영우를
-    // 먼저 보여준다 — 화면 위 위치(left/bottom)는 applyScreen()의
-    // updateCamera() 호출로 이미 최종 값이 세팅돼 있고(패닝은 el.bgLayer만
-    // 옮기고 캐릭터는 안 건드림) 그 값이 바로 도착 지점 기준이라, 미리
-    // 풀어도 엉뚱한 자리에 나타나지 않는다.
-    const panMs = CAMERA_INTRO_LEG_MS.reduce((sum, ms) => sum + ms, 0);
-    setTimeout(() => {
-      el.charStage.style.visibility = '';
-      if (npcWasVisible) el.npcYoungwooStage.classList.remove('hidden');
-    }, panMs / 2);
+    // 카메라 인트로는 카메라(el.bgLayer)만 움직이는 순수한 패닝이고,
+    // 캐릭터는 별개다 — 패닝이 도는 동안은 계속 숨겨두고, 다 끝나 카메라가
+    // 실제 위치로 돌아온 뒤에야 지수/영우를 보여준다.
     await playCameraIntroPan();
     updateCamera();
+    el.charStage.style.visibility = '';
+    if (npcWasVisible) el.npcYoungwooStage.classList.remove('hidden');
   }
   if (renderDialogueIntro(pendingDialogueSceneCfg || {}, pendingDialogueById || new Map())) {
     gameState = 'dialogue';
@@ -2018,11 +2024,21 @@ function typeDialogueIntroText(textEl, text) {
     }
   }, DIALOGUE_INTRO_TYPING_MS);
 }
-function renderDialogueIntroFrame() {
+// 대화창/지수/영우 이미지(DIALOGUE_INTRO_IMAGE_LAYERS)는 줄이 바뀌어도
+// 그대로라 씬 진입 때 딱 한 번만 짓는다 — 이름/초상화/대사(portraitLayer/
+// nameLayer/textLayer)만 화자에 따라 매 줄 바뀌므로 그 세 엘리먼트
+// 참조만 들고 있다가 updateDialogueIntroLine에서 내용만 갈아끼운다(예전엔
+// 줄이 바뀔 때마다 innerHTML을 통째로 비우고 다시 그려서, 안 바뀌는
+// 대화창/캐릭터 그림까지 매번 사라졌다 나타나는 것처럼 깜빡였다).
+let dialogueIntroPortraitImgEl = null;
+let dialogueIntroNameTextEl = null;
+let dialogueIntroTextContentEl = null;
+function buildDialogueIntroLayers() {
   const dialogueScene = dialogueIntroScene, byId = dialogueIntroById;
-  const line = dialogueIntroLines[dialogueIntroIndex] || null;
-  const speaker = line && line.speaker === 'youngwoo' ? 'youngwoo' : 'jisoo';
   el.dialogueIntroInner.innerHTML = '';
+  dialogueIntroPortraitImgEl = null;
+  dialogueIntroNameTextEl = null;
+  dialogueIntroTextContentEl = null;
   DIALOGUE_INTRO_LAYERS.forEach(key => {
     const data = dialogueScene[key];
     if (!data) return;
@@ -2035,9 +2051,9 @@ function renderDialogueIntroFrame() {
     if (key === 'nameLayer') {
       const nameEl = document.createElement('div');
       nameEl.className = 'dialogue-intro-name';
-      nameEl.textContent = speaker === 'youngwoo' ? '영우' : '지수';
       layerEl.appendChild(nameEl);
       el.dialogueIntroInner.appendChild(layerEl);
+      dialogueIntroNameTextEl = nameEl;
       return;
     }
     if (key === 'textLayer') {
@@ -2045,20 +2061,16 @@ function renderDialogueIntroFrame() {
       textEl.className = 'dialogue-intro-text';
       layerEl.appendChild(textEl);
       el.dialogueIntroInner.appendChild(layerEl);
-      typeDialogueIntroText(textEl, (line && line.text) || '');
+      dialogueIntroTextContentEl = textEl;
       return;
     }
     if (key === 'portraitLayer') {
       layerEl.classList.add('dialogue-portrait-layer');
-      const portraitAssetId = speaker === 'youngwoo' ? dialogueScene.youngwooPortraitAssetId : dialogueScene.jisooPortraitAssetId;
-      const portraitAsset = portraitAssetId ? byId.get(portraitAssetId) : null;
-      if (portraitAsset) {
-        const img = document.createElement('img');
-        img.src = portraitAsset.dataUrl;
-        img.alt = '';
-        layerEl.appendChild(img);
-      }
+      const img = document.createElement('img');
+      img.alt = '';
+      layerEl.appendChild(img);
       el.dialogueIntroInner.appendChild(layerEl);
+      dialogueIntroPortraitImgEl = img;
       return;
     }
     const asset = data.assetId ? byId.get(data.assetId) : null;
@@ -2070,6 +2082,18 @@ function renderDialogueIntroFrame() {
     }
     el.dialogueIntroInner.appendChild(layerEl);
   });
+}
+function updateDialogueIntroLine() {
+  const dialogueScene = dialogueIntroScene, byId = dialogueIntroById;
+  const line = dialogueIntroLines[dialogueIntroIndex] || null;
+  const speaker = line && line.speaker === 'youngwoo' ? 'youngwoo' : 'jisoo';
+  if (dialogueIntroNameTextEl) dialogueIntroNameTextEl.textContent = speaker === 'youngwoo' ? '영우' : '지수';
+  if (dialogueIntroPortraitImgEl) {
+    const portraitAssetId = speaker === 'youngwoo' ? dialogueScene.youngwooPortraitAssetId : dialogueScene.jisooPortraitAssetId;
+    const portraitAsset = portraitAssetId ? byId.get(portraitAssetId) : null;
+    dialogueIntroPortraitImgEl.src = portraitAsset ? portraitAsset.dataUrl : '';
+  }
+  if (dialogueIntroTextContentEl) typeDialogueIntroText(dialogueIntroTextContentEl, (line && line.text) || '');
 }
 function renderDialogueIntro(dialogueScene, byId) {
   const hasAnyLayer = DIALOGUE_INTRO_LAYERS.some(key => dialogueScene[key]);
@@ -2084,7 +2108,8 @@ function renderDialogueIntro(dialogueScene, byId) {
   dialogueIntroById = byId;
   dialogueIntroLines = fishingDialogueLines(dialogueScene);
   dialogueIntroIndex = 0;
-  renderDialogueIntroFrame();
+  buildDialogueIntroLayers();
+  updateDialogueIntroLine();
   el.dialogueIntro.classList.remove('hidden');
   return true;
 }
@@ -2099,7 +2124,7 @@ el.dialogueIntro.addEventListener('pointerdown', (e) => {
   }
   dialogueIntroIndex += 1;
   if (dialogueIntroIndex < dialogueIntroLines.length) {
-    renderDialogueIntroFrame();
+    updateDialogueIntroLine();
     return;
   }
   el.dialogueIntro.classList.add('hidden');
@@ -3486,7 +3511,10 @@ el.layoutEditBtn.addEventListener('pointerdown', (e) => {
   el.layoutEditPanel.classList.toggle('hidden', !layoutEditMode);
   if (layoutEditMode) {
     stopMoveHold();
+    el.bgZoomLabel.classList.toggle('hidden', !hasWorldBackground);
+    el.bgZoomRange.value = bgZoom;
   } else {
+    el.bgZoomLabel.classList.add('hidden');
     castingPosPreview = false;
     el.layoutCastingPosBtn.classList.remove('active');
     if (gameState !== 'charging') el.castPowerWrap.classList.add('hidden');
@@ -3611,6 +3639,15 @@ el.dialogueIntroInner.addEventListener('pointermove', (e) => {
     dialogueBoxDragPointerId = null;
   });
 });
+// 배경화면 확대 — layoutPrefs의 다른 크기 슬라이더와 달리 저장하지 않는다
+// (bgZoom 선언부 주석 참고: 배경마다 다시 맞춰야 하는 값이라 화면 전환/재입장
+// 시 0.9로 되돌아간다). applyBgLayerSize로 el.bgLayer 크기를, updateCamera로
+// 카메라·캐릭터 화면 위치를 즉시 다시 맞춘다.
+el.bgZoomRange.addEventListener('input', () => {
+  bgZoom = parseFloat(el.bgZoomRange.value);
+  applyBgLayerSize();
+  updateCamera();
+});
 el.dialogueBoxScaleRange.addEventListener('input', () => {
   layoutPrefs.dialogueBox.scale = parseFloat(el.dialogueBoxScaleRange.value);
   applyLayoutPrefs();
@@ -3658,6 +3695,7 @@ el.layoutEditDoneBtn.addEventListener('click', (e) => {
   layoutEditMode = false;
   el.layoutEditBtn.classList.remove('active');
   el.layoutEditPanel.classList.add('hidden');
+  el.bgZoomLabel.classList.add('hidden');
   castingPosPreview = false;
   el.layoutCastingPosBtn.classList.remove('active');
   if (gameState !== 'charging') el.castPowerWrap.classList.add('hidden');

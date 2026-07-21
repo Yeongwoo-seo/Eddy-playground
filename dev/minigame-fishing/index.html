@@ -967,6 +967,12 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
       <div class="option-desc">배경화면 위, 영우가 서 있을 자리를 지정하세요. 배경화면과 영우 idle 시트를 둘 다 있어야 지정할 수 있고, 지정하지 않으면 영우는 화면에 나타나지 않아요.</div>
       <button type="button" class="fish-sheet-btn" id="youngwooPosEditBtn" style="width:100%" disabled>📍 영우 위치 지정</button>
     </div>
+
+    <div class="option-group">
+      <div class="option-label">지수 시작 위치</div>
+      <div class="option-desc">이 화면이 게임 시작 화면일 때, 지수가 처음 서 있을 자리를 지정하세요. 배경화면이 있어야 지정할 수 있고, 지정하지 않으면 예전처럼 화면 정중앙에서 시작해요.</div>
+      <button type="button" class="fish-sheet-btn" id="jisuStartPosEditBtn" style="width:100%" disabled>📍 지수 시작 위치 지정</button>
+    </div>
   </div>
 
   <!-- ===== 상태창 — 플레이 화면 위쪽에 뜨는 상태 HUD(요일·날짜/시간/포인트/
@@ -1300,6 +1306,26 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     <div class="crop-actions">
       <button type="button" class="crop-btn secondary" id="youngwooPosCancelBtn">취소</button>
       <button type="button" class="crop-btn primary" id="youngwooPosConfirmBtn">적용</button>
+    </div>
+  </div>
+</div>
+
+<!-- 지수 시작 위치 지정 — youngwooPosOverlay와 완전히 같은 틀(같은 배경
+     이미지, 같은 0~1 top-down 좌표계)이지만, 이 화면이 게임 시작 화면일 때
+     지수(플레이어)가 처음 스폰될 위치를 정한다(화면의 jisuStartPos). 지정하지
+     않으면 play/index.html의 applyScreen()이 예전처럼 화면 정중앙에서
+     시작한다. -->
+<div class="crop-overlay hidden" id="jisuStartPosOverlay">
+  <div class="crop-sheet">
+    <div class="crop-title">지수 시작 위치 지정</div>
+    <div class="crop-desc">배경화면이에요 — 그림 위를 탭하거나 드래그해서 지수가 처음 서 있을 위치를 옮기세요.</div>
+    <div class="heldfish-stage" id="jisuStartPosStage">
+      <img id="jisuStartPosImg" alt="">
+      <div class="rodtip-marker" id="jisuStartPosMarker"></div>
+    </div>
+    <div class="crop-actions">
+      <button type="button" class="crop-btn secondary" id="jisuStartPosCancelBtn">취소</button>
+      <button type="button" class="crop-btn primary" id="jisuStartPosConfirmBtn">적용</button>
     </div>
   </div>
 </div>
@@ -1657,6 +1683,13 @@ const el = {
   youngwooPosMarker: document.getElementById('youngwooPosMarker'),
   youngwooPosCancelBtn: document.getElementById('youngwooPosCancelBtn'),
   youngwooPosConfirmBtn: document.getElementById('youngwooPosConfirmBtn'),
+  jisuStartPosEditBtn: document.getElementById('jisuStartPosEditBtn'),
+  jisuStartPosOverlay: document.getElementById('jisuStartPosOverlay'),
+  jisuStartPosStage: document.getElementById('jisuStartPosStage'),
+  jisuStartPosImg: document.getElementById('jisuStartPosImg'),
+  jisuStartPosMarker: document.getElementById('jisuStartPosMarker'),
+  jisuStartPosCancelBtn: document.getElementById('jisuStartPosCancelBtn'),
+  jisuStartPosConfirmBtn: document.getElementById('jisuStartPosConfirmBtn'),
   screenPills: document.getElementById('screenPills'),
   addScreenBtn: document.getElementById('addScreenBtn'),
   renameScreenBtn: document.getElementById('renameScreenBtn'),
@@ -4244,7 +4277,7 @@ async function renderMoveTestStage() {
    배경화면 여러 장을 "화면"(screen) 여러 개로 두고 서로 이동할 수 있게
    한다(§신규, 영역지정/화면 전환). fishingConfig.screens가 화면 목록,
    각 screen은 { id, name, backgroundAssetId, fishableAreas, blockedAreas,
-   interactionAreas, moveAreas, youngwooNpcPos }를 자기 것으로 갖는다(예전
+   interactionAreas, moveAreas, youngwooNpcPos, jisuStartPos }를 자기 것으로 갖는다(예전
    낚시바 디자인 탭의 fishingConfig.backgroundAssetId 하나짜리 구조를
    화면마다 하나씩으로 늘린 것). currentScreenId가 "지금 편집 중인 화면"
    — 모션 탭의 이동 테스트 미리보기, 영역 설정 탭, 캐릭터 탭(영우 위치)
@@ -4313,7 +4346,7 @@ el.addScreenBtn.addEventListener('click', async () => {
   const name = (prompt('새 화면 이름', `화면 ${screens().length + 1}`) || '').trim();
   if (!name) return;
   const id = `screen_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-  const newScreen = { id, name, backgroundAssetId: null, fishableAreas: [], blockedAreas: [], interactionAreas: [], moveAreas: [], youngwooNpcPos: null };
+  const newScreen = { id, name, backgroundAssetId: null, fishableAreas: [], blockedAreas: [], interactionAreas: [], moveAreas: [], youngwooNpcPos: null, jisuStartPos: null };
   const patch = { screens: screens().concat(newScreen) };
   if (!fishingConfig.startScreenId) patch.startScreenId = id; // 첫 화면은 자동으로 시작 화면
   fishingConfig = await AssetDB.setFishingConfig(patch);
@@ -4331,7 +4364,7 @@ el.renameScreenBtn.addEventListener('click', async () => {
 el.deleteScreenBtn.addEventListener('click', async () => {
   const screen = currentScreen();
   if (!screen) return;
-  if (!confirm(`"${screen.name}" 화면을 삭제할까요? 이 화면의 영역·영우 위치도 같이 지워져요. 이 화면을 도착지로 하던 이동 영역은 남아있지만 더 이상 이동하지 않게 돼요.`)) return;
+  if (!confirm(`"${screen.name}" 화면을 삭제할까요? 이 화면의 영역·영우 위치·지수 시작 위치도 같이 지워져요. 이 화면을 도착지로 하던 이동 영역은 남아있지만 더 이상 이동하지 않게 돼요.`)) return;
   const next = screens().filter(s => s.id !== screen.id);
   const patch = { screens: next };
   if (fishingConfig.startScreenId === screen.id) patch.startScreenId = next[0] ? next[0].id : null;
@@ -5416,6 +5449,7 @@ async function renderCharacterTab() {
   await renderIdleCharacter('youngwoo');
   const screen = currentScreen();
   el.youngwooPosEditBtn.disabled = !(screen && screen.backgroundAssetId && idleFrameCache.youngwoo.down);
+  el.jisuStartPosEditBtn.disabled = !(screen && screen.backgroundAssetId);
 }
 
 ['jisu', 'youngwoo'].forEach((character) => {
@@ -5481,6 +5515,49 @@ el.youngwooPosConfirmBtn.addEventListener('click', async () => {
   await patchCurrentScreen({ youngwooNpcPos: youngwooPosDraft });
   showSaveNote();
   el.youngwooPosOverlay.classList.add('hidden');
+});
+
+/* ===== 지수 시작 위치 지정 =====
+   youngwooPosStage와 완전히 같은 단일 포인트 드래그 패턴·좌표계(배경 원본
+   크기 기준 0~1, top-down) — 다만 이 화면이 게임 시작 화면일 때만 실제로
+   쓰인다(play/index.html의 applyScreen이 charWorldPos를 처음 잡을 때
+   화면 정중앙 대신 이 값을 쓴다). 화면마다 따로 지정한다(그 화면의
+   jisuStartPos). */
+let jisuStartPosDraft = { x: 0.5, y: 0.5 };
+let jisuStartPosDragging = false;
+async function openJisuStartPosEditor() {
+  const screen = currentScreen();
+  if (!screen || !screen.backgroundAssetId) return;
+  const bgAsset = await AssetDB.getAsset(screen.backgroundAssetId).catch(() => null);
+  if (!bgAsset) return;
+  const dims = await loadImageDimensions(bgAsset.dataUrl);
+  jisuStartPosDraft = Object.assign({ x: 0.5, y: 0.5 }, screen.jisuStartPos || {});
+  el.jisuStartPosImg.src = bgAsset.dataUrl;
+  el.jisuStartPosStage.style.setProperty('--heldfish-ar', dims ? (dims.width + '/' + dims.height) : '1/1');
+  renderJisuStartPosMarker();
+  el.jisuStartPosOverlay.classList.remove('hidden');
+}
+function renderJisuStartPosMarker() {
+  el.jisuStartPosMarker.style.left = (jisuStartPosDraft.x * 100) + '%';
+  el.jisuStartPosMarker.style.top = (jisuStartPosDraft.y * 100) + '%';
+}
+function updateJisuStartPosFromEvent(e) {
+  const rect = el.jisuStartPosStage.getBoundingClientRect();
+  jisuStartPosDraft = {
+    x: clamp01((e.clientX - rect.left) / rect.width),
+    y: clamp01((e.clientY - rect.top) / rect.height),
+  };
+  renderJisuStartPosMarker();
+}
+el.jisuStartPosEditBtn.addEventListener('click', openJisuStartPosEditor);
+el.jisuStartPosStage.addEventListener('pointerdown', (e) => { jisuStartPosDragging = true; updateJisuStartPosFromEvent(e); });
+window.addEventListener('pointermove', (e) => { if (jisuStartPosDragging) updateJisuStartPosFromEvent(e); });
+window.addEventListener('pointerup', () => { jisuStartPosDragging = false; });
+el.jisuStartPosCancelBtn.addEventListener('click', () => el.jisuStartPosOverlay.classList.add('hidden'));
+el.jisuStartPosConfirmBtn.addEventListener('click', async () => {
+  await patchCurrentScreen({ jisuStartPos: jisuStartPosDraft });
+  showSaveNote();
+  el.jisuStartPosOverlay.classList.add('hidden');
 });
 
 /* ===== 상태창 — 프레임/화살표는 castGaugeImageSlot(renderCastGaugeImageSlot
