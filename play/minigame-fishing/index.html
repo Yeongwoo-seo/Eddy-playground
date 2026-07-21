@@ -2967,9 +2967,9 @@ function flyFishToCharacter(fishDef) {
 /* ===== 캐스팅 게이지 위치 =====
    세기 게이지(cast-power-wrap)는 화면 고정 자리가 아니라 캐릭터 머리
    위에 뜬다. 폭은 CSS 고정값(220px)이라 레이아웃 측정 없이 상수로 clamp할
-   수 있다(positionItemPopupAboveCharacter와 같은 패턴). layoutPrefs.casting.
-   left/bottom은 이 "머리 위" 기준점에서 얼마나 더 옮길지 정하는 오프셋으로,
-   배치 편집 패널의 "캐스팅 게이지 위치 수정하기" 드래그가 이 값을 바꾼다. */
+   수 있다. layoutPrefs.casting.left/bottom은 이 "머리 위" 기준점에서 얼마나
+   더 옮길지 정하는 오프셋으로, 배치 편집 패널의 "캐스팅 게이지 위치
+   수정하기" 드래그가 이 값을 바꾼다. */
 const CAST_GAUGE_WIDTH = 220;
 const CAST_GAUGE_MARGIN = 12;
 function positionCastGaugeAboveCharacter() {
@@ -3009,26 +3009,22 @@ function positionFishbarRightOfCharacter() {
    참고), 성공해서 물고기가 캐릭터에게 도착한 다음에만 이 팝업이 뜬다.
    배경/아이콘 위치·크기는 dev/minigame-fishing/index.html의 "낚시 팝업" 탭
    (itemPopup config, loadConfig에서 el.itemPopupCard/el.itemPopupIcon에
-   이미 적용해둔 상태)을 그대로 쓴다. */
+   이미 적용해둔 상태)을 그대로 쓴다.
+   예전엔 캐릭터 머리 위(positionItemPopupAboveCharacter)에 떴는데, 영우
+   NPC 근처에서 낚시해 팔러 다니는 경우가 많아 캐릭터가 영우 옆에 서 있을
+   때 뜨면 꼭 "영우한테" 뜨는 것처럼 보였다 — 캐릭터/NPC 위치와 무관하게
+   항상 화면 중앙 상단 고정 자리에 뜨도록 바꿨다. */
 // 낚시 팝업 카드 폭 — .item-popup-card의 고정 width(220px, CSS)와 맞춰야
-// 한다. 카드가 화면 밖으로 나가지 않도록 캐릭터 중심에 맞추되 좌우
-// ITEM_POPUP_MARGIN 안쪽으로 clamp한다(캐릭터가 화면 가장자리에 가까워도
-// 안전 — % 기반 위치만 쓰면 캐릭터가 가장자리에 있을 때 카드가 화면
-// 밖으로 잘려 나간다). el.itemPopup(래퍼)은 아직 화면 밖(left:-9999px)에
-// 있을 때라도 left/bottom을 미리 계산해 넣을 수 있다 — 실제 크기(220px)는
-// CSS 고정값이라 레이아웃 측정 없이 상수로 계산 가능.
+// 한다. el.itemPopup(래퍼)은 아직 화면 밖(left:-9999px)에 있을 때라도
+// left/top을 미리 계산해 넣을 수 있다 — 실제 크기(220px)는 CSS 고정값이라
+// 레이아웃 측정 없이 상수로 계산 가능.
 const ITEM_POPUP_CARD_WIDTH = 220;
-const ITEM_POPUP_GAP = 14;
-const ITEM_POPUP_MARGIN = 12;
-function positionItemPopupAboveCharacter() {
+const ITEM_POPUP_TOP_GAP = 16;
+function positionItemPopupTopCenter() {
   const frameRect = el.frame.getBoundingClientRect();
-  const charRect = el.charStage.getBoundingClientRect();
-  const half = ITEM_POPUP_CARD_WIDTH / 2;
-  const charCenterX = charRect.left - frameRect.left + charRect.width / 2;
-  const clampedCenterX = clamp(charCenterX, ITEM_POPUP_MARGIN + half, frameRect.width - ITEM_POPUP_MARGIN - half);
-  const bottomPx = frameRect.bottom - charRect.top + ITEM_POPUP_GAP;
-  el.itemPopup.style.left = clampedCenterX + 'px';
-  el.itemPopup.style.bottom = bottomPx + 'px';
+  el.itemPopup.style.left = (frameRect.width / 2) + 'px';
+  el.itemPopup.style.top = 'calc(' + ITEM_POPUP_TOP_GAP + 'px + env(safe-area-inset-top, 0px))';
+  el.itemPopup.style.bottom = '';
   el.itemPopup.style.transform = `translateX(-50%) scale(${layoutPrefs.casting.scale * layoutPrefs.itemPopup.scale})`;
 }
 
@@ -3090,7 +3086,7 @@ function showHeldFish(fishCaught) {
 function showItemPopup(fishCaught) {
   gameState = 'popup';
   populateItemPopup(fishCaught);
-  positionItemPopupAboveCharacter();
+  positionItemPopupTopCenter();
   showHeldFish(fishCaught);
 }
 
@@ -3346,7 +3342,7 @@ let layoutPrefs = {
   char: { scale: 0.45, outline: 0 }, // 캐릭터(.char-stage) 전체 배율 — --char-scale, char-stage의 transform:scale에 그대로 들어간다. 배치 확정 값으로 기본값 고정
   casting: { scale: 0.55, left: 1, bottom: -20 }, // 캐스팅 파워바/찌/입질 팝업/아이템 팝업/물고기 날아가는 연출을 한 번에 묶어 조절하는 배율 — --casting-scale과 각 요소의 JS 계산 transform에 곱해진다. 추 던지기 궤적(cast-svg)은 낚싯대 끝의 실제 화면 좌표에 맞춰야 해서 일부러 빼뒀다(비율만 바꾸면 궤적 시작점이 캐릭터 손끝에서 어긋나 보인다). left/bottom은 더 이상 화면 기준 절대 위치가 아니라, 캐스팅 게이지(cast-power-wrap)가 뜨는 "캐릭터 머리 위" 기준점에서 얼마나 더 옮길지 정하는 오프셋이다(positionCastGaugeAboveCharacter 참고) — 배치 확정 값으로 기본값 고정.
   fishbar: { scale: 1, left: -28, top: 5 }, // 잡아채기 낚시바(fishbar-panel) 전용 배율·위치 — 예전엔 casting.scale을 같이 썼지만, 낚시바만 따로 크기/위치를 잡고 싶다는 요청으로 분리했다. left/top은 "캐릭터 오른쪽, 세로 중앙" 기준점(positionFishbarRightOfCharacter)에서 얼마나 더 옮길지 정하는 오프셋 — top인 이유는 그 함수가 bottom이 아니라 top으로 세로 위치를 잡기 때문(캐스팅 게이지 쪽 bottom과 부호 방향이 다르다). 배치 확정 값으로 기본값 고정.
-  itemPopup: { scale: 1.6 }, // 낚시 팝업(.item-popup) 전용 배율 — casting.scale(전체 캐스팅 UI 묶음)에 곱해져 적용된다(positionItemPopupAboveCharacter). 낚시 팝업만 따로 크기를 조절하고 싶다는 요청으로 추가.
+  itemPopup: { scale: 1.6 }, // 낚시 팝업(.item-popup) 전용 배율 — casting.scale(전체 캐스팅 UI 묶음)에 곱해져 적용된다(positionItemPopupTopCenter). 낚시 팝업만 따로 크기를 조절하고 싶다는 요청으로 추가.
   statusWindow: { scale: 1, left: 0, top: 0 }, // 상태창(.status-window, 요일·날짜/시간/포인트/화살표) 전용 배율·오프셋 — 기준 위치(우상단 고정)에서 얼마나 옮길지와 전체 배율. transform-origin이 top right라 scale은 그 모서리를 축으로 커진다.
   dialogueBox: { scale: 1, left: 5, top: 4 }, // 대화 인트로(.dialogue-intro-inner — 대화창 배경/이름/대사/초상화 레이어 그룹) 전용 배율·오프셋. 화면 전체를 덮는 어두운 배경(.dialogue-intro 자체)은 그대로 두고 안쪽 그림들만 통째로 옮기고 키운다.
 };
@@ -3611,14 +3607,14 @@ el.fishbarPanel.addEventListener('pointermove', (e) => {
 });
 // 낚시 팝업 미리보기 — 평소엔 낚시 성공 직후에만 보이는 요소라, 크기
 // 슬라이더 결과를 확인하려면 먼저 이 버튼으로 강제로 띄워둬야 한다(위치는
-// 캐릭터 기준으로 자동 계산되는 값이라 드래그 대상은 아니다).
+// 화면 중앙 상단 고정이라 드래그 대상은 아니다).
 el.layoutItemPopupPosBtn.addEventListener('click', (e) => {
   e.stopPropagation();
   itemPopupPreview = !itemPopupPreview;
   el.layoutItemPopupPosBtn.classList.toggle('active', itemPopupPreview);
   if (itemPopupPreview) {
     populateItemPopup(fishDefs['1']);
-    positionItemPopupAboveCharacter();
+    positionItemPopupTopCenter();
   } else {
     el.itemPopup.style.left = '-9999px';
   }
