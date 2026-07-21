@@ -1201,7 +1201,7 @@ function confirmSellFish() {
   if (total <= 0) return;
   EconomyState.addPoints(total, { source: 'fishing-sell-fish' });
   caughtFishTally = {};
-  refreshStatusWindowPoints();
+  animateStatusWindowPointsTo(EconomyState.getPoints());
   renderItemWindow(); // 아이템창도 같은 caughtFishTally를 보여주므로 판매 후 같이 비운다
   vibrate(15);
   closeSellFishModal();
@@ -1774,12 +1774,14 @@ function updateStatusWindowClock() {
   const deg = 180 + (hourFraction / 24) * 180;
   el.statusWindow.style.setProperty('--status-arrow-deg', deg + 'deg');
 }
-function refreshStatusWindowPoints() {
+let displayedStatusWindowPoints = null; // 지금 화면에 그려진 숫자 — 카운트업 애니메이션의 시작점으로 쓴다
+function renderStatusWindowPointsValue(value) {
+  displayedStatusWindowPoints = value;
   if (el.statusWindow.classList.contains('hidden')) return;
   el.statusWindowDigits.innerHTML = '';
   const slots = statusWindowDigitSlots;
   if (!slots.length) return;
-  alignStatusDigitsToSlots(EconomyState.getPoints(), slots.length).forEach(({ digit, slotIndex }) => {
+  alignStatusDigitsToSlots(value, slots.length).forEach(({ digit, slotIndex }) => {
     const url = statusWindowNumberFontUrls[digit];
     const slot = slots[slotIndex];
     if (!url || !slot) return;
@@ -1792,6 +1794,29 @@ function refreshStatusWindowPoints() {
     img.style.height = statusWindowNumberFontAdjust.height + 'px';
     el.statusWindowDigits.appendChild(img);
   });
+}
+function refreshStatusWindowPoints() {
+  renderStatusWindowPointsValue(EconomyState.getPoints());
+}
+// 물고기를 팔아 포인트가 늘어날 때, 새 값으로 바로 뛰지 않고 숫자가
+// 좌라락 올라가듯 짧게 카운트업한다(ease-out). 애니메이션 도중 또 팔면
+// 토큰을 새로 발급해 이전 애니메이션 프레임을 무시시키고, 지금 화면에
+// 보이던 숫자(displayedStatusWindowPoints)에서 이어서 새 목표로 간다.
+let statusWindowPointsAnimToken = 0;
+const STATUS_WINDOW_POINTS_ANIM_MS = 600;
+function animateStatusWindowPointsTo(toValue) {
+  const fromValue = displayedStatusWindowPoints == null ? toValue : displayedStatusWindowPoints;
+  if (fromValue === toValue) { renderStatusWindowPointsValue(toValue); return; }
+  const token = ++statusWindowPointsAnimToken;
+  const start = performance.now();
+  const step = (ts) => {
+    if (token !== statusWindowPointsAnimToken) return;
+    const t = clamp((ts - start) / STATUS_WINDOW_POINTS_ANIM_MS, 0, 1);
+    const eased = 1 - Math.pow(1 - t, 3);
+    renderStatusWindowPointsValue(Math.round(fromValue + (toValue - fromValue) * eased));
+    if (t < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
 }
 
 /* ===== 화면 적용 =====
