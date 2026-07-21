@@ -487,11 +487,11 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
       <div class="cast-power-track" id="castPowerTrack"><div class="cast-power-fill" id="castPowerFill"></div></div>
     </div>
   </div>
-  <div class="joystick" id="joystick">
+  <div class="joystick hidden" id="joystick">
     <div class="joystick-base"></div>
     <div class="joystick-knob" id="joystickKnob"></div>
   </div>
-  <button type="button" class="fish-btn" id="fishBtn">🎣</button>
+  <button type="button" class="fish-btn hidden" id="fishBtn">🎣</button>
   <button type="button" class="layout-edit-btn" id="layoutEditBtn" aria-label="배치 편집">✎</button>
   <div class="layout-edit-panel hidden" id="layoutEditPanel">
     <label id="bgZoomLabel" class="hidden">배경화면 확대
@@ -1984,6 +1984,8 @@ async function playGameStartIntro() {
     gameState = 'dialogue';
   } else {
     gameState = 'idle';
+    el.joystick.classList.remove('hidden');
+    el.fishBtn.classList.remove('hidden');
   }
 }
 // 대사가 여러 줄(지수/영우 번갈아 말하는 티키타카, dev/minigame-fishing/
@@ -2129,6 +2131,8 @@ el.dialogueIntro.addEventListener('pointerdown', (e) => {
   }
   el.dialogueIntro.classList.add('hidden');
   gameState = 'idle';
+  el.joystick.classList.remove('hidden');
+  el.fishBtn.classList.remove('hidden');
 });
 
 // 잡은 물고기 아이콘(overlayFishIcon)은 endRun에서 처음 그 fishId의
@@ -3093,6 +3097,7 @@ function resetToIdle() {
   el.biteCaught.classList.add('hidden');
   el.heldFish.classList.add('hidden');
   el.joystick.classList.remove('hidden');
+  el.fishBtn.classList.remove('hidden');
   el.charImg.classList.remove('char-mirror-x'); // 걷기/idle 시트는 방향별로 이미 따로 있어 반전이 필요 없다
   const pose = idlePoseUrl();
   if (pose) { el.charImg.src = pose; el.charImg.classList.remove('hidden'); el.charFallback.classList.add('hidden'); }
