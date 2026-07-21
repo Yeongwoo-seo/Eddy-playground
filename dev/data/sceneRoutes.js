@@ -10,6 +10,10 @@
 // dead page.
 const MINIGAME_ROUTES = {
   'week1-scene-001-2-minigame': '/play/minigame-eastwood/',
+  // [레이튼 퀴즈 삽입] 열차에서 지수가 켜본 두뇌 퍼즐(PZ-H02) — 낚시와 같은
+  // 오픈형 미니게임 계약: 클리어 조건 없이 SHOP_TUTORIAL_RETURN_SCENE이
+  // 정해준 씬으로 뒤로가기 버튼이 돌아간다.
+  'week1-scene-train-minigame': '/play/minigame-layton/?puzzle=pz-h02',
   // [v08 재편] 서큘러키 사진+낚시 제안 (week1-scene-circular-quay 참고) —
   // 독립형 낚시 미니게임(fishing-minigame, play/minigame-fishing/) 재사용.
   // 클리어 조건이 따로 없는 오픈형 미니게임이라 게임 쪽에서 자동으로 다음
@@ -54,6 +58,7 @@ const MINIGAME_ROUTES = {
 // returns straight into week1-scene-002-1 (accommodation) since the shop
 // beat already happened earlier in the day.
 const SHOP_TUTORIAL_RETURN_SCENE = {
+  'week1-scene-train-minigame': 'week1-scene-train-2',
   'week1-scene-shop-visit': 'week1-scene-circular-quay',
   'week1-scene-circular-quay-minigame': 'week1-scene-002-1',
 };

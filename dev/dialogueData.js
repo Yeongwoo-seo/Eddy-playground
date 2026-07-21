@@ -641,7 +641,13 @@ const week1Scene001_2Lines = [
    stop early at Circular Quay" beat that used to open the old
    circular-quay scene is folded into this scene's own closing lines below,
    since that's the geography that puts them right by 더 록스 골목 for the
-   shop discovery next. */
+   shop discovery next.
+
+   [레이튼 퀴즈 삽입] 지수가 심심해서 퍼즐 앱을 켜보는 짧은 비트 뒤로
+   week1SceneTrainLines가 끊긴다 — nextSceneId가 week1-scene-shop-intro
+   대신 week1-scene-train-minigame(PZ-H02, /play/minigame-layton/)으로
+   바뀌었고, 나머지 대화는 week1SceneTrainLines2로 옮겨 그 미니게임 다음
+   씬(week1-scene-train-2)에 붙였다. */
 const week1SceneTrainLines = [
   { id: 'line-001', speaker: '지수', text: '오오.\n이제 좀 감 잡았어요.', characterId: 'jisoo', expression: 'happy' },
   { id: 'line-002', speaker: '영우', text: '그치.\n나중에 장소 이름 나와도 대충 알겠지?', characterId: 'youngwoo', expression: 'soft' },
@@ -662,6 +668,20 @@ const week1SceneTrainLines = [
   { id: 'line-013', speaker: '영우', text: '어떻게 잤길래 ㅋㅎㅋㅎㅋㅎㅋㅎ', characterId: 'youngwoo', expression: 'happy' },
   { id: 'line-014', speaker: '지수', text: '살기 위해 잔 거예요.', characterId: 'jisoo', expression: 'smirk' },
   { id: 'line-015', speaker: '영우', text: '아구.\n진짜 고생했네.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-015a', speaker: '지수', text: '아 맞다, 저 심심해서 비행기에서 이상한 퍼즐 앱 깔았거든요.', characterId: 'jisoo', expression: 'curious' },
+  { id: 'line-015b', speaker: '영우', text: '오, 뭔데?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-015c', speaker: '지수', text: '레이튼풍 두뇌 퍼즐이래요.\n한 문제만 보여줄게요.', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-015d', speaker: '영우', text: '궁금한데.\n한번 보자.', characterId: 'youngwoo', expression: 'soft' },
+];
+
+// 이후 대화(원래 line-016부터)는 week1SceneTrainLines2로 분리했다 —
+// 퍼즐 앱 미니게임(week1-scene-train-minigame, PZ-H02)이 스토리 씬 사이에
+// 끼어드는 별도 라우팅 페이지라 여기서 한 번 끊어야 한다(week1Scenes의
+// week1-scene-train.nextSceneId → week1-scene-train-minigame → 미니게임의
+// mkShopReturnUrl로 여기 이어짐, week1-scene-circular-quay/-minigame 쌍과
+// 같은 패턴). 정답을 몰라도 뒤로가기로 바로 여기 돌아올 수 있어 진행에는
+// 영향이 없다.
+const week1SceneTrainLines2 = [
   { id: 'line-016', speaker: '지수', text: '영우는 어제 몇 시에 잤어요?', characterId: 'jisoo', expression: 'curious' },
   { id: 'line-017', speaker: '영우', text: '음.', characterId: 'youngwoo', expression: 'blank' },
   { id: 'line-018', speaker: '지수', text: '그 음 뭐야.', characterId: 'jisoo', expression: 'suspicious' },
@@ -1082,16 +1102,40 @@ const week1Scenes = [
     introLabel: 'SYDNEY TRAINS',
     time: '10:05',
     lines: week1SceneTrainLines,
-    // [v08 재편] Hands off straight into the shop-discovery beat now — the
-    // "get off one stop early at Circular Quay" reveal that used to open
-    // week1-scene-circular-quay is folded into this scene's own closing
-    // lines (see week1SceneTrainLines' header comment), since that's the
-    // geography that puts them right by 더 록스 골목 for the shop.
+    // [레이튼 퀴즈 삽입] 예전엔 여기서 곧장 week1-scene-shop-intro로 넘어갔지만,
+    // 이제 지수가 켜본 퍼즐 앱(PZ-H02)으로 먼저 새는 별도 라우팅 페이지를
+    // 거친다 — week1-scene-circular-quay → -minigame과 같은 패턴.
+    nextSceneId: 'week1-scene-train-minigame',
+  },
+  {
+    id: 'week1-scene-train-minigame',
+    order: 5,
+    name: '레이튼 퀴즈 · 사진 촬영 순서 (PZ-H02)',
+    location: 'Sydney Trains',
+    time: '10:15',
+    // No `lines` — routes straight into the puzzle-play page (same
+    // MINIGAME_ROUTES/SHOP_TUTORIAL_RETURN_SCENE handoff every other
+    // minigame uses, dev/data/sceneRoutes.js). Open-ended like the fishing
+    // minigame — no clear condition gates progress, its own back button
+    // (mkShopReturnUrl) returns straight into week1-scene-train-2.
+    route: '/play/minigame-layton/?puzzle=pz-h02',
+  },
+  {
+    id: 'week1-scene-train-2',
+    order: 6,
+    name: '열차 — 잠 이야기',
+    location: 'Sydney Trains',
+    introLabel: 'SYDNEY TRAINS',
+    time: '10:20',
+    lines: week1SceneTrainLines2,
+    // Picks back up right after the puzzle-app beat and hands off to the
+    // shop-discovery scene, same destination week1-scene-train used to go
+    // to directly before the minigame was inserted.
     nextSceneId: 'week1-scene-shop-intro',
   },
   {
     id: 'week1-scene-shop-intro',
-    order: 5,
+    order: 7,
     name: '더 록스 · 작은 편집숍 발견',
     location: 'The Rocks Lane',
     introLabel: 'THE ROCKS',
@@ -1110,7 +1154,7 @@ const week1Scenes = [
   },
   {
     id: 'week1-scene-shop-visit',
-    order: 6,
+    order: 8,
     name: '옷가게 튜토리얼',
     location: 'The Rocks Boutique',
     time: '10:50',
@@ -1118,7 +1162,7 @@ const week1Scenes = [
   },
   {
     id: 'week1-scene-circular-quay',
-    order: 7,
+    order: 9,
     name: '서큘러키 · 사진과 낚시 제안',
     location: 'Circular Quay Waterfront',
     introLabel: 'CIRCULAR QUAY',
@@ -1131,7 +1175,7 @@ const week1Scenes = [
   },
   {
     id: 'week1-scene-circular-quay-minigame',
-    order: 8,
+    order: 10,
     name: '서큘러키 낚시',
     location: 'Circular Quay Waterfront',
     time: '11:30',
@@ -1139,7 +1183,7 @@ const week1Scenes = [
   },
   {
     id: 'week1-scene-002-1',
-    order: 9,
+    order: 11,
     name: '낚시 수익 정산 · 진짜 같이 있네 · 사라진 폰',
     location: 'Eastwood Accommodation',
     introLabel: 'EASTWOOD',
@@ -1164,7 +1208,7 @@ const week1Scenes = [
   },
   {
     id: 'week1-scene-002-2',
-    order: 10,
+    order: 12,
     name: '핸드폰을 찾아라',
     location: 'Eastwood Accommodation',
     time: '20:35',
@@ -1176,7 +1220,7 @@ const week1Scenes = [
   },
   {
     id: 'week1-scene-002-3',
-    order: 11,
+    order: 13,
     name: '근데 이 열쇠 뭐지? · 집주인과의 통화 · 첫날 밤',
     location: 'Eastwood Accommodation',
     introLabel: 'EASTWOOD',
@@ -1202,7 +1246,7 @@ const week1Scenes = [
 // even inside a group whose other members got merged.
 const week1SceneGroups = [
   { range: '#1-2', label: '공항 도착', sceneIds: ['week1-scene-flight'] },
-  { range: '#3-5', label: '지하철 · 열차', sceneIds: ['week1-scene-001-2', 'week1-scene-001-2-minigame', 'week1-scene-train'] },
+  { range: '#3-5', label: '지하철 · 열차', sceneIds: ['week1-scene-001-2', 'week1-scene-001-2-minigame', 'week1-scene-train', 'week1-scene-train-minigame', 'week1-scene-train-2'] },
   // [v08 재편] The Missing Key v1 §5.2 — 지도 미니게임에서 받은 500P를 처음
   // 써보는 옷가게 발견 비트. 열차와 서큘러키 관광 사이로 옮겨왔다(더 록스
   // 골목 = 서큘러키에서 내린 직후 걷는 길).
