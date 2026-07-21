@@ -377,10 +377,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .npc-menu-btn--close{background:rgba(255,255,255,.15);color:rgba(255,255,255,.85)}
 .npc-menu-btn:active{opacity:.8}
 
-.sell-fish-card{width:270px;max-height:70vh;background:rgba(8,16,22,.94);background-size:cover;background-position:center;border:1px solid rgba(255,255,255,.18);border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:10px}
-/* 아이템창 탭(dev/minigame-fishing/index.html)에서 배경(액자) 그림을
-   올리면 이 클래스가 붙어 기본 어두운 단색 대신 그 그림이 깔린다. */
-.sell-fish-card.sell-fish-card--has-bg{background-color:transparent}
+.sell-fish-card{width:270px;max-height:70vh;background:rgba(8,16,22,.94);border:1px solid rgba(255,255,255,.18);border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:10px}
 .sell-fish-title{text-align:center;font-size:16px;font-weight:700;color:#fff}
 .sell-fish-list{display:flex;flex-direction:column;gap:6px;max-height:38vh;overflow-y:auto}
 .sell-fish-empty{text-align:center;font-size:13px;color:rgba(255,255,255,.6);padding:10px 0}
@@ -861,9 +858,9 @@ let fishSheetDims = null; // { width, height } of the *actual* loaded sheet — 
 let fishIconOverrides = {};
 // 아이템창(상시 표시, .item-window) — dev/minigame-fishing/index.html
 // "아이템창" 탭에서 올린 배경(액자) 이미지와, 그 위에 지정한 8칸 그리드
-// (itemIconGrid). 배경 이미지 자체가 sell-fish-card 배경으로도 같이
-// 쓰이지만(loadConfig), 여기 아이템창은 판매(영우 NPC)와 별개로 그
-// 이미지를 프레임 삼아 항상 화면에 떠 있다. 배경을 안 올렸으면(에디터도
+// (itemIconGrid). 판매 모달(sell-fish-card)은 이 배경을 쓰지 않고 항상
+// 기본(어두운 반투명) 카드 모양이다 — 아이템창은 판매(영우 NPC)와 별개로
+// 그 이미지를 프레임 삼아 항상 화면에 떠 있다. 배경을 안 올렸으면(에디터도
 // 그리드 편집을 잠가둠) 보여줄 칸 자리 기준이 없어 통째로 숨긴다.
 let itemWindowBgUrl = null;
 let itemWindowBgDims = null; // { width, height } — 배경 이미지 원본 크기, 그리드 계산 기준
@@ -1634,13 +1631,11 @@ async function loadConfig() {
   await setupStatusWindow(statusWindowCfg, byId);
 
   // 아이템창 배경(액자) — dev/minigame-fishing/index.html의 "아이템창" 탭
-  // 설정. 판매 모달(sell-fish-card)의 배경으로도 쓰고, 화면 상단 상시
-  // 표시(item-window)의 프레임/그리드 기준 이미지로도 같은 에셋을 쓴다.
+  // 설정. 화면 상단 상시 표시(item-window)의 프레임/그리드 기준 이미지로만
+  // 쓰고, 판매 모달(sell-fish-card)은 항상 기본 카드 모양 그대로 둔다.
   const itemWindowBgAsset = cfg.itemWindowBackgroundAssetId ? byId.get(cfg.itemWindowBackgroundAssetId) : null;
   if (itemWindowBgAsset) {
     itemWindowBgUrl = (await preloadWithRetry(itemWindowBgAsset.dataUrl, 3, 500)).url;
-    el.sellFishCard.style.backgroundImage = `url(${itemWindowBgUrl})`;
-    el.sellFishCard.classList.add('sell-fish-card--has-bg');
     el.itemWindowFrameImg.src = itemWindowBgUrl;
     itemWindowBgDims = await new Promise(resolve => {
       const img = new Image();
@@ -1650,8 +1645,6 @@ async function loadConfig() {
     });
     if (itemWindowBgDims) el.itemWindow.style.setProperty('--item-window-ar', itemWindowBgDims.width + '/' + itemWindowBgDims.height);
   } else {
-    el.sellFishCard.style.backgroundImage = '';
-    el.sellFishCard.classList.remove('sell-fish-card--has-bg');
     itemWindowBgUrl = null;
     itemWindowBgDims = null;
   }
