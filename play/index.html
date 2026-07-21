@@ -52,8 +52,10 @@ body{background:#000;display:flex;justify-content:center;min-height:100dvh}
 .week-tile.active:active{transform:scale(.98)}
 .week-tile.locked{cursor:not-allowed;background:linear-gradient(135deg,#14171c 0%,#000 100%);filter:grayscale(.2)}
 .week-tile.minigame{background:linear-gradient(135deg,#2a1b3d 0%,#120d20 100%);background-size:cover;background-position:center}
+.week-tile.continue{background:linear-gradient(135deg,#0f4d54 0%,#082024 100%)}
 .week-tile-body{position:absolute;right:18px;bottom:16px;z-index:1;color:#fff;text-align:right}
 .week-tile-name{font-size:18px;font-weight:800}
+.week-tile-desc{font-size:12px;color:rgba(255,255,255,.75);font-weight:500;margin-top:3px}
 
 .minigame-select{position:absolute;inset:0;z-index:11;background:#000;display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
 .minigame-select.show{display:flex}
@@ -109,6 +111,12 @@ if ('serviceWorker' in navigator) {
 </script>
 <script src="/realPlayMode.js"></script>
 <script src="/dev/assetDb.js"></script>
+<script src="/dev/caseFileState.js"></script>
+<script src="/dev/state/economyState.js"></script>
+<script src="/dev/state/relationshipState.js"></script>
+<script src="/dev/state/wardrobeState.js"></script>
+<script src="/dev/state/shopState.js"></script>
+<script src="/dev/state/explorationState.js"></script>
 <script>
 const BG_IMG_KEY = 'mkDevStartScreenBg';
 const BG_POS_KEY = 'mkDevStartScreenBgPos';
@@ -185,6 +193,25 @@ renderStartPos(loadStartPos());
 // the story from the top, not to browse individual scenes for testing.
 function goToRealStart() { RealPlayMode.mark(); location.href = '/play/game/?scene=week1-scene-flight'; }
 
+// "이어하기" — 저장 슬롯을 실제로 불러와(CaseFileState.loadSlot) 조사 상태/
+// 포인트/옷장/탐색 허브 상태를 전부 복원한 뒤, 저장된 씬(또는 탐색 허브
+// 위치)으로 이동한다. play/game/index.html의 CASE FILE 메뉴 "불러오기"가
+// 하는 것과 동일한 절차 — 거기서도 로드 직후 페이지를 이동하면 새로 뜨는
+// 페이지는 이미 복원된 localStorage를 그대로 읽는다.
+async function goToContinue() {
+  if (!continueSlot) return;
+  const loaded = await CaseFileState.loadSlot(continueSlot.slotNum);
+  if (!loaded) return;
+  RealPlayMode.mark();
+  if (loaded.sceneId === '__EXPLORE_HUB__') {
+    const phase = (loaded.explorationState && loaded.explorationState.currentPhase) || 'W2_TOURISM';
+    const loc = (loaded.explorationState && loaded.explorationState.currentLocationId) || 'w2-circular-quay';
+    location.href = `/play/explore/?phase=${encodeURIComponent(phase)}&location=${encodeURIComponent(loc)}`;
+  } else {
+    location.href = `/play/game/?scene=${encodeURIComponent(loaded.sceneId)}&line=${loaded.lineIndex || 0}`;
+  }
+}
+
 // Same tap-feedback sequence as /dev/start/: hold the darken 0.2s, clear it,
 // pause 0.1s, then show the 주차 select screen — otherwise it appears before
 // the darken is ever seen.
@@ -219,13 +246,50 @@ const WEEK1_MINIGAMES = [
   { name: '시간대 정리', route: '/play/minigame-timeline/' },
 ];
 
-el.weekGrid.innerHTML = WEEK_TILES.map(t => `
-  <div class="week-tile ${t.locked ? 'locked' : 'active'}${t.key === 'minigame' ? ' minigame' : ''}" data-key="${t.key}"${t.bg ? ` style="background-image:url('${t.bg}')"` : ''}>
-    <div class="week-tile-body">
-      <div class="week-tile-name">${t.label}</div>
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function formatSaveTime(ms) {
+  if (!ms) return '';
+  const d = new Date(ms);
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+// 저장된 기록이 있으면 주차 선택 화면 맨 위에 "이어하기" 타일을 추가로
+// 보여준다 — 3개 저장 슬롯(CaseFileState.saveSlot/loadSlot) 중 가장 최근에
+// 저장된 것을 고른다. 로컬 캐시로 먼저 즉시 그리고(listSlotsLocalSync),
+// 서버(Supabase) 병합본이 도착하면(listSlots) 그 사이 기록된 다른 기기의
+// 저장도 반영해 다시 그린다.
+let continueSlot = null;
+function pickMostRecentSlot(slots) {
+  const occupied = slots.filter(s => s.occupied);
+  if (!occupied.length) return null;
+  return occupied.reduce((a, b) => (b.updatedAt || 0) > (a.updatedAt || 0) ? b : a);
+}
+
+function renderWeekGrid() {
+  const continueTile = continueSlot ? `
+    <div class="week-tile continue active" data-key="continue">
+      <div class="week-tile-body">
+        <div class="week-tile-name">이어하기</div>
+        <div class="week-tile-desc">${escapeHtml(continueSlot.missionTitle || '')}${continueSlot.missionTitle ? ' · ' : ''}${formatSaveTime(continueSlot.updatedAt)}</div>
+      </div>
     </div>
-  </div>
-`).join('');
+  ` : '';
+  el.weekGrid.innerHTML = continueTile + WEEK_TILES.map(t => `
+    <div class="week-tile ${t.locked ? 'locked' : 'active'}${t.key === 'minigame' ? ' minigame' : ''}" data-key="${t.key}"${t.bg ? ` style="background-image:url('${t.bg}')"` : ''}>
+      <div class="week-tile-body">
+        <div class="week-tile-name">${t.label}</div>
+      </div>
+    </div>
+  `).join('');
+}
+continueSlot = pickMostRecentSlot(CaseFileState.listSlotsLocalSync());
+renderWeekGrid();
+CaseFileState.listSlots().then(slots => {
+  continueSlot = pickMostRecentSlot(slots);
+  renderWeekGrid();
+}).catch(() => {});
 
 el.minigameList.innerHTML = WEEK1_MINIGAMES.map(m => `
   <div class="minigame-item" data-route="${m.route}">${m.name}</div>
@@ -241,7 +305,8 @@ function showMinigameSelect() {
 el.weekGrid.addEventListener('click', (e) => {
   const tile = e.target.closest('.week-tile.active');
   if (!tile) return;
-  if (tile.dataset.key === 'week1') goToRealStart();
+  if (tile.dataset.key === 'continue') goToContinue();
+  else if (tile.dataset.key === 'week1') goToRealStart();
   else if (tile.dataset.key === 'minigame') showMinigameSelect();
 });
 
