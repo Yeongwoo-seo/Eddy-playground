@@ -5299,12 +5299,15 @@ el.youngwooPosConfirmBtn.addEventListener('click', async () => {
 });
 
 /* ===== 상태창 — 프레임/화살표는 castGaugeImageSlot(renderCastGaugeImageSlot
-   참고)과 같은 단일 슬롯 업로드 패턴이고, 숫자글꼴은 0~9 자리마다 그
-   패턴을 반복한다. 저장 형태는 fishingConfig.statusWindow 한 덩어리인데
-   setFishingConfig가 최상위 키만 얕게(Object.assign) 병합하기 때문에,
-   그 안의 필드 하나만 바꿀 때도 patchStatusWindow가 기존 statusWindow
-   전체를 들고 와 합친 뒤 통째로 다시 저장한다(heldFishPos처럼 필드가
-   하나뿐인 값과 달리 하위 필드가 여럿이라 이 헬퍼가 필요하다). */
+   참고)과 같은 단일 슬롯 업로드 UI 패턴이고, 숫자글꼴은 0~9 자리마다 그
+   패턴을 반복한다. 다만 castGaugeImageSlot(막대 게이지 배경, 배경을 그대로
+   둬야 함)과 달리 이 셋은 플레이 화면 위에 얹는 HUD 소품이라 모션 프레임과
+   같은 이유로 업로드 즉시 배경을 자동으로 투명하게 만든다
+   (removeBackgroundOrFallback). 저장 형태는 fishingConfig.statusWindow
+   한 덩어리인데 setFishingConfig가 최상위 키만 얕게(Object.assign)
+   병합하기 때문에, 그 안의 필드 하나만 바꿀 때도 patchStatusWindow가 기존
+   statusWindow 전체를 들고 와 합친 뒤 통째로 다시 저장한다(heldFishPos처럼
+   필드가 하나뿐인 값과 달리 하위 필드가 여럿이라 이 헬퍼가 필요하다). */
 const DEFAULT_STATUS_WINDOW = {
   frameAssetId: null,
   arrowAssetId: null,
@@ -5419,7 +5422,8 @@ el.statusFrameFileInput.addEventListener('change', async () => {
   if (!file) return;
   el.statusFrameAddBtn.disabled = true;
   try {
-    const asset = await AssetDB.addAsset({ type: 'fishing-status-frame', name: file.name, blob: file });
+    const blob = await removeBackgroundOrFallback(file); // 플레이 화면 위에 얹는 HUD 프레임이라 나머지 소품 이미지처럼 배경을 투명하게 만든다
+    const asset = await AssetDB.addAsset({ type: 'fishing-status-frame', name: file.name, blob });
     await patchStatusWindow({ frameAssetId: asset.id });
     renderStatusFrameSlot();
   } finally {
@@ -5457,7 +5461,8 @@ el.statusArrowFileInput.addEventListener('change', async () => {
   if (!file) return;
   el.statusArrowAddBtn.disabled = true;
   try {
-    const asset = await AssetDB.addAsset({ type: 'fishing-status-arrow', name: file.name, blob: file });
+    const blob = await removeBackgroundOrFallback(file); // 바늘 아이콘도 프레임과 같은 이유로 배경을 투명하게 만든다
+    const asset = await AssetDB.addAsset({ type: 'fishing-status-arrow', name: file.name, blob });
     await patchStatusWindow({ arrowAssetId: asset.id });
     renderStatusArrowSlot();
   } finally {
@@ -5519,7 +5524,8 @@ el.statusNumberFontFileInput.addEventListener('change', async () => {
   const digit = statusNumberFontUploadDigit;
   statusNumberFontUploadDigit = null;
   if (!file || digit == null) return;
-  const asset = await AssetDB.addAsset({ type: 'fishing-status-digit', name: file.name, blob: file });
+  const blob = await removeBackgroundOrFallback(file); // 숫자 글꼴도 소품 이미지라 배경을 투명하게 만든다
+  const asset = await AssetDB.addAsset({ type: 'fishing-status-digit', name: file.name, blob });
   const sw = currentStatusWindow();
   const next = Object.assign({}, sw.numberFontAssetIds, { [digit]: asset.id });
   await patchStatusWindow({ numberFontAssetIds: next });
