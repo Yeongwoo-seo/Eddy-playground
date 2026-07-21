@@ -494,6 +494,9 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
   <button type="button" class="fish-btn" id="fishBtn">🎣</button>
   <button type="button" class="layout-edit-btn" id="layoutEditBtn" aria-label="배치 편집">✎</button>
   <div class="layout-edit-panel hidden" id="layoutEditPanel">
+    <label id="bgZoomLabel" class="hidden">배경화면 확대
+      <input type="range" id="bgZoomRange" min="0.5" max="2" step="0.02" value="0.9">
+    </label>
     <button type="button" class="secondary" id="layoutCastingPosBtn">🎯 캐스팅 게이지 위치 수정하기</button>
     <button type="button" class="secondary" id="layoutFishbarPosBtn">🎣 낚시바 위치 수정하기</button>
     <button type="button" class="secondary" id="layoutItemPopupPosBtn">🎁 낚시 팝업 미리보기</button>
@@ -703,6 +706,8 @@ const el = {
   fishBtn: document.getElementById('fishBtn'),
   layoutEditBtn: document.getElementById('layoutEditBtn'),
   layoutEditPanel: document.getElementById('layoutEditPanel'),
+  bgZoomLabel: document.getElementById('bgZoomLabel'),
+  bgZoomRange: document.getElementById('bgZoomRange'),
   layoutEditDoneBtn: document.getElementById('layoutEditDoneBtn'),
   layoutDragGhost: document.getElementById('layoutDragGhost'),
   layoutCastingPosBtn: document.getElementById('layoutCastingPosBtn'),
@@ -3499,7 +3504,10 @@ el.layoutEditBtn.addEventListener('pointerdown', (e) => {
   el.layoutEditPanel.classList.toggle('hidden', !layoutEditMode);
   if (layoutEditMode) {
     stopMoveHold();
+    el.bgZoomLabel.classList.toggle('hidden', !hasWorldBackground);
+    el.bgZoomRange.value = bgZoom;
   } else {
+    el.bgZoomLabel.classList.add('hidden');
     castingPosPreview = false;
     el.layoutCastingPosBtn.classList.remove('active');
     if (gameState !== 'charging') el.castPowerWrap.classList.add('hidden');
@@ -3624,6 +3632,15 @@ el.dialogueIntroInner.addEventListener('pointermove', (e) => {
     dialogueBoxDragPointerId = null;
   });
 });
+// 배경화면 확대 — layoutPrefs의 다른 크기 슬라이더와 달리 저장하지 않는다
+// (bgZoom 선언부 주석 참고: 배경마다 다시 맞춰야 하는 값이라 화면 전환/재입장
+// 시 0.9로 되돌아간다). applyBgLayerSize로 el.bgLayer 크기를, updateCamera로
+// 카메라·캐릭터 화면 위치를 즉시 다시 맞춘다.
+el.bgZoomRange.addEventListener('input', () => {
+  bgZoom = parseFloat(el.bgZoomRange.value);
+  applyBgLayerSize();
+  updateCamera();
+});
 el.dialogueBoxScaleRange.addEventListener('input', () => {
   layoutPrefs.dialogueBox.scale = parseFloat(el.dialogueBoxScaleRange.value);
   applyLayoutPrefs();
@@ -3671,6 +3688,7 @@ el.layoutEditDoneBtn.addEventListener('click', (e) => {
   layoutEditMode = false;
   el.layoutEditBtn.classList.remove('active');
   el.layoutEditPanel.classList.add('hidden');
+  el.bgZoomLabel.classList.add('hidden');
   castingPosPreview = false;
   el.layoutCastingPosBtn.classList.remove('active');
   if (gameState !== 'charging') el.castPowerWrap.classList.add('hidden');
