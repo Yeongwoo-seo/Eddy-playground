@@ -3144,9 +3144,12 @@ function applyMoveSprite(spriteDir) {
 }
 // 이동 불가 영역(blockedAreas)이 있으면 후보 위치가 그 안에 들어가는지
 // 검사한다 — bgDims를 못 읽었으면(배경 없음) 판정 근거가 없으니 항상 허용.
+// 낚시가능 영역(fishableAreas)과 겹치는 자리는 낚시가능이 우선이라 이동을 막지 않는다.
 function isPositionBlocked(x, y) {
   if (!blockedAreas.length) return false;
-  return isInsideAnyArea(worldPosToImageFrac(x, y), blockedAreas);
+  const frac = worldPosToImageFrac(x, y);
+  if (isInsideAnyArea(frac, fishableAreas)) return false;
+  return isInsideAnyArea(frac, blockedAreas);
 }
 function moveTick(ts) {
   if (!moveHoldVec) { moveRaf = null; return; }
