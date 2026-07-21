@@ -5113,6 +5113,66 @@ async function patchStatusWindow(partial) {
   return fishingConfig.statusWindow;
 }
 
+// 상태창 이미지 3종(프레임/화살표/숫자글꼴) 각각의 "✂ 배경 제거" — 아이템창
+// 배경의 cutoutItemWindowBg와 같은 패턴(이미 올려둔 이미지를 다시 불러와
+// AI 배경 제거 후 같은 자리에 새 에셋으로 덮어쓴다).
+async function cutoutStatusFrame(btn) {
+  const sw = currentStatusWindow();
+  if (!sw.frameAssetId) return;
+  const asset = await AssetDB.getAsset(sw.frameAssetId).catch(() => null);
+  if (!asset) return;
+  if (btn) btn.disabled = true;
+  try {
+    const srcBlob = await dataUrlToBlob(asset.dataUrl);
+    const resultBlob = await removeBackgroundOrFallback(srcBlob);
+    const newAsset = await AssetDB.addAsset({ type: 'fishing-status-frame', name: 'status-frame-cutout.png', blob: resultBlob });
+    await patchStatusWindow({ frameAssetId: newAsset.id });
+    renderStatusFrameSlot();
+  } catch (err) {
+    DevDiag.show('상태창 프레임 배경 제거 실패: ' + (err && err.message ? err.message : err));
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+async function cutoutStatusArrow(btn) {
+  const sw = currentStatusWindow();
+  if (!sw.arrowAssetId) return;
+  const asset = await AssetDB.getAsset(sw.arrowAssetId).catch(() => null);
+  if (!asset) return;
+  if (btn) btn.disabled = true;
+  try {
+    const srcBlob = await dataUrlToBlob(asset.dataUrl);
+    const resultBlob = await removeBackgroundOrFallback(srcBlob);
+    const newAsset = await AssetDB.addAsset({ type: 'fishing-status-arrow', name: 'status-arrow-cutout.png', blob: resultBlob });
+    await patchStatusWindow({ arrowAssetId: newAsset.id });
+    renderStatusArrowSlot();
+  } catch (err) {
+    DevDiag.show('화살표 배경 제거 실패: ' + (err && err.message ? err.message : err));
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+async function cutoutStatusDigit(digit, btn) {
+  const sw = currentStatusWindow();
+  const assetId = sw.numberFontAssetIds[digit];
+  if (!assetId) return;
+  const asset = await AssetDB.getAsset(assetId).catch(() => null);
+  if (!asset) return;
+  if (btn) btn.disabled = true;
+  try {
+    const srcBlob = await dataUrlToBlob(asset.dataUrl);
+    const resultBlob = await removeBackgroundOrFallback(srcBlob);
+    const newAsset = await AssetDB.addAsset({ type: 'fishing-status-digit', name: `status-digit-${digit}-cutout.png`, blob: resultBlob });
+    const next = Object.assign({}, sw.numberFontAssetIds, { [digit]: newAsset.id });
+    await patchStatusWindow({ numberFontAssetIds: next });
+    renderStatusNumberFontSlots();
+  } catch (err) {
+    DevDiag.show(`숫자(${digit}) 배경 제거 실패: ` + (err && err.message ? err.message : err));
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
 // 상태창 프레임 — 단일 슬롯 업로드.
 async function renderStatusFrameSlot() {
   const sw = currentStatusWindow();
@@ -5123,7 +5183,8 @@ async function renderStatusFrameSlot() {
     const slot = document.createElement('div');
     slot.className = 'frame-slot';
     slot.innerHTML = `${asset ? `<img src="${asset.dataUrl}" alt="">` : ''}
-      <div class="frame-actions"><button type="button" class="frame-mini-btn danger" data-act="del">✕</button></div>`;
+      <div class="frame-actions"><button type="button" class="frame-mini-btn" data-act="cutout" title="배경 제거">✂</button><button type="button" class="frame-mini-btn danger" data-act="del">✕</button></div>`;
+    slot.querySelector('[data-act=cutout]').addEventListener('click', (e) => cutoutStatusFrame(e.currentTarget));
     slot.querySelector('[data-act=del]').addEventListener('click', async () => {
       await patchStatusWindow({ frameAssetId: null });
       renderStatusFrameSlot();
@@ -5161,7 +5222,8 @@ async function renderStatusArrowSlot() {
     const slot = document.createElement('div');
     slot.className = 'frame-slot';
     slot.innerHTML = `${asset ? `<img src="${asset.dataUrl}" alt="">` : ''}
-      <div class="frame-actions"><button type="button" class="frame-mini-btn danger" data-act="del">✕</button></div>`;
+      <div class="frame-actions"><button type="button" class="frame-mini-btn" data-act="cutout" title="배경 제거">✂</button><button type="button" class="frame-mini-btn danger" data-act="del">✕</button></div>`;
+    slot.querySelector('[data-act=cutout]').addEventListener('click', (e) => cutoutStatusArrow(e.currentTarget));
     slot.querySelector('[data-act=del]').addEventListener('click', async () => {
       await patchStatusWindow({ arrowAssetId: null });
       renderStatusArrowSlot();
@@ -5199,12 +5261,19 @@ function renderStatusNumberFontSlots() {
     slot.className = 'frame-slot';
     slot.dataset.digit = digit;
     slot.innerHTML = `<span class="frame-index">${digit}</span>
-      <div class="frame-actions">${assetId ? '<button type="button" class="frame-mini-btn danger" data-act="del">✕</button>' : ''}</div>`;
+      <div class="frame-actions">${assetId ? '<button type="button" class="frame-mini-btn" data-act="cutout" title="배경 제거">✂</button><button type="button" class="frame-mini-btn danger" data-act="del">✕</button>' : ''}</div>`;
     slot.addEventListener('click', (e) => {
-      if (e.target.closest('[data-act=del]')) return;
+      if (e.target.closest('[data-act]')) return;
       statusNumberFontUploadDigit = digit;
       el.statusNumberFontFileInput.click();
     });
+    const cutoutBtn = slot.querySelector('[data-act=cutout]');
+    if (cutoutBtn) {
+      cutoutBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        cutoutStatusDigit(digit, cutoutBtn);
+      });
+    }
     const delBtn = slot.querySelector('[data-act=del]');
     if (delBtn) {
       delBtn.addEventListener('click', async (e) => {
