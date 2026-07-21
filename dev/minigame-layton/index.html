@@ -52,8 +52,8 @@ a.puzzle-item:active{transform:scale(.98);background:var(--surface-2)}
   <a class="back" href="/dev/minigames/">‹ DEV</a>
   <div class="tag">Minigame · 레이튼 퀴즈</div>
   <div class="title">🧩 레이튼풍 고난도 퀴즈</div>
-  <div class="sub">체감 난이도 7~8의 두뇌 퍼즐 20종. 그중 입력만으로 검증 가능한 3문제를 우선 구현했고, 나머지는 목록만 확인할 수 있어요.</div>
-  <div class="progress-note">현재 플레이 가능: 3 / 20</div>
+  <div class="sub">체감 난이도 7~8의 두뇌 퍼즐 20종, 전부 입력만으로 정답을 검증할 수 있도록 구현했어요.</div>
+  <div class="progress-note">현재 플레이 가능: 20 / 20</div>
   <div id="listRoot"></div>
 </div>
 <script>
@@ -63,36 +63,35 @@ if ('serviceWorker' in navigator) {
 </script>
 <script>
 /* ===== 레이튼 퀴즈 목록 — 원본 리서치 문서(§5 권장 난이도 배치)의 20문제
-   순서를 그대로 따른다. developed:true인 3문제(PZ-H01/H17/H18)만 답이
-   "한 줄 텍스트/숫자 입력 + 정확히 일치"로 검증 가능해 우선 구현했고,
-   드래그·배치·경로 그리기가 필요한 나머지 17문제는 아직 미개발이라 목록
-   행이 잠긴 상태로만 표시된다(플레이 화면은 dev/minigame-layton/play/). ===== */
+   순서를 그대로 따른다. 모든 문제가 "한 줄 텍스트/숫자 입력 + 정확히
+   일치"로 검증 가능하도록 설계돼 developed:true다(플레이 화면은
+   dev/minigame-layton/play/). ===== */
 const LAYTON_PUZZLES = [
   { group: '도입부 · 난이도 7', items: [
     { id: 'pz-h01', name: '세 기록으로 찾는 네 자리 암호', type: '숫자 암호 · 조건 소거', difficulty: 7, developed: true },
-    { id: 'pz-h02', name: '일곱 명의 사진 촬영 순서', type: '일렬 배치 · 관계 논리', difficulty: 7, developed: false },
-    { id: 'pz-h05', name: '다섯 사람과 하나의 손전등', type: '최적화 · 다리 건너기', difficulty: 7, developed: false },
-    { id: 'pz-h13', name: '7시와 8시 사이의 두 순간', type: '시계 · 연립 방정식', difficulty: 7, developed: false },
-    { id: 'pz-h19', name: '곱과 합으로 채우는 3×3 숫자판', type: '숫자 배치 · 곱셈·합 조건', difficulty: 7, developed: false },
+    { id: 'pz-h02', name: '일곱 명의 사진 촬영 순서', type: '일렬 배치 · 관계 논리', difficulty: 7, developed: true },
+    { id: 'pz-h05', name: '다섯 사람과 하나의 손전등', type: '최적화 · 다리 건너기', difficulty: 7, developed: true },
+    { id: 'pz-h13', name: '7시와 8시 사이의 두 순간', type: '시계 · 연립 방정식', difficulty: 7, developed: true },
+    { id: 'pz-h19', name: '곱과 합으로 채우는 3×3 숫자판', type: '숫자 배치 · 곱셈·합 조건', difficulty: 7, developed: true },
   ]},
   { group: '중반부 · 난이도 7~8', items: [
-    { id: 'pz-h03', name: '원탁의 여덟 자리', type: '원형 배치', difficulty: 8, developed: false },
-    { id: 'pz-h04', name: '세 명만 진실을 말한다', type: '진실·거짓 · 자기일관성', difficulty: 8, developed: false },
-    { id: 'pz-h07', name: '9L·5L·4L 세 물통', type: '물통 · 최소 상태 전이', difficulty: 8, developed: false },
-    { id: 'pz-h09', name: '서로 자리를 바꾸는 여덟 개의 말', type: '이동 퍼즐 · 최소 횟수', difficulty: 8, developed: false },
-    { id: 'pz-h12', name: '두 사람이 알고 있는 생일', type: '인식론 논리 · 정보 변화', difficulty: 8, developed: false },
+    { id: 'pz-h03', name: '원탁의 여덟 자리', type: '원형 배치', difficulty: 8, developed: true },
+    { id: 'pz-h04', name: '세 명만 진실을 말한다', type: '진실·거짓 · 자기일관성', difficulty: 8, developed: true },
+    { id: 'pz-h07', name: '9L·5L·4L 세 물통', type: '물통 · 최소 상태 전이', difficulty: 8, developed: true },
+    { id: 'pz-h09', name: '서로 자리를 바꾸는 여덟 개의 말', type: '이동 퍼즐 · 최소 횟수', difficulty: 8, developed: true },
+    { id: 'pz-h12', name: '두 사람이 알고 있는 생일', type: '인식론 논리 · 정보 변화', difficulty: 8, developed: true },
     { id: 'pz-h17', name: '6×6 점으로 만들 수 있는 정사각형', type: '도형 개수 세기 · 기하 조합', difficulty: 8, developed: true },
     { id: 'pz-h18', name: '세 방향으로 뚫린 정육면체', type: '3차원 공간 · 노출 면 계산', difficulty: 7, developed: true },
   ]},
   { group: '후반부 · 난이도 8', items: [
-    { id: 'pz-h06', name: '세 마법사와 세 제자', type: '강 건너기 · 상태 제약', difficulty: 8, developed: false },
-    { id: 'pz-h08', name: '4×4 전등을 최소로 끄기', type: '토글 · 패리티 · 최소 조작', difficulty: 8, developed: false },
-    { id: 'pz-h10', name: '두 왕관이 놓인 8×8 보드', type: '8퀸 · 공간 제약', difficulty: 8, developed: false },
-    { id: 'pz-h11', name: '무게가 다른 동전 하나', type: '양팔저울 · 분기 전략', difficulty: 8, developed: false },
-    { id: 'pz-h14', name: 'BOOK + BOOK = TITLE', type: '복면산 · 자리올림', difficulty: 8, developed: false },
-    { id: 'pz-h15', name: '4×4 라틴 케이지', type: '라틴 스퀘어 · 산술 케이지', difficulty: 8, developed: false },
-    { id: 'pz-h16', name: '25칸을 한 번씩 지나가기', type: '해밀턴 경로 · 순서 체크포인트', difficulty: 8, developed: false },
-    { id: 'pz-h20', name: '다섯 사람의 여행지와 음료', type: '로직 그리드 · 다중 속성', difficulty: 8, developed: false },
+    { id: 'pz-h06', name: '세 마법사와 세 제자', type: '강 건너기 · 상태 제약', difficulty: 8, developed: true },
+    { id: 'pz-h08', name: '4×4 전등을 최소로 끄기', type: '토글 · 패리티 · 최소 조작', difficulty: 8, developed: true },
+    { id: 'pz-h10', name: '두 왕관이 놓인 8×8 보드', type: '8퀸 · 공간 제약', difficulty: 8, developed: true },
+    { id: 'pz-h11', name: '무게가 다른 동전 하나', type: '양팔저울 · 분기 전략', difficulty: 8, developed: true },
+    { id: 'pz-h14', name: 'BOOK + BOOK = TITLE', type: '복면산 · 자리올림', difficulty: 8, developed: true },
+    { id: 'pz-h15', name: '4×4 라틴 케이지', type: '라틴 스퀘어 · 산술 케이지', difficulty: 8, developed: true },
+    { id: 'pz-h16', name: '25칸을 한 번씩 지나가기', type: '해밀턴 경로 · 순서 체크포인트', difficulty: 8, developed: true },
+    { id: 'pz-h20', name: '다섯 사람의 여행지와 음료', type: '로직 그리드 · 다중 속성', difficulty: 8, developed: true },
   ]},
 ];
 
