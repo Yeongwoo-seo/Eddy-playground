@@ -1005,13 +1005,14 @@ async function setLocCharStage(charId) {
 }
 
 // 허브에서 대화하는 모든 캐릭터가 서는 자리 — 장소/인물마다 따로 정의하지
-// 않는 한 전부 이 자리로 통일된다(§신규 코드 기본값 확정: 더 록스 골목·영우
-// 슬라이더로 맞췄던 y:-150을 허브 전체 기본값으로 승격). locationDefs.js의
+// 않는 한 전부 이 자리로 통일된다. play/game(대화 씬)의
+// DevGameState.getCharacterTransform 기본값(y:84, dev/assetDb.js)과 맞춰
+// 허브에서도 모든 캐릭터 높이를 y:84로 통일한다. locationDefs.js의
 // charPositions로 장소별 예외를 코드에 직접 정의할 수 있다(resolveCharPos).
 // 대기 화면(setLocCharStage)과 대화 화면(applyDialogueCharacter)이 같은
 // 함수를 공유하는 유일한 좌표 소스라, 어느 화면에서든 항상 같은 자리로
 // 통일된다.
-const DEFAULT_HUB_CHAR_POS = { x: 0, y: -150 };
+const DEFAULT_HUB_CHAR_POS = { x: 0, y: 84 };
 function resolveCharPos(locationId, characterId) {
   const def = locationDefs[locationId];
   const pos = (def && def.charPositions && def.charPositions[characterId]) || DEFAULT_HUB_CHAR_POS;

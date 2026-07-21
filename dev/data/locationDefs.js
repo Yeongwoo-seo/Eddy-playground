@@ -35,10 +35,11 @@
    `charPositions` (optional) — { [characterId]: { x, y } } in px, this
    location's own exception to the hub-wide standing position. Every hub
    character otherwise stands at DEFAULT_HUB_CHAR_POS (play/explore/index.html,
-   currently { x: 0, y: -150 }) — a location only needs this field for the
-   rare spot where that shared default doesn't fit. Purely a static code
-   value now (no runtime editor/override store backs it) — see
-   resolveCharPos() in play/explore/index.html.
+   currently { x: 0, y: 84 } — unified with play/game's scene-based
+   DevGameState.getCharacterTransform default, dev/assetDb.js) — a location
+   only needs this field for the rare spot where that shared default doesn't
+   fit. Purely a static code value now (no runtime editor/override store
+   backs it) — see resolveCharPos() in play/explore/index.html.
 
    `mapPosition` (optional) — { x, y } in % over that phase's overview map
    image (phaseMaps below), for locations landmark-level enough to get their
