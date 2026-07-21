@@ -230,6 +230,9 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .layout-edit-panel button{margin-top:2px;padding:8px;border-radius:10px;border:none;background:rgba(232,116,30,.9);color:#fff;font-weight:700;font-size:13px}
 .layout-edit-panel button.secondary{background:rgba(255,255,255,.14)}
 .layout-edit-panel button.active{background:var(--cyan);color:#04181c}
+.layout-save-status{min-height:14px;font-size:11px;font-weight:600;line-height:1.4;text-align:center;color:rgba(255,255,255,.6)}
+.layout-save-status.error{color:#ff8a8a}
+.layout-save-status.ok{color:#7ee0a8}
 
 /* ===== 배치 코드 보기 — 편집 패널의 "코드보기" 버튼으로 연다. 지금
    layoutPrefs 값을 그대로 JS 리터럴로 보여줘서, 마음에 드는 배치를
@@ -503,6 +506,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
       <input type="range" id="statusWindowScaleRange" min="0.5" max="2" step="0.02" value="1">
     </label>
     <button type="button" class="secondary" id="layoutCodeBtn">📋 코드보기</button>
+    <div class="layout-save-status" id="layoutSaveStatus"></div>
     <button type="button" id="layoutEditDoneBtn">완료</button>
   </div>
   <div class="layout-drag-ghost hidden" id="layoutDragGhost"></div>
@@ -716,6 +720,7 @@ const el = {
   layoutCodeCopyBtn: document.getElementById('layoutCodeCopyBtn'),
   layoutCodeCopyStatus: document.getElementById('layoutCodeCopyStatus'),
   layoutCodeCloseBtn: document.getElementById('layoutCodeCloseBtn'),
+  layoutSaveStatus: document.getElementById('layoutSaveStatus'),
   itemPopup: document.getElementById('itemPopup'),
   itemPopupCard: document.getElementById('itemPopupCard'),
   itemPopupIcon: document.getElementById('itemPopupIcon'),
@@ -3344,9 +3349,30 @@ async function pullLayoutPrefsFromServer() {
     if (fishbarPosPreview) positionFishbarRightOfCharacter();
   } catch (err) { /* 오프라인/서버 오류 — 로컬 캐시 값 그대로 사용 */ }
 }
-function saveLayoutPrefs() {
+// 서버 저장이 실패해도 예전엔 조용히 무시돼서(.catch(() => {})) 편집한
+// 사람이 지금 이 배치가 이 기기에만 남았는지 다른 기기에도 뜨는지 알 방법이
+// 없었다 — layoutSaveStatus 한 줄로 성공/실패를 바로 보여준다(showSaveNote류
+// 다른 화면의 저장 토스트와 같은 목적, 이 화면엔 그런 토스트가 따로
+// 없어서 layout-edit-panel 안에 작게 둔다).
+let layoutSaveStatusTimer = null;
+function setLayoutSaveStatus(text, kind) {
+  el.layoutSaveStatus.textContent = text;
+  el.layoutSaveStatus.classList.toggle('ok', kind === 'ok');
+  el.layoutSaveStatus.classList.toggle('error', kind === 'error');
+  clearTimeout(layoutSaveStatusTimer);
+  if (kind === 'ok') {
+    layoutSaveStatusTimer = setTimeout(() => { el.layoutSaveStatus.textContent = ''; }, 2000);
+  }
+}
+async function saveLayoutPrefs() {
   try { localStorage.setItem(LAYOUT_PREFS_KEY, JSON.stringify(layoutPrefs)); } catch (err) { /* 저장 실패해도 이번 세션 값은 그대로 쓸 수 있으니 무시 */ }
-  AssetDB.setFishingLayoutPrefs(layoutPrefs).catch(() => {});
+  setLayoutSaveStatus('저장 중…', null);
+  try {
+    await AssetDB.setFishingLayoutPrefs(layoutPrefs);
+    setLayoutSaveStatus('✅ 서버에 저장됨', 'ok');
+  } catch (err) {
+    setLayoutSaveStatus('⚠️ 서버 저장 실패 — 이 기기에만 저장됨', 'error');
+  }
 }
 function applyLayoutPrefs() {
   const root = document.documentElement.style;
