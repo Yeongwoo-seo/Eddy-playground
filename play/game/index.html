@@ -740,7 +740,6 @@ async function applyCharacterForLine(characterId, expression) {
     syncCharPosPanel();
     return;
   }
-  el.charWrap.style.opacity = '1';
   const outfitAssetId = outfitResolution.outfit
     ? await DevGameState.getCharacterAssetIdForOutfit(characterId, outfitResolution.outfit, expression)
     : await DevGameState.getCharacterAssetId(characterId, expression);
@@ -760,7 +759,11 @@ async function applyCharacterForLine(characterId, expression) {
   // meant to (position/scale is a per-character tune, not per-outfit).
   const transform = await DevGameState.getCharacterTransform(characterId);
   if (requestToken !== charRequestToken) return; // stale transform must not move the new character's portrait
+  // Position is applied before the reveal (not before the awaits above) so
+  // the character never flashes at the untransformed (0,0) spot while its
+  // saved position is still loading — it only becomes visible already in place.
   applyTransformToImage(transform);
+  el.charWrap.style.opacity = '1';
   currentPortraitCharacterId = characterId;
   currentPortraitTransform = Object.assign({}, transform);
   syncCharPosPanel();
