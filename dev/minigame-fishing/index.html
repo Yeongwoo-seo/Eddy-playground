@@ -6105,7 +6105,7 @@ function renderStatusAssemblePanel() {
     el.statusAssembleFontSizeRow.classList.add('hidden');
     el.deleteStatusDigitBtn.classList.add('hidden');
     el.statusAssemblePanelLabel.textContent = n === 0 ? '숫자 자리를 탭해서 선택하세요' : `숫자 자리 ${n}개 선택됨`;
-    el.statusAssembleAlignRow.classList.toggle('hidden', n < 2);
+    el.statusAssembleAlignRow.classList.remove('hidden'); // 개수와 무관하게 항상 자리를 차지해야 2개/3개 문턱을 넘을 때마다 패널 높이가 바뀌어 스테이지가 튀는 걸 막는다 — 버튼은 disabled로만 막는다
     el.statusAssembleAlignYBtn.disabled = n < 2;
     el.statusAssembleDistributeBtn.disabled = n < 3;
     return;
