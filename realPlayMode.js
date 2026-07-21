@@ -20,7 +20,10 @@ const RealPlayMode = {
   isActive() { try { return sessionStorage.getItem(this.KEY) === '1'; } catch (e) { return false; } },
   hideDevChrome() {
     if (!this.isActive()) return;
-    document.querySelectorAll('a.vn-btn[href="/dev/"], #devBtn, #transformBtn, #caseMenuMount')
+    // #transformBtn (캐릭터 높이 조정 슬라이더, play/game/index.html)은
+    // 의도적으로 여기 넣지 않는다 — .dev-settings-link와 같은 이유로,
+    // 실제 설치-플레이 중에도 위치/레이아웃을 바로 조정할 수 있어야 한다.
+    document.querySelectorAll('a.vn-btn[href="/dev/"], #devBtn, #caseMenuMount')
       .forEach(el => { el.style.display = 'none'; });
   },
 };
