@@ -512,8 +512,8 @@ function unlockBgmOnFirstTap() {
 // (character, expression) pair a line might show, before the first line is
 // shown — a mid-dialogue character/expression swap then never waits on the
 // network, which is what made the character portrait visibly lag behind the
-// text. Resolution has to mirror applyCharacterForLine's exactly (outfit
-// first via WardrobeState.resolveOutfitForScene, falling back to the base
+// text. Resolution has to mirror applyCharacterForLine's exactly (a forced
+// outfit via WardrobeState.resolveOutfitForScene, falling back to the base
 // characterId) — this used to skip the outfit lookup and warm only the base
 // portrait, so any scene showing an equipped outfit's art still hit the
 // network the first time that (outfit, expression) pair came up, no matter
@@ -528,18 +528,18 @@ async function preloadCharacterAssetsForLines(lines) {
   });
   const idLookups = await Promise.allSettled([...pairs.values()].map(async l => {
     const expression = l.expression || 'neutral';
-    let resolvedCharacterId = l.characterId;
+    let forcedOutfit = null;
     if (typeof WardrobeState !== 'undefined') {
       try {
         const resolution = WardrobeState.resolveOutfitForScene(l.characterId, {
           outfitMode: activeSceneData.outfitMode, storyOutfitId: activeSceneData.storyOutfitId,
         });
         if (resolution.hidden) return [];
-        if (resolution.characterId) resolvedCharacterId = resolution.characterId;
+        forcedOutfit = resolution.outfit;
       } catch (e) { /* fall back to the base characterId below */ }
     }
     const [outfitAssetId, baseAssetId] = await Promise.all([
-      DevGameState.getCharacterAssetId(resolvedCharacterId, expression),
+      forcedOutfit ? DevGameState.getCharacterAssetIdForOutfit(l.characterId, forcedOutfit, expression) : DevGameState.getCharacterAssetId(l.characterId, expression),
       DevGameState.getCharacterAssetId(l.characterId, expression),
     ]);
     return [outfitAssetId, baseAssetId];
@@ -574,10 +574,10 @@ let charRequestToken = 0;
 // whatever's currently equipped in WardrobeState) | 'story_locked' (force
 // scene.storyOutfitId regardless of equip state) | 'hidden' (no portrait at
 // all). WardrobeState.resolveOutfitForScene maps that + characterId to the
-// *asset lookup key* to try first (an outfit's own characterAssetKey, e.g.
-// 'jisoo_w0_soft_cardigan' — just another uploadable "character" in the same
-// AssetDB pipeline every base character portrait already uses). If nothing's
-// been uploaded yet for that key, this falls back to the base characterId's
+// vnOutfitId to force, if any (an outfit's art lives under 지수's own VN
+// outfit slots — DevGameState.getCharacterAssetIdForOutfit looks up a specific
+// slot regardless of what's currently selected for gameplay). If nothing's
+// been uploaded yet for that slot, this falls back to the base characterId's
 // own portrait so a scene never goes blank just because an outfit's art
 // hasn't been drawn/uploaded (spec §19.2's "의상이 갑자기 기본 의상으로
 // 돌아가는 현상은 피해야 한다" is about *mid-scene* swaps, not "no art yet").
@@ -589,18 +589,20 @@ async function applyCharacterForLine(characterId, expression) {
   }
   const outfitResolution = (typeof WardrobeState !== 'undefined')
     ? WardrobeState.resolveOutfitForScene(characterId, { outfitMode: activeSceneData.outfitMode, storyOutfitId: activeSceneData.storyOutfitId })
-    : { characterId, hidden: false };
+    : { characterId, outfit: null, hidden: false };
   if (outfitResolution.hidden) {
     el.charWrap.style.opacity = '0';
     return;
   }
   el.charWrap.style.opacity = '1';
   let asset = null;
-  const outfitAssetId = await DevGameState.getCharacterAssetId(outfitResolution.characterId, expression);
+  const outfitAssetId = outfitResolution.outfit
+    ? await DevGameState.getCharacterAssetIdForOutfit(characterId, outfitResolution.outfit, expression)
+    : await DevGameState.getCharacterAssetId(characterId, expression);
   if (requestToken !== charRequestToken) return; // superseded by a later line change
   if (outfitAssetId) asset = await AssetDB.getAsset(outfitAssetId);
   if (requestToken !== charRequestToken) return;
-  if (!asset && outfitResolution.characterId !== characterId) {
+  if (!asset && outfitResolution.outfit) {
     const baseAssetId = await DevGameState.getCharacterAssetId(characterId, expression);
     if (requestToken !== charRequestToken) return;
     asset = baseAssetId ? await AssetDB.getAsset(baseAssetId) : null;

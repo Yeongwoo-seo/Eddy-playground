@@ -65,14 +65,13 @@ const WardrobeState = {
     wardrobeState.equippedOutfitId = outfitId;
     wardrobeState.lastEquippedOutfitId = outfitId;
     saveWardrobeState();
-    // vnOutfitId items reuse art already uploaded under 지수's VN outfit
-    // slots (see shopItems.js) instead of a dedicated characterAssetKey —
-    // syncing the same selection every other screen already reads via
-    // DevGameState.getCharacterAssetId('jisoo', expression) means dialogue,
-    // minigames, and the explore hub all pick up the equipped look with no
-    // changes needed there. Only affects story_locked scenes that force a
-    // *different* vnOutfitId-based outfit mid-scene — none exist yet (see
-    // resolveOutfitForScene below).
+    // Every outfit reuses art already uploaded under 지수's VN outfit slots
+    // (see shopItems.js) — syncing the same selection every other screen
+    // already reads via DevGameState.getCharacterAssetId('jisoo', expression)
+    // means dialogue, minigames, and the explore hub all pick up the equipped
+    // look with no changes needed there. story_locked scenes that force a
+    // *different* outfit mid-scene go through resolveOutfitForScene below
+    // instead, without touching this equipped/selected state.
     const def = shopItems[outfitId];
     if (def && def.vnOutfitId && typeof DevGameState !== 'undefined') {
       try {
@@ -94,24 +93,27 @@ const WardrobeState = {
   // re-reading equippedOutfitId, since a story-locked scene never wrote it.
   getLastEquippedOutfitId() { return wardrobeState.lastEquippedOutfitId; },
 
-  // Resolves which uploaded-asset characterId a dialogue line's portrait
-  // lookup should use, given the line's own characterId and its scene's
-  // outfitMode (spec §5.5 outfitMode: 'equipped' | 'story_locked' | 'hidden').
-  // Falls back to the base characterId whenever the equipped outfit has no
-  // characterAssetKey for this character (i.e. it's not a 지수 outfit) — see
-  // game/index.html's applyCharacterForLine for the "no upload yet" fallback,
-  // which happens one layer up (AssetDB.getAsset returning null).
+  // Resolves which *vnOutfitId* a dialogue line's portrait lookup should
+  // force, given the line's own characterId and its scene's outfitMode (spec
+  // §5.5 outfitMode: 'equipped' | 'story_locked' | 'hidden'). 'equipped'
+  // (the default) returns no forced outfit — DevGameState.getCharacterAssetId
+  // already resolves through the currently-selected outfit on its own (see
+  // getSelectedOutfit in assetDb.js), so there's nothing to override here.
+  // 'story_locked' forces scene.storyOutfitId's vnOutfitId regardless of what's
+  // equipped, via DevGameState.getCharacterAssetIdForOutfit — see
+  // play/game/index.html's applyCharacterForLine for the "no upload yet"
+  // fallback to the base portrait, which happens one layer up (AssetDB.getAsset
+  // returning null).
   resolveOutfitForScene(characterId, options) {
     const opts = options || {};
-    if (opts.outfitMode === 'hidden') return { characterId: null, hidden: true };
-    let outfitId;
-    if (opts.outfitMode === 'story_locked' && opts.storyOutfitId) outfitId = opts.storyOutfitId;
-    else outfitId = wardrobeState.equippedOutfitId;
-    const def = shopItems[outfitId];
-    if (def && def.characterId === characterId && def.characterAssetKey) {
-      return { characterId: def.characterAssetKey, hidden: false, fallbackCharacterId: characterId };
+    if (opts.outfitMode === 'hidden') return { characterId: null, outfit: null, hidden: true };
+    if (opts.outfitMode === 'story_locked' && opts.storyOutfitId) {
+      const def = shopItems[opts.storyOutfitId];
+      if (def && def.characterId === characterId && def.vnOutfitId) {
+        return { characterId, outfit: def.vnOutfitId, hidden: false };
+      }
     }
-    return { characterId, hidden: false };
+    return { characterId, outfit: null, hidden: false };
   },
 
   /* ===== 저장/불러오기 연동 (§16) ===== */

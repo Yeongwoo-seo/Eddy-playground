@@ -3,23 +3,18 @@
    read by shopState.js/play/shop/index.html. 1차 구현 범위는 완성 코디
    프리셋만 판매 — 부위별 조합은 하지 않는다 (§5.1).
 
-   Each item's art can come from two sources, tried in this order (see
-   WardrobeState.equipOutfit / dev/shop/index.html's updatePreview):
-   1. characterAssetKey — a dedicated shop-only upload, looked up through the
-      *same* per-(characterId, expression) uploaded-asset pipeline every other
-      character portrait uses (see DevGameState.getCharacterAssetId in
-      assetDb.js). An outfit's art is just another "character" id an artist
-      can upload under via /dev/upload's 인물 DB tab (옷가게 코디 프리뷰 항목).
-   2. vnOutfitId — reuses art already uploaded under 지수's existing VN outfit
-      slots (dialogueData.js's jisoo.outfits: 'outfit-01'..'outfit-10'), via
-      DevGameState.getCharacterAssetIdForOutfit('jisoo', vnOutfitId, ...).
-      Equipping such an item also calls DevGameState.setSelectedOutfit so
-      every other call site that already renders 지수 via the plain
-      getCharacterAssetId('jisoo', expression) — game/game/index.html dialogue,
-      explore hub, minigames, weekPreloader — picks up the right outfit *and*
-      expression automatically, with no changes needed there.
-   Falls back to the base characterId's own portrait whenever neither source
-   has anything uploaded yet (see game/index.html applyCharacterForLine). */
+   Each item's art is its vnOutfitId — art already uploaded under 지수's
+   existing VN outfit slots (dialogueData.js's jisoo.outfits:
+   'outfit-01'..'outfit-10', via /dev/upload's 인물 DB탭 → 지수 → 옷 피커), looked
+   up through DevGameState.getCharacterAssetIdForOutfit('jisoo', vnOutfitId,
+   ...) (see WardrobeState.equipOutfit / play/shop/index.html's updatePreview).
+   Equipping such an item also calls DevGameState.setSelectedOutfit so every
+   other call site that already renders 지수 via the plain
+   getCharacterAssetId('jisoo', expression) — play/game/index.html dialogue,
+   explore hub, minigames, weekPreloader — picks up the right outfit *and*
+   expression automatically, with no changes needed there.
+   Falls back to the base characterId's own portrait whenever nothing has
+   been uploaded yet (see play/game/index.html applyCharacterForLine). */
 
 const shopItems = {
   /* ===== 1주차 초기 재고 ===== */
@@ -32,7 +27,6 @@ const shopItems = {
     rarity: 'basic',
     week: 1,
     characterId: 'jisoo',
-    characterAssetKey: 'jisoo_w0_soft_cardigan',
     vnOutfitId: 'outfit-01',
     unlockConditions: [{ type: 'flagEquals', key: 'shopUnlocked', value: true }],
   },
@@ -45,7 +39,6 @@ const shopItems = {
     rarity: 'basic',
     week: 1,
     characterId: 'jisoo',
-    characterAssetKey: 'jisoo_w0_city_denim',
     vnOutfitId: 'outfit-02',
     unlockConditions: [{ type: 'flagEquals', key: 'shopUnlocked', value: true }],
   },
@@ -58,7 +51,6 @@ const shopItems = {
     rarity: 'select',
     week: 1,
     characterId: 'jisoo',
-    characterAssetKey: 'jisoo_w0_ribbon_knit',
     vnOutfitId: 'outfit-03',
     unlockConditions: [{ type: 'flagEquals', key: 'week1MapMinigameCleared', value: true }],
   },
@@ -71,7 +63,6 @@ const shopItems = {
     rarity: 'select',
     week: 1,
     characterId: 'jisoo',
-    characterAssetKey: 'jisoo_w0_night_walk',
     vnOutfitId: 'outfit-04',
     unlockConditions: [{ type: 'flagEquals', key: 'week1Completed', value: true }],
   },
@@ -86,7 +77,6 @@ const shopItems = {
     rarity: 'select',
     week: 2,
     characterId: 'jisoo',
-    characterAssetKey: 'jisoo_w1_harbour_breeze',
     vnOutfitId: 'outfit-05',
     unlockConditions: [{ type: 'flagEquals', key: 'visitedCircularQuay', value: true }],
   },
@@ -99,7 +89,6 @@ const shopItems = {
     rarity: 'select',
     week: 2,
     characterId: 'jisoo',
-    characterAssetKey: 'jisoo_w1_rocks_vintage',
     vnOutfitId: 'outfit-06',
     unlockConditions: [{ type: 'flagEquals', key: 'visitedTheRocksBoutique', value: true }],
   },
@@ -112,7 +101,6 @@ const shopItems = {
     rarity: 'premium',
     week: 2,
     characterId: 'jisoo',
-    characterAssetKey: 'jisoo_w1_detective_check',
     vnOutfitId: 'outfit-07',
     unlockConditions: [{ type: 'flagAtLeast', key: 'week2CoreQuestionsResolved', min: 3 }],
   },
@@ -125,7 +113,6 @@ const shopItems = {
     rarity: 'premium',
     week: 2,
     characterId: 'jisoo',
-    characterAssetKey: 'jisoo_w1_photo_perfect',
     vnOutfitId: 'outfit-08',
     unlockConditions: [{ type: 'flagEquals', key: 'harbourPhotoGradeS', value: true }],
   },
