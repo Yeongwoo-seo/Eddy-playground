@@ -2030,6 +2030,14 @@ async function triggerScreenTransition(moveArea) {
     el.preloadOverlay.classList.add('hidden'); // revealGame()과 같은 마무리 — 트랜지션 끝나면 완전히 빼서 다시 그릴 일이 없게 한다
   } finally {
     screenTransitioning = false; // 위에서 무슨 일이 있었든(타임아웃 포함) 조이스틱은 반드시 다시 풀린다
+    // stopMoveHold()가 moveHoldVec만 비웠을 뿐, 손가락은 그대로 조이스틱을
+    // 쥐고 있을 수 있다 — 방향을 안 바꾸면 pointermove가 다시 안 와서
+    // startMoveHold가 재호출되지 않고, 화면은 넘어갔는데 캐릭터만 멈춘
+    // 채로 남는다. 여전히 쥐고 있는 방향(activeMoveDir)이 있으면 그대로
+    // 이어서 재개한다.
+    if (joystickPointerId !== null && activeMoveDir) {
+      startMoveHold(activeMoveDir.dx, activeMoveDir.dy, spriteDirFor(activeMoveDir.dx, activeMoveDir.dy));
+    }
   }
 }
 // moveTick(캐릭터가 이동 중일 때 매 프레임)에서 checkInteractionArea와
