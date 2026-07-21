@@ -1799,6 +1799,11 @@ async function applyScreen(screenDef, opts) {
    막아야 하므로(screenTransitioning), stopMoveHold로 지금 하던 이동부터
    끊는다 — moveTick은 moveHoldVec이 비면 그 프레임에서 스스로 멈춘다. */
 function screenById(id) { return screensList.find(s => s.id === id) || null; }
+// 도착 지점이 (같은 화면 상호이동처럼) 도착 화면의 다른 이동 영역 안에
+// 그대로 떨어지는 경우가 있다 — 그 영역은 캐릭터가 한 번 밖으로 나가기
+// 전까지 checkMoveArea가 트리거로 치지 않는다(안 그러면 도착하자마자 같은
+// 프레임에 다시 반대쪽으로 튕겨나가는 무한 핑퐁이 난다). null이면 억제 없음.
+let suppressMoveAreaId = null;
 async function triggerScreenTransition(moveArea) {
   if (screenTransitioning) return;
   const targetDef = screenById(moveArea.targetScreenId);
@@ -1813,6 +1818,8 @@ async function triggerScreenTransition(moveArea) {
   });
   currentScreenId = targetDef.id;
   await applyScreen(targetDef, { entryPoint: moveArea.entryPoint });
+  const landedArea = areaContaining(worldPosToImageFrac(charWorldPos.x, charWorldPos.y), moveAreas);
+  suppressMoveAreaId = landedArea ? landedArea.id : null;
   await new Promise(resolve => {
     el.preloadOverlay.addEventListener('transitionend', resolve, { once: true });
     el.preloadOverlay.classList.add('fade-out'); // opacity 1 -> 0, 밝아짐
@@ -1827,7 +1834,9 @@ async function triggerScreenTransition(moveArea) {
 function checkMoveArea() {
   if (screenTransitioning || !moveAreas.length) return;
   const area = areaContaining(worldPosToImageFrac(charWorldPos.x, charWorldPos.y), moveAreas);
-  if (area) triggerScreenTransition(area);
+  if (!area) { suppressMoveAreaId = null; return; } // 영역 밖으로 나갔으면 억제 해제
+  if (area.id === suppressMoveAreaId) return;
+  triggerScreenTransition(area);
 }
 
 // 프리로드 오버레이(#preloadOverlay, 정적 마크업이라 첫 페인트부터 검다)를
