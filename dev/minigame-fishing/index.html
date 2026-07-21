@@ -287,7 +287,7 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .status-assemble-text{white-space:nowrap;color:#000;font-family:var(--sans);font-weight:700;pointer-events:none}
 .status-assemble-arrow-img{display:block;pointer-events:none;user-select:none;max-width:60px}
 .status-assemble-digit{border:1px dashed var(--cyan);border-radius:4px;box-sizing:border-box;color:var(--text-muted);font-family:var(--mono);font-size:10px;image-rendering:pixelated}
-.status-assemble-panel{border-top:1px solid var(--divider);padding:12px 16px calc(14px + env(safe-area-inset-bottom,0));flex-shrink:0}
+.status-assemble-panel{border-top:1px solid var(--divider);padding:12px 16px calc(14px + env(safe-area-inset-bottom,0));flex-shrink:0;min-height:96px;box-sizing:border-box}
 .status-assemble-panel-label{font-size:13px;color:var(--text-secondary);margin-bottom:8px;font-weight:600}
 .status-assemble-align-row{display:flex;gap:8px}
 #statusDigitMultiSelectBtn.active{color:#04181c;background:var(--amber);border-color:var(--amber)}
@@ -1361,8 +1361,8 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   <div class="status-assemble-stage-wrap" id="statusAssembleStageWrap">
     <div class="status-assemble-stage" id="statusAssembleStage"></div>
   </div>
-  <div class="status-assemble-panel hidden" id="statusAssemblePanel">
-    <div class="status-assemble-panel-label" id="statusAssemblePanelLabel"></div>
+  <div class="status-assemble-panel" id="statusAssemblePanel">
+    <div class="status-assemble-panel-label" id="statusAssemblePanelLabel">레이어를 탭해서 선택하세요</div>
     <div class="crop-size-row hidden" id="statusAssembleFontSizeRow">
       <div class="crop-size-controls">
         <input type="range" id="statusAssembleFontSizeInput" min="8" max="40" step="0.5" value="9.5">
@@ -6102,7 +6102,6 @@ async function renderStatusAssembleStage() {
 function renderStatusAssemblePanel() {
   if (statusDigitMultiSelectMode) {
     const n = selectedStatusDigitIds.size;
-    el.statusAssemblePanel.classList.remove('hidden');
     el.statusAssembleFontSizeRow.classList.add('hidden');
     el.deleteStatusDigitBtn.classList.add('hidden');
     el.statusAssemblePanelLabel.textContent = n === 0 ? '숫자 자리를 탭해서 선택하세요' : `숫자 자리 ${n}개 선택됨`;
@@ -6114,10 +6113,11 @@ function renderStatusAssemblePanel() {
   el.statusAssembleAlignRow.classList.add('hidden');
   const id = selectedStatusAssembleLayerId;
   if (!id) {
-    el.statusAssemblePanel.classList.add('hidden');
+    el.statusAssemblePanelLabel.textContent = '레이어를 탭해서 선택하세요';
+    el.statusAssembleFontSizeRow.classList.add('hidden');
+    el.deleteStatusDigitBtn.classList.add('hidden');
     return;
   }
-  el.statusAssemblePanel.classList.remove('hidden');
   const isText = id === 'dateLayer' || id === 'timeLayer';
   const isDigit = /^digit-/.test(id);
   el.statusAssemblePanelLabel.textContent = id === 'dateLayer' ? '요일·날짜'
