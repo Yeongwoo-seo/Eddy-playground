@@ -70,6 +70,36 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .gauge-fill.satisfaction{background:var(--cyan)}
 .gauge-fill.affection{background:#E8749E}
 
+/* ===== 캐릭터 높이 조정 패널 — .vn-topbar의 🧍↕ 버튼(우상단)으로 연다.
+   .relation-gauges(top:58px, 우상단 세로 게이지)와 겹치지 않도록 그 아래로
+   내려서 배치했다 — play/minigame-fishing/index.html의 배치 편집 패널과
+   같은 관례(펜 아이콘 → 우상단 플로팅 패널 → 코드보기). 값은 슬라이더를
+   움직이는 즉시 미리보기에 반영되고(applyTransformToImage), 살짝 멈추면
+   DevGameState.setCharacterTransform으로 서버에 저장된다(syncCharPosSlider
+   input 핸들러의 디바운스). */
+.char-pos-panel{position:absolute;right:calc(16px + env(safe-area-inset-right,0));top:calc(168px + env(safe-area-inset-top,0));z-index:6;width:210px;background:rgba(5,7,10,.85);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.18);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.char-pos-panel.hidden{display:none}
+.char-pos-panel label{display:flex;flex-direction:column;gap:6px;color:#fff;font-size:12px;font-weight:600;font-family:var(--mono)}
+.char-pos-panel .char-pos-value{color:var(--cyan)}
+.char-pos-panel input[type=range]{width:100%;accent-color:var(--cyan)}
+.char-pos-panel .char-pos-hint{font-size:11px;color:rgba(255,255,255,.55);line-height:1.4}
+.char-pos-panel button{padding:9px;border-radius:10px;border:none;background:rgba(255,255,255,.14);color:#fff;font-weight:700;font-size:12.5px;font-family:var(--mono);cursor:pointer}
+.char-pos-panel button:active{opacity:.8}
+.char-pos-panel button.primary{background:var(--cyan);color:#06181c}
+.vn-btn.charpos.active{color:var(--cyan);background:rgba(89,184,200,.2);border-color:rgba(89,184,200,.5)}
+
+/* ===== 캐릭터 위치 코드보기 — play/minigame-fishing의 배치 코드보기와 같은
+   모달 패턴(중앙 오버레이 + 읽기전용 textarea + 복사). ===== */
+.char-code-overlay{position:fixed;inset:0;z-index:21;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:20px}
+.char-code-overlay.hidden{display:none}
+.char-code-sheet{width:100%;max-width:380px;max-height:80vh;overflow-y:auto;background:rgba(8,14,18,.96);border:1px solid rgba(255,255,255,.25);border-radius:18px;padding:18px}
+.char-code-title{font-family:var(--mono);font-size:14px;font-weight:700;color:#fff;margin-bottom:6px}
+.char-code-desc{font-size:12.5px;color:rgba(255,255,255,.7);line-height:1.5;margin-bottom:12px}
+.char-code-textarea{width:100%;min-height:140px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.2);border-radius:10px;padding:10px;color:#fff;font-family:var(--mono);font-size:11.5px;line-height:1.5;resize:vertical;margin-bottom:10px;-webkit-user-select:text;user-select:text}
+.char-code-copy-btn{width:100%;padding:10px;border-radius:10px;border:none;background:var(--cyan);color:#06181c;font-weight:700;font-size:13px;cursor:pointer;margin-bottom:6px}
+.char-code-copy-status{font-family:var(--mono);font-size:11px;color:var(--cyan);min-height:14px;margin-bottom:8px}
+.char-code-close-btn{width:100%;padding:10px;border-radius:10px;border:none;background:rgba(255,255,255,.14);color:#fff;font-weight:700;font-size:13px;cursor:pointer}
+
 /* ===== Layer 2: Character ===== */
 /* bottom is kept in sync with .dlg-layer's actual rendered height by
    syncCharWrapBottom (a ResizeObserver on #dlgLayer) — so the character's
@@ -231,6 +261,7 @@ window.addEventListener('orientationchange', setVh100);
       <button class="vn-btn skip" id="skipBtn" aria-label="다음 상호작용">다음 ⏭</button>
       <a class="vn-btn dev-settings-link" id="settingsLink" href="/dev/upload/" aria-label="설정">⚙ 설정</a>
       <button class="vn-btn auto hidden" id="autoplayBtn">AUTO ⏸ 정지</button>
+      <button class="vn-btn charpos" id="transformBtn" aria-label="캐릭터 높이 조정">🧍↕</button>
       <button class="vn-btn dev" id="devBtn">DEV</button>
     </div>
   </div>
@@ -265,6 +296,28 @@ window.addEventListener('orientationchange', setVh100);
      embedded player rather than a downloaded file — see youtubeSound.js —
      mounted 1x1 and off-screen since only the audio matters here. -->
 <div id="bgmMount" style="position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden"></div>
+
+<!-- #frame 밖의 형제 요소 — .sheet-overlay와 같은 이유. #frame 안에 두면
+     el.frame의 onTap 클릭 리스너로 버블링되어(대사 탭 진행) 슬라이더를
+     만지거나 코드보기를 여는 동작이 동시에 대사를 넘겨버린다. -->
+<div class="char-pos-panel hidden" id="charPosPanel">
+  <label>캐릭터 높이 <span class="char-pos-value" id="charPosValue">0px</span>
+    <input type="range" id="charPosSlider" min="-300" max="300" step="1" value="0">
+  </label>
+  <div class="char-pos-hint" id="charPosHint">지금 화면에 보이는 인물의 위/아래 위치를 조정해요.</div>
+  <button type="button" id="charPosCodeBtn">📋 코드보기</button>
+  <button type="button" class="primary" id="charPosDoneBtn">완료</button>
+</div>
+<div class="char-code-overlay hidden" id="charCodeOverlay">
+  <div class="char-code-sheet">
+    <div class="char-code-title">캐릭터 위치 코드</div>
+    <div class="char-code-desc">지금 조정한 캐릭터 위치 값이에요. DevGameState.setCharacterTransform으로 이미 서버에 저장됐고, 아래는 참고/백업용 복사본이에요.</div>
+    <textarea class="char-code-textarea" id="charCodeTextarea" readonly></textarea>
+    <button type="button" class="char-code-copy-btn" id="charCodeCopyBtn">📋 복사하기</button>
+    <div class="char-code-copy-status" id="charCodeCopyStatus"></div>
+    <button type="button" class="char-code-close-btn" id="charCodeCloseBtn">닫기</button>
+  </div>
+</div>
 
 <div class="sheet-overlay hidden" id="sheetOverlay">
   <div class="sheet">
@@ -404,6 +457,18 @@ const el = {
   tapArrow: document.getElementById('tapArrow'),
   devBtn: document.getElementById('devBtn'),
   skipBtn: document.getElementById('skipBtn'),
+  transformBtn: document.getElementById('transformBtn'),
+  charPosPanel: document.getElementById('charPosPanel'),
+  charPosSlider: document.getElementById('charPosSlider'),
+  charPosValue: document.getElementById('charPosValue'),
+  charPosHint: document.getElementById('charPosHint'),
+  charPosCodeBtn: document.getElementById('charPosCodeBtn'),
+  charPosDoneBtn: document.getElementById('charPosDoneBtn'),
+  charCodeOverlay: document.getElementById('charCodeOverlay'),
+  charCodeTextarea: document.getElementById('charCodeTextarea'),
+  charCodeCopyBtn: document.getElementById('charCodeCopyBtn'),
+  charCodeCopyStatus: document.getElementById('charCodeCopyStatus'),
+  charCodeCloseBtn: document.getElementById('charCodeCloseBtn'),
   settingsLink: document.getElementById('settingsLink'),
   autoplayBtn: document.getElementById('autoplayBtn'),
   sheetOverlay: document.getElementById('sheetOverlay'),
@@ -572,6 +637,16 @@ function applyTransformToImage(transform) {
   el.charImg.style.transform = `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`;
 }
 
+// Tracks whichever character is currently on screen, so the 🧍↕ 캐릭터 높이
+// panel (below) knows both who a slider drag should save the transform for
+// (DevGameState.setCharacterTransform is keyed by characterId) and what
+// value to seed the slider with when the panel opens. currentPortraitTransform
+// is a copy, not the map's own object — the panel mutates .y directly while
+// dragging, and that must not silently corrupt DevGameState's cached map
+// before setCharacterTransform is actually called.
+let currentPortraitCharacterId = null;
+let currentPortraitTransform = { x: 0, y: 0, scale: 1 };
+
 // Each named character (from dialogueCharacters) has its own uploaded asset
 // per expression, and its own CharacterTransform (x/y/scale) — looked up per
 // dialogue line's (characterId, expression) pair.
@@ -599,6 +674,8 @@ async function applyCharacterForLine(characterId, expression) {
   const requestToken = ++charRequestToken;
   if (!characterId) {
     el.charWrap.style.opacity = '0';
+    currentPortraitCharacterId = null;
+    syncCharPosPanel();
     return;
   }
   const outfitResolution = (typeof WardrobeState !== 'undefined')
@@ -606,6 +683,8 @@ async function applyCharacterForLine(characterId, expression) {
     : { characterId, outfit: null, hidden: false };
   if (outfitResolution.hidden) {
     el.charWrap.style.opacity = '0';
+    currentPortraitCharacterId = null;
+    syncCharPosPanel();
     return;
   }
   el.charWrap.style.opacity = '1';
@@ -629,6 +708,9 @@ async function applyCharacterForLine(characterId, expression) {
   const transform = await DevGameState.getCharacterTransform(characterId);
   if (requestToken !== charRequestToken) return; // stale transform must not move the new character's portrait
   applyTransformToImage(transform);
+  currentPortraitCharacterId = characterId;
+  currentPortraitTransform = Object.assign({}, transform);
+  syncCharPosPanel();
 }
 
 function updateArrow(show) {
@@ -1398,6 +1480,80 @@ el.sheetOverlay.addEventListener('click', (e) => {
 el.bgSelect.addEventListener('change', async (e) => {
   await DevGameState.setBackgroundId(activeSceneData.id, e.target.value || null);
   await applyBackground();
+});
+
+/* ===== 캐릭터 높이 조정 패널 (🧍↕, 우상단) =====
+   지금 화면의 캐릭터가 없으면(대사에 초상화가 없는 줄, 씬 전환 중 등)
+   슬라이더를 비활성화하고 안내 문구로 바꾼다 — currentPortraitCharacterId가
+   applyCharacterForLine에서 null로 꺼진 경우. */
+function syncCharPosPanel() {
+  const hasCharacter = !!currentPortraitCharacterId;
+  el.charPosSlider.disabled = !hasCharacter;
+  el.charPosHint.textContent = hasCharacter
+    ? '지금 화면에 보이는 인물의 위/아래 위치를 조정해요.'
+    : '지금은 화면에 조정할 인물이 없어요.';
+  el.charPosSlider.value = String(currentPortraitTransform.y);
+  el.charPosValue.textContent = currentPortraitTransform.y + 'px';
+}
+
+el.transformBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const opening = el.charPosPanel.classList.contains('hidden');
+  el.charPosPanel.classList.toggle('hidden', !opening);
+  el.transformBtn.classList.toggle('active', opening);
+  if (opening) syncCharPosPanel();
+});
+el.charPosDoneBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  el.charPosPanel.classList.add('hidden');
+  el.transformBtn.classList.remove('active');
+});
+
+// input(드래그 중 계속 발생)마다 바로 미리보기에 반영하고, 서버 저장은
+// 디바운스한다 — setCharacterTransform은 서버 Storage 왕복이 있는 async
+// 호출이라 매 픽셀마다 보내면 느려지고 순서가 꼬일 수 있다.
+let charPosSaveTimer = null;
+el.charPosSlider.addEventListener('input', () => {
+  if (!currentPortraitCharacterId) return;
+  currentPortraitTransform.y = Number(el.charPosSlider.value);
+  el.charPosValue.textContent = currentPortraitTransform.y + 'px';
+  applyTransformToImage(currentPortraitTransform);
+  const savingFor = currentPortraitCharacterId;
+  clearTimeout(charPosSaveTimer);
+  charPosSaveTimer = setTimeout(() => {
+    DevGameState.setCharacterTransform(savingFor, currentPortraitTransform).catch(err => {
+      console.error('캐릭터 높이 저장 실패', err);
+    });
+  }, 300);
+});
+
+function buildCharTransformCode() {
+  return `// ${currentPortraitCharacterId || '（화면에 인물 없음）'}\nCharacterTransform ${JSON.stringify(currentPortraitTransform, null, 2)}`;
+}
+el.charPosCodeBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  el.charCodeTextarea.value = buildCharTransformCode();
+  el.charCodeCopyStatus.textContent = '';
+  el.charCodeOverlay.classList.remove('hidden');
+});
+async function copyCharCodeToClipboard() {
+  if (!el.charCodeTextarea.value) return;
+  try {
+    await navigator.clipboard.writeText(el.charCodeTextarea.value);
+  } catch (err) {
+    // Clipboard API가 막혀있는 환경(구형 WebView 등) 폴백.
+    el.charCodeTextarea.select();
+    document.execCommand('copy');
+  }
+  el.charCodeCopyStatus.textContent = '복사됐어요.';
+}
+el.charCodeCopyBtn.addEventListener('click', copyCharCodeToClipboard);
+el.charCodeCloseBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  el.charCodeOverlay.classList.add('hidden');
+});
+el.charCodeOverlay.addEventListener('click', (e) => {
+  if (e.target === el.charCodeOverlay) el.charCodeOverlay.classList.add('hidden');
 });
 
 /* ===== Dev · Case File debug shortcuts (brief §46) — sample ids include a
