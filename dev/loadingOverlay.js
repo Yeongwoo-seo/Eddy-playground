@@ -1,4 +1,4 @@
-/* OPERATION MK DEV — shared full-screen loading animation.
+/* MISSING KEY DEV — shared full-screen loading animation.
    Every scene/minigame entry point has to wait on at least one network
    fetch (a Supabase-hosted photo, sometimes several) before it has anything
    real to show. A slow connection can make that take a couple of seconds —

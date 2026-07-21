@@ -1,4 +1,4 @@
-/* OPERATION MK — shared "real play" flag.
+/* MISSING KEY — shared "real play" flag.
    Set once when a player actually enters the game through /play/'s own
    install-gated start screen (see play/index.html's goToRealStart and
    its minigame picker); read by every real-play-reachable page (play/game,

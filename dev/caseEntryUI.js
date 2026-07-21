@@ -1,4 +1,4 @@
-/* OPERATION MK DEV — CaseEntry 제시 시트 공용 렌더 (§11 공용 컴포넌트).
+/* MISSING KEY DEV — CaseEntry 제시 시트 공용 렌더 (§11 공용 컴포넌트).
    play/game/index.html(대화 중 제시 시트)과 play/explore/index.html(탐색허브
    제시 시트)이 각각 따로 구현하던 필터/그룹핑 로직을 하나로 합친다.
    순수 HTML 문자열 생성만 담당 — 실제 DOM 교체와 이벤트 재바인딩은 호스트

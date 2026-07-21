@@ -1,4 +1,4 @@
-/* OPERATION MK DEV — CASE FILE investigation menu UI.
+/* MISSING KEY DEV — CASE FILE investigation menu UI.
    Vanilla-JS "component": initCaseMenu(options) injects its own <style> and
    DOM once, wires everything, and returns { open, close, isOpen,
    notifyNewQuestion, destroy } so the host page's own tap-to-advance

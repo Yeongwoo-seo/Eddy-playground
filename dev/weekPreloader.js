@@ -1,4 +1,4 @@
-/* OPERATION MK DEV — per-week asset preloader.
+/* MISSING KEY DEV — per-week asset preloader.
    /play/game plays one week's scenes as a chain of full page navigations
    (see game/index.html's nextSceneId handoff), each of which used to show
    LoadingOverlay's spinner while re-fetching that scene's background/

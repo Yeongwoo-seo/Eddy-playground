@@ -1,4 +1,4 @@
-/* OPERATION MK DEV — 상호작용 정의 (The Missing Key v1 §7.3/§7.4/§14.7).
+/* MISSING KEY DEV — 상호작용 정의 (The Missing Key v1 §7.3/§7.4/§14.7).
    Static catalog read by explorationState.js + play/explore/index.html.
    First content slice: 2주차 Phase 1 관광 자유 탐색 (§12.2 "관광 자유 탐색
    상세"). Dialogue lines are authored inline here (not in dev/dialogueData.js)

@@ -1,4 +1,4 @@
-/* OPERATION MK DEV — 여행 만족도 / 영우 호감도 게이지.
+/* MISSING KEY DEV — 여행 만족도 / 영우 호감도 게이지.
    Same idiom as EconomyState (economyState.js): a plain global object, one
    JSON blob in localStorage, defensive Object.assign-onto-defaults on load.
 

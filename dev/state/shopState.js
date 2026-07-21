@@ -1,4 +1,4 @@
-/* OPERATION MK DEV — 옷가게 상태 (The Missing Key v1 §5/§14.2).
+/* MISSING KEY DEV — 옷가게 상태 (The Missing Key v1 §5/§14.2).
    Same idiom as caseFileState.js/economyState.js. Depends on shopItems.js
    (catalog) and economyState.js (spendPoints) both being loaded first, and
    on wardrobeState.js for purchaseShopItem's "구매 = 소유" side effect. */

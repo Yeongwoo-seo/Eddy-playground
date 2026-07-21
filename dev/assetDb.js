@@ -1,4 +1,4 @@
-/* OPERATION MK DEV — isolated MVP sandbox, not part of the main game.
+/* MISSING KEY DEV — isolated MVP sandbox, not part of the main game.
    Background/character images live in Supabase Storage (bucket:
    dev-assets) with metadata in the dev_assets table, so an upload
    survives closing the app, reinstalling it, or switching devices —
