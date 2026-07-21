@@ -307,6 +307,11 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
    새로 만들고(el.stage에 추가) 도착하면 제거한다. */
 .fish-fly{position:absolute;z-index:7;width:44px;height:44px;border-radius:12px;background-repeat:no-repeat;image-rendering:pixelated;pointer-events:none;transform:translate(-50%,-50%) scale(var(--casting-scale,1));filter:drop-shadow(0 3px 6px rgba(0,0,0,.4));font-size:28px;display:flex;align-items:center;justify-content:center;box-sizing:border-box}
 
+/* 물고기 팔기(전부 팔기) 연출용 동전 — spawnSellCoins가 판매하기 버튼
+   근처에서 여러 개 새로 만들어(el.stage에 추가) 상태창 포인트 쪽으로
+   등속도로 날아가게 한 뒤 도착하면 제거한다. */
+.sell-coin{position:absolute;z-index:12;width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#FFEB99,#FFC93C 55%,#D68A0C 100%);box-shadow:0 1px 3px rgba(0,0,0,.35);pointer-events:none;transform:translate(-50%,-50%)}
+
 /* ===== 낚시 팝업 — 낚시 성공(물고기가 캐릭터에게 날아온 다음)에만 뜨는
    말풍선. 실패했을 때는 아무 화면도 뜨지 않고 그냥 대기 상태로 돌아간다
    (missReaction/endCatch 참고 — resetToIdle을 바로 호출). 배경(액자)
@@ -1196,9 +1201,59 @@ function closeSellFishModal() {
   gameState = 'idle';
   el.sellFishModal.classList.add('hidden');
 }
+
+// ===== 판매 동전 연출 =====
+// 판매하기(전부 팔기)를 누르면 판 금액에 비례한 개수의 동전이 그 버튼
+// 근처에서 무작위 위치로 튀어나와, 상태창 포인트 숫자(el.statusWindowDigits)
+// 쪽으로 등속도(이징 없는 선형 보간)로 날아가 도착하면 사라진다.
+// animateStatusWindowPointsTo(카운트업)와 비슷한 시간(SELL_COIN_DURATION_MS)
+// 동안 움직여서, 숫자가 다 올라갈 때쯤 동전도 다 도착한 것처럼 보이게
+// 맞췄다. 상태창을 아직 안 올렸으면(el.statusWindow 숨김) 도착 지점이
+// 없으니 아예 만들지 않는다.
+const SELL_COIN_MIN_COUNT = 3;
+const SELL_COIN_MAX_COUNT = 14;
+const SELL_COIN_VALUE_PER_COIN = 8; // 이 값(P)마다 동전 1개꼴 — 위 min/max로 clamp
+const SELL_COIN_SPAWN_RADIUS = 22; // px, 판매하기 버튼 중심 기준 무작위 시작 위치 반경
+const SELL_COIN_DURATION_MS = 600;
+const SELL_COIN_MAX_STAGGER_MS = 120; // 동전마다 이 안에서 무작위로 살짝 늦게 출발 — 한 덩어리로 안 겹치게
+function spawnSellCoins(total) {
+  if (total <= 0 || el.statusWindow.classList.contains('hidden')) return;
+  const count = clamp(Math.round(total / SELL_COIN_VALUE_PER_COIN), SELL_COIN_MIN_COUNT, SELL_COIN_MAX_COUNT);
+  const frameRect = el.frame.getBoundingClientRect();
+  const btnRect = el.sellFishConfirmBtn.getBoundingClientRect();
+  const originX = btnRect.left + btnRect.width / 2 - frameRect.left;
+  const originY = btnRect.top + btnRect.height / 2 - frameRect.top;
+  const targetRect = el.statusWindowDigits.getBoundingClientRect();
+  const targetX = targetRect.left + targetRect.width / 2 - frameRect.left;
+  const targetY = targetRect.top + targetRect.height / 2 - frameRect.top;
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const radius = Math.random() * SELL_COIN_SPAWN_RADIUS;
+    const startX = originX + Math.cos(angle) * radius;
+    const startY = originY + Math.sin(angle) * radius;
+    const coinEl = document.createElement('div');
+    coinEl.className = 'sell-coin';
+    coinEl.style.left = startX + 'px';
+    coinEl.style.top = startY + 'px';
+    el.stage.appendChild(coinEl);
+    setTimeout(() => {
+      let start = null;
+      function frame(ts) {
+        if (start === null) start = ts;
+        const t = Math.min((ts - start) / SELL_COIN_DURATION_MS, 1); // 등속도 — 이징 없이 그대로 선형 보간
+        coinEl.style.left = (startX + (targetX - startX) * t) + 'px';
+        coinEl.style.top = (startY + (targetY - startY) * t) + 'px';
+        if (t < 1) { requestAnimationFrame(frame); return; }
+        coinEl.remove();
+      }
+      requestAnimationFrame(frame);
+    }, Math.random() * SELL_COIN_MAX_STAGGER_MS);
+  }
+}
 function confirmSellFish() {
   const total = totalCaughtFishValue();
   if (total <= 0) return;
+  spawnSellCoins(total); // 모달이 닫혀 버튼이 사라지기 전에, 아직 보이는 위치를 기준으로 만든다
   EconomyState.addPoints(total, { source: 'fishing-sell-fish' });
   caughtFishTally = {};
   animateStatusWindowPointsTo(EconomyState.getPoints());
