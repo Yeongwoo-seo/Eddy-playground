@@ -4,9 +4,9 @@
    Merged into week1-scene-flight (see that scene's header comment) — its
    first line below carries the sceneTransition into this location. */
 
-// role 'protagonist' gets its own dedicated CharacterTransform; every other
-// role shares one common default transform (see DevGameState in assetDb.js) —
-// tune it once on any non-protagonist character and it applies to all of them.
+// Every character, including the protagonist, shares one common
+// CharacterTransform (see DevGameState in assetDb.js) — tune it once on any
+// character and it applies to all of them, so heights stay unified.
 // `expressions` lists which of the 10 dialogueExpressions below this
 // character actually needs — per the "최종 감정 이미지 최소 제작표" in the
 // character-art spec (44 portraits total across all 11 characters). 인물 DB's
