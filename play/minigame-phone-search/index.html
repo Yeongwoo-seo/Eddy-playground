@@ -129,10 +129,10 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
    (see /dev/upload) — a dev only has to upload it once per character and
    every minigame's dialogue box picks it up. Hidden entirely for
    speaker-less narration lines instead of showing a placeholder. */
-.msg-portrait-wrap{width:56px;height:76px;border-radius:10px;overflow:hidden;background:var(--surface-2, #171C22);flex-shrink:0;display:flex;align-items:flex-end;justify-content:center}
+.msg-portrait-wrap{width:56px;height:56px;border-radius:10px;overflow:hidden;background:var(--surface-2, #171C22);flex-shrink:0;display:flex;align-items:center;justify-content:center}
 .msg-portrait-wrap.hidden{display:none}
-.msg-portrait-wrap img{width:100%;height:100%;object-fit:cover;object-position:top;display:none}
-.msg-portrait-placeholder{width:60%;height:78%;opacity:.35;color:var(--text-secondary)}
+.msg-portrait-wrap img{width:100%;height:100%;object-fit:cover;object-position:center;display:none}
+.msg-portrait-placeholder{width:62%;height:62%;opacity:.35;color:var(--text-secondary)}
 .msg-body-wrap{flex:1;min-width:0;min-height:20vh;display:flex;flex-direction:column}
 .msg-name{font-size:15px;font-weight:700;color:var(--cyan);margin-bottom:8px}
 .msg-name:empty{display:none}

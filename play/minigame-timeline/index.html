@@ -68,9 +68,9 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 /* ===== Bottom reaction strip ===== */
 .dlg-strip{position:relative;flex-shrink:0;background:rgba(5,7,10,.86);border:1px solid rgba(255,255,255,.1);border-radius:18px;box-shadow:0 8px 28px rgba(0,0,0,.25);padding:14px 16px;display:flex;align-items:flex-end;gap:14px;opacity:0;max-height:0;overflow:hidden;transition:opacity .2s ease,max-height .2s ease}
 .dlg-strip.show{opacity:1;max-height:140px}
-.portrait-wrap{width:48px;height:64px;border-radius:10px;overflow:hidden;background:var(--surface-2);flex-shrink:0;display:flex;align-items:flex-end;justify-content:center}
-.portrait-wrap img{width:100%;height:100%;object-fit:cover;object-position:top;display:none}
-.portrait-placeholder{width:60%;height:80%;opacity:.35;color:var(--text-secondary)}
+.portrait-wrap{width:48px;height:48px;border-radius:10px;overflow:hidden;background:var(--surface-2);flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.portrait-wrap img{width:100%;height:100%;object-fit:cover;object-position:center;display:none}
+.portrait-placeholder{width:62%;height:62%;opacity:.35;color:var(--text-secondary)}
 .dlg-body-wrap{flex:1;min-width:0}
 .dlg-name{font-size:13px;font-weight:700;color:var(--cyan);margin-bottom:3px}
 .dlg-name:empty{display:none}
