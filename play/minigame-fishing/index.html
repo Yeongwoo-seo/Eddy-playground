@@ -383,10 +383,10 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
    index.html "대화" 탭의 슬라이드 에디터와 같은 0~1 비율 좌표계를 그대로
    재사용해 대화창/지수/영우 이미지를 겹쳐 그린다(.dialogue-intro-layer
    img가 object-fit:fill인 것도 그 에디터의 .slide-layer img와 맞춘 것 —
-   에디터에서 본 자리·크기 그대로 재생 화면에도 나온다). 화면 전체를
-   덮는 반투명 배경 위에 탭 한 번이면(대사 텍스트가 아직 없어서) 바로
-   사라지고 낚시가 시작된다. */
-.dialogue-intro{position:absolute;inset:0;z-index:20;background:rgba(0,0,0,.45);cursor:pointer}
+   에디터에서 본 자리·크기 그대로 재생 화면에도 나온다). 화면을 어둡게
+   가리지 않고 배경이 그대로 보이는 채로, 화면 아무 데나 탭하면(대사
+   텍스트가 아직 없어서) 바로 사라지고 낚시가 시작된다. */
+.dialogue-intro{position:absolute;inset:0;z-index:20;cursor:pointer}
 .dialogue-intro.hidden{display:none}
 /* 배치 편집(layoutPrefs.dialogueBox)이 대화창/이름/대사/초상화 레이어
    전체를 하나의 그룹으로 옮기고 키울 수 있도록 감싸는 안쪽 래퍼 — 바깥
@@ -2012,11 +2012,21 @@ function typeDialogueIntroText(textEl, text) {
     }
   }, DIALOGUE_INTRO_TYPING_MS);
 }
-function renderDialogueIntroFrame() {
+// 대화창/지수/영우 이미지(DIALOGUE_INTRO_IMAGE_LAYERS)는 줄이 바뀌어도
+// 그대로라 씬 진입 때 딱 한 번만 짓는다 — 이름/초상화/대사(portraitLayer/
+// nameLayer/textLayer)만 화자에 따라 매 줄 바뀌므로 그 세 엘리먼트
+// 참조만 들고 있다가 updateDialogueIntroLine에서 내용만 갈아끼운다(예전엔
+// 줄이 바뀔 때마다 innerHTML을 통째로 비우고 다시 그려서, 안 바뀌는
+// 대화창/캐릭터 그림까지 매번 사라졌다 나타나는 것처럼 깜빡였다).
+let dialogueIntroPortraitImgEl = null;
+let dialogueIntroNameTextEl = null;
+let dialogueIntroTextContentEl = null;
+function buildDialogueIntroLayers() {
   const dialogueScene = dialogueIntroScene, byId = dialogueIntroById;
-  const line = dialogueIntroLines[dialogueIntroIndex] || null;
-  const speaker = line && line.speaker === 'youngwoo' ? 'youngwoo' : 'jisoo';
   el.dialogueIntroInner.innerHTML = '';
+  dialogueIntroPortraitImgEl = null;
+  dialogueIntroNameTextEl = null;
+  dialogueIntroTextContentEl = null;
   DIALOGUE_INTRO_LAYERS.forEach(key => {
     const data = dialogueScene[key];
     if (!data) return;
@@ -2029,9 +2039,9 @@ function renderDialogueIntroFrame() {
     if (key === 'nameLayer') {
       const nameEl = document.createElement('div');
       nameEl.className = 'dialogue-intro-name';
-      nameEl.textContent = speaker === 'youngwoo' ? '영우' : '지수';
       layerEl.appendChild(nameEl);
       el.dialogueIntroInner.appendChild(layerEl);
+      dialogueIntroNameTextEl = nameEl;
       return;
     }
     if (key === 'textLayer') {
@@ -2039,20 +2049,16 @@ function renderDialogueIntroFrame() {
       textEl.className = 'dialogue-intro-text';
       layerEl.appendChild(textEl);
       el.dialogueIntroInner.appendChild(layerEl);
-      typeDialogueIntroText(textEl, (line && line.text) || '');
+      dialogueIntroTextContentEl = textEl;
       return;
     }
     if (key === 'portraitLayer') {
       layerEl.classList.add('dialogue-portrait-layer');
-      const portraitAssetId = speaker === 'youngwoo' ? dialogueScene.youngwooPortraitAssetId : dialogueScene.jisooPortraitAssetId;
-      const portraitAsset = portraitAssetId ? byId.get(portraitAssetId) : null;
-      if (portraitAsset) {
-        const img = document.createElement('img');
-        img.src = portraitAsset.dataUrl;
-        img.alt = '';
-        layerEl.appendChild(img);
-      }
+      const img = document.createElement('img');
+      img.alt = '';
+      layerEl.appendChild(img);
       el.dialogueIntroInner.appendChild(layerEl);
+      dialogueIntroPortraitImgEl = img;
       return;
     }
     const asset = data.assetId ? byId.get(data.assetId) : null;
@@ -2064,6 +2070,18 @@ function renderDialogueIntroFrame() {
     }
     el.dialogueIntroInner.appendChild(layerEl);
   });
+}
+function updateDialogueIntroLine() {
+  const dialogueScene = dialogueIntroScene, byId = dialogueIntroById;
+  const line = dialogueIntroLines[dialogueIntroIndex] || null;
+  const speaker = line && line.speaker === 'youngwoo' ? 'youngwoo' : 'jisoo';
+  if (dialogueIntroNameTextEl) dialogueIntroNameTextEl.textContent = speaker === 'youngwoo' ? '영우' : '지수';
+  if (dialogueIntroPortraitImgEl) {
+    const portraitAssetId = speaker === 'youngwoo' ? dialogueScene.youngwooPortraitAssetId : dialogueScene.jisooPortraitAssetId;
+    const portraitAsset = portraitAssetId ? byId.get(portraitAssetId) : null;
+    dialogueIntroPortraitImgEl.src = portraitAsset ? portraitAsset.dataUrl : '';
+  }
+  if (dialogueIntroTextContentEl) typeDialogueIntroText(dialogueIntroTextContentEl, (line && line.text) || '');
 }
 function renderDialogueIntro(dialogueScene, byId) {
   const hasAnyLayer = DIALOGUE_INTRO_LAYERS.some(key => dialogueScene[key]);
@@ -2078,7 +2096,8 @@ function renderDialogueIntro(dialogueScene, byId) {
   dialogueIntroById = byId;
   dialogueIntroLines = fishingDialogueLines(dialogueScene);
   dialogueIntroIndex = 0;
-  renderDialogueIntroFrame();
+  buildDialogueIntroLayers();
+  updateDialogueIntroLine();
   el.dialogueIntro.classList.remove('hidden');
   return true;
 }
@@ -2093,7 +2112,7 @@ el.dialogueIntro.addEventListener('pointerdown', (e) => {
   }
   dialogueIntroIndex += 1;
   if (dialogueIntroIndex < dialogueIntroLines.length) {
-    renderDialogueIntroFrame();
+    updateDialogueIntroLine();
     return;
   }
   el.dialogueIntro.classList.add('hidden');
