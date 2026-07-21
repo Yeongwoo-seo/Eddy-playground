@@ -1922,10 +1922,18 @@ async function playGameStartIntro() {
   }
   await revealGame();
   if (canPan) {
+    // 패닝이 끝난 뒤(도착 지점)가 아니라 절반쯤 지났을 때 지수/영우를
+    // 먼저 보여준다 — 화면 위 위치(left/bottom)는 applyScreen()의
+    // updateCamera() 호출로 이미 최종 값이 세팅돼 있고(패닝은 el.bgLayer만
+    // 옮기고 캐릭터는 안 건드림) 그 값이 바로 도착 지점 기준이라, 미리
+    // 풀어도 엉뚱한 자리에 나타나지 않는다.
+    const panMs = CAMERA_INTRO_LEG_MS.reduce((sum, ms) => sum + ms, 0);
+    setTimeout(() => {
+      el.charStage.style.visibility = '';
+      if (npcWasVisible) el.npcYoungwooStage.classList.remove('hidden');
+    }, panMs / 2);
     await playCameraIntroPan();
     updateCamera();
-    el.charStage.style.visibility = '';
-    if (npcWasVisible) el.npcYoungwooStage.classList.remove('hidden');
   }
   if (renderDialogueIntro(pendingDialogueSceneCfg || {}, pendingDialogueById || new Map())) {
     gameState = 'dialogue';
