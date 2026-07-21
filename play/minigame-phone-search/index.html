@@ -592,6 +592,16 @@ el.settingsLink.href = (minigames.find(m => m.id === 'week1-scene-002-2') || {})
 // lookup back to the 미니게임 얼굴 DB key (see updateMsgPortrait).
 const SPEAKER_TO_CHARACTER_KEY = { '지수': 'jisoo', '영우': 'youngwoo' };
 
+// 첫 대사가 뜨기 전에 지수/영우 미니게임 얼굴을 미리 받아둔다 — 안 그러면
+// 대사가 뜨는 순간 사진이 늦게 튀어나와 깜빡인다.
+function preloadMinigameFaces() {
+  return Promise.all(Object.values(SPEAKER_TO_CHARACTER_KEY).map(async (key) => {
+    const assetId = await DevGameState.getCharacterAssetId(key, MINIGAME_FACE_EXPRESSION).catch(() => null);
+    const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
+    if (asset && asset.dataUrl) await AssetDB.preloadImage(asset.dataUrl);
+  }));
+}
+
 // Same 미니게임 얼굴 DB close-up crop minigame-eastwood's dlg-strip uses —
 // a dev only has to upload it once per character (/dev/upload's 미니게임
 // 얼굴 tab) and every minigame's dialogue box picks it up from here.
@@ -1594,6 +1604,7 @@ CaseFileState.recordSceneVisit('week1-scene-002-2');
 renderItemGrid();
 updateLockState();
 (async function boot() {
+  preloadMinigameFaces();
   await loadCustomItemsAndRecipes();
   renderItemGrid();
   await preloadAllAreas();

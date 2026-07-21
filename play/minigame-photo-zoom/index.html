@@ -825,6 +825,17 @@ async function updatePortrait(characterKey) {
   }
 }
 const SPEAKER_TO_CHARACTER_KEY = { '지수': 'jisoo', '영우': 'youngwoo' };
+
+// 첫 대사가 뜨기 전에 지수/영우 미니게임 얼굴을 미리 받아둔다 — 안 그러면
+// 대사가 뜨는 순간 사진이 늦게 튀어나와 깜빡인다.
+function preloadMinigameFaces() {
+  return Promise.all(Object.values(SPEAKER_TO_CHARACTER_KEY).map(async (key) => {
+    const assetId = await DevGameState.getCharacterAssetId(key, MINIGAME_FACE_EXPRESSION).catch(() => null);
+    const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
+    if (asset && asset.dataUrl) await AssetDB.preloadImage(asset.dataUrl);
+  }));
+}
+
 let reactionHideTimer = null;
 function say(speakerName, text) {
   clearTimeout(reactionHideTimer);
@@ -1223,6 +1234,7 @@ document.querySelectorAll('.skip-next').forEach(btn => {
 });
 
 /* ===== Boot ===== */
+preloadMinigameFaces();
 startOrderPhase();
 </script>
 <script src="/dev/devPlanFab.js"></script>

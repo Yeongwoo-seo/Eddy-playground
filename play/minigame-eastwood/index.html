@@ -298,6 +298,7 @@ function buildImageMap(url) {
 }
 
 async function initMap() {
+  preloadMinigameFaces();
   LoadingOverlay.show('지도 불러오는 중');
   // 지도형 미니게임 배경은 location-background-system 설계안 범위 밖 — 기존
   // 레거시 sceneId 직접 배정 방식 그대로.
@@ -461,6 +462,16 @@ function say(characterKey, expression, speakerName, text) {
   el.dlgName.textContent = speakerName;
   el.dlgText.textContent = text;
   updatePortrait(characterKey, expression);
+}
+
+// 첫 대사가 뜨기 전에 지수/영우 미니게임 얼굴을 미리 받아둔다 — 안 그러면
+// initMap의 지도 로딩이 끝나고 대사가 뜨는 순간 사진이 늦게 튀어나와 깜빡인다.
+function preloadMinigameFaces() {
+  return Promise.all(['jisoo', 'youngwoo'].map(async (key) => {
+    const assetId = await DevGameState.getCharacterAssetId(key, MINIGAME_FACE_EXPRESSION).catch(() => null);
+    const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
+    if (asset && asset.dataUrl) await AssetDB.preloadImage(asset.dataUrl);
+  }));
 }
 
 /* ===== Game state ===== */
