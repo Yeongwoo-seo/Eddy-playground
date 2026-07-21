@@ -349,34 +349,39 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .item-popup-name{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;font-size:16px;font-weight:700;color:#000}
 .item-popup-meta{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;font-family:var(--mono);font-size:12px;color:#000}
 
-/* ===== 영우 NPC 메뉴 / 물고기 팔기 — 대화 인트로(.dialogue-intro)와 같은
-   전체화면 반투명 오버레이 + 배경 탭으로 닫기 규칙을 그대로 따른다. */
-.npc-menu,.sell-fish{position:absolute;inset:0;z-index:21;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center}
-.npc-menu.hidden,.sell-fish.hidden{display:none}
+/* ===== 영우 NPC 메뉴 — 대화 인트로(.dialogue-intro)와 같은 전체화면
+   반투명 오버레이 + 배경 탭으로 닫기 규칙을 그대로 따른다. */
+.npc-menu{position:absolute;inset:0;z-index:21;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center}
+.npc-menu.hidden{display:none}
 .npc-menu-card{width:240px;background:rgba(8,16,22,.92);border:1px solid rgba(255,255,255,.18);border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:10px}
 .npc-menu-title{text-align:center;font-size:17px;font-weight:700;color:#fff;margin-bottom:6px}
 .npc-menu-btn{padding:12px;border-radius:14px;border:none;font-size:14px;font-weight:700;color:#fff;font-family:inherit}
-.npc-menu-btn--sell{background:rgba(62,207,107,.85)}
 .npc-menu-btn--quit{background:rgba(217,65,65,.85)}
 .npc-menu-btn--close{background:rgba(255,255,255,.15);color:rgba(255,255,255,.85)}
 .npc-menu-btn:active{opacity:.8}
 
-.sell-fish-card{width:270px;max-height:70vh;background:rgba(8,16,22,.94);background-size:cover;background-position:center;border:1px solid rgba(255,255,255,.18);border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:10px}
+/* ===== 아이템창(물고기 팔기) — 예전엔 영우 NPC한테 말 걸어야만 뜨는
+   전체화면 모달이었는데, 영우 위치와 무관하게 화면 상단 중앙에 항상 떠
+   있는 HUD로 바꿨다(요청) — 잡을 때마다(renderSellFishList) 목록이 그
+   자리에서 바로 갱신되고, 팔기도 아무 때나 이 자리에서 바로 할 수 있다.
+   더 이상 "여닫는" 모달이 아니라 닫기 버튼도 뺐다. */
+.sell-fish{position:absolute;top:calc(52px + env(safe-area-inset-top,0));left:50%;transform:translateX(-50%);z-index:7}
+.sell-fish.hidden{display:none}
+.sell-fish-card{width:200px;max-height:34vh;background:rgba(8,16,22,.94);background-size:cover;background-position:center;border:1px solid rgba(255,255,255,.18);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:6px}
 /* 아이템창 탭(dev/minigame-fishing/index.html)에서 배경(액자) 그림을
    올리면 이 클래스가 붙어 기본 어두운 단색 대신 그 그림이 깔린다. */
 .sell-fish-card.sell-fish-card--has-bg{background-color:transparent}
-.sell-fish-title{text-align:center;font-size:16px;font-weight:700;color:#fff}
-.sell-fish-list{display:flex;flex-direction:column;gap:6px;max-height:38vh;overflow-y:auto}
-.sell-fish-empty{text-align:center;font-size:13px;color:rgba(255,255,255,.6);padding:10px 0}
-.sell-fish-row{display:flex;align-items:center;gap:8px;font-size:13px;color:#fff}
+.sell-fish-title{text-align:center;font-size:13px;font-weight:700;color:#fff}
+.sell-fish-list{display:flex;flex-direction:column;gap:4px;max-height:16vh;overflow-y:auto}
+.sell-fish-empty{text-align:center;font-size:12px;color:rgba(255,255,255,.6);padding:6px 0}
+.sell-fish-row{display:flex;align-items:center;gap:6px;font-size:12px;color:#fff}
 .sell-fish-name{flex:1;font-weight:600}
 .sell-fish-qty{color:rgba(255,255,255,.6)}
-.sell-fish-value{font-family:var(--mono);font-weight:700;color:#FFD12E;min-width:44px;text-align:right}
-.sell-fish-total{text-align:right;font-size:15px;font-weight:800;color:#fff;border-top:1px solid rgba(255,255,255,.15);padding-top:8px}
-.sell-fish-confirm{padding:12px;border-radius:14px;border:none;font-size:14px;font-weight:700;color:#fff;background:rgba(62,207,107,.85);font-family:inherit}
+.sell-fish-value{font-family:var(--mono);font-weight:700;color:#FFD12E;min-width:40px;text-align:right}
+.sell-fish-total{text-align:right;font-size:13px;font-weight:800;color:#fff;border-top:1px solid rgba(255,255,255,.15);padding-top:6px}
+.sell-fish-confirm{padding:9px;border-radius:12px;border:none;font-size:13px;font-weight:700;color:#fff;background:rgba(62,207,107,.85);font-family:inherit}
 .sell-fish-confirm:disabled{background:rgba(255,255,255,.12);color:rgba(255,255,255,.4)}
-.sell-fish-close{padding:10px;border-radius:14px;border:none;font-size:13px;font-weight:700;color:rgba(255,255,255,.85);background:rgba(255,255,255,.15);font-family:inherit}
-.sell-fish-confirm:active,.sell-fish-close:active{opacity:.8}
+.sell-fish-confirm:active{opacity:.8}
 
 /* ===== 대화 인트로 — 낚시 시작 전 지수/영우 대화 장면. dev/minigame-fishing/
    index.html "대화" 탭의 슬라이드 에디터와 같은 0~1 비율 좌표계를 그대로
@@ -536,23 +541,25 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
        isNearYoungwoo)에서 idle 상태 화면을 탭하면 뜬다. 대화 인트로
        (.dialogue-intro)와 같은 관례로, 카드 밖(반투명 배경)을 탭하면 그냥
        닫힌다 — 카드/버튼은 자체 pointerdown에서 stopPropagation해 그 탭이
-       배경 닫기로 새지 않게 한다. -->
+       배경 닫기로 새지 않게 한다. "물고기 팔기"는 더 이상 여기 없다 — 아래
+       아이템창(.sell-fish) 참고. -->
   <div class="npc-menu hidden" id="npcMenu">
     <div class="npc-menu-card" id="npcMenuCard">
       <div class="npc-menu-title">영우</div>
-      <button type="button" class="npc-menu-btn npc-menu-btn--sell" id="npcMenuSellBtn">물고기 팔기</button>
       <button type="button" class="npc-menu-btn npc-menu-btn--quit" id="npcMenuQuitBtn">그만하기</button>
       <button type="button" class="npc-menu-btn npc-menu-btn--close" id="npcMenuCloseBtn">닫기</button>
     </div>
   </div>
 
-  <div class="sell-fish hidden" id="sellFishModal">
+  <!-- ===== 아이템창(물고기 팔기) — 영우한테 말 걸어야 뜨던 모달이 아니라,
+       화면 상단 중앙에 항상 떠 있는 HUD다(요청). 잡을 때마다
+       renderSellFishList가 그 자리에서 목록/합계를 새로 그린다. ===== -->
+  <div class="sell-fish" id="sellFishModal">
     <div class="sell-fish-card" id="sellFishCard">
       <div class="sell-fish-title">물고기 팔기</div>
       <div class="sell-fish-list" id="sellFishList"></div>
       <div class="sell-fish-total" id="sellFishTotal">총 0P</div>
       <button type="button" class="sell-fish-confirm" id="sellFishConfirmBtn">전부 팔기</button>
-      <button type="button" class="sell-fish-close" id="sellFishCloseBtn">닫기</button>
     </div>
   </div>
 
@@ -735,7 +742,6 @@ const el = {
   dialogueIntroInner: document.getElementById('dialogueIntroInner'),
   npcMenu: document.getElementById('npcMenu'),
   npcMenuCard: document.getElementById('npcMenuCard'),
-  npcMenuSellBtn: document.getElementById('npcMenuSellBtn'),
   npcMenuQuitBtn: document.getElementById('npcMenuQuitBtn'),
   npcMenuCloseBtn: document.getElementById('npcMenuCloseBtn'),
   sellFishModal: document.getElementById('sellFishModal'),
@@ -743,7 +749,6 @@ const el = {
   sellFishList: document.getElementById('sellFishList'),
   sellFishTotal: document.getElementById('sellFishTotal'),
   sellFishConfirmBtn: document.getElementById('sellFishConfirmBtn'),
-  sellFishCloseBtn: document.getElementById('sellFishCloseBtn'),
 };
 
 // 스토리에서 넘어온 경우(week1-scene-circular-quay-minigame 등) 뒤로가기는
@@ -853,7 +858,7 @@ let currentScreenId = null;
 let screenTransitioning = false; // true인 동안은 새 이동 트리거/조이스틱 입력을 막는다(triggerScreenTransition)
 // 아직 영우에게 안 판 물고기 — fishId(문자열) -> 마리 수. 팔면 비워진다(confirmSellFish).
 let caughtFishTally = {};
-let gameState = 'idle'; // idle | charging | casting | waiting | bite | caught | catching | reeling | popup | dialogue | npcMenu | sellFish
+let gameState = 'idle'; // idle | charging | casting | waiting | bite | caught | catching | reeling | popup | dialogue | npcMenu
 let biteTimer = null;
 let reactionTimer = null;
 let holding = false;
@@ -1096,11 +1101,11 @@ function checkInteractionArea() {
 
 /* ===== 영우 NPC 메뉴 =====
    NPC 반경 안(activeInteractionAreaId === YOUNGWOO_NPC_INTERACTION_ID)에서
-   idle 상태 화면을 탭하면(handleActionPointerDown) 뜬다. "물고기 팔기"는
-   이번 판에서 잡아 아직 안 판 물고기(caughtFishTally)를 전부 포인트로
-   바꾸고(EconomyState), "그만하기"는 낚시를 끝내고 다음 씬으로 넘긴다
-   (handleQuit) — 대화 인트로와 같은 관례로 카드 밖(반투명 배경)을 탭하면
-   그냥 닫힌다. */
+   idle 상태 화면을 탭하면(handleActionPointerDown) 뜬다. "그만하기"는
+   낚시를 끝내고 다음 씬으로 넘긴다(handleQuit) — 대화 인트로와 같은
+   관례로 카드 밖(반투명 배경)을 탭하면 그냥 닫힌다. 물고기 팔기는 더
+   이상 여기 없다 — 아이템창(sell-fish)이 화면 상단에 항상 떠 있어서
+   영우를 찾아갈 필요 없이 아무 때나 바로 판다. */
 function openNpcMenu() {
   gameState = 'npcMenu';
   el.npcMenu.classList.remove('hidden');
@@ -1110,6 +1115,11 @@ function closeNpcMenu() {
   el.npcMenu.classList.add('hidden');
 }
 
+/* ===== 아이템창(물고기 팔기) =====
+   예전엔 영우한테 말 걸어야만 뜨는 모달이었는데, 화면 상단 중앙에 항상
+   떠 있는 HUD로 바꿨다(요청) — 그래서 "열고 닫는" 함수 대신, 잡을
+   때마다(playReelThenResult)와 팔고 난 뒤(confirmSellFish) 그 자리에서
+   목록/합계만 다시 그리면 된다. */
 function totalCaughtFishValue() {
   return Object.entries(caughtFishTally).reduce((sum, [id, qty]) => {
     const def = getFishDef(id);
@@ -1135,16 +1145,6 @@ function renderSellFishList() {
   el.sellFishTotal.textContent = `총 ${total}P`;
   el.sellFishConfirmBtn.disabled = total <= 0;
 }
-function openSellFishModal() {
-  gameState = 'sellFish';
-  renderSellFishList();
-  el.npcMenu.classList.add('hidden');
-  el.sellFishModal.classList.remove('hidden');
-}
-function closeSellFishModal() {
-  gameState = 'idle';
-  el.sellFishModal.classList.add('hidden');
-}
 function confirmSellFish() {
   const total = totalCaughtFishValue();
   if (total <= 0) return;
@@ -1152,11 +1152,10 @@ function confirmSellFish() {
   caughtFishTally = {};
   refreshStatusWindowPoints();
   vibrate(15);
-  closeSellFishModal();
+  renderSellFishList();
 }
 
 el.skipBtn.addEventListener('pointerdown', (e) => { e.stopPropagation(); handleQuit(); });
-el.npcMenuSellBtn.addEventListener('pointerdown', (e) => { e.stopPropagation(); openSellFishModal(); });
 el.npcMenuQuitBtn.addEventListener('pointerdown', (e) => { e.stopPropagation(); handleQuit(); });
 el.npcMenuCloseBtn.addEventListener('pointerdown', (e) => { e.stopPropagation(); closeNpcMenu(); });
 el.npcMenuCard.addEventListener('pointerdown', (e) => e.stopPropagation());
@@ -1166,14 +1165,10 @@ el.npcMenu.addEventListener('pointerdown', (e) => {
   closeNpcMenu();
 });
 
+// 아이템창은 화면 위에 항상 떠 있는 HUD라, 탭이 뒤(el.frame)로 새서
+// 캐스팅을 건드리지 않게만 막으면 된다 — 조이스틱/낚시버튼과 같은 패턴.
 el.sellFishConfirmBtn.addEventListener('pointerdown', (e) => { e.stopPropagation(); confirmSellFish(); });
-el.sellFishCloseBtn.addEventListener('pointerdown', (e) => { e.stopPropagation(); closeSellFishModal(); });
 el.sellFishCard.addEventListener('pointerdown', (e) => e.stopPropagation());
-el.sellFishModal.addEventListener('pointerdown', (e) => {
-  if (gameState !== 'sellFish') return;
-  e.stopPropagation();
-  closeSellFishModal();
-});
 
 /* ===== 그만하기 =====
    낚시를 시작한 씬이 ?nextScene=<sceneId>로 넘어온 경우(다른 미니게임들과
@@ -2890,6 +2885,7 @@ async function playReelThenResult() {
   el.castSvg.classList.add('hidden');
   const fishCaught = pendingCatchFish;
   caughtFishTally[fishCaught.id] = (caughtFishTally[fishCaught.id] || 0) + 1;
+  renderSellFishList(); // 상단에 항상 떠 있는 아이템창을 방금 잡은 물고기까지 반영해 바로 갱신한다
   // 낚시 팝업 내용(populateItemPopup)은 startCatching 때 이미 화면 밖에서
   // 다 그려놨으니 지연 없이 뜰 준비는 끝났지만, 뜨는 시점 자체는 물고기가
   // 캐릭터에 실제로 도착한 다음이어야 자연스럽다(사용자 요청) — 그래서
@@ -3775,6 +3771,7 @@ setTimeout(revealGame, 8000);
 
 loadConfig().then(() => {
   checkInteractionArea(); // 초기 스폰 위치가 이미 상호작용 영역 안일 수도 있으니 로드 직후 한 번 확인
+  renderSellFishList(); // 화면 상단에 항상 떠 있는 아이템창 초기 상태(보통 "팔 수 있는 물고기가 없어요")를 채운다
   playGameStartIntro(); // 페이드인 -> 카메라 인트로(우상단->우하단->좌하단->좌상단->캐릭터 위치) -> 지수 대화 순으로 이어진다
 });
 </script>
