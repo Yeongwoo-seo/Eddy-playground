@@ -354,7 +354,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
    (--item-window-ar, renderItemWindow이 채운다) — item-popup-card와
    같은 이유로 aspect-ratio를 씀. 너비는 CSS 고정값(200px)이라 슬롯 픽셀
    크기도 이 값 기준으로 계산할 수 있다(ITEM_WINDOW_WIDTH 참고). */
-.item-window{position:absolute;top:calc(52px + env(safe-area-inset-top,0));left:50%;transform:translateX(-50%);z-index:7;width:200px;aspect-ratio:var(--item-window-ar,4/1);pointer-events:none}
+.item-window{position:absolute;top:calc(52px + env(safe-area-inset-top,0));left:50%;transform:translateX(-50%) translate(var(--item-window-left-offset,0px),var(--item-window-top-offset,0px)) scale(var(--item-window-scale,1));z-index:7;width:200px;aspect-ratio:var(--item-window-ar,4/1);pointer-events:none}
 .item-window.hidden{display:none}
 .item-window-frame{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;display:block;pointer-events:none;user-select:none;-webkit-user-drag:none}
 .item-window-slots{position:absolute;inset:0}
@@ -523,6 +523,10 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
     <button type="button" class="secondary" id="layoutStatusWindowPosBtn">📊 상태창 위치·크기 수정하기</button>
     <label id="statusWindowScaleLabel" class="hidden">상태창 크기
       <input type="range" id="statusWindowScaleRange" min="0.5" max="2" step="0.02" value="1">
+    </label>
+    <button type="button" class="secondary" id="layoutItemWindowPosBtn">🐟 아이템창 위치·크기 수정하기</button>
+    <label id="itemWindowScaleLabel" class="hidden">아이템창 크기
+      <input type="range" id="itemWindowScaleRange" min="0.5" max="2" step="0.02" value="1">
     </label>
     <button type="button" class="secondary" id="layoutCodeBtn">📋 코드보기</button>
     <div class="layout-save-status" id="layoutSaveStatus"></div>
@@ -750,6 +754,9 @@ const el = {
   layoutStatusWindowPosBtn: document.getElementById('layoutStatusWindowPosBtn'),
   statusWindowScaleLabel: document.getElementById('statusWindowScaleLabel'),
   statusWindowScaleRange: document.getElementById('statusWindowScaleRange'),
+  layoutItemWindowPosBtn: document.getElementById('layoutItemWindowPosBtn'),
+  itemWindowScaleLabel: document.getElementById('itemWindowScaleLabel'),
+  itemWindowScaleRange: document.getElementById('itemWindowScaleRange'),
   layoutCodeBtn: document.getElementById('layoutCodeBtn'),
   layoutCodeOverlay: document.getElementById('layoutCodeOverlay'),
   layoutCodeTextarea: document.getElementById('layoutCodeTextarea'),
@@ -2292,6 +2299,10 @@ function renderItemWindow() {
       slotEl.textContent = '🐟';
     }
     slotEl.addEventListener('pointerdown', (e) => {
+      // 배치 편집 중엔 설명 토글 대신 el.itemWindow 자체의 드래그가
+      // 시작되게 이벤트를 그대로 흘려보낸다(stopPropagation 안 함) —
+      // 아이템창 위치·크기 수정하기(layoutItemWindowPosBtn) 참고.
+      if (layoutEditMode) return;
       e.stopPropagation();
       toggleItemWindowDesc(def, slotEl);
     });
@@ -3166,22 +3177,26 @@ function positionFishbarRightOfCharacter() {
    참고), 성공해서 물고기가 캐릭터에게 도착한 다음에만 이 팝업이 뜬다.
    배경/아이콘 위치·크기는 dev/minigame-fishing/index.html의 "낚시 팝업" 탭
    (itemPopup config, loadConfig에서 el.itemPopupCard/el.itemPopupIcon에
-   이미 적용해둔 상태)을 그대로 쓴다.
-   예전엔 캐릭터 머리 위(positionItemPopupAboveCharacter)에 떴는데, 영우
-   NPC 근처에서 낚시해 팔러 다니는 경우가 많아 캐릭터가 영우 옆에 서 있을
-   때 뜨면 꼭 "영우한테" 뜨는 것처럼 보였다 — 캐릭터/NPC 위치와 무관하게
-   항상 화면 중앙 상단 고정 자리에 뜨도록 바꿨다. */
+   이미 적용해둔 상태)을 그대로 쓴다. */
 // 낚시 팝업 카드 폭 — .item-popup-card의 고정 width(220px, CSS)와 맞춰야
-// 한다. el.itemPopup(래퍼)은 아직 화면 밖(left:-9999px)에 있을 때라도
-// left/top을 미리 계산해 넣을 수 있다 — 실제 크기(220px)는 CSS 고정값이라
-// 레이아웃 측정 없이 상수로 계산 가능.
+// 한다. 카드가 화면 밖으로 나가지 않도록 캐릭터 중심에 맞추되 좌우
+// ITEM_POPUP_MARGIN 안쪽으로 clamp한다(캐릭터가 화면 가장자리에 가까워도
+// 안전 — % 기반 위치만 쓰면 캐릭터가 가장자리에 있을 때 카드가 화면
+// 밖으로 잘려 나간다). el.itemPopup(래퍼)은 아직 화면 밖(left:-9999px)에
+// 있을 때라도 left/bottom을 미리 계산해 넣을 수 있다 — 실제 크기(220px)는
+// CSS 고정값이라 레이아웃 측정 없이 상수로 계산 가능.
 const ITEM_POPUP_CARD_WIDTH = 220;
-const ITEM_POPUP_TOP_GAP = 16;
-function positionItemPopupTopCenter() {
+const ITEM_POPUP_GAP = 14;
+const ITEM_POPUP_MARGIN = 12;
+function positionItemPopupAboveCharacter() {
   const frameRect = el.frame.getBoundingClientRect();
-  el.itemPopup.style.left = (frameRect.width / 2) + 'px';
-  el.itemPopup.style.top = 'calc(' + ITEM_POPUP_TOP_GAP + 'px + env(safe-area-inset-top, 0px))';
-  el.itemPopup.style.bottom = '';
+  const charRect = el.charStage.getBoundingClientRect();
+  const half = ITEM_POPUP_CARD_WIDTH / 2;
+  const charCenterX = charRect.left - frameRect.left + charRect.width / 2;
+  const clampedCenterX = clamp(charCenterX, ITEM_POPUP_MARGIN + half, frameRect.width - ITEM_POPUP_MARGIN - half);
+  const bottomPx = frameRect.bottom - charRect.top + ITEM_POPUP_GAP;
+  el.itemPopup.style.left = clampedCenterX + 'px';
+  el.itemPopup.style.bottom = bottomPx + 'px';
   el.itemPopup.style.transform = `translateX(-50%) scale(${layoutPrefs.casting.scale * layoutPrefs.itemPopup.scale})`;
 }
 
@@ -3243,7 +3258,7 @@ function showHeldFish(fishCaught) {
 function showItemPopup(fishCaught) {
   gameState = 'popup';
   populateItemPopup(fishCaught);
-  positionItemPopupTopCenter();
+  positionItemPopupAboveCharacter();
   showHeldFish(fishCaught);
 }
 
@@ -3500,9 +3515,10 @@ let layoutPrefs = {
   char: { scale: 0.45, outline: 0 }, // 캐릭터(.char-stage) 전체 배율 — --char-scale, char-stage의 transform:scale에 그대로 들어간다. 배치 확정 값으로 기본값 고정
   casting: { scale: 0.55, left: 1, bottom: -20 }, // 캐스팅 파워바/찌/입질 팝업/아이템 팝업/물고기 날아가는 연출을 한 번에 묶어 조절하는 배율 — --casting-scale과 각 요소의 JS 계산 transform에 곱해진다. 추 던지기 궤적(cast-svg)은 낚싯대 끝의 실제 화면 좌표에 맞춰야 해서 일부러 빼뒀다(비율만 바꾸면 궤적 시작점이 캐릭터 손끝에서 어긋나 보인다). left/bottom은 더 이상 화면 기준 절대 위치가 아니라, 캐스팅 게이지(cast-power-wrap)가 뜨는 "캐릭터 머리 위" 기준점에서 얼마나 더 옮길지 정하는 오프셋이다(positionCastGaugeAboveCharacter 참고) — 배치 확정 값으로 기본값 고정.
   fishbar: { scale: 1, left: -28, top: 5 }, // 잡아채기 낚시바(fishbar-panel) 전용 배율·위치 — 예전엔 casting.scale을 같이 썼지만, 낚시바만 따로 크기/위치를 잡고 싶다는 요청으로 분리했다. left/top은 "캐릭터 오른쪽, 세로 중앙" 기준점(positionFishbarRightOfCharacter)에서 얼마나 더 옮길지 정하는 오프셋 — top인 이유는 그 함수가 bottom이 아니라 top으로 세로 위치를 잡기 때문(캐스팅 게이지 쪽 bottom과 부호 방향이 다르다). 배치 확정 값으로 기본값 고정.
-  itemPopup: { scale: 1.6 }, // 낚시 팝업(.item-popup) 전용 배율 — casting.scale(전체 캐스팅 UI 묶음)에 곱해져 적용된다(positionItemPopupTopCenter). 낚시 팝업만 따로 크기를 조절하고 싶다는 요청으로 추가.
+  itemPopup: { scale: 1.6 }, // 낚시 팝업(.item-popup) 전용 배율 — casting.scale(전체 캐스팅 UI 묶음)에 곱해져 적용된다(positionItemPopupAboveCharacter). 낚시 팝업만 따로 크기를 조절하고 싶다는 요청으로 추가.
   statusWindow: { scale: 1, left: 0, top: 0 }, // 상태창(.status-window, 요일·날짜/시간/포인트/화살표) 전용 배율·오프셋 — 기준 위치(우상단 고정)에서 얼마나 옮길지와 전체 배율. transform-origin이 top right라 scale은 그 모서리를 축으로 커진다.
   dialogueBox: { scale: 1, left: 5, top: 4 }, // 대화 인트로(.dialogue-intro-inner — 대화창 배경/이름/대사/초상화 레이어 그룹) 전용 배율·오프셋. 화면 전체를 덮는 어두운 배경(.dialogue-intro 자체)은 그대로 두고 안쪽 그림들만 통째로 옮기고 키운다.
+  itemWindow: { scale: 1, left: 0, top: 0 }, // 아이템창(.item-window, 잡은 물고기 상시 표시) 전용 배율·오프셋 — 기준 위치(화면 상단 중앙 고정)에서 얼마나 옮길지와 전체 배율. statusWindow와 같은 패턴.
 };
 let layoutEditMode = false;
 let layoutDragTarget = null; // 'joystick' | 'fishBtn' | 'casting' | 'fishbar' | null
@@ -3513,11 +3529,13 @@ let castingDragPointerId = null;
 let fishbarDragPointerId = null;
 let statusWindowDragPointerId = null;
 let dialogueBoxDragPointerId = null;
+let itemWindowDragPointerId = null;
 let castingPosPreview = false; // 캐스팅 게이지는 평소 세기 조절 중에만 보여서, 위치를 드래그로 옮기려면 편집 중엔 강제로 보여줘야 한다(layoutCastingPosBtn).
 let fishbarPosPreview = false; // 낚시바도 마찬가지 — 평소엔 잡아채기(catching) 중에만 보여서, 위치를 드래그로 옮기려면 편집 중엔 강제로 보여줘야 한다(layoutFishbarPosBtn).
 let itemPopupPreview = false; // 낚시 팝업도 마찬가지 — 평소엔 낚시 성공 직후에만 보여서, 크기 슬라이더 결과를 보려면 편집 중엔 강제로 띄워둬야 한다(layoutItemPopupPosBtn).
 let statusWindowPosPreview = false; // 상태창은 평소에도 떠 있지만 pointer-events:none이라 그대로는 드래그를 못 잡는다 — 편집 중엔 이 버튼으로 pointer-events를 잠깐 켜준다(layoutStatusWindowPosBtn).
 let dialogueBoxPosPreview = false; // 대화창은 낚시 시작 직후 대화 장면에서만(또는 아직 한 번도) 보이는 요소라, 위치를 드래그로 옮기려면 편집 중엔 강제로 띄워둬야 한다(layoutDialogueBoxPosBtn).
+let itemWindowPosPreview = false; // 아이템창도 상태창과 같은 사정 — 평소에도 떠 있지만(배경을 올렸으면) 슬롯 자체가 pointer-events:auto라 그대로 잡으면 탭(설명 토글)이 먼저 걸린다 — 편집 중엔 이 버튼으로 컨테이너 pointer-events를 켜고, 슬롯 쪽도 layoutEditMode면 자기 탭을 양보한다(toggleItemWindowDesc 호출부 참고).
 function mergeLayoutPrefs(saved) {
   if (!saved) return;
   if (saved.joystick) Object.assign(layoutPrefs.joystick, saved.joystick);
@@ -3529,6 +3547,7 @@ function mergeLayoutPrefs(saved) {
   if (saved.itemPopup) Object.assign(layoutPrefs.itemPopup, saved.itemPopup);
   if (saved.statusWindow) Object.assign(layoutPrefs.statusWindow, saved.statusWindow);
   if (saved.dialogueBox) Object.assign(layoutPrefs.dialogueBox, saved.dialogueBox);
+  if (saved.itemWindow) Object.assign(layoutPrefs.itemWindow, saved.itemWindow);
 }
 function loadLayoutPrefs() {
   try {
@@ -3550,6 +3569,7 @@ async function pullLayoutPrefsFromServer() {
     applyLayoutPrefs();
     el.dialogueBoxScaleRange.value = layoutPrefs.dialogueBox.scale;
     el.statusWindowScaleRange.value = layoutPrefs.statusWindow.scale;
+    el.itemWindowScaleRange.value = layoutPrefs.itemWindow.scale;
     if (castingPosPreview) positionCastGaugeAboveCharacter();
     if (fishbarPosPreview) positionFishbarRightOfCharacter();
   } catch (err) { /* 오프라인/서버 오류 — 로컬 캐시 값 그대로 사용 */ }
@@ -3598,6 +3618,9 @@ function applyLayoutPrefs() {
   root.setProperty('--dlg-scale', layoutPrefs.dialogueBox.scale);
   root.setProperty('--dlg-left-offset', layoutPrefs.dialogueBox.left + 'px');
   root.setProperty('--dlg-top-offset', layoutPrefs.dialogueBox.top + 'px');
+  root.setProperty('--item-window-scale', layoutPrefs.itemWindow.scale);
+  root.setProperty('--item-window-left-offset', layoutPrefs.itemWindow.left + 'px');
+  root.setProperty('--item-window-top-offset', layoutPrefs.itemWindow.top + 'px');
 }
 // 조이스틱 반지름/데드존은 --joy-base-size에 비례해서 커진 원 크기에 맞게 매번 다시 계산한다(고정 상수 대신).
 function joystickRadiusPx() { return layoutPrefs.joystick.size * 0.4; }
@@ -3619,6 +3642,7 @@ function layoutDragTargetEl() {
   if (layoutDragTarget === 'fishbar') return el.fishbarPanel;
   if (layoutDragTarget === 'statusWindow') return el.statusWindow;
   if (layoutDragTarget === 'dialogueBox') return el.dialogueIntroInner;
+  if (layoutDragTarget === 'itemWindow') return el.itemWindow;
   return el.fishBtn;
 }
 function startLayoutDrag(target, e) {
@@ -3629,6 +3653,7 @@ function startLayoutDrag(target, e) {
   else if (target === 'fishbar') layoutDragStartPos = { left: layoutPrefs.fishbar.left, top: layoutPrefs.fishbar.top };
   else if (target === 'statusWindow') layoutDragStartPos = { left: layoutPrefs.statusWindow.left, top: layoutPrefs.statusWindow.top };
   else if (target === 'dialogueBox') layoutDragStartPos = { left: layoutPrefs.dialogueBox.left, top: layoutPrefs.dialogueBox.top };
+  else if (target === 'itemWindow') layoutDragStartPos = { left: layoutPrefs.itemWindow.left, top: layoutPrefs.itemWindow.top };
   else layoutDragStartPos = { right: layoutPrefs.fishBtn.right, bottom: layoutPrefs.fishBtn.bottom };
   layoutDragTargetEl().classList.add('layout-drag-hide');
   el.layoutDragGhost.classList.remove('hidden');
@@ -3660,6 +3685,10 @@ function updateLayoutDrag(e) {
   } else if (layoutDragTarget === 'dialogueBox') {
     layoutPrefs.dialogueBox.left = layoutDragStartPos.left + dx;
     layoutPrefs.dialogueBox.top = layoutDragStartPos.top + dy;
+  } else if (layoutDragTarget === 'itemWindow') {
+    // 아이템창도 상단 고정 기준점에서의 오프셋 — statusWindow/dialogueBox와 같은 부호.
+    layoutPrefs.itemWindow.left = layoutDragStartPos.left + dx;
+    layoutPrefs.itemWindow.top = layoutDragStartPos.top + dy;
   } else {
     layoutPrefs.fishBtn.right = Math.max(0, layoutDragStartPos.right - dx);
     layoutPrefs.fishBtn.bottom = Math.max(0, layoutDragStartPos.bottom - dy);
@@ -3705,6 +3734,10 @@ el.layoutEditBtn.addEventListener('pointerdown', (e) => {
     el.layoutDialogueBoxPosBtn.classList.remove('active');
     el.dialogueBoxScaleLabel.classList.add('hidden');
     if (gameState !== 'dialogue') el.dialogueIntro.classList.add('hidden');
+    itemWindowPosPreview = false;
+    el.layoutItemWindowPosBtn.classList.remove('active');
+    el.itemWindowScaleLabel.classList.add('hidden');
+    el.itemWindow.style.pointerEvents = '';
   }
 });
 // 캐스팅 게이지 위치 드래그 — fishBtn과 같은 패턴(편집 모드에서만 pointerdown이
@@ -3765,14 +3798,14 @@ el.fishbarPanel.addEventListener('pointermove', (e) => {
 });
 // 낚시 팝업 미리보기 — 평소엔 낚시 성공 직후에만 보이는 요소라, 크기
 // 슬라이더 결과를 확인하려면 먼저 이 버튼으로 강제로 띄워둬야 한다(위치는
-// 화면 중앙 상단 고정이라 드래그 대상은 아니다).
+// 캐릭터 기준으로 자동 계산되는 값이라 드래그 대상은 아니다).
 el.layoutItemPopupPosBtn.addEventListener('click', (e) => {
   e.stopPropagation();
   itemPopupPreview = !itemPopupPreview;
   el.layoutItemPopupPosBtn.classList.toggle('active', itemPopupPreview);
   if (itemPopupPreview) {
     populateItemPopup(fishDefs['1']);
-    positionItemPopupTopCenter();
+    positionItemPopupAboveCharacter();
   } else {
     el.itemPopup.style.left = '-9999px';
   }
@@ -3863,6 +3896,42 @@ el.statusWindowScaleRange.addEventListener('input', () => {
 });
 el.statusWindowScaleRange.addEventListener('change', () => saveLayoutPrefs());
 
+// 아이템창 위치·크기 편집 — 상태창과 같은 패턴. 평소엔 컨테이너가
+// pointer-events:none이고 슬롯만 auto라(탭으로 설명 보기), 이 버튼으로
+// 편집 중에만 컨테이너 쪽도 pointer-events를 켠다 — 위치가 화면 상단
+// 중앙 고정이라 별도 "강제로 띄우기"는 필요 없다(배경을 올린 상태라면
+// 이미 idle에서도 보인다).
+el.layoutItemWindowPosBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  itemWindowPosPreview = !itemWindowPosPreview;
+  el.layoutItemWindowPosBtn.classList.toggle('active', itemWindowPosPreview);
+  el.itemWindowScaleLabel.classList.toggle('hidden', !itemWindowPosPreview);
+  el.itemWindow.style.pointerEvents = itemWindowPosPreview ? 'auto' : '';
+});
+el.itemWindow.addEventListener('pointerdown', (e) => {
+  if (!layoutEditMode || !itemWindowPosPreview) return;
+  e.stopPropagation();
+  itemWindowDragPointerId = e.pointerId;
+  el.itemWindow.setPointerCapture(e.pointerId);
+  startLayoutDrag('itemWindow', e);
+});
+el.itemWindow.addEventListener('pointermove', (e) => {
+  if (!layoutEditMode || e.pointerId !== itemWindowDragPointerId) return;
+  updateLayoutDrag(e);
+});
+['pointerup', 'pointercancel', 'pointerleave'].forEach(evt => {
+  el.itemWindow.addEventListener(evt, (e) => {
+    if (!layoutEditMode || e.pointerId !== itemWindowDragPointerId) return;
+    endLayoutDrag();
+    itemWindowDragPointerId = null;
+  });
+});
+el.itemWindowScaleRange.addEventListener('input', () => {
+  layoutPrefs.itemWindow.scale = parseFloat(el.itemWindowScaleRange.value);
+  applyLayoutPrefs();
+});
+el.itemWindowScaleRange.addEventListener('change', () => saveLayoutPrefs());
+
 el.layoutEditDoneBtn.addEventListener('click', (e) => {
   e.stopPropagation();
   layoutEditMode = false;
@@ -3886,6 +3955,10 @@ el.layoutEditDoneBtn.addEventListener('click', (e) => {
   el.layoutDialogueBoxPosBtn.classList.remove('active');
   el.dialogueBoxScaleLabel.classList.add('hidden');
   if (gameState !== 'dialogue') el.dialogueIntro.classList.add('hidden');
+  itemWindowPosPreview = false;
+  el.layoutItemWindowPosBtn.classList.remove('active');
+  el.itemWindowScaleLabel.classList.add('hidden');
+  el.itemWindow.style.pointerEvents = '';
 });
 async function copyToClipboard(textareaEl, statusEl) {
   if (!textareaEl.value) return;
@@ -3923,6 +3996,7 @@ loadLayoutPrefs();
 applyLayoutPrefs();
 el.dialogueBoxScaleRange.value = layoutPrefs.dialogueBox.scale;
 el.statusWindowScaleRange.value = layoutPrefs.statusWindow.scale;
+el.itemWindowScaleRange.value = layoutPrefs.itemWindow.scale;
 pullLayoutPrefsFromServer();
 
 // 오프라인이거나 Supabase 응답이 유난히 느려도 화면이 검게 영영 멈춰
