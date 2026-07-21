@@ -1650,6 +1650,30 @@ const AssetDB = (() => {
   }
   async function _setCharacterOutfitMap(map) { return saveJsonBlobMap(CHARACTER_OUTFITS_PATH, characterOutfitsCache, 'map', map, '선택 의상'); }
 
+  // 옷 이름(라벨) 오버라이드 — { [vnOutfitId]: name }. dialogueData.js의
+  // dialogueOutfits 기본 라벨을 /dev/upload 인물 DB 탭 "이름 변경"으로 재정의한
+  // 값만 담는다(재정의가 없는 옷은 이 맵에 아예 없다 — 기본 라벨을 그대로
+  // 쓴다는 뜻). 옷가게/옷장(§옷가게 데이터를 실제 옷과 연동)도 shopItems.js의
+  // 정적 name 대신 여기 값을 우선해서 보여준다 — getOutfitLabel(dialogueData.js)/
+  // getShopItemName(shopItems.js) 참고.
+  const outfitNamesCache = new Map();
+  const OUTFIT_NAMES_PATH = 'outfit-names/map.json';
+  async function getOutfitNameMap() { return getJsonBlobMap(OUTFIT_NAMES_PATH, outfitNamesCache, 'map'); }
+  async function setOutfitNameEntry(outfitId, name) {
+    if (!outfitId) return outfitNamesCache.get('map') || {};
+    return setJsonBlobEntry(OUTFIT_NAMES_PATH, outfitNamesCache, 'map', outfitId, name, '옷 이름');
+  }
+  // 옷가게/옷장 화면은 카드 목록을 동기 함수로 그리므로(구매/장착마다 다시
+  // 그림), 매번 서버 왕복 없이 읽을 수 있는 캐시가 필요하다 — getCaseEntryMeta의
+  // prefetchCaseEntryMeta/getCaseEntryMetaCached와 같은 패턴. 각 화면의
+  // init()이 시작할 때 한 번 prefetchOutfitNames()를 호출해 둔다.
+  let outfitNamesSyncCache = null;
+  async function prefetchOutfitNames() {
+    outfitNamesSyncCache = await getOutfitNameMap().catch(() => ({}));
+    return outfitNamesSyncCache;
+  }
+  function getOutfitNamesCached() { return outfitNamesSyncCache || {}; }
+
   // 캐릭터 위치/스케일 배정 — { [transformKey]: {x,y,scale} }, transformKey는
   // DevGameState._transformKeyFor 결과(주인공은 characterKey 그대로, 나머지
   // 전원은 '__other__' 공용 키).
@@ -1724,6 +1748,7 @@ const AssetDB = (() => {
     getPlayIconUrls, getPlayIconPreviewUrls, savePlayIcon,
     getCharacterAssetMap, setCharacterAssetEntry, _setCharacterAssetMap,
     getCharacterOutfitMap, setCharacterOutfitEntry, _setCharacterOutfitMap,
+    getOutfitNameMap, setOutfitNameEntry, prefetchOutfitNames, getOutfitNamesCached,
     getCharacterTransformMap, setCharacterTransformEntry, _setCharacterTransformMap,
     getSceneBgmMap, setSceneBgmEntry, _setSceneBgmMap,
     getLocationBackgroundMap, setLocationBackgroundEntry, _setLocationBackgroundMap,
@@ -1736,6 +1761,7 @@ const DevGameState = {
     background: 'mkDevSelectedBackgrounds', characters: 'mkDevSelectedCharacters',
     transforms: 'mkDevCharacterTransforms', sceneBgm: 'mkDevSceneBgm',
     outfits: 'mkDevSelectedOutfits', locationBackgrounds: 'mkDevLocationBackgrounds',
+    outfitNames: 'mkDevOutfitNames',
   },
 
   // Reads a server-backed assignment map and, when the read succeeds,
@@ -2047,6 +2073,27 @@ const DevGameState = {
     if (outfitId) map[characterKey] = outfitId; else delete map[characterKey];
     localStorage.setItem(this._keys.outfits, JSON.stringify(map));
     await AssetDB.setCharacterOutfitEntry(characterKey, outfitId || null);
+  },
+
+  // 옷 이름(라벨) 오버라이드 — /dev/upload 인물 DB 탭 "이름 변경"에서만 쓴다.
+  // 옷가게/옷장 화면은 매 렌더마다 이걸 기다릴 수 없으므로 대신
+  // AssetDB.prefetchOutfitNames()/getOutfitNamesCached()(동기 캐시)를 쓴다 —
+  // getOutfitLabel(dialogueData.js) 참고. AssetDB.getOutfitNameMap()/
+  // setOutfitNameEntry가 실제(다중 기기) 저장소.
+  _loadOutfitNameMap() {
+    try { return JSON.parse(localStorage.getItem(this._keys.outfitNames)) || {}; }
+    catch (e) { return {}; }
+  },
+  async getOutfitNameMap() {
+    return await this._syncFromServer(this._keys.outfitNames, this._loadOutfitNameMap(), () => AssetDB.getOutfitNameMap());
+  },
+  async setOutfitName(outfitId, name) {
+    if (!outfitId) return;
+    const map = this._loadOutfitNameMap();
+    const trimmed = (name || '').trim();
+    if (trimmed) map[outfitId] = trimmed; else delete map[outfitId];
+    localStorage.setItem(this._keys.outfitNames, JSON.stringify(map));
+    await AssetDB.setOutfitNameEntry(outfitId, trimmed || null);
   },
 
   // Backed by AssetDB.getCharacterTransformMap()/setCharacterTransformEntry

@@ -150,3 +150,14 @@ const shopItems = {
 // 기본(구매 불가) 코디 — WardrobeState의 초기 보유/장착 대상. 상점 카탈로그에는
 // 노출하지 않는다.
 const DEFAULT_OUTFIT_ID = 'outfit-default';
+
+// 상품의 실제 표시 이름 — 위 카탈로그의 정적 name 대신, 이 상품의 실제 옷
+// (vnOutfitId)에 /dev/upload에서 지정된 이름을 우선 보여준다(§옷가게 데이터를
+// 실제 옷과 연동 — 이름을 두 곳에서 따로 관리하지 않고 실제 옷 쪽을 단일
+// 소스로 삼는다). 재정의가 없으면(또는 vnOutfitId가 없으면) 이 카탈로그의
+// name으로 폴백 — getOutfitLabel은 dialogueData.js 참고.
+function getShopItemName(item) {
+  if (!item) return '';
+  if (item.vnOutfitId && typeof getOutfitLabel === 'function') return getOutfitLabel(item.vnOutfitId);
+  return item.name;
+}

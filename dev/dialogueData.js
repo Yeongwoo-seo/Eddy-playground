@@ -79,6 +79,19 @@ const dialogueOutfits = [
   { id: 'outfit-10', label: '굿바이 시드니 코디' },
 ];
 
+// 위 기본 라벨을 /dev/upload 인물 DB 탭 "이름 변경"으로 재정의한 값이 있으면
+// 그걸 우선 반환한다 — AssetDB.prefetchOutfitNames()로 미리 채워 둔 동기
+// 캐시(AssetDB.getOutfitNamesCached())를 읽으므로, 옷가게/옷장처럼 목록을
+// 동기로 반복 렌더링하는 화면에서도 서버 왕복 없이 쓸 수 있다. prefetch를 아직
+// 안 했거나 재정의가 없으면 dialogueOutfits의 기본 라벨로 조용히 폴백한다.
+function getOutfitLabel(outfitId) {
+  if (!outfitId) return '';
+  const overrides = (typeof AssetDB !== 'undefined') ? AssetDB.getOutfitNamesCached() : {};
+  if (overrides[outfitId]) return overrides[outfitId];
+  const def = dialogueOutfits.find(o => o.id === outfitId);
+  return def ? def.label : outfitId;
+}
+
 // Sentinel "expression" a minigame face photo is stored/looked up under in
 // the same (character, expression) asset map 인물 DB uses — not a real mood,
 // just one dedicated square close-up per character for small in-minigame
