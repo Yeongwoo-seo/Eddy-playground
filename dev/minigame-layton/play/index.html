@@ -77,6 +77,65 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .next-link{margin-top:8px;text-align:center;font-family:var(--mono);font-size:12.5px;color:var(--cyan);text-decoration:none;padding:12px}
 
 .not-found{font-size:14px;color:var(--text-secondary);line-height:1.7}
+
+/* ===== Game-feel additions ===== */
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 600px 400px at 50% -10%, rgba(89,184,200,.10), transparent 60%),
+    repeating-linear-gradient(180deg, rgba(255,255,255,.012) 0px, rgba(255,255,255,.012) 1px, transparent 1px, transparent 3px);
+}
+.frame{position:relative;z-index:1}
+
+@keyframes fadeSlideUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.top-row,.tag,.title,.meta,.stat-row{animation:fadeSlideUp .5s cubic-bezier(.2,.8,.2,1) both}
+.tag{animation-delay:.03s}
+.title{animation-delay:.06s}
+.meta{animation-delay:.09s}
+.stat-row{animation-delay:.12s}
+.card{animation:fadeSlideUp .5s cubic-bezier(.2,.8,.2,1) both}
+.card:nth-of-type(1){animation-delay:.16s}
+.card:nth-of-type(2){animation-delay:.22s}
+.card:nth-of-type(3){animation-delay:.28s}
+
+.stat-row{display:flex;gap:8px;margin-bottom:22px;flex-wrap:wrap}
+.stat-chip{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:11px;color:var(--text-secondary);background:var(--surface-1);border:1px solid var(--divider);border-radius:20px;padding:7px 12px;transition:border-color .3s}
+.stat-chip .stat-label{color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;font-size:10px}
+.stat-chip .stat-val{color:var(--text-primary);font-weight:600}
+#timerChip .stat-val{color:var(--cyan)}
+#attemptsChip.has-miss{border-color:rgba(217,65,65,.35)}
+#attemptsChip.has-miss .stat-val{color:var(--signal-red)}
+.diff-meter{display:inline-flex;gap:2px}
+.diff-meter span{width:5px;height:9px;border-radius:1px;background:var(--divider)}
+.diff-meter span.on{background:var(--diff-color,var(--cyan))}
+
+.brief-card{position:relative}
+.brief-card::before,.brief-card::after{content:'';position:absolute;width:10px;height:10px;border:1px solid rgba(89,184,200,.45);pointer-events:none}
+.brief-card::before{top:-1px;left:-1px;border-right:none;border-bottom:none}
+.brief-card::after{bottom:-1px;right:-1px;border-left:none;border-top:none}
+
+.answer-row{position:relative}
+.answer-row.shake{animation:shakeX .4s}
+@keyframes shakeX{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(3px)}30%,50%,70%{transform:translateX(-5px)}40%,60%{transform:translateX(5px)}}
+.answer-input.flash-wrong{border-color:var(--signal-red);box-shadow:0 0 0 3px rgba(217,65,65,.15)}
+.answer-input.flash-correct{border-color:var(--green);box-shadow:0 0 0 3px rgba(62,207,107,.15)}
+
+.feedback{display:flex;align-items:center;gap:6px}
+.feedback.correct{animation:popIn .35s cubic-bezier(.2,.8,.2,1)}
+.feedback.wrong{animation:shakeX .4s}
+@keyframes popIn{0%{opacity:0;transform:scale(.85)}100%{opacity:1;transform:scale(1)}}
+
+.clear-stamp{display:none;align-items:center;gap:8px;margin-top:14px;padding:10px 14px;border:1px solid rgba(62,207,107,.4);border-radius:12px;background:rgba(62,207,107,.08);color:var(--green);font-family:var(--mono);font-weight:700;font-size:12.5px;letter-spacing:.02em}
+.clear-stamp.show{display:flex;animation:stampIn .45s cubic-bezier(.2,.8,.2,1) forwards}
+@keyframes stampIn{0%{opacity:0;transform:rotate(-10deg) scale(.6)}70%{opacity:1;transform:rotate(2deg) scale(1.06)}100%{opacity:1;transform:rotate(-2deg) scale(1)}}
+
+.hint-btn{display:flex;align-items:center;gap:8px}
+.hint-text{display:flex;align-items:flex-start;gap:8px;border-left:2px solid var(--cyan);border-top-left-radius:2px;border-bottom-left-radius:2px;animation:fadeSlideUp .4s cubic-bezier(.2,.8,.2,1)}
+.hint-text .hint-num{flex-shrink:0;font-family:var(--mono);font-size:10px;color:var(--cyan);font-weight:700;background:rgba(89,184,200,.12);border-radius:6px;padding:2px 6px;margin-top:1px;white-space:nowrap}
+
+.reveal-btn{display:flex;align-items:center;justify-content:center;gap:6px;color:var(--amber);border-color:rgba(214,168,75,.3)}
+.reveal-btn.decoding{opacity:.6;pointer-events:none}
+
+.solved-ribbon{display:inline-block;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.08em;color:#04181c;background:var(--green);border-radius:8px;padding:3px 8px;margin-bottom:10px}
 </style>
 </head>
 <body>
@@ -715,20 +774,26 @@ if (!puzzle) {
     </div>
     <div class="tag">Minigame · 레이튼 퀴즈</div>
     <div class="title">${puzzle.name}</div>
-    <div class="meta">${puzzle.type} · 난이도 ${puzzle.difficulty} · 예상 ${puzzle.estTime}</div>
+    <div class="meta">${puzzle.type} · 예상 ${puzzle.estTime}</div>
+    <div class="stat-row">
+      <div class="stat-chip"><span class="stat-label">난이도</span><span class="diff-meter" id="diffMeter"></span></div>
+      <div class="stat-chip" id="timerChip"><span class="stat-label">경과</span><span class="stat-val" id="timerVal">00:00</span></div>
+      <div class="stat-chip" id="attemptsChip"><span class="stat-label">시도</span><span class="stat-val" id="attemptsVal">0</span></div>
+    </div>
 
-    <div class="card">
+    <div class="card brief-card">
       <div class="card-label">문제</div>
       <div class="statement">${puzzle.statementHtml}</div>
     </div>
 
     <div class="card">
       <div class="card-label">정답 입력</div>
-      <div class="answer-row">
+      <div class="answer-row" id="answerRow">
         <input class="answer-input" id="answerInput" type="text" inputmode="${puzzle.inputMode}" maxlength="${puzzle.maxLength}" placeholder="${puzzle.inputPlaceholder}">
         <button class="submit-btn" id="submitBtn">확인</button>
       </div>
       <div class="feedback" id="feedback"></div>
+      <div class="clear-stamp" id="clearStamp">🏆 미션 성공 — 아래에서 풀이를 확인해 보세요</div>
     </div>
 
     <div class="card" id="hintCard">
@@ -736,20 +801,23 @@ if (!puzzle) {
       <div class="hint-list" id="hintList"></div>
     </div>
 
-    <button class="reveal-btn" id="revealBtn">정답과 풀이 바로 보기</button>
+    <button class="reveal-btn" id="revealBtn">⚠ 정답과 풀이 바로 보기</button>
 
-    <div class="card" id="solutionCard" style="display:none">
+    <div class="card solution-card" id="solutionCard" style="display:none">
+      <span class="solved-ribbon">CASE CLOSED</span>
       <div class="card-label">상세 풀이</div>
       <div class="solution-answer" id="solutionAnswer"></div>
       <div class="solution" id="solutionText"></div>
-      <button class="reset-btn" id="resetBtn">다시 풀어보기</button>
+      <button class="reset-btn" id="resetBtn">↺ 다시 풀어보기</button>
       <a class="next-link" href="/dev/minigame-layton/">‹ 다른 퀴즈 보기</a>
     </div>
   `;
 
   const answerInput = document.getElementById('answerInput');
+  const answerRow = document.getElementById('answerRow');
   const submitBtn = document.getElementById('submitBtn');
   const feedback = document.getElementById('feedback');
+  const clearStamp = document.getElementById('clearStamp');
   const hintList = document.getElementById('hintList');
   const hintCard = document.getElementById('hintCard');
   const revealBtn = document.getElementById('revealBtn');
@@ -757,12 +825,39 @@ if (!puzzle) {
   const solutionAnswer = document.getElementById('solutionAnswer');
   const solutionText = document.getElementById('solutionText');
   const resetBtn = document.getElementById('resetBtn');
+  const diffMeter = document.getElementById('diffMeter');
+  const timerVal = document.getElementById('timerVal');
+  const attemptsVal = document.getElementById('attemptsVal');
+  const attemptsChip = document.getElementById('attemptsChip');
 
   let hintsShown = 0;
+  let attempts = 0;
+  let elapsedSec = 0;
+  let timerInterval = null;
+  let solved = false;
+
+  /* ===== HUD: difficulty meter + live solve timer — the same "game 상태 표시"
+     pattern the item-scan minigame's progress pill uses, so this puzzle screen
+     reads as a mission in progress rather than a static form. ===== */
+  function renderDiffMeter() {
+    const diff = puzzle.difficulty;
+    const tier = diff <= 5 ? 'var(--cyan)' : diff <= 7 ? 'var(--amber)' : 'var(--signal-red)';
+    diffMeter.innerHTML = Array.from({ length: 10 }, (_, i) =>
+      `<span class="${i < diff ? 'on' : ''}" style="--diff-color:${tier}"></span>`
+    ).join('');
+  }
+  renderDiffMeter();
+
+  function pad2(n) { return String(n).padStart(2, '0'); }
+  function updateTimerDisplay() { timerVal.textContent = pad2(Math.floor(elapsedSec / 60)) + ':' + pad2(elapsedSec % 60); }
+  function startTimer() { stopTimer(); timerInterval = setInterval(() => { elapsedSec++; updateTimerDisplay(); }, 1000); }
+  function stopTimer() { if (timerInterval) { clearInterval(timerInterval); timerInterval = null; } }
+  startTimer();
+
   function renderHints() {
     hintList.innerHTML = puzzle.hints.map((h, i) => {
-      if (i < hintsShown) return `<div class="hint-text">힌트 ${i + 1}. ${h}</div>`;
-      if (i === hintsShown) return `<button class="hint-btn" data-hint="${i}">힌트 ${i + 1} 보기</button>`;
+      if (i < hintsShown) return `<div class="hint-text"><span class="hint-num">HINT ${i + 1}</span><span>${h}</span></div>`;
+      if (i === hintsShown) return `<button class="hint-btn" data-hint="${i}">🔒 힌트 ${i + 1} 잠금 해제</button>`;
       return '';
     }).join('');
     hintList.querySelectorAll('.hint-btn').forEach(btn => {
@@ -780,30 +875,59 @@ if (!puzzle) {
   }
 
   function checkAnswer() {
+    if (solved) return;
     const raw = puzzle.normalize(answerInput.value);
     feedback.classList.remove('correct', 'wrong');
+    answerInput.classList.remove('flash-correct', 'flash-wrong');
     feedback.classList.add('show');
     if (raw && raw === puzzle.answer) {
+      solved = true;
+      stopTimer();
       feedback.classList.add('correct');
-      feedback.textContent = '정답이에요! 아래에서 풀이를 확인해 보세요.';
+      feedback.textContent = '✔ 정답이에요! 아래에서 풀이를 확인해 보세요.';
+      answerInput.classList.add('flash-correct');
+      clearStamp.classList.add('show');
       showSolution();
     } else {
+      attempts++;
+      attemptsVal.textContent = attempts;
+      attemptsChip.classList.add('has-miss');
       feedback.classList.add('wrong');
-      feedback.textContent = '아직 정답이 아니에요. 힌트를 참고해 보세요.';
+      feedback.textContent = '✕ 아직 정답이 아니에요. 힌트를 참고해 보세요.';
+      answerInput.classList.add('flash-wrong');
+      answerRow.classList.remove('shake');
+      void answerRow.offsetWidth;
+      answerRow.classList.add('shake');
     }
   }
 
   submitBtn.addEventListener('click', checkAnswer);
   answerInput.addEventListener('keydown', e => { if (e.key === 'Enter') checkAnswer(); });
-  revealBtn.addEventListener('click', showSolution);
+  revealBtn.addEventListener('click', () => {
+    stopTimer();
+    revealBtn.classList.add('decoding');
+    revealBtn.textContent = '해독 중...';
+    setTimeout(showSolution, 450);
+  });
   resetBtn.addEventListener('click', () => {
     answerInput.value = '';
     hintsShown = 0;
     renderHints();
     feedback.classList.remove('show', 'correct', 'wrong');
+    answerInput.classList.remove('flash-correct', 'flash-wrong');
+    clearStamp.classList.remove('show');
     solutionCard.style.display = 'none';
     hintCard.style.display = 'block';
     revealBtn.style.display = 'block';
+    revealBtn.classList.remove('decoding');
+    revealBtn.textContent = '⚠ 정답과 풀이 바로 보기';
+    attempts = 0;
+    attemptsVal.textContent = '0';
+    attemptsChip.classList.remove('has-miss');
+    elapsedSec = 0;
+    updateTimerDisplay();
+    solved = false;
+    startTimer();
   });
 }
 </script>

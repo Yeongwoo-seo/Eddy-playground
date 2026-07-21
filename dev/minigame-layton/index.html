@@ -45,6 +45,33 @@ a.puzzle-item:active{transform:scale(.98);background:var(--surface-2)}
 .puzzle-badge{font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.03em;border-radius:8px;padding:5px 8px;flex-shrink:0;white-space:nowrap}
 .puzzle-badge.play{background:var(--cyan);color:#04181c}
 .puzzle-badge.locked{background:var(--surface-2);color:var(--text-muted)}
+
+/* ===== Game-feel additions ===== */
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 600px 400px at 50% -10%, rgba(89,184,200,.10), transparent 60%),
+    repeating-linear-gradient(180deg, rgba(255,255,255,.012) 0px, rgba(255,255,255,.012) 1px, transparent 1px, transparent 3px);
+}
+.frame{position:relative;z-index:1}
+
+@keyframes fadeSlideUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.tag,.title,.sub,.progress-note{animation:fadeSlideUp .5s cubic-bezier(.2,.8,.2,1) both}
+.title{animation-delay:.04s}
+.sub{animation-delay:.08s}
+.progress-note{animation-delay:.12s}
+
+.progress-note{display:flex;flex-direction:column;gap:8px}
+.progress-note-top{display:flex;justify-content:space-between;align-items:center}
+.progress-bar-track{height:6px;border-radius:4px;background:var(--surface-2);overflow:hidden}
+.progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--cyan),#7fd4e0);border-radius:4px;transition:width .6s cubic-bezier(.2,.8,.2,1)}
+
+.group-count{color:var(--text-muted);font-weight:400;margin-left:6px}
+
+.puzzle-item{opacity:0;animation:fadeSlideUp .45s cubic-bezier(.2,.8,.2,1) forwards;transition:border-color .2s,background .2s}
+a.puzzle-item:active{border-color:rgba(89,184,200,.4)}
+.puzzle-diff{display:inline-flex;gap:2px;margin-left:8px;vertical-align:middle}
+.puzzle-diff span{width:4px;height:8px;border-radius:1px;background:var(--divider)}
+.puzzle-diff span.on{background:var(--diff-color,var(--cyan))}
 </style>
 </head>
 <body>
@@ -53,7 +80,10 @@ a.puzzle-item:active{transform:scale(.98);background:var(--surface-2)}
   <div class="tag">Minigame · 레이튼 퀴즈</div>
   <div class="title">🧩 레이튼풍 고난도 퀴즈</div>
   <div class="sub">체감 난이도 7~8의 두뇌 퍼즐 20종, 전부 입력만으로 정답을 검증할 수 있도록 구현했어요.</div>
-  <div class="progress-note">현재 플레이 가능: 20 / 20</div>
+  <div class="progress-note">
+    <div class="progress-note-top"><span>플레이 가능한 미션</span><span id="progressCount">20 / 20</span></div>
+    <div class="progress-bar-track"><div class="progress-bar-fill" id="progressFill" style="width:0%"></div></div>
+  </div>
   <div id="listRoot"></div>
 </div>
 <script>
@@ -95,29 +125,47 @@ const LAYTON_PUZZLES = [
   ]},
 ];
 
+function diffDotsHtml(diff) {
+  const tier = diff <= 5 ? 'var(--cyan)' : diff <= 7 ? 'var(--amber)' : 'var(--signal-red)';
+  return '<span class="puzzle-diff">' + Array.from({ length: 10 }, (_, i) =>
+    `<span class="${i < diff ? 'on' : ''}" style="--diff-color:${tier}"></span>`
+  ).join('') + '</span>';
+}
+
 const root = document.getElementById('listRoot');
+let itemIndex = 0;
 root.innerHTML = LAYTON_PUZZLES.map(section => `
-  <div class="group-label">${section.group}</div>
+  <div class="group-label">${section.group}<span class="group-count">${section.items.length}문제</span></div>
   <div class="puzzle-list">
-    ${section.items.map(p => p.developed ? `
-      <a class="puzzle-item" href="/dev/minigame-layton/play/?puzzle=${p.id}">
+    ${section.items.map(p => {
+      const delay = (itemIndex++ * 40) + 'ms';
+      return p.developed ? `
+      <a class="puzzle-item" style="animation-delay:${delay}" href="/dev/minigame-layton/play/?puzzle=${p.id}">
         <div class="puzzle-info">
           <div class="puzzle-name">${p.name}</div>
-          <div class="puzzle-meta">${p.type} · 난이도 ${p.difficulty}</div>
+          <div class="puzzle-meta">${p.type} · 난이도 ${p.difficulty}${diffDotsHtml(p.difficulty)}</div>
         </div>
-        <div class="puzzle-badge play">PLAY</div>
+        <div class="puzzle-badge play">PLAY ▶</div>
       </a>
     ` : `
-      <div class="puzzle-item locked">
+      <div class="puzzle-item locked" style="animation-delay:${delay}">
         <div class="puzzle-info">
           <div class="puzzle-name">${p.name}</div>
-          <div class="puzzle-meta">${p.type} · 난이도 ${p.difficulty}</div>
+          <div class="puzzle-meta">${p.type} · 난이도 ${p.difficulty}${diffDotsHtml(p.difficulty)}</div>
         </div>
         <div class="puzzle-badge locked">미개발</div>
       </div>
-    `).join('')}
+    `;
+    }).join('')}
   </div>
 `).join('');
+
+const developedCount = LAYTON_PUZZLES.reduce((sum, s) => sum + s.items.filter(p => p.developed).length, 0);
+const totalCount = LAYTON_PUZZLES.reduce((sum, s) => sum + s.items.length, 0);
+document.getElementById('progressCount').textContent = `${developedCount} / ${totalCount}`;
+requestAnimationFrame(() => {
+  document.getElementById('progressFill').style.width = (totalCount ? (developedCount / totalCount * 100) : 0) + '%';
+});
 </script>
 <script src="/dev/devPlanFab.js"></script>
 </body>
