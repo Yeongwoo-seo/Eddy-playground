@@ -651,7 +651,7 @@ const week1Scene001_2Lines = [
   { id: 'line-051', speaker: '지수', text: '아놔.\n칭찬 좀 길게 해줘요.', characterId: 'jisoo', expression: 'annoyed' },
   { id: 'line-052', speaker: '영우', text: '잘했어 지수야.\n진짜 처음 본 것치고 엄청 빨리 찾았어.', characterId: 'youngwoo', expression: 'soft' },
   { id: 'line-053', speaker: '지수', text: '헤헤 ㅎㅎㅎㅎㅎㅎ\n이제 됐어요!!!!', characterId: 'jisoo', expression: 'happy' },
-  { id: 'line-054', speaker: '영우', text: '그럼 마지막으로\n실제 이동 경로를 연결해보자.', characterId: 'youngwoo', expression: 'neutral' },
+  { id: 'line-054', speaker: '영우', text: '그럼 이제\n지도에서 네 곳을 직접 찾아보자.', characterId: 'youngwoo', expression: 'neutral' },
   { id: 'line-055', speaker: '', text: 'MINIGAME START', characterId: null },
 ];
 
@@ -1110,9 +1110,9 @@ const week1Scenes = [
     // hotspot slot per location on the shared map image. Eastwood is the
     // accommodation and Marayong is 영우's workplace (see this scene's
     // lines' header comment for why that's the reverse of the v3 draft).
-    // /play/minigame-eastwood/ now implements the documented 3-stage design
-    // (라벨 배치 → 관계 연결 → 경로 확인, The Missing Key v1 §11.2) over these
-    // same 4 hotspots, in this array's order.
+    // /play/minigame-eastwood/ implements a single 라벨 배치 stage over these
+    // same 4 hotspots, in this array's order — tap each label onto its spot
+    // on the map, any order, and the minigame clears.
     minigameStages: ['공항 (Sydney International Airport)', '서큘러키 (Circular Quay)', '숙소 (Eastwood)', '영우 근무지 (Marayong)'],
   },
   {
