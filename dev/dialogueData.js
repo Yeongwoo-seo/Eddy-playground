@@ -67,16 +67,16 @@ const dialogueExpressions = [
 // globally — /play/game just keeps asking for (characterId, expression) like
 // before, and AssetDB resolves that against whichever outfit is selected.
 const dialogueOutfits = [
-  { id: 'outfit-01', label: '의상 1' },
-  { id: 'outfit-02', label: '의상 2' },
-  { id: 'outfit-03', label: '의상 3' },
-  { id: 'outfit-04', label: '의상 4' },
-  { id: 'outfit-05', label: '의상 5' },
-  { id: 'outfit-06', label: '의상 6' },
-  { id: 'outfit-07', label: '의상 7' },
-  { id: 'outfit-08', label: '의상 8' },
-  { id: 'outfit-09', label: '의상 9' },
-  { id: 'outfit-10', label: '의상 10' },
+  { id: 'outfit-01', label: '소프트 가디건 데이트룩' },
+  { id: 'outfit-02', label: '시티 데님 캐주얼' },
+  { id: 'outfit-03', label: '리본 니트 코디' },
+  { id: 'outfit-04', label: '나이트 워크 니트' },
+  { id: 'outfit-05', label: '하버 브리즈 코디' },
+  { id: 'outfit-06', label: '더 록스 빈티지 원피스' },
+  { id: 'outfit-07', label: '탐정 체크 재킷' },
+  { id: 'outfit-08', label: '포토 퍼펙트 데이트룩' },
+  { id: 'outfit-09', label: '시티 나잇 무드룩' },
+  { id: 'outfit-10', label: '굿바이 시드니 코디' },
 ];
 
 // Sentinel "expression" a minigame face photo is stored/looked up under in

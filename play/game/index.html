@@ -71,9 +71,21 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .gauge-fill.affection{background:#E8749E}
 
 /* ===== Layer 2: Character ===== */
-.char-wrap{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;pointer-events:none;opacity:0;transition:opacity .2s ease}
-.char-img{max-height:78%;max-width:88%;object-fit:contain;object-position:bottom;transform:translateY(0)}
-.char-placeholder{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:46%;height:62%;opacity:.4;display:flex;align-items:flex-end;justify-content:center;color:var(--text-secondary)}
+/* bottom is kept in sync with .dlg-layer's actual rendered height by
+   syncCharWrapBottom (a ResizeObserver on #dlgLayer) — so the character's
+   feet (align-items:flex-end) land right at the dialogue box's top edge
+   instead of the screen bottom, which used to hide the lower portion of the
+   character behind the box (.bottom-stack's z-index:3 sits above char-wrap).
+   26vh here is just the initial guess (.dlg-layer's own min-height) before
+   the observer's first measurement runs. */
+.char-wrap{position:absolute;top:0;left:0;right:0;bottom:26vh;display:flex;align-items:flex-end;justify-content:center;pointer-events:none;opacity:0;transition:opacity .2s ease,bottom .3s cubic-bezier(0.2,0.8,0.2,1)}
+/* max-height/height are in vh, not % — char-wrap's own box height now
+   shrinks to make room for the dialogue box above (see .char-wrap), and a %
+   here would resolve against that shrunk box, quietly scaling the character
+   down every time the dialogue box grows. vh keeps the size anchored to the
+   true viewport height regardless of how tall .dlg-layer currently is. */
+.char-img{max-height:78vh;max-width:88%;object-fit:contain;object-position:bottom;transform:translateY(0)}
+.char-placeholder{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:46%;height:62vh;opacity:.4;display:flex;align-items:flex-end;justify-content:center;color:var(--text-secondary)}
 .char-placeholder svg{width:100%;height:100%}
 
 /* ===== Layer 3: Dialogue ===== */
@@ -512,8 +524,8 @@ function unlockBgmOnFirstTap() {
 // (character, expression) pair a line might show, before the first line is
 // shown — a mid-dialogue character/expression swap then never waits on the
 // network, which is what made the character portrait visibly lag behind the
-// text. Resolution has to mirror applyCharacterForLine's exactly (outfit
-// first via WardrobeState.resolveOutfitForScene, falling back to the base
+// text. Resolution has to mirror applyCharacterForLine's exactly (a forced
+// outfit via WardrobeState.resolveOutfitForScene, falling back to the base
 // characterId) — this used to skip the outfit lookup and warm only the base
 // portrait, so any scene showing an equipped outfit's art still hit the
 // network the first time that (outfit, expression) pair came up, no matter
@@ -528,18 +540,20 @@ async function preloadCharacterAssetsForLines(lines) {
   });
   const idLookups = await Promise.allSettled([...pairs.values()].map(async l => {
     const expression = l.expression || 'neutral';
-    let resolvedCharacterId = l.characterId;
+    let forcedOutfit = null;
     if (typeof WardrobeState !== 'undefined') {
       try {
         const resolution = WardrobeState.resolveOutfitForScene(l.characterId, {
           outfitMode: activeSceneData.outfitMode, storyOutfitId: activeSceneData.storyOutfitId,
         });
         if (resolution.hidden) return [];
-        if (resolution.characterId) resolvedCharacterId = resolution.characterId;
+        forcedOutfit = resolution.outfit;
       } catch (e) { /* fall back to the base characterId below */ }
     }
     const [outfitAssetId, baseAssetId] = await Promise.all([
-      DevGameState.getCharacterAssetId(resolvedCharacterId, expression),
+      forcedOutfit
+        ? DevGameState.getCharacterAssetIdForOutfit(l.characterId, forcedOutfit, expression)
+        : DevGameState.getCharacterAssetId(l.characterId, expression),
       DevGameState.getCharacterAssetId(l.characterId, expression),
     ]);
     return [outfitAssetId, baseAssetId];
@@ -574,10 +588,10 @@ let charRequestToken = 0;
 // whatever's currently equipped in WardrobeState) | 'story_locked' (force
 // scene.storyOutfitId regardless of equip state) | 'hidden' (no portrait at
 // all). WardrobeState.resolveOutfitForScene maps that + characterId to the
-// *asset lookup key* to try first (an outfit's own characterAssetKey, e.g.
-// 'jisoo_w0_soft_cardigan' — just another uploadable "character" in the same
-// AssetDB pipeline every base character portrait already uses). If nothing's
-// been uploaded yet for that key, this falls back to the base characterId's
+// vnOutfitId to force, if any (an outfit's art lives under 지수's own VN
+// outfit slots — DevGameState.getCharacterAssetIdForOutfit looks up a specific
+// slot regardless of what's currently selected for gameplay). If nothing's
+// been uploaded yet for that slot, this falls back to the base characterId's
 // own portrait so a scene never goes blank just because an outfit's art
 // hasn't been drawn/uploaded (spec §19.2's "의상이 갑자기 기본 의상으로
 // 돌아가는 현상은 피해야 한다" is about *mid-scene* swaps, not "no art yet").
@@ -589,18 +603,19 @@ async function applyCharacterForLine(characterId, expression) {
   }
   const outfitResolution = (typeof WardrobeState !== 'undefined')
     ? WardrobeState.resolveOutfitForScene(characterId, { outfitMode: activeSceneData.outfitMode, storyOutfitId: activeSceneData.storyOutfitId })
-    : { characterId, hidden: false };
+    : { characterId, outfit: null, hidden: false };
   if (outfitResolution.hidden) {
     el.charWrap.style.opacity = '0';
     return;
   }
   el.charWrap.style.opacity = '1';
-  let asset = null;
-  const outfitAssetId = await DevGameState.getCharacterAssetId(outfitResolution.characterId, expression);
+  const outfitAssetId = outfitResolution.outfit
+    ? await DevGameState.getCharacterAssetIdForOutfit(characterId, outfitResolution.outfit, expression)
+    : await DevGameState.getCharacterAssetId(characterId, expression);
   if (requestToken !== charRequestToken) return; // superseded by a later line change
-  if (outfitAssetId) asset = await AssetDB.getAsset(outfitAssetId);
+  let asset = outfitAssetId ? await AssetDB.getAsset(outfitAssetId) : null;
   if (requestToken !== charRequestToken) return;
-  if (!asset && outfitResolution.characterId !== characterId) {
+  if (!asset && outfitResolution.outfit) {
     const baseAssetId = await DevGameState.getCharacterAssetId(characterId, expression);
     if (requestToken !== charRequestToken) return;
     asset = baseAssetId ? await AssetDB.getAsset(baseAssetId) : null;
@@ -938,6 +953,19 @@ function syncChoiceLayerBottom() {
 window.addEventListener('resize', () => {
   if (!el.choiceLayer.classList.contains('hidden')) syncChoiceLayerBottom();
 });
+
+// Keeps .char-wrap's bottom glued to .dlg-layer's actual rendered height —
+// same "real height, not a vh guess" reasoning as syncChoiceLayerBottom
+// above, so the character's feet sit right at the dialogue box's top edge
+// instead of the fixed 26vh default. A ResizeObserver (not just the
+// window 'resize' listener syncChoiceLayerBottom uses) because .dlg-layer's
+// height also changes from things that aren't a viewport resize — new
+// dialogue text wrapping to more/fewer lines, or .has-interactive's 48vh
+// jump — and the character has to track those too.
+function syncCharWrapBottom() {
+  el.charWrap.style.bottom = el.dlgLayer.offsetHeight + 'px';
+}
+new ResizeObserver(syncCharWrapBottom).observe(el.dlgLayer);
 
 // Choices render as a floating panel over a dimmed scene, centered in the
 // area above the dialogue box (see .choice-layer/.scene-dim) — not appended
