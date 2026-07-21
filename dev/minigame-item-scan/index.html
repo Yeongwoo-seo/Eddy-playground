@@ -339,7 +339,7 @@ async function updateMsgPortrait(characterKey) {
   if (requestToken !== msgPortraitRequestToken) return; // a later call already superseded this one
   if (asset && asset.dataUrl) {
     el.msgPortraitImg.src = asset.dataUrl;
-    el.msgPortraitImg.style.display = '';
+    el.msgPortraitImg.style.display = 'block';
     el.msgPortraitPlaceholder.style.display = 'none';
   } else {
     el.msgPortraitImg.removeAttribute('src');

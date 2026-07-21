@@ -448,7 +448,7 @@ async function updatePortrait(characterKey, expression) {
   if (requestToken !== portraitRequestToken) return;
   if (asset && asset.dataUrl) {
     el.portraitImg.src = asset.dataUrl;
-    el.portraitImg.style.display = '';
+    el.portraitImg.style.display = 'block';
     el.portraitPlaceholder.style.display = 'none';
   } else {
     el.portraitImg.removeAttribute('src');
