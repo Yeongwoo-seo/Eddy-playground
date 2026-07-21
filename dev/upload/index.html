@@ -739,18 +739,12 @@ let currentType = 'background';
 let currentWeekId = weeks[0].id;
 let currentSceneId = weeks[0].scenes[0] && weeks[0].scenes[0].id;
 let currentBgKind = 'scene'; // 'scene' | 'loc:N' | 'minigame' — see backgroundKinds()
-// 인물 DB 피커에 옷가게 코디 프리뷰용 가짜 "캐릭터"를 얹는다 — 각 항목의
-// characterAssetKey가 DevGameState.getCharacterAssetId 조회 키가 되므로
-// (shopItems.js 상단 주석 참고), 실제 dialogueCharacters에는 넣지 않고 이
-// 페이지 안에서만 쓰는 별도 목록으로 합친다. dialogueCharacters 자체를
-// 건드리면 대사 작성/게임 렌더링 등 다른 곳에서도 "말할 수 있는 인물"로
-// 취급돼버리기 때문. expressions: ['neutral']만 두는 이유는 /play/shop/의
-// 미리보기가 항상 'neutral' 표정만 조회하기 때문(outfits: []는 옷 피커를
-// 숨겨서 옷 차원이 없는 일반 캐릭터와 동일하게 동작하게 한다).
-const shopOutfitPreviewCharacters = Object.values(shopItems)
-  .filter(i => i.type === 'outfit' && i.characterAssetKey)
-  .map(i => ({ id: i.characterAssetKey, name: i.name, role: 'outfit-preview', expressions: ['neutral'], outfits: [] }));
-const uploadCharacterEntries = dialogueCharacters.concat(shopOutfitPreviewCharacters);
+// 옷가게 코디 아트는 지수의 VN 의상 슬롯(위 인물 목록의 outfits: ['outfit-01'..])
+// 하나로 합쳐졌다 — 인물 DB 피커에 코디별 가짜 "캐릭터"를 따로 얹지 않는다
+// (예전엔 여기서 shopItems의 characterAssetKey마다 하나씩 만들었지만,
+// 지수 선택 → 옷 피커에서 의상을 고르는 것과 같은 사진을 두 곳에 중복
+// 업로드하게 만드는 경로였다).
+const uploadCharacterEntries = dialogueCharacters;
 let currentCharacterKey = dialogueCharacters[0].id;
 let currentExpression = dialogueExpressions[0].id;
 // null for characters with no `outfits` list — see allowedOutfits()/characterHasOutfits().
@@ -2107,7 +2101,7 @@ async function renderBgKindPicker() {
 
 function renderCharPicker() {
   el.charPickerPills.innerHTML = uploadCharacterEntries.map(c =>
-    `<button class="pill${c.id === currentCharacterKey ? ' active' : ''}" data-key="${c.id}">${c.role === 'outfit-preview' ? '👗 ' : ''}${escapeHtml(c.name)}${isCharacterComplete(c) ? ' ✓' : ''}</button>`
+    `<button class="pill${c.id === currentCharacterKey ? ' active' : ''}" data-key="${c.id}">${escapeHtml(c.name)}${isCharacterComplete(c) ? ' ✓' : ''}</button>`
   ).join('');
   el.charPickerPills.querySelectorAll('.pill').forEach(btn => {
     btn.addEventListener('click', () => {
