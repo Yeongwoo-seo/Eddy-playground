@@ -278,8 +278,8 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
    고정 레이어라 이동만 되고, 숫자 자리(.status-assemble-digit)만 개수가
    가변이라 점선 테두리로 "아직 실제 값이 없는 자리"라는 걸 보여준다(숫자
    글꼴을 올렸으면 실제 잘라낸 숫자 이미지를 예시로 보여준다). */
-.status-assemble-stage-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:16px;overflow:hidden;min-height:0}
-.status-assemble-stage{position:relative;background:var(--surface-1);border:1px solid var(--divider);border-radius:10px;overflow:hidden;touch-action:none;max-width:100%;max-height:100%;width:min(94vw,480px);aspect-ratio:var(--status-assemble-ar,2/1)}
+.status-assemble-stage-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto;min-height:0}
+.status-assemble-stage{position:relative;background:var(--surface-1);border:1px solid var(--divider);border-radius:10px;overflow:hidden;touch-action:pan-x pan-y;max-width:100%;max-height:100%;width:min(94vw,480px);aspect-ratio:var(--status-assemble-ar,2/1);flex-shrink:0;transform:scale(var(--status-assemble-zoom,1));transform-origin:center center}
 .status-assemble-stage-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;pointer-events:none;user-select:none}
 .status-assemble-layer{position:absolute;transform:translate(-50%,-50%);touch-action:none;cursor:grab;display:flex;align-items:center;justify-content:center}
 .status-assemble-layer.selected{outline:2px solid var(--green);outline-offset:3px}
@@ -1348,7 +1348,12 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     <button type="button" class="fish-sheet-btn" id="addStatusDigitBtn" style="flex:0 0 auto;padding:9px 14px;width:auto">+ 숫자 자리</button>
   </div>
   <div class="areafs-hint">몸통을 드래그해서 옮기세요. 요일·날짜/시간을 선택하면 아래에서 글자 크기를 키울 수 있어요. 숫자 자리는 배열 순서(왼쪽부터 추가한 순서)가 높은 자리부터예요 — 실제 포인트 자릿수가 이보다 적으면 앞자리는 빈칸으로 남아요.</div>
-  <div class="status-assemble-stage-wrap">
+  <div class="areafs-zoom-controls" style="justify-content:center;padding:6px 16px 0">
+    <button type="button" class="areafs-zoom-btn" id="statusAssembleZoomOutBtn">–</button>
+    <button type="button" class="areafs-zoom-btn" id="statusAssembleZoomResetBtn">100%</button>
+    <button type="button" class="areafs-zoom-btn" id="statusAssembleZoomInBtn">+</button>
+  </div>
+  <div class="status-assemble-stage-wrap" id="statusAssembleStageWrap">
     <div class="status-assemble-stage" id="statusAssembleStage"></div>
   </div>
   <div class="status-assemble-panel hidden" id="statusAssemblePanel">
@@ -1728,7 +1733,11 @@ const el = {
   statusAssembleBtn: document.getElementById('statusAssembleBtn'),
   statusAssembleOverlay: document.getElementById('statusAssembleOverlay'),
   statusAssembleCloseBtn: document.getElementById('statusAssembleCloseBtn'),
+  statusAssembleStageWrap: document.getElementById('statusAssembleStageWrap'),
   statusAssembleStage: document.getElementById('statusAssembleStage'),
+  statusAssembleZoomOutBtn: document.getElementById('statusAssembleZoomOutBtn'),
+  statusAssembleZoomResetBtn: document.getElementById('statusAssembleZoomResetBtn'),
+  statusAssembleZoomInBtn: document.getElementById('statusAssembleZoomInBtn'),
   addStatusDigitBtn: document.getElementById('addStatusDigitBtn'),
   statusAssemblePanel: document.getElementById('statusAssemblePanel'),
   statusAssemblePanelLabel: document.getElementById('statusAssemblePanelLabel'),
@@ -5915,15 +5924,32 @@ function statusAssembleDigitBgStyle(rect, sheetW, sheetH, boxW, boxH) {
   const y = (rect.cy * sheetH - cropSize / 2) * scaleY;
   return { backgroundPosition: `-${x}px -${y}px`, backgroundSize: `${sheetW * scaleX}px ${sheetH * scaleY}px` };
 }
+// 선택만 바뀔 땐 renderStatusAssembleStage()(전체 DOM 재생성 + 에셋 재조회)를
+// 부르지 않는다 — 그 방식은 선택할 때마다 스테이지가 통째로 비워졌다 다시
+// 그려져 화면이 깜빡였고, 첫 탭이 "선택"만 하고 끝나버려(pointerId를 못 잡음)
+// 실제 드래그는 두 번째 탭부터만 먹혀 이동도 잘 안 됐다. 이제 선택 표시는
+// 클래스 토글로만 하고, 같은 pointerdown 안에서 곧바로 드래그 추적까지
+// 시작해 "누르자마자 선택되고 그대로 끌 수 있게" 한다.
+function selectStatusAssembleLayer(id) {
+  if (selectedStatusAssembleLayerId === id) return;
+  selectedStatusAssembleLayerId = id;
+  el.statusAssembleStage.querySelectorAll('.status-assemble-layer').forEach(layerEl => {
+    layerEl.classList.toggle('selected', layerEl.dataset.layerId === id);
+  });
+  renderStatusAssemblePanel();
+}
+function deselectStatusAssembleLayer() {
+  if (!selectedStatusAssembleLayerId) return;
+  selectedStatusAssembleLayerId = null;
+  el.statusAssembleStage.querySelectorAll('.status-assemble-layer.selected').forEach(layerEl => layerEl.classList.remove('selected'));
+  renderStatusAssemblePanel();
+}
 function attachStatusAssembleLayerMove(layerEl, id) {
+  layerEl.dataset.layerId = id;
   let pointerId = null, start = null, startPos = null;
   layerEl.addEventListener('pointerdown', (e) => {
     e.stopPropagation();
-    if (selectedStatusAssembleLayerId !== id) {
-      selectedStatusAssembleLayerId = id;
-      renderStatusAssembleStage();
-      return;
-    }
+    selectStatusAssembleLayer(id);
     pointerId = e.pointerId;
     layerEl.setPointerCapture(pointerId);
     start = { x: e.clientX, y: e.clientY };
@@ -6081,13 +6107,32 @@ el.deleteStatusDigitBtn.addEventListener('click', async () => {
 });
 el.statusAssembleStage.addEventListener('pointerdown', (e) => {
   if (e.target !== el.statusAssembleStage) return;
-  if (!selectedStatusAssembleLayerId) return;
-  selectedStatusAssembleLayerId = null;
-  renderStatusAssembleStage();
+  deselectStatusAssembleLayer();
 });
+
+// ===== 상태창 조립 줌 — 작은 HUD 소품이라 1배로는 숫자 자리 하나하나를
+// 정밀하게 맞추기 어려워서 추가한다. transform:scale이라 스테이지의
+// 실제 레이아웃 크기(퍼센트 좌표 기준)는 그대로고, 드래그 계산은 매번
+// getBoundingClientRect()(변환 반영된 값)를 다시 읽으므로 확대 배율과
+// 무관하게 좌표 계산이 그대로 맞는다.
+const STATUS_ASSEMBLE_MIN_ZOOM = 1, STATUS_ASSEMBLE_MAX_ZOOM = 3, STATUS_ASSEMBLE_ZOOM_STEP = 0.25;
+let statusAssembleZoom = 1;
+function setStatusAssembleZoom(z) {
+  statusAssembleZoom = Math.min(STATUS_ASSEMBLE_MAX_ZOOM, Math.max(STATUS_ASSEMBLE_MIN_ZOOM, z));
+  el.statusAssembleStage.style.setProperty('--status-assemble-zoom', statusAssembleZoom);
+  el.statusAssembleZoomResetBtn.textContent = Math.round(statusAssembleZoom * 100) + '%';
+}
+el.statusAssembleZoomOutBtn.addEventListener('click', () => setStatusAssembleZoom(statusAssembleZoom - STATUS_ASSEMBLE_ZOOM_STEP));
+el.statusAssembleZoomInBtn.addEventListener('click', () => setStatusAssembleZoom(statusAssembleZoom + STATUS_ASSEMBLE_ZOOM_STEP));
+el.statusAssembleZoomResetBtn.addEventListener('click', () => setStatusAssembleZoom(1));
+el.statusAssembleStageWrap.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  setStatusAssembleZoom(statusAssembleZoom + (e.deltaY < 0 ? STATUS_ASSEMBLE_ZOOM_STEP : -STATUS_ASSEMBLE_ZOOM_STEP));
+}, { passive: false });
 async function openStatusAssembleEditor() {
   if (!currentStatusWindow().frameAssetId) return;
   selectedStatusAssembleLayerId = null;
+  setStatusAssembleZoom(1);
   await renderStatusAssembleStage();
   el.statusAssembleOverlay.classList.remove('hidden');
 }
