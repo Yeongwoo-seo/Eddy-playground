@@ -283,11 +283,14 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .status-assemble-stage-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;pointer-events:none;user-select:none}
 .status-assemble-layer{position:absolute;transform:translate(-50%,-50%);touch-action:none;cursor:grab;display:flex;align-items:center;justify-content:center}
 .status-assemble-layer.selected{outline:2px solid var(--green);outline-offset:3px}
+.status-assemble-layer.multi-selected{outline:2px solid var(--amber);outline-offset:3px}
 .status-assemble-text{white-space:nowrap;color:#000;font-family:var(--sans);font-weight:700;pointer-events:none}
 .status-assemble-arrow-img{display:block;pointer-events:none;user-select:none;max-width:60px}
 .status-assemble-digit{border:1px dashed var(--cyan);border-radius:4px;box-sizing:border-box;color:var(--text-muted);font-family:var(--mono);font-size:10px;image-rendering:pixelated}
 .status-assemble-panel{border-top:1px solid var(--divider);padding:12px 16px calc(14px + env(safe-area-inset-bottom,0));flex-shrink:0}
 .status-assemble-panel-label{font-size:13px;color:var(--text-secondary);margin-bottom:8px;font-weight:600}
+.status-assemble-align-row{display:flex;gap:8px}
+#statusDigitMultiSelectBtn.active{color:#04181c;background:var(--amber);border-color:var(--amber)}
 
 /* ===== 세밀영역조절(범용) 전체화면 편집기 — dev/upload/evidence-notebook/
    index.html의 영역지정 편집기(evn-*)와 완전히 같은 pan/draw 제스처 패턴을
@@ -459,6 +462,7 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .screen-pill .screen-start-badge{margin-left:4px}
 .screen-actions-row{display:flex;gap:8px;margin:10px 0}
 .screen-actions-row .fish-sheet-btn:disabled{opacity:.4;cursor:default}
+.status-assemble-align-row .fish-sheet-btn:disabled{opacity:.4;cursor:default}
 
 /* ===== 이동 영역(moveAreas) 설정 시트 — 폴리곤을 다 그리면(영역 종류
    "이동") crop-overlay와 같은 바텀시트 틀로 도착 화면 + 도착 지점을
@@ -1345,9 +1349,10 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   <div class="areafs-topbar">
     <button type="button" class="areafs-close-btn" id="statusAssembleCloseBtn">✕</button>
     <div class="areafs-title">상태창 조립</div>
+    <button type="button" class="fish-sheet-btn" id="statusDigitMultiSelectBtn" style="flex:0 0 auto;padding:9px 14px;width:auto">☐ 다중 선택</button>
     <button type="button" class="fish-sheet-btn" id="addStatusDigitBtn" style="flex:0 0 auto;padding:9px 14px;width:auto">+ 숫자 자리</button>
   </div>
-  <div class="areafs-hint">몸통을 드래그해서 옮기세요. 요일·날짜/시간을 선택하면 아래에서 글자 크기를 키울 수 있어요. 숫자 자리는 배열 순서(왼쪽부터 추가한 순서)가 높은 자리부터예요 — 실제 포인트 자릿수가 이보다 적으면 앞자리는 빈칸으로 남아요.</div>
+  <div class="areafs-hint" id="statusAssembleHint">몸통을 드래그해서 옮기세요. 요일·날짜/시간을 선택하면 아래에서 글자 크기를 키울 수 있어요. 숫자 자리는 배열 순서(왼쪽부터 추가한 순서)가 높은 자리부터예요 — 실제 포인트 자릿수가 이보다 적으면 앞자리는 빈칸으로 남아요.</div>
   <div class="areafs-zoom-controls" style="justify-content:center;padding:6px 16px 0">
     <button type="button" class="areafs-zoom-btn" id="statusAssembleZoomOutBtn">–</button>
     <button type="button" class="areafs-zoom-btn" id="statusAssembleZoomResetBtn">100%</button>
@@ -1366,6 +1371,10 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
       </div>
     </div>
     <button type="button" class="fish-sheet-btn danger hidden" id="deleteStatusDigitBtn" style="width:100%;margin-top:10px">✕ 이 숫자 자리 삭제</button>
+    <div class="status-assemble-align-row hidden" id="statusAssembleAlignRow">
+      <button type="button" class="fish-sheet-btn" id="statusAssembleDistributeBtn">↔ 가로 간격 일정하게</button>
+      <button type="button" class="fish-sheet-btn" id="statusAssembleAlignYBtn">↕ 세로 중앙 맞춤</button>
+    </div>
   </div>
 </div>
 
@@ -1739,12 +1748,17 @@ const el = {
   statusAssembleZoomResetBtn: document.getElementById('statusAssembleZoomResetBtn'),
   statusAssembleZoomInBtn: document.getElementById('statusAssembleZoomInBtn'),
   addStatusDigitBtn: document.getElementById('addStatusDigitBtn'),
+  statusDigitMultiSelectBtn: document.getElementById('statusDigitMultiSelectBtn'),
+  statusAssembleHint: document.getElementById('statusAssembleHint'),
   statusAssemblePanel: document.getElementById('statusAssemblePanel'),
   statusAssemblePanelLabel: document.getElementById('statusAssemblePanelLabel'),
   statusAssembleFontSizeRow: document.getElementById('statusAssembleFontSizeRow'),
   statusAssembleFontSizeInput: document.getElementById('statusAssembleFontSizeInput'),
   statusAssembleFontSizeNumberInput: document.getElementById('statusAssembleFontSizeNumberInput'),
   deleteStatusDigitBtn: document.getElementById('deleteStatusDigitBtn'),
+  statusAssembleAlignRow: document.getElementById('statusAssembleAlignRow'),
+  statusAssembleDistributeBtn: document.getElementById('statusAssembleDistributeBtn'),
+  statusAssembleAlignYBtn: document.getElementById('statusAssembleAlignYBtn'),
 };
 
 // 카테고리 6개(motion-category-title/motionElKey는 이 파일 아래쪽에서
@@ -5888,8 +5902,33 @@ function renderStatusNumberAdjustInputs() {
    setStatusAssembleLayerPos가 이 id 체계와 fishingConfig.statusWindow의
    실제 필드(datePos/timePos/arrowPivot/digitPositions) 사이를 변환한다. */
 let selectedStatusAssembleLayerId = null;
+// 숫자 자리 다중 선택 — 토글 버튼(statusDigitMultiSelectBtn)으로 켜고 끄는
+// 별도 모드다. 켜져 있는 동안엔 숫자 자리를 탭해도 드래그를 시작하지 않고
+// selectedStatusDigitIds(Set of 'digit-N')에 넣었다 뺐다만 한다(다른 레이어
+// 종류는 이 모드와 무관하게 그대로 단일 선택+드래그). 2개 이상 고르면
+// 패널에 "세로 중앙 맞춤"(y좌표를 평균으로 통일)이, 3개 이상이면 "가로 간격
+// 일정하게"(맨 왼쪽·오른쪽은 그대로 두고 사이를 등간격으로 재배치)가 뜬다.
+let statusDigitMultiSelectMode = false;
+let selectedStatusDigitIds = new Set();
+const STATUS_ASSEMBLE_DEFAULT_HINT = '몸통을 드래그해서 옮기세요. 요일·날짜/시간을 선택하면 아래에서 글자 크기를 키울 수 있어요. 숫자 자리는 배열 순서(왼쪽부터 추가한 순서)가 높은 자리부터예요 — 실제 포인트 자릿수가 이보다 적으면 앞자리는 빈칸으로 남아요.';
+const STATUS_ASSEMBLE_MULTI_HINT = '숫자 자리를 탭해서 여러 개 고르세요. 2개 이상 고르면 세로 중앙 맞춤을, 3개 이상 고르면 가로 간격을 일정하게 정리할 수 있어요.';
 function updateStatusAssembleBtnState() {
   el.statusAssembleBtn.disabled = !currentStatusWindow().frameAssetId;
+}
+function setStatusDigitMultiSelectMode(on) {
+  statusDigitMultiSelectMode = on;
+  selectedStatusDigitIds.clear();
+  el.statusDigitMultiSelectBtn.classList.toggle('active', on);
+  el.statusDigitMultiSelectBtn.textContent = on ? '✓ 다중 선택 중' : '☐ 다중 선택';
+  el.statusAssembleHint.textContent = on ? STATUS_ASSEMBLE_MULTI_HINT : STATUS_ASSEMBLE_DEFAULT_HINT;
+  if (on) selectedStatusAssembleLayerId = null;
+  renderStatusAssembleStage();
+}
+function toggleStatusDigitMultiSelect(id, layerEl) {
+  if (selectedStatusDigitIds.has(id)) selectedStatusDigitIds.delete(id);
+  else selectedStatusDigitIds.add(id);
+  layerEl.classList.toggle('multi-selected', selectedStatusDigitIds.has(id));
+  renderStatusAssemblePanel();
 }
 function statusAssembleLayerPos(sw, id) {
   if (id === 'dateLayer') return sw.datePos || { x: 0.28, y: 0.3, fontSize: 9.5 };
@@ -5949,6 +5988,10 @@ function attachStatusAssembleLayerMove(layerEl, id) {
   let pointerId = null, start = null, startPos = null;
   layerEl.addEventListener('pointerdown', (e) => {
     e.stopPropagation();
+    if (statusDigitMultiSelectMode && /^digit-/.test(id)) {
+      toggleStatusDigitMultiSelect(id, layerEl);
+      return;
+    }
     selectStatusAssembleLayer(id);
     pointerId = e.pointerId;
     layerEl.setPointerCapture(pointerId);
@@ -6031,7 +6074,7 @@ async function renderStatusAssembleStage() {
   slots.forEach((pos, i) => {
     const id = 'digit-' + i;
     const layerEl = document.createElement('div');
-    layerEl.className = 'status-assemble-layer' + (selectedStatusAssembleLayerId === id ? ' selected' : '');
+    layerEl.className = 'status-assemble-layer' + (selectedStatusAssembleLayerId === id ? ' selected' : '') + (selectedStatusDigitIds.has(id) ? ' multi-selected' : '');
     layerEl.style.left = (pos.x * 100) + '%';
     layerEl.style.top = (pos.y * 100) + '%';
     const digitEl = document.createElement('div');
@@ -6057,6 +6100,18 @@ async function renderStatusAssembleStage() {
   renderStatusAssemblePanel();
 }
 function renderStatusAssemblePanel() {
+  if (statusDigitMultiSelectMode) {
+    const n = selectedStatusDigitIds.size;
+    el.statusAssemblePanel.classList.remove('hidden');
+    el.statusAssembleFontSizeRow.classList.add('hidden');
+    el.deleteStatusDigitBtn.classList.add('hidden');
+    el.statusAssemblePanelLabel.textContent = n === 0 ? '숫자 자리를 탭해서 선택하세요' : `숫자 자리 ${n}개 선택됨`;
+    el.statusAssembleAlignRow.classList.toggle('hidden', n < 2);
+    el.statusAssembleAlignYBtn.disabled = n < 2;
+    el.statusAssembleDistributeBtn.disabled = n < 3;
+    return;
+  }
+  el.statusAssembleAlignRow.classList.add('hidden');
   const id = selectedStatusAssembleLayerId;
   if (!id) {
     el.statusAssemblePanel.classList.add('hidden');
@@ -6093,7 +6148,8 @@ el.addStatusDigitBtn.addEventListener('click', async () => {
   const last = list[list.length - 1] || { x: 0.5, y: 0.6 };
   list.push({ x: clamp01(last.x + 0.12), y: last.y });
   await patchStatusWindow({ digitPositions: list });
-  selectedStatusAssembleLayerId = 'digit-' + (list.length - 1);
+  if (statusDigitMultiSelectMode) selectedStatusDigitIds.add('digit-' + (list.length - 1));
+  else selectedStatusAssembleLayerId = 'digit-' + (list.length - 1);
   renderStatusAssembleStage();
 });
 el.deleteStatusDigitBtn.addEventListener('click', async () => {
@@ -6107,7 +6163,42 @@ el.deleteStatusDigitBtn.addEventListener('click', async () => {
 });
 el.statusAssembleStage.addEventListener('pointerdown', (e) => {
   if (e.target !== el.statusAssembleStage) return;
+  if (statusDigitMultiSelectMode) {
+    if (selectedStatusDigitIds.size === 0) return;
+    selectedStatusDigitIds.clear();
+    renderStatusAssembleStage();
+    return;
+  }
   deselectStatusAssembleLayer();
+});
+el.statusDigitMultiSelectBtn.addEventListener('click', () => setStatusDigitMultiSelectMode(!statusDigitMultiSelectMode));
+el.statusAssembleAlignYBtn.addEventListener('click', async () => {
+  if (selectedStatusDigitIds.size < 2) return;
+  const sw = currentStatusWindow();
+  const list = getStatusDigitPositions(sw).slice();
+  const ids = Array.from(selectedStatusDigitIds);
+  const avgY = ids.reduce((sum, id) => sum + statusAssembleLayerPos(sw, id).y, 0) / ids.length;
+  ids.forEach(id => {
+    const m = /^digit-(\d+)$/.exec(id);
+    list[Number(m[1])] = Object.assign({}, list[Number(m[1])], { y: avgY });
+  });
+  await patchStatusWindow({ digitPositions: list });
+  renderStatusAssembleStage();
+});
+el.statusAssembleDistributeBtn.addEventListener('click', async () => {
+  if (selectedStatusDigitIds.size < 3) return;
+  const sw = currentStatusWindow();
+  const list = getStatusDigitPositions(sw).slice();
+  const ids = Array.from(selectedStatusDigitIds).sort((a, b) => statusAssembleLayerPos(sw, a).x - statusAssembleLayerPos(sw, b).x);
+  const minX = statusAssembleLayerPos(sw, ids[0]).x;
+  const maxX = statusAssembleLayerPos(sw, ids[ids.length - 1]).x;
+  const step = (maxX - minX) / (ids.length - 1);
+  ids.forEach((id, i) => {
+    const m = /^digit-(\d+)$/.exec(id);
+    list[Number(m[1])] = Object.assign({}, list[Number(m[1])], { x: clamp01(minX + step * i) });
+  });
+  await patchStatusWindow({ digitPositions: list });
+  renderStatusAssembleStage();
 });
 
 // ===== 상태창 조립 줌 — 작은 HUD 소품이라 1배로는 숫자 자리 하나하나를
@@ -6132,6 +6223,11 @@ el.statusAssembleStageWrap.addEventListener('wheel', (e) => {
 async function openStatusAssembleEditor() {
   if (!currentStatusWindow().frameAssetId) return;
   selectedStatusAssembleLayerId = null;
+  statusDigitMultiSelectMode = false;
+  selectedStatusDigitIds.clear();
+  el.statusDigitMultiSelectBtn.classList.remove('active');
+  el.statusDigitMultiSelectBtn.textContent = '☐ 다중 선택';
+  el.statusAssembleHint.textContent = STATUS_ASSEMBLE_DEFAULT_HINT;
   setStatusAssembleZoom(1);
   await renderStatusAssembleStage();
   el.statusAssembleOverlay.classList.remove('hidden');
