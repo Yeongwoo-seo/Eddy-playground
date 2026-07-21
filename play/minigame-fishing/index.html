@@ -3728,8 +3728,12 @@ async function copyToClipboard(textareaEl, statusEl) {
 // 지금 layoutPrefs(크기·위치)를 그대로 JS 리터럴로 보여준다 — 마음에
 // 드는 배치를 찾으면 이 파일 위쪽 layoutPrefs 기본값에 그대로 붙여넣어
 // localStorage 없이(다른 기기에서도) 이 배치로 고정("확정")할 수 있다.
+// bgZoom은 layoutPrefs에 안 담기지만(화면마다 다시 맞춰야 해서 저장 안 함,
+// bgZoom 선언부 주석 참고) 지금 슬라이더로 맞춘 배율을 확인·복사할 수
+// 있게 별도 줄로 같이 보여준다 — 이 화면의 기본값을 바꾸고 싶으면 위쪽
+// `let bgZoom = 0.9;` 줄에 그대로 붙여넣으면 된다.
 function buildLayoutPrefsCode() {
-  return 'let layoutPrefs = ' + JSON.stringify(layoutPrefs, null, 2) + ';';
+  return 'let layoutPrefs = ' + JSON.stringify(layoutPrefs, null, 2) + ';\nlet bgZoom = ' + bgZoom + ';';
 }
 el.layoutCodeBtn.addEventListener('click', (e) => {
   e.stopPropagation();
