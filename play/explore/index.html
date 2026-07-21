@@ -466,6 +466,33 @@ const el = {
 
 function escapeHtml(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 
+// ===== 화면 밖 페인트 워밍 (낚시 미니게임 preloadFishIcons와 같은 기법) =====
+// AssetDB.preloadImage(new Image().decode())는 디코드까지만 끝내둘 뿐이라,
+// el.locImg/el.locCharStageImg/el.moveMapWrap처럼 실제로 화면에 그려지는
+// 건 여전히 그 순간 처음 일어난다 — 그래서 preloadPhaseAssets로 미리
+// 디코드해둬도 이동/대화 전환 때 살짝 밀리는 느낌이 남았다. 화면이
+// 열리기 전에 실제 <img>로 화면 밖(-9999px)에 한 번 그려 페인트까지
+// 끝내두면, 실제 전환은 이미 그려둔 같은 url을 그대로 옮기는 것뿐이라
+// 즉시 뜬다.
+function getPaintWarmHost() {
+  let host = document.getElementById('paintWarmHost');
+  if (!host) {
+    host = document.createElement('div');
+    host.id = 'paintWarmHost';
+    host.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:0;height:0;overflow:hidden;pointer-events:none';
+    host.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(host);
+  }
+  return host;
+}
+function paintWarm(dataUrl) {
+  if (!dataUrl) return;
+  const img = document.createElement('img');
+  img.src = dataUrl;
+  img.alt = '';
+  getPaintWarmHost().appendChild(img);
+}
+
 function updatePointBalance() {
   const introduced = CaseFileState.hasFlag('pointsUiIntroduced');
   el.pointBalance.classList.toggle('hidden', !introduced);
@@ -627,6 +654,7 @@ async function applyLocationBackground(locationId) {
   if (asset && asset.dataUrl) {
     el.locStage.classList.remove('placeholder');
     await AssetDB.preloadImage(asset.dataUrl).catch(() => {});
+    paintWarm(asset.dataUrl);
     el.locImg.src = asset.dataUrl;
     locCanvasW = asset.width;
     locCanvasH = asset.height;
@@ -966,6 +994,7 @@ async function setLocCharStage(charId) {
     // paint is free, and that decode is what performMove's caller (moveTo)
     // is actually waiting on to lift the move-fade cover.
     await AssetDB.preloadImage(asset.dataUrl).catch(() => {});
+    paintWarm(asset.dataUrl);
     if (token !== locCharStageToken) return;
     el.locCharStageImg.src = asset.dataUrl;
     el.locCharStage.classList.add('show');
@@ -1191,6 +1220,7 @@ async function openMoveMapSheet(phaseMap, mapDests, listDests) {
     // photo" spot in this file makes this call right before setting
     // src/background-image; this one was the one exception.
     await AssetDB.preloadImage(asset.dataUrl).catch(() => {});
+    paintWarm(asset.dataUrl);
     el.moveMapWrap.style.backgroundImage = `url(${asset.dataUrl})`;
   }
 }
@@ -2072,7 +2102,11 @@ async function preloadPhaseAssets(phaseId) {
     const characterAssetIds = await collectPhaseCharacterAssetIds(phaseId, locationIds);
     const assetIds = [...new Set([...backgroundIds, ...(mapAssetId ? [mapAssetId] : []), ...characterAssetIds])];
     const assets = assetIds.length ? await AssetDB.getAssetsByIds(assetIds) : [];
-    await Promise.all(assets.map(a => (a && a.dataUrl) ? AssetDB.preloadImage(a.dataUrl) : Promise.resolve()));
+    await Promise.all(assets.map(async (a) => {
+      if (!a || !a.dataUrl) return;
+      await AssetDB.preloadImage(a.dataUrl);
+      paintWarm(a.dataUrl);
+    }));
   } finally {
     LoadingOverlay.hide();
   }
