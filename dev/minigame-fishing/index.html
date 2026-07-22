@@ -954,7 +954,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
 
     <div class="option-group">
       <div class="option-label">영우(NPC) idle</div>
-      <div class="option-desc">투명 PNG · 정확히 2열×2행(4칸) 격자 · 순서(왼쪽 위부터): 위·아래·왼쪽·오른쪽. 영우는 화면에 가만히 서 있는 NPC라 이 중 아래(정면) 프레임만 실제로 쓰여요 — 나머지 방향도 나중을 위해 같이 올려둘 수 있어요.</div>
+      <div class="option-desc">정확히 2열×2행(4칸) 격자 · 순서(왼쪽 위부터): 위·아래·왼쪽·오른쪽. 배경이 있는 사진을 그대로 올려도 업로드하면 자동으로 배경을 없애 주니 미리 누끼를 딸 필요는 없어요. 영우는 화면에 가만히 서 있는 NPC라 이 중 아래(정면) 프레임만 실제로 쓰여요 — 나머지 방향도 나중을 위해 같이 올려둘 수 있어요.</div>
       <div class="fish-sheet-frame" id="youngwooIdleSheetFrame">
         <div class="fish-sheet-empty" id="youngwooIdleSheetEmpty">아직 업로드된 시트가 없어요<br>업로드하기 전까진 영우가 화면에 나타나지 않아요</div>
       </div>
@@ -5482,10 +5482,22 @@ async function renderCharacterTab() {
     const file = input.files[0];
     input.value = '';
     if (!file) return;
-    const asset = await AssetDB.addAsset({ type: 'fishing-idle-sheet-' + character, name: file.name, blob: file });
-    await setIdleSheetConfig(character, { assetId: asset.id, overrides: {} });
-    showSaveNote();
-    renderCharacterTab();
+    const btn = el[character + 'IdleSheetUploadBtn'];
+    btn.disabled = true;
+    try {
+      // 영우는 화면에 서 있는 NPC라 사용자가 미리 누끼 딴 투명 PNG를 준비해야
+      // 하는 부담이 크다 — 모션 카테고리 스트립 업로드(handleMotionCategoryStripUpload)와
+      // 같은 이유로 업로드 즉시 자동으로 배경을 제거한다. 지수는 기존처럼 원본을 그대로 쓴다.
+      const blob = character === 'youngwoo' ? await removeBackgroundOrFallback(file) : file;
+      const asset = await AssetDB.addAsset({ type: 'fishing-idle-sheet-' + character, name: file.name, blob });
+      await setIdleSheetConfig(character, { assetId: asset.id, overrides: {} });
+      showSaveNote();
+      renderCharacterTab();
+    } catch (err) {
+      DevDiag.show((character === 'youngwoo' ? '영우' : '지수') + ' idle 시트 업로드 실패: ' + (err && err.message ? err.message : err));
+    } finally {
+      btn.disabled = false;
+    }
   });
   el[character + 'IdleSheetRemoveBtn'].addEventListener('click', async () => {
     // 시트를 지우면 세밀영역조절 보정도 같이 지운다 — 새 시트를 올렸을 때
