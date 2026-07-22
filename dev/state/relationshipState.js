@@ -9,7 +9,9 @@
    지급 방지 장치가 없다 — 선택지는 세이브 한 판에서 한 번만 지나가는 노드라
    포인트처럼 "같은 보상을 두 번 받는" 시나리오 자체가 없다. */
 
-const RELATIONSHIP_STATE_KEY = 'mkRelationshipState_v1';
+// v1 -> v2: 1주차 마무리하며 그동안 쌓인 테스트 만족도/호감도 값을 초기화
+// (서비스워커 캐시 버전을 올려 로컬 캐시를 초기화하던 것과 같은 방식).
+const RELATIONSHIP_STATE_KEY = 'mkRelationshipState_v2';
 const GAUGE_MIN = 0;
 const GAUGE_MAX = 100;
 const GAUGE_DEFAULT = 50; // 중립값 — 선택지에 따라 위아래로 움직임
