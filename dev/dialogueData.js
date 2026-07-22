@@ -130,7 +130,7 @@ const week1SceneFlightLines = [
   { id: 'line-006', speaker: '', text: '기내 안내 방송이 흘러나오고,\n좌석벨트 표시등에 불이 들어왔다.', characterId: null },
   { id: 'line-007', speaker: '', text: '지수가 비행기 모드를 해제하자\n영우의 메시지가 한꺼번에 들어왔다.', characterId: 'jisoo', expression: 'curious' },
   { id: 'line-008', speaker: '영우', text: '착륙했어????', characterId: 'youngwoo', expression: 'happy' },
-  { id: 'line-009', speaker: '영우', text: '나 36번 게이트 앞이야\n천천히 나와 ㅎㅎㅎㅎㅎㅎ', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-009', speaker: '영우', text: '나 A에서 기다리고 있어\n천천히 나와 ㅎㅎㅎㅎㅎㅎ', characterId: 'youngwoo', expression: 'soft' },
   { id: 'line-010', speaker: '영우', text: '어제부터 계속 도착 시간 검색하고 있었다는 건\n안 비밀 ㅎㅎㅎㅎㅎㅎ', characterId: 'youngwoo', expression: 'soft' },
   { id: 'line-011', speaker: '지수', text: '오.\n이번엔 위치 설명 정확한데요????', characterId: 'jisoo', expression: 'smirk' },
   { id: 'line-012', speaker: '영우', text: '나 호주 살면서 성장했어.', characterId: 'youngwoo', expression: 'smirk' },
