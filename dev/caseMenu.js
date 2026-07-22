@@ -23,6 +23,9 @@ function initCaseMenu(options) {
   const currentSceneId = options.currentSceneId || null;
   const mountSelector = options.mountSelector || null;
   const disabled = !!options.disabled;
+  // 1주차는 증거 1건뿐이라 증거노트(EvidenceNotebook) 진입점을 숨긴다 —
+  // 2주차부터 노출.
+  const isWeek1 = typeof currentSceneId === 'string' && /^week1-/.test(currentSceneId);
 
   CaseFileState.recordSceneVisit(currentSceneId);
 
@@ -290,7 +293,7 @@ function initCaseMenu(options) {
     if (!evidence.length) return emptyNote('아직 확보한 증거가 없습니다.');
     const filter = ctx.evidenceFilter || 'all';
     const presentCats = EVIDENCE_CATEGORY_ORDER.filter(c => c !== 'testimony' && evidence.some(ev => (ev.subtype || 'etc') === c));
-    const notebookBtn = `<button class="cm-notebook-btn" data-action="openNotebook">📓 수첩으로 보기</button>`;
+    const notebookBtn = isWeek1 ? '' : `<button class="cm-notebook-btn" data-action="openNotebook">📓 수첩으로 보기</button>`;
     const filterBar = `
       <div class="cm-filter-row">
         <button class="cm-filter-chip${filter === 'all' ? ' cm-filter-chip-active' : ''}" data-evidence-filter="all">전체 ${evidence.length}</button>
@@ -335,7 +338,7 @@ function initCaseMenu(options) {
   function renderTestimonyTabBody() {
     const testimonies = CaseFileState.getCaseEntries().filter(e => e.kind === 'testimony');
     if (!testimonies.length) return emptyNote('아직 기록된 증언이 없습니다.');
-    const notebookBtn = `<button class="cm-notebook-btn" data-action="openNotebook">📓 수첩으로 보기</button>`;
+    const notebookBtn = isWeek1 ? '' : `<button class="cm-notebook-btn" data-action="openNotebook">📓 수첩으로 보기</button>`;
     return notebookBtn + `<div class="cm-list">${testimonies.map(testimonyRow).join('')}</div>`;
   }
   function testimonyRow(t) {
