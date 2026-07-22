@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>성경 읽기 진행표</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --primary:#E8741E;--primary-hover:#D4681A;--primary-light:#FFF3EB;
+  --primary-gradient:linear-gradient(135deg,#E8741E 0%,#F5943A 100%);
+  --bg:#F5F5F5;--white:#FFFFFF;
+  --grey50:#FAFAFA;--grey100:#F2F4F6;--grey200:#E5E8EB;--grey300:#D1D6DB;
+  --grey500:#8B95A1;--grey700:#4E5968;--black:#191F28;
+  --success:#1DB847;--info:#3182F6;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--black);font-family:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;overflow-x:hidden;display:flex;justify-content:center}
+.app{width:100%;max-width:500px;min-height:100vh;padding:0 16px 40px}
+.hl{color:var(--primary)}
+
+.header{background:var(--primary-gradient);color:var(--white);padding:20px 24px 28px;border-radius:0 0 28px 28px;margin:0 -16px 20px}
+.header-top{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.back-btn{color:var(--white);text-decoration:none;font-size:20px;opacity:.9;line-height:1}
+.header-logo{font-size:14px;font-weight:600;opacity:.85}
+.header-title{font-size:22px;font-weight:700;line-height:1.3}
+
+.card{background:var(--white);border-radius:24px;box-shadow:0 2px 12px rgba(0,0,0,0.06);padding:20px;margin-bottom:16px}
+
+.ov-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.ov-label{font-size:14px;font-weight:700;color:var(--grey700)}
+.reset-btn{background:var(--grey100);color:var(--grey500);border:none;font-size:12px;font-weight:600;padding:6px 12px;border-radius:20px;cursor:pointer;font-family:inherit}
+.reset-btn:active{opacity:.8}
+.ov-pct{font-size:32px;font-weight:800;letter-spacing:-.5px;color:var(--primary)}
+.bar{width:100%;height:10px;background:var(--grey100);border-radius:20px;overflow:hidden;margin-top:10px}
+.bar-fill{height:100%;background:var(--primary-gradient);border-radius:20px;transition:width .3s cubic-bezier(0.2,0.8,0.2,1)}
+.ov-sub{font-size:13px;color:var(--grey500);font-weight:500;margin-top:8px}
+
+.stage-hdr{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.stage-title{font-size:16px;font-weight:700}
+.stage-pct{font-size:14px;font-weight:700;color:var(--primary);flex-shrink:0}
+.stage-desc{font-size:12.5px;color:var(--grey500);font-weight:500;margin-top:6px;line-height:1.5}
+.stage-bar{margin-top:12px}
+.stage-bar .bar-fill{background:var(--primary)}
+
+.book-list{margin-top:16px;display:flex;flex-direction:column}
+.book-row{display:flex;align-items:center;gap:10px;padding:12px 4px;cursor:pointer;border-top:1px solid var(--grey100)}
+.book-list .book-row:first-child{border-top:none}
+.book-row:active{background:var(--grey50)}
+.book-row-main{flex:1;min-width:0}
+.book-name{font-size:14.5px;font-weight:600}
+.book-name.done{color:var(--success)}
+.book-meta{display:flex;align-items:center;gap:8px;margin-top:6px}
+.book-frac{font-size:11.5px;color:var(--grey500);font-weight:600;flex-shrink:0;width:44px}
+.book-mini-bar{flex:1;height:6px;background:var(--grey100);border-radius:20px;overflow:hidden}
+.book-mini-fill{height:100%;background:var(--primary);border-radius:20px}
+.book-mini-fill.done{background:var(--success)}
+.book-arrow{color:var(--grey300);font-size:16px;flex-shrink:0;transition:transform .2s}
+.book-arrow.open{transform:rotate(90deg);color:var(--primary)}
+
+.ch-panel{padding:4px 4px 16px}
+.ch-actions{display:flex;gap:8px;margin-bottom:12px}
+.ch-action{flex:1;background:var(--grey100);color:var(--grey700);border:none;font-size:12px;font-weight:700;padding:9px;border-radius:12px;cursor:pointer;font-family:inherit}
+.ch-action:active{opacity:.8}
+.ch-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(34px,1fr));gap:6px}
+.ch-btn{aspect-ratio:1;background:var(--grey100);color:var(--grey700);border:none;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s,color .15s,transform .1s}
+.ch-btn:active{transform:scale(.9)}
+.ch-btn.read{background:var(--primary);color:var(--white)}
+
+.pg-ftr{text-align:center;font-size:12px;color:var(--grey500);padding:12px 0}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="header-top">
+      <a class="back-btn" href="index.html">‹</a>
+      <span class="header-logo">Eddy Playground</span>
+    </div>
+    <div class="header-title">성경 <span class="hl">읽기</span> 진행표</div>
+  </div>
+
+  <div id="content"></div>
+
+  <div class="pg-ftr">장별로 탭해서 읽은 부분을 체크하세요</div>
+</div>
+
+<script>
+const PLAN = [
+  {
+    title: '1단계 · 예수님 이야기부터',
+    desc: '요한복음이 가장 읽기 쉽고 핵심 메시지가 명확해서 첫 시작으로 좋아요.',
+    books: [['요한복음',21],['마가복음',16],['누가복음',24],['마태복음',28]]
+  },
+  {
+    title: '2단계 · 초대교회 이야기',
+    desc: '예수님이 떠나신 후 제자들이 교회를 세워가는 이야기예요.',
+    books: [['사도행전',28]]
+  },
+  {
+    title: '3단계 · 쉬운 구약 이야기',
+    desc: '천지창조부터 다윗과 다니엘까지, 이야기 위주라 술술 읽혀요.',
+    books: [['창세기',50],['출애굽기',40],['룻기',4],['사무엘상',31],['사무엘하',24],['다니엘',12]]
+  },
+  {
+    title: '4단계 · 시가서 (감성·지혜)',
+    desc: '삶의 감정과 지혜를 노래와 잠언으로 담아낸 책들이에요.',
+    books: [['시편',150],['잠언',31],['전도서',12]]
+  },
+  {
+    title: '5단계 · 신약 서신서',
+    desc: '사도들이 각 교회에 보낸 편지예요. 로마서·에베소서·빌립보서·야고보서부터 시작해보세요.',
+    books: [['로마서',16],['에베소서',6],['빌립보서',4],['야고보서',5],['고린도전서',16],['고린도후서',13],['갈라디아서',6],['골로새서',4],['데살로니가전서',5],['데살로니가후서',3],['디모데전서',6],['디모데후서',4],['디도서',3],['빌레몬서',1],['히브리서',13],['베드로전서',5],['베드로후서',3],['요한1서',5],['요한2서',1],['요한3서',1],['유다서',1]]
+  },
+  {
+    title: '6단계 · 나머지 구약 (역사서·예언서)',
+    desc: '율법서(레위기·민수기·신명기)와 소예언서는 배경지식이 쌓인 뒤 읽는 게 훨씬 이해가 잘 돼요.',
+    books: [['레위기',27],['민수기',36],['신명기',34],['여호수아',24],['사사기',21],['열왕기상',22],['열왕기하',25],['역대상',29],['역대하',36],['에스라',10],['느헤미야',13],['에스더',10],['욥기',42],['아가',8],['이사야',66],['예레미야',52],['예레미야애가',5],['에스겔',48],['호세아',14],['요엘',3],['아모스',9],['오바댜',1],['요나',4],['미가',7],['나훔',3],['하박국',3],['스바냐',3],['학개',2],['스가랴',14],['말라기',4]]
+  },
+  {
+    title: '7단계 · 요한계시록',
+    desc: '가장 상징적이고 어려운 책이라 맨 마지막에 읽는 걸 추천해요.',
+    books: [['요한계시록',22]]
+  }
+];
+
+const CHAPTER_COUNT = {};
+let TOTAL_CHAPTERS = 0;
+PLAN.forEach(stage => stage.books.forEach(([name, chapters]) => {
+  CHAPTER_COUNT[name] = chapters;
+  TOTAL_CHAPTERS += chapters;
+}));
+
+const STORAGE_KEY = 'bibleReadingProgressV1';
+let progress = loadProgress();
+let openBook = null;
+
+function loadProgress(){
+  try{
+    const raw = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+    const out = {};
+    for(const k in raw){ out[k] = new Set(raw[k]); }
+    return out;
+  }catch(e){ return {}; }
+}
+function saveProgress(){
+  const raw = {};
+  for(const k in progress){ raw[k] = Array.from(progress[k]); }
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(raw)); }catch(e){}
+}
+function readCount(name){ return progress[name] ? progress[name].size : 0; }
+function pct(read, total){ return total ? Math.round((read/total)*1000)/10 : 0; }
+
+function toggleChapter(book, ch){
+  if(!progress[book]) progress[book] = new Set();
+  if(progress[book].has(ch)) progress[book].delete(ch);
+  else progress[book].add(ch);
+  saveProgress();
+  render();
+}
+function markAll(book){
+  const total = CHAPTER_COUNT[book];
+  progress[book] = new Set(Array.from({length: total}, (_, i) => i + 1));
+  saveProgress();
+  render();
+}
+function clearBook(book){
+  progress[book] = new Set();
+  saveProgress();
+  render();
+}
+function resetAll(){
+  if(!confirm('모든 읽기 진행률을 초기화할까요?')) return;
+  progress = {};
+  saveProgress();
+  render();
+}
+
+function renderChapterGrid(name){
+  const total = CHAPTER_COUNT[name];
+  const readSet = progress[name] || new Set();
+  let btns = '';
+  for(let ch = 1; ch <= total; ch++){
+    btns += `<button class="ch-btn${readSet.has(ch) ? ' read' : ''}" data-book="${name}" data-ch="${ch}">${ch}</button>`;
+  }
+  return `
+    <div class="ch-panel">
+      <div class="ch-actions">
+        <button class="ch-action" data-action="all" data-book="${name}">전체 읽음</button>
+        <button class="ch-action" data-action="clear" data-book="${name}">전체 초기화</button>
+      </div>
+      <div class="ch-grid">${btns}</div>
+    </div>`;
+}
+
+function renderBookRow(name){
+  const total = CHAPTER_COUNT[name];
+  const read = readCount(name);
+  const bp = pct(read, total);
+  const done = read === total;
+  const open = openBook === name;
+  return `
+    <div class="book-row" data-book="${name}">
+      <div class="book-row-main">
+        <div class="book-name${done ? ' done' : ''}">${name}</div>
+        <div class="book-meta">
+          <span class="book-frac">${read}/${total}</span>
+          <div class="book-mini-bar"><div class="book-mini-fill${done ? ' done' : ''}" style="width:${bp}%"></div></div>
+        </div>
+      </div>
+      <div class="book-arrow${open ? ' open' : ''}">›</div>
+    </div>
+    ${open ? renderChapterGrid(name) : ''}`;
+}
+
+function renderStage(stage){
+  const total = stage.books.reduce((s, [, c]) => s + c, 0);
+  const read = stage.books.reduce((s, [n]) => s + readCount(n), 0);
+  const sp = pct(read, total);
+  return `
+    <div class="card">
+      <div class="stage-hdr">
+        <div class="stage-title">${stage.title}</div>
+        <div class="stage-pct">${sp}%</div>
+      </div>
+      <div class="stage-desc">${stage.desc}</div>
+      <div class="bar stage-bar"><div class="bar-fill" style="width:${sp}%"></div></div>
+      <div class="book-list">
+        ${stage.books.map(([n]) => renderBookRow(n)).join('')}
+      </div>
+    </div>`;
+}
+
+function render(){
+  const totalRead = Object.keys(CHAPTER_COUNT).reduce((s, n) => s + readCount(n), 0);
+  const ov = pct(totalRead, TOTAL_CHAPTERS);
+  const html = `
+    <div class="card">
+      <div class="ov-row">
+        <div class="ov-label">전체 진행률</div>
+        <button class="reset-btn" id="resetBtn">초기화</button>
+      </div>
+      <div class="ov-pct">${ov}%</div>
+      <div class="bar"><div class="bar-fill" style="width:${ov}%"></div></div>
+      <div class="ov-sub">${totalRead} / ${TOTAL_CHAPTERS}장 읽음</div>
+    </div>
+    ${PLAN.map(renderStage).join('')}`;
+  document.getElementById('content').innerHTML = html;
+}
+
+document.getElementById('content').addEventListener('click', (e) => {
+  const chBtn = e.target.closest('.ch-btn');
+  if(chBtn){ toggleChapter(chBtn.dataset.book, parseInt(chBtn.dataset.ch, 10)); return; }
+
+  const actionBtn = e.target.closest('.ch-action');
+  if(actionBtn){
+    if(actionBtn.dataset.action === 'all') markAll(actionBtn.dataset.book);
+    else clearBook(actionBtn.dataset.book);
+    return;
+  }
+
+  const resetBtn = e.target.closest('#resetBtn');
+  if(resetBtn){ resetAll(); return; }
+
+  const row = e.target.closest('.book-row');
+  if(row){
+    const book = row.dataset.book;
+    openBook = openBook === book ? null : book;
+    render();
+  }
+});
+
+render();
+</script>
+</body>
+</html>
