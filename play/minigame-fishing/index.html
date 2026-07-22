@@ -104,7 +104,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
    화면 위치만 다시 계산한다. pointer-events:none — 상호작용 지점은
    fishingConfig.interactionAreas로 별도 지정하지 이 NPC 그림 자체를
    탭 대상으로 삼지 않는다. */
-.npc-stage{position:absolute;left:0;bottom:0;transform:translate(-50%,50%);z-index:2;width:84px;height:84px;display:flex;align-items:flex-end;justify-content:center;pointer-events:none}
+.npc-stage{position:absolute;left:0;bottom:0;transform:translate(-50%,50%) scale(.7);z-index:2;width:84px;height:84px;display:flex;align-items:flex-end;justify-content:center;pointer-events:none}
 .npc-stage img{max-width:100%;max-height:100%;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 4px 6px rgba(0,0,0,.35))}
 .npc-stage.hidden{display:none}
 
