@@ -233,10 +233,9 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
       <button class="sheet-btn" id="btnGiveMetalHanger">GIVE METAL HANGER</button>
       <button class="sheet-btn" id="btnGiveGardenStake">GIVE GARDEN STAKE</button>
       <button class="sheet-btn" id="btnGiveLongHook">GIVE LONG HOOK</button>
-      <button class="sheet-btn" id="btnRevealKey">REVEAL KEY</button>
-      <button class="sheet-btn" id="btnGiveKey">GIVE KEY</button>
-      <button class="sheet-btn" id="btnUnlockPhone">UNLOCK PHONE</button>
-      <button class="sheet-btn" id="btnGivePhone">GIVE PHONE</button>
+      <button class="sheet-btn" id="btnRevealPhoneGlow">REVEAL PHONE GLOW</button>
+      <button class="sheet-btn" id="btnGiveKey">GIVE KEY ONLY</button>
+      <button class="sheet-btn" id="btnGivePhone">GIVE PHONE + KEY</button>
       <button class="sheet-btn danger" id="btnResetMinigame">RESET GAME</button>
       <button class="sheet-btn danger" id="btnClearState">CLEAR STATE</button>
     </div>
@@ -268,19 +267,18 @@ if ('serviceWorker' in navigator) {
 <script src="/dev/caseFileState.js"></script>
 <script src="/dev/vnPlayer.js"></script>
 <script>
-/* MISSING KEY — WEEK 0 · SCENE 2-2 「핸드폰을 찾아라」 (v3 — 실제 4개 장소
+/* MISSING KEY — WEEK 0 · SCENE 2-2 「핸드폰을 찾아라」 (v4 — 실제 4개 장소
    이미지 기반 Hotspot · 아이템 조합 · 상태 변화 · 재탐색).
    Point-and-click room search across 4 real accommodation photos (주방/욕실/
-   외부/침실 — roomSearchAreas in dialogueData.js). Absolute rule this file
-   exists to enforce: the player CANNOT find jisu-phone until unknown-key has
-   been found AND the forced phoneUnlocked event has played — see
-   canRevealPhone() below, which every phone-reveal path (including the DEV
-   sheet) must go through. State still round-trips through localStorage
-   (saveState()/STATE_KEY) so within-session actions like area moves keep
-   working the same way, but every fresh load of this page starts clean —
-   entering the minigame (from /dev/minigames, the VN story flow, or a
-   plain refresh) always resets items/progress rather than resuming a
-   stale run from a previous test pass.
+   외부/침실 — roomSearchAreas in dialogueData.js). 핸드폰과 낡은 열쇠는 모두
+   주방 냉장고 틈(kitchen-fridge-gap) 한 곳에서 함께 나온다 — 작동 손전등으로
+   비추면 핸드폰이 보이지만 손이 닿지 않고, 긴 갈고리로 꺼내면 핸드폰과 열쇠를
+   동시에 획득하며 게임이 끝난다. handleKitchenFridgeGap() 참고. State still
+   round-trips through localStorage (saveState()/STATE_KEY) so within-session
+   actions like area moves keep working the same way, but every fresh load of
+   this page starts clean — entering the minigame (from /dev/minigames, the
+   VN story flow, or a plain refresh) always resets items/progress rather
+   than resuming a stale run from a previous test pass.
 
    Each area renders one of two ways, decided per area every time it's opened:
    - "photo" mode, once a dev has uploaded that area's room photo and marked
@@ -336,11 +334,10 @@ function findRecipe(idA, idB) {
 // with the item it holds.
 const ITEM_HOTSPOT_ITEM_IDS = new Map([
   ['kitchen-right-lower-drawer', 'aa-batteries'],
-  ['kitchen-fridge-gap', 'jisu-phone'], // win condition
+  ['kitchen-fridge-gap', 'jisu-phone'], // win condition — also grants unknown-key
   ['bathroom-behind-door', 'metal-hanger'],
   ['exterior-center-shrubs', 'garden-stake'],
   ['bedroom-bedside-table', 'dead-flashlight'],
-  ['bedroom-right-vent', 'unknown-key'],
 ]);
 
 // Flavor text for hotspots with no special gating logic — fixed, not random
@@ -402,26 +399,17 @@ const HOOK_LINES = [
 const KITCHEN_POTS_LINES = [
   { speaker: '지수', text: '쌤 설마 냄비 안까지 보는 거예요?' },
 ];
-// Section 12 — key -> phone-unlock forced event, verbatim.
-const KEY_FORCED_LINES = [
-  { speaker: '', text: '부우웅—' },
-  { speaker: '지수', text: '...어?' },
-  { speaker: '영우', text: '핸드폰 아니야?' },
-  { speaker: '', text: '부우웅—' },
-];
-// Boot-time hint pointing the player at the kitchen (see boot() below) —
-// the phone is hidden at kitchen-fridge-gap, not bedroom-under-bed (that
-// hotspot's FLAVOR line is a dead-end decoy).
-const INTRO_HINT_LINES = [
-  { speaker: '영우', text: '핸드폰이 대체 어디 있는 거야.' },
-  { speaker: '지수', text: '쌤, 잠깐만요.\n저기 부엌 쪽에서 무슨 소리 나는 거 같은데?' },
-];
 // First flashlight shine into kitchen-fridge-gap (handleKitchenFridgeGap) —
-// an explicit "is that a phone?" beat before the hook can pull it out.
+// an explicit "is that a phone?" beat before the hook can pull it out, plus
+// a short 티키타카 riffing on how it even ended up there.
 const PHONE_GLOW_CONFIRM_LINES = [
   { speaker: '', text: '[ 안쪽을 비춘다 ]' },
   { speaker: '지수', text: '어? 저거 화면 불빛 아니에요?' },
   { speaker: '영우', text: '핸드폰인가?\n일단 손이 안 닿네.' },
+  { speaker: '영우', text: '근데 이걸 어떻게 하면\n냉장고 틈에 빠뜨리냐 ㅋㅎㅋㅎㅋㅎ' },
+  { speaker: '지수', text: '몰라요!!!!\n정신없이 짐 풀다가 그런 걸 어떡해요.' },
+  { speaker: '영우', text: '재주 좋다 재주 좋아.' },
+  { speaker: '지수', text: '빨리 꺼내기나 하세요, 손님.' },
 ];
 
 function defaultState() {
@@ -433,9 +421,9 @@ function defaultState() {
     searchCounts: {},
     flags: {
       bathroomDoorOpened: false,
-      keyVisible: false, keyFound: false,
+      keyFound: false,
       phoneGlowSeen: false,
-      phoneUnlocked: false, phoneFound: false,
+      phoneFound: false,
       blindOpen: false,
     },
     completed: false,
@@ -511,10 +499,6 @@ function markSearched(hotspotId) {
   if (!state.searchedHotspotIds.includes(hotspotId)) state.searchedHotspotIds.push(hotspotId);
   state.searchCounts[hotspotId] = (state.searchCounts[hotspotId] || 0) + 1;
   saveState();
-}
-
-function canRevealPhone() {
-  return state.flags.keyFound && state.flags.phoneUnlocked;
 }
 
 // ===== Hint system (section 20) — nudges after real stretches with no
@@ -660,27 +644,6 @@ function queueDialogue(lines, onComplete) {
   player.load(lines.map(l => ({ speaker: l.speaker, text: l.text })));
 }
 
-/* ===== Forced key -> phone-unlock event (section 11 of the brief) =====
-   Scheduled 700-1200ms after the key is found, independent of what the
-   player taps in the meantime — the phone stays gated on phoneUnlocked
-   regardless, so there's no way to race past it. Also re-armed on page load
-   if a refresh happened between keyFound and phoneUnlocked, otherwise a
-   refresh in that narrow window would soft-lock the phone forever. */
-let forcedEventArmed = false;
-function scheduleForcedPhoneUnlock(delayMs) {
-  if (forcedEventArmed || state.flags.phoneUnlocked || state.completed) return;
-  forcedEventArmed = true;
-  setTimeout(() => {
-    if (navigator.vibrate) navigator.vibrate(200);
-    playBuzzSound();
-    queueDialogue(KEY_FORCED_LINES, () => {
-      state.flags.phoneUnlocked = true;
-      saveState();
-      setMessage('[ 부엌 쪽에서 진동 소리가 들린다 ]');
-    });
-  }, delayMs);
-}
-
 function playBuzzSound() {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -734,21 +697,8 @@ function handleKitchenPots() {
 }
 function handleKitchenFridgeGap(hotspotId) {
   if (state.flags.phoneFound) { setMessage('더 이상 아무것도 없다.'); return; }
-  if (!canRevealPhone()) {
-    // A flat "nothing special here" would contradict INTRO_HINT_LINES'
-    // "부엌 쪽에서 무슨 소리 나는 거 같은데" boot hint — this hotspot IS where
-    // the phone actually is (see this function's header comment), so even
-    // before the key/flashlight/hook chain is done, tapping it should nudge
-    // the player toward it instead of reading as a dead end.
-    setMessage(hasSearched(hotspotId)
-      ? '여전히 좁은 틈이다.\n안쪽에 뭔가 있는 것 같은데 손이 닿지 않는다.'
-      : '좁은 틈이다.\n안쪽에 뭔가 있는 것 같기도 한데,\n너무 어두워서 확실하지 않다.');
-    markSearched(hotspotId);
-    return;
-  }
   // Needs the flashlight to actually reveal the glow (phoneGlowSeen) before
-  // the hook can pull it out — mirrors handleRightVent's flashlight-then-
-  // hook pattern instead of auto-revealing as soon as the key chain is done.
+  // the hook can pull it out.
   if (state.selectedItemId === 'long-hook') {
     if (state.flags.phoneGlowSeen) { handlePhoneFound(); return; }
     setMessage('안쪽에 무엇이 있는지 아직 보이지 않는다.');
@@ -846,42 +796,11 @@ function handleLeftVent() {
   setMessage(hasSearched('bedroom-left-vent') ? '여전히 안쪽이 어둡다.' : '환기구다.\n안쪽은 잘 보이지 않는다.\n한쪽 나사가 유독 녹슬어 있다.');
   markSearched('bedroom-left-vent');
 }
-function handleRightVent(hotspotId) {
-  if (state.flags.keyFound) { setMessage('환기구 안은 이미 비어 있다.'); return; }
-  if (state.selectedItemId === 'long-hook') {
-    if (state.flags.keyVisible) {
-      addItem('unknown-key');
-      state.flags.keyFound = true;
-      state.selectedItemId = null;
-      saveState();
-      registerKeyEvidence();
-      renderItemGrid();
-      markProgress();
-      revealPickup('unknown-key', '[ 갈고리를 환기구 틈으로 넣었다 ]\n딸깍.\n무언가가 바닥으로 떨어졌다.\n[ 낡은 열쇠를 발견했다 ]');
-      scheduleForcedPhoneUnlock(900);
-    } else {
-      setMessage('아직 안쪽에 뭐가 있는지 보이지 않는다.');
-    }
-    return;
-  }
-  if (state.selectedItemId === 'working-flashlight') {
-    if (!state.flags.keyVisible) {
-      state.flags.keyVisible = true;
-      saveState();
-      setMessage('[ 환기구 안쪽을 비춘다 ]\n안쪽에서 무언가 반짝인다.\n너무 높아서 손이 닿지 않는다.');
-      markProgress();
-    } else {
-      setMessage('아까 그 반짝이는 물건이다.\n손이 닿지 않는다.');
-    }
-    return;
-  }
-  if (state.selectedItemId === 'dead-flashlight') { setMessage('손전등이 켜지지 않는다.'); return; }
-  if (!state.flags.keyVisible) {
-    setMessage(hasSearched(hotspotId) ? '여전히 안쪽이 어둡다.' : '높고 어두워서 안쪽이 보이지 않는다.');
-    markSearched(hotspotId);
-  } else {
-    setMessage('반짝이는 게 보이는데 손이 닿지 않는다.');
-  }
+// 열쇠는 이제 주방 냉장고 틈에서 핸드폰과 함께 나오므로, 이 환기구는 순수
+// 플레이버 스팟(왼쪽 환기구와 동일한 성격)이다.
+function handleRightVent() {
+  setMessage(hasSearched('bedroom-right-vent') ? '여전히 안쪽이 어둡다.' : '환기구다.\n안쪽은 잘 보이지 않는다.');
+  markSearched('bedroom-right-vent');
 }
 
 // Flavor hotspots with hand-written logic but no item attached to them —
@@ -895,6 +814,7 @@ const HOTSPOT_HANDLERS = {
   'exterior-extension-windows': handleExteriorExtensionWindows,
   'bedroom-blind': handleBlind,
   'bedroom-left-vent': handleLeftVent,
+  'bedroom-right-vent': handleRightVent,
 };
 
 // Core item -> the hand-written handler that grants it. Keyed by itemId
@@ -902,14 +822,14 @@ const HOTSPOT_HANDLERS = {
 // /dev/upload's 아이템 tab — loadCustomItemsAndRecipes below wires each of
 // these into HOTSPOT_HANDLERS at whatever hotspot the item currently
 // resolves to (its saved override, or ROOM_SEARCH_CORE_ITEM_HOTSPOTS's
-// default).
+// default). unknown-key has no entry of its own — handleKitchenFridgeGap
+// grants it together with jisu-phone.
 const CORE_ITEM_HANDLERS = {
   'aa-batteries': handleKitchenBatteryDrawer,
   'jisu-phone': handleKitchenFridgeGap,
   'metal-hanger': handleBathroomBehindDoor,
   'garden-stake': handleExteriorCenterShrubs,
   'dead-flashlight': handleBedsideTable,
-  'unknown-key': handleRightVent,
 };
 Object.keys(CORE_ITEM_HANDLERS).forEach(itemId => {
   const hotspotId = ROOM_SEARCH_CORE_ITEM_HOTSPOTS[itemId];
@@ -922,9 +842,9 @@ function onHotspotTap(hotspotId) {
   if (handler) { handler(hotspotId); return; }
   // Dev-added simple pickups (see loadCustomItemsAndRecipes) — one-time,
   // no gating, same shape the old hardcoded DECOY_ITEMS table used to be.
-  // Item is granted immediately either way (same order handleRightVent etc.
-  // use) — a dialogue authored on 상호작용 plays on top of that; otherwise
-  // it's just the flat 발견 메시지 toast.
+  // Item is granted immediately either way (same order handleBedsideTable
+  // etc. use) — a dialogue authored on 상호작용 plays on top of that;
+  // otherwise it's just the flat 발견 메시지 toast.
   const customItemId = CUSTOM_PICKUP_MESSAGES.has(hotspotId) ? ITEM_HOTSPOT_ITEM_IDS.get(hotspotId) : null;
   if (customItemId) {
     if (hasItem(customItemId)) { setMessage('이미 확인했다.'); return; }
@@ -940,16 +860,19 @@ function onHotspotTap(hotspotId) {
 /* ===== GAME CLEAR ===== */
 function handlePhoneFound() {
   addItem('jisu-phone');
+  addItem('unknown-key');
   state.flags.phoneFound = true;
+  state.flags.keyFound = true;
   state.completed = true;
   saveState();
+  registerKeyEvidence();
   renderItemGrid();
   updateLockState();
   setMessage('부우웅—');
   if (navigator.vibrate) navigator.vibrate([120, 80, 160]);
   playBuzzSound();
   setTimeout(() => {
-    setMessage('[ 지수의 핸드폰을 발견했다 ]');
+    setMessage('[ 지수의 핸드폰과 낡은 열쇠를 함께 발견했다 ]');
     setTimeout(() => {
       playSuccessBeep();
       el.stamp.classList.add('show');
@@ -1474,22 +1397,15 @@ document.getElementById('btnGiveWorkingFlashlight').addEventListener('click', ()
 document.getElementById('btnGiveMetalHanger').addEventListener('click', () => { addItem('metal-hanger'); renderItemGrid(); });
 document.getElementById('btnGiveGardenStake').addEventListener('click', () => { addItem('garden-stake'); renderItemGrid(); });
 document.getElementById('btnGiveLongHook').addEventListener('click', () => { addItem('long-hook'); renderItemGrid(); });
-document.getElementById('btnRevealKey').addEventListener('click', () => { state.flags.keyVisible = true; saveState(); });
+document.getElementById('btnRevealPhoneGlow').addEventListener('click', () => { state.flags.phoneGlowSeen = true; saveState(); });
 document.getElementById('btnGiveKey').addEventListener('click', () => {
   addItem('unknown-key');
-  state.flags.keyVisible = true;
   state.flags.keyFound = true;
   saveState();
   registerKeyEvidence();
   renderItemGrid();
-  scheduleForcedPhoneUnlock(600);
 });
-document.getElementById('btnUnlockPhone').addEventListener('click', () => { state.flags.phoneUnlocked = true; saveState(); });
-document.getElementById('btnGivePhone').addEventListener('click', () => {
-  state.flags.keyFound = true;
-  state.flags.phoneUnlocked = true;
-  handlePhoneFound();
-});
+document.getElementById('btnGivePhone').addEventListener('click', handlePhoneFound);
 document.getElementById('btnResetMinigame').addEventListener('click', () => {
   state = defaultState();
   saveState();
@@ -1609,16 +1525,7 @@ updateLockState();
   renderItemGrid();
   await preloadAllAreas();
   await loadArea(roomSearchAreas.find(a => a.id === state.currentAreaId) || roomSearchAreas[0]);
-  // Every entry into this page is a fresh run (see defaultState above), so
-  // this always replays — same as it would the first time a player opens
-  // the minigame.
-  queueDialogue(INTRO_HINT_LINES);
 })();
-// A refresh that landed between "key found" and "phone unlocked" must not
-// soft-lock the phone forever — re-arm the forced event on load.
-if (state.flags.keyFound && !state.flags.phoneUnlocked && !state.completed) {
-  scheduleForcedPhoneUnlock(800);
-}
 </script>
 <script src="/dev/devPlanFab.js"></script>
 </body>

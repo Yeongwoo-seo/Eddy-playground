@@ -998,14 +998,15 @@ function roomSearchAreaSceneId(areaId) { return `${ROOM_SEARCH_MINIGAME_ID}-${ar
 // list — a dev can drag a core item's location elsewhere and the handler
 // (and this reserved-ness) follows it there. working-flashlight/long-hook
 // are recipe outputs, not hotspot pickups, so they're absent here on
-// purpose and stay non-repositionable.
+// purpose and stay non-repositionable. unknown-key is also absent —
+// kitchen-fridge-gap's handler grants it together with jisu-phone, so it
+// has no independent hotspot of its own to reposition.
 const ROOM_SEARCH_CORE_ITEM_HOTSPOTS = {
   'aa-batteries': 'kitchen-right-lower-drawer',
   'jisu-phone': 'kitchen-fridge-gap',
   'metal-hanger': 'bathroom-behind-door',
   'garden-stake': 'exterior-center-shrubs',
   'dead-flashlight': 'bedroom-bedside-table',
-  'unknown-key': 'bedroom-right-vent',
 };
 
 // Hotspot IDs with their own hand-written flavor logic but no item attached
@@ -1019,7 +1020,7 @@ const ROOM_SEARCH_SPECIAL_HOTSPOT_IDS = [
   'kitchen-pots',
   'bathroom-mirror', 'bathroom-wall-switch', 'bathroom-right-door',
   'exterior-extension-windows',
-  'bedroom-blind', 'bedroom-left-vent',
+  'bedroom-blind', 'bedroom-left-vent', 'bedroom-right-vent',
 ];
 
 // Flat id/name/icon catalog of the room-search minigame's core (code-gated)
