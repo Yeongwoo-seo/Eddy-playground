@@ -164,6 +164,23 @@ function migrateLegacyEconomySnapshot(snapshot) {
   return out;
 }
 
+/* 좌상단 포인트 배지 초기화 마이그레이션 (2026-07) — pointsUiIntroduced 플래그는
+   "포인트가 처음 지급된 순간부터 배지를 보여준다"는 규칙(§4.1/§6.1)을 위한
+   것인데, 그 규칙이 생기기 전 테스트 플레이 중 이미 세워진 세이브가 많아
+   실제로는 스토리에서 포인트가 언급되기도 전에 배지가 뜨는 세이브가 섞여
+   있었다. flags 안의 다른 값(증언/가설/심문 진행 등)은 전부 보존한 채 이
+   플래그 하나만 한 번 지워, 다음 실제 지급부터 다시 정상적으로 나타나게
+   한다 — 리셋 마커를 남겨 이미 밀어낸 세이브에서 재지급 후 배지가 다시
+   지워지는 일은 없게 한다. */
+const POINTS_UI_INTRODUCED_RESET_DONE_FLAG = 'pointsUiIntroducedResetV1Done';
+function resetPointsUiIntroducedOnce(flags) {
+  if (!flags || !flags.pointsUiIntroduced || flags[POINTS_UI_INTRODUCED_RESET_DONE_FLAG]) return flags || {};
+  const out = Object.assign({}, flags);
+  delete out.pointsUiIntroduced;
+  out[POINTS_UI_INTRODUCED_RESET_DONE_FLAG] = true;
+  return out;
+}
+
 function loadCaseState() {
   try {
     const raw = JSON.parse(localStorage.getItem(CASE_STATE_KEY));
@@ -171,7 +188,7 @@ function loadCaseState() {
     const isLegacy = isLegacyPreRenumberSave(raw, null);
     return Object.assign(defaultCaseState(), raw, {
       settings: Object.assign(defaultCaseState().settings, raw.settings || {}),
-      flags: isLegacy ? migrateLegacyFlags(raw.flags || {}) : Object.assign({}, raw.flags || {}),
+      flags: resetPointsUiIntroducedOnce(isLegacy ? migrateLegacyFlags(raw.flags || {}) : Object.assign({}, raw.flags || {})),
       hypothesisDefs: Object.assign({}, raw.hypothesisDefs || {}),
       currentHypotheses: Object.assign({}, raw.currentHypotheses || {}),
       hypothesisHistory: Object.assign({}, raw.hypothesisHistory || {}),
@@ -499,7 +516,7 @@ const CaseFileState = {
     }
     caseState = Object.assign(defaultCaseState(), slot.caseState, {
       settings: Object.assign(defaultCaseState().settings, (slot.caseState && slot.caseState.settings) || {}),
-      flags: isLegacy ? migrateLegacyFlags((slot.caseState && slot.caseState.flags) || {}) : Object.assign({}, (slot.caseState && slot.caseState.flags) || {}),
+      flags: resetPointsUiIntroducedOnce(isLegacy ? migrateLegacyFlags((slot.caseState && slot.caseState.flags) || {}) : Object.assign({}, (slot.caseState && slot.caseState.flags) || {})),
       hypothesisDefs: Object.assign({}, (slot.caseState && slot.caseState.hypothesisDefs) || {}),
       currentHypotheses: Object.assign({}, (slot.caseState && slot.caseState.currentHypotheses) || {}),
       hypothesisHistory: Object.assign({}, (slot.caseState && slot.caseState.hypothesisHistory) || {}),
