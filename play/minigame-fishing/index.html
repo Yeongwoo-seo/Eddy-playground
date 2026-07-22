@@ -376,6 +376,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .npc-menu.hidden,.sell-fish.hidden{display:none}
 .npc-menu-card{width:240px;background:rgba(8,16,22,.92);border:1px solid rgba(255,255,255,.18);border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:10px}
 .npc-menu-title{text-align:center;font-size:17px;font-weight:700;color:#fff;margin-bottom:6px}
+.npc-menu-line{text-align:center;font-size:13px;font-weight:500;line-height:1.5;color:rgba(255,255,255,.85);margin:-2px 0 4px}
 .npc-menu-btn{padding:12px;border-radius:14px;border:none;font-size:14px;font-weight:700;color:#fff;font-family:inherit}
 .npc-menu-btn--sell{background:rgba(62,207,107,.85)}
 .npc-menu-btn--quit{background:rgba(217,65,65,.85)}
@@ -577,9 +578,10 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
   <div class="npc-menu hidden" id="npcMenu">
     <div class="npc-menu-card" id="npcMenuCard">
       <div class="npc-menu-title">영우</div>
+      <div class="npc-menu-line">나랑 대화하면 물고기를 팔거나<br>게임을 그만할 수 있어. 어떻게 할래?</div>
       <button type="button" class="npc-menu-btn npc-menu-btn--sell" id="npcMenuSellBtn">물고기 팔기</button>
       <button type="button" class="npc-menu-btn npc-menu-btn--quit" id="npcMenuQuitBtn">그만하기</button>
-      <button type="button" class="npc-menu-btn npc-menu-btn--close" id="npcMenuCloseBtn">닫기</button>
+      <button type="button" class="npc-menu-btn npc-menu-btn--close" id="npcMenuCloseBtn">다음에</button>
     </div>
   </div>
 
