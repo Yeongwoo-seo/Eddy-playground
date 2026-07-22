@@ -44,8 +44,8 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .vn-btn.auto{color:var(--cyan);border-color:rgba(89,184,200,.45);background:rgba(89,184,200,.16)}
 .vn-btn.auto.hidden{display:none}
 /* 다음 상호작용(스킵) 버튼 — 대사 스킵 + 다음 선택지/씬으로 즉시 이동.
-   실제 플레이(/play/)에서도 항상 노출되는 유일한 우상단 버튼이라
-   RealPlayMode.hideDevChrome의 숨김 목록에는 넣지 않는다. */
+   dev 전용 편의 기능이라 실제 플레이에서는 RealPlayMode.hideDevChrome이
+   숨긴다(#skipBtn). */
 .vn-btn.skip:active{opacity:.7}
 
 /* ===== Point balance (The Missing Key v1 §4.1/§6.1) — small badge next to

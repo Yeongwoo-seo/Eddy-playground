@@ -8,7 +8,9 @@
    never touch points — only addPoints/spendPoints callers decide that, this
    module just enforces "don't pay out the same reward twice". */
 
-const ECONOMY_STATE_KEY = 'mkEconomyState_v1';
+// v1 -> v2: 1주차 마무리하며 그동안 쌓인 테스트 포인트를 초기화
+// (서비스워커 캐시 버전을 올려 로컬 캐시를 초기화하던 것과 같은 방식).
+const ECONOMY_STATE_KEY = 'mkEconomyState_v2';
 
 function defaultEconomyState() {
   return {
