@@ -110,6 +110,8 @@ body.sheet-open{overflow:hidden}
 .nav-card:active{transform:scale(.98)}
 .nav-card::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg, rgba(0,0,0,.15) 0%, rgba(0,0,0,.15) 40%, rgba(0,0,0,.75) 100%)}
 .nav-body{position:absolute;left:20px;right:20px;bottom:18px;z-index:1;color:#fff}
+.secret-bg{position:absolute;inset:0;background:center/cover no-repeat;opacity:0;transition:opacity 1.8s ease}
+.secret-bg.show{opacity:1}
 .nav-emoji{font-size:22px;margin-bottom:4px;display:block}
 .nav-name{font-size:18px;font-weight:800}
 .nav-desc{font-size:12.5px;color:rgba(255,255,255,.85);font-weight:500;margin-top:4px;line-height:1.5}
@@ -163,6 +165,7 @@ body.sheet-open{overflow:hidden}
     </a>
 
     <a class="nav-card" id="secretCard" href="/play/">
+      <div class="secret-bg" id="secretBg"></div>
       <div class="nav-body">
         <div class="nav-name">The Missing Key</div>
       </div>
@@ -506,9 +509,13 @@ const MK_BG_POS_KEY = 'mkDevStartScreenBgPos';
 
 function applyMissingKeyBg(imgUrl, pos) {
   if (!imgUrl) return;
-  const card = document.getElementById('secretCard');
-  card.style.backgroundImage = `url("${imgUrl}")`;
-  card.style.backgroundPosition = `${pos.x}% ${pos.y}%`;
+  const bg = document.getElementById('secretBg');
+  bg.style.backgroundImage = `url("${imgUrl}")`;
+  bg.style.backgroundPosition = `${pos.x}% ${pos.y}%`;
+  bg.classList.remove('show');
+  // 다음 프레임에 클래스를 추가해야 transition이 실제로 재생된다
+  // (같은 프레임에서 스타일과 클래스를 함께 바꾸면 브라우저가 병합해버림)
+  requestAnimationFrame(() => requestAnimationFrame(() => bg.classList.add('show')));
 }
 function loadMissingKeyBgPos() {
   try { return Object.assign({ x: 50, y: 50 }, JSON.parse(localStorage.getItem(MK_BG_POS_KEY))); }
