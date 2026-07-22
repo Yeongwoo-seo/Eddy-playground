@@ -1,8 +1,8 @@
-// PWA scope covers the whole site — registered from schedule.html and
-// hangeoreum.html (each an independently installed home-screen app) with
-// { scope: '.' }, so navigating within either app's pages stays inside
-// the standalone app instead of kicking out to the browser
-const CACHE_NAME = 'gangnangkong-tour-v10';
+// PWA scope covers the whole site — registered from schedule.html,
+// hangeoreum.html, and bible.html (each an independently installed
+// home-screen app) with { scope: '.' }, so navigating within any app's
+// pages stays inside the standalone app instead of kicking out to the browser
+const CACHE_NAME = 'gangnangkong-tour-v11';
 const APP_SHELL = [
   'schedule.html',
   'planner.html',
@@ -12,6 +12,7 @@ const APP_SHELL = [
   'boarding-pass.html',
   'secret.html',
   'hangeoreum.html',
+  'bible.html',
   'manifest.json',
   'icons/icon-192.png',
   'icons/icon-512.png',
