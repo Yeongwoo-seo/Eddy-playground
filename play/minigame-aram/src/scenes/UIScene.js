@@ -18,6 +18,14 @@
         fontFamily: 'monospace', fontSize: '12px', color: '#e8741e',
       });
 
+      const lane = NS.activeLane;
+      const laneInfo = lane
+        ? `world ${NS.MapDefs.WORLD_WIDTH}x${NS.MapDefs.WORLD_HEIGHT} · lane length ${Math.round(lane.totalLength)}px`
+        : 'lane not ready';
+      this.add.text(12, 30, laneInfo, {
+        fontFamily: 'monospace', fontSize: '11px', color: '#8b95a1',
+      });
+
       const back = this.add.text(w - 12, 12, '← /play/', {
         fontFamily: 'monospace', fontSize: '12px', color: '#8b95a1',
       }).setOrigin(1, 0).setInteractive({ useHandCursor: true });
