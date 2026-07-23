@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>칼바람 1v1 · ARAM PROTOTYPE</title>
+<meta name="theme-color" content="#05070a">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+html,body{height:100%;background:#000;overflow:hidden}
+body{display:flex;align-items:center;justify-content:center;touch-action:none}
+
+/* Phaser의 Scale.FIT가 이 컨테이너 안에서 9:16 비율을 유지한 채
+   중앙 정렬한다. 컨테이너 자체는 뷰포트를 꽉 채워 레터박스 색이
+   body 배경(검정)으로 자연스럽게 보이게 한다. */
+#aram-root{width:100vw;height:100dvh;height:100vh;display:flex;align-items:center;justify-content:center}
+#aram-root canvas{image-rendering:pixelated;image-rendering:crisp-edges}
+</style>
+</head>
+<body>
+<div id="aram-root"></div>
+
+<script src="vendor/phaser.min.js"></script>
+<script src="src/core/Namespace.js"></script>
+<script src="src/config/GameConfig.js"></script>
+<script src="src/gfx/PixelArtFactory.js"></script>
+<script src="src/scenes/BootScene.js"></script>
+<script src="src/scenes/PreloadScene.js"></script>
+<script src="src/scenes/GameScene.js"></script>
+<script src="src/scenes/UIScene.js"></script>
+<script>
+  window.ARAM.GameConfig.scene = [
+    window.ARAM.BootScene,
+    window.ARAM.PreloadScene,
+    window.ARAM.GameScene,
+    window.ARAM.UIScene,
+  ];
+  window.ARAM.game = new Phaser.Game(window.ARAM.GameConfig);
+</script>
+</body>
+</html>
