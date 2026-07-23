@@ -58,7 +58,7 @@ body{background:var(--bg);color:var(--black);font-family:'Pretendard',-apple-sys
 .book-name{font-size:14.5px;font-weight:600}
 .book-name.done{color:var(--success)}
 .book-meta{display:flex;align-items:center;gap:8px;margin-top:6px}
-.book-frac{font-size:11.5px;color:var(--grey500);font-weight:600;flex-shrink:0;width:44px}
+.book-frac{font-size:11.5px;color:var(--grey500);font-weight:600;flex-shrink:0;min-width:44px;white-space:nowrap}
 .book-mini-bar{flex:1;height:6px;background:var(--grey100);border-radius:20px;overflow:hidden}
 .book-mini-fill{height:100%;background:var(--primary);border-radius:20px}
 .book-mini-fill.done{background:var(--success)}
@@ -70,9 +70,26 @@ body{background:var(--bg);color:var(--black);font-family:'Pretendard',-apple-sys
 .ch-action{flex:1;background:var(--grey100);color:var(--grey700);border:none;font-size:12px;font-weight:700;padding:9px;border-radius:12px;cursor:pointer;font-family:inherit}
 .ch-action:active{opacity:.8}
 .ch-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(34px,1fr));gap:6px}
-.ch-btn{aspect-ratio:1;background:var(--grey100);color:var(--grey700);border:none;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s,color .15s,transform .1s}
+.ch-btn{position:relative;aspect-ratio:1;background:var(--grey100);color:var(--grey700);border:none;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s,color .15s,transform .1s}
 .ch-btn:active{transform:scale(.9)}
 .ch-btn.read{background:var(--primary);color:var(--white)}
+.ch-btn.partial{background:var(--primary-light);color:var(--primary);box-shadow:inset 0 0 0 2px var(--primary)}
+.v-badge{position:absolute;top:-5px;right:-5px;min-width:14px;height:14px;padding:0 3px;background:var(--primary);color:var(--white);border-radius:20px;font-size:8px;font-weight:800;display:flex;align-items:center;justify-content:center;line-height:1}
+.ch-hint{font-size:11px;color:var(--grey300);font-weight:500;text-align:center;margin-top:10px}
+
+.verse-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;padding:24px;z-index:100;opacity:0;pointer-events:none;transition:opacity .3s cubic-bezier(0.2,0.8,0.2,1)}
+.verse-modal-overlay.open{opacity:1;pointer-events:auto}
+.verse-modal{width:100%;max-width:340px;background:var(--white);border-radius:28px;box-shadow:0 8px 32px rgba(0,0,0,0.12);padding:24px;transform:scale(.9);transition:transform .3s cubic-bezier(0.2,0.8,0.2,1)}
+.verse-modal-overlay.open .verse-modal{transform:scale(1)}
+.verse-modal-title{font-size:17px;font-weight:700}
+.verse-modal-sub{font-size:13px;color:var(--grey500);font-weight:500;margin-top:6px}
+.verse-input{width:100%;margin-top:16px;background:var(--grey100);border:2px solid transparent;border-radius:14px;padding:14px;font-size:18px;font-weight:700;color:var(--black);text-align:center;outline:none;font-family:inherit}
+.verse-input:focus{border-color:var(--primary);background:var(--white)}
+.verse-modal-actions{display:flex;gap:8px;margin-top:18px}
+.verse-btn{flex:1;border:none;padding:14px;border-radius:16px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .3s cubic-bezier(0.2,0.8,0.2,1)}
+.verse-btn:active{opacity:.8}
+.verse-btn-ghost{background:var(--grey100);color:var(--grey700)}
+.verse-btn-primary{background:var(--primary);color:var(--white)}
 
 .pg-ftr{text-align:center;font-size:12px;color:var(--grey500);padding:12px 0}
 </style>
@@ -89,7 +106,19 @@ body{background:var(--bg);color:var(--black);font-family:'Pretendard',-apple-sys
 
   <div id="content"></div>
 
-  <div class="pg-ftr">장별로 탭해서 읽은 부분을 체크하세요</div>
+  <div class="pg-ftr">한 번 탭하면 읽음, 두 번 빠르게 탭하면 몇 절까지 읽었는지 기록해요</div>
+</div>
+
+<div class="verse-modal-overlay" id="verseModalOverlay" onclick="closeVerseModal()">
+  <div class="verse-modal" onclick="event.stopPropagation()">
+    <div class="verse-modal-title" id="verseModalTitle"></div>
+    <div class="verse-modal-sub">몇 절까지 읽으셨어요?</div>
+    <input type="number" id="verseInput" class="verse-input" inputmode="numeric" min="1" placeholder="절 번호">
+    <div class="verse-modal-actions">
+      <button class="verse-btn verse-btn-ghost" id="verseClearBtn">읽음 해제</button>
+      <button class="verse-btn verse-btn-primary" id="verseSaveBtn">저장</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -138,41 +167,61 @@ PLAN.forEach(stage => stage.books.forEach(([name, chapters]) => {
   TOTAL_CHAPTERS += chapters;
 }));
 
-const STORAGE_KEY = 'bibleReadingProgressV1';
+// progress[book][chapter] is either the string 'read' (finished) or a
+// number (the verse the reader stopped at — a chapter read partway).
+const STORAGE_KEY = 'bibleReadingProgressV2';
+const LEGACY_STORAGE_KEY = 'bibleReadingProgressV1';
 let progress = loadProgress();
 let openBook = null;
 
 function loadProgress(){
   try{
-    const raw = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
-    const out = {};
-    for(const k in raw){ out[k] = new Set(raw[k]); }
-    return out;
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw) return JSON.parse(raw);
+    // migrate from the old format (arrays of fully-read chapter numbers)
+    // so upgrading doesn't wipe out reading progress already saved.
+    const legacy = JSON.parse(localStorage.getItem(LEGACY_STORAGE_KEY) || 'null');
+    if(legacy){
+      const migrated = {};
+      for(const book in legacy){
+        migrated[book] = {};
+        legacy[book].forEach(ch => { migrated[book][ch] = 'read'; });
+      }
+      return migrated;
+    }
+    return {};
   }catch(e){ return {}; }
 }
 function saveProgress(){
-  const raw = {};
-  for(const k in progress){ raw[k] = Array.from(progress[k]); }
-  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(raw)); }catch(e){}
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); }catch(e){}
 }
-function readCount(name){ return progress[name] ? progress[name].size : 0; }
+function readCount(name){
+  const b = progress[name];
+  return b ? Object.values(b).filter(v => v === 'read').length : 0;
+}
+function partialCount(name){
+  const b = progress[name];
+  return b ? Object.values(b).filter(v => typeof v === 'number').length : 0;
+}
 function pct(read, total){ return total ? Math.round((read/total)*1000)/10 : 0; }
 
 function toggleChapter(book, ch){
-  if(!progress[book]) progress[book] = new Set();
-  if(progress[book].has(ch)) progress[book].delete(ch);
-  else progress[book].add(ch);
+  if(!progress[book]) progress[book] = {};
+  if(progress[book][ch] === 'read') delete progress[book][ch];
+  else progress[book][ch] = 'read';
   saveProgress();
   render();
 }
 function markAll(book){
   const total = CHAPTER_COUNT[book];
-  progress[book] = new Set(Array.from({length: total}, (_, i) => i + 1));
+  const obj = {};
+  for(let ch = 1; ch <= total; ch++) obj[ch] = 'read';
+  progress[book] = obj;
   saveProgress();
   render();
 }
 function clearBook(book){
-  progress[book] = new Set();
+  progress[book] = {};
   saveProgress();
   render();
 }
@@ -183,12 +232,51 @@ function resetAll(){
   render();
 }
 
+let verseModalState = null;
+function openVerseModal(book, ch){
+  verseModalState = { book, ch };
+  const cur = progress[book] && progress[book][ch];
+  document.getElementById('verseModalTitle').textContent = `${book} ${ch}장`;
+  const input = document.getElementById('verseInput');
+  input.value = typeof cur === 'number' ? cur : '';
+  document.getElementById('verseModalOverlay').classList.add('open');
+  setTimeout(() => input.focus(), 50);
+}
+function closeVerseModal(){
+  document.getElementById('verseModalOverlay').classList.remove('open');
+  verseModalState = null;
+}
+function saveVerse(){
+  if(!verseModalState) return;
+  const { book, ch } = verseModalState;
+  const v = parseInt(document.getElementById('verseInput').value, 10);
+  if(!v || v < 1){ document.getElementById('verseInput').focus(); return; }
+  if(!progress[book]) progress[book] = {};
+  progress[book][ch] = v;
+  saveProgress();
+  closeVerseModal();
+  render();
+}
+function clearVerse(){
+  if(!verseModalState) return;
+  const { book, ch } = verseModalState;
+  if(progress[book]) delete progress[book][ch];
+  saveProgress();
+  closeVerseModal();
+  render();
+}
+
 function renderChapterGrid(name){
   const total = CHAPTER_COUNT[name];
-  const readSet = progress[name] || new Set();
+  const bookProgress = progress[name] || {};
   let btns = '';
   for(let ch = 1; ch <= total; ch++){
-    btns += `<button class="ch-btn${readSet.has(ch) ? ' read' : ''}" data-book="${name}" data-ch="${ch}">${ch}</button>`;
+    const v = bookProgress[ch];
+    const isRead = v === 'read';
+    const isPartial = typeof v === 'number';
+    const cls = isRead ? ' read' : (isPartial ? ' partial' : '');
+    const badge = isPartial ? `<span class="v-badge">${v}</span>` : '';
+    btns += `<button class="ch-btn${cls}" data-book="${name}" data-ch="${ch}">${ch}${badge}</button>`;
   }
   return `
     <div class="ch-panel">
@@ -197,12 +285,14 @@ function renderChapterGrid(name){
         <button class="ch-action" data-action="clear" data-book="${name}">전체 초기화</button>
       </div>
       <div class="ch-grid">${btns}</div>
+      <div class="ch-hint">두 번 탭하면 몇 절까지 읽었는지 기록할 수 있어요</div>
     </div>`;
 }
 
 function renderBookRow(name){
   const total = CHAPTER_COUNT[name];
   const read = readCount(name);
+  const partial = partialCount(name);
   const bp = pct(read, total);
   const done = read === total;
   const open = openBook === name;
@@ -211,7 +301,7 @@ function renderBookRow(name){
       <div class="book-row-main">
         <div class="book-name${done ? ' done' : ''}">${name}</div>
         <div class="book-meta">
-          <span class="book-frac">${read}/${total}</span>
+          <span class="book-frac">${read}/${total}${partial ? ` · 읽는 중 ${partial}` : ''}</span>
           <div class="book-mini-bar"><div class="book-mini-fill${done ? ' done' : ''}" style="width:${bp}%"></div></div>
         </div>
       </div>
@@ -240,6 +330,7 @@ function renderStage(stage){
 
 function render(){
   const totalRead = Object.keys(CHAPTER_COUNT).reduce((s, n) => s + readCount(n), 0);
+  const totalPartial = Object.keys(CHAPTER_COUNT).reduce((s, n) => s + partialCount(n), 0);
   const ov = pct(totalRead, TOTAL_CHAPTERS);
   const html = `
     <div class="card">
@@ -249,15 +340,39 @@ function render(){
       </div>
       <div class="ov-pct">${ov}%</div>
       <div class="bar"><div class="bar-fill" style="width:${ov}%"></div></div>
-      <div class="ov-sub">${totalRead} / ${TOTAL_CHAPTERS}장 읽음</div>
+      <div class="ov-sub">${totalRead} / ${TOTAL_CHAPTERS}장 읽음${totalPartial ? ` · 읽는 중 ${totalPartial}장` : ''}</div>
     </div>
     ${PLAN.map(renderStage).join('')}`;
   document.getElementById('content').innerHTML = html;
 }
 
+// Single tap toggles a chapter fully read/unread. A quick second tap on the
+// same chapter within the window below is treated as a double-tap instead,
+// opening the verse picker for a chapter that was only read partway.
+const DOUBLE_TAP_MS = 300;
+let pendingTapTimer = null;
+let pendingTapBtn = null;
+
 document.getElementById('content').addEventListener('click', (e) => {
   const chBtn = e.target.closest('.ch-btn');
-  if(chBtn){ toggleChapter(chBtn.dataset.book, parseInt(chBtn.dataset.ch, 10)); return; }
+  if(chBtn){
+    const book = chBtn.dataset.book;
+    const ch = parseInt(chBtn.dataset.ch, 10);
+    if(pendingTapTimer && pendingTapBtn === chBtn){
+      clearTimeout(pendingTapTimer);
+      pendingTapTimer = null;
+      pendingTapBtn = null;
+      openVerseModal(book, ch);
+    }else{
+      pendingTapBtn = chBtn;
+      pendingTapTimer = setTimeout(() => {
+        pendingTapTimer = null;
+        pendingTapBtn = null;
+        toggleChapter(book, ch);
+      }, DOUBLE_TAP_MS);
+    }
+    return;
+  }
 
   const actionBtn = e.target.closest('.ch-action');
   if(actionBtn){
@@ -275,6 +390,12 @@ document.getElementById('content').addEventListener('click', (e) => {
     openBook = openBook === book ? null : book;
     render();
   }
+});
+
+document.getElementById('verseSaveBtn').addEventListener('click', saveVerse);
+document.getElementById('verseClearBtn').addEventListener('click', clearVerse);
+document.getElementById('verseInput').addEventListener('keydown', (e) => {
+  if(e.key === 'Enter') saveVerse();
 });
 
 render();
