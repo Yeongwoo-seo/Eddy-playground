@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>2주차 v4 재설계 · MISSING KEY DEV</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<meta name="theme-color" content="#080A0C">
+<link rel="manifest" href="/dev/manifest.json">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#080A0C;--surface-1:#101419;--surface-2:#171C22;
+  --text-primary:#EDF1F4;--text-secondary:#929BA5;--text-muted:#5F6872;
+  --cyan:#59B8C8;--amber:#D6A84B;--pink:#D66B9A;--divider:rgba(255,255,255,0.08);
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sans:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
+}
+html,body{height:100%}
+body{background:#050607;color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center;min-height:100dvh}
+.frame{width:100%;max-width:430px;min-height:100dvh;min-height:100vh;padding:calc(48px + env(safe-area-inset-top,0)) 20px calc(32px + env(safe-area-inset-bottom,0));display:flex;flex-direction:column}
+.topbar-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:18px}
+.back{font-family:var(--mono);font-size:12px;color:var(--text-muted);text-decoration:none;display:inline-flex;align-items:center;gap:4px;width:fit-content}
+.doc-link{font-family:var(--mono);font-size:11px;color:var(--pink);text-decoration:none;background:rgba(214,107,154,.12);border:1px solid rgba(214,107,154,.3);border-radius:14px;padding:6px 12px;white-space:nowrap;flex-shrink:0}
+.tag{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px}
+.title{font-size:26px;font-weight:700;letter-spacing:-.2px;margin-bottom:10px}
+.sub{font-size:14px;color:var(--text-secondary);margin-bottom:20px;line-height:1.6}
+.summary-box{background:var(--surface-1);border:1px solid var(--divider);border-radius:14px;padding:16px 18px;margin-bottom:24px;font-size:13px;line-height:1.7;color:var(--text-secondary)}
+.summary-box b{color:var(--text-primary)}
+
+.part-header{display:flex;align-items:baseline;gap:8px;margin:26px 0 14px;padding:0 2px}
+.part-header:first-of-type{margin-top:0}
+.part-label{font-size:15px;font-weight:700}
+.part-sub{font-family:var(--mono);font-size:11px;color:var(--text-muted)}
+
+.ch-list{display:flex;flex-direction:column;gap:12px}
+.ch-card{background:var(--surface-1);border:1px solid var(--divider);border-radius:16px;padding:16px 18px;transition:background .15s}
+.ch-head{display:flex;align-items:flex-start;gap:10px;cursor:pointer}
+.ch-num{font-family:var(--mono);font-size:12px;color:var(--cyan);flex-shrink:0;padding-top:2px}
+.ch-headtxt{flex:1;min-width:0}
+.ch-title{font-size:15px;font-weight:700;line-height:1.4}
+.ch-meta{font-size:11.5px;color:var(--text-muted);margin-top:3px}
+.ch-caret{color:var(--text-muted);font-size:14px;flex-shrink:0;transition:transform .2s;padding-top:2px}
+.ch-card.open .ch-caret{transform:rotate(180deg)}
+.ch-badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.badge{font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:.03em;border-radius:8px;padding:3px 7px}
+.badge.twist{color:#2a0d18;background:var(--pink)}
+.badge.live{color:#06181c;background:var(--cyan)}
+.badge.new{color:var(--text-muted);background:rgba(255,255,255,.08)}
+
+.ch-body{display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--divider)}
+.ch-card.open .ch-body{display:block}
+.field{margin-bottom:10px}
+.field-label{font-family:var(--mono);font-size:10.5px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
+.field-val{font-size:13px;line-height:1.6;color:var(--text-secondary)}
+.field-val.believe{color:var(--amber)}
+.field-val.truth{color:var(--cyan)}
+.chip-row{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:11px;background:var(--surface-2);border:1px solid var(--divider);border-radius:10px;padding:3px 8px;color:var(--text-secondary)}
+
+.play-link{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:12px;color:var(--cyan);text-decoration:none;background:rgba(89,184,200,.12);border:1px solid rgba(89,184,200,.3);border-radius:12px;padding:8px 12px;margin-top:8px}
+.no-play{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11.5px;color:var(--text-muted);margin-top:8px}
+
+.prompt-block{margin-top:14px}
+.prompt-headrow{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.prompt-status{font-family:var(--mono);font-size:10.5px;color:var(--text-muted)}
+.prompt-textarea{width:100%;min-height:220px;resize:vertical;background:var(--bg);border:1px solid var(--divider);border-radius:12px;padding:12px;color:var(--text-primary);font-family:var(--mono);font-size:12px;line-height:1.65;outline:none}
+.prompt-textarea:focus{border-color:rgba(89,184,200,.4)}
+.prompt-actions{display:flex;gap:8px;margin-top:8px}
+.pbtn{flex:1;font-family:var(--mono);font-size:11.5px;font-weight:600;border-radius:10px;padding:9px;border:1px solid var(--divider);background:var(--surface-2);color:var(--text-primary);cursor:pointer}
+.pbtn:active{opacity:.8}
+.pbtn.primary{background:var(--amber);color:#1a1206;border-color:var(--amber)}
+</style>
+</head>
+<body>
+<div class="frame">
+  <div class="topbar-row">
+    <a class="back" href="/dev/week2/">‹ 2주차</a>
+    <a class="doc-link" href="/docs/week2-storyline-outline-v4.md" target="_blank" rel="noopener">전체 아웃라인 문서</a>
+  </div>
+  <div class="tag">Missing Key · v4 재설계</div>
+  <div class="title">2주차 재설계</div>
+  <div class="sub">사라진 11분 → 사라진 조각. 인물의 정체·증거의 의미·사건의 정의가 뒤집히는 22챕터 재구성. 아직 실제 대사가 없는 챕터는 대사 생성용 프롬프트만 적어둘 수 있습니다.</div>
+  <div class="summary-box">
+    <b>1부(Ch1~11)</b>: 레오가 K-01을 옮긴 사실을 밝혀 사건이 해결된 것처럼 보인다.<br>
+    <b>2부(Ch12~22)</b>: 회수된 K-01의 내부 인덱스가 사라졌다는 게 드러나며, 이 모든 걸 설계한 다니엘의 정체가 4단계로 벗겨진다.<br>
+    ▶ 초록 배지가 붙은 챕터는 기존 씬과 골격을 공유해 바로 플레이할 수 있습니다(대사는 v3 그대로라 재작성 필요). 나머지는 전면 신규라 프롬프트만 확인할 수 있습니다.
+  </div>
+
+  <div id="chapterRoot"></div>
+</div>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
+}
+</script>
+<script src="/dev/dialogueData.js"></script>
+<script src="/dev/data/week2RedesignV4.js"></script>
+<script>
+const PROMPT_KEY_PREFIX = 'week2v4Prompt:';
+const sceneById = new Map((typeof week2Scenes !== 'undefined' ? week2Scenes : []).map(s => [s.id, s]));
+
+function playHrefFor(ch) {
+  if (!ch.existingSceneId) return null;
+  const scene = sceneById.get(ch.existingSceneId);
+  if (!scene) return '/play/game/?scene=' + encodeURIComponent(ch.existingSceneId);
+  return scene.route || ('/play/game/?scene=' + encodeURIComponent(scene.id));
+}
+
+function chapterCardHtml(ch) {
+  const playHref = playHrefFor(ch);
+  const evidenceChips = ch.newEvidence.map(e => `<span class="chip">${e}</span>`).join('');
+  return `
+    <div class="ch-card" id="card-${ch.id}">
+      <div class="ch-head" data-toggle="${ch.id}">
+        <div class="ch-num">#${String(ch.order).padStart(2, '0')}</div>
+        <div class="ch-headtxt">
+          <div class="ch-title">${ch.title}</div>
+          <div class="ch-meta">${ch.location} · ${ch.characters.join(', ')}</div>
+          <div class="ch-badges">
+            ${ch.twist ? `<span class="badge twist">${ch.twist.split(' — ')[0]}</span>` : ''}
+            ${playHref ? `<span class="badge live">기존 씬 연결</span>` : `<span class="badge new">전면 신규</span>`}
+          </div>
+        </div>
+        <div class="ch-caret">▾</div>
+      </div>
+      <div class="ch-body">
+        <div class="field">
+          <div class="field-label">장면 목적</div>
+          <div class="field-val">${ch.purpose}</div>
+        </div>
+        <div class="field">
+          <div class="field-label">이 시점에 플레이어가 믿어야 하는 것</div>
+          <div class="field-val believe">${ch.believe}</div>
+        </div>
+        <div class="field">
+          <div class="field-label">실제 진실</div>
+          <div class="field-val truth">${ch.truth}</div>
+        </div>
+        ${ch.newEvidence.length ? `
+        <div class="field">
+          <div class="field-label">새로 등록되는 증거·기록</div>
+          <div class="chip-row">${evidenceChips}</div>
+        </div>` : ''}
+        ${playHref
+          ? `<a class="play-link" href="${playHref}">▶ 바로 플레이 (기존 씬 · 대사는 v3)</a>`
+          : `<div class="no-play">○ 아직 플레이 가능한 대사 없음 — 아래 프롬프트로 새로 작성 필요</div>`}
+        <div class="prompt-block">
+          <div class="prompt-headrow">
+            <div class="field-label">대사 생성용 AI 프롬프트</div>
+            <div class="prompt-status" id="status-${ch.id}">&nbsp;</div>
+          </div>
+          <textarea class="prompt-textarea" id="prompt-${ch.id}" spellcheck="false"></textarea>
+          <div class="prompt-actions">
+            <button class="pbtn primary" data-copy="${ch.id}">📋 복사</button>
+            <button class="pbtn" data-reset="${ch.id}">기본값으로 재설정</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+const root = document.getElementById('chapterRoot');
+const part1 = week2RedesignV4Chapters.filter(c => c.part === 1);
+const part2 = week2RedesignV4Chapters.filter(c => c.part === 2);
+root.innerHTML = `
+  <div class="part-header">
+    <div class="part-label">1부 — 보이는 도난</div>
+    <div class="part-sub">Ch1~${part1.length}</div>
+  </div>
+  <div class="ch-list">${part1.map(chapterCardHtml).join('')}</div>
+  <div class="part-header">
+    <div class="part-label">2부 — 안내자가 만든 사건</div>
+    <div class="part-sub">Ch${part1.length + 1}~${part1.length + part2.length}</div>
+  </div>
+  <div class="ch-list">${part2.map(chapterCardHtml).join('')}</div>
+`;
+
+// 챕터별 프롬프트 textarea 채우기 — 이 기기에 저장된 값이 있으면 그걸,
+// 없으면 buildWeek2RedesignPrompt() 기본값을 채운다.
+week2RedesignV4Chapters.forEach(ch => {
+  const key = PROMPT_KEY_PREFIX + ch.id;
+  const textarea = document.getElementById('prompt-' + ch.id);
+  const saved = localStorage.getItem(key);
+  textarea.value = saved !== null ? saved : buildWeek2RedesignPrompt(ch);
+
+  let saveTimer = null;
+  const status = document.getElementById('status-' + ch.id);
+  textarea.addEventListener('input', () => {
+    status.textContent = '저장 중...';
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      localStorage.setItem(key, textarea.value);
+      status.textContent = '저장됨';
+    }, 400);
+  });
+});
+
+// 카드 펼치기/접기
+root.addEventListener('click', (e) => {
+  const head = e.target.closest('[data-toggle]');
+  if (head) {
+    document.getElementById('card-' + head.dataset.toggle).classList.toggle('open');
+    return;
+  }
+  const copyBtn = e.target.closest('[data-copy]');
+  if (copyBtn) {
+    const id = copyBtn.dataset.copy;
+    const textarea = document.getElementById('prompt-' + id);
+    navigator.clipboard.writeText(textarea.value).then(() => {
+      const orig = copyBtn.textContent;
+      copyBtn.textContent = '✓ 복사됨';
+      setTimeout(() => { copyBtn.textContent = orig; }, 1200);
+    }).catch(() => {});
+    return;
+  }
+  const resetBtn = e.target.closest('[data-reset]');
+  if (resetBtn) {
+    const id = resetBtn.dataset.reset;
+    const ch = week2RedesignV4Chapters.find(c => c.id === id);
+    const textarea = document.getElementById('prompt-' + id);
+    textarea.value = buildWeek2RedesignPrompt(ch);
+    localStorage.setItem(PROMPT_KEY_PREFIX + id, textarea.value);
+    document.getElementById('status-' + id).textContent = '기본값으로 재설정됨';
+  }
+});
+</script>
+<script src="/dev/devPlanFab.js"></script>
+</body>
+</html>
