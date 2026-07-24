@@ -4817,16 +4817,28 @@ const week1UploadScenes = week1Scenes.concat(roomSearchAreas.map(area => ({
   name: `핸드폰찾기 · ${area.label}`,
   roomHotspots: area.hotspots,
 })));
+// dev/data/week2v4Scenes.js is a fully separate, opt-in data file (2주차 v4
+// 재설계 아웃라인의 테스트용 초안 씬 — see docs/week2-storyline-outline-v4.md)
+// — only pages that explicitly load it before this script (the v4 재설계
+// 탭, /play/game, /dev/upload) get it merged in below. Every other page that
+// loads only dialogueData.js sees `weeks`/`allScenes` completely unchanged,
+// so this never touches the live v3 week2 content.
+const week2v4ScenesIfLoaded = typeof week2v4Scenes !== 'undefined' ? week2v4Scenes : [];
+
 const weeks = [
   { id: 'week1', label: '1주차', scenes: week1UploadScenes },
   { id: 'week2', label: '2주차', scenes: week2Scenes },
   { id: 'week3', label: '3주차', scenes: week3Scenes },
   { id: 'week4', label: '4주차', scenes: week4Scenes },
-];
+  // week2v4Scenes.js를 로드하지 않은 페이지에서는 이 항목 자체가 배열에
+  // 없다 — 빈 week 항목을 추가하면 /dev/upload의 주차/씬 피커가 "씬 0개인
+  // 주차"라는, 지금까지 한 번도 없었던 상태를 실서비스 페이지에서까지
+  // 겪게 되므로 완전히 생략하는 쪽을 택했다.
+].concat(week2v4ScenesIfLoaded.length ? [{ id: 'week2v4', label: '2주차 (v4 재설계 초안)', scenes: week2v4ScenesIfLoaded }] : []);
 
 // Combined lookup across every week's scenes — /play/game resolves a
 // requested ?scene= id against this instead of a single week's array, since
 // a scene can belong to any week. Per-week test pages (/dev/week1 ~
 // /dev/week4) still read their own week*Scenes array directly so their
 // listing stays scoped to just that week.
-const allScenes = week1Scenes.concat(week2Scenes).concat(week3Scenes).concat(week4Scenes);
+const allScenes = week1Scenes.concat(week2Scenes).concat(week3Scenes).concat(week4Scenes).concat(week2v4ScenesIfLoaded);
