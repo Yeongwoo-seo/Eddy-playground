@@ -53,6 +53,7 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .pbtn{flex:1;font-family:var(--mono);font-size:11.5px;font-weight:600;border-radius:10px;padding:9px;border:1px solid var(--divider);background:var(--surface-2);color:var(--text-primary);cursor:pointer}
 .pbtn:active{opacity:.8}
 .pbtn.primary{background:var(--amber);color:#1a1206;border-color:var(--amber)}
+.empty{font-size:13px;color:var(--text-muted);padding:20px 0;line-height:1.6}
 </style>
 </head>
 <body>
@@ -111,7 +112,9 @@ function cardHtml(loc) {
   `;
 }
 
-root.innerHTML = week2v4Locations.map(cardHtml).join('');
+root.innerHTML = week2v4Locations.length
+  ? week2v4Locations.map(cardHtml).join('')
+  : '<div class="empty">등록된 장소가 없습니다. dev/data/week2v4Locations.js에 항목을 추가하세요.</div>';
 
 week2v4Locations.forEach(loc => {
   const key = PROMPT_KEY_PREFIX + loc.id;

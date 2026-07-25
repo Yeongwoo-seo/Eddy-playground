@@ -12,24 +12,16 @@
 // 존재하는 인물 소개(소피/클레어/윤민아/애드리언/레오, Ch4)는 허브가 아니라
 // 전시장 진입 직후 선형 씬(week2-scene-003)에서 처리되므로 여기 목록에는
 // 없다.
-const week2v4HubTopics = [
-  {
-    id: 'hub-rocks-lane-lockers', locationId: 'w2-the-rocks-lane', locationName: '더 록스 골목',
-    relatedChapter: 'Ch3. 더 록스, 보관함을 익히다',
-    name: '다니엘, 분실물 돕기',
-    purpose: '다니엘이 관광객의 분실 가방을 도와 카페 임시 보관함 사용법을 익히는 모습을 지수·영우가 옆에서 목격하는 신규 상호작용. 다니엘의 두 번째 긍정적 관계 형성(②)이자, 이후 회수 단계 복선.',
-    characters: ['지수', '영우', '다니엘', '(지나가는 관광객 NPC)'],
-    previewHref: '/play/explore/?phase=W2_TOURISM&location=w2-the-rocks-lane',
-  },
-  {
-    id: 'hub-exhibition-group-photo', locationId: 'w2-exhibition-entrance', locationName: '빈티지 전시장 입구',
-    relatedChapter: 'Ch6. 단체사진, 평범한 배경',
-    name: '단체사진, 자리 배치',
-    purpose: '전시장에 들어가기 직전, 다니엘이 관광객 무리의 단체사진 위치를 세밀하게 조정하는 신규 상호작용. 다니엘의 세 번째 긍정 관계 장면(③)이자, 반전 4(입구 시야를 가리는 군중 배치)의 복선.',
-    characters: ['지수', '영우', '다니엘', '레오', '관광객 무리(NPC)'],
-    previewHref: '/play/explore/?phase=W2_TOURISM&location=w2-exhibition-entrance',
-  },
-];
+// 아래는 빈 배열이다 — 항목을 추가할 땐 이 양식을 그대로 따른다:
+// {
+//   id: 'hub-example', locationId: 'w2-example', locationName: '장소 이름',
+//   relatedChapter: 'Ch0. 챕터 제목',
+//   name: '상호작용 이름',
+//   purpose: '이 상호작용의 목적 (관계 형성 단계·복선 등)',
+//   characters: ['지수', '영우', '...'],
+//   previewHref: '/play/explore/?phase=W2_TOURISM&location=w2-example',
+// },
+const week2v4HubTopics = [];
 
 function buildWeek2v4HubPrompt(topic) {
   const lines = [];
