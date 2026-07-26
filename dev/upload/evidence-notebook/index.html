@@ -46,7 +46,10 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
 /* ===== 예시 탭 — 배경 사진 없이 직접 디자인한 노트 미리보기 =====
    dev/evidenceNotebook.js가 배경 아트 없을 때 그리는 페이지(renderFallbackPageHtml)
    를 그대로 재사용해, "사진을 올리지 않아도 노트답게 보인다"를 이 설정
-   화면에서 바로 확인할 수 있게 한다(§하단 evn-example-* 스크립트). */
+   화면에서 바로 확인할 수 있게 한다(§하단 evn-example-* 스크립트). 책갈피
+   선택 UI는 별도 칩(뱃지) 스타일을 만들지 않고, 실제 노트가 쓰는 책갈피
+   탭(.evn-tab/.evn-tabbar, EvidenceNotebook.injectStyles가 주입)을 그대로
+   재사용한다 — 설정 화면과 실제 화면의 책갈피 모양이 어긋나지 않게. */
 .example-tab-btn{width:100%;display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,rgba(214,168,75,.14),rgba(89,184,200,.1));border:1px solid rgba(214,168,75,.35);border-radius:16px;padding:14px 16px;margin-bottom:18px;cursor:pointer;text-align:left}
 .example-tab-btn:active{opacity:.85}
 .example-tab-icon{font-size:22px;flex-shrink:0}
@@ -61,9 +64,6 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
 .evn-example-title{flex:1;font-size:15px;font-weight:700}
 .evn-example-reroll-btn{font-family:var(--mono);font-size:12.5px;font-weight:700;color:#04181c;background:var(--amber);border:none;border-radius:10px;padding:9px 14px;cursor:pointer;flex-shrink:0}
 .evn-example-reroll-btn:active{opacity:.85}
-.evn-example-tabs{display:flex;gap:8px;padding:12px 16px;border-bottom:1px solid var(--divider);flex-shrink:0;overflow-x:auto}
-.evn-example-tab{font-family:var(--sans);font-size:13px;font-weight:700;color:var(--text-secondary);background:var(--surface-1);border:1px solid var(--divider);border-radius:20px;padding:8px 14px;cursor:pointer;display:flex;align-items:center;gap:6px;flex-shrink:0}
-.evn-example-tab.active{color:#fff;border-color:transparent}
 .evn-example-stage{position:relative;flex:1;min-height:0;overflow:hidden;background:#020304;padding:16px}
 .evn-example-book{position:relative;width:100%;max-width:420px;height:100%;margin:0 auto;display:flex;flex-direction:column}
 
@@ -267,19 +267,43 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
 </div>
 
 <!-- 예시 — 배경 사진 없이 dev/evidenceNotebook.js가 직접 그리는 노트
-     디자인을 그대로 보여준다. 책갈피(증인/증거/사진)를 눌러 바꾸고,
-     다른 샘플로 문서/사진/진술 각 스타일을 훑어볼 수 있다. -->
+     디자인을 그대로 보여준다. 책갈피(증인/증거/사진)는 실제 노트와 같은
+     탭(.evn-tabbar/.evn-tab)으로 고르고, 이전/색인/다음/제출 버튼도 실제
+     노트와 같은 evn-footer/evn-submit-btn을 그대로 재사용해 이 설정
+     화면만의 별도 UI가 생기지 않게 한다. -->
 <div class="evn-example-fullscreen hidden" id="evnExampleFullscreen">
   <div class="evn-example-topbar">
     <button type="button" class="evn-close-btn" id="evnExampleCloseBtn">✕</button>
     <div class="evn-example-title">예시 (사진 없이)</div>
     <button type="button" class="evn-example-reroll-btn" id="evnExampleRerollBtn">🎲 다른 샘플</button>
   </div>
-  <div class="evn-example-tabs" id="evnExampleTabs"></div>
+  <div class="evn-tabbar" id="evnExampleTabs"></div>
   <div class="evn-example-stage">
     <div class="evn-example-book">
       <div class="evn-book-body">
         <div class="evn-page" id="evnExamplePage"></div>
+        <div class="evn-footer" id="evnExampleFooter">
+          <button type="button" class="evn-nav-btn" id="evnExamplePrevBtn">‹ 이전</button>
+          <button type="button" class="evn-nav-btn evn-nav-btn-index" id="evnExampleIndexBtn">☰ 색인</button>
+          <button type="button" class="evn-nav-btn" id="evnExampleNextBtn">다음 ›</button>
+        </div>
+        <button type="button" class="evn-submit-btn" id="evnExampleSubmitBtn">제출</button>
+      </div>
+      <div class="evn-index-panel hidden" id="evnExampleIndexPanel">
+        <div class="evn-index-header">
+          <div class="evn-index-title">색인</div>
+          <button type="button" class="evn-close-btn" id="evnExampleIndexCloseBtn">✕</button>
+        </div>
+        <div class="evn-index-list" id="evnExampleIndexList"></div>
+      </div>
+      <div class="evn-confirm-panel hidden" id="evnExampleConfirmPanel">
+        <div class="evn-confirm-card">
+          <div class="evn-confirm-text" id="evnExampleConfirmText"></div>
+          <div class="evn-confirm-actions">
+            <button type="button" class="evn-confirm-cancel" id="evnExampleConfirmCancelBtn">취소</button>
+            <button type="button" class="evn-confirm-ok" id="evnExampleConfirmOkBtn">제출</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -359,6 +383,9 @@ const EXAMPLE_SAMPLE_ENTRIES = {
   ],
 };
 let exampleSection = 'evidence';
+// 실제 노트의 lastViewedBySection과 같은 방식 — 책갈피를 옮겨도 그 책갈피에서
+// 보던 페이지를 기억한다.
+let exampleIndexBySection = { witness: 0, evidence: 0, photo: 0 };
 
 let notebookConfig = { imageAssetId: null, imageAssetIds: { witness: null, evidence: null, photo: null }, regions: {}, styles: {} };
 let slotImageUrls = { witness: null, evidence: null, photo: null }; // section -> dataUrl
@@ -404,6 +431,17 @@ const el = {
   evnExampleRerollBtn: document.getElementById('evnExampleRerollBtn'),
   evnExampleTabs: document.getElementById('evnExampleTabs'),
   evnExamplePage: document.getElementById('evnExamplePage'),
+  evnExamplePrevBtn: document.getElementById('evnExamplePrevBtn'),
+  evnExampleIndexBtn: document.getElementById('evnExampleIndexBtn'),
+  evnExampleNextBtn: document.getElementById('evnExampleNextBtn'),
+  evnExampleSubmitBtn: document.getElementById('evnExampleSubmitBtn'),
+  evnExampleIndexPanel: document.getElementById('evnExampleIndexPanel'),
+  evnExampleIndexCloseBtn: document.getElementById('evnExampleIndexCloseBtn'),
+  evnExampleIndexList: document.getElementById('evnExampleIndexList'),
+  evnExampleConfirmPanel: document.getElementById('evnExampleConfirmPanel'),
+  evnExampleConfirmText: document.getElementById('evnExampleConfirmText'),
+  evnExampleConfirmCancelBtn: document.getElementById('evnExampleConfirmCancelBtn'),
+  evnExampleConfirmOkBtn: document.getElementById('evnExampleConfirmOkBtn'),
 };
 
 function labelDef(id) { return EVIDENCE_NOTEBOOK_LABELS.find(x => x.id === id); }
@@ -876,10 +914,21 @@ function renderTestPreview() {
    노트 디자인 미리보기 =====
    업로드된 배경/영역지정과 완전히 무관하게 항상 열 수 있다(referenceImageUrl
    불필요) — "사진을 안 올려도 노트답게 보인다"는 게 이 탭의 존재 이유라서,
-   테스트 미리보기(openTestPreview)와 달리 배경 유무 게이트가 없다. */
+   테스트 미리보기(openTestPreview)와 달리 배경 유무 게이트가 없다. 책갈피
+   탭·이전/색인/다음·제출 버튼은 실제 노트(dev/evidenceNotebook.js)와 같은
+   클래스(evn-tab/evn-footer/evn-submit-btn/evn-index-panel/evn-confirm-panel)를
+   그대로 써서 설정 화면과 실제 화면의 UI가 벌어지지 않게 한다. */
 el.exampleTabBtn.addEventListener('click', openExamplePreview);
 el.evnExampleCloseBtn.addEventListener('click', () => el.evnExampleFullscreen.classList.add('hidden'));
-el.evnExampleRerollBtn.addEventListener('click', renderExamplePage);
+el.evnExampleRerollBtn.addEventListener('click', () => {
+  const list = currentExampleList();
+  if (list.length > 1) {
+    let idx;
+    do { idx = Math.floor(Math.random() * list.length); } while (idx === currentExampleIndex());
+    exampleIndexBySection[exampleSection] = idx;
+  }
+  renderExamplePage();
+});
 el.evnExampleTabs.addEventListener('click', (e) => {
   const btn = e.target.closest('[data-example-section]');
   if (!btn) return;
@@ -887,10 +936,34 @@ el.evnExampleTabs.addEventListener('click', (e) => {
   renderExampleTabs();
   renderExamplePage();
 });
+el.evnExamplePrevBtn.addEventListener('click', exampleGoPrev);
+el.evnExampleNextBtn.addEventListener('click', exampleGoNext);
+el.evnExampleIndexBtn.addEventListener('click', () => {
+  renderExampleIndexList();
+  el.evnExampleIndexPanel.classList.remove('hidden');
+});
+el.evnExampleIndexCloseBtn.addEventListener('click', () => el.evnExampleIndexPanel.classList.add('hidden'));
+el.evnExampleIndexList.addEventListener('click', (e) => {
+  const row = e.target.closest('[data-example-jump]');
+  if (!row) return;
+  exampleIndexBySection[exampleSection] = Number(row.dataset.exampleJump);
+  el.evnExampleIndexPanel.classList.add('hidden');
+  renderExamplePage();
+});
+el.evnExampleSubmitBtn.addEventListener('click', () => {
+  const entry = currentExampleEntry();
+  if (!entry) return;
+  el.evnExampleConfirmText.innerHTML = `'${escapeHtml(entry.title)}'을(를)<br>제출하는 모습 미리보기입니다.`;
+  el.evnExampleConfirmPanel.classList.remove('hidden');
+});
+el.evnExampleConfirmCancelBtn.addEventListener('click', () => el.evnExampleConfirmPanel.classList.add('hidden'));
+el.evnExampleConfirmOkBtn.addEventListener('click', () => el.evnExampleConfirmPanel.classList.add('hidden'));
 
 function openExamplePreview() {
   EvidenceNotebook.injectStyles();
   el.evnExampleFullscreen.classList.remove('hidden');
+  el.evnExampleIndexPanel.classList.add('hidden');
+  el.evnExampleConfirmPanel.classList.add('hidden');
   renderExampleTabs();
   renderExamplePage();
 }
@@ -898,18 +971,46 @@ function openExamplePreview() {
 function renderExampleTabs() {
   el.evnExampleTabs.innerHTML = EvidenceNotebook.SECTIONS.map(s => {
     const active = s.id === exampleSection;
-    return `<button type="button" class="evn-example-tab${active ? ' active' : ''}" data-example-section="${s.id}" style="${active ? `background:${s.tint};border-color:${s.tint}` : ''}"><span>${s.icon}</span>${escapeHtml(s.label)}</button>`;
+    return `<button type="button" class="evn-tab evn-tab-${s.id}${active ? ' evn-tab-active' : ''}" data-example-section="${s.id}" style="${active ? `--evn-tab-tint:${s.tint}` : ''}"><span class="evn-tab-icon">${s.icon}</span><span class="evn-tab-label">${escapeHtml(s.label)}</span></button>`;
   }).join('');
 }
 
-function pickRandomExampleSample() {
-  const pool = EXAMPLE_SAMPLE_ENTRIES[exampleSection] || [];
-  return pool[Math.floor(Math.random() * pool.length)] || null;
+function currentExampleList() { return EXAMPLE_SAMPLE_ENTRIES[exampleSection] || []; }
+function currentExampleIndex() { return exampleIndexBySection[exampleSection] || 0; }
+function currentExampleEntry() { return currentExampleList()[currentExampleIndex()] || null; }
+
+function exampleGoPrev() {
+  const idx = currentExampleIndex();
+  if (idx <= 0) return;
+  exampleIndexBySection[exampleSection] = idx - 1;
+  renderExamplePage();
+}
+function exampleGoNext() {
+  const list = currentExampleList();
+  const idx = currentExampleIndex();
+  if (idx >= list.length - 1) return;
+  exampleIndexBySection[exampleSection] = idx + 1;
+  renderExamplePage();
+}
+
+function renderExampleIndexList() {
+  const list = currentExampleList();
+  const idx = currentExampleIndex();
+  el.evnExampleIndexList.innerHTML = list.length ? list.map((e, i) => `
+    <button type="button" class="evn-index-row${i === idx ? ' evn-index-row-active' : ''}" data-example-jump="${i}">
+      <span class="evn-index-code">${escapeHtml(e.code || '')}</span>
+      <span class="evn-index-title">${escapeHtml(e.title)}</span>
+    </button>
+  `).join('') : '<div class="evn-index-empty">항목이 없습니다.</div>';
 }
 
 function renderExamplePage() {
-  const sample = pickRandomExampleSample();
-  el.evnExamplePage.innerHTML = sample ? EvidenceNotebook.renderExamplePageHtml(sample, 1, 0) : '';
+  const list = currentExampleList();
+  const idx = currentExampleIndex();
+  const entry = list[idx] || null;
+  el.evnExamplePage.innerHTML = entry ? EvidenceNotebook.renderExamplePageHtml(entry, list.length, idx) : '';
+  el.evnExamplePrevBtn.disabled = idx <= 0;
+  el.evnExampleNextBtn.disabled = idx >= list.length - 1;
 }
 
 async function init() {
