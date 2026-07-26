@@ -43,6 +43,30 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;overflow:hidden}
 .dropzone.busy{opacity:.6;pointer-events:none}
 
+/* ===== 예시 탭 — 배경 사진 없이 직접 디자인한 노트 미리보기 =====
+   dev/evidenceNotebook.js가 배경 아트 없을 때 그리는 페이지(renderFallbackPageHtml)
+   를 그대로 재사용해, "사진을 올리지 않아도 노트답게 보인다"를 이 설정
+   화면에서 바로 확인할 수 있게 한다(§하단 evn-example-* 스크립트). */
+.example-tab-btn{width:100%;display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,rgba(214,168,75,.14),rgba(89,184,200,.1));border:1px solid rgba(214,168,75,.35);border-radius:16px;padding:14px 16px;margin-bottom:18px;cursor:pointer;text-align:left}
+.example-tab-btn:active{opacity:.85}
+.example-tab-icon{font-size:22px;flex-shrink:0}
+.example-tab-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.example-tab-title{font-size:14px;font-weight:700;color:var(--text-primary)}
+.example-tab-desc{font-size:12px;color:var(--text-secondary)}
+.example-tab-arrow{font-size:18px;color:var(--amber);flex-shrink:0}
+
+.evn-example-fullscreen{position:fixed;inset:0;z-index:500;background:#050607;display:flex;flex-direction:column}
+.evn-example-fullscreen.hidden{display:none}
+.evn-example-topbar{display:flex;align-items:center;gap:10px;padding:calc(14px + env(safe-area-inset-top,0)) 16px 12px;border-bottom:1px solid var(--divider);flex-shrink:0}
+.evn-example-title{flex:1;font-size:15px;font-weight:700}
+.evn-example-reroll-btn{font-family:var(--mono);font-size:12.5px;font-weight:700;color:#04181c;background:var(--amber);border:none;border-radius:10px;padding:9px 14px;cursor:pointer;flex-shrink:0}
+.evn-example-reroll-btn:active{opacity:.85}
+.evn-example-tabs{display:flex;gap:8px;padding:12px 16px;border-bottom:1px solid var(--divider);flex-shrink:0;overflow-x:auto}
+.evn-example-tab{font-family:var(--sans);font-size:13px;font-weight:700;color:var(--text-secondary);background:var(--surface-1);border:1px solid var(--divider);border-radius:20px;padding:8px 14px;cursor:pointer;display:flex;align-items:center;gap:6px;flex-shrink:0}
+.evn-example-tab.active{color:#fff;border-color:transparent}
+.evn-example-stage{position:relative;flex:1;min-height:0;overflow:hidden;background:#020304;padding:16px}
+.evn-example-book{position:relative;width:100%;max-width:420px;height:100%;margin:0 auto;display:flex;flex-direction:column}
+
 /* ===== 책갈피별 배경 슬롯 3장 =====
    원본 아트가 탭 바 자체를 그림 안에 그려 넣은 완성된 페이지라(§상단 주석
    참고), 책갈피마다 별도 이미지를 받는다 — 노트 UI가 텍스트 탭을 따로
@@ -160,6 +184,15 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   <div class="title">증거수첩</div>
   <div class="sub">증거 제시/증거확인 화면에 쓰일 증거수첩 배경을 책갈피(증인·증거·사진)별로 올립니다. 세 그림은 탭 바까지 포함해 완성된 페이지 아트라, 노트 화면은 이 그림 자체를 책갈피별 배경으로 바꿔 끼웁니다. 세 그림의 레이아웃이 같다는 전제로, 어느 자리에 어떤 데이터(코드·제목·사진·설명·발견 위치·관련 인물)와 버튼(이전·색인·다음·제출)이 들어갈지는 영역 하나만 지정하면 셋 다에 적용됩니다.</div>
 
+  <button type="button" class="example-tab-btn" id="exampleTabBtn">
+    <span class="example-tab-icon">✏️</span>
+    <span class="example-tab-body">
+      <span class="example-tab-title">예시 — 사진 없이 바로 보기</span>
+      <span class="example-tab-desc">배경 그림을 올리지 않아도 노트가 이렇게 보여요</span>
+    </span>
+    <span class="example-tab-arrow">›</span>
+  </button>
+
   <div class="slot-grid" id="slotGrid"></div>
   <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp">
 
@@ -233,12 +266,32 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   </div>
 </div>
 
+<!-- 예시 — 배경 사진 없이 dev/evidenceNotebook.js가 직접 그리는 노트
+     디자인을 그대로 보여준다. 책갈피(증인/증거/사진)를 눌러 바꾸고,
+     다른 샘플로 문서/사진/진술 각 스타일을 훑어볼 수 있다. -->
+<div class="evn-example-fullscreen hidden" id="evnExampleFullscreen">
+  <div class="evn-example-topbar">
+    <button type="button" class="evn-close-btn" id="evnExampleCloseBtn">✕</button>
+    <div class="evn-example-title">예시 (사진 없이)</div>
+    <button type="button" class="evn-example-reroll-btn" id="evnExampleRerollBtn">🎲 다른 샘플</button>
+  </div>
+  <div class="evn-example-tabs" id="evnExampleTabs"></div>
+  <div class="evn-example-stage">
+    <div class="evn-example-book">
+      <div class="evn-book-body">
+        <div class="evn-page" id="evnExamplePage"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
 }
 </script>
 <script src="/dev/assetDb.js"></script>
+<script src="/dev/evidenceNotebook.js"></script>
 <script>
 /* =========================================================================
    증거수첩 데이터 설정 — dev/data/index.html에서 들어오는 별도 페이지
@@ -285,6 +338,27 @@ const TEST_SAMPLE_ENTRIES = [
   { code: 'E-K02', title: 'K-02 깨진 액자 유리', description: '전시된 회화 액자의 유리가 깨진 채 바닥에서 발견됨. 충격 방향은 안쪽에서 바깥쪽.', discoveredLocationText: '2층 회화 전시실', relatedPerson: '박지훈' },
   { code: 'W-03', title: '경비원 진술서', description: '"자정 무렵 비상계단 쪽에서 인기척을 들었습니다. 확인하러 갔을 땐 아무도 없었어요."', discoveredLocationText: '지하 1층 경비실', relatedPerson: '최성만' },
 ];
+// "예시" 미리보기 전용 샘플 — 책갈피(증인/증거/사진)별로 dev/evidenceNotebook.js의
+// templateFor가 실제로 갈라지는 조건(kind:testimony → 진술, subtype:photo →
+// 사진, 그 외 → 문서)에 맞춰 하나씩 준비해, 탭을 눌렀을 때 세 디자인을 다
+// 훑어볼 수 있게 한다. CaseFileState/CaseEntryModel을 로드하지 않은 이
+// 설정 페이지에서도 그대로 그려지도록(personName/fallbackIconFor의 안전
+// 폴백, dev/evidenceNotebook.js 참고) relatedNpcIds에 이름을 바로 넣는다.
+const EXAMPLE_SAMPLE_ENTRIES = {
+  witness: [
+    { code: 'W-01', title: '경비원 진술서', kind: 'testimony', description: '"자정 무렵 비상계단 쪽에서 인기척을 들었습니다. 확인하러 갔을 땐 아무도 없었어요."', discoveredLocationText: '지하 1층 경비실', relatedNpcIds: ['최성만'], fallbackIcon: '🎙️' },
+    { code: 'W-02', title: '큐레이터 진술서', kind: 'testimony', description: '"그림은 분명 어제 저녁 점검 때까지 멀쩡했어요. 오늘 아침에 와서야 알았습니다."', discoveredLocationText: '2층 사무실', relatedNpcIds: ['한소희'], fallbackIcon: '🎙️' },
+  ],
+  evidence: [
+    { code: 'E-K02', title: 'K-02 감식 보고서', kind: 'evidence', subtype: 'record', description: '전시된 회화 액자의 유리가 깨진 채 바닥에서 발견됨. 충격 방향은 안쪽에서 바깥쪽으로 추정.', discoveredLocationText: '2층 회화 전시실', relatedNpcIds: ['박지훈'], fallbackIcon: '🧾' },
+    { code: 'E-K05', title: 'K-05 지문 채취 결과', kind: 'evidence', subtype: 'record', description: '비상계단 소화전 손잡이에서 채취한 지문 1건. 등록된 직원 명단과 대조 중.', discoveredLocationText: '비상계단', relatedNpcIds: [], fallbackIcon: '🧾' },
+  ],
+  photo: [
+    { code: 'E-K01', title: 'K-01 명찰 사진', kind: 'evidence', subtype: 'photo', description: '아티오 갤러리 직원 윤민아의 명찰. 사건 당일 메인 전시장 내부에서 발견되었다.', discoveredLocationText: '메인 전시장', relatedNpcIds: ['윤민아'], fallbackIcon: '🪪', status: 'updated' },
+    { code: 'E-K03', title: 'K-03 CCTV 캡처', kind: 'evidence', subtype: 'photo', description: '자정 02시 14분, 비상계단 카메라에 잡힌 인영. 얼굴은 식별되지 않는다.', discoveredLocationText: '비상계단 CCTV', relatedNpcIds: [], fallbackIcon: '🎞️' },
+  ],
+};
+let exampleSection = 'evidence';
 
 let notebookConfig = { imageAssetId: null, imageAssetIds: { witness: null, evidence: null, photo: null }, regions: {}, styles: {} };
 let slotImageUrls = { witness: null, evidence: null, photo: null }; // section -> dataUrl
@@ -324,6 +398,12 @@ const el = {
   evnTestCanvas: document.getElementById('evnTestCanvas'),
   evnTestImg: document.getElementById('evnTestImg'),
   evnTestFields: document.getElementById('evnTestFields'),
+  exampleTabBtn: document.getElementById('exampleTabBtn'),
+  evnExampleFullscreen: document.getElementById('evnExampleFullscreen'),
+  evnExampleCloseBtn: document.getElementById('evnExampleCloseBtn'),
+  evnExampleRerollBtn: document.getElementById('evnExampleRerollBtn'),
+  evnExampleTabs: document.getElementById('evnExampleTabs'),
+  evnExamplePage: document.getElementById('evnExamplePage'),
 };
 
 function labelDef(id) { return EVIDENCE_NOTEBOOK_LABELS.find(x => x.id === id); }
@@ -790,6 +870,46 @@ function renderTestPreview() {
     const textStyle = `${boxStyle}font-size:${s.fontSize}px;color:${s.color};text-align:${s.align};font-weight:${s.weight === 'bold' ? '700' : '400'}`;
     return `<div class="evn-test-field" style="${textStyle}">${escapeHtml(sample[l.id] || '')}</div>`;
   }).join('');
+}
+
+/* ===== 예시 — 배경 사진 없이 dev/evidenceNotebook.js가 직접 그리는
+   노트 디자인 미리보기 =====
+   업로드된 배경/영역지정과 완전히 무관하게 항상 열 수 있다(referenceImageUrl
+   불필요) — "사진을 안 올려도 노트답게 보인다"는 게 이 탭의 존재 이유라서,
+   테스트 미리보기(openTestPreview)와 달리 배경 유무 게이트가 없다. */
+el.exampleTabBtn.addEventListener('click', openExamplePreview);
+el.evnExampleCloseBtn.addEventListener('click', () => el.evnExampleFullscreen.classList.add('hidden'));
+el.evnExampleRerollBtn.addEventListener('click', renderExamplePage);
+el.evnExampleTabs.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-example-section]');
+  if (!btn) return;
+  exampleSection = btn.dataset.exampleSection;
+  renderExampleTabs();
+  renderExamplePage();
+});
+
+function openExamplePreview() {
+  EvidenceNotebook.injectStyles();
+  el.evnExampleFullscreen.classList.remove('hidden');
+  renderExampleTabs();
+  renderExamplePage();
+}
+
+function renderExampleTabs() {
+  el.evnExampleTabs.innerHTML = EvidenceNotebook.SECTIONS.map(s => {
+    const active = s.id === exampleSection;
+    return `<button type="button" class="evn-example-tab${active ? ' active' : ''}" data-example-section="${s.id}" style="${active ? `background:${s.tint};border-color:${s.tint}` : ''}"><span>${s.icon}</span>${escapeHtml(s.label)}</button>`;
+  }).join('');
+}
+
+function pickRandomExampleSample() {
+  const pool = EXAMPLE_SAMPLE_ENTRIES[exampleSection] || [];
+  return pool[Math.floor(Math.random() * pool.length)] || null;
+}
+
+function renderExamplePage() {
+  const sample = pickRandomExampleSample();
+  el.evnExamplePage.innerHTML = sample ? EvidenceNotebook.renderExamplePageHtml(sample, 1, 0) : '';
 }
 
 async function init() {
