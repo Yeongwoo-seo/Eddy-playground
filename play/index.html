@@ -53,10 +53,20 @@ body{background:#000;display:flex;justify-content:center;min-height:100dvh}
 .week-tile.active:active{transform:scale(.98)}
 .week-tile.locked{cursor:not-allowed;background:linear-gradient(135deg,#14171c 0%,#000 100%);filter:grayscale(.2)}
 .week-tile.minigame{background:linear-gradient(135deg,#2a1b3d 0%,#120d20 100%);background-size:cover;background-position:center}
+.week-tile.shop{background:linear-gradient(135deg,#4a2a12 0%,#1f1109 100%);background-size:cover;background-position:center}
 .week-tile.continue{background:linear-gradient(135deg,#0f4d54 0%,#082024 100%)}
 .week-tile-body{position:absolute;right:18px;bottom:16px;z-index:1;color:#fff;text-align:right}
 .week-tile-name{font-size:18px;font-weight:800}
 .week-tile-desc{font-size:12px;color:rgba(255,255,255,.75);font-weight:500;margin-top:3px}
+
+/* 미니게임 + 옷가게 — 한 행을 절반씩 나눠 쓰는 2칸짜리 타일. 나머지
+   week-tile은 세로로 쌓이는 전체 폭 카드라서, 이 행만 flex row로 감싸고
+   .half로 폭/텍스트 크기를 줄인다. */
+.week-tile-row{display:flex;gap:14px}
+.week-tile.half{flex:1;min-width:0}
+.week-tile.half .week-tile-body{right:14px;bottom:14px}
+.week-tile.half .week-tile-name{font-size:15px}
+.week-tile.half .week-tile-desc{font-size:11px}
 
 .minigame-select{position:absolute;inset:0;z-index:11;background:#000;display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
 .minigame-select.show{display:flex}
@@ -246,11 +256,23 @@ const WEEK_TILES = [
   { key: 'week2', label: '???', locked: true },
   { key: 'week3', label: '???', locked: true },
   { key: 'week4', label: '???', locked: true },
+];
+
+// 미니게임과 나란히 놓이는 옷가게 진입 타일 — 한 행에 절반씩. 옷가게는
+// week1Completed 여부가 아니라 ShopState.unlocked(스토리 중 옷가게 방문
+// 씬의 unlockShop 효과)로 잠금이 풀린다.
+const MINIGAME_SHOP_TILES = [
   {
     key: 'minigame', label: '미니게임',
     bg: 'https://images.pexels.com/photos/12380741/pexels-photo-12380741.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
     locked: !CaseFileState.getFlag('week1Completed'),
     lockedDesc: '1주차를 완료하면 열려요',
+  },
+  {
+    key: 'shop', label: '옷가게',
+    bg: 'https://images.pexels.com/photos/994523/pexels-photo-994523.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
+    locked: !ShopState.isUnlocked(),
+    lockedDesc: '스토리를 진행하면 열려요',
   },
 ];
 
@@ -280,6 +302,18 @@ function pickMostRecentSlot(slots) {
   return occupied.reduce((a, b) => (b.updatedAt || 0) > (a.updatedAt || 0) ? b : a);
 }
 
+function tileHtml(t, half) {
+  const extraClass = (t.key === 'minigame' || t.key === 'shop') ? ` ${t.key}` : '';
+  return `
+    <div class="week-tile${half ? ' half' : ''} ${t.locked ? 'locked' : 'active'}${extraClass}" data-key="${t.key}"${t.bg ? ` style="background-image:url('${t.bg}')"` : ''}>
+      <div class="week-tile-body">
+        <div class="week-tile-name">${t.label}</div>
+        ${t.locked && t.lockedDesc ? `<div class="week-tile-desc">${escapeHtml(t.lockedDesc)}</div>` : ''}
+      </div>
+    </div>
+  `;
+}
+
 function renderWeekGrid() {
   const continueTile = continueSlot ? `
     <div class="week-tile continue active" data-key="continue">
@@ -289,14 +323,8 @@ function renderWeekGrid() {
       </div>
     </div>
   ` : '';
-  el.weekGrid.innerHTML = continueTile + WEEK_TILES.map(t => `
-    <div class="week-tile ${t.locked ? 'locked' : 'active'}${t.key === 'minigame' ? ' minigame' : ''}" data-key="${t.key}"${t.bg ? ` style="background-image:url('${t.bg}')"` : ''}>
-      <div class="week-tile-body">
-        <div class="week-tile-name">${t.label}</div>
-        ${t.locked && t.lockedDesc ? `<div class="week-tile-desc">${escapeHtml(t.lockedDesc)}</div>` : ''}
-      </div>
-    </div>
-  `).join('');
+  const minigameShopRow = `<div class="week-tile-row">${MINIGAME_SHOP_TILES.map(t => tileHtml(t, true)).join('')}</div>`;
+  el.weekGrid.innerHTML = continueTile + WEEK_TILES.map(t => tileHtml(t, false)).join('') + minigameShopRow;
 }
 continueSlot = pickMostRecentSlot(CaseFileState.listSlotsLocalSync());
 renderWeekGrid();
@@ -316,12 +344,15 @@ function showMinigameSelect() {
   el.minigameSelect.classList.add('show');
 }
 
+function goToShop() { RealPlayMode.mark(); location.href = '/play/shop/'; }
+
 el.weekGrid.addEventListener('click', (e) => {
   const tile = e.target.closest('.week-tile.active');
   if (!tile) return;
   if (tile.dataset.key === 'continue') goToContinue();
   else if (tile.dataset.key === 'week1') goToRealStart();
   else if (tile.dataset.key === 'minigame') showMinigameSelect();
+  else if (tile.dataset.key === 'shop') goToShop();
 });
 
 el.minigameBackBtn.addEventListener('click', () => {
