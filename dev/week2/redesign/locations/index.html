@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>2주차 v4 재설계 · 장소 · MISSING KEY DEV</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<meta name="theme-color" content="#080A0C">
+<link rel="manifest" href="/dev/manifest.json">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#080A0C;--surface-1:#101419;--surface-2:#171C22;
+  --text-primary:#EDF1F4;--text-secondary:#929BA5;--text-muted:#5F6872;
+  --cyan:#59B8C8;--amber:#D6A84B;--pink:#D66B9A;--divider:rgba(255,255,255,0.08);
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sans:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
+}
+html,body{height:100%}
+body{background:#050607;color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center;min-height:100dvh}
+.frame{width:100%;max-width:430px;min-height:100dvh;min-height:100vh;padding:calc(48px + env(safe-area-inset-top,0)) 20px calc(32px + env(safe-area-inset-bottom,0));display:flex;flex-direction:column}
+.back{font-family:var(--mono);font-size:12px;color:var(--text-muted);text-decoration:none;margin-bottom:18px;display:inline-flex;align-items:center;gap:4px;width:fit-content}
+.tag{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--text-muted);text-transform:uppercase;margin-bottom:6px}
+.title{font-size:26px;font-weight:700;letter-spacing:-.2px;margin-bottom:10px}
+.sub{font-size:14px;color:var(--text-secondary);margin-bottom:22px;line-height:1.6}
+
+.card{background:var(--surface-1);border:1px solid var(--divider);border-radius:16px;padding:16px 18px;margin-bottom:12px}
+.card-head{display:flex;align-items:flex-start;gap:10px;cursor:pointer}
+.card-headtxt{flex:1;min-width:0}
+.card-title{font-size:15px;font-weight:700}
+.card-badge{display:inline-block;margin-top:6px;font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:.03em;border-radius:8px;padding:3px 7px}
+.card-badge.hub{color:#06181c;background:var(--cyan)}
+.card-badge.scene{color:var(--text-muted);background:rgba(255,255,255,.08)}
+.card-badge.reuse{color:#06181c;background:var(--cyan);margin-left:6px}
+.card-badge.new{color:#2a0d18;background:var(--pink);margin-left:6px}
+.card-caret{color:var(--text-muted);font-size:14px;flex-shrink:0;transition:transform .2s}
+.card.open .card-caret{transform:rotate(180deg)}
+.card-body{display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--divider)}
+.card.open .card-body{display:block}
+.field{margin-bottom:10px}
+.field-label{font-family:var(--mono);font-size:10.5px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
+.field-val{font-size:13px;line-height:1.6;color:var(--text-secondary)}
+.chip-row{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:11px;background:var(--surface-2);border:1px solid var(--divider);border-radius:10px;padding:3px 8px;color:var(--text-secondary)}
+
+.upload-link{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:12px;color:var(--amber);text-decoration:none;background:rgba(214,168,75,.12);border:1px solid rgba(214,168,75,.3);border-radius:12px;padding:8px 12px;margin-top:4px}
+
+.prompt-block{margin-top:14px}
+.prompt-headrow{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.prompt-status{font-family:var(--mono);font-size:10.5px;color:var(--text-muted)}
+.prompt-textarea{width:100%;min-height:170px;resize:vertical;background:var(--bg);border:1px solid var(--divider);border-radius:12px;padding:12px;color:var(--text-primary);font-family:var(--mono);font-size:12px;line-height:1.65;outline:none}
+.prompt-textarea:focus{border-color:rgba(89,184,200,.4)}
+.prompt-actions{display:flex;gap:8px;margin-top:8px}
+.pbtn{flex:1;font-family:var(--mono);font-size:11.5px;font-weight:600;border-radius:10px;padding:9px;border:1px solid var(--divider);background:var(--surface-2);color:var(--text-primary);cursor:pointer}
+.pbtn:active{opacity:.8}
+.pbtn.primary{background:var(--amber);color:#1a1206;border-color:var(--amber)}
+.empty{font-size:13px;color:var(--text-muted);padding:20px 0;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="frame">
+  <a class="back" href="/dev/week2/redesign/">‹ v4 재설계</a>
+  <div class="tag">Missing Key · v4 재설계</div>
+  <div class="title">장소</div>
+  <div class="sub">v4 챕터에서 쓰이는 장소별 배경 이미지 프롬프트입니다. 실제 배경 등록은 "이미지 업로드" 버튼으로 기존 /dev/upload 파이프라인에서 그대로 진행하면 게임에 바로 적용됩니다.</div>
+  <div id="locRoot"></div>
+</div>
+<script src="/dev/data/week2v4Scenes.js"></script>
+<script src="/dev/dialogueData.js"></script>
+<script src="/dev/data/week2v4Locations.js"></script>
+<script>
+const PROMPT_KEY_PREFIX = 'week2v4LocPrompt:';
+const root = document.getElementById('locRoot');
+
+function cardHtml(loc) {
+  const uploadHref = '/dev/upload/?scene=' + encodeURIComponent(loc.anchorSceneId);
+  return `
+    <div class="card" id="card-${loc.id}">
+      <div class="card-head" data-toggle="${loc.id}">
+        <div class="card-headtxt">
+          <div class="card-title">${loc.name}</div>
+          <span class="card-badge ${loc.hubLocationId ? 'hub' : 'scene'}">${loc.hubLocationId ? '허브 공용 장소 (' + loc.hubLocationId + ')' : '씬 전용 배경'}</span>
+          <span class="card-badge ${loc.needsNewPhoto ? 'new' : 'reuse'}">${loc.needsNewPhoto ? '새 사진 필요' : '기존 사진 재사용'}</span>
+        </div>
+        <div class="card-caret">▾</div>
+      </div>
+      <div class="card-body">
+        <div class="field">
+          <div class="field-label">기본 묘사</div>
+          <div class="field-val">${loc.realVisualBrief}</div>
+        </div>
+        <div class="field">
+          <div class="field-label">v4에서의 쓰임</div>
+          <div class="field-val">${loc.v4Note}</div>
+        </div>
+        ${loc.reuseHint ? `
+        <div class="field">
+          <div class="field-label">${loc.needsNewPhoto ? '재사용 확인 필요' : '재사용 방법'}</div>
+          <div class="field-val">${loc.reuseHint}</div>
+        </div>` : ''}
+        <div class="field">
+          <div class="field-label">등장 챕터</div>
+          <div class="chip-row">${loc.appearsIn.map(c => `<span class="chip">${c}</span>`).join('')}</div>
+        </div>
+        <a class="upload-link" href="${uploadHref}">🖼️ 이미지 업로드 (실제 게임에 적용)</a>
+        <div class="prompt-block">
+          <div class="prompt-headrow">
+            <div class="field-label">${loc.needsNewPhoto ? '배경 이미지 생성용 AI 프롬프트' : '재사용 안내'}</div>
+            <div class="prompt-status" id="status-${loc.id}">&nbsp;</div>
+          </div>
+          <textarea class="prompt-textarea" id="prompt-${loc.id}" spellcheck="false"></textarea>
+          <div class="prompt-actions">
+            <button class="pbtn primary" data-copy="${loc.id}">📋 복사</button>
+            <button class="pbtn" data-reset="${loc.id}">기본값으로 재설정</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+root.innerHTML = week2v4Locations.length
+  ? week2v4Locations.map(cardHtml).join('')
+  : '<div class="empty">등록된 장소가 없습니다. dev/data/week2v4Locations.js에 항목을 추가하세요.</div>';
+
+week2v4Locations.forEach(loc => {
+  const key = PROMPT_KEY_PREFIX + loc.id;
+  const textarea = document.getElementById('prompt-' + loc.id);
+  const saved = localStorage.getItem(key);
+  textarea.value = saved !== null ? saved : buildWeek2v4LocationPrompt(loc);
+
+  let saveTimer = null;
+  const status = document.getElementById('status-' + loc.id);
+  textarea.addEventListener('input', () => {
+    status.textContent = '저장 중...';
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      localStorage.setItem(key, textarea.value);
+      status.textContent = '저장됨';
+    }, 400);
+  });
+});
+
+root.addEventListener('click', (e) => {
+  const head = e.target.closest('[data-toggle]');
+  if (head) {
+    document.getElementById('card-' + head.dataset.toggle).classList.toggle('open');
+    return;
+  }
+  const copyBtn = e.target.closest('[data-copy]');
+  if (copyBtn) {
+    const id = copyBtn.dataset.copy;
+    const textarea = document.getElementById('prompt-' + id);
+    navigator.clipboard.writeText(textarea.value).then(() => {
+      const orig = copyBtn.textContent;
+      copyBtn.textContent = '✓ 복사됨';
+      setTimeout(() => { copyBtn.textContent = orig; }, 1200);
+    }).catch(() => {});
+    return;
+  }
+  const resetBtn = e.target.closest('[data-reset]');
+  if (resetBtn) {
+    const id = resetBtn.dataset.reset;
+    const loc = week2v4Locations.find(l => l.id === id);
+    const textarea = document.getElementById('prompt-' + id);
+    textarea.value = buildWeek2v4LocationPrompt(loc);
+    localStorage.setItem(PROMPT_KEY_PREFIX + id, textarea.value);
+    document.getElementById('status-' + id).textContent = '기본값으로 재설정됨';
+  }
+});
+</script>
+<script src="/dev/devPlanFab.js"></script>
+</body>
+</html>
