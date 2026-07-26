@@ -22,26 +22,24 @@ const caseMapLocations = [
       // and week1-scene-firstnight merged into week1-scene-002-3 — see
       // week1Scenes in dialogueData.js.
       'week1-scene-002-1', 'week1-scene-002-2', 'week1-scene-002-3',
-      'week2-scene-013',
+      // 2주차 v4 전면 재설계 — 오프닝(001, 숙소에서 열쇠를 다시 보는 장면)과
+      // 엔딩(023)이 둘 다 숙소라 여기 포함 — see week2Scenes in dialogueData.js.
+      'week2-scene-001', 'week2-scene-023',
     ],
   },
   {
     id: 'circular-quay', name: 'Circular Quay', mapX: 62, mapY: 30,
     relatedSceneIds: [
-      // 2주차 장편 확장 v2 — 003(순수 자유조사)/004(도난+사진분석,
-      // 004-minigame/004-review)/005(신규: 용의자 선별+현장 재조사)로
-      // 재배치됐다. A 재오픈(010), 최종 심문(011), 사건 재구성(012)도 모두
-      // Circular Quay 권역이라 여기 포함. 엔딩(013)만 숙소라 위
-      // accommodation 항목으로 옮겨졌다 — see week2Scenes in dialogueData.js.
-      // v4 §9/§10 — 클레어/다니엘 최초 진술(005a/005b), 재심문(008a), 현장
-      // 재검증(009a), 애드리언 재심문(011a), 마틴 베일 통화(011b)도 전부
-      // 같은 권역이라 여기 추가.
-      'week2-scene-001', 'week2-scene-003',
-      'week2-scene-004', 'week2-scene-004-minigame', 'week2-scene-004-review', 'week2-scene-005',
-      'week2-scene-005a', 'week2-scene-005b',
+      // 2주차 v4 전면 재설계 — 002(다니엘과의 첫 만남)부터 022(최종 사건
+      // 재구성)까지 전부 Circular Quay/더 록스/전시장 권역이다. 오프닝(001)과
+      // 엔딩(023)만 숙소라 위 accommodation 항목에 있다 — see week2Scenes in
+      // dialogueData.js.
+      'week2-scene-002', 'week2-scene-003', 'week2-scene-004', 'week2-scene-005',
       'week2-scene-006', 'week2-scene-007', 'week2-scene-008', 'week2-scene-008-minigame',
-      'week2-scene-008a', 'week2-scene-009', 'week2-scene-009a', 'week2-scene-010', 'week2-scene-011',
-      'week2-scene-011a', 'week2-scene-011b', 'week2-scene-012',
+      'week2-scene-008-review', 'week2-scene-009', 'week2-scene-010', 'week2-scene-010-minigame',
+      'week2-scene-011', 'week2-scene-012', 'week2-scene-013', 'week2-scene-014',
+      'week2-scene-015', 'week2-scene-016', 'week2-scene-017', 'week2-scene-018',
+      'week2-scene-019', 'week2-scene-020', 'week2-scene-021', 'week2-scene-022',
     ],
   },
   { id: 'opera-house', name: 'Opera House', mapX: 70, mapY: 22, relatedSceneIds: [] },

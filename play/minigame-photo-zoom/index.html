@@ -43,7 +43,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .photo-card.complete{border-color:rgba(214,168,75,.5)}
 .photo-card .check-badge{position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;background:var(--amber);color:#211703;font-size:13px;font-weight:700;display:none;align-items:center;justify-content:center;z-index:2}
 .photo-card.complete .check-badge{display:flex}
-/* A dev-uploaded photo (see /dev/upload/?scene=week2-scene-004-minigame)
+/* A dev-uploaded photo (see /dev/upload/?scene=week2-scene-008-minigame)
    fills the card behind the existing time/found-count overlay instead of the
    plain camera-icon placeholder — the scrim keeps that text legible on top
    of a busy photo. */
@@ -157,7 +157,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
     <div class="topbar" style="padding-left:0;padding-right:0">
       <a class="vn-btn" href="/dev/">← DEV</a>
       <div style="display:flex;gap:8px">
-        <a class="vn-btn dev-settings-link" href="/dev/upload/?scene=week2-scene-004-minigame" aria-label="설정">⚙ 설정</a>
+        <a class="vn-btn dev-settings-link" href="/dev/upload/?scene=week2-scene-008-minigame" aria-label="설정">⚙ 설정</a>
         <button class="vn-btn skip-next" aria-label="다음 상호작용">다음 ⏭</button>
       </div>
     </div>
@@ -192,7 +192,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
     <div class="topbar" style="padding-left:0;padding-right:0">
       <a class="vn-btn" href="/dev/">← DEV</a>
       <div style="display:flex;gap:8px">
-        <a class="vn-btn dev-settings-link" href="/dev/upload/?scene=week2-scene-004-minigame" aria-label="설정">⚙ 설정</a>
+        <a class="vn-btn dev-settings-link" href="/dev/upload/?scene=week2-scene-008-minigame" aria-label="설정">⚙ 설정</a>
         <button class="vn-btn skip-next" aria-label="다음 상호작용">다음 ⏭</button>
       </div>
     </div>
@@ -245,7 +245,7 @@ if ('serviceWorker' in navigator) {
 <script src="/dev/caseFileState.js"></script>
 <script src="/dev/vnPlayer.js"></script>
 <script>
-/* ===== 사진 속 인물 찾기 — week2-scene-004-minigame =====
+/* ===== 사진 속 인물 찾기 — week2-scene-008-minigame =====
    전시장 직원이 건넨 사진 6장. 각 사진은 K-01 진열장(고정 위치)과 그 주변의
    인물 몇 명으로 구성된 순수 CSS/DOM 씬(이미지 파일 없음 — char-placeholder류
    추상 인물 아이콘과 같은 방식). 사진마다 실제로 케이스 근처에 있던 인물
@@ -254,8 +254,10 @@ if ('serviceWorker' in navigator) {
 
    6장에 걸쳐 반복 등장하는 세 사람(윤민아/애드리언 콜/레오 박에 해당하는
    베이지 코트·네이비 수트·그레이 후드) + 인파 속에 딱 한 번 나오는 얼굴 없는
-   인물, 총 8회 목격을 다 찾으면 완료. 이름은 아직 밝히지 않는다 —
-   week2-scene-006/007/008에서 실제로 만나기 전이라(아래 redirect는 이제 사진 분석 마무리 씬 week2-scene-004-review로 간다) 서술만 색/옷차림으로 한다. */
+   인물, 총 8회 목격을 다 찾으면 완료. v4 재설계에서는 세 사람 모두 앞서
+   week2-scene-004에서 이미 이름까지 소개됐지만(아래 redirect는 사진 분석
+   마무리 씬 week2-scene-008-review로 간다), 이 미니게임 자체는 사진만 보고
+   구분하는 게 목적이라 여전히 색/옷차림으로만 서술한다. */
 const CANVAS_W = 640, CANVAS_H = 860;
 // 8 people sightings + 4 required specialTargets (명찰 사진 / 렌즈 반사 /
 // 진열장 문 열림 / 빈 받침대) — §22 장편 확장 v2: "K-01 상태 변화" 발견이
@@ -583,11 +585,11 @@ el.mapStage.addEventListener('wheel', (e) => {
 }, { passive: false });
 
 /* ===== Build a photo scene (background + case + figures) ===== */
-// Same key pattern as dialogueData.js's week2-scene-004-minigame.photoSlots
-// (see /dev/upload/?scene=week2-scene-004-minigame) — computed rather than
+// Same key pattern as dialogueData.js's week2-scene-008-minigame.photoSlots
+// (see /dev/upload/?scene=week2-scene-008-minigame) — computed rather than
 // stored per-PHOTOS-entry so the two never drift out of sync.
 function photoBackgroundKey(photoIdx) {
-  return `week2-scene-004-minigame-photo-${photoIdx + 1}`;
+  return `week2-scene-008-minigame-photo-${photoIdx + 1}`;
 }
 
 // A dev-uploaded photo (via the setup screen above) replaces the flat
@@ -616,7 +618,7 @@ async function loadPhotoBackground(photoIdx, bgEl) {
 // room-hotspot system minigame-exhibition-search/minigame-phone-search use,
 // via /dev/upload's "정답 영역 지정" editor keyed by photoBackgroundKey().
 // Only correct figures + specialTargets are markable there (see
-// week2-scene-004-minigame.photoSlots[i].hotspots in dialogueData.js) — this
+// week2-scene-008-minigame.photoSlots[i].hotspots in dialogueData.js) — this
 // minigame only needs their *tap area*, not full polygon hit-testing, so a
 // marked shape's bounding box is what actually drives layout/hit-testing
 // below; the free-form polygon points themselves are only used to derive it.
@@ -1226,7 +1228,7 @@ function startSuccessDialogue() {
 
 function fadeOutAndRedirect() {
   el.fadeOverlay.classList.add('show');
-  setTimeout(() => { location.href = '/play/game/?scene=week2-scene-004-review'; }, 950);
+  setTimeout(() => { location.href = '/play/game/?scene=week2-scene-008-review'; }, 950);
 }
 
 document.querySelectorAll('.skip-next').forEach(btn => {
