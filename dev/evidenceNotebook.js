@@ -161,6 +161,8 @@ const EvidenceNotebook = (function () {
     state.zoomEntry = null;
     el.indexPanel.classList.remove('evn-index-open');
     el.indexPanel.classList.add('hidden');
+    pageFlipToken += 1; // 열려 있던 중 넘김 애니메이션이 끝나지 못하고 닫혔을 경우를 대비해 이전 체인을 무효화
+    el.page.classList.remove('evn-page-anim-out-next', 'evn-page-anim-out-prev', 'evn-page-anim-in-next', 'evn-page-anim-in-prev');
 
     const all = (typeof CaseFileState !== 'undefined' ? CaseFileState.getCaseEntries() : [])
       .filter(e => e.kind === 'evidence' || e.kind === 'testimony');
@@ -247,27 +249,44 @@ const EvidenceNotebook = (function () {
   }
 
   /* ===== 페이지 넘김 효과 =====
-     이전/다음 이동에 책장을 넘기는 듯한 전환을 준다. el.page 컨테이너
-     자체에 클래스를 걸어 애니메이션하므로, render()가 그 안의 내용
-     (innerHTML)을 다시 그려도 el.page에 걸린 클래스는 그대로 유지된다 —
-     내용 교체(mutate)는 "넘어가는" 절반 지점(evn-flip-out-*)에서 실행하고,
-     이어서 반대편에서 들어오는 절반(evn-flip-in-*)으로 마무리한다. */
-  let pageFlipTimer = null;
+     이전/다음 이동에 책장이 접히듯 휘어지는 전환을 준다(evnPageOutNext 등
+     @keyframes, §CSS) — 단순 rotateY 대신 skewY와 scaleX/scaleY를 rotateY와
+     함께 매 구간마다 바꿔가며 종이가 빳빳하지 않고 살짝 물결치듯 휘는
+     인상을 준다. el.page 컨테이너 자체에 클래스를 걸어 애니메이션하므로,
+     render()가 그 안의 내용(innerHTML)을 다시 그려도 애니메이션 진행에는
+     영향이 없다 — 내용 교체(mutate)는 "넘어가는" 절반(에서 넘어간 뒤,
+     animationend로 정확히 다음 절반이 시작되는 시점)에 실행한다.
+     setTimeout으로 지속시간을 흉내내지 않고 animationend를 쓰는 이유는
+     — 여러 keyframe 구간(overshoot 포함)이라 지속시간을 어긋나게 추정하면
+     내용 교체 타이밍이 눈에 띄게 어긋나기 때문. animationName으로 걸러
+     §evn-page::after의 별도 하이라이트 애니메이션(evnPageCurlShadow)이
+     같은 엘리먼트에서 동시에 끝나며 보내는 animationend와 헷갈리지 않게
+     한다. pageFlipToken은 넘기는 도중 다시 넘기기(연타)를 눌렀을 때 이전
+     체인의 뒷부분이 뒤늦게 실행되는 것을 막는다. */
+  let pageFlipToken = 0;
+  const PAGE_FLIP_ANIM_NAMES = { next: { out: 'evnPageOutNext', in: 'evnPageInNext' }, prev: { out: 'evnPageOutPrev', in: 'evnPageInPrev' } };
   function runPageFlip(direction, mutate) {
-    if (pageFlipTimer) { clearTimeout(pageFlipTimer); pageFlipTimer = null; }
-    el.page.classList.remove('evn-flip-out-next', 'evn-flip-out-prev', 'evn-flip-in-next', 'evn-flip-in-prev', 'evn-flip-in-settle');
-    el.page.classList.add(direction === 'next' ? 'evn-flip-out-next' : 'evn-flip-out-prev');
-    pageFlipTimer = setTimeout(() => {
+    const token = ++pageFlipToken;
+    const names = PAGE_FLIP_ANIM_NAMES[direction];
+    const outClass = direction === 'next' ? 'evn-page-anim-out-next' : 'evn-page-anim-out-prev';
+    const inClass = direction === 'next' ? 'evn-page-anim-in-next' : 'evn-page-anim-in-prev';
+    el.page.classList.remove('evn-page-anim-out-next', 'evn-page-anim-out-prev', 'evn-page-anim-in-next', 'evn-page-anim-in-prev');
+    void el.page.offsetWidth; // reflow — 연타로 같은 클래스를 다시 걸어도 애니메이션이 처음부터 다시 뛰게 한다
+    el.page.classList.add(outClass);
+    el.page.addEventListener('animationend', function onOut(e) {
+      if (e.animationName !== names.out) return;
+      el.page.removeEventListener('animationend', onOut);
+      if (token !== pageFlipToken) return; // 그 사이 다른 넘김이 새로 시작됨 — 이 체인은 여기서 멈춘다
       mutate();
-      el.page.classList.remove('evn-flip-out-next', 'evn-flip-out-prev');
-      el.page.classList.add(direction === 'next' ? 'evn-flip-in-next' : 'evn-flip-in-prev');
-      void el.page.offsetWidth; // reflow — evn-flip-in-*은 transition:none이라 이 시점 값이 그대로 시작점이 된다
-      el.page.classList.add('evn-flip-in-settle');
-      pageFlipTimer = setTimeout(() => {
-        el.page.classList.remove('evn-flip-in-next', 'evn-flip-in-prev', 'evn-flip-in-settle');
-        pageFlipTimer = null;
-      }, 240);
-    }, 150);
+      el.page.classList.remove(outClass);
+      void el.page.offsetWidth;
+      el.page.classList.add(inClass);
+      el.page.addEventListener('animationend', function onIn(e2) {
+        if (e2.animationName !== names.in) return;
+        el.page.removeEventListener('animationend', onIn);
+        if (token === pageFlipToken) el.page.classList.remove(inClass);
+      });
+    });
   }
 
   /* ===== 색인 패널 열기/닫기 =====
@@ -711,18 +730,47 @@ const EvidenceNotebook = (function () {
       .evn-close-btn{position:absolute;top:-14px;right:-6px;z-index:5;width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.4)}
       .evn-close-btn:active{opacity:.8}
 
-      .evn-page{flex:1;min-height:0;display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain;transform-origin:center left}
+      .evn-page{flex:1;min-height:0;display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain;position:relative;transform-origin:center left;will-change:transform}
       /* ===== 페이지 넘김 효과 (runPageFlip) =====
-         이전/다음 이동 시 el.page 컨테이너를 살짝 기울여 밀어내고(evn-flip-out-*),
-         내용 교체 직후 반대쪽에서 눌러 들어와(evn-flip-in-*) 자리를 잡는다
-         (evn-flip-in-settle). evn-flip-in-*은 transition:none으로 순간 이동시켜
-         시작 자세를 만든 뒤, 다음 프레임에 settle 클래스로 트랜지션을 건다. */
-      .evn-page.evn-flip-out-next,.evn-page.evn-flip-out-prev{transition:transform .15s cubic-bezier(0.4,0,0.7,0.4),opacity .15s ease}
-      .evn-page.evn-flip-out-next{transform:perspective(1000px) rotateY(-16deg) scale(.97);opacity:.4}
-      .evn-page.evn-flip-out-prev{transform:perspective(1000px) rotateY(16deg) scale(.97);opacity:.4}
-      .evn-page.evn-flip-in-next{transform:perspective(1000px) rotateY(16deg) scale(.97);opacity:0;transition:none}
-      .evn-page.evn-flip-in-prev{transform:perspective(1000px) rotateY(-16deg) scale(.97);opacity:0;transition:none}
-      .evn-page.evn-flip-in-settle{transform:none;opacity:1;transition:transform .24s cubic-bezier(0.2,0.8,0.2,1),opacity .24s ease}
+         단순 rotateY 트랜지션 대신 @keyframes로 구간마다 rotateY·skewY·
+         scaleX/scaleY·filter(brightness)를 함께 바꿔, 빳빳한 판이 아니라
+         종이 한 장이 접히듯 살짝 물결치며 넘어가는 인상을 준다 — skewY가
+         "위쪽 모서리가 아래쪽보다 더 많이 들리는" 비대칭 휨을 만들고,
+         scaleX/scaleY가 종이가 눌렸다 펴지는 두께감을 준다. 들어오는 쪽
+         (evnPageIn*)은 완전히 넘어간 반대쪽 각도에서 시작해 0도를 살짝
+         지나쳤다 되돌아오는 오버슈트(55%→80%→100%)로 "탁" 내려앉는 종이의
+         탄성을 흉내낸다. evn-page::after는 넘어가는 순간 접힌 면에 빛이
+         스치는 하이라이트/그림자를 얹는 보조 효과(evnPageCurlShadow). */
+      .evn-page::after{content:'';position:absolute;inset:0;pointer-events:none;opacity:0;background:linear-gradient(100deg,rgba(0,0,0,0) 28%,rgba(255,255,255,.38) 46%,rgba(0,0,0,.26) 56%,rgba(0,0,0,0) 74%)}
+      @keyframes evnPageOutNext{
+        0%{transform:perspective(1100px) rotateY(0deg) skewY(0deg) scaleX(1) scaleY(1);filter:brightness(1)}
+        40%{transform:perspective(1100px) rotateY(-17deg) skewY(-2.6deg) scaleX(.97) scaleY(1.015);filter:brightness(.93)}
+        100%{transform:perspective(1100px) rotateY(-46deg) skewY(-5.5deg) scaleX(.87) scaleY(1.045);opacity:.15;filter:brightness(.76)}
+      }
+      @keyframes evnPageOutPrev{
+        0%{transform:perspective(1100px) rotateY(0deg) skewY(0deg) scaleX(1) scaleY(1);filter:brightness(1)}
+        40%{transform:perspective(1100px) rotateY(17deg) skewY(2.6deg) scaleX(.97) scaleY(1.015);filter:brightness(.93)}
+        100%{transform:perspective(1100px) rotateY(46deg) skewY(5.5deg) scaleX(.87) scaleY(1.045);opacity:.15;filter:brightness(.76)}
+      }
+      @keyframes evnPageInNext{
+        0%{transform:perspective(1100px) rotateY(38deg) skewY(5deg) scaleX(.87) scaleY(1.05);opacity:0;filter:brightness(.8)}
+        55%{transform:perspective(1100px) rotateY(-9deg) skewY(-1.6deg) scaleX(1.025) scaleY(.978);opacity:1;filter:brightness(1.1)}
+        80%{transform:perspective(1100px) rotateY(3deg) skewY(.6deg) scaleX(.99) scaleY(1.008);filter:brightness(.98)}
+        100%{transform:perspective(1100px) rotateY(0deg) skewY(0deg) scaleX(1) scaleY(1);opacity:1;filter:brightness(1)}
+      }
+      @keyframes evnPageInPrev{
+        0%{transform:perspective(1100px) rotateY(-38deg) skewY(-5deg) scaleX(.87) scaleY(1.05);opacity:0;filter:brightness(.8)}
+        55%{transform:perspective(1100px) rotateY(9deg) skewY(1.6deg) scaleX(1.025) scaleY(.978);opacity:1;filter:brightness(1.1)}
+        80%{transform:perspective(1100px) rotateY(-3deg) skewY(-.6deg) scaleX(.99) scaleY(1.008);filter:brightness(.98)}
+        100%{transform:perspective(1100px) rotateY(0deg) skewY(0deg) scaleX(1) scaleY(1);opacity:1;filter:brightness(1)}
+      }
+      @keyframes evnPageCurlShadow{0%{opacity:0}45%{opacity:.55}100%{opacity:0}}
+      .evn-page.evn-page-anim-out-next{animation:evnPageOutNext .3s cubic-bezier(.5,0,.85,.4) forwards}
+      .evn-page.evn-page-anim-out-prev{animation:evnPageOutPrev .3s cubic-bezier(.5,0,.85,.4) forwards}
+      .evn-page.evn-page-anim-in-next{animation:evnPageInNext .46s cubic-bezier(.22,.85,.32,1) forwards}
+      .evn-page.evn-page-anim-in-prev{animation:evnPageInPrev .46s cubic-bezier(.22,.85,.32,1) forwards}
+      .evn-page.evn-page-anim-out-next::after,.evn-page.evn-page-anim-out-prev::after{animation:evnPageCurlShadow .3s ease forwards}
+      .evn-page.evn-page-anim-in-next::after,.evn-page.evn-page-anim-in-prev::after{animation:evnPageCurlShadow .46s ease forwards}
 
       /* ===== 직접 디자인 페이지 — 배경 아트 없이도 손으로 꾸민 수사 노트
          처럼 보이도록 CSS만으로 그린다(renderFallbackPageHtml). 압정
