@@ -33,18 +33,6 @@ function loadShopState() {
 let shopState = loadShopState();
 function saveShopState() { localStorage.setItem(SHOP_STATE_KEY, JSON.stringify(shopState)); }
 
-// unlockConditions vocabulary shared with play/game/index.html's own
-// evaluateCondition — kept as its own small evaluator here (not imported
-// from game/index.html) so shop/wardrobe screens don't need the whole VN
-// engine loaded to compute what's for sale.
-function evaluateShopUnlockCondition(cond) {
-  if (!cond) return true;
-  if (cond.type === 'flagEquals') return CaseFileState.getFlag(cond.key) === cond.value;
-  if (cond.type === 'flagAtLeast') return (Number(CaseFileState.getFlag(cond.key)) || 0) >= cond.min;
-  if (cond.type === 'weekReached') return (Number(CaseFileState.getFlag('currentWeek')) || 0) >= cond.value;
-  return true;
-}
-
 const ShopState = {
   isUnlocked() { return shopState.unlocked; },
   unlockShop() {
@@ -67,13 +55,11 @@ const ShopState = {
   },
   unlockShopItems(itemIds) { (itemIds || []).forEach(id => this.unlockShopItem(id)); },
 
-  isShopItemUnlocked(itemId) {
-    if (shopState.unlockedItemIds.includes(itemId)) return true;
-    const def = shopItems[itemId];
-    if (!def) return false;
-    const conds = def.unlockConditions || [];
-    return conds.length > 0 && conds.every(evaluateShopUnlockCondition);
-  },
+  // 옷가게 전체 언락 — 카탈로그에 있는 상품은 스토리 진행/플래그와 무관하게
+  // 전부 구매 가능 상태로 노출한다 (unlockConditions는 더 이상 게이팅하지
+  // 않음). unlockShopItem(s)로 개별 부여하던 흐름은 그대로 두되 실질적인
+  // 효과는 없다 — 카탈로그 존재 여부만으로 이미 언락 상태이기 때문.
+  isShopItemUnlocked(itemId) { return Object.prototype.hasOwnProperty.call(shopItems, itemId); },
 
   markShopItemSeen(itemId) {
     if (shopState.seenItemIds.includes(itemId)) return;
