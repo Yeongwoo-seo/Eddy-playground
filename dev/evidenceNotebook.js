@@ -318,7 +318,7 @@ const EvidenceNotebook = (function () {
 
   function renderPageHtml(entry, total) {
     const bg = sectionBgUrl(state.section);
-    return bg ? renderImageModePageHtml(entry, total, bg) : renderFallbackPageHtml(entry, total);
+    return bg ? renderImageModePageHtml(entry, total, bg) : renderFallbackPageHtml(entry, total, state.index);
   }
 
   function regionStyle(labelId) {
@@ -390,22 +390,28 @@ const EvidenceNotebook = (function () {
     `;
   }
 
-  // 배경 아트가 아직 없는 책갈피 — CSS만으로 그린 목업 페이지(§20 "아트
-  // 없어도 기능은 항상 동작"). 이 경로에서만 render()가 CSS 탭바를 보여준다.
-  function renderFallbackPageHtml(entry, total) {
+  // 배경 아트가 아직 없는 책갈피 — 사진 배경 없이도 "직접 손으로 꾸민
+  // 수사 노트"처럼 보이도록 CSS만으로 그린 페이지(§20 "아트 없어도 기능은
+  // 항상 동작"). 이 경로에서만 render()가 CSS 탭바를 보여준다. pageIndex를
+  // 인자로 받아(기본값 state.index) 외부(dev/upload/evidence-notebook의
+  // "예시" 미리보기)에서도 모듈 내부 state 없이 그대로 재사용할 수 있게
+  // 한다 — renderExamplePageHtml로 그대로 노출.
+  function renderFallbackPageHtml(entry, total, pageIndex) {
     const template = templateFor(entry);
     const photoUrl = photoUrlFor(entry);
-    const pageNum = String(state.index + 1).padStart(2, '0');
+    const idx = pageIndex == null ? state.index : pageIndex;
+    const pageNum = String(idx + 1).padStart(2, '0');
     const totalStr = String(total).padStart(2, '0');
 
     let mainHtml;
     if (template === 'image') {
       mainHtml = photoUrl
-        ? `<div class="evn-frame evn-frame-photo" data-evn-zoom="1"><img src="${photoUrl}" alt="${escapeHtml(entry.title)}"></div>`
-        : `<div class="evn-frame evn-frame-empty"><span class="evn-frame-fallback-icon">${fallbackIconFor(entry)}</span></div>`;
+        ? `<div class="evn-frame evn-frame-photo" data-evn-zoom="1"><span class="evn-frame-tape evn-frame-tape-l"></span><span class="evn-frame-tape evn-frame-tape-r"></span><img src="${photoUrl}" alt="${escapeHtml(entry.title)}"></div>`
+        : `<div class="evn-frame evn-frame-empty"><span class="evn-frame-fallback-icon">${fallbackIconFor(entry)}</span><span class="evn-frame-empty-label">사진 미첨부</span></div>`;
     } else if (template === 'statement') {
       mainHtml = `<div class="evn-frame evn-frame-statement">
-        ${photoUrl ? `<img class="evn-statement-portrait" src="${photoUrl}" alt="">` : `<span class="evn-frame-fallback-icon">${fallbackIconFor(entry)}</span>`}
+        <span class="evn-quote-mark">“</span>
+        ${photoUrl ? `<img class="evn-statement-portrait" src="${photoUrl}" alt="">` : `<span class="evn-statement-icon">${fallbackIconFor(entry)}</span>`}
         <div class="evn-statement-quote">${escapeHtml(entry.description || entry.summary || '')}</div>
       </div>`;
     } else {
@@ -420,9 +426,10 @@ const EvidenceNotebook = (function () {
 
     return `
       <div class="evn-sheet">
+        <span class="evn-sheet-pin">📌</span>
         <div class="evn-sheet-header">
           <span class="evn-sheet-code">${escapeHtml(entry.code || '')}</span>
-          <span class="evn-sheet-page">${pageNum} / ${totalStr}</span>
+          <span class="evn-sheet-page">PAGE ${pageNum} / ${totalStr}</span>
         </div>
         <div class="evn-sheet-title">${escapeHtml(entry.title)}${entry.status === 'updated' ? '<span class="evn-updated">업데이트됨</span>' : ''}</div>
         ${mainHtml}
@@ -667,8 +674,16 @@ const EvidenceNotebook = (function () {
       .evn-close-btn:active{opacity:.8}
 
       .evn-page{flex:1;min-height:0;display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain}
-      .evn-sheet{flex:1;display:flex;flex-direction:column;min-height:0;background:#f2e6cc linear-gradient(180deg,#f6ecd6,#eaddc0);background-size:cover;background-position:center;border-radius:10px;padding:16px 16px 12px;box-shadow:inset 0 0 0 1px rgba(214,168,75,.5),0 6px 18px rgba(0,0,0,.3);color:#3a2f1c}
-      .evn-sheet-empty{align-items:center;justify-content:center;gap:10px;color:#7a6a45}
+
+      /* ===== 직접 디자인 페이지 — 배경 아트 없이도 손으로 꾸민 수사 노트
+         처럼 보이도록 CSS만으로 그린다(renderFallbackPageHtml). 압정
+         (evn-sheet-pin)·줄노트 배경·마스킹 테이프(evn-frame-tape)·점선
+         구분선으로 "사진을 올리지 않아도 노트답게" 보이는 게 목표라, 사진이
+         없는 항목(evn-frame-empty)도 빈 프레임이 아니라 완성된 디자인
+         요소로 보이게 한다. */
+      .evn-sheet{position:relative;flex:1;display:flex;flex-direction:column;min-height:0;background:repeating-linear-gradient(180deg,rgba(138,114,69,.09) 0,rgba(138,114,69,.09) 1px,transparent 1px,transparent 27px),linear-gradient(180deg,#f8efd9,#efe0bd);border-radius:3px 12px 12px 3px;padding:26px 18px 14px;box-shadow:inset 0 0 0 1px rgba(214,168,75,.5),inset 6px 0 0 rgba(199,117,44,.18),0 8px 22px rgba(0,0,0,.32);color:#3a2f1c;transform:rotate(-.3deg)}
+      .evn-sheet-empty{align-items:center;justify-content:center;gap:10px;color:#7a6a45;transform:none}
+      .evn-sheet-pin{position:absolute;top:0;left:50%;transform:translateX(-50%) rotate(-8deg);font-size:20px;filter:drop-shadow(0 3px 4px rgba(0,0,0,.4));pointer-events:none}
 
       /* ===== 이미지 모드 — 실제 배경 아트가 있는 책갈피 (§상단 주석) =====
          .evn-sheet-imagemode는 flex:none이라 자식 <img>의 자연 비율 높이로만
@@ -690,28 +705,36 @@ const EvidenceNotebook = (function () {
       .evn-empty-icon{font-size:34px;opacity:.7}
       .evn-empty-text{font-size:13px;font-weight:600}
 
-      .evn-sheet-header{display:flex;justify-content:space-between;align-items:center;font-family:var(--mono,'IBM Plex Mono',ui-monospace,monospace);font-size:11px;letter-spacing:.06em;color:#8a7245;border-bottom:1px solid rgba(138,114,69,.35);padding-bottom:8px;margin-bottom:8px}
-      .evn-sheet-title{font-size:16px;font-weight:800;color:#2c2311;margin-bottom:10px;line-height:1.35}
+      .evn-sheet-header{display:flex;justify-content:space-between;align-items:center;font-family:var(--mono,'IBM Plex Mono',ui-monospace,monospace);font-size:10.5px;font-weight:700;letter-spacing:.08em;color:#8a5a2c;border-bottom:1px dashed rgba(138,114,69,.45);padding-bottom:8px;margin-bottom:10px}
+      .evn-sheet-code{background:rgba(199,117,44,.14);border:1px solid rgba(199,117,44,.4);border-radius:4px;padding:2px 7px}
+      .evn-sheet-title{font-size:16.5px;font-weight:800;color:#2c2311;margin-bottom:12px;line-height:1.35;padding-bottom:8px;border-bottom:2px solid rgba(44,35,17,.14)}
       .evn-updated{display:inline-block;margin-left:8px;font-size:10px;font-weight:700;color:#fff;background:#c7752c;border-radius:8px;padding:2px 7px;vertical-align:middle}
 
-      .evn-frame{position:relative;border:2px solid rgba(138,114,69,.55);border-radius:8px;background:rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;min-height:150px;max-height:38vh}
-      .evn-frame-photo{cursor:zoom-in}
-      .evn-frame-photo img{width:100%;height:100%;object-fit:cover;display:block}
-      .evn-frame-empty .evn-frame-fallback-icon{font-size:44px;opacity:.55}
-      .evn-frame-document{flex-direction:column;gap:8px;padding:14px;align-items:flex-start;justify-content:flex-start;overflow-y:auto}
-      .evn-doc-icon{font-size:22px}
-      .evn-doc-text{font-size:13.5px;line-height:1.6;color:#3a2f1c;white-space:pre-wrap}
-      .evn-frame-statement{flex-direction:column;gap:10px;padding:16px}
-      .evn-statement-portrait{width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid rgba(138,114,69,.5)}
-      .evn-statement-quote{font-size:14px;line-height:1.6;color:#3a2f1c;text-align:center;font-style:italic}
+      .evn-frame{position:relative;border:1px solid rgba(138,114,69,.4);border-radius:6px;background:rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;min-height:150px;max-height:38vh;box-shadow:0 3px 10px rgba(58,47,28,.18)}
+      .evn-frame-photo{cursor:zoom-in;overflow:visible;padding:10px 10px 22px;background:#fffdf6;border:1px solid rgba(0,0,0,.08)}
+      .evn-frame-photo img{width:100%;height:100%;object-fit:cover;display:block;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)}
+      .evn-frame-tape{position:absolute;width:44px;height:15px;background:rgba(214,168,75,.4);border:1px solid rgba(214,168,75,.55);opacity:.8;z-index:2}
+      .evn-frame-tape-l{top:-6px;left:12px;transform:rotate(-8deg)}
+      .evn-frame-tape-r{top:-6px;right:12px;transform:rotate(7deg)}
+      .evn-frame-empty{flex-direction:column;gap:6px;border-style:dashed}
+      .evn-frame-empty .evn-frame-fallback-icon{font-size:40px;opacity:.5}
+      .evn-frame-empty-label{font-family:var(--mono,'IBM Plex Mono',ui-monospace,monospace);font-size:11px;color:#8a7245}
+      .evn-frame-document{flex-direction:column;gap:8px;padding:14px 14px 14px 20px;align-items:flex-start;justify-content:flex-start;overflow-y:auto;background:repeating-linear-gradient(180deg,transparent 0,transparent 22px,rgba(138,114,69,.16) 23px),#fffdf6;border-left:3px solid rgba(199,65,65,.35)}
+      .evn-doc-icon{font-size:20px}
+      .evn-doc-text{font-size:13.5px;line-height:23px;color:#3a2f1c;white-space:pre-wrap}
+      .evn-frame-statement{position:relative;flex-direction:column;gap:8px;padding:18px 16px 14px;background:#fffdf6}
+      .evn-quote-mark{position:absolute;top:-6px;left:10px;font-size:52px;line-height:1;color:rgba(199,117,44,.25);font-family:Georgia,serif}
+      .evn-statement-portrait{width:60px;height:60px;border-radius:50%;object-fit:cover;border:3px solid #fffdf6;box-shadow:0 0 0 1px rgba(138,114,69,.5)}
+      .evn-statement-icon{font-size:34px}
+      .evn-statement-quote{font-size:14px;line-height:1.7;color:#3a2f1c;text-align:center;font-style:italic}
 
-      .evn-sheet-scroll{flex:1;min-height:0;overflow-y:auto;margin-top:10px}
-      .evn-sheet-desc{font-size:13px;line-height:1.6;color:#4a3d22;margin-bottom:10px}
-      .evn-meta-table{border-top:1px solid rgba(138,114,69,.3);padding-top:8px;display:flex;flex-direction:column;gap:6px}
+      .evn-sheet-scroll{flex:1;min-height:0;overflow-y:auto;margin-top:12px}
+      .evn-sheet-desc{font-size:13px;line-height:1.7;color:#4a3d22;margin-bottom:12px;padding:10px 12px;background:rgba(255,255,255,.4);border-radius:6px;border:1px dashed rgba(138,114,69,.3)}
+      .evn-meta-table{border-top:1px dashed rgba(138,114,69,.4);padding-top:10px;display:flex;flex-direction:column;gap:7px}
       .evn-meta-row{display:flex;align-items:baseline;gap:8px;font-size:12.5px}
-      .evn-meta-icon{width:16px;text-align:center;opacity:.8}
-      .evn-meta-label{color:#8a7245;flex-shrink:0}
-      .evn-meta-value{color:#2c2311;font-weight:600}
+      .evn-meta-icon{width:18px;text-align:center;opacity:.85}
+      .evn-meta-label{font-family:var(--mono,'IBM Plex Mono',ui-monospace,monospace);font-size:10.5px;color:#8a7245;flex-shrink:0}
+      .evn-meta-value{color:#2c2311;font-weight:700}
 
       .evn-npc-tag{position:absolute;top:12px;left:16px;z-index:4;font-family:var(--mono,'IBM Plex Mono',ui-monospace,monospace);font-size:11px;font-weight:700;color:#fff;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.25);border-radius:20px;padding:5px 12px}
       .evn-npc-tag.hidden{display:none}
@@ -762,5 +785,9 @@ const EvidenceNotebook = (function () {
     document.head.appendChild(style);
   }
 
-  return { open, close, injectStyles };
+  // SECTIONS/renderExamplePageHtml는 dev/upload/evidence-notebook/index.html의
+  // "예시" 미리보기 전용 — 이 파일이 사진 배경 없이 그리는 직접 디자인
+  // 페이지(renderFallbackPageHtml)를 관리자 설정 화면에서도 똑같이 재사용해
+  // 두 곳의 디자인이 벌어지지 않게 한다(§상단 주석 "순수 표시 계층 하나").
+  return { open, close, injectStyles, SECTIONS, renderExamplePageHtml: renderFallbackPageHtml };
 })();
