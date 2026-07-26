@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>2주차 v4 재설계 · 장소 · MISSING KEY DEV</title>
+<title>2주차 v4 재설계 · 증거 · MISSING KEY DEV</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <meta name="theme-color" content="#080A0C">
@@ -29,10 +29,9 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .card-head{display:flex;align-items:flex-start;gap:10px;cursor:pointer}
 .card-headtxt{flex:1;min-width:0}
 .card-title{font-size:15px;font-weight:700}
+.card-meta{font-size:11.5px;color:var(--text-muted);margin-top:3px}
 .card-badge{display:inline-block;margin-top:6px;font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:.03em;border-radius:8px;padding:3px 7px}
-.card-badge.hub{color:#06181c;background:var(--cyan)}
-.card-badge.scene{color:var(--text-muted);background:rgba(255,255,255,.08)}
-.card-badge.reuse{color:#06181c;background:var(--cyan);margin-left:6px}
+.card-badge.reuse{color:#06181c;background:var(--cyan)}
 .card-badge.new{color:#2a0d18;background:var(--pink);margin-left:6px}
 .card-caret{color:var(--text-muted);font-size:14px;flex-shrink:0;transition:transform .2s}
 .card.open .card-caret{transform:rotate(180deg)}
@@ -41,15 +40,17 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .field{margin-bottom:10px}
 .field-label{font-family:var(--mono);font-size:10.5px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
 .field-val{font-size:13px;line-height:1.6;color:var(--text-secondary)}
-.chip-row{display:flex;flex-wrap:wrap;gap:6px}
-.chip{font-size:11px;background:var(--surface-2);border:1px solid var(--divider);border-radius:10px;padding:3px 8px;color:var(--text-secondary)}
+.meaning-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+.meaning-col{background:var(--surface-2);border-radius:10px;padding:8px 9px}
+.meaning-col .field-label{margin-bottom:4px}
+.meaning-col .field-val{font-size:11.5px;line-height:1.5}
 
 .upload-link{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:12px;color:var(--amber);text-decoration:none;background:rgba(214,168,75,.12);border:1px solid rgba(214,168,75,.3);border-radius:12px;padding:8px 12px;margin-top:4px}
 
 .prompt-block{margin-top:14px}
 .prompt-headrow{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
 .prompt-status{font-family:var(--mono);font-size:10.5px;color:var(--text-muted)}
-.prompt-textarea{width:100%;min-height:170px;resize:vertical;background:var(--bg);border:1px solid var(--divider);border-radius:12px;padding:12px;color:var(--text-primary);font-family:var(--mono);font-size:12px;line-height:1.65;outline:none}
+.prompt-textarea{width:100%;min-height:190px;resize:vertical;background:var(--bg);border:1px solid var(--divider);border-radius:12px;padding:12px;color:var(--text-primary);font-family:var(--mono);font-size:12px;line-height:1.65;outline:none}
 .prompt-textarea:focus{border-color:rgba(89,184,200,.4)}
 .prompt-actions{display:flex;gap:8px;margin-top:8px}
 .pbtn{flex:1;font-family:var(--mono);font-size:11.5px;font-weight:600;border-radius:10px;padding:9px;border:1px solid var(--divider);background:var(--surface-2);color:var(--text-primary);cursor:pointer}
@@ -62,57 +63,61 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 <div class="frame">
   <a class="back" href="/dev/week2/redesign/">‹ v4 재설계</a>
   <div class="tag">Missing Key · v4 재설계</div>
-  <div class="title">장소</div>
-  <div class="sub">v4 챕터에서 쓰이는 장소별 배경 이미지 프롬프트입니다. 실제 배경 등록은 "이미지 업로드" 버튼으로 기존 /dev/upload 파이프라인에서 그대로 진행하면 게임에 바로 적용됩니다.</div>
-  <div id="locRoot"></div>
+  <div class="title">증거</div>
+  <div class="sub">docs/week2-storyline-outline-v4.md §10 갱신표 기준, v4에서 쓰이는 증거별 사진 생성 프롬프트입니다. 기존 자산으로 재사용 가능한 항목은 "기존 사진 재사용" 배지로 표시되며 새 프롬프트가 필요 없습니다. 실제 등록은 "이미지 업로드" 버튼으로 기존 /dev/upload 증거 DB 파이프라인에서 진행합니다.</div>
+  <div id="evRoot"></div>
 </div>
-<script src="/dev/data/week2v4Scenes.js"></script>
-<script src="/dev/dialogueData.js"></script>
-<script src="/dev/data/week2v4Locations.js"></script>
+<script src="/dev/data/week2v4Evidence.js"></script>
 <script>
-const PROMPT_KEY_PREFIX = 'week2v4LocPrompt:';
-const root = document.getElementById('locRoot');
+const PROMPT_KEY_PREFIX = 'week2v4EvPrompt:';
+const root = document.getElementById('evRoot');
+const uploadHref = '/dev/upload/?type=evidence';
 
-function cardHtml(loc) {
-  const uploadHref = '/dev/upload/?scene=' + encodeURIComponent(loc.anchorSceneId);
+function cardHtml(ev) {
   return `
-    <div class="card" id="card-${loc.id}">
-      <div class="card-head" data-toggle="${loc.id}">
+    <div class="card" id="card-${ev.id}">
+      <div class="card-head" data-toggle="${ev.id}">
         <div class="card-headtxt">
-          <div class="card-title">${loc.name}</div>
-          <span class="card-badge ${loc.hubLocationId ? 'hub' : 'scene'}">${loc.hubLocationId ? '허브 공용 장소 (' + loc.hubLocationId + ')' : '씬 전용 배경'}</span>
-          <span class="card-badge ${loc.needsNewPhoto ? 'new' : 'reuse'}">${loc.needsNewPhoto ? '새 사진 필요' : '기존 사진 재사용'}</span>
+          <div class="card-title">${ev.name}</div>
+          <div class="card-meta">첫 등장: ${ev.firstAppearance}</div>
+          <span class="card-badge ${ev.needsNewPhoto ? 'new' : 'reuse'}">${ev.needsNewPhoto ? '새 사진 필요' : '기존 사진 재사용'}</span>
         </div>
         <div class="card-caret">▾</div>
       </div>
       <div class="card-body">
-        <div class="field">
-          <div class="field-label">기본 묘사</div>
-          <div class="field-val">${loc.realVisualBrief}</div>
+        <div class="meaning-row">
+          <div class="meaning-col">
+            <div class="field-label">초반</div>
+            <div class="field-val">${ev.initialMeaning}</div>
+          </div>
+          <div class="meaning-col">
+            <div class="field-label">1부</div>
+            <div class="field-val">${ev.part1Meaning}</div>
+          </div>
+          <div class="meaning-col">
+            <div class="field-label">2부·최종</div>
+            <div class="field-val">${ev.finalMeaning}</div>
+          </div>
         </div>
         <div class="field">
-          <div class="field-label">v4에서의 쓰임</div>
-          <div class="field-val">${loc.v4Note}</div>
+          <div class="field-label">사진에 담아야 할 것</div>
+          <div class="field-val">${ev.photoBrief}</div>
         </div>
-        ${loc.reuseHint ? `
+        ${ev.reuseHint ? `
         <div class="field">
-          <div class="field-label">${loc.needsNewPhoto ? '재사용 확인 필요' : '재사용 방법'}</div>
-          <div class="field-val">${loc.reuseHint}</div>
+          <div class="field-label">${ev.needsNewPhoto ? '참고' : '재사용 방법'}</div>
+          <div class="field-val">${ev.reuseHint}</div>
         </div>` : ''}
-        <div class="field">
-          <div class="field-label">등장 챕터</div>
-          <div class="chip-row">${loc.appearsIn.map(c => `<span class="chip">${c}</span>`).join('')}</div>
-        </div>
         <a class="upload-link" href="${uploadHref}">🖼️ 이미지 업로드 (실제 게임에 적용)</a>
         <div class="prompt-block">
           <div class="prompt-headrow">
-            <div class="field-label">${loc.needsNewPhoto ? '배경 이미지 생성용 AI 프롬프트' : '재사용 안내'}</div>
-            <div class="prompt-status" id="status-${loc.id}">&nbsp;</div>
+            <div class="field-label">${ev.needsNewPhoto ? '증거 사진 생성용 AI 프롬프트' : '재사용 안내'}</div>
+            <div class="prompt-status" id="status-${ev.id}">&nbsp;</div>
           </div>
-          <textarea class="prompt-textarea" id="prompt-${loc.id}" spellcheck="false"></textarea>
+          <textarea class="prompt-textarea" id="prompt-${ev.id}" spellcheck="false"></textarea>
           <div class="prompt-actions">
-            <button class="pbtn primary" data-copy="${loc.id}">📋 복사</button>
-            <button class="pbtn" data-reset="${loc.id}">기본값으로 재설정</button>
+            <button class="pbtn primary" data-copy="${ev.id}">📋 복사</button>
+            <button class="pbtn" data-reset="${ev.id}">기본값으로 재설정</button>
           </div>
         </div>
       </div>
@@ -120,18 +125,18 @@ function cardHtml(loc) {
   `;
 }
 
-root.innerHTML = week2v4Locations.length
-  ? week2v4Locations.map(cardHtml).join('')
-  : '<div class="empty">등록된 장소가 없습니다. dev/data/week2v4Locations.js에 항목을 추가하세요.</div>';
+root.innerHTML = week2v4Evidence.length
+  ? week2v4Evidence.map(cardHtml).join('')
+  : '<div class="empty">등록된 증거가 없습니다. dev/data/week2v4Evidence.js에 항목을 추가하세요.</div>';
 
-week2v4Locations.forEach(loc => {
-  const key = PROMPT_KEY_PREFIX + loc.id;
-  const textarea = document.getElementById('prompt-' + loc.id);
+week2v4Evidence.forEach(ev => {
+  const key = PROMPT_KEY_PREFIX + ev.id;
+  const textarea = document.getElementById('prompt-' + ev.id);
   const saved = localStorage.getItem(key);
-  textarea.value = saved !== null ? saved : buildWeek2v4LocationPrompt(loc);
+  textarea.value = saved !== null ? saved : buildWeek2v4EvidencePrompt(ev);
 
   let saveTimer = null;
-  const status = document.getElementById('status-' + loc.id);
+  const status = document.getElementById('status-' + ev.id);
   textarea.addEventListener('input', () => {
     status.textContent = '저장 중...';
     clearTimeout(saveTimer);
@@ -162,9 +167,9 @@ root.addEventListener('click', (e) => {
   const resetBtn = e.target.closest('[data-reset]');
   if (resetBtn) {
     const id = resetBtn.dataset.reset;
-    const loc = week2v4Locations.find(l => l.id === id);
+    const ev = week2v4Evidence.find(x => x.id === id);
     const textarea = document.getElementById('prompt-' + id);
-    textarea.value = buildWeek2v4LocationPrompt(loc);
+    textarea.value = buildWeek2v4EvidencePrompt(ev);
     localStorage.setItem(PROMPT_KEY_PREFIX + id, textarea.value);
     document.getElementById('status-' + id).textContent = '기본값으로 재설정됨';
   }

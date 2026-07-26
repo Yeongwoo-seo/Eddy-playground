@@ -54,6 +54,11 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .pbtn{flex:1;font-family:var(--mono);font-size:11.5px;font-weight:600;border-radius:10px;padding:9px;border:1px solid var(--divider);background:var(--surface-2);color:var(--text-primary);cursor:pointer}
 .pbtn:active{opacity:.8}
 .pbtn.primary{background:var(--amber);color:#1a1206;border-color:var(--amber)}
+.photo-concept{margin-top:16px;padding-top:16px;border-top:1px solid var(--divider)}
+.photo-concept-title{font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--pink);text-transform:uppercase;margin-bottom:10px}
+.photo-concept-item{margin-bottom:14px}
+.photo-concept-item:last-child{margin-bottom:0}
+.upload-link{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:12px;color:var(--amber);text-decoration:none;background:rgba(214,168,75,.12);border:1px solid rgba(214,168,75,.3);border-radius:12px;padding:8px 12px;margin-top:4px}
 </style>
 </head>
 <body>
@@ -110,6 +115,30 @@ function cardHtml(mg) {
             <button class="pbtn" data-reset="${mg.id}">기본값으로 재설정</button>
           </div>
         </div>` : ''}
+        ${(mg.requiredPhotos || []).length ? `
+        <div class="photo-concept">
+          <div class="photo-concept-title">이 미니게임에 필요한 사진</div>
+          ${mg.requiredPhotos.map(photo => {
+            const key = mg.id + ':' + photo.id;
+            return `
+          <div class="photo-concept-item">
+            <div class="field-label">${photo.label}</div>
+            <div class="field-val" style="margin-bottom:8px">${photo.photoBrief}</div>
+            <a class="upload-link" href="/dev/upload/">🖼️ 이미지 업로드 (구현 후 씬 배경으로 등록)</a>
+            <div class="prompt-block">
+              <div class="prompt-headrow">
+                <div class="field-label">사진 생성용 AI 프롬프트</div>
+                <div class="prompt-status" id="status-photo-${key}">&nbsp;</div>
+              </div>
+              <textarea class="prompt-textarea" id="prompt-photo-${key}" spellcheck="false" style="min-height:150px"></textarea>
+              <div class="prompt-actions">
+                <button class="pbtn primary" data-copy-photo="${key}">📋 복사</button>
+                <button class="pbtn" data-reset-photo="${key}">기본값으로 재설정</button>
+              </div>
+            </div>
+          </div>`;
+          }).join('')}
+        </div>` : ''}
       </div>
     </div>
   `;
@@ -132,6 +161,25 @@ week2v4Minigames.filter(mg => mg.status === 'new').forEach(mg => {
       localStorage.setItem(key, textarea.value);
       status.textContent = '저장됨';
     }, 400);
+  });
+
+  (mg.requiredPhotos || []).forEach(photo => {
+    const photoKey = mg.id + ':' + photo.id;
+    const storageKey = PROMPT_KEY_PREFIX + 'photo:' + photoKey;
+    const photoTextarea = document.getElementById('prompt-photo-' + photoKey);
+    const photoSaved = localStorage.getItem(storageKey);
+    photoTextarea.value = photoSaved !== null ? photoSaved : buildWeek2v4MinigamePhotoPrompt(mg, photo);
+
+    let photoSaveTimer = null;
+    const photoStatus = document.getElementById('status-photo-' + photoKey);
+    photoTextarea.addEventListener('input', () => {
+      photoStatus.textContent = '저장 중...';
+      clearTimeout(photoSaveTimer);
+      photoSaveTimer = setTimeout(() => {
+        localStorage.setItem(storageKey, photoTextarea.value);
+        photoStatus.textContent = '저장됨';
+      }, 400);
+    });
   });
 });
 
@@ -160,6 +208,29 @@ root.addEventListener('click', (e) => {
     textarea.value = buildWeek2v4MinigamePrompt(mg);
     localStorage.setItem(PROMPT_KEY_PREFIX + id, textarea.value);
     document.getElementById('status-' + id).textContent = '기본값으로 재설정됨';
+    return;
+  }
+  const copyPhotoBtn = e.target.closest('[data-copy-photo]');
+  if (copyPhotoBtn) {
+    const key = copyPhotoBtn.dataset.copyPhoto;
+    const textarea = document.getElementById('prompt-photo-' + key);
+    navigator.clipboard.writeText(textarea.value).then(() => {
+      const orig = copyPhotoBtn.textContent;
+      copyPhotoBtn.textContent = '✓ 복사됨';
+      setTimeout(() => { copyPhotoBtn.textContent = orig; }, 1200);
+    }).catch(() => {});
+    return;
+  }
+  const resetPhotoBtn = e.target.closest('[data-reset-photo]');
+  if (resetPhotoBtn) {
+    const key = resetPhotoBtn.dataset.resetPhoto;
+    const [mgId, photoId] = key.split(':');
+    const mg = week2v4Minigames.find(m => m.id === mgId);
+    const photo = (mg.requiredPhotos || []).find(p => p.id === photoId);
+    const textarea = document.getElementById('prompt-photo-' + key);
+    textarea.value = buildWeek2v4MinigamePhotoPrompt(mg, photo);
+    localStorage.setItem(PROMPT_KEY_PREFIX + 'photo:' + key, textarea.value);
+    document.getElementById('status-photo-' + key).textContent = '기본값으로 재설정됨';
   }
 });
 </script>
