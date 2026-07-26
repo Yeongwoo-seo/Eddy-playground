@@ -794,6 +794,11 @@ const deepLinkedSceneId = new URLSearchParams(location.search).get('scene');
 // and making the tester click through tabs + phase pills by hand.
 const deepLinkedHubTab = new URLSearchParams(location.search).get('tab') === 'hub';
 const deepLinkedHubPhase = new URLSearchParams(location.search).get('phase');
+// Locks the 단계(Phase) picker to just the one hub the tester deep-linked
+// into — without this, nothing stopped them from also flipping the phase
+// pills to a *different* exploration hub and editing its settings from
+// what's supposed to be a single hub's dedicated 설정 screen.
+const focusHubPhase = deepLinkedHubTab && !!deepLinkedHubPhase;
 // ?type=<tab> — from /dev/data's menu (the old 사진 업로드 page's tab row,
 // now split out into its own per-item menu) — jump straight into whichever
 // tab the tester picked instead of always landing on 배경 DB.
@@ -1778,7 +1783,7 @@ function selectType(type) {
   el.bgLocationAssignPanel.classList.toggle('hidden', type !== 'background' && type !== 'hub');
   el.locationPicker.classList.toggle('hidden', type !== 'location');
   el.variantPicker.classList.toggle('hidden', type !== 'location');
-  el.hubPhasePicker.classList.toggle('hidden', type !== 'hub');
+  el.hubPhasePicker.classList.toggle('hidden', type !== 'hub' || focusHubPhase);
   el.hubLocationPicker.classList.toggle('hidden', type !== 'hub');
   el.hubPromptPanel.classList.toggle('hidden', type !== 'hub');
   el.charPicker.classList.toggle('hidden', type !== 'character' && type !== 'minigameFace');
