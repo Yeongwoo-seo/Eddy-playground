@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>탐색허브 · MISSING KEY DEV</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<meta name="theme-color" content="#080A0C">
+<link rel="manifest" href="/dev/manifest.json">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MISSING KEY DEV">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#080A0C;--surface-1:#101419;--surface-2:#171C22;--surface-3:#20262D;
+  --text-primary:#EDF1F4;--text-secondary:#929BA5;--text-muted:#5F6872;
+  --cyan:#59B8C8;--amber:#D6A84B;--signal-red:#D94141;--divider:rgba(255,255,255,0.08);
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sans:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
+}
+html,body{height:100%}
+body{background:#050607;color:var(--text-primary);font-family:var(--sans);display:flex;justify-content:center}
+.frame{width:100%;max-width:430px;min-height:100dvh;min-height:100vh;padding:calc(20px + env(safe-area-inset-top,0)) 20px calc(40px + env(safe-area-inset-bottom,0))}
+
+.topbar{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+.back-btn{width:36px;height:36px;border-radius:50%;background:var(--surface-1);border:1px solid var(--divider);color:var(--text-primary);display:flex;align-items:center;justify-content:center;text-decoration:none;flex-shrink:0}
+.page-title{font-size:19px;font-weight:700}
+
+.picker{margin-bottom:14px}
+.picker-label{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px}
+.picker-pills{display:flex;gap:8px;flex-wrap:wrap}
+.pill{padding:9px 16px;border-radius:20px;background:var(--surface-1);border:1px solid var(--divider);color:var(--text-secondary);font-size:13px;font-weight:600;cursor:pointer}
+.pill.active{background:rgba(89,184,200,.12);color:var(--cyan);border-color:rgba(89,184,200,.4)}
+
+.select-btn{display:inline-block;background:var(--surface-2);border:1px solid var(--divider);color:var(--text-primary);padding:11px 20px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--mono);letter-spacing:.05em}
+.hint{font-size:11px;color:var(--text-muted);margin:10px 0 24px;text-align:center}
+.hint.hidden{display:none}
+.empty-note{font-size:13px;color:var(--text-muted);padding:14px 0}
+
+.text-input{width:100%;background:var(--surface-2);border:1px solid var(--divider);border-radius:10px;padding:11px 12px;color:var(--text-primary);font-size:13.5px;font-family:var(--sans)}
+
+.interaction-textarea{width:100%;min-height:220px;background:var(--surface-2);border:1px solid var(--divider);border-radius:10px;padding:14px;color:var(--text-primary);font-size:13px;font-family:var(--mono);line-height:1.7;white-space:pre;resize:vertical}
+
+.preview-panel{background:var(--surface-1);border:1px solid var(--divider);border-radius:14px;padding:16px;margin-bottom:24px}
+.preview-panel.hidden{display:none}
+.preview-img-wrap{width:100%;max-height:220px;border-radius:10px;overflow:hidden;background:var(--surface-3);display:flex;align-items:center;justify-content:center;margin-bottom:14px}
+.preview-img-wrap img{max-width:100%;max-height:220px;object-fit:contain}
+
+/* ===== 지도 핀 편집기 — 지도(phaseMaps) pseudo-location을 고르면 뜬다.
+   폴리곤 hotspot-stage보다 훨씬 단순한 문제(위치당 점 하나)라 팬/줌 없이
+   고정 비율 박스에 탭 한 번으로 좌표를 잡는다(renderMapPinPanel). ===== */
+.map-pin-panel{background:var(--surface-1);border:1px solid var(--divider);border-radius:14px;padding:16px;margin-bottom:24px}
+.map-pin-panel.hidden{display:none}
+.map-pin-stage{position:relative;width:100%;aspect-ratio:4/5;border-radius:10px;overflow:hidden;background-color:var(--surface-3);background-size:cover;background-position:center;cursor:crosshair}
+.map-pin-dot{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;border:3px solid var(--amber);background:rgba(214,168,75,.3);pointer-events:none}
+.map-pin-dot.selected{border-color:var(--cyan);background:rgba(89,184,200,.4)}
+.map-pin-dot-label{position:absolute;top:100%;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:10px;font-weight:700;margin-top:3px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9),0 0 2px rgba(0,0,0,.9)}
+
+.picker.assign-panel{background:var(--surface-1);border:1px solid var(--divider);border-radius:14px;padding:16px;margin-bottom:24px}
+
+.modal-overlay{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center}
+.modal-overlay.hidden{display:none}
+.modal-panel{width:100%;max-width:430px;max-height:92vh;background:var(--surface-1);border-top-left-radius:20px;border-top-right-radius:20px;border:1px solid var(--divider);border-bottom:none;padding:18px 18px calc(18px + env(safe-area-inset-bottom,0));display:flex;flex-direction:column;overflow:hidden}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-shrink:0}
+.modal-title{font-size:16px;font-weight:700}
+.modal-close-btn{width:32px;height:32px;border-radius:50%;background:var(--surface-2);border:1px solid var(--divider);color:var(--text-primary);font-size:14px;cursor:pointer;flex-shrink:0}
+.unassign-btn{font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--signal-red);background:rgba(217,65,65,.08);border:1px solid rgba(217,65,65,.35);border-radius:14px;padding:9px 12px;cursor:pointer}
+.unassign-btn.hidden{display:none}
+
+input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;overflow:hidden}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="frame">
+  <div class="topbar">
+    <a class="back-btn" id="backBtn" href="/dev/phases/">←</a>
+    <div class="page-title">탐색허브</div>
+  </div>
+
+  <!-- dev/data/locationDefs.js에 정의된 허브 장소마다 어느 배경을 쓸지
+       고른다. Phase 피커로 먼저 좁힌 다음 그 안의 장소를 고르면, 아래
+       배정 패널(배경 DB의 일반 슬롯과 완전히 같은 흐름)에서 전역 장소
+       카탈로그(장소 DB) 항목에 배정한다 — 같은 물리적 장소를 가리키는 VN
+       씬과 허브 위치가 있으면 사진이 자동으로 공유된다. 원래 /dev/upload의
+       탭 중 하나였으나(장소 DB=사진 저장소 / 배경 DB=씬 배정과 같은 구조),
+       사건 카드·PWA 아이콘과 같은 이유로 별도 페이지로 분리했다. -->
+  <div class="picker" id="hubPhasePicker">
+    <div class="picker-label">단계 (Phase)</div>
+    <div class="picker-pills" id="hubPhasePickerPills"></div>
+  </div>
+  <div class="picker" id="hubLocationPicker">
+    <div class="picker-label">장소</div>
+    <div class="picker-pills" id="hubLocationPickerPills"></div>
+  </div>
+
+  <div class="picker assign-panel" id="bgLocationAssignPanel">
+    <div class="picker-label">배정된 장소</div>
+    <div class="hint" id="bgLocationAssignedLabel" style="margin:0 0 10px;text-align:left"></div>
+    <button class="select-btn" id="bgLocationAssignOpenBtn" style="width:100%;text-align:center">배정하기</button>
+  </div>
+
+  <!-- 선택된 허브 장소의 실제 모습·스토리·인터랙티브 요소를 반영한 AI
+       이미지 생성 프롬프트 — locationDefs.js의 visualBrief +
+       interactionDefs.js의 해당 장소/단계 상호작용을 조합해 만든다. 실제
+       사진은 여전히 위 배정 패널에서 장소 DB에 배정해 올린다 — 이건 그
+       사진을 만들 때 참고할 텍스트일 뿐. See buildHubLocationPrompt()/
+       renderHubPromptPanel(). -->
+  <div class="picker" id="hubPromptPanel">
+    <div class="picker-label">AI 배경 생성 프롬프트</div>
+    <textarea class="interaction-textarea" id="hubPromptText" readonly spellcheck="false"></textarea>
+    <button class="select-btn" id="hubPromptCopyBtn" style="width:100%;margin-top:8px">📋 프롬프트 복사</button>
+    <div class="hint" id="hubPromptCopyStatus" style="margin-top:6px"></div>
+  </div>
+
+  <!-- 지도(🗺) pseudo-location을 골랐을 때만 보인다. 이 phase에서
+       mapPosition을 가진(=landmark급으로 이미 지정된) 위치들만 고를 수
+       있고, 지도 그림을 탭하면 그 위치의 좌표를 저장한다(AssetDB
+       map-pins — dev/data/locationDefs.js의 정적 mapPosition보다 우선해서
+       읽힘, see play/explore/index.html openMoveMapSheet). 어떤 위치가
+       지도에 핀을 갖는지 자체는 여전히 locationDefs.js를 고쳐야 하는 코드
+       결정 — 여기선 그 좌표만 시각적으로 조정한다. -->
+  <div class="map-pin-panel hidden" id="mapPinPanel">
+    <div class="picker-label">지도 핀 위치 — 아래 지도를 탭해서 놓기</div>
+    <div class="picker-pills" id="mapPinLocationPills" style="margin-bottom:10px"></div>
+    <div class="map-pin-stage" id="mapPinStage"><div id="mapPinDots"></div></div>
+    <div class="hint" id="mapPinHint" style="margin:10px 0 0"></div>
+  </div>
+</div>
+
+<!-- 배정하기 팝업 — 장소 선택/생성/variant/사진 업로드까지 한 번에 끝낸다.
+     사진은 장소 카탈로그(locationId+variantId 키)에 저장되므로 같은 장소를
+     쓰는 다른 씬(배경 DB)과 그대로 공유된다. -->
+<div class="modal-overlay hidden" id="bgLocationAssignModal">
+  <div class="modal-panel">
+    <div class="modal-header">
+      <div class="modal-title">장소 배정</div>
+      <button class="modal-close-btn" id="bgLocationAssignCloseBtn">✕</button>
+    </div>
+    <div style="overflow-y:auto">
+      <div class="picker-pills" id="bgLocationAssignPills"></div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <input type="text" class="text-input" id="bgNewLocationInput" placeholder="새 장소 이름">
+        <button class="select-btn" id="bgNewLocationBtn" style="flex-shrink:0">+ 새 장소</button>
+      </div>
+      <div class="picker hidden" id="bgVariantAssignPicker" style="margin-top:14px">
+        <div class="picker-label">variant</div>
+        <div class="picker-pills" id="bgVariantAssignPills"></div>
+      </div>
+      <button class="unassign-btn hidden" id="bgUnassignBtn" style="margin-top:10px;width:100%">장소 배정 해제</button>
+      <div class="preview-panel hidden" id="bgLocationPreviewPanel" style="margin-top:14px">
+        <div class="preview-img-wrap"><img id="bgLocationPreviewImg" class="hidden" alt="preview"></div>
+        <div class="empty-note hidden" id="bgLocationPreviewEmpty" style="padding:0 0 10px;text-align:center">아직 사진이 없습니다.</div>
+        <button class="select-btn" id="bgLocationPhotoBtn" style="width:100%">📷 사진 올리기 / 바꾸기</button>
+        <input type="file" id="bgLocationPhotoInput" accept="image/*">
+        <div class="hint" id="bgLocationPhotoStatus" style="margin-top:6px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
+}
+</script>
+<script src="/dev/assetDb.js"></script>
+<script src="/dev/dialogueData.js"></script>
+<script src="/dev/data/locationDefs.js"></script>
+<script src="/dev/data/interactionDefs.js"></script>
+<script>
+/* =========================================================================
+   탐색허브 설정 — dev/upload/index.html의 탐색허브 탭이었던 것을 별도
+   페이지로 분리했다(사건 카드/PWA 아이콘과 같은 이유: 상태머신이 다른 탭과
+   너무 다르게 자라 같은 selectType() 안에 끼워두는 게 오히려 더 헷갈렸다).
+   장소 배정 팝업은 배경 DB 탭의 것과 완전히 같은 로직을 그대로 가져왔다 —
+   두 화면 다 "이 슬롯이 어느 장소 DB 항목인지" 고르고 그 자리에서 사진까지
+   올리는 같은 흐름이라, 여기선 currentType 분기 없이 이 페이지 전용으로
+   단순화했다.
+   ===== */
+
+const el = {
+  backBtn: document.getElementById('backBtn'),
+  hubPhasePickerPills: document.getElementById('hubPhasePickerPills'),
+  hubLocationPickerPills: document.getElementById('hubLocationPickerPills'),
+  hubPromptText: document.getElementById('hubPromptText'),
+  hubPromptCopyBtn: document.getElementById('hubPromptCopyBtn'),
+  hubPromptCopyStatus: document.getElementById('hubPromptCopyStatus'),
+  mapPinPanel: document.getElementById('mapPinPanel'),
+  mapPinLocationPills: document.getElementById('mapPinLocationPills'),
+  mapPinStage: document.getElementById('mapPinStage'),
+  mapPinDots: document.getElementById('mapPinDots'),
+  mapPinHint: document.getElementById('mapPinHint'),
+  bgLocationAssignedLabel: document.getElementById('bgLocationAssignedLabel'),
+  bgLocationAssignOpenBtn: document.getElementById('bgLocationAssignOpenBtn'),
+  bgLocationAssignModal: document.getElementById('bgLocationAssignModal'),
+  bgLocationAssignCloseBtn: document.getElementById('bgLocationAssignCloseBtn'),
+  bgLocationAssignPills: document.getElementById('bgLocationAssignPills'),
+  bgNewLocationInput: document.getElementById('bgNewLocationInput'),
+  bgNewLocationBtn: document.getElementById('bgNewLocationBtn'),
+  bgVariantAssignPicker: document.getElementById('bgVariantAssignPicker'),
+  bgVariantAssignPills: document.getElementById('bgVariantAssignPills'),
+  bgUnassignBtn: document.getElementById('bgUnassignBtn'),
+  bgLocationPreviewPanel: document.getElementById('bgLocationPreviewPanel'),
+  bgLocationPreviewImg: document.getElementById('bgLocationPreviewImg'),
+  bgLocationPreviewEmpty: document.getElementById('bgLocationPreviewEmpty'),
+  bgLocationPhotoBtn: document.getElementById('bgLocationPhotoBtn'),
+  bgLocationPhotoInput: document.getElementById('bgLocationPhotoInput'),
+  bgLocationPhotoStatus: document.getElementById('bgLocationPhotoStatus'),
+};
+
+// ?phase=<id> — from /dev/phases's 설정 button, jump straight to that
+// phase's location list instead of always landing on the first one. Also
+// decides where "back" goes — /dev/phases always sends this, /dev/data's
+// menu links here with no params at all.
+const deepLinkedHubPhase = new URLSearchParams(location.search).get('phase');
+if (!deepLinkedHubPhase) el.backBtn.href = '/dev/data/';
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function slugify(label) {
+  return String(label).trim().toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'x';
+}
+function loadImageFromBlob(blob) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = URL.createObjectURL(blob);
+  });
+}
+// 위치 사진은 실사용 화면(핀치 최대 3배)에서 이 이상 해상도가 필요 없어
+// (배경 DB 탭과 같은 기준) 큰 원본을 그대로 올리는 대신 줄여서 저장한다.
+const BG_MAX_DIMENSION = 1600;
+const BG_JPEG_QUALITY = 0.85;
+function resizeImageToBlob(img, maxDim, quality) {
+  const scale = Math.min(1, maxDim / Math.max(img.naturalWidth, img.naturalHeight));
+  const w = Math.max(1, Math.round(img.naturalWidth * scale));
+  const h = Math.max(1, Math.round(img.naturalHeight * scale));
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+  return new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality));
+}
+
+/* ===== 탐색허브 탭: locationDefs.js의 허브 장소마다 배경 사진 직접 등록.
+   장소 DB 위 카탈로그와 무관한 별도 흐름 — 여기 location id 자체가 저장
+   키다(activeHubSceneId()/DevGameState.getBackgroundId 참고). Phase 라벨은
+   코드에서 찾을 수 없어 여기서 직접 붙인다(dev/data/locationDefs.js 주석
+   기준). ===== */
+const HUB_PHASE_LABELS = {
+  W2_TOURISM: '2주차 · 관광',
+  W2_SUSPECT_INTERVIEWS: '2주차 · 용의자 탐문',
+  W2_REVERIFICATION: '2주차 · 모순 재검증',
+};
+// AI 배경 생성 프롬프트(buildHubLocationPrompt)용 — 단계별 전반적인 분위기.
+// HUB_PHASE_LABELS 바로 옆에 두는 이유는 둘 다 "phase id -> 사람이 읽을 텍스트"
+// 매핑이라 새 phase 추가 시 항상 같이 고쳐야 하기 때문.
+const HUB_PHASE_MOOD = {
+  W2_TOURISM: '사건이 일어나기 전 — 오전 관광 시간대, 밝고 따뜻한 햇살 아래 평화롭고 여유로운 분위기.',
+  W2_SUSPECT_INTERVIEWS: 'K-01 도난 사건이 알려진 직후 — 오후, 한풀 가라앉은 채광에 살짝 긴장되고 차분해진 분위기.',
+  W2_REVERIFICATION: '사건을 다시 짚어보는 재검증 단계 — 늦은 오후, 신중하고 가라앉은 빛과 분위기.',
+};
+function hubPhases() {
+  const seen = [];
+  Object.values(locationDefs).forEach(loc => {
+    (loc.phases || []).forEach(p => { if (!seen.includes(p)) seen.push(p); });
+  });
+  return seen;
+}
+function hubLocationsForPhase(phase) {
+  return Object.values(locationDefs).filter(loc => (loc.phases || []).includes(phase));
+}
+// phase-keyed 필드 (§신규 저작 관습, dev/data/locationDefs.js 상단 주석 참고) —
+// play/explore/index.html의 resolveByPhase와 같은 로직(마커를 명시적으로
+// 요구하는 이유도 그쪽 주석 참고 — mapPosition의 평범한 `{x,y}`까지
+// phase-keyed로 오인하지 않기 위함). mapPosition 등이 `{ __byPhase: true,
+// [phase]: value }` 객체로 저장된 장소(w2-hub-plaza/w2-adrian-spot)를 이
+// 관리자 화면에서도 올바르게 읽으려면 필요하다.
+function resolveByPhase(value, phase) {
+  if (value == null) return null;
+  if (value && typeof value === 'object' && value.__byPhase) return value[phase] ?? null;
+  return value;
+}
+// phaseMaps(dev/data/locationDefs.js) 항목도 배경 사진이 필요한 건 마찬가지라
+// (탐색허브 이동하기 화면의 지도 그림, play/explore/index.html의
+// openMoveMapSheet) — locationDefs와 똑같은 사진 배정/AI 프롬프트 패널을
+// 재사용하도록, 위치 하나인 것처럼 보이는 가짜 def로 감싸 hub 피커에 끼워
+// 넣는다. 실제 locationDefs에는 없으므로 이동하기/조사하기 등 게임 로직에는
+// 전혀 영향 없다 — 여기 업로드 UI에서만 쓰는 뷰용 객체.
+function mapPseudoLocation(phase) {
+  const m = (typeof phaseMaps !== 'undefined') ? phaseMaps[phase] : null;
+  if (!m) return null;
+  return { id: m.id, name: '🗺 ' + m.name, visualBrief: m.visualBrief, week: null, phases: [phase], characters: [], isMap: true };
+}
+function currentHubLocation() {
+  if (!currentHubLocationId) return null;
+  const m = mapPseudoLocation(currentHubPhase);
+  if (m && m.id === currentHubLocationId) return m;
+  return locationDefs[currentHubLocationId] || null;
+}
+
+// interactionDefs.js 전체에서 이 장소+단계에 걸린 상호작용만 골라, 배경
+// 이미지에 실제로 그려 넣어야 할 요소를 뽑아낸다. 대사 첫 줄 중
+// characterId:null(내레이션)인 줄을 "이 상호작용이 뭘 보여주는 장면인지"의
+// 시각적 단서로 쓰고, 없으면 그냥 label을 쓴다 — play/explore/index.html의
+// getInteractionsForLocation과 같은 필터 논리(단, 여긴 순수 조회용이라
+// ExplorationState의 상태(완료 여부 등)는 필요 없다).
+function hubLocationInteractions(locationId, phase) {
+  return Object.values(interactionDefs).filter(def =>
+    (def.locationIds || []).includes(locationId) && (!def.phases || !def.phases.length || def.phases.includes(phase))
+  );
+}
+function interactionVisualCue(def) {
+  const narrLine = (def.lines || []).find(l => l.characterId === null && l.text);
+  return narrLine ? narrLine.text.replace(/\n/g, ' ') : (def.label || def.id);
+}
+
+// 선택된 허브 장소의 실제 모습(locationDefs.js visualBrief) + 현재 단계의
+// 분위기(HUB_PHASE_MOOD) + 그 장소/단계에 걸린 상호작용들이 요구하는 시각
+// 요소를 조합해, 그대로 복붙해서 이미지 생성 AI에 넣을 수 있는 프롬프트
+// 문단을 만든다. 실제 사진 업로드는 여전히 아래 배정 팝업의 장소 DB 배정
+// 몫 — 이건 그 사진을 만들 때 참고할 텍스트만 준비해 줄 뿐이다.
+// "화면에 꼭 있어야 하는 요소"를 다 한 자리에 몰아 그리라고 하면 그림이
+// 어색해지므로(§피드백), 요소 개수에 맞춰 화면 가로축 위치를 하나씩
+// 분산 배정한다 — 1개면 중앙, 여러 개면 왼쪽 끝~오른쪽 끝 사이에 고르게
+// 펼친다. 순서는 hubLocationInteractions()가 반환하는 순서 그대로(등록된
+// 순서) 써서, 다시 만들어도 항상 같은 자리에 배정되게 한다.
+const LOC_PROMPT_ZONES = [
+  '화면 왼쪽 끝 (패닝해야 보이는 구간)',
+  '화면 왼쪽',
+  '화면 가로 중앙 (처음 진입 시 바로 보이는 구간)',
+  '화면 오른쪽',
+  '화면 오른쪽 끝 (패닝해야 보이는 구간)',
+];
+function locPromptZoneFor(index, total) {
+  if (total <= 1) return LOC_PROMPT_ZONES[2];
+  const pos = Math.round((index / (total - 1)) * (LOC_PROMPT_ZONES.length - 1));
+  return LOC_PROMPT_ZONES[pos];
+}
+
+// 지도(phaseMaps) pseudo-location은 사진이 아니라 일러스트 관광 지도라 아래
+// 사진풍 프롬프트(구도/스타일 문단)를 그대로 쓰면 톤이 어긋난다 — 실제 모습
+// 설명(visualBrief)만 공유하고 나머지는 별도로 짧게 짠다.
+function buildMapPrompt(loc) {
+  return [
+    `[지도] ${loc.name}`,
+    '',
+    '[비율] 4:5 (세로로 살짝 긴 구도)',
+    '',
+    '[실제 지리]',
+    loc.visualBrief || '',
+    '',
+    '[스타일]',
+    '- 손그림 느낌의 일러스트 관광 지도(여행 안내책자 스타일), 밝고 따뜻한 색감',
+    '- 건물은 단순화된 입체 블록으로, 도로/골목은 선으로 명확히 구분',
+    '- 항구의 물은 밝은 청록색',
+    '',
+    '[피해야 할 것]',
+    '- 실사/위성지도 스타일, 텍스트 라벨, 마커·핀 아이콘 (핀은 게임이 좌표로 직접 얹으므로 지도 자체에는 넣지 않음)',
+    '- 워터마크, UI 요소, 과도한 채도',
+  ].join('\n');
+}
+
+function buildHubLocationPrompt(locationId, phase) {
+  const loc = mapPseudoLocation(phase) && mapPseudoLocation(phase).id === locationId ? mapPseudoLocation(phase) : locationDefs[locationId];
+  if (!loc) return '';
+  if (loc.isMap) return buildMapPrompt(loc);
+  const visual = loc.visualBrief || `${loc.name} — 실제 모습에 대한 설명이 아직 등록되지 않았습니다(locationDefs.js에 visualBrief를 추가하세요).`;
+  const mood = HUB_PHASE_MOOD[phase] || '';
+  const interactions = hubLocationInteractions(locationId, phase);
+  const elementsBlock = interactions.length
+    ? interactions.map((def, i) => `- [배치: ${locPromptZoneFor(i, interactions.length)}] ${def.label || def.id}: ${interactionVisualCue(def)}`).join('\n')
+    : '- (이 장소/단계에 걸린 상호작용 없음 — 특별히 필요한 요소 없음)';
+  // 배경에서 빼야 하는 건 "이름 있는 주연"뿐이다 — 이 사람들은 표정별 누끼
+  // PNG가 따로 있어 게임이 그 위에 겹쳐 그린다(play/game/index.html의
+  // char-img transform 합성 참고). 위 요소 목록에 나오는 이름 없는 배경
+  // 인물(예: "옆 건물 직원이 태그를 문에 갖다 댔다")은 반대로 별도 자산이
+  // 전혀 없으므로 이 사진에 직접 그려 넣어야만 플레이어가 볼 수 있다 —
+  // 그래서 "사람 자체를 빼라"가 아니라 "이 명단만 빼라"로 정확히 짚어준다.
+  const castNames = Array.from(new Set(
+    ['지수'].concat((resolveByPhase(loc.characters, phase) || []).map(id => {
+      const c = (typeof dialogueCharacters !== 'undefined') ? dialogueCharacters.find(d => d.id === id) : null;
+      return c ? c.name : id;
+    }))
+  ));
+  return [
+    `[장소] ${loc.name} (${loc.week}주차 · ${HUB_PHASE_LABELS[phase] || phase})`,
+    '',
+    '[비율] 18:16 (가로로 살짝 넓은 구도)',
+    '',
+    '[실제 모습]',
+    visual,
+    '',
+    '[분위기 · 시간대]',
+    mood,
+    '',
+    '[화면에 꼭 있어야 하는 요소 — 아래 배치대로 화면에 펼쳐서, 한곳에 몰아넣지 말 것]',
+    elementsBlock,
+    '',
+    '[구도 · 카메라]',
+    '- 아이레벨(눈높이) 시점, 스마트폰으로 찍은 듯한 자연스러운 미디엄~와이드 샷',
+    '- 실제 게임 화면은 이 사진을 드래그로 좌우 패닝, 핀치/휠로 최대 3배 확대하며 둘러보는 구조라 한 화면에 다 담을 필요는 없음',
+    '- 처음 진입하면 화면 높이에 맞춰 중앙 정렬로 꽉 채워지고, 화면 밖으로 넘치는 좌우가 패닝 범위가 됨 — 그래서 위 요소 목록의 "배치"가 화면 중앙/왼쪽/오른쪽으로 나뉘어 있는 것',
+    '- 확대해야 알아볼 수 있는 작은 디테일(글자, 표식 등)을 하나쯤 넣어도 좋음 — 플레이어가 확대해서 찾아보는 재미',
+    '- 화면 하단부터 위로 약 74% 구간은 대화 중 인물 이미지가 그 위에 겹쳐 뜨는 자리이므로, 위 요소들의 디테일은 그 구간에 깔려도 알아볼 수 있게 중상단 쪽에도 배치',
+    '',
+    '[스타일]',
+    '- 사실적인 사진풍(스마트폰 스냅샷 느낌), 과장 없는 자연광, 살짝 차분한 톤의 시네마틱 색감',
+    `- ${castNames.join('/')}는 게임에서 별도 이미지로 렌더링되어 이 배경 위에 겹쳐지므로 그려 넣지 않는다`,
+    '- 단, 위 "화면에 꼭 있어야 하는 요소"에 등장하는 이름 없는 인물(예: 직원, 낯선 사람)은 별도 자산이 없으므로 반드시 이 사진 안에 직접 그려 넣는다',
+    '',
+    '[피해야 할 것]',
+    '- 텍스트, 워터마크, 로고, UI 요소',
+    '- 만화/애니메이션풍 렌더링, 어안렌즈 왜곡, 과장된 채도',
+    '- 요소들을 한곳에 몰아 붙이거나 겹쳐 그리기 — 반드시 지정된 배치대로 화면에 펼칠 것',
+    `- ${castNames.join('/')} 등 이름 있는 주연 캐릭터의 얼굴이나 전신`,
+  ].join('\n');
+}
+
+function renderHubPromptPanel() {
+  if (!currentHubLocationId || !currentHubPhase) { el.hubPromptText.value = ''; return; }
+  el.hubPromptText.value = buildHubLocationPrompt(currentHubLocationId, currentHubPhase);
+  el.hubPromptCopyStatus.textContent = '';
+}
+
+el.hubPromptCopyBtn.addEventListener('click', async () => {
+  if (!el.hubPromptText.value) return;
+  try {
+    await navigator.clipboard.writeText(el.hubPromptText.value);
+  } catch (err) {
+    // Clipboard API can be unavailable/denied (older WebView, missing
+    // permission) — select the text so the tester can still copy it by hand
+    // instead of leaving them with a silent failure.
+    el.hubPromptText.select();
+    document.execCommand('copy');
+  }
+  el.hubPromptCopyStatus.textContent = '복사됐어요.';
+});
+
+/* ===== 지도 핀 편집기 — 지도(🗺) pseudo-location을 골랐을 때만 보인다.
+   dev/data/locationDefs.js에 mapPosition이 있는(=이미 랜드마크급으로 지정된)
+   위치만 고를 수 있고, 지도 그림을 탭하면 AssetDB.setMapPin으로 그 위치의
+   좌표 override를 저장한다 — play/explore/index.html의 이동하기 지도가 이
+   override를 mapPosition보다 우선해서 읽는다(location-background-system과
+   같은 이유: 정적 코드를 고치지 않고 실제 그림 보면서 조정). ===== */
+let currentMapPinLocationId = null;
+async function renderMapPinPanel() {
+  const loc = currentHubLocation();
+  const isMap = !!(loc && loc.isMap);
+  el.mapPinPanel.classList.toggle('hidden', !isMap);
+  if (!isMap) return;
+  const phaseLocs = hubLocationsForPhase(currentHubPhase).filter(l => resolveByPhase(l.mapPosition, currentHubPhase));
+  if (!phaseLocs.length) {
+    el.mapPinLocationPills.innerHTML = '';
+    el.mapPinDots.innerHTML = '';
+    el.mapPinHint.textContent = '이 단계에 mapPosition을 가진 위치가 없습니다 (dev/data/locationDefs.js 참고).';
+    return;
+  }
+  if (!currentMapPinLocationId || !phaseLocs.some(l => l.id === currentMapPinLocationId)) currentMapPinLocationId = phaseLocs[0].id;
+
+  let pins = {};
+  try { pins = await AssetDB.getMapPins(); } catch (err) { DevDiag.show('지도 핀 정보를 불러오지 못했습니다: ' + (err && err.message ? err.message : err)); }
+
+  el.mapPinLocationPills.innerHTML = phaseLocs.map(l =>
+    `<button class="pill${l.id === currentMapPinLocationId ? ' active' : ''}" data-id="${l.id}">${escapeHtml(l.name)}${pins[l.id] ? ' •' : ''}</button>`
+  ).join('');
+  el.mapPinLocationPills.querySelectorAll('.pill').forEach(btn => {
+    btn.addEventListener('click', () => { currentMapPinLocationId = btn.dataset.id; renderMapPinPanel(); });
+  });
+
+  const assetId = await DevGameState.getBackgroundId(loc.id).catch(() => null);
+  const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
+  el.mapPinStage.style.backgroundImage = (asset && asset.dataUrl) ? `url(${asset.dataUrl})` : '';
+
+  el.mapPinDots.innerHTML = '';
+  phaseLocs.forEach(l => {
+    const pos = pins[l.id] || resolveByPhase(l.mapPosition, currentHubPhase);
+    const dot = document.createElement('div');
+    dot.className = 'map-pin-dot' + (l.id === currentMapPinLocationId ? ' selected' : '');
+    dot.style.left = pos.x + '%';
+    dot.style.top = pos.y + '%';
+    dot.innerHTML = `<span class="map-pin-dot-label">${escapeHtml(l.name)}</span>`;
+    el.mapPinDots.appendChild(dot);
+  });
+
+  const savedPos = pins[currentMapPinLocationId];
+  el.mapPinHint.textContent = asset
+    ? (savedPos
+      ? `저장된 위치: x ${savedPos.x}%, y ${savedPos.y}% — 지도를 다시 탭하면 옮겨집니다.`
+      : '아직 이 위치의 핀을 조정하지 않았습니다(코드 기본값 사용 중) — 지도를 탭해서 놓으세요.')
+    : '먼저 이 지도의 배경 이미지를 위 장소 배정 패널에서 업로드하세요. (이미지 없이도 탭으로 좌표는 저장할 수 있습니다)';
+}
+
+el.mapPinStage.addEventListener('click', async (e) => {
+  if (!currentMapPinLocationId) return;
+  const rect = el.mapPinStage.getBoundingClientRect();
+  const x = Math.round(Math.min(100, Math.max(0, ((e.clientX - rect.left) / rect.width) * 100)) * 10) / 10;
+  const y = Math.round(Math.min(100, Math.max(0, ((e.clientY - rect.top) / rect.height) * 100)) * 10) / 10;
+  el.mapPinHint.textContent = '저장하는 중...';
+  try {
+    await AssetDB.setMapPin(currentMapPinLocationId, { x, y });
+    await renderMapPinPanel();
+  } catch (err) {
+    el.mapPinHint.textContent = '저장 실패: ' + (err && err.message ? err.message : err);
+  }
+});
+
+let currentHubPhase = deepLinkedHubPhase || null;
+let currentHubLocationId = null;
+
+function renderHubPicker() {
+  const phases = hubPhases();
+  if (!currentHubPhase || !phases.includes(currentHubPhase)) currentHubPhase = phases[0] || null;
+  el.hubPhasePickerPills.innerHTML = phases.length
+    ? phases.map(p => `<button class="pill${p === currentHubPhase ? ' active' : ''}" data-id="${p}">${escapeHtml(HUB_PHASE_LABELS[p] || p)}</button>`).join('')
+    : '<div class="empty-note">locationDefs.js에 등록된 장소가 없습니다.</div>';
+  el.hubPhasePickerPills.querySelectorAll('.pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentHubPhase = btn.dataset.id;
+      currentHubLocationId = null;
+      // Re-render the phase pills too (not just locations) — otherwise the
+      // `active` class stays on whichever phase was picked last, since
+      // nothing else updates the pill markup after this click.
+      renderHubPicker();
+    });
+  });
+  renderHubLocationPicker();
+}
+
+// 장소별 사진 배정 완료 여부를 pill에 체크(✓)로 보여준다 — 실제 탐색허브
+// 화면(play/explore/index.html applyLocationBackground)이 사진을 찾을 때 쓰는
+// 것과 같은 DevGameState.getBackgroundId 조회라, 여기서 체크가 뜨면 그
+// 화면에서도 실제로 사진이 나온다는 뜻이다. 조회가 비동기라 pill을 그리기
+// 전에 먼저 await한다 — 탭을 빠르게 오가도 지난 phase의 결과가 새 목록에
+// 얹히지 않도록 토큰으로 막는다.
+let hubLocationPickerToken = 0;
+async function renderHubLocationPicker() {
+  const token = ++hubLocationPickerToken;
+  const mapPseudo = currentHubPhase ? mapPseudoLocation(currentHubPhase) : null;
+  const locs = currentHubPhase ? hubLocationsForPhase(currentHubPhase).concat(mapPseudo ? [mapPseudo] : []) : [];
+  if (!currentHubLocationId || !locs.some(l => l.id === currentHubLocationId)) currentHubLocationId = locs[0] ? locs[0].id : null;
+  const withHas = await Promise.all(locs.map(async l => ({ loc: l, has: !!(await DevGameState.getBackgroundId(l.id).catch(() => null)) })));
+  if (token !== hubLocationPickerToken) return;
+  el.hubLocationPickerPills.innerHTML = withHas.length
+    ? withHas.map(({ loc: l, has }) => `<button class="pill${l.id === currentHubLocationId ? ' active' : ''}" data-id="${l.id}">${escapeHtml(l.name)}${has ? ' ✓' : ''}</button>`).join('')
+    : '<div class="empty-note">이 단계에 등록된 장소가 없습니다.</div>';
+  el.hubLocationPickerPills.querySelectorAll('.pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentHubLocationId = btn.dataset.id;
+      // Re-render so the `active` class actually moves to the clicked pill.
+      renderHubLocationPicker();
+    });
+  });
+  renderBgLocationAssign();
+  renderHubPromptPanel();
+  renderMapPinPanel();
+}
+
+/* ===== 장소 배정 팝업 — 배경 DB 탭(dev/upload/index.html)의 일반 씬 배경
+   슬롯이 쓰는 것과 완전히 같은 흐름: 이 허브 위치가 어느 장소 DB 항목인지
+   고르고, 그 자리에서 사진 업로드까지 끝낸다(location-background-system
+   설계안) — 허브 위치와 VN 씬이 같은 물리적 장소를 가리키는 경우(예: 둘 다
+   "전시장 앞") 사진을 한 번만 올리면 공유된다. ===== */
+let locationsCatalog = {};
+let bgAssignLocId = null;
+let bgAssignVariantId = 'default';
+
+async function loadLocationsCatalog() {
+  try { locationsCatalog = await AssetDB.getLocations(); }
+  catch (err) { DevDiag.show('장소 목록을 불러오지 못했습니다: ' + (err && err.message ? err.message : err)); }
+}
+
+function uniqueLocationId(label) {
+  const base = 'loc-' + slugify(label);
+  let id = base, n = 2;
+  while (locationsCatalog[id]) { id = `${base}-${n}`; n++; }
+  return id;
+}
+
+async function renderBgLocationAssign() {
+  if (!currentHubLocation()) return;
+  const sceneId = currentHubLocationId;
+  await loadLocationsCatalog();
+  let sceneLocMap = {};
+  try { sceneLocMap = await AssetDB.getSceneLocationMap(); }
+  catch (err) { DevDiag.show('장소 배정 정보를 불러오지 못했습니다: ' + (err && err.message ? err.message : err)); }
+  const assigned = sceneLocMap[sceneId] || null;
+  const loc = assigned && assigned.locationId ? locationsCatalog[assigned.locationId] : null;
+  const variantLabel = loc && assigned.variantId && assigned.variantId !== 'default'
+    ? ((loc.variants || []).find(v => v.id === assigned.variantId) || {}).label : null;
+  el.bgLocationAssignedLabel.textContent = loc
+    ? `현재 배정: ${loc.label}${variantLabel ? ' · ' + variantLabel : ''}`
+    : '아직 장소가 배정되지 않았습니다.';
+  bgAssignLocId = loc ? loc.id : null;
+  bgAssignVariantId = assigned ? (assigned.variantId || 'default') : 'default';
+
+  const ids = Object.keys(locationsCatalog).sort((a, b) => locationsCatalog[a].label.localeCompare(locationsCatalog[b].label, 'ko'));
+  el.bgLocationAssignPills.innerHTML = ids.length
+    ? ids.map(id => `<button class="pill${loc && id === loc.id ? ' active' : ''}" data-id="${id}">${escapeHtml(locationsCatalog[id].label)}</button>`).join('')
+    : '<div class="empty-note">등록된 장소가 없습니다. 장소 DB 탭에서 먼저 만들거나, 아래에서 바로 새로 만드세요.</div>';
+  el.bgLocationAssignPills.querySelectorAll('.pill').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const locationId = btn.dataset.id;
+      const targetLoc = locationsCatalog[locationId];
+      const variantId = (targetLoc.variants && targetLoc.variants[0] && targetLoc.variants[0].id) || 'default';
+      try {
+        await DevGameState.assignSlotLocation(sceneId, locationId, variantId);
+        await renderBgLocationAssign();
+        renderHubLocationPicker();
+      } catch (err) {
+        DevDiag.show('장소 배정 실패: ' + (err && err.message ? err.message : err));
+      }
+    });
+  });
+
+  el.bgUnassignBtn.classList.toggle('hidden', !loc);
+  const variants = loc && loc.variants && loc.variants.length > 1 ? loc.variants : null;
+  el.bgVariantAssignPicker.classList.toggle('hidden', !variants);
+  if (variants) {
+    el.bgVariantAssignPills.innerHTML = variants.map(v =>
+      `<button class="pill${assigned.variantId === v.id ? ' active' : ''}" data-id="${v.id}">${escapeHtml(v.label)}</button>`
+    ).join('');
+    el.bgVariantAssignPills.querySelectorAll('.pill').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        try {
+          await DevGameState.assignSlotLocation(sceneId, loc.id, btn.dataset.id);
+          await renderBgLocationAssign();
+        } catch (err) {
+          DevDiag.show('variant 배정 실패: ' + (err && err.message ? err.message : err));
+        }
+      });
+    });
+  }
+
+  // 사진 유무와 무관하게 loc가 있으면 패널을 보여준다 — 배정만 하고 아직
+  // 사진이 없는 상태에서도 바로 이 팝업에서 올릴 수 있어야 하므로(§장소 DB
+  // 탭으로 건너가지 않고 여기서 통합 처리). 사진이 없으면 empty-note만 뜨고
+  // 업로드 버튼은 그대로 동작한다.
+  el.bgLocationPreviewPanel.classList.toggle('hidden', !loc);
+  const previewAssetId = loc ? await DevGameState.getLocationAssetId(loc.id, assigned.variantId) : null;
+  let asset = null;
+  if (previewAssetId) {
+    try { asset = await AssetDB.getAsset(previewAssetId); }
+    catch (err) { DevDiag.show('사진 미리보기를 불러오지 못했습니다: ' + (err && err.message ? err.message : err)); }
+  }
+  el.bgLocationPreviewImg.classList.toggle('hidden', !asset);
+  el.bgLocationPreviewEmpty.classList.toggle('hidden', !loc || !!asset);
+  if (asset) el.bgLocationPreviewImg.src = asset.dataUrl;
+}
+
+el.bgNewLocationBtn.addEventListener('click', async () => {
+  const label = el.bgNewLocationInput.value.trim();
+  if (!label || !currentHubLocation()) return;
+  const sceneId = currentHubLocationId;
+  const id = uniqueLocationId(label);
+  try {
+    await AssetDB.setLocation(id, { id, label, variants: [{ id: 'default', label: '기본' }] });
+    await DevGameState.assignSlotLocation(sceneId, id, 'default');
+    el.bgNewLocationInput.value = '';
+    await renderBgLocationAssign();
+    renderHubLocationPicker();
+  } catch (err) {
+    DevDiag.show('새 장소 배정 실패: ' + (err && err.message ? err.message : err));
+  }
+});
+
+el.bgUnassignBtn.addEventListener('click', async () => {
+  if (!currentHubLocation()) return;
+  const sceneId = currentHubLocationId;
+  try {
+    await DevGameState.assignSlotLocation(sceneId, null, null);
+    await renderBgLocationAssign();
+    renderHubLocationPicker();
+  } catch (err) {
+    DevDiag.show('배정 해제 실패: ' + (err && err.message ? err.message : err));
+  }
+});
+
+el.bgLocationAssignOpenBtn.addEventListener('click', async () => {
+  await renderBgLocationAssign();
+  el.bgLocationAssignModal.classList.remove('hidden');
+});
+el.bgLocationAssignCloseBtn.addEventListener('click', () => {
+  el.bgLocationAssignModal.classList.add('hidden');
+});
+
+el.bgLocationPhotoBtn.addEventListener('click', () => el.bgLocationPhotoInput.click());
+// 배정하기 팝업 안에서 바로 사진을 올리는 통합 업로드 — 장소 DB 탭의
+// currentType==='location' 저장 분기와 같은 방식(리사이즈 + locationId/
+// variantId 키)을 그대로 여기서 직접 수행한다.
+el.bgLocationPhotoInput.addEventListener('change', async (e) => {
+  const file = e.target.files && e.target.files[0];
+  e.target.value = '';
+  if (!file || !file.type.startsWith('image/') || !bgAssignLocId) return;
+  el.bgLocationPhotoBtn.disabled = true;
+  el.bgLocationPhotoStatus.textContent = '업로드 중...';
+  try {
+    const img = await loadImageFromBlob(file);
+    let blob = file, name = file.name, width = img.naturalWidth, height = img.naturalHeight;
+    if (Math.max(width, height) > BG_MAX_DIMENSION) {
+      blob = await resizeImageToBlob(img, BG_MAX_DIMENSION, BG_JPEG_QUALITY);
+      const resized = await loadImageFromBlob(blob);
+      name = file.name.replace(/\.[^.]+$/, '') + '.jpg';
+      width = resized.naturalWidth;
+      height = resized.naturalHeight;
+    }
+    const record = await AssetDB.addAsset({ type: 'background', name, blob, width, height, locationId: bgAssignLocId, variantId: bgAssignVariantId });
+    await DevGameState.setLocationAssetId(bgAssignLocId, bgAssignVariantId, record.id);
+    el.bgLocationPhotoStatus.textContent = '';
+    await renderBgLocationAssign();
+    renderHubLocationPicker();
+  } catch (err) {
+    el.bgLocationPhotoStatus.textContent = '업로드 실패: ' + (err && err.message ? err.message : err);
+  } finally {
+    el.bgLocationPhotoBtn.disabled = false;
+  }
+});
+
+renderHubPicker();
+</script>
+<script src="/dev/devPlanFab.js"></script>
+</body>
+</html>
