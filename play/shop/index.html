@@ -82,9 +82,28 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--sans);disp
 .mk-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 .item-btn.buy[disabled]{opacity:.5;cursor:default}
+
+/* ===== Initial preload overlay — shown from first paint until every
+   component this page needs (outfit metadata, item thumbnails, thumbnail
+   images, preview background) has finished loading, so the shop never
+   reveals empty cards/placeholders that then pop in art a moment later. ===== */
+.shop-preload-overlay{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;transition:opacity .35s ease}
+.shop-preload-overlay.hide{opacity:0;pointer-events:none}
+.shop-preload-inner{width:min(280px,72vw);display:flex;flex-direction:column;align-items:center;gap:14px}
+.shop-preload-label{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--text-secondary);text-transform:uppercase}
+.shop-preload-track{width:100%;height:6px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden}
+.shop-preload-fill{height:100%;width:0%;border-radius:3px;background:linear-gradient(90deg,var(--cyan),#8FE0EC);transition:width .25s ease}
+.shop-preload-pct{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--text-secondary)}
 </style>
 </head>
 <body>
+<div class="shop-preload-overlay" id="shopPreloadOverlay">
+  <div class="shop-preload-inner">
+    <div class="shop-preload-label">불러오는 중</div>
+    <div class="shop-preload-track"><div class="shop-preload-fill" id="shopPreloadFill"></div></div>
+    <div class="shop-preload-pct" id="shopPreloadPct">0%</div>
+  </div>
+</div>
 <div class="frame">
   <div class="shop-header">
     <button class="back-btn" id="backBtn">← 돌아가기</button>
@@ -172,6 +191,9 @@ const el = {
   wearLaterBtn: document.getElementById('wearLaterBtn'),
   wearNowBtn: document.getElementById('wearNowBtn'),
   toast: document.getElementById('toast'),
+  preloadOverlay: document.getElementById('shopPreloadOverlay'),
+  preloadFill: document.getElementById('shopPreloadFill'),
+  preloadPct: document.getElementById('shopPreloadPct'),
 };
 
 function escapeHtml(s) {
@@ -189,17 +211,24 @@ async function safeCall(fn) {
 // 각 상품이 실제로 걸친 옷(vnOutfitId)의 업로드 사진을 카드 썸네일로 미리
 // 읽어 둔다 — 미리보기 패널과 같은 lookup을 카드 목록 전체에 대해 한 번에
 // 돌리는 것뿐이라 별도 캐시 없이도 충분히 가볍다.
-async function loadItemThumbs() {
+// onItemDone (optional): called once per item as its lookup settles, so the
+// preload overlay's progress bar can advance per-item instead of jumping
+// straight from this step's start to its end.
+async function loadItemThumbs(onItemDone) {
   const entries = await Promise.all(Object.values(shopItems).map(async item => {
-    if (!item.vnOutfitId) return [item.id, null];
-    // …Any (not the strict 'neutral'-only lookup) — a thumbnail just needs to
-    // show the outfit, so an outfit that only has a non-neutral portrait
-    // uploaded so far should still get a real photo instead of the emoji
-    // placeholder.
-    const assetId = await safeCall(() => DevGameState.getCharacterAssetIdForOutfitAny(item.characterId || 'jisoo', item.vnOutfitId));
-    if (!assetId) return [item.id, null];
-    const asset = await AssetDB.getAsset(assetId).catch(() => null);
-    return [item.id, (asset && asset.dataUrl) || null];
+    const entry = await (async () => {
+      if (!item.vnOutfitId) return [item.id, null];
+      // …Any (not the strict 'neutral'-only lookup) — a thumbnail just needs to
+      // show the outfit, so an outfit that only has a non-neutral portrait
+      // uploaded so far should still get a real photo instead of the emoji
+      // placeholder.
+      const assetId = await safeCall(() => DevGameState.getCharacterAssetIdForOutfitAny(item.characterId || 'jisoo', item.vnOutfitId));
+      if (!assetId) return [item.id, null];
+      const asset = await AssetDB.getAsset(assetId).catch(() => null);
+      return [item.id, (asset && asset.dataUrl) || null];
+    })();
+    if (onItemDone) onItemDone();
+    return entry;
   }));
   itemThumbUrls = Object.fromEntries(entries);
 }
@@ -442,13 +471,58 @@ el.wearNowBtn.addEventListener('click', async () => {
   if (!result.success) showToast('구매는 완료됐지만 의상 장착 동기화에 실패했습니다. 옷장에서 다시 시도해주세요.');
 });
 
+// ===== Initial preload progress bar =====
+// Tracks every component this page needs before it's safe to reveal the
+// shop: outfit-name/description metadata, each item's thumbnail lookup,
+// the actual decode of every resolved thumbnail image, and the preview
+// panel's location background. The total grows once the thumbnail-lookup
+// step resolves and we know how many unique images still need decoding.
+let preloadDone = 0;
+let preloadTotal = 1;
+function setPreloadProgress() {
+  const pct = preloadTotal > 0 ? Math.min(100, Math.round((preloadDone / preloadTotal) * 100)) : 100;
+  el.preloadFill.style.width = pct + '%';
+  el.preloadPct.textContent = pct + '%';
+}
+function bumpPreload() {
+  preloadDone += 1;
+  setPreloadProgress();
+}
+function hidePreloadOverlay() {
+  el.preloadOverlay.classList.add('hide');
+}
+
 (async function init() {
   updateHeaderPoints();
   renderTabs();
-  await Promise.all([safeCall(() => AssetDB.prefetchOutfitNames()), safeCall(() => AssetDB.prefetchOutfitDescriptions()), loadItemThumbs()]);
+
+  const itemCount = Object.keys(shopItems).length;
+  // steps: outfit names + outfit descriptions + one per shop item's thumbnail
+  // lookup + the preview background load + the initial preview image itself.
+  // Thumbnail *image* decode steps are appended once loadItemThumbs resolves
+  // and the actual unique image count is known.
+  preloadTotal = 2 + itemCount + 2;
+  preloadDone = 0;
+  setPreloadProgress();
+
+  await Promise.all([
+    safeCall(() => AssetDB.prefetchOutfitNames()).then(bumpPreload),
+    safeCall(() => AssetDB.prefetchOutfitDescriptions()).then(bumpPreload),
+    loadItemThumbs(bumpPreload),
+  ]);
+
+  const thumbUrls = [...new Set(Object.values(itemThumbUrls).filter(Boolean))];
+  preloadTotal += thumbUrls.length;
+  setPreloadProgress();
+  await Promise.all(thumbUrls.map(url => AssetDB.preloadImage(url).then(bumpPreload)));
+
   renderList();
-  updatePreview();
-  loadPreviewLocationBackground();
+  await updatePreview();
+  bumpPreload();
+  await loadPreviewLocationBackground();
+  bumpPreload();
+
+  hidePreloadOverlay();
 })();
 </script>
 </body>
