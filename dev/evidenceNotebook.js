@@ -159,6 +159,8 @@ const EvidenceNotebook = (function () {
     state.onClose = typeof opts.onClose === 'function' ? opts.onClose : null;
     state.isIndexOpen = false;
     state.zoomEntry = null;
+    el.indexPanel.classList.remove('evn-index-open');
+    el.indexPanel.classList.add('hidden');
 
     const all = (typeof CaseFileState !== 'undefined' ? CaseFileState.getCaseEntries() : [])
       .filter(e => e.kind === 'evidence' || e.kind === 'testimony');
@@ -216,24 +218,22 @@ const EvidenceNotebook = (function () {
     state.section = sectionId;
     const list = currentEntries();
     state.index = Math.min(lastViewedBySection[sectionId] || 0, Math.max(0, list.length - 1));
-    state.isIndexOpen = false;
+    closeIndexPanel();
     render();
   }
   function goPrev() {
     if (state.index <= 0) return;
-    state.index -= 1;
-    afterNav();
+    runPageFlip('prev', () => { state.index -= 1; afterNav(); });
   }
   function goNext() {
     if (state.index >= currentEntries().length - 1) return;
-    state.index += 1;
-    afterNav();
+    runPageFlip('next', () => { state.index += 1; afterNav(); });
   }
   function jumpTo(entryId) {
     const idx = currentEntries().findIndex(e => e.id === entryId);
     if (idx < 0) return;
     state.index = idx;
-    state.isIndexOpen = false;
+    closeIndexPanel();
     afterNav();
   }
   function afterNav() {
@@ -244,6 +244,47 @@ const EvidenceNotebook = (function () {
     }
     render();
     hydrateAndRerender();
+  }
+
+  /* ===== 페이지 넘김 효과 =====
+     이전/다음 이동에 책장을 넘기는 듯한 전환을 준다. el.page 컨테이너
+     자체에 클래스를 걸어 애니메이션하므로, render()가 그 안의 내용
+     (innerHTML)을 다시 그려도 el.page에 걸린 클래스는 그대로 유지된다 —
+     내용 교체(mutate)는 "넘어가는" 절반 지점(evn-flip-out-*)에서 실행하고,
+     이어서 반대편에서 들어오는 절반(evn-flip-in-*)으로 마무리한다. */
+  let pageFlipTimer = null;
+  function runPageFlip(direction, mutate) {
+    if (pageFlipTimer) { clearTimeout(pageFlipTimer); pageFlipTimer = null; }
+    el.page.classList.remove('evn-flip-out-next', 'evn-flip-out-prev', 'evn-flip-in-next', 'evn-flip-in-prev', 'evn-flip-in-settle');
+    el.page.classList.add(direction === 'next' ? 'evn-flip-out-next' : 'evn-flip-out-prev');
+    pageFlipTimer = setTimeout(() => {
+      mutate();
+      el.page.classList.remove('evn-flip-out-next', 'evn-flip-out-prev');
+      el.page.classList.add(direction === 'next' ? 'evn-flip-in-next' : 'evn-flip-in-prev');
+      void el.page.offsetWidth; // reflow — evn-flip-in-*은 transition:none이라 이 시점 값이 그대로 시작점이 된다
+      el.page.classList.add('evn-flip-in-settle');
+      pageFlipTimer = setTimeout(() => {
+        el.page.classList.remove('evn-flip-in-next', 'evn-flip-in-prev', 'evn-flip-in-settle');
+        pageFlipTimer = null;
+      }, 240);
+    }, 150);
+  }
+
+  /* ===== 색인 패널 열기/닫기 =====
+     evn-overlay 전체의 open()/close()와 같은 방식(hidden 유지 + 클래스로
+     트랜지션, 닫힐 때만 지연 후 hidden 재부착) — 색인도 책의 한 페이지처럼
+     펼쳐지고 접히는 느낌을 주기 위해서다(evn-index-open, §CSS). */
+  function openIndexPanel() {
+    state.isIndexOpen = true;
+    el.indexList.innerHTML = renderIndexHtml(currentEntries());
+    el.indexPanel.classList.remove('hidden');
+    requestAnimationFrame(() => el.indexPanel.classList.add('evn-index-open'));
+  }
+  function closeIndexPanel() {
+    if (!state.isIndexOpen) return;
+    state.isIndexOpen = false;
+    el.indexPanel.classList.remove('evn-index-open');
+    setTimeout(() => { if (!state.isIndexOpen) el.indexPanel.classList.add('hidden'); }, 340);
   }
 
   /* ===== 렌더 ===== */
@@ -287,9 +328,6 @@ const EvidenceNotebook = (function () {
     } else if (state.mode === 'present') {
       el.npcTag.textContent = '증거 제시';
     }
-
-    el.indexPanel.classList.toggle('hidden', !state.isIndexOpen);
-    if (state.isIndexOpen) el.indexList.innerHTML = renderIndexHtml(list);
 
     el.zoomPanel.classList.toggle('hidden', !state.zoomEntry);
     if (state.zoomEntry) renderZoomHtml(state.zoomEntry);
@@ -458,7 +496,7 @@ const EvidenceNotebook = (function () {
     });
     el.page.querySelectorAll('[data-evn-prev]').forEach(node => node.addEventListener('click', goPrev));
     el.page.querySelectorAll('[data-evn-next]').forEach(node => node.addEventListener('click', goNext));
-    el.page.querySelectorAll('[data-evn-index]').forEach(node => node.addEventListener('click', () => { state.isIndexOpen = true; render(); }));
+    el.page.querySelectorAll('[data-evn-index]').forEach(node => node.addEventListener('click', openIndexPanel));
     el.page.querySelectorAll('[data-evn-submit]').forEach(node => node.addEventListener('click', requestSubmit));
   }
 
@@ -564,7 +602,7 @@ const EvidenceNotebook = (function () {
         </div>
         <div class="evn-index-panel hidden" id="evnIndexPanel">
           <div class="evn-index-header">
-            <div class="evn-index-title">색인</div>
+            <div class="evn-index-panel-title">색인</div>
             <button type="button" class="evn-close-btn" id="evnIndexCloseBtn">✕</button>
           </div>
           <div class="evn-index-list" id="evnIndexList"></div>
@@ -611,8 +649,8 @@ const EvidenceNotebook = (function () {
     overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
     el.prevBtn.addEventListener('click', goPrev);
     el.nextBtn.addEventListener('click', goNext);
-    el.indexBtn.addEventListener('click', () => { state.isIndexOpen = true; render(); });
-    overlay.querySelector('#evnIndexCloseBtn').addEventListener('click', () => { state.isIndexOpen = false; render(); });
+    el.indexBtn.addEventListener('click', openIndexPanel);
+    overlay.querySelector('#evnIndexCloseBtn').addEventListener('click', closeIndexPanel);
     el.indexPanel.addEventListener('click', (e) => {
       const row = e.target.closest('[data-evn-jump]');
       if (row) jumpTo(row.dataset.evnJump);
@@ -673,7 +711,18 @@ const EvidenceNotebook = (function () {
       .evn-close-btn{position:absolute;top:-14px;right:-6px;z-index:5;width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.4)}
       .evn-close-btn:active{opacity:.8}
 
-      .evn-page{flex:1;min-height:0;display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain}
+      .evn-page{flex:1;min-height:0;display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain;transform-origin:center left}
+      /* ===== 페이지 넘김 효과 (runPageFlip) =====
+         이전/다음 이동 시 el.page 컨테이너를 살짝 기울여 밀어내고(evn-flip-out-*),
+         내용 교체 직후 반대쪽에서 눌러 들어와(evn-flip-in-*) 자리를 잡는다
+         (evn-flip-in-settle). evn-flip-in-*은 transition:none으로 순간 이동시켜
+         시작 자세를 만든 뒤, 다음 프레임에 settle 클래스로 트랜지션을 건다. */
+      .evn-page.evn-flip-out-next,.evn-page.evn-flip-out-prev{transition:transform .15s cubic-bezier(0.4,0,0.7,0.4),opacity .15s ease}
+      .evn-page.evn-flip-out-next{transform:perspective(1000px) rotateY(-16deg) scale(.97);opacity:.4}
+      .evn-page.evn-flip-out-prev{transform:perspective(1000px) rotateY(16deg) scale(.97);opacity:.4}
+      .evn-page.evn-flip-in-next{transform:perspective(1000px) rotateY(16deg) scale(.97);opacity:0;transition:none}
+      .evn-page.evn-flip-in-prev{transform:perspective(1000px) rotateY(-16deg) scale(.97);opacity:0;transition:none}
+      .evn-page.evn-flip-in-settle{transform:none;opacity:1;transition:transform .24s cubic-bezier(0.2,0.8,0.2,1),opacity .24s ease}
 
       /* ===== 직접 디자인 페이지 — 배경 아트 없이도 손으로 꾸민 수사 노트
          처럼 보이도록 CSS만으로 그린다(renderFallbackPageHtml). 압정
@@ -748,18 +797,23 @@ const EvidenceNotebook = (function () {
       .evn-submit-btn.hidden{display:none}
       .evn-submit-btn:active{opacity:.85}
 
-      .evn-index-panel{position:absolute;inset:0;z-index:6;background:rgba(6,8,12,.96);border-radius:4px 14px 14px 14px;display:flex;flex-direction:column;padding:16px}
+      /* ===== 색인 패널 — 기존 노트 페이지(evn-sheet)와 같은 종이/파치먼트
+         양식을 그대로 차용한다(어두운 팝업 대신 노트의 한 페이지처럼 보이게).
+         열고 닫을 때도 evn-overlay와 같은 방식(hidden 유지 + 클래스 트랜지션,
+         §openIndexPanel/closeIndexPanel)으로 책장이 넘어가듯 펼쳐진다. */
+      .evn-index-panel{position:absolute;inset:0;z-index:6;background:repeating-linear-gradient(180deg,rgba(138,114,69,.09) 0,rgba(138,114,69,.09) 1px,transparent 1px,transparent 27px),linear-gradient(180deg,#f8efd9,#efe0bd);border-radius:3px 12px 12px 3px;box-shadow:inset 0 0 0 1px rgba(214,168,75,.5),inset 6px 0 0 rgba(199,117,44,.18),0 8px 22px rgba(0,0,0,.32);display:flex;flex-direction:column;padding:18px 16px 16px;transform-origin:left center;transform:perspective(1200px) rotateY(-88deg);opacity:0;transition:transform .32s cubic-bezier(0.2,0.8,0.2,1),opacity .26s ease}
       .evn-index-panel.hidden{display:none}
-      .evn-index-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-      .evn-index-title{font-size:15px;font-weight:700;color:#fff}
-      .evn-index-panel .evn-close-btn{position:static}
+      .evn-index-panel.evn-index-open{transform:perspective(1200px) rotateY(0deg);opacity:1}
+      .evn-index-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:8px;border-bottom:1px dashed rgba(138,114,69,.45)}
+      .evn-index-panel-title{font-size:15px;font-weight:800;color:#2c2311}
+      .evn-index-panel .evn-close-btn{position:static;background:rgba(44,35,17,.12);border:1px solid rgba(138,114,69,.4);color:#4a3d22}
       .evn-index-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px}
-      .evn-index-row{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:11px 12px;cursor:pointer;text-align:left;font-family:inherit;color:#fff;min-height:44px}
-      .evn-index-row-active{border-color:rgba(214,168,75,.6);background:rgba(214,168,75,.12)}
-      .evn-index-code{font-family:var(--mono,'IBM Plex Mono',ui-monospace,monospace);font-size:10.5px;color:#8a95a1;flex-shrink:0}
-      .evn-index-title{font-size:13px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-      .evn-dot{width:7px;height:7px;border-radius:50%;background:#59b8c8;flex-shrink:0}
-      .evn-index-empty{color:#8a95a1;font-size:13px;text-align:center;padding:20px 0}
+      .evn-index-row{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.45);border:1px solid rgba(138,114,69,.3);border-radius:8px;padding:11px 12px;cursor:pointer;text-align:left;font-family:inherit;color:#3a2f1c;min-height:44px}
+      .evn-index-row-active{border-color:rgba(199,117,44,.7);background:rgba(199,117,44,.16)}
+      .evn-index-code{font-family:var(--mono,'IBM Plex Mono',ui-monospace,monospace);font-size:10.5px;color:#8a7245;flex-shrink:0}
+      .evn-index-title{font-size:13px;font-weight:600;color:#2c2311;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      .evn-dot{width:7px;height:7px;border-radius:50%;background:#c7752c;flex-shrink:0}
+      .evn-index-empty{color:#8a7245;font-size:13px;text-align:center;padding:20px 0}
 
       .evn-zoom-panel{position:absolute;inset:0;z-index:8;background:#000;border-radius:4px 14px 14px 14px;overflow:hidden}
       .evn-zoom-panel.hidden{display:none}

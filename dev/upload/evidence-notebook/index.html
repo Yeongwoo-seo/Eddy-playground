@@ -291,7 +291,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
       </div>
       <div class="evn-index-panel hidden" id="evnExampleIndexPanel">
         <div class="evn-index-header">
-          <div class="evn-index-title">색인</div>
+          <div class="evn-index-panel-title">색인</div>
           <button type="button" class="evn-close-btn" id="evnExampleIndexCloseBtn">✕</button>
         </div>
         <div class="evn-index-list" id="evnExampleIndexList"></div>
@@ -933,21 +933,19 @@ el.evnExampleTabs.addEventListener('click', (e) => {
   const btn = e.target.closest('[data-example-section]');
   if (!btn) return;
   exampleSection = btn.dataset.exampleSection;
+  closeExampleIndexPanel();
   renderExampleTabs();
   renderExamplePage();
 });
 el.evnExamplePrevBtn.addEventListener('click', exampleGoPrev);
 el.evnExampleNextBtn.addEventListener('click', exampleGoNext);
-el.evnExampleIndexBtn.addEventListener('click', () => {
-  renderExampleIndexList();
-  el.evnExampleIndexPanel.classList.remove('hidden');
-});
-el.evnExampleIndexCloseBtn.addEventListener('click', () => el.evnExampleIndexPanel.classList.add('hidden'));
+el.evnExampleIndexBtn.addEventListener('click', openExampleIndexPanel);
+el.evnExampleIndexCloseBtn.addEventListener('click', closeExampleIndexPanel);
 el.evnExampleIndexList.addEventListener('click', (e) => {
   const row = e.target.closest('[data-example-jump]');
   if (!row) return;
   exampleIndexBySection[exampleSection] = Number(row.dataset.exampleJump);
-  el.evnExampleIndexPanel.classList.add('hidden');
+  closeExampleIndexPanel();
   renderExamplePage();
 });
 el.evnExampleSubmitBtn.addEventListener('click', () => {
@@ -962,6 +960,7 @@ el.evnExampleConfirmOkBtn.addEventListener('click', () => el.evnExampleConfirmPa
 function openExamplePreview() {
   EvidenceNotebook.injectStyles();
   el.evnExampleFullscreen.classList.remove('hidden');
+  el.evnExampleIndexPanel.classList.remove('evn-index-open');
   el.evnExampleIndexPanel.classList.add('hidden');
   el.evnExampleConfirmPanel.classList.add('hidden');
   renderExampleTabs();
@@ -979,18 +978,51 @@ function currentExampleList() { return EXAMPLE_SAMPLE_ENTRIES[exampleSection] ||
 function currentExampleIndex() { return exampleIndexBySection[exampleSection] || 0; }
 function currentExampleEntry() { return currentExampleList()[currentExampleIndex()] || null; }
 
+// 실제 노트(dev/evidenceNotebook.js)의 runPageFlip과 같은 클래스
+// (evn-flip-out-*/evn-flip-in-*, EvidenceNotebook.injectStyles가 주입한 CSS를
+// 그대로 공유)를 el.evnExamplePage에 걸어 넘기는 효과를 똑같이 재현한다 —
+// 두 화면의 페이지 전환이 벌어지지 않게.
+let exampleFlipTimer = null;
+function runExampleFlip(direction, mutate) {
+  if (exampleFlipTimer) { clearTimeout(exampleFlipTimer); exampleFlipTimer = null; }
+  const page = el.evnExamplePage;
+  page.classList.remove('evn-flip-out-next', 'evn-flip-out-prev', 'evn-flip-in-next', 'evn-flip-in-prev', 'evn-flip-in-settle');
+  page.classList.add(direction === 'next' ? 'evn-flip-out-next' : 'evn-flip-out-prev');
+  exampleFlipTimer = setTimeout(() => {
+    mutate();
+    page.classList.remove('evn-flip-out-next', 'evn-flip-out-prev');
+    page.classList.add(direction === 'next' ? 'evn-flip-in-next' : 'evn-flip-in-prev');
+    void page.offsetWidth;
+    page.classList.add('evn-flip-in-settle');
+    exampleFlipTimer = setTimeout(() => {
+      page.classList.remove('evn-flip-in-next', 'evn-flip-in-prev', 'evn-flip-in-settle');
+      exampleFlipTimer = null;
+    }, 240);
+  }, 150);
+}
 function exampleGoPrev() {
   const idx = currentExampleIndex();
   if (idx <= 0) return;
-  exampleIndexBySection[exampleSection] = idx - 1;
-  renderExamplePage();
+  runExampleFlip('prev', () => { exampleIndexBySection[exampleSection] = idx - 1; renderExamplePage(); });
 }
 function exampleGoNext() {
   const list = currentExampleList();
   const idx = currentExampleIndex();
   if (idx >= list.length - 1) return;
-  exampleIndexBySection[exampleSection] = idx + 1;
-  renderExamplePage();
+  runExampleFlip('next', () => { exampleIndexBySection[exampleSection] = idx + 1; renderExamplePage(); });
+}
+
+// 색인 패널도 실제 노트의 openIndexPanel/closeIndexPanel과 같은 방식(hidden
+// 유지 + evn-index-open 클래스로 트랜지션) — evn-index-panel의 파치먼트
+// 스타일과 펼침 애니메이션은 EvidenceNotebook.injectStyles가 주입한 CSS 그대로다.
+function openExampleIndexPanel() {
+  renderExampleIndexList();
+  el.evnExampleIndexPanel.classList.remove('hidden');
+  requestAnimationFrame(() => el.evnExampleIndexPanel.classList.add('evn-index-open'));
+}
+function closeExampleIndexPanel() {
+  el.evnExampleIndexPanel.classList.remove('evn-index-open');
+  setTimeout(() => el.evnExampleIndexPanel.classList.add('hidden'), 340);
 }
 
 function renderExampleIndexList() {
