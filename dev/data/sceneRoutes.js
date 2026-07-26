@@ -23,26 +23,14 @@ const MINIGAME_ROUTES = {
   'week1-scene-circular-quay-minigame': '/play/minigame-fishing/',
   'week1-scene-002-2': '/play/minigame-phone-search/',
   'week1-scene-shop-visit': '/play/shop/',
-  // §신규 재편 — 전시장 증거 수집이 전용 미니게임(minigame-exhibition-search,
-  // 삭제됨)에서 탐색 허브의 w2-adrian-spot 조사하기로 옮겨갔다. week2-scene-003
-  // 종료 시 곧장 그 허브 장소로 내려준다 — see dialogueData.js/locationDefs.js.
-  'week2-scene-003-exhibition-return': '/play/explore/?phase=W2_TOURISM&location=w2-adrian-spot',
-  'week2-scene-004-minigame': '/play/minigame-photo-zoom/',
-  'week2-scene-008-minigame': '/play/minigame-timeline/',
-  // The Missing Key v1 §12.6 — 세 용의자 자유 순서 탐문. Both virtual ids
-  // land on the same shared hub-center location; individual suspect spots
-  // are reached from there (see dev/data/locationDefs.js's w2-hub-plaza/
-  // w2-*-spot entries — w2-hub-plaza is shared with Phase 5's re-verify
-  // hub-entry below, §신규 phase간 중복 장소 통합).
-  'week2-suspect-hub-entry': '/play/explore/?phase=W2_SUSPECT_INTERVIEWS&location=w2-hub-plaza',
-  'week2-suspect-interview-return': '/play/explore/?phase=W2_SUSPECT_INTERVIEWS&location=w2-hub-plaza',
-  // §12.2 — 시티 도착 직후 곧장 탐색 허브로. Phase 1(W2_TOURISM) 도입 대화는
-  // interactionDefs.js의 'w2-phase1-intro'(type:'phaseIntro')로 이 phase에
-  // 처음 진입할 때 허브 안에서 자동 재생된다.
-  'week2-hub-entry-tourism': '/play/explore/?phase=W2_TOURISM&location=w2-circular-quay',
-  // §12.8 — 재검증 단계 자유 순회.
-  'week2-reverify-hub-entry': '/play/explore/?phase=W2_REVERIFICATION&location=w2-hub-plaza',
-  'week2-reverify-interview-return': '/play/explore/?phase=W2_REVERIFICATION&location=w2-hub-plaza',
+  // 2주차 v4 전면 재설계 — week2Scenes가 완전 선형 구조로 바뀌면서 옛
+  // 탐색 허브(W2_TOURISM/W2_SUSPECT_INTERVIEWS/W2_REVERIFICATION) 진입/복귀
+  // virtual id들은 전부 제거했다. 미니게임 두 개(사진 속 인물 찾기/시간대
+  // 정리)만 그대로 재사용하며, 새 씬 id로 다시 연결한다 — see
+  // dialogueData.js의 week2-scene-008/010, minigame-photo-zoom·
+  // minigame-timeline의 하드코딩된 복귀 리다이렉트.
+  'week2-scene-008-minigame': '/play/minigame-photo-zoom/',
+  'week2-scene-010-minigame': '/play/minigame-timeline/',
 };
 
 // The Missing Key v1 §5.2/§11.3 — week1-scene-shop-intro's own nextSceneId

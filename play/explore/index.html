@@ -1857,11 +1857,14 @@ function showEvidenceToast(text, correct) {
 
 // A finished interrogation scene's nextSceneId (see dev/dialogueData.js)
 // almost always resolves through MINIGAME_ROUTES (dev/data/sceneRoutes.js)
-// back to this same hub (e.g. week2-suspect-interview-return ->
-// w2-hub-plaza) — those cases move in place instead of a full page
+// back to this same hub (e.g. a suspect-interview-return virtual id ->
+// a hub-plaza location) — those cases move in place instead of a full page
 // reload, since we never actually left the hub. A route to a real
 // standalone page (e.g. the timeline minigame) still navigates away, same
 // hand-off contract playInteraction's type:'minigame' branch already uses.
+//
+// [2주차 v4 재설계] week2Scenes는 더 이상 이 허브로 진입/복귀하지 않는다 —
+// 위 예시는 다른 주차/향후 허브 사용을 위해 남겨둔 일반 설명이다.
 function onInlineSceneComplete(sceneData) {
   currentDialoguePlayer = null;
   activeInlineSceneId = null;
