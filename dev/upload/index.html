@@ -380,27 +380,16 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
 
   <!-- 배경 DB의 일반 씬 배경 슬롯(미니게임 아님) + 탐색허브 위치가 공유하는
        장소 배정 패널 — location-background-system 설계안: 이 슬롯이 어느
-       장소인지만 고르고, 실제 사진 업로드/배정은 장소 DB 탭에서 한다(같은
-       장소를 쓰는 다른 슬롯과 사진을 공유하기 위함). 미니게임 kind일 때는 이
-       패널이 숨고 기존 직접 업로드 방식 그대로 동작한다. See
-       renderBgLocationAssign()/updateBackgroundModeChrome(). -->
+       장소인지 고르고, 그 장소의 사진 업로드까지 한 팝업(bgLocationAssignModal)
+       안에서 끝낸다(같은 장소를 쓰는 다른 슬롯과 사진을 공유하기 위해 실제
+       파일은 여전히 장소 카탈로그 쪽에 저장됨). 씬을 고르자마자 이 전체 UI가
+       펼쳐져 있던 예전 방식 대신, 여기선 현재 배정 상태 한 줄 + "배정하기"
+       버튼만 보인다. 미니게임 kind일 때는 이 패널이 숨고 기존 직접 업로드
+       방식 그대로 동작한다. See renderBgLocationAssign()/updateBackgroundModeChrome(). -->
   <div class="picker hidden" id="bgLocationAssignPanel">
     <div class="picker-label">배정된 장소</div>
     <div class="hint" id="bgLocationAssignedLabel" style="margin:0 0 10px;text-align:left"></div>
-    <div class="picker-pills" id="bgLocationAssignPills"></div>
-    <div style="display:flex;gap:8px;margin-top:10px">
-      <input type="text" class="text-input" id="bgNewLocationInput" placeholder="새 장소 이름">
-      <button class="select-btn" id="bgNewLocationBtn" style="flex-shrink:0">+ 새 장소</button>
-    </div>
-    <div class="picker hidden" id="bgVariantAssignPicker" style="margin-top:14px">
-      <div class="picker-label">variant</div>
-      <div class="picker-pills" id="bgVariantAssignPills"></div>
-    </div>
-    <button class="week-dialogue-all-btn hidden" id="bgUnassignBtn" style="margin-top:10px;width:100%;padding:9px;border-radius:10px;color:var(--signal-red);border-color:rgba(217,65,65,.35);background:rgba(217,65,65,.08)">장소 배정 해제</button>
-    <div class="preview-panel hidden" id="bgLocationPreviewPanel" style="margin-top:14px">
-      <div class="preview-img-wrap"><img id="bgLocationPreviewImg" alt="preview"></div>
-      <div class="hint" style="margin:6px 0 0">이 장소에 배정된 사진 미리보기 — 업로드/변경은 장소 DB 탭에서.</div>
-    </div>
+    <button class="select-btn" id="bgLocationAssignOpenBtn" style="width:100%;text-align:center">배정하기</button>
   </div>
 
   <!-- 인물 DB: character -> outfit -> expression picker. 옷 picker는 outfits
@@ -713,6 +702,41 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   </div>
 </div>
 
+<!-- 배경 DB/탐색허브의 "배정하기" 팝업 — 예전엔 씬을 고르자마자 장소 피커
+     전체가 화면에 펼쳐져 있었고, 사진을 실제로 올리려면 또 장소 DB 탭으로
+     건너가야 했다(장소 DB=사진 저장소 / 배경 DB=배정만, 서로 다른 탭). 이제
+     bgLocationAssignPanel은 한 줄 요약 + 버튼만 보이고, 누르면 이 팝업에서
+     장소 선택/생성/variant/사진 업로드까지 한 번에 끝낸다 — 사진은 여전히
+     장소 카탈로그(locationId+variantId 키)에 저장되므로 같은 장소를 쓰는
+     다른 씬과 그대로 공유된다. -->
+<div class="modal-overlay hidden" id="bgLocationAssignModal">
+  <div class="modal-panel">
+    <div class="modal-header">
+      <div class="modal-title">장소 배정</div>
+      <button class="modal-close-btn" id="bgLocationAssignCloseBtn">✕</button>
+    </div>
+    <div style="overflow-y:auto">
+      <div class="picker-pills" id="bgLocationAssignPills"></div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <input type="text" class="text-input" id="bgNewLocationInput" placeholder="새 장소 이름">
+        <button class="select-btn" id="bgNewLocationBtn" style="flex-shrink:0">+ 새 장소</button>
+      </div>
+      <div class="picker hidden" id="bgVariantAssignPicker" style="margin-top:14px">
+        <div class="picker-label">variant</div>
+        <div class="picker-pills" id="bgVariantAssignPills"></div>
+      </div>
+      <button class="week-dialogue-all-btn hidden" id="bgUnassignBtn" style="margin-top:10px;width:100%;padding:9px;border-radius:10px;color:var(--signal-red);border-color:rgba(217,65,65,.35);background:rgba(217,65,65,.08)">장소 배정 해제</button>
+      <div class="preview-panel hidden" id="bgLocationPreviewPanel" style="margin-top:14px">
+        <div class="preview-img-wrap"><img id="bgLocationPreviewImg" class="hidden" alt="preview"></div>
+        <div class="empty-note hidden" id="bgLocationPreviewEmpty" style="padding:0 0 10px;text-align:center">아직 사진이 없습니다.</div>
+        <button class="select-btn" id="bgLocationPhotoBtn" style="width:100%">📷 사진 올리기 / 바꾸기</button>
+        <input type="file" id="bgLocationPhotoInput" accept="image/*">
+        <div class="hint" id="bgLocationPhotoStatus" style="margin-top:6px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <a class="test-fab hidden" id="testFab" href="#">🎮 테스트하기</a>
 
 <script>
@@ -770,6 +794,12 @@ let currentOutfit = null;
 let currentLocationId = null;
 let currentVariantId = 'default';
 let locationsCatalog = {};
+// 배경 DB/탐색허브의 "배정하기" 팝업이 지금 다루는 장소/variant — 장소 DB
+// 탭의 currentLocationId/currentVariantId와는 별개다(팝업이 열려 있어도 그
+// 탭의 편집 대상은 안 바뀌어야 함). renderBgLocationAssign()이 매번 최신
+// 배정 상태로 갱신하고, 팝업의 사진 업로드 핸들러가 이 값으로 저장한다.
+let bgAssignLocId = null;
+let bgAssignVariantId = 'default';
 // 탐색허브 tab state — currentHubPhase is which locationDefs.js `phases`
 // value is selected, currentHubLocationId which location within it (its raw
 // id doubles as the legacy background storage key, see saveAsset()/
@@ -952,6 +982,9 @@ const el = {
   mapPinHint: document.getElementById('mapPinHint'),
   bgLocationAssignPanel: document.getElementById('bgLocationAssignPanel'),
   bgLocationAssignedLabel: document.getElementById('bgLocationAssignedLabel'),
+  bgLocationAssignOpenBtn: document.getElementById('bgLocationAssignOpenBtn'),
+  bgLocationAssignModal: document.getElementById('bgLocationAssignModal'),
+  bgLocationAssignCloseBtn: document.getElementById('bgLocationAssignCloseBtn'),
   bgLocationAssignPills: document.getElementById('bgLocationAssignPills'),
   bgNewLocationInput: document.getElementById('bgNewLocationInput'),
   bgNewLocationBtn: document.getElementById('bgNewLocationBtn'),
@@ -960,6 +993,10 @@ const el = {
   bgUnassignBtn: document.getElementById('bgUnassignBtn'),
   bgLocationPreviewPanel: document.getElementById('bgLocationPreviewPanel'),
   bgLocationPreviewImg: document.getElementById('bgLocationPreviewImg'),
+  bgLocationPreviewEmpty: document.getElementById('bgLocationPreviewEmpty'),
+  bgLocationPhotoBtn: document.getElementById('bgLocationPhotoBtn'),
+  bgLocationPhotoInput: document.getElementById('bgLocationPhotoInput'),
+  bgLocationPhotoStatus: document.getElementById('bgLocationPhotoStatus'),
   locationPicker: document.getElementById('locationPicker'),
   locationPickerPills: document.getElementById('locationPickerPills'),
   newLocationInput: document.getElementById('newLocationInput'),
@@ -1635,6 +1672,8 @@ async function renderBgLocationAssign() {
   el.bgLocationAssignedLabel.textContent = loc
     ? `현재 배정: ${loc.label}${variantLabel ? ' · ' + variantLabel : ''}`
     : '아직 장소가 배정되지 않았습니다.';
+  bgAssignLocId = loc ? loc.id : null;
+  bgAssignVariantId = assigned ? (assigned.variantId || 'default') : 'default';
 
   const ids = Object.keys(locationsCatalog).sort((a, b) => locationsCatalog[a].label.localeCompare(locationsCatalog[b].label, 'ko'));
   el.bgLocationAssignPills.innerHTML = ids.length
@@ -1674,16 +1713,20 @@ async function renderBgLocationAssign() {
     });
   }
 
+  // 사진 유무와 무관하게 loc가 있으면 패널을 보여준다 — 배정만 하고 아직
+  // 사진이 없는 상태에서도 바로 이 팝업에서 올릴 수 있어야 하므로(§장소 DB
+  // 탭으로 건너가지 않고 여기서 통합 처리). 사진이 없으면 empty-note만 뜨고
+  // 업로드 버튼은 그대로 동작한다.
+  el.bgLocationPreviewPanel.classList.toggle('hidden', !loc);
   const previewAssetId = loc ? await DevGameState.getLocationAssetId(loc.id, assigned.variantId) : null;
+  let asset = null;
   if (previewAssetId) {
-    try {
-      const asset = await AssetDB.getAsset(previewAssetId);
-      if (asset) { el.bgLocationPreviewImg.src = asset.dataUrl; el.bgLocationPreviewPanel.classList.remove('hidden'); }
-      else el.bgLocationPreviewPanel.classList.add('hidden');
-    } catch (err) { el.bgLocationPreviewPanel.classList.add('hidden'); }
-  } else {
-    el.bgLocationPreviewPanel.classList.add('hidden');
+    try { asset = await AssetDB.getAsset(previewAssetId); }
+    catch (err) { DevDiag.show('사진 미리보기를 불러오지 못했습니다: ' + (err && err.message ? err.message : err)); }
   }
+  el.bgLocationPreviewImg.classList.toggle('hidden', !asset);
+  el.bgLocationPreviewEmpty.classList.toggle('hidden', !loc || !!asset);
+  if (asset) el.bgLocationPreviewImg.src = asset.dataUrl;
 }
 
 // 배경 DB의 배경 슬롯 kind 피커(✓/사진 없음 표시)와 탐색허브의 위치 피커는
@@ -1719,6 +1762,48 @@ el.bgUnassignBtn.addEventListener('click', async () => {
     refreshOrdinarySlotPicker();
   } catch (err) {
     DevDiag.show('배정 해제 실패: ' + (err && err.message ? err.message : err));
+  }
+});
+
+el.bgLocationAssignOpenBtn.addEventListener('click', async () => {
+  await renderBgLocationAssign();
+  el.bgLocationAssignModal.classList.remove('hidden');
+});
+el.bgLocationAssignCloseBtn.addEventListener('click', () => {
+  el.bgLocationAssignModal.classList.add('hidden');
+});
+
+el.bgLocationPhotoBtn.addEventListener('click', () => el.bgLocationPhotoInput.click());
+// 배정하기 팝업 안에서 바로 사진을 올리는 통합 업로드 — 기존 dropzone/
+// pendingFile/saveAsset 파이프라인(currentType 전역 상태에 강하게 묶여 있어
+// 배경 DB/탐색허브 탭이 열려 있는 동안 재사용하면 씬 키로 잘못 저장될 위험이
+// 있음)과 별개로, 장소 DB 탭의 currentType==='location' 저장 분기와 같은
+// 방식(리사이즈 + locationId/variantId 키)을 그대로 여기서 직접 수행한다.
+el.bgLocationPhotoInput.addEventListener('change', async (e) => {
+  const file = e.target.files && e.target.files[0];
+  e.target.value = '';
+  if (!file || !file.type.startsWith('image/') || !bgAssignLocId) return;
+  el.bgLocationPhotoBtn.disabled = true;
+  el.bgLocationPhotoStatus.textContent = '업로드 중...';
+  try {
+    const img = await loadImageFromBlob(file);
+    let blob = file, name = file.name, width = img.naturalWidth, height = img.naturalHeight;
+    if (Math.max(width, height) > BG_MAX_DIMENSION) {
+      blob = await resizeImageToBlob(img, BG_MAX_DIMENSION, BG_JPEG_QUALITY);
+      const resized = await loadImageFromBlob(blob);
+      name = file.name.replace(/\.[^.]+$/, '') + '.jpg';
+      width = resized.naturalWidth;
+      height = resized.naturalHeight;
+    }
+    const record = await AssetDB.addAsset({ type: 'background', name, blob, width, height, locationId: bgAssignLocId, variantId: bgAssignVariantId });
+    await DevGameState.setLocationAssetId(bgAssignLocId, bgAssignVariantId, record.id);
+    el.bgLocationPhotoStatus.textContent = '';
+    await renderBgLocationAssign();
+    refreshOrdinarySlotPicker();
+  } catch (err) {
+    el.bgLocationPhotoStatus.textContent = '업로드 실패: ' + (err && err.message ? err.message : err);
+  } finally {
+    el.bgLocationPhotoBtn.disabled = false;
   }
 });
 
