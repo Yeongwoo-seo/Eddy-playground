@@ -245,12 +245,7 @@ el.startBtn.addEventListener('pointerdown', (e) => {
 }));
 
 // 게임 스타트 → 검은 화면에 /schedule.html 홈과 같은 스타일의 세로 카드
-// 리스트(1~4주차 + 미니게임). 2/3/4주차는 아직 구현되지 않아 ???로 잠가두고,
-// 1주차를 고르면 프롤로그(내부 week1)부터 실제 스토리가 시작된다. 미니게임
-// 타일은 1주차를 클리어하기 전까지는 잠겨 있다가(week1-scene-002-3 마지막
-// 줄의 setFlag 효과가 CaseFileState에 심는 'week1Completed' 플래그 기준),
-// 완료되는 순간 1주차에서 플레이했던 미니게임을 전부 다시 플레이할 수 있는
-// 목록으로 열린다.
+// 리스트(1~4주차 + 미니게임). 2/3/4주차는 아직 구현되지 않아 ???로 잠가둔다.
 const WEEK_TILES = [
   { key: 'week1', label: '1주차', bg: 'https://images.pexels.com/photos/20636564/pexels-photo-20636564.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop', locked: false },
   { key: 'week2', label: '???', locked: true },
@@ -258,28 +253,38 @@ const WEEK_TILES = [
   { key: 'week4', label: '???', locked: true },
 ];
 
-// 미니게임과 나란히 놓이는 옷가게 진입 타일 — 한 행에 절반씩. 옷가게는
-// week1Completed 여부가 아니라 ShopState.unlocked(스토리 중 옷가게 방문
-// 씬의 unlockShop 효과)로 잠금이 풀린다.
+// 미니게임과 나란히 놓이는 옷가게 진입 타일 — 한 행에 절반씩. 둘 다 완료
+// 여부와 무관하게 처음부터 열려 있다.
 const MINIGAME_SHOP_TILES = [
   {
     key: 'minigame', label: '미니게임',
     bg: 'https://images.pexels.com/photos/12380741/pexels-photo-12380741.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
-    locked: !CaseFileState.getFlag('week1Completed'),
-    lockedDesc: '1주차를 완료하면 열려요',
+    locked: false,
   },
   {
     key: 'shop', label: '옷가게',
     bg: 'https://images.pexels.com/photos/994523/pexels-photo-994523.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&fit=crop',
-    locked: !ShopState.isUnlocked(),
-    lockedDesc: '스토리를 진행하면 열려요',
+    locked: false,
   },
 ];
 
-const WEEK1_MINIGAMES = [
-  { name: '지하철 역 찾기', route: '/play/minigame-eastwood/' },
-  { name: '핸드폰을 찾아라', route: '/play/minigame-phone-search/' },
-];
+// 미니게임 목록은 완료 여부가 아니라 "그 주차가 지금 플레이 가능한가"
+// (WEEK_TILES의 locked)로 걸러진다 — 1주차만 열려 있으면 1주차 미니게임만,
+// 2주차까지 열리면 2주차 미니게임도 함께 보인다.
+const MINIGAMES_BY_WEEK = {
+  week1: [
+    { name: '지하철 역 찾기', route: '/play/minigame-eastwood/' },
+    { name: '핸드폰을 찾아라', route: '/play/minigame-phone-search/' },
+  ],
+  week2: [],
+  week3: [],
+  week4: [],
+};
+function availableMinigames() {
+  return WEEK_TILES
+    .filter(t => !t.locked)
+    .flatMap(t => MINIGAMES_BY_WEEK[t.key] || []);
+}
 
 function escapeHtml(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -333,7 +338,7 @@ CaseFileState.listSlots().then(slots => {
   renderWeekGrid();
 }).catch(() => {});
 
-el.minigameList.innerHTML = WEEK1_MINIGAMES.map(m => `
+el.minigameList.innerHTML = availableMinigames().map(m => `
   <div class="minigame-item" data-route="${m.route}">${m.name}</div>
 `).join('');
 
