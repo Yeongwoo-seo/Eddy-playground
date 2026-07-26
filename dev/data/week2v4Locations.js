@@ -105,5 +105,7 @@ function buildWeek2v4LocationPrompt(loc) {
   lines.push('- 텍스트, 워터마크, 로고, UI 요소');
   lines.push('- 만화/애니메이션풍 렌더링, 어안렌즈 왜곡, 과장된 채도');
   lines.push('- 이름 있는 등장인물의 얼굴이나 전신');
+  lines.push('');
+  lines.push('위 조건에 맞는 이미지를 10가지 버전으로 만들어줘.');
   return lines.join('\n');
 }

@@ -153,5 +153,7 @@ function buildWeek2v4EvidencePrompt(ev) {
   lines.push('- 실제로 읽을 수 있는 텍스트, 워터마크, 로고, UI 요소 (읽어야 하는 내용은 게임 자체 텍스트로 별도 표시하므로 사진엔 흐릿한 레이아웃 정도만)');
   lines.push('- 만화/애니메이션풍 렌더링, 과장된 채도');
   lines.push('- 이름 있는 등장인물의 얼굴 전체가 드러나는 구도');
+  lines.push('');
+  lines.push('위 조건에 맞는 이미지를 10가지 버전으로 만들어줘.');
   return lines.join('\n');
 }

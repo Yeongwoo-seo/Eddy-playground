@@ -91,5 +91,7 @@ function buildWeek2v4MinigamePhotoPrompt(mg, photo) {
   lines.push('- 텍스트, 워터마크, 로고, UI 요소');
   lines.push('- 짝을 이루는 다른 사진과 다른 카메라 각도·거리·조명·색감 (비교 슬라이더이므로 반드시 맞춰야 한다)');
   lines.push('- 이름 있는 등장인물의 얼굴이나 전신');
+  lines.push('');
+  lines.push('위 조건에 맞는 이미지를 10가지 버전으로 만들어줘.');
   return lines.join('\n');
 }
