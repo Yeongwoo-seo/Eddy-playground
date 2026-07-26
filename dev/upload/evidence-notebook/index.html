@@ -963,6 +963,8 @@ function openExamplePreview() {
   el.evnExampleIndexPanel.classList.remove('evn-index-open');
   el.evnExampleIndexPanel.classList.add('hidden');
   el.evnExampleConfirmPanel.classList.add('hidden');
+  exampleFlipToken += 1;
+  el.evnExamplePage.classList.remove('evn-page-anim-out-next', 'evn-page-anim-out-prev', 'evn-page-anim-in-next', 'evn-page-anim-in-prev');
   renderExampleTabs();
   renderExamplePage();
 }
@@ -979,26 +981,36 @@ function currentExampleIndex() { return exampleIndexBySection[exampleSection] ||
 function currentExampleEntry() { return currentExampleList()[currentExampleIndex()] || null; }
 
 // 실제 노트(dev/evidenceNotebook.js)의 runPageFlip과 같은 클래스
-// (evn-flip-out-*/evn-flip-in-*, EvidenceNotebook.injectStyles가 주입한 CSS를
-// 그대로 공유)를 el.evnExamplePage에 걸어 넘기는 효과를 똑같이 재현한다 —
-// 두 화면의 페이지 전환이 벌어지지 않게.
-let exampleFlipTimer = null;
+// (evn-page-anim-out-*/evn-page-anim-in-*, EvidenceNotebook.injectStyles가
+// 주입한 @keyframes CSS를 그대로 공유)를 el.evnExamplePage에 걸어 종이가
+// 휘어지며 넘어가는 효과를 똑같이 재현한다 — 두 화면의 페이지 전환이
+// 벌어지지 않게. animationend로 다음 절반을 잇는 이유·연타 시 이전 체인을
+// 무효화하는 토큰 방식도 실제 노트의 runPageFlip과 동일하다.
+let exampleFlipToken = 0;
+const EXAMPLE_FLIP_ANIM_NAMES = { next: { out: 'evnPageOutNext', in: 'evnPageInNext' }, prev: { out: 'evnPageOutPrev', in: 'evnPageInPrev' } };
 function runExampleFlip(direction, mutate) {
-  if (exampleFlipTimer) { clearTimeout(exampleFlipTimer); exampleFlipTimer = null; }
+  const token = ++exampleFlipToken;
+  const names = EXAMPLE_FLIP_ANIM_NAMES[direction];
   const page = el.evnExamplePage;
-  page.classList.remove('evn-flip-out-next', 'evn-flip-out-prev', 'evn-flip-in-next', 'evn-flip-in-prev', 'evn-flip-in-settle');
-  page.classList.add(direction === 'next' ? 'evn-flip-out-next' : 'evn-flip-out-prev');
-  exampleFlipTimer = setTimeout(() => {
+  const outClass = direction === 'next' ? 'evn-page-anim-out-next' : 'evn-page-anim-out-prev';
+  const inClass = direction === 'next' ? 'evn-page-anim-in-next' : 'evn-page-anim-in-prev';
+  page.classList.remove('evn-page-anim-out-next', 'evn-page-anim-out-prev', 'evn-page-anim-in-next', 'evn-page-anim-in-prev');
+  void page.offsetWidth;
+  page.classList.add(outClass);
+  page.addEventListener('animationend', function onOut(e) {
+    if (e.animationName !== names.out) return;
+    page.removeEventListener('animationend', onOut);
+    if (token !== exampleFlipToken) return;
     mutate();
-    page.classList.remove('evn-flip-out-next', 'evn-flip-out-prev');
-    page.classList.add(direction === 'next' ? 'evn-flip-in-next' : 'evn-flip-in-prev');
+    page.classList.remove(outClass);
     void page.offsetWidth;
-    page.classList.add('evn-flip-in-settle');
-    exampleFlipTimer = setTimeout(() => {
-      page.classList.remove('evn-flip-in-next', 'evn-flip-in-prev', 'evn-flip-in-settle');
-      exampleFlipTimer = null;
-    }, 240);
-  }, 150);
+    page.classList.add(inClass);
+    page.addEventListener('animationend', function onIn(e2) {
+      if (e2.animationName !== names.in) return;
+      page.removeEventListener('animationend', onIn);
+      if (token === exampleFlipToken) page.classList.remove(inClass);
+    });
+  });
 }
 function exampleGoPrev() {
   const idx = currentExampleIndex();
