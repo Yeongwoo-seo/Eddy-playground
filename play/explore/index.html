@@ -41,6 +41,31 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .loc-badge{position:absolute;top:14px;right:16px;font-family:var(--mono);font-size:10.5px;font-weight:700;color:#06181c;background:var(--cyan);border-radius:10px;padding:3px 8px}
 .loc-current-tag{font-family:var(--mono);font-size:10px;color:var(--cyan);margin-top:6px}
 
+/* ===== 2주차 라이프 게이지 — 심문 중 증거 오답 제시/선택지 오답 시 경중에
+   따라 깎이는 판정용 게이지(§ lifeGaugeState.js). 허브의 자유 '제시하기'는
+   설계상(§8.2/§8.4, 오답도 페널티 없음) 이 게이지를 절대 건드리지 않는다 —
+   씬 저자가 명시적으로 위험하다고 표시한 지점(line.wrongSeverity/
+   choice effects의 damageLife)에서만 깎인다. play/game/index.html의
+   .relation-gauges와 같은 우상단 배치(top:58px, topbar와 안 겹치게). */
+.life-gauge{position:absolute;top:calc(58px + env(safe-area-inset-top,0));right:16px;z-index:6;display:flex;align-items:center;gap:6px}
+.life-gauge.hidden{display:none}
+.life-gauge-icon{font-size:12px;line-height:1}
+.life-gauge-track{position:relative;width:84px;height:7px;border-radius:4px;background:rgba(255,255,255,.16);overflow:hidden}
+.life-gauge-fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:var(--signal-red);transition:width .35s cubic-bezier(.2,.8,.2,1),background-color .35s ease}
+.life-gauge-flash{position:absolute;top:0;bottom:0;border-radius:4px;background:#fff;pointer-events:none}
+.life-gauge-flash.hidden{display:none}
+.life-gauge-flash.blinking{animation:lifeGaugeBlink .18s steps(1) infinite}
+@keyframes lifeGaugeBlink{0%,100%{opacity:.9}50%{opacity:.2}}
+
+.life-gameover-overlay{position:fixed;inset:0;z-index:23;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:20px}
+.life-gameover-overlay.hidden{display:none}
+.life-gameover-sheet{width:100%;max-width:340px;background:rgba(8,14,18,.97);border:1px solid rgba(217,65,65,.4);border-radius:20px;padding:28px 22px;text-align:center}
+.life-gameover-icon{font-size:34px;margin-bottom:10px}
+.life-gameover-title{font-size:18px;font-weight:800;color:#fff;margin-bottom:8px}
+.life-gameover-desc{font-size:13px;color:rgba(255,255,255,.68);line-height:1.6;margin-bottom:20px}
+.life-gameover-retry-btn{width:100%;padding:13px;border-radius:14px;border:none;background:var(--signal-red);color:#fff;font-weight:700;font-size:14px;cursor:pointer}
+.life-gameover-retry-btn:active{opacity:.8}
+
 /* ===== LOCATION VIEW (spec §7.1) ===== */
 .location-view{position:absolute;inset:0;display:none;flex-direction:column}
 .location-view.active{display:flex}
@@ -281,6 +306,14 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
     </div>
   </div>
 
+  <span class="life-gauge hidden" id="lifeGauge" title="라이프 게이지">
+    <span class="life-gauge-icon">❤</span>
+    <span class="life-gauge-track">
+      <span class="life-gauge-fill" id="lifeGaugeFill"></span>
+      <span class="life-gauge-flash hidden" id="lifeGaugeFlash"></span>
+    </span>
+  </span>
+
   <div class="map-view" id="mapView">
     <div class="map-title">지도 · SYDNEY</div>
     <div id="mapList"></div>
@@ -364,6 +397,15 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
   </div>
 </div>
 
+<div class="life-gameover-overlay hidden" id="lifeGameoverOverlay">
+  <div class="life-gameover-sheet">
+    <div class="life-gameover-icon">💥</div>
+    <div class="life-gameover-title">조사가 흔들렸다</div>
+    <div class="life-gameover-desc">잘못된 증거 제시와 판단이 쌓여<br>라이프 게이지가 모두 소진됐다.<br>다시 처음부터 신중하게 되짚어보자.</div>
+    <button type="button" class="life-gameover-retry-btn" id="lifeGameoverRetryBtn">다시 시작하기</button>
+  </div>
+</div>
+
 <script>
 function setVh100() { document.documentElement.style.setProperty('--vh100', window.innerHeight + 'px'); }
 setVh100();
@@ -382,6 +424,7 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('/play/sw.js'
 <script src="/dev/state/economyState.js"></script>
 <script src="/dev/state/wardrobeState.js"></script>
 <script src="/dev/state/shopState.js"></script>
+<script src="/dev/state/lifeGaugeState.js"></script>
 <script src="/dev/data/locationDefs.js"></script>
 <script src="/dev/data/interactionDefs.js"></script>
 <script src="/dev/data/sceneRoutes.js"></script>
@@ -409,6 +452,11 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('/play/sw.js'
 const el = {
   frame: document.getElementById('frame'),
   pointBalance: document.getElementById('pointBalance'),
+  lifeGauge: document.getElementById('lifeGauge'),
+  lifeGaugeFill: document.getElementById('lifeGaugeFill'),
+  lifeGaugeFlash: document.getElementById('lifeGaugeFlash'),
+  lifeGameoverOverlay: document.getElementById('lifeGameoverOverlay'),
+  lifeGameoverRetryBtn: document.getElementById('lifeGameoverRetryBtn'),
   mapView: document.getElementById('mapView'),
   mapList: document.getElementById('mapList'),
   locationView: document.getElementById('locationView'),
@@ -498,6 +546,55 @@ function updatePointBalance() {
   el.pointBalance.classList.toggle('hidden', !introduced);
   if (introduced) el.pointBalance.textContent = 'P ' + EconomyState.getPoints();
 }
+
+/* ===== 라이프 게이지 (2주차부터 도입, § lifeGaugeState.js) — play/game/
+   index.html의 같은 이름 함수와 짝(§ 이 파일 헤더의 "두 파일이 갈라질 위험"
+   관례 그대로). 허브는 지금 W2_* phase로만 쓰이지만, 3주차·4주차도 같은
+   W<n>_ 네이밍으로 허브를 이어갈 예정이라 phase 접두어를 'W2_'로 고정하지
+   않고 "1주차 계열(W1_*)만 아니면 표시"로 일반화해둔다. */
+const LIFE_FLASH_MS = 650;
+function lifeGaugeColor(value) {
+  if (value <= 25) return 'var(--signal-red)';
+  if (value <= 55) return 'var(--amber)';
+  return 'var(--cyan)';
+}
+function updateLifeGauge() {
+  const phase = ExplorationState.getCurrentPhase() || '';
+  el.lifeGauge.classList.toggle('hidden', !phase || phase.startsWith('W1_'));
+  const value = LifeGaugeState.getValue();
+  el.lifeGaugeFill.style.width = value + '%';
+  el.lifeGaugeFill.style.backgroundColor = lifeGaugeColor(value);
+}
+// severity: 'minor' | 'major'. 깎일 구간을 먼저 반짝이게 보여주고
+// (LIFE_FLASH_MS) 그 뒤에야 fill을 줄인다 — play/game/index.html과 동일한
+// 예고 연출.
+function applyLifeDamage(severity) {
+  const { from, to, amount } = LifeGaugeState.damage(severity);
+  if (!amount) return;
+  el.lifeGaugeFlash.style.left = to + '%';
+  el.lifeGaugeFlash.style.width = (from - to) + '%';
+  el.lifeGaugeFlash.classList.remove('hidden');
+  el.lifeGaugeFlash.classList.add('blinking');
+  setTimeout(() => {
+    el.lifeGaugeFlash.classList.add('hidden');
+    el.lifeGaugeFlash.classList.remove('blinking');
+    el.lifeGaugeFill.style.width = to + '%';
+    el.lifeGaugeFill.style.backgroundColor = lifeGaugeColor(to);
+    if (LifeGaugeState.isDepleted()) setTimeout(showLifeGameOver, 350);
+  }, LIFE_FLASH_MS);
+}
+function showLifeGameOver() {
+  el.lifeGameoverOverlay.classList.remove('hidden');
+}
+el.lifeGameoverRetryBtn.addEventListener('click', () => {
+  LifeGaugeState.reset();
+  el.lifeGameoverOverlay.classList.add('hidden');
+  updateLifeGauge();
+  // 진행 중이던 인라인 씬을 처음부터 다시 재생 — 없으면(비정상 상태)
+  // 허브 자체를 새로고침해 안전하게 되돌린다.
+  if (currentDialoguePlayer) currentDialoguePlayer.restart();
+  else location.reload();
+});
 
 const STATE_LABEL = { locked: '잠김', new: 'NEW', available: '가능', in_progress: '진행 중', exhausted: '완료', updated: 'UPDATED', resolved: '해결됨' };
 
@@ -1687,6 +1784,13 @@ function applyInlineSceneEffect(effect) {
       EconomyState.spendPoints(effect.amount, { source: effect.source || activeInlineSceneId });
       updatePointBalance();
       break;
+
+    // 2주차 라이프 게이지(§ lifeGaugeState.js) — 심문 선택지 오답의
+    // effects에 넣어 쓴다(경중은 severity). 허브의 자유 '제시하기'
+    // (presentEvidenceToCharacter)는 설계상 이 이펙트를 절대 쓰지 않는다.
+    case 'damageLife':
+      applyLifeDamage(effect.severity);
+      break;
     case 'unlockShop':
       ShopState.unlockShop();
       updatePointBalance();
@@ -1967,6 +2071,9 @@ function playSceneInline(sceneIdOrData, interactionId) {
         const attempt = CaseFileState.incrementFlag('wrong:' + line.id);
         const texts = Array.isArray(line.wrongText) ? line.wrongText : [line.wrongText || '그건 아닌 것 같아요...'];
         showEvidenceToast(texts[Math.min(attempt - 1, texts.length - 1)], false);
+        // line.wrongSeverity('minor'|'major')는 opt-in — 심문 씬 저자가
+        // 명시한 줄에만 라이프 게이지가 깎인다(§ play/game/index.html과 동일).
+        if (line.wrongSeverity) applyLifeDamage(line.wrongSeverity);
       }
     },
     onSceneTransition: (transition) => applyLocationBackground(transition.backgroundKey),
@@ -2004,6 +2111,7 @@ const caseMenu = initCaseMenu({
       return;
     }
     updatePointBalance();
+    updateLifeGauge();
     if (ExplorationState.getCurrentLocationId()) { renderLocation(); showView('location'); }
     else { renderMap(); showView('map'); }
   },
@@ -2131,6 +2239,7 @@ async function preloadPhaseAssets(phaseId) {
   const bootLocation = params.get('location');
   const phaseChanged = !!bootPhase && ExplorationState.getCurrentPhase() !== bootPhase;
   if (bootPhase) ExplorationState.enterExplorationPhase(bootPhase);
+  updateLifeGauge();
   // dev/week2의 허브 칸 "⚙ 허브 설정" 버튼과 같은 목적지(§'/dev/hub/?phase=')
   // — 지금 있는 phase 기준으로 바로 그 phase의 탐색허브 설정 화면으로 들어간다.
   el.settingsLink.href = `/dev/hub/?phase=${encodeURIComponent(ExplorationState.getCurrentPhase() || '')}`;
