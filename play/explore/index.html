@@ -275,7 +275,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
       <span class="point-balance hidden" id="pointBalance">P 0</span>
     </div>
     <div style="display:flex;gap:8px">
-      <a class="vn-btn dev-settings-link" id="settingsLink" href="/dev/upload/?tab=hub" aria-label="설정">⚙ 설정</a>
+      <a class="vn-btn dev-settings-link" id="settingsLink" href="/dev/hub/" aria-label="설정">⚙ 설정</a>
       <button class="vn-btn" id="devBtn">DEV</button>
       <a class="vn-btn" href="/dev/">← DEV</a>
     </div>
@@ -1618,6 +1618,12 @@ function applyInlineSceneEffect(effect) {
     case 'addEvidence':
       CaseFileState.addEvidence(effect.evidence);
       break;
+    // [탐색허브 재도입] week2-scene-010b(레오 재접근)처럼 이제 허브 안에서
+    // 인라인 재생되는 씬도 "증거 갱신" 내레이션 비트를 쓴다 — play/game/
+    // index.html의 같은 case와 동일하게 맞춘다.
+    case 'updateEvidence':
+      CaseFileState.updateEvidence(effect.id, { summary: effect.summary, status: effect.status });
+      break;
     case 'addQuestion': {
       const added = CaseFileState.addQuestion(effect.question);
       if (added) caseMenu.notifyNewQuestion(effect.question.title);
@@ -2125,9 +2131,9 @@ async function preloadPhaseAssets(phaseId) {
   const bootLocation = params.get('location');
   const phaseChanged = !!bootPhase && ExplorationState.getCurrentPhase() !== bootPhase;
   if (bootPhase) ExplorationState.enterExplorationPhase(bootPhase);
-  // dev/phases의 설정 버튼과 같은 목적지(§'/dev/upload/?tab=hub&phase=') —
-  // 지금 있는 phase 기준으로 바로 그 phase의 탐색허브 탭으로 들어간다.
-  el.settingsLink.href = `/dev/upload/?tab=hub&phase=${encodeURIComponent(ExplorationState.getCurrentPhase() || '')}`;
+  // dev/phases의 설정 버튼과 같은 목적지(§'/dev/hub/?phase=') — 지금 있는
+  // phase 기준으로 바로 그 phase의 탐색허브 설정 화면으로 들어간다.
+  el.settingsLink.href = `/dev/hub/?phase=${encodeURIComponent(ExplorationState.getCurrentPhase() || '')}`;
   const [gameSettings] = await Promise.all([
     AssetDB.getGameSettings().catch(() => AssetDB.DEFAULT_GAME_SETTINGS),
     preloadPhaseAssets(ExplorationState.getCurrentPhase()),

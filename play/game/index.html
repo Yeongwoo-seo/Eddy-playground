@@ -883,6 +883,13 @@ function applyEffect(effect) {
     case 'addEvidence':
       CaseFileState.addEvidence(effect.evidence);
       break;
+    // A scene's "증거 갱신" narration beat — same evidence id, new
+    // meaning/status as the story reinterprets it (§7.5). No-ops if the
+    // referenced evidence was never added (e.g. a save that skipped the
+    // scene granting it).
+    case 'updateEvidence':
+      CaseFileState.updateEvidence(effect.id, { summary: effect.summary, status: effect.status });
+      break;
     case 'addQuestion': {
       const added = CaseFileState.addQuestion(effect.question);
       if (added) caseMenu.notifyNewQuestion(effect.question.title);

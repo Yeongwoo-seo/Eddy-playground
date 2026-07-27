@@ -493,7 +493,17 @@ const week1SceneFrontdeskLines = [
   { id: 'line-035', speaker: '영우', text: '범인도 검거됐고?', characterId: 'youngwoo', expression: 'happy' },
   { id: 'line-036', speaker: '지수', text: '웅.\n냉장고 틈이 범인이었어요 ㅋㅎㅋㅎㅋㅎㅋㅎㅋㅎ', characterId: 'jisoo', expression: 'smirk' },
   { id: 'line-037', speaker: '영우', text: '끝까지 냉장고 탓이네 ㅋㅎㅋㅎㅋㅎㅋㅎㅋㅎ', characterId: 'youngwoo', expression: 'happy' },
-  { id: 'line-038', speaker: '', text: '[ ITEM ACQUIRED ]\n\nUNKNOWN KEY\n각인: M.K.', characterId: null },
+  {
+    id: 'line-038', speaker: '', text: '[ ITEM ACQUIRED ]\n\nUNKNOWN KEY\n각인: M.K.', characterId: null,
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-mk-key', code: 'E-001', category: 'physical', title: 'M.K. 황동 열쇠',
+        description: '환기구에서 나온 낡은 황동 열쇠. 뒷면에 "M.K."라는 이니셜이 새겨져 있다. 1주차의 미해결 기념품.',
+        discoveredLocationText: '숙소 환기구',
+      },
+    }],
+  },
 ];
 
 /* MISSING KEY — WEEK 1 · SCENE 10 「첫날 밤」
@@ -1363,7 +1373,27 @@ const week2Scene002Lines = [
   { id: 'line-020', speaker: '지수', text: '영우, 오늘 완전 럭키데이인가봐 ㅎㅎ', characterId: 'jisoo', expression: 'smirk' },
   { id: 'line-021', speaker: '영우', text: '그러게, 가이드님 만난 것부터 개쥬아.', characterId: 'youngwoo', expression: 'happy' },
   { id: 'line-022', speaker: '다니엘', text: '자 이쪽으로 가시죠.', characterId: 'daniel-guide', expression: 'neutral' },
-  { id: 'line-023', speaker: '', text: '[ 기록: 서큘러키 커플 사진 ] [ 기록: 다니엘 명찰 ] 획득. 세 사람이 더 록스 방향으로 걷기 시작한다.', characterId: null },
+  {
+    id: 'line-023', speaker: '', text: '[ 기록: 서큘러키 커플 사진 ] [ 기록: 다니엘 명찰 ] 획득. 세 사람이 더 록스 방향으로 걷기 시작한다.', characterId: null,
+    effects: [
+      {
+        type: 'addEvidence',
+        evidence: {
+          id: 'evidence-circular-quay-photo', code: 'E-V04', category: 'photo', title: '서큘러키 커플 사진',
+          description: '오페라하우스를 배경으로 다니엘이 찍어준 기념사진. 구도를 잡아준다며 지수의 가방 쪽으로 손을 뻗은 순간이 함께 찍혔다.',
+          discoveredLocationText: 'Circular Quay',
+        },
+      },
+      {
+        type: 'addEvidence',
+        evidence: {
+          id: 'evidence-daniel-badge', code: 'E-V03', category: 'physical', title: '다니엘 명찰',
+          description: '다니엘이 목에 걸고 있는 여행사 가이드 명찰. 로고가 선명하게 인쇄돼 있다.',
+          discoveredLocationText: 'Circular Quay',
+        },
+      },
+    ],
+  },
 ];
 
 const week2Scene003Lines = [
@@ -1376,7 +1406,27 @@ const week2Scene003Lines = [
   { id: 'line-007', speaker: '지수', text: '와 완전 친절하시다, 오지랖 대박 ㅎㅎㅎㅎㅎㅎ', characterId: 'jisoo', expression: 'happy' },
   { id: 'line-008', speaker: '다니엘', text: '하하, 그냥 익숙해서요. 이 동네 자주 다니니까.', characterId: 'daniel-guide', expression: 'neutral' },
   { id: 'line-009', speaker: '영우', text: '아 그러시구나.', characterId: 'youngwoo', expression: 'neutral' },
-  { id: 'line-010', speaker: '', text: '[ 기록: 카페 임시 보관함 시스템 ] 획득.', characterId: null },
+  {
+    id: 'line-010', speaker: '', text: '[ 기록: 카페 임시 보관함 시스템 ] 획득.', characterId: null,
+    effects: [
+      {
+        type: 'addEvidence',
+        evidence: {
+          id: 'evidence-cafe-locker-system', code: 'E-V05', category: 'physical', title: '카페 임시 보관함 시스템',
+          description: '카페 안쪽 벽면에 설치된 번호식 임시 보관함. 다니엘이 구조를 필요 이상으로 오래 들여다봤다.',
+          discoveredLocationText: 'Café near Circular Quay',
+        },
+      },
+      {
+        type: 'addEvidence',
+        evidence: {
+          id: 'evidence-itinerary', code: 'E-V02', category: 'record', title: '관광 일정표',
+          description: '다니엘이 짜준 오늘 하루의 동선. 서큘러키 사진 → 더 록스 안내 → 전시장 관람 → 단체사진 → 카페 휴식 순으로 이어진다.',
+          discoveredLocationText: 'The Rocks',
+        },
+      },
+    ],
+  },
   { id: 'line-011', speaker: '다니엘', text: '자, 저기 골목 끝이 전시장이에요.', characterId: 'daniel-guide', expression: 'neutral' },
   { id: 'line-012', speaker: '지수', text: '야르~ 감사합니다 진짜.', characterId: 'jisoo', expression: 'happy' },
   { id: 'line-013', speaker: '다니엘', text: '그럼 저는 여기서, 좋은 시간 보내세요.', characterId: 'daniel-guide', expression: 'neutral' },
@@ -1387,7 +1437,17 @@ const week2Scene003Lines = [
 
 const week2Scene004Lines = [
   { id: 'line-001', speaker: '', text: '전시장 입구. 접수대에 클레어가 앉아 있다.', characterId: null },
-  { id: 'line-002', speaker: '클레어', text: '어서 오세요, 팝업 전시 K-Collection에 오신 걸 환영합니다.\n입장은 무료고, 사진 촬영은 개인 소장용만 가능해요.', characterId: 'claire', expression: 'neutral' },
+  {
+    id: 'line-002', speaker: '클레어', text: '어서 오세요, 팝업 전시 K-Collection에 오신 걸 환영합니다.\n입장은 무료고, 사진 촬영은 개인 소장용만 가능해요.', characterId: 'claire', expression: 'neutral',
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-claire-alibi-statement', code: 'E-CL1', category: 'testimony', title: '클레어의 최초 진술 — 접수대 상주',
+        description: '클레어 모건 — 자신은 근무 시간 내내 접수대에 있었고 자리를 비운 적이 없다는 진술.',
+        discoveredLocationText: 'Pop-up Exhibition 접수대 · 클레어 최초 진술',
+      },
+    }],
+  },
   { id: 'line-003', speaker: '지수', text: '아 네 감사합니다.', characterId: 'jisoo', expression: 'neutral' },
   { id: 'line-004', speaker: '영우', text: '안쪽에 뭐가 제일 유명해요?', characterId: 'youngwoo', expression: 'neutral' },
   { id: 'line-005', speaker: '클레어', text: '저희 메인 전시품은 K-01이에요. 이 지역 공예가가 만든 황동 작품인데, 안쪽 진열대에 있어요.', characterId: 'claire', expression: 'neutral' },
@@ -1440,7 +1500,17 @@ const week2Scene005Lines = [
   { id: 'line-009', speaker: '', text: '윤민아가 서둘러 사진 몇 장을 지운다.', characterId: null },
   { id: 'line-010', speaker: '윤민아', text: '죄송해요, 그냥 개인 소장용으로 몇 장만...', characterId: 'minah', expression: 'shocked' },
   { id: 'line-011', speaker: '클레어', text: '다음부턴 주의해주세요.', characterId: 'claire', expression: 'neutral' },
-  { id: 'line-012', speaker: '', text: '[ 증거: 윤민아의 확대 사진(무단 촬영 자료) ] 등록.', characterId: null },
+  {
+    id: 'line-012', speaker: '', text: '[ 증거: 윤민아의 확대 사진(무단 촬영 자료) ] 등록.', characterId: null,
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-mina-photo-confiscated', code: 'E-V01', category: 'photo', title: '윤민아의 확대 사진',
+        description: 'K-01 하단을 몰래 확대 촬영한 사진. 클레어에게 걸려 대부분 급히 지워졌다.',
+        discoveredLocationText: 'Pop-up Exhibition · K-01 진열대',
+      },
+    }],
+  },
   { id: 'line-013', speaker: '지수', text: '(작게) 영우, 저 사람 왜 저렇게 급하게 지웠지.', characterId: 'jisoo', expression: 'suspicious' },
   { id: 'line-014', speaker: '영우', text: '그러게, 좀 이상하긴 하다.', characterId: 'youngwoo', expression: 'neutral' },
   { id: 'line-015', speaker: '', text: '애드리언이 클레어에게 다가간다.', characterId: null },
@@ -1474,7 +1544,17 @@ const week2Scene006Lines = [
   { id: 'line-012', speaker: '레오', text: '아 그럼 시드니 완전 초반이시네, 더 록스 골목도 예쁜 데 많으니까 천천히 도세요.', characterId: 'leo', expression: 'neutral' },
   { id: 'line-013', speaker: '', text: '(작게, 옆 사람에게) "어, 저희... 처음 뵙는 거 맞죠?" "네 맞아요, 신기하게 다 여기서 만났네요" — 관광객들이 서로 어색하게 인사한다.', characterId: null },
   { id: 'line-014', speaker: '다니엘', text: '자, 다 됐습니다. 하나 둘 셋!', characterId: 'daniel-guide', expression: 'neutral' },
-  { id: 'line-015', speaker: '', text: '셔터 소리. [ 기록: 관광팀 단체사진 ] 획득.', characterId: null },
+  {
+    id: 'line-015', speaker: '', text: '셔터 소리. [ 기록: 관광팀 단체사진 ] 획득.', characterId: null,
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-group-photo', code: 'E-V11', category: 'photo', title: '관광팀 단체사진',
+        description: '다니엘이 서큘러키에서 만난 관광객들을 모아 찍은 기념사진. 다니엘이 각자의 위치를 세밀하게 조정했다.',
+        discoveredLocationText: 'Pop-up Exhibition 입구',
+      },
+    }],
+  },
   { id: 'line-016', speaker: '지수', text: '헐 완전 잘 나왔다!!!!\n다들 감사해요 ㅎㅎㅎㅎㅎㅎ', characterId: 'jisoo', expression: 'happy' },
   { id: 'line-017', speaker: '영우', text: '오늘 진짜 사람 복 터졌네, 개쥬아.', characterId: 'youngwoo', expression: 'happy' },
   { id: 'line-018', speaker: '다니엘', text: '저는 다시 일 좀 보러 가볼게요, 좋은 여행 되세요.', characterId: 'daniel-guide', expression: 'neutral' },
@@ -1504,10 +1584,40 @@ const week2Scene007Lines = [
   { id: 'line-016', speaker: '지수', text: '헐, 그럼 그 11분 동안 누가 진짜로 여길...', characterId: 'jisoo', expression: 'shocked' },
   { id: 'line-017', speaker: '클레어', text: '그, 그런 게 가능해요?', characterId: 'claire', expression: 'shocked' },
   { id: 'line-018', speaker: '영우', text: '가능하니까 지금 우리가 보고 있죠.', characterId: 'youngwoo', expression: 'serious' },
-  { id: 'line-019', speaker: '', text: '[ 증거: 카메라 11분 루프 기록 ] [ 사건 정의: K-01 도난 사건 ] 등록.', characterId: null },
+  {
+    id: 'line-019', speaker: '', text: '[ 증거: 카메라 11분 루프 기록 ] [ 사건 정의: K-01 도난 사건 ] 등록.', characterId: null,
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-camera-11min-loop', code: 'E-V07', category: 'record', title: '카메라 11분 루프 기록',
+        description: '보안 카메라 화면이 정확히 같은 자세로 11분간 반복되고 있었다 — 그 사이 진열대에 실제로 접근한 사람은 화면에 잡히지 않는다.',
+        discoveredLocationText: 'Pop-up Exhibition · CCTV',
+      },
+    }],
+  },
   { id: 'line-020', speaker: '지수', text: '영우, 우리가 좀 알아보자.', characterId: 'jisoo', expression: 'serious' },
   { id: 'line-021', speaker: '영우', text: '그래, 일단 그 11분 사이에 누가 어디 있었는지부터.', characterId: 'youngwoo', expression: 'serious' },
-  { id: 'line-022', speaker: '', text: '현장 조사가 시작된다.', characterId: null },
+  {
+    id: 'line-022', speaker: '', text: '현장 조사가 시작된다.', characterId: null,
+    effects: [
+      {
+        type: 'addEvidence',
+        evidence: {
+          id: 'evidence-case-dust-mark', code: 'E-H05', category: 'physical', title: '진열장 먼지 자국',
+          description: '진열장 유리 안쪽, K-01이 있던 자리 주변에 누군가 손을 짚은 듯한 자국이 남아 있다.',
+          discoveredLocationText: 'Pop-up Exhibition · 현장 조사',
+        },
+      },
+      {
+        type: 'addEvidence',
+        evidence: {
+          id: 'evidence-case-lock-mechanism', code: 'E-H10', category: 'physical', title: '진열장 잠금부 — 강제 개방 흔적 없음',
+          description: '진열장 잠금부 자체에는 파손이나 강제로 딴 흔적이 없다. 정상적인 방식으로 열린 것으로 보인다.',
+          discoveredLocationText: 'Pop-up Exhibition · 현장 조사',
+        },
+      },
+    ],
+  },
 ];
 
 const week2Scene008Lines = [
@@ -1528,7 +1638,43 @@ const week2Scene008ReviewLines = [
   { id: 'line-007', speaker: '영우', text: '저 그레이 후드 누구지, 얼굴은 안 보이는데.', characterId: 'youngwoo', expression: 'serious' },
   { id: 'line-008', speaker: '지수', text: '잠만, 6번엔 아예 사람이 없고.', characterId: 'jisoo', expression: 'serious' },
   { id: 'line-009', speaker: '영우', text: '7번, 케이스가 완전 비어 있어.', characterId: 'youngwoo', expression: 'shocked' },
-  { id: 'line-010', speaker: '', text: '[ 증거: 사진 속 그레이 후드 남성(레오로 추정) ] [ 증거: 진열장 문 열림 순간 ] 등록.\n사진 배경 한 귀퉁이로 다니엘로 보이는 뒷모습이 스치듯 지나간다 — 지금은 아무 의미 없어 보인다.', characterId: null },
+  {
+    id: 'line-010', speaker: '', text: '[ 증거: 사진 속 그레이 후드 남성(레오로 추정) ] [ 증거: 진열장 문 열림 순간 ] 등록.\n사진 배경 한 귀퉁이로 다니엘로 보이는 뒷모습이 스치듯 지나간다 — 지금은 아무 의미 없어 보인다.', characterId: null,
+    effects: [
+      {
+        type: 'addEvidence',
+        evidence: {
+          id: 'evidence-tourist-extra-photo', code: 'E-SEL3', category: 'photo', title: '사진 속 그레이 후드 남성(레오로 추정)',
+          description: '소피가 건네준 연속 촬영 사진 중 한 장. 진열장 문 옆으로 회색 후드를 입은 인물의 팔이 걸쳐 있다.',
+          discoveredLocationText: 'Pop-up Exhibition · 사진 분석',
+        },
+      },
+      {
+        type: 'addEvidence',
+        evidence: {
+          id: 'evidence-case-door-open-moment', code: 'E-H06', category: 'photo', title: '진열장 문 열림 순간',
+          description: '같은 사진 속, 이전 컷까지 닫혀 있던 진열장 문이 살짝 열려 있는 순간이 포착됐다.',
+          discoveredLocationText: 'Pop-up Exhibition · 사진 분석',
+        },
+      },
+      {
+        type: 'addEvidence',
+        evidence: {
+          id: 'evidence-theft-time-range', code: 'E-TR1', category: 'record', title: '사건 발생 추정 시간대',
+          description: '사진들의 촬영 순서를 분석한 결과, K-01이 사라진 시점은 11분 루프 구간 초반으로 좁혀진다. 정확한 순간까지는 아직 확정되지 않았다.',
+          discoveredLocationText: 'Pop-up Exhibition · 사진 분석',
+        },
+      },
+      {
+        type: 'addEvidence',
+        evidence: {
+          id: 'evidence-empty-reception-photo', code: 'E-CL2', category: 'photo', title: '접수대가 비어 있는 사진',
+          description: '같은 연속 촬영 사진 중 한 장에, 클레어가 자리를 비운 접수대가 잠깐 찍혀 있다.',
+          discoveredLocationText: 'Pop-up Exhibition · 사진 분석',
+        },
+      },
+    ],
+  },
   { id: 'line-011', speaker: '지수', text: '이 그레이 후드, 누구 옷이랑 비슷한지 좀 봐야겠다.', characterId: 'jisoo', expression: 'serious' },
   { id: 'line-012', speaker: '영우', text: '윤민아씨, 레오씨, 크로스백이나 후드 있었던 사람들 다시 봐야지.', characterId: 'youngwoo', expression: 'serious' },
   { id: 'line-013', speaker: '지수', text: '일단 제일 수상했던 사람부터.', characterId: 'jisoo', expression: 'serious' },
@@ -1541,22 +1687,72 @@ const week2Scene009Lines = [
   { id: 'line-003', speaker: '윤민아', text: '...저 범인 아니에요.', characterId: 'minah', expression: 'annoyed' },
   { id: 'line-004', speaker: '영우', text: '그렇게 말씀하시니까 더 궁금해지는데요.', characterId: 'youngwoo', expression: 'serious' },
   { id: 'line-005', speaker: '', text: '[ 심문 1단계 — 클레어의 열쇠 관리 진술 ]', characterId: null },
-  { id: 'line-006', speaker: '클레어', text: '저... 사실 진열장 열쇠는 저랑 접수대 직원, 그리고 임시로 도와주시는 분들도 접근할 수 있었어요. 관리가 허술했다는 건 인정할게요.', characterId: 'claire', expression: 'annoyed' },
+  {
+    id: 'line-006', speaker: '클레어', text: '저... 사실 진열장 열쇠는 저랑 접수대 직원, 그리고 임시로 도와주시는 분들도 접근할 수 있었어요. 관리가 허술했다는 건 인정할게요.', characterId: 'claire', expression: 'annoyed',
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-staff-lock-check-time', code: 'E-SEL1', category: 'testimony', title: '진열장 잠금 확인 시각',
+        description: '클레어 — 진열장 잠금은 오늘 아침 한 번 확인했다. 그 이후로는 따로 확인하지 않았고, 관리가 허술했음을 인정한다.',
+        discoveredLocationText: 'Pop-up Exhibition · 클레어 심문',
+      },
+    }],
+  },
   { id: 'line-007', speaker: '영우', text: '그럼 윤민아씨도 접근 가능했던 거예요?', characterId: 'youngwoo', expression: 'serious' },
   { id: 'line-008', speaker: '클레어', text: '직접 열쇠를 드린 적은 없는데, 근처에 걸려 있긴 했어요.', characterId: 'claire', expression: 'neutral' },
   { id: 'line-009', speaker: '', text: '[ 심문 2단계 — 다니엘의 회색 캡 목격 진술 ]', characterId: null },
-  { id: 'line-010', speaker: '다니엘', text: '아, 저 그거 봤어요. 회색 캡 쓴 분이 진열대 쪽으로 가는 거.', characterId: 'daniel-guide', expression: 'neutral' },
+  {
+    id: 'line-010', speaker: '다니엘', text: '아, 저 그거 봤어요. 회색 캡 쓴 분이 진열대 쪽으로 가는 거.', characterId: 'daniel-guide', expression: 'neutral',
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-daniel-graycap-sighting', code: 'E-DN1', category: 'testimony', title: '다니엘의 목격담 — 회색 캡 목격',
+        description: '다니엘 리드 — 회색 캡을 쓴 인물이 진열대 쪽으로 가는 것을 봤다는 진술.',
+        discoveredLocationText: 'Pop-up Exhibition · 다니엘 진술',
+      },
+    }],
+  },
   { id: 'line-011', speaker: '지수', text: '회색 캡이요?', characterId: 'jisoo', expression: 'shocked' },
-  { id: 'line-012', speaker: '다니엘', text: '네, 확실친 않은데 그, 몰래 찍으시던 분 쪽이었던 것 같아요.', characterId: 'daniel-guide', expression: 'neutral' },
+  {
+    id: 'line-012', speaker: '다니엘', text: '네, 확실친 않은데 그, 몰래 찍으시던 분 쪽이었던 것 같아요.', characterId: 'daniel-guide', expression: 'neutral',
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-daniel-silhouette-report', code: 'E-DN2', category: 'testimony', title: '다니엘의 목격담 — 윤민아 쪽 실루엣',
+        description: '다니엘 리드 — 확신은 없지만, 그 인물이 몰래 사진을 찍던 윤민아 쪽에 있었던 것 같다는 진술.',
+        discoveredLocationText: 'Pop-up Exhibition · 다니엘 진술',
+      },
+    }],
+  },
   { id: 'line-013', speaker: '윤민아', text: '저 캡 안 썼는데요?!', characterId: 'minah', expression: 'shocked' },
   { id: 'line-014', speaker: '', text: '[ 심문 3단계 — 윤민아의 삭제 사진 진술 ]', characterId: null },
   { id: 'line-015', speaker: '지수', text: '그럼 아까 왜 사진을 급하게 지우셨어요?', characterId: 'jisoo', expression: 'serious' },
   { id: 'line-016', speaker: '윤민아', text: '...하.', characterId: 'minah', expression: 'annoyed' },
-  { id: 'line-017', speaker: '윤민아', text: '저 사실 콘텐츠 크리에이터거든요. 협찬 없이 몰래 찍은 거라, 클레어씨한테 걸리면 문제될까봐 지운 거예요.', characterId: 'minah', expression: 'annoyed' },
+  {
+    id: 'line-017', speaker: '윤민아', text: '저 사실 콘텐츠 크리에이터거든요. 협찬 없이 몰래 찍은 거라, 클레어씨한테 걸리면 문제될까봐 지운 거예요.', characterId: 'minah', expression: 'annoyed',
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-mina-illegal-photo', code: 'E-M01', category: 'testimony', title: '윤민아의 비공식 촬영 자백',
+        description: '전시품을 촬영 금지 규정을 어기고 몰래 찍었다고 시인했다. 이유는 콘텐츠 제작용.',
+        discoveredLocationText: 'Pop-up Exhibition · 윤민아 심문',
+      },
+    }],
+  },
   { id: 'line-018', speaker: '영우', text: '그럼 촬영 목적이 도난이랑은 상관없다는 거네요.', characterId: 'youngwoo', expression: 'serious' },
   { id: 'line-019', speaker: '윤민아', text: '당연하죠, 저는 그냥 K-01 클립 하나 뽑아서 업로드하려던 거였어요.', characterId: 'minah', expression: 'annoyed' },
   { id: 'line-020', speaker: '', text: '[ 심문 4단계 — 윤민아의 알리바이 성립 ]', characterId: null },
-  { id: 'line-021', speaker: '윤민아', text: '그리고 저 11분 루프 시작될 때쯤, 클레어씨한테 걸려서 계속 접수대 앞에서 사과하고 있었어요. 클레어씨가 증인이에요.', characterId: 'minah', expression: 'neutral' },
+  {
+    id: 'line-021', speaker: '윤민아', text: '그리고 저 11분 루프 시작될 때쯤, 클레어씨한테 걸려서 계속 접수대 앞에서 사과하고 있었어요. 클레어씨가 증인이에요.', characterId: 'minah', expression: 'neutral',
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-mina-photo-timestamps', code: 'E-M03', category: 'record', title: '윤민아 촬영 시각 기록',
+        description: '윤민아가 촬영한 사진들의 타임스탬프. 11분 루프가 시작될 무렵부터는 접수대 앞에서 클레어에게 붙잡혀 있었다는 알리바이와 일치한다.',
+        discoveredLocationText: 'Pop-up Exhibition · 윤민아 심문',
+      },
+    }],
+  },
   { id: 'line-022', speaker: '클레어', text: '...맞아요, 그 시간엔 저랑 같이 있었어요.', characterId: 'claire', expression: 'neutral' },
   { id: 'line-023', speaker: '', text: '[ 심문 5단계 — 카메라 영상이 빈 화면이 아니라 반복 화면임을 확인 ]', characterId: null },
   { id: 'line-024', speaker: '영우', text: '그리고 결정적으로, 카메라 영상 자체가 그냥 끊긴 게 아니라 11분 동안 똑같은 화면을 반복 재생하게 조작된 거였어요.', characterId: 'youngwoo', expression: 'serious' },
@@ -1566,7 +1762,14 @@ const week2Scene009Lines = [
   { id: 'line-028', speaker: '클레어', text: '그러고 보니, 직원문 출입 기록에 레오씨 이름이 그 시간대에 있어요.', characterId: 'claire', expression: 'shocked' },
   { id: 'line-029', speaker: '지수', text: '레오씨가요?', characterId: 'jisoo', expression: 'shocked' },
   { id: 'line-030', speaker: '영우', text: '아, 잠만. 그 그레이 후드, 레오씨 아니야?', characterId: 'youngwoo', expression: 'serious' },
-  { id: 'line-031', speaker: '', text: '[ 증거 갱신: 윤민아의 확대 사진 → 사건 전 K-01 상태를 증명하는 자료 ] [ 의문점: 카메라가 빈 화면이 아니라 반복 화면이었다 ] [ 의문점: 레오가 직원문에 접근한 기록 ] 등록.', characterId: null },
+  {
+    id: 'line-031', speaker: '', text: '[ 증거 갱신: 윤민아의 확대 사진 → 사건 전 K-01 상태를 증명하는 자료 ] [ 의문점: 카메라가 빈 화면이 아니라 반복 화면이었다 ] [ 의문점: 레오가 직원문에 접근한 기록 ] 등록.', characterId: null,
+    effects: [{
+      type: 'updateEvidence',
+      id: 'evidence-mina-photo-confiscated',
+      summary: '단순한 무단 촬영 자료가 아니라, 사건 전 K-01 하단이 정상적으로 결합돼 있던 상태를 증명하는 기준 자료.',
+    }],
+  },
   { id: 'line-032', speaker: '윤민아', text: '아 다행이다 진짜, 저 완전 범인 취급받는 줄 알았어요.', characterId: 'minah', expression: 'neutral' },
   { id: 'line-033', speaker: '지수', text: '죄송해요, 의심해서.', characterId: 'jisoo', expression: 'neutral' },
   { id: 'line-034', speaker: '윤민아', text: '아니에요, 상황이 그랬으니까. 근데 저 그 사진들 필요하시면 원본 다 드릴게요. 정리하는 데 도움 될 것 같아서.', characterId: 'minah', expression: 'neutral' },
@@ -1582,30 +1785,102 @@ const week2Scene010Lines = [
   { id: 'line-006', speaker: '지수', text: '근데 가격은 한 번도 안 물으셨잖아요. 보통 그런 거 먼저 물어보지 않아요?', characterId: 'jisoo', expression: 'suspicious' },
   { id: 'line-007', speaker: '애드리언', text: '음... 그건, 제가 원래 가격보다 물건 자체를 보는 편이라.', characterId: 'adrian', expression: 'suspicious' },
   { id: 'line-008', speaker: '영우', text: '(작게, 지수에게) 뭔가 더 있는 것 같은데 아직은 말 안 하겠다.', characterId: 'youngwoo', expression: 'serious' },
-  { id: 'line-009', speaker: '애드리언', text: '더 필요한 거 있으시면 말씀하세요, 저는 여기 좀 더 있을 테니.', characterId: 'adrian', expression: 'neutral' },
 ];
 
 // [분리] week2Scene010Lines의 후반부(구 line-010~028) — 레오를 다시 붙잡아
 // 물증을 들이대는 장면. 탐문 허브에서 레오 스팟(w2-suspect-leo-spot)의
-// 독립된 인터랙션으로 쓰기 위해 별도 씬으로 나눴다. 대사 자체는 그대로,
-// id만 새로 매겼다.
+// 독립된 인터랙션으로 쓰기 위해 별도 씬으로 나눴다. 대사·증거 이펙트
+// 내용은 origin/main에 병합된 버전 그대로, id만 새로 매겼다.
 const week2Scene010bLines = [
   { id: 'line-001', speaker: '', text: '전시장 직원문 앞. 두 사람은 근처에서 잘린 완충재와 레오의 크로스백 형태 변화를 발견한다.', characterId: null },
   { id: 'line-002', speaker: '영우', text: '어, 저기 완충재 잘린 조각 있다.', characterId: 'youngwoo', expression: 'serious' },
   { id: 'line-003', speaker: '지수', text: '이거 K-01 포장할 때 쓰는 거 아니야?', characterId: 'jisoo', expression: 'suspicious' },
-  { id: 'line-004', speaker: '', text: '[ 증거: 잘린 완충재 ] 등록.', characterId: null },
+  {
+    id: 'line-004', speaker: '', text: '[ 증거: 잘린 완충재 ] 등록.', characterId: null,
+    effects: [
+      {
+        type: 'addEvidence',
+        evidence: {
+          id: 'evidence-packing-foam', code: 'E-V06', category: 'physical', title: '잘린 완충재',
+          description: '직원문 근처에 떨어진 스티로폼 조각. K-01 크기에 맞춰 깔끔하게 잘린 단면이 남아 있다.',
+          discoveredLocationText: 'Pop-up Exhibition 직원문 앞',
+        },
+      },
+      {
+        type: 'addEvidence',
+        evidence: {
+          id: 'evidence-staffdoor-ajar', code: 'E-H06b', category: 'physical', title: '직원 전용문 반쯤 열림',
+          description: '자유 관람 때는 닫혀 있던 직원 전용문이, 지금은 반쯤 열려 있다.',
+          discoveredLocationText: 'Pop-up Exhibition · 직원 전용문',
+        },
+      },
+      {
+        type: 'addEvidence',
+        evidence: {
+          id: 'evidence-shelf-arrangement', code: 'E-H11', category: 'physical', title: '직원 구역 선반 — 흐트러진 정리',
+          description: '직원문 안쪽 선반의 물건 배치가 평소와 다르게 흐트러져 있다. 누군가 최근에 무언가를 찾거나 옮긴 것 같다.',
+          discoveredLocationText: 'Pop-up Exhibition 직원 구역',
+        },
+      },
+    ],
+  },
   { id: 'line-005', speaker: '', text: '레오가 직원문 쪽에서 걸어 나온다. 크로스백이 아까보다 훨씬 부풀어 있다가, 지수와 눈이 마주치자 슬쩍 각도를 튼다.', characterId: null },
   { id: 'line-006', speaker: '지수', text: '어, 레오씨 가방이 아까보다 커진 것 같은데.', characterId: 'jisoo', expression: 'suspicious' },
   { id: 'line-007', speaker: '레오', text: '어? 아 이거, 그냥 짐이 좀 많아서요 ㅎㅎ', characterId: 'leo', expression: 'shocked' },
-  { id: 'line-008', speaker: '', text: '[ 증거: 레오의 크로스백(형태 변화) ] 등록.', characterId: null },
+  {
+    id: 'line-008', speaker: '', text: '[ 증거: 레오의 크로스백(형태 변화) ] 등록.', characterId: null,
+    effects: [
+      {
+        type: 'addEvidence',
+        evidence: {
+          id: 'evidence-leo-bag-strap-shape', code: 'E-DN3', category: 'physical', title: '레오의 크로스백',
+          description: '레오가 매고 있던 크로스백의 형태와 매는 방식을 정리한 자료. 아까보다 눈에 띄게 부풀어 있다.',
+          discoveredLocationText: 'Pop-up Exhibition 직원문 앞',
+        },
+      },
+      {
+        type: 'addEvidence',
+        evidence: {
+          id: 'evidence-leo-bag-volume-change', code: 'E-TL3', category: 'photo', title: '레오 가방 부피 변화',
+          description: '전시장 안에서 찍힌 사진과 지금을 비교하면, 레오의 가방이 눈에 띄게 더 두꺼워져 있다.',
+          discoveredLocationText: 'Pop-up Exhibition · 사진 대조',
+        },
+      },
+      {
+        type: 'addEvidence',
+        evidence: {
+          id: 'evidence-case-edge-fiber', code: 'E-H12', category: 'physical', title: '진열장 모서리 검은 섬유',
+          description: '진열장 모서리에 걸린 검은 섬유 조각. 레오의 옷 소매와 같은 색이다.',
+          discoveredLocationText: 'Pop-up Exhibition · K-01 진열대',
+        },
+      },
+    ],
+  },
   { id: 'line-009', speaker: '영우', text: '레오씨, 잠깐 얘기 좀 할 수 있을까요?', characterId: 'youngwoo', expression: 'serious' },
   { id: 'line-010', speaker: '레오', text: '...네, 왜요.', characterId: 'leo', expression: 'shocked' },
   { id: 'line-011', speaker: '', text: '그 순간 레오의 폰이 짧게 진동한다. 화면을 흘긋 보고 흠칫한다.', characterId: null },
   { id: 'line-012', speaker: '영우', text: '직원문 출입 기록에 레오씨 이름이 있던데, 그 시간에 뭐 하셨어요?', characterId: 'youngwoo', expression: 'serious' },
-  { id: 'line-013', speaker: '레오', text: '어... 저 그냥 창고에 물건 가지러 간 거예요. 진열장 근처는 안 갔어요.', characterId: 'leo', expression: 'shocked' },
+  {
+    id: 'line-013', speaker: '레오', text: '어... 저 그냥 창고에 물건 가지러 간 거예요. 진열장 근처는 안 갔어요.', characterId: 'leo', expression: 'shocked',
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-leo-first-statement', code: 'E-TL0', category: 'testimony', title: '레오 박의 최초 진술',
+        description: '"창고에 물건 가지러 간 거고, 진열장 근처는 안 갔다"는 레오 본인의 최초 진술.',
+        discoveredLocationText: 'Pop-up Exhibition · 레오 조사',
+      },
+    }],
+  },
   { id: 'line-014', speaker: '지수', text: '정말요?', characterId: 'jisoo', expression: 'suspicious' },
   { id: 'line-015', speaker: '레오', text: '네, 진짜예요.', characterId: 'leo', expression: 'shocked' },
-  { id: 'line-016', speaker: '', text: '레오가 시선을 피한다. [ 증거 갱신: 레오의 크로스백 = "평범한 소지품" → "K-01 반출 도구(의심)" ]', characterId: null },
+  {
+    id: 'line-016', speaker: '', text: '레오가 시선을 피한다. [ 증거 갱신: 레오의 크로스백 = "평범한 소지품" → "K-01 반출 도구(의심)" ]', characterId: null,
+    effects: [{
+      type: 'updateEvidence',
+      id: 'evidence-leo-bag-strap-shape',
+      summary: '단순한 소지품이 아니라 K-01 반출에 쓰였을 가능성이 있는 도구로 의심된다.',
+    }],
+  },
   { id: 'line-017', speaker: '영우', text: '(작게, 지수에게) 좀 더 물증 모아서 다시 오자.', characterId: 'youngwoo', expression: 'serious' },
   { id: 'line-018', speaker: '지수', text: '그래, 이대로는 안 밀리겠다.', characterId: 'jisoo', expression: 'serious' },
   { id: 'line-019', speaker: '', text: '자리를 떠나기 전, 영우가 흩어진 시간대를 정리해보기로 한다.', characterId: null },
@@ -1638,12 +1913,63 @@ const week2Scene011Lines = [
   { id: 'line-024', speaker: '', text: '[ 심문 6단계 — "익명 지시에 따라 보관함에 넣었다" ]', characterId: null },
   { id: 'line-025', speaker: '영우', text: '어디로 옮기셨어요?', characterId: 'youngwoo', expression: 'serious' },
   { id: 'line-026', speaker: '레오', text: '...카페 골목에 있는 임시 보관함이요. 넣고 사진만 찍어서 보내면 된다고 했어요.', characterId: 'leo', expression: 'blank' },
-  { id: 'line-027', speaker: '', text: '[ 증거: MK_Consult 메시지(익명 촬영 의뢰) ] [ 증거: 카페 보관함 기록 ] 등록.', characterId: null },
+  {
+    id: 'line-027', speaker: '', text: '[ 증거: MK_Consult 메시지(익명 촬영 의뢰) ] [ 증거: 카페 보관함 기록 ] 등록.', characterId: null,
+    effects: [
+      {
+        type: 'addEvidence',
+        evidence: {
+          id: 'evidence-mk-consult-account', code: 'E-C04', category: 'record', title: '중개 계정 — MK_Consult',
+          description: '레오가 익명 의뢰를 받은 중개 계정명. 애드리언이 받은 문의 계정 "M.K."와 같은 계열로 보인다.',
+          discoveredLocationText: 'Pop-up Exhibition · 레오 심문',
+        },
+      },
+      {
+        type: 'addEvidence',
+        evidence: {
+          id: 'evidence-leo-commission-message', code: 'E-C01', category: 'record', title: '레오가 받은 의뢰 메시지',
+          description: 'K-01 하단 각인을 최대한 선명하게 확대해서 찍어달라는 매우 구체적인 촬영 요청 목록.',
+          discoveredLocationText: 'Pop-up Exhibition · 레오 심문',
+        },
+      },
+      {
+        type: 'addEvidence',
+        evidence: {
+          id: 'evidence-k01-inscription-request', code: 'E-C03', category: 'record', title: '각인 확대 촬영 요청',
+          description: '의뢰 메시지에는 K-01 하단 각인을 최대한 선명하게 확대해서 찍어달라는 조건이 포함되어 있었다.',
+          discoveredLocationText: 'Pop-up Exhibition · 레오 심문',
+        },
+      },
+      {
+        type: 'addEvidence',
+        evidence: {
+          id: 'evidence-leo-reference-image', code: 'E-C02', category: 'photo', title: '레오가 받은 참고 이미지',
+          description: '레오가 의뢰받을 때 함께 전달받은 참고 이미지. 구도·조명·각도가 상당히 구체적으로 지정돼 있다.',
+          discoveredLocationText: 'Pop-up Exhibition · 레오 심문',
+        },
+      },
+      {
+        type: 'addEvidence',
+        evidence: {
+          id: 'evidence-cafe-storage-log', code: 'E-V08', category: 'record', title: '카페 보관함 기록',
+          description: '레오가 K-01을 넣은 임시 보관함의 번호와 시각. 인증 사진을 찍어 MK_Consult 계정으로 보냈다는 기록이 남아 있다.',
+          discoveredLocationText: 'Café near Circular Quay · 보관함',
+        },
+      },
+    ],
+  },
   { id: 'line-028', speaker: '레오', text: '저는 그냥... 사진 몇 장 부탁받은 줄 알았어요. 근데 어느샌가 이렇게 돼 있더라고요.', characterId: 'leo', expression: 'blank' },
   { id: 'line-029', speaker: '지수', text: '레오씨... 좋은 사람인 줄 알았는데.', characterId: 'jisoo', expression: 'annoyed' },
   { id: 'line-030', speaker: '레오', text: '...죄송해요, 정말로요.', characterId: 'leo', expression: 'blank' },
   { id: 'line-031', speaker: '영우', text: '일단 그 보관함부터 가봐요, K-01부터 찾아야죠.', characterId: 'youngwoo', expression: 'serious' },
-  { id: 'line-032', speaker: '', text: '[ 증거 갱신: MK_Consult 메시지 = "익명 촬영 의뢰" → "레오를 움직인 배후" ]', characterId: null },
+  {
+    id: 'line-032', speaker: '', text: '[ 증거 갱신: MK_Consult 메시지 = "익명 촬영 의뢰" → "레오를 움직인 배후" ]', characterId: null,
+    effects: [{
+      type: 'updateEvidence',
+      id: 'evidence-mk-consult-account',
+      summary: '단순한 익명 촬영 의뢰가 아니라, 레오를 단계적으로 움직인 배후의 지시 채널.',
+    }],
+  },
 ];
 
 const week2Scene012Lines = [
@@ -1651,7 +1977,17 @@ const week2Scene012Lines = [
   { id: 'line-002', speaker: '지수', text: '헐, 있다!!!!', characterId: 'jisoo', expression: 'happy' },
   { id: 'line-003', speaker: '영우', text: '다행이다 진짜, K-01 무사하네.', characterId: 'youngwoo', expression: 'happy' },
   { id: 'line-004', speaker: '', text: '윤민아가 소식을 듣고 달려온다.', characterId: null },
-  { id: 'line-005', speaker: '윤민아', text: '저 사진 원본 가져왔어요, 회수된 거랑 비교해볼게요.', characterId: 'minah', expression: 'neutral' },
+  {
+    id: 'line-005', speaker: '윤민아', text: '저 사진 원본 가져왔어요, 회수된 거랑 비교해볼게요.', characterId: 'minah', expression: 'neutral',
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-mina-recovered-photo-fragment', code: 'E-M02', category: 'photo', title: '복구된 원본 사진',
+        description: '클레어에게 지적받고도 완전히 지우지 못한 원본. K-01 뒷면·하단 각인 부분을 확대 촬영한 흔적이 남아 있다.',
+        discoveredLocationText: 'Café near Circular Quay · 보관함',
+      },
+    }],
+  },
   { id: 'line-006', speaker: '', text: '윤민아가 사건 전 촬영한 확대 사진과 회수된 K-01을 나란히 놓는다.', characterId: null },
   { id: 'line-007', speaker: '윤민아', text: '어... 잠깐만요.', characterId: 'minah', expression: 'shocked' },
   { id: 'line-008', speaker: '지수', text: '왜요?', characterId: 'jisoo', expression: 'suspicious' },
@@ -1662,7 +1998,17 @@ const week2Scene012Lines = [
   { id: 'line-013', speaker: '윤민아', text: '클레어씨 등록 무게 기록이랑 대조해봐야 할 것 같아요.', characterId: 'minah', expression: 'neutral' },
   { id: 'line-014', speaker: '영우', text: '잠만, 그럼 이거... 레오씨가 훔친 게 K-01 전체가 아니라...?', characterId: 'youngwoo', expression: 'shocked' },
   { id: 'line-015', speaker: '지수', text: '안에 뭐가 있었는데, 그게 없어졌다는 거야???', characterId: 'jisoo', expression: 'shocked' },
-  { id: 'line-016', speaker: '', text: '[ 증거: K-01(내부 분해 흔적 발견) ] [ 사건 정의 갱신: 레오에 의한 K-01 무단 반출 사건 ] 등록.', characterId: null },
+  {
+    id: 'line-016', speaker: '', text: '[ 증거: K-01(내부 분해 흔적 발견) ] [ 사건 정의 갱신: 레오에 의한 K-01 무단 반출 사건 ] 등록.', characterId: null,
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-k01', code: 'E-V09', category: 'physical', title: 'K-01',
+        description: '회수된 황동 공예품 K-01. 원래 있던 자리보다 가볍고, 나사 방향과 결합선 위치가 사건 전 사진과 미묘하게 다르다.',
+        discoveredLocationText: 'Café near Circular Quay · 보관함',
+      },
+    }],
+  },
   { id: 'line-017', speaker: '영우', text: '(작게) 나 지금까지 물리 증거로 다 맞다고 생각했는데, 이거... 뭔가 더 있는 거 아니야.', characterId: 'youngwoo', expression: 'shocked' },
   { id: 'line-018', speaker: '지수', text: '돌아온 건 K-01이 맞아. 그런데...... 안에 있던 게 없어.', characterId: 'jisoo', expression: 'serious' },
   { id: 'line-019', speaker: '', text: '세 사람이 서로를 바라본다. — 1부 종료, 2부로 이어짐.', characterId: null },
@@ -1670,7 +2016,17 @@ const week2Scene012Lines = [
 
 const week2Scene013Lines = [
   { id: 'line-001', speaker: '', text: '전시장. 지수와 영우가 클레어와 함께 K-01을 정밀하게 살펴보고 있다.', characterId: null },
-  { id: 'line-002', speaker: '클레어', text: '저희 등록 대장에 K-01 무게가 정확히 적혀 있어요, 확인해볼게요.', characterId: 'claire', expression: 'neutral' },
+  {
+    id: 'line-002', speaker: '클레어', text: '저희 등록 대장에 K-01 무게가 정확히 적혀 있어요, 확인해볼게요.', characterId: 'claire', expression: 'neutral',
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-k01-weight', code: 'E-V13', category: 'record', title: 'K-01 등록 무게',
+        description: '전시 등록 대장에 적힌 K-01의 원래 무게. 회수된 K-01과 대조할 기준값이다.',
+        discoveredLocationText: 'Pop-up Exhibition · 등록 대장',
+      },
+    }],
+  },
   { id: 'line-003', speaker: '', text: '클레어가 저울에 K-01을 올린다.', characterId: null },
   { id: 'line-004', speaker: '클레어', text: '...어.', characterId: 'claire', expression: 'shocked' },
   { id: 'line-005', speaker: '클레어', text: '등록 무게보다 확실히 가벼워요. 이 정도 차이면 절대 오차 범위가 아니에요.', characterId: 'claire', expression: 'shocked' },
@@ -1682,7 +2038,13 @@ const week2Scene013Lines = [
   { id: 'line-011', speaker: '지수', text: '그럼 레오씨가 훔친 건 K-01이 아니라, 이 안에 있던 뭔가를 훔치기 위한 통로였던 거야?', characterId: 'jisoo', expression: 'serious' },
   { id: 'line-012', speaker: '클레어', text: '제가... 등록할 때 무게까지 정확히 확인했어야 했는데, 그냥 정상이라고만 생각했어요.', characterId: 'claire', expression: 'annoyed' },
   { id: 'line-013', speaker: '영우', text: '클레어씨 잘못은 아니에요, 누구도 안에 뭐가 있는지 몰랐잖아요.', characterId: 'youngwoo', expression: 'soft' },
-  { id: 'line-014', speaker: '', text: '[ 증거 갱신: K-01 → 내부가 비어 있는 껍데기 ] [ 증거 갱신: K-01 등록 무게 = "일상적인 관리 대장" → "내부 부품 소실의 물증" ]', characterId: null },
+  {
+    id: 'line-014', speaker: '', text: '[ 증거 갱신: K-01 → 내부가 비어 있는 껍데기 ] [ 증거 갱신: K-01 등록 무게 = "일상적인 관리 대장" → "내부 부품 소실의 물증" ]', characterId: null,
+    effects: [
+      { type: 'updateEvidence', id: 'evidence-k01', summary: '내부 인덱스가 제거된, 텅 빈 껍데기 상태의 K-01.' },
+      { type: 'updateEvidence', id: 'evidence-k01-weight', summary: '일상적인 관리 대장이 아니라, 내부 부품 소실을 증명하는 물증.' },
+    ],
+  },
   { id: 'line-015', speaker: '지수', text: '이거 만든 사람한테 물어봐야겠다, 안에 원래 뭐가 있었는지.', characterId: 'jisoo', expression: 'serious' },
   { id: 'line-016', speaker: '클레어', text: '제작자분 연락처 있어요, 마틴 베일씨라고.', characterId: 'claire', expression: 'neutral' },
 ];
@@ -1694,18 +2056,74 @@ const week2Scene014Lines = [
   { id: 'line-004', speaker: '영우', text: '사실 오늘 K-01에서 도난 사건이 있었어요. 회수는 됐는데, 내부가 비어 있더라고요.', characterId: 'youngwoo', expression: 'serious' },
   { id: 'line-005', speaker: '', text: '전화 너머로 긴 침묵이 흐른다.', characterId: null },
   { id: 'line-006', speaker: '마틴', text: '...그럴 리가 없는데.', characterId: 'martin', expression: 'neutral' },
-  { id: 'line-007', speaker: '마틴', text: '제가 클레어씨한테도 몇 번이나 말했어요, 그 작품 하단은 절대 열지 말라고.', characterId: 'martin', expression: 'neutral' },
+  {
+    id: 'line-007', speaker: '마틴', text: '제가 클레어씨한테도 몇 번이나 말했어요, 그 작품 하단은 절대 열지 말라고.', characterId: 'martin', expression: 'neutral',
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-martin-not-for-sale-testimony', code: 'E-MV1', category: 'testimony', title: '마틴의 진술 — 판매 목적 아님',
+        description: '마틴 베일 — K-01은 판매용이 아니라 전시 목적으로만 빌려준 것이며, 하단은 절대 열지 말라고 여러 번 당부했다는 진술.',
+        discoveredLocationText: '전화 통화 · 마틴 베일',
+      },
+    }],
+  },
   { id: 'line-008', speaker: '지수', text: '왜요? 안에 뭐가 있는데요?', characterId: 'jisoo', expression: 'shocked' },
   { id: 'line-009', speaker: '', text: '다시 침묵.', characterId: null },
   { id: 'line-010', speaker: '마틴', text: '...말씀드려야겠네요.', characterId: 'martin', expression: 'neutral' },
   { id: 'line-011', speaker: '마틴', text: '그 안에는 작은 황동 인덱스가 들어 있었어요, 식별판 같은 거예요.', characterId: 'martin', expression: 'neutral' },
   { id: 'line-012', speaker: '영우', text: '인덱스요? 그게 뭐하는 물건인데요?', characterId: 'youngwoo', expression: 'serious' },
   { id: 'line-013', speaker: '마틴', text: '저도 정확힌 몰라요, 그냥 의뢰받은 대로 만들어 끼워넣었을 뿐이라서.', characterId: 'martin', expression: 'neutral' },
-  { id: 'line-014', speaker: '마틴', text: '그... M.K. 계열 표식이라고만 들었어요.', characterId: 'martin', expression: 'neutral' },
+  {
+    id: 'line-014', speaker: '마틴', text: '그... M.K. 계열 표식이라고만 들었어요.', characterId: 'martin', expression: 'neutral',
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-mk-inscription-focused-inquiries', code: 'E-MV5', category: 'record', title: 'M.K.의 문의 — 각인에만 집중',
+        description: 'M.K. 계열 계정이 마틴에게 보냈던 과거 문의들. 물건 전체가 아니라 매번 하단 각인 부분만 반복해서 물었다.',
+        discoveredLocationText: '전화 통화 · 마틴 베일',
+      },
+    }],
+  },
   { id: 'line-015', speaker: '지수', text: '...M.K.요?', characterId: 'jisoo', expression: 'shocked' },
   { id: 'line-016', speaker: '', text: '지수가 무의식적으로 가방에 걸린 M.K. 열쇠를 만진다.', characterId: null },
   { id: 'line-017', speaker: '마틴', text: '아, 제가 말이 좀 많았네요. 아무튼 그거 없어졌으면 큰일이에요, 빨리 찾으시는 게 좋을 거예요.', characterId: 'martin', expression: 'neutral' },
-  { id: 'line-018', speaker: '', text: '전화가 끊긴다. [ 증거: 내부 황동 인덱스의 존재 ] [ 의문점: 이 인덱스는 왜 있었는가 ] 등록.', characterId: null },
+  {
+    id: 'line-018', speaker: '', text: '전화가 끊긴다. [ 증거: 내부 황동 인덱스의 존재 ] [ 의문점: 이 인덱스는 왜 있었는가 ] 등록.', characterId: null,
+    effects: [
+      {
+        type: 'addEvidence',
+        evidence: {
+          id: 'evidence-internal-index', code: 'E-V12', category: 'record', title: '내부 황동 인덱스의 존재',
+          description: '마틴이 K-01 하단에 끼워 넣었다는 작은 황동 인덱스(식별판). M.K. 계열 표식이라는 것 외에는 마틴도 정확히 모른다.',
+          discoveredLocationText: '전화 통화 · 마틴 베일',
+        },
+      },
+      {
+        type: 'addEvidence',
+        evidence: {
+          id: 'evidence-k01-submission-photo', code: 'E-MV2', category: 'photo', title: 'K-01 출품 당시 사진',
+          description: '마틴이 K-01을 전시에 내놓을 때 찍어둔 사진. 지금과 비교할 수 있는 유일한 "출품 당시" 기록이다.',
+          discoveredLocationText: '전화 통화 · 마틴 베일',
+        },
+      },
+      {
+        type: 'addEvidence',
+        evidence: {
+          id: 'evidence-k01-catalog-year-mismatch', code: 'E-MV3', category: 'record', title: '카탈로그 제작 연도 — 출품 기록과 불일치',
+          description: '마틴이 알고 있는 K-01의 제작 연도가, 전시 카탈로그에 적힌 연도와 다르다. 둘 중 하나는 틀렸다.',
+          discoveredLocationText: '전화 통화 · 마틴 베일',
+        },
+      },
+      {
+        type: 'addEvidence',
+        evidence: {
+          id: 'evidence-k01-inscription-sharper', code: 'E-MV4', category: 'testimony', title: '하단 각인 — 선명도 변화',
+          description: '마틴이 기억하는 K-01의 하단 각인은 흐릿했는데, 회수된 K-01 사진 속 각인은 눈에 띄게 선명하다.',
+          discoveredLocationText: '전화 통화 · 마틴 베일',
+        },
+      },
+    ],
+  },
   { id: 'line-019', speaker: '영우', text: '지수야, 진짜 도난품은 K-01이 아니었어.', characterId: 'youngwoo', expression: 'serious' },
   { id: 'line-020', speaker: '지수', text: '그 안에 있던 인덱스였어. 그럼 누가 그걸 원했을까.', characterId: 'jisoo', expression: 'serious' },
   { id: 'line-021', speaker: '영우', text: '애드리언씨, 그 사람 다시 만나야겠다.', characterId: 'youngwoo', expression: 'serious' },
@@ -1718,16 +2136,86 @@ const week2Scene015Lines = [
   { id: 'line-004', speaker: '영우', text: 'K-01 안에 인덱스가 있었는데 사라졌어요. 아까 받침 내부 깊이 물어보신 거, 이거랑 관련 있는 거 아니에요?', characterId: 'youngwoo', expression: 'serious' },
   { id: 'line-005', speaker: '', text: '애드리언이 한숨을 쉰다.', characterId: null },
   { id: 'line-006', speaker: '애드리언', text: '...사실대로 말씀드릴게요.', characterId: 'adrian', expression: 'serious' },
-  { id: 'line-007', speaker: '애드리언', text: '저 비공식 매입 의뢰를 받고 있었어요. 근데 그 의뢰인이 요구한 게 좀 이상했어요.', characterId: 'adrian', expression: 'serious' },
+  {
+    id: 'line-007', speaker: '애드리언', text: '저 비공식 매입 의뢰를 받고 있었어요. 근데 그 의뢰인이 요구한 게 좀 이상했어요.', characterId: 'adrian', expression: 'serious',
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-adrian-inquiry', code: 'E-B01', category: 'record', title: 'K-01 외부 문의 기록',
+        description: '최근 K-01과 비슷한 황동 물건에 대한 외부 문의가 있었다. 제작 시기, 재질, 세부 각인까지 비정상적으로 구체적이었다.',
+        discoveredLocationText: 'Pop-up Exhibition · 애드리언 심문',
+      },
+    }],
+  },
   { id: 'line-008', speaker: '지수', text: '어떻게 이상했는데요?', characterId: 'jisoo', expression: 'serious' },
-  { id: 'line-009', speaker: '애드리언', text: '가격 얘기는 한 번도 없었어요. 대신 하단 각인의 정확한 형태, 받침 내부 깊이, 분해 가능한 구조인지만 계속 물었어요.', characterId: 'adrian', expression: 'serious' },
+  {
+    id: 'line-009', speaker: '애드리언', text: '가격 얘기는 한 번도 없었어요. 대신 하단 각인의 정확한 형태, 받침 내부 깊이, 분해 가능한 구조인지만 계속 물었어요.', characterId: 'adrian', expression: 'serious',
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-adrian-client-email', code: 'E-V10', category: 'record', title: '애드리언의 의뢰인 메일',
+        description: '가격 얘기는 한 번도 없이, 하단 각인의 정확한 형태·받침 내부 깊이·분해 가능한 구조인지만 반복해서 묻는 의뢰 메일.',
+        discoveredLocationText: 'Pop-up Exhibition · 애드리언 심문',
+      },
+    }],
+  },
   { id: 'line-010', speaker: '', text: '애드리언이 폰을 꺼내 메일 일부를 보여준다.', characterId: null },
-  { id: 'line-011', speaker: '영우', text: '이거... 소유 이력 물어본 것도 있네요.', characterId: 'youngwoo', expression: 'serious' },
-  { id: 'line-012', speaker: '애드리언', text: '네, 저도 이상해서 몇 번 되물었는데 답이 항상 짧고 사무적이었어요.', characterId: 'adrian', expression: 'serious' },
+  {
+    id: 'line-011', speaker: '영우', text: '이거... 소유 이력 물어본 것도 있네요.', characterId: 'youngwoo', expression: 'serious',
+    effects: [
+      {
+        type: 'addEvidence',
+        evidence: {
+          id: 'evidence-adrian-sender', code: 'E-B02', category: 'record', title: '문의 발신 계정 — M.K.',
+          description: '문의 메일의 발신 계정명은 "M.K."뿐이었다. 회신 주소나 소속 표기가 전혀 없었다.',
+          discoveredLocationText: 'Pop-up Exhibition · 애드리언 심문',
+        },
+      },
+      {
+        type: 'addEvidence',
+        evidence: {
+          id: 'evidence-adrian-email-re-prefix', code: 'E-B02B', category: 'record', title: '메일 제목의 "Re:"',
+          description: '문의 메일 제목이 "Re: 문의드립니다"로 시작한다. Re:는 보통 답장에 붙는 접두사다 — 애초에 누군가 먼저 답장을 보낸 적 있다는 뜻일 수 있다.',
+          discoveredLocationText: 'Pop-up Exhibition · 애드리언 심문',
+        },
+      },
+    ],
+  },
+  {
+    id: 'line-012', speaker: '애드리언', text: '네, 저도 이상해서 몇 번 되물었는데 답이 항상 짧고 사무적이었어요.', characterId: 'adrian', expression: 'serious',
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-adrian-sent-mail-cache', code: 'E-B08', category: 'record', title: '애드리언 보낸메일 캐시',
+        description: '애드리언이 M.K. 계정에 보낸 답장 캐시. 짧고 사무적인 회신들만 남아 있다.',
+        discoveredLocationText: 'Pop-up Exhibition · 애드리언 심문',
+      },
+    }],
+  },
   { id: 'line-013', speaker: '', text: '[ 증거: 애드리언의 의뢰인 메일(구조·각인 집착) ] 등록. 메일 문체가 어딘가 낯익다 — 아직 명확히 짚이진 않는다.', characterId: null },
-  { id: 'line-014', speaker: '애드리언', text: '저도 이제 와서 보니, 이게 그냥 매입이 아니라 뭔가 다른 걸 노린 거였구나 싶네요.', characterId: 'adrian', expression: 'serious' },
+  {
+    id: 'line-014', speaker: '애드리언', text: '저도 이제 와서 보니, 이게 그냥 매입이 아니라 뭔가 다른 걸 노린 거였구나 싶네요.', characterId: 'adrian', expression: 'serious',
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-adrian-once-only-claim', code: 'E-B09', category: 'testimony', title: '애드리언의 재진술 — 단 한 번뿐인 연락',
+        description: '애드리언 콜 — "M.K. 계정과는 이번이 처음이자 마지막 연락"이라는 진술.',
+        discoveredLocationText: 'Pop-up Exhibition · 애드리언 심문',
+      },
+    }],
+  },
   { id: 'line-015', speaker: '지수', text: '애드리언씨도 이용당하신 거네요.', characterId: 'jisoo', expression: 'neutral' },
-  { id: 'line-016', speaker: '애드리언', text: '...그런 것 같습니다, 제가 아는 건 여기까지예요.', characterId: 'adrian', expression: 'neutral' },
+  {
+    id: 'line-016', speaker: '애드리언', text: '...그런 것 같습니다, 제가 아는 건 여기까지예요.', characterId: 'adrian', expression: 'neutral',
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-adrian-tablet-history', code: 'E-B10', category: 'record', title: '애드리언 태블릿 — 과거 문의 기록',
+        description: '애드리언의 태블릿 브라우저 기록. 몇 달 전에도 비슷한 이니셜의 계정에서 K-01 관련 문의가 몇 차례 왔었지만, 스팸으로 보고 무시한 흔적이 남아 있다.',
+        discoveredLocationText: 'Pop-up Exhibition · 애드리언 심문',
+      },
+    }],
+  },
   { id: 'line-017', speaker: '영우', text: '감사합니다, 레오씨한테 다시 가서 보관함 이후를 물어봐야겠다.', characterId: 'youngwoo', expression: 'serious' },
 ];
 
@@ -1743,7 +2231,14 @@ const week2Scene016Lines = [
   { id: 'line-009', speaker: '레오', text: '...몰라요, 저는 정말 그 뒤론 아무것도 몰라요.', characterId: 'leo', expression: 'blank' },
   { id: 'line-010', speaker: '', text: '레오가 잠시 말을 멈춘다.', characterId: null },
   { id: 'line-011', speaker: '레오', text: '근데 생각해보니까 이상하긴 해요, 저한테 온 지시는 항상 짧고 사무적이었거든요. 꼭 필요한 말만, "넣어라" "사진 보내라" 이런 식으로.', characterId: 'leo', expression: 'blank' },
-  { id: 'line-012', speaker: '', text: '[ 의문점: 레오가 떠난 뒤 보관함에 접근한 사람은 누구인가 ] 등록. [ 증거 갱신: 카페 보관함 기록 = "K-01 회수 장소" → "레오 이후 누군가 다시 접근할 수 있었던 지점" ]', characterId: null },
+  {
+    id: 'line-012', speaker: '', text: '[ 의문점: 레오가 떠난 뒤 보관함에 접근한 사람은 누구인가 ] 등록. [ 증거 갱신: 카페 보관함 기록 = "K-01 회수 장소" → "레오 이후 누군가 다시 접근할 수 있었던 지점" ]', characterId: null,
+    effects: [{
+      type: 'updateEvidence',
+      id: 'evidence-cafe-storage-log',
+      summary: '단순한 K-01 회수 장소가 아니라, 레오 이후 누군가 다시 접근할 수 있었던 지점.',
+    }],
+  },
   { id: 'line-013', speaker: '레오', text: '...저 혹시, 저도 이용당한 거예요?', characterId: 'leo', expression: 'shocked' },
   { id: 'line-014', speaker: '지수', text: '아직 확실친 않아요, 근데 그럴 가능성이 있어요.', characterId: 'jisoo', expression: 'neutral' },
   { id: 'line-015', speaker: '레오', text: '...하.', characterId: 'leo', expression: 'blank' },
@@ -1757,7 +2252,35 @@ const week2Scene017Lines = [
   { id: 'line-003', speaker: '소피', text: '네, 뭔데요?', characterId: 'sophie', expression: 'curious' },
   { id: 'line-004', speaker: '영우', text: '그 골목 보관함 근처에서 뭔가 특별한 거 기억나는 거 있으세요?', characterId: 'youngwoo', expression: 'serious' },
   { id: 'line-005', speaker: '소피', text: '음... 딱히 특별한 건 없었는데.', characterId: 'sophie', expression: 'curious' },
-  { id: 'line-006', speaker: '', text: '소피가 잠시 생각에 잠긴다.', characterId: null },
+  {
+    id: 'line-006', speaker: '', text: '소피가 잠시 생각에 잠긴다.', characterId: null,
+    effects: [
+      {
+        type: 'addEvidence',
+        evidence: {
+          id: 'evidence-sophie-initial-sighting', code: 'E-SP1', category: 'testimony', title: '소피의 목격담 — 창가 자리의 회색 후드',
+          description: '소피 첸(카페 직원) — 회색 후드 남성이 카페에 들어와 바로 창가 자리에 앉았다는 목격담.',
+          discoveredLocationText: 'Café near Circular Quay · 소피 진술',
+        },
+      },
+      {
+        type: 'addEvidence',
+        evidence: {
+          id: 'evidence-cafe-staff-tip', code: 'E-SEL2', category: 'testimony', title: '카페 직원 증언',
+          description: '소피 첸 — 그레이 후드 남성은 주문 후 바로 앉지 않았고, 가방을 의자 아래 뒀으며, 누군가와 통화를 했다.',
+          discoveredLocationText: 'Café near Circular Quay · 소피 진술',
+        },
+      },
+      {
+        type: 'addEvidence',
+        evidence: {
+          id: 'evidence-leo-mobile-preorder', code: 'E-SP2', category: 'record', title: '레오의 모바일 선주문 기록',
+          description: '레오는 카페 도착 전 모바일 앱으로 미리 주문을 넣어뒀다 — 직접 줄을 서거나 자리를 잡을 필요가 없었다.',
+          discoveredLocationText: 'Café near Circular Quay · 주문 앱 기록',
+        },
+      },
+    ],
+  },
   { id: 'line-007', speaker: '소피', text: '아, 맞다. 그 친절한 가이드분 있잖아요, 다니엘씨.', characterId: 'sophie', expression: 'curious' },
   { id: 'line-008', speaker: '지수', text: '네?', characterId: 'jisoo', expression: 'suspicious' },
   { id: 'line-009', speaker: '소피', text: '그분이 아까 낮에 관광객 분실물 맡긴다고 보관함 사용법을 저한테 물어봤었어요.', characterId: 'sophie', expression: 'curious' },
@@ -1798,7 +2321,24 @@ const week2Scene018Lines = [
   { id: 'line-017', speaker: '', text: '다니엘이 웃으며 화제를 넘기려 한다 — 그러나 문장이 조금씩 짧아지고 있다.', characterId: null },
   { id: 'line-018', speaker: '영우', text: '(작게, 지수에게) 저 사람 지금 되게 급하게 넘어가려는 것 같은데.', characterId: 'youngwoo', expression: 'serious' },
   { id: 'line-019', speaker: '지수', text: '그러게, 뭔가 숨기고 있어.', characterId: 'jisoo', expression: 'suspicious' },
-  { id: 'line-020', speaker: '', text: '[ 증거: 다니엘 소속 여행사 미등록 확인 ] [ 증거 갱신: 다니엘 명찰 = "가이드 신분 증명" → "여행사 소속 확인 자료(그러나 등록 안 됨)" ] 등록.', characterId: null },
+  {
+    id: 'line-020', speaker: '', text: '[ 증거: 다니엘 소속 여행사 미등록 확인 ] [ 증거 갱신: 다니엘 명찰 = "가이드 신분 증명" → "여행사 소속 확인 자료(그러나 등록 안 됨)" ] 등록.', characterId: null,
+    effects: [
+      {
+        type: 'addEvidence',
+        evidence: {
+          id: 'evidence-daniel-travel-agency-unregistered', code: 'E-V10b', category: 'record', title: '다니엘 소속 여행사 미등록 확인',
+          description: '다니엘이 명찰에 적은 여행사에 직접 확인한 결과, 그 이름으로 등록된 가이드가 없다는 답변을 받았다.',
+          discoveredLocationText: '전화 통화 · 여행사',
+        },
+      },
+      {
+        type: 'updateEvidence',
+        id: 'evidence-daniel-badge',
+        summary: '단순한 가이드 신분 증명이 아니라, 여행사 소속 확인 자료(그러나 정식 등록은 안 되어 있음).',
+      },
+    ],
+  },
   { id: 'line-021', speaker: '다니엘', text: '아무튼 저는 바빠서 이만, 좋은 하루 보내세요.', characterId: 'daniel-guide', expression: 'neutral' },
   { id: 'line-022', speaker: '', text: '다니엘이 자리를 뜬다. 명찰을 자세히 보면 이름 부분만 스티커처럼 새것으로 보인다.', characterId: null },
   { id: 'line-023', speaker: '지수', text: '아까 단체사진 찍었던 사람들한테 다니엘씨에 대해 물어보자.', characterId: 'jisoo', expression: 'serious' },
@@ -1815,7 +2355,24 @@ const week2Scene019Lines = [
   { id: 'line-008', speaker: '', text: '"저도요, 사실 아까 그 단체사진 찍을 때 다들 처음 뵙는 분들이었어요."', characterId: null },
   { id: 'line-009', speaker: '지수', text: '서로 모르는 사이셨어요?', characterId: 'jisoo', expression: 'shocked' },
   { id: 'line-010', speaker: '', text: '"네, 다 우연히 그 자리에 있던 사람들이었죠. 근데 그분이 워낙 자연스럽게 이끄셔서 몰랐어요." "저도 마찬가지예요, 정식 투어인 줄 알았는데 지금 생각해보니 정식 명찰이나 그런 것도 없었던 것 같고."', characterId: null },
-  { id: 'line-011', speaker: '', text: '[ 증거: 관광팀 단체사진 재해석 근거 ] [ 증거 갱신: 관광팀 단체사진 = "다니엘의 투어 진행 증명" → "정식 관광팀이 아니며 군중 위치가 의도적으로 배치됐다는 증거" ] 등록.', characterId: null },
+  {
+    id: 'line-011', speaker: '', text: '[ 증거: 관광팀 단체사진 재해석 근거 ] [ 증거 갱신: 관광팀 단체사진 = "다니엘의 투어 진행 증명" → "정식 관광팀이 아니며 군중 위치가 의도적으로 배치됐다는 증거" ] 등록.', characterId: null,
+    effects: [
+      {
+        type: 'addEvidence',
+        evidence: {
+          id: 'evidence-group-photo-reinterpretation', code: 'E-V11b', category: 'testimony', title: '관광팀 단체사진 재해석 근거',
+          description: '단체사진 속 관광객들이 서로 처음 만난 사이였고, 정식 명찰이나 투어 표시가 없었다는 증언.',
+          discoveredLocationText: 'Circular Quay · 관광객 재조사',
+        },
+      },
+      {
+        type: 'updateEvidence',
+        id: 'evidence-group-photo',
+        summary: '다니엘의 투어 진행 증명이 아니라, 정식 관광팀이 아니며 군중 위치가 의도적으로 배치됐다는 증거.',
+      },
+    ],
+  },
   { id: 'line-012', speaker: '영우', text: '지수야, 그 단체사진, 사람들 위치 다니엘씨가 다 정해줬잖아.', characterId: 'youngwoo', expression: 'serious' },
   { id: 'line-013', speaker: '지수', text: '그게... 그냥 사진 잘 나오게 하려던 게 아니라.', characterId: 'jisoo', expression: 'suspicious' },
   { id: 'line-014', speaker: '영우', text: '입구 시야를 가리려던 거였을 수도 있어.', characterId: 'youngwoo', expression: 'serious' },
@@ -1838,7 +2395,14 @@ const week2Scene020Lines = [
   { id: 'line-013', speaker: '지수', text: '처음부터... 이 하루 전체가 다 설계된 거였어.', characterId: 'jisoo', expression: 'annoyed' },
   { id: 'line-014', speaker: '영우', text: '사진 찍어준 것도, 보관함 알려준 것도, 단체사진 찍자고 한 것도.', characterId: 'youngwoo', expression: 'shocked' },
   { id: 'line-015', speaker: '영우', text: '전부 다 계산된 거였다는 거잖아.', characterId: 'youngwoo', expression: 'shocked' },
-  { id: 'line-016', speaker: '', text: '[ 증거 갱신: 관광 일정표 = "다니엘의 이동 기록" → "군중 배치·직원문 확인·보관함 회수를 정리한 작전표" ]', characterId: null },
+  {
+    id: 'line-016', speaker: '', text: '[ 증거 갱신: 관광 일정표 = "다니엘의 이동 기록" → "군중 배치·직원문 확인·보관함 회수를 정리한 작전표" ]', characterId: null,
+    effects: [{
+      type: 'updateEvidence',
+      id: 'evidence-itinerary',
+      summary: '단순한 이동 기록이 아니라, 군중 배치·직원문 확인·보관함 회수를 정리한 작전표.',
+    }],
+  },
   { id: 'line-017', speaker: '지수', text: '근데 왜 하필 우리야, 왜 하필 이 열쇠였을까.', characterId: 'jisoo', expression: 'serious' },
   { id: 'line-018', speaker: '영우', text: '그건 직접 물어봐야 할 것 같아, 이제 진짜 마지막이야.', characterId: 'youngwoo', expression: 'serious' },
   { id: 'line-019', speaker: '지수', text: '가자, 다니엘씨한테.', characterId: 'jisoo', expression: 'serious' },
@@ -1886,7 +2450,15 @@ const week2Scene021Lines = [
   { id: 'line-039', speaker: '', text: '긴 침묵. 다니엘의 태도가 완전히 바뀐다 — 더 이상 웃지 않는다.', characterId: null },
   { id: 'line-040', speaker: '다니엘', text: '...네, 맞아요.', characterId: 'daniel-guide', expression: 'serious' },
   { id: 'line-041', speaker: '다니엘', text: '그 열쇠를 서큘러키에서 처음 봤을 때부터 알아봤어요.', characterId: 'daniel-guide', expression: 'serious' },
-  { id: 'line-042', speaker: '', text: '[ 증거 갱신 일괄: 서큘러키 커플 사진 → 다니엘의 사전 인지 증명 / 회색 캡 목격담 → 의도적 유도 / 다니엘 명찰 → 위장 출입증 / 레오의 크로스백 → 희생양 구조의 증거 ]', characterId: null },
+  {
+    id: 'line-042', speaker: '', text: '[ 증거 갱신 일괄: 서큘러키 커플 사진 → 다니엘의 사전 인지 증명 / 회색 캡 목격담 → 의도적 유도 / 다니엘 명찰 → 위장 출입증 / 레오의 크로스백 → 희생양 구조의 증거 ]', characterId: null,
+    effects: [
+      { type: 'updateEvidence', id: 'evidence-circular-quay-photo', summary: '단순한 기념사진이 아니라, 다니엘이 사건 전부터 M.K. 열쇠를 알아봤다는 사전 인지의 증명.' },
+      { type: 'updateEvidence', id: 'evidence-daniel-graycap-sighting', summary: '단순한 목격 정보가 아니라, 레오에게 혐의를 집중시키기 위한 다니엘의 의도적 유도.' },
+      { type: 'updateEvidence', id: 'evidence-daniel-badge', summary: '여행사 소속 확인 자료가 아니라, 행사 임시 패스를 개조한 위장 출입증.' },
+      { type: 'updateEvidence', id: 'evidence-leo-bag-strap-shape', summary: '의심 단계를 넘어, 다니엘이 선택한 희생양 구조와 부분 의뢰를 보여주는 증거.' },
+    ],
+  },
   { id: 'line-043', speaker: '다니엘', text: 'K-01은 제 목표가 아니었어요, 그 안에 있던 인덱스가 필요했을 뿐이에요.', characterId: 'daniel-guide', expression: 'serious' },
   { id: 'line-044', speaker: '다니엘', text: '그래서 전체는 다시 돌려놨어요, 전 훔친 게 아니라 필요한 것만 회수한 거예요.', characterId: 'daniel-guide', expression: 'serious' },
   { id: 'line-045', speaker: '지수', text: '그게 무슨 차이가 있어요, 레오씨한테 훔치게 시킨 건 똑같잖아요.', characterId: 'jisoo', expression: 'annoyed' },
@@ -1945,7 +2517,14 @@ const week2Scene023Lines = [
   { id: 'line-008', speaker: '', text: '지수가 가방에서 M.K. 열쇠를 꺼내 본다.', characterId: null },
   { id: 'line-009', speaker: '지수', text: '이게 그냥 기념품이 아니었어, 처음부터.', characterId: 'jisoo', expression: 'serious' },
   { id: 'line-010', speaker: '영우', text: '다니엘씨가 우리한테 접근한 이유가 이거 하나였다는 거잖아.', characterId: 'youngwoo', expression: 'serious' },
-  { id: 'line-011', speaker: '', text: '[ 기존 증거 설명 갱신: M.K. 황동 열쇠 = "1주차의 미해결 기념품" → "다니엘이 지수에게 접근한 이유이자 사건 전 인지의 증거" ] [ 장기 미스터리: MK_Consult는 M.K. 표식이 있는 물건을 추적한다 ] [ 장기 미스터리: 우리가 우연히 여기 온 게 아닐 수도 있다 ] 등록.', characterId: null },
+  {
+    id: 'line-011', speaker: '', text: '[ 기존 증거 설명 갱신: M.K. 황동 열쇠 = "1주차의 미해결 기념품" → "다니엘이 지수에게 접근한 이유이자 사건 전 인지의 증거" ] [ 장기 미스터리: MK_Consult는 M.K. 표식이 있는 물건을 추적한다 ] [ 장기 미스터리: 우리가 우연히 여기 온 게 아닐 수도 있다 ] 등록.', characterId: null,
+    effects: [{
+      type: 'updateEvidence',
+      id: 'evidence-mk-key',
+      summary: '1주차의 미해결 기념품이 아니라, 다니엘이 지수에게 접근한 이유이자 사건 전 인지의 증거.',
+    }],
+  },
   { id: 'line-012', speaker: '지수', text: '영우, 우리가 여기 온 것도... 진짜 우연이었을까?', characterId: 'jisoo', expression: 'annoyed' },
   { id: 'line-013', speaker: '영우', text: '...모르겠어.', characterId: 'youngwoo', expression: 'soft' },
   { id: 'line-014', speaker: '', text: '잠시 침묵이 흐른다.', characterId: null },
