@@ -90,11 +90,11 @@ const week2v4Evidence = [
     needsNewPhoto: true,
   },
   {
-    id: 'ev-cafe-storage-log', name: '카페 보관함 기록', firstAppearance: 'Ch3',
-    initialMeaning: '일상적인 보관 기록', part1Meaning: 'K-01 회수 장소',
+    id: 'ev-cafe-storage-log', name: '카페 보관함 기록', firstAppearance: 'Ch11',
+    initialMeaning: '(자료 없음 — Ch3의 "카페 임시 보관함 시스템"과는 별개 항목)', part1Meaning: 'K-01 회수 장소',
     finalMeaning: '레오 이후 다니엘이 다시 접근할 수 있었음을 증명',
     photoBrief: '카페 바 안쪽, 손님 보관함 앞에 놓인 종이 대장 또는 태블릿 화면 클로즈업. 시간과 칸 번호가 적힌 표 형태의 레이아웃 실루엣만(실제 읽히는 글자는 넣지 않는다).',
-    storyContext: 'Ch3 Scene 3-1, 더 록스 골목 카페. 캐리어를 든 관광객이 "탑 텐 미니츠..."라며 당황해하자 다니엘이 "this café has a lockers system — let me ask for you"라며 나서서 해결해준다(script L.635-660). 다니엘이 관광객에게 "just punch in any four digits and remember them. You can pick it up anytime today"라고 알려주는 장면 자체가 이 시스템의 사용 규칙을 보여준다 — 4자리 숫자만 누르면 되는 공용 임시 코드 방식. 관광객이 떠난 뒤 "다니엘이 보관함 번호판을 필요 이상으로 오래 들여다본다 — 구조를 확인하듯"이라는 지문이 이어진다(script L.690). Ch11-2에서 K-01 회수 장소로 쓰이고, Ch15에서 "레오 이후 다니엘이 다시 접근할 수 있었던 지점"으로 의미가 갱신된다.',
+    storyContext: '스토리라인 아웃라인(§10)엔 firstAppearance가 Ch3로 적혀 있었지만, 실제 완성 대본을 대조하면 오류였다 — Ch3 Scene 3-1(더 록스 골목 카페)에서 다니엘이 관광객을 도와주며 등록되는 건 별개 항목인 "카페 임시 보관함 시스템"(ev-cafe-locker-system)뿐이고, 그 장면엔 "카페 보관함 기록"이라는 이름의 증거가 따로 등록되지 않는다. 이 증거가 실제로 처음 등록되는 지점은 Ch11-1(레오 집중 심문, 전시장) — "심문 6단계"에서 레오가 "카페 골목에 있는 임시 보관함이요. 넣고 사진만 찍어서 보내면 된다고 했어요"라고 자백하는 순간, "[증거: MK_Consult 메시지(익명 촬영 의뢰)] [증거: 카페 보관함 기록] 등록."이라는 지문과 함께 두 증거가 동시에 등록된다(script L.4358-4381). 즉 이 증거는 처음부터 "K-01 회수 장소"라는 의미로 등록되며, Ch3처럼 순수하게 무해해 보이던 "초반" 단계가 따로 없다. Ch15 Scene 15-1에서 "레오 이후 누군가 다시 접근할 수 있었던 지점"으로 다시 갱신된다(script L.5720). 사진은 레오가 자백하는 전시장이 아니라, 실제 기록이 존재하는 카페(서큘러키 인근) 바 안쪽 배경으로.',
     needsNewPhoto: true,
   },
   {
