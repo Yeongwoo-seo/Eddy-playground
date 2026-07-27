@@ -23,14 +23,23 @@ const MINIGAME_ROUTES = {
   'week1-scene-circular-quay-minigame': '/play/minigame-fishing/',
   'week1-scene-002-2': '/play/minigame-phone-search/',
   'week1-scene-shop-visit': '/play/shop/',
-  // 2주차 v4 전면 재설계 — week2Scenes가 완전 선형 구조로 바뀌면서 옛
-  // 탐색 허브(W2_TOURISM/W2_SUSPECT_INTERVIEWS/W2_REVERIFICATION) 진입/복귀
-  // virtual id들은 전부 제거했다. 미니게임 두 개(사진 속 인물 찾기/시간대
-  // 정리)만 그대로 재사용하며, 새 씬 id로 다시 연결한다 — see
-  // dialogueData.js의 week2-scene-008/010, minigame-photo-zoom·
-  // minigame-timeline의 하드코딩된 복귀 리다이렉트.
+  // 2주차 v4 전면 재설계 — 미니게임 두 개(사진 속 인물 찾기/시간대 정리)는
+  // 그대로 재사용하며, 새 씬 id로 다시 연결한다 — see dialogueData.js의
+  // week2-scene-008/010b, minigame-photo-zoom·minigame-timeline의
+  // 하드코딩된 복귀 리다이렉트.
   'week2-scene-008-minigame': '/play/minigame-photo-zoom/',
   'week2-scene-010-minigame': '/play/minigame-timeline/',
+
+  // [탐색허브 재도입] v4가 한 번 지웠던 허브 진입/복귀 virtual id들을 새 씬
+  // 번호로 다시 연결한다 — dev/dialogueData.js 파일 헤더 주석과
+  // dev/data/locationDefs.js/interactionDefs.js의 관련 항목 참고. game/
+  // index.html의 playMinigameTransition, explore/index.html의
+  // onInlineSceneComplete 둘 다 이 표를 거친다.
+  'week2-hub-entry-exhibit': '/play/explore/?phase=W2_EXHIBIT_FREE_LOOK&location=w2-exhibit-floor',
+  'week2-hub-entry-suspects': '/play/explore/?phase=W2_SUSPECT_INTERVIEWS&location=w2-hub-plaza',
+  'week2-suspect-interview-return': '/play/explore/?phase=W2_SUSPECT_INTERVIEWS&location=w2-hub-plaza',
+  'week2-hub-entry-reverify': '/play/explore/?phase=W2_REVERIFICATION&location=w2-hub-plaza',
+  'week2-reverify-interview-return': '/play/explore/?phase=W2_REVERIFICATION&location=w2-hub-plaza',
 };
 
 // The Missing Key v1 §5.2/§11.3 — week1-scene-shop-intro's own nextSceneId

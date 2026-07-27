@@ -1298,18 +1298,35 @@ const week1SceneGroups = [
 ];
 
 
-/* MISSING KEY — WEEK 2 (v4 전면 재설계)
+/* MISSING KEY — WEEK 2 (v4 전면 재설계 + 탐색허브 재도입)
    Source: docs/week2-storyline-outline-v4.md / docs/week2-v4-script.md
    Voice: docs/voice-bible-v2.md (지수·영우), 그 외 인물은 스크립트 문서 §0 기준.
 
-   v3(구 관광객 모드 + 탐색 허브 기반 대사)를 전면 대체한다. 이 버전은
-   허브(exploration hub)를 쓰지 않고 22챕터(23개 콘텐츠 씬 + 사진/시간대
-   미니게임 핸드오프 2곳)를 전부 nextSceneId로 잇는 완전 선형 구조다 —
-   기존 W2_TOURISM/W2_SUSPECT_INTERVIEWS/W2_REVERIFICATION 허브 phase와
-   locationDefs.js/interactionDefs.js의 관련 항목은 삭제하지 않고 그대로
-   남겨두지만(허브 인프라 자체는 다른 주차에서도 쓰이므로 유지), 이 v4
-   week2Scenes는 더 이상 그 허브로 진입시키지 않는다 — 직접 방문(북마크/딥링크)
-   시에만 남아있는 옛 항목이 보일 수 있다는 뜻이며, 이는 의도된 절충이다.
+   [재개편] v4는 원래 22챕터 전부를 nextSceneId로 잇는 완전 선형 구조였다 —
+   허브(exploration hub)를 아예 쓰지 않아서, 아웃라인 문서 자신이 "자유 탐색
+   허브"라고 부른 구간(Ch4 다섯 인물 첫 만남)까지 하나의 긴 대사 배열로
+   재현됐었다. 역전재판형 구조(조사 파트는 자유 순회, 심문 파트만 선형)로
+   되돌리기 위해 세 구간을 다시 허브로 내보낸다 — 아래 각 구간은 여전히
+   지금 이 파일에 스크립트가 있지만(라운드/선택지/가설 구조는 그대로),
+   더 이상 nextSceneId로 자동 연결되지 않고 dev/data/locationDefs.js +
+   interactionDefs.js가 정의한 허브 장소·상호작용을 거쳐 인라인 재생된다
+   (play/explore/index.html의 playSceneInline) — MINIGAME_ROUTES의 가상
+   id들(dev/data/sceneRoutes.js의 week2-hub-entry-exhibit 등 hub-entry/
+   interview-return 계열)이 그 왕복을 담당한다. 심문 라운드 내부(009/010b/
+   011/021)는 여전히 완전 선형 — 어느 용의자를 먼저 심문할지만 자유고,
+   심문 자체의 단계 순서는 손대지 않았다.
+
+   - Ch4~5(전시장 자유 관람, week2-scene-004/005)는 원본 그대로 남겨두되
+     더 이상 재생 경로에 없다 — 그 대사는 w2ef-topic 계열(interactionDefs.js)
+     허브 상호작용으로 다시 쓰였다. week2-scene-003의 nextSceneId가 곧장
+     W2_EXHIBIT_FREE_LOOK 허브로 보낸다.
+   - Ch9~11(용의자 탐문, week2-scene-009/010/010b/011)은 W2_SUSPECT_
+     INTERVIEWS 허브(기존 인프라, sceneId만 v4 번호로 교정)에서 자유
+     순서로 심문 대상을 고른다. week2-scene-010을 애드리언 단독 분량과
+     레오 단독 분량(신규 010b)으로 나눠 각자의 탐문 스팟에 건다.
+   - Ch14~19(2부 재검증, week2-scene-014~019)는 W2_REVERIFICATION 허브에
+     여섯 곳(마틴 통화·애드리언 재심문·레오 재심문·소피·다니엘 신원 확인·
+     관광객 재조사)으로 흩어져 자유 순서로 진행된다.
 
    미니게임은 기존 두 개(사진 속 인물 찾기/photo-zoom, 시간대 정리/timeline)를
    그대로 재사용한다 — 새 미니게임 UI(Ch19 매칭/Ch20 슬라이더/Ch21 드래그
@@ -1768,12 +1785,18 @@ const week2Scene010Lines = [
   { id: 'line-006', speaker: '지수', text: '근데 가격은 한 번도 안 물으셨잖아요. 보통 그런 거 먼저 물어보지 않아요?', characterId: 'jisoo', expression: 'suspicious' },
   { id: 'line-007', speaker: '애드리언', text: '음... 그건, 제가 원래 가격보다 물건 자체를 보는 편이라.', characterId: 'adrian', expression: 'suspicious' },
   { id: 'line-008', speaker: '영우', text: '(작게, 지수에게) 뭔가 더 있는 것 같은데 아직은 말 안 하겠다.', characterId: 'youngwoo', expression: 'serious' },
-  { id: 'line-009', speaker: '애드리언', text: '더 필요한 거 있으시면 말씀하세요, 저는 여기 좀 더 있을 테니.', characterId: 'adrian', expression: 'neutral' },
-  { id: 'line-010', speaker: '', text: '애드리언이 자리를 피한다. 두 사람은 직원문 근처에서 잘린 완충재와 레오의 크로스백 형태 변화를 발견한다.', characterId: null },
-  { id: 'line-011', speaker: '영우', text: '어, 저기 완충재 잘린 조각 있다.', characterId: 'youngwoo', expression: 'serious' },
-  { id: 'line-012', speaker: '지수', text: '이거 K-01 포장할 때 쓰는 거 아니야?', characterId: 'jisoo', expression: 'suspicious' },
+];
+
+// [분리] week2Scene010Lines의 후반부(구 line-010~028) — 레오를 다시 붙잡아
+// 물증을 들이대는 장면. 탐문 허브에서 레오 스팟(w2-suspect-leo-spot)의
+// 독립된 인터랙션으로 쓰기 위해 별도 씬으로 나눴다. 대사·증거 이펙트
+// 내용은 origin/main에 병합된 버전 그대로, id만 새로 매겼다.
+const week2Scene010bLines = [
+  { id: 'line-001', speaker: '', text: '전시장 직원문 앞. 두 사람은 근처에서 잘린 완충재와 레오의 크로스백 형태 변화를 발견한다.', characterId: null },
+  { id: 'line-002', speaker: '영우', text: '어, 저기 완충재 잘린 조각 있다.', characterId: 'youngwoo', expression: 'serious' },
+  { id: 'line-003', speaker: '지수', text: '이거 K-01 포장할 때 쓰는 거 아니야?', characterId: 'jisoo', expression: 'suspicious' },
   {
-    id: 'line-013', speaker: '', text: '[ 증거: 잘린 완충재 ] 등록.', characterId: null,
+    id: 'line-004', speaker: '', text: '[ 증거: 잘린 완충재 ] 등록.', characterId: null,
     effects: [
       {
         type: 'addEvidence',
@@ -1801,11 +1824,11 @@ const week2Scene010Lines = [
       },
     ],
   },
-  { id: 'line-014', speaker: '', text: '레오가 직원문 쪽에서 걸어 나온다. 크로스백이 아까보다 훨씬 부풀어 있다가, 지수와 눈이 마주치자 슬쩍 각도를 튼다.', characterId: null },
-  { id: 'line-015', speaker: '지수', text: '어, 레오씨 가방이 아까보다 커진 것 같은데.', characterId: 'jisoo', expression: 'suspicious' },
-  { id: 'line-016', speaker: '레오', text: '어? 아 이거, 그냥 짐이 좀 많아서요 ㅎㅎ', characterId: 'leo', expression: 'shocked' },
+  { id: 'line-005', speaker: '', text: '레오가 직원문 쪽에서 걸어 나온다. 크로스백이 아까보다 훨씬 부풀어 있다가, 지수와 눈이 마주치자 슬쩍 각도를 튼다.', characterId: null },
+  { id: 'line-006', speaker: '지수', text: '어, 레오씨 가방이 아까보다 커진 것 같은데.', characterId: 'jisoo', expression: 'suspicious' },
+  { id: 'line-007', speaker: '레오', text: '어? 아 이거, 그냥 짐이 좀 많아서요 ㅎㅎ', characterId: 'leo', expression: 'shocked' },
   {
-    id: 'line-017', speaker: '', text: '[ 증거: 레오의 크로스백(형태 변화) ] 등록.', characterId: null,
+    id: 'line-008', speaker: '', text: '[ 증거: 레오의 크로스백(형태 변화) ] 등록.', characterId: null,
     effects: [
       {
         type: 'addEvidence',
@@ -1833,12 +1856,12 @@ const week2Scene010Lines = [
       },
     ],
   },
-  { id: 'line-018', speaker: '영우', text: '레오씨, 잠깐 얘기 좀 할 수 있을까요?', characterId: 'youngwoo', expression: 'serious' },
-  { id: 'line-019', speaker: '레오', text: '...네, 왜요.', characterId: 'leo', expression: 'shocked' },
-  { id: 'line-020', speaker: '', text: '그 순간 레오의 폰이 짧게 진동한다. 화면을 흘긋 보고 흠칫한다.', characterId: null },
-  { id: 'line-021', speaker: '영우', text: '직원문 출입 기록에 레오씨 이름이 있던데, 그 시간에 뭐 하셨어요?', characterId: 'youngwoo', expression: 'serious' },
+  { id: 'line-009', speaker: '영우', text: '레오씨, 잠깐 얘기 좀 할 수 있을까요?', characterId: 'youngwoo', expression: 'serious' },
+  { id: 'line-010', speaker: '레오', text: '...네, 왜요.', characterId: 'leo', expression: 'shocked' },
+  { id: 'line-011', speaker: '', text: '그 순간 레오의 폰이 짧게 진동한다. 화면을 흘긋 보고 흠칫한다.', characterId: null },
+  { id: 'line-012', speaker: '영우', text: '직원문 출입 기록에 레오씨 이름이 있던데, 그 시간에 뭐 하셨어요?', characterId: 'youngwoo', expression: 'serious' },
   {
-    id: 'line-022', speaker: '레오', text: '어... 저 그냥 창고에 물건 가지러 간 거예요. 진열장 근처는 안 갔어요.', characterId: 'leo', expression: 'shocked',
+    id: 'line-013', speaker: '레오', text: '어... 저 그냥 창고에 물건 가지러 간 거예요. 진열장 근처는 안 갔어요.', characterId: 'leo', expression: 'shocked',
     effects: [{
       type: 'addEvidence',
       evidence: {
@@ -1848,19 +1871,19 @@ const week2Scene010Lines = [
       },
     }],
   },
-  { id: 'line-023', speaker: '지수', text: '정말요?', characterId: 'jisoo', expression: 'suspicious' },
-  { id: 'line-024', speaker: '레오', text: '네, 진짜예요.', characterId: 'leo', expression: 'shocked' },
+  { id: 'line-014', speaker: '지수', text: '정말요?', characterId: 'jisoo', expression: 'suspicious' },
+  { id: 'line-015', speaker: '레오', text: '네, 진짜예요.', characterId: 'leo', expression: 'shocked' },
   {
-    id: 'line-025', speaker: '', text: '레오가 시선을 피한다. [ 증거 갱신: 레오의 크로스백 = "평범한 소지품" → "K-01 반출 도구(의심)" ]', characterId: null,
+    id: 'line-016', speaker: '', text: '레오가 시선을 피한다. [ 증거 갱신: 레오의 크로스백 = "평범한 소지품" → "K-01 반출 도구(의심)" ]', characterId: null,
     effects: [{
       type: 'updateEvidence',
       id: 'evidence-leo-bag-strap-shape',
       summary: '단순한 소지품이 아니라 K-01 반출에 쓰였을 가능성이 있는 도구로 의심된다.',
     }],
   },
-  { id: 'line-026', speaker: '영우', text: '(작게, 지수에게) 좀 더 물증 모아서 다시 오자.', characterId: 'youngwoo', expression: 'serious' },
-  { id: 'line-027', speaker: '지수', text: '그래, 이대로는 안 밀리겠다.', characterId: 'jisoo', expression: 'serious' },
-  { id: 'line-028', speaker: '', text: '자리를 떠나기 전, 영우가 흩어진 시간대를 정리해보기로 한다.', characterId: null },
+  { id: 'line-017', speaker: '영우', text: '(작게, 지수에게) 좀 더 물증 모아서 다시 오자.', characterId: 'youngwoo', expression: 'serious' },
+  { id: 'line-018', speaker: '지수', text: '그래, 이대로는 안 밀리겠다.', characterId: 'jisoo', expression: 'serious' },
+  { id: 'line-019', speaker: '', text: '자리를 떠나기 전, 영우가 흩어진 시간대를 정리해보기로 한다.', characterId: null },
 ];
 
 const week2Scene011Lines = [
@@ -2518,11 +2541,14 @@ const week2Scene023Lines = [
   { id: 'line-025', speaker: '', text: '암전. — 2주차 종료, 3주차로 이어짐.', characterId: null },
 ];
 
-// Registry of Week 2 scenes (v4, 전면 재설계) — /dev/week2 lists these, each
-// linking to /play/game/?scene=<id>. 완전 선형 구조라 마지막 씬(023) 외에는
-// 전부 nextSceneId로 다음 콘텐츠까지 자동으로 이어진다(1주차와 같은 관례).
-// 미니게임 핸드오프 두 곳(008 -> 008-minigame -> 008-review, 010 ->
-// 010-minigame -> 011)만 MINIGAME_ROUTES(dev/data/sceneRoutes.js)를 거친다.
+// Registry of Week 2 scenes (v4, 전면 재설계 + 탐색허브 재도입) — /dev/week2
+// lists these, each linking to /play/game/?scene=<id>. 대부분은 여전히
+// nextSceneId로 다음 콘텐츠까지 자동으로 이어지지만(1주차와 같은 관례),
+// 세 지점(003 끝/008-review 끝/013 끝)은 파일 헤더 주석대로 허브로 나가고,
+// 허브에서 인라인 재생되는 심문 씬들(009/010/010b/014~019)은 각자
+// week2-*-interview-return 가상 id로 허브에 되돌아온다. 미니게임 핸드오프
+// 두 곳(008 -> 008-minigame -> 008-review, 010b -> 010-minigame -> 011)도
+// MINIGAME_ROUTES(dev/data/sceneRoutes.js)를 거친다.
 const week2Scenes = [
   {
     id: 'week2-scene-001', order: 1, name: '짧은 아침, 풀리지 않은 열쇠',
@@ -2540,8 +2566,14 @@ const week2Scenes = [
     id: 'week2-scene-003', order: 3, name: '더 록스, 보관함을 익히다',
     location: 'The Rocks 골목, 카페 앞', introLabel: 'CIRCULAR QUAY', time: '09:50',
     lines: week2Scene003Lines,
-    nextSceneId: 'week2-scene-004',
+    // [탐색허브 재도입] W2_EXHIBIT_FREE_LOOK 허브(w2-exhibit-floor)로 나간다 —
+    // 다섯 인물을 자유 순서로 만난 뒤 단체사진(006)으로 넘어간다.
+    nextSceneId: 'week2-hub-entry-exhibit',
   },
+  // [탐색허브 재도입] week2-scene-004/005는 더 이상 재생 경로에 없다 — 이
+  // 대사는 W2_EXHIBIT_FREE_LOOK 허브의 w2ef-topic-*(dev/data/interactionDefs.js)
+  // 상호작용으로 다시 쓰였다. 원본은 참고용으로 그대로 남겨둔다(v3 orphan
+  // 씬과 같은 관례 — 위 파일 헤더 주석 참고).
   {
     id: 'week2-scene-004', order: 4, name: '사람들과의 첫 만남',
     location: 'Pop-up Exhibition', introLabel: 'CIRCULAR QUAY', time: '10:10',
@@ -2629,19 +2661,33 @@ const week2Scenes = [
     id: 'week2-scene-008-review', order: 10, name: '사진 분석 마무리',
     location: 'Pop-up Exhibition', introLabel: 'CIRCULAR QUAY', time: '10:58',
     lines: week2Scene008ReviewLines,
-    nextSceneId: 'week2-scene-009',
+    // [탐색허브 재도입] 다음 씬으로 직행하지 않고 W2_SUSPECT_INTERVIEWS
+    // 허브(w2-hub-plaza)로 나간다 — 윤민아/애드리언/레오를 자유 순서로 탐문.
+    nextSceneId: 'week2-hub-entry-suspects',
   },
   {
     id: 'week2-scene-009', order: 11, name: '윤민아 1차 심문 — 반전 1',
     location: 'Pop-up Exhibition', introLabel: 'CIRCULAR QUAY', time: '11:10',
     lines: week2Scene009Lines,
-    nextSceneId: 'week2-scene-010',
+    // 탐문 허브(w2-suspect-mina-spot)에서 인라인 재생 — 완료 후 허브로 복귀.
+    nextSceneId: 'week2-suspect-interview-return',
   },
   {
-    id: 'week2-scene-010', order: 12, name: '레오를 향한 접근',
-    location: 'Pop-up Exhibition / Café near Circular Quay', introLabel: 'CIRCULAR QUAY', time: '11:40',
+    id: 'week2-scene-010', order: 12, name: '애드리언의 애매한 답변',
+    location: 'Pop-up Exhibition', introLabel: 'CIRCULAR QUAY', time: '11:40',
+    // [분리] 원래 애드리언(evasive)+레오(물증 발견) 한 씬이었던 것을 허브
+    // 자유 순서(용의자별 독립 방문)를 위해 둘로 나눴다 — 레오 쪽은 아래
+    // week2-scene-010b. 대사 내용 자체는 그대로, 자르는 위치만 바뀌었다.
     lines: week2Scene010Lines,
+    nextSceneId: 'week2-suspect-interview-return',
+  },
+  {
+    id: 'week2-scene-010b', order: 12.5, name: '레오를 다시 붙잡다 — 물증 포착',
+    location: '전시장 직원문 앞', introLabel: 'CIRCULAR QUAY', time: '11:40',
+    lines: week2Scene010bLines,
     // 기존 시간대 정리 미니게임(timeline)을 그대로 재사용 — MINIGAME_ROUTES 참고.
+    // 레오의 자백(011)까지는 허브로 돌아오지 않고 그대로 이어진다(레오의
+    // 방문 순서와 무관하게 안전 — 다른 두 용의자 완료 여부에 의존하지 않음).
     nextSceneId: 'week2-scene-010-minigame',
   },
   {
@@ -2665,43 +2711,46 @@ const week2Scenes = [
     id: 'week2-scene-013', order: 16, name: '사건의 이름을 다시 붙이다',
     location: 'Pop-up Exhibition', introLabel: 'CIRCULAR QUAY', time: '13:00',
     lines: week2Scene013Lines,
-    nextSceneId: 'week2-scene-014',
+    // [탐색허브 재도입] W2_REVERIFICATION 허브(w2-hub-plaza)로 나간다 —
+    // 마틴 통화/애드리언 재심문/레오 재심문/소피/다니엘 신원 확인/관광객
+    // 재조사를 자유 순서로 진행.
+    nextSceneId: 'week2-hub-entry-reverify',
   },
   {
     id: 'week2-scene-014', order: 17, name: '마틴 베일과의 통화 — 내부 인덱스',
     location: 'Circular Quay 이동 중 (전화)', introLabel: 'CIRCULAR QUAY', time: '13:20',
     lines: week2Scene014Lines,
-    nextSceneId: 'week2-scene-015',
+    nextSceneId: 'week2-reverify-interview-return',
   },
   {
     id: 'week2-scene-015', order: 18, name: '애드리언의 메일함 — 진짜 의뢰 목적',
     location: 'Pop-up Exhibition', introLabel: 'CIRCULAR QUAY', time: '13:40',
     lines: week2Scene015Lines,
-    nextSceneId: 'week2-scene-016',
+    nextSceneId: 'week2-reverify-interview-return',
   },
   {
     id: 'week2-scene-016', order: 19, name: '레오 재심문 — 보관함과 익명 지시',
     location: 'Pop-up Exhibition', introLabel: 'CIRCULAR QUAY', time: '14:00',
     lines: week2Scene016Lines,
-    nextSceneId: 'week2-scene-017',
+    nextSceneId: 'week2-reverify-interview-return',
   },
   {
     id: 'week2-scene-017', order: 20, name: '소피의 생활 기억 — 조력자의 균열',
     location: 'Café near Circular Quay', introLabel: 'CIRCULAR QUAY', time: '14:30',
     lines: week2Scene017Lines,
-    nextSceneId: 'week2-scene-018',
+    nextSceneId: 'week2-reverify-interview-return',
   },
   {
     id: 'week2-scene-018', order: 21, name: '신원 조회 — 등록되지 않은 가이드',
     location: 'Pop-up Exhibition / 전화', introLabel: 'CIRCULAR QUAY', time: '15:00',
     lines: week2Scene018Lines,
-    nextSceneId: 'week2-scene-019',
+    nextSceneId: 'week2-reverify-interview-return',
   },
   {
     id: 'week2-scene-019', order: 22, name: '관광팀의 증언 — 서로 모르는 사람들',
     location: 'Circular Quay', introLabel: 'CIRCULAR QUAY', time: '15:30',
     lines: week2Scene019Lines,
-    nextSceneId: 'week2-scene-020',
+    nextSceneId: 'week2-reverify-interview-return',
   },
   {
     id: 'week2-scene-020', order: 23, name: '일정표와 단체사진 재해석 — 작전표',
@@ -2739,7 +2788,7 @@ const week2SceneGroups = [
       'week2-scene-001', 'week2-scene-002', 'week2-scene-003', 'week2-scene-004',
       'week2-scene-005', 'week2-scene-006', 'week2-scene-007', 'week2-scene-008',
       'week2-scene-008-minigame', 'week2-scene-008-review', 'week2-scene-009',
-      'week2-scene-010', 'week2-scene-010-minigame', 'week2-scene-011', 'week2-scene-012',
+      'week2-scene-010', 'week2-scene-010b', 'week2-scene-010-minigame', 'week2-scene-011', 'week2-scene-012',
     ],
   },
   {

@@ -1618,6 +1618,12 @@ function applyInlineSceneEffect(effect) {
     case 'addEvidence':
       CaseFileState.addEvidence(effect.evidence);
       break;
+    // [탐색허브 재도입] week2-scene-010b(레오 재접근)처럼 이제 허브 안에서
+    // 인라인 재생되는 씬도 "증거 갱신" 내레이션 비트를 쓴다 — play/game/
+    // index.html의 같은 case와 동일하게 맞춘다.
+    case 'updateEvidence':
+      CaseFileState.updateEvidence(effect.id, { summary: effect.summary, status: effect.status });
+      break;
     case 'addQuestion': {
       const added = CaseFileState.addQuestion(effect.question);
       if (added) caseMenu.notifyNewQuestion(effect.question.title);
