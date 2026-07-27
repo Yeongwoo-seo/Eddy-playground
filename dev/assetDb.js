@@ -1001,6 +1001,45 @@ const AssetDB = (() => {
     return settings;
   }
 
+  // 증언(증거 DB의 "증인" 책갈피)은 진술마다 각자 다른 사진을 만들 필요가
+  // 없어, 전부 이 "기록사진" 한 장을 공유한다 — 위 공통 프롬프트 설정과 같은
+  // id 없는 단일 { imageAssetId } 오브젝트 패턴. 다른(증언이 아닌) 증거에도
+  // 개별 사진 대신 이 기록사진을 그대로 적용할 수 있다(dev/upload/index.html
+  // evidenceRowHtml의 "기록사진" 버튼).
+  const evidenceTestimonyPhotoCache = new Map(); // single entry keyed 'photo'
+  const EVIDENCE_TESTIMONY_PHOTO_PATH = 'evidence-photos/testimony-photo.json';
+
+  async function getEvidenceTestimonyPhoto() {
+    if (evidenceTestimonyPhotoCache.has('photo')) return evidenceTestimonyPhotoCache.get('photo');
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${EVIDENCE_TESTIMONY_PHOTO_PATH}?t=${Date.now()}`;
+    try {
+      const data = (await fetchJsonBlob(url)) || {};
+      evidenceTestimonyPhotoCache.set('photo', data);
+      return data;
+    } catch (e) {
+      return evidenceTestimonyPhotoCache.get('photo') || {};
+    }
+  }
+
+  async function setEvidenceTestimonyPhoto(imageAssetId) {
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${EVIDENCE_TESTIMONY_PHOTO_PATH}?t=${Date.now()}`;
+    const data = { imageAssetId: imageAssetId || null };
+    const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${DEV_ASSETS_BUCKET}/${EVIDENCE_TESTIMONY_PHOTO_PATH}`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'x-upsert': 'true',
+      },
+      body: blob,
+    });
+    if (!res.ok) throw new Error(`기록사진 저장 실패 (${res.status}): ${await res.text()}`);
+    evidenceTestimonyPhotoCache.set('photo', data);
+    return data;
+  }
+
   // 게임환경설정(/dev/settings/) — 지금은 탐색허브 이동 페이드(.move-fade의
   // 트랜지션 길이/이징 곡선, MOVE_FADE_MS 홀드 시간) 하나뿐이지만, 다른
   // 게임 전반 설정도 같은 자리에 필드만 늘려서 추가할 수 있게 flat한 단일
@@ -1776,6 +1815,7 @@ const AssetDB = (() => {
     getSpriteSheetManifests, getSpriteSheetManifest, setSpriteSheetManifest,
     getEvidencePhotos, setEvidencePhoto,
     getEvidencePromptSettings, setEvidencePromptSettings,
+    getEvidenceTestimonyPhoto, setEvidenceTestimonyPhoto,
     getGameSettings, setGameSettings, DEFAULT_GAME_SETTINGS,
     getFishingConfig, setFishingConfig,
     getEvidenceNotebookConfig, setEvidenceNotebookConfig,
