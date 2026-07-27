@@ -174,14 +174,17 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
 .evn-test-field.evn-test-photo img{width:100%;height:100%;object-fit:cover}
 .evn-test-field.evn-test-button{border:2px dashed rgba(89,184,200,.85);border-radius:6px;background:rgba(89,184,200,.14);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:10.5px;font-weight:700;color:#59b8c8}
 
-/* ===== 개별 사진 — 주차별 증거·증언 목록 =====
-   배경 아트(책갈피당 1장)와 별개로, 증거/증언 항목 하나하나에 사진을 개별
+/* ===== 개별 사진 — 주차별 증거 목록 =====
+   배경 아트(책갈피당 1장)와 별개로, 증거 항목 하나하나에 사진을 개별
    배정한다. dev/upload/index.html의 증거 DB 탭과 같은 저장소(AssetDB.
    getEvidencePhotos/setEvidencePhoto, entry id로 키가 잡힌 카탈로그)를
    그대로 쓰므로 여기서 올린 사진이 바로 dev/evidenceNotebook.js가 읽는
    사진이 된다 — 노트 쪽 코드는 손대지 않는다. 목록은 dialogueData.js의
    weeks[].scenes[].lines[].effects(addEvidence)를 스캔해 만드는 읽기
-   전용 감사 목록(증거 DB 탭과 같은 방식)이라 주차별 그룹이 자연히 나온다. */
+   전용 감사 목록(증거 DB 탭과 같은 방식)이라 주차별 그룹이 자연히 나온다.
+   증언 항목은 각자 사진을 배정하지 않고 이 목록에서도 빠진다 — 대신
+   TESTIMONY_SHARED_PHOTO_ID 한 칸에 올린 사진 한 장을 모든 증언 페이지가
+   공유한다("증언 공통 사진" 섹션, renderTestimonySharedPhotoRow). */
 .pill-row{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;margin-bottom:14px}
 .pill{font-family:var(--mono);font-size:12px;font-weight:700;white-space:nowrap;color:var(--text-secondary);background:var(--surface-1);border:1px solid var(--divider);border-radius:20px;padding:8px 14px;cursor:pointer;flex-shrink:0}
 .pill:active{opacity:.8}
@@ -234,7 +237,13 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   <div class="upload-status hidden" id="uploadStatus"></div>
 
   <div class="photolist-section">
-    <div class="section-title">개별 사진 — 주차별 증거·증언</div>
+    <div class="section-title">증언 공통 사진</div>
+    <div class="photolist-desc">증언은 항목마다 따로 올리지 않고, 여기서 올린 사진 한 장을 모든 증언 페이지에 똑같이 적용합니다.</div>
+    <div id="testimonySharedPhotoRow"></div>
+  </div>
+
+  <div class="photolist-section">
+    <div class="section-title">개별 사진 — 주차별 증거</div>
     <div class="photolist-desc">항목마다 사진을 하나씩 올리면 증거수첩에 바로 표시됩니다. 위 책갈피 배경과는 별개로, 이 목록에서 올린 사진은 그 항목 전용입니다.</div>
     <div class="pill-row" id="photoSectionPills"></div>
     <div id="photoList"></div>
@@ -301,7 +310,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
 </div>
 
 <!-- 예시 — 배경 사진 없이 dev/evidenceNotebook.js가 직접 그리는 노트
-     디자인을 그대로 보여준다. 책갈피(증인/증거/사진)는 실제 노트와 같은
+     디자인을 그대로 보여준다. 책갈피(증언/증거/사진)는 실제 노트와 같은
      탭(.evn-tabbar/.evn-tab)으로 고르고, 이전/색인/다음/제출 버튼도 실제
      노트와 같은 evn-footer/evn-submit-btn을 그대로 재사용해 이 설정
      화면만의 별도 UI가 생기지 않게 한다. -->
@@ -362,7 +371,7 @@ if ('serviceWorker' in navigator) {
 
    저장 데이터 (AssetDB.getEvidenceNotebookConfig/setEvidenceNotebookConfig):
      { imageAssetId(레거시, 책갈피 3분할 이전 데이터), imageAssetIds: {
-       witness, evidence, photo }, regions: { [labelId]: {x,y,w,h} },
+       testimony, evidence, photo }, regions: { [labelId]: {x,y,w,h} },
        styles: { [labelId]: {fontSize,color,align,weight} } }
    x/y/w/h는 이미지 원본 크기 대비 0~1 비율 — "영역지정" 편집기가 항상
    이미지를 화면 폭에 맞춰(가로=100%) 그리므로, 가로 비율 스케일이 곧 세로
@@ -387,10 +396,13 @@ const EVIDENCE_NOTEBOOK_LABELS = [
   { id: 'submitButton', label: '제출 버튼', kind: 'button' },
 ];
 const EVIDENCE_NOTEBOOK_SLOTS = [
-  { id: 'witness', label: '증언' },
+  { id: 'testimony', label: '증언' },
   { id: 'evidence', label: '증거' },
   { id: 'photo', label: '사진' },
 ];
+// 증언 항목이 각자 사진을 올리지 않고 공유하는 evidence-photos 카탈로그의
+// 예약 id — dev/evidenceNotebook.js의 같은 상수와 반드시 일치해야 한다.
+const TESTIMONY_SHARED_PHOTO_ID = '__testimony_shared__';
 const DEFAULT_LABEL_STYLE = { fontSize: 13, color: '#2c2311', align: 'left', weight: 'normal' };
 // 샘플 데이터 — "테스트" 미리보기에서 무작위로 골라 채워 넣는다. 실제 증거
 // 데이터와 무관한, 화면 확인용 더미 문구.
@@ -399,14 +411,14 @@ const TEST_SAMPLE_ENTRIES = [
   { code: 'E-K02', title: 'K-02 깨진 액자 유리', description: '전시된 회화 액자의 유리가 깨진 채 바닥에서 발견됨. 충격 방향은 안쪽에서 바깥쪽.', discoveredLocationText: '2층 회화 전시실', relatedPerson: '박지훈' },
   { code: 'W-03', title: '경비원 진술서', description: '"자정 무렵 비상계단 쪽에서 인기척을 들었습니다. 확인하러 갔을 땐 아무도 없었어요."', discoveredLocationText: '지하 1층 경비실', relatedPerson: '최성만' },
 ];
-// "예시" 미리보기 전용 샘플 — 책갈피(증인/증거/사진)별로 dev/evidenceNotebook.js의
+// "예시" 미리보기 전용 샘플 — 책갈피(증언/증거/사진)별로 dev/evidenceNotebook.js의
 // templateFor가 실제로 갈라지는 조건(kind:testimony → 진술, subtype:photo →
 // 사진, 그 외 → 문서)에 맞춰 하나씩 준비해, 탭을 눌렀을 때 세 디자인을 다
 // 훑어볼 수 있게 한다. CaseFileState/CaseEntryModel을 로드하지 않은 이
 // 설정 페이지에서도 그대로 그려지도록(personName/fallbackIconFor의 안전
 // 폴백, dev/evidenceNotebook.js 참고) relatedNpcIds에 이름을 바로 넣는다.
 const EXAMPLE_SAMPLE_ENTRIES = {
-  witness: [
+  testimony: [
     { code: 'W-01', title: '경비원 진술서', kind: 'testimony', description: '"자정 무렵 비상계단 쪽에서 인기척을 들었습니다. 확인하러 갔을 땐 아무도 없었어요."', discoveredLocationText: '지하 1층 경비실', relatedNpcIds: ['최성만'], fallbackIcon: '🎙️' },
     { code: 'W-02', title: '큐레이터 진술서', kind: 'testimony', description: '"그림은 분명 어제 저녁 점검 때까지 멀쩡했어요. 오늘 아침에 와서야 알았습니다."', discoveredLocationText: '2층 사무실', relatedNpcIds: ['한소희'], fallbackIcon: '🎙️' },
   ],
@@ -422,10 +434,10 @@ const EXAMPLE_SAMPLE_ENTRIES = {
 let exampleSection = 'evidence';
 // 실제 노트의 lastViewedBySection과 같은 방식 — 책갈피를 옮겨도 그 책갈피에서
 // 보던 페이지를 기억한다.
-let exampleIndexBySection = { witness: 0, evidence: 0, photo: 0 };
+let exampleIndexBySection = { testimony: 0, evidence: 0, photo: 0 };
 
-let notebookConfig = { imageAssetId: null, imageAssetIds: { witness: null, evidence: null, photo: null }, regions: {}, styles: {} };
-let slotImageUrls = { witness: null, evidence: null, photo: null }; // section -> dataUrl
+let notebookConfig = { imageAssetId: null, imageAssetIds: { testimony: null, evidence: null, photo: null }, regions: {}, styles: {} };
+let slotImageUrls = { testimony: null, evidence: null, photo: null }; // section -> dataUrl
 let legacyFallbackSlots = new Set(); // 레거시 단일 이미지를 임시로 보여주는 중인 슬롯 id들
 let currentUploadSlot = null; // fileInput이 지금 어느 슬롯용으로 열렸는지
 let draftRegions = {}; // 편집기 안에서만 쓰는 임시 상태 — 확정을 눌러야 저장됨
@@ -482,6 +494,7 @@ const el = {
   photoSectionPills: document.getElementById('photoSectionPills'),
   photoList: document.getElementById('photoList'),
   evidencePhotoInput: document.getElementById('evidencePhotoInput'),
+  testimonySharedPhotoRow: document.getElementById('testimonySharedPhotoRow'),
 };
 
 function labelDef(id) { return EVIDENCE_NOTEBOOK_LABELS.find(x => x.id === id); }
@@ -491,9 +504,9 @@ function escapeHtml(s) {
 }
 
 // 영역지정 편집기의 기준 이미지 — 세 책갈피가 레이아웃을 공유한다는 전제라
-// 아무거나 먼저 채워진 걸 쓰면 된다(증거 → 증인 → 사진 순으로 우선).
+// 아무거나 먼저 채워진 걸 쓰면 된다(증거 → 증언 → 사진 순으로 우선).
 function referenceImageUrl() {
-  return slotImageUrls.evidence || slotImageUrls.witness || slotImageUrls.photo || null;
+  return slotImageUrls.evidence || slotImageUrls.testimony || slotImageUrls.photo || null;
 }
 
 function renderMainView() {
@@ -1097,7 +1110,7 @@ function renderExamplePage() {
   el.evnExampleNextBtn.disabled = idx >= list.length - 1;
 }
 
-/* ===== 개별 사진 — 주차별 증거·증언 목록 =====
+/* ===== 개별 사진 — 주차별 증거 목록 =====
    dev/upload/index.html의 증거 DB 탭(collectEvidenceCatalog/renderEvidencePanel)
    과 같은 방식으로 dialogueData.js의 weeks[].scenes[].lines[].effects
    (addEvidence)와 interactionDefs.js(탐색허브)를 스캔해 항목을 모으고,
@@ -1105,8 +1118,10 @@ function renderExamplePage() {
    중복 카드를 보여줄 필요가 없다) 최초로 등장한 주차 아래 나열한다. 사진
    저장은 증거 DB 탭과 완전히 같은 카탈로그(AssetDB.getEvidencePhotos/
    setEvidencePhoto, entry id 키)를 쓰므로 여기서 올린 사진이 그대로
-   dev/evidenceNotebook.js가 읽는 사진이 된다. */
-const EVIDENCE_PHOTO_SECTION_LABELS = { witness: '증언', evidence: '증거', photo: '사진' };
+   dev/evidenceNotebook.js가 읽는 사진이 된다. 증언(testimony) 항목은 여기
+   목록에서 제외한다 — 개별 사진이 아니라 TESTIMONY_SHARED_PHOTO_ID 한 칸을
+   공유하는 "증언 공통 사진"(renderTestimonySharedPhotoRow)으로 배정한다. */
+const EVIDENCE_PHOTO_SECTION_LABELS = { evidence: '증거', photo: '사진' };
 let evidencePhotoCatalogCache = null;
 let evidencePhotoSectionFilter = 'all';
 let evidencePhotoAssets = {}; // evidenceId -> asset record { id, dataUrl }
@@ -1140,10 +1155,10 @@ function collectEvidencePhotoCatalog() {
   const seenIds = new Set();
   const deduped = rows.filter(r => (seenIds.has(r.id) ? false : (seenIds.add(r.id), true)));
   deduped.forEach(r => {
-    r.section = (typeof CaseEntryModel !== 'undefined') ? CaseEntryModel.getNotebookSection(r) : (r.category === 'testimony' ? 'witness' : (r.category === 'photo' ? 'photo' : 'evidence'));
+    r.section = (typeof CaseEntryModel !== 'undefined') ? CaseEntryModel.getNotebookSection(r) : (r.category === 'testimony' ? 'testimony' : (r.category === 'photo' ? 'photo' : 'evidence'));
   });
-  evidencePhotoCatalogCache = deduped;
-  return deduped;
+  evidencePhotoCatalogCache = deduped.filter(r => r.section !== 'testimony');
+  return evidencePhotoCatalogCache;
 }
 
 async function loadEvidencePhotoAssets() {
@@ -1163,10 +1178,10 @@ async function loadEvidencePhotoAssets() {
 
 function renderEvidencePhotoList() {
   const rows = collectEvidencePhotoCatalog();
-  const sectionCounts = { witness: 0, evidence: 0, photo: 0 };
+  const sectionCounts = { evidence: 0, photo: 0 };
   rows.forEach(r => { sectionCounts[r.section] = (sectionCounts[r.section] || 0) + 1; });
   el.photoSectionPills.innerHTML = `<button type="button" class="pill${evidencePhotoSectionFilter === 'all' ? ' active' : ''}" data-section="all">전체 ${rows.length}</button>` +
-    ['witness', 'evidence', 'photo'].map(s => `<button type="button" class="pill${evidencePhotoSectionFilter === s ? ' active' : ''}" data-section="${s}">${EVIDENCE_PHOTO_SECTION_LABELS[s]} ${sectionCounts[s] || 0}</button>`).join('');
+    ['evidence', 'photo'].map(s => `<button type="button" class="pill${evidencePhotoSectionFilter === s ? ' active' : ''}" data-section="${s}">${EVIDENCE_PHOTO_SECTION_LABELS[s]} ${sectionCounts[s] || 0}</button>`).join('');
   el.photoSectionPills.querySelectorAll('.pill').forEach(btn => {
     btn.addEventListener('click', () => { evidencePhotoSectionFilter = btn.dataset.section; renderEvidencePhotoList(); });
   });
@@ -1183,6 +1198,34 @@ function renderEvidencePhotoList() {
     btn.addEventListener('click', () => { currentEvidencePhotoTargetId = btn.dataset.photoUpload; el.evidencePhotoInput.click(); });
   });
   el.photoList.querySelectorAll('[data-photo-remove]').forEach(btn => {
+    btn.addEventListener('click', () => removeEvidencePhoto(btn.dataset.photoRemove));
+  });
+}
+
+// 증언 공통 사진 — 개별 증거 목록과 저장 카탈로그(AssetDB.getEvidencePhotos/
+// setEvidencePhoto)는 그대로 공유하되, entry id 대신 TESTIMONY_SHARED_PHOTO_ID
+// 한 칸만 쓴다. handleEvidencePhotoUpload/removeEvidencePhoto가 evidenceId를
+// 그대로 받아 동작하므로 이 예약 id를 넘기기만 하면 된다.
+function renderTestimonySharedPhotoRow() {
+  const photo = evidencePhotoAssets[TESTIMONY_SHARED_PHOTO_ID];
+  const thumbHtml = photo ? `<img src="${photo.dataUrl}" alt="">` : '📓';
+  el.testimonySharedPhotoRow.innerHTML = `
+    <div class="photo-row" id="photoRow-${TESTIMONY_SHARED_PHOTO_ID}">
+      <div class="photo-row-thumb">${thumbHtml}</div>
+      <div class="photo-row-body">
+        <div class="photo-row-tag">증언</div>
+        <div class="photo-row-title">모든 증언 페이지에 공통 적용</div>
+      </div>
+      <div class="photo-row-actions">
+        <button type="button" class="slot-btn" data-photo-upload="${TESTIMONY_SHARED_PHOTO_ID}">${photo ? '교체' : '올리기'}</button>
+        ${photo ? `<button type="button" class="slot-btn slot-btn-cutout" data-photo-remove="${TESTIMONY_SHARED_PHOTO_ID}">제거</button>` : ''}
+      </div>
+    </div>
+  `;
+  el.testimonySharedPhotoRow.querySelectorAll('[data-photo-upload]').forEach(btn => {
+    btn.addEventListener('click', () => { currentEvidencePhotoTargetId = btn.dataset.photoUpload; el.evidencePhotoInput.click(); });
+  });
+  el.testimonySharedPhotoRow.querySelectorAll('[data-photo-remove]').forEach(btn => {
     btn.addEventListener('click', () => removeEvidencePhoto(btn.dataset.photoRemove));
   });
 }
@@ -1211,6 +1254,11 @@ el.evidencePhotoInput.addEventListener('change', () => {
   if (file && currentEvidencePhotoTargetId) handleEvidencePhotoUpload(file, currentEvidencePhotoTargetId);
 });
 
+function renderPhotoLists() {
+  renderEvidencePhotoList();
+  renderTestimonySharedPhotoRow();
+}
+
 async function handleEvidencePhotoUpload(file, evidenceId) {
   const row = document.getElementById('photoRow-' + evidenceId);
   if (row) row.classList.add('busy');
@@ -1220,7 +1268,7 @@ async function handleEvidencePhotoUpload(file, evidenceId) {
     await AssetDB.setEvidencePhoto(evidenceId, asset.id);
     evidencePhotoAssets[evidenceId] = asset;
     setUploadStatus('', null);
-    renderEvidencePhotoList();
+    renderPhotoLists();
   } catch (err) {
     setUploadStatus('사진 업로드 실패: ' + (err && err.message ? err.message : String(err)), 'error');
   } finally {
@@ -1234,7 +1282,7 @@ async function removeEvidencePhoto(evidenceId) {
   try {
     await AssetDB.setEvidencePhoto(evidenceId, null);
     delete evidencePhotoAssets[evidenceId];
-    renderEvidencePhotoList();
+    renderPhotoLists();
   } catch (err) {
     setUploadStatus('사진 제거 실패: ' + (err && err.message ? err.message : String(err)), 'error');
   } finally {
@@ -1244,7 +1292,7 @@ async function removeEvidencePhoto(evidenceId) {
 
 async function init() {
   notebookConfig = await AssetDB.getEvidenceNotebookConfig().catch(() => notebookConfig);
-  notebookConfig.imageAssetIds = Object.assign({ witness: null, evidence: null, photo: null }, notebookConfig.imageAssetIds);
+  notebookConfig.imageAssetIds = Object.assign({ testimony: null, evidence: null, photo: null }, notebookConfig.imageAssetIds);
   const ids = EVIDENCE_NOTEBOOK_SLOTS.map(s => notebookConfig.imageAssetIds[s.id]).filter(Boolean);
   if (ids.length) {
     const assets = await AssetDB.getAssetsByIds(ids).catch(() => []);
@@ -1267,7 +1315,7 @@ async function init() {
   }
   renderMainView();
   await loadEvidencePhotoAssets();
-  renderEvidencePhotoList();
+  renderPhotoLists();
 }
 init();
 </script>

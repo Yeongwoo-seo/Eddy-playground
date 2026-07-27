@@ -35,13 +35,13 @@ function caseEntryFallbackIcon(kind, subtype) {
 function inferCaseEntryKind(evidenceItem) { return evidenceItem.category === 'testimony' ? 'testimony' : 'evidence'; }
 
 /* 증거 DB 노트 v1.1 §3.1 — 기존 5개 category(physical/photo/testimony/
-   record/etc)를 플레이어용 3개 책갈피(witness/evidence/photo)로 파생하는
+   record/etc)를 플레이어용 3개 책갈피(testimony/evidence/photo)로 파생하는
    유일한 규칙. 원본 category 값은 절대 바꾸지 않고, 이 함수만으로 노트
    UI와 dev/upload 증거 DB 탭의 3-way 필터가 항상 같은 분류를 쓰게 한다.
    raw evidence record(.category)와 정규화된 CaseEntry(.kind/.subtype)
    양쪽 모양을 다 받는다. */
 function getNotebookSection(entry) {
-  if (entry.kind === 'testimony' || entry.category === 'testimony') return 'witness';
+  if (entry.kind === 'testimony' || entry.category === 'testimony') return 'testimony';
   if ((entry.subtype || entry.category) === 'photo') return 'photo';
   return 'evidence';
 }

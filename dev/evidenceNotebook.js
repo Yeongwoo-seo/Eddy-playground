@@ -4,7 +4,7 @@
    58곳)와 CaseEntryModel(그룹 병합·관련도·게이트 감사)은 절대 건드리지
    않는다 — 이 파일은 그 위에 얹는 순수 표시 계층 하나뿐이다. 데이터는
    CaseFileState.getCaseEntries()에서 그대로 받고, 책갈피 분류는
-   CaseEntryModel.getNotebookSection() 한 곳(기존 5개 category → 증인/증거/
+   CaseEntryModel.getNotebookSection() 한 곳(기존 5개 category → 증언/증거/
    사진 3개 책갈피)만 쓴다. 기존 제시 시트(CaseEntryUI.renderPresentSheetHtml,
    관련도 스코어링·게이트 안전성 다 검증된 코드)는 유지한 채, 이 노트는
    "펼쳐서 한 장씩 읽는" 대안 프레젠테이션 + 증거 제시(present) 모드를
@@ -12,7 +12,7 @@
    (game/explore의 player.presentEvidence)이 하므로 이 파일은 정답/오답을
    전혀 모른다.
 
-   배경 아트: dev/upload/evidence-notebook/index.html에서 책갈피(증인/증거/
+   배경 아트: dev/upload/evidence-notebook/index.html에서 책갈피(증언/증거/
    사진)별로 올린 배경 이미지 최대 3장 + 5개 데이터 영역(코드/제목/사진/
    설명/발견위치, AssetDB.getEvidenceNotebookConfig)을 쓴다. 이 원본 아트는
    탭 바까지 이미 그림 안에 그려 넣은 완성된 페이지라(디자이너 확인 —
@@ -24,7 +24,7 @@
 
 const EvidenceNotebook = (function () {
   const SECTIONS = [
-    { id: 'witness', label: '증언', icon: '👤', tint: '#8a2332' },
+    { id: 'testimony', label: '증언', icon: '👤', tint: '#8a2332' },
     { id: 'evidence', label: '증거', icon: '🔍', tint: '#1f3a6e' },
     { id: 'photo', label: '사진', icon: '📷', tint: '#1f5c3a' },
   ];
@@ -61,17 +61,23 @@ const EvidenceNotebook = (function () {
     mode: 'browse', // 'browse' | 'present'
     npcId: null,
     section: 'evidence',
-    entriesBySection: { witness: [], evidence: [], photo: [] },
+    entriesBySection: { testimony: [], evidence: [], photo: [] },
     index: 0,
     isIndexOpen: false,
     zoomEntry: null,
     onPresent: null,
     onClose: null,
   };
-  const lastViewedBySection = { witness: 0, evidence: 0, photo: 0 };
+  const lastViewedBySection = { testimony: 0, evidence: 0, photo: 0 };
+  // 증언 항목은 각자 다른 사진을 올리지 않고, evidence-photos 카탈로그의 이
+  // 예약 id 한 칸에 올린 사진 한 장을 모든 증언 페이지가 공유해서 쓴다
+  // (dev/upload/evidence-notebook/index.html "증언 공통 사진"). 실제
+  // 증거/증언 id는 dialogueData.js addEvidence에서 나오므로 '__'로 시작하는
+  // id와 절대 충돌하지 않는다.
+  const TESTIMONY_SHARED_PHOTO_ID = '__testimony_shared__';
 
-  let notebookConfig = null; // { imageAssetId, imageAssetIds:{witness,evidence,photo}, regions }
-  let sectionBgUrls = { witness: null, evidence: null, photo: null };
+  let notebookConfig = null; // { imageAssetId, imageAssetIds:{testimony,evidence,photo}, regions }
+  let sectionBgUrls = { testimony: null, evidence: null, photo: null };
   let evidencePhotoAssetIds = {}; // entryId -> imageAssetId (evidence-photos catalog)
   let assetUrlCache = {}; // assetId -> dataUrl
 
@@ -92,7 +98,7 @@ const EvidenceNotebook = (function () {
     if (typeof AssetDB === 'undefined' || notebookConfig) return;
     try {
       notebookConfig = await AssetDB.getEvidenceNotebookConfig();
-      const perSlotIds = Object.assign({ witness: null, evidence: null, photo: null }, notebookConfig.imageAssetIds);
+      const perSlotIds = Object.assign({ testimony: null, evidence: null, photo: null }, notebookConfig.imageAssetIds);
       const ids = SECTIONS.map(s => perSlotIds[s.id]).filter(Boolean);
       if (ids.length) {
         const assets = await AssetDB.getAssetsByIds(ids);
@@ -133,9 +139,14 @@ const EvidenceNotebook = (function () {
       Object.keys(photos).forEach(id => { if (photos[id] && photos[id].imageAssetId) evidencePhotoAssetIds[id] = photos[id].imageAssetId; });
     } catch (e) { /* offline — pages fall back to icon placeholders */ }
   }
+  function photoAssetIdFor(entry) {
+    if (!entry) return null;
+    if (entry.kind === 'testimony') return evidencePhotoAssetIds[TESTIMONY_SHARED_PHOTO_ID] || null;
+    return entry.detailImageAssetId || entry.imageAssetId || evidencePhotoAssetIds[entry.id] || null;
+  }
   async function hydratePagePhoto(entry) {
     if (!entry || typeof AssetDB === 'undefined') return false;
-    const assetId = entry.detailImageAssetId || entry.imageAssetId || evidencePhotoAssetIds[entry.id];
+    const assetId = photoAssetIdFor(entry);
     if (!assetId || assetUrlCache[assetId]) return false;
     try {
       const asset = await AssetDB.getAsset(assetId);
@@ -144,7 +155,7 @@ const EvidenceNotebook = (function () {
     return false;
   }
   function photoUrlFor(entry) {
-    const assetId = entry && (entry.detailImageAssetId || entry.imageAssetId || evidencePhotoAssetIds[entry.id]);
+    const assetId = photoAssetIdFor(entry);
     return assetId ? (assetUrlCache[assetId] || null) : null;
   }
 
@@ -169,7 +180,7 @@ const EvidenceNotebook = (function () {
     const pool = state.mode === 'present'
       ? all.filter(e => e.presentable && e.status !== 'superseded' && e.status !== 'invalid')
       : all;
-    const bySection = { witness: [], evidence: [], photo: [] };
+    const bySection = { testimony: [], evidence: [], photo: [] };
     pool.forEach(e => { bySection[CaseEntryModel.getNotebookSection(e)].push(e); });
     Object.keys(bySection).forEach(k => bySection[k].sort((a, b) => (a.discoveredAt || 0) - (b.discoveredAt || 0)));
     state.entriesBySection = bySection;

@@ -1220,7 +1220,7 @@ const AssetDB = (() => {
     return cfg;
   }
 
-  // 증거수첩 — 책갈피(증인/증거/사진)별 배경 이미지 최대 3장과, 그 위 어느
+  // 증거수첩 — 책갈피(증언/증거/사진)별 배경 이미지 최대 3장과, 그 위 어느
   // 네모 영역에 어떤 증거 데이터 필드(코드/제목/사진/설명/발견 위치)가
   // 배치될지의 좌표를 담는다. 배경 원본(디자이너가 준 3장)이 이미 탭 바
   // 자체를 그림으로 그려 넣은 상태라(책갈피마다 활성 탭 색만 다른 완성된
@@ -1236,13 +1236,24 @@ const AssetDB = (() => {
   // 완전히 같은 단일 JSON blob + patch 병합 패턴.
   const evidenceNotebookConfigCache = new Map(); // single entry keyed 'config'
   const EVIDENCE_NOTEBOOK_CONFIG_PATH = 'evidence-notebook/config.json';
-  const EVIDENCE_NOTEBOOK_CONFIG_DEFAULT = { imageAssetId: null, imageAssetIds: { witness: null, evidence: null, photo: null }, regions: {} };
+  const EVIDENCE_NOTEBOOK_CONFIG_DEFAULT = { imageAssetId: null, imageAssetIds: { testimony: null, evidence: null, photo: null }, regions: {} };
+
+  // 책갈피 id가 witness → testimony로 바뀌기 전에 저장된 imageAssetIds에는
+  // testimony 자리가 비고 witness 자리에 그 배경 이미지가 들어 있을 수
+  // 있다 — 새 키가 비어 있을 때만 옛 키 값을 그대로 물려받아, 이미 올려둔
+  // 배경이 이름만 바뀌었다고 사라지지 않게 한다.
+  function migrateNotebookConfigLegacyKeys(cfg) {
+    if (cfg.imageAssetIds && !cfg.imageAssetIds.testimony && cfg.imageAssetIds.witness) {
+      cfg.imageAssetIds.testimony = cfg.imageAssetIds.witness;
+    }
+    return cfg;
+  }
 
   async function getEvidenceNotebookConfig() {
     if (evidenceNotebookConfigCache.has('config')) return evidenceNotebookConfigCache.get('config');
     const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${EVIDENCE_NOTEBOOK_CONFIG_PATH}?t=${Date.now()}`;
     try {
-      const cfg = Object.assign({}, EVIDENCE_NOTEBOOK_CONFIG_DEFAULT, (await fetchJsonBlob(url)) || {});
+      const cfg = migrateNotebookConfigLegacyKeys(Object.assign({}, EVIDENCE_NOTEBOOK_CONFIG_DEFAULT, (await fetchJsonBlob(url)) || {}));
       evidenceNotebookConfigCache.set('config', cfg);
       return cfg;
     } catch (e) {
@@ -1253,7 +1264,7 @@ const AssetDB = (() => {
   async function setEvidenceNotebookConfig(patch) {
     const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${EVIDENCE_NOTEBOOK_CONFIG_PATH}?t=${Date.now()}`;
     const current = await readCurrentForWrite(evidenceNotebookConfigCache, 'config', url, EVIDENCE_NOTEBOOK_CONFIG_DEFAULT);
-    const cfg = Object.assign({}, EVIDENCE_NOTEBOOK_CONFIG_DEFAULT, current, patch);
+    const cfg = migrateNotebookConfigLegacyKeys(Object.assign({}, EVIDENCE_NOTEBOOK_CONFIG_DEFAULT, current, patch));
     const blob = new Blob([JSON.stringify(cfg)], { type: 'application/json' });
     const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${DEV_ASSETS_BUCKET}/${EVIDENCE_NOTEBOOK_CONFIG_PATH}`, {
       method: 'POST',
