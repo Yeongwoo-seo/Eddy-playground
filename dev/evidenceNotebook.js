@@ -24,7 +24,7 @@
 
 const EvidenceNotebook = (function () {
   const SECTIONS = [
-    { id: 'witness', label: '증인', icon: '👤', tint: '#8a2332' },
+    { id: 'witness', label: '증언', icon: '👤', tint: '#8a2332' },
     { id: 'evidence', label: '증거', icon: '🔍', tint: '#1f3a6e' },
     { id: 'photo', label: '사진', icon: '📷', tint: '#1f5c3a' },
   ];

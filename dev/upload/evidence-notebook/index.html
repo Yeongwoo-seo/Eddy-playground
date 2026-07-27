@@ -174,6 +174,32 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
 .evn-test-field.evn-test-photo img{width:100%;height:100%;object-fit:cover}
 .evn-test-field.evn-test-button{border:2px dashed rgba(89,184,200,.85);border-radius:6px;background:rgba(89,184,200,.14);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:10.5px;font-weight:700;color:#59b8c8}
 
+/* ===== 개별 사진 — 주차별 증거·증언 목록 =====
+   배경 아트(책갈피당 1장)와 별개로, 증거/증언 항목 하나하나에 사진을 개별
+   배정한다. dev/upload/index.html의 증거 DB 탭과 같은 저장소(AssetDB.
+   getEvidencePhotos/setEvidencePhoto, entry id로 키가 잡힌 카탈로그)를
+   그대로 쓰므로 여기서 올린 사진이 바로 dev/evidenceNotebook.js가 읽는
+   사진이 된다 — 노트 쪽 코드는 손대지 않는다. 목록은 dialogueData.js의
+   weeks[].scenes[].lines[].effects(addEvidence)를 스캔해 만드는 읽기
+   전용 감사 목록(증거 DB 탭과 같은 방식)이라 주차별 그룹이 자연히 나온다. */
+.pill-row{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;margin-bottom:14px}
+.pill{font-family:var(--mono);font-size:12px;font-weight:700;white-space:nowrap;color:var(--text-secondary);background:var(--surface-1);border:1px solid var(--divider);border-radius:20px;padding:8px 14px;cursor:pointer;flex-shrink:0}
+.pill:active{opacity:.8}
+.pill.active{color:#04181c;background:var(--amber);border-color:var(--amber)}
+.photolist-section{margin-top:28px}
+.photolist-desc{font-size:13px;color:var(--text-secondary);line-height:1.5;margin-bottom:14px}
+.photolist-week{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;color:var(--text-muted);text-transform:uppercase;margin:18px 0 8px}
+.photolist-week:first-child{margin-top:0}
+.photo-row{display:flex;align-items:center;gap:12px;background:var(--surface-1);border:1px solid var(--divider);border-radius:14px;padding:10px 12px;margin-bottom:8px}
+.photo-row.busy{opacity:.55;pointer-events:none}
+.photo-row-thumb{width:52px;height:52px;border-radius:10px;overflow:hidden;background:var(--surface-2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--text-muted)}
+.photo-row-thumb img{width:100%;height:100%;object-fit:cover}
+.photo-row-body{flex:1;min-width:0}
+.photo-row-tag{font-family:var(--mono);font-size:10.5px;color:var(--text-muted);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.photo-row-title{font-size:13.5px;font-weight:600;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.photo-row-actions{display:flex;gap:6px;flex-shrink:0}
+.photo-list-empty{font-size:13px;color:var(--text-muted);padding:20px 0;text-align:center}
+
 .hidden{display:none}
 </style>
 </head>
@@ -182,7 +208,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   <a class="back" id="backBtn" href="/dev/data/">‹ 데이터 설정</a>
   <div class="tag">Missing Key</div>
   <div class="title">증거수첩</div>
-  <div class="sub">증거 제시/증거확인 화면에 쓰일 증거수첩 배경을 책갈피(증인·증거·사진)별로 올립니다. 세 그림은 탭 바까지 포함해 완성된 페이지 아트라, 노트 화면은 이 그림 자체를 책갈피별 배경으로 바꿔 끼웁니다. 세 그림의 레이아웃이 같다는 전제로, 어느 자리에 어떤 데이터(코드·제목·사진·설명·발견 위치·관련 인물)와 버튼(이전·색인·다음·제출)이 들어갈지는 영역 하나만 지정하면 셋 다에 적용됩니다.</div>
+  <div class="sub">증거 제시/증거확인 화면에 쓰일 증거수첩 배경을 책갈피(증언·증거·사진)별로 올립니다. 세 그림은 탭 바까지 포함해 완성된 페이지 아트라, 노트 화면은 이 그림 자체를 책갈피별 배경으로 바꿔 끼웁니다. 세 그림의 레이아웃이 같다는 전제로, 어느 자리에 어떤 데이터(코드·제목·사진·설명·발견 위치·관련 인물)와 버튼(이전·색인·다음·제출)이 들어갈지는 영역 하나만 지정하면 셋 다에 적용됩니다.</div>
 
   <button type="button" class="example-tab-btn" id="exampleTabBtn">
     <span class="example-tab-icon">✏️</span>
@@ -206,6 +232,14 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   </div>
 
   <div class="upload-status hidden" id="uploadStatus"></div>
+
+  <div class="photolist-section">
+    <div class="section-title">개별 사진 — 주차별 증거·증언</div>
+    <div class="photolist-desc">항목마다 사진을 하나씩 올리면 증거수첩에 바로 표시됩니다. 위 책갈피 배경과는 별개로, 이 목록에서 올린 사진은 그 항목 전용입니다.</div>
+    <div class="pill-row" id="photoSectionPills"></div>
+    <div id="photoList"></div>
+  </div>
+  <input type="file" id="evidencePhotoInput" accept="image/jpeg,image/png,image/webp">
 </div>
 
 <div class="evn-fullscreen hidden" id="evnFullscreen">
@@ -315,6 +349,9 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 <script src="/dev/assetDb.js"></script>
+<script src="/dev/dialogueData.js"></script>
+<script src="/dev/data/interactionDefs.js"></script>
+<script src="/dev/caseEntryModel.js"></script>
 <script src="/dev/evidenceNotebook.js"></script>
 <script>
 /* =========================================================================
@@ -350,7 +387,7 @@ const EVIDENCE_NOTEBOOK_LABELS = [
   { id: 'submitButton', label: '제출 버튼', kind: 'button' },
 ];
 const EVIDENCE_NOTEBOOK_SLOTS = [
-  { id: 'witness', label: '증인' },
+  { id: 'witness', label: '증언' },
   { id: 'evidence', label: '증거' },
   { id: 'photo', label: '사진' },
 ];
@@ -442,6 +479,9 @@ const el = {
   evnExampleConfirmText: document.getElementById('evnExampleConfirmText'),
   evnExampleConfirmCancelBtn: document.getElementById('evnExampleConfirmCancelBtn'),
   evnExampleConfirmOkBtn: document.getElementById('evnExampleConfirmOkBtn'),
+  photoSectionPills: document.getElementById('photoSectionPills'),
+  photoList: document.getElementById('photoList'),
+  evidencePhotoInput: document.getElementById('evidencePhotoInput'),
 };
 
 function labelDef(id) { return EVIDENCE_NOTEBOOK_LABELS.find(x => x.id === id); }
@@ -1057,6 +1097,151 @@ function renderExamplePage() {
   el.evnExampleNextBtn.disabled = idx >= list.length - 1;
 }
 
+/* ===== 개별 사진 — 주차별 증거·증언 목록 =====
+   dev/upload/index.html의 증거 DB 탭(collectEvidenceCatalog/renderEvidencePanel)
+   과 같은 방식으로 dialogueData.js의 weeks[].scenes[].lines[].effects
+   (addEvidence)와 interactionDefs.js(탐색허브)를 스캔해 항목을 모으고,
+   같은 id는 하나로 합쳐(여기선 감사가 아니라 "사진 하나 배정"이 목적이라
+   중복 카드를 보여줄 필요가 없다) 최초로 등장한 주차 아래 나열한다. 사진
+   저장은 증거 DB 탭과 완전히 같은 카탈로그(AssetDB.getEvidencePhotos/
+   setEvidencePhoto, entry id 키)를 쓰므로 여기서 올린 사진이 그대로
+   dev/evidenceNotebook.js가 읽는 사진이 된다. */
+const EVIDENCE_PHOTO_SECTION_LABELS = { witness: '증언', evidence: '증거', photo: '사진' };
+let evidencePhotoCatalogCache = null;
+let evidencePhotoSectionFilter = 'all';
+let evidencePhotoAssets = {}; // evidenceId -> asset record { id, dataUrl }
+let currentEvidencePhotoTargetId = null;
+
+function collectEvidencePhotoCatalog() {
+  if (evidencePhotoCatalogCache) return evidencePhotoCatalogCache;
+  const rows = [];
+  function push(ev, groupLabel) {
+    if (!ev || !ev.id) return;
+    rows.push(Object.assign({ groupLabel }, ev));
+  }
+  if (typeof weeks !== 'undefined') {
+    weeks.forEach(week => {
+      (week.scenes || []).forEach(scene => {
+        (scene.lines || []).forEach(line => {
+          (line.effects || []).forEach(effect => {
+            if (effect.type === 'addEvidence') push(effect.evidence, week.label);
+          });
+        });
+      });
+    });
+  }
+  if (typeof interactionDefs !== 'undefined') {
+    Object.values(interactionDefs).forEach(def => {
+      (def.effects || []).forEach(effect => {
+        if (effect.type === 'addEvidence') push(effect.evidence, '탐색허브');
+      });
+    });
+  }
+  const seenIds = new Set();
+  const deduped = rows.filter(r => (seenIds.has(r.id) ? false : (seenIds.add(r.id), true)));
+  deduped.forEach(r => {
+    r.section = (typeof CaseEntryModel !== 'undefined') ? CaseEntryModel.getNotebookSection(r) : (r.category === 'testimony' ? 'witness' : (r.category === 'photo' ? 'photo' : 'evidence'));
+  });
+  evidencePhotoCatalogCache = deduped;
+  return deduped;
+}
+
+async function loadEvidencePhotoAssets() {
+  let catalog = {};
+  try { catalog = await AssetDB.getEvidencePhotos(); } catch (err) { /* offline — 목록은 사진 없이 보여준다 */ }
+  const assetIds = Object.values(catalog).map(entry => entry && entry.imageAssetId).filter(Boolean);
+  let assets = [];
+  try { assets = await AssetDB.getAssetsByIds(assetIds); } catch (err) { /* offline */ }
+  const assetsById = {};
+  assets.forEach(a => { assetsById[a.id] = a; });
+  evidencePhotoAssets = {};
+  Object.keys(catalog).forEach(evId => {
+    const entry = catalog[evId];
+    if (entry && entry.imageAssetId && assetsById[entry.imageAssetId]) evidencePhotoAssets[evId] = assetsById[entry.imageAssetId];
+  });
+}
+
+function renderEvidencePhotoList() {
+  const rows = collectEvidencePhotoCatalog();
+  const sectionCounts = { witness: 0, evidence: 0, photo: 0 };
+  rows.forEach(r => { sectionCounts[r.section] = (sectionCounts[r.section] || 0) + 1; });
+  el.photoSectionPills.innerHTML = `<button type="button" class="pill${evidencePhotoSectionFilter === 'all' ? ' active' : ''}" data-section="all">전체 ${rows.length}</button>` +
+    ['witness', 'evidence', 'photo'].map(s => `<button type="button" class="pill${evidencePhotoSectionFilter === s ? ' active' : ''}" data-section="${s}">${EVIDENCE_PHOTO_SECTION_LABELS[s]} ${sectionCounts[s] || 0}</button>`).join('');
+  el.photoSectionPills.querySelectorAll('.pill').forEach(btn => {
+    btn.addEventListener('click', () => { evidencePhotoSectionFilter = btn.dataset.section; renderEvidencePhotoList(); });
+  });
+
+  const filtered = evidencePhotoSectionFilter === 'all' ? rows : rows.filter(r => r.section === evidencePhotoSectionFilter);
+  const groupOrder = (typeof weeks !== 'undefined' ? weeks.map(w => w.label) : []).concat(['탐색허브']);
+  const groupsHtml = groupOrder.map(g => {
+    const items = filtered.filter(r => r.groupLabel === g);
+    if (!items.length) return '';
+    return `<div class="photolist-week">${escapeHtml(g)} (${items.length})</div>${items.map(evidencePhotoRowHtml).join('')}`;
+  }).join('');
+  el.photoList.innerHTML = groupsHtml || '<div class="photo-list-empty">조건에 맞는 항목이 없습니다.</div>';
+  el.photoList.querySelectorAll('[data-photo-upload]').forEach(btn => {
+    btn.addEventListener('click', () => { currentEvidencePhotoTargetId = btn.dataset.photoUpload; el.evidencePhotoInput.click(); });
+  });
+  el.photoList.querySelectorAll('[data-photo-remove]').forEach(btn => {
+    btn.addEventListener('click', () => removeEvidencePhoto(btn.dataset.photoRemove));
+  });
+}
+
+function evidencePhotoRowHtml(r) {
+  const photo = evidencePhotoAssets[r.id];
+  const thumbHtml = photo ? `<img src="${photo.dataUrl}" alt="">` : '📓';
+  return `
+    <div class="photo-row" id="photoRow-${r.id}">
+      <div class="photo-row-thumb">${thumbHtml}</div>
+      <div class="photo-row-body">
+        <div class="photo-row-tag">${escapeHtml(EVIDENCE_PHOTO_SECTION_LABELS[r.section] || '')} · ${escapeHtml(r.code || '')}</div>
+        <div class="photo-row-title">${escapeHtml(r.title || r.id)}</div>
+      </div>
+      <div class="photo-row-actions">
+        <button type="button" class="slot-btn" data-photo-upload="${r.id}">${photo ? '교체' : '올리기'}</button>
+        ${photo ? `<button type="button" class="slot-btn slot-btn-cutout" data-photo-remove="${r.id}">제거</button>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+el.evidencePhotoInput.addEventListener('change', () => {
+  const file = el.evidencePhotoInput.files[0];
+  el.evidencePhotoInput.value = '';
+  if (file && currentEvidencePhotoTargetId) handleEvidencePhotoUpload(file, currentEvidencePhotoTargetId);
+});
+
+async function handleEvidencePhotoUpload(file, evidenceId) {
+  const row = document.getElementById('photoRow-' + evidenceId);
+  if (row) row.classList.add('busy');
+  try {
+    setUploadStatus('사진 업로드 중...', 'busy');
+    const asset = await AssetDB.addAsset({ type: 'evidence', name: file.name, blob: file });
+    await AssetDB.setEvidencePhoto(evidenceId, asset.id);
+    evidencePhotoAssets[evidenceId] = asset;
+    setUploadStatus('', null);
+    renderEvidencePhotoList();
+  } catch (err) {
+    setUploadStatus('사진 업로드 실패: ' + (err && err.message ? err.message : String(err)), 'error');
+  } finally {
+    if (row) row.classList.remove('busy');
+  }
+}
+
+async function removeEvidencePhoto(evidenceId) {
+  const row = document.getElementById('photoRow-' + evidenceId);
+  if (row) row.classList.add('busy');
+  try {
+    await AssetDB.setEvidencePhoto(evidenceId, null);
+    delete evidencePhotoAssets[evidenceId];
+    renderEvidencePhotoList();
+  } catch (err) {
+    setUploadStatus('사진 제거 실패: ' + (err && err.message ? err.message : String(err)), 'error');
+  } finally {
+    if (row) row.classList.remove('busy');
+  }
+}
+
 async function init() {
   notebookConfig = await AssetDB.getEvidenceNotebookConfig().catch(() => notebookConfig);
   notebookConfig.imageAssetIds = Object.assign({ witness: null, evidence: null, photo: null }, notebookConfig.imageAssetIds);
@@ -1081,6 +1266,8 @@ async function init() {
     }
   }
   renderMainView();
+  await loadEvidencePhotoAssets();
+  renderEvidencePhotoList();
 }
 init();
 </script>
