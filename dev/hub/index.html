@@ -77,7 +77,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
 <body>
 <div class="frame">
   <div class="topbar">
-    <a class="back-btn" id="backBtn" href="/dev/phases/">←</a>
+    <a class="back-btn" id="backBtn" href="/dev/week2/">←</a>
     <div class="page-title">탐색허브</div>
   </div>
 
@@ -212,9 +212,9 @@ const el = {
   bgLocationPhotoStatus: document.getElementById('bgLocationPhotoStatus'),
 };
 
-// ?phase=<id> — from /dev/phases's 설정 button, jump straight to that
-// phase's location list instead of always landing on the first one. Also
-// decides where "back" goes — /dev/phases always sends this, /dev/data's
+// ?phase=<id> — from /dev/week2's 허브 칸 "⚙ 허브 설정" button, jump straight
+// to that phase's location list instead of always landing on the first one.
+// Also decides where "back" goes — /dev/week2 always sends this, /dev/data's
 // menu links here with no params at all.
 const deepLinkedHubPhase = new URLSearchParams(location.search).get('phase');
 if (!deepLinkedHubPhase) el.backBtn.href = '/dev/data/';

@@ -2779,24 +2779,51 @@ const week2Scenes = [
   },
 ];
 
-// week1SceneGroups와 같은 형태 — v4 재설계 22챕터(23콘텐츠 씬 + 미니게임
-// 데이터 홀더 2개 = 26개)를 3막 구조로 묶는다.
+// week1SceneGroups와 같은 형태였으나, 탐색허브+메인 스토리 통합(/dev/story
+// 개편)을 위해 각 PART를 sceneIds 평면 배열 대신 `nodes` 순서 배열로 바꿨다.
+// node.type === 'scene'인 구간은 기존처럼 개별 씬 행으로 펼쳐 보여주고,
+// node.type === 'hub'인 구간(자유 탐색 허브 — dev/state/explorationState.js
+// + play/explore/)은 씬 사이에 놓인 "탐색허브 칸" 하나로 묶어서 보여준다.
+// 허브 안에서만 진입 가능한 심문 씬(예: 윤민아/애드리언/레오 탐문)은
+// 더 이상 메인 스토리에 개별 씬으로 노출되지 않고, 해당 hub node의
+// sceneIds에 담겨 그 허브 칸을 펼쳤을 때만 보인다 — 자세한 배경은
+// docs/week2-hub-restructure-progress.md 참고.
+//
+// week2-scene-004/005는 W2_EXHIBIT_FREE_LOOK 허브 도입 이후 재생 경로에서
+// 빠진 원본 대사(위 week2Scenes 배열의 주석 참고)라 어느 node에도 넣지
+// 않았다 — 그 내용은 이제 w2ef-topic-*(interactionDefs.js) 상호작용으로
+// 대체되어 있다.
 const week2SceneGroups = [
   {
     range: 'PART 1', label: '보이는 도난 (Ch1~11)',
-    sceneIds: [
-      'week2-scene-001', 'week2-scene-002', 'week2-scene-003', 'week2-scene-004',
-      'week2-scene-005', 'week2-scene-006', 'week2-scene-007', 'week2-scene-008',
-      'week2-scene-008-minigame', 'week2-scene-008-review', 'week2-scene-009',
-      'week2-scene-010', 'week2-scene-010b', 'week2-scene-010-minigame', 'week2-scene-011', 'week2-scene-012',
+    nodes: [
+      { type: 'scene', sceneIds: ['week2-scene-001', 'week2-scene-002', 'week2-scene-003'] },
+      {
+        type: 'hub', phaseId: 'W2_EXHIBIT_FREE_LOOK', startLocationId: 'w2-exhibit-floor',
+        label: '전시장 자유 관람',
+        desc: '소피 · 윤민아 · 애드리언 · 레오 · K-01을 자유 순서로 둘러본다',
+      },
+      { type: 'scene', sceneIds: ['week2-scene-006', 'week2-scene-007', 'week2-scene-008', 'week2-scene-008-minigame', 'week2-scene-008-review'] },
+      {
+        type: 'hub', phaseId: 'W2_SUSPECT_INTERVIEWS', startLocationId: 'w2-hub-plaza',
+        label: '용의자 탐문',
+        desc: '윤민아 · 애드리언 · 레오를 자유 순서로 탐문 — 심문은 이 허브 안에서 진행된다',
+        sceneIds: ['week2-scene-009', 'week2-scene-010', 'week2-scene-010b', 'week2-scene-010-minigame', 'week2-scene-011'],
+      },
+      { type: 'scene', sceneIds: ['week2-scene-012'] },
     ],
   },
   {
     range: 'PART 2', label: '안내자가 만든 사건 (Ch12~22)',
-    sceneIds: [
-      'week2-scene-013', 'week2-scene-014', 'week2-scene-015', 'week2-scene-016',
-      'week2-scene-017', 'week2-scene-018', 'week2-scene-019', 'week2-scene-020',
-      'week2-scene-021', 'week2-scene-022', 'week2-scene-023',
+    nodes: [
+      { type: 'scene', sceneIds: ['week2-scene-013'] },
+      {
+        type: 'hub', phaseId: 'W2_REVERIFICATION', startLocationId: 'w2-hub-plaza',
+        label: '재검증',
+        desc: '마틴 · 애드리언 · 레오 · 소피 · 다니엘 · 관광객을 자유 순서로 재조사 — 재심문은 이 허브 안에서 진행된다',
+        sceneIds: ['week2-scene-014', 'week2-scene-015', 'week2-scene-016', 'week2-scene-017', 'week2-scene-018', 'week2-scene-019'],
+      },
+      { type: 'scene', sceneIds: ['week2-scene-020', 'week2-scene-021', 'week2-scene-022', 'week2-scene-023'] },
     ],
   },
 ];

@@ -34,10 +34,30 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 .group-header{display:flex;align-items:center;gap:8px;padding:0 2px}
 .group-range{font-family:var(--mono);font-size:12px;color:var(--amber);letter-spacing:.06em}
 .group-label{font-size:14px;font-weight:700;color:var(--text-secondary)}
-.group-mode{font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:.04em;border-radius:8px;padding:2.5px 6px;flex-shrink:0}
-.group-mode.hub{color:#06181c;background:var(--cyan)}
-.group-mode.scene{color:var(--text-muted);background:rgba(255,255,255,.08)}
 .scene-row{display:flex;align-items:stretch;gap:10px}
+/* 탐색허브 칸 — 씬 사이에 놓인 자유 탐색 구간을 개별 씬으로 펼치지 않고
+   하나의 카드로 접어서 보여준다. summary를 누르면 펼쳐지고, 펼친 안에서만
+   그 허브 안에서 진행되는 심문 등 개별 씬이 드러난다(메인 스토리 목록에
+   별도 씬 행으로 노출되지 않음). */
+.hub-card{background:rgba(89,184,200,.07);border:1px solid rgba(89,184,200,.28);border-radius:12px;overflow:hidden}
+.hub-summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:12px;padding:16px 18px;transition:background .15s}
+.hub-summary::-webkit-details-marker{display:none}
+.hub-summary:active{background:rgba(89,184,200,.12)}
+.hub-badge{font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:.04em;color:#06181c;background:var(--cyan);border-radius:8px;padding:2.5px 6px;flex-shrink:0}
+.hub-summary-txt{flex:1;min-width:0}
+.hub-name{font-size:15px;font-weight:700}
+.hub-desc{font-size:12px;color:var(--text-secondary);margin-top:3px;line-height:1.5}
+.hub-caret{color:var(--cyan);font-size:16px;flex-shrink:0;transition:transform .15s}
+.hub-card[open] .hub-caret{transform:rotate(90deg)}
+.hub-body{padding:0 18px 16px}
+.hub-actions{display:flex;gap:8px;margin-bottom:12px}
+.hub-action-btn{flex:1;text-align:center;font-family:var(--mono);font-size:11.5px;font-weight:600;color:var(--cyan);text-decoration:none;background:rgba(89,184,200,.12);border:1px solid rgba(89,184,200,.3);border-radius:10px;padding:9px 10px;transition:background .15s}
+.hub-action-btn:active{background:rgba(89,184,200,.22)}
+.hub-action-btn.play{color:#06181c;background:var(--cyan);border-color:var(--cyan)}
+.hub-scene-label{font-family:var(--mono);font-size:10.5px;color:var(--text-muted);letter-spacing:.04em;margin-bottom:8px}
+.hub-scene-list{display:flex;flex-direction:column;gap:8px}
+.hub-scene-list .scene-btn{padding:13px 16px}
+.hub-scene-list .play-btn{width:46px}
 .scene-btn{flex:1;min-width:0;display:flex;align-items:center;gap:14px;background:var(--surface-1);border:1px solid var(--divider);border-radius:12px;padding:18px 20px;text-decoration:none;color:inherit;transition:transform .15s,background .15s}
 .scene-btn:active{transform:scale(.98);background:var(--surface-2)}
 .scene-num{font-family:var(--mono);font-size:13px;color:var(--cyan);flex-shrink:0}
@@ -63,7 +83,7 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
 <body>
 <div class="frame">
   <div class="topbar-row">
-    <a class="back" href="/dev/story/">‹ 스토리</a>
+    <a class="back" href="/dev/story/">‹ 메인 스토리</a>
     <div class="topbar-links">
       <a class="redesign-link" href="/dev/week2/redesign/">🔀 v4 재설계</a>
       <a class="script-link" href="/dev/script/?week=week2">전체 대사보기</a>
@@ -73,7 +93,7 @@ body{background:#050607;color:var(--text-primary);font-family:var(--sans);displa
   <div class="autoplay-hint">탭 없이 자동으로 대사가 이어서 재생됩니다. 미니게임 구간에 닿으면 자동 재생이 멈춥니다. 실제 플레이는 <a href="/play/" style="color:var(--cyan)">/play/</a>에서 확인하세요.</div>
   <div class="tag">Missing Key</div>
   <div class="title">2주차</div>
-  <div class="sub">씬을 선택해서 개별로 테스트할 수 있습니다. <b>허브</b> 페이즈는 장소를 자유 순서로 오가고, <b>씬</b> 페이즈는 순차 진행됩니다.</div>
+  <div class="sub">씬을 선택해서 개별로 테스트할 수 있습니다. <b>탐색허브</b> 칸은 씬 사이에서 장소를 자유 순서로 오가며 그 안에서 심문까지 진행됩니다 — 펼치면 안에서 진행되는 개별 씬을 확인할 수 있습니다.</div>
   <div class="scene-list" id="sceneList"></div>
 </div>
 <script>
@@ -116,39 +136,56 @@ function sceneRowHtml(s) {
   `;
 }
 
-// Kept in sync with dev/phases/index.html's PHASE_HUB_META — hub phases let
-// you roam locations in any order (play/explore/), scene phases are the
-// original linear dialogue/minigame chain (play/game/).
-const PHASE_HUB_META = {
-  'PHASE 1': { mode: 'hub' },
-  'PHASE 2': { mode: 'scene' },
-  'PHASE 3': { mode: 'scene' },
-  'PHASE 4': { mode: 'hub' },
-  'PHASE 5': { mode: 'hub' },
-  'PHASE 6': { mode: 'scene' },
-};
+// 탐색허브 칸 — 씬 사이에 자유 탐색 허브(hub node)가 있으면 개별 씬으로
+// 펼치지 않고 하나의 <details> 카드로 접어서 보여준다. 안에 sceneIds가
+// 있으면(그 허브 안에서만 진입 가능한 심문 등) 펼쳤을 때만 씬 행으로
+// 드러난다 — 메인 스토리 목록 자체에는 노출되지 않는다.
+function hubCardHtml(node, byId) {
+  const innerScenes = (node.sceneIds || []).map(id => byId.get(id)).filter(Boolean);
+  return `
+    <details class="hub-card">
+      <summary class="hub-summary">
+        <span class="hub-badge">허브</span>
+        <div class="hub-summary-txt">
+          <div class="hub-name">${node.label}</div>
+          <div class="hub-desc">${node.desc}</div>
+        </div>
+        <span class="hub-caret">›</span>
+      </summary>
+      <div class="hub-body">
+        <div class="hub-actions">
+          <a class="hub-action-btn" href="/dev/hub/?phase=${encodeURIComponent(node.phaseId)}">⚙ 허브 설정</a>
+          <a class="hub-action-btn play" href="/play/explore/?phase=${encodeURIComponent(node.phaseId)}&location=${encodeURIComponent(node.startLocationId)}">▶ 바로 플레이</a>
+        </div>
+        ${innerScenes.length ? `
+          <div class="hub-scene-label">이 허브 안에서 진행되는 씬</div>
+          <div class="hub-scene-list">${innerScenes.map(sceneRowHtml).join('')}</div>
+        ` : ''}
+      </div>
+    </details>
+  `;
+}
 
 const list = document.getElementById('sceneList');
 if (!week2Scenes.length) {
   list.innerHTML = '<div class="empty">등록된 씬이 없습니다.</div>';
 } else {
   const byId = new Map(week2Scenes.map(s => [s.id, s]));
-  // week2SceneGroups (dialogueData.js) buckets the flat week2Scenes list into
-  // the Phase 1-6 investigation stages The Missing Key 문서가 쓰는 구분 —
-  // same pattern as week1SceneGroups.
-  list.innerHTML = week2SceneGroups.map(g => {
-    const meta = PHASE_HUB_META[g.range];
-    return `
+  // week2SceneGroups (dialogueData.js) buckets week2Scenes into PART 1/2,
+  // each holding an ordered `nodes` list — 'scene' nodes render as the usual
+  // flat scene rows, 'hub' nodes render as one hub-card (see hubCardHtml).
+  list.innerHTML = week2SceneGroups.map(g => `
     <div class="scene-group">
       <div class="group-header">
         <span class="group-range">${g.range}</span>
         <span class="group-label">${g.label}</span>
-        ${meta ? `<span class="group-mode ${meta.mode}">${meta.mode === 'hub' ? '허브' : '씬'}</span>` : ''}
       </div>
-      ${g.sceneIds.map(id => byId.get(id)).filter(Boolean).map(sceneRowHtml).join('')}
+      ${g.nodes.map(node => node.type === 'hub'
+        ? hubCardHtml(node, byId)
+        : node.sceneIds.map(id => byId.get(id)).filter(Boolean).map(sceneRowHtml).join('')
+      ).join('')}
     </div>
-  `;
-  }).join('');
+  `).join('');
 }
 </script>
 <script src="/dev/devPlanFab.js"></script>
