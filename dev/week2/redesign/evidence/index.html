@@ -103,6 +103,11 @@ function cardHtml(ev) {
           <div class="field-label">사진에 담아야 할 것</div>
           <div class="field-val">${ev.photoBrief}</div>
         </div>
+        ${ev.storyContext ? `
+        <div class="field">
+          <div class="field-label">장면 속 맥락</div>
+          <div class="field-val">${ev.storyContext}</div>
+        </div>` : ''}
         ${ev.reuseHint ? `
         <div class="field">
           <div class="field-label">${ev.needsNewPhoto ? '참고' : '재사용 방법'}</div>
