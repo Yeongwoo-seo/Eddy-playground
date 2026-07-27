@@ -73,6 +73,7 @@ const EvidenceNotebook = (function () {
   let notebookConfig = null; // { imageAssetId, imageAssetIds:{witness,evidence,photo}, regions }
   let sectionBgUrls = { witness: null, evidence: null, photo: null };
   let evidencePhotoAssetIds = {}; // entryId -> imageAssetId (evidence-photos catalog)
+  let evidenceTestimonyPhotoAssetId = null; // 증언(kind==='testimony') 전부가 공유하는 "기록사진"
   let assetUrlCache = {}; // assetId -> dataUrl
 
   function escapeHtml(s) {
@@ -128,14 +129,23 @@ const EvidenceNotebook = (function () {
   async function ensureEvidencePhotoCatalog() {
     if (typeof AssetDB === 'undefined') return;
     try {
-      const photos = await AssetDB.getEvidencePhotos();
+      const [photos, testimonyPhoto] = await Promise.all([AssetDB.getEvidencePhotos(), AssetDB.getEvidenceTestimonyPhoto()]);
       evidencePhotoAssetIds = {};
       Object.keys(photos).forEach(id => { if (photos[id] && photos[id].imageAssetId) evidencePhotoAssetIds[id] = photos[id].imageAssetId; });
+      evidenceTestimonyPhotoAssetId = (testimonyPhoto && testimonyPhoto.imageAssetId) || null;
     } catch (e) { /* offline — pages fall back to icon placeholders */ }
+  }
+  // 증언(kind==='testimony')은 개별 사진 대신 전부 이 공용 "기록사진" 한
+  // 장을 쓴다 — 아직 기록사진이 배정되지 않았을 때만 레거시 개별 자산으로
+  // 폴백한다.
+  function photoAssetIdFor(entry) {
+    if (!entry) return null;
+    if (entry.kind === 'testimony') return evidenceTestimonyPhotoAssetId || entry.detailImageAssetId || entry.imageAssetId || evidencePhotoAssetIds[entry.id];
+    return entry.detailImageAssetId || entry.imageAssetId || evidencePhotoAssetIds[entry.id];
   }
   async function hydratePagePhoto(entry) {
     if (!entry || typeof AssetDB === 'undefined') return false;
-    const assetId = entry.detailImageAssetId || entry.imageAssetId || evidencePhotoAssetIds[entry.id];
+    const assetId = photoAssetIdFor(entry);
     if (!assetId || assetUrlCache[assetId]) return false;
     try {
       const asset = await AssetDB.getAsset(assetId);
@@ -144,7 +154,7 @@ const EvidenceNotebook = (function () {
     return false;
   }
   function photoUrlFor(entry) {
-    const assetId = entry && (entry.detailImageAssetId || entry.imageAssetId || evidencePhotoAssetIds[entry.id]);
+    const assetId = photoAssetIdFor(entry);
     return assetId ? (assetUrlCache[assetId] || null) : null;
   }
 

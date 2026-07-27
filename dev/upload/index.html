@@ -2047,8 +2047,8 @@ async function saveAsset() {
 let imageEditorTarget = 'character';
 function activeCropAspect() { return imageEditorTarget === 'character' ? 3 / 4 : 1; }
 function activeCropVAnchor() { return imageEditorTarget === 'character' ? 0 : 0.5; }
-const CROP_ENTER_LABELS = { character: '다음: 자르기', minigameFace: '다음: 얼굴 자르기', item: '다음: 자르기', evidence: '다음: 자르기' };
-const CROP_SAVE_LABELS = { character: '이 표정으로 저장', minigameFace: '이 사진을 미니게임 얼굴로 저장', item: '이 이미지를 아이템 이미지로 저장', evidence: '이 사진을 증거 사진으로 저장' };
+const CROP_ENTER_LABELS = { character: '다음: 자르기', minigameFace: '다음: 얼굴 자르기', item: '다음: 자르기', evidence: '다음: 자르기', evidenceTestimony: '다음: 자르기' };
+const CROP_SAVE_LABELS = { character: '이 표정으로 저장', minigameFace: '이 사진을 미니게임 얼굴로 저장', item: '이 이미지를 아이템 이미지로 저장', evidence: '이 사진을 증거 사진으로 저장', evidenceTestimony: '이 사진을 기록사진으로 저장' };
 
 let workingBlob = null;
 let workingImgNatural = { width: 0, height: 0 };
@@ -2079,7 +2079,7 @@ function openCharEditor(file, url, img) {
   el.cropEnterBtn.textContent = CROP_ENTER_LABELS[imageEditorTarget];
   el.cropEnterBtn.style.display = 'none';
   if (imageEditorTarget === 'item') el.charEditorPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  if (imageEditorTarget === 'evidence') {
+  if (imageEditorTarget === 'evidence' || imageEditorTarget === 'evidenceTestimony') {
     el.cropEnterBtn.style.display = '';
   } else {
     runBackgroundRemoval();
@@ -2539,6 +2539,8 @@ el.cropSaveBtn.addEventListener('click', async () => {
       await saveCroppedItemImage(cropBlob, croppedImg);
     } else if (imageEditorTarget === 'evidence') {
       await saveCroppedEvidenceImage(cropBlob, croppedImg);
+    } else if (imageEditorTarget === 'evidenceTestimony') {
+      await saveCroppedTestimonyImage(cropBlob, croppedImg);
     } else {
       const outfit = imageEditorTarget === 'character' ? activeOutfitForFilter() : null;
       const outfitLabel = outfit ? getOutfitLabel(outfit) + ' ' : '';
@@ -2582,6 +2584,15 @@ async function saveCroppedEvidenceImage(cropBlob, croppedImg) {
   const record = await AssetDB.addAsset({ type: 'evidence', name: `${sourceFileBaseName}.png`, blob: cropBlob, width: croppedImg.naturalWidth, height: croppedImg.naturalHeight });
   await AssetDB.setEvidencePhoto(currentEvidencePhotoTargetId, record.id);
   evidencePhotoAssets[currentEvidencePhotoTargetId] = record;
+  renderEvidenceList();
+}
+
+// 증언 카드의 "기록사진 업로드" — 개별 evidenceId가 아니라 모든 증언이
+// 공유하는 단일 사진(AssetDB.setEvidenceTestimonyPhoto)에 저장한다.
+async function saveCroppedTestimonyImage(cropBlob, croppedImg) {
+  const record = await AssetDB.addAsset({ type: 'evidence', name: `${sourceFileBaseName}.png`, blob: cropBlob, width: croppedImg.naturalWidth, height: croppedImg.naturalHeight });
+  await AssetDB.setEvidenceTestimonyPhoto(record.id);
+  evidenceTestimonyPhotoAsset = record;
   renderEvidenceList();
 }
 
@@ -3448,6 +3459,11 @@ let evidenceSearchQuery = '';
 let evidencePhotoAssets = {}; // evidenceId -> { id, dataUrl, ... } asset record, loaded by loadEvidencePhotoAssets
 let evidenceCommonPrompt = '';
 let currentEvidencePhotoTargetId = null; // which evidence id the shared photo editor is currently uploading for
+// 증언(kind==='testimony')은 전부 이 한 장의 "기록사진"을 공유한다 — 개별
+// 증언마다 사진을 만들 필요가 없기 때문. 다른(증언이 아닌) 증거에도 각
+// 카드의 "기록사진" 버튼으로 같은 사진을 그대로 적용할 수 있다.
+let evidenceTestimonyPhotoAsset = null; // { id, dataUrl, ... } asset record, loaded by loadEvidencePhotoAssets
+let currentEvidencePhotoIsTestimony = false; // true면 다음 업로드가 개별 증거가 아니라 공용 기록사진을 갱신
 
 function collectEvidenceCatalog() {
   if (evidenceCatalogCache) return evidenceCatalogCache;
@@ -3490,14 +3506,15 @@ function collectEvidenceCatalog() {
 }
 
 async function loadEvidencePhotoAssets() {
-  let catalog = {}, settings = { commonPrompt: '' };
+  let catalog = {}, settings = { commonPrompt: '' }, testimonyPhoto = {};
   try {
-    [catalog, settings] = await Promise.all([AssetDB.getEvidencePhotos(), AssetDB.getEvidencePromptSettings()]);
+    [catalog, settings, testimonyPhoto] = await Promise.all([AssetDB.getEvidencePhotos(), AssetDB.getEvidencePromptSettings(), AssetDB.getEvidenceTestimonyPhoto()]);
   } catch (err) {
     DevDiag.show('증거 사진/프롬프트 설정을 불러오지 못했습니다: ' + (err && err.message ? err.message : err));
   }
   evidenceCommonPrompt = settings.commonPrompt || '';
   const assetIds = Object.values(catalog).map(entry => entry && entry.imageAssetId).filter(Boolean);
+  if (testimonyPhoto && testimonyPhoto.imageAssetId) assetIds.push(testimonyPhoto.imageAssetId);
   let assets = [];
   try {
     assets = await AssetDB.getAssetsByIds(assetIds);
@@ -3511,6 +3528,7 @@ async function loadEvidencePhotoAssets() {
     const entry = catalog[evId];
     if (entry && entry.imageAssetId && assetsById[entry.imageAssetId]) evidencePhotoAssets[evId] = assetsById[entry.imageAssetId];
   });
+  evidenceTestimonyPhotoAsset = (testimonyPhoto && testimonyPhoto.imageAssetId && assetsById[testimonyPhoto.imageAssetId]) || null;
 }
 
 // 사진/프롬프트 설정은 패널을 새로 열 때만 다시 불러오면 되고(loadEvidencePhotoAssets),
@@ -3579,11 +3597,22 @@ function evidenceRowHtml(r) {
   if (r.dupeId) warnings.push('ID 중복');
   if (r.dupeCode) warnings.push('코드 중복');
   const warnTag = warnings.length ? `<span class="asset-tag evidence-dupe-tag">${warnings.join(' · ')}</span>` : '';
-  const photo = evidencePhotoAssets[r.id];
+  // 증언(kind==='testimony')은 개별 사진 대신 전부 공용 "기록사진" 한 장을
+  // 보여준다 — 그 외 증거는 각자 배정된 사진, 없으면 빈 썸네일.
+  const isTestimony = r.kind === 'testimony';
+  const photo = isTestimony ? evidenceTestimonyPhotoAsset : evidencePhotoAssets[r.id];
   const thumbHtml = photo
     ? `<img class="asset-thumb" src="${photo.dataUrl}" alt="">`
     : `<div class="asset-thumb evidence-thumb-empty">📷</div>`;
   const kindTag = `<span class="asset-tag evidence-kind-tag-${r.section}">${EVIDENCE_SECTION_LABELS[r.section]}</span>`;
+  // 증언은 개별 AI 프롬프트/사진 업로드가 필요 없어 공용 기록사진을
+  // 올리는 버튼 하나만 둔다. 그 외 증거는 기존 버튼에 더해, 이미 올려둔
+  // 기록사진을 그대로 갖다 쓸 수 있는 "기록사진" 버튼을 추가한다.
+  const actionsHtml = isTestimony
+    ? `<button class="select-btn" onclick="triggerEvidenceTestimonyPhotoUpload()">기록사진 업로드</button>`
+    : `<button class="hotspot-secondary-btn" onclick="openEvidencePromptPanel('${r.id}')">AI 프롬프트</button>
+          <button class="select-btn" onclick="triggerEvidencePhotoUpload('${r.id}')">사진 업로드</button>
+          <button class="hotspot-secondary-btn" onclick="applyTestimonyPhotoToEvidence('${r.id}')"${evidenceTestimonyPhotoAsset ? '' : ' disabled title="기록사진을 먼저 올려야 합니다"'}>기록사진</button>`;
   return `
     <div class="asset-card" style="align-items:flex-start">
       ${thumbHtml}
@@ -3593,8 +3622,7 @@ function evidenceRowHtml(r) {
         <div class="asset-meta">${escapeHtml(r.description || '')}</div>
         <div class="asset-meta">${escapeHtml(r.discoveredLocationText || '')} · ${escapeHtml(r.sceneLabel || '')}</div>
         <div class="item-actions-row" style="margin-top:10px">
-          <button class="hotspot-secondary-btn" onclick="openEvidencePromptPanel('${r.id}')">AI 프롬프트</button>
-          <button class="select-btn" onclick="triggerEvidencePhotoUpload('${r.id}')">사진 업로드</button>
+          ${actionsHtml}
         </div>
       </div>
     </div>
@@ -3659,16 +3687,37 @@ el.evidenceCommonPromptSaveBtn.addEventListener('click', async () => {
 // 필요하면 누끼 버튼을 수동으로 눌러 적용할 수 있다.
 function triggerEvidencePhotoUpload(evidenceId) {
   currentEvidencePhotoTargetId = evidenceId;
+  currentEvidencePhotoIsTestimony = false;
   el.evidencePhotoInput.click();
+}
+// "기록사진 업로드" 버튼(증언 카드) — 개별 증거 id가 아니라 모든 증언이
+// 공유하는 단일 사진을 갱신한다. imageEditorTarget='evidenceTestimony'로
+// 열어 같은 크롭 흐름을 타되 저장은 saveCroppedTestimonyImage가 한다.
+function triggerEvidenceTestimonyPhotoUpload() {
+  currentEvidencePhotoTargetId = null;
+  currentEvidencePhotoIsTestimony = true;
+  el.evidencePhotoInput.click();
+}
+// "기록사진" 버튼(증언이 아닌 카드) — 새로 업로드하지 않고, 이미 배정된
+// 공용 기록사진을 이 증거의 개별 배정으로 그대로 복사한다.
+async function applyTestimonyPhotoToEvidence(evidenceId) {
+  if (!evidenceTestimonyPhotoAsset) return;
+  try {
+    await AssetDB.setEvidencePhoto(evidenceId, evidenceTestimonyPhotoAsset.id);
+    evidencePhotoAssets[evidenceId] = evidenceTestimonyPhotoAsset;
+    renderEvidenceList();
+  } catch (err) {
+    DevDiag.show('기록사진 적용 실패: ' + (err && err.message ? err.message : err));
+  }
 }
 el.evidencePhotoInput.addEventListener('change', (e) => {
   const file = e.target.files && e.target.files[0];
   e.target.value = '';
-  if (!file || !currentEvidencePhotoTargetId) return;
+  if (!file || (!currentEvidencePhotoTargetId && !currentEvidencePhotoIsTestimony)) return;
   const url = URL.createObjectURL(file);
   const img = new Image();
   img.onload = () => {
-    imageEditorTarget = 'evidence';
+    imageEditorTarget = currentEvidencePhotoIsTestimony ? 'evidenceTestimony' : 'evidence';
     openCharEditor(file, url, img);
   };
   img.src = url;
