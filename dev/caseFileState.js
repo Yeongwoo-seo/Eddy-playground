@@ -494,6 +494,7 @@ const CaseFileState = {
       wardrobeState: (typeof WardrobeState !== 'undefined') ? WardrobeState.snapshot() : undefined,
       explorationState: (typeof ExplorationState !== 'undefined') ? ExplorationState.snapshot() : undefined,
       relationshipState: (typeof RelationshipState !== 'undefined') ? RelationshipState.snapshot() : undefined,
+      lifeGaugeState: (typeof LifeGaugeState !== 'undefined') ? LifeGaugeState.snapshot() : undefined,
       updatedAt: Date.now(),
     }, extra);
     const slots = loadSaveSlots();
@@ -537,6 +538,7 @@ const CaseFileState = {
       ExplorationState.restore(isLegacy ? migrateLegacyExplorationSnapshot(slot.explorationState) : slot.explorationState);
     }
     if (typeof RelationshipState !== 'undefined' && slot.relationshipState) RelationshipState.restore(slot.relationshipState);
+    if (typeof LifeGaugeState !== 'undefined' && slot.lifeGaugeState) LifeGaugeState.restore(slot.lifeGaugeState);
     // slot came from local-only (server was behind or unreachable) — push it
     // up so the server catches up instead of staying stale until next save.
     if (slot === localSlot && (!serverSlot || (localSlot.updatedAt || 0) > (serverSlot.updatedAt || 0))) {
