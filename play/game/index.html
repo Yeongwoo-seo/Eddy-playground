@@ -17,7 +17,7 @@
 :root{
   --bg:#080A0C;--surface-1:#101419;--surface-2:#171C22;
   --text-primary:#EDF1F4;--text-secondary:#929BA5;--text-muted:#5F6872;
-  --cyan:#59B8C8;--amber:#D6A84B;--divider:rgba(255,255,255,0.08);
+  --cyan:#59B8C8;--amber:#D6A84B;--signal-red:#D94141;--divider:rgba(255,255,255,0.08);
   --mono:'IBM Plex Mono',ui-monospace,monospace;
   --sans:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
 }
@@ -69,6 +69,33 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .gauge-fill{width:100%;border-radius:3px;transition:height .3s cubic-bezier(.2,.8,.2,1)}
 .gauge-fill.satisfaction{background:var(--cyan)}
 .gauge-fill.affection{background:#E8749E}
+
+/* ===== 2주차 라이프 게이지 — 심문 중 증거 오답 제시/선택지 오답 시 경중에
+   따라 깎이는 판정용 게이지(§ lifeGaugeState.js). relation-gauges 바로 위에
+   가로 막대로 얹는다 — 우상단 세로 스택으로 겹치지 않게 쌓는다. 2주차 씬이
+   아니면 .hidden으로 완전히 숨긴다(updateLifeGauge). */
+.life-gauge{position:absolute;top:calc(12px + env(safe-area-inset-top,0));right:16px;z-index:6;display:flex;align-items:center;gap:6px}
+.life-gauge.hidden{display:none}
+.life-gauge-icon{font-size:12px;line-height:1}
+.life-gauge-track{position:relative;width:84px;height:7px;border-radius:4px;background:rgba(255,255,255,.16);overflow:hidden}
+.life-gauge-fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:var(--signal-red);transition:width .35s cubic-bezier(.2,.8,.2,1),background-color .35s ease}
+/* 깎일 구간 예고 — 실제로 줄기 전에 잃을 만큼의 영역에서 먼저 반짝인 뒤
+   (applyLifeDamage의 LIFE_FLASH_MS 딜레이) fill이 그 자리까지 줄어든다. */
+.life-gauge-flash{position:absolute;top:0;bottom:0;border-radius:4px;background:#fff;pointer-events:none}
+.life-gauge-flash.hidden{display:none}
+.life-gauge-flash.blinking{animation:lifeGaugeBlink .18s steps(1) infinite}
+@keyframes lifeGaugeBlink{0%,100%{opacity:.9}50%{opacity:.2}}
+
+/* ===== 라이프 게이지 소진 — 게임오버(재도전) 오버레이. char-code-overlay와
+   같은 중앙 시트 모달 관례를 따른다. */
+.life-gameover-overlay{position:fixed;inset:0;z-index:23;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:20px}
+.life-gameover-overlay.hidden{display:none}
+.life-gameover-sheet{width:100%;max-width:340px;background:rgba(8,14,18,.97);border:1px solid rgba(217,65,65,.4);border-radius:20px;padding:28px 22px;text-align:center}
+.life-gameover-icon{font-size:34px;margin-bottom:10px}
+.life-gameover-title{font-size:18px;font-weight:800;color:#fff;margin-bottom:8px}
+.life-gameover-desc{font-size:13px;color:rgba(255,255,255,.68);line-height:1.6;margin-bottom:20px}
+.life-gameover-retry-btn{width:100%;padding:13px;border-radius:14px;border:none;background:var(--signal-red);color:#fff;font-weight:700;font-size:14px;cursor:pointer}
+.life-gameover-retry-btn:active{opacity:.8}
 
 /* ===== 캐릭터 높이 조정 패널 — .vn-topbar의 🧍↕ 버튼(우상단)으로 연다.
    .relation-gauges(top:58px, 우상단 세로 게이지)와 겹치지 않도록 그 아래로
@@ -266,6 +293,14 @@ window.addEventListener('orientationchange', setVh100);
     </div>
   </div>
 
+  <span class="life-gauge hidden" id="lifeGauge" title="라이프 게이지">
+    <span class="life-gauge-icon">❤</span>
+    <span class="life-gauge-track">
+      <span class="life-gauge-fill" id="lifeGaugeFill"></span>
+      <span class="life-gauge-flash hidden" id="lifeGaugeFlash"></span>
+    </span>
+  </span>
+
   <span class="relation-gauges" id="relationGauges">
     <span class="gauge-pill" title="여행 만족도"><span class="gauge-icon">✨</span><span class="gauge-track"><span class="gauge-fill satisfaction" id="satisfactionFill"></span></span></span>
     <span class="gauge-pill" title="영우 호감도"><span class="gauge-icon">💛</span><span class="gauge-track"><span class="gauge-fill affection" id="affectionFill"></span></span></span>
@@ -316,6 +351,15 @@ window.addEventListener('orientationchange', setVh100);
     <button type="button" class="char-code-copy-btn" id="charCodeCopyBtn">📋 복사하기</button>
     <div class="char-code-copy-status" id="charCodeCopyStatus"></div>
     <button type="button" class="char-code-close-btn" id="charCodeCloseBtn">닫기</button>
+  </div>
+</div>
+
+<div class="life-gameover-overlay hidden" id="lifeGameoverOverlay">
+  <div class="life-gameover-sheet">
+    <div class="life-gameover-icon">💥</div>
+    <div class="life-gameover-title">조사가 흔들렸다</div>
+    <div class="life-gameover-desc">잘못된 증거 제시와 판단이 쌓여<br>라이프 게이지가 모두 소진됐다.<br>다시 처음부터 신중하게 되짚어보자.</div>
+    <button type="button" class="life-gameover-retry-btn" id="lifeGameoverRetryBtn">다시 시작하기</button>
   </div>
 </div>
 
@@ -410,6 +454,7 @@ if ('serviceWorker' in navigator) {
 <script src="/dev/data/shopItems.js"></script>
 <script src="/dev/state/economyState.js"></script>
 <script src="/dev/state/relationshipState.js"></script>
+<script src="/dev/state/lifeGaugeState.js"></script>
 <script src="/dev/state/wardrobeState.js"></script>
 <script src="/dev/state/shopState.js"></script>
 <script src="/dev/data/locationDefs.js"></script>
@@ -494,6 +539,11 @@ const el = {
   relationGauges: document.getElementById('relationGauges'),
   satisfactionFill: document.getElementById('satisfactionFill'),
   affectionFill: document.getElementById('affectionFill'),
+  lifeGauge: document.getElementById('lifeGauge'),
+  lifeGaugeFill: document.getElementById('lifeGaugeFill'),
+  lifeGaugeFlash: document.getElementById('lifeGaugeFlash'),
+  lifeGameoverOverlay: document.getElementById('lifeGameoverOverlay'),
+  lifeGameoverRetryBtn: document.getElementById('lifeGameoverRetryBtn'),
 };
 
 function updatePointBalance() {
@@ -535,6 +585,50 @@ function updateRelationshipGauges() {
   el.satisfactionFill.style.height = RelationshipState.getSatisfaction() + '%';
   el.affectionFill.style.height = RelationshipState.getAffection() + '%';
 }
+
+/* ===== 2주차 라이프 게이지 (§ lifeGaugeState.js) — 심문 중 증거 오답 제시/
+   선택지 오답 시에만 붙는 판정용 게이지라, satisfaction/affection과 달리
+   2주차 씬이 아니면 아예 숨긴다. 0이 되면 게임오버 오버레이를 띄운다. */
+const LIFE_FLASH_MS = 650;
+function lifeGaugeColor(value) {
+  if (value <= 25) return 'var(--signal-red)';
+  if (value <= 55) return 'var(--amber)';
+  return 'var(--cyan)';
+}
+function updateLifeGauge() {
+  const isWeek2 = WeekPreloader.weekIdOf(activeSceneData.id) === 'week2';
+  el.lifeGauge.classList.toggle('hidden', !isWeek2);
+  const value = LifeGaugeState.getValue();
+  el.lifeGaugeFill.style.width = value + '%';
+  el.lifeGaugeFill.style.backgroundColor = lifeGaugeColor(value);
+}
+// severity: 'minor' | 'major'. 실제로 깎기 전, 깎일 구간(from%~to% 사이)을
+// 먼저 반짝이게 보여주고(LIFE_FLASH_MS) 그 뒤에야 fill을 줄인다 — "이만큼
+// 잃는다"를 예고하는 딜레이 연출.
+function applyLifeDamage(severity) {
+  const { from, to, amount } = LifeGaugeState.damage(severity);
+  if (!amount) return;
+  el.lifeGaugeFlash.style.left = to + '%';
+  el.lifeGaugeFlash.style.width = (from - to) + '%';
+  el.lifeGaugeFlash.classList.remove('hidden');
+  el.lifeGaugeFlash.classList.add('blinking');
+  setTimeout(() => {
+    el.lifeGaugeFlash.classList.add('hidden');
+    el.lifeGaugeFlash.classList.remove('blinking');
+    el.lifeGaugeFill.style.width = to + '%';
+    el.lifeGaugeFill.style.backgroundColor = lifeGaugeColor(to);
+    if (LifeGaugeState.isDepleted()) setTimeout(showLifeGameOver, 350);
+  }, LIFE_FLASH_MS);
+}
+function showLifeGameOver() {
+  el.lifeGameoverOverlay.classList.remove('hidden');
+}
+el.lifeGameoverRetryBtn.addEventListener('click', () => {
+  LifeGaugeState.reset();
+  el.lifeGameoverOverlay.classList.add('hidden');
+  updateLifeGauge();
+  player.restart();
+});
 
 function setBackground(asset) {
   if (asset && asset.dataUrl) {
@@ -983,6 +1077,13 @@ function applyEffect(effect) {
       if (effect.amount) caseMenu.notifyAffection(effect.amount);
       updateRelationshipGauges();
       break;
+
+    // 2주차 라이프 게이지(§ 위 lifeGaugeState.js 참고) — 심문 선택지 중
+    // 오답을 골랐을 때 그 선택의 effects에 넣어 쓴다(경중은 severity로).
+    // relationshipState와 달리 이건 실제로 게임오버까지 이어질 수 있다.
+    case 'damageLife':
+      applyLifeDamage(effect.severity);
+      break;
     case 'unlockShop':
       ShopState.unlockShop();
       updatePointBalance();
@@ -1282,6 +1383,10 @@ const player = createVNPlayer({
       const attempt = CaseFileState.incrementFlag('wrong:' + line.id);
       const texts = Array.isArray(line.wrongText) ? line.wrongText : [line.wrongText || '그건 아닌 것 같아요...'];
       showEvidenceToast(texts[Math.min(attempt - 1, texts.length - 1)], false);
+      // line.wrongSeverity ('minor'|'major')는 opt-in이다 — 심문 씬 저자가
+      // "이 증거 오답은 라이프 게이지를 깎는다"고 명시한 줄에만 붙는다.
+      // 명시하지 않은 기존 씬(1주차 포함)은 지금처럼 힌트만 뜨고 그대로다.
+      if (line.wrongSeverity) applyLifeDamage(line.wrongSeverity);
     }
   },
   onSceneTransition: (transition) => playSceneTransition(transition),
@@ -1812,6 +1917,7 @@ async function applyDialogueOverrides() {
   }
   updatePointBalance();
   updateRelationshipGauges();
+  updateLifeGauge();
   await applyDialogueOverrides();
   await applyBackground();
   applyBgm();
