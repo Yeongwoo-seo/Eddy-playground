@@ -23,14 +23,24 @@ const MINIGAME_ROUTES = {
   'week1-scene-circular-quay-minigame': '/play/minigame-fishing/',
   'week1-scene-002-2': '/play/minigame-phone-search/',
   'week1-scene-shop-visit': '/play/shop/',
-  // 2주차 v4 전면 재설계 — week2Scenes가 완전 선형 구조로 바뀌면서 옛
-  // 탐색 허브(W2_TOURISM/W2_SUSPECT_INTERVIEWS/W2_REVERIFICATION) 진입/복귀
-  // virtual id들은 전부 제거했다. 미니게임 두 개(사진 속 인물 찾기/시간대
-  // 정리)만 그대로 재사용하며, 새 씬 id로 다시 연결한다 — see
-  // dialogueData.js의 week2-scene-008/010, minigame-photo-zoom·
-  // minigame-timeline의 하드코딩된 복귀 리다이렉트.
+  // 2주차 v4 전면 재설계 — week2Scenes는 22챕터를 nextSceneId로 잇는 대부분
+  // 선형 구조이며, 미니게임 두 개(사진 속 인물 찾기/시간대 정리)는 그대로
+  // 재사용한다 — see dialogueData.js의 week2-scene-008/010b, minigame-photo-
+  // zoom·minigame-timeline의 하드코딩된 복귀 리다이렉트.
   'week2-scene-008-minigame': '/play/minigame-photo-zoom/',
   'week2-scene-010-minigame': '/play/minigame-timeline/',
+  // [허브 재도입] v4 아웃라인 자체가 "자유 탐색 허브에서 순차적으로 만난다"고
+  // 서술하는 조사/탐문 구간 세 곳(전시장 인물 자유 관람/용의자 탐문/재검증)만
+  // 탐색 허브(dev/state/explorationState.js + play/explore/)로 다시 연결했다
+  // — 심문 라운드 내부는 여전히 선형이다. 라우트가 '/play/explore/'로
+  // 시작하면 play/explore/index.html의 onInlineSceneComplete가 페이지 이동
+  // 대신 그 안에서 phase/location만 바꾼다(풀 리로드 없음) — see 그 함수의
+  // 자체 주석.
+  'week2-hub-entry-exhibit': '/play/explore/?phase=W2_EXHIBIT_FREE_LOOK&location=w2-exhibit-floor',
+  'week2-hub-entry-suspects': '/play/explore/?phase=W2_SUSPECT_INTERVIEWS&location=w2-hub-plaza',
+  'week2-suspect-interview-return': '/play/explore/?phase=W2_SUSPECT_INTERVIEWS&location=w2-hub-plaza',
+  'week2-hub-entry-reverify': '/play/explore/?phase=W2_REVERIFICATION&location=w2-hub-plaza',
+  'week2-reverify-interview-return': '/play/explore/?phase=W2_REVERIFICATION&location=w2-hub-plaza',
 };
 
 // The Missing Key v1 §5.2/§11.3 — week1-scene-shop-intro's own nextSceneId

@@ -70,15 +70,19 @@
    이렇게 쓰는 예시, w2-adrian-spot은 mapPosition만 이렇게 쓰는 예시다. */
 
 const locationDefs = {
+  // §신규 — Phase 5(재검증)도 관광팀(그룹 투어에 있던 관광객들, week2-scene-019)
+  // 증언을 받으러 같은 서큘러키 산책로를 다시 찾는다. mapPosition은 관광
+  // 지도(map-w2-tourism)와 재검증 지도(map-w2-reverify)가 서로 다른
+  // 그림이라 phase-keyed로 바꿨다(§파일 상단 관례).
   'w2-circular-quay': {
     id: 'w2-circular-quay',
     week: 2,
     name: '서큘러키 산책로',
-    phases: ['W2_TOURISM'],
+    phases: ['W2_TOURISM', 'W2_REVERIFICATION'],
     visualBrief: '시드니 서큘러키(Circular Quay) 페리 선착장 옆 워터프론트 산책로. 여러 척의 페리가 정박해 있고, 버스커들이 공연하는 넓은 야외 데크. 오페라하우스와 하버브리지가 양쪽 먼 배경에 살짝 보이는 확 트인 구도.',
     characters: ['youngwoo'],
     exits: ['w2-opera-view', 'w2-bridge-view', 'w2-the-rocks-lane'],
-    mapPosition: { x: 52, y: 66 },
+    mapPosition: { __byPhase: true, W2_TOURISM: { x: 52, y: 66 }, W2_REVERIFICATION: { x: 20, y: 55 } },
     firstVisitFlag: 'visitedCircularQuay',
   },
   'w2-opera-view': {
@@ -144,14 +148,40 @@ const locationDefs = {
     enterSceneLabel: '전시장에 들어간다',
   },
 
+  /* ===== 허브 A — 전시장 인물 자유 관람 (§신규, v4 재도입) =====
+     week2-scene-003 이후 진입(MINIGAME_ROUTES의 'week2-hub-entry-exhibit').
+     원래 week2-scene-004/005가 하나의 긴 선형 씬으로 소피/윤민아/애드리언/
+     레오와의 첫 만남 + K-01 감상/작은 균열들을 전부 순서대로 보여줬는데,
+     v4 아웃라인 자체가 이 구간을 "자유 탐색 허브에서 다섯 인물과 순차적으로"
+     만난다고 서술하고 있어 자유 순서 허브로 재도입했다. phase 하나에 장소가
+     이거 하나뿐이라 이동하기 목적지는 없다(exits 없음) — enterSceneId로
+     week2-scene-006(단체사진)으로 나간다. */
+  'w2-exhibit-floor': {
+    id: 'w2-exhibit-floor',
+    week: 2,
+    name: '전시장 내부',
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
+    visualBrief: '팝업 전시장 내부. 안쪽엔 K-01(황동 공예품) 진열대가 조명을 받으며 놓여 있고, 한쪽엔 작은 카페 코너, 다른 쪽엔 직원 전용문이 있는 아담한 실내 전시 공간.',
+    characters: ['sophie', 'minah', 'adrian', 'leo'],
+    // K-01 자체는 인물이 아니라 조사하기 핫스팟으로 연다 — w2-adrian-spot의
+    // investigateHotspots와 같은 관례(마커 없는 순수 탭 존). x/y는 실제
+    // 사진이 없어 잠정 배치, 나중에 눈으로 보고 재조정한다.
+    investigateHotspots: [
+      { x: 50, y: 35, interactionId: 'w2ef-topic-k01' },
+    ],
+    enterSceneId: 'week2-scene-006',
+    enterSceneLabel: '이제 단체사진 찍으러 가자',
+  },
+
   /* ===== Phase 4 — 용의자 탐문 (The Missing Key v1 §12.6) =====
-     Reached from week2-scene-005b's nextSceneId (다니엘 최초 진술 종료 후).
-     Each suspect spot has exactly one interaction: a full hand-off into
-     that suspect's existing, untouched interrogation scene (week2-scene-006/
-     007/008) — see dev/data/interactionDefs.js. Visiting 레오 (008) is the
-     one that already had its own downstream chain (timeline minigame ->
-     008a -> 009); the other two return here via 'week2-suspect-interview-
-     return' (see MINIGAME_ROUTES in dev/data/sceneRoutes.js). */
+     [v4 재도입] Reached from week2-scene-008-review's nextSceneId (사진 분석
+     마무리 종료 후). Each suspect spot has exactly one interaction: a full
+     hand-off into that suspect's existing, untouched interrogation scene
+     (week2-scene-009/010/010b) — see dev/data/interactionDefs.js. Visiting
+     레오 (010b) is the one that already had its own downstream chain
+     (timeline minigame -> 011); the other two return here via
+     'week2-suspect-interview-return' (see MINIGAME_ROUTES in
+     dev/data/sceneRoutes.js). */
   // w2-hub-plaza — Phase 4(탐문)/Phase 5(재검증)가 같은 실제 장소(전시장 앞
   // 광장)를 썼는데 예전엔 phase마다 별도 id(w2-suspect-hub/w2-reverify-hub)로
   // 중복 정의되어 있었다(§신규 통합 — 저작 부담을 줄이려고 phase-keyed 필드로
@@ -166,14 +196,17 @@ const locationDefs = {
     visualBrief: '팝업 전시장 입구 앞 작은 광장. 탐문 단계엔 도난 사건 직후라 안내판이나 임시 표지판이 하나 정도 추가된 듯한 한산한 분위기, 재검증 단계엔 시간이 더 지나 사건이 정리되어가는 차분하고 가라앉은 분위기.',
     // 영우는 탐문(Phase 4) 동안만 이 광장에 지수와 같이 있다 — Phase 1 사전
     // 복선(§신규)이 실제 증거로 바뀌는 회상 topic(w2sh-topic-van-recall, see
-    // interactionDefs.js)을 걸 chip이 필요해서였다. 재검증(Phase 5)엔 그
-    // topic이 없으므로 영우도 없다.
-    characters: { __byPhase: true, W2_SUSPECT_INTERVIEWS: ['youngwoo'] },
-    exits: ['w2-suspect-mina-spot', 'w2-adrian-spot', 'w2-suspect-leo-spot', 'w2-reverify-mina-spot', 'w2-reverify-martin-spot'],
+    // interactionDefs.js)을 걸 chip이 필요해서였다. 재검증(Phase 5)엔 다니엘
+    // (신원 확인 대상, week2-scene-018)이 대신 이 광장에 선다.
+    characters: { __byPhase: true, W2_SUSPECT_INTERVIEWS: ['youngwoo'], W2_REVERIFICATION: ['daniel-guide'] },
+    exits: ['w2-suspect-mina-spot', 'w2-adrian-spot', 'w2-suspect-leo-spot', 'w2-reverify-martin-spot', 'w2-reverify-sophie-spot'],
     // "지금까지의 단서로 사건을 재구성한다" 진행 버튼은 재검증 단계에만 뜬다
-    // (§10.4 "제안을 미뤄도 추가 탐색 가능" — 세 재검증 대상을 다 안 돌아도
-    // 언제든 진행 가능, 강제 조건 없음).
-    enterSceneId: { __byPhase: true, W2_REVERIFICATION: 'week2-scene-012' },
+    // (§10.4 "제안을 미뤄도 추가 탐색 가능" — 여섯 재조사 대상을 다 안 돌아도
+    // 언제든 진행 가능, 강제 조건 없음). v4 재도입 전엔 이 값이 옛 번호 체계의
+    // week2-scene-012(현재는 "K-01 회수 — 반전 3"이라는 전혀 다른 챕터)를
+    // 가리키는 오류였다 — v4의 실제 "사건 재구성" 대응 챕터인
+    // week2-scene-020(일정표와 단체사진 재해석)으로 고쳤다.
+    enterSceneId: { __byPhase: true, W2_REVERIFICATION: 'week2-scene-020' },
     enterSceneLabel: { __byPhase: true, W2_REVERIFICATION: '지금까지의 단서로 사건을 재구성한다' },
     // 두 phase의 지도 이미지(map-w2-suspect/map-w2-reverify)가 서로 다른
     // 그림이라 핀 좌표도 phase마다 따로 유지해야 한다.
@@ -242,11 +275,15 @@ const locationDefs = {
     enterSceneId: { __byPhase: true, W2_TOURISM: 'week2-scene-004' },
     enterSceneLabel: { __byPhase: true, W2_TOURISM: '이제 안쪽으로 들어가자' },
   },
+  // §신규 — Phase 5(재검증)도 같은 실제 장소(레오는 접수대·직원 구역에서
+  // 그대로 재심문한다, week2-scene-016)를 쓰므로 phases에 추가한다(§파일
+  // 상단 phase-keyed 관례 — enterSceneId/characters/mapPosition 등 값 자체는
+  // 두 phase가 같아 phase-keyed로 바꿀 필요가 없다).
   'w2-suspect-leo-spot': {
     id: 'w2-suspect-leo-spot',
     week: 2,
     name: '접수대·직원 구역',
-    phases: ['W2_SUSPECT_INTERVIEWS'],
+    phases: ['W2_SUSPECT_INTERVIEWS', 'W2_REVERIFICATION'],
     visualBrief: '전시장 접수대와 그 옆 직원 전용문 경계. 태그 리더기가 붙은 서비스 문, 접수대 위 서랍과 안내 자료가 보이는 업무 공간.',
     characters: ['leo'],
     exits: ['w2-hub-plaza'],
@@ -254,22 +291,28 @@ const locationDefs = {
   },
 
   /* ===== Phase 5 — 모순 재검증 (The Missing Key v1 §12.8) =====
-     Reached from week2-scene-010's nextSceneId (윤민아 재오픈 직후). 세 재검증
-     대상(윤민아 최종 심문/애드리언 재심문/마틴 베일 통화)은 서로 참조하는
-     내부 condition이 없어 자유 순서로 열어 둔다 — Phase 4와 동일한
-     "통짜 씬 단위 hand-off" 패턴. 사건 재구성(week2-scene-012)으로 넘어가는
-     조건은 일부러 강제하지 않았다(§10.4 "제안을 미뤄도 추가 탐색 가능") —
-     세 곳을 다 안 돌아도 hub-center에서 언제든 진행할 수 있다. 애드리언은
-     w2-adrian-spot(위, Phase 4/5 공용)에서 이미 다룬다. */
-  'w2-reverify-mina-spot': {
-    id: 'w2-reverify-mina-spot',
+     [v4 재도입] Reached from week2-scene-013's nextSceneId (사건의 이름을
+     다시 붙이다 종료 후). 여섯 재조사 대상(마틴 통화/애드리언 재심문/레오
+     재심문/소피/다니엘 신원 확인/관광팀 증언)은 서로 참조하는 내부 condition이
+     없어 자유 순서로 열어 둔다 — Phase 4와 동일한 "통짜 씬 단위 hand-off"
+     패턴. 사건 재구성(week2-scene-020)으로 넘어가는 조건은 일부러 강제하지
+     않았다(§10.4 "제안을 미뤄도 추가 탐색 가능") — 여섯 곳을 다 안 돌아도
+     hub-center(w2-hub-plaza)에서 언제든 진행할 수 있다. 애드리언은
+     w2-adrian-spot(위, Phase 4/5 공용)에서, 레오는 w2-suspect-leo-spot(위,
+     Phase 4/5 공용)에서, 다니엘은 w2-hub-plaza 자체에서, 관광팀은
+     w2-circular-quay(위, Phase 1/5 공용)에서 이미 다룬다 — 여기 남는 건 새
+     장소가 필요한 마틴(전화)과 소피뿐이다. 윤민아는 v4 Part 2에 재조사
+     챕터가 없다(§신규 — 역할이 이미 week2-scene-012에서 소화됨) — 예전엔
+     여기 w2-reverify-mina-spot이 있었으나, 대응하는 씬 자체가 없어 삭제했다. */
+  'w2-reverify-sophie-spot': {
+    id: 'w2-reverify-sophie-spot',
     week: 2,
-    name: '서큘러키 편집숍',
+    name: '서큘러키 카페',
     phases: ['W2_REVERIFICATION'],
-    visualBrief: '서큘러키 근처의 세련된 편집숍 내부 또는 쇼윈도 앞 — 윤민아가 일하는 곳. 옷걸이와 액세서리 진열대가 보이는 밝고 정돈된 매장.',
-    characters: ['minah'],
+    visualBrief: '서큘러키 근처 아담한 카페 — 소피가 일하는 곳. 커피 머신과 진열된 디저트, 창가 자리가 보이는 아늑한 실내.',
+    characters: ['sophie'],
     exits: ['w2-hub-plaza'],
-    mapPosition: { x: 22, y: 35 },
+    mapPosition: { x: 30, y: 45 },
   },
   'w2-reverify-martin-spot': {
     id: 'w2-reverify-martin-spot',

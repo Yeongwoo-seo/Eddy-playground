@@ -1298,18 +1298,21 @@ const week1SceneGroups = [
 ];
 
 
-/* MISSING KEY — WEEK 2 (v4 전면 재설계)
+/* MISSING KEY — WEEK 2 (v4 전면 재설계 + 탐색허브 재도입)
    Source: docs/week2-storyline-outline-v4.md / docs/week2-v4-script.md
    Voice: docs/voice-bible-v2.md (지수·영우), 그 외 인물은 스크립트 문서 §0 기준.
 
-   v3(구 관광객 모드 + 탐색 허브 기반 대사)를 전면 대체한다. 이 버전은
-   허브(exploration hub)를 쓰지 않고 22챕터(23개 콘텐츠 씬 + 사진/시간대
-   미니게임 핸드오프 2곳)를 전부 nextSceneId로 잇는 완전 선형 구조다 —
-   기존 W2_TOURISM/W2_SUSPECT_INTERVIEWS/W2_REVERIFICATION 허브 phase와
-   locationDefs.js/interactionDefs.js의 관련 항목은 삭제하지 않고 그대로
-   남겨두지만(허브 인프라 자체는 다른 주차에서도 쓰이므로 유지), 이 v4
-   week2Scenes는 더 이상 그 허브로 진입시키지 않는다 — 직접 방문(북마크/딥링크)
-   시에만 남아있는 옛 항목이 보일 수 있다는 뜻이며, 이는 의도된 절충이다.
+   v3(구 관광객 모드 + 탐색 허브 기반 대사)를 전면 대체한다. 22챕터(23개
+   콘텐츠 씬 + 사진/시간대 미니게임 핸드오프 2곳)의 심문 라운드 내부(단계별
+   압박 순서)는 그대로 nextSceneId 선형 구조를 유지하지만, 아웃라인 자체가
+   "자유 탐색 허브에서 여러 인물을 순차적으로 만난다"고 서술하는 조사/탐문
+   구간 세 곳은 탐색 허브(exploration hub, dev/state/explorationState.js +
+   play/explore/)로 다시 연결했다 — week2-scene-003 이후(전시장 인물 자유
+   관람), week2-scene-008-review 이후(용의자 3인 탐문), week2-scene-013
+   이후(재검증 6곳)가 그 세 허브다. 각 허브의 진입/복귀는 nextSceneId가
+   가리키는 가상 id(MINIGAME_ROUTES, dev/data/sceneRoutes.js 참고)가
+   담당하고, 허브를 나가면 다시 평범한 선형 체인으로 돌아온다 — 세부 매핑은
+   locationDefs.js/interactionDefs.js의 관련 주석 참고.
 
    미니게임은 기존 두 개(사진 속 인물 찾기/photo-zoom, 시간대 정리/timeline)를
    그대로 재사용한다 — 새 미니게임 UI(Ch19 매칭/Ch20 슬라이더/Ch21 드래그
@@ -2518,11 +2521,14 @@ const week2Scene023Lines = [
   { id: 'line-025', speaker: '', text: '암전. — 2주차 종료, 3주차로 이어짐.', characterId: null },
 ];
 
-// Registry of Week 2 scenes (v4, 전면 재설계) — /dev/week2 lists these, each
-// linking to /play/game/?scene=<id>. 완전 선형 구조라 마지막 씬(023) 외에는
-// 전부 nextSceneId로 다음 콘텐츠까지 자동으로 이어진다(1주차와 같은 관례).
-// 미니게임 핸드오프 두 곳(008 -> 008-minigame -> 008-review, 010 ->
-// 010-minigame -> 011)만 MINIGAME_ROUTES(dev/data/sceneRoutes.js)를 거친다.
+// Registry of Week 2 scenes (v4, 전면 재설계 + 탐색허브 재도입) — /dev/week2
+// lists these, each linking to /play/game/?scene=<id>. 마지막 씬(023) 외에는
+// 전부 nextSceneId로 다음 콘텐츠까지 자동으로 이어진다(1주차와 같은 관례) —
+// 단, 심문 라운드 내부만 그렇다는 뜻이고, 조사/탐문 구간 세 곳(003 이후/
+// 008-review 이후/013 이후)은 nextSceneId가 가리키는 가상 id를 통해 탐색
+// 허브로 진입해 자유 순서로 진행된다. 미니게임 핸드오프 두 곳(008 ->
+// 008-minigame -> 008-review, 010b -> 010-minigame -> 011)과 허브 진입/복귀
+// 가상 id 전부 MINIGAME_ROUTES(dev/data/sceneRoutes.js)를 거친다.
 const week2Scenes = [
   {
     id: 'week2-scene-001', order: 1, name: '짧은 아침, 풀리지 않은 열쇠',
@@ -2540,15 +2546,26 @@ const week2Scenes = [
     id: 'week2-scene-003', order: 3, name: '더 록스, 보관함을 익히다',
     location: 'The Rocks 골목, 카페 앞', introLabel: 'CIRCULAR QUAY', time: '09:50',
     lines: week2Scene003Lines,
-    nextSceneId: 'week2-scene-004',
+    // 허브 A(W2_EXHIBIT_FREE_LOOK) 진입 — MINIGAME_ROUTES 참고. 004/005는
+    // 더 이상 이 뒤에 재생되지 않는다(아래 두 씬 자체 주석 참고).
+    nextSceneId: 'week2-hub-entry-exhibit',
   },
   {
+    // [허브 재도입] 더 이상 재생 경로에 없음 — 이 씬의 내용(클레어 환영 인사/
+    // 소피·윤민아·애드리언·레오와의 첫 만남)은 interactionDefs.js의
+    // W2_EXHIBIT_FREE_LOOK phaseIntro(w2-exhibit-phase-intro)와 4개 topic
+    // (w2ef-topic-sophie/minah/adrian/leo)으로 옮겨졌다. 원본은 그대로
+    // 보존한다(v3 orphan 씬과 동일한 관례).
     id: 'week2-scene-004', order: 4, name: '사람들과의 첫 만남',
     location: 'Pop-up Exhibition', introLabel: 'CIRCULAR QUAY', time: '10:10',
     lines: week2Scene004Lines,
     nextSceneId: 'week2-scene-005',
   },
   {
+    // [허브 재도입] 더 이상 재생 경로에 없음 — 이 씬의 내용(K-01 감상/윤민아
+    // 무단 촬영 적발/애드리언의 구조 질문/다니엘의 짧은 등장)은
+    // interactionDefs.js의 w2ef-topic-minah/w2ef-topic-adrian/w2ef-topic-k01로
+    // 옮겨졌다. 원본은 그대로 보존한다.
     id: 'week2-scene-005', order: 5, name: '전시장 자유 관람 — 작은 균열들',
     location: 'Pop-up Exhibition', introLabel: 'CIRCULAR QUAY', time: '10:25',
     lines: week2Scene005Lines,
@@ -2629,100 +2646,123 @@ const week2Scenes = [
     id: 'week2-scene-008-review', order: 10, name: '사진 분석 마무리',
     location: 'Pop-up Exhibition', introLabel: 'CIRCULAR QUAY', time: '10:58',
     lines: week2Scene008ReviewLines,
-    nextSceneId: 'week2-scene-009',
+    // 허브 B(W2_SUSPECT_INTERVIEWS) 진입 — 윤민아/애드리언/레오를 자유
+    // 순서로 만난다. MINIGAME_ROUTES 참고.
+    nextSceneId: 'week2-hub-entry-suspects',
   },
   {
     id: 'week2-scene-009', order: 11, name: '윤민아 1차 심문 — 반전 1',
     location: 'Pop-up Exhibition', introLabel: 'CIRCULAR QUAY', time: '11:10',
     lines: week2Scene009Lines,
-    nextSceneId: 'week2-scene-010',
+    // 허브 B 복귀 — 윤민아 완료 후 광장으로 돌아간다. MINIGAME_ROUTES 참고.
+    nextSceneId: 'week2-suspect-interview-return',
   },
   {
+    // [허브 재도입] 애드리언 단독 파트만 남긴다(원본 lines 001~009) — 레오
+    // 파트(원본 010~028)는 week2-scene-010b로 분리했다(자유 순서 허브를 위해
+    // 하나의 씬을 둘로 쪼갬, week2Scene010Lines 배열 자체는 그대로 두고 이
+    // 씬의 lines만 새 배열을 참조).
     id: 'week2-scene-010', order: 12, name: '레오를 향한 접근',
     location: 'Pop-up Exhibition / Café near Circular Quay', introLabel: 'CIRCULAR QUAY', time: '11:40',
-    lines: week2Scene010Lines,
+    lines: week2Scene010Lines.slice(0, 9),
+    // 허브 B 복귀 — 애드리언 완료 후 광장으로 돌아간다.
+    nextSceneId: 'week2-suspect-interview-return',
+  },
+  {
+    // [신규] week2-scene-010의 원본 뒷부분(레오의 물증 포착, lines
+    // 010~028)을 별도 씬으로 분리 — 레오 스팟을 방문하면 재생된다. 레오는
+    // 물증 확보 직후 시간대 정리 미니게임으로 바로 이어지므로(원본과 동일),
+    // 다른 두 용의자와 달리 허브로 복귀하지 않는다(§신규 — 사건이 이미
+    // 진행되기 시작했으므로 의도된 설계).
+    id: 'week2-scene-010b', order: 13, name: '레오, 물증을 남기다',
+    location: 'Pop-up Exhibition', introLabel: 'CIRCULAR QUAY', time: '11:45',
+    lines: week2Scene010Lines.slice(9),
     // 기존 시간대 정리 미니게임(timeline)을 그대로 재사용 — MINIGAME_ROUTES 참고.
     nextSceneId: 'week2-scene-010-minigame',
   },
   {
-    id: 'week2-scene-010-minigame', order: 13, name: '시간대 정리 (미니게임)',
+    id: 'week2-scene-010-minigame', order: 14, name: '시간대 정리 (미니게임)',
     location: 'Café near Circular Quay', time: '11:55',
     route: '/play/minigame-timeline/',
   },
   {
-    id: 'week2-scene-011', order: 14, name: '레오, 무너지다 — 반전 2',
+    id: 'week2-scene-011', order: 15, name: '레오, 무너지다 — 반전 2',
     location: 'Pop-up Exhibition', introLabel: 'CIRCULAR QUAY', time: '12:05',
     lines: week2Scene011Lines,
     nextSceneId: 'week2-scene-012',
   },
   {
-    id: 'week2-scene-012', order: 15, name: 'K-01 회수 — 반전 3',
+    id: 'week2-scene-012', order: 16, name: 'K-01 회수 — 반전 3',
     location: 'Café near Circular Quay', introLabel: 'CIRCULAR QUAY', time: '12:20',
     lines: week2Scene012Lines,
     nextSceneId: 'week2-scene-013',
   },
   {
-    id: 'week2-scene-013', order: 16, name: '사건의 이름을 다시 붙이다',
+    id: 'week2-scene-013', order: 17, name: '사건의 이름을 다시 붙이다',
     location: 'Pop-up Exhibition', introLabel: 'CIRCULAR QUAY', time: '13:00',
     lines: week2Scene013Lines,
-    nextSceneId: 'week2-scene-014',
+    // 허브 C(W2_REVERIFICATION) 진입 — 6개 재조사 대상을 자유 순서로 만난다.
+    // MINIGAME_ROUTES 참고.
+    nextSceneId: 'week2-hub-entry-reverify',
   },
   {
-    id: 'week2-scene-014', order: 17, name: '마틴 베일과의 통화 — 내부 인덱스',
+    id: 'week2-scene-014', order: 18, name: '마틴 베일과의 통화 — 내부 인덱스',
     location: 'Circular Quay 이동 중 (전화)', introLabel: 'CIRCULAR QUAY', time: '13:20',
     lines: week2Scene014Lines,
-    nextSceneId: 'week2-scene-015',
+    // 허브 C 복귀 — MINIGAME_ROUTES 참고. 020(허브 나가기)만 예외로 그대로
+    // 다음 챕터로 선형 진행한다(아래 020 참고).
+    nextSceneId: 'week2-reverify-interview-return',
   },
   {
-    id: 'week2-scene-015', order: 18, name: '애드리언의 메일함 — 진짜 의뢰 목적',
+    id: 'week2-scene-015', order: 19, name: '애드리언의 메일함 — 진짜 의뢰 목적',
     location: 'Pop-up Exhibition', introLabel: 'CIRCULAR QUAY', time: '13:40',
     lines: week2Scene015Lines,
-    nextSceneId: 'week2-scene-016',
+    nextSceneId: 'week2-reverify-interview-return',
   },
   {
-    id: 'week2-scene-016', order: 19, name: '레오 재심문 — 보관함과 익명 지시',
+    id: 'week2-scene-016', order: 20, name: '레오 재심문 — 보관함과 익명 지시',
     location: 'Pop-up Exhibition', introLabel: 'CIRCULAR QUAY', time: '14:00',
     lines: week2Scene016Lines,
-    nextSceneId: 'week2-scene-017',
+    nextSceneId: 'week2-reverify-interview-return',
   },
   {
-    id: 'week2-scene-017', order: 20, name: '소피의 생활 기억 — 조력자의 균열',
+    id: 'week2-scene-017', order: 21, name: '소피의 생활 기억 — 조력자의 균열',
     location: 'Café near Circular Quay', introLabel: 'CIRCULAR QUAY', time: '14:30',
     lines: week2Scene017Lines,
-    nextSceneId: 'week2-scene-018',
+    nextSceneId: 'week2-reverify-interview-return',
   },
   {
-    id: 'week2-scene-018', order: 21, name: '신원 조회 — 등록되지 않은 가이드',
+    id: 'week2-scene-018', order: 22, name: '신원 조회 — 등록되지 않은 가이드',
     location: 'Pop-up Exhibition / 전화', introLabel: 'CIRCULAR QUAY', time: '15:00',
     lines: week2Scene018Lines,
-    nextSceneId: 'week2-scene-019',
+    nextSceneId: 'week2-reverify-interview-return',
   },
   {
-    id: 'week2-scene-019', order: 22, name: '관광팀의 증언 — 서로 모르는 사람들',
+    id: 'week2-scene-019', order: 23, name: '관광팀의 증언 — 서로 모르는 사람들',
     location: 'Circular Quay', introLabel: 'CIRCULAR QUAY', time: '15:30',
     lines: week2Scene019Lines,
-    nextSceneId: 'week2-scene-020',
+    nextSceneId: 'week2-reverify-interview-return',
   },
   {
-    id: 'week2-scene-020', order: 23, name: '일정표와 단체사진 재해석 — 작전표',
+    id: 'week2-scene-020', order: 24, name: '일정표와 단체사진 재해석 — 작전표',
     location: 'Café near Circular Quay', introLabel: 'CIRCULAR QUAY', time: '16:00',
     lines: week2Scene020Lines,
     nextSceneId: 'week2-scene-021',
   },
   {
-    id: 'week2-scene-021', order: 24, name: '다니엘 최종 심문',
+    id: 'week2-scene-021', order: 25, name: '다니엘 최종 심문',
     location: 'Pop-up Exhibition', introLabel: 'CIRCULAR QUAY', time: '16:30',
     lines: week2Scene021Lines,
     nextSceneId: 'week2-scene-022',
   },
   {
-    id: 'week2-scene-022', order: 25, name: '최종 사건 재구성',
+    id: 'week2-scene-022', order: 26, name: '최종 사건 재구성',
     location: 'Café near Circular Quay', introLabel: 'CIRCULAR QUAY', time: '17:30',
     lines: week2Scene022Lines,
     nextSceneId: 'week2-scene-023',
   },
   {
-    id: 'week2-scene-023', order: 26, name: '엔딩 — M.K.라는 불안',
+    id: 'week2-scene-023', order: 27, name: '엔딩 — M.K.라는 불안',
     location: 'Sydney Accommodation', introLabel: 'ACCOMMODATION', time: '21:40',
     lines: week2Scene023Lines,
     // 마지막 씬 — nextSceneId 없음 (playEndingSequence 트리거, 1주차 마지막
@@ -2739,7 +2779,7 @@ const week2SceneGroups = [
       'week2-scene-001', 'week2-scene-002', 'week2-scene-003', 'week2-scene-004',
       'week2-scene-005', 'week2-scene-006', 'week2-scene-007', 'week2-scene-008',
       'week2-scene-008-minigame', 'week2-scene-008-review', 'week2-scene-009',
-      'week2-scene-010', 'week2-scene-010-minigame', 'week2-scene-011', 'week2-scene-012',
+      'week2-scene-010', 'week2-scene-010b', 'week2-scene-010-minigame', 'week2-scene-011', 'week2-scene-012',
     ],
   },
   {

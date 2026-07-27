@@ -481,6 +481,164 @@ const interactionDefs = {
     lines: [{ speaker: '', text: '사람들이 끊임없이 들고 난다. 바로 옆 골목엔 작은 카페가 보인다.', characterId: null }],
   },
 
+  /* ===== 허브 A — 전시장 인물 자유 관람 (§신규, v4 재도입) =====
+     week2-scene-003 이후, week2-scene-004("사람들과의 첫 만남")/005("전시장
+     자유 관람 — 작은 균열들")가 원래 하나의 긴 선형 씬으로 순서대로 보여주던
+     내용을 자유 순서 허브로 재도입했다 — v4 아웃라인 자체가 이 구간을
+     "자유 탐색 허브에서 다섯 인물과 순차적으로" 만난다고 서술하고 있어서다.
+     대사는 두 원본 씬(week2Scene004Lines/005Lines, dev/dialogueData.js)에서
+     그대로 옮겨와 인물별로 재배치했을 뿐, 새로 지어낸 내용은 없다 — 각
+     addEvidence 이펙트도 원본 그대로 보존했다. */
+  'w2-exhibit-phase-intro': {
+    id: 'w2-exhibit-phase-intro',
+    type: 'phaseIntro',
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
+    lines: [
+      { id: 'line-001', speaker: '', text: '전시장 입구. 접수대에 클레어가 앉아 있다.', characterId: null },
+      {
+        id: 'line-002', speaker: '클레어', text: '어서 오세요, 팝업 전시 K-Collection에 오신 걸 환영합니다.\n입장은 무료고, 사진 촬영은 개인 소장용만 가능해요.', characterId: 'claire', expression: 'neutral',
+        effects: [{
+          type: 'addEvidence',
+          evidence: {
+            id: 'evidence-claire-alibi-statement', code: 'E-CL1', category: 'testimony', title: '클레어의 최초 진술 — 접수대 상주',
+            description: '클레어 모건 — 자신은 근무 시간 내내 접수대에 있었고 자리를 비운 적이 없다는 진술.',
+            discoveredLocationText: 'Pop-up Exhibition 접수대 · 클레어 최초 진술',
+          },
+        }],
+      },
+      { id: 'line-003', speaker: '지수', text: '아 네 감사합니다.', characterId: 'jisoo', expression: 'neutral' },
+      { id: 'line-004', speaker: '영우', text: '안쪽에 뭐가 제일 유명해요?', characterId: 'youngwoo', expression: 'neutral' },
+      { id: 'line-005', speaker: '클레어', text: '저희 메인 전시품은 K-01이에요. 이 지역 공예가가 만든 황동 작품인데, 안쪽 진열대에 있어요.', characterId: 'claire', expression: 'neutral' },
+      { id: 'line-006', speaker: '', text: '전시장을 자유롭게 둘러볼 수 있는 상태가 된다.', characterId: null },
+    ],
+  },
+  'w2ef-topic-sophie': {
+    id: 'w2ef-topic-sophie',
+    characterId: 'sophie',
+    locationIds: ['w2-exhibit-floor'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
+    type: 'topic',
+    label: '소피와 인사하기',
+    lines: [
+      { speaker: '', text: '전시장 안으로 들어서면 카페 코너에 소피가 있다.', characterId: null },
+      { speaker: '소피', text: '어머 안녕하세요! 커피 한 잔 하고 구경하실래요?', characterId: 'sophie', expression: 'curious' },
+      { speaker: '지수', text: '오 좋아요 ㅎㅎ', characterId: 'jisoo', expression: 'happy' },
+      { speaker: '소피', text: '여기 요즘 동네에 이 전시 때문에 사람들 좀 왔다갔다해요. 저 골목 카페들도 다 요즘 붐빈다니까.', characterId: 'sophie', expression: 'curious' },
+      { speaker: '영우', text: '아 그렇구나.', characterId: 'youngwoo', expression: 'neutral' },
+      { speaker: '소피', text: '천천히 구경하고 가세요~', characterId: 'sophie', expression: 'curious' },
+    ],
+  },
+  'w2ef-topic-minah': {
+    id: 'w2ef-topic-minah',
+    characterId: 'minah',
+    locationIds: ['w2-exhibit-floor'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
+    type: 'topic',
+    label: '윤민아 지켜보기',
+    lines: [
+      { speaker: '', text: '전시장 중앙, 윤민아가 휴대폰으로 무언가를 급히 촬영하고 있다.', characterId: null },
+      { speaker: '영우', text: '어, 저분 뭔가 되게 열심히 찍으시네.', characterId: 'youngwoo', expression: 'neutral' },
+      { speaker: '지수', text: '그러게, 근데 좀 조심스러워 보이는데.', characterId: 'jisoo', expression: 'suspicious' },
+      { speaker: '', text: '윤민아가 두 사람을 발견하고 재빨리 폰을 내린다.', characterId: null },
+      { speaker: '윤민아', text: '아, 안녕하세요. 그냥 콘텐츠용으로 좀.', characterId: 'minah', expression: 'annoyed' },
+      { speaker: '지수', text: '아 네 ㅎㅎ 편하게 하세요.', characterId: 'jisoo', expression: 'neutral' },
+      { speaker: '윤민아', text: '...네.', characterId: 'minah', expression: 'annoyed' },
+      { speaker: '', text: '[ 의문점: 윤민아가 뭔가 급히 숨기는 것 같다 ] 등록.', characterId: null },
+      { speaker: '', text: '잠시 후, 근처에서 윤민아가 몸을 낮춰 K-01 하단을 확대 촬영하고 있다.', characterId: null },
+      { speaker: '클레어', text: '저기요, 손님.', characterId: 'claire', expression: 'annoyed' },
+      { speaker: '윤민아', text: '네?', characterId: 'minah', expression: 'annoyed' },
+      { speaker: '클레어', text: '상업적 촬영은 별도 허가가 필요해요. 지금 찍으신 거 확인 좀 할게요.', characterId: 'claire', expression: 'annoyed' },
+      { speaker: '윤민아', text: '아 이거 그냥...', characterId: 'minah', expression: 'shocked' },
+      { speaker: '', text: '윤민아가 서둘러 사진 몇 장을 지운다.', characterId: null },
+      { speaker: '윤민아', text: '죄송해요, 그냥 개인 소장용으로 몇 장만...', characterId: 'minah', expression: 'shocked' },
+      { speaker: '클레어', text: '다음부턴 주의해주세요.', characterId: 'claire', expression: 'neutral' },
+      {
+        speaker: '', text: '[ 증거: 윤민아의 확대 사진(무단 촬영 자료) ] 등록.', characterId: null,
+        effects: [{
+          type: 'addEvidence',
+          evidence: {
+            id: 'evidence-mina-photo-confiscated', code: 'E-V01', category: 'photo', title: '윤민아의 확대 사진',
+            description: 'K-01 하단을 몰래 확대 촬영한 사진. 클레어에게 걸려 대부분 급히 지워졌다.',
+            discoveredLocationText: 'Pop-up Exhibition · K-01 진열대',
+          },
+        }],
+      },
+      { speaker: '지수', text: '(작게) 영우, 저 사람 왜 저렇게 급하게 지웠지.', characterId: 'jisoo', expression: 'suspicious' },
+      { speaker: '영우', text: '그러게, 좀 이상하긴 하다.', characterId: 'youngwoo', expression: 'neutral' },
+    ],
+  },
+  'w2ef-topic-adrian': {
+    id: 'w2ef-topic-adrian',
+    characterId: 'adrian',
+    locationIds: ['w2-exhibit-floor'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
+    type: 'topic',
+    label: '애드리언과 대화하기',
+    lines: [
+      { speaker: '', text: 'K-01 진열대 근처를 애드리언이 서성이고 있다.', characterId: null },
+      { speaker: '애드리언', text: '좋은 작품이죠, 이거. 황동 세공이 정말 섬세해요.', characterId: 'adrian', expression: 'neutral' },
+      { speaker: '영우', text: '이거 사실 수도 있어요?', characterId: 'youngwoo', expression: 'neutral' },
+      { speaker: '애드리언', text: '음... 그런 쪽은 제가 직접 다루는 건 아니고요, 그냥 보는 걸 좋아해서.', characterId: 'adrian', expression: 'suspicious' },
+      { speaker: '', text: '[ 의문점: 애드리언이 가격 얘기를 피한다 ] 등록.', characterId: null },
+      { speaker: '', text: '잠시 후, 애드리언이 클레어에게 다가간다.', characterId: null },
+      { speaker: '애드리언', text: '클레어씨, 하나만 여쭤볼게요. 이 받침 내부 깊이가 어느 정도 되나요?', characterId: 'adrian', expression: 'suspicious' },
+      { speaker: '클레어', text: '네...? 그건 왜...', characterId: 'claire', expression: 'suspicious' },
+      { speaker: '애드리언', text: '아, 그냥 구조가 궁금해서요, 공예적으로.', characterId: 'adrian', expression: 'suspicious' },
+      { speaker: '', text: '어색한 침묵. [ 의문점: 애드리언은 왜 가격이 아니라 구조를 묻는가 ] 등록.', characterId: null },
+    ],
+  },
+  'w2ef-topic-leo': {
+    id: 'w2ef-topic-leo',
+    characterId: 'leo',
+    locationIds: ['w2-exhibit-floor'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
+    type: 'topic',
+    label: '레오와 마주치기',
+    lines: [
+      { speaker: '', text: '전시장 뒤쪽에서 짐을 나르던 레오가 지수와 부딪힐 뻔한다.', characterId: null },
+      { speaker: '레오', text: '아 죄송해요!!', characterId: 'leo', expression: 'shocked' },
+      { speaker: '지수', text: '아니에요 제가 잘 안 보고.', characterId: 'jisoo', expression: 'neutral' },
+      { speaker: '', text: '그 순간 지수의 가방 고리에서 M.K. 열쇠가 떨어진다.', characterId: null },
+      { speaker: '레오', text: '어 이거.', characterId: 'leo', expression: 'neutral' },
+      { speaker: '', text: '레오가 열쇠를 주워 지수에게 건넨다.', characterId: null },
+      { speaker: '레오', text: '떨어뜨리신 거 같은데... 어, M.K.네요?', characterId: 'leo', expression: 'neutral' },
+      { speaker: '지수', text: '어? 아세요?', characterId: 'jisoo', expression: 'shocked' },
+      { speaker: '레오', text: '아 아니, 그냥 이니셜이 특이해서요 ㅎㅎ', characterId: 'leo', expression: 'neutral' },
+      { speaker: '지수', text: '아 감사합니다!!!!\n큰일 날 뻔했어요.', characterId: 'jisoo', expression: 'happy' },
+      { speaker: '레오', text: '별말씀을요, 전시 재밌게 보고 가세요.', characterId: 'leo', expression: 'neutral' },
+      { speaker: '영우', text: '지수야, 방금 또 뭐 흘렸어.', characterId: 'youngwoo', expression: 'smirk' },
+      { speaker: '지수', text: '아니거든?????', characterId: 'jisoo', expression: 'annoyed' },
+      { speaker: '영우', text: '열쇠 흘리고 다니는 거 은근 위험한데.', characterId: 'youngwoo', expression: 'smirk' },
+      { speaker: '지수', text: '바부야 👊\n다신 안 그럴 거야.', characterId: 'jisoo', expression: 'annoyed' },
+    ],
+  },
+  // K-01 진열대 자체는 인물이 아니라 조사하기 핫스팟(locationDefs.js의
+  // w2-exhibit-floor.investigateHotspots)으로 연다 — w2as-topic-*와 같은
+  // 관례. 다니엘의 짧은 등장(원본 week2Scene005Lines 020~028, 직원문 방향을
+  // 이미 안다는 복선)도 K-01 진열대 앞에서 벌어지는 장면이라 여기 묶었다.
+  'w2ef-topic-k01': {
+    id: 'w2ef-topic-k01',
+    characterId: 'youngwoo',
+    locationIds: ['w2-exhibit-floor'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
+    type: 'topic',
+    label: 'K-01 자세히 보기',
+    lines: [
+      { speaker: '', text: '지수와 영우가 K-01 진열대 앞으로 다가간다. 정교한 황동 공예품이 조명 아래 놓여 있다.', characterId: null },
+      { speaker: '지수', text: '와, 진짜 예쁘다.', characterId: 'jisoo', expression: 'neutral' },
+      { speaker: '영우', text: '이거 세공 미쳤는데, 하단 무늬 봐봐.', characterId: 'youngwoo', expression: 'neutral' },
+      { speaker: '', text: '그때 다니엘이 잠깐 전시장에 들른다.', characterId: null },
+      { speaker: '다니엘', text: '어, 여기 계셨네요.', characterId: 'daniel-guide', expression: 'curious' },
+      { speaker: '지수', text: '어! 다니엘씨!!!!', characterId: 'jisoo', expression: 'happy' },
+      { speaker: '다니엘', text: '이 진열장 처음 보는 구조인데 신기하네요.', characterId: 'daniel-guide', expression: 'curious' },
+      { speaker: '다니엘', text: '직원문이 저쪽으로 열리는 구조인가.', characterId: 'daniel-guide', expression: 'neutral' },
+      { speaker: '영우', text: '어 그런가봐요.', characterId: 'youngwoo', expression: 'neutral' },
+      { speaker: '', text: '다니엘이 별생각 없다는 듯 웃으며 다시 나간다. [ 복선: 다니엘이 직원문 방향을 이미 안다 ] 등록.', characterId: null },
+      { speaker: '지수', text: '저분 진짜 아는 것도 많으시네.', characterId: 'jisoo', expression: 'neutral' },
+      { speaker: '영우', text: '그러게, 로컬이라 그런가.', characterId: 'youngwoo', expression: 'neutral' },
+    ],
+  },
+
   /* ===== Phase 4 — 용의자 탐문 (§12.6) =====
      Each suspect's *entire* existing interrogation scene (already scripted,
      multi-round, choice-heavy — see dev/dialogueData.js week2Scene006/007/
@@ -622,7 +780,10 @@ const interactionDefs = {
     autoPlayOnFirstVisit: true,
     label: '심문하기',
     icon: '🔍',
-    sceneId: 'week2-scene-006',
+    // [v4 재도입] 옛 번호 체계의 week2-scene-006(현재는 "단체사진, 평범한
+    // 배경"이라는 다른 챕터)을 가리키던 오류 — v4의 실제 "윤민아 1차 심문"
+    // 챕터로 고쳤다.
+    sceneId: 'week2-scene-009',
   },
   // 위 mina-topic-watch와 같은 목적 — 애드리언의 대화하기 chip에 뜨는 순수
   // 관찰 비트, week2Scene007Lines의 실제 오프닝과는 겹치지 않는다.
@@ -651,7 +812,10 @@ const interactionDefs = {
     autoPlayOnFirstVisit: true,
     label: '심문하기',
     icon: '🔍',
-    sceneId: 'week2-scene-007',
+    // [v4 재도입] 옛 번호 체계의 week2-scene-007(현재는 "K-01 도난 발생"이라는
+    // 다른 챕터)을 가리키던 오류 — v4의 실제 "레오를 향한 접근" 챕터 중
+    // 애드리언 단독 파트(week2-scene-010, 원본을 둘로 쪼갠 앞부분)로 고쳤다.
+    sceneId: 'week2-scene-010',
   },
   // 위 두 topic과 같은 목적 — 레오의 대화하기 chip에 뜨는 순수 관찰 비트,
   // week2Scene008Lines의 실제 오프닝과는 겹치지 않는다.
@@ -680,24 +844,25 @@ const interactionDefs = {
     autoPlayOnFirstVisit: true,
     label: '심문하기',
     icon: '🔍',
-    sceneId: 'week2-scene-008',
+    // [v4 재도입] 옛 번호 체계의 week2-scene-008(현재는 "사진 속 인물 찾기
+    // (도입)"이라는 다른 챕터)을 가리키던 오류 — v4의 실제 "레오를 향한
+    // 접근" 챕터 중 레오의 물증 포착 파트(week2-scene-010b, 원본을 둘로
+    // 쪼갠 뒷부분)로 고쳤다. 완료 후엔 원본 그대로 시간대 정리 미니게임으로
+    // 바로 이어지므로(week2-scene-010-minigame), 다른 두 용의자와 달리 허브로
+    // 자동 복귀하지 않는다.
+    sceneId: 'week2-scene-010b',
   },
 
   /* ===== Phase 5 — 모순 재검증 (§12.8) =====
-     Same coarse "visit = launch the whole existing scene" hand-off as Phase
-     4's suspect interviews — see dev/data/locationDefs.js's w2-reverify-*
-     entries for the free-order rationale. */
-  'w1reverify-mina-interview': {
-    id: 'w1reverify-mina-interview',
-    characterId: 'minah',
-    locationIds: ['w2-reverify-mina-spot'],
-    phases: ['W2_REVERIFICATION'],
-    type: 'scene',
-    isInterrogation: true,
-    label: '최종 심문하기',
-    icon: '🔍',
-    sceneId: 'week2-scene-011',
-  },
+     [v4 재도입] Same coarse "visit = launch the whole existing scene"
+     hand-off as Phase 4's suspect interviews — see dev/data/locationDefs.js's
+     w2-reverify-sophie-spot/w2-adrian-spot/w2-suspect-leo-spot/w2-circular-quay
+     항목의 free-order rationale. 옛 번호 체계(week2-scene-011/011a/011b)는 전부 v4의
+     현재 씬과 대응이 끊긴 상태였다 — week2-scene-011은 이제 "레오, 무너지다"
+     라는 전혀 다른 챕터고, 011a/011b는 v4에 아예 존재하지 않는 id다. 여섯
+     항목 전부 v4 Part 2(Ch13~22)의 실제 재조사 챕터(014~019)로 다시
+     연결했다. 윤민아는 대응하는 v4 챕터 자체가 없어(§신규 — 역할이 이미
+     week2-scene-012에서 소화됨) 항목을 삭제했다(w1reverify-mina-interview). */
   'w1reverify-adrian-interview': {
     id: 'w1reverify-adrian-interview',
     characterId: 'adrian',
@@ -707,17 +872,69 @@ const interactionDefs = {
     isInterrogation: true,
     label: '재심문하기',
     icon: '🔍',
-    sceneId: 'week2-scene-011a',
+    // 존재하지 않는 옛 id('week2-scene-011a') → v4의 실제 "애드리언의
+    // 메일함" 챕터로 고쳤다.
+    sceneId: 'week2-scene-015',
   },
+  'w1reverify-leo-interview': {
+    id: 'w1reverify-leo-interview',
+    characterId: 'leo',
+    locationIds: ['w2-suspect-leo-spot'],
+    phases: ['W2_REVERIFICATION'],
+    type: 'scene',
+    isInterrogation: true,
+    label: '재심문하기',
+    icon: '🔍',
+    sceneId: 'week2-scene-016',
+  },
+  'w1reverify-sophie-interview': {
+    id: 'w1reverify-sophie-interview',
+    characterId: 'sophie',
+    locationIds: ['w2-reverify-sophie-spot'],
+    phases: ['W2_REVERIFICATION'],
+    type: 'scene',
+    isInterrogation: true,
+    label: '이야기 나누기',
+    icon: '🔍',
+    sceneId: 'week2-scene-017',
+  },
+  'w1reverify-daniel-interview': {
+    id: 'w1reverify-daniel-interview',
+    characterId: 'daniel-guide',
+    locationIds: ['w2-hub-plaza'],
+    phases: ['W2_REVERIFICATION'],
+    type: 'scene',
+    isInterrogation: true,
+    label: '신원 확인하기',
+    icon: '🔍',
+    sceneId: 'week2-scene-018',
+  },
+  'w1reverify-tourists-interview': {
+    id: 'w1reverify-tourists-interview',
+    characterId: 'youngwoo',
+    locationIds: ['w2-circular-quay'],
+    phases: ['W2_REVERIFICATION'],
+    type: 'scene',
+    isInterrogation: true,
+    label: '관광팀에게 물어보기',
+    icon: '🔍',
+    sceneId: 'week2-scene-019',
+  },
+  // [v4 재도입] 예전엔 type:'minigame'+route(완전 페이지 이동, play/game/
+  // index.html로 나갔다 스크립트가 끝나면 돌아오지 않는 방식)였지만, 다른
+  // 재검증 항목과 통일해 type:'scene'+sceneId(허브 인라인 재생 + 복귀)로
+  // 바꿨다 — 마틴은 전화 통화라는 연출만 다를 뿐, 나머지 재조사 대상과 같은
+  // "허브를 벗어나지 않는" hand-off를 받는 게 맞다.
   'w1reverify-martin-call': {
     id: 'w1reverify-martin-call',
     characterId: 'martin',
     locationIds: ['w2-reverify-martin-spot'],
     phases: ['W2_REVERIFICATION'],
-    type: 'minigame',
+    type: 'scene',
+    isInterrogation: true,
     label: '전화 걸기',
     icon: '📞',
-    route: '/play/game/?scene=week2-scene-011b',
+    sceneId: 'week2-scene-014',
   },
 };
 
