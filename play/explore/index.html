@@ -41,13 +41,27 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .loc-badge{position:absolute;top:14px;right:16px;font-family:var(--mono);font-size:10.5px;font-weight:700;color:#06181c;background:var(--cyan);border-radius:10px;padding:3px 8px}
 .loc-current-tag{font-family:var(--mono);font-size:10px;color:var(--cyan);margin-top:6px}
 
+/* ===== 여행 만족도 / 영우 호감도 게이지 — play/game/index.html의
+   .relation-gauges와 동일(§ relationshipState.js). 상시 표시, 연출용(스토리/
+   엔딩에 관여하지 않음). 허브에서 인라인 재생되는 심문 씬도 게임 페이지와
+   같은 addSatisfaction/addAffection 이펙트를 쓸 수 있으므로[탐색허브 재도입],
+   허브를 벗어나도 값이 끊기지 않게 이 페이지에도 둔다. */
+.relation-gauges{position:absolute;top:calc(58px + env(safe-area-inset-top,0));right:16px;z-index:6;display:flex;gap:10px;background:transparent}
+.relation-gauges.hidden{display:none}
+.gauge-pill{display:flex;flex-direction:column;align-items:center;gap:6px;background:transparent}
+.gauge-icon{font-size:12px;line-height:1}
+.gauge-track{width:6px;height:64px;border-radius:3px;background:rgba(255,255,255,.14);overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end}
+.gauge-fill{width:100%;border-radius:3px;transition:height .3s cubic-bezier(.2,.8,.2,1)}
+.gauge-fill.satisfaction{background:var(--cyan)}
+.gauge-fill.affection{background:#E8749E}
+
 /* ===== 2주차 라이프 게이지 — 심문 중 증거 오답 제시/선택지 오답 시 경중에
    따라 깎이는 판정용 게이지(§ lifeGaugeState.js). 허브의 자유 '제시하기'는
    설계상(§8.2/§8.4, 오답도 페널티 없음) 이 게이지를 절대 건드리지 않는다 —
    씬 저자가 명시적으로 위험하다고 표시한 지점(line.wrongSeverity/
-   choice effects의 damageLife)에서만 깎인다. play/game/index.html의
-   .relation-gauges와 같은 우상단 배치(top:58px, topbar와 안 겹치게). */
-.life-gauge{position:absolute;top:calc(58px + env(safe-area-inset-top,0));right:16px;z-index:6;display:flex;align-items:center;gap:6px}
+   choice effects의 damageLife)에서만 깎인다. .relation-gauges 바로 위에
+   가로 막대로 얹는다 — play/game/index.html과 같은 우상단 세로 스택. */
+.life-gauge{position:absolute;top:calc(12px + env(safe-area-inset-top,0));right:16px;z-index:6;display:flex;align-items:center;gap:6px}
 .life-gauge.hidden{display:none}
 .life-gauge-icon{font-size:12px;line-height:1}
 .life-gauge-track{position:relative;width:84px;height:7px;border-radius:4px;background:rgba(255,255,255,.16);overflow:hidden}
@@ -314,6 +328,11 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
     </span>
   </span>
 
+  <span class="relation-gauges" id="relationGauges">
+    <span class="gauge-pill" title="여행 만족도"><span class="gauge-icon">✨</span><span class="gauge-track"><span class="gauge-fill satisfaction" id="satisfactionFill"></span></span></span>
+    <span class="gauge-pill" title="영우 호감도"><span class="gauge-icon">💛</span><span class="gauge-track"><span class="gauge-fill affection" id="affectionFill"></span></span></span>
+  </span>
+
   <div class="map-view" id="mapView">
     <div class="map-title">지도 · SYDNEY</div>
     <div id="mapList"></div>
@@ -422,6 +441,7 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('/play/sw.js'
 <script src="/dev/caseFileState.js"></script>
 <script src="/dev/data/shopItems.js"></script>
 <script src="/dev/state/economyState.js"></script>
+<script src="/dev/state/relationshipState.js"></script>
 <script src="/dev/state/wardrobeState.js"></script>
 <script src="/dev/state/shopState.js"></script>
 <script src="/dev/state/lifeGaugeState.js"></script>
@@ -455,6 +475,9 @@ const el = {
   lifeGauge: document.getElementById('lifeGauge'),
   lifeGaugeFill: document.getElementById('lifeGaugeFill'),
   lifeGaugeFlash: document.getElementById('lifeGaugeFlash'),
+  relationGauges: document.getElementById('relationGauges'),
+  satisfactionFill: document.getElementById('satisfactionFill'),
+  affectionFill: document.getElementById('affectionFill'),
   lifeGameoverOverlay: document.getElementById('lifeGameoverOverlay'),
   lifeGameoverRetryBtn: document.getElementById('lifeGameoverRetryBtn'),
   mapView: document.getElementById('mapView'),
@@ -545,6 +568,13 @@ function updatePointBalance() {
   const introduced = CaseFileState.hasFlag('pointsUiIntroduced');
   el.pointBalance.classList.toggle('hidden', !introduced);
   if (introduced) el.pointBalance.textContent = 'P ' + EconomyState.getPoints();
+}
+
+// 포인트와 달리 첫 지급 전까지 숨기지 않는다 — play/game/index.html의 같은
+// 이름 함수와 짝(§ 이 파일 헤더의 "두 파일이 갈라질 위험" 관례 그대로).
+function updateRelationshipGauges() {
+  el.satisfactionFill.style.height = RelationshipState.getSatisfaction() + '%';
+  el.affectionFill.style.height = RelationshipState.getAffection() + '%';
 }
 
 /* ===== 라이프 게이지 (2주차부터 도입, § lifeGaugeState.js) — play/game/
@@ -1785,6 +1815,20 @@ function applyInlineSceneEffect(effect) {
       updatePointBalance();
       break;
 
+    // [탐색허브 재도입] 여행 만족도 / 영우 호감도 — 연출용 게이지(§
+    // relationshipState.js). 수사 로직·엔딩 분기는 절대 이 값을 읽지 않는다.
+    // play/game/index.html의 applyEffect와 같은 case.
+    case 'addSatisfaction':
+      RelationshipState.addSatisfaction(effect.amount);
+      if (effect.amount) caseMenu.notifySatisfaction(effect.amount);
+      updateRelationshipGauges();
+      break;
+    case 'addAffection':
+      RelationshipState.addAffection(effect.amount);
+      if (effect.amount) caseMenu.notifyAffection(effect.amount);
+      updateRelationshipGauges();
+      break;
+
     // 2주차 라이프 게이지(§ lifeGaugeState.js) — 심문 선택지 오답의
     // effects에 넣어 쓴다(경중은 severity). 허브의 자유 '제시하기'
     // (presentEvidenceToCharacter)는 설계상 이 이펙트를 절대 쓰지 않는다.
@@ -2112,6 +2156,7 @@ const caseMenu = initCaseMenu({
     }
     updatePointBalance();
     updateLifeGauge();
+    updateRelationshipGauges();
     if (ExplorationState.getCurrentLocationId()) { renderLocation(); showView('location'); }
     else { renderMap(); showView('map'); }
   },
@@ -2234,6 +2279,7 @@ async function preloadPhaseAssets(phaseId) {
 /* ===== Boot ===== */
 (async function init() {
   updatePointBalance();
+  updateRelationshipGauges();
   const params = new URLSearchParams(location.search);
   const bootPhase = params.get('phase');
   const bootLocation = params.get('location');
