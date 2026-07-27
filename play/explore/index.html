@@ -547,9 +547,11 @@ function updatePointBalance() {
   if (introduced) el.pointBalance.textContent = 'P ' + EconomyState.getPoints();
 }
 
-/* ===== 2주차 라이프 게이지 (§ lifeGaugeState.js) — play/game/index.html의
-   같은 이름 함수와 짝(§ 이 파일 헤더의 "두 파일이 갈라질 위험" 관례 그대로).
-   허브는 지금 W2_* phase로만 쓰이므로 phase 접두어로 표시 여부를 정한다. */
+/* ===== 라이프 게이지 (2주차부터 도입, § lifeGaugeState.js) — play/game/
+   index.html의 같은 이름 함수와 짝(§ 이 파일 헤더의 "두 파일이 갈라질 위험"
+   관례 그대로). 허브는 지금 W2_* phase로만 쓰이지만, 3주차·4주차도 같은
+   W<n>_ 네이밍으로 허브를 이어갈 예정이라 phase 접두어를 'W2_'로 고정하지
+   않고 "1주차 계열(W1_*)만 아니면 표시"로 일반화해둔다. */
 const LIFE_FLASH_MS = 650;
 function lifeGaugeColor(value) {
   if (value <= 25) return 'var(--signal-red)';
@@ -558,7 +560,7 @@ function lifeGaugeColor(value) {
 }
 function updateLifeGauge() {
   const phase = ExplorationState.getCurrentPhase() || '';
-  el.lifeGauge.classList.toggle('hidden', !phase.startsWith('W2_'));
+  el.lifeGauge.classList.toggle('hidden', !phase || phase.startsWith('W1_'));
   const value = LifeGaugeState.getValue();
   el.lifeGaugeFill.style.width = value + '%';
   el.lifeGaugeFill.style.backgroundColor = lifeGaugeColor(value);

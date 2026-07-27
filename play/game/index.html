@@ -586,9 +586,11 @@ function updateRelationshipGauges() {
   el.affectionFill.style.height = RelationshipState.getAffection() + '%';
 }
 
-/* ===== 2주차 라이프 게이지 (§ lifeGaugeState.js) — 심문 중 증거 오답 제시/
-   선택지 오답 시에만 붙는 판정용 게이지라, satisfaction/affection과 달리
-   2주차 씬이 아니면 아예 숨긴다. 0이 되면 게임오버 오버레이를 띄운다. */
+/* ===== 라이프 게이지 (2주차부터 도입, § lifeGaugeState.js) — 심문 중 증거
+   오답 제시/선택지 오답 시에만 붙는 판정용 게이지라, satisfaction/affection과
+   달리 1주차(아직 수사 자체가 없는 도입부) 씬에서는 아예 숨긴다. 2주차 이후
+   (3주차·4주차도 같은 패턴으로 이어질 예정) 모든 주차에서 표시. 0이 되면
+   게임오버 오버레이를 띄운다. */
 const LIFE_FLASH_MS = 650;
 function lifeGaugeColor(value) {
   if (value <= 25) return 'var(--signal-red)';
@@ -596,8 +598,9 @@ function lifeGaugeColor(value) {
   return 'var(--cyan)';
 }
 function updateLifeGauge() {
-  const isWeek2 = WeekPreloader.weekIdOf(activeSceneData.id) === 'week2';
-  el.lifeGauge.classList.toggle('hidden', !isWeek2);
+  const weekId = WeekPreloader.weekIdOf(activeSceneData.id);
+  const showsLifeGauge = !!weekId && weekId !== 'week1';
+  el.lifeGauge.classList.toggle('hidden', !showsLifeGauge);
   const value = LifeGaugeState.getValue();
   el.lifeGaugeFill.style.width = value + '%';
   el.lifeGaugeFill.style.backgroundColor = lifeGaugeColor(value);
