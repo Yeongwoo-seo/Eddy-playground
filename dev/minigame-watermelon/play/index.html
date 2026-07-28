@@ -31,13 +31,10 @@ body{background:linear-gradient(180deg,var(--yellow-bg-top) 0%,var(--yellow-bg-b
 .frame{position:relative;width:100%;max-width:430px;height:100dvh;height:100vh;height:var(--vh100, 100vh);overflow:hidden;background:linear-gradient(180deg,var(--yellow-bg-top) 0%,var(--yellow-bg-bottom) 100%);display:flex;flex-direction:column;touch-action:none}
 
 .topbar{position:absolute;top:0;left:0;right:0;z-index:6;padding:calc(14px + env(safe-area-inset-top,0)) 16px 10px;display:flex;align-items:center;gap:10px;pointer-events:none}
-.back-chip{pointer-events:auto;flex-shrink:0;height:30px;padding:0 12px;border-radius:15px;display:flex;align-items:center;justify-content:center;gap:3px;background:rgba(255,255,255,.4);border:1px solid rgba(90,60,20,.25);color:#5A3B14;font-family:var(--mono);font-size:12px;font-weight:700;line-height:1;text-decoration:none;white-space:nowrap}
+/* margin-left:auto pushes it to the topbar's right edge regardless of the
+   score-coin's own width (the topbar has no space-between). */
+.back-chip{pointer-events:auto;margin-left:auto;flex-shrink:0;height:30px;padding:0 12px;border-radius:15px;display:flex;align-items:center;justify-content:center;gap:3px;background:rgba(255,255,255,.4);border:1px solid rgba(90,60,20,.25);color:#5A3B14;font-family:var(--mono);font-size:12px;font-weight:700;line-height:1;text-decoration:none;white-space:nowrap}
 .back-chip:active{transform:scale(.92)}
-/* Settings link to this minigame's dev editor (/dev/minigame-watermelon/) —
-   margin-left:auto pushes it to the topbar's right edge regardless of the
-   back-chip/score-coin's own widths (the topbar has no space-between). */
-.settings-chip{pointer-events:auto;margin-left:auto;flex-shrink:0;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.4);border:1px solid rgba(90,60,20,.25);color:#5A3B14;font-size:15px;line-height:1;text-decoration:none}
-.settings-chip:active{transform:scale(.92)}
 
 .score-coin{pointer-events:none;flex-shrink:0;width:58px;height:58px;border-radius:50%;border:5px solid var(--coin-ring);background:radial-gradient(circle at 35% 30%,var(--coin-a) 0%,var(--coin-b) 60%,var(--coin-c) 100%);box-shadow:0 3px 8px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center}
 .score-coin-value{font-family:var(--mono);font-weight:800;color:var(--coin-text);font-size:15px;line-height:1;text-align:center;padding:0 4px}
@@ -64,11 +61,10 @@ body{background:linear-gradient(180deg,var(--yellow-bg-top) 0%,var(--yellow-bg-b
 <div class="frame" id="frame">
 
   <div class="topbar">
-    <a class="back-chip" id="backChip" href="/dev/minigames/" aria-label="그만하기">‹ 그만하기</a>
     <div class="score-coin">
       <div class="score-coin-value" id="scoreValue">0</div>
     </div>
-    <a class="settings-chip dev-settings-link" href="/dev/minigame-watermelon/" aria-label="설정">⚙</a>
+    <a class="back-chip" id="backChip" href="/dev/minigames/" aria-label="그만하기">‹ 그만하기</a>
   </div>
 
   <div class="toast" id="toast"></div>
