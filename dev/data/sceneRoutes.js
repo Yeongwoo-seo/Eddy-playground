@@ -41,6 +41,11 @@ const MINIGAME_ROUTES = {
   // dev/data/locationDefs.js/interactionDefs.js의 관련 항목 참고. game/
   // index.html의 playMinigameTransition, explore/index.html의
   // onInlineSceneComplete 둘 다 이 표를 거친다.
+  // [2주차 관광 자유 탐색 이식] week2-scene-003(더 록스, 다니엘과 작별) 종료
+  // 후 진입 — dev/data/locationDefs.js/interactionDefs.js의 W2_TOURISM 항목은
+  // v4 재설계 이전부터 있었지만 이 표에 연결되지 않아 고아 상태였다. 다른
+  // 세 허브와 같은 관례로 여기 연결한다.
+  'week2-hub-entry-tourism': '/play/explore/?phase=W2_TOURISM&location=w2-circular-quay',
   'week2-hub-entry-exhibit': '/play/explore/?phase=W2_EXHIBIT_FREE_LOOK&location=w2-exhibit-floor',
   'week2-hub-entry-suspects': '/play/explore/?phase=W2_SUSPECT_INTERVIEWS&location=w2-hub-plaza',
   'week2-suspect-interview-return': '/play/explore/?phase=W2_SUSPECT_INTERVIEWS&location=w2-hub-plaza',

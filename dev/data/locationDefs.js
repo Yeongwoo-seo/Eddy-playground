@@ -156,7 +156,11 @@ const locationDefs = {
     // player chose "조금 더 둘러본다" earlier from Phase 1's intro dialogue
     // (w2-phase1-intro), wandered the hub, and this is where they finally
     // commit to going in).
-    enterSceneId: 'week2-scene-003',
+    // [2주차 관광 자유 탐색 이식] 이전엔 'week2-scene-003'(더 록스, 보관함)을
+    // 가리켰다 — 이 허브가 이제 그 씬 *다음*에 진입하므로 시간을 거꾸로
+    // 되돌리는 값이었다(고아 참조). W2_EXHIBIT_FREE_LOOK 허브로 바로
+    // 이어준다.
+    enterSceneId: 'week2-hub-entry-exhibit',
     enterSceneLabel: '전시장에 들어간다',
   },
 
@@ -291,10 +295,12 @@ const locationDefs = {
     ],
     // W2_TOURISM 전용 — "이제 안쪽으로 들어가자"는 구 미니게임의 exitBtn
     // 문구를 그대로 가져왔다. 조사 완료 여부와 무관하게 언제든 누를 수
-    // 있다(§20 게임오버 없음, 구 미니게임도 동일). week2-scene-004 자체가
-    // 이미 "단체 관광객 무리가 빠져나가고 나서야 다시 조용해졌다"로 시간
-    // 경과·붐빔 전환을 흡수하므로 별도 전환 씬을 새로 만들지 않는다.
-    enterSceneId: { __byPhase: true, W2_TOURISM: 'week2-scene-004' },
+    // 있다(§20 게임오버 없음, 구 미니게임도 동일).
+    // [2주차 관광 자유 탐색 이식] 원래 week2-scene-004를 가리켰지만 그 씬은
+    // W2_EXHIBIT_FREE_LOOK 허브 도입으로 이미 재생 경로에서 빠진 고아 씬이다
+    // (dev/dialogueData.js 참고) — 실제로 다섯 인물을 만나는 그 허브로
+    // 직접 보낸다.
+    enterSceneId: { __byPhase: true, W2_TOURISM: 'week2-hub-entry-exhibit' },
     enterSceneLabel: { __byPhase: true, W2_TOURISM: '이제 안쪽으로 들어가자' },
   },
   'w2-suspect-leo-spot': {
