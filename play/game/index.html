@@ -1608,8 +1608,11 @@ const TEXT_SPEED_MS = { slow: 58, normal: 36, fast: 18, instant: 1 };
 // onLineChange 시점엔 아직 isPausing이 세팅되지 않아, 여기서 빠르게만 만들고
 // 실제 스킵(탭)은 하지 않으므로 안전하지만, 그래도 전환 연출은 늘 제 속도로
 // 보여주는 게 맞다. 이미 저자가 typingSpeedMs를 직접 지정한 줄은 항상
-// 우선한다(l.typingSpeedMs ||).
-const EVIDENCE_CHECK_TYPING_MS = 1;
+// 우선한다(l.typingSpeedMs ||). 0은 vnPlayer.js의 typeText에서 "타이핑
+// 애니메이션 없이 전체 텍스트를 한 번에 표시"로 처리되므로, 글자 수가 많은
+// 줄도 setInterval의 ~4ms 클램프로 눈에 띄게 흘러가지 않고 그대로 뜬 뒤
+// 즉시(EVIDENCE_CHECK_SKIP_MS) 다음 줄로 넘어간다.
+const EVIDENCE_CHECK_TYPING_MS = 0;
 function applyTextSpeedSetting(lines) {
   const speedMs = TEXT_SPEED_MS[CaseFileState.getSettings().textSpeed] || TEXT_SPEED_MS.normal;
   return lines.map(l => {
