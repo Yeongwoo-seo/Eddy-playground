@@ -117,9 +117,19 @@ function createVNPlayer({ onLineChange, onTextUpdate, onArrow, onComplete, onEff
 
   function typeText(text, speedMs, line) {
     clearInterval(typingTimer);
-    onTextUpdate('');
     isTyping = true;
     onArrow(false);
+    // speedMs === 0 means "don't animate at all" (증거버전의 안 중요한 줄) —
+    // an interval clamped to the browser's ~4ms floor still crawls character
+    // by character for a long line, which reads as "빠르게 지나가는" typing
+    // rather than the flash-and-skip the evidence mode wants. Skip the
+    // interval entirely and show the whole line in one paint instead.
+    if (speedMs === 0) {
+      onTextUpdate(text);
+      handleTypingDone(line);
+      return;
+    }
+    onTextUpdate('');
     let i = 0;
     typingTimer = setInterval(() => {
       i++;
