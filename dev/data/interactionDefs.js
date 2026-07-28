@@ -41,10 +41,14 @@ const interactionDefs = {
   // 도입부(처음 보는 반응의 사진 포즈 루프, "저게 뭐지?" 팝업 전시 발견)를
   // 그대로 두면 방금 겪은 장면을 처음인 것처럼 되풀이하므로, 다니엘과
   // 헤어진 직후로 다시 썼다 — 대사만 교체, 그릇(phaseIntro 계약)은 그대로.
+  // 관광 스팟과 전시장 내부가 지금은 같은 phase(W2_EXHIBIT_FREE_LOOK)라
+  // 이 항목이 그 phase의 유일한 phaseIntro다 — 전시장 내부(w2-exhibit-floor)
+  // 진입 시의 클레어 환영 인사는 phaseIntro가 아니라 장소 단위
+  // autoPlayOnFirstVisit로 재생된다(아래 w2-exhibit-phase-intro 참고).
   'w2-phase1-intro': {
     id: 'w2-phase1-intro',
     type: 'phaseIntro',
-    phases: ['W2_TOURISM'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
     lines: [
       { id: 'line-001', speaker: '', text: '다니엘이 손을 흔들며 골목 저편으로 사라진 뒤,\n지수와 영우만 남았다.', characterId: null },
       { id: 'line-002', speaker: '지수', text: '전시장 들어가기 전에\n우리 조금만 더 둘러볼까요?', characterId: 'jisoo', expression: 'curious' },
@@ -57,7 +61,7 @@ const interactionDefs = {
     id: 'w2cq-topic-ferries',
     characterId: 'youngwoo',
     locationIds: ['w2-circular-quay'],
-    phases: ['W2_TOURISM'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
     type: 'topic',
     label: '페리 구경하기',
     lines: [
@@ -71,7 +75,7 @@ const interactionDefs = {
     id: 'w2cq-topic-buskers',
     characterId: 'youngwoo',
     locationIds: ['w2-circular-quay'],
-    phases: ['W2_TOURISM'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
     type: 'topic',
     label: '버스커 구경하기',
     lines: [
@@ -85,7 +89,7 @@ const interactionDefs = {
     id: 'w2ov-topic-building',
     characterId: 'youngwoo',
     locationIds: ['w2-opera-view'],
-    phases: ['W2_TOURISM'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
     type: 'topic',
     label: '오페라하우스 감상하기',
     lines: [
@@ -102,7 +106,7 @@ const interactionDefs = {
     id: 'w2ov-minigame-photo',
     characterId: 'youngwoo',
     locationIds: ['w2-opera-view'],
-    phases: ['W2_TOURISM'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
     type: 'minigame',
     label: '사진 찍기 (하버 포토)',
     icon: '📷',
@@ -128,7 +132,7 @@ const interactionDefs = {
     id: 'w2ov-topic-crop',
     characterId: 'youngwoo',
     locationIds: ['w2-opera-view'],
-    phases: ['W2_TOURISM'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
     type: 'topic',
     label: '사진 잘라보기',
     lines: [
@@ -143,7 +147,7 @@ const interactionDefs = {
     id: 'w2bv-topic-bridge',
     characterId: 'youngwoo',
     locationIds: ['w2-bridge-view'],
-    phases: ['W2_TOURISM'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
     type: 'topic',
     label: '다리 구경하기',
     lines: [
@@ -157,7 +161,7 @@ const interactionDefs = {
     id: 'w2bv-topic-memory',
     characterId: 'youngwoo',
     locationIds: ['w2-bridge-view'],
-    phases: ['W2_TOURISM'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
     type: 'topic',
     label: '영우와 추억 이야기하기',
     lines: [
@@ -171,7 +175,7 @@ const interactionDefs = {
     id: 'w2bv-minigame-photo',
     characterId: 'youngwoo',
     locationIds: ['w2-bridge-view'],
-    phases: ['W2_TOURISM'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
     type: 'minigame',
     label: '사진 찍기 (하버 포토)',
     icon: '📷',
@@ -185,7 +189,7 @@ const interactionDefs = {
     id: 'w2bv-topic-van',
     characterId: 'youngwoo',
     locationIds: ['w2-bridge-view'],
-    phases: ['W2_TOURISM'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
     type: 'topic',
     label: '서비스 밴 발견하기',
     lines: [
@@ -200,7 +204,7 @@ const interactionDefs = {
     id: 'w2rl-topic-vintage',
     characterId: 'youngwoo',
     locationIds: ['w2-the-rocks-lane'],
-    phases: ['W2_TOURISM'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
     type: 'topic',
     label: '골목 구경하기',
     lines: [
@@ -213,7 +217,7 @@ const interactionDefs = {
     id: 'w2rl-topic-exhibition-spot',
     characterId: 'youngwoo',
     locationIds: ['w2-the-rocks-lane'],
-    phases: ['W2_TOURISM'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
     type: 'topic',
     label: '팝업 전시장 쪽 다시 보기',
     lines: [
@@ -233,7 +237,7 @@ const interactionDefs = {
     id: 'w2rl-topic-magnet',
     characterId: 'youngwoo',
     locationIds: ['w2-the-rocks-lane'],
-    phases: ['W2_TOURISM'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
     type: 'topic',
     label: '직원 통용문 여는 모습 보기',
     lines: [
@@ -249,7 +253,7 @@ const interactionDefs = {
     id: 'w2ee-topic-outside',
     characterId: 'youngwoo',
     locationIds: ['w2-exhibition-entrance'],
-    phases: ['W2_TOURISM'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
     type: 'topic',
     label: '입구에서 둘러보기',
     lines: [
@@ -269,7 +273,7 @@ const interactionDefs = {
     id: 'w2ee-topic-provenance',
     characterId: 'youngwoo',
     locationIds: ['w2-exhibition-entrance'],
-    phases: ['W2_TOURISM'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
     type: 'topic',
     label: "Maker's Mark 안내문 읽기",
     lines: [
@@ -283,13 +287,13 @@ const interactionDefs = {
   // w2-exhibition-entrance investigateHotspot 1개 (§신규) — 위 두 개
   // (w2ee-topic-outside/provenance)는 캐릭터 칩 기반 topic이라, 같은
   // 장소에 탭으로 찾는 조사하기 하나를 별도로 둔다. 증거 없는 순수
-  // 분위기용 — 아직 애드리언/레오도 만나기 전(W2_TOURISM 초반)이라 특정
-  // 인물과 엮인 물증을 놓기엔 이르다.
+  // 분위기용 — 다섯 인물을 만나기 전(w2-exhibit-floor에 들어가기 전)이라
+  // 특정 인물과 엮인 물증을 놓기엔 이르다.
   'w2en-hotspot-flyer': {
     id: 'w2en-hotspot-flyer',
     characterId: 'youngwoo',
     locationIds: ['w2-exhibition-entrance'],
-    phases: ['W2_TOURISM'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
     type: 'topic',
     label: '바닥에 떨어진 전단지 조각 보기',
     lines: [
@@ -299,24 +303,25 @@ const interactionDefs = {
     ],
   },
 
-  /* ===== w2-adrian-spot (전시장 보조 진열 구역) — W2_TOURISM 전용 자유 조사
-     10개 핫스팟 (§신규, 구 minigame-exhibition-search/HOTSPOTS 이식). 미니게임
-     자체 UI(진행도 카운터, "다시 봐도 똑같다" 재방문 토스트, 3개 이상
-     선택 관찰 시 보너스 증거)는 폐기했다 — 조사하기 자체가 이미 완료
-     상태(state-exhausted)를 마커로 보여주고, addEvidence가 id로 중복을
-     막아주므로 재방문 시 같은 짧은 대사가 다시 보이는 정도는 문제 없다.
-     k01만 원래 대사 그대로 여러 줄(K01_DISCOVERY_LINES) 유지, 나머지 9개는
-     원래 미니게임의 단문 관찰(line) 하나만 그대로 옮겼다 — 다른 페이즈의
-     대화하기 topic들처럼 지수/영우 티키타카를 새로 지어 붙이지 않았다
-     (원본에 없던 내용이라). characterId는 이 파일의 다른 W2_TOURISM
-     topic들과 같은 관례로 'youngwoo'를 쓰지만, 이 phase의 w2-adrian-spot엔
-     `characters`가 비어 있어(locationDefs.js) 대화하기 목록엔 뜨지 않고
-     오직 조사하기 핫스팟으로만 열린다. */
+  /* ===== w2-adrian-spot (전시장 보조 진열 구역) — W2_EXHIBIT_FREE_LOOK
+     구간에서 다섯 인물을 만나기 전 자유 조사 10개 핫스팟 (§신규, 구
+     minigame-exhibition-search/HOTSPOTS 이식). 미니게임 자체 UI(진행도
+     카운터, "다시 봐도 똑같다" 재방문 토스트, 3개 이상 선택 관찰 시 보너스
+     증거)는 폐기했다 — 조사하기 자체가 이미 완료 상태(state-exhausted)를
+     마커로 보여주고, addEvidence가 id로 중복을 막아주므로 재방문 시 같은
+     짧은 대사가 다시 보이는 정도는 문제 없다. k01만 원래 대사 그대로 여러
+     줄(K01_DISCOVERY_LINES) 유지, 나머지 9개는 원래 미니게임의 단문
+     관찰(line) 하나만 그대로 옮겼다 — 다른 페이즈의 대화하기 topic들처럼
+     지수/영우 티키타카를 새로 지어 붙이지 않았다(원본에 없던 내용이라).
+     characterId는 이 파일의 다른 관광 topic들과 같은 관례로 'youngwoo'를
+     쓰지만, 다섯 인물을 아직 안 만난 시점엔 w2-adrian-spot의 `characters`가
+     비어 있어(locationDefs.js) 대화하기 목록엔 뜨지 않고 오직 조사하기
+     핫스팟으로만 열린다. */
   'w2as-topic-k01': {
     id: 'w2as-topic-k01',
     characterId: 'youngwoo',
     locationIds: ['w2-adrian-spot'],
-    phases: ['W2_TOURISM'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
     type: 'topic',
     label: '황동 장치 K-01 살펴보기',
     lines: [
@@ -345,7 +350,7 @@ const interactionDefs = {
     id: 'w2as-topic-camera',
     characterId: 'youngwoo',
     locationIds: ['w2-adrian-spot'],
-    phases: ['W2_TOURISM'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
     type: 'topic',
     label: '오래된 필름 카메라 살펴보기',
     lines: [{ speaker: '', text: '접이식 빈티지 카메라. 렌즈 캡이 없어 안쪽이 살짝 뿌옇다.', characterId: null }],
@@ -354,7 +359,7 @@ const interactionDefs = {
     id: 'w2as-topic-watch',
     characterId: 'youngwoo',
     locationIds: ['w2-adrian-spot'],
-    phases: ['W2_TOURISM'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
     type: 'topic',
     label: '은제 회중시계 살펴보기',
     lines: [{ speaker: '', text: '은제 회중시계. 뒷면에 낯선 이니셜이 새겨져 있는데, 이 열쇠와는 다른 이니셜이다.', characterId: null }],
@@ -363,7 +368,7 @@ const interactionDefs = {
     id: 'w2as-topic-desk',
     characterId: 'youngwoo',
     locationIds: ['w2-adrian-spot'],
-    phases: ['W2_TOURISM'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
     type: 'topic',
     label: '접수대 살펴보기',
     lines: [{ speaker: '', text: '접수대. 안내 책자와 방명록, 작은 태그 몇 개가 놓여 있다.', characterId: null }],
@@ -372,7 +377,7 @@ const interactionDefs = {
     id: 'w2as-topic-tag',
     characterId: 'youngwoo',
     locationIds: ['w2-adrian-spot'],
-    phases: ['W2_TOURISM'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
     type: 'topic',
     label: '직원용 태그 살펴보기',
     lines: [{ speaker: '', text: '직원용 태그 — 접수대 오른쪽에 놓여 있다. 진열장을 정리할 때 쓰는 것 같다.', characterId: null }],
@@ -388,7 +393,7 @@ const interactionDefs = {
     id: 'w2as-topic-staffdoor',
     characterId: 'youngwoo',
     locationIds: ['w2-adrian-spot'],
-    phases: ['W2_TOURISM'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
     type: 'topic',
     label: '직원 전용문 살펴보기',
     lines: [{ speaker: '', text: '직원 전용문. "관계자 외 출입 금지"라고 적혀 있다. 살짝 닫혀 있다.', characterId: null }],
@@ -397,7 +402,7 @@ const interactionDefs = {
     id: 'w2as-topic-pamphlet',
     characterId: 'youngwoo',
     locationIds: ['w2-adrian-spot'],
-    phases: ['W2_TOURISM'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
     type: 'topic',
     label: '안내 팸플릿 살펴보기',
     lines: [{ speaker: '', text: '안내 팸플릿. K-01 항목 옆에 "판매 불가 · 전시 전용" 표시가 있다.', characterId: null }],
@@ -413,7 +418,7 @@ const interactionDefs = {
     id: 'w2as-topic-guestbook',
     characterId: 'youngwoo',
     locationIds: ['w2-adrian-spot'],
-    phases: ['W2_TOURISM'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
     type: 'topic',
     label: '방문객 방명록 살펴보기',
     lines: [{ speaker: '', text: '오늘 자 방명록 어디에도 "레오"로 추정되는 이름이 없다.', characterId: null }],
@@ -429,7 +434,7 @@ const interactionDefs = {
     id: 'w2as-topic-ceiling',
     characterId: 'youngwoo',
     locationIds: ['w2-adrian-spot'],
-    phases: ['W2_TOURISM'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
     type: 'topic',
     label: '천장 보안카메라 살펴보기',
     lines: [{ speaker: '', text: '천장 보안카메라가 진열장 정면이 아니라 출입구 쪽을 향해 있다.', characterId: null }],
@@ -445,7 +450,7 @@ const interactionDefs = {
     id: 'w2as-topic-entrance',
     characterId: 'youngwoo',
     locationIds: ['w2-adrian-spot'],
-    phases: ['W2_TOURISM'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
     type: 'topic',
     label: '출입구 주변 살펴보기',
     lines: [{ speaker: '', text: '사람들이 끊임없이 들고 난다. 바로 옆 골목엔 작은 카페가 보인다.', characterId: null }],
@@ -458,17 +463,29 @@ const interactionDefs = {
      topic + 진입 도입부 하나를 둔다. 대사는 dev/dialogueData.js의
      week2Scene004Lines/005Lines(더 이상 재생 경로에 없음)에서 옮겨 썼다 —
      내용은 그대로, 다섯 인물별 독립 대화로 쪼갰을 뿐이다. */
-  /* ===== Phase W2_EXHIBIT_FREE_LOOK — 전시장 자유 관람 (v4 Ch4~5, 탐색허브
-     재도입) =====
+  /* ===== W2_EXHIBIT_FREE_LOOK 안, 전시장 내부(w2-exhibit-floor) — 전시장
+     자유 관람 (v4 Ch4~5, 탐색허브 재도입) =====
      dev/data/locationDefs.js의 w2-exhibit-floor 주석 참고. 도난 사건 이전
-     구간이라 Phase 1과 같은 톤(ungated, 순수 관계 형성/복선)으로 다섯 개
+     구간이라 관광 스팟들과 같은 톤(ungated, 순수 관계 형성/복선)으로 다섯 개
      topic + 진입 도입부 하나를 둔다. 대사는 docs/week2-v4-script.md의
      Scene 4-1/4-2/5-1/5-2(보이스 바이블 기준 확장판)에서 옮겨 썼다 —
-     다섯 인물별 독립 대화로 쪼갰다. */
+     다섯 인물별 독립 대화로 쪼갰다.
+     [2주차 관광 자유 탐색 이식] 관광 스팟(서큘러키 등)과 이 전시장이 이제
+     같은 phase(W2_EXHIBIT_FREE_LOOK)를 쓰므로, phase 하나엔 자동 재생
+     도입부(type:'phaseIntro')가 하나만 존재할 수 있다(findPhaseIntro가
+     `.find()`로 첫 번째 것만 찾는다 — play/explore/index.html 참고). phase
+     진입 자동 재생은 w2-phase1-intro(다니엘과 작별한 직후, 서큘러키)가
+     맡고, 클레어의 환영 인사는 "이 phase에서 처음"이 아니라 "이 장소에
+     처음 도착했을 때"만 재생돼야 하므로 autoPlayOnFirstVisit(장소 단위 자동
+     재생, w1suspect-*-interview와 같은 관례)로 바꿨다 — 그릇만 바뀌었을 뿐
+     내용은 그대로. */
   'w2-exhibit-phase-intro': {
     id: 'w2-exhibit-phase-intro',
-    type: 'phaseIntro',
+    characterId: 'claire',
+    locationIds: ['w2-exhibit-floor'],
     phases: ['W2_EXHIBIT_FREE_LOOK'],
+    type: 'topic',
+    autoPlayOnFirstVisit: true,
     lines: [
       { id: "line-001", speaker: '', text: "전시장 입구에 들어서자 서늘한 실내 공기가 훅 끼친다. 낮은 조명 아래 황동 공예품들이 유리 진열장 안에서 은은하게 빛나고, 벽에는 작가들의 소개 패널이 걸려 있다. 접수대에 클레어가 앉아 태블릿을 들여다보고 있다.", characterId: null },
       { id: "line-002", speaker: "클레어", text: "어서 오세요, 팝업 전시 K-Collection에 오신 걸 환영합니다\n입장은 무료고, 사진 촬영은 개인 소장용만 가능해요", characterId: "claire", expression: "neutral" ,
@@ -1247,7 +1264,7 @@ const defaultPresentReaction = { result: 'wrong', reactionText: '음... 이게 �
 // "제안" UI(소프트 게이트, §10.3)는 아직 play/explore/index.html에 연결하지
 // 않음 — 후속 작업.
 const phaseGoals = {
-  W2_TOURISM: {
+  W2_EXHIBIT_FREE_LOOK: {
     requiredFactIds: [],
     suggestNextConditions: [
       { type: 'visitedLocationsAtLeast', count: 2 },

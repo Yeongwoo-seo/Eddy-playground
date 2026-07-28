@@ -42,11 +42,14 @@ const MINIGAME_ROUTES = {
   // index.html의 playMinigameTransition, explore/index.html의
   // onInlineSceneComplete 둘 다 이 표를 거친다.
   // [2주차 관광 자유 탐색 이식] week2-scene-003(더 록스, 다니엘과 작별) 종료
-  // 후 진입 — dev/data/locationDefs.js/interactionDefs.js의 W2_TOURISM 항목은
-  // v4 재설계 이전부터 있었지만 이 표에 연결되지 않아 고아 상태였다. 다른
-  // 세 허브와 같은 관례로 여기 연결한다.
-  'week2-hub-entry-tourism': '/play/explore/?phase=W2_TOURISM&location=w2-circular-quay',
-  'week2-hub-entry-exhibit': '/play/explore/?phase=W2_EXHIBIT_FREE_LOOK&location=w2-exhibit-floor',
+  // 후 진입 — dev/data/locationDefs.js/interactionDefs.js의 관광 스팟들은
+  // v4 재설계 이전부터 있었지만 이 표에 연결되지 않아 고아 상태였다.
+  // 처음엔 별도 phase(W2_TOURISM)로 연결했었지만, 관광 스팟과 전시장 내부가
+  // 별개 허브처럼 두 번 hop하는 게 어색해 전시장과 같은 phase
+  // (W2_EXHIBIT_FREE_LOOK)로 합쳤다 — 시작 위치만 서큘러키(w2-circular-quay)로
+  // 잡고, 전시장 내부(w2-exhibit-floor)까지는 그 phase 안에서 이동하기로
+  // 걸어간다.
+  'week2-hub-entry-exhibit': '/play/explore/?phase=W2_EXHIBIT_FREE_LOOK&location=w2-circular-quay',
   'week2-hub-entry-suspects': '/play/explore/?phase=W2_SUSPECT_INTERVIEWS&location=w2-hub-plaza',
   'week2-suspect-interview-return': '/play/explore/?phase=W2_SUSPECT_INTERVIEWS&location=w2-hub-plaza',
   'week2-hub-entry-reverify': '/play/explore/?phase=W2_REVERIFICATION&location=w2-hub-plaza',
