@@ -648,6 +648,12 @@ const DIFF_TUNING = {
 const BITE_WAIT_MIN_MS = 5000;
 const BITE_WAIT_MAX_MS = 10000;
 
+// 낚시로 얻는 포인트는 fishDefs.js에 정의된 물고기 기본 가치(value)의 5배다
+// — fishDefs.value 자체는 dev 에디터 등 다른 곳에서도 참조하는 공용
+// 카탈로그라 건드리지 않고, 포인트로 환산하는 이 지점에서만 배율을 곱한다.
+const FISHING_POINTS_MULTIPLIER = 5;
+function fishPointValue(value) { return value * FISHING_POINTS_MULTIPLIER; }
+
 function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
 function vibrate(pattern) { if (navigator.vibrate) navigator.vibrate(pattern); }
 function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
@@ -1179,7 +1185,7 @@ function closeNpcMenu() {
 function totalCaughtFishValue() {
   return Object.entries(caughtFishTally).reduce((sum, [id, qty]) => {
     const def = getFishDef(id);
-    return sum + (def ? def.value * qty : 0);
+    return sum + (def ? fishPointValue(def.value) * qty : 0);
   }, 0);
 }
 function renderSellFishList() {
@@ -1193,7 +1199,7 @@ function renderSellFishList() {
       if (!def) return;
       const row = document.createElement('div');
       row.className = 'sell-fish-row';
-      row.innerHTML = `<span class="sell-fish-name" style="color:${GRADE_NAME_COLORS[def.grade] || '#fff'}">${def.name}</span><span class="sell-fish-qty">x${qty}</span><span class="sell-fish-value">${def.value * qty}P</span>`;
+      row.innerHTML = `<span class="sell-fish-name" style="color:${GRADE_NAME_COLORS[def.grade] || '#fff'}">${def.name}</span><span class="sell-fish-qty">x${qty}</span><span class="sell-fish-value">${fishPointValue(def.value) * qty}P</span>`;
       el.sellFishList.appendChild(row);
     });
   }
@@ -2179,13 +2185,12 @@ async function playGameStartIntro() {
     });
     updateCamera();
   }
-  if (renderDialogueIntro(pendingDialogueSceneCfg || {}, pendingDialogueById || new Map())) {
-    gameState = 'dialogue';
-  } else {
-    gameState = 'idle';
-    el.joystick.classList.remove('hidden');
-    el.fishBtn.classList.remove('hidden');
-  }
+  // 낚시 미니게임 진입 시 대화 인트로는 더 이상 보여주지 않는다 — 카메라
+  // 인트로가 끝나면 renderDialogueIntro를 거치지 않고 바로 조작 가능한
+  // idle 상태로 넘어간다.
+  gameState = 'idle';
+  el.joystick.classList.remove('hidden');
+  el.fishBtn.classList.remove('hidden');
 }
 // 대사가 여러 줄(지수/영우 번갈아 말하는 티키타카, dev/minigame-fishing/
 // index.html "대화" 탭에서 편집)이라 화면을 탭할 때마다 다음 줄로 넘어가야
@@ -2372,7 +2377,7 @@ function hideItemWindowDesc() {
 function toggleItemWindowDesc(def, slotEl) {
   if (selectedItemWindowFishId === def.id) { hideItemWindowDesc(); return; }
   selectedItemWindowFishId = def.id;
-  el.itemWindowDesc.textContent = `${def.name} · ${def.grade} · ${def.value}P`;
+  el.itemWindowDesc.textContent = `${def.name} · ${def.grade} · ${fishPointValue(def.value)}P`;
   const slotRect = slotEl.getBoundingClientRect();
   const frameRect = el.frame.getBoundingClientRect();
   el.itemWindowDesc.style.left = (slotRect.left + slotRect.width / 2 - frameRect.left) + 'px';
@@ -3335,7 +3340,7 @@ function positionItemPopupAboveCharacter() {
 function populateItemPopup(fishCaught) {
   el.itemPopupName.textContent = fishCaught.name;
   el.itemPopupName.style.color = GRADE_NAME_COLORS[fishCaught.grade] || '#000';
-  el.itemPopupMeta.textContent = `${fishCaught.grade} · ${fishCaught.value}P`;
+  el.itemPopupMeta.textContent = `${fishCaught.grade} · ${fishPointValue(fishCaught.value)}P`;
   if (fishSheetUrl) {
     const override = fishIconOverrides[fishCaught.id];
     const style = (override && fishSheetDims)
