@@ -592,9 +592,22 @@ el.rewardContinueBtn.addEventListener('click', () => {
   fadeOutAndRedirect();
 });
 
+// 스토리에서 자동재생/증거버전 중 이 미니게임에 들어왔다면(game/index.html의
+// playMinigameTransition이 남겨둔 1회용 플래그) 복귀 URL에 그 모드를 다시
+// 붙여서 이어 재생되게 한다 — 없으면(수동 진입 등) 빈 문자열.
+function autoplayResumeSuffix() {
+  const raw = sessionStorage.getItem('mkAutoplayResume');
+  if (!raw) return '';
+  sessionStorage.removeItem('mkAutoplayResume');
+  try {
+    const { week, evidenceCheck } = JSON.parse(raw);
+    return `&autoplay=1&week=${encodeURIComponent(week || 'week1')}${evidenceCheck ? '&evidenceCheck=1' : ''}`;
+  } catch (e) { return ''; }
+}
+
 function fadeOutAndRedirect() {
   el.fadeOverlay.classList.add('show');
-  setTimeout(() => { location.href = '/play/game/?scene=week1-scene-train'; }, 950);
+  setTimeout(() => { location.href = '/play/game/?scene=week1-scene-train' + autoplayResumeSuffix(); }, 950);
 }
 
 document.getElementById('skipBtn').addEventListener('click', (e) => {

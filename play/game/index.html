@@ -956,6 +956,15 @@ function playEndingSequence() {
 // matching VN scene isn't built yet, so it just shows a placeholder overlay
 // instead of navigating to a dead page.
 
+// autoplay(§?autoplay=1)/증거버전(§?evidenceCheck=1)이 켜진 채로 nextSceneId
+// 체인을 따라갈 때 다음 URL에 붙일 쿼리 조각. 미니게임 경계에서는 이 자체가
+// 소용없지만(미니게임은 실제 입력이 필요해 스크립트할 게 없다), 미니게임을
+// 통과해 다시 VN 씬으로 돌아오는 순간에는 그대로 이어서 재생돼야 하므로
+// mkAutoplayResume(아래)이 이 문자열을 그 복귀 지점까지 들고 간다.
+function autoplayResumeSuffix() {
+  return autoplayOn ? `&autoplay=1&week=${encodeURIComponent(autoplayWeek)}${evidenceCheckMode ? '&evidenceCheck=1' : ''}` : '';
+}
+
 // Most nextSceneId handoffs are into a minigame (MINIGAME_ROUTES above), but
 // a plain location change with no minigame in between — e.g.
 // week1-scene-flight -> week1-scene-001-2 — hands off straight to another
@@ -965,8 +974,15 @@ function playMinigameTransition(nextSceneId) {
   const route = MINIGAME_ROUTES[nextSceneId];
   if (route) {
     if (SHOP_TUTORIAL_RETURN_SCENE[nextSceneId]) {
-      sessionStorage.setItem('mkShopReturnUrl', `/play/game/?scene=${encodeURIComponent(SHOP_TUTORIAL_RETURN_SCENE[nextSceneId])}`);
+      sessionStorage.setItem('mkShopReturnUrl', `/play/game/?scene=${encodeURIComponent(SHOP_TUTORIAL_RETURN_SCENE[nextSceneId])}${autoplayResumeSuffix()}`);
     }
+    // 1회용 플래그 — "완료하면 고정된 다음 씬으로 돌아가는" 미니게임들
+    // (phone-search/eastwood/photo-zoom/timeline 등, mkShopReturnUrl 계약을
+    // 안 쓰는 쪽)이 자기 하드코딩된 복귀 URL에 이걸 붙여서 자동재생을 이어
+    // 간다 — 없으면(수동 진입 등) 그냥 무시한다. autoplayOn이 아니면 이전
+    // 실행에서 남은 값이 잘못 이어받지 않도록 지운다.
+    if (autoplayOn) sessionStorage.setItem('mkAutoplayResume', JSON.stringify({ week: autoplayWeek, evidenceCheck: evidenceCheckMode }));
+    else sessionStorage.removeItem('mkAutoplayResume');
     location.href = route;
     return;
   }
@@ -976,8 +992,7 @@ function playMinigameTransition(nextSceneId) {
     // route above instead, autoplay has nothing left to script (those need
     // real input), so this suffix is simply omitted and that navigation
     // lands there in normal manual mode.
-    const suffix = autoplayOn ? `&autoplay=1&week=${encodeURIComponent(autoplayWeek)}${evidenceCheckMode ? '&evidenceCheck=1' : ''}` : '';
-    location.href = `/play/game/?scene=${encodeURIComponent(nextSceneId)}${suffix}`;
+    location.href = `/play/game/?scene=${encodeURIComponent(nextSceneId)}${autoplayResumeSuffix()}`;
     return;
   }
   el.introCard.textContent = 'MINIGAME START';
@@ -1529,10 +1544,11 @@ function autoReadDelay(text) {
 // ===== 증거버전(?evidenceCheck=1) 판정 — 증거 획득/케이스 파일 갱신
 // 이펙트(§applyEffect)를 달고 있거나, 심문 프롬프트(choice/evidence)인 줄만
 // "중요한 줄"로 본다. EVIDENCE_CHECK_SKIP_MS는 그 외 줄을 훑고 지나가는
-// 속도 — 0으로 하면 setTimeout 체인이 브라우저를 버벅이게 만들 수 있어
-// skipToNextInteraction과 같은 감각으로 아주 짧게만 둔다.
+// 속도 — setTimeout(fn, 0)도 브라우저가 최소 ~4ms로 clamp하므로
+// skipToNextInteraction(수동 스킵 버튼)과 같은 감각으로 0을 그대로 둬도
+// 안전하다.
 const IMPORTANT_EFFECT_TYPES = new Set(['addEvidence', 'updateEvidence', 'addFact', 'addQuestion', 'setQuestionStatus', 'addPerson', 'setPersonStatus', 'setHypothesis']);
-const EVIDENCE_CHECK_SKIP_MS = 30;
+const EVIDENCE_CHECK_SKIP_MS = 0;
 function isImportantLine(line) {
   if (!line) return false;
   if (line.type === 'choice' || line.type === 'evidence') return true;
@@ -1593,7 +1609,7 @@ const TEXT_SPEED_MS = { slow: 58, normal: 36, fast: 18, instant: 1 };
 // 실제 스킵(탭)은 하지 않으므로 안전하지만, 그래도 전환 연출은 늘 제 속도로
 // 보여주는 게 맞다. 이미 저자가 typingSpeedMs를 직접 지정한 줄은 항상
 // 우선한다(l.typingSpeedMs ||).
-const EVIDENCE_CHECK_TYPING_MS = 4;
+const EVIDENCE_CHECK_TYPING_MS = 1;
 function applyTextSpeedSetting(lines) {
   const speedMs = TEXT_SPEED_MS[CaseFileState.getSettings().textSpeed] || TEXT_SPEED_MS.normal;
   return lines.map(l => {
