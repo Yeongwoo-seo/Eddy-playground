@@ -727,8 +727,8 @@ const EvidenceNotebook = (function () {
       .evn-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0);display:flex;align-items:center;justify-content:center;padding:calc(env(safe-area-inset-top,0) + 14px) 14px calc(env(safe-area-inset-bottom,0) + 14px);opacity:0;transition:opacity .25s ease,background .25s ease;-webkit-tap-highlight-color:transparent}
       .evn-overlay.hidden{display:none}
       .evn-overlay.show{opacity:1;background:rgba(0,0,0,.72)}
-      .evn-book{position:relative;width:100%;max-width:420px;height:100%;max-height:820px;display:flex;flex-direction:column;transform:scale(.94);transition:transform .25s cubic-bezier(0.2,0.8,0.2,1)}
-      .evn-overlay.show .evn-book{transform:scale(1)}
+      .evn-book{position:relative;width:100%;max-width:420px;height:100%;max-height:820px;display:flex;flex-direction:column;transform:translateY(36px) scale(.96);transition:transform .28s cubic-bezier(0.2,0.8,0.2,1)}
+      .evn-overlay.show .evn-book{transform:translateY(0) scale(1)}
 
       .evn-tabbar{display:flex;justify-content:flex-end;gap:6px;padding-right:10px;flex-shrink:0}
       .evn-tabbar.hidden{display:none}
@@ -901,5 +901,5 @@ const EvidenceNotebook = (function () {
   // "예시" 미리보기 전용 — 이 파일이 사진 배경 없이 그리는 직접 디자인
   // 페이지(renderFallbackPageHtml)를 관리자 설정 화면에서도 똑같이 재사용해
   // 두 곳의 디자인이 벌어지지 않게 한다(§상단 주석 "순수 표시 계층 하나").
-  return { open, close, injectStyles, SECTIONS, renderExamplePageHtml: renderFallbackPageHtml };
+  return { open, close, isOpen: () => state.isOpen, injectStyles, SECTIONS, renderExamplePageHtml: renderFallbackPageHtml };
 })();
