@@ -978,7 +978,7 @@ function playMinigameTransition(nextSceneId) {
 function applyEffect(effect) {
   switch (effect.type) {
     case 'addEvidence':
-      CaseFileState.addEvidence(effect.evidence);
+      if (CaseFileState.addEvidence(effect.evidence)) caseMenu.notifyEvidence(effect.evidence);
       break;
     // A scene's "증거 갱신" narration beat — same evidence id, new
     // meaning/status as the story reinterprets it (§7.5). No-ops if the
