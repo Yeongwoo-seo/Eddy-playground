@@ -109,6 +109,7 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/dev/sw.js', { scope: '/dev/' });
 }
 </script>
+<script src="/dev/caseFileState.js"></script>
 <script src="/dev/dialogueData.js"></script>
 <script>
 // Setup href: plain VN scenes go to /dev/upload's 배경/캐릭터/대사 editor for
@@ -127,6 +128,11 @@ const autoplayFirstScene = week2Scenes.find(s => s.lines && s.lines.length);
 if (autoplayFirstScene) {
   autoplayLink.href = `/play/game/?scene=${encodeURIComponent(autoplayFirstScene.id)}&autoplay=1&week=week2`;
   evidenceCheckLink.href = `/play/game/?scene=${encodeURIComponent(autoplayFirstScene.id)}&autoplay=1&week=week2&evidenceCheck=1`;
+  // 1주차 홈 화면의 "시작하기"와 동일하게, 2주차를 처음부터 다시 재생할
+  // 때도 이전 테스트에서 남은 CaseFileState(증거·의문점)를 초기화하고
+  // 들어간다 — 안 그러면 증거버전 재생 때 이미 등록된 증거가 안 뜬다.
+  autoplayLink.addEventListener('click', () => CaseFileState.resetAll());
+  evidenceCheckLink.addEventListener('click', () => CaseFileState.resetAll());
 } else {
   autoplayLink.classList.add('disabled');
   evidenceCheckLink.classList.add('disabled');
