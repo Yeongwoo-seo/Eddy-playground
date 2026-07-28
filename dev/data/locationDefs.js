@@ -138,6 +138,11 @@ const locationDefs = {
     visualBrief: '더 록스 골목 한쪽에 자리한 작은 팝업 전시장의 유리문 입구. "K-01: 잃어버린 시간들" 배너가 입구 위에 걸려 있고, 유리문 너머로 전시 공간 일부가 살짝 비쳐 보인다.',
     characters: ['youngwoo'],
     exits: ['w2-the-rocks-lane'],
+    // 좌표는 실제 사진이 없어 잠정 배치(§w2-adrian-spot investigateHotspots
+    // 주석과 동일한 관례) — /dev/upload로 사진 올린 뒤 재조정 필요.
+    investigateHotspots: [
+      { x: 50, y: 80, interactionId: 'w2en-hotspot-flyer' },
+    ],
     // A location can also hand off *back into the VN* instead of only to
     // another routed page (routeOnEnter) or hub location (exits) — the hub
     // screen shows this as a distinct "들어간다" action, not a normal exit
@@ -171,6 +176,15 @@ const locationDefs = {
     visualBrief: '작은 팝업 전시장 내부. 중앙에 조명을 받는 황동 공예품 K-01 진열대가 있고, 한쪽엔 카페 코너, 다른 한쪽엔 접수대와 보조 진열 구역이 있는 아늑한 실내 전시 공간.',
     characters: ['claire', 'sophie', 'minah', 'adrian', 'leo'],
     exits: [],
+    // 좌표는 실제 사진이 없어 잠정 배치(§w2-adrian-spot investigateHotspots
+    // 주석과 동일한 관례) — /dev/upload로 사진 올린 뒤 재조정 필요. 조명은
+    // 증거 없는 순수 분위기, 나머지 둘은 레오/애드리언 쪽 보강 물증(필수
+    // 게이트 아님 — see interactionDefs.js w2ef-hotspot-* 주석).
+    investigateHotspots: [
+      { x: 50, y: 20, interactionId: 'w2ef-hotspot-k01-light' },
+      { x: 82, y: 65, interactionId: 'w2ef-hotspot-staffdoor' },
+      { x: 25, y: 55, interactionId: 'w2ef-hotspot-pedestal' },
+    ],
     enterSceneId: 'week2-scene-006',
     enterSceneLabel: '이제 단체사진 찍으러 가자',
   },
