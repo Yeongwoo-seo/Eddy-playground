@@ -94,6 +94,16 @@ function cardHtml(loc) {
           <div class="field-label">v4에서의 쓰임</div>
           <div class="field-val">${loc.v4Note}</div>
         </div>
+        ${loc.storyContext ? `
+        <div class="field">
+          <div class="field-label">장면 속 맥락</div>
+          <div class="field-val">${loc.storyContext}</div>
+        </div>` : ''}
+        ${loc.requiredElements && loc.requiredElements.length ? `
+        <div class="field">
+          <div class="field-label">필수 구성요소</div>
+          <div class="chip-row">${loc.requiredElements.map(e => `<span class="chip">${e}</span>`).join('')}</div>
+        </div>` : ''}
         ${loc.reuseHint ? `
         <div class="field">
           <div class="field-label">${loc.needsNewPhoto ? '재사용 확인 필요' : '재사용 방법'}</div>
