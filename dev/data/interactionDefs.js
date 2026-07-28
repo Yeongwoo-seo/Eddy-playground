@@ -687,7 +687,18 @@ const interactionDefs = {
       { speaker: "애드리언", text: "아, 그냥 구조가 궁금해서요\n공예적으로\n혹시 내부가 분리되는 구조인가요?", characterId: "adrian", expression: "annoyed" },
       { speaker: "클레어", text: "그것도... 저는 전시 관리만 해서요\n왜 그게 궁금하세요?", characterId: "claire", expression: "shocked" },
       { speaker: "애드리언", text: "아뇨 그냥\n공예 작품들 볼 때 습관적으로 궁금해지는 부분이라서요", characterId: "adrian", expression: "annoyed" },
-      { speaker: '', text: "어색한 침묵. [의문점: 애드리언은 왜 가격이 아니라 구조를 묻는가] 등록.", characterId: null },
+      { speaker: '', text: "어색한 침묵. [의문점: 애드리언은 왜 가격이 아니라 구조를 묻는가] 등록.", characterId: null ,
+        effects: [
+          {
+            type: 'addEvidence',
+            evidence: {
+              id: 'evidence-adrian-structure-question', code: 'E-B00', category: 'testimony', title: '애드리언의 이상한 질문 — 가격 대신 구조',
+              description: '애드리언 콜 — K-01 앞에서 가격은 한 번도 묻지 않고, 받침 내부 깊이와 분리 가능한 구조인지만 클레어에게 캐물었다. 공예 애호가치고는 이상한 관심사.',
+              discoveredLocationText: 'Pop-up Exhibition · 애드리언과 클레어의 대화',
+            },
+          },
+        ],
+      },
       { speaker: "영우", text: "(작게) 저 질문 좀 특이하다\n보통 사람들은 가격부터 물어보지 않나", characterId: "youngwoo", expression: "curious" },
       { speaker: "지수", text: "(작게) 그러게\n가격이 아니라 안쪽 구조를 궁금해하시네", characterId: "jisoo", expression: "curious" },
       { speaker: "영우", text: "뭐 그럴 수도 있지\n공예 좋아하시는 분들은 만듦새를 더 궁금해하기도 하니까", characterId: "youngwoo", expression: "neutral" },
@@ -793,7 +804,18 @@ const interactionDefs = {
       { speaker: "다니엘", text: "직원문이 저쪽으로 열리는 구조인가", characterId: "daniel-guide", expression: "neutral" },
       { speaker: "영우", text: "어 그런가봐요", characterId: "youngwoo", expression: "neutral" },
       { speaker: "지수", text: "그러고 보니 저기 문 있었네요\n전혀 못 봤어요", characterId: "jisoo", expression: "neutral" },
-      { speaker: '', text: "다니엘이 별생각 없다는 듯 웃으며 다시 나간다. [복선: 다니엘이 직원문 방향을 이미 안다] 등록.", characterId: null },
+      { speaker: '', text: "다니엘이 별생각 없다는 듯 웃으며 다시 나간다. [복선: 다니엘이 직원문 방향을 이미 안다] 등록.", characterId: null ,
+        effects: [
+          {
+            type: 'addEvidence',
+            evidence: {
+              id: 'evidence-daniel-staffdoor-foreknowledge', code: 'E-DN0', category: 'testimony', title: '다니엘의 직원문 선지식',
+              description: '다니엘 리드 — "이 진열장 처음 보는 구조"라면서도 직원문이 열리는 방향까지 곧바로 맞혔다. 처음 온 사람치고는 너무 정확한 감.',
+              discoveredLocationText: 'Pop-up Exhibition · K-01 진열대 앞, 다니엘과의 대화',
+            },
+          },
+        ],
+      },
       { speaker: "다니엘", text: "저는 다시 일 좀 보러 가볼게요\n오후에 시간 되시면 또 뵈어요", characterId: "daniel-guide", expression: "neutral" },
       { speaker: "지수", text: "네 감사합니다!!", characterId: "jisoo", expression: "happy" },
       { speaker: '', text: "다니엘이 손을 흔들고 전시장 밖으로 나간다.", characterId: null },
