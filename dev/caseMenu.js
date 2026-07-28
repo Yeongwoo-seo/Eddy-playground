@@ -39,6 +39,10 @@ function initCaseMenu(options) {
   }
 
   injectCaseMenuStyles();
+  // 증거 획득 토스트의 사진/폴백 아이콘(CaseEntryUI.caseEntryIconHtml)이 쓰는
+  // .ces-card-icon/.ces-icon-img 스타일 — 기존엔 증거 제시 시트를 한 번 열어야만
+  // 늦게 주입돼, 시트를 열기 전에 뜨는 토스트가 아이콘 없이 보일 수 있었다.
+  if (typeof CaseEntryUI !== 'undefined' && CaseEntryUI.injectCaseEntryUIStyles) CaseEntryUI.injectCaseEntryUIStyles();
   const root = buildCaseMenuDom();
   document.body.appendChild(root);
   const menuBtn = injectMenuButton(mountSelector, disabled);
@@ -706,20 +710,37 @@ function initCaseMenu(options) {
     `;
   }
 
-  /* ===== NEW QUESTION 토스트 ===== */
+  /* ===== NEW QUESTION 토스트 (§큐 — 한 줄의 effects 배열에서 addEvidence가
+     여러 건 한꺼번에 fire되는 경우(예: week2-scene-008 사진 분석 씬 하나에서
+     증거 3건)도 서로 덮어쓰지 않고 하나씩 순서대로 보여주기 위해 큐를 둔다.
+     기존 notify* 호출들도 전부 같은 큐를 타므로 같은 틱에 서로 다른 알림이
+     겹쳐도 안전하다. ===== */
   const toastEl = document.createElement('div');
   toastEl.className = 'cm-toast cm-hidden';
   document.body.appendChild(toastEl);
   let toastTimer = null;
-  function notifyToast(label, title) {
-    toastEl.innerHTML = `<div class="cm-toast-label">${escapeHtml(label)}</div><div class="cm-toast-title">${escapeHtml(title)}</div>`;
+  let toastQueue = [];
+  let toastBusy = false;
+  function runToastQueue() {
+    const next = toastQueue.shift();
+    if (!next) { toastBusy = false; return; }
+    toastBusy = true;
+    toastEl.innerHTML = next.html;
     toastEl.classList.remove('cm-hidden');
     requestAnimationFrame(() => toastEl.classList.add('cm-toast-show'));
+    if (next.imageAssetId && typeof CaseEntryUI !== 'undefined') CaseEntryUI.hydrateCaseEntryIcons(toastEl);
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => {
       toastEl.classList.remove('cm-toast-show');
-      setTimeout(() => toastEl.classList.add('cm-hidden'), 300);
+      setTimeout(() => { toastEl.classList.add('cm-hidden'); runToastQueue(); }, 300);
     }, 1700);
+  }
+  function queueToast(html, imageAssetId) {
+    toastQueue.push({ html, imageAssetId: imageAssetId || null });
+    if (!toastBusy) runToastQueue();
+  }
+  function notifyToast(label, title) {
+    queueToast(`<div class="cm-toast-label">${escapeHtml(label)}</div><div class="cm-toast-title">${escapeHtml(title)}</div>`);
   }
   function notifyNewQuestion(title) { notifyToast('NEW QUESTION', title); }
   // The Missing Key v1 §4.5 — a short toast for points earned mid-scene
@@ -728,16 +749,28 @@ function initCaseMenu(options) {
   function notifyPoints(amount) { notifyToast('포인트 획득', `+${amount}P`); }
   // The Missing Key v4 §15 — 증거 연결 성공 시 "새 사실 카드 생성 / 수사노트
   // 등록 알림", 가설 선택 시 "현재 가설로 저장" 피드백. Reuses the same toast
-  // element/timer as notifyNewQuestion (only one of these fires per beat in
-  // practice — a choice's effects array runs synchronously per line).
+  // queue as notifyNewQuestion.
   function notifyHypothesis(text) { notifyToast('가설 저장됨', text); }
   function notifyFact(title) { notifyToast('추론 사실 생성', title); }
   // 여행 만족도 / 영우 호감도 게이지 변화 — notifyPoints와 같은 목적의 짧은
   // 토스트(연출용 게이지라 방향·크기만 확인시켜주면 충분).
   function notifySatisfaction(amount) { notifyToast('여행 만족도', `${amount > 0 ? '+' : ''}${amount}`); }
   function notifyAffection(amount) { notifyToast('영우 호감도', `${amount > 0 ? '+' : ''}${amount}`); }
+  // 증거 획득 토스트 — 대사 줄 안에 "[ 증거: ... ] 등록." 문구를 박아 알리던
+  // 방식 대신, addEvidence effect가 fire될 때마다 카드와 동일한 사진/폴백
+  // 아이콘 우선순위(§10.14, CaseEntryUI.caseEntryIconHtml)로 사진을 포함한
+  // 토스트를 띄운다.
+  function notifyEvidence(item) {
+    if (!item) return;
+    const entries = (typeof CaseFileState !== 'undefined' && CaseFileState.getCaseEntries) ? CaseFileState.getCaseEntries() : [];
+    const entry = entries.find(e => e.id === item.id) || null;
+    const iconHtml = (entry && typeof CaseEntryUI !== 'undefined') ? CaseEntryUI.caseEntryIconHtml(entry) : `<span class="ces-card-icon">🧾</span>`;
+    const title = (entry && entry.title) || item.title || '';
+    const html = `<div class="cm-toast-row"><span class="cm-toast-icon">${iconHtml}</span><div><div class="cm-toast-label">증거 획득</div><div class="cm-toast-title">${escapeHtml(title)}</div></div></div>`;
+    queueToast(html, entry && entry.imageAssetId);
+  }
 
-  return { open, close, isOpen, notifyNewQuestion, notifyHypothesis, notifyFact, notifyPoints, notifySatisfaction, notifyAffection, destroy: () => { root.remove(); toastEl.remove(); } };
+  return { open, close, isOpen, notifyNewQuestion, notifyHypothesis, notifyFact, notifyPoints, notifySatisfaction, notifyAffection, notifyEvidence, destroy: () => { root.remove(); toastEl.remove(); } };
 }
 
 // The Missing Key v1 §5.3 — "비활성 상태에서는 메뉴를 숨기지 말고 잠금 또는
@@ -937,6 +970,10 @@ function injectCaseMenuStyles() {
     .cm-toast-show{opacity:1;transform:translateX(-50%) translateY(0)}
     .cm-toast-label{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;letter-spacing:.1em;color:#D8A93D;margin-bottom:4px}
     .cm-toast-title{font-size:13px;color:#F1F3F5;font-weight:600;word-break:keep-all}
+    .cm-toast-row{display:flex;align-items:center;gap:10px}
+    .cm-toast-icon{flex-shrink:0;width:36px;height:36px;border-radius:8px;overflow:hidden}
+    .cm-toast-icon .ces-card-icon{width:36px;height:36px;font-size:22px}
+    .cm-toast-icon .ces-icon-img{width:36px;height:36px}
   `;
   document.head.appendChild(style);
 }

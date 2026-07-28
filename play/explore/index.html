@@ -1658,7 +1658,7 @@ function playInteraction(interactionId) {
 function applyLocalEffect(effect) {
   if (effect.type === 'setFlag') CaseFileState.setFlag(effect.key, effect.value);
   else if (effect.type === 'addFact') { if (CaseFileState.addFact(effect.fact)) ExplorationState.refreshInteractionsByFact(effect.fact.id); }
-  else if (effect.type === 'addEvidence') CaseFileState.addEvidence(effect.evidence);
+  else if (effect.type === 'addEvidence') { if (CaseFileState.addEvidence(effect.evidence)) caseMenu.notifyEvidence(effect.evidence); }
   else if (effect.type === 'addQuestion') CaseFileState.addQuestion(effect.question);
 }
 
@@ -1771,7 +1771,7 @@ let activeInlineSceneId = null;
 function applyInlineSceneEffect(effect) {
   switch (effect.type) {
     case 'addEvidence':
-      CaseFileState.addEvidence(effect.evidence);
+      if (CaseFileState.addEvidence(effect.evidence)) caseMenu.notifyEvidence(effect.evidence);
       break;
     // [탐색허브 재도입] week2-scene-010b(레오 재접근)처럼 이제 허브 안에서
     // 인라인 재생되는 씬도 "증거 갱신" 내레이션 비트를 쓴다 — play/game/
