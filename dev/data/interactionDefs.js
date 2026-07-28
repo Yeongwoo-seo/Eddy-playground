@@ -604,7 +604,7 @@ const interactionDefs = {
       { speaker: "영우", text: "그러게\n근데 다니엘씨 오늘 여기저기 진짜 많이 다니시나봐", characterId: "youngwoo", expression: "neutral" },
       { speaker: "지수", text: "바쁜 가이드님인가보지 뭐\n아무튼 우리도 슬슬 안쪽 구경하러 가자", characterId: "jisoo", expression: "neutral" },
       { speaker: "영우", text: "그래\nK-01부터 다시 보러 가자", characterId: "youngwoo", expression: "neutral" },
-      { speaker: '', text: "[기록: 소피의 동네 잡담(다니엘 목격 최초 언급)] 획득. 전시장을 자유롭게 둘러볼 수 있는 상태가 된다.", characterId: null ,
+      { speaker: '', text: "전시장을 자유롭게 둘러볼 수 있는 상태가 된다.", characterId: null ,
         effects: [
           {
             type: 'addEvidence',
@@ -641,8 +641,13 @@ const interactionDefs = {
       { speaker: "윤민아", text: "아니에요 뭐", characterId: "minah", expression: "suspicious" },
       { speaker: '', text: "윤민아가 폰을 주머니에 넣으며 살짝 몸을 돌린다. 시선이 자꾸 두 사람과 K-01 진열대를 번갈아 오간다.", characterId: null },
       { speaker: "지수", text: "저희는 그냥 구경하는 거니까\n신경 쓰지 마세요 ㅎㅎ", characterId: "jisoo", expression: "neutral" },
-      { speaker: "윤민아", text: "네... 감사합니다", characterId: "minah", expression: "suspicious" },
-      { speaker: '', text: "[의문점: 윤민아가 뭔가 급히 숨기는 것 같다] 등록.", characterId: null },
+      {
+        speaker: "윤민아", text: "네... 감사합니다", characterId: "minah", expression: "suspicious",
+        effects: [{
+          type: 'addQuestion',
+          question: { id: 'question-minah-hiding-something', title: '윤민아가 뭔가 급히 숨기는 것 같다', description: '윤민아가 두 사람을 보자마자 재빨리 폰을 내렸다. 무언가를 촬영하다 들킨 듯한 반응이다.' },
+        }],
+      },
       { speaker: '', text: "지수가 카메라를 들어 K-01을 몇 장 찍는다. 근처에서 윤민아가 몸을 낮춰 K-01 하단을 확대 촬영하고 있다.", characterId: null },
       { speaker: "영우", text: "(작게) 저분 또 저러시네", characterId: "youngwoo", expression: "curious" },
       { speaker: "지수", text: "(작게) 아까 그분이지\n근데 되게 각도를 세밀하게 잡으시는데", characterId: "jisoo", expression: "curious" },
@@ -657,7 +662,7 @@ const interactionDefs = {
       { speaker: "윤민아", text: "죄송해요\n그냥 개인 소장용으로 몇 장만...\n업로드 안 할게요", characterId: "minah", expression: "annoyed" },
       { speaker: "클레어", text: "다음부턴 주의해주세요\n저희도 작가님 작품 저작권 때문에 민감해서요", characterId: "claire", expression: "neutral" },
       { speaker: "윤민아", text: "네... 죄송합니다", characterId: "minah", expression: "shocked" },
-      { speaker: '', text: "클레어가 다시 접수대 쪽으로 걸어간다. [증거: 윤민아의 확대 사진(무단 촬영 자료)] 등록.", characterId: null ,
+      { speaker: '', text: "클레어가 다시 접수대 쪽으로 걸어간다.", characterId: null ,
         effects: [
           {
             type: 'addEvidence',
@@ -696,8 +701,13 @@ const interactionDefs = {
       { speaker: "애드리언", text: "음... 글쎄요\n그건 보는 사람마다 다르지 않을까요", characterId: "adrian", expression: "annoyed" },
       { speaker: '', text: "애드리언이 웃으며 말끝을 흐린다. 지수와 영우가 서로 눈을 마주친다.", characterId: null },
       { speaker: "지수", text: "(작게) 뭔가 대답을 안 하시는 느낌인데", characterId: "jisoo", expression: "curious" },
-      { speaker: "영우", text: "(작게) 그러게\n질문을 질문으로 받으시네", characterId: "youngwoo", expression: "curious" },
-      { speaker: '', text: "[의문점: 애드리언이 가격 얘기를 피한다] 등록.", characterId: null },
+      {
+        speaker: "영우", text: "(작게) 그러게\n질문을 질문으로 받으시네", characterId: "youngwoo", expression: "curious",
+        effects: [{
+          type: 'addQuestion',
+          question: { id: 'question-adrian-avoids-price', title: '애드리언이 가격 얘기를 피한다', description: '애드리언은 공예품 얘기를 하면서도 가격이나 판매 쪽 얘기는 한 번도 꺼내지 않았다.' },
+        }],
+      },
       { speaker: '', text: "윤민아가 자리를 옮겨 전시장 반대편으로 이동한다. 폰을 계속 만지작거리며 걷는다.", characterId: null },
       { speaker: '', text: "애드리언이 클레어에게 다가간다.", characterId: null },
       { speaker: "애드리언", text: "클레어씨, 하나만 여쭤볼게요\n이 받침 내부 깊이가 어느 정도 되나요?", characterId: "adrian", expression: "neutral" },
@@ -705,7 +715,7 @@ const interactionDefs = {
       { speaker: "애드리언", text: "아, 그냥 구조가 궁금해서요\n공예적으로\n혹시 내부가 분리되는 구조인가요?", characterId: "adrian", expression: "annoyed" },
       { speaker: "클레어", text: "그것도... 저는 전시 관리만 해서요\n왜 그게 궁금하세요?", characterId: "claire", expression: "shocked" },
       { speaker: "애드리언", text: "아뇨 그냥\n공예 작품들 볼 때 습관적으로 궁금해지는 부분이라서요", characterId: "adrian", expression: "annoyed" },
-      { speaker: '', text: "어색한 침묵. [의문점: 애드리언은 왜 가격이 아니라 구조를 묻는가] 등록.", characterId: null ,
+      { speaker: '', text: "어색한 침묵.", characterId: null ,
         effects: [
           {
             type: 'addEvidence',
@@ -745,8 +755,8 @@ const interactionDefs = {
       { speaker: '', text: "애드리언이 K-01 반대편으로 자리를 옮긴다. 지수와 영우가 마주 본다.", characterId: null },
       { speaker: "영우", text: "(작게) 근데 방금도 결국 대답은 안 했어", characterId: "youngwoo", expression: "curious" },
       { speaker: "지수", text: "(작게) 그러게\n근데 나쁜 사람 같지는 않아\n그냥 뭔가... 조심스러운 느낌?", characterId: "jisoo", expression: "curious" },
-      { speaker: "영우", text: "그럴 수도 있지\n아무튼 계속 지켜보자", characterId: "youngwoo", expression: "neutral" },
-      { speaker: '', text: "[기록: 애드리언의 수집 취미 이야기] 획득.", characterId: null ,
+      {
+        speaker: "영우", text: "그럴 수도 있지\n아무튼 계속 지켜보자", characterId: "youngwoo", expression: "neutral",
         effects: [
           {
             type: 'addEvidence',
@@ -822,7 +832,7 @@ const interactionDefs = {
       { speaker: "다니엘", text: "직원문이 저쪽으로 열리는 구조인가", characterId: "daniel-guide", expression: "neutral" },
       { speaker: "영우", text: "어 그런가봐요", characterId: "youngwoo", expression: "neutral" },
       { speaker: "지수", text: "그러고 보니 저기 문 있었네요\n전혀 못 봤어요", characterId: "jisoo", expression: "neutral" },
-      { speaker: '', text: "다니엘이 별생각 없다는 듯 웃으며 다시 나간다. [복선: 다니엘이 직원문 방향을 이미 안다] 등록.", characterId: null ,
+      { speaker: '', text: "다니엘이 별생각 없다는 듯 웃으며 다시 나간다.", characterId: null ,
         effects: [
           {
             type: 'addEvidence',
@@ -878,8 +888,8 @@ const interactionDefs = {
       { speaker: '영우', text: '직원용인가봐\n지금은 잠겨 있는 것 같은데', characterId: 'youngwoo', expression: 'neutral' },
       { speaker: '', text: '문턱 아래 틈에 작은 포장용 테이프 조각이 떨어져 있다. 짐을 옮기다 흘린 것 같다.', characterId: null },
       { speaker: '지수', text: '이런 것도 막 떨어져 있네.', characterId: 'jisoo', expression: 'neutral' },
-      { speaker: '영우', text: '짐 나르다 흘렸나보다\n대수롭지 않은 거겠지', characterId: 'youngwoo', expression: 'neutral' },
-      { speaker: '', text: '[증거: 직원문 앞 포장용 테이프 조각] 등록.', characterId: null ,
+      {
+        speaker: '영우', text: '짐 나르다 흘렸나보다\n대수롭지 않은 거겠지', characterId: 'youngwoo', expression: 'neutral',
         effects: [
           {
             type: 'addEvidence',
@@ -906,8 +916,8 @@ const interactionDefs = {
       { speaker: '', text: '받침대 옆면에 연필로 그은 듯한 작은 눈금 자국이 남아 있다. 누군가 치수를 재본 흔적 같다.', characterId: null },
       { speaker: '지수', text: '어? 여기 뭐 재본 자국 있는데.', characterId: 'jisoo', expression: 'curious' },
       { speaker: '영우', text: '진짜네\n누가 이런 걸 재나', characterId: 'youngwoo', expression: 'curious' },
-      { speaker: '지수', text: '전시 준비하면서 그랬겠지 뭐.', characterId: 'jisoo', expression: 'neutral' },
-      { speaker: '', text: '[증거: 보조 받침대의 눈금 자국] 등록.', characterId: null ,
+      {
+        speaker: '지수', text: '전시 준비하면서 그랬겠지 뭐.', characterId: 'jisoo', expression: 'neutral',
         effects: [
           {
             type: 'addEvidence',
