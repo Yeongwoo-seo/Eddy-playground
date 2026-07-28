@@ -206,7 +206,10 @@ renderStartPos(loadStartPos());
 // Straight into the prologue's first scene (internal week1, ARRIVAL), not
 // the /dev/week1 scene picker — a real player who picks 1주차 plays through
 // the story from the top, not to browse individual scenes for testing.
-function goToRealStart() { RealPlayMode.mark(); location.href = '/play/game/?scene=week1-scene-flight'; }
+// 새 플레이 시작 — 이전 테스트/플레이에서 남은 증거수첩(증거·의문점)을
+// 들고 시작하면 1주차인데 2주차 증거가 보이는 등 앞뒤가 안 맞으므로,
+// 저장 슬롯과 무관하게 매번 초기화하고 들어간다.
+function goToRealStart() { CaseFileState.resetAll(); RealPlayMode.mark(); location.href = '/play/game/?scene=week1-scene-flight'; }
 
 // "이어하기" — 저장 슬롯을 실제로 불러와(CaseFileState.loadSlot) 조사 상태/
 // 포인트/옷장/탐색 허브 상태를 전부 복원한 뒤, 저장된 씬(또는 탐색 허브
