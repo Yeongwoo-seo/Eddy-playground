@@ -578,6 +578,12 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
          어긋나지 않게 한다. -->
     <div class="picker-pills" id="evidenceKindPills" style="margin-bottom:10px"></div>
     <div class="picker-pills" id="evidenceCategoryPills" style="margin-bottom:14px"></div>
+    <!-- 사진 미등록 필터 — evidencePhotoAssets(증언은 evidenceTestimonyPhotoAsset)에
+         아직 배정된 사진이 없는 항목만 골라 보는 토글. kind/카테고리 pill과
+         독립적으로 같이 적용된다(renderEvidenceList 참고). -->
+    <div class="picker-pills" id="evidenceUnregisteredPill" style="margin-bottom:14px">
+      <button class="pill" id="evidenceUnregisteredToggle">📷 사진 미등록만 보기</button>
+    </div>
     <div class="hint" id="evidenceCountHint" style="margin:0 0 14px"></div>
     <div id="evidenceList"></div>
     <input type="file" id="evidencePhotoInput" accept="image/jpeg,image/png,image/webp">
@@ -851,6 +857,7 @@ const el = {
   evidenceKindPills: document.getElementById('evidenceKindPills'),
   evidenceCategoryPills: document.getElementById('evidenceCategoryPills'),
   evidenceCountHint: document.getElementById('evidenceCountHint'),
+  evidenceUnregisteredToggle: document.getElementById('evidenceUnregisteredToggle'),
   evidenceList: document.getElementById('evidenceList'),
   evidencePhotoInput: document.getElementById('evidencePhotoInput'),
   evidencePromptSettingsBtn: document.getElementById('evidencePromptSettingsBtn'),
@@ -3456,6 +3463,7 @@ let evidenceCatalogCache = null;
 let evidenceSectionFilter = 'all'; // all | witness | evidence | photo
 let evidenceCategoryFilter = 'all';
 let evidenceSearchQuery = '';
+let evidenceUnregisteredOnly = false; // true면 사진이 배정 안 된 항목만 보여줌
 let evidencePhotoAssets = {}; // evidenceId -> { id, dataUrl, ... } asset record, loaded by loadEvidencePhotoAssets
 let evidenceCommonPrompt = '';
 let currentEvidencePhotoTargetId = null; // which evidence id the shared photo editor is currently uploading for
@@ -3577,6 +3585,7 @@ function renderEvidenceList() {
   const query = evidenceSearchQuery.trim().toLowerCase();
   const filtered = sectionFiltered.filter(r => {
     if (evidenceSectionFilter !== 'witness' && evidenceSectionFilter !== 'photo' && evidenceCategoryFilter !== 'all' && (r.category || 'etc') !== evidenceCategoryFilter) return false;
+    if (evidenceUnregisteredOnly && evidenceHasPhoto(r)) return false;
     if (!query) return true;
     const haystack = [r.title, r.code, r.id, r.description, r.discoveredLocationText].filter(Boolean).join(' ').toLowerCase();
     return haystack.includes(query);
@@ -3590,6 +3599,20 @@ function renderEvidenceList() {
   }).join('');
   el.evidenceList.innerHTML = groupsHtml || '<div class="empty-note">조건에 맞는 증거가 없습니다.</div>';
   el.evidenceCountHint.textContent = `전체 ${rows.length}개 중 ${filtered.length}개 표시`;
+  el.evidenceUnregisteredToggle.classList.toggle('active', evidenceUnregisteredOnly);
+}
+
+el.evidenceUnregisteredToggle.addEventListener('click', () => {
+  evidenceUnregisteredOnly = !evidenceUnregisteredOnly;
+  renderEvidenceList();
+});
+
+// 증언(kind==='testimony')은 공용 "기록사진" 한 장을 공유하므로 그 배정
+// 여부로, 그 외 증거는 각자 evidencePhotoAssets 배정 여부로 등록 상태를
+// 판단한다. evidenceRowHtml의 썸네일 표시와 미등록 필터가 같은 기준을
+// 쓰도록 여기 한 곳에서만 정의한다(§0 원칙: 파생값은 한 곳에서만).
+function evidenceHasPhoto(r) {
+  return !!(r.kind === 'testimony' ? evidenceTestimonyPhotoAsset : evidencePhotoAssets[r.id]);
 }
 
 function evidenceRowHtml(r) {
