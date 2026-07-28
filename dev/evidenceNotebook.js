@@ -112,8 +112,12 @@ const EvidenceNotebook = (function () {
       }
     } catch (e) { notebookConfig = notebookConfig || { imageAssetId: null, imageAssetIds: {}, regions: {} }; }
   }
-  function sectionBgUrl(sectionId) { return sectionBgUrls[sectionId] || null; }
-  function hasAnyRealBg() { return SECTIONS.some(s => !!sectionBgUrls[s.id]); }
+  // 업로드된 배경 아트(이미지 모드)와 손으로 그린 CSS 노트(폴백)가 책갈피별로
+  // 섞여 보이는 것을 막기 위해, 아트가 있어도 항상 폴백 디자인만 쓰도록 여기서
+  // 통째로 끈다 — dev/upload/evidence-notebook에 올려둔 아트 자체는 그대로
+  // 남아있으니 나중에 되돌리려면 이 두 줄만 원래대로 바꾸면 된다.
+  function sectionBgUrl() { return null; }
+  function hasAnyRealBg() { return false; }
   function regionFor(labelId) {
     const r = notebookConfig && notebookConfig.regions && notebookConfig.regions[labelId];
     return r || DEFAULT_REGION_FALLBACK[labelId] || null;

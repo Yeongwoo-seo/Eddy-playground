@@ -30,7 +30,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 #caseMenuMount{display:flex}
 /* 증거노트 배지 — play/game/index.html의 evnBadgeBtn과 같은 스타일. 탐색허브는
    2주차부터만 쓰이는 화면이라(§week1은 이 페이지에 오지 않음) 항상 노출한다. */
-.evn-badge-btn{width:36px;height:36px;border-radius:50%;background:rgba(214,168,75,.14);border:1px solid rgba(214,168,75,.4);color:var(--amber);font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.evn-badge-btn{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--amber);background:rgba(214,168,75,.14);border:1px solid rgba(214,168,75,.4);border-radius:20px;padding:9px 14px;min-height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .evn-badge-btn:active{opacity:.8}
 
 /* ===== MAP VIEW (spec §7.2) ===== */
@@ -327,7 +327,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
   <div class="topbar">
     <div class="topbar-left">
       <span id="caseMenuMount"></span>
-      <button type="button" class="evn-badge-btn" id="evnBadgeBtn" aria-label="증거노트 열기">📓</button>
+      <button type="button" class="evn-badge-btn" id="evnBadgeBtn" aria-label="증거노트 열기">증거</button>
       <span class="point-balance hidden" id="pointBalance">P 0</span>
     </div>
     <div style="display:flex;gap:8px">
