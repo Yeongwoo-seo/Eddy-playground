@@ -2253,8 +2253,8 @@ const week2Scene010bLines = [
       {
         type: 'addEvidence',
         evidence: {
-          id: 'evidence-case-edge-fiber', code: 'E-H12', category: 'physical', title: '진열장 모서리 검은 섬유',
-          description: '진열장 모서리에 걸린 검은 섬유 조각. 레오의 옷 소매와 같은 색이다.',
+          id: 'evidence-case-edge-fiber', code: 'E-H12', category: 'physical', title: '진열장 모서리 회색 섬유',
+          description: '진열장 모서리에 걸린 회색 섬유 조각. 레오의 옷 소매와 같은 색이다.',
           discoveredLocationText: 'Pop-up Exhibition · K-01 진열대',
         },
       },
