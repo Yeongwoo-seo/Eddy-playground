@@ -271,9 +271,8 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
    있었는데, "PPT 슬라이드형 에디터"로 바뀌면서 색상 피커(barColor)가
    빠진 채 그 하드코딩 색만 남아, 낚시바 이미지를 안 올렸거나 슬라이드
    전체를 안 덮으면 안 덮인 부분이 그냥 검게 보이는 문제가 있었다. */
-/* 위치(left/top/transform)는 화면 중앙 고정이 아니라 캐릭터 오른쪽을
-   따라가도록 positionFishbarRightOfCharacter가 매번 인라인 스타일로
-   계산해 넣는다(아래 참고). */
+/* 위치(left/top/transform)는 화면 왼쪽·세로 중앙 고정 위치로
+   positionFishbarLeftCenter가 매번 인라인 스타일로 계산해 넣는다(아래 참고). */
 .fishbar-panel{position:absolute;z-index:4;display:flex;align-items:center;gap:14px;padding:18px 20px}
 .fishbar-panel.hidden{display:none}
 .fishbar{position:relative;width:52px;height:230px;border-radius:12px;overflow:hidden}
@@ -3040,7 +3039,7 @@ async function abortWaitingReel() {
 function startCatching() {
   gameState = 'catching';
   el.fishbarPanel.classList.remove('hidden');
-  positionFishbarRightOfCharacter();
+  positionFishbarLeftCenter();
   fish = { y: 100, vy: -DIFF_TUNING[DIFFICULTY].fishSpeedMult * 34, targetY: 100, pickTimer: 0 };
   zone = { y: 100 - zoneSizePct, vel: 0 };
   progress = 30;
@@ -3284,22 +3283,23 @@ function positionCastGaugeAboveCharacter() {
 }
 
 /* ===== 낚시바 위치 =====
-   잡아채기 낚시바(fishbar-panel)는 화면 중앙 고정이 아니라 캐릭터 오른쪽에
-   뜬다. 폭은 안에 올린 바 이미지/게이지 크기에 따라 달라지므로, 보이게 만든
-   직후(호출부에서 hidden을 먼저 지운 뒤) 실제 레이아웃 폭(offsetWidth —
-   transform 영향을 안 받는 값)을 재서 화면 오른쪽으로 잘려나가지 않게 clamp한다. */
-const FISHBAR_GAP = 20;
+   잡아채기 낚시바(fishbar-panel)는 캐릭터를 따라다니지 않고 화면 왼쪽,
+   세로 중앙에 고정된다 — 캐릭터는 조이스틱으로 화면 어디든 움직일 수
+   있어서(FALLBACK_MOVE_BOUNDS_PCT 등) 캐릭터 기준으로 띄우면 잡아채기
+   때마다 낚시바가 나타나는 위치가 들쭉날쭉해 찾기 번거로웠다. 폭은 안에
+   올린 바 이미지/게이지 크기에 따라 달라지므로, 보이게 만든 직후(호출부에서
+   hidden을 먼저 지운 뒤) 실제 레이아웃 폭(offsetWidth — transform 영향을
+   안 받는 값)을 재서 화면 오른쪽으로 잘려나가지 않게 clamp한다. */
 const FISHBAR_MARGIN = 12;
-function positionFishbarRightOfCharacter() {
+function positionFishbarLeftCenter() {
   const frameRect = el.frame.getBoundingClientRect();
-  const charRect = el.charStage.getBoundingClientRect();
   const scale = layoutPrefs.fishbar.scale;
   const panelWidth = el.fishbarPanel.offsetWidth * scale;
-  const charCenterY = charRect.top - frameRect.top + charRect.height / 2 + layoutPrefs.fishbar.top;
-  const anchorLeftPx = charRect.right - frameRect.left + FISHBAR_GAP + layoutPrefs.fishbar.left;
-  const clampedLeftPx = Math.min(anchorLeftPx, frameRect.width - FISHBAR_MARGIN - panelWidth);
+  const centerY = frameRect.height / 2 + layoutPrefs.fishbar.top;
+  const anchorLeftPx = FISHBAR_MARGIN + layoutPrefs.fishbar.left;
+  const clampedLeftPx = Math.max(FISHBAR_MARGIN, Math.min(anchorLeftPx, frameRect.width - FISHBAR_MARGIN - panelWidth));
   el.fishbarPanel.style.left = clampedLeftPx + 'px';
-  el.fishbarPanel.style.top = charCenterY + 'px';
+  el.fishbarPanel.style.top = centerY + 'px';
   el.fishbarPanel.style.transform = `translateY(-50%) scale(${scale})`;
 }
 
@@ -3645,7 +3645,7 @@ let layoutPrefs = {
   heldFish: { size: 32 }, // 낚시 성공 후 캐릭터가 들고 있는 물고기 아이콘 크기(px) — .held-fish 기본값과 맞춤. 배치 확정 값으로 기본값 고정
   char: { scale: 0.45, outline: 0 }, // 캐릭터(.char-stage) 전체 배율 — --char-scale, char-stage의 transform:scale에 그대로 들어간다. 배치 확정 값으로 기본값 고정
   casting: { scale: 0.55, left: 1, bottom: -20 }, // 캐스팅 파워바/찌/입질 팝업/아이템 팝업/물고기 날아가는 연출을 한 번에 묶어 조절하는 배율 — --casting-scale과 각 요소의 JS 계산 transform에 곱해진다. 추 던지기 궤적(cast-svg)은 낚싯대 끝의 실제 화면 좌표에 맞춰야 해서 일부러 빼뒀다(비율만 바꾸면 궤적 시작점이 캐릭터 손끝에서 어긋나 보인다). left/bottom은 더 이상 화면 기준 절대 위치가 아니라, 캐스팅 게이지(cast-power-wrap)가 뜨는 "캐릭터 머리 위" 기준점에서 얼마나 더 옮길지 정하는 오프셋이다(positionCastGaugeAboveCharacter 참고) — 배치 확정 값으로 기본값 고정.
-  fishbar: { scale: 1, left: -28, top: 5 }, // 잡아채기 낚시바(fishbar-panel) 전용 배율·위치 — 예전엔 casting.scale을 같이 썼지만, 낚시바만 따로 크기/위치를 잡고 싶다는 요청으로 분리했다. left/top은 "캐릭터 오른쪽, 세로 중앙" 기준점(positionFishbarRightOfCharacter)에서 얼마나 더 옮길지 정하는 오프셋 — top인 이유는 그 함수가 bottom이 아니라 top으로 세로 위치를 잡기 때문(캐스팅 게이지 쪽 bottom과 부호 방향이 다르다). 배치 확정 값으로 기본값 고정.
+  fishbar: { scale: 1, left: 0, top: 0 }, // 잡아채기 낚시바(fishbar-panel) 전용 배율·위치 — 예전엔 casting.scale을 같이 썼지만, 낚시바만 따로 크기/위치를 잡고 싶다는 요청으로 분리했다. left/top은 "화면 왼쪽, 세로 중앙" 기준점(positionFishbarLeftCenter)에서 얼마나 더 옮길지 정하는 오프셋 — top인 이유는 그 함수가 bottom이 아니라 top으로 세로 위치를 잡기 때문(캐스팅 게이지 쪽 bottom과 부호 방향이 다르다). 캐릭터 오른쪽 앵커에서 화면 왼쪽 앵커로 바뀌면서(요청) 기존 오프셋(-28,5)은 더 이상 의미가 없어 0으로 초기화했다.
   itemPopup: { scale: 1.6 }, // 낚시 팝업(.item-popup) 전용 배율 — casting.scale(전체 캐스팅 UI 묶음)에 곱해져 적용된다(positionItemPopupAboveCharacter). 낚시 팝업만 따로 크기를 조절하고 싶다는 요청으로 추가.
   statusWindow: { scale: 1, left: 0, top: 0 }, // 상태창(.status-window, 요일·날짜/시간/포인트/화살표) 전용 배율·오프셋 — 기준 위치(우상단 고정)에서 얼마나 옮길지와 전체 배율. transform-origin이 top right라 scale은 그 모서리를 축으로 커진다.
   dialogueBox: { scale: 1, left: 5, top: 4 }, // 대화 인트로(.dialogue-intro-inner — 대화창 배경/이름/대사/초상화 레이어 그룹) 전용 배율·오프셋. 화면 전체를 덮는 어두운 배경(.dialogue-intro 자체)은 그대로 두고 안쪽 그림들만 통째로 옮기고 키운다.
@@ -3702,7 +3702,7 @@ async function pullLayoutPrefsFromServer() {
     el.statusWindowScaleRange.value = layoutPrefs.statusWindow.scale;
     el.itemWindowScaleRange.value = layoutPrefs.itemWindow.scale;
     if (castingPosPreview) positionCastGaugeAboveCharacter();
-    if (fishbarPosPreview) positionFishbarRightOfCharacter();
+    if (fishbarPosPreview) positionFishbarLeftCenter();
   } catch (err) { /* 오프라인/서버 오류 — 로컬 캐시 값 그대로 사용 */ }
 }
 // 서버 저장이 실패해도 예전엔 조용히 무시돼서(.catch(() => {})) 편집한
@@ -3826,7 +3826,7 @@ function updateLayoutDrag(e) {
   }
   applyLayoutPrefs();
   if (layoutDragTarget === 'casting') positionCastGaugeAboveCharacter();
-  else if (layoutDragTarget === 'fishbar') positionFishbarRightOfCharacter();
+  else if (layoutDragTarget === 'fishbar') positionFishbarLeftCenter();
   syncDragGhost(layoutDragTargetEl());
 }
 function endLayoutDrag() {
@@ -3907,7 +3907,7 @@ el.layoutFishbarPosBtn.addEventListener('click', (e) => {
   fishbarPosPreview = !fishbarPosPreview;
   el.layoutFishbarPosBtn.classList.toggle('active', fishbarPosPreview);
   el.fishbarPanel.classList.toggle('hidden', !fishbarPosPreview);
-  if (fishbarPosPreview) positionFishbarRightOfCharacter();
+  if (fishbarPosPreview) positionFishbarLeftCenter();
 });
 el.fishbarPanel.addEventListener('pointerdown', (e) => {
   if (!layoutEditMode) return;
