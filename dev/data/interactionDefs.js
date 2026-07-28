@@ -654,6 +654,51 @@ const interactionDefs = {
     ],
   },
 
+  // ===== w2-exhibit-floor 조사하기 핫스팟 (§신규) — 지금까지 이 phase는
+  // 인물 chip(대화하기)만으로 접근했고, w2-adrian-spot(W2_TOURISM)이 이미
+  // 쓰고 있는 조사하기(투명 탭존, locationDefs.js investigateHotspots)는
+  // W2_EXHIBIT_FREE_LOOK엔 하나도 연결돼 있지 않았다. characterId는 다른
+  // 조사하기 전용 topic들과 같은 관례로 'youngwoo'를 쓰되, w2-exhibit-floor의
+  // `characters`엔 'youngwoo'가 없어(locationDefs.js) 대화하기 chip에는 뜨지
+  // 않고 오직 조사하기 핫스팟으로만 열린다. 이 phase의 다른 topic들과 달리
+  // effects는 (조사하기 전용 topic들의 관례대로) lines가 아니라 topic 최상위에
+  // 둔다 — playInvestigateHotspot()이 그렇게 읽는다(w2as-topic-* 참고).
+  'w2ef-inv-staffdoor': {
+    id: 'w2ef-inv-staffdoor',
+    characterId: 'youngwoo',
+    locationIds: ['w2-exhibit-floor'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
+    type: 'topic',
+    label: '직원 전용문 살펴보기',
+    lines: [
+      { speaker: '', text: '직원 전용문. "관계자 외 출입 금지"라고 적혀 있다. 지금은 굳게 닫혀 있다.', characterId: null },
+    ],
+    // 이 "닫혀 있음" 관찰이 실제로 필요한 이유 — week2-scene-010b(레오를 다시
+    // 붙잡는 장면)의 evidence-staffdoor-ajar(E-H06b)가 "자유 관람 때는 닫혀
+    // 있던 직원 전용문"이라고 명시적으로 전제하는데, 정작 그 "닫혀 있던" 순간
+    // 자체를 등록할 방법이 이제까지 하나도 없었다. E-H06b와 짝을 맞추도록
+    // 코드를 E-H06a로 잇는다.
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-staffdoor-closed-baseline', code: 'E-H06a', category: 'physical', title: '직원 전용문 (닫혀 있음)',
+        description: '자유 관람 중, 직원 전용문은 "관계자 외 출입 금지" 표시와 함께 굳게 닫혀 있다.',
+        discoveredLocationText: 'Pop-up Exhibition · 직원 전용문',
+      },
+    }],
+  },
+  'w2ef-inv-case': {
+    id: 'w2ef-inv-case',
+    characterId: 'youngwoo',
+    locationIds: ['w2-exhibit-floor'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
+    type: 'topic',
+    label: 'K-01 진열대 조명 살펴보기',
+    lines: [
+      { speaker: '', text: '진열대 조명이 K-01을 따뜻하게 비춘다. 세공된 표면이 빛을 받아 은은하게 일렁이고, 받침대 하단엔 작은 무늬가 촘촘하게 새겨져 있다.', characterId: null },
+    ],
+  },
+
   /* ===== Phase 4 — 용의자 탐문 (§12.6) =====
      Each suspect's *entire* existing interrogation scene (already scripted,
      multi-round, choice-heavy — see dev/dialogueData.js week2Scene006/007/

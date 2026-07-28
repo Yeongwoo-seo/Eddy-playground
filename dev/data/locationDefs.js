@@ -171,6 +171,14 @@ const locationDefs = {
     visualBrief: '작은 팝업 전시장 내부. 중앙에 조명을 받는 황동 공예품 K-01 진열대가 있고, 한쪽엔 카페 코너, 다른 한쪽엔 접수대와 보조 진열 구역이 있는 아늑한 실내 전시 공간.',
     characters: ['claire', 'sophie', 'minah', 'adrian', 'leo'],
     exits: [],
+    // 조사하기(§신규) — w2-adrian-spot(W2_TOURISM)과 달리 이 phase는 지금까지
+    // 인물 chip(대화하기)으로만 진행됐다. x/y는 실제 사진이 아직 없어 잠정
+    // 배치한 값(§파일 상단 investigateHotspots 주석 참고, /dev/upload로 사진
+    // 올린 뒤 다시 맞춰야 함). interactionDefs.js의 w2ef-inv-* 참고.
+    investigateHotspots: [
+      { x: 82, y: 68, interactionId: 'w2ef-inv-staffdoor' },
+      { x: 50, y: 35, interactionId: 'w2ef-inv-case' },
+    ],
     enterSceneId: 'week2-scene-006',
     enterSceneLabel: '이제 단체사진 찍으러 가자',
   },
