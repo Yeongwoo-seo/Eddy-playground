@@ -64,7 +64,7 @@ body{background:linear-gradient(180deg,var(--yellow-bg-top) 0%,var(--yellow-bg-b
 <div class="frame" id="frame">
 
   <div class="topbar">
-    <a class="back-chip" href="/dev/minigames/" aria-label="뒤로">‹</a>
+    <a class="back-chip" id="backChip" href="/dev/minigames/" aria-label="뒤로">‹</a>
     <div class="score-coin">
       <div class="score-coin-value" id="scoreValue">0</div>
     </div>
@@ -101,13 +101,21 @@ if ('serviceWorker' in navigator) {
 <script src="/dev/assetDb.js"></script>
 <script>
 /* =========================================================================
-   수박 게임 (watermelon merge game, Suika-style) — standalone/독립형
-   미니게임, 스토리 미연동. Reference: https://github.com/liyupi/daxigua.git
+   수박 게임 (watermelon merge game, Suika-style). Reference:
+   https://github.com/liyupi/daxigua.git
 
    Physics runs on Matter.js (loaded via CDN above); this file only owns
    spawning/merging/game-over rules and a plain canvas render pass that
    reads body positions straight out of the Matter world each frame.
+
+   [과일 마켓 · 수박 게임 연계] 독립형으로 만들어졌지만, week2-scene-001b
+   (패디스 마켓 상인의 도전 제안)에서도 그대로 재사용된다 — 클리어 조건이
+   없는 오픈형 미니게임이라 /play/minigame-fishing/과 같은 mkShopReturnUrl
+   계약(SHOP_TUTORIAL_RETURN_SCENE, dev/data/sceneRoutes.js)을 그대로 쓴다.
+   값이 없으면(=/dev/minigames 등에서 직접 열었으면) 원래대로 미니게임
+   목록으로 돌아간다.
    ========================================================================= */
+document.getElementById('backChip').href = sessionStorage.getItem('mkShopReturnUrl') || '/dev/minigames/';
 
 const { Engine, Bodies, Composite, Events } = Matter;
 
