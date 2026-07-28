@@ -1958,7 +1958,7 @@ document.getElementById('btnOpenExplore').addEventListener('click', () => {
   storeShopReturnUrl();
   location.href = ExplorationState.getCurrentLocationId()
     ? `/play/explore/?phase=${encodeURIComponent(ExplorationState.getCurrentPhase() || '')}&location=${encodeURIComponent(ExplorationState.getCurrentLocationId())}`
-    : '/play/explore/?phase=W2_TOURISM&location=w2-circular-quay';
+    : '/play/explore/?phase=W2_EXHIBIT_FREE_LOOK&location=w2-circular-quay';
 });
 document.getElementById('btnUnlockAllLocations').addEventListener('click', () => ExplorationState.debugUnlockAllLocations());
 document.getElementById('btnMarkAllInteractionsNew').addEventListener('click', () => ExplorationState.debugMarkAllInteractionsNew());

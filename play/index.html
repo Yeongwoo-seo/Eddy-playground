@@ -222,7 +222,7 @@ async function goToContinue() {
   if (!loaded) return;
   RealPlayMode.mark();
   if (loaded.sceneId === '__EXPLORE_HUB__') {
-    const phase = (loaded.explorationState && loaded.explorationState.currentPhase) || 'W2_TOURISM';
+    const phase = (loaded.explorationState && loaded.explorationState.currentPhase) || 'W2_EXHIBIT_FREE_LOOK';
     const loc = (loaded.explorationState && loaded.explorationState.currentLocationId) || 'w2-circular-quay';
     location.href = `/play/explore/?phase=${encodeURIComponent(phase)}&location=${encodeURIComponent(loc)}`;
   } else {

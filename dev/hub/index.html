@@ -255,8 +255,11 @@ function resizeImageToBlob(img, maxDim, quality) {
    키다(activeHubSceneId()/DevGameState.getBackgroundId 참고). Phase 라벨은
    코드에서 찾을 수 없어 여기서 직접 붙인다(dev/data/locationDefs.js 주석
    기준). ===== */
+// [2주차 관광 자유 탐색 이식] W2_TOURISM 관광 스팟은 이제 W2_EXHIBIT_FREE_LOOK
+// phase 소속이다(dev/data/locationDefs.js 참고) — 별도 phase가 아니게 됐으므로
+// 라벨/무드도 하나로 합쳤다.
 const HUB_PHASE_LABELS = {
-  W2_TOURISM: '2주차 · 관광',
+  W2_EXHIBIT_FREE_LOOK: '2주차 · 관광·전시장 자유 관람',
   W2_SUSPECT_INTERVIEWS: '2주차 · 용의자 탐문',
   W2_REVERIFICATION: '2주차 · 모순 재검증',
 };
@@ -264,7 +267,7 @@ const HUB_PHASE_LABELS = {
 // HUB_PHASE_LABELS 바로 옆에 두는 이유는 둘 다 "phase id -> 사람이 읽을 텍스트"
 // 매핑이라 새 phase 추가 시 항상 같이 고쳐야 하기 때문.
 const HUB_PHASE_MOOD = {
-  W2_TOURISM: '사건이 일어나기 전 — 오전 관광 시간대, 밝고 따뜻한 햇살 아래 평화롭고 여유로운 분위기.',
+  W2_EXHIBIT_FREE_LOOK: '사건이 일어나기 전 — 오전 관광 시간대부터 전시장 관람까지, 밝고 따뜻한 햇살 아래 평화롭고 여유로운 분위기.',
   W2_SUSPECT_INTERVIEWS: 'K-01 도난 사건이 알려진 직후 — 오후, 한풀 가라앉은 채광에 살짝 긴장되고 차분해진 분위기.',
   W2_REVERIFICATION: '사건을 다시 짚어보는 재검증 단계 — 늦은 오후, 신중하고 가라앉은 빛과 분위기.',
 };
