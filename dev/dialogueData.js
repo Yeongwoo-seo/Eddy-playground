@@ -1316,9 +1316,15 @@ const week1SceneGroups = [
    011/021)는 여전히 완전 선형 — 어느 용의자를 먼저 심문할지만 자유고,
    심문 자체의 단계 순서는 손대지 않았다.
 
+   - Ch2~3(관광, week2-scene-002/003)은 계속 선형이지만, 다니엘과 작별하는
+     week2-scene-003 끝에서 W2_TOURISM 허브(w2-circular-quay 등, v4 이전부터
+     dev/data/locationDefs.js·interactionDefs.js에 있었으나 연결이 끊겨 있던
+     인프라)로 나간다 — 전시장에 들어가기 전 자유 순서로 관광 스팟을 둘러본다.
+     허브를 나가면(w2-exhibition-entrance/w2-adrian-spot) W2_EXHIBIT_FREE_LOOK
+     허브로 이어진다.
    - Ch4~5(전시장 자유 관람, week2-scene-004/005)는 원본 그대로 남겨두되
      더 이상 재생 경로에 없다 — 그 대사는 w2ef-topic 계열(interactionDefs.js)
-     허브 상호작용으로 다시 쓰였다. week2-scene-003의 nextSceneId가 곧장
+     허브 상호작용으로 다시 쓰였다. W2_TOURISM 허브를 나가면 곧장
      W2_EXHIBIT_FREE_LOOK 허브로 보낸다.
    - Ch9~11(용의자 탐문, week2-scene-009/010/010b/011)은 W2_SUSPECT_
      INTERVIEWS 허브(기존 인프라, sceneId만 v4 번호로 교정)에서 자유
@@ -3461,9 +3467,12 @@ const week2Scenes = [
     id: 'week2-scene-003', order: 3, name: '더 록스, 보관함을 익히다',
     location: 'The Rocks 골목, 카페 앞', introLabel: 'CIRCULAR QUAY', time: '09:50',
     lines: week2Scene003Lines,
-    // [탐색허브 재도입] W2_EXHIBIT_FREE_LOOK 허브(w2-exhibit-floor)로 나간다 —
-    // 다섯 인물을 자유 순서로 만난 뒤 단체사진(006)으로 넘어간다.
-    nextSceneId: 'week2-hub-entry-exhibit',
+    // [2주차 관광 자유 탐색 이식] 다니엘과 작별한 뒤 W2_TOURISM 허브
+    // (w2-circular-quay 등)로 나간다 — 전시장에 들어가기 전 자유 순서로
+    // 관광 스팟을 둘러본다. 허브의 "전시장에 들어간다"(w2-exhibition-entrance)
+    // / "이제 안쪽으로 들어가자"(w2-adrian-spot)가 W2_EXHIBIT_FREE_LOOK
+    // 허브(다섯 인물, 단체사진으로 이어짐)로 이어받는다.
+    nextSceneId: 'week2-hub-entry-tourism',
   },
   // [탐색허브 재도입] week2-scene-004/005는 더 이상 재생 경로에 없다 — 이
   // 대사는 W2_EXHIBIT_FREE_LOOK 허브의 w2ef-topic-*(dev/data/interactionDefs.js)
