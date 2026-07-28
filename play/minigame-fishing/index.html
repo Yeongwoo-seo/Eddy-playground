@@ -800,9 +800,9 @@ const el = {
 // 스토리에서 넘어온 경우(week1-scene-circular-quay-minigame 등) 뒤로가기는
 // 낚시 설정 화면이 아니라 다음 씬으로 이어져야 한다 — /play/shop/, /play/wardrobe/
 // 와 같은 mkShopReturnUrl 계약(SHOP_TUTORIAL_RETURN_SCENE, dev/data/
-// sceneRoutes.js)을 그대로 재사용한다. 값이 없으면(=/dev/minigames 등에서 직접
-// 열었으면) 원래대로 설정 화면으로 돌아간다.
-el.backChip.href = sessionStorage.getItem('mkShopReturnUrl') || '/dev/minigame-fishing/';
+// sceneRoutes.js)을 그대로 재사용한다. 값이 없으면(=/play/의 미니게임 목록에서
+// 단독으로 열었으면) 메인 화면(/play/)으로 돌아간다.
+el.backChip.href = sessionStorage.getItem('mkShopReturnUrl') || '/play/';
 
 let castFrameUrls = [];
 let castFrameDurations = null; // per-frame ms, dev/minigame-fishing/index.html 재생 타임라인에서 설정
@@ -1304,13 +1304,12 @@ el.sellFishModal.addEventListener('pointerdown', (e) => {
 /* ===== 그만하기 =====
    낚시를 시작한 씬이 ?nextScene=<sceneId>로 넘어온 경우(다른 미니게임들과
    같은 관례 — dev/minigame-timeline/index.html의 하드코딩된 다음 씬
-   리다이렉트 참고) 그 씬으로 넘긴다. 지금 실제 진입 경로
+   리다이렉트 참고) 그 씬으로 넘긴다. 스토리 진입 경로
    (week0-scene-circular-quay-minigame)는 nextScene 없이 el.backChip과
    같은 mkShopReturnUrl 계약으로 열리므로, nextScene이 없으면 el.backChip.href
-   (=sessionStorage의 mkShopReturnUrl, 그것도 없으면 설정 화면)로 넘긴다 —
-   그래야 스킵 버튼을 눌러도 설정 화면이 아니라 원래 스토리 씬으로 돌아간다.
-   §추후 — "미니게임만 즐기기" 단독 실행 모드가 생기면 그때는 메인 메뉴로
-   돌아가야 하지만, 그 모드 자체가 아직 없어 지금은 구현하지 않는다. */
+   (=sessionStorage의 mkShopReturnUrl, 그것도 없으면 메인 화면 /play/)로
+   넘긴다 — 스토리에서 왔으면 원래 씬으로, /play/의 미니게임 목록에서 단독으로
+   열었으면 메인 화면으로 돌아간다. */
 function handleQuit() {
   const nextScene = settingsParams.get('nextScene');
   location.href = nextScene ? ('/play/game/?scene=' + encodeURIComponent(nextScene)) : el.backChip.href;
