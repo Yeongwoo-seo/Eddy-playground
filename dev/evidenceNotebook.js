@@ -245,13 +245,9 @@ const EvidenceNotebook = (function () {
     if (state.index >= currentEntries().length - 1) return;
     runPageFlip('next', () => { state.index += 1; afterNav(); });
   }
-  // 색인이 이제 증언/증거/사진 3개 책갈피를 한꺼번에 보여주므로(§openIndexPanel),
-  // 고른 항목이 지금 펴져 있는 책갈피가 아닐 수도 있다 — 항목이 실제로 속한
-  // 책갈피를 먼저 찾아 전환한 뒤에 그 안에서 페이지를 잡는다.
+  // 목록은 지금 펴진 책갈피 항목만 보여주므로(§openIndexPanel), 고른 항목은
+  // 항상 현재 책갈피 안에 있다 — 책갈피 전환 없이 그 안에서 바로 페이지를 잡는다.
   function jumpTo(entryId) {
-    const sectionId = SECTIONS.map(s => s.id).find(sec => (state.entriesBySection[sec] || []).some(e => e.id === entryId));
-    if (!sectionId) return;
-    state.section = sectionId;
     const idx = currentEntries().findIndex(e => e.id === entryId);
     if (idx < 0) return;
     state.index = idx;
@@ -309,20 +305,21 @@ const EvidenceNotebook = (function () {
     });
   }
 
-  /* ===== 색인 패널 열기/닫기 =====
+  /* ===== 목록 패널 열기/닫기 =====
      evn-overlay 전체의 open()/close()와 같은 방식(hidden 유지 + 클래스로
-     트랜지션, 닫힐 때만 지연 후 hidden 재부착) — 색인도 책의 한 페이지처럼
-     펼쳐지고 접히는 느낌을 주기 위해서다(evn-index-open, §CSS). */
+     트랜지션, 닫힐 때만 지연 후 hidden 재부착) — 목록도 책의 한 페이지처럼
+     펼쳐지고 접히는 느낌을 주기 위해서다(evn-index-open, §CSS). 지금 펴진
+     책갈피(증언/증거/사진 중 하나) 항목만 보여준다 — 다른 책갈피 목록을
+     보려면 먼저 탭으로 책갈피를 바꿔야 한다. */
   function openIndexPanel() {
     state.isIndexOpen = true;
     el.indexList.innerHTML = renderIndexHtml();
     el.indexPanel.classList.remove('hidden');
     requestAnimationFrame(() => el.indexPanel.classList.add('evn-index-open'));
-    // 색인 카드가 사진 썸네일을 보여주므로(§renderIndexHtml), 아직 캐시에
-    // 없는 항목들의 사진을 한꺼번에 미리 받아온다 — hydratePagePhoto 자체가
-    // 이미 캐시된 건 그냥 스킵하므로 여러 번 열어도 매번 새로 받지 않는다.
-    const allEntries = SECTIONS.map(s => s.id).flatMap(sec => state.entriesBySection[sec] || []);
-    Promise.all(allEntries.map(hydratePagePhoto)).then(results => {
+    // 목록 카드가 사진 썸네일을 보여주므로(§renderIndexHtml), 아직 캐시에
+    // 없는 현재 책갈피 항목들의 사진을 한꺼번에 미리 받아온다 — hydratePagePhoto
+    // 자체가 이미 캐시된 건 그냥 스킵하므로 여러 번 열어도 매번 새로 받지 않는다.
+    Promise.all(currentEntries().map(hydratePagePhoto)).then(results => {
       if (results.some(Boolean) && state.isIndexOpen) el.indexList.innerHTML = renderIndexHtml();
     });
   }
@@ -346,7 +343,7 @@ const EvidenceNotebook = (function () {
     const section = SECTIONS.find(s => s.id === state.section) || SECTIONS[1];
     el.overlay.style.setProperty('--evn-tint', section.tint);
 
-    // 실제 배경 아트가 하나라도 있으면 그림 자체에 탭/이전/색인/다음/제출
+    // 실제 배경 아트가 하나라도 있으면 그림 자체에 탭/이전/목록/다음/제출
     // 버튼이 다 그려져 있으므로 CSS 탭바·하단 바·제출 버튼은 통째로 숨기고,
     // 각 페이지 안에 투명 히트존만 얹는다(renderImageModePageHtml). 배경이
     // 아예 없을 때만 이 CSS 크롬으로 대체한다.
@@ -388,17 +385,15 @@ const EvidenceNotebook = (function () {
     </div>`;
   }
 
-  // 색인 — 지금 펴진 책갈피 한 곳만이 아니라 증언/증거/사진 3개 책갈피를
-  // 각각 구획으로 나눠 한 화면에서 보여준다(§jumpTo가 책갈피를 넘나들며 점프).
-  // 한 줄짜리 목록 대신 사진/이름/설명이 다 보이는 카드를 2열 그리드로 배치.
+  // 목록 — 증언/증거/사진 3개 책갈피를 한 화면에 몰아서 보여주지 않고,
+  // 지금 펴진 책갈피 항목만 보여준다 — 다른 책갈피 항목을 고르려면 먼저
+  // 탭으로 책갈피를 바꿔야 한다(§jumpTo). 한 줄짜리 목록 대신 사진/이름/
+  // 설명이 다 보이는 카드를 2열 그리드로 배치.
   function renderIndexHtml() {
     const activeId = currentEntry() ? currentEntry().id : null;
-    const groups = SECTIONS.map(s => ({ section: s, list: state.entriesBySection[s.id] || [] })).filter(g => g.list.length);
-    if (!groups.length) return '<div class="evn-index-empty">항목이 없습니다.</div>';
-    return groups.map(g => `
-      <div class="evn-index-section-label">${escapeHtml(g.section.label)}</div>
-      <div class="evn-index-grid">${g.list.map(e => renderIndexCardHtml(e, e.id === activeId)).join('')}</div>
-    `).join('');
+    const list = currentEntries();
+    if (!list.length) return '<div class="evn-index-empty">항목이 없습니다.</div>';
+    return `<div class="evn-index-grid">${list.map(e => renderIndexCardHtml(e, e.id === activeId)).join('')}</div>`;
   }
   function renderIndexCardHtml(e, active) {
     const photoUrl = photoUrlFor(e);
@@ -439,7 +434,7 @@ const EvidenceNotebook = (function () {
 
   // 실제 배경 아트가 있는 책갈피 — 그림을 그대로 캔버스로 쓰고, 관리자가
   // "영역지정"으로 찍어둔 좌표(없으면 눈대중 기본값, DEFAULT_REGION_FALLBACK)
-  // 위에 실제 데이터를 절대좌표로 얹는다. 탭도, 이전/색인/다음/제출
+  // 위에 실제 데이터를 절대좌표로 얹는다. 탭도, 이전/목록/다음/제출
   // 버튼도 이미 그림 자체에 그려져 있으므로 투명 히트존만 얹는다 — 그래서
   // render()가 이 모드일 때 CSS 탭바/하단 바(.evn-footer)/제출 버튼
   // (.evn-submit-btn)을 통째로 숨긴다(showChromeTabs).
@@ -465,7 +460,7 @@ const EvidenceNotebook = (function () {
     const tabHotspotsHtml = SECTIONS.map((s, i) => `<button type="button" class="evn-tab-hotspot" data-evn-tab="${s.id}" style="left:${(TAB_HOTSPOT_BAND.left + i * hotspotW) * 100}%;top:${TAB_HOTSPOT_BAND.top * 100}%;width:${hotspotW * 100}%;height:${TAB_HOTSPOT_BAND.height * 100}%" aria-label="${escapeHtml(s.label)}"></button>`).join('');
     const navHotspotsHtml = [
       state.index > 0 ? buttonHotspotHtml('prevButton', 'data-evn-prev="1"', '이전') : '',
-      buttonHotspotHtml('indexButton', 'data-evn-index="1"', '색인'),
+      buttonHotspotHtml('indexButton', 'data-evn-index="1"', '목록'),
       state.index < total - 1 ? buttonHotspotHtml('nextButton', 'data-evn-next="1"', '다음') : '',
       state.mode === 'present' ? buttonHotspotHtml('submitButton', 'data-evn-submit="1"', '제출') : '',
     ].join('');
@@ -544,7 +539,7 @@ const EvidenceNotebook = (function () {
     el.page.querySelectorAll('[data-evn-zoom]').forEach(node => {
       node.addEventListener('click', () => { state.zoomEntry = currentEntry(); render(); });
     });
-    // 이미지 모드 전용 — 그림에 그려진 탭/이전/색인/다음/제출 버튼 위에
+    // 이미지 모드 전용 — 그림에 그려진 탭/이전/목록/다음/제출 버튼 위에
     // 얹은 투명 히트존(§상단 주석). CSS 크롬(evn-footer/evn-submit-btn)이
     // 이미 같은 동작(goPrev/goNext/openIndex/requestSubmit)을 쓰므로 그대로
     // 재사용한다.
@@ -652,14 +647,14 @@ const EvidenceNotebook = (function () {
           <div class="evn-npc-tag hidden" id="evnNpcTag"></div>
           <div class="evn-footer" id="evnFooter">
             <button type="button" class="evn-nav-btn" id="evnPrevBtn">‹ 이전</button>
-            <button type="button" class="evn-nav-btn evn-nav-btn-index" id="evnIndexBtn">☰ 색인</button>
+            <button type="button" class="evn-nav-btn evn-nav-btn-index" id="evnIndexBtn">☰ 목록</button>
             <button type="button" class="evn-nav-btn" id="evnNextBtn">다음 ›</button>
           </div>
           <button type="button" class="evn-submit-btn hidden" id="evnSubmitBtn">제출</button>
         </div>
         <div class="evn-index-panel hidden" id="evnIndexPanel">
           <div class="evn-index-header">
-            <div class="evn-index-panel-title">색인</div>
+            <div class="evn-index-panel-title">목록</div>
             <button type="button" class="evn-close-btn" id="evnIndexCloseBtn">✕</button>
           </div>
           <div class="evn-index-list" id="evnIndexList"></div>
@@ -883,7 +878,7 @@ const EvidenceNotebook = (function () {
       .evn-submit-btn.hidden{display:none}
       .evn-submit-btn:active{opacity:.85}
 
-      /* ===== 색인 패널 — 기존 노트 페이지(evn-sheet)와 같은 종이/파치먼트
+      /* ===== 목록 패널 — 기존 노트 페이지(evn-sheet)와 같은 종이/파치먼트
          양식을 그대로 차용한다(어두운 팝업 대신 노트의 한 페이지처럼 보이게).
          열고 닫을 때도 evn-overlay와 같은 방식(hidden 유지 + 클래스 트랜지션,
          §openIndexPanel/closeIndexPanel)으로 책장이 넘어가듯 펼쳐진다. */
@@ -894,8 +889,6 @@ const EvidenceNotebook = (function () {
       .evn-index-panel-title{font-size:15px;font-weight:800;color:#2c2311}
       .evn-index-panel .evn-close-btn{position:static;background:rgba(44,35,17,.12);border:1px solid rgba(138,114,69,.4);color:#4a3d22}
       .evn-index-list{flex:1;overflow-y:auto}
-      .evn-index-section-label{font-family:var(--mono,'IBM Plex Mono',ui-monospace,monospace);font-size:10.5px;letter-spacing:.08em;color:#8a7245;text-transform:uppercase;margin:16px 0 8px}
-      .evn-index-section-label:first-child{margin-top:0}
       .evn-index-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
       .evn-index-card{display:flex;flex-direction:column;gap:6px;background:rgba(255,255,255,.5);border:1px solid rgba(138,114,69,.3);border-radius:10px;padding:10px;cursor:pointer;text-align:left;font-family:inherit;color:#3a2f1c}
       .evn-index-card-active{border-color:rgba(199,117,44,.7);background:rgba(199,117,44,.16)}
