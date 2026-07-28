@@ -245,7 +245,13 @@ const EvidenceNotebook = (function () {
     if (state.index >= currentEntries().length - 1) return;
     runPageFlip('next', () => { state.index += 1; afterNav(); });
   }
+  // 색인이 이제 증언/증거/사진 3개 책갈피를 한꺼번에 보여주므로(§openIndexPanel),
+  // 고른 항목이 지금 펴져 있는 책갈피가 아닐 수도 있다 — 항목이 실제로 속한
+  // 책갈피를 먼저 찾아 전환한 뒤에 그 안에서 페이지를 잡는다.
   function jumpTo(entryId) {
+    const sectionId = SECTIONS.map(s => s.id).find(sec => (state.entriesBySection[sec] || []).some(e => e.id === entryId));
+    if (!sectionId) return;
+    state.section = sectionId;
     const idx = currentEntries().findIndex(e => e.id === entryId);
     if (idx < 0) return;
     state.index = idx;
@@ -309,9 +315,16 @@ const EvidenceNotebook = (function () {
      펼쳐지고 접히는 느낌을 주기 위해서다(evn-index-open, §CSS). */
   function openIndexPanel() {
     state.isIndexOpen = true;
-    el.indexList.innerHTML = renderIndexHtml(currentEntries());
+    el.indexList.innerHTML = renderIndexHtml();
     el.indexPanel.classList.remove('hidden');
     requestAnimationFrame(() => el.indexPanel.classList.add('evn-index-open'));
+    // 색인 카드가 사진 썸네일을 보여주므로(§renderIndexHtml), 아직 캐시에
+    // 없는 항목들의 사진을 한꺼번에 미리 받아온다 — hydratePagePhoto 자체가
+    // 이미 캐시된 건 그냥 스킵하므로 여러 번 열어도 매번 새로 받지 않는다.
+    const allEntries = SECTIONS.map(s => s.id).flatMap(sec => state.entriesBySection[sec] || []);
+    Promise.all(allEntries.map(hydratePagePhoto)).then(results => {
+      if (results.some(Boolean) && state.isIndexOpen) el.indexList.innerHTML = renderIndexHtml();
+    });
   }
   function closeIndexPanel() {
     if (!state.isIndexOpen) return;
@@ -375,16 +388,27 @@ const EvidenceNotebook = (function () {
     </div>`;
   }
 
-  function renderIndexHtml(list) {
-    if (!list.length) return '<div class="evn-index-empty">항목이 없습니다.</div>';
-    return list.map((e, i) => `
-      <button type="button" class="evn-index-row${i === state.index ? ' evn-index-row-active' : ''}" data-evn-jump="${e.id}">
-        <span class="evn-index-code">${escapeHtml(e.code || '')}</span>
-        <span class="evn-index-title">${escapeHtml(e.title)}</span>
-        ${e.status === 'new' ? '<span class="evn-dot"></span>' : ''}
-        ${e.status === 'updated' ? '<span class="evn-updated">갱신</span>' : ''}
-      </button>
+  // 색인 — 지금 펴진 책갈피 한 곳만이 아니라 증언/증거/사진 3개 책갈피를
+  // 각각 구획으로 나눠 한 화면에서 보여준다(§jumpTo가 책갈피를 넘나들며 점프).
+  // 한 줄짜리 목록 대신 사진/이름/설명이 다 보이는 카드를 2열 그리드로 배치.
+  function renderIndexHtml() {
+    const activeId = currentEntry() ? currentEntry().id : null;
+    const groups = SECTIONS.map(s => ({ section: s, list: state.entriesBySection[s.id] || [] })).filter(g => g.list.length);
+    if (!groups.length) return '<div class="evn-index-empty">항목이 없습니다.</div>';
+    return groups.map(g => `
+      <div class="evn-index-section-label">${escapeHtml(g.section.label)}</div>
+      <div class="evn-index-grid">${g.list.map(e => renderIndexCardHtml(e, e.id === activeId)).join('')}</div>
     `).join('');
+  }
+  function renderIndexCardHtml(e, active) {
+    const photoUrl = photoUrlFor(e);
+    return `
+      <button type="button" class="evn-index-card${active ? ' evn-index-card-active' : ''}" data-evn-jump="${e.id}">
+        <span class="evn-index-card-photo">${photoUrl ? `<img src="${photoUrl}" alt="">` : `<span class="evn-index-card-fallback">${fallbackIconFor(e)}</span>`}</span>
+        <span class="evn-index-card-title">${escapeHtml(e.title)}${e.status === 'new' ? '<span class="evn-dot"></span>' : ''}${e.status === 'updated' ? '<span class="evn-updated">갱신</span>' : ''}</span>
+        <span class="evn-index-card-desc">${escapeHtml(e.description || e.summary || '')}</span>
+      </button>
+    `;
   }
 
   function renderPageHtml(entry, total) {
@@ -869,11 +893,17 @@ const EvidenceNotebook = (function () {
       .evn-index-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:8px;border-bottom:1px dashed rgba(138,114,69,.45)}
       .evn-index-panel-title{font-size:15px;font-weight:800;color:#2c2311}
       .evn-index-panel .evn-close-btn{position:static;background:rgba(44,35,17,.12);border:1px solid rgba(138,114,69,.4);color:#4a3d22}
-      .evn-index-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px}
-      .evn-index-row{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.45);border:1px solid rgba(138,114,69,.3);border-radius:8px;padding:11px 12px;cursor:pointer;text-align:left;font-family:inherit;color:#3a2f1c;min-height:44px}
-      .evn-index-row-active{border-color:rgba(199,117,44,.7);background:rgba(199,117,44,.16)}
-      .evn-index-code{font-family:var(--mono,'IBM Plex Mono',ui-monospace,monospace);font-size:10.5px;color:#8a7245;flex-shrink:0}
-      .evn-index-title{font-size:13px;font-weight:600;color:#2c2311;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      .evn-index-list{flex:1;overflow-y:auto}
+      .evn-index-section-label{font-family:var(--mono,'IBM Plex Mono',ui-monospace,monospace);font-size:10.5px;letter-spacing:.08em;color:#8a7245;text-transform:uppercase;margin:16px 0 8px}
+      .evn-index-section-label:first-child{margin-top:0}
+      .evn-index-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+      .evn-index-card{display:flex;flex-direction:column;gap:6px;background:rgba(255,255,255,.5);border:1px solid rgba(138,114,69,.3);border-radius:10px;padding:10px;cursor:pointer;text-align:left;font-family:inherit;color:#3a2f1c}
+      .evn-index-card-active{border-color:rgba(199,117,44,.7);background:rgba(199,117,44,.16)}
+      .evn-index-card-photo{width:100%;aspect-ratio:4/3;border-radius:6px;overflow:hidden;background:rgba(138,114,69,.14);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+      .evn-index-card-photo img{width:100%;height:100%;object-fit:cover;display:block}
+      .evn-index-card-fallback{font-size:26px;opacity:.5}
+      .evn-index-card-title{font-size:12.5px;font-weight:700;color:#2c2311;line-height:1.3;display:flex;align-items:center;gap:5px}
+      .evn-index-card-desc{font-size:11px;color:#5a4a2c;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
       .evn-dot{width:7px;height:7px;border-radius:50%;background:#c7752c;flex-shrink:0}
       .evn-index-empty{color:#8a7245;font-size:13px;text-align:center;padding:20px 0}
 
