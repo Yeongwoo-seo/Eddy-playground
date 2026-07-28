@@ -1111,6 +1111,17 @@ const interactionDefs = {
       { speaker: '영우', text: '일단 가서 얘기 좀 해보자.', characterId: 'youngwoo', expression: 'neutral' },
     ],
   },
+  // unlockConditions 게이트(§신규, 리뷰 지적 반영) — 레오 쪽만 허브로 안
+  // 돌아오고 곧장 week2-scene-010b→minigame-timeline→011→012→013까지 이어져
+  // 버리는데(위 주석 참고), 윤민아/애드리언 스팟은 순서 제약이 전혀 없어
+  // 플레이어가 셋 중 레오를 먼저 찍으면 그 판본에서 윤민아 심문(009)·
+  // 애드리언 1차 응대(010)를 영영 못 보게 된다 — 세 스팟이 겉보기엔 동등한
+  // 자유 탐색처럼 보이는데 실제론 하나만 "돌아올 수 없는 허브 탈출"이라
+  // 사고로 걸리기 쉬운 구조였다. autoPlayOnFirstVisit도 getInteractionState
+  // === 'new' 조건이라 locked면 자동 재생되지 않고, 심문하기 버튼도
+  // getInterrogationInteraction이 locked를 걸러내 안 뜬다(레오 살펴보기
+  // topic은 ungated라 그대로 보임 — 대화하기는 정상 동작, 놀러 온
+  // 느낌만 유지).
   'w1suspect-leo-interview': {
     id: 'w1suspect-leo-interview',
     characterId: 'leo',
@@ -1119,6 +1130,9 @@ const interactionDefs = {
     type: 'scene',
     isInterrogation: true,
     autoPlayOnFirstVisit: true,
+    unlockConditions: [
+      { type: 'interactionCompleted', ids: ['w1suspect-mina-interview', 'w1suspect-adrian-interview'] },
+    ],
     label: '심문하기',
     icon: '🔍',
     sceneId: 'week2-scene-010b',
