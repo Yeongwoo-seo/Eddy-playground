@@ -51,14 +51,19 @@ function saveExplorationState() { localStorage.setItem(EXPLORATION_STATE_KEY, JS
 
 // Shared with shopState.js's evaluator in spirit but kept separate (small,
 // self-contained, no cross-file coupling) — covers what interactionDefs.js
-// actually authors: hasEvidence/hasFact/flags/flagEquals. Extend here if a
-// future interactionDef needs a new condition type.
+// actually authors: hasEvidence/hasFact/flags/flagEquals/interactionCompleted.
+// Extend here if a future interactionDef needs a new condition type.
 function evaluateInteractionCondition(cond) {
   if (!cond) return true;
   if (cond.type === 'hasEvidence') return (cond.ids || [cond.id]).every(id => CaseFileState.getEvidence().some(e => e.id === id));
   if (cond.type === 'hasFact') return (cond.ids || [cond.id]).every(id => CaseFileState.getFacts().some(f => f.id === id));
   if (cond.type === 'flags') return (cond.keys || []).every(k => CaseFileState.hasFlag(k));
   if (cond.type === 'flagEquals') return CaseFileState.getFlag(cond.key) === cond.value;
+  // Gate on another interactionDefs entry already being played through at
+  // least once — used to force visit order within a hub (e.g. a suspect
+  // whose scene hands off the story permanently, with no return trip, must
+  // wait until the other suspects in the same hub have been talked to).
+  if (cond.type === 'interactionCompleted') return (cond.ids || [cond.id]).every(id => explorationState.completedInteractionIds.includes(id));
   return true;
 }
 function evaluateAllConditions(conds) { return !conds || !conds.length || conds.every(evaluateInteractionCondition); }
