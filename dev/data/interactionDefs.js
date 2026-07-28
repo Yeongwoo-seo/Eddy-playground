@@ -583,7 +583,17 @@ const interactionDefs = {
       { speaker: '애드리언', text: '클레어씨, 하나만 여쭤볼게요. 이 받침 내부 깊이가 어느 정도 되나요?', characterId: 'adrian', expression: 'suspicious' },
       { speaker: '클레어', text: '네...? 그건 왜...', characterId: 'claire', expression: 'suspicious' },
       { speaker: '애드리언', text: '아, 그냥 구조가 궁금해서요, 공예적으로.', characterId: 'adrian', expression: 'suspicious' },
-      { speaker: '', text: '어색한 침묵. [ 의문점: 애드리언은 왜 가격이 아니라 구조를 묻는가 ] 등록.', characterId: null },
+      {
+        speaker: '', text: '어색한 침묵. [ 증거: 애드리언의 수상한 질문(가격 대신 구조) ] 등록.', characterId: null,
+        effects: [{
+          type: 'addEvidence',
+          evidence: {
+            id: 'evidence-adrian-avoids-price', code: 'E-B00', category: 'testimony', title: '애드리언의 수상한 질문 — 가격 대신 구조',
+            description: '애드리언은 K-01의 가격을 한 번도 묻지 않았다. 대신 받침 내부 깊이와 구조만 클레어에게 캐물었다 — "그냥 궁금해서요"라는 대답이 석연치 않다.',
+            discoveredLocationText: 'Pop-up Exhibition · K-01 진열대 근처',
+          },
+        }],
+      },
     ],
   },
   'w2ef-topic-leo': {
@@ -628,7 +638,17 @@ const interactionDefs = {
       { speaker: '다니엘', text: '이 진열장 처음 보는 구조인데 신기하네요.', characterId: 'daniel-guide', expression: 'curious' },
       { speaker: '다니엘', text: '직원문이 저쪽으로 열리는 구조인가.', characterId: 'daniel-guide', expression: 'neutral' },
       { speaker: '영우', text: '어 그런가봐요.', characterId: 'youngwoo', expression: 'neutral' },
-      { speaker: '', text: '다니엘이 별생각 없다는 듯 웃으며 다시 나간다. [ 복선: 다니엘이 직원문 방향을 이미 안다 ] 등록.', characterId: null },
+      {
+        speaker: '', text: '다니엘이 별생각 없다는 듯 웃으며 다시 나간다. [ 증거: 다니엘 — 직원문 방향을 이미 안다 ] 등록.', characterId: null,
+        effects: [{
+          type: 'addEvidence',
+          evidence: {
+            id: 'evidence-daniel-staffdoor-foreknowledge', code: 'E-DN0', category: 'testimony', title: '다니엘 — 처음 보는 구조인데 직원문 위치를 안다',
+            description: '다니엘은 "처음 보는 구조"라면서도 직원문이 어느 쪽으로 열리는지 곧바로 알아맞혔다. 별생각 없다는 듯 웃으며 넘어갔지만, 어딘가 석연치 않다.',
+            discoveredLocationText: 'Pop-up Exhibition · K-01 진열대 앞',
+          },
+        }],
+      },
       { speaker: '지수', text: '저분 진짜 아는 것도 많으시네.', characterId: 'jisoo', expression: 'neutral' },
       { speaker: '영우', text: '그러게, 로컬이라 그런가.', characterId: 'youngwoo', expression: 'neutral' },
     ],
