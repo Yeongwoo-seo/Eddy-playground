@@ -2241,6 +2241,11 @@ const week2Scene011Lines = [
   { id: "line-006", speaker: "레오", text: "저 진짜 직원문만 들어갔다 나온 거예요\n진열장 쪽엔 안 갔어요", characterId: "leo", expression: "annoyed" },
   { id: "line-007", speaker: "지수", text: "정말요?", characterId: "jisoo", expression: "neutral" },
   { id: "line-008", speaker: "레오", text: "네, 창고에서 물건만 꺼내고 바로 나왔어요", characterId: "leo", expression: "annoyed" },
+  {
+    id: "line-008-evidence", type: 'evidence', speaker: '', text: "지수와 영우가 사진을 내민다.\n증거를 제시하세요.", characterId: "jisoo", expression: "serious",
+    evidenceIds: ['evidence-tourist-extra-photo'],
+    wrongText: '레오: "...그게 왜요?" 아직 감을 못 잡은 표정이다.',
+  },
   { id: "line-009", speaker: "영우", text: "근데 이 사진 보시면요\n5번째 사진, 진열장 문 옆에 그레이 후드\n이거 레오씨 후드 아니에요?", characterId: "youngwoo", expression: "serious" },
   { id: "line-010", speaker: "레오", text: "...", characterId: "leo", expression: "shocked" },
   { id: "line-011", speaker: "레오", text: "그, 그런 회색 후드가 저것만 있는 거 아니잖아요\n전시장 안에 다른 분들도 있었고", characterId: "leo", expression: "annoyed" },
@@ -2253,6 +2258,11 @@ const week2Scene011Lines = [
   { id: "line-018", speaker: '', text: "[심문: 2단계 — \"진열장엔 갔지만 열지 않았다\"]", characterId: null },
   { id: "line-019", speaker: "지수", text: "그럼 이 잘린 완충재는요?\n직원문 바로 앞에 떨어져 있던 건데", characterId: "jisoo", expression: "serious" },
   { id: "line-020", speaker: "레오", text: "그건...\n그거 원래 포장할 때 쓰는 거라\n저 말고도 다들 만지는 거예요", characterId: "leo", expression: "shocked" },
+  {
+    id: "line-020-evidence", type: 'evidence', speaker: '', text: "지수가 완충재 조각을 내민다.\n증거를 제시하세요.", characterId: "jisoo", expression: "serious",
+    evidenceIds: ['evidence-packing-foam'],
+    wrongText: '레오: "그게 뭐 어떻다는 건데요?" 대수롭지 않다는 투다.',
+  },
   { id: "line-021", speaker: "영우", text: "근데 이거 절단면이 최근에 잘린 거예요\n오래된 게 아니라", characterId: "youngwoo", expression: "serious" },
   { id: "line-022", speaker: "레오", text: "그, 그건 제가 오늘 아침에 다른 물건 포장하면서 쓴 걸 수도 있고요", characterId: "leo", expression: "annoyed" },
   { id: "line-023", speaker: "지수", text: "아까는 진열장 쪽에 안 갔다고 하셨잖아요\n근데 왜 진열장 앞에 이게 떨어져 있어요?", characterId: "jisoo", expression: "serious" },
@@ -2346,6 +2356,19 @@ const week2Scene011Lines = [
   { id: "line-068", speaker: "지수", text: "레오씨...\n좋은 사람인 줄 알았는데", characterId: "jisoo", expression: "soft" },
   { id: "line-069", speaker: "레오", text: "...죄송해요\n정말로요", characterId: "leo", expression: "soft" },
   { id: "line-070", speaker: "레오", text: "저 진짜 나쁜 사람 되려던 거 아니었어요\n그냥... 처음엔 별거 아닌 것 같았어요", characterId: "leo", expression: "soft" },
+  {
+    id: "line-070-choice", type: 'choice', speaker: '', text: "영우는 레오의 사과를 들으며 생각했다.", characterId: "youngwoo", expression: "soft",
+    choices: [
+      {
+        id: 'leo-response-warm', label: '"그래도 사실대로 말해줘서 다행이에요."',
+        effects: [{ type: 'addSatisfaction', amount: 1 }],
+      },
+      {
+        id: 'leo-response-firm', label: '"지금은 K-01부터 찾는 게 먼저예요."',
+        effects: [{ type: 'addSatisfaction', amount: -1 }],
+      },
+    ],
+  },
   { id: "line-071", speaker: '', text: "지수가 잠시 말을 잇지 못한다. 영우가 지수의 어깨를 살짝 짚는다.", characterId: null },
   { id: "line-072", speaker: "영우", text: "지수야", characterId: "youngwoo", expression: "soft" },
   { id: "line-073", speaker: "지수", text: "...웅\n알아\n지금은 K-01부터 찾아야지", characterId: "jisoo", expression: "soft" },
