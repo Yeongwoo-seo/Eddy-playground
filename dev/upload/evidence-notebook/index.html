@@ -973,7 +973,10 @@ el.evnExampleTabs.addEventListener('click', (e) => {
   const btn = e.target.closest('[data-example-section]');
   if (!btn) return;
   exampleSection = btn.dataset.exampleSection;
-  closeExampleIndexPanel();
+  // 목록이 열려 있는 동안에는 닫지 않고 그 책갈피 목록으로 바로 이어서
+  // 보여준다(실제 노트의 switchSection과 동일) — 탭이 목록 패널 바깥에
+  // 있어 목록이 열려 있어도 계속 눌린다.
+  if (!el.evnExampleIndexPanel.classList.contains('hidden')) renderExampleIndexList();
   renderExampleTabs();
   renderExamplePage();
 });
@@ -1007,6 +1010,10 @@ function openExamplePreview() {
   el.evnExamplePage.classList.remove('evn-page-anim-out-next', 'evn-page-anim-out-prev', 'evn-page-anim-in-next', 'evn-page-anim-in-prev');
   renderExampleTabs();
   renderExamplePage();
+  // 실제 노트(dev/evidenceNotebook.js의 open())와 같이 책을 펴자마자
+  // 목록부터 보여준다 — evn-index-panel이 evn-example-book 안에만 덮이므로
+  // 우상단 책갈피 탭(evnExampleTabs, 이 book 바깥)은 계속 보이고 눌린다.
+  openExampleIndexPanel();
 }
 
 function renderExampleTabs() {

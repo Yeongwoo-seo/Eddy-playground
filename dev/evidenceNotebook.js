@@ -209,6 +209,12 @@ const EvidenceNotebook = (function () {
     el.overlay.classList.remove('hidden');
     requestAnimationFrame(() => el.overlay.classList.add('show'));
 
+    // 특정 항목을 바로 펴서 보여달라는 요청(focusEntryId)이 없으면 책을
+    // 펴자마자 목록부터 보여준다 — 목록이 이제 책갈피 탭 아래(evn-book-body
+    // 안)에만 덮이므로(§CSS), 목록이 열려 있어도 우상단 책갈피 탭은 계속
+    // 보이고 눌러서 다른 책갈피 목록으로 바로 넘어갈 수 있다(§switchSection).
+    if (!opts.focusEntryId) openIndexPanel();
+
     // Best-effort background asset load — never blocks the page from being usable.
     ensureNotebookConfig().then(() => { if (state.isOpen) render(); });
     ensureEvidencePhotoCatalog().then(() => { if (state.isOpen) hydrateAndRerender(); });
@@ -229,12 +235,17 @@ const EvidenceNotebook = (function () {
   }
 
   /* ===== 네비게이션 ===== */
+  // 목록이 열려 있는 동안에도 우상단 책갈피 탭은 계속 보이므로(§evn-book-body
+  // 안에 갇힌 evn-index-panel, §CSS), 목록을 안 닫고 그대로 둔 채 다른
+  // 책갈피로 넘어가 그 책갈피 목록을 이어서 보여준다 — 페이지가 펴져 있을
+  // 때(목록이 닫혀 있을 때)는 원래대로 그냥 그 책갈피의 마지막으로 보던
+  // 페이지로 전환한다.
   function switchSection(sectionId) {
     if (state.section === sectionId) return;
     state.section = sectionId;
     const list = currentEntries();
     state.index = Math.min(lastViewedBySection[sectionId] || 0, Math.max(0, list.length - 1));
-    closeIndexPanel();
+    if (state.isIndexOpen) el.indexList.innerHTML = renderIndexHtml();
     render();
   }
   function goPrev() {
@@ -309,8 +320,10 @@ const EvidenceNotebook = (function () {
      evn-overlay 전체의 open()/close()와 같은 방식(hidden 유지 + 클래스로
      트랜지션, 닫힐 때만 지연 후 hidden 재부착) — 목록도 책의 한 페이지처럼
      펼쳐지고 접히는 느낌을 주기 위해서다(evn-index-open, §CSS). 지금 펴진
-     책갈피(증언/증거/사진 중 하나) 항목만 보여준다 — 다른 책갈피 목록을
-     보려면 먼저 탭으로 책갈피를 바꿔야 한다. */
+     책갈피(증언/증거/사진 중 하나) 항목만 보여준다. evn-index-panel이
+     evn-tabbar가 아니라 evn-book-body 안에만 덮이므로(§CSS) 우상단 책갈피
+     탭은 목록이 열려 있는 동안에도 그대로 보이고 눌린다 — 탭을 누르면
+     목록을 닫지 않고 그 책갈피 목록으로 바로 이어서 보여준다(§switchSection). */
   function openIndexPanel() {
     state.isIndexOpen = true;
     el.indexList.innerHTML = renderIndexHtml();
@@ -651,13 +664,13 @@ const EvidenceNotebook = (function () {
             <button type="button" class="evn-nav-btn" id="evnNextBtn">다음 ›</button>
           </div>
           <button type="button" class="evn-submit-btn hidden" id="evnSubmitBtn">제출</button>
-        </div>
-        <div class="evn-index-panel hidden" id="evnIndexPanel">
-          <div class="evn-index-header">
-            <div class="evn-index-panel-title">목록</div>
-            <button type="button" class="evn-close-btn" id="evnIndexCloseBtn">✕</button>
+          <div class="evn-index-panel hidden" id="evnIndexPanel">
+            <div class="evn-index-header">
+              <div class="evn-index-panel-title">목록</div>
+              <button type="button" class="evn-close-btn" id="evnIndexCloseBtn">✕</button>
+            </div>
+            <div class="evn-index-list" id="evnIndexList"></div>
           </div>
-          <div class="evn-index-list" id="evnIndexList"></div>
         </div>
         <div class="evn-zoom-panel hidden" id="evnZoomPanel">
           <button type="button" class="evn-close-btn evn-zoom-close" id="evnZoomCloseBtn">✕</button>
@@ -881,7 +894,11 @@ const EvidenceNotebook = (function () {
       /* ===== 목록 패널 — 기존 노트 페이지(evn-sheet)와 같은 종이/파치먼트
          양식을 그대로 차용한다(어두운 팝업 대신 노트의 한 페이지처럼 보이게).
          열고 닫을 때도 evn-overlay와 같은 방식(hidden 유지 + 클래스 트랜지션,
-         §openIndexPanel/closeIndexPanel)으로 책장이 넘어가듯 펼쳐진다. */
+         §openIndexPanel/closeIndexPanel)으로 책장이 넘어가듯 펼쳐진다.
+         evn-book이 아니라 evn-book-body 안에 넣어(마크업 §마운트) inset:0이
+         evn-book-body 영역까지만 덮게 한다 — 그 위에 flex로 얹힌 evn-tabbar
+         (우상단 책갈피 탭)는 이 패널과 겹치지 않는 별도 영역이라 목록이
+         열려도 계속 보이고 눌린다. */
       .evn-index-panel{position:absolute;inset:0;z-index:6;background:repeating-linear-gradient(180deg,rgba(138,114,69,.09) 0,rgba(138,114,69,.09) 1px,transparent 1px,transparent 27px),linear-gradient(180deg,#f8efd9,#efe0bd);border-radius:3px 12px 12px 3px;box-shadow:inset 0 0 0 1px rgba(214,168,75,.5),inset 6px 0 0 rgba(199,117,44,.18),0 8px 22px rgba(0,0,0,.32);display:flex;flex-direction:column;padding:18px 16px 16px;transform-origin:left center;transform:perspective(1200px) rotateY(-88deg);opacity:0;transition:transform .32s cubic-bezier(0.2,0.8,0.2,1),opacity .26s ease}
       .evn-index-panel.hidden{display:none}
       .evn-index-panel.evn-index-open{transform:perspective(1200px) rotateY(0deg);opacity:1}
