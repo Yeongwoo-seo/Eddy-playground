@@ -208,7 +208,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   <a class="back" id="backBtn" href="/dev/data/">‹ 데이터 설정</a>
   <div class="tag">Missing Key</div>
   <div class="title">증거수첩</div>
-  <div class="sub">증거 제시/증거확인 화면에 쓰일 증거수첩 배경을 책갈피(증언·증거·사진)별로 올립니다. 세 그림은 탭 바까지 포함해 완성된 페이지 아트라, 노트 화면은 이 그림 자체를 책갈피별 배경으로 바꿔 끼웁니다. 세 그림의 레이아웃이 같다는 전제로, 어느 자리에 어떤 데이터(코드·제목·사진·설명·발견 위치·관련 인물)와 버튼(이전·색인·다음·제출)이 들어갈지는 영역 하나만 지정하면 셋 다에 적용됩니다.</div>
+  <div class="sub">증거 제시/증거확인 화면에 쓰일 증거수첩 배경을 책갈피(증언·증거·사진)별로 올립니다. 세 그림은 탭 바까지 포함해 완성된 페이지 아트라, 노트 화면은 이 그림 자체를 책갈피별 배경으로 바꿔 끼웁니다. 세 그림의 레이아웃이 같다는 전제로, 어느 자리에 어떤 데이터(코드·제목·사진·설명·발견 위치·관련 인물)와 버튼(이전·목록·다음·제출)이 들어갈지는 영역 하나만 지정하면 셋 다에 적용됩니다.</div>
 
   <button type="button" class="example-tab-btn" id="exampleTabBtn">
     <span class="example-tab-icon">✏️</span>
@@ -302,7 +302,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
 
 <!-- 예시 — 배경 사진 없이 dev/evidenceNotebook.js가 직접 그리는 노트
      디자인을 그대로 보여준다. 책갈피(증인/증거/사진)는 실제 노트와 같은
-     탭(.evn-tabbar/.evn-tab)으로 고르고, 이전/색인/다음/제출 버튼도 실제
+     탭(.evn-tabbar/.evn-tab)으로 고르고, 이전/목록/다음/제출 버튼도 실제
      노트와 같은 evn-footer/evn-submit-btn을 그대로 재사용해 이 설정
      화면만의 별도 UI가 생기지 않게 한다. -->
 <div class="evn-example-fullscreen hidden" id="evnExampleFullscreen">
@@ -318,14 +318,14 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
         <div class="evn-page" id="evnExamplePage"></div>
         <div class="evn-footer" id="evnExampleFooter">
           <button type="button" class="evn-nav-btn" id="evnExamplePrevBtn">‹ 이전</button>
-          <button type="button" class="evn-nav-btn evn-nav-btn-index" id="evnExampleIndexBtn">☰ 색인</button>
+          <button type="button" class="evn-nav-btn evn-nav-btn-index" id="evnExampleIndexBtn">☰ 목록</button>
           <button type="button" class="evn-nav-btn" id="evnExampleNextBtn">다음 ›</button>
         </div>
         <button type="button" class="evn-submit-btn" id="evnExampleSubmitBtn">제출</button>
       </div>
       <div class="evn-index-panel hidden" id="evnExampleIndexPanel">
         <div class="evn-index-header">
-          <div class="evn-index-panel-title">색인</div>
+          <div class="evn-index-panel-title">목록</div>
           <button type="button" class="evn-close-btn" id="evnExampleIndexCloseBtn">✕</button>
         </div>
         <div class="evn-index-list" id="evnExampleIndexList"></div>
@@ -370,7 +370,7 @@ if ('serviceWorker' in navigator) {
    세 책갈피 배경은 레이아웃이 같다는 전제로 regions/styles를 공유한다.
 
    라벨은 kind로 나뉜다 — 'text'(코드/제목/설명/발견 위치/관련 인물)만
-   서식(styles)이 의미 있고, 'photo'(사진 한 장)와 'button'(이전/색인/다음/
+   서식(styles)이 의미 있고, 'photo'(사진 한 장)와 'button'(이전/목록/다음/
    제출 — 실제 게임에서 그림 위 클릭 히트존으로만 쓰이는 버튼 자리)은
    서식 패널을 보여주지 않는다(updateEvnStylePanel). */
 
@@ -382,7 +382,7 @@ const EVIDENCE_NOTEBOOK_LABELS = [
   { id: 'discoveredLocationText', label: '발견 위치', kind: 'text' },
   { id: 'relatedPerson', label: '관련 인물', kind: 'text' },
   { id: 'prevButton', label: '이전 버튼', kind: 'button' },
-  { id: 'indexButton', label: '색인 버튼', kind: 'button' },
+  { id: 'indexButton', label: '목록 버튼', kind: 'button' },
   { id: 'nextButton', label: '다음 버튼', kind: 'button' },
   { id: 'submitButton', label: '제출 버튼', kind: 'button' },
 ];
@@ -928,7 +928,7 @@ function pickRandomSample() {
   return TEST_SAMPLE_ENTRIES[Math.floor(Math.random() * TEST_SAMPLE_ENTRIES.length)];
 }
 
-const TEST_BUTTON_TEXT = { prevButton: '‹ 이전', indexButton: '☰ 색인', nextButton: '다음 ›', submitButton: '제출' };
+const TEST_BUTTON_TEXT = { prevButton: '‹ 이전', indexButton: '☰ 목록', nextButton: '다음 ›', submitButton: '제출' };
 
 function renderTestPreview() {
   const sample = pickRandomSample();
@@ -955,7 +955,7 @@ function renderTestPreview() {
    업로드된 배경/영역지정과 완전히 무관하게 항상 열 수 있다(referenceImageUrl
    불필요) — "사진을 안 올려도 노트답게 보인다"는 게 이 탭의 존재 이유라서,
    테스트 미리보기(openTestPreview)와 달리 배경 유무 게이트가 없다. 책갈피
-   탭·이전/색인/다음·제출 버튼은 실제 노트(dev/evidenceNotebook.js)와 같은
+   탭·이전/목록/다음·제출 버튼은 실제 노트(dev/evidenceNotebook.js)와 같은
    클래스(evn-tab/evn-footer/evn-submit-btn/evn-index-panel/evn-confirm-panel)를
    그대로 써서 설정 화면과 실제 화면의 UI가 벌어지지 않게 한다. */
 el.exampleTabBtn.addEventListener('click', openExamplePreview);
@@ -1064,7 +1064,7 @@ function exampleGoNext() {
   runExampleFlip('next', () => { exampleIndexBySection[exampleSection] = idx + 1; renderExamplePage(); });
 }
 
-// 색인 패널도 실제 노트의 openIndexPanel/closeIndexPanel과 같은 방식(hidden
+// 목록 패널도 실제 노트의 openIndexPanel/closeIndexPanel과 같은 방식(hidden
 // 유지 + evn-index-open 클래스로 트랜지션) — evn-index-panel의 파치먼트
 // 스타일과 펼침 애니메이션은 EvidenceNotebook.injectStyles가 주입한 CSS 그대로다.
 function openExampleIndexPanel() {
