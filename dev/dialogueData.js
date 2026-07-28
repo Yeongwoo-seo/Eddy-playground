@@ -1453,7 +1453,7 @@ const week2Scene002Lines = [
   { id: "line-053", speaker: "다니엘", text: "가시죠, 여기서 십 분 정도밖에 안 걸려요", characterId: "daniel-guide", expression: "neutral" },
   { id: "line-054", speaker: "지수", text: "네!!", characterId: "jisoo", expression: "neutral" },
   { id: "line-055", speaker: "다니엘", text: "자 이쪽으로 가시죠", characterId: "daniel-guide", expression: "neutral" },
-  { id: "line-056", speaker: '', text: "[기록: 서큘러키 커플 사진] [기록: 다니엘 명찰] 획득. 세 사람이 더 록스 방향으로 걷기 시작한다. 뒤로 오페라하우스의 흰 지붕이 점점 멀어진다.", characterId: null,
+  { id: "line-056", speaker: '', text: "세 사람이 더 록스 방향으로 걷기 시작한다. 뒤로 오페라하우스의 흰 지붕이 점점 멀어진다.", characterId: null,
     effects: [
       {
         type: 'addEvidence',
@@ -1502,8 +1502,8 @@ const week2Scene003Lines = [
   { id: "line-024", speaker: "다니엘", text: "하하, 그냥 익숙해서요\n이 동네 자주 다니니까", characterId: "daniel-guide", expression: "neutral" },
   { id: "line-025", speaker: "영우", text: "아 그러시구나", characterId: "youngwoo", expression: "neutral" },
   { id: "line-026", speaker: "지수", text: "근데 진짜 신기해요\n길 가다 만난 사람인데 이렇게 다 알고 계시고", characterId: "jisoo", expression: "smirk" },
-  { id: "line-027", speaker: "다니엘", text: "매일 여기서 사람들 만나다 보면\n자연스럽게 알게 되는 것들이 많아요", characterId: "daniel-guide", expression: "neutral" },
-  { id: "line-028", speaker: '', text: "[기록: 카페 임시 보관함 시스템] 획득.", characterId: null,
+  {
+    id: "line-027", speaker: "다니엘", text: "매일 여기서 사람들 만나다 보면\n자연스럽게 알게 되는 것들이 많아요", characterId: "daniel-guide", expression: "neutral",
     effects: [
       {
         type: 'addEvidence',
@@ -1571,13 +1571,23 @@ const week2Scene004Lines = [
   { id: 'line-015', speaker: '', text: '윤민아가 두 사람을 발견하고 재빨리 폰을 내린다.', characterId: null },
   { id: 'line-016', speaker: '윤민아', text: '아, 안녕하세요. 그냥 콘텐츠용으로 좀.', characterId: 'minah', expression: 'annoyed' },
   { id: 'line-017', speaker: '지수', text: '아 네 ㅎㅎ 편하게 하세요.', characterId: 'jisoo', expression: 'neutral' },
-  { id: 'line-018', speaker: '윤민아', text: '...네.', characterId: 'minah', expression: 'annoyed' },
-  { id: 'line-019', speaker: '', text: '[ 의문점: 윤민아가 뭔가 급히 숨기는 것 같다 ] 등록.', characterId: null },
+  {
+    id: 'line-018', speaker: '윤민아', text: '...네.', characterId: 'minah', expression: 'annoyed',
+    effects: [{
+      type: 'addQuestion',
+      question: { id: 'question-minah-hiding-something', title: '윤민아가 뭔가 급히 숨기는 것 같다', description: '윤민아가 두 사람을 보자마자 재빨리 폰을 내렸다. 무언가를 촬영하다 들킨 듯한 반응이다.' },
+    }],
+  },
   { id: 'line-020', speaker: '', text: 'K-01 진열대 근처를 애드리언이 서성이고 있다.', characterId: null },
   { id: 'line-021', speaker: '애드리언', text: '좋은 작품이죠, 이거. 황동 세공이 정말 섬세해요.', characterId: 'adrian', expression: 'neutral' },
   { id: 'line-022', speaker: '영우', text: '이거 사실 수도 있어요?', characterId: 'youngwoo', expression: 'neutral' },
-  { id: 'line-023', speaker: '애드리언', text: '음... 그런 쪽은 제가 직접 다루는 건 아니고요, 그냥 보는 걸 좋아해서.', characterId: 'adrian', expression: 'suspicious' },
-  { id: 'line-024', speaker: '', text: '[ 의문점: 애드리언이 가격 얘기를 피한다 ] 등록.', characterId: null },
+  {
+    id: 'line-023', speaker: '애드리언', text: '음... 그런 쪽은 제가 직접 다루는 건 아니고요, 그냥 보는 걸 좋아해서.', characterId: 'adrian', expression: 'suspicious',
+    effects: [{
+      type: 'addQuestion',
+      question: { id: 'question-adrian-avoids-price', title: '애드리언이 가격 얘기를 피한다', description: '애드리언은 공예품 얘기를 하면서도 가격이나 판매 쪽 얘기는 한 번도 꺼내지 않았다.' },
+    }],
+  },
   { id: 'line-025', speaker: '', text: '전시장 뒤쪽에서 짐을 나르던 레오가 지수와 부딪힐 뻔한다.', characterId: null },
   { id: 'line-026', speaker: '레오', text: '아 죄송해요!!', characterId: 'leo', expression: 'shocked' },
   { id: 'line-027', speaker: '지수', text: '아니에요 제가 잘 안 보고.', characterId: 'jisoo', expression: 'neutral' },
@@ -1624,14 +1634,34 @@ const week2Scene005Lines = [
   { id: 'line-016', speaker: '애드리언', text: '클레어씨, 하나만 여쭤볼게요. 이 받침 내부 깊이가 어느 정도 되나요?', characterId: 'adrian', expression: 'suspicious' },
   { id: 'line-017', speaker: '클레어', text: '네...? 그건 왜...', characterId: 'claire', expression: 'suspicious' },
   { id: 'line-018', speaker: '애드리언', text: '아, 그냥 구조가 궁금해서요, 공예적으로.', characterId: 'adrian', expression: 'suspicious' },
-  { id: 'line-019', speaker: '', text: '어색한 침묵. [ 의문점: 애드리언은 왜 가격이 아니라 구조를 묻는가 ] 등록.', characterId: null },
+  {
+    id: 'line-019', speaker: '', text: '어색한 침묵.', characterId: null,
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-adrian-structure-question', code: 'E-B00', category: 'testimony', title: '애드리언의 이상한 질문 — 가격 대신 구조',
+        description: '애드리언 콜 — K-01 앞에서 가격은 한 번도 묻지 않고, 받침 내부 깊이와 분리 가능한 구조인지만 클레어에게 캐물었다. 공예 애호가치고는 이상한 관심사.',
+        discoveredLocationText: 'Pop-up Exhibition · 애드리언과 클레어의 대화',
+      },
+    }],
+  },
   { id: 'line-020', speaker: '', text: '그때 다니엘이 잠깐 전시장에 들른다.', characterId: null },
   { id: 'line-021', speaker: '다니엘', text: '어, 여기 계셨네요.', characterId: 'daniel-guide', expression: 'curious' },
   { id: 'line-022', speaker: '지수', text: '어! 다니엘씨!!!!', characterId: 'jisoo', expression: 'happy' },
   { id: 'line-023', speaker: '다니엘', text: '이 진열장 처음 보는 구조인데 신기하네요.', characterId: 'daniel-guide', expression: 'curious' },
   { id: 'line-024', speaker: '다니엘', text: '직원문이 저쪽으로 열리는 구조인가.', characterId: 'daniel-guide', expression: 'neutral' },
   { id: 'line-025', speaker: '영우', text: '어 그런가봐요.', characterId: 'youngwoo', expression: 'neutral' },
-  { id: 'line-026', speaker: '', text: '다니엘이 별생각 없다는 듯 웃으며 다시 나간다. [ 복선: 다니엘이 직원문 방향을 이미 안다 ] 등록.', characterId: null },
+  {
+    id: 'line-026', speaker: '', text: '다니엘이 별생각 없다는 듯 웃으며 다시 나간다.', characterId: null,
+    effects: [{
+      type: 'addEvidence',
+      evidence: {
+        id: 'evidence-daniel-staffdoor-foreknowledge', code: 'E-DN0', category: 'testimony', title: '다니엘의 직원문 선지식',
+        description: '다니엘 리드 — "이 진열장 처음 보는 구조"라면서도 직원문이 열리는 방향까지 곧바로 맞혔다. 처음 온 사람치고는 너무 정확한 감.',
+        discoveredLocationText: 'Pop-up Exhibition · K-01 진열대 앞, 다니엘과의 대화',
+      },
+    }],
+  },
   { id: 'line-027', speaker: '지수', text: '저분 진짜 아는 것도 많으시네.', characterId: 'jisoo', expression: 'neutral' },
   { id: 'line-028', speaker: '영우', text: '그러게, 로컬이라 그런가.', characterId: 'youngwoo', expression: 'neutral' },
 ];
@@ -1674,7 +1704,7 @@ const week2Scene006Lines = [
   { id: "line-035", speaker: "관광객 NPC 1", text: "그러니까요, 근데 다들 자연스럽게 모였네", characterId: null },
   { id: "line-036", speaker: '', text: "다니엘이 마지막으로 대열을 점검한다. 프레임 안쪽을 눈으로 훑으며 한 사람 한 사람의 위치를 확인한다.", characterId: null },
   { id: "line-037", speaker: "다니엘", text: "자, 다 됐습니다\n하나 둘 셋!", characterId: "daniel-guide", expression: "neutral" },
-  { id: "line-038", speaker: '', text: "셔터 소리. [기록: 관광팀 단체사진] 획득.", characterId: null ,
+  { id: "line-038", speaker: '', text: "셔터 소리.", characterId: null ,
     effects: [
       {
         type: 'addEvidence',
@@ -2043,12 +2073,20 @@ const week2Scene009Lines = [
   { id: "line-066", speaker: "영우", text: "그 그레이 후드\n레오씨 아니야?", characterId: "youngwoo", expression: "curious" },
   { id: "line-067", speaker: "지수", text: "잠깐만\n그럼 아까 다니엘씨가 말한 회색 캡도...", characterId: "jisoo", expression: "shocked" },
   { id: "line-068", speaker: "영우", text: "레오씨였을 수도 있단 얘기지", characterId: "youngwoo", expression: "curious" },
-  { id: "line-069", speaker: '', text: "[증거 갱신: 윤민아의 확대 사진 → 사건 전 K-01 상태를 증명하는 자료] [의문점: 카메라가 빈 화면이 아니라 반복 화면이었다] [의문점: 레오가 직원문에 접근한 기록] 등록.", characterId: null ,
+  { id: "line-069", speaker: '', text: "[증거 갱신: 윤민아의 확대 사진 → 사건 전 K-01 상태를 증명하는 자료]", characterId: null ,
     effects: [
       {
         type: 'updateEvidence',
         id: 'evidence-mina-photo-confiscated',
         summary: '단순한 무단 촬영 자료가 아니라, 사건 전 K-01 하단이 정상적으로 결합돼 있던 상태를 증명하는 기준 자료.',
+      },
+      {
+        type: 'addQuestion',
+        question: { id: 'question-camera-loop-meaning', title: '카메라 영상은 왜 반복 화면으로 조작됐을까', description: '11분 동안 화면이 반복 재생되도록 조작하려면 카메라 시스템 구조를 미리 파악해야 한다. 누가, 어떻게 했을까.' },
+      },
+      {
+        type: 'addQuestion',
+        question: { id: 'question-leo-staffdoor-access', title: '레오가 직원문에 접근한 기록은 무엇을 의미할까', description: '직원문 출입 기록에 레오의 이름이 남아 있다. 목격된 그레이 후드와 겹치는 시간대다.' },
       },
     ],
   },
@@ -2117,8 +2155,13 @@ const week2Scene010Lines = [
   { id: "line-035", speaker: '', text: "애드리언이 처음으로 눈을 피하지 않고 지수를 바라본다.", characterId: null },
   { id: "line-036", speaker: "애드리언", text: "저는 훔치거나 그런 거 아니에요\n그냥 부탁받은 걸 확인해준 것뿐이에요\n믿기 어려우시겠지만", characterId: "adrian", expression: "soft" },
   { id: "line-037", speaker: "지수", text: "지금은... 일단 알겠어요\n근데 그 사람이 누군지는 계속 여쭤볼 거예요", characterId: "jisoo", expression: "neutral" },
-  { id: "line-038", speaker: "애드리언", text: "...네, 그러세요", characterId: "adrian", expression: "soft" },
-  { id: "line-039", speaker: '', text: "[의문점: 애드리언에게 구조를 물어봐 달라고 부탁한 사람은 누구인가] 등록.", characterId: null },
+  {
+    id: "line-038", speaker: "애드리언", text: "...네, 그러세요", characterId: "adrian", expression: "soft",
+    effects: [{
+      type: 'addQuestion',
+      question: { id: 'question-adrian-mystery-client', title: '애드리언에게 구조를 물어봐 달라고 부탁한 사람은 누구인가', description: '애드리언은 받침 내부 구조를 확인해달라는 부탁을 받았다고 인정했지만, 누구인지는 끝내 밝히지 않았다.' },
+    }],
+  },
   { id: "line-040", speaker: "영우", text: "(작게, 지수에게) 완전히 거짓말쟁이는 아닌 것 같아", characterId: "youngwoo", expression: "soft" },
   { id: "line-041", speaker: "지수", text: "(작게) 그니까\n근데 뭔가 하나는 확실히 숨기고 있어", characterId: "jisoo", expression: "soft" },
   {
@@ -2824,12 +2867,16 @@ const week2Scene016Lines = [
   { id: "line-021", speaker: "영우", text: "진짜 짧네요\n꾸밈말이 하나도 없어요", characterId: "youngwoo", expression: "curious" },
   { id: "line-022", speaker: "지수", text: "누군지 짐작 가는 거 없으세요?\n말투나, 뭐 사소한 거라도", characterId: "jisoo", expression: "serious" },
   { id: "line-023", speaker: "레오", text: "...음\n딱히요\n근데 이상하게 되게 침착한 사람 같았어요\n서두르는 법이 없었거든요", characterId: "leo", expression: "soft" },
-  { id: "line-024", speaker: '', text: "[의문점: 레오가 떠난 뒤 보관함에 접근한 사람은 누구인가] 등록. [증거 갱신: 카페 보관함 기록 = \"K-01 회수 장소\" → \"레오 이후 누군가 다시 접근할 수 있었던 지점\"]", characterId: null ,
+  { id: "line-024", speaker: '', text: "[증거 갱신: 카페 보관함 기록 = \"K-01 회수 장소\" → \"레오 이후 누군가 다시 접근할 수 있었던 지점\"]", characterId: null ,
     effects: [
       {
         type: 'updateEvidence',
         id: 'evidence-cafe-storage-log',
         summary: '단순한 K-01 회수 장소가 아니라, 레오 이후 누군가 다시 접근할 수 있었던 지점.',
+      },
+      {
+        type: 'addQuestion',
+        question: { id: 'question-cafe-locker-second-visitor', title: '레오가 떠난 뒤 보관함에 접근한 사람은 누구인가', description: '레오는 K-01을 넣고 사진만 보낸 뒤 바로 돌아왔다고 말한다. 그렇다면 그 이후 보관함에 다시 접근한 사람이 따로 있다는 뜻이다.' },
       },
     ],
   },
@@ -2884,8 +2931,13 @@ const week2Scene017Lines = [
   { id: "line-033", speaker: "소피", text: "그냥... 걸음걸이가 특이했어요\n되게 여유 있어 보이는데\n어디로 가는지는 되게 정확하게 아는 사람처럼요", characterId: "sophie", expression: "soft" },
   { id: "line-034", speaker: "영우", text: "잠깐\n그럼 그날 다니엘씨를 몇 번 보신 거예요, 정확히?", characterId: "youngwoo", expression: "neutral" },
   { id: "line-035", speaker: "소피", text: "음... 보관함 물어봤을 때 한 번\n카페 안쪽 들어온 거 두 번\n그리고 레오씨 다녀간 다음에 그 구역에 있었던 거 한 번", characterId: "sophie", expression: "soft" },
-  { id: "line-036", speaker: "소피", text: "어...\n이렇게 세어보니까 좀 많네요?", characterId: "sophie", expression: "shocked" },
-  { id: "line-037", speaker: '', text: "[의문점: 다니엘이 왜 보관함 구역에 반복해서 있었는가] 등록.", characterId: null },
+  {
+    id: "line-036", speaker: "소피", text: "어...\n이렇게 세어보니까 좀 많네요?", characterId: "sophie", expression: "shocked",
+    effects: [{
+      type: 'addQuestion',
+      question: { id: 'question-daniel-locker-area-repeat', title: '다니엘이 왜 보관함 구역에 반복해서 있었는가', description: '소피가 세어보니 다니엘은 그날 보관함 구역 근처에서 세 차례나 목격됐다 — 우연이라기엔 잦은 횟수다.' },
+    }],
+  },
   { id: "line-038", speaker: "소피", text: "아, 근데 저 확신은 없어요\n그냥 우연이었을 수도 있고", characterId: "sophie", expression: "suspicious" },
   { id: "line-039", speaker: "소피", text: "저도 그분 좋은 사람이라고 생각했거든요\n저희 카페 손님들한테도 항상 상냥하게 인사해주시고", characterId: "sophie", expression: "annoyed" },
   { id: "line-040", speaker: "지수", text: "아니에요, 도움 많이 됐어요", characterId: "jisoo", expression: "serious" },
@@ -3330,12 +3382,20 @@ const week2Scene023Lines = [
   { id: "line-025", speaker: "지수", text: "어?", characterId: "jisoo", expression: "shocked" },
   { id: "line-026", speaker: "영우", text: "아니, 그냥\n누가 일부러 거기 뒀을 수도 있잖아\n우리가 그 방에 묵을 걸 알고", characterId: "youngwoo", expression: "soft" },
   { id: "line-027", speaker: "지수", text: "...그런 생각까진 못 했는데", characterId: "jisoo", expression: "shocked" },
-  { id: "line-028", speaker: '', text: "[기존 증거 설명 갱신: M.K. 황동 열쇠 = \"1주차의 미해결 기념품\" → \"다니엘이 지수에게 접근한 이유이자 사건 전 인지의 증거\"] [장기 미스터리: MK_Consult는 M.K. 표식이 있는 물건을 추적한다] [장기 미스터리: 우리가 우연히 여기 온 게 아닐 수도 있다] 등록.", characterId: null ,
+  { id: "line-028", speaker: '', text: "[기존 증거 설명 갱신: M.K. 황동 열쇠 = \"1주차의 미해결 기념품\" → \"다니엘이 지수에게 접근한 이유이자 사건 전 인지의 증거\"]", characterId: null ,
     effects: [
       {
         type: 'updateEvidence',
         id: 'evidence-mk-key',
         summary: '1주차의 미해결 기념품이 아니라, 다니엘이 지수에게 접근한 이유이자 사건 전 인지의 증거.',
+      },
+      {
+        type: 'addQuestion',
+        question: { id: 'question-mkconsult-tracks-mk-items', title: 'MK_Consult는 M.K. 표식이 있는 물건을 추적한다', description: '다니엘은 M.K. 열쇠를 서큘러키에서 처음 본 순간부터 알아봤다고 인정했다. MK_Consult 계정이 노리는 건 이 열쇠 하나가 아닐 수도 있다.' },
+      },
+      {
+        type: 'addQuestion',
+        question: { id: 'question-not-a-coincidence', title: '우리가 우연히 여기 온 게 아닐 수도 있다', description: '누군가 지수와 영우가 그 방에 묵을 걸 알고 열쇠를 일부러 뒀을 가능성이 있다.' },
       },
     ],
   },
