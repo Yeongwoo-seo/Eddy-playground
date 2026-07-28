@@ -192,8 +192,13 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
    background is already pannable/zoomable at all times (§263's ambient
    loc-stage above), so 조사하기 only needs to add the "here's what's
    actually tappable" layer on top of it. Hotspots come from locationDefs[id]
-   .investigateHotspots (optional, {x,y,interactionId,icon} in %, see that
-   file); a location with none defined still toggles investigate mode on
+   .investigateHotspots (optional, in %, see that file) — either a point
+   {x,y,interactionId,icon} (legacy, renders a fixed 40px circular tap
+   zone) or an area {x1,y1,x2,y2,interactionId} (§신규, same rectangle
+   shape as play/minigame-phone-search's room hotspots, renders sized to
+   the box — see .investigate-hotspot.is-rect above and
+   renderInvestigateHotspots below); a location with none defined still
+   toggles investigate mode on
    (so the button always does *something*), it just shows the roam hint
    text instead of any marker. Markers are appended as children of
    #locCanvas so they inherit its pan/zoom transform for free. ===== */
@@ -202,6 +207,13 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
    어디를 찾아야 하는지 보여주지 않는 편이 실제 "둘러보다 발견한다"는
    느낌에 가깝다는 판단으로, 이전의 반짝이는 원형 아이콘 마커를 없앴다. */
 .investigate-hotspot{position:absolute;width:40px;height:40px;margin:-20px 0 0 -20px;border-radius:50%;background:transparent;border:none;cursor:pointer;padding:0}
+/* 영역 지정(x1/y1/x2/y2) 핫스팟 — 핸드폰 찾기 미니게임(play/minigame-
+   phone-search)의 사각형/폴리곤 판정 방식과 같은 스키마. locationDefs.js의
+   investigateHotspots 항목이 점(x,y) 대신 사각형(x1,y1,x2,y2)이면 이
+   .is-rect 변형을 쓴다 — 중앙 정렬 margin 없이 left/top/width/height를
+   그대로 영역 크기로 채운다(§신규, /dev/upload 에디터 연결은 아직 없어
+   지금은 좌표를 직접 채워 넣는다). */
+.investigate-hotspot.is-rect{width:auto;height:auto;margin:0;border-radius:8px}
 .investigate-hint{position:absolute;left:16px;right:16px;top:calc(96px + env(safe-area-inset-top,0));z-index:2;text-align:center;font-size:13px;color:var(--text-secondary);background:rgba(8,10,12,.65);border-radius:14px;padding:10px 14px;pointer-events:none;opacity:0;transition:opacity .2s ease}
 .investigate-hint:empty{display:none}
 .investigate-hint.show{opacity:1}
@@ -1498,9 +1510,10 @@ function openPresentSheet(characterId) {
    pan/zoom stage on top of it, just a toggle that surfaces "here's what's
    actually tappable" as marker buttons layered into the *same* #locCanvas,
    so they inherit its live pan/zoom transform for free. Hotspots come from
-   locationDefs[id].investigateHotspots (optional {x,y,interactionId,icon}
-   in %, see that file's header comment) — a location with none authored
-   yet still toggles the mode on, it just has nothing to mark and no hint
+   locationDefs[id].investigateHotspots (optional, point {x,y,interactionId,
+   icon} or area {x1,y1,x2,y2,interactionId} in %, see that file's header
+   comment and .investigate-hotspot/.is-rect above) — a location with none
+   authored yet still toggles the mode on, it just has nothing to mark and no hint
    text either (조사하기 자체가 핫스팟 유무를 알려주는 게 아니라 순수히
    핫스팟을 찾는 도구라, "여긴 특별히 없다"는 안내는 스포일러에 가깝다).
    locStage's own pointerdown (a few lines up) is
@@ -1516,8 +1529,23 @@ function renderInvestigateHotspots() {
   hotspots.forEach(h => {
     const btn = document.createElement('button');
     btn.className = 'investigate-hotspot';
-    btn.style.left = ((h.x / 100) * locCanvasW) + 'px';
-    btn.style.top = ((h.y / 100) * locCanvasH) + 'px';
+    if (h.x1 !== undefined) {
+      // 영역(사각형) 핫스팟 — x1/y1/x2/y2는 %, 정규화 안 돼 있어도(x1>x2 등)
+      // Math.min/max로 항상 올바른 좌상단 기준 박스가 되게 한다.
+      btn.classList.add('is-rect');
+      const left = (Math.min(h.x1, h.x2) / 100) * locCanvasW;
+      const top = (Math.min(h.y1, h.y2) / 100) * locCanvasH;
+      const width = (Math.abs(h.x2 - h.x1) / 100) * locCanvasW;
+      const height = (Math.abs(h.y2 - h.y1) / 100) * locCanvasH;
+      btn.style.left = left + 'px';
+      btn.style.top = top + 'px';
+      btn.style.width = width + 'px';
+      btn.style.height = height + 'px';
+    } else {
+      // 레거시 점(x,y) 핫스팟 — 40px 원형 탭존 그대로 유지(기존 w2-adrian-spot 등).
+      btn.style.left = ((h.x / 100) * locCanvasW) + 'px';
+      btn.style.top = ((h.y / 100) * locCanvasH) + 'px';
+    }
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       playInvestigateHotspot(h.interactionId);

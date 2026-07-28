@@ -328,6 +328,24 @@ const interactionDefs = {
     ],
     effects: [{ type: 'setFlag', key: 'sawMakersMarkPlacard', value: true }],
   },
+  // w2-exhibition-entrance investigateHotspot 1개 (§신규) — 위 두 개
+  // (w2ee-topic-outside/provenance)는 캐릭터 칩 기반 topic이라, 같은
+  // 장소에 탭으로 찾는 조사하기 하나를 별도로 둔다. 증거 없는 순수
+  // 분위기용 — 아직 애드리언/레오도 만나기 전(W2_TOURISM 초반)이라 특정
+  // 인물과 엮인 물증을 놓기엔 이르다.
+  'w2en-hotspot-flyer': {
+    id: 'w2en-hotspot-flyer',
+    characterId: 'youngwoo',
+    locationIds: ['w2-exhibition-entrance'],
+    phases: ['W2_TOURISM'],
+    type: 'topic',
+    label: '바닥에 떨어진 전단지 조각 보기',
+    lines: [
+      { speaker: '', text: '입구 바닥에 안내 전단지 한 귀퉁이가 찢어진 채 떨어져 있다.', characterId: null },
+      { speaker: '지수', text: '이것도 그 전시 거네.', characterId: 'jisoo', expression: 'neutral' },
+      { speaker: '영우', text: '누가 밟고 지나갔나보다.', characterId: 'youngwoo', expression: 'neutral' },
+    ],
+  },
 
   /* ===== w2-adrian-spot (전시장 보조 진열 구역) — W2_TOURISM 전용 자유 조사
      10개 핫스팟 (§신규, 구 minigame-exhibition-search/HOTSPOTS 이식). 미니게임
@@ -687,7 +705,18 @@ const interactionDefs = {
       { speaker: "애드리언", text: "아, 그냥 구조가 궁금해서요\n공예적으로\n혹시 내부가 분리되는 구조인가요?", characterId: "adrian", expression: "annoyed" },
       { speaker: "클레어", text: "그것도... 저는 전시 관리만 해서요\n왜 그게 궁금하세요?", characterId: "claire", expression: "shocked" },
       { speaker: "애드리언", text: "아뇨 그냥\n공예 작품들 볼 때 습관적으로 궁금해지는 부분이라서요", characterId: "adrian", expression: "annoyed" },
-      { speaker: '', text: "어색한 침묵. [의문점: 애드리언은 왜 가격이 아니라 구조를 묻는가] 등록.", characterId: null },
+      { speaker: '', text: "어색한 침묵. [의문점: 애드리언은 왜 가격이 아니라 구조를 묻는가] 등록.", characterId: null ,
+        effects: [
+          {
+            type: 'addEvidence',
+            evidence: {
+              id: 'evidence-adrian-structure-question', code: 'E-B00', category: 'testimony', title: '애드리언의 이상한 질문 — 가격 대신 구조',
+              description: '애드리언 콜 — K-01 앞에서 가격은 한 번도 묻지 않고, 받침 내부 깊이와 분리 가능한 구조인지만 클레어에게 캐물었다. 공예 애호가치고는 이상한 관심사.',
+              discoveredLocationText: 'Pop-up Exhibition · 애드리언과 클레어의 대화',
+            },
+          },
+        ],
+      },
       { speaker: "영우", text: "(작게) 저 질문 좀 특이하다\n보통 사람들은 가격부터 물어보지 않나", characterId: "youngwoo", expression: "curious" },
       { speaker: "지수", text: "(작게) 그러게\n가격이 아니라 안쪽 구조를 궁금해하시네", characterId: "jisoo", expression: "curious" },
       { speaker: "영우", text: "뭐 그럴 수도 있지\n공예 좋아하시는 분들은 만듦새를 더 궁금해하기도 하니까", characterId: "youngwoo", expression: "neutral" },
@@ -793,7 +822,18 @@ const interactionDefs = {
       { speaker: "다니엘", text: "직원문이 저쪽으로 열리는 구조인가", characterId: "daniel-guide", expression: "neutral" },
       { speaker: "영우", text: "어 그런가봐요", characterId: "youngwoo", expression: "neutral" },
       { speaker: "지수", text: "그러고 보니 저기 문 있었네요\n전혀 못 봤어요", characterId: "jisoo", expression: "neutral" },
-      { speaker: '', text: "다니엘이 별생각 없다는 듯 웃으며 다시 나간다. [복선: 다니엘이 직원문 방향을 이미 안다] 등록.", characterId: null },
+      { speaker: '', text: "다니엘이 별생각 없다는 듯 웃으며 다시 나간다. [복선: 다니엘이 직원문 방향을 이미 안다] 등록.", characterId: null ,
+        effects: [
+          {
+            type: 'addEvidence',
+            evidence: {
+              id: 'evidence-daniel-staffdoor-foreknowledge', code: 'E-DN0', category: 'testimony', title: '다니엘의 직원문 선지식',
+              description: '다니엘 리드 — "이 진열장 처음 보는 구조"라면서도 직원문이 열리는 방향까지 곧바로 맞혔다. 처음 온 사람치고는 너무 정확한 감.',
+              discoveredLocationText: 'Pop-up Exhibition · K-01 진열대 앞, 다니엘과의 대화',
+            },
+          },
+        ],
+      },
       { speaker: "다니엘", text: "저는 다시 일 좀 보러 가볼게요\n오후에 시간 되시면 또 뵈어요", characterId: "daniel-guide", expression: "neutral" },
       { speaker: "지수", text: "네 감사합니다!!", characterId: "jisoo", expression: "happy" },
       { speaker: '', text: "다니엘이 손을 흔들고 전시장 밖으로 나간다.", characterId: null },
@@ -802,6 +842,83 @@ const interactionDefs = {
       { speaker: "지수", text: "오늘 진짜 좋은 사람들만 만나는 거 같아\n사진 찍어주신 것도 그렇고\n보관함 도와주신 것도 그렇고", characterId: "jisoo", expression: "happy" },
       { speaker: "영우", text: "그니까\n나중에 다니엘씨한테 시드니 관광청 표창장이라도 드려야 되는 거 아니야", characterId: "youngwoo", expression: "smirk" },
       { speaker: "지수", text: "ㅋㅎㅋㅎㅋㅎㅋㅎㅋㅎ\n무슨 표창장이야\n그래도 인정은 인정", characterId: "jisoo", expression: "happy" },
+    ],
+  },
+
+  /* ===== w2-exhibit-floor investigateHotspots (§신규) =====
+     w2-adrian-spot의 w2as-topic-*(구 미니게임 핫스팟)와 같은 패턴 — 캐릭터
+     칩과 별개로 화면을 탭해서 찾는 순수 조사하기 topic 셋. K-01
+     조명(w2ef-hotspot-k01-light)은 증거 없는 순수 분위기용, 나머지 둘은
+     사건 전 자유 관람 시점에 미리 놓인 물증(§신규 원칙대로 "필수 증거"
+     게이트는 아니고 보강 증거)이다. 레오/애드리언 쪽 물증으로만 채워
+     다니엘이 배후라는 반전과 어긋나지 않게 한다. */
+  'w2ef-hotspot-k01-light': {
+    id: 'w2ef-hotspot-k01-light',
+    characterId: 'youngwoo',
+    locationIds: ['w2-exhibit-floor'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
+    type: 'topic',
+    label: 'K-01 진열대 조명 살펴보기',
+    lines: [
+      { speaker: '', text: 'K-01 위쪽 조명을 올려다본다. 각도가 미묘하게 세공 부분을 강조하도록 맞춰져 있다.', characterId: null },
+      { speaker: '지수', text: '조명 하나로 이렇게 느낌이 다르구나.', characterId: 'jisoo', expression: 'happy' },
+      { speaker: '영우', text: '그러게, 신경 좀 썼네.', characterId: 'youngwoo', expression: 'neutral' },
+    ],
+  },
+  'w2ef-hotspot-staffdoor': {
+    id: 'w2ef-hotspot-staffdoor',
+    characterId: 'youngwoo',
+    locationIds: ['w2-exhibit-floor'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
+    type: 'topic',
+    label: '직원 전용문 살펴보기',
+    lines: [
+      { speaker: '', text: '전시장 안쪽, "관계자 외 출입 금지"라고 적힌 직원 전용문이 보인다. 지금은 굳게 닫혀 있다.', characterId: null },
+      { speaker: '지수', text: '저 문은 뭐지?', characterId: 'jisoo', expression: 'curious' },
+      { speaker: '영우', text: '직원용인가봐\n지금은 잠겨 있는 것 같은데', characterId: 'youngwoo', expression: 'neutral' },
+      { speaker: '', text: '문턱 아래 틈에 작은 포장용 테이프 조각이 떨어져 있다. 짐을 옮기다 흘린 것 같다.', characterId: null },
+      { speaker: '지수', text: '이런 것도 막 떨어져 있네.', characterId: 'jisoo', expression: 'neutral' },
+      { speaker: '영우', text: '짐 나르다 흘렸나보다\n대수롭지 않은 거겠지', characterId: 'youngwoo', expression: 'neutral' },
+      { speaker: '', text: '[증거: 직원문 앞 포장용 테이프 조각] 등록.', characterId: null ,
+        effects: [
+          {
+            type: 'addEvidence',
+            evidence: {
+              id: 'evidence-staffdoor-tape-scrap', code: 'E-EF1', category: 'physical', title: '직원문 앞 포장용 테이프 조각',
+              description: '직원 전용문 문턱 아래 떨어져 있던 포장용 테이프 조각. 지금은 그냥 짐을 나르다 흘린 부스러기처럼 보인다.',
+              discoveredLocationText: 'Pop-up Exhibition · 직원 전용문 앞',
+            },
+          },
+        ],
+      },
+    ],
+  },
+  'w2ef-hotspot-pedestal': {
+    id: 'w2ef-hotspot-pedestal',
+    characterId: 'youngwoo',
+    locationIds: ['w2-exhibit-floor'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
+    type: 'topic',
+    label: '보조 진열대 살펴보기',
+    lines: [
+      { speaker: '', text: 'K-01 진열대 옆, 보조 진열용 받침대 하나가 비어 있다.', characterId: null },
+      { speaker: '영우', text: '이건 뭐 놓으려고 비워둔 건가?', characterId: 'youngwoo', expression: 'curious' },
+      { speaker: '', text: '받침대 옆면에 연필로 그은 듯한 작은 눈금 자국이 남아 있다. 누군가 치수를 재본 흔적 같다.', characterId: null },
+      { speaker: '지수', text: '어? 여기 뭐 재본 자국 있는데.', characterId: 'jisoo', expression: 'curious' },
+      { speaker: '영우', text: '진짜네\n누가 이런 걸 재나', characterId: 'youngwoo', expression: 'curious' },
+      { speaker: '지수', text: '전시 준비하면서 그랬겠지 뭐.', characterId: 'jisoo', expression: 'neutral' },
+      { speaker: '', text: '[증거: 보조 받침대의 눈금 자국] 등록.', characterId: null ,
+        effects: [
+          {
+            type: 'addEvidence',
+            evidence: {
+              id: 'evidence-pedestal-pencil-marks', code: 'E-EF2', category: 'physical', title: '보조 받침대의 눈금 자국',
+              description: 'K-01 옆 빈 받침대 옆면에 남은 연필 눈금 자국. 누군가 정확한 치수를 재본 흔적으로 보인다.',
+              discoveredLocationText: 'Pop-up Exhibition · 보조 진열 구역',
+            },
+          },
+        ],
+      },
     ],
   },
 
