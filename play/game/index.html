@@ -482,7 +482,16 @@ const activeSceneData = allScenes.find(s => s.id === requestedSceneId) || allSce
 // instead of tapping through it line by line. ?week= carries the originating
 // week id through the nextSceneId chain purely so the completion card knows
 // which week list to link back to.
-const isAutoplay = gameParams.get('autoplay') === '1';
+//
+// ?evidenceCheck=1 (set by /dev/week2's "🔎 증거버전" button) — a verification
+// variant of autoplay: lines that don't grant evidence/a case-file update and
+// aren't an interrogation prompt (choice/evidence) fly by almost instantly,
+// while lines that DO (see isImportantLine below) hold at the normal reading
+// pace so a dev watching the cascade can actually see the evidence
+// toast/case-file notify fire, instead of it flashing past along with every
+// other line. Implies autoplay — see isAutoplay below.
+const evidenceCheckMode = gameParams.get('evidenceCheck') === '1';
+const isAutoplay = gameParams.get('autoplay') === '1' || evidenceCheckMode;
 const autoplayWeek = gameParams.get('week') || 'week2';
 // Clones every field (not a fixed whitelist) so interactive fields — id,
 // type, choices, effects, goto, evidenceIds, correctGoto, wrongText — reach
@@ -959,7 +968,7 @@ function playMinigameTransition(nextSceneId) {
     // route above instead, autoplay has nothing left to script (those need
     // real input), so this suffix is simply omitted and that navigation
     // lands there in normal manual mode.
-    const suffix = autoplayOn ? `&autoplay=1&week=${encodeURIComponent(autoplayWeek)}` : '';
+    const suffix = autoplayOn ? `&autoplay=1&week=${encodeURIComponent(autoplayWeek)}${evidenceCheckMode ? '&evidenceCheck=1' : ''}` : '';
     location.href = `/play/game/?scene=${encodeURIComponent(nextSceneId)}${suffix}`;
     return;
   }
@@ -1347,8 +1356,14 @@ const player = createVNPlayer({
     // true = this line finished typing and is waiting on a tap; schedule the
     // auto-tap after a reading pause. false = a new line just started typing
     // (or a scene transition is holding) — drop any stale pending auto-tap.
-    if (show) scheduleAutoTap(autoReadDelay(el.dialogueText.textContent));
-    else clearAutoplayTimer();
+    // 증거버전에서는 "중요한 줄"이 아니면 읽는 속도 대신 거의 즉시 다음으로
+    // 넘긴다 — isImportantLine이 참인 줄만 원래 읽는 속도로 멈춰서, 그 줄이
+    // 달고 있는 증거 토스트/케이스 파일 알림이 실제로 눈에 보이게 한다.
+    if (show) {
+      const line = activeLines[player.getState().index];
+      const delay = (evidenceCheckMode && !isImportantLine(line)) ? EVIDENCE_CHECK_SKIP_MS : autoReadDelay(el.dialogueText.textContent);
+      scheduleAutoTap(delay);
+    } else clearAutoplayTimer();
   },
   onEffect: (effects) => {
     (Array.isArray(effects) ? effects : [effects]).forEach(applyEffect);
@@ -1401,7 +1416,7 @@ const player = createVNPlayer({
     if (autoplayOn) {
       const fallback = findAutoplayFallbackNextScene();
       if (fallback) {
-        location.href = `/play/game/?scene=${encodeURIComponent(fallback.id)}&autoplay=1&week=${encodeURIComponent(autoplayWeek)}`;
+        location.href = `/play/game/?scene=${encodeURIComponent(fallback.id)}&autoplay=1&week=${encodeURIComponent(autoplayWeek)}${evidenceCheckMode ? '&evidenceCheck=1' : ''}`;
       } else {
         showAutoplayComplete();
       }
@@ -1491,7 +1506,24 @@ function autoReadDelay(text) {
   return 550 + Math.min(1600, (text || '').length * 16);
 }
 
-if (isAutoplay) el.autoplayBtn.classList.remove('hidden');
+// ===== 증거버전(?evidenceCheck=1) 판정 — 증거 획득/케이스 파일 갱신
+// 이펙트(§applyEffect)를 달고 있거나, 심문 프롬프트(choice/evidence)인 줄만
+// "중요한 줄"로 본다. EVIDENCE_CHECK_SKIP_MS는 그 외 줄을 훑고 지나가는
+// 속도 — 0으로 하면 setTimeout 체인이 브라우저를 버벅이게 만들 수 있어
+// skipToNextInteraction과 같은 감각으로 아주 짧게만 둔다.
+const IMPORTANT_EFFECT_TYPES = new Set(['addEvidence', 'updateEvidence', 'addFact', 'addQuestion', 'setQuestionStatus', 'addPerson', 'setPersonStatus', 'setHypothesis']);
+const EVIDENCE_CHECK_SKIP_MS = 30;
+function isImportantLine(line) {
+  if (!line) return false;
+  if (line.type === 'choice' || line.type === 'evidence') return true;
+  const effects = Array.isArray(line.effects) ? line.effects : (line.effects ? [line.effects] : []);
+  return effects.some(e => IMPORTANT_EFFECT_TYPES.has(e.type));
+}
+
+if (isAutoplay) {
+  el.autoplayBtn.classList.remove('hidden');
+  if (evidenceCheckMode) el.autoplayBtn.textContent = '증거체크 ⏸ 정지';
+}
 el.autoplayBtn.addEventListener('click', (e) => {
   e.stopPropagation();
   stopAutoplay();
@@ -1523,7 +1555,7 @@ function findAutoplayFallbackNextScene() {
 function showAutoplayComplete() {
   stopAutoplay();
   el.frame.classList.add('ending-fade');
-  el.introCard.textContent = '자동 재생 완료';
+  el.introCard.textContent = evidenceCheckMode ? '증거체크 완료' : '자동 재생 완료';
   el.introOverlay.classList.remove('hidden');
   setTimeout(() => { location.href = `/dev/${autoplayWeek}/`; }, 2200);
 }
@@ -1532,9 +1564,22 @@ function showAutoplayComplete() {
 // scene data didn't already author one — vnPlayer.js itself reads
 // line.typingSpeedMs per line, so no change to the shared engine is needed.
 const TEXT_SPEED_MS = { slow: 58, normal: 36, fast: 18, instant: 1 };
+// 증거버전에서 "중요하지 않은" 줄은 타이핑 자체도 즉시에 가깝게 끝낸다 —
+// onArrow의 EVIDENCE_CHECK_SKIP_MS(타이핑이 끝난 뒤 다음으로 넘어가는 대기
+// 시간)만 줄이면 글자 수가 많은 줄은 여전히 타이핑 애니메이션만큼 시간이
+// 걸리므로, 여기서 typingSpeedMs 자체를 같이 줄여야 진짜 "스킵"처럼 보인다.
+// 장면 전환(line.sceneTransition)이 걸린 줄은 제외 — showLine이 그 줄의
+// onLineChange 시점엔 아직 isPausing이 세팅되지 않아, 여기서 빠르게만 만들고
+// 실제 스킵(탭)은 하지 않으므로 안전하지만, 그래도 전환 연출은 늘 제 속도로
+// 보여주는 게 맞다. 이미 저자가 typingSpeedMs를 직접 지정한 줄은 항상
+// 우선한다(l.typingSpeedMs ||).
+const EVIDENCE_CHECK_TYPING_MS = 4;
 function applyTextSpeedSetting(lines) {
   const speedMs = TEXT_SPEED_MS[CaseFileState.getSettings().textSpeed] || TEXT_SPEED_MS.normal;
-  return lines.map(l => Object.assign({}, l, { typingSpeedMs: l.typingSpeedMs || speedMs }));
+  return lines.map(l => {
+    const useFastTyping = evidenceCheckMode && !l.sceneTransition && !isImportantLine(l);
+    return Object.assign({}, l, { typingSpeedMs: l.typingSpeedMs || (useFastTyping ? EVIDENCE_CHECK_TYPING_MS : speedMs) });
+  });
 }
 
 const caseMenu = initCaseMenu({
