@@ -28,6 +28,10 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .point-balance.hidden{display:none}
 .topbar-left{display:flex;gap:8px;align-items:center}
 #caseMenuMount{display:flex}
+/* 증거노트 배지 — play/game/index.html의 evnBadgeBtn과 같은 스타일. 탐색허브는
+   2주차부터만 쓰이는 화면이라(§week1은 이 페이지에 오지 않음) 항상 노출한다. */
+.evn-badge-btn{width:36px;height:36px;border-radius:50%;background:rgba(214,168,75,.14);border:1px solid rgba(214,168,75,.4);color:var(--amber);font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.evn-badge-btn:active{opacity:.8}
 
 /* ===== MAP VIEW (spec §7.2) ===== */
 .map-view{position:absolute;inset:0;overflow-y:auto;padding:calc(80px + env(safe-area-inset-top,0)) 16px calc(24px + env(safe-area-inset-bottom,0));display:none}
@@ -323,6 +327,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
   <div class="topbar">
     <div class="topbar-left">
       <span id="caseMenuMount"></span>
+      <button type="button" class="evn-badge-btn" id="evnBadgeBtn" aria-label="증거노트 열기">📓</button>
       <span class="point-balance hidden" id="pointBalance">P 0</span>
     </div>
     <div style="display:flex;gap:8px">
@@ -483,6 +488,7 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('/play/sw.js'
 
 const el = {
   frame: document.getElementById('frame'),
+  evnBadgeBtn: document.getElementById('evnBadgeBtn'),
   pointBalance: document.getElementById('pointBalance'),
   lifeGauge: document.getElementById('lifeGauge'),
   lifeGaugeFill: document.getElementById('lifeGaugeFill'),
@@ -2196,6 +2202,12 @@ const caseMenu = initCaseMenu({
 el.frame.addEventListener('click', (e) => {
   // Nothing extra needed globally yet — kept for parity with play/game's tap
   // pattern in case a future beat needs a frame-level tap guard.
+});
+
+// 증거노트 배지 — 탐색허브는 2주차부터만 쓰여서(§CSS 주석) week1 숨김 없이
+// 항상 노출, browse 모드로 훑어보기만 한다.
+el.evnBadgeBtn.addEventListener('click', () => {
+  if (typeof EvidenceNotebook !== 'undefined') EvidenceNotebook.open({ mode: 'browse' });
 });
 
 // Phase-wide preload (§신규, 확장판) — a phase's locations share one small

@@ -43,6 +43,12 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
    but cyan to read as "this is the player-facing preview", not a dev tool. */
 .vn-btn.auto{color:var(--cyan);border-color:rgba(89,184,200,.45);background:rgba(89,184,200,.16)}
 .vn-btn.auto.hidden{display:none}
+/* 증거노트 배지 — 2주차부터 좌상단에 노출, 누르면 EvidenceNotebook을 browse
+   모드로 연다(§evnBadgeBtn 초기화). cm-menu-btn-inline(caseMenu.js)과 같은
+   36px 원형 크기지만 케이스 파일 메뉴와 구분되도록 앰버 톤으로 뺀다. */
+.evn-badge-btn{width:36px;height:36px;border-radius:50%;background:rgba(214,168,75,.14);border:1px solid rgba(214,168,75,.4);color:var(--amber);font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.evn-badge-btn:active{opacity:.8}
+.evn-badge-btn.hidden{display:none}
 /* 다음 상호작용(스킵) 버튼 — 대사 스킵 + 다음 선택지/씬으로 즉시 이동.
    dev 전용 편의 기능이라 실제 플레이에서는 RealPlayMode.hideDevChrome이
    숨긴다(#skipBtn). */
@@ -281,6 +287,7 @@ window.addEventListener('orientationchange', setVh100);
   <div class="vn-topbar">
     <div style="display:flex;gap:8px;align-items:center">
       <span id="caseMenuMount"></span>
+      <button type="button" class="evn-badge-btn hidden" id="evnBadgeBtn" aria-label="증거노트 열기">📓</button>
       <span class="point-balance hidden" id="pointBalance">P 0</span>
       <a class="vn-btn" href="/dev/">← DEV</a>
     </div>
@@ -544,6 +551,7 @@ const el = {
   lifeGaugeFlash: document.getElementById('lifeGaugeFlash'),
   lifeGameoverOverlay: document.getElementById('lifeGameoverOverlay'),
   lifeGameoverRetryBtn: document.getElementById('lifeGameoverRetryBtn'),
+  evnBadgeBtn: document.getElementById('evnBadgeBtn'),
 };
 
 function updatePointBalance() {
@@ -1326,6 +1334,16 @@ if (el.evidenceSheetNotebookBtn) {
   });
 }
 
+// 증거노트 배지 — 1주차는 증거 1건뿐이라 caseMenu.js의 진입점 숨김과 같은
+// 이유로 숨긴다(2주차부터 노출). 언제든 눌러 훑어볼 수 있는 browse 모드로
+// 연다 — 제시(present) 흐름과 달리 npcId/onPresent 없이 그냥 구경만 한다.
+if (WeekPreloader.weekIdOf(activeSceneData.id) !== 'week1') {
+  el.evnBadgeBtn.classList.remove('hidden');
+}
+el.evnBadgeBtn.addEventListener('click', () => {
+  if (typeof EvidenceNotebook !== 'undefined') EvidenceNotebook.open({ mode: 'browse' });
+});
+
 const player = createVNPlayer({
   pageFit: { textEl: el.dialogueText },
   onLineChange: (line, index, total) => {
@@ -1413,7 +1431,7 @@ const player = createVNPlayer({
 
 function onTap() {
   unlockBgmOnFirstTap();
-  if (caseMenu.isOpen()) return;
+  if (caseMenu.isOpen() || (typeof EvidenceNotebook !== 'undefined' && EvidenceNotebook.isOpen())) return;
   player.tap();
 }
 
@@ -1440,7 +1458,8 @@ function skipToNextInteraction() {
     if (!skipRunning) return;
     const state = player.getState();
     if (state.awaitingChoice || state.awaitingEvidence) { skipRunning = false; return; }
-    if (caseMenu.isOpen() || !el.sheetOverlay.classList.contains('hidden') || !el.evidenceSheetOverlay.classList.contains('hidden')) {
+    if (caseMenu.isOpen() || !el.sheetOverlay.classList.contains('hidden') || !el.evidenceSheetOverlay.classList.contains('hidden')
+      || (typeof EvidenceNotebook !== 'undefined' && EvidenceNotebook.isOpen())) {
       setTimeout(step, 200);
       return;
     }
@@ -1478,7 +1497,8 @@ function scheduleAutoTap(delayMs) {
   clearAutoplayTimer();
   autoplayTimer = setTimeout(() => {
     if (!autoplayOn) return;
-    if (caseMenu.isOpen() || !el.sheetOverlay.classList.contains('hidden') || !el.evidenceSheetOverlay.classList.contains('hidden')) {
+    if (caseMenu.isOpen() || !el.sheetOverlay.classList.contains('hidden') || !el.evidenceSheetOverlay.classList.contains('hidden')
+      || (typeof EvidenceNotebook !== 'undefined' && EvidenceNotebook.isOpen())) {
       scheduleAutoTap(400);
       return;
     }
