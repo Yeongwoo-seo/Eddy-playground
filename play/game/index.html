@@ -44,9 +44,9 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .vn-btn.auto{color:var(--cyan);border-color:rgba(89,184,200,.45);background:rgba(89,184,200,.16)}
 .vn-btn.auto.hidden{display:none}
 /* 증거노트 배지 — 2주차부터 좌상단에 노출, 누르면 EvidenceNotebook을 browse
-   모드로 연다(§evnBadgeBtn 초기화). cm-menu-btn-inline(caseMenu.js)과 같은
-   36px 원형 크기지만 케이스 파일 메뉴와 구분되도록 앰버 톤으로 뺀다. */
-.evn-badge-btn{width:36px;height:36px;border-radius:50%;background:rgba(214,168,75,.14);border:1px solid rgba(214,168,75,.4);color:var(--amber);font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent}
+   모드로 연다(§evnBadgeBtn 초기화). "증거" 텍스트 라벨이라 vn-btn 계열과 같은
+   알약형 배지로, 케이스 파일 메뉴와 구분되도록 앰버 톤을 쓴다. */
+.evn-badge-btn{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--amber);background:rgba(214,168,75,.14);border:1px solid rgba(214,168,75,.4);border-radius:20px;padding:9px 14px;min-height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .evn-badge-btn:active{opacity:.8}
 .evn-badge-btn.hidden{display:none}
 /* 다음 상호작용(스킵) 버튼 — 대사 스킵 + 다음 선택지/씬으로 즉시 이동.
@@ -287,7 +287,7 @@ window.addEventListener('orientationchange', setVh100);
   <div class="vn-topbar">
     <div style="display:flex;gap:8px;align-items:center">
       <span id="caseMenuMount"></span>
-      <button type="button" class="evn-badge-btn hidden" id="evnBadgeBtn" aria-label="증거노트 열기">📓</button>
+      <button type="button" class="evn-badge-btn hidden" id="evnBadgeBtn" aria-label="증거노트 열기">증거</button>
       <span class="point-balance hidden" id="pointBalance">P 0</span>
       <a class="vn-btn" href="/dev/">← DEV</a>
     </div>
