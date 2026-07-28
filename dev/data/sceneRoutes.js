@@ -22,6 +22,12 @@ const MINIGAME_ROUTES = {
   // 같은 계약).
   'week1-scene-circular-quay-minigame': '/play/minigame-fishing/',
   'week1-scene-002-2': '/play/minigame-phone-search/',
+  // [과일 마켓 · 수박 게임 연계] week2-scene-001b(패디스 마켓)의 상인이
+  // 제안하는 도전 게임 — 기존 독립형 수박 게임(dev/minigame-watermelon)을
+  // 그대로 재사용한다. 낚시와 같은 오픈형 계약이라 자동으로 다음 씬으로
+  // 넘기지 않고, SHOP_TUTORIAL_RETURN_SCENE으로 설정한 복귀 씬을 그 화면의
+  // 뒤로가기 버튼이 읽어 돌아온다.
+  'week2-scene-001-watermelon-minigame': '/dev/minigame-watermelon/play/',
   'week1-scene-shop-visit': '/play/shop/',
   // 2주차 v4 전면 재설계 — 미니게임 두 개(사진 속 인물 찾기/시간대 정리)는
   // 그대로 재사용하며, 새 씬 id로 다시 연결한다 — see dialogueData.js의
@@ -58,4 +64,6 @@ const SHOP_TUTORIAL_RETURN_SCENE = {
   'week1-scene-train-minigame': 'week1-scene-train-2',
   'week1-scene-shop-visit': 'week1-scene-circular-quay',
   'week1-scene-circular-quay-minigame': 'week1-scene-002-1',
+  // 패디스 마켓 수박 게임 도전 뒤 서큘러키(다니엘과의 첫 만남)로 복귀.
+  'week2-scene-001-watermelon-minigame': 'week2-scene-002',
 };

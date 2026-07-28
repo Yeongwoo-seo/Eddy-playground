@@ -1350,6 +1350,29 @@ const week2Scene001Lines = [
   { id: 'line-015', speaker: '지수', text: '헤헤 알겠어 ㅎㅎ 가자!!!!', characterId: 'jisoo', expression: 'happy' },
 ];
 
+// [과일 마켓 · 수박 게임 연계] 서큘러키(002)로 걸어가는 길에 시티 바로
+// 옆 차이나타운 인근 실내 과일 마켓(패디스 마켓, 실존 장소)에 잠깐 들르는
+// 막간극. 사건과는 무관한 순수 일상 비트로, week1-scene-circular-quay의
+// 낚시 미니게임과 같은 계약(오픈형·클리어 조건 없음)으로 기존 독립형
+// 수박 게임(dev/minigame-watermelon)을 그대로 이어 붙인다 — 새 미니게임
+// UI 없이 route/복귀만 새로 연결(dev/data/sceneRoutes.js 참고).
+const week2Scene001bLines = [
+  { id: 'line-001', speaker: '', text: '숙소를 나선 지수와 영우, 서큘러키로 향하는 길에 차이나타운 근처 패디스 마켓 앞을 지난다. 알록달록한 과일 상자들이 입구까지 늘어서 있다.', characterId: null },
+  { id: 'line-002', speaker: '지수', text: '영크크!!!!\n여기 봐봐, 완전 과일 산이야 ㅎㅎㅎㅎㅎㅎ', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-003', speaker: '영우', text: '와 진짜네, 이 시간에 벌써 이렇게 사람 많다고?', characterId: 'youngwoo', expression: 'curious' },
+  { id: 'line-004', speaker: '지수', text: '시티 바로 옆인데 이런 마켓이 있는 게 신기하다 ㅎㅎ\n야르~ 잠깐만 구경하고 가자!!', characterId: 'jisoo', expression: 'happy' },
+  { id: 'line-005', speaker: '', text: '입구 쪽 과일 가게 상인이 태블릿을 손님들에게 들이밀며 뭔가를 홍보하고 있다.', characterId: null },
+  { id: 'line-006', speaker: '마켓 상인', text: '손님들, 이 게임 한 판 도전해보실래요?\n같은 과일을 계속 합쳐서 수박까지 만들면 진짜 수박 한 통 드려요!', characterId: null },
+  { id: 'line-007', speaker: '지수', text: '헐?????\n수박을 진짜 준다고요?', characterId: 'jisoo', expression: 'shocked' },
+  { id: 'line-008', speaker: '영우', text: '지수 눈빛 바뀐 거 봐 ㅋㅎㅋㅎㅋㅎㅋㅎㅋㅎ', characterId: 'youngwoo', expression: 'smirk' },
+  { id: 'line-009', speaker: '지수', text: '아니거든?\n그냥... 궁금해서 그러지 ㅎㅎ', characterId: 'jisoo', expression: 'annoyed' },
+  { id: 'line-010', speaker: '영우', text: '웅웅 알겠어, 그럼 한 판 해봐.\n나는 옆에서 응원할게.', characterId: 'youngwoo', expression: 'soft' },
+  { id: 'line-011', speaker: '마켓 상인', text: '다들 그냥 수박 게임이라고 불러요.\n화면 만지면 바로 시작돼요.', characterId: null },
+  { id: 'line-012', speaker: '지수', text: '영우, 나 진짜 수박 만들고 온다 ㅎㅎㅎㅎㅎㅎ', characterId: 'jisoo', expression: 'smirk' },
+  { id: 'line-013', speaker: '영우', text: '오키, 화이팅!!!!\n나는 여기서 과일이나 좀 보고 있을게.', characterId: 'youngwoo', expression: 'happy' },
+  { id: 'line-014', speaker: '', text: '지수가 태블릿 앞에 자리를 잡는다.', characterId: null },
+];
+
 const week2Scene002Lines = [
   { id: 'line-001', speaker: '', text: '오페라하우스와 하버브리지가 보이는 서큘러키.\n지수와 영우가 사진을 찍으려 하지만 앵글이 잘 안 나온다.', characterId: null },
   { id: 'line-002', speaker: '지수', text: '아 잠만, 나 왜 자꾸 다리가 잘려.', characterId: 'jisoo', expression: 'annoyed' },
@@ -2554,11 +2577,22 @@ const week2Scenes = [
     id: 'week2-scene-001', order: 1, name: '짧은 아침, 풀리지 않은 열쇠',
     location: 'Sydney Accommodation', introLabel: 'ACCOMMODATION', time: '08:50',
     lines: week2Scene001Lines,
-    nextSceneId: 'week2-scene-002',
+    nextSceneId: 'week2-scene-001b',
+  },
+  {
+    // [과일 마켓 · 수박 게임 연계] 사건과 무관한 막간극 — 서큘러키로 가는
+    // 길에 실존 장소(패디스 마켓)에 들러 기존 독립형 수박 게임으로 이어진다.
+    id: 'week2-scene-001b', order: 1.5, name: '패디스 마켓, 과일 산 구경',
+    location: "Paddy's Market", introLabel: "PADDY'S MARKET", time: '09:05',
+    lines: week2Scene001bLines,
+    // 오픈형 미니게임(클리어 조건 없음) — week1-scene-circular-quay-minigame과
+    // 같은 계약. MINIGAME_ROUTES/SHOP_TUTORIAL_RETURN_SCENE(dev/data/
+    // sceneRoutes.js) 참고: 뒤로가기가 week2-scene-002로 직접 돌아간다.
+    nextSceneId: 'week2-scene-001-watermelon-minigame',
   },
   {
     id: 'week2-scene-002', order: 2, name: '서큘러키, 우연한 가이드',
-    location: 'Circular Quay', introLabel: 'CIRCULAR QUAY', time: '09:20',
+    location: 'Circular Quay', introLabel: 'CIRCULAR QUAY', time: '09:35',
     lines: week2Scene002Lines,
     nextSceneId: 'week2-scene-003',
   },
@@ -2797,7 +2831,7 @@ const week2SceneGroups = [
   {
     range: 'PART 1', label: '보이는 도난 (Ch1~11)',
     nodes: [
-      { type: 'scene', sceneIds: ['week2-scene-001', 'week2-scene-002', 'week2-scene-003'] },
+      { type: 'scene', sceneIds: ['week2-scene-001', 'week2-scene-001b', 'week2-scene-001-watermelon-minigame', 'week2-scene-002', 'week2-scene-003'] },
       {
         type: 'hub', phaseId: 'W2_EXHIBIT_FREE_LOOK', startLocationId: 'w2-exhibit-floor',
         label: '전시장 자유 관람',
