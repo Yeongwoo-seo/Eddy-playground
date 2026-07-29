@@ -1912,7 +1912,7 @@ const week2Scene008ReviewLines = [
         type: 'addEvidence',
         evidence: {
           id: 'evidence-tourist-extra-photo', code: 'E-SEL3', category: 'photo', title: '사진 속 그레이 후드 남성(레오로 추정)',
-          description: '영우·지수·클레어와 다른 관광객들의 사진을 모아 재구성한 것 중 한 장. 진열장 문 옆으로 회색 후드를 입은 인물의 팔이 걸쳐 있다.',
+          description: '지수가 찍은 5번째 사진. 진열장 문 옆으로 회색 후드를 입은 인물의 팔이 걸쳐 있다.',
           discoveredLocationText: 'Pop-up Exhibition · 사진 분석',
         },
       },
@@ -1920,7 +1920,7 @@ const week2Scene008ReviewLines = [
         type: 'addEvidence',
         evidence: {
           id: 'evidence-case-door-open-moment', code: 'E-H06', category: 'photo', title: '진열장 문 열림 순간',
-          description: '같은 사진 속, 이전 컷까지 닫혀 있던 진열장 문이 살짝 열려 있는 순간이 포착됐다.',
+          description: '같은 5번째 사진 속, 이전 컷까지 닫혀 있던 진열장 문이 살짝 열려 있는 순간이 포착됐다.',
           discoveredLocationText: 'Pop-up Exhibition · 사진 분석',
         },
       },
@@ -1928,7 +1928,7 @@ const week2Scene008ReviewLines = [
         type: 'addEvidence',
         evidence: {
           id: 'evidence-theft-time-range', code: 'E-TR1', category: 'record', title: '사건 발생 추정 시간대',
-          description: '사진들의 촬영 순서를 분석한 결과, K-01이 사라진 시점은 11분 루프 구간 초반으로 좁혀진다. 정확한 순간까지는 아직 확정되지 않았다.',
+          description: '영우·지수·클레어와 다른 관광객들이 각자 다른 시점에 찍은 사진들을 시간 순서로 맞춰본 결과, K-01이 사라진 시점은 11분 루프 구간 초반으로 좁혀진다. 정확한 순간까지는 아직 확정되지 않았다.',
           discoveredLocationText: 'Pop-up Exhibition · 사진 분석',
         },
       },
@@ -1936,7 +1936,7 @@ const week2Scene008ReviewLines = [
         type: 'addEvidence',
         evidence: {
           id: 'evidence-empty-reception-photo', code: 'E-CL2', category: 'photo', title: '접수대가 비어 있는 사진',
-          description: '같은 방식으로 모은 사진 중 한 장에, 클레어가 자리를 비운 접수대가 잠깐 찍혀 있다.',
+          description: '클레어가 모은 관광객 사진 중 한 장에, 클레어가 자리를 비운 접수대가 배경으로 잠깐 찍혀 있다.',
           discoveredLocationText: 'Pop-up Exhibition · 사진 분석',
         },
       },
@@ -3516,9 +3516,17 @@ const week2Scenes = [
     route: '/play/minigame-photo-zoom/',
     // v3 week2-scene-004-minigame과 동일한 7장 구성을 그대로 재사용한다
     // (내용이 동일한 사건 장면이라 사진/핫스팟을 새로 만들 필요가 없음).
+    // 각 슬롯의 `prompt`는 그 사진의 구도를 잡기 위한 기본 AI 생성 프롬프트다
+    // (촬영자·각도·장면 내용) — 영우·지수·클레어가 각자 찍은 사진과 클레어가
+    // 다른 관광객들에게서 모은 사진이 섞여 있다는 설정에 맞춰 슬롯마다 촬영자와
+    // 각도를 다르게 뒀다. dev/upload(?scene=week2-scene-008-minigame)의
+    // "AI 프롬프트" 패널에서 슬롯별로 덮어써 저장할 수 있다(AssetDB.
+    // getPhotoSlotPrompts/setPhotoSlotPrompt) — 이 값은 그 덮어쓰기 전까지의
+    // 기본값일 뿐이다.
     photoSlots: [
       {
         key: 'week2-scene-008-minigame-photo-1', label: '① 10:41 · 한산한 전시장',
+        prompt: '지수가 정면 눈높이에서 촬영. 아직 한산한 팝업 전시장, 유리 진열장 오른쪽에 베이지 코트를 입은 여성이 서 있고 진열장의 "K-01" 명찰이 비교적 가깝게 보인다. 진열장 문은 닫혀 있다.',
         hotspots: [
           { id: 'fig-minah', label: '베이지 코트 여성' },
           { id: 'nameplate', label: 'K-01 명찰 사진' },
@@ -3526,6 +3534,7 @@ const week2Scenes = [
       },
       {
         key: 'week2-scene-008-minigame-photo-2', label: '② 10:43 · 두 사람이 멈춰 선다',
+        prompt: '클레어가 다른 관광객에게서 받아 모은 사진 — 진열장을 비스듬한 대각선 각도에서 찍음. 네이비 수트를 입은 남성과 그레이 후드를 입은 남성이 각각 진열장 좌우에 멈춰 서 있다.',
         hotspots: [
           { id: 'fig-adrian', label: '네이비 수트 남성' },
           { id: 'fig-leo', label: '그레이 후드 남성' },
@@ -3533,6 +3542,7 @@ const week2Scenes = [
       },
       {
         key: 'week2-scene-008-minigame-photo-3', label: '③ 10:45 · 사진 찍는 손님',
+        prompt: '영우가 살짝 옆쪽에서 촬영. 베이지 코트를 입은 여성이 자신의 카메라로 진열장을 찍고 있고, 그 카메라 렌즈에 진열장이 또렷하게 반사되어 있다.',
         hotspots: [
           { id: 'fig-minah', label: '베이지 코트 여성' },
           { id: 'lens-reflection', label: '카메라 렌즈 반사' },
@@ -3540,6 +3550,7 @@ const week2Scenes = [
       },
       {
         key: 'week2-scene-008-minigame-photo-4', label: '④ 10:47 · 단체 관광객 밀려듦',
+        prompt: '클레어가 모은 다른 관광객 사진 — 인파 위쪽에서 약간 내려다보는 각도. 단체 관광객이 한꺼번에 밀려들어 진열장 절반이 사람들 등에 가려져 있고, 그레이 후드를 입은 남성과 얼굴이 보이지 않는 검은 재킷 인물이 인파 속에 섞여 있다.',
         hotspots: [
           { id: 'fig-leo', label: '그레이 후드 남성' },
           { id: 'fig-unknown', label: '얼굴이 안 보이는 인물' },
@@ -3547,10 +3558,12 @@ const week2Scenes = [
       },
       {
         key: 'week2-scene-008-minigame-photo-5', label: '⑤ 10:48 · 진열장 문이 열려 있다',
+        prompt: '지수가 인파 틈으로 몸을 기울여 촬영. 사람들 사이 좁은 틈 너머로 진열장이 보이고, 문이 살짝 열려 있는 순간이 포착되어 있다.',
         hotspots: [{ id: 'door-ajar', label: '진열장 문 열림' }],
       },
       {
         key: 'week2-scene-008-minigame-photo-6', label: '⑥ 10:50 · 인파 절정',
+        prompt: '클레어가 접수대 쪽에서 촬영. 인파가 절정에 달한 전시장, 네이비 수트를 입은 남성과 베이지 코트를 입은 여성이 각각 진열장 주변에 있다.',
         hotspots: [
           { id: 'fig-adrian', label: '네이비 수트 남성' },
           { id: 'fig-minah', label: '베이지 코트 여성' },
@@ -3558,6 +3571,7 @@ const week2Scenes = [
       },
       {
         key: 'week2-scene-008-minigame-photo-7', label: '⑦ 10:53 · 케이스가 비어 있다',
+        prompt: '영우가 인파가 빠져나간 직후 정면에서 촬영. 진열장 받침대가 완전히 비어 있다.',
         hotspots: [{ id: 'empty-case', label: 'K-01 상태 변화 (빈 받침대)' }],
       },
     ],
