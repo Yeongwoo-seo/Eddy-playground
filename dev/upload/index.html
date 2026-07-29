@@ -3590,15 +3590,19 @@ let currentEvidencePhotoIsTestimony = false; // true면 다음 업로드가 개�
 function collectEvidenceCatalog() {
   if (evidenceCatalogCache) return evidenceCatalogCache;
   const rows = [];
-  function pushEvidence(ev, groupLabel, sceneLabel) {
+  // source: { sourceType:'scene', sceneId, lineIndex } | { sourceType:'interaction', interactionId } —
+  // 획득 조건 문구(evidenceConditionText)와 씬 재생 버튼(evidenceScenePlaybackUrl)이
+  // 각 증거가 실제로 어디서(어느 씬의 몇 번째 대사, 또는 어느 탐색허브 상호작용)
+  // 왔는지 알아야 하므로, 스캔 시점에 바로 태깅해둔다.
+  function pushEvidence(ev, groupLabel, sceneLabel, source) {
     if (!ev || !ev.id) return;
-    rows.push(Object.assign({ groupLabel, sceneLabel }, ev));
+    rows.push(Object.assign({ groupLabel, sceneLabel }, ev, source || {}));
   }
   weeks.forEach(week => {
     (week.scenes || []).forEach(scene => {
-      (scene.lines || []).forEach(line => {
+      (scene.lines || []).forEach((line, lineIndex) => {
         (line.effects || []).forEach(effect => {
-          if (effect.type === 'addEvidence') pushEvidence(effect.evidence, week.label, scene.name || scene.id);
+          if (effect.type === 'addEvidence') pushEvidence(effect.evidence, week.label, scene.name || scene.id, { sourceType: 'scene', sceneId: scene.id, lineIndex });
         });
       });
     });
@@ -3606,7 +3610,7 @@ function collectEvidenceCatalog() {
   if (typeof interactionDefs !== 'undefined') {
     Object.values(interactionDefs).forEach(def => {
       (def.effects || []).forEach(effect => {
-        if (effect.type === 'addEvidence') pushEvidence(effect.evidence, '탐색허브', def.label || def.id);
+        if (effect.type === 'addEvidence') pushEvidence(effect.evidence, '탐색허브', def.label || def.id, { sourceType: 'interaction', interactionId: def.id });
       });
     });
   }
@@ -3625,6 +3629,58 @@ function collectEvidenceCatalog() {
   });
   evidenceCatalogCache = rows;
   return rows;
+}
+
+/* ===== 획득 조건 표시 + 씬 재생 (§증거 DB 조건/재생) =====
+   collectEvidenceCatalog가 스캔 시점에 태깅한 source(sceneId/lineIndex 또는
+   interactionId)를 사람이 읽을 수 있는 문구/링크로 바꾼다. 스토리 씬에서 온
+   증거는 dialogueData.js 구조상 전부 그 씬을 순서대로 진행하다 특정 대사에
+   도달하면(choices 분기 없이) 자동으로 붙는 효과라 별도 분기 조건이 없고,
+   탐색허브(interactionDefs) 증거만 explorationState.evaluateInteractionCondition이
+   실제로 검사하는 unlockConditions(hasEvidence/hasFact/flags/flagEquals/
+   interactionCompleted)를 갖는다 — 그 다섯 타입만 사람이 읽는 문구로 옮긴다. */
+const UNLOCK_CONDITION_LABELS = { flags: '플래그', hasEvidence: '증거 보유', hasFact: '단서 확보', flagEquals: '플래그 값', interactionCompleted: '먼저 완료 필요' };
+function formatUnlockCondition(cond) {
+  if (!cond || !cond.type) return '';
+  const ids = cond.keys || cond.ids || (cond.id ? [cond.id] : []);
+  if (cond.type === 'flagEquals') return `${UNLOCK_CONDITION_LABELS.flagEquals}: ${cond.key} = ${cond.value}`;
+  const label = UNLOCK_CONDITION_LABELS[cond.type] || cond.type;
+  return ids.length ? `${label}: ${ids.join(', ')}` : label;
+}
+function evidenceConditionText(r) {
+  if (r.sourceType === 'interaction') {
+    const def = (typeof interactionDefs !== 'undefined') ? interactionDefs[r.interactionId] : null;
+    const conds = (def && def.unlockConditions) || [];
+    const condPart = conds.length ? conds.map(formatUnlockCondition).join(' · ') : '별도 조건 없음 · 장소 도달 시 바로 확인 가능';
+    const locLabel = (def && def.locationIds || []).map(id => (typeof locationDefs !== 'undefined' && locationDefs[id] && locationDefs[id].name) || id).join(', ');
+    const phaseLabel = (def && def.phases || []).join(', ');
+    return `[탐색허브] ${condPart}` + (locLabel ? ` · 위치: ${locLabel}` : '') + (phaseLabel ? ` · 단계: ${phaseLabel}` : '');
+  }
+  if (r.sourceType === 'scene') return `[스토리 진행] '${r.groupLabel} · ${r.sceneLabel}' 씬을 진행해 해당 대사에 도달하면 자동 획득`;
+  return '조건 정보 없음';
+}
+// 씬 재생 — 스토리 씬 증거는 /dev/week1 등이 이미 쓰는 것과 같은 규칙
+// (/play/game/?scene=<id>)에 &line=<증거를 얻는 정확한 대사 인덱스>를 더해
+// 그 대사 직전이 아니라 정확히 그 순간부터 재생한다. 탐색허브 증거는 별도
+// scene이 없어 (def.type==='scene'인 심문 씬만 예외) 해당 장소/단계로 이동하는
+// /play/explore/ 링크로 대체한다 — 실제 상호작용을 다시 트리거하려면 그
+// unlockConditions를 직접 만족시켜야 하므로 완전한 재생은 아니지만, 증거가
+// 나온 맥락으로 가장 가깝게 이동하는 최선의 대안이다.
+function evidenceScenePlaybackUrl(r) {
+  if (r.sourceType === 'scene' && r.sceneId) return `/play/game/?scene=${encodeURIComponent(r.sceneId)}&line=${r.lineIndex}`;
+  if (r.sourceType === 'interaction') {
+    const def = (typeof interactionDefs !== 'undefined') ? interactionDefs[r.interactionId] : null;
+    if (def && def.type === 'scene' && def.sceneId) return `/play/game/?scene=${encodeURIComponent(def.sceneId)}`;
+    const locationId = def && def.locationIds && def.locationIds[0];
+    const phase = def && def.phases && def.phases[0];
+    if (locationId && phase) return `/play/explore/?phase=${encodeURIComponent(phase)}&location=${encodeURIComponent(locationId)}`;
+  }
+  return null;
+}
+function playEvidenceScene(evidenceId) {
+  const r = collectEvidenceCatalog().find(x => x.id === evidenceId);
+  const url = r && evidenceScenePlaybackUrl(r);
+  if (url) window.open(url, '_blank');
 }
 
 async function loadEvidencePhotoAssets() {
@@ -3745,11 +3801,14 @@ function evidenceRowHtml(r) {
   // 증언은 개별 AI 프롬프트/사진 업로드가 필요 없어 공용 기록사진을
   // 올리는 버튼 하나만 둔다. 그 외 증거는 기존 버튼에 더해, 이미 올려둔
   // 기록사진을 그대로 갖다 쓸 수 있는 "기록사진" 버튼을 추가한다.
+  const playbackUrl = evidenceScenePlaybackUrl(r);
+  const sceneBtnHtml = `<button class="hotspot-secondary-btn" onclick="playEvidenceScene('${r.id}')"${playbackUrl ? '' : ' disabled title="재생할 씬을 찾지 못했습니다"'}>🎬 씬 재생</button>`;
   const actionsHtml = isTestimony
-    ? `<button class="select-btn" onclick="triggerEvidenceTestimonyPhotoUpload()">기록사진 업로드</button>`
+    ? `<button class="select-btn" onclick="triggerEvidenceTestimonyPhotoUpload()">기록사진 업로드</button>${sceneBtnHtml}`
     : `<button class="hotspot-secondary-btn" onclick="openEvidencePromptPanel('${r.id}')">AI 프롬프트</button>
           <button class="select-btn" onclick="triggerEvidencePhotoUpload('${r.id}')">사진 업로드</button>
-          <button class="hotspot-secondary-btn" onclick="applyTestimonyPhotoToEvidence('${r.id}')"${evidenceTestimonyPhotoAsset ? '' : ' disabled title="기록사진을 먼저 올려야 합니다"'}>기록사진</button>`;
+          <button class="hotspot-secondary-btn" onclick="applyTestimonyPhotoToEvidence('${r.id}')"${evidenceTestimonyPhotoAsset ? '' : ' disabled title="기록사진을 먼저 올려야 합니다"'}>기록사진</button>
+          ${sceneBtnHtml}`;
   return `
     <div class="asset-card" style="align-items:flex-start">
       ${thumbHtml}
@@ -3758,7 +3817,8 @@ function evidenceRowHtml(r) {
         <div class="asset-name">${escapeHtml(r.title || r.id)}</div>
         <div class="asset-meta">${escapeHtml(r.description || '')}</div>
         <div class="asset-meta">${escapeHtml(r.discoveredLocationText || '')} · ${escapeHtml(r.sceneLabel || '')}</div>
-        <div class="item-actions-row" style="margin-top:10px">
+        <div class="asset-meta evidence-condition-meta">🔑 획득 조건: ${escapeHtml(evidenceConditionText(r))}</div>
+        <div class="item-actions-row" style="margin-top:10px;flex-wrap:wrap">
           ${actionsHtml}
         </div>
       </div>
