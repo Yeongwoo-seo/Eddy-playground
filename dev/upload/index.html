@@ -297,6 +297,7 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     <div class="picker-label">배경 종류</div>
     <div class="picker-pills" id="bgKindPickerPills"></div>
     <div class="hint" style="margin-top:8px">미니게임 지도/사진은 반드시 "미니게임"을 선택한 상태에서 올려야 게임에 반영돼요.</div>
+    <button class="hotspot-secondary-btn hidden" id="photoSlotPromptBtn" style="width:100%;margin-top:8px;border-radius:10px;padding:10px;font-family:var(--mono);font-weight:700">🖼 이 사진 AI 프롬프트</button>
   </div>
 
   <!-- 장소 DB: 전역 장소 카탈로그 관리 + variant별 사진 업로드/배정
@@ -657,6 +658,30 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
   </div>
 </div>
 
+<!-- scene.photoSlots(사진 미니게임)의 슬롯별 "AI 프롬프트" 패널 — 위 증거
+     프롬프트와 같은 목적이지만, 증거 프롬프트(코드의 제목/설명에서 항상 그대로
+     조립되는 값이라 편집할 게 없음)와 달리 여기서는 텍스트를 직접 고쳐서
+     저장할 수 있다 — 실제로 이미지를 뽑아보면 구도(촬영자·각도)를 슬롯별로
+     다시 조정하고 싶은 경우가 많기 때문. 기본값은 dialogueData.js의
+     slot.prompt, 저장한 덮어쓰기는 AssetDB.getPhotoSlotPrompts/
+     setPhotoSlotPrompt(슬롯의 key로 식별)에 보관된다. -->
+<div class="modal-overlay hidden" id="photoSlotPromptModal">
+  <div class="modal-panel">
+    <div class="modal-header">
+      <div class="modal-title" id="photoSlotPromptModalTitle">AI 프롬프트</div>
+      <button class="modal-close-btn" id="photoSlotPromptModalCloseBtn">✕</button>
+    </div>
+    <div class="hint" style="margin:0 0 12px;text-align:left">이 사진의 구도(촬영자·각도·장면 내용)를 잡기 위한 프롬프트예요. 고쳐서 저장하면 이 슬롯에만 적용되고, "기본값으로" 누른 뒤 저장하면 원래 값으로 돌아가요.</div>
+    <textarea class="interaction-textarea" id="photoSlotPromptModalText" spellcheck="false" style="min-height:220px"></textarea>
+    <div class="hotspot-actions" style="margin-top:10px">
+      <button class="hotspot-secondary-btn" id="photoSlotPromptModalResetBtn">기본값으로</button>
+      <button class="select-btn" id="photoSlotPromptModalCopyBtn">📋 복사</button>
+    </div>
+    <button class="crop-save-btn" id="photoSlotPromptModalSaveBtn" style="width:100%;margin-top:10px;border-radius:10px;padding:12px;font-family:var(--mono);font-weight:700;border:none">저장</button>
+    <div class="hint" id="photoSlotPromptModalStatus" style="margin-top:8px"></div>
+  </div>
+</div>
+
 <!-- 배경 DB/탐색허브의 "배정하기" 팝업 — 예전엔 씬을 고르자마자 장소 피커
      전체가 화면에 펼쳐져 있었고, 사진을 실제로 올리려면 또 장소 DB 탭으로
      건너가야 했다(장소 DB=사진 저장소 / 배경 DB=배정만, 서로 다른 탭). 이제
@@ -909,6 +934,15 @@ const el = {
   scenePickerPills: document.getElementById('scenePickerPills'),
   bgKindPicker: document.getElementById('bgKindPicker'),
   bgKindPickerPills: document.getElementById('bgKindPickerPills'),
+  photoSlotPromptBtn: document.getElementById('photoSlotPromptBtn'),
+  photoSlotPromptModal: document.getElementById('photoSlotPromptModal'),
+  photoSlotPromptModalTitle: document.getElementById('photoSlotPromptModalTitle'),
+  photoSlotPromptModalCloseBtn: document.getElementById('photoSlotPromptModalCloseBtn'),
+  photoSlotPromptModalText: document.getElementById('photoSlotPromptModalText'),
+  photoSlotPromptModalResetBtn: document.getElementById('photoSlotPromptModalResetBtn'),
+  photoSlotPromptModalCopyBtn: document.getElementById('photoSlotPromptModalCopyBtn'),
+  photoSlotPromptModalSaveBtn: document.getElementById('photoSlotPromptModalSaveBtn'),
+  photoSlotPromptModalStatus: document.getElementById('photoSlotPromptModalStatus'),
   tabLocation: document.getElementById('tabLocation'),
   bgLocationAssignPanel: document.getElementById('bgLocationAssignPanel'),
   bgLocationAssignedLabel: document.getElementById('bgLocationAssignedLabel'),
@@ -1054,7 +1088,8 @@ function activeOutfitForFilter() {
 // background storage/uploads are keyed against, same one-slot-per-id pattern
 // the old scene/minigame-only picker used, just generalized past 2 slots.
 // scene.photoSlots — several one-off images a single minigame needs (e.g.
-// week2-scene-008-minigame's 7 burst-shot photos, see dialogueData.js) that
+// week2-scene-008-minigame's 7 photos, shot from different angles by
+// different people and compiled together — see dialogueData.js) that
 // each want the old-style direct upload, not the 장소 DB catalog: they're
 // never reused across scenes the way a real location is, so wrapping each in
 // its own catalog entry would just be busywork. Kind ids 'photo:0'..'photo:N'
@@ -1796,7 +1831,86 @@ async function renderBgKindPicker() {
   // single-slot scene needs its own location assignment.
   updateBackgroundModeChrome();
   await renderBgLocationAssign();
+
+  // "AI 프롬프트" 버튼은 photoSlots 슬롯을 보고 있을 때만 의미가 있다 —
+  // 일반 배경/미니게임 지도는 slot.prompt 자체가 없다.
+  el.photoSlotPromptBtn.classList.toggle('hidden', !currentPhotoSlot());
 }
+
+// 지금 선택된 배경 종류('photo:N')가 가리키는 photoSlots 엔트리, 아니면 null.
+function currentPhotoSlot() {
+  const scene = currentScene();
+  if (!scene || !scene.photoSlots || !currentBgKind.startsWith('photo:')) return null;
+  return scene.photoSlots[Number(currentBgKind.slice('photo:'.length))] || null;
+}
+
+/* ===== 사진 슬롯 AI 프롬프트 패널 — evidencePromptModal(§증거 DB)과 같은
+   "텍스트 조립, 복사는 사람이" 방식이되, 여기서는 slot.prompt 기본값을 그대로
+   보여주는 데 그치지 않고 직접 고쳐서 저장할 수 있다(AssetDB.
+   getPhotoSlotPrompts/setPhotoSlotPrompt, 슬롯의 key로 식별). ===== */
+let photoSlotPromptOverrides = null; // AssetDB.getPhotoSlotPrompts() 결과, 패널을 열 때 처음 한 번만 불러옴
+
+async function loadPhotoSlotPromptOverrides() {
+  if (photoSlotPromptOverrides) return photoSlotPromptOverrides;
+  try {
+    photoSlotPromptOverrides = await AssetDB.getPhotoSlotPrompts();
+  } catch (err) {
+    DevDiag.show('사진 프롬프트를 불러오지 못했습니다: ' + (err && err.message ? err.message : err));
+    photoSlotPromptOverrides = {};
+  }
+  return photoSlotPromptOverrides;
+}
+
+async function openPhotoSlotPromptPanel() {
+  const slot = currentPhotoSlot();
+  if (!slot) return;
+  const overrides = await loadPhotoSlotPromptOverrides();
+  el.photoSlotPromptModalTitle.textContent = slot.label || slot.key;
+  el.photoSlotPromptModalText.value = overrides[slot.key] || slot.prompt || '';
+  el.photoSlotPromptModalStatus.textContent = '';
+  el.photoSlotPromptModal.classList.remove('hidden');
+}
+
+el.photoSlotPromptBtn.addEventListener('click', openPhotoSlotPromptPanel);
+el.photoSlotPromptModalCloseBtn.addEventListener('click', () => el.photoSlotPromptModal.classList.add('hidden'));
+
+// "기본값으로" — 아직 저장은 하지 않고 textarea만 slot.prompt로 되돌린다.
+// 이 상태로 저장을 눌러야 실제 덮어쓰기가 지워진다(setPhotoSlotPrompt는 빈
+// 문자열을 저장하려 하면 그 슬롯의 override 자체를 삭제하도록 되어 있음).
+el.photoSlotPromptModalResetBtn.addEventListener('click', () => {
+  const slot = currentPhotoSlot();
+  if (!slot) return;
+  el.photoSlotPromptModalText.value = slot.prompt || '';
+  el.photoSlotPromptModalStatus.textContent = '';
+});
+
+el.photoSlotPromptModalCopyBtn.addEventListener('click', async () => {
+  if (!el.photoSlotPromptModalText.value) return;
+  try {
+    await navigator.clipboard.writeText(el.photoSlotPromptModalText.value);
+  } catch (err) {
+    el.photoSlotPromptModalText.select();
+    document.execCommand('copy');
+  }
+  el.photoSlotPromptModalStatus.textContent = '복사됐어요.';
+});
+
+el.photoSlotPromptModalSaveBtn.addEventListener('click', async () => {
+  const slot = currentPhotoSlot();
+  if (!slot) return;
+  const value = el.photoSlotPromptModalText.value;
+  try {
+    // 기본값과 똑같은 텍스트를 저장하는 건 덮어쓰기가 아니라 그냥 덮어쓰기를
+    // 지우는 것과 같으므로, 그대로 넘겨도 setPhotoSlotPrompt가 알아서
+    // 처리한다(값이 기본값과 같은지는 신경 쓰지 않고 빈 문자열일 때만 삭제).
+    const isDefault = value === (slot.prompt || '');
+    const saved = await AssetDB.setPhotoSlotPrompt(slot.key, isDefault ? '' : value);
+    photoSlotPromptOverrides = saved;
+    el.photoSlotPromptModalStatus.textContent = isDefault ? '기본값으로 저장됐어요.' : '저장됐어요.';
+  } catch (err) {
+    el.photoSlotPromptModalStatus.textContent = '저장 실패: ' + (err && err.message ? err.message : err);
+  }
+});
 
 function renderCharPicker() {
   el.charPickerPills.innerHTML = uploadCharacterEntries.map(c =>
@@ -2665,7 +2779,7 @@ function currentMinigameStages() {
 function activeHotspotStageIndex() {
   return currentMinigameStages() ? currentHotspotStageIndex : undefined;
 }
-// scene.photoSlots (week2-scene-008-minigame's 7 burst-shot photos, see
+// scene.photoSlots (week2-scene-008-minigame's 7 multi-angle photos, see
 // dialogueData.js) each carry their own `hotspots` list — same room-hotspot
 // shape as scene.roomHotspots, just scoped to whichever 'photo:N' kind is
 // currently selected instead of the whole scene, since every slot is its own

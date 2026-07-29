@@ -1873,17 +1873,17 @@ const week2Scene007Lines = [
       },
     ],
   },
-  { id: "line-089", speaker: "지수", text: "좋아\n그럼 이제 사진부터 보자\n소피씨가 뭔가 찍어뒀다고 했잖아", characterId: "jisoo", expression: "serious" },
+  { id: "line-089", speaker: "지수", text: "좋아\n그럼 이제 사진부터 모아보자\n다들 각자 찍은 거 있을 거 아니야", characterId: "jisoo", expression: "serious" },
 ];
 
 const week2Scene008Lines = [
-  { id: "line-001", speaker: '', text: "소피가 폰을 들고 다가온다.", characterId: null },
-  { id: "line-002", speaker: "소피", text: "저기, 저 아까 전시장 사진 찍고 있었거든요\n혹시 도움 될까 해서요", characterId: "sophie", expression: "shocked" },
+  { id: "line-001", speaker: '', text: "클레어가 태블릿과 폰 몇 대를 들고 다가온다.", characterId: null },
+  { id: "line-002", speaker: "클레어", text: "저... 여기 계셨던 분들 사진을 좀 모아봤어요\n다들 흔쾌히 보내주셨어요", characterId: "claire", expression: "neutral" },
   { id: "line-003", speaker: "지수", text: "헐 진짜요?\n완전 도움돼요!!!!", characterId: "jisoo", expression: "happy" },
-  { id: "line-004", speaker: "영우", text: "소피씨\n그 사진들 저희가 좀 봐도 될까요?", characterId: "youngwoo", expression: "serious" },
-  { id: "line-005", speaker: "소피", text: "그럼요\n저도 도움 되고 싶어요, 진짜", characterId: "sophie", expression: "neutral" },
-  { id: "line-006", speaker: "소피", text: "연속 촬영으로 몇 장 찍었어요\n여기요", characterId: "sophie", expression: "neutral" },
-  { id: "line-007", speaker: '', text: "[미니게임: 사진 속 인물 찾기] 소피가 촬영한 7장의 연속 사진이 펼쳐진다. 각 사진 속 인물과 배경 요소를 확대해 살펴볼 수 있다.", characterId: null },
+  { id: "line-004", speaker: "영우", text: "저희도 몇 장 찍은 거 있어요\n같이 맞춰볼까요", characterId: "youngwoo", expression: "serious" },
+  { id: "line-005", speaker: "지수", text: "나도 아까 여기저기서 찍었는데\n각도가 다 달라서 오히려 좋을 수도", characterId: "jisoo", expression: "neutral" },
+  { id: "line-006", speaker: "클레어", text: "그럼 시간 순서대로 정리해볼게요\n제 것, 두 분 것, 그리고 다른 관광객분들 것까지 합치면", characterId: "claire", expression: "neutral" },
+  { id: "line-007", speaker: '', text: "[미니게임: 사진 속 인물 찾기] 영우·지수·클레어, 그리고 클레어가 모은 다른 관광객들의 사진까지 더해 서로 다른 각도에서 찍힌 7장의 사진이 펼쳐진다. 각 사진 속 인물과 배경 요소를 확대해 살펴볼 수 있다.", characterId: null },
 ];
 
 const week2Scene008ReviewLines = [
@@ -1912,7 +1912,7 @@ const week2Scene008ReviewLines = [
         type: 'addEvidence',
         evidence: {
           id: 'evidence-tourist-extra-photo', code: 'E-SEL3', category: 'photo', title: '사진 속 그레이 후드 남성(레오로 추정)',
-          description: '소피가 건네준 연속 촬영 사진 중 한 장. 진열장 문 옆으로 회색 후드를 입은 인물의 팔이 걸쳐 있다.',
+          description: '지수가 찍은 5번째 사진. 진열장 문 옆으로 회색 후드를 입은 인물의 팔이 걸쳐 있다.',
           discoveredLocationText: 'Pop-up Exhibition · 사진 분석',
         },
       },
@@ -1920,7 +1920,7 @@ const week2Scene008ReviewLines = [
         type: 'addEvidence',
         evidence: {
           id: 'evidence-case-door-open-moment', code: 'E-H06', category: 'photo', title: '진열장 문 열림 순간',
-          description: '같은 사진 속, 이전 컷까지 닫혀 있던 진열장 문이 살짝 열려 있는 순간이 포착됐다.',
+          description: '같은 5번째 사진 속, 이전 컷까지 닫혀 있던 진열장 문이 살짝 열려 있는 순간이 포착됐다.',
           discoveredLocationText: 'Pop-up Exhibition · 사진 분석',
         },
       },
@@ -1928,7 +1928,7 @@ const week2Scene008ReviewLines = [
         type: 'addEvidence',
         evidence: {
           id: 'evidence-theft-time-range', code: 'E-TR1', category: 'record', title: '사건 발생 추정 시간대',
-          description: '사진들의 촬영 순서를 분석한 결과, K-01이 사라진 시점은 11분 루프 구간 초반으로 좁혀진다. 정확한 순간까지는 아직 확정되지 않았다.',
+          description: '영우·지수·클레어와 다른 관광객들이 각자 다른 시점에 찍은 사진들을 시간 순서로 맞춰본 결과, K-01이 사라진 시점은 11분 루프 구간 초반으로 좁혀진다. 정확한 순간까지는 아직 확정되지 않았다.',
           discoveredLocationText: 'Pop-up Exhibition · 사진 분석',
         },
       },
@@ -1936,7 +1936,7 @@ const week2Scene008ReviewLines = [
         type: 'addEvidence',
         evidence: {
           id: 'evidence-empty-reception-photo', code: 'E-CL2', category: 'photo', title: '접수대가 비어 있는 사진',
-          description: '같은 연속 촬영 사진 중 한 장에, 클레어가 자리를 비운 접수대가 잠깐 찍혀 있다.',
+          description: '클레어가 모은 관광객 사진 중 한 장에, 클레어가 자리를 비운 접수대가 배경으로 잠깐 찍혀 있다.',
           discoveredLocationText: 'Pop-up Exhibition · 사진 분석',
         },
       },
@@ -1949,9 +1949,9 @@ const week2Scene008ReviewLines = [
   { id: "line-025", speaker: "영우", text: "웅\n저긴 그냥 배경이네", characterId: "youngwoo", expression: "neutral" },
   { id: "line-026", speaker: "지수", text: "이 그레이 후드\n누구 옷이랑 비슷한지 좀 봐야겠다", characterId: "jisoo", expression: "curious" },
   { id: "line-027", speaker: "영우", text: "윤민아씨, 레오씨\n크로스백이나 후드 있었던 사람들 다시 봐야지", characterId: "youngwoo", expression: "curious" },
-  { id: "line-028", speaker: "소피", text: "저... 제가 찍은 사진 때문에\n누구 곤란해지는 거 아니죠?", characterId: "sophie", expression: "soft" },
-  { id: "line-029", speaker: "지수", text: "아니에요\n오히려 이거 덕분에 정리가 되는 거예요\n감사해요, 소피씨", characterId: "jisoo", expression: "soft" },
-  { id: "line-030", speaker: "소피", text: "다행이다\n저는 그냥 다들 걱정돼서요", characterId: "sophie", expression: "soft" },
+  { id: "line-028", speaker: "클레어", text: "저... 제가 모은 사진 때문에\n누구 곤란해지는 거 아니죠?", characterId: "claire", expression: "soft" },
+  { id: "line-029", speaker: "지수", text: "아니에요\n오히려 이거 덕분에 정리가 되는 거예요\n감사해요, 클레어씨", characterId: "jisoo", expression: "soft" },
+  { id: "line-030", speaker: "클레어", text: "다행이다\n저는 그냥 다들 걱정돼서요", characterId: "claire", expression: "soft" },
   { id: "line-031", speaker: "지수", text: "일단 제일 수상했던 사람부터", characterId: "jisoo", expression: "serious" },
   { id: "line-032", speaker: "영우", text: "윤민아씨네\n아까 몰래 찍다가 지우기까지 했잖아", characterId: "youngwoo", expression: "serious" },
   { id: "line-033", speaker: "지수", text: "그니까\n가서 물어보자", characterId: "jisoo", expression: "serious" },
@@ -3516,9 +3516,17 @@ const week2Scenes = [
     route: '/play/minigame-photo-zoom/',
     // v3 week2-scene-004-minigame과 동일한 7장 구성을 그대로 재사용한다
     // (내용이 동일한 사건 장면이라 사진/핫스팟을 새로 만들 필요가 없음).
+    // 각 슬롯의 `prompt`는 그 사진의 구도를 잡기 위한 기본 AI 생성 프롬프트다
+    // (촬영자·각도·장면 내용) — 영우·지수·클레어가 각자 찍은 사진과 클레어가
+    // 다른 관광객들에게서 모은 사진이 섞여 있다는 설정에 맞춰 슬롯마다 촬영자와
+    // 각도를 다르게 뒀다. dev/upload(?scene=week2-scene-008-minigame)의
+    // "AI 프롬프트" 패널에서 슬롯별로 덮어써 저장할 수 있다(AssetDB.
+    // getPhotoSlotPrompts/setPhotoSlotPrompt) — 이 값은 그 덮어쓰기 전까지의
+    // 기본값일 뿐이다.
     photoSlots: [
       {
         key: 'week2-scene-008-minigame-photo-1', label: '① 10:41 · 한산한 전시장',
+        prompt: '지수가 정면 눈높이에서 촬영. 아직 한산한 팝업 전시장, 유리 진열장 오른쪽에 베이지 코트를 입은 여성이 서 있고 진열장의 "K-01" 명찰이 비교적 가깝게 보인다. 진열장 문은 닫혀 있다.',
         hotspots: [
           { id: 'fig-minah', label: '베이지 코트 여성' },
           { id: 'nameplate', label: 'K-01 명찰 사진' },
@@ -3526,6 +3534,7 @@ const week2Scenes = [
       },
       {
         key: 'week2-scene-008-minigame-photo-2', label: '② 10:43 · 두 사람이 멈춰 선다',
+        prompt: '클레어가 다른 관광객에게서 받아 모은 사진 — 진열장을 비스듬한 대각선 각도에서 찍음. 네이비 수트를 입은 남성과 그레이 후드를 입은 남성이 각각 진열장 좌우에 멈춰 서 있다.',
         hotspots: [
           { id: 'fig-adrian', label: '네이비 수트 남성' },
           { id: 'fig-leo', label: '그레이 후드 남성' },
@@ -3533,6 +3542,7 @@ const week2Scenes = [
       },
       {
         key: 'week2-scene-008-minigame-photo-3', label: '③ 10:45 · 사진 찍는 손님',
+        prompt: '영우가 살짝 옆쪽에서 촬영. 베이지 코트를 입은 여성이 자신의 카메라로 진열장을 찍고 있고, 그 카메라 렌즈에 진열장이 또렷하게 반사되어 있다.',
         hotspots: [
           { id: 'fig-minah', label: '베이지 코트 여성' },
           { id: 'lens-reflection', label: '카메라 렌즈 반사' },
@@ -3540,6 +3550,7 @@ const week2Scenes = [
       },
       {
         key: 'week2-scene-008-minigame-photo-4', label: '④ 10:47 · 단체 관광객 밀려듦',
+        prompt: '클레어가 모은 다른 관광객 사진 — 인파 위쪽에서 약간 내려다보는 각도. 단체 관광객이 한꺼번에 밀려들어 진열장 절반이 사람들 등에 가려져 있고, 그레이 후드를 입은 남성과 얼굴이 보이지 않는 검은 재킷 인물이 인파 속에 섞여 있다.',
         hotspots: [
           { id: 'fig-leo', label: '그레이 후드 남성' },
           { id: 'fig-unknown', label: '얼굴이 안 보이는 인물' },
@@ -3547,10 +3558,12 @@ const week2Scenes = [
       },
       {
         key: 'week2-scene-008-minigame-photo-5', label: '⑤ 10:48 · 진열장 문이 열려 있다',
+        prompt: '지수가 인파 틈으로 몸을 기울여 촬영. 사람들 사이 좁은 틈 너머로 진열장이 보이고, 문이 살짝 열려 있는 순간이 포착되어 있다.',
         hotspots: [{ id: 'door-ajar', label: '진열장 문 열림' }],
       },
       {
         key: 'week2-scene-008-minigame-photo-6', label: '⑥ 10:50 · 인파 절정',
+        prompt: '클레어가 접수대 쪽에서 촬영. 인파가 절정에 달한 전시장, 네이비 수트를 입은 남성과 베이지 코트를 입은 여성이 각각 진열장 주변에 있다.',
         hotspots: [
           { id: 'fig-adrian', label: '네이비 수트 남성' },
           { id: 'fig-minah', label: '베이지 코트 여성' },
@@ -3558,6 +3571,7 @@ const week2Scenes = [
       },
       {
         key: 'week2-scene-008-minigame-photo-7', label: '⑦ 10:53 · 케이스가 비어 있다',
+        prompt: '영우가 인파가 빠져나간 직후 정면에서 촬영. 진열장 받침대가 완전히 비어 있다.',
         hotspots: [{ id: 'empty-case', label: 'K-01 상태 변화 (빈 받침대)' }],
       },
     ],

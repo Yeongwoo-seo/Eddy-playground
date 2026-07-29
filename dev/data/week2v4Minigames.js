@@ -9,7 +9,7 @@ const week2v4Minigames = [
   {
     id: 'mg-photo-zoom', name: '사진 속 인물 찾기', status: 'reused', reusedMinigameId: 'week2-scene-004-minigame',
     relatedChapter: 'Ch8. 사진 속 인물 찾기',
-    purpose: '7장의 연속 사진에서 인물·단서 핫스팟을 찾아 시간대별 동선을 확인한다. v4에서도 구조는 그대로 재사용 — "누가 진열장 문이 열린 사진에 가까이 있었는가"에 집중하도록 캡션만 다시 씀.',
+    purpose: '영우·지수·클레어와 다른 관광객들이 각기 다른 각도에서 찍어 클레어가 재구성한 7장의 사진에서 인물·단서 핫스팟을 찾아 시간대별 동선을 확인한다. v4에서도 구조는 그대로 재사용 — "누가 진열장 문이 열린 사진에 가까이 있었는가"에 집중하도록 캡션만 다시 씀.',
     requiredUi: [],
   },
   {

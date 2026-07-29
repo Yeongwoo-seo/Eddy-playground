@@ -1040,6 +1040,50 @@ const AssetDB = (() => {
     return data;
   }
 
+  // scene.photoSlots(week2-scene-008-minigame의 7장 등)의 사진별 "구도 프롬프트"
+  // — dialogueData.js에 하드코딩된 slot.prompt 기본값을 dev/upload/index.html
+  // (사진별 AI 프롬프트 패널)에서 그대로 써도 되지만, 실제로 이미지를 뽑아보면
+  // 구도를 다시 조정하고 싶은 경우가 많아 슬롯별로 덮어쓸 수 있게 한다.
+  // evidence-photos/catalog.json과 같은 패턴 — slot.key(전역 유일)로 나뉜 단일
+  // JSON 맵. 증거 프롬프트와 달리 공통 프리픽스를 따로 조립하지 않고, 값
+  // 자체가 그 슬롯이 실제로 쓸 최종 프롬프트 텍스트다.
+  const photoSlotPromptsCache = new Map(); // single entry keyed 'catalog'
+  const PHOTO_SLOT_PROMPTS_PATH = 'photo-slot-prompts/catalog.json';
+
+  async function getPhotoSlotPrompts() {
+    if (photoSlotPromptsCache.has('catalog')) return photoSlotPromptsCache.get('catalog');
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${PHOTO_SLOT_PROMPTS_PATH}?t=${Date.now()}`;
+    try {
+      const map = (await fetchJsonBlob(url)) || {};
+      photoSlotPromptsCache.set('catalog', map);
+      return map;
+    } catch (e) {
+      return photoSlotPromptsCache.get('catalog') || {};
+    }
+  }
+
+  async function setPhotoSlotPrompt(slotKey, promptText) {
+    if (!slotKey) return {};
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${PHOTO_SLOT_PROMPTS_PATH}?t=${Date.now()}`;
+    const current = await readCurrentForWrite(photoSlotPromptsCache, 'catalog', url, {});
+    const map = Object.assign({}, current);
+    if (promptText && promptText.trim()) map[slotKey] = promptText; else delete map[slotKey];
+    const blob = new Blob([JSON.stringify(map)], { type: 'application/json' });
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${DEV_ASSETS_BUCKET}/${PHOTO_SLOT_PROMPTS_PATH}`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'x-upsert': 'true',
+      },
+      body: blob,
+    });
+    if (!res.ok) throw new Error(`사진 프롬프트 저장 실패 (${res.status}): ${await res.text()}`);
+    photoSlotPromptsCache.set('catalog', map);
+    return map;
+  }
+
   // 게임환경설정(/dev/settings/) — 지금은 탐색허브 이동 페이드(.move-fade의
   // 트랜지션 길이/이징 곡선, MOVE_FADE_MS 홀드 시간) 하나뿐이지만, 다른
   // 게임 전반 설정도 같은 자리에 필드만 늘려서 추가할 수 있게 flat한 단일
@@ -1816,6 +1860,7 @@ const AssetDB = (() => {
     getEvidencePhotos, setEvidencePhoto,
     getEvidencePromptSettings, setEvidencePromptSettings,
     getEvidenceTestimonyPhoto, setEvidenceTestimonyPhoto,
+    getPhotoSlotPrompts, setPhotoSlotPrompt,
     getGameSettings, setGameSettings, DEFAULT_GAME_SETTINGS,
     getFishingConfig, setFishingConfig,
     getEvidenceNotebookConfig, setEvidenceNotebookConfig,
