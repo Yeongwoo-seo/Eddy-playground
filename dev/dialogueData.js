@@ -1873,17 +1873,17 @@ const week2Scene007Lines = [
       },
     ],
   },
-  { id: "line-089", speaker: "지수", text: "좋아\n그럼 이제 사진부터 보자\n소피씨가 뭔가 찍어뒀다고 했잖아", characterId: "jisoo", expression: "serious" },
+  { id: "line-089", speaker: "지수", text: "좋아\n그럼 이제 사진부터 모아보자\n다들 각자 찍은 거 있을 거 아니야", characterId: "jisoo", expression: "serious" },
 ];
 
 const week2Scene008Lines = [
-  { id: "line-001", speaker: '', text: "소피가 폰을 들고 다가온다.", characterId: null },
-  { id: "line-002", speaker: "소피", text: "저기, 저 아까 전시장 사진 찍고 있었거든요\n혹시 도움 될까 해서요", characterId: "sophie", expression: "shocked" },
+  { id: "line-001", speaker: '', text: "클레어가 태블릿과 폰 몇 대를 들고 다가온다.", characterId: null },
+  { id: "line-002", speaker: "클레어", text: "저... 여기 계셨던 분들 사진을 좀 모아봤어요\n다들 흔쾌히 보내주셨어요", characterId: "claire", expression: "neutral" },
   { id: "line-003", speaker: "지수", text: "헐 진짜요?\n완전 도움돼요!!!!", characterId: "jisoo", expression: "happy" },
-  { id: "line-004", speaker: "영우", text: "소피씨\n그 사진들 저희가 좀 봐도 될까요?", characterId: "youngwoo", expression: "serious" },
-  { id: "line-005", speaker: "소피", text: "그럼요\n저도 도움 되고 싶어요, 진짜", characterId: "sophie", expression: "neutral" },
-  { id: "line-006", speaker: "소피", text: "연속 촬영으로 몇 장 찍었어요\n여기요", characterId: "sophie", expression: "neutral" },
-  { id: "line-007", speaker: '', text: "[미니게임: 사진 속 인물 찾기] 소피가 촬영한 7장의 연속 사진이 펼쳐진다. 각 사진 속 인물과 배경 요소를 확대해 살펴볼 수 있다.", characterId: null },
+  { id: "line-004", speaker: "영우", text: "저희도 몇 장 찍은 거 있어요\n같이 맞춰볼까요", characterId: "youngwoo", expression: "serious" },
+  { id: "line-005", speaker: "지수", text: "나도 아까 여기저기서 찍었는데\n각도가 다 달라서 오히려 좋을 수도", characterId: "jisoo", expression: "neutral" },
+  { id: "line-006", speaker: "클레어", text: "그럼 시간 순서대로 정리해볼게요\n제 것, 두 분 것, 그리고 다른 관광객분들 것까지 합치면", characterId: "claire", expression: "neutral" },
+  { id: "line-007", speaker: '', text: "[미니게임: 사진 속 인물 찾기] 영우·지수·클레어, 그리고 클레어가 모은 다른 관광객들의 사진까지 더해 서로 다른 각도에서 찍힌 7장의 사진이 펼쳐진다. 각 사진 속 인물과 배경 요소를 확대해 살펴볼 수 있다.", characterId: null },
 ];
 
 const week2Scene008ReviewLines = [
@@ -1912,7 +1912,7 @@ const week2Scene008ReviewLines = [
         type: 'addEvidence',
         evidence: {
           id: 'evidence-tourist-extra-photo', code: 'E-SEL3', category: 'photo', title: '사진 속 그레이 후드 남성(레오로 추정)',
-          description: '소피가 건네준 연속 촬영 사진 중 한 장. 진열장 문 옆으로 회색 후드를 입은 인물의 팔이 걸쳐 있다.',
+          description: '영우·지수·클레어와 다른 관광객들의 사진을 모아 재구성한 것 중 한 장. 진열장 문 옆으로 회색 후드를 입은 인물의 팔이 걸쳐 있다.',
           discoveredLocationText: 'Pop-up Exhibition · 사진 분석',
         },
       },
@@ -1936,7 +1936,7 @@ const week2Scene008ReviewLines = [
         type: 'addEvidence',
         evidence: {
           id: 'evidence-empty-reception-photo', code: 'E-CL2', category: 'photo', title: '접수대가 비어 있는 사진',
-          description: '같은 연속 촬영 사진 중 한 장에, 클레어가 자리를 비운 접수대가 잠깐 찍혀 있다.',
+          description: '같은 방식으로 모은 사진 중 한 장에, 클레어가 자리를 비운 접수대가 잠깐 찍혀 있다.',
           discoveredLocationText: 'Pop-up Exhibition · 사진 분석',
         },
       },
@@ -1949,9 +1949,9 @@ const week2Scene008ReviewLines = [
   { id: "line-025", speaker: "영우", text: "웅\n저긴 그냥 배경이네", characterId: "youngwoo", expression: "neutral" },
   { id: "line-026", speaker: "지수", text: "이 그레이 후드\n누구 옷이랑 비슷한지 좀 봐야겠다", characterId: "jisoo", expression: "curious" },
   { id: "line-027", speaker: "영우", text: "윤민아씨, 레오씨\n크로스백이나 후드 있었던 사람들 다시 봐야지", characterId: "youngwoo", expression: "curious" },
-  { id: "line-028", speaker: "소피", text: "저... 제가 찍은 사진 때문에\n누구 곤란해지는 거 아니죠?", characterId: "sophie", expression: "soft" },
-  { id: "line-029", speaker: "지수", text: "아니에요\n오히려 이거 덕분에 정리가 되는 거예요\n감사해요, 소피씨", characterId: "jisoo", expression: "soft" },
-  { id: "line-030", speaker: "소피", text: "다행이다\n저는 그냥 다들 걱정돼서요", characterId: "sophie", expression: "soft" },
+  { id: "line-028", speaker: "클레어", text: "저... 제가 모은 사진 때문에\n누구 곤란해지는 거 아니죠?", characterId: "claire", expression: "soft" },
+  { id: "line-029", speaker: "지수", text: "아니에요\n오히려 이거 덕분에 정리가 되는 거예요\n감사해요, 클레어씨", characterId: "jisoo", expression: "soft" },
+  { id: "line-030", speaker: "클레어", text: "다행이다\n저는 그냥 다들 걱정돼서요", characterId: "claire", expression: "soft" },
   { id: "line-031", speaker: "지수", text: "일단 제일 수상했던 사람부터", characterId: "jisoo", expression: "serious" },
   { id: "line-032", speaker: "영우", text: "윤민아씨네\n아까 몰래 찍다가 지우기까지 했잖아", characterId: "youngwoo", expression: "serious" },
   { id: "line-033", speaker: "지수", text: "그니까\n가서 물어보자", characterId: "jisoo", expression: "serious" },
