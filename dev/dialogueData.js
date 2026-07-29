@@ -1675,11 +1675,11 @@ const week2Scene005Lines = [
 ];
 
 const week2Scene006Lines = [
-  { id: "line-001", speaker: '', text: "전시장 입구. 오전 햇살이 문 앞까지 길게 드리운다. 다니엘이 몇몇 관광객들을 모아 단체사진을 준비하고 있다. 서너 명이 어색하게 줄지어 서 있고, 다니엘이 손짓으로 그들의 위치를 조정하는 중이다.", characterId: null },
-  { id: "line-002", speaker: "다니엘", text: "자 여기 서큘러키에서 만난 분들끼리\n기념으로 한 장 어때요?", characterId: "daniel-guide", expression: "neutral" },
+  { id: "line-001", speaker: '', text: "전시장 입구. 오전 햇살이 문 앞까지 길게 드리운다. 다니엘이 관광객 두어 명과 서 있다. 다들 어색하게 줄지어 서 있고, 다니엘이 손짓으로 그들의 위치를 조정하는 중이다.", characterId: null },
+  { id: "line-002", speaker: "다니엘", text: "아, 이분들은 제가 아까 딴 데서\n안내해드리던 분들이에요\n다들 여기서 다시 마주쳤길래\n기념으로 한 장 어때요?", characterId: "daniel-guide", expression: "neutral" },
   { id: "line-003", speaker: "지수", text: "오 좋아요!!!!", characterId: "jisoo", expression: "happy" },
   { id: "line-004", speaker: "영우", text: "저희도 껴도 되나요?", characterId: "youngwoo", expression: "neutral" },
-  { id: "line-005", speaker: "다니엘", text: "그럼요, 이쪽으로 오세요", characterId: "daniel-guide", expression: "neutral" },
+  { id: "line-005", speaker: "다니엘", text: "그럼요, 지수님 영우님도\n오늘 종일 같이 다녔잖아요\n이쪽으로 오세요", characterId: "daniel-guide", expression: "neutral" },
   { id: "line-006", speaker: '', text: "지수와 영우가 무리에 합류한다. 관광객들이 서로 가볍게 목례를 나눈다.", characterId: null },
   { id: "line-007", speaker: "다니엘", text: "이렇게 서야 다 나와요\n거기 두 분은 조금만 왼쪽으로", characterId: "daniel-guide", expression: "neutral" },
   { id: "line-008", speaker: '', text: "다니엘이 사람들의 위치를 세밀하게 조정한다. 한 명씩 반걸음씩 옮기게 하고, 뒷줄과 앞줄 간격까지 손으로 재듯 살핀다.", characterId: null },
@@ -1718,7 +1718,7 @@ const week2Scene006Lines = [
         type: 'addEvidence',
         evidence: {
           id: 'evidence-group-photo', code: 'E-V11', category: 'photo', title: '관광팀 단체사진',
-          description: '다니엘이 서큘러키에서 만난 관광객들을 모아 찍은 기념사진. 다니엘이 각자의 위치를 세밀하게 조정했다.',
+          description: '다니엘이 개별적으로 안내하던 관광객들과 다시 마주쳐 찍은 기념사진. 다니엘이 각자의 위치를 세밀하게 조정했다.',
           discoveredLocationText: 'Pop-up Exhibition 입구',
         },
       },
