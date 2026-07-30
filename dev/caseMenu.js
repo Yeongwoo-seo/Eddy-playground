@@ -797,6 +797,7 @@ const CaseEvidencePopup = (() => {
   let sheet = null;
   let queue = [];
   let busy = false;
+  let typingTimer = null;
 
   function ensureDom() {
     if (root) return;
@@ -818,9 +819,36 @@ const CaseEvidencePopup = (() => {
       <div class="cm-evp-eyebrow">증거 획득</div>
       ${photoHtml}
       <div class="cm-evp-name">${escapeHtml(entry.title)}</div>
-      <div class="cm-evp-desc">${escapeHtml(entry.summary || '')}</div>
+      <div class="cm-evp-desc"></div>
       <button class="cm-evp-confirm" data-action="closeEvidencePopup">확인</button>
     `;
+  }
+  // 게임 대사(vnPlayer.js typeText)와 같은 속도 체계 — 설정의 텍스트 속도를
+  // 그대로 따라간다. dev/settings/ 미리보기처럼 CaseFileState가 없는
+  // 페이지에서는 '보통' 속도로 고정.
+  function typingSpeedMs() {
+    const speeds = { slow: 58, normal: 36, fast: 18, instant: 0 };
+    const setting = (typeof CaseFileState !== 'undefined' && CaseFileState.getSettings) ? CaseFileState.getSettings().textSpeed : 'normal';
+    return speeds[setting] != null ? speeds[setting] : speeds.normal;
+  }
+  // 설명을 한 글자씩 채워 넣고, 다 채워진 뒤에만 확인 버튼을 페이드인 +
+  // 클릭 가능하게 만든다 — 버튼은 html()에서 이미 opacity:0 · pointer-
+  // events:none 상태로 그려지므로 타이핑 도중에는 눌러도 반응하지 않는다.
+  function typeDescription(text) {
+    clearInterval(typingTimer);
+    const descEl = sheet.querySelector('.cm-evp-desc');
+    const btnEl = sheet.querySelector('.cm-evp-confirm');
+    if (btnEl) btnEl.classList.remove('cm-evp-confirm-ready');
+    if (!descEl) return;
+    const finish = () => { if (btnEl) btnEl.classList.add('cm-evp-confirm-ready'); };
+    const speedMs = typingSpeedMs();
+    if (!text || speedMs === 0) { descEl.textContent = text || ''; finish(); return; }
+    let i = 0;
+    typingTimer = setInterval(() => {
+      i++;
+      descEl.textContent = text.slice(0, i);
+      if (i >= text.length) { clearInterval(typingTimer); finish(); }
+    }, speedMs);
   }
   // toastQueue와 같은 이유(§큐 주석)로 한 틱에 addEvidence가 여러 건 fire돼도
   // 겹치지 않게 순서대로 하나씩만 띄운다 — 다만 토스트는 타이머로 자동으로
@@ -831,6 +859,7 @@ const CaseEvidencePopup = (() => {
     busy = true;
     sheet.innerHTML = html(next);
     if (next.imageAssetId && typeof CaseEntryUI !== 'undefined') CaseEntryUI.hydrateCaseEntryIcons(sheet);
+    typeDescription(next.summary || '');
     root.classList.remove('cm-hidden');
     // 이중 rAF — 한 번만 걸면 display:none 해제와 cm-show 부여가 같은
     // 프레임으로 묶여 브라우저가 "이전 상태"를 페인트하지 못하고 그냥
@@ -842,6 +871,7 @@ const CaseEvidencePopup = (() => {
     });
   }
   function close() {
+    clearInterval(typingTimer);
     // cm-show는 유지한 채(그래야 transform이 translateY(0)에 고정돼 아래로
     // 슬라이드해 내려가지 않는다) cm-closing만 얹어 제자리 페이드아웃만
     // 재생한다. 실제로 cm-show를 떼는 건 페이드가 끝난 다음 — 그래야 다음
@@ -1144,8 +1174,11 @@ function injectCaseMenuStyles() {
     .cm-evp-photo .ces-icon-img{width:100%;height:100%;object-fit:cover;border-radius:16px}
     .cm-evp-name{font-size:18px;font-weight:800;color:#F1F3F5;margin-bottom:8px;word-break:keep-all}
     .cm-evp-desc{font-size:13.5px;line-height:1.6;color:#C9D1D9;margin-bottom:20px;word-break:keep-all}
-    .cm-evp-confirm{width:100%;background:#FFFFFF;color:#10151B;border:none;border-radius:14px;padding:15px;font-size:15px;font-weight:700;cursor:pointer;font-family:'IBM Plex Mono',ui-monospace,monospace;letter-spacing:.04em}
-    .cm-evp-confirm:active{opacity:.85}
+    /* 설명 타이핑이 끝나기 전까지는 안 보이고 눌리지도 않는다(cm-evp-confirm-ready가
+       붙어야 페이드인 + 클릭 가능) — typeDescription 참고. */
+    .cm-evp-confirm{width:100%;background:#FFFFFF;color:#10151B;border:none;border-radius:14px;padding:15px;font-size:15px;font-weight:700;cursor:pointer;font-family:'IBM Plex Mono',ui-monospace,monospace;letter-spacing:.04em;opacity:0;pointer-events:none;transition:opacity .4s ease}
+    .cm-evp-confirm.cm-evp-confirm-ready{opacity:1;pointer-events:auto}
+    .cm-evp-confirm.cm-evp-confirm-ready:active{opacity:.85}
   `;
   document.head.appendChild(style);
 }
