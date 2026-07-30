@@ -758,21 +758,26 @@ function initCaseMenu(options) {
   function notifyAffection(amount) { notifyToast('영우 호감도', `${amount > 0 ? '+' : ''}${amount}`); }
   // 증거 획득 시 뜨는 팝업에 넘길 표시용 데이터 조합 — 대사 줄 안에
   // "[ 증거: ... ] 등록." 문구를 박아 알리던 방식 대신, addEvidence effect가
-  // fire될 때마다 카드와 동일한 사진/폴백 아이콘 우선순위(§10.14,
-  // CaseEntryUI.caseEntryIconHtml)로 사진을 포함해 보여준다. 팝업 자체는
-  // CaseEvidencePopup(페이지 전역 싱글턴, 아래 정의)이 담당 — initCaseMenu
-  // 인스턴스와 무관하게 dev/settings/ 같은 다른 페이지에서도 재사용하기
-  // 위함(CaseEvidencePopup.preview 참고).
+  // fire될 때마다 사진을 포함해 보여준다. 사진은 증거수첩(evidenceNotebook.js
+  // photoAssetIdFor)과 완전히 같은 우선순위로 골라야 "증거 DB에 올린 그
+  // 사진"이 카드 아이콘이 아니라 이 팝업에도 그대로 뜬다 — 아래
+  // CaseEvidencePopup.resolvePhotoAssetId 참고. 팝업 자체는 CaseEvidencePopup
+  // (페이지 전역 싱글턴, 아래 정의)이 담당 — initCaseMenu 인스턴스와 무관하게
+  // dev/settings/ 같은 다른 페이지에서도 재사용하기 위함(CaseEvidencePopup.
+  // preview 참고).
   function notifyEvidence(item) {
     if (!item) return;
     const entries = (typeof CaseFileState !== 'undefined' && CaseFileState.getCaseEntries) ? CaseFileState.getCaseEntries() : [];
     const entry = entries.find(e => e.id === item.id) || null;
-    CaseEvidencePopup.show({
+    const base = {
       title: (entry && entry.title) || item.title || '',
       summary: (entry && (entry.summary || entry.description)) || item.description || '',
       fallbackIcon: (entry && entry.fallbackIcon) || '🧾',
-      imageAssetId: entry ? entry.imageAssetId : null,
-    });
+    };
+    const lookup = entry || { id: item.id, kind: item.category === 'testimony' ? 'testimony' : 'evidence', detailImageAssetId: null, imageAssetId: null };
+    CaseEvidencePopup.resolvePhotoAssetId(lookup)
+      .then(imageAssetId => CaseEvidencePopup.show(Object.assign({}, base, { imageAssetId })))
+      .catch(() => CaseEvidencePopup.show(Object.assign({}, base, { imageAssetId: null })));
   }
 
   return {
@@ -855,28 +860,53 @@ const CaseEvidencePopup = (() => {
     queue.push(entry);
     if (!busy) runQueue();
   }
-  // dev/settings/(게임환경설정)의 "이 기능 테스트" 버튼이 부르는 진입점 —
-  // 실제 증거를 등록하지 않고 샘플 데이터로 레이아웃을 확인한다. 사진 칸도
-  // 폴백 이모지 대신, 실제 게임 화면(수사 노트 카드/증거 획득 팝업 본편)이
-  // 쓰는 것과 동일한 카탈로그 — AssetDB.getCaseEntryMeta()(dev/upload/
-  // case-entries에서 관리자가 승인한 imageAssetId, CaseEntryModel.
-  // normalizeLegacyEvidence가 entry.imageAssetId로 그대로 꽂아주는 바로
-  // 그 값) — 에서 승인된 사진이 하나라도 있으면 그중 아무거나 가져와
-  // 보여준다. (구버전은 별개의 evidence-photos 카탈로그를 봤는데, 그건
-  // dev/upload 증거 DB 탭의 AI 프롬프트 생성용이라 실제로 카드에 쓰이는
-  // 사진과 다를 수 있었다 — 실제 연동이 안 된 원인이었다.) 없거나
-  // 오프라인이면 이모지로 조용히 폴백한다.
-  async function pickAnyEvidencePhotoAssetId() {
-    if (typeof AssetDB === 'undefined' || !AssetDB.getCaseEntryMeta) return null;
-    try {
-      const metaCatalog = await AssetDB.getCaseEntryMeta();
-      const ids = Object.values(metaCatalog || {}).map(m => m && m.imageAssetId).filter(Boolean);
-      if (ids.length) return ids[Math.floor(Math.random() * ids.length)];
-    } catch (e) { /* 오프라인/서버 불가 — 이모지 폴백 */ }
+  // 사진 우선순위 — 증거수첩(evidenceNotebook.js photoAssetIdFor)과 완전히
+  // 똑같은 순서를 그대로 따라간다: 증언은 공유 "기록사진"이 최우선, 그다음
+  // 관리자가 승인한 상세용/카드용 이미지(detailImageAssetId/imageAssetId,
+  // dev/upload/case-entries), 마지막으로 "증거 DB" 탭에서 증거 id별로 올린
+  // 사진(evidence-photos 카탈로그, dev/upload/index.html 증거 DB 탭의
+  // "사진 업로드"). 이 순서를 안 맞추면 노트에서 보이는 사진과 이 팝업에서
+  // 보이는 사진이 서로 다른 걸 가리킬 수 있다.
+  async function resolvePhotoAssetId(entry) {
+    if (!entry) return null;
+    if (entry.kind === 'testimony' && typeof AssetDB !== 'undefined' && AssetDB.getEvidenceTestimonyPhoto) {
+      try {
+        const shared = await AssetDB.getEvidenceTestimonyPhoto();
+        if (shared && shared.imageAssetId) return shared.imageAssetId;
+      } catch (e) { /* 오프라인/서버 불가 — 다음 우선순위로 계속 */ }
+    }
+    if (entry.detailImageAssetId) return entry.detailImageAssetId;
+    if (entry.imageAssetId) return entry.imageAssetId;
+    if (typeof AssetDB !== 'undefined' && AssetDB.getEvidencePhotos) {
+      try {
+        const catalog = await AssetDB.getEvidencePhotos();
+        const rec = catalog && catalog[entry.id];
+        if (rec && rec.imageAssetId) return rec.imageAssetId;
+      } catch (e) { /* 오프라인/서버 불가 — 이모지 폴백 */ }
+    }
     return null;
   }
+  // dev/settings/(게임환경설정)의 "이 기능 테스트" 버튼이 부르는 진입점 —
+  // 실제 증거를 등록하지 않고 샘플 데이터로 레이아웃을 확인한다. 사진 칸도
+  // 폴백 이모지 대신, 위 resolvePhotoAssetId와 같은 두 카탈로그(카드용 승인
+  // 이미지 + 증거 DB 탭 사진)를 통틀어 사진이 배정된 증거 id가 하나라도
+  // 있으면 그중 아무거나 가져와 보여준다.
   async function preview() {
-    const imageAssetId = await pickAnyEvidencePhotoAssetId();
+    let metaCatalog = {};
+    let photosCatalog = {};
+    if (typeof AssetDB !== 'undefined') {
+      try { if (AssetDB.getCaseEntryMeta) metaCatalog = await AssetDB.getCaseEntryMeta(); } catch (e) { /* 오프라인 */ }
+      try { if (AssetDB.getEvidencePhotos) photosCatalog = await AssetDB.getEvidencePhotos(); } catch (e) { /* 오프라인 */ }
+    }
+    const candidateIds = new Set([...Object.keys(metaCatalog || {}), ...Object.keys(photosCatalog || {})]);
+    const candidates = [];
+    candidateIds.forEach(id => {
+      const meta = (metaCatalog && metaCatalog[id]) || {};
+      const photoRec = (photosCatalog && photosCatalog[id]) || {};
+      const resolved = meta.detailImageAssetId || meta.imageAssetId || photoRec.imageAssetId;
+      if (resolved) candidates.push(resolved);
+    });
+    const imageAssetId = candidates.length ? candidates[Math.floor(Math.random() * candidates.length)] : null;
     show({
       title: '테스트 증거 — 명함',
       summary: '게임환경설정에서 미리보기로 띄운 샘플입니다. 실제 증거를 얻으면 사진/이름/설명과 확인 버튼이 이 레이아웃 그대로 표시됩니다.',
@@ -884,7 +914,7 @@ const CaseEvidencePopup = (() => {
       imageAssetId,
     });
   }
-  return { show, preview };
+  return { show, preview, resolvePhotoAssetId };
 })();
 
 // The Missing Key v1 §5.3 — "비활성 상태에서는 메뉴를 숨기지 말고 잠금 또는
