@@ -827,11 +827,20 @@ const CaseEvidencePopup = (() => {
     sheet.innerHTML = html(next);
     if (next.imageAssetId && typeof CaseEntryUI !== 'undefined') CaseEntryUI.hydrateCaseEntryIcons(sheet);
     root.classList.remove('cm-hidden');
-    requestAnimationFrame(() => root.classList.add('cm-show'));
+    // 이중 rAF — 한 번만 걸면 display:none 해제와 cm-show 부여가 같은
+    // 프레임으로 묶여 브라우저가 "이전 상태"를 페인트하지 못하고 그냥
+    // 최종 위치로 점프해버린다(느린 트랜지션을 걸어도 애니메이션 없이
+    // 순간이동하는 원인). 첫 rAF에서 off-screen 상태가 실제로 한 프레임
+    // 페인트된 뒤, 다음 rAF에서 cm-show를 추가해야 트랜지션이 재생된다.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => root.classList.add('cm-show'));
+    });
   }
   function close() {
     root.classList.remove('cm-show');
-    setTimeout(() => { root.classList.add('cm-hidden'); runQueue(); }, 300);
+    // 시트 transition(.7s + .15s 지연)이 끝난 뒤에 지워야 마지막 프레임이
+    // 잘리지 않는다 — 여는 쪽과 동일한 지속시간을 그대로 맞춰준다.
+    setTimeout(() => { root.classList.add('cm-hidden'); runQueue(); }, 900);
   }
   function show(entry) {
     ensureDom();
@@ -839,13 +848,32 @@ const CaseEvidencePopup = (() => {
     if (!busy) runQueue();
   }
   // dev/settings/(게임환경설정)의 "이 기능 테스트" 버튼이 부르는 진입점 —
-  // 실제 증거를 등록하지 않고 샘플 데이터로만 레이아웃을 확인한다.
-  function preview() {
+  // 실제 증거를 등록하지 않고 샘플 데이터로 레이아웃을 확인한다. 사진 칸도
+  // 폴백 이모지 대신, 이미 관리자가 승인해둔 실제 증거 사진(AssetDB의
+  // evidence-photos 카탈로그) 중 아무거나 하나를 가져와 보여준다 — 없거나
+  // 오프라인이면 공유 기록사진, 그마저 없으면 이모지로 조용히 폴백한다.
+  async function pickAnyEvidencePhotoAssetId() {
+    if (typeof AssetDB === 'undefined') return null;
+    try {
+      if (AssetDB.getEvidencePhotos) {
+        const catalog = await AssetDB.getEvidencePhotos();
+        const ids = Object.values(catalog || {}).map(v => v && v.imageAssetId).filter(Boolean);
+        if (ids.length) return ids[Math.floor(Math.random() * ids.length)];
+      }
+      if (AssetDB.getEvidenceTestimonyPhoto) {
+        const shared = await AssetDB.getEvidenceTestimonyPhoto();
+        if (shared && shared.imageAssetId) return shared.imageAssetId;
+      }
+    } catch (e) { /* 오프라인/서버 불가 — 이모지 폴백 */ }
+    return null;
+  }
+  async function preview() {
+    const imageAssetId = await pickAnyEvidencePhotoAssetId();
     show({
       title: '테스트 증거 — 명함',
       summary: '게임환경설정에서 미리보기로 띄운 샘플입니다. 실제 증거를 얻으면 사진/이름/설명과 확인 버튼이 이 레이아웃 그대로 표시됩니다.',
       fallbackIcon: '🧾',
-      imageAssetId: null,
+      imageAssetId,
     });
   }
   return { show, preview };
@@ -1053,10 +1081,10 @@ function injectCaseMenuStyles() {
     .cm-toast-icon .ces-card-icon{width:36px;height:36px;font-size:22px}
     .cm-toast-icon .ces-icon-img{width:36px;height:36px}
 
-    .cm-evp-root{position:fixed;inset:0;z-index:90;display:flex;align-items:flex-end;justify-content:center;font-family:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif}
+    .cm-evp-root{position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;font-family:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif}
     .cm-evp-root.cm-hidden{display:none}
-    .cm-evp-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.7);opacity:0;transition:opacity .3s cubic-bezier(.2,.8,.2,1)}
-    .cm-evp-sheet{position:relative;width:100%;max-width:430px;background:#10151B;border-radius:24px 24px 0 0;padding:22px 20px calc(20px + env(safe-area-inset-bottom,0));box-shadow:0 -8px 32px rgba(0,0,0,.5);transform:translateY(100%);transition:transform .35s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;align-items:center;text-align:center}
+    .cm-evp-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.7);opacity:0;transition:opacity .6s cubic-bezier(.45,0,.55,1)}
+    .cm-evp-sheet{position:relative;width:calc(100% - 48px);max-width:380px;background:#10151B;border-radius:24px;padding:26px 22px;box-shadow:0 8px 40px rgba(0,0,0,.55);transform:translateY(120%);transition:transform .75s cubic-bezier(.45,0,.15,1) .15s;display:flex;flex-direction:column;align-items:center;text-align:center}
     .cm-evp-root.cm-show .cm-evp-backdrop{opacity:1}
     .cm-evp-root.cm-show .cm-evp-sheet{transform:translateY(0)}
     .cm-evp-eyebrow{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.12em;color:#D8A93D;text-transform:uppercase;margin-bottom:14px}
@@ -1064,7 +1092,7 @@ function injectCaseMenuStyles() {
     .cm-evp-photo .ces-icon-img{width:100%;height:100%;object-fit:cover;border-radius:16px}
     .cm-evp-name{font-size:18px;font-weight:800;color:#F1F3F5;margin-bottom:8px;word-break:keep-all}
     .cm-evp-desc{font-size:13.5px;line-height:1.6;color:#C9D1D9;margin-bottom:20px;word-break:keep-all}
-    .cm-evp-confirm{width:100%;background:#D8A93D;color:#191206;border:none;border-radius:14px;padding:15px;font-size:15px;font-weight:700;cursor:pointer;font-family:'IBM Plex Mono',ui-monospace,monospace;letter-spacing:.04em}
+    .cm-evp-confirm{width:100%;background:#FFFFFF;color:#10151B;border:none;border-radius:14px;padding:15px;font-size:15px;font-weight:700;cursor:pointer;font-family:'IBM Plex Mono',ui-monospace,monospace;letter-spacing:.04em}
     .cm-evp-confirm:active{opacity:.85}
   `;
   document.head.appendChild(style);
