@@ -837,10 +837,18 @@ const CaseEvidencePopup = (() => {
     });
   }
   function close() {
-    root.classList.remove('cm-show');
-    // 시트 transition(.7s + .15s 지연)이 끝난 뒤에 지워야 마지막 프레임이
-    // 잘리지 않는다 — 여는 쪽과 동일한 지속시간을 그대로 맞춰준다.
-    setTimeout(() => { root.classList.add('cm-hidden'); runQueue(); }, 900);
+    // cm-show는 유지한 채(그래야 transform이 translateY(0)에 고정돼 아래로
+    // 슬라이드해 내려가지 않는다) cm-closing만 얹어 제자리 페이드아웃만
+    // 재생한다. 실제로 cm-show를 떼는 건 페이드가 끝난 다음 — 그래야 다음
+    // 항목이 뜰 때 다시 off-screen(opacity 0 / translateY(100vh))부터
+    // 시작한다.
+    root.classList.add('cm-closing');
+    setTimeout(() => {
+      root.classList.remove('cm-show');
+      root.classList.remove('cm-closing');
+      root.classList.add('cm-hidden');
+      runQueue();
+    }, 520);
   }
   function show(entry) {
     ensureDom();
@@ -849,21 +857,21 @@ const CaseEvidencePopup = (() => {
   }
   // dev/settings/(게임환경설정)의 "이 기능 테스트" 버튼이 부르는 진입점 —
   // 실제 증거를 등록하지 않고 샘플 데이터로 레이아웃을 확인한다. 사진 칸도
-  // 폴백 이모지 대신, 이미 관리자가 승인해둔 실제 증거 사진(AssetDB의
-  // evidence-photos 카탈로그) 중 아무거나 하나를 가져와 보여준다 — 없거나
-  // 오프라인이면 공유 기록사진, 그마저 없으면 이모지로 조용히 폴백한다.
+  // 폴백 이모지 대신, 실제 게임 화면(수사 노트 카드/증거 획득 팝업 본편)이
+  // 쓰는 것과 동일한 카탈로그 — AssetDB.getCaseEntryMeta()(dev/upload/
+  // case-entries에서 관리자가 승인한 imageAssetId, CaseEntryModel.
+  // normalizeLegacyEvidence가 entry.imageAssetId로 그대로 꽂아주는 바로
+  // 그 값) — 에서 승인된 사진이 하나라도 있으면 그중 아무거나 가져와
+  // 보여준다. (구버전은 별개의 evidence-photos 카탈로그를 봤는데, 그건
+  // dev/upload 증거 DB 탭의 AI 프롬프트 생성용이라 실제로 카드에 쓰이는
+  // 사진과 다를 수 있었다 — 실제 연동이 안 된 원인이었다.) 없거나
+  // 오프라인이면 이모지로 조용히 폴백한다.
   async function pickAnyEvidencePhotoAssetId() {
-    if (typeof AssetDB === 'undefined') return null;
+    if (typeof AssetDB === 'undefined' || !AssetDB.getCaseEntryMeta) return null;
     try {
-      if (AssetDB.getEvidencePhotos) {
-        const catalog = await AssetDB.getEvidencePhotos();
-        const ids = Object.values(catalog || {}).map(v => v && v.imageAssetId).filter(Boolean);
-        if (ids.length) return ids[Math.floor(Math.random() * ids.length)];
-      }
-      if (AssetDB.getEvidenceTestimonyPhoto) {
-        const shared = await AssetDB.getEvidenceTestimonyPhoto();
-        if (shared && shared.imageAssetId) return shared.imageAssetId;
-      }
+      const metaCatalog = await AssetDB.getCaseEntryMeta();
+      const ids = Object.values(metaCatalog || {}).map(m => m && m.imageAssetId).filter(Boolean);
+      if (ids.length) return ids[Math.floor(Math.random() * ids.length)];
     } catch (e) { /* 오프라인/서버 불가 — 이모지 폴백 */ }
     return null;
   }
@@ -1084,9 +1092,23 @@ function injectCaseMenuStyles() {
     .cm-evp-root{position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;font-family:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif}
     .cm-evp-root.cm-hidden{display:none}
     .cm-evp-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.7);opacity:0;transition:opacity .6s cubic-bezier(.45,0,.55,1)}
-    .cm-evp-sheet{position:relative;width:calc(100% - 48px);max-width:380px;background:#10151B;border-radius:24px;padding:26px 22px;box-shadow:0 8px 40px rgba(0,0,0,.55);transform:translateY(120%);transition:transform .75s cubic-bezier(.45,0,.15,1) .15s;display:flex;flex-direction:column;align-items:center;text-align:center}
+    /* translateY(100vh) — 카드 자기 높이 기준(예: 120%)이면 화면 크기 대비
+       카드가 작을 때 시작 지점이 아직 뷰포트 안이라 위쪽이 살짝 보인 채로
+       시작해버린다. 뷰포트 전체 높이만큼 내려두면 카드 크기와 무관하게
+       확실히 화면 밖에서 시작한다. opacity도 transform과 같은 지속시간·
+       이징으로 함께 걸어서 "이동 후 등장"이 아니라 "등장하며 이동"이
+       되게 한다(둘이 어긋나면 다 올라온 뒤에 뒤늦게 페이드인하거나, 반대로
+       투명한 채로 먼저 다 이동해버리는 것처럼 보인다). */
+    .cm-evp-sheet{position:relative;width:calc(100% - 48px);max-width:380px;background:#10151B;border-radius:24px;padding:26px 22px;box-shadow:0 8px 40px rgba(0,0,0,.55);opacity:0;transform:translateY(100vh);transition:transform .9s cubic-bezier(.33,1,.68,1) .1s,opacity .9s cubic-bezier(.33,1,.68,1) .1s;display:flex;flex-direction:column;align-items:center;text-align:center}
     .cm-evp-root.cm-show .cm-evp-backdrop{opacity:1}
-    .cm-evp-root.cm-show .cm-evp-sheet{transform:translateY(0)}
+    .cm-evp-root.cm-show .cm-evp-sheet{opacity:1;transform:translateY(0)}
+    /* 닫을 때는 아래로 다시 내려가는 슬라이드가 아니라 제자리에서 페이드
+       아웃만 한다 — cm-show는 그대로 둔 채(transform:translateY(0) 유지)
+       cm-closing만 얹어서 opacity 트랜지션만 새로 짧게 덮어쓴다(뒤에 나온
+       규칙이 이겨야 하므로 아래 두 줄은 반드시 cm-show 규칙보다 뒤에 있어야
+       한다). */
+    .cm-evp-root.cm-closing .cm-evp-backdrop{transition:opacity .5s ease;opacity:0}
+    .cm-evp-root.cm-closing .cm-evp-sheet{transition:opacity .5s ease;opacity:0}
     .cm-evp-eyebrow{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.12em;color:#D8A93D;text-transform:uppercase;margin-bottom:14px}
     .cm-evp-photo{width:120px;height:120px;border-radius:16px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:52px;overflow:hidden;margin-bottom:16px;flex-shrink:0}
     .cm-evp-photo .ces-icon-img{width:100%;height:100%;object-fit:cover;border-radius:16px}
