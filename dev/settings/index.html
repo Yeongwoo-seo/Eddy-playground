@@ -65,6 +65,18 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--sans);disp
   </div>
 
   <div>
+    <div class="section-label" style="margin-bottom:10px">증거 획득 팝업</div>
+    <button class="link-card" id="btnEvidencePopupPreview" style="width:100%;border:1px solid var(--divider);font:inherit;color:inherit;cursor:pointer">
+      <div class="link-card-icon">🧾</div>
+      <div class="link-card-txt">
+        <div class="link-card-name">증거 획득 팝업 미리보기</div>
+        <div class="link-card-desc">암전 배경 + 아래에서 올라오는 시트(사진/이름/설명 + 확인 버튼)를 실제 증거 없이 바로 테스트합니다</div>
+      </div>
+      <div class="link-card-arrow">›</div>
+    </button>
+  </div>
+
+  <div>
     <div class="section-label" style="margin-bottom:10px">이동 페이드 (확정값)</div>
     <div class="panel">
       <div class="panel-title">트랜지션</div>
@@ -79,7 +91,9 @@ body{background:var(--bg);color:var(--text-primary);font-family:var(--sans);disp
 </div>
 
 <script src="/dev/assetDb.js"></script>
+<script src="/dev/caseMenu.js"></script>
 <script>
+document.getElementById('btnEvidencePopupPreview').addEventListener('click', () => CaseEvidencePopup.preview());
 (async function init() {
   let settings = AssetDB.DEFAULT_GAME_SETTINGS;
   try { settings = await AssetDB.getGameSettings(); } catch (e) { /* fall back to the hardcoded default */ }
