@@ -161,12 +161,6 @@ function initCaseMenu(options) {
       if (options.onOpenShop) options.onOpenShop();
     } else if (action === 'openWardrobe') {
       if (options.onOpenWardrobe) options.onOpenWardrobe();
-    } else if (action === 'testEvidencePopup') {
-      notifyEvidence({
-        id: '__evidence_popup_preview__',
-        title: '테스트 증거 — 명함',
-        description: '설정에서 미리보기로 띄운 샘플입니다. 실제 증거를 얻으면 사진/이름/설명과 확인 버튼이 이 레이아웃 그대로 표시됩니다.',
-      });
     } else if (action === 'openNotebook') {
       // 증거 DB 노트 v1.1 — 기존 평면 목록/상세 뷰(evidenceRow의 data-nav,
       // renderEvidenceDetail 등)는 그대로 두고, 노트는 별도 진입점으로만
@@ -703,13 +697,6 @@ function initCaseMenu(options) {
         ${boolSettingRow('sfx', '효과음', s.sfx)}
         ${boolSettingRow('bgm', '배경음', s.bgm)}
         ${boolSettingRow('vibration', '진동', s.vibration)}
-        <div class="cm-settings-block">
-          <div class="cm-detail-label">테스트</div>
-          <button class="cm-row" data-action="testEvidencePopup">
-            <div class="cm-row-main"><div class="cm-row-title">증거 획득 팝업 미리보기</div></div>
-            <div class="cm-row-arrow">›</div>
-          </button>
-        </div>
       `,
     };
   }
@@ -769,20 +756,56 @@ function initCaseMenu(options) {
   // 토스트(연출용 게이지라 방향·크기만 확인시켜주면 충분).
   function notifySatisfaction(amount) { notifyToast('여행 만족도', `${amount > 0 ? '+' : ''}${amount}`); }
   function notifyAffection(amount) { notifyToast('영우 호감도', `${amount > 0 ? '+' : ''}${amount}`); }
-  /* ===== 증거 획득 팝업 — 스쳐 지나가는 토스트 대신 화면을 암전시키고
-     아래에서 위로 올라오는 시트로 사진/이름/설명을 보여주고 확인 버튼을
-     눌러야 닫힌다. toastQueue와 같은 이유(§큐 주석)로 한 틱에 addEvidence가
-     여러 건 fire돼도 겹치지 않게 순서대로 하나씩만 띄운다 — 다만 토스트는
-     타이머로 자동으로 넘어가는 반면 이건 플레이어의 확인 탭을 기다렸다가
-     다음 걸 띄운다. ===== */
-  const evpRoot = document.createElement('div');
-  evpRoot.className = 'cm-evp-root cm-hidden';
-  evpRoot.innerHTML = `<div class="cm-evp-backdrop"></div><div class="cm-evp-sheet"></div>`;
-  document.body.appendChild(evpRoot);
-  const evpSheet = evpRoot.querySelector('.cm-evp-sheet');
-  let evpQueue = [];
-  let evpBusy = false;
-  function evidencePopupHtml(entry) {
+  // 증거 획득 시 뜨는 팝업에 넘길 표시용 데이터 조합 — 대사 줄 안에
+  // "[ 증거: ... ] 등록." 문구를 박아 알리던 방식 대신, addEvidence effect가
+  // fire될 때마다 카드와 동일한 사진/폴백 아이콘 우선순위(§10.14,
+  // CaseEntryUI.caseEntryIconHtml)로 사진을 포함해 보여준다. 팝업 자체는
+  // CaseEvidencePopup(페이지 전역 싱글턴, 아래 정의)이 담당 — initCaseMenu
+  // 인스턴스와 무관하게 dev/settings/ 같은 다른 페이지에서도 재사용하기
+  // 위함(CaseEvidencePopup.preview 참고).
+  function notifyEvidence(item) {
+    if (!item) return;
+    const entries = (typeof CaseFileState !== 'undefined' && CaseFileState.getCaseEntries) ? CaseFileState.getCaseEntries() : [];
+    const entry = entries.find(e => e.id === item.id) || null;
+    CaseEvidencePopup.show({
+      title: (entry && entry.title) || item.title || '',
+      summary: (entry && (entry.summary || entry.description)) || item.description || '',
+      fallbackIcon: (entry && entry.fallbackIcon) || '🧾',
+      imageAssetId: entry ? entry.imageAssetId : null,
+    });
+  }
+
+  return {
+    open, close, isOpen, notifyNewQuestion, notifyHypothesis, notifyFact, notifyPoints, notifySatisfaction, notifyAffection, notifyEvidence,
+    destroy: () => { root.remove(); toastEl.remove(); },
+  };
+}
+
+/* ===== 증거 획득 팝업 (CaseEvidencePopup) — 스쳐 지나가는 토스트 대신 화면을
+   암전시키고 아래에서 위로 올라오는 시트로 사진/이름/설명을 보여주고 확인
+   버튼을 눌러야 닫힌다. initCaseMenu 인스턴스가 아니라 페이지 전역 싱글턴으로
+   둬서, CASE FILE 메뉴 전체(저장/불러오기/수사노트 등)를 띄울 필요 없이
+   dev/settings/(게임환경설정) 같은 DEV 페이지에서도 caseMenu.js만 로드해
+   CaseEvidencePopup.preview()로 바로 미리볼 수 있다. */
+const CaseEvidencePopup = (() => {
+  let root = null;
+  let sheet = null;
+  let queue = [];
+  let busy = false;
+
+  function ensureDom() {
+    if (root) return;
+    injectCaseMenuStyles();
+    root = document.createElement('div');
+    root.className = 'cm-evp-root cm-hidden';
+    root.innerHTML = `<div class="cm-evp-backdrop"></div><div class="cm-evp-sheet"></div>`;
+    document.body.appendChild(root);
+    sheet = root.querySelector('.cm-evp-sheet');
+    sheet.addEventListener('click', (e) => {
+      if (e.target.closest('[data-action="closeEvidencePopup"]')) close();
+    });
+  }
+  function html(entry) {
     const photoHtml = entry.imageAssetId
       ? `<span class="cm-evp-photo" data-icon-asset="${entry.imageAssetId}">${entry.fallbackIcon}</span>`
       : `<span class="cm-evp-photo">${entry.fallbackIcon}</span>`;
@@ -794,48 +817,39 @@ function initCaseMenu(options) {
       <button class="cm-evp-confirm" data-action="closeEvidencePopup">확인</button>
     `;
   }
-  function runEvpQueue() {
-    const next = evpQueue.shift();
-    if (!next) { evpBusy = false; return; }
-    evpBusy = true;
-    evpSheet.innerHTML = evidencePopupHtml(next);
-    if (next.imageAssetId && typeof CaseEntryUI !== 'undefined') CaseEntryUI.hydrateCaseEntryIcons(evpSheet);
-    evpRoot.classList.remove('cm-hidden');
-    requestAnimationFrame(() => evpRoot.classList.add('cm-show'));
+  // toastQueue와 같은 이유(§큐 주석)로 한 틱에 addEvidence가 여러 건 fire돼도
+  // 겹치지 않게 순서대로 하나씩만 띄운다 — 다만 토스트는 타이머로 자동으로
+  // 넘어가는 반면 이건 플레이어의 확인 탭을 기다렸다가 다음 걸 띄운다.
+  function runQueue() {
+    const next = queue.shift();
+    if (!next) { busy = false; return; }
+    busy = true;
+    sheet.innerHTML = html(next);
+    if (next.imageAssetId && typeof CaseEntryUI !== 'undefined') CaseEntryUI.hydrateCaseEntryIcons(sheet);
+    root.classList.remove('cm-hidden');
+    requestAnimationFrame(() => root.classList.add('cm-show'));
   }
-  function closeEvidencePopup() {
-    evpRoot.classList.remove('cm-show');
-    setTimeout(() => { evpRoot.classList.add('cm-hidden'); runEvpQueue(); }, 300);
+  function close() {
+    root.classList.remove('cm-show');
+    setTimeout(() => { root.classList.add('cm-hidden'); runQueue(); }, 300);
   }
-  function queueEvidencePopup(entry) {
-    evpQueue.push(entry);
-    if (!evpBusy) runEvpQueue();
+  function show(entry) {
+    ensureDom();
+    queue.push(entry);
+    if (!busy) runQueue();
   }
-  evpSheet.addEventListener('click', (e) => {
-    if (e.target.closest('[data-action="closeEvidencePopup"]')) closeEvidencePopup();
-  });
-
-  // 증거 획득 시 뜨는 위 팝업에 넘길 표시용 데이터 조합 — 대사 줄 안에
-  // "[ 증거: ... ] 등록." 문구를 박아 알리던 방식 대신, addEvidence effect가
-  // fire될 때마다 카드와 동일한 사진/폴백 아이콘 우선순위(§10.14,
-  // CaseEntryUI.caseEntryIconHtml)로 사진을 포함해 보여준다.
-  function notifyEvidence(item) {
-    if (!item) return;
-    const entries = (typeof CaseFileState !== 'undefined' && CaseFileState.getCaseEntries) ? CaseFileState.getCaseEntries() : [];
-    const entry = entries.find(e => e.id === item.id) || null;
-    queueEvidencePopup({
-      title: (entry && entry.title) || item.title || '',
-      summary: (entry && (entry.summary || entry.description)) || item.description || '',
-      fallbackIcon: (entry && entry.fallbackIcon) || '🧾',
-      imageAssetId: entry ? entry.imageAssetId : null,
+  // dev/settings/(게임환경설정)의 "이 기능 테스트" 버튼이 부르는 진입점 —
+  // 실제 증거를 등록하지 않고 샘플 데이터로만 레이아웃을 확인한다.
+  function preview() {
+    show({
+      title: '테스트 증거 — 명함',
+      summary: '게임환경설정에서 미리보기로 띄운 샘플입니다. 실제 증거를 얻으면 사진/이름/설명과 확인 버튼이 이 레이아웃 그대로 표시됩니다.',
+      fallbackIcon: '🧾',
+      imageAssetId: null,
     });
   }
-
-  return {
-    open, close, isOpen, notifyNewQuestion, notifyHypothesis, notifyFact, notifyPoints, notifySatisfaction, notifyAffection, notifyEvidence,
-    destroy: () => { root.remove(); toastEl.remove(); evpRoot.remove(); },
-  };
-}
+  return { show, preview };
+})();
 
 // The Missing Key v1 §5.3 — "비활성 상태에서는 메뉴를 숨기지 말고 잠금 또는
 // 회색 처리하며 사유를 표시한다". A future interrogation/minigame beat sets
