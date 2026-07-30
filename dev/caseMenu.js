@@ -822,13 +822,44 @@ const CaseEvidencePopup = (() => {
       if (e.target.closest('[data-action="closeEvidencePopup"]')) close();
     });
   }
-  function html(entry) {
-    // 실제 사진이 있을 때만 증거수첩(evidenceNotebook.js .evn-frame-photo)과
-    // 같은 폴라로이드+마스킹테이프 프레임을 입힌다 — cm-evp-photo-framed,
-    // 아래 CSS 참고. 폴백 이모지뿐일 때는 굳이 종이 프레임을 씌우지 않고
-    // (증거수첩의 evn-frame-empty처럼) 심플한 둥근 박스만 키운다.
-    const photoHtml = entry.imageAssetId
-      ? `<span class="cm-evp-photo cm-evp-photo-framed" data-icon-asset="${entry.imageAssetId}">${entry.fallbackIcon}</span>`
+  // 사진 데이터 미리 받아두기 — imageAssetId별로 캐시해 같은 사진을 여러 번
+  // 받지 않는다. show()가 큐에 넣는 시점에 곧바로(= 현재 팝업이 떠 있는
+  // 동안 병렬로) 호출해두고, runQueue는 자기 차례가 됐을 때 그 Promise를
+  // await만 한다 — 이미 끝나 있으면 사실상 대기 없이 넘어간다.
+  const photoDataUrlCache = new Map(); // imageAssetId -> Promise<string|null>
+  function preloadEvidencePhoto(imageAssetId) {
+    if (!imageAssetId) return Promise.resolve(null);
+    if (photoDataUrlCache.has(imageAssetId)) return photoDataUrlCache.get(imageAssetId);
+    const p = (async () => {
+      if (typeof AssetDB === 'undefined' || !AssetDB.getAssetsByIds) return null;
+      try {
+        const assets = await AssetDB.getAssetsByIds([imageAssetId]);
+        const asset = assets && assets[0];
+        if (!asset || !asset.dataUrl) return null;
+        // 브라우저가 실제로 디코드까지 끝내둬야 <img>를 넣는 순간 다시
+        // 기다리지 않는다(흰 배경이 잠깐 비치는 원인이었다).
+        await new Promise((resolve) => {
+          const img = new Image();
+          img.onload = resolve;
+          img.onerror = resolve;
+          img.src = asset.dataUrl;
+        });
+        return asset.dataUrl;
+      } catch (e) { return null; }
+    })();
+    photoDataUrlCache.set(imageAssetId, p);
+    return p;
+  }
+  // photoDataUrl은 위에서 이미 다 받아 디코드까지 끝낸 결과 — 여기서는
+  // <img>를 곧바로 완성된 상태로 그리기만 한다(폴백 이모지 → 사진으로
+  // 뒤늦게 바뀌는 스왑이 아예 없다). 실제 사진이 있을 때만 증거수첩
+  // (evidenceNotebook.js .evn-frame-photo)과 같은 폴라로이드+마스킹테이프
+  // 프레임을 입힌다 — cm-evp-photo-framed, 아래 CSS 참고. 사진이 없거나
+  // 못 받아온 경우엔(증거수첩의 evn-frame-empty처럼) 종이 프레임 없이
+  // 폴백 이모지만 심플하게 키운 박스로 보여준다.
+  function html(entry, photoDataUrl) {
+    const photoHtml = photoDataUrl
+      ? `<span class="cm-evp-photo cm-evp-photo-framed"><img class="ces-icon-img" src="${photoDataUrl}" alt=""></span>`
       : `<span class="cm-evp-photo">${entry.fallbackIcon}</span>`;
     return `
       <div class="cm-evp-eyebrow">증거 획득</div>
@@ -869,12 +900,16 @@ const CaseEvidencePopup = (() => {
   // toastQueue와 같은 이유(§큐 주석)로 한 틱에 addEvidence가 여러 건 fire돼도
   // 겹치지 않게 순서대로 하나씩만 띄운다 — 다만 토스트는 타이머로 자동으로
   // 넘어가는 반면 이건 플레이어의 확인 탭을 기다렸다가 다음 걸 띄운다.
-  function runQueue() {
+  // 로딩이 최우선 — 사진이 있으면 그 로딩(위 preloadEvidencePhoto)이 끝날
+  // 때까지는 시트를 그리지도, 화면에 보여주지도 않는다. runQueue가 처리를
+  // 시작하는 시점에 이미 큐에 들어와 있던 항목은 show()에서 미리(병렬로)
+  // 받아두기 시작했으므로 대개는 대기 없이 곧장 넘어간다.
+  async function runQueue() {
     const next = queue.shift();
     if (!next) { busy = false; return; }
     busy = true;
-    sheet.innerHTML = html(next);
-    if (next.imageAssetId && typeof CaseEntryUI !== 'undefined') CaseEntryUI.hydrateCaseEntryIcons(sheet);
+    const photoDataUrl = await preloadEvidencePhoto(next.imageAssetId);
+    sheet.innerHTML = html(next, photoDataUrl);
     clearTimeout(typeStartTimer);
     typeStartTimer = setTimeout(() => typeDescription(next.summary || ''), SHEET_ENTER_MS + TEXT_START_PAUSE_MS);
     root.classList.remove('cm-hidden');
@@ -906,6 +941,10 @@ const CaseEvidencePopup = (() => {
   function show(entry) {
     ensureDom();
     queue.push(entry);
+    // 지금 다른 항목이 떠 있어 곧바로 처리되지 않더라도, 이 항목의 사진은
+    // 지금부터 미리(현재 항목이 보여지는 동안 병렬로) 받아두기 시작한다 —
+    // runQueue가 이 항목 차례가 됐을 때 다시 기다리지 않도록.
+    if (entry.imageAssetId) preloadEvidencePhoto(entry.imageAssetId);
     if (!busy) runQueue();
   }
   // 사진 우선순위 — 증거수첩(evidenceNotebook.js photoAssetIdFor)과 완전히
