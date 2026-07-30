@@ -792,12 +792,23 @@ function initCaseMenu(options) {
    둬서, CASE FILE 메뉴 전체(저장/불러오기/수사노트 등)를 띄울 필요 없이
    dev/settings/(게임환경설정) 같은 DEV 페이지에서도 caseMenu.js만 로드해
    CaseEvidencePopup.preview()로 바로 미리볼 수 있다. */
+// 시트 등장 트랜지션(.cm-evp-sheet의 transition: .1s 지연 + .9s 지속)이 끝나는
+// 시점 — 텍스트 타이핑을 이보다 먼저 시작하면 카드가 아직 움직이는 도중에
+// 글자가 채워져 산만해진다. 다 뜨고 멈춘 뒤에도 곧장 시작하지 않고
+// TEXT_START_PAUSE_MS만큼 한 박자 쉬었다가 타이핑을 시작한다.
+const SHEET_ENTER_MS = 1000;
+const TEXT_START_PAUSE_MS = 250;
+// 이 팝업의 설명 타이핑은 대사(vnPlayer.js typeText)보다 살짝 더 여유
+// 있게 — 설정된 텍스트 속도의 0.7배(=글자당 대기시간을 1/0.7배로 늘림).
+const TEXT_SPEED_MULTIPLIER = 0.7;
+
 const CaseEvidencePopup = (() => {
   let root = null;
   let sheet = null;
   let queue = [];
   let busy = false;
   let typingTimer = null;
+  let typeStartTimer = null;
 
   function ensureDom() {
     if (root) return;
@@ -812,8 +823,12 @@ const CaseEvidencePopup = (() => {
     });
   }
   function html(entry) {
+    // 실제 사진이 있을 때만 증거수첩(evidenceNotebook.js .evn-frame-photo)과
+    // 같은 폴라로이드+마스킹테이프 프레임을 입힌다 — cm-evp-photo-framed,
+    // 아래 CSS 참고. 폴백 이모지뿐일 때는 굳이 종이 프레임을 씌우지 않고
+    // (증거수첩의 evn-frame-empty처럼) 심플한 둥근 박스만 키운다.
     const photoHtml = entry.imageAssetId
-      ? `<span class="cm-evp-photo" data-icon-asset="${entry.imageAssetId}">${entry.fallbackIcon}</span>`
+      ? `<span class="cm-evp-photo cm-evp-photo-framed" data-icon-asset="${entry.imageAssetId}">${entry.fallbackIcon}</span>`
       : `<span class="cm-evp-photo">${entry.fallbackIcon}</span>`;
     return `
       <div class="cm-evp-eyebrow">증거 획득</div>
@@ -829,7 +844,8 @@ const CaseEvidencePopup = (() => {
   function typingSpeedMs() {
     const speeds = { slow: 58, normal: 36, fast: 18, instant: 0 };
     const setting = (typeof CaseFileState !== 'undefined' && CaseFileState.getSettings) ? CaseFileState.getSettings().textSpeed : 'normal';
-    return speeds[setting] != null ? speeds[setting] : speeds.normal;
+    const base = speeds[setting] != null ? speeds[setting] : speeds.normal;
+    return base === 0 ? 0 : Math.round(base / TEXT_SPEED_MULTIPLIER);
   }
   // 설명을 한 글자씩 채워 넣고, 다 채워진 뒤에만 확인 버튼을 페이드인 +
   // 클릭 가능하게 만든다 — 버튼은 html()에서 이미 opacity:0 · pointer-
@@ -859,7 +875,8 @@ const CaseEvidencePopup = (() => {
     busy = true;
     sheet.innerHTML = html(next);
     if (next.imageAssetId && typeof CaseEntryUI !== 'undefined') CaseEntryUI.hydrateCaseEntryIcons(sheet);
-    typeDescription(next.summary || '');
+    clearTimeout(typeStartTimer);
+    typeStartTimer = setTimeout(() => typeDescription(next.summary || ''), SHEET_ENTER_MS + TEXT_START_PAUSE_MS);
     root.classList.remove('cm-hidden');
     // 이중 rAF — 한 번만 걸면 display:none 해제와 cm-show 부여가 같은
     // 프레임으로 묶여 브라우저가 "이전 상태"를 페인트하지 못하고 그냥
@@ -872,6 +889,7 @@ const CaseEvidencePopup = (() => {
   }
   function close() {
     clearInterval(typingTimer);
+    clearTimeout(typeStartTimer);
     // cm-show는 유지한 채(그래야 transform이 translateY(0)에 고정돼 아래로
     // 슬라이드해 내려가지 않는다) cm-closing만 얹어 제자리 페이드아웃만
     // 재생한다. 실제로 cm-show를 떼는 건 페이드가 끝난 다음 — 그래야 다음
@@ -1170,8 +1188,16 @@ function injectCaseMenuStyles() {
     .cm-evp-root.cm-closing .cm-evp-backdrop{transition:opacity .5s ease;opacity:0}
     .cm-evp-root.cm-closing .cm-evp-sheet{transition:opacity .5s ease;opacity:0}
     .cm-evp-eyebrow{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.12em;color:#D8A93D;text-transform:uppercase;margin-bottom:14px}
-    .cm-evp-photo{width:120px;height:120px;border-radius:16px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:52px;overflow:hidden;margin-bottom:16px;flex-shrink:0}
+    .cm-evp-photo{position:relative;width:100%;max-width:180px;aspect-ratio:1/1;border-radius:16px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:72px;overflow:hidden;margin-bottom:18px;flex-shrink:0}
     .cm-evp-photo .ces-icon-img{width:100%;height:100%;object-fit:cover;border-radius:16px}
+    /* 실제 사진이 있을 때만 붙는 변형 — 증거수첩(evidenceNotebook.js
+       .evn-frame-photo/.evn-frame-tape)과 같은 폴라로이드 종이 프레임 +
+       마스킹테이프 코너. 기본 cm-evp-photo보다 한 단계 더 크다. */
+    .cm-evp-photo-framed{max-width:220px;background:#fffdf6;border:1px solid rgba(0,0,0,.08);border-radius:6px;padding:12px 12px 26px;box-sizing:border-box;box-shadow:0 6px 18px rgba(0,0,0,.4)}
+    .cm-evp-photo-framed::before,.cm-evp-photo-framed::after{content:'';position:absolute;width:48px;height:16px;background:rgba(214,168,75,.45);border:1px solid rgba(214,168,75,.6);opacity:.85;z-index:2}
+    .cm-evp-photo-framed::before{top:-7px;left:14px;transform:rotate(-8deg)}
+    .cm-evp-photo-framed::after{top:-7px;right:14px;transform:rotate(7deg)}
+    .cm-evp-photo-framed .ces-icon-img{border-radius:2px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
     .cm-evp-name{font-size:18px;font-weight:800;color:#F1F3F5;margin-bottom:8px;word-break:keep-all}
     .cm-evp-desc{font-size:13.5px;line-height:1.6;color:#C9D1D9;margin-bottom:20px;word-break:keep-all}
     /* 설명 타이핑이 끝나기 전까지는 안 보이고 눌리지도 않는다(cm-evp-confirm-ready가
