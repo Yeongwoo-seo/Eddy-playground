@@ -161,6 +161,12 @@ function initCaseMenu(options) {
       if (options.onOpenShop) options.onOpenShop();
     } else if (action === 'openWardrobe') {
       if (options.onOpenWardrobe) options.onOpenWardrobe();
+    } else if (action === 'testEvidencePopup') {
+      notifyEvidence({
+        id: '__evidence_popup_preview__',
+        title: '테스트 증거 — 명함',
+        description: '설정에서 미리보기로 띄운 샘플입니다. 실제 증거를 얻으면 사진/이름/설명과 확인 버튼이 이 레이아웃 그대로 표시됩니다.',
+      });
     } else if (action === 'openNotebook') {
       // 증거 DB 노트 v1.1 — 기존 평면 목록/상세 뷰(evidenceRow의 data-nav,
       // renderEvidenceDetail 등)는 그대로 두고, 노트는 별도 진입점으로만
@@ -697,6 +703,13 @@ function initCaseMenu(options) {
         ${boolSettingRow('sfx', '효과음', s.sfx)}
         ${boolSettingRow('bgm', '배경음', s.bgm)}
         ${boolSettingRow('vibration', '진동', s.vibration)}
+        <div class="cm-settings-block">
+          <div class="cm-detail-label">테스트</div>
+          <button class="cm-row" data-action="testEvidencePopup">
+            <div class="cm-row-main"><div class="cm-row-title">증거 획득 팝업 미리보기</div></div>
+            <div class="cm-row-arrow">›</div>
+          </button>
+        </div>
       `,
     };
   }
@@ -756,21 +769,72 @@ function initCaseMenu(options) {
   // 토스트(연출용 게이지라 방향·크기만 확인시켜주면 충분).
   function notifySatisfaction(amount) { notifyToast('여행 만족도', `${amount > 0 ? '+' : ''}${amount}`); }
   function notifyAffection(amount) { notifyToast('영우 호감도', `${amount > 0 ? '+' : ''}${amount}`); }
-  // 증거 획득 토스트 — 대사 줄 안에 "[ 증거: ... ] 등록." 문구를 박아 알리던
-  // 방식 대신, addEvidence effect가 fire될 때마다 카드와 동일한 사진/폴백
-  // 아이콘 우선순위(§10.14, CaseEntryUI.caseEntryIconHtml)로 사진을 포함한
-  // 토스트를 띄운다.
+  /* ===== 증거 획득 팝업 — 스쳐 지나가는 토스트 대신 화면을 암전시키고
+     아래에서 위로 올라오는 시트로 사진/이름/설명을 보여주고 확인 버튼을
+     눌러야 닫힌다. toastQueue와 같은 이유(§큐 주석)로 한 틱에 addEvidence가
+     여러 건 fire돼도 겹치지 않게 순서대로 하나씩만 띄운다 — 다만 토스트는
+     타이머로 자동으로 넘어가는 반면 이건 플레이어의 확인 탭을 기다렸다가
+     다음 걸 띄운다. ===== */
+  const evpRoot = document.createElement('div');
+  evpRoot.className = 'cm-evp-root cm-hidden';
+  evpRoot.innerHTML = `<div class="cm-evp-backdrop"></div><div class="cm-evp-sheet"></div>`;
+  document.body.appendChild(evpRoot);
+  const evpSheet = evpRoot.querySelector('.cm-evp-sheet');
+  let evpQueue = [];
+  let evpBusy = false;
+  function evidencePopupHtml(entry) {
+    const photoHtml = entry.imageAssetId
+      ? `<span class="cm-evp-photo" data-icon-asset="${entry.imageAssetId}">${entry.fallbackIcon}</span>`
+      : `<span class="cm-evp-photo">${entry.fallbackIcon}</span>`;
+    return `
+      <div class="cm-evp-eyebrow">증거 획득</div>
+      ${photoHtml}
+      <div class="cm-evp-name">${escapeHtml(entry.title)}</div>
+      <div class="cm-evp-desc">${escapeHtml(entry.summary || '')}</div>
+      <button class="cm-evp-confirm" data-action="closeEvidencePopup">확인</button>
+    `;
+  }
+  function runEvpQueue() {
+    const next = evpQueue.shift();
+    if (!next) { evpBusy = false; return; }
+    evpBusy = true;
+    evpSheet.innerHTML = evidencePopupHtml(next);
+    if (next.imageAssetId && typeof CaseEntryUI !== 'undefined') CaseEntryUI.hydrateCaseEntryIcons(evpSheet);
+    evpRoot.classList.remove('cm-hidden');
+    requestAnimationFrame(() => evpRoot.classList.add('cm-show'));
+  }
+  function closeEvidencePopup() {
+    evpRoot.classList.remove('cm-show');
+    setTimeout(() => { evpRoot.classList.add('cm-hidden'); runEvpQueue(); }, 300);
+  }
+  function queueEvidencePopup(entry) {
+    evpQueue.push(entry);
+    if (!evpBusy) runEvpQueue();
+  }
+  evpSheet.addEventListener('click', (e) => {
+    if (e.target.closest('[data-action="closeEvidencePopup"]')) closeEvidencePopup();
+  });
+
+  // 증거 획득 시 뜨는 위 팝업에 넘길 표시용 데이터 조합 — 대사 줄 안에
+  // "[ 증거: ... ] 등록." 문구를 박아 알리던 방식 대신, addEvidence effect가
+  // fire될 때마다 카드와 동일한 사진/폴백 아이콘 우선순위(§10.14,
+  // CaseEntryUI.caseEntryIconHtml)로 사진을 포함해 보여준다.
   function notifyEvidence(item) {
     if (!item) return;
     const entries = (typeof CaseFileState !== 'undefined' && CaseFileState.getCaseEntries) ? CaseFileState.getCaseEntries() : [];
     const entry = entries.find(e => e.id === item.id) || null;
-    const iconHtml = (entry && typeof CaseEntryUI !== 'undefined') ? CaseEntryUI.caseEntryIconHtml(entry) : `<span class="ces-card-icon">🧾</span>`;
-    const title = (entry && entry.title) || item.title || '';
-    const html = `<div class="cm-toast-row"><span class="cm-toast-icon">${iconHtml}</span><div><div class="cm-toast-label">증거 획득</div><div class="cm-toast-title">${escapeHtml(title)}</div></div></div>`;
-    queueToast(html, entry && entry.imageAssetId);
+    queueEvidencePopup({
+      title: (entry && entry.title) || item.title || '',
+      summary: (entry && (entry.summary || entry.description)) || item.description || '',
+      fallbackIcon: (entry && entry.fallbackIcon) || '🧾',
+      imageAssetId: entry ? entry.imageAssetId : null,
+    });
   }
 
-  return { open, close, isOpen, notifyNewQuestion, notifyHypothesis, notifyFact, notifyPoints, notifySatisfaction, notifyAffection, notifyEvidence, destroy: () => { root.remove(); toastEl.remove(); } };
+  return {
+    open, close, isOpen, notifyNewQuestion, notifyHypothesis, notifyFact, notifyPoints, notifySatisfaction, notifyAffection, notifyEvidence,
+    destroy: () => { root.remove(); toastEl.remove(); evpRoot.remove(); },
+  };
 }
 
 // The Missing Key v1 §5.3 — "비활성 상태에서는 메뉴를 숨기지 말고 잠금 또는
@@ -974,6 +1038,20 @@ function injectCaseMenuStyles() {
     .cm-toast-icon{flex-shrink:0;width:36px;height:36px;border-radius:8px;overflow:hidden}
     .cm-toast-icon .ces-card-icon{width:36px;height:36px;font-size:22px}
     .cm-toast-icon .ces-icon-img{width:36px;height:36px}
+
+    .cm-evp-root{position:fixed;inset:0;z-index:90;display:flex;align-items:flex-end;justify-content:center;font-family:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif}
+    .cm-evp-root.cm-hidden{display:none}
+    .cm-evp-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.7);opacity:0;transition:opacity .3s cubic-bezier(.2,.8,.2,1)}
+    .cm-evp-sheet{position:relative;width:100%;max-width:430px;background:#10151B;border-radius:24px 24px 0 0;padding:22px 20px calc(20px + env(safe-area-inset-bottom,0));box-shadow:0 -8px 32px rgba(0,0,0,.5);transform:translateY(100%);transition:transform .35s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;align-items:center;text-align:center}
+    .cm-evp-root.cm-show .cm-evp-backdrop{opacity:1}
+    .cm-evp-root.cm-show .cm-evp-sheet{transform:translateY(0)}
+    .cm-evp-eyebrow{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.12em;color:#D8A93D;text-transform:uppercase;margin-bottom:14px}
+    .cm-evp-photo{width:120px;height:120px;border-radius:16px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:52px;overflow:hidden;margin-bottom:16px;flex-shrink:0}
+    .cm-evp-photo .ces-icon-img{width:100%;height:100%;object-fit:cover;border-radius:16px}
+    .cm-evp-name{font-size:18px;font-weight:800;color:#F1F3F5;margin-bottom:8px;word-break:keep-all}
+    .cm-evp-desc{font-size:13.5px;line-height:1.6;color:#C9D1D9;margin-bottom:20px;word-break:keep-all}
+    .cm-evp-confirm{width:100%;background:#D8A93D;color:#191206;border:none;border-radius:14px;padding:15px;font-size:15px;font-weight:700;cursor:pointer;font-family:'IBM Plex Mono',ui-monospace,monospace;letter-spacing:.04em}
+    .cm-evp-confirm:active{opacity:.85}
   `;
   document.head.appendChild(style);
 }
