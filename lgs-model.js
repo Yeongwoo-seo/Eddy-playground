@@ -214,12 +214,34 @@ function supabaseHeaders() {
   };
 }
 
+/* visible save/sync indicator (top-right pill) — the fetches below fail
+   silently on purpose (offline shouldn't break editing), but that used to
+   mean a real failure (bad RLS policy, unreachable table, etc.) looked
+   identical to "everything's fine" from the user's side. surface it instead. */
+function timeLabel() {
+  const d = new Date();
+  return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+}
+function setSyncStatus(kind, text) {
+  const el = q('syncStatus');
+  const textEl = q('syncStatusText');
+  if (!el || !textEl) return;
+  el.className = 'sync-status' + (kind ? ' ' + kind : '');
+  textEl.textContent = text;
+}
+
 function pushToRemote() {
+  setSyncStatus('saving', '저장 중…');
   fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?on_conflict=id`, {
     method: 'POST',
     headers: Object.assign(supabaseHeaders(), { 'Prefer': 'resolution=merge-duplicates,return=minimal' }),
     body: JSON.stringify({ id: SUPABASE_ROW_ID, data: state, updated_at: new Date().toISOString() })
-  }).catch(() => {});
+  }).then(res => {
+    if (!res.ok) throw new Error('save failed: HTTP ' + res.status);
+    setSyncStatus('saved', '저장됨 · ' + timeLabel());
+  }).catch(() => {
+    setSyncStatus('error', '저장 실패 (로컬에만 저장됨)');
+  });
 }
 
 let saveTimer = null;
@@ -233,23 +255,26 @@ function scheduleSave() {
 // pulls the shared copy on load (and periodically) so every device sees the
 // same numbers; only applies it if actually newer than what's local, so a
 // pull raced against an in-flight save can't stomp on it (same guard as
-// planner.html's syncFromRemote). Falls back to local-only silently if
-// offline or the table isn't set up yet.
+// planner.html's syncFromRemote). Falls back to local-only if offline or
+// the table isn't set up yet, but that failure is now shown, not swallowed.
 async function syncFromRemote() {
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?id=eq.${SUPABASE_ROW_ID}&select=data`, {
       headers: supabaseHeaders(),
       cache: 'no-store'
     });
-    if (!res.ok) return;
+    if (!res.ok) throw new Error('sync failed: HTTP ' + res.status);
     const rows = await res.json();
+    setSyncStatus('saved', '동기화됨 · ' + timeLabel());
     if (!rows || !rows.length || !rows[0].data) return;
     const remote = rows[0].data;
     if ((remote.lastModified || 0) <= (state.lastModified || 0)) return;
     state = Object.assign(buildDefaultState(), remote);
     try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) {}
     rebuildAllUIFromState();
-  } catch (e) {}
+  } catch (e) {
+    setSyncStatus('error', '연결 실패 (로컬 데이터 표시 중)');
+  }
 }
 
 function fmt(n) {
