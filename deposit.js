@@ -293,7 +293,10 @@ function renderDepositors() {
             <img class="block-thumb" src="${d.thumb}" alt="">
             <div class="block-body">
                 <input class="block-name-input" type="text" value="${escapeHtml(d.name)}" placeholder="이름 확인 필요">
-                <input class="block-amount-input" type="text" value="${escapeHtml(d.amount)}" placeholder="금액 (선택)">
+                <div class="block-amount-wrap">
+                    <span class="block-amount-prefix">$</span>
+                    <input class="block-amount-input" type="text" inputmode="decimal" value="${escapeHtml(d.amount)}" placeholder="금액 (선택)">
+                </div>
             </div>
             <button class="block-remove" aria-label="삭제">&times;</button>
         `;
@@ -358,7 +361,7 @@ function renderHistory() {
                 ${h.thumb ? `<img class="history-thumb" src="${h.thumb}" alt="">` : '<div class="history-thumb-placeholder">🧾</div>'}
                 <div class="history-body">
                     <div class="history-names"><b>${escapeHtml(h.applicantName)}</b> &harr; ${escapeHtml(h.depositorName)}</div>
-                    <div class="history-meta">${h.amount ? escapeHtml(h.amount) + '원 · ' : ''}${formatTime(h.timestamp)}${h.auto ? ' · 자동매칭' : ''}</div>
+                    <div class="history-meta">${h.amount ? '$' + escapeHtml(h.amount) + ' · ' : ''}${formatTime(h.timestamp)}${h.auto ? ' · 자동매칭' : ''}</div>
                 </div>
                 <button class="block-remove" aria-label="삭제">&times;</button>
             `;
