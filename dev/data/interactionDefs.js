@@ -836,6 +836,52 @@ const interactionDefs = {
       { speaker: "지수", text: "ㅋㅎㅋㅎㅋㅎㅋㅎㅋㅎ\n무슨 표창장이야\n그래도 인정은 인정", characterId: "jisoo", expression: "happy" },
     ],
   },
+  // ===== "사전 복선" 패턴 추가 2건 (§신규, 허브별 인물 대화하기 볼륨 보강) —
+  // 파일 상단 관례 그대로 setFlag만 쓰고 addQuestion/addEvidence는 쓰지
+  // 않는다. 클레어 쪽은 3부 Ch12(K-01 무게 대조)의 첫 근거를, 레오 쪽은
+  // 2부 Ch10-11에서 밝혀지는 익명 촬영 의뢰(MK_Consult)의 첫 낌새를 사건
+  // 발생 전 시점에 미리 심어 둔다 — 둘 다 지금 시점엔 그냥 스쳐가는
+  // 잡담으로만 보이게 연출.
+  'w2ef-topic-claire-ledger': {
+    id: 'w2ef-topic-claire-ledger',
+    characterId: 'claire',
+    locationIds: ['w2-exhibit-floor'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
+    type: 'topic',
+    label: '클레어의 관리 대장 구경하기',
+    lines: [
+      { speaker: '', text: "접수대에서 태블릿을 들여다보던 클레어가 지수와 영우가 다가오자 화면을 슬쩍 보여준다.", characterId: null },
+      { speaker: "클레어", text: "이거 저희 전시품 관리 대장이에요\n등록할 때 사진이랑 실측 정보까지 다 남겨놔요", characterId: "claire", expression: "neutral" },
+      { speaker: "지수", text: "오 이런 것도 다 적어두시는구나", characterId: "jisoo", expression: "curious" },
+      { speaker: "클레어", text: "특히 K-01은 워낙 정교한 작품이라\n무게까지 소수점 단위로 재놨어요\n412.6그램, 이런 식으로요", characterId: "claire", expression: "neutral" },
+      { speaker: "영우", text: "그렇게까지 자세히요?", characterId: "youngwoo", expression: "curious" },
+      { speaker: "클레어", text: "보험 때문에도 필요하고\n나중에 뭐가 조금이라도 달라지면\n바로 알 수 있게요", characterId: "claire", expression: "neutral" },
+      { speaker: "지수", text: "오 신기하다", characterId: "jisoo", expression: "happy" },
+      { speaker: "클레어", text: "아무튼 그런 거예요\n천천히 구경하세요", characterId: "claire", expression: "neutral" },
+    ],
+    effects: [{ type: 'setFlag', key: 'sawClaireK01WeightLedger', value: true }],
+  },
+  'w2ef-topic-leo-dm': {
+    id: 'w2ef-topic-leo-dm',
+    characterId: 'leo',
+    locationIds: ['w2-exhibit-floor'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
+    type: 'topic',
+    label: '레오의 휴대폰 구경하기',
+    lines: [
+      { speaker: '', text: "상자를 정리하던 레오가 휴대폰을 흘깃 보다가 피식 웃는다.", characterId: null },
+      { speaker: "레오", text: "아 이것도 참", characterId: "leo", expression: "neutral" },
+      { speaker: "지수", text: "왜요?\n뭐 재밌는 거 있어요?", characterId: "jisoo", expression: "curious" },
+      { speaker: "레오", text: "아뇨 그냥\n요즘 사진 계정으로 이상한 디엠이 좀 와서요\n작품 아래쪽만 딱 찍어달라는 그런 부탁", characterId: "leo", expression: "neutral" },
+      { speaker: "영우", text: "그런 것도 대행해주는 거예요?", characterId: "youngwoo", expression: "curious" },
+      { speaker: "레오", text: "가끔요\n용돈벌이 삼아 몇 번 해준 적 있는데\n이번 것도 그런 건가 싶어서", characterId: "leo", expression: "neutral" },
+      { speaker: "지수", text: "요청하는 사람이 누군지는 알아요?", characterId: "jisoo", expression: "curious" },
+      { speaker: "레오", text: "그건 몰라요\n계정 이름도 그냥 무슨 회사 이름 같고\n딱히 캐묻진 않아요, 돈만 잘 주면", characterId: "leo", expression: "neutral" },
+      { speaker: "영우", text: "오묘하네요 ㅎㅎ", characterId: "youngwoo", expression: "happy" },
+      { speaker: "레오", text: "그쵸 ㅎㅎ\n아무튼 신경 안 써요\n자 그럼 다시 일하러 가볼게요", characterId: "leo", expression: "neutral" },
+    ],
+    effects: [{ type: 'setFlag', key: 'heardLeoAnonymousDmRequests', value: true }],
+  },
 
   /* ===== w2-exhibit-floor investigateHotspots (§신규) =====
      w2-adrian-spot의 w2as-topic-*(구 미니게임 핫스팟)와 같은 패턴 — 캐릭터
@@ -1087,6 +1133,30 @@ const interactionDefs = {
     icon: '🔍',
     sceneId: 'week2-scene-010',
   },
+  // "사전 복선" 패턴 추가(§신규, 허브별 인물 대화하기 볼륨 보강) — 애드리언이
+  // 누군가의 부탁으로 움직이고 있다는 낌새를 심문 전에 살짝 흘려, 3부
+  // Ch14(그의 메일함이 진짜 의뢰인을 드러내는 반전)의 첫 실마리를 미리
+  // 던져둔다. 의뢰인 정체는 이 시점엔 전혀 밝히지 않는다 — setFlag만.
+  'w1suspect-adrian-topic-call': {
+    id: 'w1suspect-adrian-topic-call',
+    characterId: 'adrian',
+    locationIds: ['w2-adrian-spot'],
+    phases: ['W2_SUSPECT_INTERVIEWS'],
+    type: 'topic',
+    label: '애드리언의 통화 엿듣기',
+    lines: [
+      { speaker: '', text: '진열장에서 조금 떨어진 곳, 애드리언이 낮은 목소리로 통화 중이다.', characterId: null },
+      { speaker: '애드리언', text: '네... 말씀하신 대로 여쭤보긴 했는데\n확실한 답은 못 들었어요', characterId: 'adrian', expression: 'neutral' },
+      { speaker: '', text: '지수와 영우가 다가오자 애드리언이 통화를 서둘러 끊는다.', characterId: null },
+      { speaker: '애드리언', text: '아, 죄송해요\n업무 전화라', characterId: 'adrian', expression: 'annoyed' },
+      { speaker: '지수', text: '괜찮아요\n중요한 전화셨나봐요', characterId: 'jisoo', expression: 'neutral' },
+      { speaker: '애드리언', text: '그냥... 예전부터 좀 여쭤봐달라는 게 있어서요\n별건 아니에요', characterId: 'adrian', expression: 'annoyed' },
+      { speaker: '영우', text: '누가 부탁하신 거예요?', characterId: 'youngwoo', expression: 'curious' },
+      { speaker: '애드리언', text: '그건... 말씀드리기가 좀', characterId: 'adrian', expression: 'annoyed' },
+      { speaker: '', text: '애드리언이 어색하게 웃으며 화제를 돌린다.', characterId: null },
+    ],
+    effects: [{ type: 'setFlag', key: 'overheardAdrianPhoneCall', value: true }],
+  },
   // 위 두 topic과 같은 목적 — 레오의 대화하기 chip에 뜨는 순수 관찰 비트,
   // week2Scene008Lines의 실제 오프닝과는 겹치지 않는다.
   'w1suspect-leo-topic-watch': {
@@ -1103,6 +1173,28 @@ const interactionDefs = {
       { speaker: '지수', text: '...너무 여유로운 거 아니에요?', characterId: 'jisoo', expression: 'suspicious' },
       { speaker: '영우', text: '일단 가서 얘기 좀 해보자.', characterId: 'youngwoo', expression: 'neutral' },
     ],
+  },
+  // "사전 복선" 패턴 추가(§신규, 허브별 인물 대화하기 볼륨 보강) — v4 아웃라인
+  // Ch10-1이 지시하는 "레오가 익명 메시지 알림에 흠칫 반응하는 연출"을 그대로
+  // 옮긴 것. 심문 전 관찰 비트라 ungated — 레오가 실제로 무슨 메시지를
+  // 받았는지는 여기서 밝히지 않는다(2부 자백에서 MK_Consult로 밝혀짐).
+  'w1suspect-leo-topic-phone': {
+    id: 'w1suspect-leo-topic-phone',
+    characterId: 'leo',
+    locationIds: ['w2-suspect-leo-spot'],
+    phases: ['W2_SUSPECT_INTERVIEWS'],
+    type: 'topic',
+    label: '레오의 휴대폰 눈치채기',
+    lines: [
+      { speaker: '', text: '레오가 커피잔을 내려다보다가, 주머니 속 휴대폰이 짧게 진동한다.', characterId: null },
+      { speaker: '', text: '레오가 흠칫하며 재빨리 화면을 확인하고는 곧바로 뒤집어 내려놓는다.', characterId: null },
+      { speaker: '지수', text: '뭐 급한 연락이에요?', characterId: 'jisoo', expression: 'curious' },
+      { speaker: '레오', text: '아 아뇨\n그냥... 별거 아니에요', characterId: 'leo', expression: 'neutral' },
+      { speaker: '영우', text: '표정이 별거 아닌 표정은 아닌데', characterId: 'youngwoo', expression: 'curious' },
+      { speaker: '레오', text: '진짜 별거 아니에요\n요즘 이것저것 문의가 많아서 그런가봐요', characterId: 'leo', expression: 'neutral' },
+      { speaker: '', text: '레오가 애써 웃어 보이지만, 시선은 계속 뒤집어놓은 휴대폰 쪽으로 향한다.', characterId: null },
+    ],
+    effects: [{ type: 'setFlag', key: 'noticedLeoPhoneNotification', value: true }],
   },
   // unlockConditions 게이트(§신규, 리뷰 지적 반영) — 레오 쪽만 허브로 안
   // 돌아오고 곧장 week2-scene-010b→minigame-timeline→011→012→013까지 이어져
@@ -1178,6 +1270,31 @@ const interactionDefs = {
     icon: '🔍',
     sceneId: 'week2-scene-016',
   },
+  // "사전 복선" 패턴 추가(§신규, 허브별 인물 대화하기 볼륨 보강) — §5.8이
+  // 서술하는 소피의 역할("선의로 보였던 행동을 생활 기억으로 재연결") 중
+  // "다니엘의 말투가 MK_Consult 메시지 문체와 비슷하다"는 조각을, 공식
+  // 재조사 씬(week2-scene-017)과 별개의 가벼운 잡담으로 미리 흘려둔다.
+  // 다니엘이 뭔가 잘못됐다고 확언하지 않고, 그냥 신기한 습관 얘기로만
+  // 들리게 — setFlag만.
+  'w1reverify-sophie-topic-texts': {
+    id: 'w1reverify-sophie-topic-texts',
+    characterId: 'sophie',
+    locationIds: ['w2-reverify-sophie-spot'],
+    phases: ['W2_REVERIFICATION'],
+    type: 'topic',
+    label: '소피와 잠깐 더 이야기하기',
+    lines: [
+      { speaker: '', text: '소피가 커피를 내리며 무심코 휴대폰 메시지함을 정리한다.', characterId: null },
+      { speaker: '소피', text: '아 맞다, 그러고보니', characterId: 'sophie', expression: 'curious' },
+      { speaker: '지수', text: '왜요?', characterId: 'jisoo', expression: 'curious' },
+      { speaker: '소피', text: '다니엘씨 문자할 때 좀 신기해요\n말할 때는 되게 편하게 하는데\n문자는 되게 딱딱하게 와요\n무슨 업무 메시지처럼요', characterId: 'sophie', expression: 'curious' },
+      { speaker: '영우', text: '그래요?', characterId: 'youngwoo', expression: 'curious' },
+      { speaker: '소피', text: '네, 인사도 없이 용건만 딱\n처음엔 그냥 그런 스타일인가 했는데\n생각해보니 좀 안 어울리긴 해요', characterId: 'sophie', expression: 'neutral' },
+      { speaker: '지수', text: '재밌는 관찰이네요 ㅎㅎ', characterId: 'jisoo', expression: 'happy' },
+      { speaker: '소피', text: '그쵸? 저도 방금 생각났어요', characterId: 'sophie', expression: 'neutral' },
+    ],
+    effects: [{ type: 'setFlag', key: 'noticedDanielTextingStyle', value: true }],
+  },
   'w1reverify-sophie-interview': {
     id: 'w1reverify-sophie-interview',
     characterId: 'sophie',
@@ -1188,6 +1305,30 @@ const interactionDefs = {
     label: '이야기 나누기',
     icon: '☕',
     sceneId: 'week2-scene-017',
+  },
+  // "사전 복선" 패턴 추가(§신규, 허브별 인물 대화하기 볼륨 보강) — 다니엘의
+  // 냉정하고 합리적인 화법(§5.3 연기 지침)을 신원 확인(018) 전에 짧게
+  // 보여주는 순수 분위기 컷. 그가 실제로 뭔가 숨긴다고 지목하지 않는다 —
+  // 미소가 한 박자 늦다는 연출 정도의 아주 미묘한 위화감만.
+  'w1reverify-daniel-topic-chat': {
+    id: 'w1reverify-daniel-topic-chat',
+    characterId: 'daniel-guide',
+    locationIds: ['w2-hub-plaza'],
+    phases: ['W2_REVERIFICATION'],
+    type: 'topic',
+    label: '다니엘과 잠깐 이야기하기',
+    lines: [
+      { speaker: '', text: '광장 한쪽에서 다니엘이 지수와 영우를 발견하고 먼저 손을 흔든다.', characterId: null },
+      { speaker: '다니엘', text: '고생 많으시죠\n이런 일 겪으실 줄 몰랐는데', characterId: 'daniel-guide', expression: 'neutral' },
+      { speaker: '지수', text: '그러니까요\n그래도 다니엘씨 덕분에 좀 안심이 돼요', characterId: 'jisoo', expression: 'neutral' },
+      { speaker: '다니엘', text: '제가 뭘요\n그냥 아는 만큼 도와드리는 거죠', characterId: 'daniel-guide', expression: 'neutral' },
+      { speaker: '영우', text: '근데 이런 사건 도와보신 적 있으세요?\n되게 침착하셔서', characterId: 'youngwoo', expression: 'curious' },
+      { speaker: '다니엘', text: '아... 뭐, 예전에 비슷한 걸 몇 번요\n이 동네 오래 있다 보면 별일을 다 겪거든요', characterId: 'daniel-guide', expression: 'curious' },
+      { speaker: '', text: '다니엘이 대수롭지 않다는 듯 웃어넘기지만, 그 미소가 평소보다 한 박자 늦게 따라온다.', characterId: null },
+      { speaker: '지수', text: '아하 ㅎㅎ 그렇구나', characterId: 'jisoo', expression: 'happy' },
+      { speaker: '다니엘', text: '아무튼 필요한 거 있으면 편하게 말씀하세요', characterId: 'daniel-guide', expression: 'neutral' },
+    ],
+    effects: [{ type: 'setFlag', key: 'noticedDanielDelayedSmile', value: true }],
   },
   'w1reverify-daniel-interview': {
     id: 'w1reverify-daniel-interview',
