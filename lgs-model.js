@@ -55,9 +55,6 @@ const DEFAULTS = {
   otherVarPct: 5,
   coilLmPerSqm: 16,
   screwsPerSqm: 12,
-  bracketsPerHouse: 40,
-  boltsPerHouse: 120,
-  sealantTubesPerHouse: 6,
   laborProductivitySqmPerHour: 2.5,
   dailyOperatingHours: 8,
   workingDaysPerMonth: 20,
@@ -141,16 +138,14 @@ function computeCoilUsage(houseTypeTotals, coilLmPerSqm) {
 }
 
 /* 조건(Conditions) tab metrics: physical/operational assumptions needed for
-   later cost & capacity calcs (screw/bracket/bolt/sealant usage, labor hours,
-   production capacity, scrap & lead times). Informational for now, same as
-   coil usage above — not yet wired into the financial engine. */
+   later cost & capacity calcs (screw usage, labor hours, production capacity,
+   scrap & lead times). Material usage is screws only for now — other fasteners
+   (brackets/bolts/sealant) can be added back once their per-unit rates are confirmed.
+   Informational for now, same as coil usage above — not yet wired into the financial engine. */
 function computeConditionMetrics(houseTypeTotals, s) {
   const totalSqm = houseTypeTotals.totalSqm;
   const totalQty = houseTypeTotals.totalQty;
   const totalScrews = totalSqm * s.screwsPerSqm;
-  const totalBrackets = totalQty * s.bracketsPerHouse;
-  const totalBolts = totalQty * s.boltsPerHouse;
-  const totalSealantTubes = totalQty * s.sealantTubesPerHouse;
   const totalLaborHours = s.laborProductivitySqmPerHour > 0 ? totalSqm / s.laborProductivitySqmPerHour : 0;
   const requiredProductionDays = s.rollformerCapacitySqmPerDay > 0 ? totalSqm / s.rollformerCapacitySqmPerDay : 0;
   const availableProductionDaysYear = s.workingDaysPerMonth * 12;
@@ -158,7 +153,7 @@ function computeConditionMetrics(houseTypeTotals, s) {
   const totalDetailingDays = totalQty * s.detailingDaysPerHouse;
   const totalDeliveryDays = totalQty * s.deliveryDaysPerHouse;
   return {
-    totalScrews, totalBrackets, totalBolts, totalSealantTubes,
+    totalScrews,
     totalLaborHours, requiredProductionDays, availableProductionDaysYear, capacityUtilizationPct,
     totalDetailingDays, totalDeliveryDays
   };
@@ -219,9 +214,6 @@ function buildDefaultState() {
     otherVarPct: DEFAULTS.otherVarPct,
     coilLmPerSqm: DEFAULTS.coilLmPerSqm,
     screwsPerSqm: DEFAULTS.screwsPerSqm,
-    bracketsPerHouse: DEFAULTS.bracketsPerHouse,
-    boltsPerHouse: DEFAULTS.boltsPerHouse,
-    sealantTubesPerHouse: DEFAULTS.sealantTubesPerHouse,
     laborProductivitySqmPerHour: DEFAULTS.laborProductivitySqmPerHour,
     dailyOperatingHours: DEFAULTS.dailyOperatingHours,
     workingDaysPerMonth: DEFAULTS.workingDaysPerMonth,
@@ -1286,9 +1278,6 @@ function renderComputed() {
 
   const cond = computeConditionMetrics(htTotals, state);
   setText('totalScrewsVal', Math.round(cond.totalScrews).toLocaleString('en-US') + '개');
-  setText('totalBracketsVal', Math.round(cond.totalBrackets).toLocaleString('en-US') + '개');
-  setText('totalBoltsVal', Math.round(cond.totalBolts).toLocaleString('en-US') + '개');
-  setText('totalSealantVal', Math.round(cond.totalSealantTubes).toLocaleString('en-US') + '통');
   setText('materialsUsageSummary', Math.round(cond.totalScrews).toLocaleString('en-US') + '개');
   setText('totalLaborHoursVal', Math.round(cond.totalLaborHours).toLocaleString('en-US') + '시간');
   setText('requiredProductionDaysVal', Math.round(cond.requiredProductionDays).toLocaleString('en-US') + '일');
@@ -1565,9 +1554,6 @@ function syncControlInputsFromState() {
 
   [
     ['screwsPerSqm', '개/sqm', 0],
-    ['bracketsPerHouse', '개/세대', 0],
-    ['boltsPerHouse', '개/세대', 0],
-    ['sealantTubesPerHouse', '통/세대', 0],
     ['dailyOperatingHours', '시간', 1],
     ['workingDaysPerMonth', '일', 0],
     ['setupMinutesPerBatch', '분', 0],
@@ -1622,9 +1608,6 @@ function initControls() {
   bindBulkSlider('otherVarPct', true, v => applyPctAll('otherVar', v));
   bindCoilLmPerSqmSlider();
   bindConditionSlider('screwsPerSqm', '개/sqm', 0);
-  bindConditionSlider('bracketsPerHouse', '개/세대', 0);
-  bindConditionSlider('boltsPerHouse', '개/세대', 0);
-  bindConditionSlider('sealantTubesPerHouse', '통/세대', 0);
   bindProductivityRateSlider('laborProductivitySqmPerHour');
   bindProductivityRateSlider('rollformerCapacitySqmPerDay');
   bindProductivityUnitToggle();

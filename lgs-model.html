@@ -379,41 +379,15 @@ label.calc-toggle-row{display:flex;align-items:center;gap:8px}
 
   <div class="card" data-collapsible data-total-id="materialsUsageSummary">
     <div class="section-label"><div class="section-dot"></div><span>자재 사용량 조건</span></div>
-    <div class="section-note">코일 외에 세대/면적당 소요되는 자재 수량이에요. 발주량·소요원가 추정에 쓰여요 — 실제 확인되는 대로 조정하세요.</div>
+    <div class="section-note">코일 외에 면적당 소요되는 자재 수량이에요. 자재 사용은 일단 스크류만 반영해요 — 발주량·소요원가 추정에 쓰여요. 실제 확인되는 대로 조정하세요.</div>
     <div class="slider-row">
       <div class="slider-label-row"><span class="slider-label">스크류 사용량 (개/sqm)</span><span class="slider-value" id="screwsPerSqmVal">-</span></div>
       <input type="range" class="slider" id="screwsPerSqm" min="4" max="30" step="1">
-    </div>
-    <div class="slider-row">
-      <div class="slider-label-row"><span class="slider-label">브라켓·커넥터 (개/세대)</span><span class="slider-value" id="bracketsPerHouseVal">-</span></div>
-      <input type="range" class="slider" id="bracketsPerHouse" min="0" max="150" step="5">
-    </div>
-    <div class="slider-row">
-      <div class="slider-label-row"><span class="slider-label">볼트·너트 (개/세대)</span><span class="slider-value" id="boltsPerHouseVal">-</span></div>
-      <input type="range" class="slider" id="boltsPerHouse" min="0" max="400" step="10">
-    </div>
-    <div class="slider-row">
-      <div class="slider-label-row"><span class="slider-label">실런트·폼 (통/세대)</span><span class="slider-value" id="sealantTubesPerHouseVal">-</span></div>
-      <input type="range" class="slider" id="sealantTubesPerHouse" min="0" max="20" step="1">
     </div>
     <div class="mini-stat-row">
       <div class="mini-stat static">
         <div class="mini-stat-label">목표 총 스크류 사용량</div>
         <div class="mini-stat-value" id="totalScrewsVal">-</div>
-      </div>
-      <div class="mini-stat static">
-        <div class="mini-stat-label">목표 총 브라켓 사용량</div>
-        <div class="mini-stat-value" id="totalBracketsVal">-</div>
-      </div>
-    </div>
-    <div class="mini-stat-row" style="margin-top:10px">
-      <div class="mini-stat static">
-        <div class="mini-stat-label">목표 총 볼트 사용량</div>
-        <div class="mini-stat-value" id="totalBoltsVal">-</div>
-      </div>
-      <div class="mini-stat static">
-        <div class="mini-stat-label">목표 총 실런트 사용량</div>
-        <div class="mini-stat-value" id="totalSealantVal">-</div>
       </div>
     </div>
     <span id="materialsUsageSummary" hidden></span>
