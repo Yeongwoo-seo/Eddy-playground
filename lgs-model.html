@@ -480,13 +480,45 @@ label.calc-toggle-row{display:flex;align-items:center;gap:8px}
 
   <div class="sub-panel" id="subtab-capex-funding">
   <div class="card">
-    <div class="section-label"><div class="section-dot"></div><span>초기 자금 · 설비투자</span></div>
+    <div class="section-label"><div class="section-dot"></div><span>초기 투자금 · 에쿼티</span></div>
+    <div class="section-note">상환 의무가 없는 자기자본 투자금이에요.</div>
     <div class="select-row">
       <div class="select-unit">
-        <label>초기 투자금 (에쿼티 조달)</label>
-        <span class="money-field money-n"><input type="number" class="num-input" id="equityRaise" min="0" step="10000"></span>
+        <label>에쿼티 투자금</label>
+        <span class="money-field money-n"><input type="number" class="num-input" id="equityAmount" min="0" step="10000"></span>
       </div>
     </div>
+  </div>
+
+  <div class="card">
+    <div class="section-label"><div class="section-dot"></div><span>초기 투자금 · 부채(대출)</span></div>
+    <div class="section-note">대출원금·연이자율·상환기간을 입력하면 원리금균등상환 방식으로 월별 상환 스케줄이 자동 계산돼요.</div>
+    <div class="select-row">
+      <div class="select-unit">
+        <label>대출원금</label>
+        <span class="money-field money-n"><input type="number" class="num-input" id="debtAmount" min="0" step="5000"></span>
+      </div>
+    </div>
+    <div class="select-row">
+      <div class="select-unit">
+        <label>연이자율 (%)</label>
+        <input type="number" class="num-input" id="debtAnnualRatePct" min="0" step="0.1">
+      </div>
+      <div class="select-unit">
+        <label>상환기간 (개월)</label>
+        <input type="number" class="num-input" id="debtTermMonths" min="1" step="1">
+      </div>
+    </div>
+
+    <table class="equip-table">
+      <thead><tr><th>월</th><th>원금상환</th><th>이자</th><th>원리금합계</th><th>대출잔액</th></tr></thead>
+      <tbody id="debtScheduleBody"></tbody>
+    </table>
+    <div class="table-hint" id="debtScheduleNote"></div>
+  </div>
+
+  <div class="card">
+    <div class="section-label"><div class="section-dot"></div><span>설비투자 지급 스케줄</span></div>
     <div class="select-row">
       <div class="select-unit">
         <label>SP120 Stage 1 지급액</label>
@@ -596,7 +628,7 @@ label.calc-toggle-row{display:flex;align-items:center;gap:8px}
   <div class="sub-panel" id="subtab-cf">
   <div class="card">
     <div class="section-label"><div class="section-dot"></div><span>현금흐름표 (월별)</span></div>
-    <div class="section-note">손익계산서·설비투자 값에서 자동 계산돼요. 이자비용은 발생주의로 비용 인식만 하고 현금 지급 없이 대차대조표의 미지급이자로 누적된다고 가정해요.</div>
+    <div class="section-note">손익계산서·설비투자 값에서 자동 계산돼요. 대출 원리금(원금+이자)은 실제 현금 상환으로 재무활동 현금흐름에 반영되고, 그 외 수동입력 이자비용은 발생주의로 비용 인식만 하고 현금 지급 없이 대차대조표의 미지급이자로 누적된다고 가정해요.</div>
     <div class="table-scroll">
       <table class="data-table">
         <thead>
@@ -605,7 +637,7 @@ label.calc-toggle-row{display:flex;align-items:center;gap:8px}
         <tbody id="cfTableBody"></tbody>
       </table>
     </div>
-    <div class="table-hint">가로로 스크롤해서 전체 월을 확인하세요. 항목 열은 고정돼 있어요. 초기 자본금은 M1 기초현금에 이미 반영돼 있어요.</div>
+    <div class="table-hint">가로로 스크롤해서 전체 월을 확인하세요. 항목 열은 고정돼 있어요. 초기 에쿼티·대출금은 M1 기초현금에 이미 반영돼 있어요.</div>
   </div>
   </div>
 
