@@ -103,6 +103,17 @@ input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events
     <button class="select-btn" id="bgLocationAssignOpenBtn" style="width:100%;text-align:center">배정하기</button>
   </div>
 
+  <!-- 인물 배정 — 이 허브 장소에 지금 누가 있는지를 코드(locationDefs.js의
+       characters) 수정 없이 여기서 직접 고른다. AssetDB.getCharAssignments()/
+       setCharAssignment()에 저장되는 override로, play/explore/index.html의
+       locationCharacters()/renderMap()이 있으면 정적 characters보다 우선해서
+       읽는다(장소 배정의 sceneLocationMap과 같은 override-beats-code 결). -->
+  <div class="picker assign-panel" id="charAssignPanel">
+    <div class="picker-label">인물 배정</div>
+    <div class="hint" id="charAssignedLabel" style="margin:0 0 10px;text-align:left"></div>
+    <div class="picker-pills" id="charAssignPills"></div>
+  </div>
+
   <!-- 선택된 허브 장소의 실제 모습·스토리·인터랙티브 요소를 반영한 AI
        이미지 생성 프롬프트 — locationDefs.js의 visualBrief +
        interactionDefs.js의 해당 장소/단계 상호작용을 조합해 만든다. 실제
@@ -196,6 +207,8 @@ const el = {
   mapPinHint: document.getElementById('mapPinHint'),
   bgLocationAssignedLabel: document.getElementById('bgLocationAssignedLabel'),
   bgLocationAssignOpenBtn: document.getElementById('bgLocationAssignOpenBtn'),
+  charAssignedLabel: document.getElementById('charAssignedLabel'),
+  charAssignPills: document.getElementById('charAssignPills'),
   bgLocationAssignModal: document.getElementById('bgLocationAssignModal'),
   bgLocationAssignCloseBtn: document.getElementById('bgLocationAssignCloseBtn'),
   bgLocationAssignPills: document.getElementById('bgLocationAssignPills'),
@@ -388,8 +401,9 @@ function buildHubLocationPrompt(locationId, phase) {
   // 인물(예: "옆 건물 직원이 태그를 문에 갖다 댔다")은 반대로 별도 자산이
   // 전혀 없으므로 이 사진에 직접 그려 넣어야만 플레이어가 볼 수 있다 —
   // 그래서 "사람 자체를 빼라"가 아니라 "이 명단만 빼라"로 정확히 짚어준다.
+  const assignedCharIds = charAssignmentsCache[locationId] || resolveByPhase(loc.characters, phase) || [];
   const castNames = Array.from(new Set(
-    ['지수'].concat((resolveByPhase(loc.characters, phase) || []).map(id => {
+    ['지수'].concat(assignedCharIds.map(id => {
       const c = (typeof dialogueCharacters !== 'undefined') ? dialogueCharacters.find(d => d.id === id) : null;
       return c ? c.name : id;
     }))
@@ -563,6 +577,7 @@ async function renderHubLocationPicker() {
     });
   });
   renderBgLocationAssign();
+  renderCharAssign();
   renderHubPromptPanel();
   renderMapPinPanel();
 }
@@ -575,6 +590,10 @@ async function renderHubLocationPicker() {
 let locationsCatalog = {};
 let bgAssignLocId = null;
 let bgAssignVariantId = 'default';
+// buildHubLocationPrompt()가 동기적으로 castNames를 뽑아야 해서, 아래
+// renderCharAssign()이 매 렌더마다 채워두는 캐시 — AssetDB.getCharAssignments()를
+// 그때그때 await할 수 없는 자리라 이걸로 대신 읽는다.
+let charAssignmentsCache = {};
 
 async function loadLocationsCatalog() {
   try { locationsCatalog = await AssetDB.getLocations(); }
@@ -657,6 +676,51 @@ async function renderBgLocationAssign() {
   el.bgLocationPreviewImg.classList.toggle('hidden', !asset);
   el.bgLocationPreviewEmpty.classList.toggle('hidden', !loc || !!asset);
   if (asset) el.bgLocationPreviewImg.src = asset.dataUrl;
+}
+
+/* ===== 인물 배정 패널 — 이 허브 장소에 지금 누가 있는지를 코드
+   (locationDefs.js의 characters) 수정 없이 여기서 직접 고른다. 지도 핀/
+   인물 위치 override(AssetDB.getMapPins/getCharPositions)와 같은 단일 JSON
+   blob override 패턴: locationDefs.js의 characters는 그대로 코드 기본값으로
+   남고, AssetDB.getCharAssignments()에 저장된 값이 있으면 그걸 우선해서
+   쓴다(play/explore/index.html의 locationCharacters()/renderMap() 참고).
+   pill을 누르면 바로 그 자리에서 토글되어 저장된다 — 장소 배정처럼 별도
+   팝업을 열 필요가 없을 만큼 단순한 다중 선택이라서. ===== */
+async function renderCharAssign() {
+  if (!currentHubLocation()) return;
+  const locationId = currentHubLocationId;
+  const phase = currentHubPhase;
+  let overrides = {};
+  try { overrides = await AssetDB.getCharAssignments(); }
+  catch (err) { DevDiag.show('인물 배정 정보를 불러오지 못했습니다: ' + (err && err.message ? err.message : err)); }
+  charAssignmentsCache = overrides;
+  const hasOverride = Object.prototype.hasOwnProperty.call(overrides, locationId);
+  const assigned = hasOverride ? overrides[locationId] : (resolveByPhase(locationDefs[locationId] ? locationDefs[locationId].characters : null, phase) || []);
+
+  const names = assigned.map(id => {
+    const c = dialogueCharacters.find(d => d.id === id);
+    return c ? c.name : id;
+  });
+  el.charAssignedLabel.textContent = names.length
+    ? `현재 배정: ${names.join(', ')}${hasOverride ? '' : ' (기본값)'}`
+    : '배정된 인물이 없습니다.';
+
+  el.charAssignPills.innerHTML = dialogueCharacters.map(c =>
+    `<button class="pill${assigned.includes(c.id) ? ' active' : ''}" data-id="${c.id}">${escapeHtml(c.name)}</button>`
+  ).join('');
+  el.charAssignPills.querySelectorAll('.pill').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const charId = btn.dataset.id;
+      const next = assigned.includes(charId) ? assigned.filter(id => id !== charId) : assigned.concat([charId]);
+      try {
+        await AssetDB.setCharAssignment(locationId, next);
+        await renderCharAssign();
+        renderHubPromptPanel();
+      } catch (err) {
+        DevDiag.show('인물 배정 실패: ' + (err && err.message ? err.message : err));
+      }
+    });
+  });
 }
 
 el.bgNewLocationBtn.addEventListener('click', async () => {

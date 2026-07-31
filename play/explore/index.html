@@ -704,13 +704,15 @@ function showView(name) {
 }
 
 /* ===== Map view (spec §7.2) ===== */
-function renderMap() {
+async function renderMap() {
   const locations = ExplorationState.getAllLocationStates();
+  const charAssignmentOverrides = await AssetDB.getCharAssignments().catch(() => ({}));
   el.mapList.innerHTML = locations.map(loc => {
     const cls = ['loc-card'];
     if (!loc.unlocked) cls.push('locked');
     if (loc.current) cls.push('current');
-    const chars = (resolveByPhase(loc.characters, ExplorationState.getCurrentPhase()) || []).map(c => (dialogueCharacters.find(d => d.id === c) || { name: c }).name).join(', ');
+    const charIds = charAssignmentOverrides[loc.id] || resolveByPhase(loc.characters, ExplorationState.getCurrentPhase()) || [];
+    const chars = charIds.map(c => (dialogueCharacters.find(d => d.id === c) || { name: c }).name).join(', ');
     return `
       <div class="${cls.join(' ')}" data-goto="${loc.unlocked ? loc.id : ''}">
         ${loc.newInteractionCount ? `<div class="loc-badge">NEW ${loc.newInteractionCount}</div>` : ''}
@@ -1046,8 +1048,14 @@ function resolveByPhase(value, phase) {
 }
 
 let currentCharacterId = null;
-function locationCharacters() {
-  const def = locationDefs[ExplorationState.getCurrentLocationId()];
+// AssetDB.getCharAssignments() override(/dev/hub/index.html의 인물 배정
+// 패널)가 있으면 locationDefs.js의 정적 characters보다 우선한다 — 지도 핀/
+// 인물 위치 override(pinPosition/resolveCharPos)와 같은 결.
+async function locationCharacters() {
+  const locationId = ExplorationState.getCurrentLocationId();
+  const overrides = await AssetDB.getCharAssignments().catch(() => ({}));
+  if (overrides[locationId]) return overrides[locationId];
+  const def = locationDefs[locationId];
   if (!def) return [];
   return resolveByPhase(def.characters, ExplorationState.getCurrentPhase()) || [];
 }
@@ -1071,7 +1079,7 @@ function locationCharacters() {
 const CHAR_NOT_DEFAULT_OUTSIDE_PHASE_START = 'youngwoo';
 let youngwooAutoPickPhase = null;
 async function renderLocationCharacters() {
-  const chars = locationCharacters();
+  const chars = await locationCharacters();
   const phase = ExplorationState.getCurrentPhase();
   const isPhaseStartLocation = phase !== youngwooAutoPickPhase;
   youngwooAutoPickPhase = phase;
@@ -2399,8 +2407,10 @@ async function addSceneCharacterAssetIds(ids, scene) {
 // lists CaseFileState.getPersons() as-is).
 async function collectPhaseCharacterAssetIds(phaseId, locationIds) {
   const ids = new Set();
+  const charAssignmentOverrides = await AssetDB.getCharAssignments().catch(() => ({}));
   await Promise.all(locationIds.map(async id => {
-    await Promise.all((resolveByPhase(locationDefs[id].characters, phaseId) || []).map(async charId => {
+    const chars = charAssignmentOverrides[id] || resolveByPhase(locationDefs[id].characters, phaseId) || [];
+    await Promise.all(chars.map(async charId => {
       const assetId = await Promise.resolve(DevGameState.getCharacterAssetId(charId, 'neutral')).catch(() => null);
       if (assetId) ids.add(assetId);
     }));
