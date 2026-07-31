@@ -73,13 +73,17 @@ body{background:var(--bg);color:var(--black);font-family:'Pretendard',-apple-sys
 .section-note{font-size:12px;color:var(--grey-500);font-weight:500;margin:-10px 0 16px;line-height:1.5}
 
 /* Collapsible cards */
-.section-collapse-toggle{margin-left:auto;display:flex;align-items:center;background:none;border:none;cursor:pointer;padding:4px 0 4px 8px;font-family:inherit}
-.section-collapse-badge{display:inline-flex;background:var(--primary-light);color:var(--primary);font-size:13px;font-weight:600;padding:5px 14px;border-radius:20px;margin:-6px 0 16px}
+.section-collapse-toggle{margin-left:auto;display:flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;padding:4px 0 4px 8px;font-family:inherit}
+.section-collapse-amount{display:none;font-size:14px;font-weight:800;color:var(--primary)}
+.card.collapsed .section-collapse-amount{display:inline}
 .section-collapse-chevron{width:8px;height:8px;flex:none;border-right:2px solid var(--grey-500);border-bottom:2px solid var(--grey-500);transform:rotate(-135deg);margin-top:2px;transition:transform .3s cubic-bezier(.2,.8,.2,1)}
 .card.collapsed .section-collapse-chevron{transform:rotate(45deg);margin-top:-2px}
-.card.collapsed>*:not(.section-label):not(.section-collapse-badge){display:none}
+.card.collapsed>*:not(.section-label){display:none}
 .card.collapsed .section-label{margin-bottom:0}
-.card.collapsed .section-collapse-badge{margin:0}
+
+/* Sub-tab total badge */
+.subtab-total-badge{display:inline-flex;align-items:baseline;gap:5px;background:var(--primary-light);color:var(--primary);border-radius:20px;padding:6px 14px;font-size:12px;font-weight:600;margin:-4px 0 14px}
+.subtab-total-badge b{font-size:13px;font-weight:800}
 
 /* Summary */
 .quick-stats{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:14px}
@@ -250,6 +254,7 @@ label.calc-toggle-row{display:flex;align-items:center;gap:8px}
   <div class="sub-tab-bar" id="subTabBar"></div>
 
   <div class="sub-panel" id="subtab-revenue">
+  <div class="subtab-total-badge">목표 총 매출액 <b id="revenueTotalBadge">-</b></div>
   <div class="card" data-collapsible data-total-id="houseTypeTotalRevenue">
     <div class="section-label"><div class="section-dot"></div><span>판매 단가 · 주택 구분별 목표</span></div>
     <div class="slider-row">
