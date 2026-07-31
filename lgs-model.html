@@ -490,7 +490,7 @@ label.calc-toggle-row{display:flex;align-items:center;gap:8px}
   <div class="sub-tab-bar" id="subTabBarCapex"></div>
 
   <div class="sub-panel" id="subtab-capex-funding">
-  <div class="card">
+  <div class="card" data-collapsible data-total-id="equityFundingSummary">
     <div class="section-label"><div class="section-dot"></div><span>초기 투자금 · 에쿼티</span></div>
     <div class="section-note">상환 의무가 없는 자기자본 투자금이에요.</div>
     <div class="select-row">
@@ -499,9 +499,10 @@ label.calc-toggle-row{display:flex;align-items:center;gap:8px}
         <span class="money-field money-n"><input type="number" class="num-input" id="equityAmount" min="0" step="10000"></span>
       </div>
     </div>
+    <span id="equityFundingSummary" hidden></span>
   </div>
 
-  <div class="card">
+  <div class="card" data-collapsible data-total-id="debtFundingSummary">
     <div class="section-label"><div class="section-dot"></div><span>초기 투자금 · 부채(대출)</span></div>
     <div class="section-note">대출원금·연이자율·상환기간을 입력하면 원리금균등상환 방식으로 월별 상환 스케줄이 자동 계산돼요.</div>
     <div class="select-row">
@@ -526,9 +527,10 @@ label.calc-toggle-row{display:flex;align-items:center;gap:8px}
       <tbody id="debtScheduleBody"></tbody>
     </table>
     <div class="table-hint" id="debtScheduleNote"></div>
+    <span id="debtFundingSummary" hidden></span>
   </div>
 
-  <div class="card">
+  <div class="card" data-collapsible data-total-id="stagePaymentSummary">
     <div class="section-label"><div class="section-dot"></div><span>설비투자 지급 스케줄</span></div>
     <div class="select-row">
       <div class="select-unit">
@@ -572,9 +574,10 @@ label.calc-toggle-row{display:flex;align-items:center;gap:8px}
         </select>
       </div>
     </div>
+    <span id="stagePaymentSummary" hidden></span>
   </div>
 
-  <div class="card">
+  <div class="card" data-collapsible data-total-id="rentDepositTotal">
     <div class="section-label"><div class="section-dot"></div><span>임대료 보증금</span></div>
     <div class="section-note">고정비·변동비에는 포함되지 않지만, 지급월의 현금흐름(투자활동)과 대차대조표(임차보증금 자산)에는 반영돼요.</div>
     <div class="select-row">
