@@ -516,6 +516,16 @@ function buildFixedCostSkeleton() {
       monthlyTd.appendChild(monthlyInput);
       tr.appendChild(monthlyTd);
 
+      const removeTd = document.createElement('td');
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'ht-remove-btn';
+      removeBtn.textContent = '✕';
+      removeBtn.dataset.i = i;
+      removeBtn.addEventListener('click', onFixedCostRemove);
+      removeTd.appendChild(removeBtn);
+      tr.appendChild(removeTd);
+
       tbody.appendChild(tr);
       fixedCostRowRefs.push({ i, input: monthlyInput });
     });
@@ -528,6 +538,17 @@ function onFixedCostInput(e) {
   let val = parseFloat(inp.value);
   if (isNaN(val) || val < 0) val = 0;
   state.fixedCostItems[i].monthly = val;
+  applyFixedCostTotals();
+  syncInputsFromState();
+  renderFixedCostTable();
+  renderComputed();
+  scheduleSave();
+}
+
+function onFixedCostRemove(e) {
+  const i = Number(e.currentTarget.dataset.i);
+  state.fixedCostItems.splice(i, 1);
+  buildFixedCostSkeleton();
   applyFixedCostTotals();
   syncInputsFromState();
   renderFixedCostTable();
