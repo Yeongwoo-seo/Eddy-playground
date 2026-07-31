@@ -13,7 +13,13 @@ const TABS = [
 let curTab = 0;
 
 const DEFAULTS = {
-  salePrice: 44917,
+  pricePerSqm: 700,
+  houseTypes: [
+    { label: '스튜디오 그래니플랫', sqm: 40, targetQty: 1 },
+    { label: '1룸형 그래니플랫', sqm: 50, targetQty: 2 },
+    { label: '2룸형 그래니플랫', sqm: 60, targetQty: 6 },
+    { label: '3룸형 그래니플랫', sqm: 85, targetQty: 3 }
+  ],
   coilPct: 30,
   screwPct: 5,
   detailPct: 10,
@@ -44,12 +50,26 @@ const DEFAULTS = {
   ]
 };
 
+function computeHouseTypeTotals(houseTypes, pricePerSqm) {
+  let totalQty = 0, totalRevenue = 0;
+  const rows = houseTypes.map(t => {
+    const unitPrice = t.sqm * pricePerSqm;
+    const subtotal = unitPrice * t.targetQty;
+    totalQty += t.targetQty;
+    totalRevenue += subtotal;
+    return { label: t.label, sqm: t.sqm, targetQty: t.targetQty, unitPrice, subtotal };
+  });
+  const blendedPrice = totalQty > 0 ? totalRevenue / totalQty : 0;
+  return { rows, totalQty, totalRevenue, blendedPrice };
+}
+
 function buildDefaultMonths() {
+  const blendedPrice = Math.round(computeHouseTypeTotals(DEFAULTS.houseTypes, DEFAULTS.pricePerSqm).blendedPrice);
   return DEFAULTS.houses.map(houses => {
-    const revenue = houses * DEFAULTS.salePrice;
+    const revenue = houses * blendedPrice;
     return {
       houses,
-      salePrice: DEFAULTS.salePrice,
+      salePrice: blendedPrice,
       coil: revenue * DEFAULTS.coilPct / 100,
       screw: revenue * DEFAULTS.screwPct / 100,
       detail: revenue * DEFAULTS.detailPct / 100,
@@ -66,6 +86,8 @@ function buildDefaultEquipment() {
 }
 
 let state = {
+  pricePerSqm: DEFAULTS.pricePerSqm,
+  houseTypes: DEFAULTS.houseTypes.map(t => ({ ...t })),
   equityRaise: DEFAULTS.equityRaise,
   stage1Amount: DEFAULTS.stage1Amount,
   stage1Month: DEFAULTS.stage1Month,
@@ -79,6 +101,7 @@ let state = {
 let activeMetric = null;
 let rowRefs = [];
 let equipRowRefs = [];
+let houseTypeRowRefs = [];
 
 function fmt(n) {
   const r = Math.round(n);
@@ -448,6 +471,131 @@ function renderEquipTable() {
   q('equipTotal').textContent = fmt(total);
 }
 
+/* ---------- house type pricing & targets (editable) ---------- */
+
+function applyBlendedPriceToMonths() {
+  const blendedPrice = Math.round(computeHouseTypeTotals(state.houseTypes, state.pricePerSqm).blendedPrice);
+  state.months.forEach(m => { m.salePrice = blendedPrice; });
+  return blendedPrice;
+}
+
+function buildHouseTypeSkeleton() {
+  const tbody = q('houseTypeBody');
+  tbody.innerHTML = '';
+  houseTypeRowRefs = [];
+
+  state.houseTypes.forEach((t, i) => {
+    const tr = document.createElement('tr');
+
+    const labelTd = document.createElement('td');
+    const labelInput = document.createElement('input');
+    labelInput.type = 'text';
+    labelInput.className = 'equip-input ht-label-input';
+    labelInput.value = t.label;
+    labelInput.dataset.i = i;
+    labelInput.dataset.key = 'label';
+    labelInput.addEventListener('input', onHouseTypeInput);
+    labelTd.appendChild(labelInput);
+    tr.appendChild(labelTd);
+
+    const sqmInput = document.createElement('input');
+    sqmInput.type = 'number';
+    sqmInput.className = 'equip-input';
+    sqmInput.min = '0';
+    sqmInput.step = '1';
+    sqmInput.value = t.sqm;
+    sqmInput.dataset.i = i;
+    sqmInput.dataset.key = 'sqm';
+    sqmInput.addEventListener('input', onHouseTypeInput);
+    const sqmTd = document.createElement('td');
+    sqmTd.appendChild(sqmInput);
+    tr.appendChild(sqmTd);
+
+    const qtyInput = document.createElement('input');
+    qtyInput.type = 'number';
+    qtyInput.className = 'equip-input';
+    qtyInput.min = '0';
+    qtyInput.step = '1';
+    qtyInput.value = t.targetQty;
+    qtyInput.dataset.i = i;
+    qtyInput.dataset.key = 'targetQty';
+    qtyInput.addEventListener('input', onHouseTypeInput);
+    const qtyTd = document.createElement('td');
+    qtyTd.appendChild(qtyInput);
+    tr.appendChild(qtyTd);
+
+    const unitPriceTd = document.createElement('td');
+    unitPriceTd.className = 'equip-subtotal';
+    tr.appendChild(unitPriceTd);
+
+    const subtotalTd = document.createElement('td');
+    subtotalTd.className = 'equip-subtotal';
+    tr.appendChild(subtotalTd);
+
+    const removeTd = document.createElement('td');
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'ht-remove-btn';
+    removeBtn.textContent = '✕';
+    removeBtn.dataset.i = i;
+    removeBtn.addEventListener('click', onHouseTypeRemove);
+    removeTd.appendChild(removeBtn);
+    tr.appendChild(removeTd);
+
+    tbody.appendChild(tr);
+    houseTypeRowRefs.push({ labelInput, sqmInput, qtyInput, unitPriceTd, subtotalTd });
+  });
+}
+
+function onHouseTypeInput(e) {
+  const inp = e.target;
+  const i = Number(inp.dataset.i);
+  const key = inp.dataset.key;
+  if (key === 'label') {
+    state.houseTypes[i].label = inp.value;
+  } else {
+    let val = parseFloat(inp.value);
+    if (isNaN(val) || val < 0) val = 0;
+    state.houseTypes[i][key] = val;
+  }
+  applyBlendedPriceToMonths();
+  syncInputsFromState();
+  renderHouseTypeTable();
+  renderComputed();
+}
+
+function onHouseTypeRemove(e) {
+  if (state.houseTypes.length <= 1) return;
+  const i = Number(e.currentTarget.dataset.i);
+  state.houseTypes.splice(i, 1);
+  buildHouseTypeSkeleton();
+  applyBlendedPriceToMonths();
+  syncInputsFromState();
+  renderHouseTypeTable();
+  renderComputed();
+}
+
+function onHouseTypeAdd() {
+  state.houseTypes.push({ label: '신규 구분', sqm: 60, targetQty: 1 });
+  buildHouseTypeSkeleton();
+  applyBlendedPriceToMonths();
+  syncInputsFromState();
+  renderHouseTypeTable();
+  renderComputed();
+}
+
+function renderHouseTypeTable() {
+  const totals = computeHouseTypeTotals(state.houseTypes, state.pricePerSqm);
+  houseTypeRowRefs.forEach((row, i) => {
+    const r = totals.rows[i];
+    row.unitPriceTd.textContent = fmt(r.unitPrice);
+    row.subtotalTd.textContent = fmt(r.subtotal);
+  });
+  q('houseTypeTotalQty').textContent = totals.totalQty + '채';
+  q('houseTypeBlendedPrice').textContent = fmt(totals.blendedPrice) + '/채';
+  q('houseTypeTotalRevenue').textContent = fmt(totals.totalRevenue);
+}
+
 /* ---------- table (editable) ---------- */
 
 const EDIT_KEYS = ['houses', 'salePrice', 'coil', 'screw', 'detail', 'otherVar', 'fixedProd', 'sga', 'otherCost'];
@@ -597,7 +745,6 @@ function renderComputed() {
 
 /* ---------- bulk-apply sliders ---------- */
 
-function applySalePriceAll(v) { state.months.forEach(m => { m.salePrice = v; }); }
 function applyFixedAll(field, v) { state.months.forEach(m => { m[field] = v; }); }
 
 function bindBulkSlider(id, isPct, applyFn) {
@@ -613,6 +760,24 @@ function bindBulkSlider(id, isPct, applyFn) {
     if (label) label.textContent = isPct ? val + '%' : fmt(val);
     applyFn(val);
     syncInputsFromState();
+    renderComputed();
+  });
+}
+
+function bindPricePerSqmSlider() {
+  const elx = q('pricePerSqm');
+  const label = q('pricePerSqmVal');
+  elx.value = DEFAULTS.pricePerSqm;
+  setSliderFill(elx);
+  label.textContent = fmt(DEFAULTS.pricePerSqm) + '/sqm';
+  elx.addEventListener('input', () => {
+    const val = parseFloat(elx.value);
+    state.pricePerSqm = val;
+    setSliderFill(elx);
+    label.textContent = fmt(val) + '/sqm';
+    applyBlendedPriceToMonths();
+    syncInputsFromState();
+    renderHouseTypeTable();
     renderComputed();
   });
 }
@@ -643,6 +808,8 @@ function bindSelect(id, key) {
 
 function resetAll() {
   state = {
+    pricePerSqm: DEFAULTS.pricePerSqm,
+    houseTypes: DEFAULTS.houseTypes.map(t => ({ ...t })),
     equityRaise: DEFAULTS.equityRaise,
     stage1Amount: DEFAULTS.stage1Amount,
     stage1Month: DEFAULTS.stage1Month,
@@ -656,24 +823,31 @@ function resetAll() {
   document.querySelectorAll('[data-metric]').forEach(o => o.classList.remove('active'));
   q('breakdownCard').style.display = 'none';
 
-  ['salePrice', 'fixedProdCost', 'sgaMonthly', 'otherCostMonthly', 'equityRaise', 'stage1Amount', 'stage2Amount'].forEach(id => {
+  ['fixedProdCost', 'sgaMonthly', 'otherCostMonthly', 'equityRaise', 'stage1Amount', 'stage2Amount'].forEach(id => {
     const elx = q(id);
     elx.value = DEFAULTS[id];
     setSliderFill(elx);
     const label = q(id + 'Val');
     if (label) label.textContent = label.dataset.fmt === 'pct' ? (DEFAULTS[id] + '%') : fmt(DEFAULTS[id]);
   });
+  const ppsElx = q('pricePerSqm');
+  ppsElx.value = DEFAULTS.pricePerSqm;
+  setSliderFill(ppsElx);
+  q('pricePerSqmVal').textContent = fmt(DEFAULTS.pricePerSqm) + '/sqm';
+
   q('stage1Month').value = DEFAULTS.stage1Month;
   q('stage2Month').value = DEFAULTS.stage2Month;
   q('equipmentMonth').value = DEFAULTS.equipmentMonth;
 
+  buildHouseTypeSkeleton();
   syncInputsFromState();
   syncEquipInputsFromState();
+  renderHouseTypeTable();
   renderComputed();
 }
 
 function initControls() {
-  bindBulkSlider('salePrice', false, applySalePriceAll);
+  bindPricePerSqmSlider();
   bindBulkSlider('fixedProdCost', false, v => applyFixedAll('fixedProd', v));
   bindBulkSlider('sgaMonthly', false, v => applyFixedAll('sga', v));
   bindBulkSlider('otherCostMonthly', false, v => applyFixedAll('otherCost', v));
@@ -721,9 +895,12 @@ window.addEventListener('DOMContentLoaded', () => {
   initControls();
   buildTableSkeleton();
   buildEquipSkeleton();
+  buildHouseTypeSkeleton();
   bindMetricClicks();
+  renderHouseTypeTable();
   renderComputed();
   renderBottomNav();
   goTab(0);
   q('resetBtn').addEventListener('click', resetAll);
+  q('houseTypeAddBtn').addEventListener('click', onHouseTypeAdd);
 });
