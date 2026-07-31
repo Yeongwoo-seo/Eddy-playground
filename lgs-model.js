@@ -1111,6 +1111,31 @@ function renderComputed() {
 
   buildMainChart(months);
   buildCashChart(months);
+  syncAllCollapsibleAmounts();
+}
+
+/* ---------- collapsible cards ---------- */
+
+function initCollapsibleCards() {
+  document.querySelectorAll('.card[data-collapsible]').forEach(card => {
+    const label = card.querySelector('.section-label');
+    if (!label) return;
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'section-collapse-toggle';
+    toggle.innerHTML = '<span class="section-collapse-amount"></span><span class="section-collapse-chevron"></span>';
+    toggle.addEventListener('click', () => card.classList.toggle('collapsed'));
+    label.appendChild(toggle);
+  });
+  syncAllCollapsibleAmounts();
+}
+
+function syncAllCollapsibleAmounts() {
+  document.querySelectorAll('.card[data-collapsible]').forEach(card => {
+    const totalEl = q(card.dataset.totalId);
+    const amountEl = card.querySelector('.section-collapse-amount');
+    if (totalEl && amountEl) amountEl.textContent = totalEl.textContent;
+  });
 }
 
 /* ---------- bulk-apply sliders ---------- */
@@ -1320,6 +1345,7 @@ function goSubTab(groupKey, i) {
 window.addEventListener('DOMContentLoaded', async () => {
   await loadStateFromServer();
   initControls();
+  initCollapsibleCards();
   buildTableSkeleton();
   buildEquipSkeleton();
   buildHouseTypeSkeleton();
