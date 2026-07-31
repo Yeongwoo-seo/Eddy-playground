@@ -315,6 +315,7 @@ let bsRowRefs = {};
 let varRowRefs = {};
 let equipRowRefs = [];
 let houseTypeRowRefs = [];
+let lastMonths = [];
 let fixedCostRowRefs = [];
 
 /* ---------- cloud sync (Supabase) ---------- */
@@ -472,13 +473,15 @@ function computeAll() {
     const retainedEarnings = cumNetIncome;
     const equity = state.equityAmount + retainedEarnings;
 
+    const totalOutflow = capex + rentDepositOutflow + m.fixedProd + m.sga + varCost + loan.payment;
+
     months.push({
       idx: i, phase: MONTH_PHASE[i], houses: m.houses, salePrice: m.salePrice,
       coil: m.coil, screw: m.screw, detail: m.detail, otherVar: m.otherVar,
       fixedProd: m.fixedProd, sga: m.sga, depreciation: m.depreciation, interest,
       loanInterest: loan.interest, loanPrincipal: loan.principal, loanPayment: loan.payment, loanBalance,
       revenue, varCost, cogs, grossProfit, ebitda, netIncome, capex,
-      rentDepositOutflow, cumRentDeposit,
+      rentDepositOutflow, cumRentDeposit, totalOutflow,
       cashBegin, operatingCF, investingCF, financingCF, netCF, cashEnd,
       ppe, accruedInterest, totalAssets, totalLiabilities, equityAmount: state.equityAmount,
       retainedEarnings, equity
@@ -508,6 +511,7 @@ function computeAll() {
     totalEquipmentCapex,
     totalRentDeposit: rentDepositAmount,
     totalHouses: sum(months, 'houses'),
+    initial3MonthOutflow: months.slice(0, 3).reduce((s, m) => s + m.totalOutflow, 0),
     endCash: months[11].cashEnd,
     endPPE: months[11].ppe,
     endAccruedInterest: months[11].accruedInterest,
@@ -1097,6 +1101,43 @@ function closeItemModal() {
   q('itemModalOverlay').classList.remove('on');
 }
 
+const INITIAL_OUTFLOW_ROWS = [
+  { key: 'capex', label: '설비투자 (SP120·장비)' },
+  { key: 'rentDepositOutflow', label: '임대료 보증금' },
+  { key: 'fixedProd', label: '고정 생산비' },
+  { key: 'sga', label: '판매관리비 (SG&A)' },
+  { key: 'varCost', label: '변동비' },
+  { key: 'loanPayment', label: '대출 원리금 상환' }
+];
+
+function openInitialOutflowModal() {
+  const title = q('itemModalTitle');
+  const settings = q('itemModalSettings');
+  const detail = q('itemModalDetail');
+
+  title.textContent = '초기 3개월 자금집행 상세';
+
+  const first3 = lastMonths.slice(0, 3);
+  let html = '<table class="equip-table"><thead><tr><th>항목</th>' +
+    first3.map((m, i) => `<th>M${i + 1}<span class="tphase">${m.phase}</span></th>`).join('') +
+    '<th>합계</th></tr></thead><tbody>';
+  INITIAL_OUTFLOW_ROWS.forEach(r => {
+    const vals = first3.map(m => m[r.key]);
+    const rowTotal = vals.reduce((s, v) => s + v, 0);
+    html += `<tr><td>${r.label}</td>${vals.map(v => `<td>${fmt(v)}</td>`).join('')}<td>${fmt(rowTotal)}</td></tr>`;
+  });
+  const monthTotals = first3.map(m => m.totalOutflow);
+  const grandTotal = monthTotals.reduce((s, v) => s + v, 0);
+  html += `<tr><td><strong>합계</strong></td>${monthTotals.map(v => `<td><strong>${fmt(v)}</strong></td>`).join('')}<td><strong>${fmt(grandTotal)}</strong></td></tr>`;
+  html += '</tbody></table>';
+
+  settings.innerHTML = html;
+  detail.innerHTML = '';
+  detail.style.display = 'none';
+
+  q('itemModalOverlay').classList.add('on');
+}
+
 /* ---------- house type pricing & targets (editable) ---------- */
 
 function applyBlendedPriceToMonths() {
@@ -1450,12 +1491,17 @@ function syncInputsFromState() {
 
 function renderComputed() {
   const { months, totals } = computeAll();
+  lastMonths = months;
 
   renderEquipTable();
   renderMonthlyRampTable();
 
   const varTotal = totals.totalCoil + totals.totalScrew + totals.totalDetail + totals.totalOtherVar;
   setText('variableTabAmount', fmt(varTotal / 12) + '/월');
+
+  q('initialOutflowQuickStats').innerHTML = `
+    <div><div class="quick-stat-label">M1–M3 자금집행 합계</div><div class="quick-stat-value">${fmt(totals.initial3MonthOutflow)}</div></div>
+  `;
 
   q('mainQuickStats').innerHTML = `
     <div><div class="quick-stat-label">Y1 매출</div><div class="quick-stat-value">${fmt(totals.totalRevenue)}</div></div>
@@ -2023,6 +2069,11 @@ window.addEventListener('DOMContentLoaded', () => {
   const resetBtn = q('resetBtn');
   if (resetBtn) resetBtn.addEventListener('click', resetAll);
   q('houseTypeAddBtn').addEventListener('click', onHouseTypeAdd);
+
+  q('initialOutflowCard').addEventListener('click', openInitialOutflowModal);
+  q('initialOutflowCard').addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openInitialOutflowModal(); }
+  });
 
   q('itemModalClose').addEventListener('click', closeItemModal);
   q('itemModalOverlay').addEventListener('click', e => {
