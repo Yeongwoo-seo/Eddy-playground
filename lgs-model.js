@@ -907,6 +907,67 @@ function renderHouseTypeTable() {
   q('houseTypeTotalRevenue').textContent = fmt(totals.totalRevenue);
 }
 
+/* ---------- monthly sales ramp (drives monthly revenue directly) ---------- */
+
+let monthlyRampRowRefs = [];
+
+function buildMonthlyRampSkeleton() {
+  const tbody = q('monthlyRampBody');
+  tbody.innerHTML = '';
+  monthlyRampRowRefs = [];
+
+  for (let i = 0; i < 12; i++) {
+    const tr = document.createElement('tr');
+
+    const monthTd = document.createElement('td');
+    monthTd.className = 'equip-label-cell';
+    monthTd.innerHTML = `<span class="equip-label">M${i + 1}<span class="tphase">${MONTH_PHASE[i]}</span></span>`;
+    tr.appendChild(monthTd);
+
+    const qtyInput = document.createElement('input');
+    qtyInput.type = 'number';
+    qtyInput.className = 'equip-input';
+    qtyInput.min = '0';
+    qtyInput.step = '1';
+    qtyInput.value = state.months[i].houses;
+    qtyInput.dataset.i = i;
+    qtyInput.addEventListener('input', onMonthlyRampInput);
+    const qtyTd = document.createElement('td');
+    qtyTd.appendChild(qtyInput);
+    tr.appendChild(qtyTd);
+
+    const revTd = document.createElement('td');
+    revTd.className = 'equip-subtotal';
+    tr.appendChild(revTd);
+
+    tbody.appendChild(tr);
+    monthlyRampRowRefs.push({ qtyInput, revTd });
+  }
+}
+
+function onMonthlyRampInput(e) {
+  const inp = e.target;
+  const i = Number(inp.dataset.i);
+  let val = parseFloat(inp.value);
+  if (isNaN(val) || val < 0) val = 0;
+  state.months[i].houses = val;
+  reapplyVariableCostPcts([i]);
+  syncInputsFromState();
+  renderComputed();
+  scheduleSave();
+}
+
+function renderMonthlyRampTable() {
+  let totalQty = 0;
+  monthlyRampRowRefs.forEach((row, i) => {
+    const m = state.months[i];
+    totalQty += m.houses;
+    row.revTd.textContent = fmt(m.houses * m.salePrice);
+  });
+  const totalQtyEl = q('monthlyRampTotalQty');
+  if (totalQtyEl) totalQtyEl.textContent = totalQty + '채';
+}
+
 /* ---------- table (editable) ---------- */
 
 const EDIT_KEYS = ['houses', 'salePrice', 'coil', 'screw', 'detail', 'otherVar', 'fixedProd', 'sga', 'otherCost'];
@@ -991,12 +1052,14 @@ function syncInputsFromState() {
     const m = state.months[i];
     EDIT_KEYS.forEach(key => { row.inputs[key].value = m[key]; });
   });
+  monthlyRampRowRefs.forEach((row, i) => { row.qtyInput.value = state.months[i].houses; });
 }
 
 function renderComputed() {
   const { months, totals } = computeAll();
 
   renderEquipTable();
+  renderMonthlyRampTable();
 
   const varTotal = totals.totalCoil + totals.totalScrew + totals.totalDetail + totals.totalOtherVar;
 
@@ -1173,6 +1236,7 @@ function resetAll() {
   buildHouseTypeSkeleton();
   buildFixedCostSkeleton();
   buildEquipSkeleton();
+  buildMonthlyRampSkeleton();
   syncInputsFromState();
   renderHouseTypeTable();
   renderFixedCostTable();
@@ -1266,6 +1330,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   buildEquipSkeleton();
   buildHouseTypeSkeleton();
   buildFixedCostSkeleton();
+  buildMonthlyRampSkeleton();
   renderHouseTypeTable();
   renderFixedCostTable();
   renderComputed();

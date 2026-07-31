@@ -239,6 +239,19 @@ input.equip-input::-webkit-outer-spin-button,input.equip-input::-webkit-inner-sp
       <span class="var-total-value" id="houseTypeTotalRevenue">-</span>
     </div>
   </div>
+
+  <div class="card">
+    <div class="section-label"><div class="section-dot"></div><span>월별 판매 계획 (매출 조정)</span></div>
+    <div class="section-note">월별로 목표 판매량(주택수)을 직접 조정해 매출 곡선을 만들 수 있어요. 위 목표 총 세대수와 합계를 맞추지 않아도 괜찮아요 — 시나리오 테스트용이에요.</div>
+    <table class="equip-table">
+      <thead><tr><th>월</th><th>판매량(채)</th><th>매출</th></tr></thead>
+      <tbody id="monthlyRampBody"></tbody>
+    </table>
+    <div class="var-total-row" style="margin-top:10px">
+      <span class="var-total-label">월별 계획 합계 세대수</span>
+      <span class="var-total-value" id="monthlyRampTotalQty">-</span>
+    </div>
+  </div>
   </div>
 
   <div class="sub-panel" id="subtab-fixed">
