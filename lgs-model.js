@@ -4,6 +4,14 @@ const MONTH_PHASE = ['Closing', 'Closing', 'Build', 'Build', 'Pilot', 'Pilot', '
 const PHASE_ORDER = ['Closing', 'Build', 'Pilot', 'Scale', 'Expand'];
 const PHASE_RANGE = { Closing: 'M1-M2', Build: 'M3-M4', Pilot: 'M5-M6', Scale: 'M7-M9', Expand: 'M10-M12' };
 
+const TABS = [
+  { id: 'summary', icon: '📊', label: '요약' },
+  { id: 'assumptions', icon: '⚙️', label: '가정' },
+  { id: 'capex', icon: '🏗️', label: '설비투자' },
+  { id: 'table', icon: '🧮', label: '월별표' }
+];
+let curTab = 0;
+
 const DEFAULTS = {
   salePrice: 44917,
   coilPct: 30,
@@ -691,11 +699,45 @@ function initControls() {
   bindSelect('equipmentMonth', 'equipmentMonth');
 }
 
+/* ---------- tabs (floating bottom nav) ---------- */
+
+function renderBottomNav() {
+  const el = q('bottomNav');
+  el.innerHTML = `<div class="bn-thumb" id="bnThumb" style="width:calc((100% - 16px) / ${TABS.length})"></div>` +
+    TABS.map((t, i) => `
+      <button class="nav-item" data-tab-index="${i}">
+        <div class="n-ic">${t.icon}</div>
+        <div class="n-lb-row"><span class="n-num">${i + 1}</span><span class="n-lb">${t.label}</span></div>
+      </button>
+    `).join('');
+  el.querySelectorAll('.nav-item').forEach(btn => {
+    btn.addEventListener('click', () => goTab(Number(btn.dataset.tabIndex)));
+  });
+  updateBottomNavActive();
+}
+
+function updateBottomNavActive() {
+  document.querySelectorAll('#bottomNav .nav-item').forEach((el, i) => el.classList.toggle('on', i === curTab));
+  const thumb = q('bnThumb');
+  if (thumb) thumb.style.transform = `translateX(${curTab * 100}%)`;
+}
+
+function goTab(i) {
+  curTab = i;
+  TABS.forEach((t, idx) => {
+    q('tab-' + t.id).classList.toggle('on', idx === i);
+  });
+  updateBottomNavActive();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 window.addEventListener('DOMContentLoaded', () => {
   initControls();
   buildTableSkeleton();
   buildEquipSkeleton();
   bindMetricClicks();
   renderComputed();
+  renderBottomNav();
+  goTab(0);
   q('resetBtn').addEventListener('click', resetAll);
 });
