@@ -86,10 +86,6 @@ input.slider[type=range]{-webkit-appearance:none;appearance:none;width:100%;heig
 input.slider[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--primary);box-shadow:0 2px 6px rgba(232,116,30,.4);cursor:pointer;border:3px solid var(--white)}
 input.slider[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--primary);border:3px solid var(--white);cursor:pointer;box-shadow:0 2px 6px rgba(232,116,30,.4)}
 
-.var-total-row{display:flex;justify-content:space-between;align-items:center;background:var(--primary-light);border-radius:14px;padding:12px 16px;margin-top:4px}
-.var-total-label{font-size:13px;font-weight:600;color:var(--primary)}
-.var-total-value{font-size:16px;font-weight:800;color:var(--primary)}
-
 /* Select */
 .select-row{display:flex;gap:12px;margin-bottom:18px}
 .select-unit{flex:1}
@@ -223,31 +219,6 @@ input.equip-input::-webkit-outer-spin-button,input.equip-input::-webkit-inner-sp
     <div class="slider-row">
       <div class="slider-label-row"><span class="slider-label">채당 평균 판매가</span><span class="slider-value" id="salePriceVal">-</span></div>
       <input type="range" class="slider" id="salePrice" min="30000" max="60000" step="500">
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="section-label"><div class="section-dot"></div><span>변동비 구성 (매출 대비 %)</span></div>
-    <div class="section-note">코일(철강) · 스크류/파스너 · 외주 디테일링 · 기타(설치 등)로 구성돼요. 슬라이더는 전체 월에 일괄 적용돼요.</div>
-    <div class="slider-row">
-      <div class="slider-label-row"><span class="slider-label">코일(철강)</span><span class="slider-value" id="coilPctVal" data-fmt="pct">-</span></div>
-      <input type="range" class="slider" id="coilPct" min="0" max="50" step="1">
-    </div>
-    <div class="slider-row">
-      <div class="slider-label-row"><span class="slider-label">스크류/파스너</span><span class="slider-value" id="screwPctVal" data-fmt="pct">-</span></div>
-      <input type="range" class="slider" id="screwPct" min="0" max="20" step="1">
-    </div>
-    <div class="slider-row">
-      <div class="slider-label-row"><span class="slider-label">외주 디테일링</span><span class="slider-value" id="detailPctVal" data-fmt="pct">-</span></div>
-      <input type="range" class="slider" id="detailPct" min="0" max="30" step="1">
-    </div>
-    <div class="slider-row">
-      <div class="slider-label-row"><span class="slider-label">기타(설치 등)</span><span class="slider-value" id="otherVarPctVal" data-fmt="pct">-</span></div>
-      <input type="range" class="slider" id="otherVarPct" min="0" max="20" step="1">
-    </div>
-    <div class="var-total-row">
-      <span class="var-total-label">총 변동비율</span>
-      <span class="var-total-value" id="varPctTotal">-</span>
     </div>
   </div>
 
