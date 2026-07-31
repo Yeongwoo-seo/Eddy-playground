@@ -227,6 +227,14 @@ function fmtK(n) {
   return (r < 0 ? '-$' : '$') + Math.abs(r) + 'k';
 }
 
+/* wrap a money input with a "$" prefix shown inside the box (variant matches the input's own class: money-n/money-t/money-e) */
+function wrapMoneyInput(input, variant) {
+  const wrap = document.createElement('span');
+  wrap.className = 'money-field ' + variant;
+  wrap.appendChild(input);
+  return wrap;
+}
+
 function q(id) { return document.getElementById(id); }
 
 function computeAll() {
@@ -426,7 +434,7 @@ function buildEquipSkeleton() {
     priceInput.dataset.key = 'unitPrice';
     priceInput.addEventListener('input', onEquipInput);
     const priceTd = document.createElement('td');
-    priceTd.appendChild(priceInput);
+    priceTd.appendChild(wrapMoneyInput(priceInput, 'money-e'));
     tr.appendChild(priceTd);
 
     const qtyInput = document.createElement('input');
@@ -535,7 +543,7 @@ function buildFixedCostSkeleton() {
         monthlyInput.value = item.monthly;
         monthlyInput.dataset.i = i;
         monthlyInput.addEventListener('input', onFixedCostInput);
-        monthlyTd.appendChild(monthlyInput);
+        monthlyTd.appendChild(wrapMoneyInput(monthlyInput, 'money-e'));
         tr.appendChild(monthlyTd);
         fixedCostRowRefs.push({ i, input: monthlyInput });
       }
@@ -631,7 +639,7 @@ function renderFixedCostTable() {
 
 /* ---------- item detail/settings modal (equipment & fixed cost items) ---------- */
 
-function buildModalNumberField(labelText, value, step, onChange) {
+function buildModalNumberField(labelText, value, step, onChange, isMoney) {
   const wrap = document.createElement('div');
   const label = document.createElement('label');
   label.textContent = labelText;
@@ -647,7 +655,7 @@ function buildModalNumberField(labelText, value, step, onChange) {
     if (isNaN(val) || val < 0) val = 0;
     onChange(val);
   });
-  wrap.appendChild(input);
+  wrap.appendChild(isMoney ? wrapMoneyInput(input, 'money-n') : input);
   return wrap;
 }
 
@@ -664,7 +672,7 @@ function openItemModal(type, i) {
     settings.appendChild(buildModalNumberField('단가', item.unitPrice, '0.01', val => {
       row.priceInput.value = val;
       row.priceInput.dispatchEvent(new Event('input', { bubbles: true }));
-    }));
+    }, true));
     settings.appendChild(buildModalNumberField('수량', item.qty, '1', val => {
       row.qtyInput.value = val;
       row.qtyInput.dispatchEvent(new Event('input', { bubbles: true }));
@@ -706,7 +714,7 @@ function openItemModal(type, i) {
           recomputeFixedCostCalcItem(i);
           if (computedEl) computedEl.textContent = '= 월 ' + fmt(item.monthly);
           refreshFixedCostItem(i);
-        }));
+        }, true));
         computedEl = document.createElement('div');
         computedEl.className = 'calc-computed';
         computedEl.textContent = '= 월 ' + fmt(item.monthly);
@@ -715,7 +723,7 @@ function openItemModal(type, i) {
         fieldsWrap.appendChild(buildModalNumberField('월 금액', item.monthly, '1', val => {
           item.monthly = val;
           refreshFixedCostItem(i);
-        }));
+        }, true));
       }
     }
     renderFields();
@@ -930,7 +938,7 @@ function buildTableSkeleton() {
       input.dataset.i = i;
       input.dataset.key = key;
       input.addEventListener('input', onCellInput);
-      td.appendChild(input);
+      td.appendChild(key === 'houses' ? input : wrapMoneyInput(input, 'money-t'));
       tr.appendChild(td);
       inputs[key] = input;
 
