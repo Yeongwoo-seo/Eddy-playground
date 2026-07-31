@@ -44,7 +44,7 @@ const DEFAULTS = {
   detailPct: 10,
   otherVarPct: 5,
   fixedCostItems: [
-    { category: 'fixedProd', label: '공장·창고 임대료', note: 'Western Sydney 산업단지 창고 (~450㎡, 순임대료 ~A$160/㎡/yr 기준)', monthly: 6000 },
+    { category: 'fixedProd', label: '공장·창고 임대료', note: 'Western Sydney 산업단지 창고 (~450㎡, 순임대료 ~$160/㎡/yr 기준)', monthly: 6000 },
     { category: 'fixedProd', label: '공장 전기·수도', note: 'SP120 롤포밍기 가동 전력 + 용수/폐수', monthly: 1500 },
     { category: 'fixedProd', label: '생산직 기본급 (오퍼레이터 2명)', note: '램프업 단계 최소 유지 인력, Fair Work 금속제조업 award 기준', monthly: 9000 },
     { category: 'fixedProd', label: '소모품·공구 유지보수', note: '드릴비트·블레이드·윤활유 등 소모품 교체', monthly: 1000 },
@@ -61,7 +61,7 @@ const DEFAULTS = {
     { category: 'sga', label: '통신·IT', note: '인터넷, 휴대폰, 클라우드 SaaS 구독', monthly: 600 },
     { category: 'sga', label: '인증·컴플라이언스', note: '구조 엔지니어 서명, WHS 컴플라이언스, CDC 인증 관련', monthly: 1800 },
     { category: 'sga', label: '기타 관리비', note: '사무용품, 소모품, 예비비', monthly: 1000 },
-    { category: 'other', label: '설비 감가상각비', note: 'SP120 Stage1+2 총 A$80,000, 내용연수 7년 정액법', monthly: 950 },
+    { category: 'other', label: '설비 감가상각비', note: 'SP120 Stage1+2 총 $80,000, 내용연수 7년 정액법', monthly: 950 },
     { category: 'other', label: '장비·공구 감가상각비', note: '포크리프트 등 초기 장비, 내용연수 5년', monthly: 90 },
     { category: 'other', label: '설비 리스·대출 이자', note: 'SP120 자산금융 가정 이자비용', monthly: 560 }
   ],
@@ -165,12 +165,12 @@ let fixedCostRowRefs = [];
 
 function fmt(n) {
   const r = Math.round(n);
-  return (r < 0 ? '-A$' : 'A$') + Math.abs(r).toLocaleString('en-US');
+  return (r < 0 ? '-$' : '$') + Math.abs(r).toLocaleString('en-US');
 }
 
 function fmtK(n) {
   const r = Math.round(n / 1000);
-  return (r < 0 ? '-A$' : 'A$') + Math.abs(r) + 'k';
+  return (r < 0 ? '-$' : '$') + Math.abs(r) + 'k';
 }
 
 function q(id) { return document.getElementById(id); }
@@ -556,14 +556,26 @@ function buildFixedCostSkeleton() {
 
       const monthlyInput = document.createElement('input');
       monthlyInput.type = 'number';
-      monthlyInput.className = 'equip-input';
+      monthlyInput.className = 'equip-input amount-input';
       monthlyInput.min = '0';
+      monthlyInput.max = '9999999';
       monthlyInput.step = '1';
       monthlyInput.value = item.monthly;
       monthlyInput.dataset.i = i;
       monthlyInput.addEventListener('input', onFixedCostInput);
+
+      const dollarSign = document.createElement('span');
+      dollarSign.className = 'amount-dollar';
+      dollarSign.textContent = '$';
+
+      const amountBox = document.createElement('div');
+      amountBox.className = 'amount-box';
+      amountBox.appendChild(dollarSign);
+      amountBox.appendChild(monthlyInput);
+
       const monthlyTd = document.createElement('td');
-      monthlyTd.appendChild(monthlyInput);
+      monthlyTd.className = 'amount-cell';
+      monthlyTd.appendChild(amountBox);
       tr.appendChild(monthlyTd);
 
       tbody.appendChild(tr);

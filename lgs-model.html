@@ -150,6 +150,12 @@ table.equip-table{width:100%;border-collapse:collapse}
 .equip-input{width:100%;min-width:44px;border:none;background:var(--grey-50);text-align:right;font-size:11.5px;font-weight:700;color:var(--black);padding:6px 5px;border-radius:8px;outline:none;font-family:inherit}
 .equip-input:focus{background:var(--primary-light);box-shadow:0 0 0 2px var(--primary) inset}
 input.equip-input::-webkit-outer-spin-button,input.equip-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.amount-cell{text-align:right}
+.amount-box{display:inline-flex;align-items:center;gap:2px;background:var(--grey-50);border-radius:8px;padding:6px 8px;transition:0.3s cubic-bezier(0.2,0.8,0.2,1)}
+.amount-box:focus-within{background:var(--primary-light);box-shadow:0 0 0 2px var(--primary) inset}
+.amount-dollar{font-size:11.5px;font-weight:700;color:var(--grey-500)}
+.amount-box .equip-input{width:7ch;min-width:0;background:none;padding:0;border-radius:0}
+.amount-box .equip-input:focus{background:none;box-shadow:none}
 .equip-subtotal{font-size:12px;font-weight:700;color:var(--grey-700);text-align:right;white-space:nowrap}
 .equip-total-row{display:flex;justify-content:space-between;align-items:center;background:var(--primary-light);border-radius:14px;padding:12px 16px;margin-top:6px;font-size:13px;font-weight:700;color:var(--primary)}
 .equip-total-row span:last-child{font-size:16px;font-weight:800}
@@ -428,7 +434,7 @@ input.equip-input::-webkit-outer-spin-button,input.equip-input::-webkit-inner-sp
         </select>
       </div>
     </div>
-    <div class="table-hint">출처: Bunnings · Total Tools · Facebook Marketplace Sydney 시세 조사 (2026). 가구용 스크류(칩보드)는 단가 확인 전이라 A$0으로 시작해요 — 확인되면 직접 입력하세요.</div>
+    <div class="table-hint">출처: Bunnings · Total Tools · Facebook Marketplace Sydney 시세 조사 (2026). 가구용 스크류(칩보드)는 단가 확인 전이라 $0으로 시작해요 — 확인되면 직접 입력하세요.</div>
   </div>
   </div>
 
@@ -455,7 +461,7 @@ input.equip-input::-webkit-outer-spin-button,input.equip-input::-webkit-inner-sp
   </div>
 
   <div class="footer">
-    기준: LGS Frame Market Research and Capabilities (2026.03) · 시드니 그래니플랫·듀플렉스·타운하우스 12채 스타터 파이프라인(제품 유형 믹스), 채당 평균 ~A$16.7k, 변동비 ~50%, 고정비 항목 리서치(2026.07) 기반 월 ~A$54.9k(연 ~A$659k) 가정 기반 시뮬레이션. 실제 결과와 다를 수 있습니다.
+    기준: LGS Frame Market Research and Capabilities (2026.03) · 시드니 그래니플랫·듀플렉스·타운하우스 12채 스타터 파이프라인(제품 유형 믹스), 채당 평균 ~$16.7k, 변동비 ~50%, 고정비 항목 리서치(2026.07) 기반 월 ~$54.9k(연 ~$659k) 가정 기반 시뮬레이션. 실제 결과와 다를 수 있습니다.
   </div>
 
 </div>
