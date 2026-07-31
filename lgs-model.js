@@ -446,6 +446,16 @@ function buildEquipSkeleton() {
     subtotalTd.className = 'equip-subtotal';
     tr.appendChild(subtotalTd);
 
+    const removeTd = document.createElement('td');
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'ht-remove-btn';
+    removeBtn.textContent = '✕';
+    removeBtn.dataset.i = i;
+    removeBtn.addEventListener('click', onEquipRemove);
+    removeTd.appendChild(removeBtn);
+    tr.appendChild(removeTd);
+
     tbody.appendChild(tr);
     equipRowRefs.push({ priceInput, qtyInput, subtotalTd });
   });
@@ -462,12 +472,12 @@ function onEquipInput(e) {
   scheduleSave();
 }
 
-function syncEquipInputsFromState() {
-  equipRowRefs.forEach((row, i) => {
-    const item = state.equipmentItems[i];
-    row.priceInput.value = item.unitPrice;
-    row.qtyInput.value = item.qty;
-  });
+function onEquipRemove(e) {
+  const i = Number(e.currentTarget.dataset.i);
+  state.equipmentItems.splice(i, 1);
+  buildEquipSkeleton();
+  renderComputed();
+  scheduleSave();
 }
 
 function renderEquipTable() {
@@ -1154,8 +1164,8 @@ function resetAll() {
 
   buildHouseTypeSkeleton();
   buildFixedCostSkeleton();
+  buildEquipSkeleton();
   syncInputsFromState();
-  syncEquipInputsFromState();
   renderHouseTypeTable();
   renderFixedCostTable();
   renderComputed();
