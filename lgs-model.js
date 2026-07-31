@@ -12,6 +12,13 @@ const TABS = [
 ];
 let curTab = 0;
 
+const SUB_TABS = [
+  { id: 'revenue', label: '매출' },
+  { id: 'fixed', label: '고정비' },
+  { id: 'variable', label: '변동비' }
+];
+let curSubTab = 0;
+
 const DEFAULTS = {
   pricePerSqm: 700,
   houseTypes: [
@@ -709,6 +716,10 @@ function renderComputed() {
     warnBanner.style.display = 'none';
   }
 
+  const totalVarPct = totals.totalRevenue > 0 ? (varTotal / totals.totalRevenue * 100) : 0;
+  const varPctEl = q('varPctTotal');
+  if (varPctEl) varPctEl.textContent = totalVarPct.toFixed(1) + '%';
+
   months.forEach((m, i) => {
     const row = rowRefs[i];
     row.inputs._revenue.textContent = fmt(m.revenue);
@@ -745,6 +756,12 @@ function renderComputed() {
 
 /* ---------- bulk-apply sliders ---------- */
 
+function applyPctAll(field, pct) {
+  state.months.forEach(m => {
+    const revenue = m.houses * m.salePrice;
+    m[field] = revenue * pct / 100;
+  });
+}
 function applyFixedAll(field, v) { state.months.forEach(m => { m[field] = v; }); }
 
 function bindBulkSlider(id, isPct, applyFn) {
@@ -823,7 +840,7 @@ function resetAll() {
   document.querySelectorAll('[data-metric]').forEach(o => o.classList.remove('active'));
   q('breakdownCard').style.display = 'none';
 
-  ['fixedProdCost', 'sgaMonthly', 'otherCostMonthly', 'equityRaise', 'stage1Amount', 'stage2Amount'].forEach(id => {
+  ['coilPct', 'screwPct', 'detailPct', 'otherVarPct', 'fixedProdCost', 'sgaMonthly', 'otherCostMonthly', 'equityRaise', 'stage1Amount', 'stage2Amount'].forEach(id => {
     const elx = q(id);
     elx.value = DEFAULTS[id];
     setSliderFill(elx);
@@ -848,6 +865,10 @@ function resetAll() {
 
 function initControls() {
   bindPricePerSqmSlider();
+  bindBulkSlider('coilPct', true, v => applyPctAll('coil', v));
+  bindBulkSlider('screwPct', true, v => applyPctAll('screw', v));
+  bindBulkSlider('detailPct', true, v => applyPctAll('detail', v));
+  bindBulkSlider('otherVarPct', true, v => applyPctAll('otherVar', v));
   bindBulkSlider('fixedProdCost', false, v => applyFixedAll('fixedProd', v));
   bindBulkSlider('sgaMonthly', false, v => applyFixedAll('sga', v));
   bindBulkSlider('otherCostMonthly', false, v => applyFixedAll('otherCost', v));
@@ -891,6 +912,32 @@ function goTab(i) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+/* ---------- sub-tabs (segmented, sliding thumb) ---------- */
+
+function renderSubTabNav() {
+  const el = q('subTabBar');
+  el.innerHTML = `<div class="sub-tab-thumb" id="subTabThumb" style="width:calc((100% - 8px) / ${SUB_TABS.length})"></div>` +
+    SUB_TABS.map((t, i) => `<button class="sub-tab-item" data-subtab-index="${i}">${t.label}</button>`).join('');
+  el.querySelectorAll('.sub-tab-item').forEach(btn => {
+    btn.addEventListener('click', () => goSubTab(Number(btn.dataset.subtabIndex)));
+  });
+  updateSubTabActive();
+}
+
+function updateSubTabActive() {
+  document.querySelectorAll('#subTabBar .sub-tab-item').forEach((el, i) => el.classList.toggle('on', i === curSubTab));
+  const thumb = q('subTabThumb');
+  if (thumb) thumb.style.transform = `translateX(${curSubTab * 100}%)`;
+}
+
+function goSubTab(i) {
+  curSubTab = i;
+  SUB_TABS.forEach((t, idx) => {
+    q('subtab-' + t.id).classList.toggle('on', idx === i);
+  });
+  updateSubTabActive();
+}
+
 window.addEventListener('DOMContentLoaded', () => {
   initControls();
   buildTableSkeleton();
@@ -901,6 +948,8 @@ window.addEventListener('DOMContentLoaded', () => {
   renderComputed();
   renderBottomNav();
   goTab(0);
+  renderSubTabNav();
+  goSubTab(0);
   q('resetBtn').addEventListener('click', resetAll);
   q('houseTypeAddBtn').addEventListener('click', onHouseTypeAdd);
 });
