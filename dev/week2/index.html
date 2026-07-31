@@ -110,6 +110,9 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 <script src="/dev/caseFileState.js"></script>
+<script src="/dev/data/locationDefs.js"></script>
+<script src="/dev/data/interactionDefs.js"></script>
+<script src="/dev/state/explorationState.js"></script>
 <script src="/dev/dialogueData.js"></script>
 <script>
 // Setup href: plain VN scenes go to /dev/upload's 배경/캐릭터/대사 editor for
@@ -131,8 +134,15 @@ if (autoplayFirstScene) {
   // 1주차 홈 화면의 "시작하기"와 동일하게, 2주차를 처음부터 다시 재생할
   // 때도 이전 테스트에서 남은 CaseFileState(증거·의문점)를 초기화하고
   // 들어간다 — 안 그러면 증거버전 재생 때 이미 등록된 증거가 안 뜬다.
-  autoplayLink.addEventListener('click', () => CaseFileState.resetAll());
-  evidenceCheckLink.addEventListener('click', () => CaseFileState.resetAll());
+  // ExplorationState(탐색허브 진행도)도 함께 초기화해야 한다 — 안 그러면
+  // 이전 미리보기 실행에서 남은 completedInteractionIds가 그대로 남아있어
+  // W2_EXHIBIT_FREE_LOOK 허브의 autoPlayOnFirstVisit(인물 첫 마주침 자동
+  // 대화)이 "이미 만난 사람"으로 판정돼 재생되지 않고, 단체사진
+  // enterSceneAutoRequiredInteractionIds 조건도 처음부터 다 채워진 걸로
+  // 오판해 바로 다음 씬으로 튕겨버린다.
+  const resetForPreview = () => { CaseFileState.resetAll(); ExplorationState.resetAll(); };
+  autoplayLink.addEventListener('click', resetForPreview);
+  evidenceCheckLink.addEventListener('click', resetForPreview);
 } else {
   autoplayLink.classList.add('disabled');
   evidenceCheckLink.classList.add('disabled');
