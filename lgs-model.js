@@ -20,12 +20,11 @@ const SUB_TABS = [
 let curSubTab = 0;
 
 const DEFAULTS = {
-  pricePerSqm: 700,
+  pricePerSqm: 200,
   houseTypes: [
-    { label: '스튜디오 그래니플랫', sqm: 40, targetQty: 1 },
-    { label: '1룸형 그래니플랫', sqm: 50, targetQty: 2 },
-    { label: '2룸형 그래니플랫', sqm: 60, targetQty: 6 },
-    { label: '3룸형 그래니플랫', sqm: 85, targetQty: 3 }
+    { label: '그래니플랫', sqm: 55, targetQty: 8 },
+    { label: '듀플렉스', sqm: 150, targetQty: 2 },
+    { label: '타운하우스', sqm: 130, targetQty: 2 }
   ],
   coilPct: 30,
   screwPct: 5,
@@ -58,6 +57,8 @@ const DEFAULTS = {
   stage1Month: 1,
   stage2Amount: 40000,
   stage2Month: 5,
+  stage3Amount: 0,
+  stage3Month: 9,
   houses: [0, 0, 0, 0, 1, 2, 1, 2, 2, 1, 2, 1],
   equipmentMonth: 1,
   equipmentItems: [
@@ -132,6 +133,8 @@ let state = {
   stage1Month: DEFAULTS.stage1Month,
   stage2Amount: DEFAULTS.stage2Amount,
   stage2Month: DEFAULTS.stage2Month,
+  stage3Amount: DEFAULTS.stage3Amount,
+  stage3Month: DEFAULTS.stage3Month,
   equipmentMonth: DEFAULTS.equipmentMonth,
   equipmentItems: buildDefaultEquipment(),
   months: buildDefaultMonths()
@@ -171,6 +174,7 @@ function computeAll() {
     let capex = 0;
     if (i + 1 === Number(state.stage1Month)) capex += state.stage1Amount;
     if (i + 1 === Number(state.stage2Month)) capex += state.stage2Amount;
+    if (i + 1 === Number(state.stage3Month)) capex += state.stage3Amount;
     if (i + 1 === Number(state.equipmentMonth)) capex += totalEquipmentCapex;
     cash += ebitda - capex;
 
@@ -195,7 +199,7 @@ function computeAll() {
     totalEBITDA: sum(months, 'ebitda'),
     totalNI: sum(months, 'netIncome'),
     totalCapex: sum(months, 'capex'),
-    totalMachineCapex: state.stage1Amount + state.stage2Amount,
+    totalMachineCapex: state.stage1Amount + state.stage2Amount + state.stage3Amount,
     totalEquipmentCapex,
     totalHouses: sum(months, 'houses'),
     endCash: months[11].cashEnd,
@@ -379,7 +383,7 @@ function getBreakdown(metric, months, totals) {
       const rows = [
         { label: '초기 투자금', value: state.equityRaise, sign: '+' },
         { label: '누적 EBITDA', value: totals.totalEBITDA, sign: totals.totalEBITDA >= 0 ? '+' : '-' },
-        { label: 'SP120 설비투자 (Stage 1+2)', value: -totals.totalMachineCapex, sign: '-' },
+        { label: 'SP120 설비투자 (Stage 1+2+3)', value: -totals.totalMachineCapex, sign: '-' },
         { label: '장비·공구 구입', value: -totals.totalEquipmentCapex, sign: '-' }
       ];
       return { title: '기말 현금 계산', rows, totalLabel: 'Y1 말 현금', totalValue: totals.endCash, showBar: false };
@@ -903,17 +907,13 @@ function bindPricePerSqmSlider() {
   });
 }
 
-function bindScalarSlider(id, key) {
+function bindScalarInput(id, key) {
   const elx = q(id);
-  const label = q(id + 'Val');
   elx.value = DEFAULTS[key];
-  setSliderFill(elx);
-  if (label) label.textContent = fmt(DEFAULTS[key]);
   elx.addEventListener('input', () => {
-    const val = parseFloat(elx.value);
+    let val = parseFloat(elx.value);
+    if (isNaN(val) || val < 0) val = 0;
     state[key] = val;
-    setSliderFill(elx);
-    if (label) label.textContent = fmt(val);
     renderComputed();
   });
 }
@@ -937,6 +937,8 @@ function resetAll() {
     stage1Month: DEFAULTS.stage1Month,
     stage2Amount: DEFAULTS.stage2Amount,
     stage2Month: DEFAULTS.stage2Month,
+    stage3Amount: DEFAULTS.stage3Amount,
+    stage3Month: DEFAULTS.stage3Month,
     equipmentMonth: DEFAULTS.equipmentMonth,
     equipmentItems: buildDefaultEquipment(),
     months: buildDefaultMonths()
@@ -945,12 +947,15 @@ function resetAll() {
   document.querySelectorAll('[data-metric]').forEach(o => o.classList.remove('active'));
   q('breakdownCard').style.display = 'none';
 
-  ['coilPct', 'screwPct', 'detailPct', 'otherVarPct', 'equityRaise', 'stage1Amount', 'stage2Amount'].forEach(id => {
+  ['coilPct', 'screwPct', 'detailPct', 'otherVarPct'].forEach(id => {
     const elx = q(id);
     elx.value = DEFAULTS[id];
     setSliderFill(elx);
     const label = q(id + 'Val');
     if (label) label.textContent = label.dataset.fmt === 'pct' ? (DEFAULTS[id] + '%') : fmt(DEFAULTS[id]);
+  });
+  ['equityRaise', 'stage1Amount', 'stage2Amount', 'stage3Amount'].forEach(id => {
+    q(id).value = DEFAULTS[id];
   });
   const ppsElx = q('pricePerSqm');
   ppsElx.value = DEFAULTS.pricePerSqm;
@@ -959,6 +964,7 @@ function resetAll() {
 
   q('stage1Month').value = DEFAULTS.stage1Month;
   q('stage2Month').value = DEFAULTS.stage2Month;
+  q('stage3Month').value = DEFAULTS.stage3Month;
   q('equipmentMonth').value = DEFAULTS.equipmentMonth;
 
   buildHouseTypeSkeleton();
@@ -976,11 +982,13 @@ function initControls() {
   bindBulkSlider('screwPct', true, v => applyPctAll('screw', v));
   bindBulkSlider('detailPct', true, v => applyPctAll('detail', v));
   bindBulkSlider('otherVarPct', true, v => applyPctAll('otherVar', v));
-  bindScalarSlider('equityRaise', 'equityRaise');
-  bindScalarSlider('stage1Amount', 'stage1Amount');
-  bindScalarSlider('stage2Amount', 'stage2Amount');
+  bindScalarInput('equityRaise', 'equityRaise');
+  bindScalarInput('stage1Amount', 'stage1Amount');
+  bindScalarInput('stage2Amount', 'stage2Amount');
+  bindScalarInput('stage3Amount', 'stage3Amount');
   bindSelect('stage1Month', 'stage1Month');
   bindSelect('stage2Month', 'stage2Month');
+  bindSelect('stage3Month', 'stage3Month');
   bindSelect('equipmentMonth', 'equipmentMonth');
 }
 
