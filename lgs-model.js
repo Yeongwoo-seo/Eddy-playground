@@ -180,7 +180,7 @@ function buildDefaultState() {
 
 let state = buildDefaultState();
 
-let rowRefs = [];
+let tableRowRefs = {};
 let equipRowRefs = [];
 let houseTypeRowRefs = [];
 let fixedCostRowRefs = [];
@@ -968,90 +968,87 @@ function renderMonthlyRampTable() {
   if (totalQtyEl) totalQtyEl.textContent = totalQty + '채';
 }
 
-/* ---------- table (editable) ---------- */
+/* ---------- table (big categories, months as columns) ---------- */
 
-const EDIT_KEYS = ['houses', 'salePrice', 'coil', 'screw', 'detail', 'otherVar', 'fixedProd', 'sga', 'otherCost'];
+function signClass(val, rowDef) {
+  if (rowDef.posNeg) return val < 0 ? ' neg' : ' pos';
+  if (rowDef.negOnly) return val < 0 ? ' neg' : '';
+  return '';
+}
+
+const TABLE_ROWS = [
+  { key: 'houses', label: '주택수', editable: true, money: false },
+  { key: 'revenue', label: '매출', editable: false, money: true },
+  { key: 'cogs', label: '매출원가', editable: false, money: true },
+  { key: 'grossProfit', label: '매출총이익', editable: false, money: true, negOnly: true },
+  { key: 'ebitda', label: 'EBITDA', editable: false, money: true, posNeg: true },
+  { key: 'cashEnd', label: '기말현금', editable: false, money: true, negOnly: true }
+];
 
 function buildTableSkeleton() {
+  const headRow = q('tableHeadRow');
+  headRow.innerHTML = '<th>항목</th>' +
+    MONTH_PHASE.map((phase, i) => `<th>M${i + 1}<span class="tphase">${phase}</span></th>`).join('') +
+    '<th class="tcol-total">Y1 합계</th>';
+
   const tbody = q('tableBody');
   tbody.innerHTML = '';
-  rowRefs = [];
+  tableRowRefs = {};
 
-  for (let i = 0; i < 12; i++) {
+  TABLE_ROWS.forEach(rowDef => {
     const tr = document.createElement('tr');
-    const m = state.months[i];
+    const labelTd = document.createElement('td');
+    labelTd.className = 'tcell tcell-month';
+    labelTd.textContent = rowDef.label;
+    tr.appendChild(labelTd);
 
-    const monthTd = document.createElement('td');
-    monthTd.className = 'tcell tcell-month';
-    monthTd.innerHTML = `M${i + 1}<span class="tphase">${MONTH_PHASE[i]}</span>`;
-    tr.appendChild(monthTd);
-
-    const inputs = {};
-    EDIT_KEYS.forEach(key => {
+    const cells = [];
+    for (let i = 0; i < 12; i++) {
       const td = document.createElement('td');
       td.className = 'tcell';
-      const input = document.createElement('input');
-      input.type = 'number';
-      input.className = 'tinput';
-      input.min = '0';
-      input.step = key === 'houses' ? '1' : '1';
-      input.value = m[key];
-      input.dataset.i = i;
-      input.dataset.key = key;
-      input.addEventListener('input', onCellInput);
-      td.appendChild(key === 'houses' ? input : wrapMoneyInput(input, 'money-t'));
-      tr.appendChild(td);
-      inputs[key] = input;
-
-      // insert revenue as a computed cell right after salePrice
-      if (key === 'salePrice') {
-        const revTd = document.createElement('td');
-        revTd.className = 'tcell tcell-computed';
-        tr.appendChild(revTd);
-        inputs._revenue = revTd;
+      if (rowDef.editable) {
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.className = 'tinput';
+        input.min = '0';
+        input.step = '1';
+        input.value = state.months[i][rowDef.key];
+        input.dataset.i = i;
+        input.dataset.key = rowDef.key;
+        input.addEventListener('input', onCellInput);
+        td.appendChild(input);
+        cells.push(input);
+      } else {
+        td.classList.add('tcell-computed');
+        cells.push(td);
       }
-    });
+      tr.appendChild(td);
+    }
 
-    const gpTd = document.createElement('td');
-    gpTd.className = 'tcell tcell-computed';
-    tr.appendChild(gpTd);
-    const ebitdaTd = document.createElement('td');
-    ebitdaTd.className = 'tcell tcell-computed';
-    tr.appendChild(ebitdaTd);
-    const cashTd = document.createElement('td');
-    cashTd.className = 'tcell tcell-computed';
-    tr.appendChild(cashTd);
+    const totalTd = document.createElement('td');
+    totalTd.className = 'tcell tcol-total';
+    tr.appendChild(totalTd);
 
     tbody.appendChild(tr);
-    rowRefs.push({ inputs, gpTd, ebitdaTd, cashTd });
-  }
-
-  const totalTr = document.createElement('tr');
-  totalTr.className = 'trow-total';
-  totalTr.id = 'totalRow';
-  tbody.appendChild(totalTr);
+    tableRowRefs[rowDef.key] = { cells, totalTd };
+  });
 }
 
 function onCellInput(e) {
   const inp = e.target;
   const i = Number(inp.dataset.i);
-  const key = inp.dataset.key;
   let val = parseFloat(inp.value);
   if (isNaN(val) || val < 0) val = 0;
-  state.months[i][key] = val;
-  if (key === 'houses' || key === 'salePrice') {
-    reapplyVariableCostPcts([i]);
-    syncInputsFromState();
-  }
+  state.months[i].houses = val;
+  reapplyVariableCostPcts([i]);
+  syncInputsFromState();
   renderComputed();
   scheduleSave();
 }
 
 function syncInputsFromState() {
-  rowRefs.forEach((row, i) => {
-    const m = state.months[i];
-    EDIT_KEYS.forEach(key => { row.inputs[key].value = m[key]; });
-  });
+  const row = tableRowRefs.houses;
+  if (row) row.cells.forEach((input, i) => { input.value = state.months[i].houses; });
   monthlyRampRowRefs.forEach((row, i) => { row.qtyInput.value = state.months[i].houses; });
 }
 
@@ -1086,34 +1083,31 @@ function renderComputed() {
   const coilUsagePerHouseEl = q('coilUsagePerHouse');
   if (coilUsagePerHouseEl) coilUsagePerHouseEl.textContent = Math.round(coilUsage.avgLmPerHouse).toLocaleString('en-US') + ' L/채';
 
-  months.forEach((m, i) => {
-    const row = rowRefs[i];
-    row.inputs._revenue.textContent = fmt(m.revenue);
-    row.gpTd.textContent = fmt(m.grossProfit);
-    row.gpTd.className = 'tcell tcell-computed' + (m.grossProfit < 0 ? ' neg' : '');
-    row.ebitdaTd.textContent = fmt(m.ebitda);
-    row.ebitdaTd.className = 'tcell tcell-computed' + (m.ebitda < 0 ? ' neg' : ' pos');
-    row.cashTd.textContent = fmt(m.cashEnd);
-    row.cashTd.className = 'tcell tcell-computed' + (m.cashEnd < 0 ? ' neg' : '');
+  TABLE_ROWS.forEach(rowDef => {
+    if (rowDef.editable) return;
+    const row = tableRowRefs[rowDef.key];
+    months.forEach((m, i) => {
+      const val = m[rowDef.key];
+      const cell = row.cells[i];
+      cell.textContent = fmt(val);
+      cell.className = 'tcell tcell-computed' + signClass(val, rowDef);
+    });
   });
 
-  const totalTr = q('totalRow');
-  totalTr.innerHTML = `
-    <td class="tcell tcell-month">Y1 합계</td>
-    <td class="tcell">${totals.totalHouses}</td>
-    <td class="tcell">-</td>
-    <td class="tcell">${fmt(totals.totalRevenue)}</td>
-    <td class="tcell">${fmt(totals.totalCoil)}</td>
-    <td class="tcell">${fmt(totals.totalScrew)}</td>
-    <td class="tcell">${fmt(totals.totalDetail)}</td>
-    <td class="tcell">${fmt(totals.totalOtherVar)}</td>
-    <td class="tcell">${fmt(totals.totalFixedProd)}</td>
-    <td class="tcell">${fmt(totals.totalSGA)}</td>
-    <td class="tcell">${fmt(totals.totalOtherCost)}</td>
-    <td class="tcell ${totals.totalGP < 0 ? 'neg' : ''}">${fmt(totals.totalGP)}</td>
-    <td class="tcell ${totals.totalEBITDA < 0 ? 'neg' : 'pos'}">${fmt(totals.totalEBITDA)}</td>
-    <td class="tcell ${totals.endCash < 0 ? 'neg' : ''}">${fmt(totals.endCash)}</td>
-  `;
+  const rowTotals = {
+    houses: totals.totalHouses,
+    revenue: totals.totalRevenue,
+    cogs: totals.totalCOGS,
+    grossProfit: totals.totalGP,
+    ebitda: totals.totalEBITDA,
+    cashEnd: totals.endCash
+  };
+  TABLE_ROWS.forEach(rowDef => {
+    const val = rowTotals[rowDef.key];
+    const totalTd = tableRowRefs[rowDef.key].totalTd;
+    totalTd.textContent = rowDef.money ? fmt(val) : val;
+    totalTd.className = 'tcell tcol-total' + signClass(val, rowDef);
+  });
 
   buildMainChart(months);
   buildCashChart(months);
