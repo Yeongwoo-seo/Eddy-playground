@@ -802,7 +802,7 @@ function renderFixedCostTable() {
   q('sgaSubtotal').textContent = fmt(totals.sga);
   q('otherCostSubtotal').textContent = fmt(totals.other);
   q('fixedCostGrandTotal').textContent = fmt(totals.grandTotal);
-  setText('fixedTabAmount', fmt(totals.grandTotal));
+  setText('fixedTabAmount', fmt(totals.grandTotal * 12));
 }
 
 /* ---------- item detail/settings modal (equipment & fixed cost items) ---------- */
