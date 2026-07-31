@@ -48,40 +48,16 @@ body{background:var(--bg);color:var(--black);font-family:'Pretendard',-apple-sys
 .section-note{font-size:12px;color:var(--grey-500);font-weight:500;margin:-10px 0 16px;line-height:1.5}
 
 /* Summary */
-.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
-.stat-card{background:var(--white);border-radius:20px;padding:16px;box-shadow:0 2px 12px rgba(0,0,0,.06);cursor:pointer;transition:box-shadow .2s,transform .15s;position:relative}
-.stat-card:active{transform:scale(.98)}
-.stat-card.active{box-shadow:0 0 0 2px var(--primary) inset,0 2px 12px rgba(0,0,0,.06)}
-.stat-label{font-size:12px;color:var(--grey-500);font-weight:600;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;gap:4px}
-.stat-caret{font-size:9px;color:var(--grey-300);transition:transform .2s}
-.stat-card.active .stat-caret{color:var(--primary);transform:rotate(180deg)}
-.stat-value{font-size:18px;font-weight:800;color:var(--black);letter-spacing:-.3px}
-.stat-value.pos{color:var(--success)}
-.stat-value.neg{color:var(--danger)}
-.stat-sub{font-size:11px;color:var(--grey-500);font-weight:500;margin-top:4px}
+.quick-stats{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:14px}
+.quick-stat-label{font-size:11px;color:var(--grey-500);font-weight:600;margin-bottom:3px}
+.quick-stat-value{font-size:15px;font-weight:800;color:var(--black);letter-spacing:-.2px}
+.quick-stat-value.pos{color:var(--success)}
+.quick-stat-value.neg{color:var(--danger)}
 
 .mini-stat-row{display:flex;gap:10px}
-.mini-stat{flex:1;background:var(--grey-50);border:1px solid var(--grey-200);border-radius:16px;padding:12px 14px;cursor:pointer;transition:box-shadow .2s,transform .15s}
-.mini-stat:active{transform:scale(.98)}
-.mini-stat.active{box-shadow:0 0 0 2px var(--primary) inset;background:var(--white)}
-.mini-stat.static{cursor:default}
-.mini-stat.static:active{transform:none}
+.mini-stat{flex:1;background:var(--grey-50);border:1px solid var(--grey-200);border-radius:16px;padding:12px 14px}
 .mini-stat-label{font-size:11px;color:var(--grey-500);font-weight:600;margin-bottom:4px;display:flex;align-items:center;justify-content:space-between;gap:4px}
 .mini-stat-value{font-size:15px;font-weight:700;color:var(--black)}
-
-/* Breakdown */
-.breakdown-card{display:none}
-.breakdown-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--grey-100);font-size:13px;gap:12px}
-.breakdown-row:last-child{border-bottom:none}
-.breakdown-label{font-weight:600;color:var(--grey-700)}
-.breakdown-value{font-weight:700;color:var(--black);white-space:nowrap}
-.breakdown-value.neg{color:var(--danger)}
-.breakdown-bar-track{height:5px;background:var(--grey-100);border-radius:3px;margin:2px 0 8px;overflow:hidden}
-.breakdown-bar-fill{height:100%;background:var(--primary);border-radius:3px;transition:width .3s cubic-bezier(0.2,0.8,0.2,1)}
-.breakdown-total-row{display:flex;justify-content:space-between;padding-top:12px;margin-top:4px;border-top:2px solid var(--grey-200);font-size:14px;font-weight:800;color:var(--primary)}
-.breakdown-total-row .neg{color:var(--danger)}
-
-.warn-banner{display:none;align-items:flex-start;gap:8px;background:#FFF0EE;border:1px solid #F5C6C0;border-radius:16px;padding:12px 14px;margin-bottom:14px;font-size:12px;font-weight:600;color:var(--danger);line-height:1.5}
 
 /* Chart */
 .chart-legend{display:flex;gap:16px;margin-bottom:12px;flex-wrap:wrap}
@@ -181,54 +157,9 @@ input.equip-input::-webkit-outer-spin-button,input.equip-input::-webkit-inner-sp
 
   <div class="tab-panel" id="tab-summary">
 
-  <div class="warn-banner" id="cashWarning">⚠️<span></span></div>
-
-  <div class="stat-grid">
-    <div class="stat-card" data-metric="revenue">
-      <div class="stat-label">Y1 총 매출<span class="stat-caret">▾</span></div>
-      <div class="stat-value" id="statRevenue">-</div>
-      <div class="stat-sub" id="statRevenueSub">-</div>
-    </div>
-    <div class="stat-card" data-metric="cogs">
-      <div class="stat-label">Y1 매출원가<span class="stat-caret">▾</span></div>
-      <div class="stat-value" id="statCOGS">-</div>
-      <div class="stat-sub" id="statCOGSSub">-</div>
-    </div>
-    <div class="stat-card" data-metric="grossProfit">
-      <div class="stat-label">Y1 매출총이익<span class="stat-caret">▾</span></div>
-      <div class="stat-value" id="statGP">-</div>
-      <div class="stat-sub" id="statGPSub">-</div>
-    </div>
-    <div class="stat-card" data-metric="cash">
-      <div class="stat-label">Y1 말 현금<span class="stat-caret">▾</span></div>
-      <div class="stat-value" id="statCash">-</div>
-      <div class="stat-sub" id="statCashSub">-</div>
-    </div>
-  </div>
-
-  <div class="mini-stat-row" style="margin-bottom:14px">
-    <div class="mini-stat" data-metric="ebitda">
-      <div class="mini-stat-label">EBITDA<span class="stat-caret">▾</span></div>
-      <div class="mini-stat-value" id="statEBITDA">-</div>
-    </div>
-    <div class="mini-stat" data-metric="netIncome">
-      <div class="mini-stat-label">순이익<span class="stat-caret">▾</span></div>
-      <div class="mini-stat-value" id="statNI">-</div>
-    </div>
-    <div class="mini-stat static">
-      <div class="mini-stat-label">월 손익분기</div>
-      <div class="mini-stat-value" id="statBreakeven">-</div>
-    </div>
-  </div>
-
-  <div class="card breakdown-card" id="breakdownCard">
-    <div class="section-label"><div class="section-dot"></div><span id="breakdownTitle">구성요소</span></div>
-    <div id="breakdownList"></div>
-    <div class="breakdown-total-row"><span id="breakdownTotalLabel">합계</span><span id="breakdownTotalValue">-</span></div>
-  </div>
-
   <div class="card">
     <div class="section-label"><div class="section-dot"></div><span>월별 매출 · 매출원가 · EBITDA</span></div>
+    <div class="quick-stats" id="mainQuickStats"></div>
     <div class="chart-legend">
       <div class="legend-item"><span class="legend-swatch" style="background:var(--primary)"></span>매출</div>
       <div class="legend-item"><span class="legend-swatch" style="background:var(--grey-300)"></span>매출원가</div>
@@ -239,6 +170,7 @@ input.equip-input::-webkit-outer-spin-button,input.equip-input::-webkit-inner-sp
 
   <div class="card">
     <div class="section-label"><div class="section-dot"></div><span>누적 현금 잔액</span></div>
+    <div class="quick-stats" id="cashQuickStats"></div>
     <svg id="cashChart" class="chart"></svg>
   </div>
 

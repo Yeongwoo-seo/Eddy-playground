@@ -144,7 +144,6 @@ let state = {
   months: buildDefaultMonths()
 };
 
-let activeMetric = null;
 let rowRefs = [];
 let equipRowRefs = [];
 let houseTypeRowRefs = [];
@@ -215,13 +214,6 @@ function computeAll() {
 }
 
 function sum(months, key) { return months.reduce((s, m) => s + m[key], 0); }
-
-function phaseAgg(months, key) {
-  const agg = {};
-  PHASE_ORDER.forEach(p => agg[p] = 0);
-  months.forEach(m => { agg[m.phase] += m[key]; });
-  return agg;
-}
 
 function setSliderFill(el) {
   const min = Number(el.min), max = Number(el.max), val = Number(el.value);
@@ -333,110 +325,6 @@ function buildCashChart(months) {
     const t = el('text', { x: padL - 6, y: y(v) + (v === maxVal ? 8 : -2), 'text-anchor': 'end', 'font-size': 9, fill: 'var(--grey-500)', 'font-weight': 600 });
     t.textContent = fmtK(v);
     svg.appendChild(t);
-  });
-}
-
-/* ---------- breakdown panel ---------- */
-
-function getBreakdown(metric, months, totals) {
-  switch (metric) {
-    case 'revenue': {
-      const revAgg = phaseAgg(months, 'revenue');
-      const houseAgg = phaseAgg(months, 'houses');
-      const rows = PHASE_ORDER.map(p => ({
-        label: `${p} (${PHASE_RANGE[p]})`,
-        sub: houseAgg[p] + '채',
-        value: revAgg[p],
-        barPct: totals.totalRevenue > 0 ? revAgg[p] / totals.totalRevenue * 100 : 0
-      }));
-      return { title: '매출 구성 (단계별)', rows, totalLabel: 'Y1 총 매출', totalValue: totals.totalRevenue, showBar: true };
-    }
-    case 'cogs': {
-      const items = [
-        ['코일(철강)', totals.totalCoil],
-        ['스크류/파스너', totals.totalScrew],
-        ['외주 디테일링', totals.totalDetail],
-        ['기타(설치 등)', totals.totalOtherVar],
-        ['고정 생산비(램프업)', totals.totalFixedProd]
-      ];
-      const rows = items.map(([label, value]) => ({ label, value, barPct: totals.totalCOGS > 0 ? value / totals.totalCOGS * 100 : 0 }));
-      return { title: '매출원가 구성', rows, totalLabel: 'Y1 매출원가', totalValue: totals.totalCOGS, showBar: true };
-    }
-    case 'grossProfit': {
-      const rows = [
-        { label: '매출', value: totals.totalRevenue, sign: '+' },
-        { label: '매출원가', value: -totals.totalCOGS, sign: '-' }
-      ];
-      return { title: '매출총이익 계산', rows, totalLabel: 'Y1 매출총이익', totalValue: totals.totalGP, showBar: false };
-    }
-    case 'ebitda': {
-      const rows = [
-        { label: '매출총이익', value: totals.totalGP, sign: '+' },
-        { label: '판매관리비 (SG&A)', value: -totals.totalSGA, sign: '-' }
-      ];
-      return { title: 'EBITDA 계산', rows, totalLabel: 'Y1 EBITDA', totalValue: totals.totalEBITDA, showBar: false };
-    }
-    case 'netIncome': {
-      const rows = [
-        { label: 'EBITDA', value: totals.totalEBITDA, sign: '+' },
-        { label: '기타비용 (감가상각/이자)', value: -totals.totalOtherCost, sign: '-' }
-      ];
-      return { title: '순이익 계산', rows, totalLabel: 'Y1 순이익', totalValue: totals.totalNI, showBar: false };
-    }
-    case 'cash': {
-      const rows = [
-        { label: '초기 투자금', value: state.equityRaise, sign: '+' },
-        { label: '누적 EBITDA', value: totals.totalEBITDA, sign: totals.totalEBITDA >= 0 ? '+' : '-' },
-        { label: 'SP120 설비투자 (Stage 1+2+3)', value: -totals.totalMachineCapex, sign: '-' },
-        { label: '장비·공구 구입', value: -totals.totalEquipmentCapex, sign: '-' }
-      ];
-      return { title: '기말 현금 계산', rows, totalLabel: 'Y1 말 현금', totalValue: totals.endCash, showBar: false };
-    }
-  }
-}
-
-function renderBreakdown(months, totals) {
-  if (!activeMetric) return;
-  const bd = getBreakdown(activeMetric, months, totals);
-  q('breakdownTitle').textContent = bd.title;
-  const list = q('breakdownList');
-  list.innerHTML = '';
-  bd.rows.forEach(r => {
-    const wrap = document.createElement('div');
-    const signPrefix = r.sign ? r.sign + ' ' : '';
-    wrap.innerHTML = `
-      <div class="breakdown-row">
-        <span class="breakdown-label">${r.label}${r.sub ? ' · ' + r.sub : ''}</span>
-        <span class="breakdown-value ${r.value < 0 ? 'neg' : ''}">${signPrefix}${fmt(Math.abs(r.value))}</span>
-      </div>
-      ${bd.showBar ? `<div class="breakdown-bar-track"><div class="breakdown-bar-fill" style="width:${Math.max(r.barPct, 0).toFixed(1)}%"></div></div>` : ''}
-    `;
-    list.appendChild(wrap);
-  });
-  q('breakdownTotalLabel').textContent = bd.totalLabel;
-  const totalEl = q('breakdownTotalValue');
-  totalEl.textContent = fmt(bd.totalValue);
-  totalEl.className = bd.totalValue < 0 ? 'neg' : '';
-}
-
-function bindMetricClicks() {
-  document.querySelectorAll('[data-metric]').forEach(elx => {
-    elx.addEventListener('click', () => {
-      const metric = elx.dataset.metric;
-      if (activeMetric === metric) {
-        activeMetric = null;
-        document.querySelectorAll('[data-metric]').forEach(o => o.classList.remove('active'));
-        q('breakdownCard').style.display = 'none';
-        return;
-      }
-      activeMetric = metric;
-      document.querySelectorAll('[data-metric]').forEach(o => o.classList.remove('active'));
-      elx.classList.add('active');
-      q('breakdownCard').style.display = 'block';
-      const { months, totals } = computeAll();
-      renderBreakdown(months, totals);
-      q('breakdownCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    });
   });
 }
 
@@ -821,32 +709,17 @@ function renderComputed() {
 
   renderEquipTable();
 
-  q('statRevenue').textContent = fmt(totals.totalRevenue);
-  q('statRevenueSub').textContent = totals.totalHouses + '채 평균 ' + fmt(totals.totalHouses > 0 ? totals.totalRevenue / totals.totalHouses : 0) + '/채';
-  q('statCOGS').textContent = fmt(totals.totalCOGS);
   const varTotal = totals.totalCoil + totals.totalScrew + totals.totalDetail + totals.totalOtherVar;
-  q('statCOGSSub').textContent = '변동비 ' + fmt(varTotal) + ' + 고정생산비 ' + fmt(totals.totalFixedProd);
-  const gpEl = q('statGP');
-  gpEl.textContent = fmt(totals.totalGP);
-  gpEl.className = 'stat-value ' + (totals.totalGP >= 0 ? 'pos' : 'neg');
-  q('statGPSub').textContent = '매출총이익률 ' + (totals.totalRevenue > 0 ? (totals.totalGP / totals.totalRevenue * 100).toFixed(1) : '0.0') + '%';
-  const cashEl = q('statCash');
-  cashEl.textContent = fmt(totals.endCash);
-  cashEl.className = 'stat-value ' + (totals.endCash >= 0 ? 'pos' : 'neg');
-  q('statCashSub').textContent = '최저 현금 ' + fmt(totals.minCash);
 
-  q('statEBITDA').textContent = fmt(totals.totalEBITDA);
-  q('statNI').textContent = fmt(totals.totalNI);
-  const beIdx = months.findIndex(m => m.ebitda >= 0);
-  q('statBreakeven').textContent = beIdx >= 0 ? ('M' + (beIdx + 1)) : 'Y1 내 미달성';
-
-  const warnBanner = q('cashWarning');
-  if (totals.minCash < 0) {
-    warnBanner.style.display = 'flex';
-    warnBanner.querySelector('span').textContent = '현금이 초기 투자금 아래로 내려갑니다 — 최저 ' + fmt(totals.minCash) + '. 판매가·비용·초기 투자금을 조정해보세요.';
-  } else {
-    warnBanner.style.display = 'none';
-  }
+  q('mainQuickStats').innerHTML = `
+    <div><div class="quick-stat-label">Y1 매출</div><div class="quick-stat-value">${fmt(totals.totalRevenue)}</div></div>
+    <div><div class="quick-stat-label">Y1 매출원가</div><div class="quick-stat-value">${fmt(totals.totalCOGS)}</div></div>
+    <div><div class="quick-stat-label">Y1 EBITDA</div><div class="quick-stat-value ${totals.totalEBITDA >= 0 ? 'pos' : 'neg'}">${fmt(totals.totalEBITDA)}</div></div>
+  `;
+  q('cashQuickStats').innerHTML = `
+    <div><div class="quick-stat-label">Y1 말 현금</div><div class="quick-stat-value ${totals.endCash >= 0 ? 'pos' : 'neg'}">${fmt(totals.endCash)}</div></div>
+    <div><div class="quick-stat-label">최저 현금</div><div class="quick-stat-value ${totals.minCash >= 0 ? 'pos' : 'neg'}">${fmt(totals.minCash)}</div></div>
+  `;
 
   const totalVarPct = totals.totalRevenue > 0 ? (varTotal / totals.totalRevenue * 100) : 0;
   const varPctEl = q('varPctTotal');
@@ -883,7 +756,6 @@ function renderComputed() {
 
   buildMainChart(months);
   buildCashChart(months);
-  renderBreakdown(months, totals);
 }
 
 /* ---------- bulk-apply sliders ---------- */
@@ -972,9 +844,6 @@ function resetAll() {
     equipmentItems: buildDefaultEquipment(),
     months: buildDefaultMonths()
   };
-  activeMetric = null;
-  document.querySelectorAll('[data-metric]').forEach(o => o.classList.remove('active'));
-  q('breakdownCard').style.display = 'none';
 
   ['coilPct', 'screwPct', 'detailPct', 'otherVarPct'].forEach(id => {
     const elx = q(id);
@@ -1085,7 +954,6 @@ window.addEventListener('DOMContentLoaded', () => {
   buildEquipSkeleton();
   buildHouseTypeSkeleton();
   buildFixedCostSkeleton();
-  bindMetricClicks();
   renderHouseTypeTable();
   renderFixedCostTable();
   renderComputed();
