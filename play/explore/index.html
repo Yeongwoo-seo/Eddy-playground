@@ -868,10 +868,25 @@ function renderLocation() {
   // w2-hub-plaza only offers "사건을 재구성한다" during W2_REVERIFICATION.
   const phase = ExplorationState.getCurrentPhase();
   const enterSceneId = resolveByPhase(def.enterSceneId, phase);
-  el.enterSceneBtn.classList.toggle('hidden', !enterSceneId);
-  if (enterSceneId) {
-    el.enterSceneBtn.textContent = resolveByPhase(def.enterSceneLabel, phase) || '들어간다';
-    el.enterSceneBtn.onclick = () => { location.href = `/play/game/?scene=${encodeURIComponent(enterSceneId)}`; };
+  // [단체사진 자동 발동, §신규] enterSceneAutoRequiredInteractionIds가 있는
+  // 장소(예: w2-exhibit-floor)는 버튼을 보여주지 않는다 — 나열된 상호작용을
+  // 전부 마친 뒤 이 장소로 (다시) 들어오면 조용히 다음 씬으로 넘어간다.
+  // 아직 안 끝났으면 평소처럼 자유 탐색이 계속된다. 이 필드가 없는 다른
+  // enterSceneId 장소(예: w2-hub-plaza)는 예전 그대로 버튼으로 동작한다.
+  const autoRequiredIds = resolveByPhase(def.enterSceneAutoRequiredInteractionIds, phase);
+  if (enterSceneId && autoRequiredIds && autoRequiredIds.length) {
+    el.enterSceneBtn.classList.add('hidden');
+    const allDone = autoRequiredIds.every(reqId => ['exhausted', 'resolved'].includes(ExplorationState.getInteractionState(reqId)));
+    if (allDone) {
+      location.href = `/play/game/?scene=${encodeURIComponent(enterSceneId)}`;
+      return Promise.resolve();
+    }
+  } else {
+    el.enterSceneBtn.classList.toggle('hidden', !enterSceneId);
+    if (enterSceneId) {
+      el.enterSceneBtn.textContent = resolveByPhase(def.enterSceneLabel, phase) || '들어간다';
+      el.enterSceneBtn.onclick = () => { location.href = `/play/game/?scene=${encodeURIComponent(enterSceneId)}`; };
+    }
   }
 
   const goal = phaseGoals[ExplorationState.getCurrentPhase()];
@@ -970,18 +985,27 @@ function findPhaseIntro(phaseId) {
   return Object.values(interactionDefs).find(def => def.type === 'phaseIntro' && (def.phases || []).includes(phaseId));
 }
 
-// 처음 만나는 용의자는 심문하기 버튼을 누르지 않아도 그 장소에 들어가는
-// 순간 심문 씬이 자동 재생된다 — phaseIntro와 같은 "낯선 도입부는 자동
-// 재생" 원칙을 phase 단위가 아니라 장소 단위로 적용한 것(§신규,
-// autoPlayOnFirstVisit — see interactionDefs.js의 w1suspect-*-interview 항목
-// 주석). 위치가 여러 phase에 걸쳐 재사용되는 경우(w2-adrian-spot 등)가 있어
-// ExplorationState.isLocationVisited(위치 단위)로는 "이번 phase에서 처음"을
-// 구분할 수 없으므로, phaseIntro와 똑같이 그 interaction 자신의 state로
-// 판별한다 — 한 번 재생되면 completeInteraction으로 'new'를 벗어나 다시는
-// 자동 재생되지 않고, 대화하기/심문하기 버튼으로만 다시 열어볼 수 있다.
-function findAutoInterrogation(locationId, phaseId) {
+// 처음 만나는 인물은 대화하기/심문하기 버튼을 누르지 않아도 그 인물을
+// "마주치는" 순간(장소에 들어가 기본 선택되거나, 그 인물의 chip을 고르는
+// 순간) 대화/심문 씬이 자동 재생된다 — phaseIntro와 같은 "낯선 도입부는
+// 자동 재생" 원칙을 phase 단위가 아니라 인물 단위로 적용한 것(§신규,
+// autoPlayOnFirstVisit — see interactionDefs.js의 w1suspect-*-interview/
+// w2ef-topic-* 항목 주석). characterId로 걸러 특정 인물 것만 찾는다 —
+// 한 장소에 자동재생 대상 인물이 여럿인 경우(예: w2-exhibit-floor의
+// 클레어+윤민아+애드리언+레오) locationId만으로 첫 매치 하나만 찾으면 이미
+// 끝난 첫 인물 것에 걸려 나머지가 영영 안 열리므로, 반드시 characterId까지
+// 좁혀서 "지금 마주친 그 사람" 것만 찾는다. 위치가 여러 phase에 걸쳐
+// 재사용되는 경우(w2-adrian-spot 등)가 있어 ExplorationState.isLocationVisited
+// (위치 단위)로는 "이번 phase에서 처음"을 구분할 수 없으므로, phaseIntro와
+// 똑같이 그 interaction 자신의 state로 판별한다 — 한 번 재생되면
+// completeInteraction으로 'new'를 벗어나 다시는 자동 재생되지 않고,
+// 대화하기/심문하기 버튼으로만 다시 열어볼 수 있다.
+function findAutoPlayForCharacter(characterId, locationId, phaseId) {
+  if (!characterId) return null;
   return Object.values(interactionDefs).find(def =>
-    def.autoPlayOnFirstVisit && (def.locationIds || []).includes(locationId) && (def.phases || []).includes(phaseId));
+    def.autoPlayOnFirstVisit && def.characterId === characterId &&
+    (def.locationIds || []).includes(locationId) && (def.phases || []).includes(phaseId) &&
+    ExplorationState.getInteractionState(def.id) === 'new') || null;
 }
 
 async function performMove(locationId) {
@@ -1019,13 +1043,15 @@ async function performMove(locationId) {
     playSceneInline(phaseIntro, phaseIntro.id);
     return;
   }
-  // 처음 만나는 용의자 자동 심문 (§신규, see findAutoInterrogation 위) —
+  // 처음 만나는 인물 자동 재생 (§신규, see findAutoPlayForCharacter 위) —
+  // renderLocationCharacters()가 이미 이 장소의 기본 선택 인물을
+  // currentCharacterId에 골라둔 상태라, 그 인물 기준으로 확인한다. 대화하기/
   // 심문하기를 직접 눌렀을 때와 같은 경로(playInteraction)로 재생해, 씬
-  // 흐름(completeInteraction 시점 등)이 수동 진입과 완전히 똑같다.
-  const autoInterrogation = findAutoInterrogation(locationId, ExplorationState.getCurrentPhase());
-  if (autoInterrogation && ExplorationState.getInteractionState(autoInterrogation.id) === 'new') {
-    playInteraction(autoInterrogation.id);
-  }
+  // 흐름(completeInteraction 시점 등)이 수동 진입과 완전히 똑같다. 같은
+  // 장소의 다른 인물들은 각자의 chip을 고르는 순간
+  // selectLocationCharacter에서 똑같이 처리된다.
+  const autoPlay = findAutoPlayForCharacter(currentCharacterId, locationId, ExplorationState.getCurrentPhase());
+  if (autoPlay) playInteraction(autoPlay.id);
 }
 
 /* ===== Hub action bar (조사/대화/제시/이동) =====
@@ -1119,6 +1145,14 @@ function selectLocationCharacter(charId) {
   el.locCharacters.querySelectorAll('[data-char]').forEach(chip => chip.classList.toggle('active', chip.dataset.char === charId));
   setLocCharStage(charId);
   renderInterrogateBtn();
+  // [허브 처음 인물 마주시 바로 대화하기, §신규] 이 인물의 chip을 고르는
+  // 게 곧 "마주치는" 순간이다 — 처음 마주치는 인물이면(autoPlayOnFirstVisit
+  // + 아직 'new') 대화하기를 따로 누르지 않아도 바로 대화가 시작된다. 한
+  // 장소에 진입할 때 기본 선택된 인물은 performMove에서 이미 같은 방식으로
+  // 처리된다(findAutoPlayForCharacter 주석 참고) — 여기는 그 장소의 다른
+  // 인물로 옮겨갈 때의 짝.
+  const autoPlay = findAutoPlayForCharacter(charId, ExplorationState.getCurrentLocationId(), ExplorationState.getCurrentPhase());
+  if (autoPlay) playInteraction(autoPlay.id);
 }
 
 // 심문하기 (§신규) — bottom-bar 위에 떠 있는 버튼. 지금 선택된 인물에게

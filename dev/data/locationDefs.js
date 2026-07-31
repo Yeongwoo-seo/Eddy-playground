@@ -201,7 +201,17 @@ const locationDefs = {
       { x1: 14, y1: 42, x2: 36, y2: 68, interactionId: 'w2ef-hotspot-pedestal' },
     ],
     enterSceneId: 'week2-scene-006',
-    enterSceneLabel: '이제 단체사진 찍으러 가자',
+    // [단체사진 자동 발동, §신규] 버튼을 눌러야 넘어가는 방식이 아니라, 이
+    // 구간에서 만날 수 있는 다섯 인물과의 대화(클레어 환영 인사·소피·윤민아·
+    // 애드리언·레오)와 K-01 자세히 보기까지 여기 나열된 상호작용을 전부
+    // 마친 뒤 이 장소로 (다시) 들어오면 조용히 다음 씬(단체사진)으로
+    // 넘어간다 — see play/explore/index.html의 renderLocation()
+    // enterSceneAutoRequiredInteractionIds 처리. 아직 다 안 마쳤다면
+    // 평소처럼 자유 탐색이 계속된다(버튼도, 안내 문구도 없음).
+    enterSceneAutoRequiredInteractionIds: [
+      'w2-exhibit-phase-intro', 'w2ef-topic-sophie', 'w2ef-topic-minah',
+      'w2ef-topic-adrian', 'w2ef-topic-leo', 'w2ef-topic-k01',
+    ],
   },
   // [첫 허브 카페 분리] w2-exhibit-floor에서 소피(카페 코너)만 떼어낸 신규
   // 장소 — w2ef-topic-sophie(interactionDefs.js)가 여기로 옮겨온다. 더 록스
