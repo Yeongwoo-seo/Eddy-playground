@@ -18,7 +18,22 @@ const DEFAULTS = {
   stage1Month: 1,
   stage2Amount: 40000,
   stage2Month: 5,
-  houses: [0, 0, 0, 0, 1, 2, 1, 2, 2, 1, 2, 1]
+  houses: [0, 0, 0, 0, 1, 2, 1, 2, 2, 1, 2, 1],
+  equipmentMonth: 1,
+  equipmentItems: [
+    { label: '포크리프트 (중고)', note: 'Facebook Marketplace Sydney', unitPrice: 4000, qty: 1 },
+    { label: '임팩 드라이버', note: 'Bunnings', unitPrice: 99, qty: 1 },
+    { label: '임팩 렌치', note: 'Bunnings', unitPrice: 299, qty: 1 },
+    { label: '스크류 (경량철골용, 1000팩)', note: 'Bunnings', unitPrice: 84.5, qty: 1 },
+    { label: '그라인더 (125mm)', note: 'Bunnings', unitPrice: 104, qty: 1 },
+    { label: '커팅 소 (금속절단)', note: 'Bunnings', unitPrice: 169, qty: 1 },
+    { label: '스트랩 (밴딩 툴)', note: 'Total Tools', unitPrice: 238, qty: 1 },
+    { label: '망치', note: 'Bunnings', unitPrice: 10.48, qty: 1 },
+    { label: '빠루 (크로바)', note: 'Bunnings', unitPrice: 14.98, qty: 1 },
+    { label: '가위 (항공가위/틴스니퍼)', note: 'Bunnings', unitPrice: 18.98, qty: 1 },
+    { label: '가구용 드릴', note: 'Bunnings', unitPrice: 89.98, qty: 1 },
+    { label: '가구용 스크류 (칩보드)', note: 'Bunnings · 단가 확인 필요', unitPrice: 0, qty: 1 }
+  ]
 };
 
 function buildDefaultMonths() {
@@ -38,17 +53,24 @@ function buildDefaultMonths() {
   });
 }
 
+function buildDefaultEquipment() {
+  return DEFAULTS.equipmentItems.map(item => ({ ...item }));
+}
+
 let state = {
   equityRaise: DEFAULTS.equityRaise,
   stage1Amount: DEFAULTS.stage1Amount,
   stage1Month: DEFAULTS.stage1Month,
   stage2Amount: DEFAULTS.stage2Amount,
   stage2Month: DEFAULTS.stage2Month,
+  equipmentMonth: DEFAULTS.equipmentMonth,
+  equipmentItems: buildDefaultEquipment(),
   months: buildDefaultMonths()
 };
 
 let activeMetric = null;
 let rowRefs = [];
+let equipRowRefs = [];
 
 function fmt(n) {
   const r = Math.round(n);
@@ -65,6 +87,7 @@ function q(id) { return document.getElementById(id); }
 function computeAll() {
   const months = [];
   let cash = state.equityRaise;
+  const totalEquipmentCapex = state.equipmentItems.reduce((s, it) => s + it.unitPrice * it.qty, 0);
 
   state.months.forEach((m, i) => {
     const revenue = m.houses * m.salePrice;
@@ -77,6 +100,7 @@ function computeAll() {
     let capex = 0;
     if (i + 1 === Number(state.stage1Month)) capex += state.stage1Amount;
     if (i + 1 === Number(state.stage2Month)) capex += state.stage2Amount;
+    if (i + 1 === Number(state.equipmentMonth)) capex += totalEquipmentCapex;
     cash += ebitda - capex;
 
     months.push({
@@ -100,6 +124,8 @@ function computeAll() {
     totalEBITDA: sum(months, 'ebitda'),
     totalNI: sum(months, 'netIncome'),
     totalCapex: sum(months, 'capex'),
+    totalMachineCapex: state.stage1Amount + state.stage2Amount,
+    totalEquipmentCapex,
     totalHouses: sum(months, 'houses'),
     endCash: months[11].cashEnd,
     minCash: Math.min(state.equityRaise, ...months.map(m => m.cashEnd))
@@ -282,7 +308,8 @@ function getBreakdown(metric, months, totals) {
       const rows = [
         { label: '초기 투자금', value: state.equityRaise, sign: '+' },
         { label: '누적 EBITDA', value: totals.totalEBITDA, sign: totals.totalEBITDA >= 0 ? '+' : '-' },
-        { label: '설비투자 (Stage 1+2)', value: -totals.totalCapex, sign: '-' }
+        { label: 'SP120 설비투자 (Stage 1+2)', value: -totals.totalMachineCapex, sign: '-' },
+        { label: '장비·공구 구입', value: -totals.totalEquipmentCapex, sign: '-' }
       ];
       return { title: '기말 현금 계산', rows, totalLabel: 'Y1 말 현금', totalValue: totals.endCash, showBar: false };
     }
@@ -332,6 +359,85 @@ function bindMetricClicks() {
       q('breakdownCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     });
   });
+}
+
+/* ---------- equipment/tools table (editable) ---------- */
+
+function buildEquipSkeleton() {
+  const tbody = q('equipBody');
+  tbody.innerHTML = '';
+  equipRowRefs = [];
+
+  state.equipmentItems.forEach((item, i) => {
+    const tr = document.createElement('tr');
+
+    const labelTd = document.createElement('td');
+    labelTd.className = 'equip-label-cell';
+    labelTd.innerHTML = `<span class="equip-label">${item.label}</span><span class="equip-note">${item.note}</span>`;
+    tr.appendChild(labelTd);
+
+    const priceInput = document.createElement('input');
+    priceInput.type = 'number';
+    priceInput.className = 'equip-input';
+    priceInput.min = '0';
+    priceInput.step = '0.01';
+    priceInput.value = item.unitPrice;
+    priceInput.dataset.i = i;
+    priceInput.dataset.key = 'unitPrice';
+    priceInput.addEventListener('input', onEquipInput);
+    const priceTd = document.createElement('td');
+    priceTd.appendChild(priceInput);
+    tr.appendChild(priceTd);
+
+    const qtyInput = document.createElement('input');
+    qtyInput.type = 'number';
+    qtyInput.className = 'equip-input';
+    qtyInput.min = '0';
+    qtyInput.step = '1';
+    qtyInput.value = item.qty;
+    qtyInput.dataset.i = i;
+    qtyInput.dataset.key = 'qty';
+    qtyInput.addEventListener('input', onEquipInput);
+    const qtyTd = document.createElement('td');
+    qtyTd.appendChild(qtyInput);
+    tr.appendChild(qtyTd);
+
+    const subtotalTd = document.createElement('td');
+    subtotalTd.className = 'equip-subtotal';
+    tr.appendChild(subtotalTd);
+
+    tbody.appendChild(tr);
+    equipRowRefs.push({ priceInput, qtyInput, subtotalTd });
+  });
+}
+
+function onEquipInput(e) {
+  const inp = e.target;
+  const i = Number(inp.dataset.i);
+  const key = inp.dataset.key;
+  let val = parseFloat(inp.value);
+  if (isNaN(val) || val < 0) val = 0;
+  state.equipmentItems[i][key] = val;
+  renderComputed();
+}
+
+function syncEquipInputsFromState() {
+  equipRowRefs.forEach((row, i) => {
+    const item = state.equipmentItems[i];
+    row.priceInput.value = item.unitPrice;
+    row.qtyInput.value = item.qty;
+  });
+}
+
+function renderEquipTable() {
+  let total = 0;
+  equipRowRefs.forEach((row, i) => {
+    const item = state.equipmentItems[i];
+    const subtotal = item.unitPrice * item.qty;
+    total += subtotal;
+    row.subtotalTd.textContent = fmt(subtotal);
+  });
+  q('equipTotal').textContent = fmt(total);
 }
 
 /* ---------- table (editable) ---------- */
@@ -417,6 +523,8 @@ function syncInputsFromState() {
 
 function renderComputed() {
   const { months, totals } = computeAll();
+
+  renderEquipTable();
 
   q('statRevenue').textContent = fmt(totals.totalRevenue);
   q('statRevenueSub').textContent = totals.totalHouses + '채 평균 ' + fmt(totals.totalHouses > 0 ? totals.totalRevenue / totals.totalHouses : 0) + '/채';
@@ -542,6 +650,8 @@ function resetAll() {
     stage1Month: DEFAULTS.stage1Month,
     stage2Amount: DEFAULTS.stage2Amount,
     stage2Month: DEFAULTS.stage2Month,
+    equipmentMonth: DEFAULTS.equipmentMonth,
+    equipmentItems: buildDefaultEquipment(),
     months: buildDefaultMonths()
   };
   activeMetric = null;
@@ -557,8 +667,10 @@ function resetAll() {
   });
   q('stage1Month').value = DEFAULTS.stage1Month;
   q('stage2Month').value = DEFAULTS.stage2Month;
+  q('equipmentMonth').value = DEFAULTS.equipmentMonth;
 
   syncInputsFromState();
+  syncEquipInputsFromState();
   renderComputed();
 }
 
@@ -576,11 +688,13 @@ function initControls() {
   bindScalarSlider('stage2Amount', 'stage2Amount');
   bindSelect('stage1Month', 'stage1Month');
   bindSelect('stage2Month', 'stage2Month');
+  bindSelect('equipmentMonth', 'equipmentMonth');
 }
 
 window.addEventListener('DOMContentLoaded', () => {
   initControls();
   buildTableSkeleton();
+  buildEquipSkeleton();
   bindMetricClicks();
   renderComputed();
   q('resetBtn').addEventListener('click', resetAll);

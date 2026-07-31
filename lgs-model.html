@@ -122,6 +122,21 @@ table.data-table{width:100%;min-width:1220px;border-collapse:collapse}
 input.tinput::-webkit-outer-spin-button,input.tinput::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .table-hint{font-size:11px;color:var(--grey-500);font-weight:500;margin-top:10px;line-height:1.6}
 
+/* Equipment table */
+table.equip-table{width:100%;border-collapse:collapse}
+.equip-table th{font-size:10.5px;font-weight:700;color:var(--grey-500);text-align:right;padding:0 4px 8px}
+.equip-table th:first-child{text-align:left}
+.equip-table td{padding:8px 4px;border-bottom:1px solid var(--grey-100);vertical-align:middle}
+.equip-label-cell{width:44%}
+.equip-label{font-size:12px;font-weight:600;color:var(--black);line-height:1.35}
+.equip-note{display:block;font-size:10px;color:var(--grey-500);font-weight:500;margin-top:2px}
+.equip-input{width:100%;min-width:44px;border:none;background:var(--grey-50);text-align:right;font-size:11.5px;font-weight:700;color:var(--black);padding:6px 5px;border-radius:8px;outline:none;font-family:inherit}
+.equip-input:focus{background:var(--primary-light);box-shadow:0 0 0 2px var(--primary) inset}
+input.equip-input::-webkit-outer-spin-button,input.equip-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.equip-subtotal{font-size:12px;font-weight:700;color:var(--grey-700);text-align:right;white-space:nowrap}
+.equip-total-row{display:flex;justify-content:space-between;align-items:center;background:var(--primary-light);border-radius:14px;padding:12px 16px;margin-top:6px;font-size:13px;font-weight:700;color:var(--primary)}
+.equip-total-row span:last-child{font-size:16px;font-weight:800}
+
 /* CTA */
 .reset-btn{width:100%;padding:16px;background:var(--grey-100);color:var(--grey-700);border:none;border-radius:16px;font-size:15px;font-weight:700;cursor:pointer;transition:opacity .2s,transform .1s}
 .reset-btn:active{opacity:.85;transform:scale(.98)}
@@ -285,6 +300,30 @@ input.tinput::-webkit-outer-spin-button,input.tinput::-webkit-inner-spin-button{
         </select>
       </div>
     </div>
+  </div>
+
+  <div class="card">
+    <div class="section-label"><div class="section-dot"></div><span>초기 장비 · 공구 구입</span></div>
+    <div class="section-note">품목별 단가·수량을 직접 입력할 수 있어요. 한 번에 구입 시점(월)을 지정하면 그 달의 현금에 일괄 반영돼요.</div>
+    <table class="equip-table">
+      <thead><tr><th>품목</th><th>단가</th><th>수량</th><th>소계</th></tr></thead>
+      <tbody id="equipBody"></tbody>
+    </table>
+    <div class="equip-total-row">
+      <span>장비·공구 합계</span>
+      <span id="equipTotal">-</span>
+    </div>
+    <div class="select-row" style="margin-top:16px">
+      <div class="select-unit">
+        <label>구입 월</label>
+        <select class="select-field" id="equipmentMonth">
+          <option value="1">M1</option><option value="2">M2</option><option value="3">M3</option><option value="4">M4</option>
+          <option value="5">M5</option><option value="6">M6</option><option value="7">M7</option><option value="8">M8</option>
+          <option value="9">M9</option><option value="10">M10</option><option value="11">M11</option><option value="12">M12</option>
+        </select>
+      </div>
+    </div>
+    <div class="table-hint">출처: Bunnings · Total Tools · Facebook Marketplace Sydney 시세 조사 (2026). 가구용 스크류(칩보드)는 단가 확인 전이라 A$0으로 시작해요 — 확인되면 직접 입력하세요.</div>
   </div>
 
   <div class="card">
