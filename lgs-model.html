@@ -17,17 +17,7 @@
 }
 html,body{height:100%}
 body{background:var(--bg);color:var(--black);font-family:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;overflow-x:hidden;display:flex;justify-content:center}
-.app-wrapper{width:100%;max-width:500px;padding:0 16px calc(112px + env(safe-area-inset-bottom))}
-
-.header{background:var(--primary-gradient);color:var(--white);padding:20px 24px 26px;border-radius:0 0 28px 28px;margin:0 -16px 20px;}
-.header-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
-.header-logo{font-size:16px;font-weight:800;letter-spacing:-.3px;opacity:.9}
-.header-actions{display:flex;align-items:center;gap:6px}
-.header-back,.header-reset{font-size:13px;font-weight:600;color:var(--white);text-decoration:none;background:rgba(255,255,255,.2);padding:5px 12px;border-radius:20px;border:none;font-family:inherit;cursor:pointer}
-.header-reset:active,.header-back:active{opacity:.8}
-.header-title{font-size:22px;font-weight:800;line-height:1.35;margin-top:6px}
-.header-title .hl{color:#FFD9B3}
-.header-sub{font-size:13px;font-weight:500;opacity:.85;margin-top:8px;line-height:1.6}
+.app-wrapper{width:100%;max-width:500px;padding:20px 16px calc(112px + env(safe-area-inset-bottom))}
 
 /* Tabs (floating bottom nav) */
 .tab-panel{display:none}
@@ -154,18 +144,6 @@ input.equip-input::-webkit-outer-spin-button,input.equip-input::-webkit-inner-sp
 </head>
 <body>
 <div class="app-wrapper">
-
-  <div class="header">
-    <div class="header-top">
-      <div class="header-logo">FrameCad · LGS Frame</div>
-      <div class="header-actions">
-        <button class="header-reset" id="resetBtn">⟲ 초기화</button>
-        <a class="header-back" href="index.html">← 홈</a>
-      </div>
-    </div>
-    <div class="header-title">Year 1 <span class="hl">재무모델</span> 시뮬레이터</div>
-    <div class="header-sub">아래 탭으로 요약·가정·설비투자·월별표를 오가며, 카드를 눌러 구성요소를 보고 표는 엑셀처럼 직접 입력하세요.</div>
-  </div>
 
   <div class="tab-panel" id="tab-summary">
 
