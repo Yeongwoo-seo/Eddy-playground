@@ -323,7 +323,7 @@ label.calc-toggle-row{display:flex;align-items:center;gap:8px}
   <div class="sub-panel" id="subtab-variable">
   <div class="card" data-collapsible data-total-id="varPctTotal">
     <div class="section-label"><div class="section-dot"></div><span>변동비 구성 (생산량 기준)</span></div>
-    <div class="section-note">코일 · 스크류는 매출 %가 아니라 그 달 판매량(주택수)에 필요한 생산면적(sqm)을 기준으로 계산돼요. 사용량 자체(L/sqm, 개/sqm)는 가정 &gt; 조건 탭에서 조정하세요. 외주 디테일링 · 기타는 매출 대비 %로 계산돼요.</div>
+    <div class="section-note">코일 · 스크류는 매출 %가 아니라 그 달 판매량(주택수)에 필요한 생산면적(sqm)을 기준으로 계산돼요. 사용량(L/sqm, 개/sqm)과 스크랩률은 가정 &gt; 조건 탭에서 조정하세요 — 스크랩률만큼 더 구매하는 물량이 이 변동비에도 그대로 반영돼요. 외주 디테일링 · 기타는 매출 대비 %로 계산돼요.</div>
     <div class="slider-row">
       <div class="slider-label-row"><span class="slider-label">코일 단가 (Truecore G550, $/L)</span><span class="slider-value" id="coilPricePerLmVal">-</span></div>
       <input type="range" class="slider" id="coilPricePerLm" min="0.5" max="6" step="0.1">
@@ -351,7 +351,7 @@ label.calc-toggle-row{display:flex;align-items:center;gap:8px}
 
   <div class="card" data-collapsible data-total-id="coilUsageTotalLm">
     <div class="section-label"><div class="section-dot"></div><span>코일 사용량 (sqm 당 L)</span></div>
-    <div class="section-note">1sqm 생산에 실제로 소요되는 코일 길이(L, 선형미터)예요. 향후 생산직 인센티브(변동비, L당 지급)를 계산할 때 이 생산량 수치를 기준으로 써요.</div>
+    <div class="section-note">1sqm 생산에 실제로 소요되는 코일 길이(L, 선형미터)예요. 향후 생산직 인센티브(변동비, L당 지급)를 계산할 때 이 생산량 수치를 기준으로 써요. 아래 총 사용량은 품질·리드타임 조건의 스크랩률만큼 더 구매하는 걸 반영해요 — 변동비(코일)도 이 수량 기준으로 계산돼요.</div>
     <div class="slider-row">
       <div class="slider-label-row"><span class="slider-label">코일 사용량 (L/sqm)</span><span class="slider-value" id="coilLmPerSqmVal">-</span></div>
       <input type="range" class="slider" id="coilLmPerSqm" min="5" max="25" step="0.5">
@@ -372,7 +372,7 @@ label.calc-toggle-row{display:flex;align-items:center;gap:8px}
 
   <div class="card" data-collapsible data-total-id="materialsUsageSummary">
     <div class="section-label"><div class="section-dot"></div><span>자재 사용량 조건</span></div>
-    <div class="section-note">코일 외에 면적당 소요되는 자재 수량이에요. 자재 사용은 일단 스크류만 반영해요 — 발주량·소요원가 추정에 쓰여요. 실제 확인되는 대로 조정하세요.</div>
+    <div class="section-note">코일 외에 면적당 소요되는 자재 수량이에요. 자재 사용은 일단 스크류만 반영해요 — 발주량·소요원가 추정에 쓰여요. 실제 확인되는 대로 조정하세요. 아래 총 사용량은 스크랩률만큼 더 구매하는 걸 반영하고, 변동비(스크류)도 이 수량 기준으로 계산돼요.</div>
     <div class="slider-row">
       <div class="slider-label-row"><span class="slider-label">스크류 사용량 (개/sqm)</span><span class="slider-value" id="screwsPerSqmVal">-</span></div>
       <input type="range" class="slider" id="screwsPerSqm" min="4" max="30" step="1">
@@ -440,7 +440,7 @@ label.calc-toggle-row{display:flex;align-items:center;gap:8px}
 
   <div class="card" data-collapsible data-total-id="qualityConditionsSummary">
     <div class="section-label"><div class="section-dot"></div><span>품질 · 리드타임 조건</span></div>
-    <div class="section-note">스크랩률과 자재·공정별 소요기간이에요. 재고·납기 계획에 참고용으로 써요.</div>
+    <div class="section-note">스크랩률과 자재·공정별 소요기간이에요. 스크랩률은 위 코일·스크류 사용량과 변동비 계산에 직접 반영돼요(구매량 = 생산량 × (1 + 스크랩률)). 소요기간은 재고·납기 계획에 참고용으로 써요.</div>
     <div class="slider-row">
       <div class="slider-label-row"><span class="slider-label">스크랩률 (%)</span><span class="slider-value" id="scrapRatePctVal">-</span></div>
       <input type="range" class="slider" id="scrapRatePct" min="0" max="15" step="0.5">
