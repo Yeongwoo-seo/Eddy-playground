@@ -293,34 +293,12 @@ function supabaseHeaders() {
   };
 }
 
-/* visible save/sync indicator (top-right pill) — the fetches below fail
-   silently on purpose (offline shouldn't break editing), but that used to
-   mean a real failure (bad RLS policy, unreachable table, etc.) looked
-   identical to "everything's fine" from the user's side. surface it instead. */
-function timeLabel() {
-  const d = new Date();
-  return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
-}
-function setSyncStatus(kind, text) {
-  const el = q('syncStatus');
-  const textEl = q('syncStatusText');
-  if (!el || !textEl) return;
-  el.className = 'sync-status' + (kind ? ' ' + kind : '');
-  textEl.textContent = text;
-}
-
 function pushToRemote() {
-  setSyncStatus('saving', '저장 중…');
   fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?on_conflict=id`, {
     method: 'POST',
     headers: Object.assign(supabaseHeaders(), { 'Prefer': 'resolution=merge-duplicates,return=minimal' }),
     body: JSON.stringify({ id: SUPABASE_ROW_ID, data: state, updated_at: new Date().toISOString() })
-  }).then(res => {
-    if (!res.ok) throw new Error('save failed: HTTP ' + res.status);
-    setSyncStatus('saved', '저장됨 · ' + timeLabel());
-  }).catch(() => {
-    setSyncStatus('error', '저장 실패 (로컬에만 저장됨)');
-  });
+  }).catch(() => {});
 }
 
 let saveTimer = null;
@@ -335,7 +313,7 @@ function scheduleSave() {
 // same numbers; only applies it if actually newer than what's local, so a
 // pull raced against an in-flight save can't stomp on it (same guard as
 // planner.html's syncFromRemote). Falls back to local-only if offline or
-// the table isn't set up yet, but that failure is now shown, not swallowed.
+// the table isn't set up yet.
 async function syncFromRemote() {
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?id=eq.${SUPABASE_ROW_ID}&select=data`, {
@@ -344,16 +322,13 @@ async function syncFromRemote() {
     });
     if (!res.ok) throw new Error('sync failed: HTTP ' + res.status);
     const rows = await res.json();
-    setSyncStatus('saved', '동기화됨 · ' + timeLabel());
     if (!rows || !rows.length || !rows[0].data) return;
     const remote = rows[0].data;
     if ((remote.lastModified || 0) <= (state.lastModified || 0)) return;
     state = migrateFixedCostItems(Object.assign(buildDefaultState(), remote));
     try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) {}
     rebuildAllUIFromState();
-  } catch (e) {
-    setSyncStatus('error', '연결 실패 (로컬 데이터 표시 중)');
-  }
+  } catch (e) {}
 }
 
 function fmt(n) {
@@ -839,7 +814,7 @@ function renderFixedCostTable() {
   q('sgaSubtotal').textContent = fmt(totals.sga);
   q('otherCostSubtotal').textContent = fmt(totals.other);
   q('fixedCostGrandTotal').textContent = fmt(totals.grandTotal);
-  setText('fixedTabAmount', fmt(totals.grandTotal * 12));
+  setText('fixedTabAmount', fmt(totals.grandTotal) + '/월');
 }
 
 /* ---------- item detail/settings modal (equipment & fixed cost items) ---------- */
@@ -1123,7 +1098,7 @@ function renderHouseTypeTable() {
   q('houseTypeTotalQty').textContent = totals.totalQty + '채';
   q('houseTypeBlendedPrice').textContent = fmt(totals.blendedPrice) + '/채';
   q('houseTypeTotalRevenue').textContent = fmt(totals.totalRevenue);
-  q('revenueTabAmount').textContent = fmt(totals.totalRevenue);
+  q('revenueTabAmount').textContent = fmt(totals.totalRevenue / 12) + '/월';
 }
 
 /* ---------- monthly sales ramp (drives monthly revenue directly) ---------- */
@@ -1309,7 +1284,7 @@ function renderComputed() {
   renderMonthlyRampTable();
 
   const varTotal = totals.totalCoil + totals.totalScrew + totals.totalDetail + totals.totalOtherVar;
-  setText('variableTabAmount', fmt(varTotal));
+  setText('variableTabAmount', fmt(varTotal / 12) + '/월');
 
   q('mainQuickStats').innerHTML = `
     <div><div class="quick-stat-label">Y1 매출</div><div class="quick-stat-value">${fmt(totals.totalRevenue)}</div></div>
