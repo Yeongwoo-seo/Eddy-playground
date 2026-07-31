@@ -1534,6 +1534,9 @@ function renderComputed() {
     <div><div class="quick-stat-label">최저 현금</div><div class="quick-stat-value ${totals.minCash >= 0 ? 'pos' : 'neg'}">${fmt(totals.minCash)}</div></div>
   `;
   setText('rentDepositTotal', fmt(totals.totalRentDeposit));
+  setText('equityFundingSummary', fmt(state.equityAmount));
+  setText('debtFundingSummary', fmt(state.debtAmount));
+  setText('stagePaymentSummary', fmt(state.stage1Amount + state.stage2Amount + state.stage3Amount));
 
   const totalVarPct = totals.totalRevenue > 0 ? (varTotal / totals.totalRevenue * 100) : 0;
   const varPctEl = q('varPctTotal');
