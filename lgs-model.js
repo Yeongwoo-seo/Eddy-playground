@@ -35,6 +35,7 @@ const SUB_TAB_GROUPS = {
     cur: 0,
     tabs: [
       { id: 'is', label: '손익계산서' },
+      { id: 'var', label: '변동비' },
       { id: 'cf', label: '현금흐름표' },
       { id: 'bs', label: '대차대조표' }
     ]
@@ -49,8 +50,8 @@ const DEFAULTS = {
     { label: '그래니플랫', sqm: 55, targetQty: 8 },
     { label: '듀플렉스', sqm: 150, targetQty: 2 }
   ],
-  coilPct: 30,
-  screwPct: 5,
+  coilPricePerLm: 2.6,
+  screwPricePer1000: 50,
   detailPct: 10,
   otherVarPct: 5,
   coilLmPerSqm: 16,
@@ -178,15 +179,18 @@ function computeFixedCostTotals(items) {
 }
 
 function buildDefaultMonths() {
-  const blendedPrice = Math.round(computeHouseTypeTotals(DEFAULTS.houseTypes, DEFAULTS.pricePerSqm).blendedPrice);
+  const htTotals = computeHouseTypeTotals(DEFAULTS.houseTypes, DEFAULTS.pricePerSqm);
+  const blendedPrice = Math.round(htTotals.blendedPrice);
+  const avgSqm = htTotals.avgSqm;
   const fc = computeFixedCostTotals(DEFAULTS.fixedCostItems);
   return DEFAULTS.houses.map(houses => {
     const revenue = houses * blendedPrice;
+    const sqm = houses * avgSqm;
     return {
       houses,
       salePrice: blendedPrice,
-      coil: revenue * DEFAULTS.coilPct / 100,
-      screw: revenue * DEFAULTS.screwPct / 100,
+      coil: sqm * DEFAULTS.coilLmPerSqm * DEFAULTS.coilPricePerLm,
+      screw: sqm * DEFAULTS.screwsPerSqm / 1000 * DEFAULTS.screwPricePer1000,
       detail: revenue * DEFAULTS.detailPct / 100,
       otherVar: revenue * DEFAULTS.otherVarPct / 100,
       fixedProd: fc.fixedProd,
@@ -213,8 +217,8 @@ function buildDefaultState() {
   return {
     pricePerSqm: DEFAULTS.pricePerSqm,
     houseTypes: DEFAULTS.houseTypes.map(t => ({ ...t })),
-    coilPct: DEFAULTS.coilPct,
-    screwPct: DEFAULTS.screwPct,
+    coilPricePerLm: DEFAULTS.coilPricePerLm,
+    screwPricePer1000: DEFAULTS.screwPricePer1000,
     detailPct: DEFAULTS.detailPct,
     otherVarPct: DEFAULTS.otherVarPct,
     coilLmPerSqm: DEFAULTS.coilLmPerSqm,
@@ -260,6 +264,7 @@ let state = loadLocalState();
 let isRowRefs = {};
 let cfRowRefs = {};
 let bsRowRefs = {};
+let varRowRefs = {};
 let equipRowRefs = [];
 let houseTypeRowRefs = [];
 let fixedCostRowRefs = [];
@@ -936,20 +941,24 @@ function closeItemModal() {
 function applyBlendedPriceToMonths() {
   const blendedPrice = Math.round(computeHouseTypeTotals(state.houseTypes, state.pricePerSqm).blendedPrice);
   state.months.forEach(m => { m.salePrice = blendedPrice; });
-  reapplyVariableCostPcts();
+  recomputeVariableCosts();
   return blendedPrice;
 }
 
-/* production-related variable costs (coil/screw/detail/otherVar) are set as
-   a % of revenue — whenever a sales assumption changes the revenue for a
-   month, recompute those costs so they stay in sync instead of going stale */
-function reapplyVariableCostPcts(indices) {
+/* coil/screw are physical materials, so their cost is driven by the production
+   volume (sqm of frame) that each month's house count actually requires — not
+   a % of revenue. detailing/other stay a % of revenue since they scale with
+   contract value rather than physical output. whenever a sales assumption,
+   usage rate, or unit price changes, recompute so months stay in sync. */
+function recomputeVariableCosts(indices) {
   const idxs = indices || state.months.map((_, i) => i);
+  const avgSqm = computeHouseTypeTotals(state.houseTypes, state.pricePerSqm).avgSqm;
   idxs.forEach(i => {
     const m = state.months[i];
     const revenue = m.houses * m.salePrice;
-    m.coil = revenue * state.coilPct / 100;
-    m.screw = revenue * state.screwPct / 100;
+    const sqm = m.houses * avgSqm;
+    m.coil = sqm * state.coilLmPerSqm * state.coilPricePerLm;
+    m.screw = sqm * state.screwsPerSqm / 1000 * state.screwPricePer1000;
     m.detail = revenue * state.detailPct / 100;
     m.otherVar = revenue * state.otherVarPct / 100;
   });
@@ -1120,7 +1129,7 @@ function onMonthlyRampInput(e) {
   let val = parseFloat(inp.value);
   if (isNaN(val) || val < 0) val = 0;
   state.months[i].houses = val;
-  reapplyVariableCostPcts([i]);
+  recomputeVariableCosts([i]);
   syncInputsFromState();
   renderComputed();
   scheduleSave();
@@ -1164,6 +1173,14 @@ const CF_TABLE_ROWS = [
   { key: 'financingCF', label: '재무활동 현금흐름', editable: false, money: true },
   { key: 'netCF', label: '순현금흐름', editable: false, money: true, posNeg: true },
   { key: 'cashEnd', label: '기말현금', editable: false, money: true, negOnly: true }
+];
+
+const VAR_TABLE_ROWS = [
+  { key: 'coil', label: '코일(철강)', editable: false, money: true },
+  { key: 'screw', label: '스크류/파스너', editable: false, money: true },
+  { key: 'detail', label: '외주 디테일링', editable: false, money: true },
+  { key: 'otherVar', label: '기타(설치 등)', editable: false, money: true },
+  { key: 'varCost', label: '변동비 합계', editable: false, money: true }
 ];
 
 const BS_TABLE_ROWS = [
@@ -1232,6 +1249,7 @@ function buildTableSkeleton() {
   isRowRefs = buildStatementTableSkeleton('isHeadRow', 'isTableBody', IS_TABLE_ROWS, 'Y1 합계');
   cfRowRefs = buildStatementTableSkeleton('cfHeadRow', 'cfTableBody', CF_TABLE_ROWS, 'Y1 합계');
   bsRowRefs = buildStatementTableSkeleton('bsHeadRow', 'bsTableBody', BS_TABLE_ROWS, 'Y1 말');
+  varRowRefs = buildStatementTableSkeleton('varHeadRow', 'varTableBody', VAR_TABLE_ROWS, 'Y1 합계');
 }
 
 function onCellInput(e) {
@@ -1240,7 +1258,7 @@ function onCellInput(e) {
   let val = parseFloat(inp.value);
   if (isNaN(val) || val < 0) val = 0;
   state.months[i].houses = val;
-  reapplyVariableCostPcts([i]);
+  recomputeVariableCosts([i]);
   syncInputsFromState();
   renderComputed();
   scheduleSave();
@@ -1333,6 +1351,15 @@ function renderComputed() {
     equity: totals.endEquity
   };
   renderStatementTable(BS_TABLE_ROWS, bsRowRefs, months, bsRowTotals);
+
+  const varRowTotals = {
+    coil: totals.totalCoil,
+    screw: totals.totalScrew,
+    detail: totals.totalDetail,
+    otherVar: totals.totalOtherVar,
+    varCost: varTotal
+  };
+  renderStatementTable(VAR_TABLE_ROWS, varRowRefs, months, varRowTotals);
 
   buildMainChart(months);
   buildCashChart(months);
@@ -1445,6 +1472,41 @@ function bindCoilLmPerSqmSlider() {
     setSliderFill(elx);
     label.textContent = val.toFixed(1) + ' L/sqm';
     if (productivityUnit === 'lm') refreshProductivitySliders();
+    recomputeVariableCosts();
+    renderComputed();
+    scheduleSave();
+  });
+}
+
+function bindCoilPricePerLmSlider() {
+  const elx = q('coilPricePerLm');
+  const label = q('coilPricePerLmVal');
+  elx.value = state.coilPricePerLm;
+  setSliderFill(elx);
+  label.textContent = '$' + state.coilPricePerLm.toFixed(2) + '/L';
+  elx.addEventListener('input', () => {
+    const val = parseFloat(elx.value);
+    state.coilPricePerLm = val;
+    setSliderFill(elx);
+    label.textContent = '$' + val.toFixed(2) + '/L';
+    recomputeVariableCosts();
+    renderComputed();
+    scheduleSave();
+  });
+}
+
+function bindScrewPricePer1000Slider() {
+  const elx = q('screwPricePer1000');
+  const label = q('screwPricePer1000Val');
+  elx.value = state.screwPricePer1000;
+  setSliderFill(elx);
+  label.textContent = fmt(state.screwPricePer1000) + '/1000개';
+  elx.addEventListener('input', () => {
+    const val = parseFloat(elx.value);
+    state.screwPricePer1000 = val;
+    setSliderFill(elx);
+    label.textContent = fmt(val) + '/1000개';
+    recomputeVariableCosts();
     renderComputed();
     scheduleSave();
   });
@@ -1505,8 +1567,9 @@ function bindProductivityUnitToggle() {
 }
 
 /* generic binder for 조건(conditions) sliders: state[id] <-> #id, label #id+'Val'
-   suffixed with `unit`, no side effects beyond re-rendering computed metrics */
-function bindConditionSlider(id, unit, decimals) {
+   suffixed with `unit`. `onChange` is an optional extra side effect (e.g.
+   screwsPerSqm needs to recompute the screw variable cost) run before render. */
+function bindConditionSlider(id, unit, decimals, onChange) {
   const elx = q(id);
   const label = q(id + 'Val');
   const fmtVal = v => (decimals ? v.toFixed(decimals) : v) + unit;
@@ -1518,6 +1581,7 @@ function bindConditionSlider(id, unit, decimals) {
     state[id] = val;
     setSliderFill(elx);
     if (label) label.textContent = fmtVal(val);
+    if (onChange) onChange(val);
     renderComputed();
     scheduleSave();
   });
@@ -1548,7 +1612,7 @@ function bindSelect(id, key) {
 /* re-reads every slider/scalar/select control from `state` — used both after
    a reset-to-defaults and after a remote sync pulls in another device's data */
 function syncControlInputsFromState() {
-  ['coilPct', 'screwPct', 'detailPct', 'otherVarPct'].forEach(id => {
+  ['detailPct', 'otherVarPct'].forEach(id => {
     const elx = q(id);
     elx.value = state[id];
     setSliderFill(elx);
@@ -1562,6 +1626,16 @@ function syncControlInputsFromState() {
   coilLmElx.value = state.coilLmPerSqm;
   setSliderFill(coilLmElx);
   q('coilLmPerSqmVal').textContent = state.coilLmPerSqm.toFixed(1) + ' L/sqm';
+
+  const coilPriceElx = q('coilPricePerLm');
+  coilPriceElx.value = state.coilPricePerLm;
+  setSliderFill(coilPriceElx);
+  q('coilPricePerLmVal').textContent = '$' + state.coilPricePerLm.toFixed(2) + '/L';
+
+  const screwPriceElx = q('screwPricePer1000');
+  screwPriceElx.value = state.screwPricePer1000;
+  setSliderFill(screwPriceElx);
+  q('screwPricePer1000Val').textContent = fmt(state.screwPricePer1000) + '/1000개';
 
   [
     ['screwsPerSqm', '개/sqm', 0],
@@ -1616,12 +1690,12 @@ function resetAll() {
 
 function initControls() {
   bindPricePerSqmSlider();
-  bindBulkSlider('coilPct', true, v => applyPctAll('coil', v));
-  bindBulkSlider('screwPct', true, v => applyPctAll('screw', v));
+  bindCoilPricePerLmSlider();
+  bindScrewPricePer1000Slider();
   bindBulkSlider('detailPct', true, v => applyPctAll('detail', v));
   bindBulkSlider('otherVarPct', true, v => applyPctAll('otherVar', v));
   bindCoilLmPerSqmSlider();
-  bindConditionSlider('screwsPerSqm', '개/sqm', 0);
+  bindConditionSlider('screwsPerSqm', '개/sqm', 0, () => recomputeVariableCosts());
   bindConditionSlider('bracketsPerHouse', '개/세대', 0);
   bindConditionSlider('boltsPerHouse', '개/세대', 0);
   bindConditionSlider('sealantTubesPerHouse', '통/세대', 0);
