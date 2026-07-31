@@ -8,8 +8,8 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
-  --primary:#E8741E;--primary-hover:#D4681A;--primary-light:#FFF3EB;
-  --primary-gradient:linear-gradient(135deg,#E8741E 0%,#F5943A 100%);
+  --primary:#0066B3;--primary-hover:#005A9E;--primary-light:#E8F3FB;
+  --primary-gradient:linear-gradient(135deg,#0066B3 0%,#3D95DA 100%);
   --bg:#F5F5F5;--white:#FFFFFF;
   --grey-50:#FAFAFA;--grey-100:#F2F4F6;--grey-200:#E5E8EB;--grey-300:#D1D6DB;
   --grey-500:#8B95A1;--grey-700:#4E5968;--black:#191F28;
@@ -46,7 +46,7 @@ body{background:var(--bg);color:var(--black);font-family:'Pretendard',-apple-sys
 /* 재무/조건 switcher — small floating pill, top-left (mirrors planner.html's 일정/숙소 switcher) */
 .mode-tabs-float{position:fixed;top:calc(10px + env(safe-area-inset-top));left:12px;z-index:25}
 .mode-tabs{position:relative;background:var(--white);border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,.06);display:flex;padding:3px}
-.mt-thumb{position:absolute;top:3px;left:3px;height:calc(100% - 6px);background:var(--primary);border-radius:10px;box-shadow:0 3px 10px rgba(232,116,30,.35);transition:transform .3s cubic-bezier(.2,.8,.2,1);z-index:0}
+.mt-thumb{position:absolute;top:3px;left:3px;height:calc(100% - 6px);background:var(--primary);border-radius:10px;box-shadow:0 3px 10px rgba(0,102,179,.35);transition:transform .3s cubic-bezier(.2,.8,.2,1);z-index:0}
 .mode-tab{position:relative;z-index:1;border:none;background:none;padding:7px 14px;border-radius:10px;font-size:12px;font-weight:700;color:var(--grey-500);cursor:pointer;font-family:inherit;transition:color .2s;white-space:nowrap;min-height:28px}
 .mode-tab.on{color:#fff}
 .mode-panel{display:none}
@@ -101,8 +101,8 @@ svg.chart{width:100%;height:auto;display:block}
 .slider-label{font-size:13px;font-weight:600;color:var(--grey-700)}
 .slider-value{font-size:15px;font-weight:700;color:var(--primary)}
 input.slider[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:3px;background:var(--grey-200);outline:none;cursor:pointer}
-input.slider[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--primary);box-shadow:0 2px 6px rgba(232,116,30,.4);cursor:pointer;border:3px solid var(--white)}
-input.slider[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--primary);border:3px solid var(--white);cursor:pointer;box-shadow:0 2px 6px rgba(232,116,30,.4)}
+input.slider[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--primary);box-shadow:0 2px 6px rgba(0,102,179,.4);cursor:pointer;border:3px solid var(--white)}
+input.slider[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--primary);border:3px solid var(--white);cursor:pointer;box-shadow:0 2px 6px rgba(0,102,179,.4)}
 
 .var-total-row{display:flex;justify-content:space-between;align-items:center;background:var(--primary-light);border-radius:14px;padding:12px 16px;margin-top:4px}
 .var-total-label{font-size:13px;font-weight:600;color:var(--primary)}
@@ -217,12 +217,12 @@ label.calc-toggle-row{display:flex;align-items:center;gap:8px}
   <div class="tab-panel" id="tab-summary">
 
   <div class="card">
-    <div class="section-label"><div class="section-dot"></div><span>월별 매출 · 매출원가 · EBITDA</span></div>
+    <div class="section-label"><div class="section-dot"></div><span>월별 매출 · 매출원가 · 세전순이익</span></div>
     <div class="quick-stats" id="mainQuickStats"></div>
     <div class="chart-legend">
       <div class="legend-item"><span class="legend-swatch" style="background:var(--primary)"></span>매출</div>
       <div class="legend-item"><span class="legend-swatch" style="background:var(--grey-300)"></span>매출원가</div>
-      <div class="legend-item"><span class="legend-line"></span>EBITDA</div>
+      <div class="legend-item"><span class="legend-line"></span>세전순이익</div>
     </div>
     <svg id="mainChart" class="chart"></svg>
   </div>
@@ -559,6 +559,37 @@ label.calc-toggle-row{display:flex;align-items:center;gap:8px}
           <option value="5">M5</option><option value="6">M6</option><option value="7">M7</option><option value="8">M8</option>
           <option value="9">M9</option><option value="10">M10</option><option value="11">M11</option><option value="12">M12</option>
         </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-label"><div class="section-dot"></div><span>임대료 보증금</span></div>
+    <div class="section-note">고정비·변동비에는 포함되지 않지만, 지급월의 현금흐름(투자활동)과 대차대조표(임차보증금 자산)에는 반영돼요.</div>
+    <div class="select-row">
+      <div class="select-unit">
+        <label>월세 기준액</label>
+        <span class="money-field money-n"><input type="number" class="num-input" id="rentDepositMonthlyRent" min="0" step="100"></span>
+      </div>
+    </div>
+    <div class="select-row">
+      <div class="select-unit">
+        <label>보증금 개월수</label>
+        <input type="number" class="num-input" id="rentDepositMonths" min="0" step="1">
+      </div>
+      <div class="select-unit">
+        <label>보증금 지급월</label>
+        <select class="select-field" id="rentDepositMonth">
+          <option value="1">M1</option><option value="2">M2</option><option value="3">M3</option><option value="4">M4</option>
+          <option value="5">M5</option><option value="6">M6</option><option value="7">M7</option><option value="8">M8</option>
+          <option value="9">M9</option><option value="10">M10</option><option value="11">M11</option><option value="12">M12</option>
+        </select>
+      </div>
+    </div>
+    <div class="select-row">
+      <div class="select-unit">
+        <label>보증금 총액</label>
+        <span class="quick-stat-value" id="rentDepositTotal">$0</span>
       </div>
     </div>
   </div>
