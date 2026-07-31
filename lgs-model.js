@@ -5,11 +5,12 @@ const PHASE_ORDER = ['Closing', 'Build', 'Pilot', 'Scale', 'Expand'];
 const PHASE_RANGE = { Closing: 'M1-M2', Build: 'M3-M4', Pilot: 'M5-M6', Scale: 'M7-M9', Expand: 'M10-M12' };
 
 const DEFAULTS = {
-  pricePerSqm: 380,
+  pricePerSqm: 700,
   houseTypes: [
-    { label: '소형 A', sqm: 90, targetQty: 4 },
-    { label: '중형 B', sqm: 120, targetQty: 5 },
-    { label: '대형 C', sqm: 150, targetQty: 3 }
+    { label: '스튜디오 그래니플랫', sqm: 40, targetQty: 1 },
+    { label: '1룸형 그래니플랫', sqm: 50, targetQty: 2 },
+    { label: '2룸형 그래니플랫', sqm: 60, targetQty: 6 },
+    { label: '3룸형 그래니플랫', sqm: 85, targetQty: 3 }
   ],
   coilPct: 30,
   screwPct: 5,
@@ -567,7 +568,7 @@ function onHouseTypeRemove(e) {
 }
 
 function onHouseTypeAdd() {
-  state.houseTypes.push({ label: '신규 구분', sqm: 100, targetQty: 1 });
+  state.houseTypes.push({ label: '신규 구분', sqm: 60, targetQty: 1 });
   buildHouseTypeSkeleton();
   applyBlendedPriceToMonths();
   syncInputsFromState();
