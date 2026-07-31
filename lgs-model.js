@@ -1442,8 +1442,63 @@ function bindCoilLmPerSqmSlider() {
     state.coilLmPerSqm = val;
     setSliderFill(elx);
     label.textContent = val.toFixed(1) + ' L/sqm';
+    if (productivityUnit === 'lm') refreshProductivitySliders();
     renderComputed();
     scheduleSave();
+  });
+}
+
+/* 노무 생산성 / 롤포머 생산능력: sqm 기준으로 state에 저장하지만, 화면에서는
+   코일 사용량(L/sqm, state.coilLmPerSqm)을 환산비로 써서 sqm ↔ lm(코일 선형미터)
+   단위를 전환해 보여줄 수 있다. 슬라이더 자체의 min/max/step/value도 현재 단위에
+   맞게 다시 계산해서 반영한다. */
+let productivityUnit = 'sqm';
+
+const PRODUCTIVITY_RATE_FIELDS = {
+  laborProductivitySqmPerHour: { min: 0.5, max: 6, step: 0.1, decimals: 1, sqmSuffix: ' sqm/인시', lmSuffix: ' L/인시' },
+  rollformerCapacitySqmPerDay: { min: 50, max: 400, step: 10, decimals: 0, sqmSuffix: ' sqm/일', lmSuffix: ' L/일' }
+};
+
+function refreshProductivitySliders() {
+  const rate = state.coilLmPerSqm;
+  Object.entries(PRODUCTIVITY_RATE_FIELDS).forEach(([id, cfg]) => {
+    const elx = q(id);
+    const label = q(id + 'Val');
+    const displayVal = productivityUnit === 'lm' ? state[id] * rate : state[id];
+    elx.min = productivityUnit === 'lm' ? cfg.min * rate : cfg.min;
+    elx.max = productivityUnit === 'lm' ? cfg.max * rate : cfg.max;
+    elx.step = productivityUnit === 'lm' ? cfg.step * rate : cfg.step;
+    elx.value = displayVal;
+    setSliderFill(elx);
+    if (label) label.textContent = displayVal.toFixed(cfg.decimals) + (productivityUnit === 'lm' ? cfg.lmSuffix : cfg.sqmSuffix);
+  });
+}
+
+function bindProductivityRateSlider(id) {
+  const elx = q(id);
+  const cfg = PRODUCTIVITY_RATE_FIELDS[id];
+  const label = q(id + 'Val');
+  elx.addEventListener('input', () => {
+    const raw = parseFloat(elx.value);
+    const sqmVal = productivityUnit === 'lm' ? raw / state.coilLmPerSqm : raw;
+    state[id] = sqmVal;
+    setSliderFill(elx);
+    if (label) label.textContent = raw.toFixed(cfg.decimals) + (productivityUnit === 'lm' ? cfg.lmSuffix : cfg.sqmSuffix);
+    renderComputed();
+    scheduleSave();
+  });
+}
+
+function bindProductivityUnitToggle() {
+  const wrap = q('productivityUnitToggle');
+  if (!wrap) return;
+  wrap.querySelectorAll('.unit-toggle-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.dataset.unit === productivityUnit) return;
+      productivityUnit = btn.dataset.unit;
+      wrap.querySelectorAll('.unit-toggle-btn').forEach(b => b.classList.toggle('on', b === btn));
+      refreshProductivitySliders();
+    });
   });
 }
 
@@ -1511,10 +1566,8 @@ function syncControlInputsFromState() {
     ['bracketsPerHouse', '개/세대', 0],
     ['boltsPerHouse', '개/세대', 0],
     ['sealantTubesPerHouse', '통/세대', 0],
-    ['laborProductivitySqmPerHour', ' sqm/인시', 1],
     ['dailyOperatingHours', '시간', 1],
     ['workingDaysPerMonth', '일', 0],
-    ['rollformerCapacitySqmPerDay', ' sqm/일', 0],
     ['setupMinutesPerBatch', '분', 0],
     ['scrapRatePct', '%', 1],
     ['materialLeadTimeDays', '일', 0],
@@ -1528,6 +1581,7 @@ function syncControlInputsFromState() {
     const label = q(id + 'Val');
     if (label) label.textContent = (decimals ? state[id].toFixed(decimals) : state[id]) + unit;
   });
+  refreshProductivitySliders();
 
   const ppsElx = q('pricePerSqm');
   ppsElx.value = state.pricePerSqm;
@@ -1569,10 +1623,12 @@ function initControls() {
   bindConditionSlider('bracketsPerHouse', '개/세대', 0);
   bindConditionSlider('boltsPerHouse', '개/세대', 0);
   bindConditionSlider('sealantTubesPerHouse', '통/세대', 0);
-  bindConditionSlider('laborProductivitySqmPerHour', ' sqm/인시', 1);
+  bindProductivityRateSlider('laborProductivitySqmPerHour');
+  bindProductivityRateSlider('rollformerCapacitySqmPerDay');
+  bindProductivityUnitToggle();
+  refreshProductivitySliders();
   bindConditionSlider('dailyOperatingHours', '시간', 1);
   bindConditionSlider('workingDaysPerMonth', '일', 0);
-  bindConditionSlider('rollformerCapacitySqmPerDay', ' sqm/일', 0);
   bindConditionSlider('setupMinutesPerBatch', '분', 0);
   bindConditionSlider('scrapRatePct', '%', 1);
   bindConditionSlider('materialLeadTimeDays', '일', 0);
