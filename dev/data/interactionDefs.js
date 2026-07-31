@@ -518,6 +518,10 @@ const interactionDefs = {
     locationIds: ['w2-exhibit-cafe-spot'],
     phases: ['W2_EXHIBIT_FREE_LOOK'],
     type: 'topic',
+    // [허브 처음 인물 마주시 바로 대화하기, §신규] 처음 마주치는 인물이라
+    // 대화하기 버튼 없이 바로 재생된다 — play/explore/index.html의
+    // findAutoPlayForCharacter 참고.
+    autoPlayOnFirstVisit: true,
     label: '소피와 얘기하기',
     lines: [
       { speaker: '', text: "전시장 안으로 들어서면 카페 코너에 소피가 있다. 원두를 갈던 손을 멈추고 반갑게 손을 흔든다.", characterId: null },
@@ -596,6 +600,8 @@ const interactionDefs = {
     locationIds: ['w2-exhibit-floor'],
     phases: ['W2_EXHIBIT_FREE_LOOK'],
     type: 'topic',
+    // [허브 처음 인물 마주시 바로 대화하기, §신규] see w2ef-topic-sophie 주석.
+    autoPlayOnFirstVisit: true,
     label: '윤민아에게 다가가기',
     lines: [
       { speaker: '', text: "전시장 중앙, 윤민아가 휴대폰으로 무언가를 급히 촬영하고 있다. 몸을 낮추고 각도를 요리조리 바꿔가며 화면을 들여다본다.", characterId: null },
@@ -658,6 +664,8 @@ const interactionDefs = {
     locationIds: ['w2-exhibit-floor'],
     phases: ['W2_EXHIBIT_FREE_LOOK'],
     type: 'topic',
+    // [허브 처음 인물 마주시 바로 대화하기, §신규] see w2ef-topic-sophie 주석.
+    autoPlayOnFirstVisit: true,
     label: '애드리언에게 다가가기',
     lines: [
       { speaker: '', text: "K-01 진열대 근처를 애드리언이 서성이고 있다. 진열장 유리에 얼굴을 가까이 대고 각도를 바꿔가며 들여다보는 중이다.", characterId: null },
@@ -748,6 +756,8 @@ const interactionDefs = {
     locationIds: ['w2-exhibit-floor'],
     phases: ['W2_EXHIBIT_FREE_LOOK'],
     type: 'topic',
+    // [허브 처음 인물 마주시 바로 대화하기, §신규] see w2ef-topic-sophie 주석.
+    autoPlayOnFirstVisit: true,
     label: '레오와 마주치기',
     lines: [
       { speaker: '', text: "전시장 뒤쪽에서 짐을 나르던 레오가 상자를 든 채 빠르게 걸어오다 지수와 부딪힐 뻔한다.", characterId: null },
@@ -1027,9 +1037,10 @@ const interactionDefs = {
     ],
   },
   // autoPlayOnFirstVisit (§신규) — 처음 만나는 용의자는 심문하기 버튼을
-  // 누르지 않아도 그 장소에 처음 들어가는 순간 심문 씬이 자동 재생된다
-  // (findAutoInterrogation/performMove, play/explore/index.html) — phaseIntro가
-  // phase 단위로 "낯선 도입부는 자동 재생"하는 것과 같은 원칙을 장소 단위로
+  // 누르지 않아도 그 인물을 마주치는(장소 진입 시 기본 선택되거나 chip을
+  // 고르는) 순간 심문 씬이 자동 재생된다 (findAutoPlayForCharacter/
+  // performMove/selectLocationCharacter, play/explore/index.html) — phaseIntro가
+  // phase 단위로 "낯선 도입부는 자동 재생"하는 것과 같은 원칙을 인물 단위로
   // 적용한 것. 재방문(이미 state가 'new'가 아님) 이후엔 대화하기/심문하기
   // 버튼이 그대로 남아 다시 열어볼 수 있다. Phase 5 재검증의 isInterrogation
   // 항목들(w1reverify-*)은 이 플래그를 일부러 안 붙인다 — "이미 아는 사람을
