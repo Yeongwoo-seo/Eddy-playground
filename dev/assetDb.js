@@ -879,6 +879,51 @@ const AssetDB = (() => {
     return map;
   }
 
+  // 허브 장소별 인물 배정 override — { [locationId]: [characterId, ...] }, 같은
+  // 단일 JSON blob 패턴(위 mapPinsCache/charPositionsCache와 동일 구조).
+  // locationDefs.js의 각 장소가 갖는 characters는 정적 코드값(§파일 상단
+  // 주석)이고, 이건 그 배정을 코드 수정 없이 조정하기 위한 override다.
+  // dev/hub/index.html의 인물 배정 패널이 여기 쓰고, play/explore/index.html의
+  // locationCharacters()/collectPhaseCharacterAssetIds가 여기 값이 있으면
+  // locationDefs.js의 characters보다 우선해서 읽는다. mapPin override와 같은
+  // 이유로 phase-keyed는 지원하지 않는다 — 장소당 배정 하나로 단순화.
+  const charAssignmentsCache = new Map(); // single entry keyed 'assignments'
+  const CHAR_ASSIGNMENTS_PATH = 'char-assignments/assignments.json';
+
+  async function getCharAssignments() {
+    if (charAssignmentsCache.has('assignments')) return charAssignmentsCache.get('assignments');
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${CHAR_ASSIGNMENTS_PATH}?t=${Date.now()}`;
+    try {
+      const map = (await fetchJsonBlob(url)) || {};
+      charAssignmentsCache.set('assignments', map);
+      return map;
+    } catch (e) {
+      return charAssignmentsCache.get('assignments') || {};
+    }
+  }
+
+  async function setCharAssignment(locationId, characterIds) {
+    if (!locationId) return {};
+    const url = `${SUPABASE_URL}/storage/v1/object/public/${DEV_ASSETS_BUCKET}/${CHAR_ASSIGNMENTS_PATH}?t=${Date.now()}`;
+    const current = await readCurrentForWrite(charAssignmentsCache, 'assignments', url, {});
+    const map = Object.assign({}, current);
+    if (characterIds && characterIds.length) map[locationId] = characterIds; else delete map[locationId];
+    const blob = new Blob([JSON.stringify(map)], { type: 'application/json' });
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${DEV_ASSETS_BUCKET}/${CHAR_ASSIGNMENTS_PATH}`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'x-upsert': 'true',
+      },
+      body: blob,
+    });
+    if (!res.ok) throw new Error(`인물 배정 저장 실패 (${res.status}): ${await res.text()}`);
+    charAssignmentsCache.set('assignments', map);
+    return map;
+  }
+
   // 씬 배경 슬롯(위 backgroundKinds()의 sceneId key, 예: 'week1-scene-002-1')
   // → { locationId, variantId } 배정. dialogueData.js는 정적 스크립트 파일이라
   // /dev/upload에서 직접 고쳐 쓸 수 없으므로, "이 슬롯이 어느 장소인지"는 코드가
@@ -1903,6 +1948,7 @@ const AssetDB = (() => {
     getSceneLocationMap, setSceneLocation, primeSceneLocationMap,
     getMapPins, setMapPin,
     getCharPositions, setCharPos,
+    getCharAssignments, setCharAssignment,
     getCaseEntryMeta, setCaseEntryMeta, prefetchCaseEntryMeta, getCaseEntryMetaCached,
     getSpriteSheetManifests, getSpriteSheetManifest, setSpriteSheetManifest,
     getEvidencePhotos, setEvidencePhoto,
