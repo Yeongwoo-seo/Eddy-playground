@@ -138,7 +138,8 @@ input.tinput::-webkit-outer-spin-button,input.tinput::-webkit-inner-spin-button{
 table.equip-table{width:100%;border-collapse:collapse}
 .equip-table th{font-size:10.5px;font-weight:700;color:var(--grey-500);text-align:right;padding:0 4px 8px}
 .equip-table th:first-child{text-align:left}
-.equip-table td{padding:8px 4px;border-bottom:1px solid var(--grey-100);vertical-align:middle}
+.equip-table td{padding:8px 4px;border-bottom:1px solid var(--grey-100);vertical-align:middle;text-align:right}
+.equip-table td:first-child{text-align:left}
 .equip-label-cell{width:44%}
 .equip-label{font-size:12px;font-weight:600;color:var(--black);line-height:1.35}
 .equip-label-btn{display:flex;align-items:center;gap:5px;background:none;border:none;padding:0;margin:0;font-family:inherit;text-align:left;cursor:pointer;min-height:32px}
@@ -155,12 +156,12 @@ input.equip-input::-webkit-outer-spin-button,input.equip-input::-webkit-inner-sp
 
 /* House type table */
 .ht-table{table-layout:fixed}
-.ht-table th:nth-child(1),.ht-table td:nth-child(1){width:31%}
-.ht-table th:nth-child(2),.ht-table td:nth-child(2){width:15%}
-.ht-table th:nth-child(3),.ht-table td:nth-child(3){width:15%}
-.ht-table th:nth-child(4),.ht-table td:nth-child(4){width:19%}
-.ht-table th:nth-child(5),.ht-table td:nth-child(5){width:19%}
-.ht-table th:nth-child(6),.ht-table td:nth-child(6){width:22px}
+.ht-table th:nth-child(1),.ht-table td:nth-child(1){width:26%}
+.ht-table th:nth-child(2),.ht-table td:nth-child(2){width:13%}
+.ht-table th:nth-child(3),.ht-table td:nth-child(3){width:12%}
+.ht-table th:nth-child(4),.ht-table td:nth-child(4){width:18%}
+.ht-table th:nth-child(5),.ht-table td:nth-child(5){width:18%}
+.ht-table th:nth-child(6),.ht-table td:nth-child(6){width:13%}
 .ht-table input.equip-input{width:100%;min-width:0;box-sizing:border-box;padding:6px 3px}
 .ht-label-input{text-align:left;font-weight:700;font-size:11px}
 .ht-table .equip-subtotal{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -185,7 +186,7 @@ input.equip-input::-webkit-outer-spin-button,input.equip-input::-webkit-inner-sp
 .modal-detail{background:var(--grey-50);border-radius:14px;padding:14px 16px;font-size:13px;font-weight:500;color:var(--grey-700);line-height:1.6}
 .modal-detail-label{font-size:11px;font-weight:700;color:var(--primary);margin-bottom:6px;display:block}
 .note-textarea{width:100%;min-height:72px;background:transparent;border:none;outline:none;resize:vertical;font-family:inherit;font-size:13px;font-weight:500;color:var(--grey-700);line-height:1.6;padding:0}
-.calc-toggle-row{display:flex;align-items:center;gap:8px}
+label.calc-toggle-row{display:flex;align-items:center;gap:8px}
 .calc-toggle-row input[type=checkbox]{width:18px;height:18px;accent-color:var(--primary);cursor:pointer;flex:none}
 .calc-toggle-row span{font-size:13px;font-weight:600;color:var(--grey-700)}
 .calc-fields{display:flex;flex-direction:column;gap:14px;margin-top:14px}
