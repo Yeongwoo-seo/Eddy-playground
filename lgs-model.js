@@ -75,14 +75,14 @@ const DEFAULTS = {
     { category: 'sga', label: '대표이사 급여', note: '경영·전략·영업 총괄. 시급 × 조건 탭의 1일 가동시간 × 월 가동일수로 계산', monthly: 10000, calc: { qty: 1, hourlyWage: 62.5, hourly: true } },
     { category: 'sga', label: '견적·영업 담당 급여', note: '고객 상담, 견적, 계약 관리', monthly: 7500, calc: { qty: 1, unitPrice: 7500 } },
     { category: 'sga', label: '관리·회계 담당 급여 (파트타임)', note: '경리, 총무, 발주 관리', monthly: 3500, calc: { qty: 1, unitPrice: 3500 } },
-    { category: 'sga', label: '사업 보험료', note: '배상책임(Public Liability) + icare 산재보험 (제조업 평균 요율 ~1.8~4.8%) — 연 1회 갱신 납부, 연간 총액을 Closing 단계에 일시 지급', monthly: 34800, oneTimeMonth: 1 },
-    { category: 'sga', label: 'FrameCAD Steelwise 라이선스', note: '설계·디테일링·엔지니어링 소프트웨어 구독 — 연 라이선스 계약, 연간 총액을 Closing 단계에 일시 지급', monthly: 18000, oneTimeMonth: 1 },
-    { category: 'sga', label: '회계·법무 자문료', note: '법인설립·계약검토 등 외부 회계사·법무 자문 — 연간 총액을 Closing 단계에 일시 지급', monthly: 21600, oneTimeMonth: 1 },
-    { category: 'sga', label: '마케팅·영업비', note: '웹사이트 구축, 온라인 광고, 전시 참가 — Pilot 출시 전 Build 단계에 연간 총액을 일시 지급', monthly: 24000, oneTimeMonth: 3 },
+    { category: 'sga', label: '사업 보험료', note: '배상책임(Public Liability) + icare 산재보험 (제조업 평균 요율 ~1.8~4.8%) — 연 1회 갱신 납부, 연간 보험료를 Closing 단계에 일시 지급', monthly: 2900, oneTimeMonth: 1 },
+    { category: 'sga', label: 'FrameCAD Steelwise 라이선스', note: '설계·디테일링·엔지니어링 소프트웨어 구독 — 연 라이선스 계약, 연간 라이선스비를 Closing 단계에 일시 지급', monthly: 1500, oneTimeMonth: 1 },
+    { category: 'sga', label: '회계·법무 자문료', note: '법인설립·계약검토 등 외부 회계사·법무 자문 — 연간 자문료를 Closing 단계에 일시 지급', monthly: 1800, oneTimeMonth: 1 },
+    { category: 'sga', label: '마케팅·영업비', note: '웹사이트 구축, 온라인 광고, 전시 참가 — Pilot 출시 전 Build 단계에 연간 마케팅비를 일시 지급', monthly: 2000, oneTimeMonth: 3 },
     { category: 'sga', label: '차량 유지비', note: '배송·현장방문용 유트(Ute) 리스+연료+보험', monthly: 1600 },
     { category: 'sga', label: '사무실 임대료·유틸리티', note: '공장 내 사무 공간 또는 소규모 별도 사무실', monthly: 1200 },
     { category: 'sga', label: '통신·IT', note: '인터넷, 휴대폰, 클라우드 SaaS 구독', monthly: 600 },
-    { category: 'sga', label: '인증·컴플라이언스', note: '구조 엔지니어 서명, WHS 컴플라이언스, CDC 인증 관련 — Pilot 출시 전 건별 인증 비용을 연간 총액으로 일시 지급', monthly: 21600, oneTimeMonth: 4 },
+    { category: 'sga', label: '인증·컴플라이언스', note: '구조 엔지니어 서명, WHS 컴플라이언스, CDC 인증 관련 — Pilot 출시 전 건별 인증 비용을 일시 지급', monthly: 1800, oneTimeMonth: 4 },
     { category: 'sga', label: '기타 관리비', note: '사무용품, 소모품, 예비비', monthly: 1000 },
     { category: 'other', type: 'depreciation', label: '설비 감가상각비', note: 'SP120 1대, Stage1~3 분할지급 총 $40,000 (2020년형 중고, 2026년 취득) — 기준내용연수 7년, 경과연수 6년으로 중고자산 내용연수 특례(기준내용연수 50% 하한, 1년 미만 절사) 적용, 수정내용연수 3년 정액법', monthly: 1111 },
     { category: 'other', type: 'depreciation', label: '장비·공구 감가상각비', note: '소모성 공구·장비 (포크리프트 제외, 렌탈 전환), 내용연수 5년', monthly: 19 }
@@ -301,11 +301,10 @@ const STORE_KEY = 'lgsModelStateV1';
    equivalent 시급 so previously-saved monthly totals don't jump */
 const HOURLY_WAGE_LABELS = ['생산직 기본급', '대표이사 급여'];
 
-/* one-time upgrade for states saved before these 5 판관비 항목 switched from a
-   smoothed monthly amount to a real one-time annual payment — multiplies the
-   user's existing monthly figure by 12 (preserving whatever Y1 total they'd
-   set) and schedules it in a default month, rather than silently changing
-   their numbers or losing any customization they'd made. */
+/* one-time upgrade for states saved before these 5 판관비 항목 switched from
+   "매달 반복" to "특정 월 1회" — the stored amount was already the real
+   one-time/annual figure (not a monthly rate to be annualized), so this only
+   schedules it into a default month without touching the number itself. */
 const ONE_TIME_SGA_DEFAULT_MONTHS = {
   '사업 보험료': 1,
   'FrameCAD Steelwise 라이선스': 1,
@@ -318,7 +317,6 @@ function migrateOneTimeSgaItems(st) {
     if (item.oneTimeMonth) return;
     const defaultMonth = ONE_TIME_SGA_DEFAULT_MONTHS[item.label];
     if (!defaultMonth) return;
-    item.monthly = Math.round(item.monthly * 12);
     item.oneTimeMonth = defaultMonth;
   });
   return st;
