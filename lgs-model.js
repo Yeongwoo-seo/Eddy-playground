@@ -27,10 +27,13 @@ const DEFAULTS = {
     { label: '2룸형 그래니플랫', sqm: 60, targetQty: 6 },
     { label: '3룸형 그래니플랫', sqm: 85, targetQty: 3 }
   ],
-  coilPct: 30,
-  screwPct: 5,
-  detailPct: 10,
-  otherVarPct: 5,
+  coilPricePerT: 2200,
+  steelWeightPerHouse: 3.0,
+  screwPricePerBox: 40,
+  screwBoxesPerHouse: 6,
+  detailRatePerHr: 50,
+  detailHrsPerHouse: 30,
+  otherVarPerHouse: 2246,
   fixedProdCost: 24125,
   sgaMonthly: 58333,
   otherCostMonthly: 6917,
@@ -72,20 +75,20 @@ function computeHouseTypeTotals(houseTypes, pricePerSqm) {
 
 function buildDefaultMonths() {
   const blendedPrice = Math.round(computeHouseTypeTotals(DEFAULTS.houseTypes, DEFAULTS.pricePerSqm).blendedPrice);
-  return DEFAULTS.houses.map(houses => {
-    const revenue = houses * blendedPrice;
-    return {
-      houses,
-      salePrice: blendedPrice,
-      coil: revenue * DEFAULTS.coilPct / 100,
-      screw: revenue * DEFAULTS.screwPct / 100,
-      detail: revenue * DEFAULTS.detailPct / 100,
-      otherVar: revenue * DEFAULTS.otherVarPct / 100,
-      fixedProd: DEFAULTS.fixedProdCost,
-      sga: DEFAULTS.sgaMonthly,
-      otherCost: DEFAULTS.otherCostMonthly
-    };
-  });
+  const coilPerHouse = DEFAULTS.coilPricePerT * DEFAULTS.steelWeightPerHouse;
+  const screwPerHouse = DEFAULTS.screwPricePerBox * DEFAULTS.screwBoxesPerHouse;
+  const detailPerHouse = DEFAULTS.detailRatePerHr * DEFAULTS.detailHrsPerHouse;
+  return DEFAULTS.houses.map(houses => ({
+    houses,
+    salePrice: blendedPrice,
+    coil: houses * coilPerHouse,
+    screw: houses * screwPerHouse,
+    detail: houses * detailPerHouse,
+    otherVar: houses * DEFAULTS.otherVarPerHouse,
+    fixedProd: DEFAULTS.fixedProdCost,
+    sga: DEFAULTS.sgaMonthly,
+    otherCost: DEFAULTS.otherCostMonthly
+  }));
 }
 
 function buildDefaultEquipment() {
@@ -95,6 +98,13 @@ function buildDefaultEquipment() {
 let state = {
   pricePerSqm: DEFAULTS.pricePerSqm,
   houseTypes: DEFAULTS.houseTypes.map(t => ({ ...t })),
+  coilPricePerT: DEFAULTS.coilPricePerT,
+  steelWeightPerHouse: DEFAULTS.steelWeightPerHouse,
+  screwPricePerBox: DEFAULTS.screwPricePerBox,
+  screwBoxesPerHouse: DEFAULTS.screwBoxesPerHouse,
+  detailRatePerHr: DEFAULTS.detailRatePerHr,
+  detailHrsPerHouse: DEFAULTS.detailHrsPerHouse,
+  otherVarPerHouse: DEFAULTS.otherVarPerHouse,
   equityRaise: DEFAULTS.equityRaise,
   stage1Amount: DEFAULTS.stage1Amount,
   stage1Month: DEFAULTS.stage1Month,
@@ -716,9 +726,13 @@ function renderComputed() {
     warnBanner.style.display = 'none';
   }
 
-  const totalVarPct = totals.totalRevenue > 0 ? (varTotal / totals.totalRevenue * 100) : 0;
-  const varPctEl = q('varPctTotal');
-  if (varPctEl) varPctEl.textContent = totalVarPct.toFixed(1) + '%';
+  const varPerHouseTotalEl = q('varPerHouseTotal');
+  if (varPerHouseTotalEl) {
+    const varPerHouse = (state.coilPricePerT * state.steelWeightPerHouse) + (state.screwPricePerBox * state.screwBoxesPerHouse) + (state.detailRatePerHr * state.detailHrsPerHouse) + state.otherVarPerHouse;
+    const blendedPrice = computeHouseTypeTotals(state.houseTypes, state.pricePerSqm).blendedPrice;
+    varPerHouseTotalEl.textContent = fmt(varPerHouse) + ' /채';
+    q('varPerHouseSub').textContent = blendedPrice > 0 ? ('판매가 대비 ' + (varPerHouse / blendedPrice * 100).toFixed(1) + '%') : '-';
+  }
 
   months.forEach((m, i) => {
     const row = rowRefs[i];
@@ -756,13 +770,44 @@ function renderComputed() {
 
 /* ---------- bulk-apply sliders ---------- */
 
-function applyPctAll(field, pct) {
-  state.months.forEach(m => {
-    const revenue = m.houses * m.salePrice;
-    m[field] = revenue * pct / 100;
+function applyFixedAll(field, v) { state.months.forEach(m => { m[field] = v; }); }
+function applyUnitCostAll(field, perHouseValue) { state.months.forEach(m => { m[field] = m.houses * perHouseValue; }); }
+
+function bindUnitPair(field, priceId, qtyId, resultId) {
+  const priceEl = q(priceId);
+  const qtyEl = q(qtyId);
+  const update = () => {
+    let price = parseFloat(priceEl.value);
+    if (isNaN(price) || price < 0) price = 0;
+    let qty = parseFloat(qtyEl.value);
+    if (isNaN(qty) || qty < 0) qty = 0;
+    state[priceId] = price;
+    state[qtyId] = qty;
+    const perHouse = price * qty;
+    q(resultId).textContent = fmt(perHouse) + ' /채';
+    applyUnitCostAll(field, perHouse);
+    syncInputsFromState();
+    renderComputed();
+  };
+  priceEl.value = DEFAULTS[priceId];
+  qtyEl.value = DEFAULTS[qtyId];
+  q(resultId).textContent = fmt(DEFAULTS[priceId] * DEFAULTS[qtyId]) + ' /채';
+  priceEl.addEventListener('input', update);
+  qtyEl.addEventListener('input', update);
+}
+
+function bindUnitSingle(field, id) {
+  const elx = q(id);
+  elx.value = DEFAULTS[id];
+  elx.addEventListener('input', () => {
+    let val = parseFloat(elx.value);
+    if (isNaN(val) || val < 0) val = 0;
+    state[id] = val;
+    applyUnitCostAll(field, val);
+    syncInputsFromState();
+    renderComputed();
   });
 }
-function applyFixedAll(field, v) { state.months.forEach(m => { m[field] = v; }); }
 
 function bindBulkSlider(id, isPct, applyFn) {
   const elx = q(id);
@@ -827,6 +872,13 @@ function resetAll() {
   state = {
     pricePerSqm: DEFAULTS.pricePerSqm,
     houseTypes: DEFAULTS.houseTypes.map(t => ({ ...t })),
+    coilPricePerT: DEFAULTS.coilPricePerT,
+    steelWeightPerHouse: DEFAULTS.steelWeightPerHouse,
+    screwPricePerBox: DEFAULTS.screwPricePerBox,
+    screwBoxesPerHouse: DEFAULTS.screwBoxesPerHouse,
+    detailRatePerHr: DEFAULTS.detailRatePerHr,
+    detailHrsPerHouse: DEFAULTS.detailHrsPerHouse,
+    otherVarPerHouse: DEFAULTS.otherVarPerHouse,
     equityRaise: DEFAULTS.equityRaise,
     stage1Amount: DEFAULTS.stage1Amount,
     stage1Month: DEFAULTS.stage1Month,
@@ -840,13 +892,17 @@ function resetAll() {
   document.querySelectorAll('[data-metric]').forEach(o => o.classList.remove('active'));
   q('breakdownCard').style.display = 'none';
 
-  ['coilPct', 'screwPct', 'detailPct', 'otherVarPct', 'fixedProdCost', 'sgaMonthly', 'otherCostMonthly', 'equityRaise', 'stage1Amount', 'stage2Amount'].forEach(id => {
+  ['fixedProdCost', 'sgaMonthly', 'otherCostMonthly', 'equityRaise', 'stage1Amount', 'stage2Amount'].forEach(id => {
     const elx = q(id);
     elx.value = DEFAULTS[id];
     setSliderFill(elx);
     const label = q(id + 'Val');
     if (label) label.textContent = label.dataset.fmt === 'pct' ? (DEFAULTS[id] + '%') : fmt(DEFAULTS[id]);
   });
+  ['coilPricePerT', 'steelWeightPerHouse', 'screwPricePerBox', 'screwBoxesPerHouse', 'detailRatePerHr', 'detailHrsPerHouse', 'otherVarPerHouse'].forEach(id => { q(id).value = DEFAULTS[id]; });
+  q('coilPerHouseVal').textContent = fmt(DEFAULTS.coilPricePerT * DEFAULTS.steelWeightPerHouse) + ' /채';
+  q('screwPerHouseVal').textContent = fmt(DEFAULTS.screwPricePerBox * DEFAULTS.screwBoxesPerHouse) + ' /채';
+  q('detailPerHouseVal').textContent = fmt(DEFAULTS.detailRatePerHr * DEFAULTS.detailHrsPerHouse) + ' /채';
   const ppsElx = q('pricePerSqm');
   ppsElx.value = DEFAULTS.pricePerSqm;
   setSliderFill(ppsElx);
@@ -865,10 +921,10 @@ function resetAll() {
 
 function initControls() {
   bindPricePerSqmSlider();
-  bindBulkSlider('coilPct', true, v => applyPctAll('coil', v));
-  bindBulkSlider('screwPct', true, v => applyPctAll('screw', v));
-  bindBulkSlider('detailPct', true, v => applyPctAll('detail', v));
-  bindBulkSlider('otherVarPct', true, v => applyPctAll('otherVar', v));
+  bindUnitPair('coil', 'coilPricePerT', 'steelWeightPerHouse', 'coilPerHouseVal');
+  bindUnitPair('screw', 'screwPricePerBox', 'screwBoxesPerHouse', 'screwPerHouseVal');
+  bindUnitPair('detail', 'detailRatePerHr', 'detailHrsPerHouse', 'detailPerHouseVal');
+  bindUnitSingle('otherVar', 'otherVarPerHouse');
   bindBulkSlider('fixedProdCost', false, v => applyFixedAll('fixedProd', v));
   bindBulkSlider('sgaMonthly', false, v => applyFixedAll('sga', v));
   bindBulkSlider('otherCostMonthly', false, v => applyFixedAll('otherCost', v));
@@ -950,6 +1006,7 @@ window.addEventListener('DOMContentLoaded', () => {
   goTab(0);
   renderSubTabNav();
   goSubTab(0);
-  q('resetBtn').addEventListener('click', resetAll);
+  const resetBtnEl = q('resetBtn');
+  if (resetBtnEl) resetBtnEl.addEventListener('click', resetAll);
   q('houseTypeAddBtn').addEventListener('click', onHouseTypeAdd);
 });

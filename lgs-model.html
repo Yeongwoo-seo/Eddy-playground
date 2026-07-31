@@ -154,6 +154,32 @@ input.equip-input::-webkit-outer-spin-button,input.equip-input::-webkit-inner-sp
 .var-total-row{display:flex;justify-content:space-between;align-items:center;background:var(--primary-light);border-radius:14px;padding:12px 16px;margin-top:4px}
 .var-total-label{font-size:13px;font-weight:600;color:var(--primary)}
 .var-total-value{font-size:16px;font-weight:800;color:var(--primary)}
+.unit-result-sub{font-size:11px;color:var(--grey-500);margin-top:2px}
+
+/* Direct-entry figure fields */
+.figure-row{margin-bottom:16px}
+.figure-row:last-child{margin-bottom:0}
+.input-label{font-size:13px;font-weight:600;color:var(--grey-500);margin-bottom:8px;display:block}
+.input-wrap{display:flex;align-items:center;background:var(--grey-100);border-radius:14px;padding:12px 14px;border:2px solid transparent;transition:border-color .2s,background .2s}
+.input-wrap:focus-within{border-color:var(--primary);background:var(--white)}
+.input-prefix,.input-suffix{font-size:14px;font-weight:600;color:var(--grey-500);white-space:nowrap}
+.input-prefix{margin-right:2px}
+.input-suffix{margin-left:4px}
+.figure-input{flex:1;min-width:0;border:none;background:transparent;font-size:18px;font-weight:700;outline:none;color:var(--black);font-family:inherit}
+input.figure-input::-webkit-outer-spin-button,input.figure-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+
+/* Unit-priced production cost assumptions */
+.est-badge{display:inline-block;font-size:9px;font-weight:700;color:var(--grey-500);background:var(--grey-100);padding:2px 7px;border-radius:8px;margin-left:6px;vertical-align:middle}
+.unit-group{margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--grey-100)}
+.unit-group:last-of-type{border-bottom:none;padding-bottom:0}
+.unit-group-title{font-size:13px;font-weight:700;color:var(--black);margin-bottom:12px}
+.unit-input-row{display:flex;gap:10px;margin-bottom:10px}
+.unit-input-row .input-col{flex:1;min-width:0}
+.unit-input-row .input-col label{font-size:11px;color:var(--grey-500);font-weight:600;margin-bottom:6px;display:block}
+.unit-input-row .input-wrap{padding:10px 12px}
+.unit-input-row .figure-input{font-size:15px}
+.unit-result-row{display:flex;justify-content:space-between;align-items:center;background:var(--grey-50);border-radius:12px;padding:10px 14px;font-size:12px;font-weight:600;color:var(--grey-700)}
+.unit-result-row b{color:var(--primary);font-size:14px}
 
 /* House type table */
 .ht-table{table-layout:fixed}
@@ -298,27 +324,68 @@ input.equip-input::-webkit-outer-spin-button,input.equip-input::-webkit-inner-sp
 
   <div class="sub-panel" id="subtab-variable">
   <div class="card">
-    <div class="section-label"><div class="section-dot"></div><span>변동비 구성 (매출 대비 %)</span></div>
-    <div class="section-note">코일(철강) · 스크류/파스너 · 외주 디테일링 · 기타(설치 등)로 구성돼요. 슬라이더는 전체 월에 일괄 적용돼요.</div>
-    <div class="slider-row">
-      <div class="slider-label-row"><span class="slider-label">코일(철강)</span><span class="slider-value" id="coilPctVal" data-fmt="pct">-</span></div>
-      <input type="range" class="slider" id="coilPct" min="0" max="50" step="1">
+    <div class="section-label"><div class="section-dot"></div><span>생산원가 가정 (단가 기반)</span></div>
+    <div class="section-note">코일 가격(A$/t) 등 실제 단가로 변동비를 계산해요. 기본값은 <b>추정치</b>이니 실제 견적이 확인되는 대로 직접 수정하세요. 전체 12개월에 일괄 적용되고, 특정 월만 다르게 하려면 월별표에서 직접 입력하세요.</div>
+
+    <div class="unit-group">
+      <div class="unit-group-title">코일(철강) <span class="est-badge">추정치</span></div>
+      <div class="unit-input-row">
+        <div class="input-col">
+          <label>코일 가격</label>
+          <div class="input-wrap"><span class="input-prefix">A$</span><input type="number" class="figure-input" id="coilPricePerT" min="0" step="1"><span class="input-suffix">/t</span></div>
+        </div>
+        <div class="input-col">
+          <label>채당 철강 중량</label>
+          <div class="input-wrap"><input type="number" class="figure-input" id="steelWeightPerHouse" min="0" step="0.1"><span class="input-suffix">t/채</span></div>
+        </div>
+      </div>
+      <div class="unit-result-row"><span>채당 코일비</span><b id="coilPerHouseVal">-</b></div>
     </div>
-    <div class="slider-row">
-      <div class="slider-label-row"><span class="slider-label">스크류/파스너</span><span class="slider-value" id="screwPctVal" data-fmt="pct">-</span></div>
-      <input type="range" class="slider" id="screwPct" min="0" max="20" step="1">
+
+    <div class="unit-group">
+      <div class="unit-group-title">스크류/파스너 <span class="est-badge">추정치</span></div>
+      <div class="unit-input-row">
+        <div class="input-col">
+          <label>박스당 단가 (LECHI 반영)</label>
+          <div class="input-wrap"><span class="input-prefix">A$</span><input type="number" class="figure-input" id="screwPricePerBox" min="0" step="1"><span class="input-suffix">/박스</span></div>
+        </div>
+        <div class="input-col">
+          <label>채당 사용량</label>
+          <div class="input-wrap"><input type="number" class="figure-input" id="screwBoxesPerHouse" min="0" step="0.5"><span class="input-suffix">박스/채</span></div>
+        </div>
+      </div>
+      <div class="unit-result-row"><span>채당 스크류비</span><b id="screwPerHouseVal">-</b></div>
     </div>
-    <div class="slider-row">
-      <div class="slider-label-row"><span class="slider-label">외주 디테일링</span><span class="slider-value" id="detailPctVal" data-fmt="pct">-</span></div>
-      <input type="range" class="slider" id="detailPct" min="0" max="30" step="1">
+
+    <div class="unit-group">
+      <div class="unit-group-title">외주 디테일링 <span class="est-badge">추정치</span></div>
+      <div class="unit-input-row">
+        <div class="input-col">
+          <label>시간당 단가</label>
+          <div class="input-wrap"><span class="input-prefix">A$</span><input type="number" class="figure-input" id="detailRatePerHr" min="0" step="1"><span class="input-suffix">/hr</span></div>
+        </div>
+        <div class="input-col">
+          <label>채당 소요시간</label>
+          <div class="input-wrap"><input type="number" class="figure-input" id="detailHrsPerHouse" min="0" step="1"><span class="input-suffix">hr/채</span></div>
+        </div>
+      </div>
+      <div class="unit-result-row"><span>채당 디테일링비</span><b id="detailPerHouseVal">-</b></div>
     </div>
-    <div class="slider-row">
-      <div class="slider-label-row"><span class="slider-label">기타(설치 등)</span><span class="slider-value" id="otherVarPctVal" data-fmt="pct">-</span></div>
-      <input type="range" class="slider" id="otherVarPct" min="0" max="20" step="1">
+
+    <div class="unit-group">
+      <div class="unit-group-title">기타(설치 등)</div>
+      <div class="figure-row">
+        <label class="input-label">채당 기타비용</label>
+        <div class="input-wrap"><span class="input-prefix">A$</span><input type="number" class="figure-input" id="otherVarPerHouse" min="0" step="1"><span class="input-suffix">/채</span></div>
+      </div>
     </div>
+
     <div class="var-total-row">
-      <span class="var-total-label">총 변동비율</span>
-      <span class="var-total-value" id="varPctTotal">-</span>
+      <div>
+        <div class="var-total-label">채당 변동비 합계</div>
+        <div class="unit-result-sub" id="varPerHouseSub">-</div>
+      </div>
+      <span class="var-total-value" id="varPerHouseTotal">-</span>
     </div>
   </div>
   </div>
@@ -408,7 +475,7 @@ input.equip-input::-webkit-outer-spin-button,input.equip-input::-webkit-inner-sp
   </div>
 
   <div class="footer">
-    기준: LGS Frame Market Research and Capabilities (2026.03) · 시드니 그래니플랫(보조주택) 12채 스타터 파이프라인(스튜디오~3룸형 믹스), 채당 평균 ~A$12.6k, 변동비 ~50%, SG&amp;A 연 ~A$700k 가정 기반 시뮬레이션. 실제 결과와 다를 수 있습니다.
+    기준: LGS Frame Market Research and Capabilities (2026.03) · 시드니 그래니플랫(보조주택) 12채 스타터 파이프라인(스튜디오~3룸형 믹스), 채당 평균 ~A$12.6k, SG&amp;A 연 ~A$700k 가정, 변동비는 코일(A$/t)·스크류·디테일링 단가 기반 추정치로 시뮬레이션. 실제 결과와 다를 수 있습니다.
   </div>
 
 </div>
