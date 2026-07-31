@@ -17,7 +17,7 @@ const SUB_TAB_GROUPS = {
     barId: 'subTabBar',
     cur: 0,
     tabs: [
-      { id: 'revenue', label: '매출' },
+      { id: 'revenue', label: '매출', amountId: 'revenueTabAmount' },
       { id: 'fixed', label: '고정비' },
       { id: 'variable', label: '변동비' }
     ]
@@ -1072,6 +1072,7 @@ function renderHouseTypeTable() {
   q('houseTypeTotalQty').textContent = totals.totalQty + '채';
   q('houseTypeBlendedPrice').textContent = fmt(totals.blendedPrice) + '/채';
   q('houseTypeTotalRevenue').textContent = fmt(totals.totalRevenue);
+  q('revenueTabAmount').textContent = fmt(totals.totalRevenue);
 }
 
 /* ---------- monthly sales ramp (drives monthly revenue directly) ---------- */
@@ -1346,12 +1347,9 @@ function initCollapsibleCards() {
     const toggle = document.createElement('button');
     toggle.type = 'button';
     toggle.className = 'section-collapse-toggle';
-    toggle.innerHTML = '<span class="section-collapse-chevron"></span>';
+    toggle.innerHTML = '<span class="section-collapse-amount"></span><span class="section-collapse-chevron"></span>';
     toggle.addEventListener('click', () => card.classList.toggle('collapsed'));
     label.appendChild(toggle);
-    const badge = document.createElement('span');
-    badge.className = 'section-collapse-badge';
-    label.insertAdjacentElement('afterend', badge);
   });
   syncAllCollapsibleAmounts();
 }
@@ -1359,8 +1357,8 @@ function initCollapsibleCards() {
 function syncAllCollapsibleAmounts() {
   document.querySelectorAll('.card[data-collapsible]').forEach(card => {
     const totalEl = q(card.dataset.totalId);
-    const badgeEl = card.querySelector('.section-collapse-badge');
-    if (totalEl && badgeEl) badgeEl.textContent = totalEl.textContent;
+    const amountEl = card.querySelector('.section-collapse-amount');
+    if (totalEl && amountEl) amountEl.textContent = totalEl.textContent;
   });
 }
 
@@ -1682,7 +1680,7 @@ function renderSubTabNav(groupKey) {
   const group = SUB_TAB_GROUPS[groupKey];
   const bar = q(group.barId);
   bar.innerHTML = `<div class="sub-tab-thumb" style="width:calc((100% - 8px) / ${group.tabs.length})"></div>` +
-    group.tabs.map((t, i) => `<button class="sub-tab-item" data-subtab-index="${i}">${t.label}</button>`).join('');
+    group.tabs.map((t, i) => `<button class="sub-tab-item" data-subtab-index="${i}"><span>${t.label}</span>${t.amountId ? `<span class="sub-tab-amount" id="${t.amountId}">-</span>` : ''}</button>`).join('');
   bar.querySelectorAll('.sub-tab-item').forEach(btn => {
     btn.addEventListener('click', () => goSubTab(groupKey, Number(btn.dataset.subtabIndex)));
   });
@@ -1747,6 +1745,12 @@ window.addEventListener('DOMContentLoaded', () => {
   buildHouseTypeSkeleton();
   buildFixedCostSkeleton();
   buildMonthlyRampSkeleton();
+  renderSubTabNav('assumptions');
+  goSubTab('assumptions', 0);
+  renderSubTabNav('capex');
+  goSubTab('capex', 0);
+  renderSubTabNav('table');
+  goSubTab('table', 0);
   renderHouseTypeTable();
   renderFixedCostTable();
   renderComputed();
@@ -1754,12 +1758,6 @@ window.addEventListener('DOMContentLoaded', () => {
   goTab(0);
   renderModeTabs();
   goAssumptionsMode(0);
-  renderSubTabNav('assumptions');
-  goSubTab('assumptions', 0);
-  renderSubTabNav('capex');
-  goSubTab('capex', 0);
-  renderSubTabNav('table');
-  goSubTab('table', 0);
   const resetBtn = q('resetBtn');
   if (resetBtn) resetBtn.addEventListener('click', resetAll);
   q('houseTypeAddBtn').addEventListener('click', onHouseTypeAdd);
