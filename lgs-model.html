@@ -35,17 +35,37 @@ body{background:var(--bg);color:var(--black);font-family:'Pretendard',-apple-sys
 
 /* Summary */
 .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
-.stat-card{background:var(--white);border-radius:20px;padding:16px;box-shadow:0 2px 12px rgba(0,0,0,.06)}
-.stat-label{font-size:12px;color:var(--grey-500);font-weight:600;margin-bottom:6px}
+.stat-card{background:var(--white);border-radius:20px;padding:16px;box-shadow:0 2px 12px rgba(0,0,0,.06);cursor:pointer;transition:box-shadow .2s,transform .15s;position:relative}
+.stat-card:active{transform:scale(.98)}
+.stat-card.active{box-shadow:0 0 0 2px var(--primary) inset,0 2px 12px rgba(0,0,0,.06)}
+.stat-label{font-size:12px;color:var(--grey-500);font-weight:600;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;gap:4px}
+.stat-caret{font-size:9px;color:var(--grey-300);transition:transform .2s}
+.stat-card.active .stat-caret{color:var(--primary);transform:rotate(180deg)}
 .stat-value{font-size:18px;font-weight:800;color:var(--black);letter-spacing:-.3px}
 .stat-value.pos{color:var(--success)}
 .stat-value.neg{color:var(--danger)}
 .stat-sub{font-size:11px;color:var(--grey-500);font-weight:500;margin-top:4px}
 
 .mini-stat-row{display:flex;gap:10px}
-.mini-stat{flex:1;background:var(--grey-50);border:1px solid var(--grey-200);border-radius:16px;padding:12px 14px}
-.mini-stat-label{font-size:11px;color:var(--grey-500);font-weight:600;margin-bottom:4px}
+.mini-stat{flex:1;background:var(--grey-50);border:1px solid var(--grey-200);border-radius:16px;padding:12px 14px;cursor:pointer;transition:box-shadow .2s,transform .15s}
+.mini-stat:active{transform:scale(.98)}
+.mini-stat.active{box-shadow:0 0 0 2px var(--primary) inset;background:var(--white)}
+.mini-stat.static{cursor:default}
+.mini-stat.static:active{transform:none}
+.mini-stat-label{font-size:11px;color:var(--grey-500);font-weight:600;margin-bottom:4px;display:flex;align-items:center;justify-content:space-between;gap:4px}
 .mini-stat-value{font-size:15px;font-weight:700;color:var(--black)}
+
+/* Breakdown */
+.breakdown-card{display:none}
+.breakdown-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--grey-100);font-size:13px;gap:12px}
+.breakdown-row:last-child{border-bottom:none}
+.breakdown-label{font-weight:600;color:var(--grey-700)}
+.breakdown-value{font-weight:700;color:var(--black);white-space:nowrap}
+.breakdown-value.neg{color:var(--danger)}
+.breakdown-bar-track{height:5px;background:var(--grey-100);border-radius:3px;margin:2px 0 8px;overflow:hidden}
+.breakdown-bar-fill{height:100%;background:var(--primary);border-radius:3px;transition:width .3s cubic-bezier(0.2,0.8,0.2,1)}
+.breakdown-total-row{display:flex;justify-content:space-between;padding-top:12px;margin-top:4px;border-top:2px solid var(--grey-200);font-size:14px;font-weight:800;color:var(--primary)}
+.breakdown-total-row .neg{color:var(--danger)}
 
 .warn-banner{display:none;align-items:flex-start;gap:8px;background:#FFF0EE;border:1px solid #F5C6C0;border-radius:16px;padding:12px 14px;margin-bottom:14px;font-size:12px;font-weight:600;color:var(--danger);line-height:1.5}
 
@@ -77,31 +97,30 @@ input.slider[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:
 select.select-field{width:100%;background:var(--grey-100);border:2px solid transparent;border-radius:14px;padding:11px 12px;font-size:15px;font-weight:700;color:var(--black);outline:none;font-family:inherit}
 select.select-field:focus{border-color:var(--primary);background:var(--white)}
 
-/* House sliders */
-.house-row{display:grid;grid-template-columns:56px 1fr 46px;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--grey-100)}
-.house-row:last-child{border-bottom:none}
-.house-label{font-size:12px;font-weight:700;color:var(--black);line-height:1.3}
-.house-phase{display:block;font-size:10px;font-weight:600;color:var(--grey-500)}
-.house-val{font-size:13px;font-weight:700;color:var(--primary);text-align:right}
-input.house-slider[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:5px;border-radius:3px;background:var(--grey-200);outline:none;cursor:pointer}
-input.house-slider[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--primary);cursor:pointer;border:2.5px solid var(--white);box-shadow:0 1px 4px rgba(232,116,30,.4)}
-input.house-slider[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--primary);cursor:pointer;border:2.5px solid var(--white)}
-.house-total{margin-top:14px;text-align:center;font-size:13px;font-weight:600;color:var(--grey-700)}
-.house-total b{color:var(--primary)}
-
-/* Table */
+/* Table — editable spreadsheet */
 .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -20px;padding:0 20px}
-table.data-table{width:100%;min-width:640px;border-collapse:collapse}
-.data-table th{font-size:11px;font-weight:700;color:var(--grey-500);text-align:right;padding:0 8px 10px;white-space:nowrap}
+table.data-table{width:100%;min-width:1220px;border-collapse:collapse}
+.data-table th{font-size:10.5px;font-weight:700;color:var(--grey-500);text-align:right;padding:0 6px 10px;white-space:nowrap}
 .data-table th:first-child{text-align:left}
-.tcell{font-size:12px;font-weight:600;color:var(--black);text-align:right;padding:9px 8px;border-bottom:1px solid var(--grey-100);white-space:nowrap}
+.tcell{font-size:12px;font-weight:600;color:var(--black);text-align:right;padding:7px 6px;border-bottom:1px solid var(--grey-100);white-space:nowrap}
 .tcell-month{text-align:left;font-weight:700}
 .tphase{display:block;font-size:9.5px;font-weight:600;color:var(--grey-500)}
 .tcell.neg{color:var(--danger)}
 .tcell.pos{color:var(--success)}
+.tcell-month,.data-table th:first-child{position:sticky;left:0;background:var(--white);z-index:1}
+.data-table th:first-child{background:var(--grey-50)}
 .trow-total .tcell{background:var(--primary-light);font-weight:800;color:var(--primary)}
+.trow-total .tcell-month{background:var(--primary-light)}
 .trow-total .tcell.neg{color:var(--danger)}
 .trow-total .tcell.pos{color:var(--success)}
+.tcell-computed{color:var(--grey-700);background:var(--grey-50)}
+.tcell-computed.neg{color:var(--danger)}
+.tcell-computed.pos{color:var(--success)}
+
+.tinput{width:100%;min-width:60px;border:none;background:transparent;text-align:right;font-size:11.5px;font-weight:700;color:var(--black);padding:5px 4px;border-radius:6px;outline:none;font-family:inherit}
+.tinput:focus{background:var(--primary-light);box-shadow:0 0 0 2px var(--primary) inset}
+input.tinput::-webkit-outer-spin-button,input.tinput::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.table-hint{font-size:11px;color:var(--grey-500);font-weight:500;margin-top:10px;line-height:1.6}
 
 /* CTA */
 .reset-btn{width:100%;padding:16px;background:var(--grey-100);color:var(--grey-700);border:none;border-radius:16px;font-size:15px;font-weight:700;cursor:pointer;transition:opacity .2s,transform .1s}
@@ -119,47 +138,53 @@ table.data-table{width:100%;min-width:640px;border-collapse:collapse}
       <a class="header-back" href="index.html">← 홈</a>
     </div>
     <div class="header-title">Year 1 <span class="hl">재무모델</span> 시뮬레이터</div>
-    <div class="header-sub">항목별 슬라이더를 움직여 판매가·비용 변동이 월별 손익과 현금에 미치는 영향을 실시간으로 확인하세요.</div>
+    <div class="header-sub">슬라이더로 항목을 조정하고, 카드를 눌러 구성요소를 확인하고, 표에서 월별 값을 엑셀처럼 직접 입력하세요.</div>
   </div>
 
   <div class="warn-banner" id="cashWarning">⚠️<span></span></div>
 
   <div class="stat-grid">
-    <div class="stat-card">
-      <div class="stat-label">Y1 총 매출</div>
+    <div class="stat-card" data-metric="revenue">
+      <div class="stat-label">Y1 총 매출<span class="stat-caret">▾</span></div>
       <div class="stat-value" id="statRevenue">-</div>
       <div class="stat-sub" id="statRevenueSub">-</div>
     </div>
-    <div class="stat-card">
-      <div class="stat-label">Y1 매출원가</div>
+    <div class="stat-card" data-metric="cogs">
+      <div class="stat-label">Y1 매출원가<span class="stat-caret">▾</span></div>
       <div class="stat-value" id="statCOGS">-</div>
       <div class="stat-sub" id="statCOGSSub">-</div>
     </div>
-    <div class="stat-card">
-      <div class="stat-label">Y1 매출총이익</div>
+    <div class="stat-card" data-metric="grossProfit">
+      <div class="stat-label">Y1 매출총이익<span class="stat-caret">▾</span></div>
       <div class="stat-value" id="statGP">-</div>
       <div class="stat-sub" id="statGPSub">-</div>
     </div>
-    <div class="stat-card">
-      <div class="stat-label">Y1 말 현금</div>
+    <div class="stat-card" data-metric="cash">
+      <div class="stat-label">Y1 말 현금<span class="stat-caret">▾</span></div>
       <div class="stat-value" id="statCash">-</div>
       <div class="stat-sub" id="statCashSub">-</div>
     </div>
   </div>
 
-  <div class="mini-stat-row" style="margin-bottom:20px">
-    <div class="mini-stat">
-      <div class="mini-stat-label">EBITDA</div>
+  <div class="mini-stat-row" style="margin-bottom:14px">
+    <div class="mini-stat" data-metric="ebitda">
+      <div class="mini-stat-label">EBITDA<span class="stat-caret">▾</span></div>
       <div class="mini-stat-value" id="statEBITDA">-</div>
     </div>
-    <div class="mini-stat">
-      <div class="mini-stat-label">순이익</div>
+    <div class="mini-stat" data-metric="netIncome">
+      <div class="mini-stat-label">순이익<span class="stat-caret">▾</span></div>
       <div class="mini-stat-value" id="statNI">-</div>
     </div>
-    <div class="mini-stat">
+    <div class="mini-stat static">
       <div class="mini-stat-label">월 손익분기</div>
       <div class="mini-stat-value" id="statBreakeven">-</div>
     </div>
+  </div>
+
+  <div class="card breakdown-card" id="breakdownCard">
+    <div class="section-label"><div class="section-dot"></div><span id="breakdownTitle">구성요소</span></div>
+    <div id="breakdownList"></div>
+    <div class="breakdown-total-row"><span id="breakdownTotalLabel">합계</span><span id="breakdownTotalValue">-</span></div>
   </div>
 
   <div class="card">
@@ -179,6 +204,7 @@ table.data-table{width:100%;min-width:640px;border-collapse:collapse}
 
   <div class="card">
     <div class="section-label"><div class="section-dot"></div><span>판매 단가</span></div>
+    <div class="section-note">슬라이더는 12개월 전체에 일괄 적용돼요. 특정 월만 다르게 하려면 아래 표에서 직접 입력하세요.</div>
     <div class="slider-row">
       <div class="slider-label-row"><span class="slider-label">채당 평균 판매가</span><span class="slider-value" id="salePriceVal">-</span></div>
       <input type="range" class="slider" id="salePrice" min="30000" max="60000" step="500">
@@ -187,7 +213,7 @@ table.data-table{width:100%;min-width:640px;border-collapse:collapse}
 
   <div class="card">
     <div class="section-label"><div class="section-dot"></div><span>변동비 구성 (매출 대비 %)</span></div>
-    <div class="section-note">코일(철강) · 스크류/파스너 · 외주 디테일링 · 기타(설치 등)로 구성돼요.</div>
+    <div class="section-note">코일(철강) · 스크류/파스너 · 외주 디테일링 · 기타(설치 등)로 구성돼요. 슬라이더는 전체 월에 일괄 적용돼요.</div>
     <div class="slider-row">
       <div class="slider-label-row"><span class="slider-label">코일(철강)</span><span class="slider-value" id="coilPctVal" data-fmt="pct">-</span></div>
       <input type="range" class="slider" id="coilPct" min="0" max="50" step="1">
@@ -212,6 +238,7 @@ table.data-table{width:100%;min-width:640px;border-collapse:collapse}
 
   <div class="card">
     <div class="section-label"><div class="section-dot"></div><span>고정비</span></div>
+    <div class="section-note">슬라이더는 전체 월에 일괄 적용돼요.</div>
     <div class="slider-row">
       <div class="slider-label-row"><span class="slider-label">월 고정 생산비 (램프업)</span><span class="slider-value" id="fixedProdCostVal">-</span></div>
       <input type="range" class="slider" id="fixedProdCost" min="0" max="60000" step="500">
@@ -261,24 +288,19 @@ table.data-table{width:100%;min-width:640px;border-collapse:collapse}
   </div>
 
   <div class="card">
-    <div class="section-label"><div class="section-dot"></div><span>월별 착수 주택 수 (Y1)</span></div>
-    <div class="section-note">12채 스타터 파이프라인을 월별로 어떻게 인도할지 조정해보세요.</div>
-    <div id="houseSliders"></div>
-    <div class="house-total" id="houseTotal"></div>
-  </div>
-
-  <div class="card">
-    <div class="section-label"><div class="section-dot"></div><span>월별 상세 테이블</span></div>
+    <div class="section-label"><div class="section-dot"></div><span>월별 상세 테이블 (직접 입력)</span></div>
+    <div class="section-note">엑셀처럼 각 셀을 눌러 월별 값을 직접 수정할 수 있어요. 회색 칸은 계산된 값이에요.</div>
     <div class="table-scroll">
       <table class="data-table">
         <thead>
           <tr>
-            <th>Month</th><th>주택수</th><th>매출</th><th>매출원가</th><th>매출총이익</th><th>SG&amp;A</th><th>EBITDA</th><th>기말현금</th>
+            <th>Month</th><th>주택수</th><th>판매단가</th><th>매출</th><th>코일</th><th>스크류</th><th>디테일링</th><th>기타변동</th><th>고정생산비</th><th>SG&amp;A</th><th>기타비용</th><th>매출총이익</th><th>EBITDA</th><th>기말현금</th>
           </tr>
         </thead>
         <tbody id="tableBody"></tbody>
       </table>
     </div>
+    <div class="table-hint">가로로 스크롤해서 전체 항목을 확인하세요. Month 열은 고정돼 있어요.</div>
   </div>
 
   <button class="reset-btn" id="resetBtn">기본값으로 재설정</button>
