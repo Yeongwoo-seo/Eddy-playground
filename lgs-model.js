@@ -1730,12 +1730,12 @@ function bindCoilPricePerLmSlider() {
   const label = q('coilPricePerLmVal');
   elx.value = state.coilPricePerLm;
   setSliderFill(elx);
-  label.textContent = '$' + state.coilPricePerLm.toFixed(2) + '/L';
+  label.textContent = '$' + state.coilPricePerLm.toFixed(2) + '/lm';
   elx.addEventListener('input', () => {
     const val = parseFloat(elx.value);
     state.coilPricePerLm = val;
     setSliderFill(elx);
-    label.textContent = '$' + val.toFixed(2) + '/L';
+    label.textContent = '$' + val.toFixed(2) + '/lm';
     recomputeVariableCosts();
     renderComputed();
     scheduleSave();
@@ -1899,7 +1899,7 @@ function syncControlInputsFromState() {
   const coilPriceElx = q('coilPricePerLm');
   coilPriceElx.value = state.coilPricePerLm;
   setSliderFill(coilPriceElx);
-  q('coilPricePerLmVal').textContent = '$' + state.coilPricePerLm.toFixed(2) + '/L';
+  q('coilPricePerLmVal').textContent = '$' + state.coilPricePerLm.toFixed(2) + '/lm';
 
   const screwPriceElx = q('screwPricePer1000');
   screwPriceElx.value = state.screwPricePer1000;
