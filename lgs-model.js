@@ -20,7 +20,7 @@ const SUB_TABS = [
 let curSubTab = 0;
 
 const DEFAULTS = {
-  pricePerSqm: 700,
+  pricePerSqm: 200,
   houseTypes: [
     { label: '스튜디오 그래니플랫', sqm: 40, targetQty: 1 },
     { label: '1룸형 그래니플랫', sqm: 50, targetQty: 2 },
