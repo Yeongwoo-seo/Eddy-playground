@@ -1363,7 +1363,8 @@ function onMonthlyRampInput(e) {
 /* per-month capacity utilization: sqm that month's house count requires,
    vs. sqm the roll-former can physically produce that month (조건 탭의
    롤포머 생산능력 × 월 가동일수) — the monthly counterpart to the annual
-   가동률 shown in computeConditionMetrics. */
+   가동률 shown in computeConditionMetrics. lm shown alongside it is that
+   same sqm converted to coil length via 조건 탭의 코일 사용량(L/sqm). */
 function renderMonthlyRampTable() {
   let totalQty = 0;
   const avgSqm = computeHouseTypeTotals(state.houseTypes, state.pricePerSqm).avgSqm;
@@ -1372,8 +1373,10 @@ function renderMonthlyRampTable() {
     const m = state.months[i];
     totalQty += m.houses;
     row.revTd.textContent = fmt(m.houses * m.salePrice);
-    const utilPct = monthlyCapacitySqm > 0 ? (m.houses * avgSqm) / monthlyCapacitySqm * 100 : 0;
-    row.utilTd.textContent = utilPct.toFixed(0) + '%';
+    const sqm = m.houses * avgSqm;
+    const lm = sqm * state.coilLmPerSqm;
+    const utilPct = monthlyCapacitySqm > 0 ? sqm / monthlyCapacitySqm * 100 : 0;
+    row.utilTd.textContent = `${utilPct.toFixed(0)}% (${Math.round(lm).toLocaleString('en-US')}L)`;
     row.utilTd.style.color = utilPct > 100 ? 'var(--danger)' : '';
   });
   const totalQtyEl = q('monthlyRampTotalQty');
