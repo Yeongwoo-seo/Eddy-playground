@@ -161,6 +161,25 @@ input.equip-input::-webkit-outer-spin-button,input.equip-input::-webkit-inner-sp
 .equip-total-row{display:flex;justify-content:space-between;align-items:center;background:var(--primary-light);border-radius:14px;padding:12px 16px;margin-top:6px;font-size:13px;font-weight:700;color:var(--primary)}
 .equip-total-row span:last-child{font-size:16px;font-weight:800}
 
+.var-total-row{display:flex;justify-content:space-between;align-items:center;background:var(--primary-light);border-radius:14px;padding:12px 16px;margin-top:4px}
+.var-total-label{font-size:13px;font-weight:600;color:var(--primary)}
+.var-total-value{font-size:16px;font-weight:800;color:var(--primary)}
+
+/* House type table */
+.ht-table{table-layout:fixed}
+.ht-table th:nth-child(1),.ht-table td:nth-child(1){width:31%}
+.ht-table th:nth-child(2),.ht-table td:nth-child(2){width:15%}
+.ht-table th:nth-child(3),.ht-table td:nth-child(3){width:15%}
+.ht-table th:nth-child(4),.ht-table td:nth-child(4){width:19%}
+.ht-table th:nth-child(5),.ht-table td:nth-child(5){width:19%}
+.ht-table th:nth-child(6),.ht-table td:nth-child(6){width:22px}
+.ht-label-input{text-align:left;font-weight:700;font-size:11px;padding:6px 3px}
+.ht-table .equip-subtotal{font-size:11px}
+.ht-remove-btn{width:26px;height:26px;border:none;border-radius:8px;background:var(--grey-100);color:var(--grey-500);font-size:12px;font-weight:700;cursor:pointer;transition:opacity .2s}
+.ht-remove-btn:active{opacity:.8}
+.ht-add-btn{width:100%;margin-top:10px;padding:11px;background:var(--primary-light);color:var(--primary);border:none;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;transition:opacity .2s,transform .1s}
+.ht-add-btn:active{opacity:.85;transform:scale(.98)}
+
 .footer{text-align:center;padding:18px 8px 4px;font-size:11px;color:var(--grey-500);line-height:1.6}
 </style>
 </head>
@@ -250,11 +269,32 @@ input.equip-input::-webkit-outer-spin-button,input.equip-input::-webkit-inner-sp
 
   <div class="sub-panel" id="subtab-revenue">
   <div class="card">
-    <div class="section-label"><div class="section-dot"></div><span>판매 단가</span></div>
-    <div class="section-note">슬라이더는 12개월 전체에 일괄 적용돼요. 특정 월만 다르게 하려면 아래 표에서 직접 입력하세요.</div>
+    <div class="section-label"><div class="section-dot"></div><span>판매 단가 · 주택 구분별 목표</span></div>
+    <div class="section-note">시드니 그래니플랫(보조주택) 시장 기준 구분이에요 — NSW 콤플라잉 디벨롭먼트 코드상 2룸형 60㎡ 이하가 가장 간소하게 승인돼 수요 비중이 가장 높고, 3룸형 이상은 별도 개발 승인(DA)이 필요해요. 판매단가는 $/sqm 기준으로 설정하고, 구분별 면적(sqm)과 목표 판매 수량을 입력하면 구분별 매출과 총 매출액이 자동 계산돼요. 계산된 평균 판매가는 아래 월별 표에 일괄 반영돼요 (특정 월만 다르게 하려면 표에서 직접 입력하세요).</div>
     <div class="slider-row">
-      <div class="slider-label-row"><span class="slider-label">채당 평균 판매가</span><span class="slider-value" id="salePriceVal">-</span></div>
-      <input type="range" class="slider" id="salePrice" min="30000" max="60000" step="500">
+      <div class="slider-label-row"><span class="slider-label">판매단가 ($/sqm)</span><span class="slider-value" id="pricePerSqmVal">-</span></div>
+      <input type="range" class="slider" id="pricePerSqm" min="300" max="1000" step="10">
+    </div>
+
+    <table class="equip-table ht-table">
+      <thead><tr><th>구분</th><th>면적(sqm)</th><th>목표수량</th><th>세대당 매출</th><th>매출 소계</th><th></th></tr></thead>
+      <tbody id="houseTypeBody"></tbody>
+    </table>
+    <button type="button" class="ht-add-btn" id="houseTypeAddBtn">+ 주택 구분 추가</button>
+
+    <div class="mini-stat-row" style="margin-top:14px">
+      <div class="mini-stat static">
+        <div class="mini-stat-label">목표 총 세대수</div>
+        <div class="mini-stat-value" id="houseTypeTotalQty">-</div>
+      </div>
+      <div class="mini-stat static">
+        <div class="mini-stat-label">채당 평균가 (믹스 반영)</div>
+        <div class="mini-stat-value" id="houseTypeBlendedPrice">-</div>
+      </div>
+    </div>
+    <div class="var-total-row" style="margin-top:10px">
+      <span class="var-total-label">목표 총 매출액</span>
+      <span class="var-total-value" id="houseTypeTotalRevenue">-</span>
     </div>
   </div>
   </div>
@@ -390,7 +430,7 @@ input.equip-input::-webkit-outer-spin-button,input.equip-input::-webkit-inner-sp
   </div>
 
   <div class="footer">
-    기준: LGS Frame Market Research and Capabilities (2026.03) · 12채 스타터 파이프라인, 채당 ~A$45k, 변동비 ~50%, SG&amp;A 연 ~A$700k 가정 기반 시뮬레이션. 실제 결과와 다를 수 있습니다.
+    기준: LGS Frame Market Research and Capabilities (2026.03) · 시드니 그래니플랫(보조주택) 12채 스타터 파이프라인(스튜디오~3룸형 믹스), 채당 평균 ~A$44k, 변동비 ~50%, SG&amp;A 연 ~A$700k 가정 기반 시뮬레이션. 실제 결과와 다를 수 있습니다.
   </div>
 
 </div>
