@@ -84,10 +84,12 @@ const DEFAULTS = {
     { category: 'sga', label: '인증·컴플라이언스', note: '구조 엔지니어 서명, WHS 컴플라이언스, CDC 인증 관련', monthly: 1800 },
     { category: 'sga', label: '기타 관리비', note: '사무용품, 소모품, 예비비', monthly: 1000 },
     { category: 'other', type: 'depreciation', label: '설비 감가상각비', note: 'SP120 Stage1+2 총 $80,000, 내용연수 7년 정액법', monthly: 950 },
-    { category: 'other', type: 'depreciation', label: '장비·공구 감가상각비', note: '소모성 공구·장비 (포크리프트 제외, 렌탈 전환), 내용연수 5년', monthly: 19 },
-    { category: 'other', type: 'interest', label: '설비 리스·대출 이자', note: 'SP120 자산금융 가정 이자비용', monthly: 560 }
+    { category: 'other', type: 'depreciation', label: '장비·공구 감가상각비', note: '소모성 공구·장비 (포크리프트 제외, 렌탈 전환), 내용연수 5년', monthly: 19 }
   ],
-  equityRaise: 350000,
+  equityAmount: 270000,
+  debtAmount: 80000,
+  debtAnnualRatePct: 8,
+  debtTermMonths: 60,
   stage1Amount: 40000,
   stage1Month: 1,
   stage2Amount: 40000,
@@ -224,7 +226,10 @@ function buildDefaultState() {
     detailingDaysPerHouse: DEFAULTS.detailingDaysPerHouse,
     deliveryDaysPerHouse: DEFAULTS.deliveryDaysPerHouse,
     fixedCostItems: buildDefaultFixedCostItems(),
-    equityRaise: DEFAULTS.equityRaise,
+    equityAmount: DEFAULTS.equityAmount,
+    debtAmount: DEFAULTS.debtAmount,
+    debtAnnualRatePct: DEFAULTS.debtAnnualRatePct,
+    debtTermMonths: DEFAULTS.debtTermMonths,
     stage1Amount: DEFAULTS.stage1Amount,
     stage1Month: DEFAULTS.stage1Month,
     stage2Amount: DEFAULTS.stage2Amount,
@@ -257,10 +262,22 @@ function migrateFixedCostItems(st) {
   return st;
 }
 
+/* pre-split saves only have `equityRaise` (no equity/debt split) — treat the
+   whole amount as equity with no debt rather than silently adopting the new
+   defaults' debt split, so existing users' numbers aren't changed under them */
+function migrateState(raw) {
+  const merged = migrateFixedCostItems(Object.assign(buildDefaultState(), raw));
+  if (raw && raw.equityRaise != null && raw.equityAmount == null) {
+    merged.equityAmount = raw.equityRaise;
+    if (raw.debtAmount == null) merged.debtAmount = 0;
+  }
+  return merged;
+}
+
 function loadLocalState() {
   try {
     const raw = localStorage.getItem(STORE_KEY);
-    if (raw) return migrateFixedCostItems(Object.assign(buildDefaultState(), JSON.parse(raw)));
+    if (raw) return migrateState(JSON.parse(raw));
   } catch (e) {}
   return buildDefaultState();
 }
@@ -325,7 +342,7 @@ async function syncFromRemote() {
     if (!rows || !rows.length || !rows[0].data) return;
     const remote = rows[0].data;
     if ((remote.lastModified || 0) <= (state.lastModified || 0)) return;
-    state = migrateFixedCostItems(Object.assign(buildDefaultState(), remote));
+    state = migrateState(remote);
     try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) {}
     rebuildAllUIFromState();
   } catch (e) {}
@@ -352,10 +369,35 @@ function wrapMoneyInput(input, variant) {
 function q(id) { return document.getElementById(id); }
 function setText(id, text) { const el = q(id); if (el) el.textContent = text; }
 
+/* 원리금균등상환(equal payment) 방식 부채 상환 스케줄. termMonths가 numMonths(보통 12,
+   Y1 기준)보다 길면 Y1 안에서는 잔액이 남은 채로 계속 상환 중인 상태로 표시된다. */
+function computeDebtSchedule(principal, annualRatePct, termMonths, numMonths) {
+  const p = Math.max(0, principal || 0);
+  const n = Math.max(1, Math.round(termMonths) || 1);
+  const monthlyRate = Math.max(0, annualRatePct || 0) / 100 / 12;
+  const payment = p <= 0 ? 0 : (monthlyRate === 0 ? p / n : p * monthlyRate / (1 - Math.pow(1 + monthlyRate, -n)));
+
+  const rows = [];
+  let balance = p;
+  for (let i = 0; i < numMonths; i++) {
+    if (i >= n || balance <= 0) {
+      rows.push({ interest: 0, principal: 0, payment: 0, balanceEnd: balance });
+      continue;
+    }
+    const interest = balance * monthlyRate;
+    let princ = payment - interest;
+    if (princ > balance) princ = balance;
+    balance = Math.max(0, balance - princ);
+    rows.push({ interest, principal: princ, payment: interest + princ, balanceEnd: balance });
+  }
+  return rows;
+}
+
 function computeAll() {
   const months = [];
-  let cash = state.equityRaise;
-  let cumCapex = 0, cumDep = 0, cumInterest = 0, cumNetIncome = 0;
+  const debtSchedule = computeDebtSchedule(state.debtAmount, state.debtAnnualRatePct, state.debtTermMonths, 12);
+  let cash = state.equityAmount + state.debtAmount;
+  let cumCapex = 0, cumDep = 0, cumAccruedInterest = 0, cumNetIncome = 0;
   const totalEquipmentCapex = state.equipmentItems.reduce((s, it) => s + it.unitPrice * it.qty, 0);
 
   state.months.forEach((m, i) => {
@@ -364,7 +406,9 @@ function computeAll() {
     const cogs = varCost + m.fixedProd;
     const grossProfit = revenue - cogs;
     const ebitda = grossProfit - m.sga;
-    const netIncome = ebitda - m.depreciation - m.interest;
+    const loan = debtSchedule[i];
+    const interest = m.interest + loan.interest;
+    const netIncome = ebitda - m.depreciation - interest;
 
     let capex = 0;
     if (i + 1 === Number(state.stage1Month)) capex += state.stage1Amount;
@@ -372,35 +416,38 @@ function computeAll() {
     if (i + 1 === Number(state.stage3Month)) capex += state.stage3Amount;
     if (i + 1 === Number(state.equipmentMonth)) capex += totalEquipmentCapex;
 
-    // CF: 감가상각비는 비현금이라 EBITDA에 이미 반영 안 됨. 이자비용은 이 모델에서
-    // 발생주의로 비용 인식만 하고 현금 지급 없이 미지급이자(BS 부채)로 누적된다고 가정.
+    // CF: 감가상각비는 비현금이라 EBITDA에 이미 반영 안 됨. 대출 원리금(원금+이자)은
+    // 실제 현금 상환이라 재무활동 현금흐름에 반영. 그 외 수동입력 이자비용(m.interest)은
+    // 이 모델에서 발생주의로 비용 인식만 하고 현금 지급 없이 미지급이자(BS 부채)로 누적된다고 가정.
     const cashBegin = cash;
     const operatingCF = ebitda;
     const investingCF = -capex;
-    const financingCF = 0;
+    const financingCF = -(loan.principal + loan.interest);
     const netCF = operatingCF + investingCF + financingCF;
     cash += netCF;
     const cashEnd = cash;
 
     cumCapex += capex;
     cumDep += m.depreciation;
-    cumInterest += m.interest;
+    cumAccruedInterest += m.interest;
     cumNetIncome += netIncome;
 
     const ppe = cumCapex - cumDep;
-    const accruedInterest = cumInterest;
+    const accruedInterest = cumAccruedInterest;
+    const loanBalance = loan.balanceEnd;
     const totalAssets = cashEnd + ppe;
-    const totalLiabilities = accruedInterest;
+    const totalLiabilities = accruedInterest + loanBalance;
     const retainedEarnings = cumNetIncome;
-    const equity = state.equityRaise + retainedEarnings;
+    const equity = state.equityAmount + retainedEarnings;
 
     months.push({
       idx: i, phase: MONTH_PHASE[i], houses: m.houses, salePrice: m.salePrice,
       coil: m.coil, screw: m.screw, detail: m.detail, otherVar: m.otherVar,
-      fixedProd: m.fixedProd, sga: m.sga, depreciation: m.depreciation, interest: m.interest,
+      fixedProd: m.fixedProd, sga: m.sga, depreciation: m.depreciation, interest,
+      loanInterest: loan.interest, loanPrincipal: loan.principal, loanPayment: loan.payment, loanBalance,
       revenue, varCost, cogs, grossProfit, ebitda, netIncome, capex,
       cashBegin, operatingCF, investingCF, financingCF, netCF, cashEnd,
-      ppe, accruedInterest, totalAssets, totalLiabilities, equityRaise: state.equityRaise,
+      ppe, accruedInterest, totalAssets, totalLiabilities, equityAmount: state.equityAmount,
       retainedEarnings, equity
     });
   });
@@ -416,6 +463,7 @@ function computeAll() {
     totalSGA: sum(months, 'sga'),
     totalDepreciation: sum(months, 'depreciation'),
     totalInterest: sum(months, 'interest'),
+    totalLoanPrincipal: sum(months, 'loanPrincipal'),
     totalEBITDA: sum(months, 'ebitda'),
     totalNI: sum(months, 'netIncome'),
     totalCapex: sum(months, 'capex'),
@@ -429,11 +477,12 @@ function computeAll() {
     endCash: months[11].cashEnd,
     endPPE: months[11].ppe,
     endAccruedInterest: months[11].accruedInterest,
+    endLoanBalance: months[11].loanBalance,
     endTotalAssets: months[11].totalAssets,
     endTotalLiabilities: months[11].totalLiabilities,
     endRetainedEarnings: months[11].retainedEarnings,
     endEquity: months[11].equity,
-    minCash: Math.min(state.equityRaise, ...months.map(m => m.cashEnd))
+    minCash: Math.min(state.equityAmount + state.debtAmount, ...months.map(m => m.cashEnd))
   };
   totals.totalGP = totals.totalRevenue - totals.totalCOGS;
 
@@ -521,7 +570,7 @@ function buildCashChart(months) {
   const plotW = W - padL - padR, plotH = H - padT - padB;
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
 
-  const series = [state.equityRaise, ...months.map(m => m.cashEnd)];
+  const series = [state.equityAmount + state.debtAmount, ...months.map(m => m.cashEnd)];
   let maxVal = Math.max(...series, 1000);
   let minVal = Math.min(...series, 0);
   const range = (maxVal - minVal) || 1;
@@ -648,6 +697,34 @@ function renderEquipTable() {
     row.subtotalTd.textContent = fmt(subtotal);
   });
   q('equipTotal').textContent = fmt(total);
+}
+
+/* ---------- debt (부채) repayment schedule — read-only, derives from 대출원금/연이자율/상환기간 ---------- */
+
+function renderDebtScheduleTable() {
+  const tbody = q('debtScheduleBody');
+  if (!tbody) return;
+  const schedule = computeDebtSchedule(state.debtAmount, state.debtAnnualRatePct, state.debtTermMonths, 12);
+  tbody.innerHTML = schedule.map((row, i) => `
+    <tr>
+      <td class="equip-label-cell"><span class="equip-label">M${i + 1}</span></td>
+      <td class="equip-subtotal">${fmt(row.principal)}</td>
+      <td class="equip-subtotal">${fmt(row.interest)}</td>
+      <td class="equip-subtotal">${fmt(row.payment)}</td>
+      <td class="equip-subtotal">${fmt(row.balanceEnd)}</td>
+    </tr>
+  `).join('');
+
+  const noteEl = q('debtScheduleNote');
+  if (!noteEl) return;
+  const term = Math.max(1, Math.round(state.debtTermMonths) || 1);
+  if (state.debtAmount <= 0) {
+    noteEl.textContent = '대출원금이 없으면 상환 스케줄도 발생하지 않아요.';
+  } else if (term > 12) {
+    noteEl.textContent = `원리금균등상환 기준, 상환기간 ${term}개월 중 1년차만 표시돼요. Y1 말 대출잔액 ${fmt(schedule[11].balanceEnd)}은 2년차부터 계속 상환돼요.`;
+  } else {
+    noteEl.textContent = `원리금균등상환 기준 상환 스케줄이에요. 상환기간 ${term}개월로 Y1 안에 상환이 완료돼요.`;
+  }
 }
 
 /* ---------- fixed cost items (editable, grouped by category) ---------- */
@@ -1196,8 +1273,9 @@ const BS_TABLE_ROWS = [
   { key: 'ppe', label: '순유형자산', editable: false, money: true },
   { key: 'totalAssets', label: '자산총계', editable: false, money: true },
   { key: 'accruedInterest', label: '미지급이자', editable: false, money: true },
+  { key: 'loanBalance', label: '대출잔액 (부채)', editable: false, money: true },
   { key: 'totalLiabilities', label: '부채총계', editable: false, money: true },
-  { key: 'equityRaise', label: '자본금', editable: false, money: true },
+  { key: 'equityAmount', label: '자본금 (에쿼티)', editable: false, money: true },
   { key: 'retainedEarnings', label: '이익잉여금', editable: false, money: true, negOnly: true },
   { key: 'equity', label: '자본총계', editable: false, money: true }
 ];
@@ -1335,7 +1413,7 @@ function renderComputed() {
   renderStatementTable(IS_TABLE_ROWS, isRowRefs, months, isRowTotals);
 
   const cfRowTotals = {
-    cashBegin: state.equityRaise,
+    cashBegin: state.equityAmount + state.debtAmount,
     operatingCF: totals.totalOperatingCF,
     investingCF: totals.totalInvestingCF,
     financingCF: totals.totalFinancingCF,
@@ -1349,13 +1427,15 @@ function renderComputed() {
     ppe: totals.endPPE,
     totalAssets: totals.endTotalAssets,
     accruedInterest: totals.endAccruedInterest,
+    loanBalance: totals.endLoanBalance,
     totalLiabilities: totals.endTotalLiabilities,
-    equityRaise: state.equityRaise,
+    equityAmount: state.equityAmount,
     retainedEarnings: totals.endRetainedEarnings,
     equity: totals.endEquity
   };
   renderStatementTable(BS_TABLE_ROWS, bsRowRefs, months, bsRowTotals);
 
+  renderDebtScheduleTable();
   buildMainChart(months);
   buildCashChart(months);
   syncAllCollapsibleAmounts();
@@ -1577,7 +1657,7 @@ function syncControlInputsFromState() {
     const label = q(id + 'Val');
     if (label) label.textContent = label.dataset.fmt === 'pct' ? (state[id] + '%') : fmt(state[id]);
   });
-  ['equityRaise', 'stage1Amount', 'stage2Amount', 'stage3Amount'].forEach(id => {
+  ['equityAmount', 'debtAmount', 'debtAnnualRatePct', 'debtTermMonths', 'stage1Amount', 'stage2Amount', 'stage3Amount'].forEach(id => {
     q(id).value = state[id];
   });
   const coilLmElx = q('coilLmPerSqm');
@@ -1655,7 +1735,10 @@ function initControls() {
   bindConditionSlider('materialLeadTimeDays', '일', 0);
   bindConditionSlider('detailingDaysPerHouse', '일/세대', 1);
   bindConditionSlider('deliveryDaysPerHouse', '일/세대', 1);
-  bindScalarInput('equityRaise', 'equityRaise');
+  bindScalarInput('equityAmount', 'equityAmount');
+  bindScalarInput('debtAmount', 'debtAmount');
+  bindScalarInput('debtAnnualRatePct', 'debtAnnualRatePct');
+  bindScalarInput('debtTermMonths', 'debtTermMonths');
   bindScalarInput('stage1Amount', 'stage1Amount');
   bindScalarInput('stage2Amount', 'stage2Amount');
   bindScalarInput('stage3Amount', 'stage3Amount');
