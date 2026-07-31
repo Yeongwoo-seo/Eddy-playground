@@ -512,7 +512,10 @@ const interactionDefs = {
   'w2ef-topic-sophie': {
     id: 'w2ef-topic-sophie',
     characterId: 'sophie',
-    locationIds: ['w2-exhibit-floor'],
+    // [첫 허브 카페 분리] w2-exhibit-floor(K-01 진열대/접수대)에서 소피의
+    // 카페 코너만 별도 장소로 분리 — dev/data/locationDefs.js의
+    // w2-exhibit-cafe-spot 주석 참고.
+    locationIds: ['w2-exhibit-cafe-spot'],
     phases: ['W2_EXHIBIT_FREE_LOOK'],
     type: 'topic',
     label: '소피와 얘기하기',
