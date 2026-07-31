@@ -553,10 +553,6 @@ function renderComputed() {
     warnBanner.style.display = 'none';
   }
 
-  const totalVarPct = totals.totalRevenue > 0 ? (varTotal / totals.totalRevenue * 100) : 0;
-  const varPctEl = q('varPctTotal');
-  if (varPctEl) varPctEl.textContent = totalVarPct.toFixed(1) + '%';
-
   months.forEach((m, i) => {
     const row = rowRefs[i];
     row.inputs._revenue.textContent = fmt(m.revenue);
@@ -594,12 +590,6 @@ function renderComputed() {
 /* ---------- bulk-apply sliders ---------- */
 
 function applySalePriceAll(v) { state.months.forEach(m => { m.salePrice = v; }); }
-function applyPctAll(field, pct) {
-  state.months.forEach(m => {
-    const revenue = m.houses * m.salePrice;
-    m[field] = revenue * pct / 100;
-  });
-}
 function applyFixedAll(field, v) { state.months.forEach(m => { m[field] = v; }); }
 
 function bindBulkSlider(id, isPct, applyFn) {
@@ -658,7 +648,7 @@ function resetAll() {
   document.querySelectorAll('[data-metric]').forEach(o => o.classList.remove('active'));
   q('breakdownCard').style.display = 'none';
 
-  ['salePrice', 'coilPct', 'screwPct', 'detailPct', 'otherVarPct', 'fixedProdCost', 'sgaMonthly', 'otherCostMonthly', 'equityRaise', 'stage1Amount', 'stage2Amount'].forEach(id => {
+  ['salePrice', 'fixedProdCost', 'sgaMonthly', 'otherCostMonthly', 'equityRaise', 'stage1Amount', 'stage2Amount'].forEach(id => {
     const elx = q(id);
     elx.value = DEFAULTS[id];
     setSliderFill(elx);
@@ -676,10 +666,6 @@ function resetAll() {
 
 function initControls() {
   bindBulkSlider('salePrice', false, applySalePriceAll);
-  bindBulkSlider('coilPct', true, v => applyPctAll('coil', v));
-  bindBulkSlider('screwPct', true, v => applyPctAll('screw', v));
-  bindBulkSlider('detailPct', true, v => applyPctAll('detail', v));
-  bindBulkSlider('otherVarPct', true, v => applyPctAll('otherVar', v));
   bindBulkSlider('fixedProdCost', false, v => applyFixedAll('fixedProd', v));
   bindBulkSlider('sgaMonthly', false, v => applyFixedAll('sga', v));
   bindBulkSlider('otherCostMonthly', false, v => applyFixedAll('otherCost', v));
