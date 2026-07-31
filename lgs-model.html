@@ -50,6 +50,22 @@ body{background:var(--bg);color:var(--black);font-family:'Pretendard',-apple-sys
 .sync-status.error{color:var(--danger)}
 .sync-status.error .dot{background:var(--danger)}
 
+/* 재무/조건 switcher — small floating pill, top-left (mirrors planner.html's 일정/숙소 switcher) */
+.mode-tabs-float{position:fixed;top:calc(10px + env(safe-area-inset-top));left:12px;z-index:25}
+.mode-tabs{position:relative;background:var(--white);border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,.06);display:flex;padding:3px}
+.mt-thumb{position:absolute;top:3px;left:3px;height:calc(100% - 6px);background:var(--primary);border-radius:10px;box-shadow:0 3px 10px rgba(232,116,30,.35);transition:transform .3s cubic-bezier(.2,.8,.2,1);z-index:0}
+.mode-tab{position:relative;z-index:1;border:none;background:none;padding:7px 14px;border-radius:10px;font-size:12px;font-weight:700;color:var(--grey-500);cursor:pointer;font-family:inherit;transition:color .2s;white-space:nowrap;min-height:28px}
+.mode-tab.on{color:#fff}
+.mode-panel{display:none}
+.mode-panel.on{display:block}
+#tab-assumptions{padding-top:40px}
+
+/* sqm/lm unit toggle for productivity/capacity rates — conversion uses 코일 사용량(L/sqm) as the rate */
+.unit-toggle{display:inline-flex;background:var(--grey-100);border-radius:10px;padding:2px;margin-left:auto}
+.card.collapsed .unit-toggle{display:none}
+.unit-toggle-btn{border:none;background:none;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:700;color:var(--grey-500);cursor:pointer;font-family:inherit}
+.unit-toggle-btn.on{background:var(--white);color:var(--primary);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+
 .card{background:var(--white);border-radius:24px;padding:22px 20px;box-shadow:0 2px 12px rgba(0,0,0,.06);margin-bottom:14px}
 .section-label{display:flex;align-items:center;gap:6px;margin-bottom:16px}
 .section-dot{width:6px;height:6px;border-radius:50%;background:var(--primary)}
@@ -227,6 +243,10 @@ label.calc-toggle-row{display:flex;align-items:center;gap:8px}
 
   <div class="tab-panel" id="tab-assumptions">
 
+  <div class="mode-tabs-float"><div class="mode-tabs" id="modeTabs"></div></div>
+
+  <div class="mode-panel on" id="modePanel-finance">
+
   <div class="sub-tab-bar" id="subTabBar"></div>
 
   <div class="sub-panel" id="subtab-revenue">
@@ -329,6 +349,11 @@ label.calc-toggle-row{display:flex;align-items:center;gap:8px}
     </div>
     <span id="varPctTotal" hidden></span>
   </div>
+  </div>
+
+  </div>
+
+  <div class="mode-panel" id="modePanel-conditions">
 
   <div class="card" data-collapsible data-total-id="coilUsageTotalLm">
     <div class="section-label"><div class="section-dot"></div><span>코일 사용량 (sqm 당 L)</span></div>
@@ -350,6 +375,133 @@ label.calc-toggle-row{display:flex;align-items:center;gap:8px}
     <span id="coilUsageTotalLm" hidden></span>
     <div class="table-hint">기본값 16 L/sqm 산출 근거: FrameCAD가 발표한 단층 주거용 철골 중량 추정치(~18kg/sqm, framecad.com)를 FrameCAD 롤포밍에서 쓰는 스터드·트랙·노깅 혼합 프로파일의 평균 중량(~1.1kg/L, 0.55~0.75mm BMT 90mm대 단면 기준 추정)으로 환산한 값이에요. 실제 하우스 타입·프로파일 구성에 따라 조정하세요.</div>
   </div>
+
+  <div class="card" data-collapsible data-total-id="materialsUsageSummary">
+    <div class="section-label"><div class="section-dot"></div><span>자재 사용량 조건</span></div>
+    <div class="section-note">코일 외에 세대/면적당 소요되는 자재 수량이에요. 발주량·소요원가 추정에 쓰여요 — 실제 확인되는 대로 조정하세요.</div>
+    <div class="slider-row">
+      <div class="slider-label-row"><span class="slider-label">스크류 사용량 (개/sqm)</span><span class="slider-value" id="screwsPerSqmVal">-</span></div>
+      <input type="range" class="slider" id="screwsPerSqm" min="4" max="30" step="1">
+    </div>
+    <div class="slider-row">
+      <div class="slider-label-row"><span class="slider-label">브라켓·커넥터 (개/세대)</span><span class="slider-value" id="bracketsPerHouseVal">-</span></div>
+      <input type="range" class="slider" id="bracketsPerHouse" min="0" max="150" step="5">
+    </div>
+    <div class="slider-row">
+      <div class="slider-label-row"><span class="slider-label">볼트·너트 (개/세대)</span><span class="slider-value" id="boltsPerHouseVal">-</span></div>
+      <input type="range" class="slider" id="boltsPerHouse" min="0" max="400" step="10">
+    </div>
+    <div class="slider-row">
+      <div class="slider-label-row"><span class="slider-label">실런트·폼 (통/세대)</span><span class="slider-value" id="sealantTubesPerHouseVal">-</span></div>
+      <input type="range" class="slider" id="sealantTubesPerHouse" min="0" max="20" step="1">
+    </div>
+    <div class="mini-stat-row">
+      <div class="mini-stat static">
+        <div class="mini-stat-label">목표 총 스크류 사용량</div>
+        <div class="mini-stat-value" id="totalScrewsVal">-</div>
+      </div>
+      <div class="mini-stat static">
+        <div class="mini-stat-label">목표 총 브라켓 사용량</div>
+        <div class="mini-stat-value" id="totalBracketsVal">-</div>
+      </div>
+    </div>
+    <div class="mini-stat-row" style="margin-top:10px">
+      <div class="mini-stat static">
+        <div class="mini-stat-label">목표 총 볼트 사용량</div>
+        <div class="mini-stat-value" id="totalBoltsVal">-</div>
+      </div>
+      <div class="mini-stat static">
+        <div class="mini-stat-label">목표 총 실런트 사용량</div>
+        <div class="mini-stat-value" id="totalSealantVal">-</div>
+      </div>
+    </div>
+    <span id="materialsUsageSummary" hidden></span>
+  </div>
+
+  <div class="card" data-collapsible data-total-id="laborConditionsSummary">
+    <div class="section-label">
+      <div class="section-dot"></div><span>생산성 · 인건비 조건</span>
+      <div class="unit-toggle" id="productivityUnitToggle">
+        <button type="button" class="unit-toggle-btn on" data-unit="sqm">sqm</button>
+        <button type="button" class="unit-toggle-btn" data-unit="lm">lm</button>
+      </div>
+    </div>
+    <div class="section-note">인력 소요시간·가동 여력을 가늠하는 조건이에요. 향후 인센티브·증원 계획 산출에 써요. 위 코일 사용량(L/sqm)을 기준으로 sqm ↔ lm(코일 선형미터) 단위를 전환해서 볼 수 있어요.</div>
+    <div class="slider-row">
+      <div class="slider-label-row"><span class="slider-label">노무 생산성</span><span class="slider-value" id="laborProductivitySqmPerHourVal">-</span></div>
+      <input type="range" class="slider" id="laborProductivitySqmPerHour" min="0.5" max="6" step="0.1">
+    </div>
+    <div class="slider-row">
+      <div class="slider-label-row"><span class="slider-label">1일 가동시간 (시간)</span><span class="slider-value" id="dailyOperatingHoursVal">-</span></div>
+      <input type="range" class="slider" id="dailyOperatingHours" min="4" max="12" step="0.5">
+    </div>
+    <div class="slider-row">
+      <div class="slider-label-row"><span class="slider-label">월 가동일수 (일)</span><span class="slider-value" id="workingDaysPerMonthVal">-</span></div>
+      <input type="range" class="slider" id="workingDaysPerMonth" min="10" max="26" step="1">
+    </div>
+    <div class="slider-row">
+      <div class="slider-label-row"><span class="slider-label">롤포머 생산능력</span><span class="slider-value" id="rollformerCapacitySqmPerDayVal">-</span></div>
+      <input type="range" class="slider" id="rollformerCapacitySqmPerDay" min="50" max="400" step="10">
+    </div>
+    <div class="slider-row">
+      <div class="slider-label-row"><span class="slider-label">셋업·전환 시간 (분/배치)</span><span class="slider-value" id="setupMinutesPerBatchVal">-</span></div>
+      <input type="range" class="slider" id="setupMinutesPerBatch" min="0" max="120" step="5">
+    </div>
+    <div class="mini-stat-row">
+      <div class="mini-stat static">
+        <div class="mini-stat-label">목표 생산 총 소요 인시</div>
+        <div class="mini-stat-value" id="totalLaborHoursVal">-</div>
+      </div>
+      <div class="mini-stat static">
+        <div class="mini-stat-label">필요 생산일수</div>
+        <div class="mini-stat-value" id="requiredProductionDaysVal">-</div>
+      </div>
+    </div>
+    <div class="mini-stat-row" style="margin-top:10px">
+      <div class="mini-stat static">
+        <div class="mini-stat-label">연간 가용 생산일수</div>
+        <div class="mini-stat-value" id="availableProductionDaysVal">-</div>
+      </div>
+      <div class="mini-stat static">
+        <div class="mini-stat-label">가동률</div>
+        <div class="mini-stat-value" id="capacityUtilizationVal">-</div>
+      </div>
+    </div>
+    <span id="laborConditionsSummary" hidden></span>
+  </div>
+
+  <div class="card" data-collapsible data-total-id="qualityConditionsSummary">
+    <div class="section-label"><div class="section-dot"></div><span>품질 · 리드타임 조건</span></div>
+    <div class="section-note">스크랩률과 자재·공정별 소요기간이에요. 재고·납기 계획에 참고용으로 써요.</div>
+    <div class="slider-row">
+      <div class="slider-label-row"><span class="slider-label">스크랩률 (%)</span><span class="slider-value" id="scrapRatePctVal">-</span></div>
+      <input type="range" class="slider" id="scrapRatePct" min="0" max="15" step="0.5">
+    </div>
+    <div class="slider-row">
+      <div class="slider-label-row"><span class="slider-label">자재 리드타임 (일)</span><span class="slider-value" id="materialLeadTimeDaysVal">-</span></div>
+      <input type="range" class="slider" id="materialLeadTimeDays" min="0" max="60" step="1">
+    </div>
+    <div class="slider-row">
+      <div class="slider-label-row"><span class="slider-label">디테일링 소요일 (일/세대)</span><span class="slider-value" id="detailingDaysPerHouseVal">-</span></div>
+      <input type="range" class="slider" id="detailingDaysPerHouse" min="0" max="14" step="0.5">
+    </div>
+    <div class="slider-row">
+      <div class="slider-label-row"><span class="slider-label">배송·설치 소요일 (일/세대)</span><span class="slider-value" id="deliveryDaysPerHouseVal">-</span></div>
+      <input type="range" class="slider" id="deliveryDaysPerHouse" min="0" max="10" step="0.5">
+    </div>
+    <div class="mini-stat-row">
+      <div class="mini-stat static">
+        <div class="mini-stat-label">디테일링 총 소요일</div>
+        <div class="mini-stat-value" id="totalDetailingDaysVal">-</div>
+      </div>
+      <div class="mini-stat static">
+        <div class="mini-stat-label">배송·설치 총 소요일</div>
+        <div class="mini-stat-value" id="totalDeliveryDaysVal">-</div>
+      </div>
+    </div>
+    <span id="qualityConditionsSummary" hidden></span>
+  </div>
+
   </div>
 
   </div>

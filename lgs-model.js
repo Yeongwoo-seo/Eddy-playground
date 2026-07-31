@@ -54,6 +54,19 @@ const DEFAULTS = {
   detailPct: 10,
   otherVarPct: 5,
   coilLmPerSqm: 16,
+  screwsPerSqm: 12,
+  bracketsPerHouse: 40,
+  boltsPerHouse: 120,
+  sealantTubesPerHouse: 6,
+  laborProductivitySqmPerHour: 2.5,
+  dailyOperatingHours: 8,
+  workingDaysPerMonth: 20,
+  rollformerCapacitySqmPerDay: 150,
+  setupMinutesPerBatch: 25,
+  scrapRatePct: 4,
+  materialLeadTimeDays: 14,
+  detailingDaysPerHouse: 3,
+  deliveryDaysPerHouse: 2,
   fixedCostItems: [
     { category: 'fixedProd', label: '공장·창고 임대료', note: 'Western Sydney 산업단지 창고 (~450㎡, 순임대료 ~$160/㎡/yr 기준)', monthly: 6000 },
     { category: 'fixedProd', label: '공장 전기·수도', note: 'SP120 롤포밍기 가동 전력 + 용수/폐수', monthly: 1500 },
@@ -127,6 +140,30 @@ function computeCoilUsage(houseTypeTotals, coilLmPerSqm) {
   return { totalSqm: houseTypeTotals.totalSqm, totalCoilLm, avgLmPerHouse };
 }
 
+/* 조건(Conditions) tab metrics: physical/operational assumptions needed for
+   later cost & capacity calcs (screw/bracket/bolt/sealant usage, labor hours,
+   production capacity, scrap & lead times). Informational for now, same as
+   coil usage above — not yet wired into the financial engine. */
+function computeConditionMetrics(houseTypeTotals, s) {
+  const totalSqm = houseTypeTotals.totalSqm;
+  const totalQty = houseTypeTotals.totalQty;
+  const totalScrews = totalSqm * s.screwsPerSqm;
+  const totalBrackets = totalQty * s.bracketsPerHouse;
+  const totalBolts = totalQty * s.boltsPerHouse;
+  const totalSealantTubes = totalQty * s.sealantTubesPerHouse;
+  const totalLaborHours = s.laborProductivitySqmPerHour > 0 ? totalSqm / s.laborProductivitySqmPerHour : 0;
+  const requiredProductionDays = s.rollformerCapacitySqmPerDay > 0 ? totalSqm / s.rollformerCapacitySqmPerDay : 0;
+  const availableProductionDaysYear = s.workingDaysPerMonth * 12;
+  const capacityUtilizationPct = availableProductionDaysYear > 0 ? (requiredProductionDays / availableProductionDaysYear * 100) : 0;
+  const totalDetailingDays = totalQty * s.detailingDaysPerHouse;
+  const totalDeliveryDays = totalQty * s.deliveryDaysPerHouse;
+  return {
+    totalScrews, totalBrackets, totalBolts, totalSealantTubes,
+    totalLaborHours, requiredProductionDays, availableProductionDaysYear, capacityUtilizationPct,
+    totalDetailingDays, totalDeliveryDays
+  };
+}
+
 function computeFixedCostTotals(items) {
   const totals = { fixedProd: 0, sga: 0, other: 0, depreciation: 0, interest: 0 };
   items.forEach(it => {
@@ -181,6 +218,19 @@ function buildDefaultState() {
     detailPct: DEFAULTS.detailPct,
     otherVarPct: DEFAULTS.otherVarPct,
     coilLmPerSqm: DEFAULTS.coilLmPerSqm,
+    screwsPerSqm: DEFAULTS.screwsPerSqm,
+    bracketsPerHouse: DEFAULTS.bracketsPerHouse,
+    boltsPerHouse: DEFAULTS.boltsPerHouse,
+    sealantTubesPerHouse: DEFAULTS.sealantTubesPerHouse,
+    laborProductivitySqmPerHour: DEFAULTS.laborProductivitySqmPerHour,
+    dailyOperatingHours: DEFAULTS.dailyOperatingHours,
+    workingDaysPerMonth: DEFAULTS.workingDaysPerMonth,
+    rollformerCapacitySqmPerDay: DEFAULTS.rollformerCapacitySqmPerDay,
+    setupMinutesPerBatch: DEFAULTS.setupMinutesPerBatch,
+    scrapRatePct: DEFAULTS.scrapRatePct,
+    materialLeadTimeDays: DEFAULTS.materialLeadTimeDays,
+    detailingDaysPerHouse: DEFAULTS.detailingDaysPerHouse,
+    deliveryDaysPerHouse: DEFAULTS.deliveryDaysPerHouse,
     fixedCostItems: buildDefaultFixedCostItems(),
     equityRaise: DEFAULTS.equityRaise,
     stage1Amount: DEFAULTS.stage1Amount,
@@ -315,6 +365,7 @@ function wrapMoneyInput(input, variant) {
 }
 
 function q(id) { return document.getElementById(id); }
+function setText(id, text) { const el = q(id); if (el) el.textContent = text; }
 
 function computeAll() {
   const months = [];
@@ -1230,6 +1281,21 @@ function renderComputed() {
   const coilUsagePerHouseEl = q('coilUsagePerHouse');
   if (coilUsagePerHouseEl) coilUsagePerHouseEl.textContent = Math.round(coilUsage.avgLmPerHouse).toLocaleString('en-US') + ' L/채';
 
+  const cond = computeConditionMetrics(htTotals, state);
+  setText('totalScrewsVal', Math.round(cond.totalScrews).toLocaleString('en-US') + '개');
+  setText('totalBracketsVal', Math.round(cond.totalBrackets).toLocaleString('en-US') + '개');
+  setText('totalBoltsVal', Math.round(cond.totalBolts).toLocaleString('en-US') + '개');
+  setText('totalSealantVal', Math.round(cond.totalSealantTubes).toLocaleString('en-US') + '통');
+  setText('materialsUsageSummary', Math.round(cond.totalScrews).toLocaleString('en-US') + '개');
+  setText('totalLaborHoursVal', Math.round(cond.totalLaborHours).toLocaleString('en-US') + '시간');
+  setText('requiredProductionDaysVal', Math.round(cond.requiredProductionDays).toLocaleString('en-US') + '일');
+  setText('availableProductionDaysVal', Math.round(cond.availableProductionDaysYear).toLocaleString('en-US') + '일');
+  setText('capacityUtilizationVal', cond.capacityUtilizationPct.toFixed(1) + '%');
+  setText('laborConditionsSummary', Math.round(cond.totalLaborHours).toLocaleString('en-US') + '시간');
+  setText('totalDetailingDaysVal', Math.round(cond.totalDetailingDays).toLocaleString('en-US') + '일');
+  setText('totalDeliveryDaysVal', Math.round(cond.totalDeliveryDays).toLocaleString('en-US') + '일');
+  setText('qualityConditionsSummary', state.scrapRatePct + '%');
+
   const isRowTotals = {
     houses: totals.totalHouses,
     revenue: totals.totalRevenue,
@@ -1376,6 +1442,80 @@ function bindCoilLmPerSqmSlider() {
     state.coilLmPerSqm = val;
     setSliderFill(elx);
     label.textContent = val.toFixed(1) + ' L/sqm';
+    if (productivityUnit === 'lm') refreshProductivitySliders();
+    renderComputed();
+    scheduleSave();
+  });
+}
+
+/* 노무 생산성 / 롤포머 생산능력: sqm 기준으로 state에 저장하지만, 화면에서는
+   코일 사용량(L/sqm, state.coilLmPerSqm)을 환산비로 써서 sqm ↔ lm(코일 선형미터)
+   단위를 전환해 보여줄 수 있다. 슬라이더 자체의 min/max/step/value도 현재 단위에
+   맞게 다시 계산해서 반영한다. */
+let productivityUnit = 'sqm';
+
+const PRODUCTIVITY_RATE_FIELDS = {
+  laborProductivitySqmPerHour: { min: 0.5, max: 6, step: 0.1, decimals: 1, sqmSuffix: ' sqm/인시', lmSuffix: ' L/인시' },
+  rollformerCapacitySqmPerDay: { min: 50, max: 400, step: 10, decimals: 0, sqmSuffix: ' sqm/일', lmSuffix: ' L/일' }
+};
+
+function refreshProductivitySliders() {
+  const rate = state.coilLmPerSqm;
+  Object.entries(PRODUCTIVITY_RATE_FIELDS).forEach(([id, cfg]) => {
+    const elx = q(id);
+    const label = q(id + 'Val');
+    const displayVal = productivityUnit === 'lm' ? state[id] * rate : state[id];
+    elx.min = productivityUnit === 'lm' ? cfg.min * rate : cfg.min;
+    elx.max = productivityUnit === 'lm' ? cfg.max * rate : cfg.max;
+    elx.step = productivityUnit === 'lm' ? cfg.step * rate : cfg.step;
+    elx.value = displayVal;
+    setSliderFill(elx);
+    if (label) label.textContent = displayVal.toFixed(cfg.decimals) + (productivityUnit === 'lm' ? cfg.lmSuffix : cfg.sqmSuffix);
+  });
+}
+
+function bindProductivityRateSlider(id) {
+  const elx = q(id);
+  const cfg = PRODUCTIVITY_RATE_FIELDS[id];
+  const label = q(id + 'Val');
+  elx.addEventListener('input', () => {
+    const raw = parseFloat(elx.value);
+    const sqmVal = productivityUnit === 'lm' ? raw / state.coilLmPerSqm : raw;
+    state[id] = sqmVal;
+    setSliderFill(elx);
+    if (label) label.textContent = raw.toFixed(cfg.decimals) + (productivityUnit === 'lm' ? cfg.lmSuffix : cfg.sqmSuffix);
+    renderComputed();
+    scheduleSave();
+  });
+}
+
+function bindProductivityUnitToggle() {
+  const wrap = q('productivityUnitToggle');
+  if (!wrap) return;
+  wrap.querySelectorAll('.unit-toggle-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.dataset.unit === productivityUnit) return;
+      productivityUnit = btn.dataset.unit;
+      wrap.querySelectorAll('.unit-toggle-btn').forEach(b => b.classList.toggle('on', b === btn));
+      refreshProductivitySliders();
+    });
+  });
+}
+
+/* generic binder for 조건(conditions) sliders: state[id] <-> #id, label #id+'Val'
+   suffixed with `unit`, no side effects beyond re-rendering computed metrics */
+function bindConditionSlider(id, unit, decimals) {
+  const elx = q(id);
+  const label = q(id + 'Val');
+  const fmtVal = v => (decimals ? v.toFixed(decimals) : v) + unit;
+  elx.value = state[id];
+  setSliderFill(elx);
+  if (label) label.textContent = fmtVal(state[id]);
+  elx.addEventListener('input', () => {
+    const val = parseFloat(elx.value);
+    state[id] = val;
+    setSliderFill(elx);
+    if (label) label.textContent = fmtVal(val);
     renderComputed();
     scheduleSave();
   });
@@ -1420,6 +1560,29 @@ function syncControlInputsFromState() {
   coilLmElx.value = state.coilLmPerSqm;
   setSliderFill(coilLmElx);
   q('coilLmPerSqmVal').textContent = state.coilLmPerSqm.toFixed(1) + ' L/sqm';
+
+  [
+    ['screwsPerSqm', '개/sqm', 0],
+    ['bracketsPerHouse', '개/세대', 0],
+    ['boltsPerHouse', '개/세대', 0],
+    ['sealantTubesPerHouse', '통/세대', 0],
+    ['dailyOperatingHours', '시간', 1],
+    ['workingDaysPerMonth', '일', 0],
+    ['setupMinutesPerBatch', '분', 0],
+    ['scrapRatePct', '%', 1],
+    ['materialLeadTimeDays', '일', 0],
+    ['detailingDaysPerHouse', '일/세대', 1],
+    ['deliveryDaysPerHouse', '일/세대', 1]
+  ].forEach(([id, unit, decimals]) => {
+    const condElx = q(id);
+    if (!condElx) return;
+    condElx.value = state[id];
+    setSliderFill(condElx);
+    const label = q(id + 'Val');
+    if (label) label.textContent = (decimals ? state[id].toFixed(decimals) : state[id]) + unit;
+  });
+  refreshProductivitySliders();
+
   const ppsElx = q('pricePerSqm');
   ppsElx.value = state.pricePerSqm;
   setSliderFill(ppsElx);
@@ -1456,6 +1619,21 @@ function initControls() {
   bindBulkSlider('detailPct', true, v => applyPctAll('detail', v));
   bindBulkSlider('otherVarPct', true, v => applyPctAll('otherVar', v));
   bindCoilLmPerSqmSlider();
+  bindConditionSlider('screwsPerSqm', '개/sqm', 0);
+  bindConditionSlider('bracketsPerHouse', '개/세대', 0);
+  bindConditionSlider('boltsPerHouse', '개/세대', 0);
+  bindConditionSlider('sealantTubesPerHouse', '통/세대', 0);
+  bindProductivityRateSlider('laborProductivitySqmPerHour');
+  bindProductivityRateSlider('rollformerCapacitySqmPerDay');
+  bindProductivityUnitToggle();
+  refreshProductivitySliders();
+  bindConditionSlider('dailyOperatingHours', '시간', 1);
+  bindConditionSlider('workingDaysPerMonth', '일', 0);
+  bindConditionSlider('setupMinutesPerBatch', '분', 0);
+  bindConditionSlider('scrapRatePct', '%', 1);
+  bindConditionSlider('materialLeadTimeDays', '일', 0);
+  bindConditionSlider('detailingDaysPerHouse', '일/세대', 1);
+  bindConditionSlider('deliveryDaysPerHouse', '일/세대', 1);
   bindScalarInput('equityRaise', 'equityRaise');
   bindScalarInput('stage1Amount', 'stage1Amount');
   bindScalarInput('stage2Amount', 'stage2Amount');
@@ -1528,6 +1706,39 @@ function goSubTab(groupKey, i) {
   updateSubTabActive(groupKey);
 }
 
+/* ---------- 가정 탭 상단의 재무/조건 switcher (small floating pill, top-left) ---------- */
+
+const ASSUMPTIONS_MODE_TABS = [
+  { id: 'finance', label: '재무' },
+  { id: 'conditions', label: '조건' }
+];
+let curAssumptionsMode = 0;
+
+function renderModeTabs() {
+  const bar = q('modeTabs');
+  bar.innerHTML = `<div class="mt-thumb" id="mtThumb" style="width:calc((100% - 6px) / ${ASSUMPTIONS_MODE_TABS.length})"></div>` +
+    ASSUMPTIONS_MODE_TABS.map((t, i) => `<button class="mode-tab" data-mode-index="${i}">${t.label}</button>`).join('');
+  bar.querySelectorAll('.mode-tab').forEach(btn => {
+    btn.addEventListener('click', () => goAssumptionsMode(Number(btn.dataset.modeIndex)));
+  });
+  updateModeTabActive();
+}
+
+function updateModeTabActive() {
+  const bar = q('modeTabs');
+  bar.querySelectorAll('.mode-tab').forEach((el, i) => el.classList.toggle('on', i === curAssumptionsMode));
+  const thumb = q('mtThumb');
+  if (thumb) thumb.style.transform = `translateX(${curAssumptionsMode * 100}%)`;
+}
+
+function goAssumptionsMode(i) {
+  curAssumptionsMode = i;
+  ASSUMPTIONS_MODE_TABS.forEach((t, idx) => {
+    q('modePanel-' + t.id).classList.toggle('on', idx === i);
+  });
+  updateModeTabActive();
+}
+
 window.addEventListener('DOMContentLoaded', () => {
   initControls();
   initCollapsibleCards();
@@ -1541,6 +1752,8 @@ window.addEventListener('DOMContentLoaded', () => {
   renderComputed();
   renderBottomNav();
   goTab(0);
+  renderModeTabs();
+  goAssumptionsMode(0);
   renderSubTabNav('assumptions');
   goSubTab('assumptions', 0);
   renderSubTabNav('capex');
