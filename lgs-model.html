@@ -183,7 +183,6 @@ input.equip-input::-webkit-outer-spin-button,input.equip-input::-webkit-inner-sp
   <div class="sub-panel" id="subtab-revenue">
   <div class="card">
     <div class="section-label"><div class="section-dot"></div><span>판매 단가 · 주택 구분별 목표</span></div>
-    <div class="section-note">그래니플랫(보조주택)·듀플렉스·타운하우스 등 시드니 주택 신축 시장의 제품 유형별 구분이에요. 판매단가는 $/sqm 기준으로 전체 유형에 동일 적용되며, 유형별 면적(sqm)과 목표 판매 수량을 입력하면 유형별 매출과 총 매출액이 자동 계산돼요. 계산된 평균 판매가는 아래 월별 표에 일괄 반영돼요 (특정 월만 다르게 하려면 표에서 직접 입력하세요).</div>
     <div class="slider-row">
       <div class="slider-label-row"><span class="slider-label">판매단가 ($/sqm)</span><span class="slider-value" id="pricePerSqmVal">-</span></div>
       <input type="range" class="slider" id="pricePerSqm" min="150" max="400" step="10">
@@ -283,6 +282,9 @@ input.equip-input::-webkit-outer-spin-button,input.equip-input::-webkit-inner-sp
 
   <div class="tab-panel" id="tab-capex">
 
+  <div class="sub-tab-bar" id="subTabBarCapex"></div>
+
+  <div class="sub-panel" id="subtab-capex-funding">
   <div class="card">
     <div class="section-label"><div class="section-dot"></div><span>초기 자금 · 설비투자</span></div>
     <div class="select-row">
@@ -334,7 +336,9 @@ input.equip-input::-webkit-outer-spin-button,input.equip-input::-webkit-inner-sp
       </div>
     </div>
   </div>
+  </div>
 
+  <div class="sub-panel" id="subtab-capex-equipment">
   <div class="card">
     <div class="section-label"><div class="section-dot"></div><span>초기 장비 · 공구 구입</span></div>
     <div class="section-note">품목별 단가·수량을 직접 입력할 수 있어요. 한 번에 구입 시점(월)을 지정하면 그 달의 현금에 일괄 반영돼요.</div>
@@ -357,6 +361,7 @@ input.equip-input::-webkit-outer-spin-button,input.equip-input::-webkit-inner-sp
       </div>
     </div>
     <div class="table-hint">출처: Bunnings · Total Tools · Facebook Marketplace Sydney 시세 조사 (2026). 가구용 스크류(칩보드)는 단가 확인 전이라 A$0으로 시작해요 — 확인되면 직접 입력하세요.</div>
+  </div>
   </div>
 
   </div>

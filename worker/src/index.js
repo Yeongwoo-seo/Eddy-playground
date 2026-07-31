@@ -44,6 +44,14 @@ async function setRules(env, app, rules) {
   await env.PUSH_KV.put(`rules:${app}`, JSON.stringify(rules));
 }
 
+async function getState(env, app) {
+  const raw = await env.PUSH_KV.get(`state:${app}`);
+  return raw ? JSON.parse(raw) : null;
+}
+async function setState(env, app, data) {
+  await env.PUSH_KV.put(`state:${app}`, JSON.stringify(data));
+}
+
 export default {
   async fetch(request, env) {
     if (request.method === 'OPTIONS') {
@@ -71,6 +79,24 @@ export default {
       if (!Array.isArray(body?.rules)) return json({ error: 'rules must be an array' }, 400);
       const app = appKey(body?.app);
       await setRules(env, app, body.rules);
+      return json({ ok: true });
+    }
+
+    // Generic per-app JSON blob storage, e.g. lgs-model.html auto-saving its
+    // form state. Unlike /subscribe and /rules this isn't limited to the
+    // APPS registry above — any app name the client sends gets its own key.
+    if (url.pathname === '/state' && request.method === 'GET') {
+      const app = url.searchParams.get('app');
+      if (!app) return json({ error: 'app is required' }, 400);
+      const data = await getState(env, app);
+      return json({ data: data || {} });
+    }
+
+    if (url.pathname === '/state' && request.method === 'POST') {
+      const body = await request.json();
+      if (!body?.app) return json({ error: 'app is required' }, 400);
+      if (!body.data || typeof body.data !== 'object') return json({ error: 'data must be an object' }, 400);
+      await setState(env, body.app, body.data);
       return json({ ok: true });
     }
 

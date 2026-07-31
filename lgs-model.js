@@ -12,12 +12,25 @@ const TABS = [
 ];
 let curTab = 0;
 
-const SUB_TABS = [
-  { id: 'revenue', label: '매출' },
-  { id: 'fixed', label: '고정비' },
-  { id: 'variable', label: '변동비' }
-];
-let curSubTab = 0;
+const SUB_TAB_GROUPS = {
+  assumptions: {
+    barId: 'subTabBar',
+    cur: 0,
+    tabs: [
+      { id: 'revenue', label: '매출' },
+      { id: 'fixed', label: '고정비' },
+      { id: 'variable', label: '변동비' }
+    ]
+  },
+  capex: {
+    barId: 'subTabBarCapex',
+    cur: 0,
+    tabs: [
+      { id: 'capex-funding', label: '자금조달' },
+      { id: 'capex-equipment', label: '장비·공구' }
+    ]
+  }
+};
 
 const DEFAULTS = {
   pricePerSqm: 200,
@@ -124,30 +137,66 @@ function buildDefaultFixedCostItems() {
   return DEFAULTS.fixedCostItems.map(item => ({ ...item }));
 }
 
-let state = {
-  pricePerSqm: DEFAULTS.pricePerSqm,
-  houseTypes: DEFAULTS.houseTypes.map(t => ({ ...t })),
-  coilPct: DEFAULTS.coilPct,
-  screwPct: DEFAULTS.screwPct,
-  detailPct: DEFAULTS.detailPct,
-  otherVarPct: DEFAULTS.otherVarPct,
-  fixedCostItems: buildDefaultFixedCostItems(),
-  equityRaise: DEFAULTS.equityRaise,
-  stage1Amount: DEFAULTS.stage1Amount,
-  stage1Month: DEFAULTS.stage1Month,
-  stage2Amount: DEFAULTS.stage2Amount,
-  stage2Month: DEFAULTS.stage2Month,
-  stage3Amount: DEFAULTS.stage3Amount,
-  stage3Month: DEFAULTS.stage3Month,
-  equipmentMonth: DEFAULTS.equipmentMonth,
-  equipmentItems: buildDefaultEquipment(),
-  months: buildDefaultMonths()
-};
+function buildDefaultState() {
+  return {
+    pricePerSqm: DEFAULTS.pricePerSqm,
+    houseTypes: DEFAULTS.houseTypes.map(t => ({ ...t })),
+    coilPct: DEFAULTS.coilPct,
+    screwPct: DEFAULTS.screwPct,
+    detailPct: DEFAULTS.detailPct,
+    otherVarPct: DEFAULTS.otherVarPct,
+    fixedCostItems: buildDefaultFixedCostItems(),
+    equityRaise: DEFAULTS.equityRaise,
+    stage1Amount: DEFAULTS.stage1Amount,
+    stage1Month: DEFAULTS.stage1Month,
+    stage2Amount: DEFAULTS.stage2Amount,
+    stage2Month: DEFAULTS.stage2Month,
+    stage3Amount: DEFAULTS.stage3Amount,
+    stage3Month: DEFAULTS.stage3Month,
+    equipmentMonth: DEFAULTS.equipmentMonth,
+    equipmentItems: buildDefaultEquipment(),
+    months: buildDefaultMonths()
+  };
+}
+
+let state = buildDefaultState();
 
 let rowRefs = [];
 let equipRowRefs = [];
 let houseTypeRowRefs = [];
 let fixedCostRowRefs = [];
+
+/* ---------- auto-save to server ---------- */
+// Fill in after `npx wrangler deploy` in worker/ (see worker/README.md) —
+// blank means auto-save/load is a no-op and the page behaves as before.
+const API_URL = '';
+
+let saveTimer = null;
+function scheduleSave() {
+  if (!API_URL) return;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    fetch(API_URL + '/state', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ app: 'lgs-model', data: state })
+    }).catch(() => {});
+  }, 800);
+}
+
+async function loadStateFromServer() {
+  if (!API_URL) return;
+  try {
+    const res = await fetch(API_URL + '/state?app=lgs-model');
+    if (!res.ok) return;
+    const payload = await res.json();
+    if (payload && payload.data && Object.keys(payload.data).length) {
+      state = Object.assign(buildDefaultState(), payload.data);
+    }
+  } catch (e) {
+    // offline or Worker unreachable — keep local defaults
+  }
+}
 
 function fmt(n) {
   const r = Math.round(n);
@@ -386,6 +435,7 @@ function onEquipInput(e) {
   if (isNaN(val) || val < 0) val = 0;
   state.equipmentItems[i][key] = val;
   renderComputed();
+  scheduleSave();
 }
 
 function syncEquipInputsFromState() {
@@ -457,6 +507,7 @@ function onFixedCostInput(e) {
   syncInputsFromState();
   renderFixedCostTable();
   renderComputed();
+  scheduleSave();
 }
 
 function applyFixedCostTotals() {
@@ -585,6 +636,7 @@ function onHouseTypeInput(e) {
   syncInputsFromState();
   renderHouseTypeTable();
   renderComputed();
+  scheduleSave();
 }
 
 function onHouseTypeRemove(e) {
@@ -596,6 +648,7 @@ function onHouseTypeRemove(e) {
   syncInputsFromState();
   renderHouseTypeTable();
   renderComputed();
+  scheduleSave();
 }
 
 function onHouseTypeAdd() {
@@ -605,6 +658,7 @@ function onHouseTypeAdd() {
   syncInputsFromState();
   renderHouseTypeTable();
   renderComputed();
+  scheduleSave();
 }
 
 function renderHouseTypeTable() {
@@ -695,6 +749,7 @@ function onCellInput(e) {
     syncInputsFromState();
   }
   renderComputed();
+  scheduleSave();
 }
 
 function syncInputsFromState() {
@@ -772,26 +827,28 @@ function applyFixedAll(field, v) { state.months.forEach(m => { m[field] = v; });
 function bindBulkSlider(id, isPct, applyFn) {
   const elx = q(id);
   const label = q(id + 'Val');
-  const defaultVal = DEFAULTS[id];
-  elx.value = defaultVal;
+  const val0 = state[id];
+  elx.value = val0;
   setSliderFill(elx);
-  if (label) label.textContent = isPct ? defaultVal + '%' : fmt(defaultVal);
+  if (label) label.textContent = isPct ? val0 + '%' : fmt(val0);
   elx.addEventListener('input', () => {
     const val = parseFloat(elx.value);
+    state[id] = val;
     setSliderFill(elx);
     if (label) label.textContent = isPct ? val + '%' : fmt(val);
     applyFn(val);
     syncInputsFromState();
     renderComputed();
+    scheduleSave();
   });
 }
 
 function bindPricePerSqmSlider() {
   const elx = q('pricePerSqm');
   const label = q('pricePerSqmVal');
-  elx.value = DEFAULTS.pricePerSqm;
+  elx.value = state.pricePerSqm;
   setSliderFill(elx);
-  label.textContent = fmt(DEFAULTS.pricePerSqm) + '/sqm';
+  label.textContent = fmt(state.pricePerSqm) + '/sqm';
   elx.addEventListener('input', () => {
     const val = parseFloat(elx.value);
     state.pricePerSqm = val;
@@ -801,49 +858,34 @@ function bindPricePerSqmSlider() {
     syncInputsFromState();
     renderHouseTypeTable();
     renderComputed();
+    scheduleSave();
   });
 }
 
 function bindScalarInput(id, key) {
   const elx = q(id);
-  elx.value = DEFAULTS[key];
+  elx.value = state[key];
   elx.addEventListener('input', () => {
     let val = parseFloat(elx.value);
     if (isNaN(val) || val < 0) val = 0;
     state[key] = val;
     renderComputed();
+    scheduleSave();
   });
 }
 
 function bindSelect(id, key) {
   const elx = q(id);
-  elx.value = DEFAULTS[key];
+  elx.value = state[key];
   elx.addEventListener('change', () => {
     state[key] = parseInt(elx.value, 10);
     renderComputed();
+    scheduleSave();
   });
 }
 
 function resetAll() {
-  state = {
-    pricePerSqm: DEFAULTS.pricePerSqm,
-    houseTypes: DEFAULTS.houseTypes.map(t => ({ ...t })),
-    coilPct: DEFAULTS.coilPct,
-    screwPct: DEFAULTS.screwPct,
-    detailPct: DEFAULTS.detailPct,
-    otherVarPct: DEFAULTS.otherVarPct,
-    fixedCostItems: buildDefaultFixedCostItems(),
-    equityRaise: DEFAULTS.equityRaise,
-    stage1Amount: DEFAULTS.stage1Amount,
-    stage1Month: DEFAULTS.stage1Month,
-    stage2Amount: DEFAULTS.stage2Amount,
-    stage2Month: DEFAULTS.stage2Month,
-    stage3Amount: DEFAULTS.stage3Amount,
-    stage3Month: DEFAULTS.stage3Month,
-    equipmentMonth: DEFAULTS.equipmentMonth,
-    equipmentItems: buildDefaultEquipment(),
-    months: buildDefaultMonths()
-  };
+  state = buildDefaultState();
 
   ['coilPct', 'screwPct', 'detailPct', 'otherVarPct'].forEach(id => {
     const elx = q(id);
@@ -872,6 +914,7 @@ function resetAll() {
   renderHouseTypeTable();
   renderFixedCostTable();
   renderComputed();
+  scheduleSave();
 }
 
 function initControls() {
@@ -924,31 +967,36 @@ function goTab(i) {
 
 /* ---------- sub-tabs (segmented, sliding thumb) ---------- */
 
-function renderSubTabNav() {
-  const el = q('subTabBar');
-  el.innerHTML = `<div class="sub-tab-thumb" id="subTabThumb" style="width:calc((100% - 8px) / ${SUB_TABS.length})"></div>` +
-    SUB_TABS.map((t, i) => `<button class="sub-tab-item" data-subtab-index="${i}">${t.label}</button>`).join('');
-  el.querySelectorAll('.sub-tab-item').forEach(btn => {
-    btn.addEventListener('click', () => goSubTab(Number(btn.dataset.subtabIndex)));
+function renderSubTabNav(groupKey) {
+  const group = SUB_TAB_GROUPS[groupKey];
+  const bar = q(group.barId);
+  bar.innerHTML = `<div class="sub-tab-thumb" style="width:calc((100% - 8px) / ${group.tabs.length})"></div>` +
+    group.tabs.map((t, i) => `<button class="sub-tab-item" data-subtab-index="${i}">${t.label}</button>`).join('');
+  bar.querySelectorAll('.sub-tab-item').forEach(btn => {
+    btn.addEventListener('click', () => goSubTab(groupKey, Number(btn.dataset.subtabIndex)));
   });
-  updateSubTabActive();
+  updateSubTabActive(groupKey);
 }
 
-function updateSubTabActive() {
-  document.querySelectorAll('#subTabBar .sub-tab-item').forEach((el, i) => el.classList.toggle('on', i === curSubTab));
-  const thumb = q('subTabThumb');
-  if (thumb) thumb.style.transform = `translateX(${curSubTab * 100}%)`;
+function updateSubTabActive(groupKey) {
+  const group = SUB_TAB_GROUPS[groupKey];
+  const bar = q(group.barId);
+  bar.querySelectorAll('.sub-tab-item').forEach((el, i) => el.classList.toggle('on', i === group.cur));
+  const thumb = bar.querySelector('.sub-tab-thumb');
+  if (thumb) thumb.style.transform = `translateX(${group.cur * 100}%)`;
 }
 
-function goSubTab(i) {
-  curSubTab = i;
-  SUB_TABS.forEach((t, idx) => {
+function goSubTab(groupKey, i) {
+  const group = SUB_TAB_GROUPS[groupKey];
+  group.cur = i;
+  group.tabs.forEach((t, idx) => {
     q('subtab-' + t.id).classList.toggle('on', idx === i);
   });
-  updateSubTabActive();
+  updateSubTabActive(groupKey);
 }
 
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
+  await loadStateFromServer();
   initControls();
   buildTableSkeleton();
   buildEquipSkeleton();
@@ -959,8 +1007,11 @@ window.addEventListener('DOMContentLoaded', () => {
   renderComputed();
   renderBottomNav();
   goTab(0);
-  renderSubTabNav();
-  goSubTab(0);
-  q('resetBtn').addEventListener('click', resetAll);
+  renderSubTabNav('assumptions');
+  goSubTab('assumptions', 0);
+  renderSubTabNav('capex');
+  goSubTab('capex', 0);
+  const resetBtn = q('resetBtn');
+  if (resetBtn) resetBtn.addEventListener('click', resetAll);
   q('houseTypeAddBtn').addEventListener('click', onHouseTypeAdd);
 });
