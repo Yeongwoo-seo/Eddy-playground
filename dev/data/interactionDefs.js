@@ -594,6 +594,47 @@ const interactionDefs = {
       },
     ],
   },
+  // "사전 복선" 패턴 추가 2건(§신규, 인물별 대화하기 볼륨 보강) — 소피는
+  // §5.8이 서술하는 "선의로 보였던 행동을 생활 기억으로 재연결하는 역할"의
+  // 원재료를 사건 전 시점에 미리 심어두는 인물. 둘 다 다니엘을 의심하는
+  // 말이 아니라 그냥 신기하다는 잡담으로만 들리게.
+  'w2ef-topic-sophie-locker-question': {
+    id: 'w2ef-topic-sophie-locker-question',
+    characterId: 'sophie',
+    locationIds: ['w2-exhibit-cafe-spot'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
+    type: 'topic',
+    label: '소피에게 동네 이야기 더 묻기',
+    lines: [
+      { speaker: '', text: '소피가 원두를 정리하며 문득 생각난 듯 말을 꺼낸다.', characterId: null },
+      { speaker: '소피', text: '아 맞다, 그러고보니 좀 특이한 질문을 받은 적 있어요', characterId: 'sophie', expression: 'curious' },
+      { speaker: '지수', text: '무슨 질문이요?', characterId: 'jisoo', expression: 'curious' },
+      { speaker: '소피', text: '다니엘씨가 예전에 그러더라고요\n"보관함에 짐을 좀 오래 놔두면 누가 확인하나요?" 이렇게', characterId: 'sophie', expression: 'curious' },
+      { speaker: '영우', text: '그건 왜 물어보셨대요?', characterId: 'youngwoo', expression: 'curious' },
+      { speaker: '소피', text: '몰라요, 그냥 궁금해서 그랬나보다 했죠\n관광객들 짐 자주 맡아주다 보면 그런 것도 궁금할 수 있잖아요', characterId: 'sophie', expression: 'neutral' },
+      { speaker: '지수', text: '그런가... 좀 뜬금없긴 하네요', characterId: 'jisoo', expression: 'curious' },
+      { speaker: '소피', text: '그니까요 ㅎㅎ\n근데 워낙 이것저것 잘 챙겨주시는 분이라 별생각 안 했어요', characterId: 'sophie', expression: 'neutral' },
+    ],
+    effects: [{ type: 'setFlag', key: 'heardDanielLockerCheckQuestion', value: true }],
+  },
+  'w2ef-topic-sophie-daniel-fluent': {
+    id: 'w2ef-topic-sophie-daniel-fluent',
+    characterId: 'sophie',
+    locationIds: ['w2-exhibit-cafe-spot'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
+    type: 'topic',
+    label: '소피와 다니엘 이야기하기',
+    lines: [
+      { speaker: '소피', text: '아 그리고, 다니엘씨 진짜 이 동네 빠삭하더라고요', characterId: 'sophie', expression: 'neutral' },
+      { speaker: '지수', text: '그래요?', characterId: 'jisoo', expression: 'curious' },
+      { speaker: '소피', text: '저번에 어떤 관광객이 짐 맡길 데를 못 찾아서 헤매고 있었는데\n다니엘씨가 바로 와서 보관함 구조를 술술 설명해주더라고요\n번호까지 딱딱 짚어가면서', characterId: 'sophie', expression: 'curious' },
+      { speaker: '영우', text: '가이드니까 그런 것도 잘 아시나보네요', characterId: 'youngwoo', expression: 'neutral' },
+      { speaker: '소피', text: '그렇겠죠?\n근데 저도 여기서 몇 년 일했는데\n그 정도로 바로바로 나오진 않거든요 ㅎㅎ', characterId: 'sophie', expression: 'curious' },
+      { speaker: '지수', text: '완전 준비된 가이드님이네요', characterId: 'jisoo', expression: 'happy' },
+      { speaker: '소피', text: '그니까요, 저보다 나아요 ㅎㅎ', characterId: 'sophie', expression: 'neutral' },
+    ],
+    effects: [{ type: 'setFlag', key: 'heardDanielFluentWithLockers', value: true }],
+  },
   'w2ef-topic-minah': {
     id: 'w2ef-topic-minah',
     characterId: 'minah',
@@ -657,6 +698,46 @@ const interactionDefs = {
       { speaker: "지수", text: "근데 그렇다고\n그게 무슨 큰 잘못을 한 건 아닐 수도 있자나", characterId: "jisoo", expression: "curious" },
       { speaker: "영우", text: "그치\n그냥 규정 몰랐을 수도 있고", characterId: "youngwoo", expression: "neutral" },
     ],
+  },
+  // "사전 복선" 패턴 추가 2건(§신규, 인물별 대화하기 볼륨 보강) — 윤민아는
+  // 3부 Ch12에서 나사 방향·결합선 차이를 가장 먼저 알아보는 인물이 되므로,
+  // 그 관찰력을 사건 발생 전에도 살짝 보여준다. 둘 다 확정적인 단서로
+  // 등록하지 않고 지나가는 인상 정도로만.
+  'w2ef-topic-minah-request': {
+    id: 'w2ef-topic-minah-request',
+    characterId: 'minah',
+    locationIds: ['w2-exhibit-floor'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
+    type: 'topic',
+    label: '윤민아에게 촬영 이야기 묻기',
+    lines: [
+      { speaker: '', text: '윤민아가 폰 화면을 들여다보며 작게 한숨을 쉰다.', characterId: null },
+      { speaker: '지수', text: '무슨 일 있으세요?', characterId: 'jisoo', expression: 'curious' },
+      { speaker: '윤민아', text: '아뇨, 그냥... 요청받은 게 좀 까다로워서요', characterId: 'minah', expression: 'annoyed' },
+      { speaker: '영우', text: '요청이요?', characterId: 'youngwoo', expression: 'curious' },
+      { speaker: '윤민아', text: '아 그, 자료 요청하는 계정이 있어서\n각도를 이렇게 저렇게 자꾸 바꿔달라 하더라고요\n특히 밑부분 위주로', characterId: 'minah', expression: 'annoyed' },
+      { speaker: '지수', text: '그런 것도 대신 찍어주고 그러세요?', characterId: 'jisoo', expression: 'curious' },
+      { speaker: '윤민아', text: '뭐... 소소하게요\n근데 이번엔 유독 디테일하게 요구해서 좀 신경 쓰이네요', characterId: 'minah', expression: 'annoyed' },
+      { speaker: '영우', text: '아하', characterId: 'youngwoo', expression: 'neutral' },
+    ],
+    effects: [{ type: 'setFlag', key: 'heardMinahOddPhotoRequest', value: true }],
+  },
+  'w2ef-topic-minah-screws': {
+    id: 'w2ef-topic-minah-screws',
+    characterId: 'minah',
+    locationIds: ['w2-exhibit-floor'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
+    type: 'topic',
+    label: '윤민아와 K-01 이야기하기',
+    lines: [
+      { speaker: '', text: '윤민아가 K-01 하단을 다시 한번 흘긋 보다가 혼잣말처럼 중얼거린다.', characterId: null },
+      { speaker: '윤민아', text: '근데 이거... 나사가 좀 이상하게 박혀있네', characterId: 'minah', expression: 'neutral' },
+      { speaker: '지수', text: '이상하다뇨?', characterId: 'jisoo', expression: 'curious' },
+      { speaker: '윤민아', text: '아 그냥, 이런 작품들 보면 보통 나사 방향이 딱 맞춰져 있거든요\n근데 이건 살짝 삐뚤어져 있어서\n사진 잘 나오게 하려면 좀 신경 쓰이네요', characterId: 'minah', expression: 'neutral' },
+      { speaker: '영우', text: '오 그런 것도 보시는구나', characterId: 'youngwoo', expression: 'curious' },
+      { speaker: '윤민아', text: '직업병이죠 뭐 ㅎㅎ\n작은 거 하나하나가 사진에서는 다 티가 나서요', characterId: 'minah', expression: 'neutral' },
+    ],
+    effects: [{ type: 'setFlag', key: 'noticedMinahScrewComment', value: true }],
   },
   'w2ef-topic-adrian': {
     id: 'w2ef-topic-adrian',
@@ -748,6 +829,43 @@ const interactionDefs = {
           },
         ],
       },
+    ],
+  },
+  // 인물 정보/캐릭터성 목적 topic 2건(§신규, 반드시 사건 암시일 필요는
+  // 없음) — 애드리언의 직업(비공식 거래 중개인)과 개인사를 더 풀어, 3부
+  // Ch14에서 "그도 이용당했을 뿐"이라는 반전이 설득력을 갖게 미리 쌓는다.
+  'w2ef-topic-adrian-job': {
+    id: 'w2ef-topic-adrian-job',
+    characterId: 'adrian',
+    locationIds: ['w2-exhibit-floor'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
+    type: 'topic',
+    label: '애드리언의 일 이야기 듣기',
+    lines: [
+      { speaker: '영우', text: '그럼 갤러리 소속이신 거예요?', characterId: 'youngwoo', expression: 'neutral' },
+      { speaker: '애드리언', text: '아뇨, 저는 소속은 없고\n개인적으로 컬렉터분들 사이에서 중개하는 일을 해요', characterId: 'adrian', expression: 'neutral' },
+      { speaker: '지수', text: '오, 그럼 이런 전시도 일 때문에 오시는 거예요?', characterId: 'jisoo', expression: 'curious' },
+      { speaker: '애드리언', text: '반은 일이고 반은 취미죠\n괜찮은 물건 있으면 관심 있으실 만한 분께 슬쩍 알려드리고\n그 정도예요', characterId: 'adrian', expression: 'neutral' },
+      { speaker: '영우', text: '재밌는 일이네요', characterId: 'youngwoo', expression: 'happy' },
+      { speaker: '애드리언', text: '재밌긴 한데 아직 자리는 잘 안 잡혀서요\n언젠가는 저만의 작은 갤러리를 갖는 게 목표예요', characterId: 'adrian', expression: 'annoyed' },
+    ],
+  },
+  'w2ef-topic-adrian-family': {
+    id: 'w2ef-topic-adrian-family',
+    characterId: 'adrian',
+    locationIds: ['w2-exhibit-floor'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
+    type: 'topic',
+    label: '애드리언의 할머니 이야기 듣기',
+    lines: [
+      { speaker: '지수', text: '아까 할머니가 물건 모으시던 분이라고 하셨잖아요', characterId: 'jisoo', expression: 'curious' },
+      { speaker: '애드리언', text: '아 맞아요\n어릴 때 할머니 따라서 이런저런 시장이랑 경매를 많이 다녔거든요', characterId: 'adrian', expression: 'neutral' },
+      { speaker: '영우', text: '그때부터 이 일에 관심 있으셨던 거예요?', characterId: 'youngwoo', expression: 'curious' },
+      { speaker: '애드리언', text: '그때는 그냥 할머니 따라다니는 게 좋아서 갔었는데\n돌아가시고 나니까 그 물건들 하나하나가\n다르게 보이더라고요', characterId: 'adrian', expression: 'neutral' },
+      { speaker: '지수', text: '아... 그러셨구나', characterId: 'jisoo', expression: 'neutral' },
+      { speaker: '애드리언', text: '그래서 그런지 저도 물건 하나 볼 때마다\n누가 만들었고 누구 손을 거쳤는지 자꾸 생각하게 돼요\n직업병이라면 직업병이죠', characterId: 'adrian', expression: 'annoyed' },
+      { speaker: '영우', text: '멋진 직업병이네요', characterId: 'youngwoo', expression: 'happy' },
+      { speaker: '애드리언', text: 'ㅎㅎ 그렇게 봐주시니 감사하네요', characterId: 'adrian', expression: 'happy' },
     ],
   },
   'w2ef-topic-leo': {
@@ -861,6 +979,27 @@ const interactionDefs = {
     ],
     effects: [{ type: 'setFlag', key: 'sawClaireK01WeightLedger', value: true }],
   },
+  // 인물 정보/캐릭터성 목적 topic(§신규, 반드시 사건 암시일 필요는 없음) —
+  // 클레어를 "관리 소홀한 직원"이 아니라 여러 팝업 행사를 전전하며 언젠가
+  // 자기 갤러리를 열고 싶어하는 프리랜서 큐레이터로 입체화한다.
+  'w2ef-topic-claire-dream': {
+    id: 'w2ef-topic-claire-dream',
+    characterId: 'claire',
+    locationIds: ['w2-exhibit-floor'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
+    type: 'topic',
+    label: '클레어에게 일 이야기 묻기',
+    lines: [
+      { speaker: '지수', text: '여기서 계속 일하신 거예요?', characterId: 'jisoo', expression: 'curious' },
+      { speaker: '클레어', text: '아뇨, 저는 프리랜서라\n이런 팝업 전시마다 옮겨 다니면서 일해요', characterId: 'claire', expression: 'neutral' },
+      { speaker: '영우', text: '오, 그럼 여러 곳 다니시겠네요', characterId: 'youngwoo', expression: 'curious' },
+      { speaker: '클레어', text: '네, 한 달은 여기, 다음 달은 다른 도시\n정신없긴 한데 재밌어요', characterId: 'claire', expression: 'neutral' },
+      { speaker: '지수', text: '멋있다', characterId: 'jisoo', expression: 'happy' },
+      { speaker: '클레어', text: '언젠가는 제 갤러리를 열고 싶긴 한데\n일단은 이렇게 경험 쌓는 중이에요', characterId: 'claire', expression: 'neutral' },
+      { speaker: '영우', text: '꼭 여시면 저희 초대해주세요', characterId: 'youngwoo', expression: 'happy' },
+      { speaker: '클레어', text: 'ㅎㅎ 그럴게요\n아무튼 이런 일도 다 그 꿈을 위한 과정이라고 생각해요', characterId: 'claire', expression: 'neutral' },
+    ],
+  },
   'w2ef-topic-leo-dm': {
     id: 'w2ef-topic-leo-dm',
     characterId: 'leo',
@@ -881,6 +1020,28 @@ const interactionDefs = {
       { speaker: "레오", text: "그쵸 ㅎㅎ\n아무튼 신경 안 써요\n자 그럼 다시 일하러 가볼게요", characterId: "leo", expression: "neutral" },
     ],
     effects: [{ type: 'setFlag', key: 'heardLeoAnonymousDmRequests', value: true }],
+  },
+  // 인물 정보/캐릭터성 목적 topic(§신규, 반드시 사건 암시일 필요는 없음) —
+  // 레오를 "짐 나르는 알바생"이 아니라 진짜 사진가를 꿈꾸는 사람으로
+  // 입체화해, 2부 배신이 감정적으로 무겁게 느껴지도록 미리 쌓아둔다.
+  'w2ef-topic-leo-photography': {
+    id: 'w2ef-topic-leo-photography',
+    characterId: 'leo',
+    locationIds: ['w2-exhibit-floor'],
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
+    type: 'topic',
+    label: '레오의 사진 이야기 듣기',
+    lines: [
+      { speaker: '영우', text: '레오씨는 여기서 일하신 지 오래되셨어요?', characterId: 'youngwoo', expression: 'neutral' },
+      { speaker: '레오', text: '일한다기보단, 이런 행사 있을 때마다\n짐 나르고 사진 도와드리고 그래요', characterId: 'leo', expression: 'neutral' },
+      { speaker: '지수', text: '사진 되게 잘 찍으시던데, 원래 전공이세요?', characterId: 'jisoo', expression: 'curious' },
+      { speaker: '레오', text: '전공까진 아니고\n그냥 어릴 때부터 좋아해서 혼자 계속 찍었어요', characterId: 'leo', expression: 'neutral' },
+      { speaker: '레오', text: '진짜 하고 싶은 건 제 이름 걸고 작업하는 건데\n일단은 이렇게 이것저것 하면서 배우는 중이에요', characterId: 'leo', expression: 'neutral' },
+      { speaker: '영우', text: '오 멋있다\n언젠가 개인전 하시면 저희도 보러 갈게요', characterId: 'youngwoo', expression: 'happy' },
+      { speaker: '레오', text: '아이 그런 날이 오면요 ㅎㅎ\n아직 갈 길이 멀어요', characterId: 'leo', expression: 'neutral' },
+      { speaker: '지수', text: '그래도 지금도 충분히 잘하시는데요', characterId: 'jisoo', expression: 'happy' },
+      { speaker: '레오', text: '그렇게 말씀해주시니까 힘이 나네요\n감사해요', characterId: 'leo', expression: 'neutral' },
+    ],
   },
 
   /* ===== w2-exhibit-floor investigateHotspots (§신규) =====
@@ -1104,6 +1265,44 @@ const interactionDefs = {
     icon: '🔍',
     sceneId: 'week2-scene-009',
   },
+  // 인물 정보/캐릭터성 목적 topic 2건(§신규, 반드시 사건 암시일 필요는
+  // 없음) — 혐의를 벗은 뒤 윤민아가 왜 그렇게 절박하게 촬영했는지, 그리고
+  // 지수·영우와의 관계가 어떻게 회복되는지를 심문 직후 후일담으로 보여준다.
+  // 심문(week2-scene-009) 완료 후에만 열리게 gate.
+  'w1suspect-mina-topic-channel': {
+    id: 'w1suspect-mina-topic-channel',
+    characterId: 'minah',
+    locationIds: ['w2-suspect-mina-spot'],
+    phases: ['W2_SUSPECT_INTERVIEWS'],
+    type: 'topic',
+    label: '윤민아의 채널 이야기 듣기',
+    unlockConditions: [{ type: 'interactionCompleted', ids: ['w1suspect-mina-interview'] }],
+    lines: [
+      { speaker: '지수', text: '근데 채널 운영하신다고 하셨잖아요\n원래 그렇게 조심스럽게 찍으세요?', characterId: 'jisoo', expression: 'curious' },
+      { speaker: '윤민아', text: '솔직히 구독자가 많은 채널도 아니고\n그냥 저 혼자 열심히 하는 거라서요', characterId: 'minah', expression: 'neutral' },
+      { speaker: '윤민아', text: '그래서 이런 거 하나하나가 다 조심스러워요\n괜히 문제 생기면 그마저도 못 하게 될까봐', characterId: 'minah', expression: 'annoyed' },
+      { speaker: '영우', text: '그래서 아까 그렇게 급하게 지우셨구나', characterId: 'youngwoo', expression: 'neutral' },
+      { speaker: '윤민아', text: '네... 창피하지만 그래요\n큰 잘못은 아니어도 괜히 찍혔다고 소문나면 곤란해서', characterId: 'minah', expression: 'annoyed' },
+      { speaker: '지수', text: '이해해요\n좋아하는 거 계속하고 싶은 마음, 저도 알 것 같아요', characterId: 'jisoo', expression: 'neutral' },
+      { speaker: '윤민아', text: '감사해요... 그렇게 말씀해주시니까', characterId: 'minah', expression: 'neutral' },
+    ],
+  },
+  'w1suspect-mina-topic-thanks': {
+    id: 'w1suspect-mina-topic-thanks',
+    characterId: 'minah',
+    locationIds: ['w2-suspect-mina-spot'],
+    phases: ['W2_SUSPECT_INTERVIEWS'],
+    type: 'topic',
+    label: '윤민아와 다시 이야기하기',
+    unlockConditions: [{ type: 'interactionCompleted', ids: ['w1suspect-mina-interview'] }],
+    lines: [
+      { speaker: '윤민아', text: '저기, 아까는 좀 예민하게 굴어서 죄송했어요', characterId: 'minah', expression: 'neutral' },
+      { speaker: '지수', text: '아니에요, 그럴 수 있죠\n갑자기 이런 일 생겼는데', characterId: 'jisoo', expression: 'neutral' },
+      { speaker: '윤민아', text: '두 분이 계속 침착하게 물어봐주셔서\n오히려 덜 무서웠던 것 같아요', characterId: 'minah', expression: 'neutral' },
+      { speaker: '영우', text: '저희도 최대한 편하게 말씀드리려고 했어요', characterId: 'youngwoo', expression: 'soft' },
+      { speaker: '윤민아', text: '아무튼 감사해요\n혹시 더 궁금한 거 있으면 편하게 물어보세요', characterId: 'minah', expression: 'neutral' },
+    ],
+  },
   // 위 mina-topic-watch와 같은 목적 — 애드리언의 대화하기 chip에 뜨는 순수
   // 관찰 비트, week2Scene007Lines의 실제 오프닝과는 겹치지 않는다.
   'w1suspect-adrian-topic-watch': {
@@ -1157,6 +1356,27 @@ const interactionDefs = {
     ],
     effects: [{ type: 'setFlag', key: 'overheardAdrianPhoneCall', value: true }],
   },
+  // 인물 정보/캐릭터성 목적 topic(§신규, 반드시 사건 암시일 필요는 없음) —
+  // 1차 응대(week2-scene-010) 완료 후에만 열리는 후일담. 애드리언이 왜
+  // 매번 방어적으로 구는지, 업계에서 겪는 애환을 통해 설명한다.
+  'w1suspect-adrian-topic-reflect': {
+    id: 'w1suspect-adrian-topic-reflect',
+    characterId: 'adrian',
+    locationIds: ['w2-adrian-spot'],
+    phases: ['W2_SUSPECT_INTERVIEWS'],
+    type: 'topic',
+    label: '애드리언과 조금 더 이야기하기',
+    unlockConditions: [{ type: 'interactionCompleted', ids: ['w1suspect-adrian-interview'] }],
+    lines: [
+      { speaker: '애드리언', text: '아까 제가 좀 방어적으로 굴었죠', characterId: 'adrian', expression: 'annoyed' },
+      { speaker: '지수', text: '아뇨, 이해해요\n갑자기 이런 일 생기면 다들 그러죠', characterId: 'jisoo', expression: 'neutral' },
+      { speaker: '애드리언', text: '저희 업계가 원래 좀 그래요\n중개하는 일이다 보니까 뭔가 사고만 나면\n일단 저부터 의심받거든요', characterId: 'adrian', expression: 'annoyed' },
+      { speaker: '영우', text: '그거 좀 억울하시겠어요', characterId: 'youngwoo', expression: 'curious' },
+      { speaker: '애드리언', text: '익숙해지긴 했는데 매번 마음이 편하진 않아요\n그래도 시간 지나면 다 풀리더라고요', characterId: 'adrian', expression: 'neutral' },
+      { speaker: '지수', text: '이번에도 잘 풀릴 거예요', characterId: 'jisoo', expression: 'happy' },
+      { speaker: '애드리언', text: '그러면 좋겠네요\n말씀 감사해요', characterId: 'adrian', expression: 'happy' },
+    ],
+  },
   // 위 두 topic과 같은 목적 — 레오의 대화하기 chip에 뜨는 순수 관찰 비트,
   // week2Scene008Lines의 실제 오프닝과는 겹치지 않는다.
   'w1suspect-leo-topic-watch': {
@@ -1195,6 +1415,28 @@ const interactionDefs = {
       { speaker: '', text: '레오가 애써 웃어 보이지만, 시선은 계속 뒤집어놓은 휴대폰 쪽으로 향한다.', characterId: null },
     ],
     effects: [{ type: 'setFlag', key: 'noticedLeoPhoneNotification', value: true }],
+  },
+  // 인물 정보/캐릭터성 목적 topic(§신규, 반드시 사건 암시일 필요는 없음) —
+  // 레오 스팟은 심문하기(week2-scene-010b)로 곧장 이어져 허브로 못
+  // 돌아오므로(아래 큰 주석 참고) 반드시 ungated로 둔다. 클레어·소피와의
+  // "가족 같은" 유대감을 보여줘, 2부에서 밝혀지는 배신이 더 아프게
+  // 다가오도록 미리 쌓는다.
+  'w1suspect-leo-topic-family': {
+    id: 'w1suspect-leo-topic-family',
+    characterId: 'leo',
+    locationIds: ['w2-suspect-leo-spot'],
+    phases: ['W2_SUSPECT_INTERVIEWS'],
+    type: 'topic',
+    label: '레오와 조금 더 이야기하기',
+    lines: [
+      { speaker: '지수', text: '여기서 일하시는 거 재밌으세요?', characterId: 'jisoo', expression: 'curious' },
+      { speaker: '레오', text: '네, 사실 돈도 돈이지만\n클레어씨나 소피씨랑 같이 일하는 게 좋아서 계속하는 것도 있어요', characterId: 'leo', expression: 'neutral' },
+      { speaker: '영우', text: '친한 사이신가봐요', characterId: 'youngwoo', expression: 'neutral' },
+      { speaker: '레오', text: '네, 이런 행사 있을 때마다 자주 보다 보니까\n거의 가족처럼 느껴질 때도 있어요', characterId: 'leo', expression: 'neutral' },
+      { speaker: '레오', text: '클레어씨가 저 되게 챙겨주시거든요\n믿고 이것저것 맡겨주시기도 하고', characterId: 'leo', expression: 'neutral' },
+      { speaker: '지수', text: '보기 좋네요, 그런 사이', characterId: 'jisoo', expression: 'happy' },
+      { speaker: '레오', text: '그쵸\n그래서 더 잘하고 싶어요, 여기서', characterId: 'leo', expression: 'neutral' },
+    ],
   },
   // unlockConditions 게이트(§신규, 리뷰 지적 반영) — 레오 쪽만 허브로 안
   // 돌아오고 곧장 week2-scene-010b→minigame-timeline→011→012→013까지 이어져
@@ -1245,6 +1487,44 @@ const interactionDefs = {
     icon: '🔍',
     sceneId: 'week2-scene-015',
   },
+  // 인물 정보/캐릭터성 목적 topic 2건(§신규, 반드시 사건 암시일 필요는
+  // 없음) — 재심문(week2-scene-015)에서 애드리언이 자기도 이용당했다는
+  // 걸 이미 밝혔으므로, 그 이후 심경과 앞으로의 다짐을 후일담으로
+  // 보여준다. 재심문 완료 후에만 열리게 gate(스포일러 방지).
+  'w1reverify-adrian-topic-guilt': {
+    id: 'w1reverify-adrian-topic-guilt',
+    characterId: 'adrian',
+    locationIds: ['w2-adrian-spot'],
+    phases: ['W2_REVERIFICATION'],
+    type: 'topic',
+    label: '애드리언과 마음 더 나누기',
+    unlockConditions: [{ type: 'interactionCompleted', ids: ['w1reverify-adrian-interview'] }],
+    lines: [
+      { speaker: '애드리언', text: '저도 아까부터 계속 그 생각만 나요\n제가 물어본 것들이 진짜로 그렇게 쓰였을까 봐서', characterId: 'adrian', expression: 'annoyed' },
+      { speaker: '지수', text: '애드리언씨가 몰랐던 거잖아요', characterId: 'jisoo', expression: 'neutral' },
+      { speaker: '애드리언', text: '그렇긴 한데\n몰랐다고 책임이 아예 없어지는 건 아니잖아요', characterId: 'adrian', expression: 'annoyed' },
+      { speaker: '영우', text: '그래도 이렇게 솔직하게 말씀해주신 것만으로도 큰 도움 됐어요', characterId: 'youngwoo', expression: 'neutral' },
+      { speaker: '애드리언', text: '앞으로는 누가 뭘 물어봐도\n제대로 확인 안 되면 그냥 거절하려고요\n이번 일 겪고 나니 그게 맞는 것 같아서', characterId: 'adrian', expression: 'neutral' },
+    ],
+  },
+  'w1reverify-adrian-topic-resolve': {
+    id: 'w1reverify-adrian-topic-resolve',
+    characterId: 'adrian',
+    locationIds: ['w2-adrian-spot'],
+    phases: ['W2_REVERIFICATION'],
+    type: 'topic',
+    label: '애드리언의 앞으로 계획 듣기',
+    unlockConditions: [{ type: 'interactionCompleted', ids: ['w1reverify-adrian-interview'] }],
+    lines: [
+      { speaker: '애드리언', text: '저 예전에 할머니 얘기 했었잖아요', characterId: 'adrian', expression: 'neutral' },
+      { speaker: '지수', text: '네, 기억나요', characterId: 'jisoo', expression: 'neutral' },
+      { speaker: '애드리언', text: '할머니가 남겨주신 반지가 하나 있는데\n그동안 한 번도 안 팔았어요\n돈 궁할 때도요', characterId: 'adrian', expression: 'neutral' },
+      { speaker: '영우', text: '소중한 물건이라서 그런 거죠?', characterId: 'youngwoo', expression: 'neutral' },
+      { speaker: '애드리언', text: '네\n근데 이번 일 겪고 나니\n저도 제대로 된 가게 하나 차려서\n그런 물건들 제대로 대해주는 사람이 되고 싶어졌어요', characterId: 'adrian', expression: 'happy' },
+      { speaker: '지수', text: '그러실 수 있을 거예요', characterId: 'jisoo', expression: 'happy' },
+      { speaker: '애드리언', text: '말씀 감사해요\n덕분에 저도 정리가 좀 되네요', characterId: 'adrian', expression: 'happy' },
+    ],
+  },
   // type:'scene'로 전환 — 다른 재검증 대상들과 같은 인라인 재생/허브 복귀
   // 패턴을 쓴다(예전엔 type:'minigame'+route로 /play/game/까지 완전히
   // 나갔다 돌아오는 별도 왕복이었다).
@@ -1259,6 +1539,44 @@ const interactionDefs = {
     icon: '📞',
     sceneId: 'week2-scene-014',
   },
+  // 인물 정보/캐릭터성 목적 topic 2건(§신규, 반드시 사건 암시일 필요는
+  // 없음) — 전화(week2-scene-014)에서 이미 인덱스 존재와 M.K. 표식을
+  // 밝혔으므로, 그 이후 마틴의 장인으로서의 배경과 이번 일에 대한 걱정을
+  // 후일담으로 보여준다. 전화 완료 후에만 열리게 gate.
+  'w1reverify-martin-topic-craft': {
+    id: 'w1reverify-martin-topic-craft',
+    characterId: 'martin',
+    locationIds: ['w2-reverify-martin-spot'],
+    phases: ['W2_REVERIFICATION'],
+    type: 'topic',
+    label: '마틴에게 다시 전화하기',
+    unlockConditions: [{ type: 'interactionCompleted', ids: ['w1reverify-martin-call'] }],
+    lines: [
+      { speaker: '', text: '영우가 다시 마틴에게 전화를 건다.', characterId: null },
+      { speaker: '영우', text: '저 다시 죄송한데, 하나만 더 여쭤봐도 될까요', characterId: 'youngwoo', expression: 'neutral' },
+      { speaker: '마틴', text: '네, 말씀하세요', characterId: 'martin', expression: 'neutral' },
+      { speaker: '지수', text: '이런 특이한 주문, 원래도 자주 받으세요?', characterId: 'jisoo', expression: 'curious' },
+      { speaker: '마틴', text: '자주는 아니고요\n근데 저는 웬만하면 이유는 안 물어봐요\n의뢰인이 원하는 대로 정확하게 만드는 게 제 일이라서요', characterId: 'martin', expression: 'neutral' },
+      { speaker: '영우', text: '그래도 좀 궁금하지 않으셨어요?', characterId: 'youngwoo', expression: 'curious' },
+      { speaker: '마틴', text: '솔직히 이번 건은 좀 걸렸어요\n근데 일이 워낙 들어오는 게 없어서\n그냥 넘겼던 것도 있고요', characterId: 'martin', expression: 'serious' },
+    ],
+  },
+  'w1reverify-martin-topic-worry': {
+    id: 'w1reverify-martin-topic-worry',
+    characterId: 'martin',
+    locationIds: ['w2-reverify-martin-spot'],
+    phases: ['W2_REVERIFICATION'],
+    type: 'topic',
+    label: '마틴의 걱정 들어보기',
+    unlockConditions: [{ type: 'interactionCompleted', ids: ['w1reverify-martin-call'] }],
+    lines: [
+      { speaker: '마틴', text: '저기, 그 작품 클레어씨가 관리하는 거 맞죠?', characterId: 'martin', expression: 'neutral' },
+      { speaker: '지수', text: '네, 맞아요', characterId: 'jisoo', expression: 'neutral' },
+      { speaker: '마틴', text: '그럼 클레어씨한테 제가 미안하다고 좀 전해주세요\n제가 진작 이상하다고 말씀드렸어야 했는데', characterId: 'martin', expression: 'serious' },
+      { speaker: '영우', text: '마틴씨 잘못은 아니에요', characterId: 'youngwoo', expression: 'neutral' },
+      { speaker: '마틴', text: '그렇게 말씀해주시니 감사하네요\n아무튼 그거 꼭 찾으시면 좋겠어요\n제가 만든 것들 중에 손이 제일 많이 간 거였거든요', characterId: 'martin', expression: 'neutral' },
+    ],
+  },
   'w1reverify-leo-interview': {
     id: 'w1reverify-leo-interview',
     characterId: 'leo',
@@ -1269,6 +1587,46 @@ const interactionDefs = {
     label: '재심문하기',
     icon: '🔍',
     sceneId: 'week2-scene-016',
+  },
+  // 인물 정보/캐릭터성 목적 topic 2건(§신규, 반드시 사건 암시일 필요는
+  // 없음) — 재심문(week2-scene-016)에서 레오가 이미 "저도 이용당한
+  // 거예요?"까지 물었으므로, 그 이후 지수·영우와의 관계 회복과 레오의
+  // 다짐을 후일담으로 보여준다. 재심문 완료 후에만 열리게 gate.
+  'w1reverify-leo-topic-apology': {
+    id: 'w1reverify-leo-topic-apology',
+    characterId: 'leo',
+    locationIds: ['w2-suspect-leo-spot'],
+    phases: ['W2_REVERIFICATION'],
+    type: 'topic',
+    label: '레오와 조금 더 얘기하기',
+    unlockConditions: [{ type: 'interactionCompleted', ids: ['w1reverify-leo-interview'] }],
+    lines: [
+      { speaker: '레오', text: '저기, 아까는 말씀 잘 못 드렸는데', characterId: 'leo', expression: 'neutral' },
+      { speaker: '지수', text: '네, 말씀하세요', characterId: 'jisoo', expression: 'neutral' },
+      { speaker: '레오', text: '정말 죄송해요\n제가 처음부터 솔직하게 말씀드렸으면\n이렇게까지 일이 커지지 않았을 수도 있는데', characterId: 'leo', expression: 'soft' },
+      { speaker: '영우', text: '그래도 지금이라도 다 말씀해주셔서 다행이에요', characterId: 'youngwoo', expression: 'neutral' },
+      { speaker: '레오', text: '클레어씨한테는 제가 직접 사과할게요\n두 분한테는... 그냥 감사하다고 말씀드리고 싶어요\n저 나쁜 사람 취급 안 해주셔서', characterId: 'leo', expression: 'soft' },
+      { speaker: '지수', text: '레오씨도 피해자일 수 있으니까요', characterId: 'jisoo', expression: 'neutral' },
+      { speaker: '레오', text: '...감사해요, 진짜로', characterId: 'leo', expression: 'soft' },
+    ],
+  },
+  'w1reverify-leo-topic-photo-again': {
+    id: 'w1reverify-leo-topic-photo-again',
+    characterId: 'leo',
+    locationIds: ['w2-suspect-leo-spot'],
+    phases: ['W2_REVERIFICATION'],
+    type: 'topic',
+    label: '레오의 다짐 듣기',
+    unlockConditions: [{ type: 'interactionCompleted', ids: ['w1reverify-leo-interview'] }],
+    lines: [
+      { speaker: '레오', text: '저 이번 일 겪으면서 좀 많이 생각했어요', characterId: 'leo', expression: 'neutral' },
+      { speaker: '영우', text: '어떤 생각이요?', characterId: 'youngwoo', expression: 'curious' },
+      { speaker: '레오', text: '누가 부탁한다고 아무 생각 없이 사진 찍어주고 그러지 말자\n제 이름 걸고 하는 일이면\n제가 뭘 찍는지 정도는 알고 찍어야겠다, 그런 거요', characterId: 'leo', expression: 'neutral' },
+      { speaker: '지수', text: '좋은 다짐이네요', characterId: 'jisoo', expression: 'happy' },
+      { speaker: '레오', text: '그리고... 이번 일 끝나면\n진짜 제 이름으로 뭔가 한번 해보려고요\n계속 미루기만 했었거든요', characterId: 'leo', expression: 'neutral' },
+      { speaker: '영우', text: '꼭 응원할게요', characterId: 'youngwoo', expression: 'happy' },
+      { speaker: '레오', text: '감사해요\n이번에 진짜 많이 배웠어요', characterId: 'leo', expression: 'soft' },
+    ],
   },
   // "사전 복선" 패턴 추가(§신규, 허브별 인물 대화하기 볼륨 보강) — §5.8이
   // 서술하는 소피의 역할("선의로 보였던 행동을 생활 기억으로 재연결") 중
@@ -1294,6 +1652,27 @@ const interactionDefs = {
       { speaker: '소피', text: '그쵸? 저도 방금 생각났어요', characterId: 'sophie', expression: 'neutral' },
     ],
     effects: [{ type: 'setFlag', key: 'noticedDanielTextingStyle', value: true }],
+  },
+  // 인물 정보/캐릭터성 목적 topic(§신규, 반드시 사건 암시일 필요는 없음) —
+  // 위 texts 잡담과 같은 위치, 사건과 무관한 소피 개인사. week2-scene-017의
+  // 내용과 겹치지 않도록 다니엘/보관함 얘기는 전혀 건드리지 않는다.
+  'w1reverify-sophie-topic-home': {
+    id: 'w1reverify-sophie-topic-home',
+    characterId: 'sophie',
+    locationIds: ['w2-reverify-sophie-spot'],
+    phases: ['W2_REVERIFICATION'],
+    type: 'topic',
+    label: '소피의 시드니 정착기 듣기',
+    lines: [
+      { speaker: '지수', text: '소피씨는 원래 여기 사셨던 거예요?', characterId: 'jisoo', expression: 'curious' },
+      { speaker: '소피', text: '아뇨, 저도 원래는 여행 왔다가 눌러앉은 케이스예요', characterId: 'sophie', expression: 'neutral' },
+      { speaker: '영우', text: '오, 그럼 얼마나 되신 거예요?', characterId: 'youngwoo', expression: 'curious' },
+      { speaker: '소피', text: '벌써 3년 다 되어가요\n처음엔 한 달만 있으려고 했는데\n어쩌다 보니 여기서 일도 구하고, 정 붙이고', characterId: 'sophie', expression: 'neutral' },
+      { speaker: '지수', text: '완전 저희 같은 여행자였네요', characterId: 'jisoo', expression: 'happy' },
+      { speaker: '소피', text: '그니까요 ㅎㅎ\n그래서 두 분 보면 좀 반가워요\n저도 처음 왔을 때 생각나고요', characterId: 'sophie', expression: 'happy' },
+      { speaker: '영우', text: '그럼 이제 여기가 완전 집 같으시겠네요', characterId: 'youngwoo', expression: 'curious' },
+      { speaker: '소피', text: '네, 이제는 그런 것 같아요\n돌아갈 곳이 두 개가 된 느낌?', characterId: 'sophie', expression: 'neutral' },
+    ],
   },
   'w1reverify-sophie-interview': {
     id: 'w1reverify-sophie-interview',
@@ -1340,6 +1719,30 @@ const interactionDefs = {
     label: '신원 확인하기',
     icon: '🔍',
     sceneId: 'week2-scene-018',
+  },
+  // 인물 정보/캐릭터성 목적 topic(§신규, 반드시 사건 암시일 필요는 없음) —
+  // 신원 확인(week2-scene-018)에서 다니엘이 이미 여행사 미등록 사실로
+  // 몰린 뒤라, 그 찜찜함을 안고 조심스럽게 한 번 더 말을 걸어보는 후일담.
+  // 다니엘의 정체는 여기서도 확정하지 않는다 — 평소처럼 매끄럽게
+  // 넘기지만 대답이 이전보다 짧아졌다는 인상만 남긴다. 신원 확인 완료
+  // 후에만 열리게 gate(스포일러 방지).
+  'w1reverify-daniel-topic-after': {
+    id: 'w1reverify-daniel-topic-after',
+    characterId: 'daniel-guide',
+    locationIds: ['w2-hub-plaza'],
+    phases: ['W2_REVERIFICATION'],
+    type: 'topic',
+    label: '다니엘에게 조심스럽게 다시 말 걸기',
+    unlockConditions: [{ type: 'interactionCompleted', ids: ['w1reverify-daniel-interview'] }],
+    lines: [
+      { speaker: '지수', text: '다니엘씨, 아까는 저희가 좀 무례했다면 죄송해요', characterId: 'jisoo', expression: 'neutral' },
+      { speaker: '다니엘', text: '아니에요, 이해해요\n이런 상황이면 당연히 그러실 수 있죠', characterId: 'daniel-guide', expression: 'neutral' },
+      { speaker: '영우', text: '그래도 저희한테 잘해주신 건 진짜 감사하게 생각해요', characterId: 'youngwoo', expression: 'neutral' },
+      { speaker: '다니엘', text: '저도 두 분 만난 거 좋았어요\n여행 중에 이런 일 겪으시는 게 안타깝긴 하지만요', characterId: 'daniel-guide', expression: 'neutral' },
+      { speaker: '지수', text: '근데 정말 별일 아니신 거 맞죠?', characterId: 'jisoo', expression: 'curious' },
+      { speaker: '다니엘', text: '네, 걱정 안 하셔도 돼요', characterId: 'daniel-guide', expression: 'neutral' },
+      { speaker: '', text: '평소와 다름없는 미소지만, 대답이 어쩐지 이전보다 짧아졌다.', characterId: null },
+    ],
   },
   'w1reverify-tourists-interview': {
     id: 'w1reverify-tourists-interview',
