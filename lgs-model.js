@@ -181,37 +181,64 @@ let equipRowRefs = [];
 let houseTypeRowRefs = [];
 let fixedCostRowRefs = [];
 
-/* ---------- auto-save to server ---------- */
-// Fill in after `npx wrangler deploy` in worker/ (see worker/README.md) —
-// blank means auto-save/load is a no-op and the page behaves as before.
-const API_URL = '';
+/* ---------- auto-save to Supabase (share across devices) ---------- */
+// Fill in your Supabase project URL + anon public key (Project Settings >
+// API) after creating the `app_state` table — see worker/README.md for the
+// SQL. Blank means auto-save/load is a no-op and the page behaves as before.
+const SUPABASE_URL = '';
+const SUPABASE_ANON_KEY = '';
+const STATE_ROW_ID = 'lgs-model';
+
+function supabaseHeaders(extra) {
+  return { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`, ...extra };
+}
 
 let saveTimer = null;
 function scheduleSave() {
-  if (!API_URL) return;
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return;
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
-    fetch(API_URL + '/state', {
+    fetch(`${SUPABASE_URL}/rest/v1/app_state`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ app: 'lgs-model', data: state })
+      headers: supabaseHeaders({ 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' }),
+      body: JSON.stringify({ id: STATE_ROW_ID, data: state, updated_at: new Date().toISOString() })
     }).catch(() => {});
   }, 800);
 }
 
 async function loadStateFromServer() {
-  if (!API_URL) return;
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return;
   try {
-    const res = await fetch(API_URL + '/state?app=lgs-model');
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/app_state?id=eq.${STATE_ROW_ID}&select=data`, { headers: supabaseHeaders() });
     if (!res.ok) return;
-    const payload = await res.json();
-    if (payload && payload.data && Object.keys(payload.data).length) {
-      state = Object.assign(buildDefaultState(), payload.data);
+    const rows = await res.json();
+    const data = rows[0] && rows[0].data;
+    if (data && Object.keys(data).length) {
+      state = Object.assign(buildDefaultState(), data);
     }
   } catch (e) {
-    // offline or Worker unreachable — keep local defaults
+    // offline or Supabase unreachable — keep local defaults
   }
 }
+
+// Other devices only push their edits on save, so pick up remote changes
+// whenever this tab regains focus (reload is simplest — every dynamic list
+// on the page would otherwise need its own merge/re-skeleton logic).
+async function refreshFromServerIfChanged() {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY || document.visibilityState !== 'visible') return;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/app_state?id=eq.${STATE_ROW_ID}&select=data`, { headers: supabaseHeaders() });
+    if (!res.ok) return;
+    const rows = await res.json();
+    const data = rows[0] && rows[0].data;
+    if (data && Object.keys(data).length && JSON.stringify(data) !== JSON.stringify(state)) {
+      location.reload();
+    }
+  } catch (e) {
+    // offline or Supabase unreachable — ignore, next focus will retry
+  }
+}
+document.addEventListener('visibilitychange', refreshFromServerIfChanged);
 
 function fmt(n) {
   const r = Math.round(n);
