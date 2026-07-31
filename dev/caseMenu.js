@@ -1237,8 +1237,8 @@ function injectCaseMenuStyles() {
     .cm-evp-photo-framed::before{top:-7px;left:14px;transform:rotate(-8deg)}
     .cm-evp-photo-framed::after{top:-7px;right:14px;transform:rotate(7deg)}
     .cm-evp-photo-framed .ces-icon-img{border-radius:2px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
-    .cm-evp-name{font-size:18px;font-weight:800;color:#F1F3F5;margin-bottom:8px;word-break:keep-all}
-    .cm-evp-desc{font-size:13.5px;line-height:1.6;color:#C9D1D9;margin-bottom:20px;word-break:keep-all}
+    .cm-evp-name{width:100%;text-align:left;font-size:18px;font-weight:800;color:#F1F3F5;margin-bottom:8px;word-break:keep-all}
+    .cm-evp-desc{width:100%;text-align:left;font-size:13.5px;line-height:1.6;color:#C9D1D9;margin-bottom:20px;word-break:keep-all}
     /* 설명 타이핑이 끝나기 전까지는 안 보이고 눌리지도 않는다(cm-evp-confirm-ready가
        붙어야 페이드인 + 클릭 가능) — typeDescription 참고. */
     .cm-evp-confirm{width:100%;background:#FFFFFF;color:#10151B;border:none;border-radius:14px;padding:15px;font-size:15px;font-weight:700;cursor:pointer;font-family:'IBM Plex Mono',ui-monospace,monospace;letter-spacing:.04em;opacity:0;pointer-events:none;transition:opacity .4s ease}
