@@ -282,20 +282,41 @@ input.equip-input::-webkit-outer-spin-button,input.equip-input::-webkit-inner-sp
 
   <div class="sub-panel" id="subtab-fixed">
   <div class="card">
-    <div class="section-label"><div class="section-dot"></div><span>고정비</span></div>
-    <div class="section-note">슬라이더는 전체 월에 일괄 적용돼요.</div>
-    <div class="slider-row">
-      <div class="slider-label-row"><span class="slider-label">월 고정 생산비 (램프업)</span><span class="slider-value" id="fixedProdCostVal">-</span></div>
-      <input type="range" class="slider" id="fixedProdCost" min="0" max="60000" step="500">
+    <div class="section-label"><div class="section-dot"></div><span>고정 생산비 (공장 운영, 램프업)</span></div>
+    <div class="section-note">생산량과 무관하게 매월 발생하는 공장 운영비예요. 항목별 월 금액을 직접 입력할 수 있어요.</div>
+    <table class="equip-table">
+      <thead><tr><th>항목</th><th>월 금액</th></tr></thead>
+      <tbody id="fixedProdBody"></tbody>
+    </table>
+    <div class="equip-total-row"><span>고정 생산비 소계</span><span id="fixedProdSubtotal">-</span></div>
+  </div>
+
+  <div class="card">
+    <div class="section-label"><div class="section-dot"></div><span>판매관리비 (SG&amp;A)</span></div>
+    <div class="section-note">인건비(경영·영업·관리), 보험, 소프트웨어, 마케팅 등 회사 운영에 필요한 관리비예요.</div>
+    <table class="equip-table">
+      <thead><tr><th>항목</th><th>월 금액</th></tr></thead>
+      <tbody id="sgaBody"></tbody>
+    </table>
+    <div class="equip-total-row"><span>SG&amp;A 소계</span><span id="sgaSubtotal">-</span></div>
+  </div>
+
+  <div class="card">
+    <div class="section-label"><div class="section-dot"></div><span>기타비용 (감가상각·이자)</span></div>
+    <div class="section-note">현금 지출은 아니지만 손익에 반영되는 비현금성 비용 및 금융비용이에요.</div>
+    <table class="equip-table">
+      <thead><tr><th>항목</th><th>월 금액</th></tr></thead>
+      <tbody id="otherCostBody"></tbody>
+    </table>
+    <div class="equip-total-row"><span>기타비용 소계</span><span id="otherCostSubtotal">-</span></div>
+  </div>
+
+  <div class="card">
+    <div class="var-total-row">
+      <span class="var-total-label">월 고정비 합계</span>
+      <span class="var-total-value" id="fixedCostGrandTotal">-</span>
     </div>
-    <div class="slider-row">
-      <div class="slider-label-row"><span class="slider-label">월 판매관리비 (SG&amp;A)</span><span class="slider-value" id="sgaMonthlyVal">-</span></div>
-      <input type="range" class="slider" id="sgaMonthly" min="20000" max="100000" step="500">
-    </div>
-    <div class="slider-row">
-      <div class="slider-label-row"><span class="slider-label">월 기타비용 (감가상각/이자)</span><span class="slider-value" id="otherCostMonthlyVal">-</span></div>
-      <input type="range" class="slider" id="otherCostMonthly" min="0" max="30000" step="500">
-    </div>
+    <div class="table-hint">출처: Sydney 산업용 임대료(JLL/commercialrealestate.com.au, 2026), NSW icare 산재보험 요율(제조업 평균), Fair Work 금속제조업 award, FrameCAD Steelwise 소프트웨어 시세 조사 기반 추정치예요. 실제 계약 조건에 따라 조정하세요.</div>
   </div>
   </div>
 
@@ -429,7 +450,7 @@ input.equip-input::-webkit-outer-spin-button,input.equip-input::-webkit-inner-sp
   </div>
 
   <div class="footer">
-    기준: LGS Frame Market Research and Capabilities (2026.03) · 시드니 그래니플랫·듀플렉스·타운하우스 12채 스타터 파이프라인(제품 유형 믹스), 채당 평균 ~A$16.7k, 변동비 ~50%, SG&amp;A 연 ~A$700k 가정 기반 시뮬레이션. 실제 결과와 다를 수 있습니다.
+    기준: LGS Frame Market Research and Capabilities (2026.03) · 시드니 그래니플랫·듀플렉스·타운하우스 12채 스타터 파이프라인(제품 유형 믹스), 채당 평균 ~A$16.7k, 변동비 ~50%, 고정비 항목 리서치(2026.07) 기반 월 ~A$54.9k(연 ~A$659k) 가정 기반 시뮬레이션. 실제 결과와 다를 수 있습니다.
   </div>
 
 </div>
