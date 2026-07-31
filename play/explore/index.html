@@ -258,6 +258,23 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
 .loc-char-stage.show{opacity:1}
 .loc-char-stage img{max-height:74%;max-width:88%;object-fit:contain;object-position:bottom}
 
+/* ===== DEV · 인물 위치 조정 모드 (§신규) — el.locCharStageImg를 직접
+   드래그해 그 장소·인물의 charPositions override(AssetDB.setCharPos)를
+   저장한다. 평소엔 .loc-char-stage 전체가 pointer-events:none이라 뒤의
+   배경 팬/줌 제스처를 가리지 않는데, 이 모드일 땐 이미지에만 다시 켠다
+   (touch-action:none으로 드래그 중 화면 스크롤/줌 제스처와 충돌 방지). */
+.loc-char-stage.pos-edit img{pointer-events:auto;cursor:grab;touch-action:none;outline:2px dashed rgba(89,184,200,.6);outline-offset:4px}
+.char-pos-editor{position:absolute;left:16px;right:16px;bottom:calc(96px + env(safe-area-inset-bottom,0));z-index:6;background:rgba(8,10,12,.85);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.18);border-radius:16px;padding:12px 14px}
+.char-pos-editor.hidden{display:none}
+.char-pos-editor-title{font-size:12.5px;font-weight:700;color:var(--text-primary);margin-bottom:6px}
+.char-pos-editor-coords{font-family:var(--mono);font-size:11px;color:var(--cyan);margin-bottom:10px}
+.char-pos-editor-row{display:flex;gap:8px}
+.char-pos-editor-row button{flex:1;font-family:inherit;font-size:12.5px;font-weight:700;border-radius:12px;padding:9px 8px;cursor:pointer}
+.char-pos-editor-row .cpe-reset{background:var(--surface-2);color:var(--text-secondary);border:1px solid var(--divider)}
+.char-pos-editor-row .cpe-save{background:rgba(89,184,200,.18);color:var(--cyan);border:1px solid rgba(89,184,200,.5)}
+.char-pos-editor-row .cpe-done{background:none;color:var(--text-muted);border:none}
+.char-pos-editor-status{font-size:11px;color:var(--text-muted);margin-top:6px;min-height:14px}
+
 /* ===== Bottom-sheet family (character menu / topic list / evidence / persons) ===== */
 .sheet-overlay{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center}
 .sheet-overlay.hidden{display:none}
@@ -360,6 +377,16 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
       <div class="loc-canvas" id="locCanvas"><img id="locImg" alt=""></div>
     </div>
     <div class="loc-char-stage" id="locCharStage"><img id="locCharStageImg" alt=""></div>
+    <div class="char-pos-editor hidden" id="charPosEditor">
+      <div class="char-pos-editor-title">🧍 인물 위치 조정 — 이미지를 드래그해서 옮기세요</div>
+      <div class="char-pos-editor-coords" id="charPosEditorCoords"></div>
+      <div class="char-pos-editor-row">
+        <button class="cpe-reset" id="charPosResetBtn">기본값으로</button>
+        <button class="cpe-save" id="charPosSaveBtn">저장</button>
+        <button class="cpe-done" id="charPosDoneBtn">완료</button>
+      </div>
+      <div class="char-pos-editor-status" id="charPosEditorStatus"></div>
+    </div>
     <div class="location-toast" id="locationToast"></div>
     <div class="investigate-hint" id="investigateHint"></div>
     <button class="investigate-close-btn hidden" id="investigateCloseBtn">조사 종료</button>
@@ -398,6 +425,7 @@ body{background:#000;color:var(--text-primary);font-family:var(--sans);display:f
     <div class="sheet-title">Dev · 탐색 허브</div>
     <button class="action-btn" id="btnDevUnlockAllLocations">UNLOCK ALL LOCATIONS</button>
     <button class="action-btn" id="btnDevMarkAllInteractionsNew">MARK ALL INTERACTIONS NEW</button>
+    <button class="action-btn" id="btnDevCharPos">🧍 지금 인물 위치 조정</button>
     <button class="action-btn" id="btnDevResetExploration" style="color:#D94141">RESET EXPLORATION STATE (장소·방문 기록 초기화)</button>
     <button class="action-btn cancel" id="devSheetCloseBtn">닫기</button>
   </div>
@@ -528,6 +556,13 @@ const el = {
   btnDevUnlockAllLocations: document.getElementById('btnDevUnlockAllLocations'),
   btnDevMarkAllInteractionsNew: document.getElementById('btnDevMarkAllInteractionsNew'),
   btnDevResetExploration: document.getElementById('btnDevResetExploration'),
+  btnDevCharPos: document.getElementById('btnDevCharPos'),
+  charPosEditor: document.getElementById('charPosEditor'),
+  charPosEditorCoords: document.getElementById('charPosEditorCoords'),
+  charPosResetBtn: document.getElementById('charPosResetBtn'),
+  charPosSaveBtn: document.getElementById('charPosSaveBtn'),
+  charPosDoneBtn: document.getElementById('charPosDoneBtn'),
+  charPosEditorStatus: document.getElementById('charPosEditorStatus'),
   listSheet: document.getElementById('listSheet'),
   listSheetTitle: document.getElementById('listSheetTitle'),
   listSheetBody: document.getElementById('listSheetBody'),
@@ -1146,7 +1181,8 @@ async function setLocCharStage(charId) {
   } else {
     el.locCharStageImg.removeAttribute('src');
   }
-  applyCharPosOffset(resolveCharPos(ExplorationState.getCurrentLocationId(), charId));
+  applyCharPosOffset(await resolveCharPos(ExplorationState.getCurrentLocationId(), charId));
+  refreshCharPosEditorUI();
 }
 
 // 허브에서 대화하는 모든 캐릭터가 서는 자리 — 장소/인물마다 따로 정의하지
@@ -1157,14 +1193,113 @@ async function setLocCharStage(charId) {
 // 함수를 공유하는 유일한 좌표 소스라, 어느 화면에서든 항상 같은 자리로
 // 통일된다.
 const DEFAULT_HUB_CHAR_POS = { x: 0, y: -150 };
-function resolveCharPos(locationId, characterId) {
+// AssetDB.getCharPositions() override(DEV · 인물 위치 조정 모드, 아래 참고)가
+// 있으면 locationDefs.js의 정적 charPositions/DEFAULT_HUB_CHAR_POS보다
+// 우선한다 — 지도 핀 override(openMoveMapSheet의 pinPosition)와 같은 결.
+async function resolveCharPos(locationId, characterId) {
+  const overrides = await AssetDB.getCharPositions().catch(() => ({}));
   const def = locationDefs[locationId];
-  const pos = (def && def.charPositions && def.charPositions[characterId]) || DEFAULT_HUB_CHAR_POS;
+  const pos = (overrides[locationId] && overrides[locationId][characterId])
+    || (def && def.charPositions && def.charPositions[characterId])
+    || DEFAULT_HUB_CHAR_POS;
   return { x: pos.x || 0, y: pos.y || 0 };
 }
 function applyCharPosOffset(pos) {
   el.locCharStageImg.style.transform = (pos.x || pos.y) ? `translate(${pos.x}px, ${pos.y}px)` : '';
 }
+
+/* ===== DEV · 인물 위치 조정 모드 =====
+   지금 서 있는 인물(currentCharacterId)의 이미지를 이 장소 위에서 직접
+   드래그해 charPositions override를 저장한다. setLocCharStage/
+   applyDialogueCharacter가 인물을 새로 그릴 때마다 refreshCharPosEditorUI를
+   같이 불러, 인물 chip을 바꾸거나 대사가 다른 화자로 넘어가도 편집기가 그
+   인물 기준으로 따라간다. */
+let charPosEditMode = false;
+let charPosDragStart = null; // { pointerX, pointerY, baseX, baseY }
+let charPosCurrent = { x: 0, y: 0 };
+
+function currentCharPosKey() {
+  const locationId = ExplorationState.getCurrentLocationId();
+  return (locationId && currentCharacterId) ? { locationId, characterId: currentCharacterId } : null;
+}
+
+async function refreshCharPosEditorUI() {
+  if (!charPosEditMode) return;
+  const key = currentCharPosKey();
+  if (!key) { el.charPosEditor.classList.add('hidden'); return; }
+  el.charPosEditor.classList.remove('hidden');
+  el.charPosEditorStatus.textContent = '';
+  charPosCurrent = await resolveCharPos(key.locationId, key.characterId);
+  el.charPosEditorCoords.textContent = `x ${charPosCurrent.x}, y ${charPosCurrent.y}`;
+}
+
+function enterCharPosEditMode() {
+  charPosEditMode = true;
+  el.locCharStage.classList.add('pos-edit');
+  refreshCharPosEditorUI();
+}
+function exitCharPosEditMode() {
+  charPosEditMode = false;
+  charPosDragStart = null;
+  el.locCharStage.classList.remove('pos-edit');
+  el.charPosEditor.classList.add('hidden');
+}
+
+el.btnDevCharPos.addEventListener('click', () => {
+  el.devSheet.classList.add('hidden');
+  enterCharPosEditMode();
+});
+el.charPosDoneBtn.addEventListener('click', exitCharPosEditMode);
+el.charPosResetBtn.addEventListener('click', async () => {
+  const key = currentCharPosKey();
+  if (!key) return;
+  el.charPosEditorStatus.textContent = '되돌리는 중...';
+  try {
+    await AssetDB.setCharPos(key.locationId, key.characterId, null);
+    charPosCurrent = await resolveCharPos(key.locationId, key.characterId);
+    applyCharPosOffset(charPosCurrent);
+    el.charPosEditorCoords.textContent = `x ${charPosCurrent.x}, y ${charPosCurrent.y}`;
+    el.charPosEditorStatus.textContent = '기본값으로 되돌렸어요.';
+  } catch (err) {
+    el.charPosEditorStatus.textContent = '되돌리기 실패: ' + (err && err.message ? err.message : err);
+  }
+});
+el.charPosSaveBtn.addEventListener('click', async () => {
+  const key = currentCharPosKey();
+  if (!key) return;
+  el.charPosSaveBtn.disabled = true;
+  el.charPosEditorStatus.textContent = '저장하는 중...';
+  try {
+    await AssetDB.setCharPos(key.locationId, key.characterId, charPosCurrent);
+    el.charPosEditorStatus.textContent = '저장됐어요.';
+  } catch (err) {
+    el.charPosEditorStatus.textContent = '저장 실패: ' + (err && err.message ? err.message : err);
+  } finally {
+    el.charPosSaveBtn.disabled = false;
+  }
+});
+
+el.locCharStageImg.addEventListener('pointerdown', (e) => {
+  if (!charPosEditMode) return;
+  charPosDragStart = { pointerX: e.clientX, pointerY: e.clientY, baseX: charPosCurrent.x, baseY: charPosCurrent.y };
+  el.locCharStageImg.setPointerCapture(e.pointerId);
+  el.locCharStageImg.style.cursor = 'grabbing';
+});
+el.locCharStageImg.addEventListener('pointermove', (e) => {
+  if (!charPosEditMode || !charPosDragStart) return;
+  charPosCurrent = {
+    x: Math.round(charPosDragStart.baseX + (e.clientX - charPosDragStart.pointerX)),
+    y: Math.round(charPosDragStart.baseY + (e.clientY - charPosDragStart.pointerY)),
+  };
+  applyCharPosOffset(charPosCurrent);
+  el.charPosEditorCoords.textContent = `x ${charPosCurrent.x}, y ${charPosCurrent.y}`;
+});
+function endCharPosDrag() {
+  charPosDragStart = null;
+  el.locCharStageImg.style.cursor = 'grab';
+}
+el.locCharStageImg.addEventListener('pointerup', endCharPosDrag);
+el.locCharStageImg.addEventListener('pointercancel', endCharPosDrag);
 
 // Pre-existing gap: listSheet's own 닫기 button had no handler at all (every
 // caller only ever closed it indirectly, by picking a row) — now that 이동/
@@ -1627,7 +1762,8 @@ async function applyDialogueCharacter(characterId, expression) {
   const assetId = await Promise.resolve(DevGameState.getCharacterAssetId(characterId, expression)).catch(() => null);
   const asset = assetId ? await AssetDB.getAsset(assetId).catch(() => null) : null;
   if (requestToken !== locCharStageToken) return;
-  applyCharPosOffset(resolveCharPos(ExplorationState.getCurrentLocationId(), characterId));
+  applyCharPosOffset(await resolveCharPos(ExplorationState.getCurrentLocationId(), characterId));
+  refreshCharPosEditorUI();
   if (asset && asset.dataUrl) { el.locCharStageImg.src = asset.dataUrl; el.locCharStage.classList.add('show'); }
   else { el.locCharStageImg.removeAttribute('src'); el.locCharStage.classList.remove('show'); }
 }
