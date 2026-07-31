@@ -172,15 +172,21 @@ const locationDefs = {
      (week2-scene-006)으로 넘어가면 도난 사건(007)으로 이어진다 — 여기서만
      phase를 완전히 벗어난다(다른 관광/전시장 스팟은 그냥 이동하기로 오가는
      같은 phase 안이라 enterSceneId가 없다). 방문 순서·완료 여부와 무관하게
-     언제든 나갈 수 있다(§20 게임오버 없음, 다른 허브 장소와 동일한 원칙). */
+     언제든 나갈 수 있다(§20 게임오버 없음, 다른 허브 장소와 동일한 원칙).
+
+     [첫 허브 카페 분리] 원래 이 장소 하나에 K-01 진열대·접수대·카페 코너가
+     전부 뭉쳐 있어 소피까지 포함해 다섯 인물이 한 배경에 동시에 서 있었다.
+     소피(카페 코너)만 별도 장소 w2-exhibit-cafe-spot으로 분리한다 —
+     W2_REVERIFICATION 허브가 이미 소피를 w2-reverify-sophie-spot이라는
+     독립 카페 장소로 두고 있는 것과 같은 결로 맞춘 것(아래 참고). */
   'w2-exhibit-floor': {
     id: 'w2-exhibit-floor',
     week: 2,
     name: '팝업 전시장 내부 · K-01 진열대',
     phases: ['W2_EXHIBIT_FREE_LOOK'],
-    visualBrief: '작은 팝업 전시장 내부. 중앙에 조명을 받는 황동 공예품 K-01 진열대가 있고, 한쪽엔 카페 코너, 다른 한쪽엔 접수대와 보조 진열 구역이 있는 아늑한 실내 전시 공간.',
-    characters: ['claire', 'sophie', 'minah', 'adrian', 'leo'],
-    exits: [],
+    visualBrief: '작은 팝업 전시장 내부. 중앙에 조명을 받는 황동 공예품 K-01 진열대가 있고, 한쪽엔 접수대와 보조 진열 구역이 있는 아늑한 실내 전시 공간.',
+    characters: ['claire', 'minah', 'adrian', 'leo'],
+    exits: ['w2-exhibit-cafe-spot'],
     // 영역(x1/y1/x2/y2) 핫스팟 — 좌표는 실제 사진이 없어 잠정 배치(§파일
     // 상단 investigateHotspots 주석과 동일한 관례) — /dev/upload로 사진
     // 올린 뒤 재조정 필요. 조명은 증거 없는 순수 분위기, 나머지 둘은
@@ -193,6 +199,20 @@ const locationDefs = {
     ],
     enterSceneId: 'week2-scene-006',
     enterSceneLabel: '이제 단체사진 찍으러 가자',
+  },
+  // [첫 허브 카페 분리] w2-exhibit-floor에서 소피(카페 코너)만 떼어낸 신규
+  // 장소 — w2ef-topic-sophie(interactionDefs.js)가 여기로 옮겨온다.
+  // mapPosition은 일부러 생략한다 — w2-exhibition-entrance/w2-adrian-spot과
+  // 같은 이유(§파일 상단 mapPosition 주석: 같은 건물 안쪽이라 지도에 따로
+  // 찍기 애매한 곳)로, 관광 지도엔 핀 대신 이동하기 리스트 줄로 뜬다.
+  'w2-exhibit-cafe-spot': {
+    id: 'w2-exhibit-cafe-spot',
+    week: 2,
+    name: '팝업 전시장 카페 코너',
+    phases: ['W2_EXHIBIT_FREE_LOOK'],
+    visualBrief: '팝업 전시장 한쪽에 자리한 아담한 카페 코너. 커피 머신과 원두 봉투가 놓인 카운터, 소피가 커피를 내리는 아늑한 공간.',
+    characters: ['sophie'],
+    exits: ['w2-exhibit-floor'],
   },
 
   /* ===== Phase 4 — 용의자 탐문 (The Missing Key v1 §12.6) =====
