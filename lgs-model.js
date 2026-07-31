@@ -67,11 +67,11 @@ const DEFAULTS = {
   fixedCostItems: [
     { category: 'fixedProd', label: '공장·창고 임대료', note: 'Western Sydney 산업단지 창고 (~450㎡, 순임대료 ~$160/㎡/yr 기준)', monthly: 6000 },
     { category: 'fixedProd', label: '공장 전기·수도', note: 'SP120 롤포밍기 가동 전력 + 용수/폐수', monthly: 1500 },
-    { category: 'fixedProd', label: '생산직 기본급 (오퍼레이터 2명)', note: '램프업 단계 최소 유지 인력, Fair Work 금속제조업 award 기준', monthly: 9000, calc: { qty: 2, unitPrice: 4500 } },
+    { category: 'fixedProd', label: '생산직 기본급 (오퍼레이터 2명)', note: '램프업 단계 최소 유지 인력, Fair Work 금속제조업 award 기준. 시급 × 조건 탭의 1일 가동시간 × 월 가동일수로 계산', monthly: 9000, calc: { qty: 2, hourlyWage: 28.125, hourly: true } },
     { category: 'fixedProd', label: '소모품·공구 유지보수', note: '드릴비트·블레이드·윤활유 등 소모품 교체', monthly: 1000, calc: { qty: 1, unitPrice: 1000 } },
     { category: 'fixedProd', label: '산업폐기물 처리', note: '철스크랩·자재 폐기물 수거', monthly: 400 },
     { category: 'fixedProd', label: '포크리프트 렌탈', note: '중고 구매 대신 월 렌탈로 전환 — 렌탈업체 시세 조사 전 추정치, 확인되면 직접 입력하세요', monthly: 650 },
-    { category: 'sga', label: '대표이사 급여', note: '경영·전략·영업 총괄', monthly: 10000, calc: { qty: 1, unitPrice: 10000 } },
+    { category: 'sga', label: '대표이사 급여', note: '경영·전략·영업 총괄. 시급 × 조건 탭의 1일 가동시간 × 월 가동일수로 계산', monthly: 10000, calc: { qty: 1, hourlyWage: 62.5, hourly: true } },
     { category: 'sga', label: '견적·영업 담당 급여', note: '고객 상담, 견적, 계약 관리', monthly: 7500, calc: { qty: 1, unitPrice: 7500 } },
     { category: 'sga', label: '관리·회계 담당 급여 (파트타임)', note: '경리, 총무, 발주 관리', monthly: 3500, calc: { qty: 1, unitPrice: 3500 } },
     { category: 'sga', label: '사업 보험료', note: '배상책임(Public Liability) + icare 산재보험 (제조업 평균 요율 ~1.8~4.8%)', monthly: 2900 },
@@ -239,10 +239,28 @@ function buildDefaultState() {
 
 const STORE_KEY = 'lgsModelStateV1';
 
+/* one-time upgrade for states saved before 생산직/대표이사 급여 switched to
+   시급 × 조건 탭의 시간·일수 — converts their old 수량 × 단가 calc to an
+   equivalent 시급 so previously-saved monthly totals don't jump */
+const HOURLY_WAGE_LABELS = ['생산직 기본급', '대표이사 급여'];
+function migrateFixedCostItems(st) {
+  st.fixedCostItems.forEach(item => {
+    if (!item.calc || item.calc.hourly) return;
+    if (!HOURLY_WAGE_LABELS.some(l => item.label.includes(l))) return;
+    const hours = st.dailyOperatingHours || DEFAULTS.dailyOperatingHours;
+    const days = st.workingDaysPerMonth || DEFAULTS.workingDaysPerMonth;
+    const denom = hours * days;
+    item.calc.hourlyWage = denom > 0 ? Math.round((item.calc.unitPrice / denom) * 100) / 100 : 0;
+    item.calc.hourly = true;
+    delete item.calc.unitPrice;
+  });
+  return st;
+}
+
 function loadLocalState() {
   try {
     const raw = localStorage.getItem(STORE_KEY);
-    if (raw) return Object.assign(buildDefaultState(), JSON.parse(raw));
+    if (raw) return migrateFixedCostItems(Object.assign(buildDefaultState(), JSON.parse(raw)));
   } catch (e) {}
   return buildDefaultState();
 }
@@ -330,7 +348,7 @@ async function syncFromRemote() {
     if (!rows || !rows.length || !rows[0].data) return;
     const remote = rows[0].data;
     if ((remote.lastModified || 0) <= (state.lastModified || 0)) return;
-    state = Object.assign(buildDefaultState(), remote);
+    state = migrateFixedCostItems(Object.assign(buildDefaultState(), remote));
     try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) {}
     rebuildAllUIFromState();
   } catch (e) {
@@ -753,18 +771,45 @@ function applyFixedCostTotals() {
   applyFixedAll('interest', totals.interest);
 }
 
-/* items with a `calc` block derive their monthly amount from 수량 × 단가
-   instead of a manually-typed flat number (e.g. 급여 = 인원수 × 1인당 급여) */
+/* items with a `calc` block derive their monthly amount instead of a manually-typed
+   flat number. Two modes:
+   - 수량 × 단가 (e.g. 견적·영업 담당 급여 = 인원수 × 1인당 급여)
+   - 수량 × 시급 × 1일 가동시간 × 월 가동일수 (calc.hourly, e.g. 생산직·대표이사 급여) —
+     the hours/days come from the 조건 탭 so those sliders drive these salaries directly */
 function recomputeFixedCostCalcItem(i) {
   const item = state.fixedCostItems[i];
   if (!item.calc) return;
   let qty = parseFloat(item.calc.qty);
-  let unitPrice = parseFloat(item.calc.unitPrice);
   if (isNaN(qty) || qty < 0) qty = 0;
-  if (isNaN(unitPrice) || unitPrice < 0) unitPrice = 0;
   item.calc.qty = qty;
-  item.calc.unitPrice = unitPrice;
-  item.monthly = qty * unitPrice;
+  if (item.calc.hourly) {
+    let hourlyWage = parseFloat(item.calc.hourlyWage);
+    if (isNaN(hourlyWage) || hourlyWage < 0) hourlyWage = 0;
+    item.calc.hourlyWage = hourlyWage;
+    item.monthly = qty * hourlyWage * state.dailyOperatingHours * state.workingDaysPerMonth;
+  } else {
+    let unitPrice = parseFloat(item.calc.unitPrice);
+    if (isNaN(unitPrice) || unitPrice < 0) unitPrice = 0;
+    item.calc.unitPrice = unitPrice;
+    item.monthly = qty * unitPrice;
+  }
+}
+
+/* re-derives every hourly-wage-based fixed cost item's monthly amount —
+   called whenever 조건 탭's 1일 가동시간/월 가동일수 sliders change, since those
+   items don't otherwise get touched by that slider's own input handler */
+function recomputeHourlyFixedCostItems() {
+  let changed = false;
+  state.fixedCostItems.forEach((item, i) => {
+    if (!item.calc || !item.calc.hourly) return;
+    recomputeFixedCostCalcItem(i);
+    updateFixedCostRowDisplay(i);
+    changed = true;
+  });
+  if (changed) {
+    applyFixedCostTotals();
+    renderFixedCostTable();
+  }
 }
 
 function updateFixedCostRowDisplay(i) {
@@ -850,7 +895,7 @@ function openItemModal(type, i) {
     toggleCheckbox.checked = !!item.calc;
     toggleRow.appendChild(toggleCheckbox);
     const toggleText = document.createElement('span');
-    toggleText.textContent = '계산식 사용 (수량 × 단가)';
+    toggleText.textContent = item.calc && item.calc.hourly ? '계산식 사용 (수량 × 시급 × 시간 × 일수)' : '계산식 사용 (수량 × 단가)';
     toggleRow.appendChild(toggleText);
     settings.appendChild(toggleRow);
 
@@ -869,12 +914,25 @@ function openItemModal(type, i) {
           if (computedEl) computedEl.textContent = '= 월 ' + fmt(item.monthly);
           refreshFixedCostItem(i);
         }));
-        fieldsWrap.appendChild(buildModalNumberField('단가', item.calc.unitPrice, '1', val => {
-          item.calc.unitPrice = val;
-          recomputeFixedCostCalcItem(i);
-          if (computedEl) computedEl.textContent = '= 월 ' + fmt(item.monthly);
-          refreshFixedCostItem(i);
-        }, true));
+        if (item.calc.hourly) {
+          fieldsWrap.appendChild(buildModalNumberField('시급', item.calc.hourlyWage, '0.01', val => {
+            item.calc.hourlyWage = val;
+            recomputeFixedCostCalcItem(i);
+            if (computedEl) computedEl.textContent = '= 월 ' + fmt(item.monthly);
+            refreshFixedCostItem(i);
+          }, true));
+          const hoursNote = document.createElement('div');
+          hoursNote.className = 'calc-hours-note';
+          hoursNote.textContent = `1일 ${state.dailyOperatingHours}시간 × 월 ${state.workingDaysPerMonth}일 = 월 ${state.dailyOperatingHours * state.workingDaysPerMonth}시간 (조건 탭 · 생산성·인건비 조건에서 조정)`;
+          fieldsWrap.appendChild(hoursNote);
+        } else {
+          fieldsWrap.appendChild(buildModalNumberField('단가', item.calc.unitPrice, '1', val => {
+            item.calc.unitPrice = val;
+            recomputeFixedCostCalcItem(i);
+            if (computedEl) computedEl.textContent = '= 월 ' + fmt(item.monthly);
+            refreshFixedCostItem(i);
+          }, true));
+        }
         computedEl = document.createElement('div');
         computedEl.className = 'calc-computed';
         computedEl.textContent = '= 월 ' + fmt(item.monthly);
@@ -1589,6 +1647,7 @@ function rebuildAllUIFromState() {
   buildEquipSkeleton();
   buildMonthlyRampSkeleton();
   syncInputsFromState();
+  recomputeHourlyFixedCostItems();
   renderHouseTypeTable();
   renderFixedCostTable();
   renderComputed();
@@ -1614,6 +1673,8 @@ function initControls() {
   refreshProductivitySliders();
   bindConditionSlider('dailyOperatingHours', '시간', 1);
   bindConditionSlider('workingDaysPerMonth', '일', 0);
+  q('dailyOperatingHours').addEventListener('input', recomputeHourlyFixedCostItems);
+  q('workingDaysPerMonth').addEventListener('input', recomputeHourlyFixedCostItems);
   bindConditionSlider('setupMinutesPerBatch', '분', 0);
   bindConditionSlider('scrapRatePct', '%', 1);
   bindConditionSlider('materialLeadTimeDays', '일', 0);
@@ -1732,6 +1793,7 @@ window.addEventListener('DOMContentLoaded', () => {
   buildHouseTypeSkeleton();
   buildFixedCostSkeleton();
   buildMonthlyRampSkeleton();
+  recomputeHourlyFixedCostItems();
   renderSubTabNav('assumptions');
   goSubTab('assumptions', 0);
   renderSubTabNav('capex');
