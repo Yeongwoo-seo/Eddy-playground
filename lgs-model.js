@@ -47,12 +47,12 @@ const DEFAULTS = {
   fixedCostItems: [
     { category: 'fixedProd', label: '공장·창고 임대료', note: 'Western Sydney 산업단지 창고 (~450㎡, 순임대료 ~$160/㎡/yr 기준)', monthly: 6000 },
     { category: 'fixedProd', label: '공장 전기·수도', note: 'SP120 롤포밍기 가동 전력 + 용수/폐수', monthly: 1500 },
-    { category: 'fixedProd', label: '생산직 기본급 (오퍼레이터 2명)', note: '램프업 단계 최소 유지 인력, Fair Work 금속제조업 award 기준', monthly: 9000 },
-    { category: 'fixedProd', label: '소모품·공구 유지보수', note: '드릴비트·블레이드·윤활유 등 소모품 교체', monthly: 1000 },
+    { category: 'fixedProd', label: '생산직 기본급 (오퍼레이터 2명)', note: '램프업 단계 최소 유지 인력, Fair Work 금속제조업 award 기준', monthly: 9000, calc: { qty: 2, unitPrice: 4500 } },
+    { category: 'fixedProd', label: '소모품·공구 유지보수', note: '드릴비트·블레이드·윤활유 등 소모품 교체', monthly: 1000, calc: { qty: 1, unitPrice: 1000 } },
     { category: 'fixedProd', label: '산업폐기물 처리', note: '철스크랩·자재 폐기물 수거', monthly: 400 },
-    { category: 'sga', label: '대표이사 급여', note: '경영·전략·영업 총괄', monthly: 10000 },
-    { category: 'sga', label: '견적·영업 담당 급여', note: '고객 상담, 견적, 계약 관리', monthly: 7500 },
-    { category: 'sga', label: '관리·회계 담당 급여 (파트타임)', note: '경리, 총무, 발주 관리', monthly: 3500 },
+    { category: 'sga', label: '대표이사 급여', note: '경영·전략·영업 총괄', monthly: 10000, calc: { qty: 1, unitPrice: 10000 } },
+    { category: 'sga', label: '견적·영업 담당 급여', note: '고객 상담, 견적, 계약 관리', monthly: 7500, calc: { qty: 1, unitPrice: 7500 } },
+    { category: 'sga', label: '관리·회계 담당 급여 (파트타임)', note: '경리, 총무, 발주 관리', monthly: 3500, calc: { qty: 1, unitPrice: 3500 } },
     { category: 'sga', label: '사업 보험료', note: '배상책임(Public Liability) + icare 산재보험 (제조업 평균 요율 ~1.8~4.8%)', monthly: 2900 },
     { category: 'sga', label: 'FrameCAD Steelwise 라이선스', note: '설계·디테일링·엔지니어링 소프트웨어 구독', monthly: 1500 },
     { category: 'sga', label: '회계·법무 자문료', note: '외부 회계사 기장, 세무신고, 계약 검토', monthly: 1800 },
@@ -148,7 +148,11 @@ function buildDefaultEquipment() {
 }
 
 function buildDefaultFixedCostItems() {
-  return DEFAULTS.fixedCostItems.map(item => ({ ...item }));
+  return DEFAULTS.fixedCostItems.map(item => {
+    const copy = { ...item };
+    if (item.calc) copy.calc = { ...item.calc };
+    return copy;
+  });
 }
 
 function buildDefaultState() {
@@ -504,17 +508,27 @@ function buildFixedCostSkeleton() {
       labelTd.appendChild(labelBtn);
       tr.appendChild(labelTd);
 
-      const monthlyInput = document.createElement('input');
-      monthlyInput.type = 'number';
-      monthlyInput.className = 'equip-input';
-      monthlyInput.min = '0';
-      monthlyInput.step = '1';
-      monthlyInput.value = item.monthly;
-      monthlyInput.dataset.i = i;
-      monthlyInput.addEventListener('input', onFixedCostInput);
       const monthlyTd = document.createElement('td');
-      monthlyTd.appendChild(monthlyInput);
-      tr.appendChild(monthlyTd);
+      if (item.calc) {
+        const monthlySpan = document.createElement('span');
+        monthlySpan.className = 'equip-subtotal';
+        monthlySpan.textContent = fmt(item.monthly);
+        monthlyTd.appendChild(monthlySpan);
+        tr.appendChild(monthlyTd);
+        fixedCostRowRefs.push({ i, span: monthlySpan });
+      } else {
+        const monthlyInput = document.createElement('input');
+        monthlyInput.type = 'number';
+        monthlyInput.className = 'equip-input';
+        monthlyInput.min = '0';
+        monthlyInput.step = '1';
+        monthlyInput.value = item.monthly;
+        monthlyInput.dataset.i = i;
+        monthlyInput.addEventListener('input', onFixedCostInput);
+        monthlyTd.appendChild(monthlyInput);
+        tr.appendChild(monthlyTd);
+        fixedCostRowRefs.push({ i, input: monthlyInput });
+      }
 
       const removeTd = document.createElement('td');
       const removeBtn = document.createElement('button');
@@ -527,7 +541,6 @@ function buildFixedCostSkeleton() {
       tr.appendChild(removeTd);
 
       tbody.appendChild(tr);
-      fixedCostRowRefs.push({ i, input: monthlyInput });
     });
   });
 }
@@ -561,6 +574,37 @@ function applyFixedCostTotals() {
   applyFixedAll('fixedProd', totals.fixedProd);
   applyFixedAll('sga', totals.sga);
   applyFixedAll('otherCost', totals.other);
+}
+
+/* items with a `calc` block derive their monthly amount from 수량 × 단가
+   instead of a manually-typed flat number (e.g. 급여 = 인원수 × 1인당 급여) */
+function recomputeFixedCostCalcItem(i) {
+  const item = state.fixedCostItems[i];
+  if (!item.calc) return;
+  let qty = parseFloat(item.calc.qty);
+  let unitPrice = parseFloat(item.calc.unitPrice);
+  if (isNaN(qty) || qty < 0) qty = 0;
+  if (isNaN(unitPrice) || unitPrice < 0) unitPrice = 0;
+  item.calc.qty = qty;
+  item.calc.unitPrice = unitPrice;
+  item.monthly = qty * unitPrice;
+}
+
+function updateFixedCostRowDisplay(i) {
+  const row = fixedCostRowRefs.find(r => r.i === i);
+  if (!row) return;
+  const item = state.fixedCostItems[i];
+  if (row.input) row.input.value = item.monthly;
+  if (row.span) row.span.textContent = fmt(item.monthly);
+}
+
+function refreshFixedCostItem(i) {
+  applyFixedCostTotals();
+  syncInputsFromState();
+  renderFixedCostTable();
+  updateFixedCostRowDisplay(i);
+  renderComputed();
+  scheduleSave();
 }
 
 function syncFixedCostInputsFromState() {
@@ -619,14 +663,79 @@ function openItemModal(type, i) {
     detail.style.display = item.note ? '' : 'none';
   } else if (type === 'fixed') {
     const item = state.fixedCostItems[i];
-    const row = fixedCostRowRefs.find(r => r.i === i);
     title.textContent = item.label;
-    settings.appendChild(buildModalNumberField('월 금액', item.monthly, '1', val => {
-      row.input.value = val;
-      row.input.dispatchEvent(new Event('input', { bubbles: true }));
-    }));
-    detail.innerHTML = item.note ? `<span class="modal-detail-label">상세 정보</span>${item.note}` : '';
-    detail.style.display = item.note ? '' : 'none';
+
+    const toggleRow = document.createElement('label');
+    toggleRow.className = 'calc-toggle-row';
+    const toggleCheckbox = document.createElement('input');
+    toggleCheckbox.type = 'checkbox';
+    toggleCheckbox.checked = !!item.calc;
+    toggleRow.appendChild(toggleCheckbox);
+    const toggleText = document.createElement('span');
+    toggleText.textContent = '계산식 사용 (수량 × 단가)';
+    toggleRow.appendChild(toggleText);
+    settings.appendChild(toggleRow);
+
+    const fieldsWrap = document.createElement('div');
+    fieldsWrap.className = 'calc-fields';
+    settings.appendChild(fieldsWrap);
+
+    let computedEl = null;
+    function renderFields() {
+      fieldsWrap.innerHTML = '';
+      computedEl = null;
+      if (item.calc) {
+        fieldsWrap.appendChild(buildModalNumberField('수량 (인원수 등)', item.calc.qty, '1', val => {
+          item.calc.qty = val;
+          recomputeFixedCostCalcItem(i);
+          if (computedEl) computedEl.textContent = '= 월 ' + fmt(item.monthly);
+          refreshFixedCostItem(i);
+        }));
+        fieldsWrap.appendChild(buildModalNumberField('단가', item.calc.unitPrice, '1', val => {
+          item.calc.unitPrice = val;
+          recomputeFixedCostCalcItem(i);
+          if (computedEl) computedEl.textContent = '= 월 ' + fmt(item.monthly);
+          refreshFixedCostItem(i);
+        }));
+        computedEl = document.createElement('div');
+        computedEl.className = 'calc-computed';
+        computedEl.textContent = '= 월 ' + fmt(item.monthly);
+        fieldsWrap.appendChild(computedEl);
+      } else {
+        fieldsWrap.appendChild(buildModalNumberField('월 금액', item.monthly, '1', val => {
+          item.monthly = val;
+          refreshFixedCostItem(i);
+        }));
+      }
+    }
+    renderFields();
+
+    toggleCheckbox.addEventListener('change', () => {
+      if (toggleCheckbox.checked) {
+        item.calc = { qty: 1, unitPrice: item.monthly };
+      } else {
+        delete item.calc;
+      }
+      buildFixedCostSkeleton();
+      renderFields();
+      refreshFixedCostItem(i);
+    });
+
+    detail.innerHTML = '';
+    const noteLabel = document.createElement('span');
+    noteLabel.className = 'modal-detail-label';
+    noteLabel.textContent = '설명';
+    detail.appendChild(noteLabel);
+    const noteTextarea = document.createElement('textarea');
+    noteTextarea.className = 'note-textarea';
+    noteTextarea.placeholder = '이 항목에 대한 설명을 입력하세요';
+    noteTextarea.value = item.note || '';
+    noteTextarea.addEventListener('input', () => {
+      item.note = noteTextarea.value;
+      scheduleSave();
+    });
+    detail.appendChild(noteTextarea);
+    detail.style.display = '';
   }
 
   q('itemModalOverlay').classList.add('on');
