@@ -12,12 +12,25 @@ const TABS = [
 ];
 let curTab = 0;
 
-const SUB_TABS = [
-  { id: 'revenue', label: '매출' },
-  { id: 'fixed', label: '고정비' },
-  { id: 'variable', label: '변동비' }
-];
-let curSubTab = 0;
+const SUB_TAB_GROUPS = {
+  assumptions: {
+    barId: 'subTabBar',
+    cur: 0,
+    tabs: [
+      { id: 'revenue', label: '매출' },
+      { id: 'fixed', label: '고정비' },
+      { id: 'variable', label: '변동비' }
+    ]
+  },
+  capex: {
+    barId: 'subTabBarCapex',
+    cur: 0,
+    tabs: [
+      { id: 'capex-funding', label: '자금조달' },
+      { id: 'capex-equipment', label: '장비·공구' }
+    ]
+  }
+};
 
 const DEFAULTS = {
   pricePerSqm: 200,
@@ -1055,28 +1068,32 @@ function goTab(i) {
 
 /* ---------- sub-tabs (segmented, sliding thumb) ---------- */
 
-function renderSubTabNav() {
-  const el = q('subTabBar');
-  el.innerHTML = `<div class="sub-tab-thumb" id="subTabThumb" style="width:calc((100% - 8px) / ${SUB_TABS.length})"></div>` +
-    SUB_TABS.map((t, i) => `<button class="sub-tab-item" data-subtab-index="${i}">${t.label}</button>`).join('');
-  el.querySelectorAll('.sub-tab-item').forEach(btn => {
-    btn.addEventListener('click', () => goSubTab(Number(btn.dataset.subtabIndex)));
+function renderSubTabNav(groupKey) {
+  const group = SUB_TAB_GROUPS[groupKey];
+  const bar = q(group.barId);
+  bar.innerHTML = `<div class="sub-tab-thumb" style="width:calc((100% - 8px) / ${group.tabs.length})"></div>` +
+    group.tabs.map((t, i) => `<button class="sub-tab-item" data-subtab-index="${i}">${t.label}</button>`).join('');
+  bar.querySelectorAll('.sub-tab-item').forEach(btn => {
+    btn.addEventListener('click', () => goSubTab(groupKey, Number(btn.dataset.subtabIndex)));
   });
-  updateSubTabActive();
+  updateSubTabActive(groupKey);
 }
 
-function updateSubTabActive() {
-  document.querySelectorAll('#subTabBar .sub-tab-item').forEach((el, i) => el.classList.toggle('on', i === curSubTab));
-  const thumb = q('subTabThumb');
-  if (thumb) thumb.style.transform = `translateX(${curSubTab * 100}%)`;
+function updateSubTabActive(groupKey) {
+  const group = SUB_TAB_GROUPS[groupKey];
+  const bar = q(group.barId);
+  bar.querySelectorAll('.sub-tab-item').forEach((el, i) => el.classList.toggle('on', i === group.cur));
+  const thumb = bar.querySelector('.sub-tab-thumb');
+  if (thumb) thumb.style.transform = `translateX(${group.cur * 100}%)`;
 }
 
-function goSubTab(i) {
-  curSubTab = i;
-  SUB_TABS.forEach((t, idx) => {
+function goSubTab(groupKey, i) {
+  const group = SUB_TAB_GROUPS[groupKey];
+  group.cur = i;
+  group.tabs.forEach((t, idx) => {
     q('subtab-' + t.id).classList.toggle('on', idx === i);
   });
-  updateSubTabActive();
+  updateSubTabActive(groupKey);
 }
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -1091,8 +1108,11 @@ window.addEventListener('DOMContentLoaded', () => {
   renderComputed();
   renderBottomNav();
   goTab(0);
-  renderSubTabNav();
-  goSubTab(0);
-  q('resetBtn').addEventListener('click', resetAll);
+  renderSubTabNav('assumptions');
+  goSubTab('assumptions', 0);
+  renderSubTabNav('capex');
+  goSubTab('capex', 0);
+  const resetBtn = q('resetBtn');
+  if (resetBtn) resetBtn.addEventListener('click', resetAll);
   q('houseTypeAddBtn').addEventListener('click', onHouseTypeAdd);
 });
