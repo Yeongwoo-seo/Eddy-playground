@@ -411,7 +411,7 @@ function buildEquipSkeleton() {
     const labelBtn = document.createElement('button');
     labelBtn.type = 'button';
     labelBtn.className = 'equip-label-btn';
-    labelBtn.innerHTML = `<span class="equip-label">${item.label}</span><span class="info-ic">ⓘ</span>`;
+    labelBtn.innerHTML = `<span class="equip-label">${item.label}</span>`;
     labelBtn.addEventListener('click', () => openItemModal('equip', i));
     labelTd.appendChild(labelBtn);
     tr.appendChild(labelTd);
@@ -513,7 +513,7 @@ function buildFixedCostSkeleton() {
       const labelBtn = document.createElement('button');
       labelBtn.type = 'button';
       labelBtn.className = 'equip-label-btn';
-      labelBtn.innerHTML = `<span class="equip-label">${item.label}</span><span class="info-ic">ⓘ</span>`;
+      labelBtn.innerHTML = `<span class="equip-label">${item.label}</span>`;
       labelBtn.addEventListener('click', () => openItemModal('fixed', i));
       labelTd.appendChild(labelBtn);
       tr.appendChild(labelTd);
