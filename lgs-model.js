@@ -194,7 +194,17 @@ function buildDefaultState() {
   };
 }
 
-let state = buildDefaultState();
+const STORE_KEY = 'lgsModelStateV1';
+
+function loadLocalState() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (raw) return Object.assign(buildDefaultState(), JSON.parse(raw));
+  } catch (e) {}
+  return buildDefaultState();
+}
+
+let state = loadLocalState();
 
 let isRowRefs = {};
 let cfRowRefs = {};
@@ -203,35 +213,85 @@ let equipRowRefs = [];
 let houseTypeRowRefs = [];
 let fixedCostRowRefs = [];
 
-/* ---------- auto-save to server ---------- */
-// Fill in after `npx wrangler deploy` in worker/ (see worker/README.md) —
-// blank means auto-save/load is a no-op and the page behaves as before.
-const API_URL = '';
+/* ---------- cloud sync (Supabase) ---------- */
+// same shared Supabase project as planner.html/boarding-pass.html/deposit.js —
+// anon key is meant to be public/client-side, safe to ship in this static page.
+// requires a `lgs_model_data` table (id text primary key, data jsonb,
+// updated_at timestamptz) with anon select/insert/update, same shape as
+// planner.html's `schedule_data` table.
+const SUPABASE_URL = 'https://dhtstqnksjoyyshnhksv.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRodHN0cW5rc2pveXlzaG5oa3N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5NjIyNzQsImV4cCI6MjA5ODUzODI3NH0.FMZdCXntYJKxQeYNwfrsy1liJcHIkD2inJ4NzbwLzd4';
+const SUPABASE_TABLE = 'lgs_model_data';
+const SUPABASE_ROW_ID = 'lgs-model';
+
+function supabaseHeaders() {
+  return {
+    'apikey': SUPABASE_ANON_KEY,
+    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+    'Content-Type': 'application/json'
+  };
+}
+
+/* visible save/sync indicator (top-right pill) — the fetches below fail
+   silently on purpose (offline shouldn't break editing), but that used to
+   mean a real failure (bad RLS policy, unreachable table, etc.) looked
+   identical to "everything's fine" from the user's side. surface it instead. */
+function timeLabel() {
+  const d = new Date();
+  return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+}
+function setSyncStatus(kind, text) {
+  const el = q('syncStatus');
+  const textEl = q('syncStatusText');
+  if (!el || !textEl) return;
+  el.className = 'sync-status' + (kind ? ' ' + kind : '');
+  textEl.textContent = text;
+}
+
+function pushToRemote() {
+  setSyncStatus('saving', '저장 중…');
+  fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?on_conflict=id`, {
+    method: 'POST',
+    headers: Object.assign(supabaseHeaders(), { 'Prefer': 'resolution=merge-duplicates,return=minimal' }),
+    body: JSON.stringify({ id: SUPABASE_ROW_ID, data: state, updated_at: new Date().toISOString() })
+  }).then(res => {
+    if (!res.ok) throw new Error('save failed: HTTP ' + res.status);
+    setSyncStatus('saved', '저장됨 · ' + timeLabel());
+  }).catch(() => {
+    setSyncStatus('error', '저장 실패 (로컬에만 저장됨)');
+  });
+}
 
 let saveTimer = null;
 function scheduleSave() {
-  if (!API_URL) return;
+  state.lastModified = Date.now();
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) {}
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => {
-    fetch(API_URL + '/state', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ app: 'lgs-model', data: state })
-    }).catch(() => {});
-  }, 800);
+  saveTimer = setTimeout(pushToRemote, 800);
 }
 
-async function loadStateFromServer() {
-  if (!API_URL) return;
+// pulls the shared copy on load (and periodically) so every device sees the
+// same numbers; only applies it if actually newer than what's local, so a
+// pull raced against an in-flight save can't stomp on it (same guard as
+// planner.html's syncFromRemote). Falls back to local-only if offline or
+// the table isn't set up yet, but that failure is now shown, not swallowed.
+async function syncFromRemote() {
   try {
-    const res = await fetch(API_URL + '/state?app=lgs-model');
-    if (!res.ok) return;
-    const payload = await res.json();
-    if (payload && payload.data && Object.keys(payload.data).length) {
-      state = Object.assign(buildDefaultState(), payload.data);
-    }
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?id=eq.${SUPABASE_ROW_ID}&select=data`, {
+      headers: supabaseHeaders(),
+      cache: 'no-store'
+    });
+    if (!res.ok) throw new Error('sync failed: HTTP ' + res.status);
+    const rows = await res.json();
+    setSyncStatus('saved', '동기화됨 · ' + timeLabel());
+    if (!rows || !rows.length || !rows[0].data) return;
+    const remote = rows[0].data;
+    if ((remote.lastModified || 0) <= (state.lastModified || 0)) return;
+    state = Object.assign(buildDefaultState(), remote);
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) {}
+    rebuildAllUIFromState();
   } catch (e) {
-    // offline or Worker unreachable — keep local defaults
+    setSyncStatus('error', '연결 실패 (로컬 데이터 표시 중)');
   }
 }
 
@@ -1338,33 +1398,36 @@ function bindSelect(id, key) {
   });
 }
 
-function resetAll() {
-  state = buildDefaultState();
-
+/* re-reads every slider/scalar/select control from `state` — used both after
+   a reset-to-defaults and after a remote sync pulls in another device's data */
+function syncControlInputsFromState() {
   ['coilPct', 'screwPct', 'detailPct', 'otherVarPct'].forEach(id => {
     const elx = q(id);
-    elx.value = DEFAULTS[id];
+    elx.value = state[id];
     setSliderFill(elx);
     const label = q(id + 'Val');
-    if (label) label.textContent = label.dataset.fmt === 'pct' ? (DEFAULTS[id] + '%') : fmt(DEFAULTS[id]);
+    if (label) label.textContent = label.dataset.fmt === 'pct' ? (state[id] + '%') : fmt(state[id]);
   });
   ['equityRaise', 'stage1Amount', 'stage2Amount', 'stage3Amount'].forEach(id => {
-    q(id).value = DEFAULTS[id];
+    q(id).value = state[id];
   });
   const coilLmElx = q('coilLmPerSqm');
-  coilLmElx.value = DEFAULTS.coilLmPerSqm;
+  coilLmElx.value = state.coilLmPerSqm;
   setSliderFill(coilLmElx);
-  q('coilLmPerSqmVal').textContent = DEFAULTS.coilLmPerSqm.toFixed(1) + ' L/sqm';
+  q('coilLmPerSqmVal').textContent = state.coilLmPerSqm.toFixed(1) + ' L/sqm';
   const ppsElx = q('pricePerSqm');
-  ppsElx.value = DEFAULTS.pricePerSqm;
+  ppsElx.value = state.pricePerSqm;
   setSliderFill(ppsElx);
-  q('pricePerSqmVal').textContent = fmt(DEFAULTS.pricePerSqm) + '/sqm';
+  q('pricePerSqmVal').textContent = fmt(state.pricePerSqm) + '/sqm';
 
-  q('stage1Month').value = DEFAULTS.stage1Month;
-  q('stage2Month').value = DEFAULTS.stage2Month;
-  q('stage3Month').value = DEFAULTS.stage3Month;
-  q('equipmentMonth').value = DEFAULTS.equipmentMonth;
+  q('stage1Month').value = state.stage1Month;
+  q('stage2Month').value = state.stage2Month;
+  q('stage3Month').value = state.stage3Month;
+  q('equipmentMonth').value = state.equipmentMonth;
+}
 
+function rebuildAllUIFromState() {
+  syncControlInputsFromState();
   buildHouseTypeSkeleton();
   buildFixedCostSkeleton();
   buildEquipSkeleton();
@@ -1373,6 +1436,11 @@ function resetAll() {
   renderHouseTypeTable();
   renderFixedCostTable();
   renderComputed();
+}
+
+function resetAll() {
+  state = buildDefaultState();
+  rebuildAllUIFromState();
   scheduleSave();
 }
 
@@ -1455,8 +1523,7 @@ function goSubTab(groupKey, i) {
   updateSubTabActive(groupKey);
 }
 
-window.addEventListener('DOMContentLoaded', async () => {
-  await loadStateFromServer();
+window.addEventListener('DOMContentLoaded', () => {
   initControls();
   initCollapsibleCards();
   buildTableSkeleton();
@@ -1486,4 +1553,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   window.addEventListener('keydown', e => {
     if (e.key === 'Escape') closeItemModal();
   });
+
+  syncFromRemote();
+  setInterval(syncFromRemote, 20000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) syncFromRemote(); });
 });
