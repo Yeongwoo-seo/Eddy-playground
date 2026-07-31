@@ -50,6 +50,7 @@ const DEFAULTS = {
     { category: 'fixedProd', label: '생산직 기본급 (오퍼레이터 2명)', note: '램프업 단계 최소 유지 인력, Fair Work 금속제조업 award 기준', monthly: 9000, calc: { qty: 2, unitPrice: 4500 } },
     { category: 'fixedProd', label: '소모품·공구 유지보수', note: '드릴비트·블레이드·윤활유 등 소모품 교체', monthly: 1000, calc: { qty: 1, unitPrice: 1000 } },
     { category: 'fixedProd', label: '산업폐기물 처리', note: '철스크랩·자재 폐기물 수거', monthly: 400 },
+    { category: 'fixedProd', label: '포크리프트 렌탈', note: '중고 구매 대신 월 렌탈로 전환 — 렌탈업체 시세 조사 전 추정치, 확인되면 직접 입력하세요', monthly: 650 },
     { category: 'sga', label: '대표이사 급여', note: '경영·전략·영업 총괄', monthly: 10000, calc: { qty: 1, unitPrice: 10000 } },
     { category: 'sga', label: '견적·영업 담당 급여', note: '고객 상담, 견적, 계약 관리', monthly: 7500, calc: { qty: 1, unitPrice: 7500 } },
     { category: 'sga', label: '관리·회계 담당 급여 (파트타임)', note: '경리, 총무, 발주 관리', monthly: 3500, calc: { qty: 1, unitPrice: 3500 } },
@@ -63,7 +64,7 @@ const DEFAULTS = {
     { category: 'sga', label: '인증·컴플라이언스', note: '구조 엔지니어 서명, WHS 컴플라이언스, CDC 인증 관련', monthly: 1800 },
     { category: 'sga', label: '기타 관리비', note: '사무용품, 소모품, 예비비', monthly: 1000 },
     { category: 'other', label: '설비 감가상각비', note: 'SP120 Stage1+2 총 $80,000, 내용연수 7년 정액법', monthly: 950 },
-    { category: 'other', label: '장비·공구 감가상각비', note: '포크리프트 등 초기 장비, 내용연수 5년', monthly: 90 },
+    { category: 'other', label: '장비·공구 감가상각비', note: '소모성 공구·장비 (포크리프트 제외, 렌탈 전환), 내용연수 5년', monthly: 19 },
     { category: 'other', label: '설비 리스·대출 이자', note: 'SP120 자산금융 가정 이자비용', monthly: 560 }
   ],
   equityRaise: 350000,
@@ -76,7 +77,6 @@ const DEFAULTS = {
   houses: [0, 0, 0, 0, 1, 2, 1, 2, 2, 1, 2, 1],
   equipmentMonth: 1,
   equipmentItems: [
-    { label: '포크리프트 (중고)', note: 'Facebook Marketplace Sydney', unitPrice: 4000, qty: 1 },
     { label: '임팩 드라이버', note: 'Bunnings', unitPrice: 99, qty: 1 },
     { label: '임팩 렌치', note: 'Bunnings', unitPrice: 299, qty: 1 },
     { label: '스크류 (경량철골용, 1000팩)', note: 'Bunnings', unitPrice: 84.5, qty: 1 },
