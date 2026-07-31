@@ -57,13 +57,13 @@ body{background:var(--bg);color:var(--black);font-family:'Pretendard',-apple-sys
 .section-note{font-size:12px;color:var(--grey-500);font-weight:500;margin:-10px 0 16px;line-height:1.5}
 
 /* Collapsible cards */
-.section-collapse-toggle{margin-left:auto;display:flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;padding:4px 0 4px 8px;font-family:inherit}
-.section-collapse-amount{display:none;font-size:14px;font-weight:800;color:var(--primary)}
-.card.collapsed .section-collapse-amount{display:inline}
+.section-collapse-toggle{margin-left:auto;display:flex;align-items:center;background:none;border:none;cursor:pointer;padding:4px 0 4px 8px;font-family:inherit}
+.section-collapse-badge{display:inline-flex;background:var(--primary-light);color:var(--primary);font-size:13px;font-weight:600;padding:5px 14px;border-radius:20px;margin:-6px 0 16px}
 .section-collapse-chevron{width:8px;height:8px;flex:none;border-right:2px solid var(--grey-500);border-bottom:2px solid var(--grey-500);transform:rotate(-135deg);margin-top:2px;transition:transform .3s cubic-bezier(.2,.8,.2,1)}
 .card.collapsed .section-collapse-chevron{transform:rotate(45deg);margin-top:-2px}
-.card.collapsed>*:not(.section-label){display:none}
+.card.collapsed>*:not(.section-label):not(.section-collapse-badge){display:none}
 .card.collapsed .section-label{margin-bottom:0}
+.card.collapsed .section-collapse-badge{margin:0}
 
 /* Summary */
 .quick-stats{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:14px}
@@ -255,10 +255,7 @@ label.calc-toggle-row{display:flex;align-items:center;gap:8px}
         <div class="mini-stat-value" id="houseTypeBlendedPrice">-</div>
       </div>
     </div>
-    <div class="var-total-row" style="margin-top:10px">
-      <span class="var-total-label">목표 총 매출액</span>
-      <span class="var-total-value" id="houseTypeTotalRevenue">-</span>
-    </div>
+    <span id="houseTypeTotalRevenue" hidden></span>
   </div>
 
   <div class="card" data-collapsible data-total-id="monthlyRampTotalQty">
@@ -268,10 +265,7 @@ label.calc-toggle-row{display:flex;align-items:center;gap:8px}
       <thead><tr><th>월</th><th>판매량(채)</th><th>매출</th></tr></thead>
       <tbody id="monthlyRampBody"></tbody>
     </table>
-    <div class="var-total-row" style="margin-top:10px">
-      <span class="var-total-label">월별 계획 합계 세대수</span>
-      <span class="var-total-value" id="monthlyRampTotalQty">-</span>
-    </div>
+    <span id="monthlyRampTotalQty" hidden></span>
   </div>
   </div>
 
@@ -283,7 +277,7 @@ label.calc-toggle-row{display:flex;align-items:center;gap:8px}
       <thead><tr><th>항목</th><th>월 금액</th><th></th></tr></thead>
       <tbody id="fixedProdBody"></tbody>
     </table>
-    <div class="equip-total-row"><span>고정 생산비 소계</span><span id="fixedProdSubtotal">-</span></div>
+    <span id="fixedProdSubtotal" hidden></span>
   </div>
 
   <div class="card" data-collapsible data-total-id="sgaSubtotal">
@@ -293,7 +287,7 @@ label.calc-toggle-row{display:flex;align-items:center;gap:8px}
       <thead><tr><th>항목</th><th>월 금액</th><th></th></tr></thead>
       <tbody id="sgaBody"></tbody>
     </table>
-    <div class="equip-total-row"><span>SG&amp;A 소계</span><span id="sgaSubtotal">-</span></div>
+    <span id="sgaSubtotal" hidden></span>
   </div>
 
   <div class="card" data-collapsible data-total-id="otherCostSubtotal">
@@ -303,7 +297,7 @@ label.calc-toggle-row{display:flex;align-items:center;gap:8px}
       <thead><tr><th>항목</th><th>월 금액</th><th></th></tr></thead>
       <tbody id="otherCostBody"></tbody>
     </table>
-    <div class="equip-total-row"><span>기타비용 소계</span><span id="otherCostSubtotal">-</span></div>
+    <span id="otherCostSubtotal" hidden></span>
   </div>
 
   <div class="card">
@@ -335,10 +329,7 @@ label.calc-toggle-row{display:flex;align-items:center;gap:8px}
       <div class="slider-label-row"><span class="slider-label">기타(설치 등)</span><span class="slider-value" id="otherVarPctVal" data-fmt="pct">-</span></div>
       <input type="range" class="slider" id="otherVarPct" min="0" max="20" step="1">
     </div>
-    <div class="var-total-row">
-      <span class="var-total-label">총 변동비율</span>
-      <span class="var-total-value" id="varPctTotal">-</span>
-    </div>
+    <span id="varPctTotal" hidden></span>
   </div>
 
   <div class="card" data-collapsible data-total-id="coilUsageTotalLm">
@@ -358,10 +349,7 @@ label.calc-toggle-row{display:flex;align-items:center;gap:8px}
         <div class="mini-stat-value" id="coilUsagePerHouse">-</div>
       </div>
     </div>
-    <div class="var-total-row" style="margin-top:10px">
-      <span class="var-total-label">예상 총 코일 소요량 (Y1)</span>
-      <span class="var-total-value" id="coilUsageTotalLm">-</span>
-    </div>
+    <span id="coilUsageTotalLm" hidden></span>
     <div class="table-hint">기본값 16 L/sqm 산출 근거: FrameCAD가 발표한 단층 주거용 철골 중량 추정치(~18kg/sqm, framecad.com)를 FrameCAD 롤포밍에서 쓰는 스터드·트랙·노깅 혼합 프로파일의 평균 중량(~1.1kg/L, 0.55~0.75mm BMT 90mm대 단면 기준 추정)으로 환산한 값이에요. 실제 하우스 타입·프로파일 구성에 따라 조정하세요.</div>
   </div>
   </div>
@@ -434,10 +422,7 @@ label.calc-toggle-row{display:flex;align-items:center;gap:8px}
       <thead><tr><th>품목</th><th>단가</th><th>수량</th><th>소계</th><th></th></tr></thead>
       <tbody id="equipBody"></tbody>
     </table>
-    <div class="equip-total-row">
-      <span>장비·공구 합계</span>
-      <span id="equipTotal">-</span>
-    </div>
+    <span id="equipTotal" hidden></span>
     <div class="select-row" style="margin-top:16px">
       <div class="select-unit">
         <label>구입 월</label>
