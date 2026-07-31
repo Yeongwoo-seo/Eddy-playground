@@ -280,6 +280,10 @@ function migrateFixedCostItems(st) {
     item.calc.hourly = true;
     delete item.calc.unitPrice;
   });
+  // 구 "설비 리스·대출 이자" 수동입력 항목(고정 $560/월) 제거 — 이제 대출이자는
+  // 대출원금·이자율·상환기간(원리금균등상환 스케줄)에서 매월 자동 계산되므로,
+  // 예전에 저장된 값이 남아있으면 이중 계산된다.
+  st.fixedCostItems = st.fixedCostItems.filter(item => !(item.category === 'other' && item.type === 'interest'));
   return st;
 }
 
@@ -819,6 +823,24 @@ function buildFixedCostSkeleton() {
 
       tbody.appendChild(tr);
     });
+
+    if (cat.id === 'other') {
+      const tr = document.createElement('tr');
+      const labelTd = document.createElement('td');
+      labelTd.className = 'equip-label-cell';
+      labelTd.innerHTML = '<span class="equip-label">대출이자 (월평균)</span>';
+      tr.appendChild(labelTd);
+
+      const monthlyTd = document.createElement('td');
+      const span = document.createElement('span');
+      span.className = 'equip-subtotal';
+      span.id = 'loanInterestRowValue';
+      monthlyTd.appendChild(span);
+      tr.appendChild(monthlyTd);
+
+      tr.appendChild(document.createElement('td'));
+      tbody.appendChild(tr);
+    }
   });
 }
 
@@ -916,13 +938,24 @@ function syncFixedCostInputsFromState() {
   fixedCostRowRefs.forEach(row => { row.input.value = state.fixedCostItems[row.i].monthly; });
 }
 
+/* 대출이자는 원리금균등상환 스케줄에 따라 매월 잔액이 줄며 감소하므로(고정비처럼
+   매월 동일하지 않음), 이 카드에서는 Y1 월평균으로 대표해 보여준다. 정확한 월별
+   금액은 설비투자 > 자금조달 탭의 상환 스케줄 표를 참고. */
+function avgLoanInterest() {
+  const schedule = computeDebtSchedule(state.debtAmount, state.debtAnnualRatePct, state.debtTermMonths, 12);
+  return schedule.reduce((s, r) => s + r.interest, 0) / 12;
+}
+
 function renderFixedCostTable() {
   const totals = computeFixedCostTotals(state.fixedCostItems);
+  const loanInterest = avgLoanInterest();
+  const loanInterestEl = q('loanInterestRowValue');
+  if (loanInterestEl) loanInterestEl.textContent = fmt(loanInterest);
   q('fixedProdSubtotal').textContent = fmt(totals.fixedProd);
   q('sgaSubtotal').textContent = fmt(totals.sga);
-  q('otherCostSubtotal').textContent = fmt(totals.other);
-  q('fixedCostGrandTotal').textContent = fmt(totals.grandTotal);
-  setText('fixedTabAmount', fmt(totals.grandTotal) + '/월');
+  q('otherCostSubtotal').textContent = fmt(totals.other + loanInterest);
+  q('fixedCostGrandTotal').textContent = fmt(totals.grandTotal + loanInterest);
+  setText('fixedTabAmount', fmt(totals.grandTotal + loanInterest) + '/월');
 }
 
 /* ---------- item detail/settings modal (equipment & fixed cost items) ---------- */
