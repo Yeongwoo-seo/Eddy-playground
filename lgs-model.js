@@ -84,7 +84,7 @@ const DEFAULTS = {
     { category: 'sga', label: '통신·IT', note: '인터넷, 휴대폰, 클라우드 SaaS 구독', monthly: 600 },
     { category: 'sga', label: '인증·컴플라이언스', note: '구조 엔지니어 서명, WHS 컴플라이언스, CDC 인증 관련', monthly: 1800 },
     { category: 'sga', label: '기타 관리비', note: '사무용품, 소모품, 예비비', monthly: 1000 },
-    { category: 'other', type: 'depreciation', label: '설비 감가상각비', note: 'SP120 Stage1+2 총 $80,000, 내용연수 7년 정액법', monthly: 950 },
+    { category: 'other', type: 'depreciation', label: '설비 감가상각비', note: 'SP120 Stage1+2 총 $80,000 (2020년형 중고, 2026년 취득) — 기준내용연수 7년, 경과연수 6년으로 중고자산 내용연수 특례(기준내용연수 50% 하한, 1년 미만 절사) 적용, 수정내용연수 3년 정액법', monthly: 2222 },
     { category: 'other', type: 'depreciation', label: '장비·공구 감가상각비', note: '소모성 공구·장비 (포크리프트 제외, 렌탈 전환), 내용연수 5년', monthly: 19 }
   ],
   equityAmount: 270000,
