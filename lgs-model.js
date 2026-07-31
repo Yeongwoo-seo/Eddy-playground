@@ -84,18 +84,18 @@ const DEFAULTS = {
     { category: 'sga', label: '통신·IT', note: '인터넷, 휴대폰, 클라우드 SaaS 구독', monthly: 600 },
     { category: 'sga', label: '인증·컴플라이언스', note: '구조 엔지니어 서명, WHS 컴플라이언스, CDC 인증 관련', monthly: 1800 },
     { category: 'sga', label: '기타 관리비', note: '사무용품, 소모품, 예비비', monthly: 1000 },
-    { category: 'other', type: 'depreciation', label: '설비 감가상각비', note: 'SP120 Stage1+2 총 $80,000, 내용연수 7년 정액법', monthly: 950 },
+    { category: 'other', type: 'depreciation', label: '설비 감가상각비', note: 'SP120 1대, Stage1~3 분할지급 총 $40,000 (2020년형 중고, 2026년 취득) — 기준내용연수 7년, 경과연수 6년으로 중고자산 내용연수 특례(기준내용연수 50% 하한, 1년 미만 절사) 적용, 수정내용연수 3년 정액법', monthly: 1111 },
     { category: 'other', type: 'depreciation', label: '장비·공구 감가상각비', note: '소모성 공구·장비 (포크리프트 제외, 렌탈 전환), 내용연수 5년', monthly: 19 }
   ],
   equityAmount: 270000,
   debtAmount: 80000,
   debtAnnualRatePct: 8,
   debtTermMonths: 60,
-  stage1Amount: 40000,
+  stage1Amount: 20000,
   stage1Month: 1,
-  stage2Amount: 40000,
+  stage2Amount: 10000,
   stage2Month: 5,
-  stage3Amount: 0,
+  stage3Amount: 10000,
   stage3Month: 9,
   // 7200 = 공장·창고($6000) + 사무실($1200) 임대료 합산 기준액; 고정비 항목과 별개로 편집 가능
   rentDepositMonthlyRent: 7200,
@@ -133,13 +133,21 @@ function computeHouseTypeTotals(houseTypes, pricePerSqm) {
   return { rows, totalQty, totalRevenue, totalSqm, blendedPrice, avgSqm };
 }
 
+/* scrap adds to how much raw material has to be bought, not to the sqm actually
+   built — e.g. a 4% scrap rate means 4% more coil/screws purchased than the sqm
+   output alone would suggest. shared by coil usage, condition metrics, and the
+   variable cost engine so all three stay consistent with one "조건" input. */
+function scrapMultiplier(scrapRatePct) {
+  return 1 + (scrapRatePct || 0) / 100;
+}
+
 /* coil usage: physical coil consumed per sqm of frame produced (linear metres, "L")
    default sourced from FRAMECAD's published steel-weight estimate for single-storey
    residential (~18kg/sqm) divided by a blended profile weight (~1.1kg/lm across the
    stud/track/nogging mix a FrameCAD roll-former typically runs) — see table-hint below.
    this is the production-volume metric the future per-L incentive scheme will pay against. */
-function computeCoilUsage(houseTypeTotals, coilLmPerSqm) {
-  const totalCoilLm = houseTypeTotals.totalSqm * coilLmPerSqm;
+function computeCoilUsage(houseTypeTotals, coilLmPerSqm, scrapRatePct) {
+  const totalCoilLm = houseTypeTotals.totalSqm * coilLmPerSqm * scrapMultiplier(scrapRatePct);
   const avgLmPerHouse = houseTypeTotals.totalQty > 0 ? totalCoilLm / houseTypeTotals.totalQty : 0;
   return { totalSqm: houseTypeTotals.totalSqm, totalCoilLm, avgLmPerHouse };
 }
@@ -148,11 +156,12 @@ function computeCoilUsage(houseTypeTotals, coilLmPerSqm) {
    later cost & capacity calcs (screw usage, labor hours, production capacity,
    scrap & lead times). Material usage is screws only for now — other fasteners
    (brackets/bolts/sealant) can be added back once their per-unit rates are confirmed.
-   Informational for now, same as coil usage above — not yet wired into the financial engine. */
+   scrap rate inflates purchased quantities (see scrapMultiplier) so this total
+   matches what recomputeVariableCosts actually charges for. */
 function computeConditionMetrics(houseTypeTotals, s) {
   const totalSqm = houseTypeTotals.totalSqm;
   const totalQty = houseTypeTotals.totalQty;
-  const totalScrews = totalSqm * s.screwsPerSqm;
+  const totalScrews = totalSqm * s.screwsPerSqm * scrapMultiplier(s.scrapRatePct);
   const totalLaborHours = s.laborProductivitySqmPerHour > 0 ? totalSqm / s.laborProductivitySqmPerHour : 0;
   const requiredProductionDays = s.rollformerCapacitySqmPerDay > 0 ? totalSqm / s.rollformerCapacitySqmPerDay : 0;
   const availableProductionDaysYear = s.workingDaysPerMonth * 12;
@@ -183,6 +192,7 @@ function buildDefaultMonths() {
   const htTotals = computeHouseTypeTotals(DEFAULTS.houseTypes, DEFAULTS.pricePerSqm);
   const blendedPrice = Math.round(htTotals.blendedPrice);
   const avgSqm = htTotals.avgSqm;
+  const scrapMult = scrapMultiplier(DEFAULTS.scrapRatePct);
   const fc = computeFixedCostTotals(DEFAULTS.fixedCostItems);
   return DEFAULTS.houses.map(houses => {
     const revenue = houses * blendedPrice;
@@ -190,8 +200,8 @@ function buildDefaultMonths() {
     return {
       houses,
       salePrice: blendedPrice,
-      coil: sqm * DEFAULTS.coilLmPerSqm * DEFAULTS.coilPricePerLm,
-      screw: sqm * DEFAULTS.screwsPerSqm / 1000 * DEFAULTS.screwPricePer1000,
+      coil: sqm * DEFAULTS.coilLmPerSqm * scrapMult * DEFAULTS.coilPricePerLm,
+      screw: sqm * DEFAULTS.screwsPerSqm * scrapMult / 1000 * DEFAULTS.screwPricePer1000,
       detail: revenue * DEFAULTS.detailPct / 100,
       otherVar: revenue * DEFAULTS.otherVarPct / 100,
       fixedProd: fc.fixedProd,
@@ -1097,19 +1107,21 @@ function applyBlendedPriceToMonths() {
 }
 
 /* coil/screw are physical materials, so their cost is driven by the production
-   volume (sqm of frame) that each month's house count actually requires — not
-   a % of revenue. detailing/other stay a % of revenue since they scale with
-   contract value rather than physical output. whenever a sales assumption,
-   usage rate, or unit price changes, recompute so months stay in sync. */
+   volume (sqm of frame) that each month's house count actually requires, inflated
+   by the 조건 탭's scrap rate (more raw material bought than ends up in the frame) —
+   not a % of revenue. detailing/other stay a % of revenue since they scale with
+   contract value rather than physical output. whenever a sales assumption, usage
+   rate, scrap rate, or unit price changes, recompute so months stay in sync. */
 function recomputeVariableCosts(indices) {
   const idxs = indices || state.months.map((_, i) => i);
   const avgSqm = computeHouseTypeTotals(state.houseTypes, state.pricePerSqm).avgSqm;
+  const scrapMult = scrapMultiplier(state.scrapRatePct);
   idxs.forEach(i => {
     const m = state.months[i];
     const revenue = m.houses * m.salePrice;
     const sqm = m.houses * avgSqm;
-    m.coil = sqm * state.coilLmPerSqm * state.coilPricePerLm;
-    m.screw = sqm * state.screwsPerSqm / 1000 * state.screwPricePer1000;
+    m.coil = sqm * state.coilLmPerSqm * scrapMult * state.coilPricePerLm;
+    m.screw = sqm * state.screwsPerSqm * scrapMult / 1000 * state.screwPricePer1000;
     m.detail = revenue * state.detailPct / 100;
     m.otherVar = revenue * state.otherVarPct / 100;
   });
@@ -1448,7 +1460,7 @@ function renderComputed() {
   if (varPctEl) varPctEl.textContent = totalVarPct.toFixed(1) + '%';
 
   const htTotals = computeHouseTypeTotals(state.houseTypes, state.pricePerSqm);
-  const coilUsage = computeCoilUsage(htTotals, state.coilLmPerSqm);
+  const coilUsage = computeCoilUsage(htTotals, state.coilLmPerSqm, state.scrapRatePct);
   const coilUsageSqmEl = q('coilUsageTotalSqm');
   if (coilUsageSqmEl) coilUsageSqmEl.textContent = coilUsage.totalSqm.toLocaleString('en-US') + ' sqm';
   const coilUsageLmEl = q('coilUsageTotalLm');
@@ -1858,7 +1870,7 @@ function initControls() {
   q('dailyOperatingHours').addEventListener('input', recomputeHourlyFixedCostItems);
   q('workingDaysPerMonth').addEventListener('input', recomputeHourlyFixedCostItems);
   bindConditionSlider('setupMinutesPerBatch', '분', 0);
-  bindConditionSlider('scrapRatePct', '%', 1);
+  bindConditionSlider('scrapRatePct', '%', 1, () => recomputeVariableCosts());
   bindConditionSlider('materialLeadTimeDays', '일', 0);
   bindConditionSlider('detailingDaysPerHouse', '일/세대', 1);
   bindConditionSlider('deliveryDaysPerHouse', '일/세대', 1);
