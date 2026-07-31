@@ -52,6 +52,7 @@ const DEFAULTS = {
   ],
   coilPricePerLm: 2.6,
   screwPricePer1000: 50,
+  productionLaborHourlyWage: 28.125,
   detailPct: 10,
   otherVarPct: 5,
   coilLmPerSqm: 16,
@@ -68,7 +69,6 @@ const DEFAULTS = {
   fixedCostItems: [
     { category: 'fixedProd', label: '공장·창고 임대료', note: 'Western Sydney 산업단지 창고 (~450㎡, 순임대료 ~$160/㎡/yr 기준)', monthly: 6000 },
     { category: 'fixedProd', label: '공장 전기·수도', note: 'SP120 롤포밍기 가동 전력 + 용수/폐수', monthly: 1500 },
-    { category: 'fixedProd', label: '생산직 기본급 (오퍼레이터 2명)', note: '램프업 단계 최소 유지 인력, Fair Work 금속제조업 award 기준. 시급 × 조건 탭의 1일 가동시간 × 월 가동일수로 계산', monthly: 9000, calc: { qty: 2, hourlyWage: 28.125, hourly: true } },
     { category: 'fixedProd', label: '소모품·공구 유지보수', note: '드릴비트·블레이드·윤활유 등 소모품 교체', monthly: 1000, calc: { qty: 1, unitPrice: 1000 } },
     { category: 'fixedProd', label: '산업폐기물 처리', note: '철스크랩·자재 폐기물 수거', monthly: 400 },
     { category: 'fixedProd', label: '포크리프트 렌탈', note: '중고 구매 대신 월 렌탈로 전환 — 렌탈업체 시세 조사 전 추정치, 확인되면 직접 입력하세요', monthly: 650 },
@@ -197,11 +197,13 @@ function buildDefaultMonths() {
   return DEFAULTS.houses.map(houses => {
     const revenue = houses * blendedPrice;
     const sqm = houses * avgSqm;
+    const laborHours = DEFAULTS.laborProductivitySqmPerHour > 0 ? sqm / DEFAULTS.laborProductivitySqmPerHour : 0;
     return {
       houses,
       salePrice: blendedPrice,
       coil: sqm * DEFAULTS.coilLmPerSqm * scrapMult * DEFAULTS.coilPricePerLm,
       screw: sqm * DEFAULTS.screwsPerSqm * scrapMult / 1000 * DEFAULTS.screwPricePer1000,
+      labor: laborHours * DEFAULTS.productionLaborHourlyWage,
       detail: revenue * DEFAULTS.detailPct / 100,
       otherVar: revenue * DEFAULTS.otherVarPct / 100,
       fixedProd: fc.fixedProd,
@@ -230,6 +232,7 @@ function buildDefaultState() {
     houseTypes: DEFAULTS.houseTypes.map(t => ({ ...t })),
     coilPricePerLm: DEFAULTS.coilPricePerLm,
     screwPricePer1000: DEFAULTS.screwPricePer1000,
+    productionLaborHourlyWage: DEFAULTS.productionLaborHourlyWage,
     detailPct: DEFAULTS.detailPct,
     otherVarPct: DEFAULTS.otherVarPct,
     coilLmPerSqm: DEFAULTS.coilLmPerSqm,
@@ -284,6 +287,17 @@ function migrateFixedCostItems(st) {
   // 대출원금·이자율·상환기간(원리금균등상환 스케줄)에서 매월 자동 계산되므로,
   // 예전에 저장된 값이 남아있으면 이중 계산된다.
   st.fixedCostItems = st.fixedCostItems.filter(item => !(item.category === 'other' && item.type === 'interest'));
+
+  // 생산직 기본급은 고정비(풀타임 가정)에서 변동비(그 달 판매량에 필요한 생산
+  // 인시 × 시급)로 이전됐다 — 예전 저장분에 남아있는 고정비 항목은 제거하고,
+  // 그 시급만 새 변동비 인건비 시급(productionLaborHourlyWage)으로 이어받는다.
+  const legacyProdLabor = st.fixedCostItems.find(item => item.label && item.label.includes('생산직 기본급'));
+  if (legacyProdLabor) {
+    if (legacyProdLabor.calc && legacyProdLabor.calc.hourlyWage != null) {
+      st.productionLaborHourlyWage = legacyProdLabor.calc.hourlyWage;
+    }
+    st.fixedCostItems = st.fixedCostItems.filter(item => item !== legacyProdLabor);
+  }
   return st;
 }
 
@@ -429,7 +443,7 @@ function computeAll() {
 
   state.months.forEach((m, i) => {
     const revenue = m.houses * m.salePrice;
-    const varCost = m.coil + m.screw + m.detail + m.otherVar;
+    const varCost = m.coil + m.screw + m.labor + m.detail + m.otherVar;
     const cogs = varCost + m.fixedProd;
     const grossProfit = revenue - cogs;
     const ebitda = grossProfit - m.sga;
@@ -474,7 +488,7 @@ function computeAll() {
 
     months.push({
       idx: i, phase: MONTH_PHASE[i], houses: m.houses, salePrice: m.salePrice,
-      coil: m.coil, screw: m.screw, detail: m.detail, otherVar: m.otherVar,
+      coil: m.coil, screw: m.screw, labor: m.labor, detail: m.detail, otherVar: m.otherVar,
       fixedProd: m.fixedProd, sga: m.sga, depreciation: m.depreciation, interest,
       loanInterest: loan.interest, loanPrincipal: loan.principal, loanPayment: loan.payment, loanBalance,
       revenue, varCost, cogs, grossProfit, ebitda, netIncome, capex,
@@ -490,6 +504,7 @@ function computeAll() {
     totalCOGS: sum(months, 'cogs'),
     totalCoil: sum(months, 'coil'),
     totalScrew: sum(months, 'screw'),
+    totalLabor: sum(months, 'labor'),
     totalDetail: sum(months, 'detail'),
     totalOtherVar: sum(months, 'otherVar'),
     totalFixedProd: sum(months, 'fixedProd'),
@@ -1122,6 +1137,8 @@ function recomputeVariableCosts(indices) {
     const sqm = m.houses * avgSqm;
     m.coil = sqm * state.coilLmPerSqm * scrapMult * state.coilPricePerLm;
     m.screw = sqm * state.screwsPerSqm * scrapMult / 1000 * state.screwPricePer1000;
+    const laborHours = state.laborProductivitySqmPerHour > 0 ? sqm / state.laborProductivitySqmPerHour : 0;
+    m.labor = laborHours * state.productionLaborHourlyWage;
     m.detail = revenue * state.detailPct / 100;
     m.otherVar = revenue * state.otherVarPct / 100;
   });
@@ -1354,6 +1371,7 @@ const CF_TABLE_ROWS = [
 const VAR_TABLE_ROWS = [
   { key: 'coil', label: '코일(철강)', editable: false, money: true },
   { key: 'screw', label: '스크류/파스너', editable: false, money: true },
+  { key: 'labor', label: '생산 인건비', editable: false, money: true },
   { key: 'detail', label: '외주 디테일링', editable: false, money: true },
   { key: 'otherVar', label: '기타(설치 등)', editable: false, money: true },
   { key: 'varCost', label: '변동비 합계', editable: false, money: true }
@@ -1454,7 +1472,7 @@ function renderComputed() {
   renderEquipTable();
   renderMonthlyRampTable();
 
-  const varTotal = totals.totalCoil + totals.totalScrew + totals.totalDetail + totals.totalOtherVar;
+  const varTotal = totals.totalCoil + totals.totalScrew + totals.totalLabor + totals.totalDetail + totals.totalOtherVar;
   setText('variableTabAmount', fmt(varTotal / 12) + '/월');
 
   q('mainQuickStats').innerHTML = `
@@ -1533,6 +1551,7 @@ function renderComputed() {
   const varRowTotals = {
     coil: totals.totalCoil,
     screw: totals.totalScrew,
+    labor: totals.totalLabor,
     detail: totals.totalDetail,
     otherVar: totals.totalOtherVar,
     varCost: varTotal
@@ -1691,6 +1710,27 @@ function bindScrewPricePer1000Slider() {
   });
 }
 
+/* 생산 인건비: 그 달 판매량에 필요한 생산면적(sqm)을 조건 탭의 노무 생산성으로
+   나눠 실제 필요 인시를 구하고, 그 인시에 이 시급을 곱해 변동비로 계산한다 —
+   더 팔린 만큼만 인건비가 늘어나는 구조. 조건 탭의 노무 생산성 슬라이더가
+   바뀌어도 이 값이 재계산되도록 recomputeVariableCosts를 함께 호출한다. */
+function bindProductionLaborHourlyWageSlider() {
+  const elx = q('productionLaborHourlyWage');
+  const label = q('productionLaborHourlyWageVal');
+  elx.value = state.productionLaborHourlyWage;
+  setSliderFill(elx);
+  label.textContent = '$' + state.productionLaborHourlyWage.toFixed(2) + '/인시';
+  elx.addEventListener('input', () => {
+    const val = parseFloat(elx.value);
+    state.productionLaborHourlyWage = val;
+    setSliderFill(elx);
+    label.textContent = '$' + val.toFixed(2) + '/인시';
+    recomputeVariableCosts();
+    renderComputed();
+    scheduleSave();
+  });
+}
+
 /* 노무 생산성 / 롤포머 생산능력: sqm 기준으로 state에 저장하지만, 화면에서는
    코일 사용량(L/sqm, state.coilLmPerSqm)을 환산비로 써서 sqm ↔ lm(코일 선형미터)
    단위를 전환해 보여줄 수 있다. 슬라이더 자체의 min/max/step/value도 현재 단위에
@@ -1717,7 +1757,7 @@ function refreshProductivitySliders() {
   });
 }
 
-function bindProductivityRateSlider(id) {
+function bindProductivityRateSlider(id, onChange) {
   const elx = q(id);
   const cfg = PRODUCTIVITY_RATE_FIELDS[id];
   const label = q(id + 'Val');
@@ -1727,6 +1767,7 @@ function bindProductivityRateSlider(id) {
     state[id] = sqmVal;
     setSliderFill(elx);
     if (label) label.textContent = raw.toFixed(cfg.decimals) + (productivityUnit === 'lm' ? cfg.lmSuffix : cfg.sqmSuffix);
+    if (onChange) onChange(sqmVal);
     renderComputed();
     scheduleSave();
   });
@@ -1816,6 +1857,11 @@ function syncControlInputsFromState() {
   setSliderFill(screwPriceElx);
   q('screwPricePer1000Val').textContent = fmt(state.screwPricePer1000) + '/1000개';
 
+  const laborWageElx = q('productionLaborHourlyWage');
+  laborWageElx.value = state.productionLaborHourlyWage;
+  setSliderFill(laborWageElx);
+  q('productionLaborHourlyWageVal').textContent = '$' + state.productionLaborHourlyWage.toFixed(2) + '/인시';
+
   [
     ['screwsPerSqm', '개/sqm', 0],
     ['dailyOperatingHours', '시간', 1],
@@ -1855,6 +1901,7 @@ function rebuildAllUIFromState() {
   buildMonthlyRampSkeleton();
   syncInputsFromState();
   recomputeHourlyFixedCostItems();
+  recomputeVariableCosts();
   renderHouseTypeTable();
   renderFixedCostTable();
   renderComputed();
@@ -1870,11 +1917,12 @@ function initControls() {
   bindPricePerSqmSlider();
   bindCoilPricePerLmSlider();
   bindScrewPricePer1000Slider();
+  bindProductionLaborHourlyWageSlider();
   bindBulkSlider('detailPct', true, v => applyPctAll('detail', v));
   bindBulkSlider('otherVarPct', true, v => applyPctAll('otherVar', v));
   bindCoilLmPerSqmSlider();
   bindConditionSlider('screwsPerSqm', '개/sqm', 0, () => recomputeVariableCosts());
-  bindProductivityRateSlider('laborProductivitySqmPerHour');
+  bindProductivityRateSlider('laborProductivitySqmPerHour', () => recomputeVariableCosts());
   bindProductivityRateSlider('rollformerCapacitySqmPerDay');
   bindProductivityUnitToggle();
   refreshProductivitySliders();
@@ -2007,6 +2055,7 @@ window.addEventListener('DOMContentLoaded', () => {
   buildFixedCostSkeleton();
   buildMonthlyRampSkeleton();
   recomputeHourlyFixedCostItems();
+  recomputeVariableCosts();
   renderSubTabNav('assumptions');
   goSubTab('assumptions', 0);
   renderSubTabNav('capex');
