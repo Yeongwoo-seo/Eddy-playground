@@ -44,9 +44,10 @@ const SUB_TAB_GROUPS = {
 const DEFAULTS = {
   pricePerSqm: 200,
   houseTypes: [
+    { label: '싱글', sqm: 120, targetQty: 1 },
+    { label: '더블', sqm: 180, targetQty: 1 },
     { label: '그래니플랫', sqm: 55, targetQty: 8 },
-    { label: '듀플렉스', sqm: 150, targetQty: 2 },
-    { label: '타운하우스', sqm: 130, targetQty: 2 }
+    { label: '듀플렉스', sqm: 150, targetQty: 2 }
   ],
   coilPct: 30,
   screwPct: 5,
