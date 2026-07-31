@@ -93,25 +93,68 @@ function buildDefaultEquipment() {
   return DEFAULTS.equipmentItems.map(item => ({ ...item }));
 }
 
-let state = {
-  pricePerSqm: DEFAULTS.pricePerSqm,
-  houseTypes: DEFAULTS.houseTypes.map(t => ({ ...t })),
-  equityRaise: DEFAULTS.equityRaise,
-  stage1Amount: DEFAULTS.stage1Amount,
-  stage1Month: DEFAULTS.stage1Month,
-  stage2Amount: DEFAULTS.stage2Amount,
-  stage2Month: DEFAULTS.stage2Month,
-  stage3Amount: DEFAULTS.stage3Amount,
-  stage3Month: DEFAULTS.stage3Month,
-  equipmentMonth: DEFAULTS.equipmentMonth,
-  equipmentItems: buildDefaultEquipment(),
-  months: buildDefaultMonths()
-};
+function buildDefaultState() {
+  return {
+    pricePerSqm: DEFAULTS.pricePerSqm,
+    coilPct: DEFAULTS.coilPct,
+    screwPct: DEFAULTS.screwPct,
+    detailPct: DEFAULTS.detailPct,
+    otherVarPct: DEFAULTS.otherVarPct,
+    fixedProdCost: DEFAULTS.fixedProdCost,
+    sgaMonthly: DEFAULTS.sgaMonthly,
+    otherCostMonthly: DEFAULTS.otherCostMonthly,
+    houseTypes: DEFAULTS.houseTypes.map(t => ({ ...t })),
+    equityRaise: DEFAULTS.equityRaise,
+    stage1Amount: DEFAULTS.stage1Amount,
+    stage1Month: DEFAULTS.stage1Month,
+    stage2Amount: DEFAULTS.stage2Amount,
+    stage2Month: DEFAULTS.stage2Month,
+    stage3Amount: DEFAULTS.stage3Amount,
+    stage3Month: DEFAULTS.stage3Month,
+    equipmentMonth: DEFAULTS.equipmentMonth,
+    equipmentItems: buildDefaultEquipment(),
+    months: buildDefaultMonths()
+  };
+}
+
+let state = buildDefaultState();
 
 let activeMetric = null;
 let rowRefs = [];
 let equipRowRefs = [];
 let houseTypeRowRefs = [];
+
+/* ---------- auto-save to server ---------- */
+// Fill in after `npx wrangler deploy` in worker/ (see worker/README.md) —
+// blank means auto-save/load is a no-op and the page behaves as before.
+const API_URL = '';
+
+let saveTimer = null;
+function scheduleSave() {
+  if (!API_URL) return;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    fetch(API_URL + '/state', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ app: 'lgs-model', data: state })
+    }).catch(() => {});
+  }, 800);
+}
+
+async function loadStateFromServer() {
+  if (!API_URL) return;
+  try {
+    const res = await fetch(API_URL + '/state?app=lgs-model');
+    if (!res.ok) return;
+    const payload = await res.json();
+    if (payload && payload.data && Object.keys(payload.data).length) {
+      state = Object.assign(buildDefaultState(), payload.data);
+    }
+  } catch (e) {
+    // offline or Worker unreachable — keep local defaults
+  }
+}
 
 function fmt(n) {
   const r = Math.round(n);
@@ -461,6 +504,7 @@ function onEquipInput(e) {
   if (isNaN(val) || val < 0) val = 0;
   state.equipmentItems[i][key] = val;
   renderComputed();
+  scheduleSave();
 }
 
 function syncEquipInputsFromState() {
@@ -573,6 +617,7 @@ function onHouseTypeInput(e) {
   syncInputsFromState();
   renderHouseTypeTable();
   renderComputed();
+  scheduleSave();
 }
 
 function onHouseTypeRemove(e) {
@@ -584,6 +629,7 @@ function onHouseTypeRemove(e) {
   syncInputsFromState();
   renderHouseTypeTable();
   renderComputed();
+  scheduleSave();
 }
 
 function onHouseTypeAdd() {
@@ -593,6 +639,7 @@ function onHouseTypeAdd() {
   syncInputsFromState();
   renderHouseTypeTable();
   renderComputed();
+  scheduleSave();
 }
 
 function renderHouseTypeTable() {
@@ -679,6 +726,7 @@ function onCellInput(e) {
   if (isNaN(val) || val < 0) val = 0;
   state.months[i][key] = val;
   renderComputed();
+  scheduleSave();
 }
 
 function syncInputsFromState() {
@@ -771,26 +819,28 @@ function applyFixedAll(field, v) { state.months.forEach(m => { m[field] = v; });
 function bindBulkSlider(id, isPct, applyFn) {
   const elx = q(id);
   const label = q(id + 'Val');
-  const defaultVal = DEFAULTS[id];
-  elx.value = defaultVal;
+  const val0 = state[id];
+  elx.value = val0;
   setSliderFill(elx);
-  if (label) label.textContent = isPct ? defaultVal + '%' : fmt(defaultVal);
+  if (label) label.textContent = isPct ? val0 + '%' : fmt(val0);
   elx.addEventListener('input', () => {
     const val = parseFloat(elx.value);
+    state[id] = val;
     setSliderFill(elx);
     if (label) label.textContent = isPct ? val + '%' : fmt(val);
     applyFn(val);
     syncInputsFromState();
     renderComputed();
+    scheduleSave();
   });
 }
 
 function bindPricePerSqmSlider() {
   const elx = q('pricePerSqm');
   const label = q('pricePerSqmVal');
-  elx.value = DEFAULTS.pricePerSqm;
+  elx.value = state.pricePerSqm;
   setSliderFill(elx);
-  label.textContent = fmt(DEFAULTS.pricePerSqm) + '/sqm';
+  label.textContent = fmt(state.pricePerSqm) + '/sqm';
   elx.addEventListener('input', () => {
     const val = parseFloat(elx.value);
     state.pricePerSqm = val;
@@ -800,44 +850,34 @@ function bindPricePerSqmSlider() {
     syncInputsFromState();
     renderHouseTypeTable();
     renderComputed();
+    scheduleSave();
   });
 }
 
 function bindScalarInput(id, key) {
   const elx = q(id);
-  elx.value = DEFAULTS[key];
+  elx.value = state[key];
   elx.addEventListener('input', () => {
     let val = parseFloat(elx.value);
     if (isNaN(val) || val < 0) val = 0;
     state[key] = val;
     renderComputed();
+    scheduleSave();
   });
 }
 
 function bindSelect(id, key) {
   const elx = q(id);
-  elx.value = DEFAULTS[key];
+  elx.value = state[key];
   elx.addEventListener('change', () => {
     state[key] = parseInt(elx.value, 10);
     renderComputed();
+    scheduleSave();
   });
 }
 
 function resetAll() {
-  state = {
-    pricePerSqm: DEFAULTS.pricePerSqm,
-    houseTypes: DEFAULTS.houseTypes.map(t => ({ ...t })),
-    equityRaise: DEFAULTS.equityRaise,
-    stage1Amount: DEFAULTS.stage1Amount,
-    stage1Month: DEFAULTS.stage1Month,
-    stage2Amount: DEFAULTS.stage2Amount,
-    stage2Month: DEFAULTS.stage2Month,
-    stage3Amount: DEFAULTS.stage3Amount,
-    stage3Month: DEFAULTS.stage3Month,
-    equipmentMonth: DEFAULTS.equipmentMonth,
-    equipmentItems: buildDefaultEquipment(),
-    months: buildDefaultMonths()
-  };
+  state = buildDefaultState();
   activeMetric = null;
   document.querySelectorAll('[data-metric]').forEach(o => o.classList.remove('active'));
   q('breakdownCard').style.display = 'none';
@@ -867,6 +907,7 @@ function resetAll() {
   syncEquipInputsFromState();
   renderHouseTypeTable();
   renderComputed();
+  scheduleSave();
 }
 
 function initControls() {
@@ -946,7 +987,8 @@ function goSubTab(i) {
   updateSubTabActive();
 }
 
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
+  await loadStateFromServer();
   initControls();
   buildTableSkeleton();
   buildEquipSkeleton();
