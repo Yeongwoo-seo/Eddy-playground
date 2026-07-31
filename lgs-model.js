@@ -18,8 +18,8 @@ const SUB_TAB_GROUPS = {
     cur: 0,
     tabs: [
       { id: 'revenue', label: '매출', amountId: 'revenueTabAmount' },
-      { id: 'fixed', label: '고정비' },
-      { id: 'variable', label: '변동비' }
+      { id: 'fixed', label: '고정비', amountId: 'fixedTabAmount' },
+      { id: 'variable', label: '변동비', amountId: 'variableTabAmount' }
     ]
   },
   capex: {
@@ -802,6 +802,7 @@ function renderFixedCostTable() {
   q('sgaSubtotal').textContent = fmt(totals.sga);
   q('otherCostSubtotal').textContent = fmt(totals.other);
   q('fixedCostGrandTotal').textContent = fmt(totals.grandTotal);
+  setText('fixedTabAmount', fmt(totals.grandTotal));
 }
 
 /* ---------- item detail/settings modal (equipment & fixed cost items) ---------- */
@@ -1258,6 +1259,7 @@ function renderComputed() {
   renderMonthlyRampTable();
 
   const varTotal = totals.totalCoil + totals.totalScrew + totals.totalDetail + totals.totalOtherVar;
+  setText('variableTabAmount', fmt(varTotal));
 
   q('mainQuickStats').innerHTML = `
     <div><div class="quick-stat-label">Y1 매출</div><div class="quick-stat-value">${fmt(totals.totalRevenue)}</div></div>
