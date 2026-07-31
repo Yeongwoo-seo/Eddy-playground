@@ -1213,14 +1213,18 @@ function renderComputed() {
 
 function initCollapsibleCards() {
   document.querySelectorAll('.card[data-collapsible]').forEach(card => {
+    card.classList.add('collapsed');
     const label = card.querySelector('.section-label');
     if (!label) return;
     const toggle = document.createElement('button');
     toggle.type = 'button';
     toggle.className = 'section-collapse-toggle';
-    toggle.innerHTML = '<span class="section-collapse-amount"></span><span class="section-collapse-chevron"></span>';
+    toggle.innerHTML = '<span class="section-collapse-chevron"></span>';
     toggle.addEventListener('click', () => card.classList.toggle('collapsed'));
     label.appendChild(toggle);
+    const badge = document.createElement('span');
+    badge.className = 'section-collapse-badge';
+    label.insertAdjacentElement('afterend', badge);
   });
   syncAllCollapsibleAmounts();
 }
@@ -1228,8 +1232,8 @@ function initCollapsibleCards() {
 function syncAllCollapsibleAmounts() {
   document.querySelectorAll('.card[data-collapsible]').forEach(card => {
     const totalEl = q(card.dataset.totalId);
-    const amountEl = card.querySelector('.section-collapse-amount');
-    if (totalEl && amountEl) amountEl.textContent = totalEl.textContent;
+    const badgeEl = card.querySelector('.section-collapse-badge');
+    if (totalEl && badgeEl) badgeEl.textContent = totalEl.textContent;
   });
 }
 
