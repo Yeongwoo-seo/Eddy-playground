@@ -1265,6 +1265,10 @@ function buildMonthlyRampSkeleton() {
     monthTd.innerHTML = `<span class="equip-label">M${i + 1}<span class="tphase">${MONTH_PHASE[i]}</span></span>`;
     tr.appendChild(monthTd);
 
+    const utilTd = document.createElement('td');
+    utilTd.className = 'equip-subtotal';
+    tr.appendChild(utilTd);
+
     const qtyInput = document.createElement('input');
     qtyInput.type = 'number';
     qtyInput.className = 'equip-input';
@@ -1282,7 +1286,7 @@ function buildMonthlyRampSkeleton() {
     tr.appendChild(revTd);
 
     tbody.appendChild(tr);
-    monthlyRampRowRefs.push({ qtyInput, revTd });
+    monthlyRampRowRefs.push({ utilTd, qtyInput, revTd });
   }
 }
 
@@ -1298,12 +1302,21 @@ function onMonthlyRampInput(e) {
   scheduleSave();
 }
 
+/* per-month capacity utilization: sqm that month's house count requires,
+   vs. sqm the roll-former can physically produce that month (조건 탭의
+   롤포머 생산능력 × 월 가동일수) — the monthly counterpart to the annual
+   가동률 shown in computeConditionMetrics. */
 function renderMonthlyRampTable() {
   let totalQty = 0;
+  const avgSqm = computeHouseTypeTotals(state.houseTypes, state.pricePerSqm).avgSqm;
+  const monthlyCapacitySqm = state.rollformerCapacitySqmPerDay * state.workingDaysPerMonth;
   monthlyRampRowRefs.forEach((row, i) => {
     const m = state.months[i];
     totalQty += m.houses;
     row.revTd.textContent = fmt(m.houses * m.salePrice);
+    const utilPct = monthlyCapacitySqm > 0 ? (m.houses * avgSqm) / monthlyCapacitySqm * 100 : 0;
+    row.utilTd.textContent = utilPct.toFixed(0) + '%';
+    row.utilTd.style.color = utilPct > 100 ? 'var(--danger)' : '';
   });
   const totalQtyEl = q('monthlyRampTotalQty');
   if (totalQtyEl) totalQtyEl.textContent = totalQty + '채';
