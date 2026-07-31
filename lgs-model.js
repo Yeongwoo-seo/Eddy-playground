@@ -97,6 +97,10 @@ const DEFAULTS = {
   stage2Month: 5,
   stage3Amount: 0,
   stage3Month: 9,
+  // 7200 = 공장·창고($6000) + 사무실($1200) 임대료 합산 기준액; 고정비 항목과 별개로 편집 가능
+  rentDepositMonthlyRent: 7200,
+  rentDepositMonths: 2,
+  rentDepositMonth: 1,
   houses: [0, 0, 0, 0, 1, 2, 1, 2, 2, 1, 2, 1],
   equipmentMonth: 1,
   equipmentItems: [
@@ -240,6 +244,9 @@ function buildDefaultState() {
     stage2Month: DEFAULTS.stage2Month,
     stage3Amount: DEFAULTS.stage3Amount,
     stage3Month: DEFAULTS.stage3Month,
+    rentDepositMonthlyRent: DEFAULTS.rentDepositMonthlyRent,
+    rentDepositMonths: DEFAULTS.rentDepositMonths,
+    rentDepositMonth: DEFAULTS.rentDepositMonth,
     equipmentMonth: DEFAULTS.equipmentMonth,
     equipmentItems: buildDefaultEquipment(),
     months: buildDefaultMonths()
@@ -402,8 +409,9 @@ function computeAll() {
   const months = [];
   const debtSchedule = computeDebtSchedule(state.debtAmount, state.debtAnnualRatePct, state.debtTermMonths, 12);
   let cash = state.equityAmount + state.debtAmount;
-  let cumCapex = 0, cumDep = 0, cumAccruedInterest = 0, cumNetIncome = 0;
+  let cumCapex = 0, cumDep = 0, cumAccruedInterest = 0, cumNetIncome = 0, cumRentDeposit = 0;
   const totalEquipmentCapex = state.equipmentItems.reduce((s, it) => s + it.unitPrice * it.qty, 0);
+  const rentDepositAmount = Number(state.rentDepositMonthlyRent) * Number(state.rentDepositMonths);
 
   state.months.forEach((m, i) => {
     const revenue = m.houses * m.salePrice;
@@ -421,12 +429,16 @@ function computeAll() {
     if (i + 1 === Number(state.stage3Month)) capex += state.stage3Amount;
     if (i + 1 === Number(state.equipmentMonth)) capex += totalEquipmentCapex;
 
+    // 임대료 디파짓: 손익(고정비·변동비)에는 반영되지 않는 보증금성 지출 — 지급월에
+    // 현금이 일시 유출되고 동액만큼 대차대조표상 자산(임차보증금)으로 남는다고 가정.
+    const rentDepositOutflow = (i + 1 === Number(state.rentDepositMonth)) ? rentDepositAmount : 0;
+
     // CF: 감가상각비는 비현금이라 EBITDA에 이미 반영 안 됨. 대출 원리금(원금+이자)은
     // 실제 현금 상환이라 재무활동 현금흐름에 반영. 그 외 수동입력 이자비용(m.interest)은
     // 이 모델에서 발생주의로 비용 인식만 하고 현금 지급 없이 미지급이자(BS 부채)로 누적된다고 가정.
     const cashBegin = cash;
     const operatingCF = ebitda;
-    const investingCF = -capex;
+    const investingCF = -capex - rentDepositOutflow;
     const financingCF = -(loan.principal + loan.interest);
     const netCF = operatingCF + investingCF + financingCF;
     cash += netCF;
@@ -436,11 +448,12 @@ function computeAll() {
     cumDep += m.depreciation;
     cumAccruedInterest += m.interest;
     cumNetIncome += netIncome;
+    cumRentDeposit += rentDepositOutflow;
 
     const ppe = cumCapex - cumDep;
     const accruedInterest = cumAccruedInterest;
     const loanBalance = loan.balanceEnd;
-    const totalAssets = cashEnd + ppe;
+    const totalAssets = cashEnd + ppe + cumRentDeposit;
     const totalLiabilities = accruedInterest + loanBalance;
     const retainedEarnings = cumNetIncome;
     const equity = state.equityAmount + retainedEarnings;
@@ -451,6 +464,7 @@ function computeAll() {
       fixedProd: m.fixedProd, sga: m.sga, depreciation: m.depreciation, interest,
       loanInterest: loan.interest, loanPrincipal: loan.principal, loanPayment: loan.payment, loanBalance,
       revenue, varCost, cogs, grossProfit, ebitda, netIncome, capex,
+      rentDepositOutflow, cumRentDeposit,
       cashBegin, operatingCF, investingCF, financingCF, netCF, cashEnd,
       ppe, accruedInterest, totalAssets, totalLiabilities, equityAmount: state.equityAmount,
       retainedEarnings, equity
@@ -478,11 +492,13 @@ function computeAll() {
     totalNetCF: sum(months, 'netCF'),
     totalMachineCapex: state.stage1Amount + state.stage2Amount + state.stage3Amount,
     totalEquipmentCapex,
+    totalRentDeposit: rentDepositAmount,
     totalHouses: sum(months, 'houses'),
     endCash: months[11].cashEnd,
     endPPE: months[11].ppe,
     endAccruedInterest: months[11].accruedInterest,
     endLoanBalance: months[11].loanBalance,
+    endRentDeposit: months[11].cumRentDeposit,
     endTotalAssets: months[11].totalAssets,
     endTotalLiabilities: months[11].totalLiabilities,
     endRetainedEarnings: months[11].retainedEarnings,
@@ -1288,6 +1304,7 @@ const VAR_TABLE_ROWS = [
 const BS_TABLE_ROWS = [
   { key: 'cashEnd', label: '현금', editable: false, money: true, negOnly: true },
   { key: 'ppe', label: '순유형자산', editable: false, money: true },
+  { key: 'cumRentDeposit', label: '임차보증금', editable: false, money: true },
   { key: 'totalAssets', label: '자산총계', editable: false, money: true },
   { key: 'accruedInterest', label: '미지급이자', editable: false, money: true },
   { key: 'loanBalance', label: '대출잔액 (부채)', editable: false, money: true },
@@ -1391,6 +1408,7 @@ function renderComputed() {
     <div><div class="quick-stat-label">Y1 말 현금</div><div class="quick-stat-value ${totals.endCash >= 0 ? 'pos' : 'neg'}">${fmt(totals.endCash)}</div></div>
     <div><div class="quick-stat-label">최저 현금</div><div class="quick-stat-value ${totals.minCash >= 0 ? 'pos' : 'neg'}">${fmt(totals.minCash)}</div></div>
   `;
+  setText('rentDepositTotal', fmt(totals.totalRentDeposit));
 
   const totalVarPct = totals.totalRevenue > 0 ? (varTotal / totals.totalRevenue * 100) : 0;
   const varPctEl = q('varPctTotal');
@@ -1443,6 +1461,7 @@ function renderComputed() {
   const bsRowTotals = {
     cashEnd: totals.endCash,
     ppe: totals.endPPE,
+    cumRentDeposit: totals.endRentDeposit,
     totalAssets: totals.endTotalAssets,
     accruedInterest: totals.endAccruedInterest,
     loanBalance: totals.endLoanBalance,
@@ -1721,7 +1740,7 @@ function syncControlInputsFromState() {
     const label = q(id + 'Val');
     if (label) label.textContent = label.dataset.fmt === 'pct' ? (state[id] + '%') : fmt(state[id]);
   });
-  ['equityAmount', 'debtAmount', 'debtAnnualRatePct', 'debtTermMonths', 'stage1Amount', 'stage2Amount', 'stage3Amount'].forEach(id => {
+  ['equityAmount', 'debtAmount', 'debtAnnualRatePct', 'debtTermMonths', 'stage1Amount', 'stage2Amount', 'stage3Amount', 'rentDepositMonthlyRent', 'rentDepositMonths'].forEach(id => {
     q(id).value = state[id];
   });
   const coilLmElx = q('coilLmPerSqm');
@@ -1766,6 +1785,7 @@ function syncControlInputsFromState() {
   q('stage1Month').value = state.stage1Month;
   q('stage2Month').value = state.stage2Month;
   q('stage3Month').value = state.stage3Month;
+  q('rentDepositMonth').value = state.rentDepositMonth;
   q('equipmentMonth').value = state.equipmentMonth;
 }
 
@@ -1819,6 +1839,9 @@ function initControls() {
   bindSelect('stage1Month', 'stage1Month');
   bindSelect('stage2Month', 'stage2Month');
   bindSelect('stage3Month', 'stage3Month');
+  bindScalarInput('rentDepositMonthlyRent', 'rentDepositMonthlyRent');
+  bindScalarInput('rentDepositMonths', 'rentDepositMonths');
+  bindSelect('rentDepositMonth', 'rentDepositMonth');
   bindSelect('equipmentMonth', 'equipmentMonth');
 }
 
