@@ -802,7 +802,7 @@ function renderFixedCostTable() {
   q('sgaSubtotal').textContent = fmt(totals.sga);
   q('otherCostSubtotal').textContent = fmt(totals.other);
   q('fixedCostGrandTotal').textContent = fmt(totals.grandTotal);
-  setText('fixedTabAmount', fmt(totals.grandTotal * 12));
+  setText('fixedTabAmount', fmt(totals.grandTotal) + '/월');
 }
 
 /* ---------- item detail/settings modal (equipment & fixed cost items) ---------- */
@@ -1073,7 +1073,7 @@ function renderHouseTypeTable() {
   q('houseTypeTotalQty').textContent = totals.totalQty + '채';
   q('houseTypeBlendedPrice').textContent = fmt(totals.blendedPrice) + '/채';
   q('houseTypeTotalRevenue').textContent = fmt(totals.totalRevenue);
-  q('revenueTabAmount').textContent = fmt(totals.totalRevenue);
+  q('revenueTabAmount').textContent = fmt(totals.totalRevenue / 12) + '/월';
 }
 
 /* ---------- monthly sales ramp (drives monthly revenue directly) ---------- */
@@ -1259,7 +1259,7 @@ function renderComputed() {
   renderMonthlyRampTable();
 
   const varTotal = totals.totalCoil + totals.totalScrew + totals.totalDetail + totals.totalOtherVar;
-  setText('variableTabAmount', fmt(varTotal));
+  setText('variableTabAmount', fmt(varTotal / 12) + '/월');
 
   q('mainQuickStats').innerHTML = `
     <div><div class="quick-stat-label">Y1 매출</div><div class="quick-stat-value">${fmt(totals.totalRevenue)}</div></div>
