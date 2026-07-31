@@ -436,18 +436,54 @@ input.equip-input::-webkit-outer-spin-button,input.equip-input::-webkit-inner-sp
 
   <div class="tab-panel" id="tab-table">
 
+  <div class="sub-tab-bar" id="subTabBarTable"></div>
+
+  <div class="sub-panel" id="subtab-is">
   <div class="card">
-    <div class="section-label"><div class="section-dot"></div><span>월별 요약 테이블 (큰 카테고리)</span></div>
+    <div class="section-label"><div class="section-dot"></div><span>손익계산서 (월별)</span></div>
     <div class="section-note">주택수만 직접 수정할 수 있고, 나머지는 계산된 값이에요.</div>
     <div class="table-scroll">
       <table class="data-table">
         <thead>
-          <tr id="tableHeadRow"><th>항목</th></tr>
+          <tr id="isHeadRow"><th>항목</th></tr>
         </thead>
-        <tbody id="tableBody"></tbody>
+        <tbody id="isTableBody"></tbody>
       </table>
     </div>
     <div class="table-hint">가로로 스크롤해서 전체 월을 확인하세요. 항목 열은 고정돼 있어요.</div>
+  </div>
+  </div>
+
+  <div class="sub-panel" id="subtab-cf">
+  <div class="card">
+    <div class="section-label"><div class="section-dot"></div><span>현금흐름표 (월별)</span></div>
+    <div class="section-note">손익계산서·설비투자 값에서 자동 계산돼요. 이자비용은 발생주의로 비용 인식만 하고 현금 지급 없이 대차대조표의 미지급이자로 누적된다고 가정해요.</div>
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead>
+          <tr id="cfHeadRow"><th>항목</th></tr>
+        </thead>
+        <tbody id="cfTableBody"></tbody>
+      </table>
+    </div>
+    <div class="table-hint">가로로 스크롤해서 전체 월을 확인하세요. 항목 열은 고정돼 있어요. 초기 자본금은 M1 기초현금에 이미 반영돼 있어요.</div>
+  </div>
+  </div>
+
+  <div class="sub-panel" id="subtab-bs">
+  <div class="card">
+    <div class="section-label"><div class="section-dot"></div><span>대차대조표 (월말 기준)</span></div>
+    <div class="section-note">각 월말 기준 스냅샷이에요. 자산총계 = 부채총계 + 자본총계로 항상 일치해요.</div>
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead>
+          <tr id="bsHeadRow"><th>항목</th></tr>
+        </thead>
+        <tbody id="bsTableBody"></tbody>
+      </table>
+    </div>
+    <div class="table-hint">가로로 스크롤해서 전체 월을 확인하세요. 항목 열은 고정돼 있어요.</div>
+  </div>
   </div>
 
   </div>

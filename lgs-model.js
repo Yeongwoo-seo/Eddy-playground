@@ -29,6 +29,15 @@ const SUB_TAB_GROUPS = {
       { id: 'capex-funding', label: '자금조달' },
       { id: 'capex-equipment', label: '장비·공구' }
     ]
+  },
+  table: {
+    barId: 'subTabBarTable',
+    cur: 0,
+    tabs: [
+      { id: 'is', label: '손익계산서' },
+      { id: 'cf', label: '현금흐름표' },
+      { id: 'bs', label: '대차대조표' }
+    ]
   }
 };
 
@@ -63,9 +72,9 @@ const DEFAULTS = {
     { category: 'sga', label: '통신·IT', note: '인터넷, 휴대폰, 클라우드 SaaS 구독', monthly: 600 },
     { category: 'sga', label: '인증·컴플라이언스', note: '구조 엔지니어 서명, WHS 컴플라이언스, CDC 인증 관련', monthly: 1800 },
     { category: 'sga', label: '기타 관리비', note: '사무용품, 소모품, 예비비', monthly: 1000 },
-    { category: 'other', label: '설비 감가상각비', note: 'SP120 Stage1+2 총 $80,000, 내용연수 7년 정액법', monthly: 950 },
-    { category: 'other', label: '장비·공구 감가상각비', note: '소모성 공구·장비 (포크리프트 제외, 렌탈 전환), 내용연수 5년', monthly: 19 },
-    { category: 'other', label: '설비 리스·대출 이자', note: 'SP120 자산금융 가정 이자비용', monthly: 560 }
+    { category: 'other', type: 'depreciation', label: '설비 감가상각비', note: 'SP120 Stage1+2 총 $80,000, 내용연수 7년 정액법', monthly: 950 },
+    { category: 'other', type: 'depreciation', label: '장비·공구 감가상각비', note: '소모성 공구·장비 (포크리프트 제외, 렌탈 전환), 내용연수 5년', monthly: 19 },
+    { category: 'other', type: 'interest', label: '설비 리스·대출 이자', note: 'SP120 자산금융 가정 이자비용', monthly: 560 }
   ],
   equityRaise: 350000,
   stage1Amount: 40000,
@@ -118,8 +127,14 @@ function computeCoilUsage(houseTypeTotals, coilLmPerSqm) {
 }
 
 function computeFixedCostTotals(items) {
-  const totals = { fixedProd: 0, sga: 0, other: 0 };
-  items.forEach(it => { totals[it.category] += it.monthly; });
+  const totals = { fixedProd: 0, sga: 0, other: 0, depreciation: 0, interest: 0 };
+  items.forEach(it => {
+    totals[it.category] += it.monthly;
+    if (it.category === 'other') {
+      if (it.type === 'interest') totals.interest += it.monthly;
+      else totals.depreciation += it.monthly;
+    }
+  });
   totals.grandTotal = totals.fixedProd + totals.sga + totals.other;
   return totals;
 }
@@ -138,7 +153,8 @@ function buildDefaultMonths() {
       otherVar: revenue * DEFAULTS.otherVarPct / 100,
       fixedProd: fc.fixedProd,
       sga: fc.sga,
-      otherCost: fc.other
+      depreciation: fc.depreciation,
+      interest: fc.interest
     };
   });
 }
@@ -180,7 +196,9 @@ function buildDefaultState() {
 
 let state = buildDefaultState();
 
-let tableRowRefs = {};
+let isRowRefs = {};
+let cfRowRefs = {};
+let bsRowRefs = {};
 let equipRowRefs = [];
 let houseTypeRowRefs = [];
 let fixedCostRowRefs = [];
@@ -240,6 +258,7 @@ function q(id) { return document.getElementById(id); }
 function computeAll() {
   const months = [];
   let cash = state.equityRaise;
+  let cumCapex = 0, cumDep = 0, cumInterest = 0, cumNetIncome = 0;
   const totalEquipmentCapex = state.equipmentItems.reduce((s, it) => s + it.unitPrice * it.qty, 0);
 
   state.months.forEach((m, i) => {
@@ -248,20 +267,44 @@ function computeAll() {
     const cogs = varCost + m.fixedProd;
     const grossProfit = revenue - cogs;
     const ebitda = grossProfit - m.sga;
-    const netIncome = ebitda - m.otherCost;
+    const netIncome = ebitda - m.depreciation - m.interest;
 
     let capex = 0;
     if (i + 1 === Number(state.stage1Month)) capex += state.stage1Amount;
     if (i + 1 === Number(state.stage2Month)) capex += state.stage2Amount;
     if (i + 1 === Number(state.stage3Month)) capex += state.stage3Amount;
     if (i + 1 === Number(state.equipmentMonth)) capex += totalEquipmentCapex;
-    cash += ebitda - capex;
+
+    // CF: 감가상각비는 비현금이라 EBITDA에 이미 반영 안 됨. 이자비용은 이 모델에서
+    // 발생주의로 비용 인식만 하고 현금 지급 없이 미지급이자(BS 부채)로 누적된다고 가정.
+    const cashBegin = cash;
+    const operatingCF = ebitda;
+    const investingCF = -capex;
+    const financingCF = 0;
+    const netCF = operatingCF + investingCF + financingCF;
+    cash += netCF;
+    const cashEnd = cash;
+
+    cumCapex += capex;
+    cumDep += m.depreciation;
+    cumInterest += m.interest;
+    cumNetIncome += netIncome;
+
+    const ppe = cumCapex - cumDep;
+    const accruedInterest = cumInterest;
+    const totalAssets = cashEnd + ppe;
+    const totalLiabilities = accruedInterest;
+    const retainedEarnings = cumNetIncome;
+    const equity = state.equityRaise + retainedEarnings;
 
     months.push({
       idx: i, phase: MONTH_PHASE[i], houses: m.houses, salePrice: m.salePrice,
       coil: m.coil, screw: m.screw, detail: m.detail, otherVar: m.otherVar,
-      fixedProd: m.fixedProd, sga: m.sga, otherCost: m.otherCost,
-      revenue, varCost, cogs, grossProfit, ebitda, netIncome, capex, cashEnd: cash
+      fixedProd: m.fixedProd, sga: m.sga, depreciation: m.depreciation, interest: m.interest,
+      revenue, varCost, cogs, grossProfit, ebitda, netIncome, capex,
+      cashBegin, operatingCF, investingCF, financingCF, netCF, cashEnd,
+      ppe, accruedInterest, totalAssets, totalLiabilities, equityRaise: state.equityRaise,
+      retainedEarnings, equity
     });
   });
 
@@ -274,14 +317,25 @@ function computeAll() {
     totalOtherVar: sum(months, 'otherVar'),
     totalFixedProd: sum(months, 'fixedProd'),
     totalSGA: sum(months, 'sga'),
-    totalOtherCost: sum(months, 'otherCost'),
+    totalDepreciation: sum(months, 'depreciation'),
+    totalInterest: sum(months, 'interest'),
     totalEBITDA: sum(months, 'ebitda'),
     totalNI: sum(months, 'netIncome'),
     totalCapex: sum(months, 'capex'),
+    totalOperatingCF: sum(months, 'operatingCF'),
+    totalInvestingCF: sum(months, 'investingCF'),
+    totalFinancingCF: sum(months, 'financingCF'),
+    totalNetCF: sum(months, 'netCF'),
     totalMachineCapex: state.stage1Amount + state.stage2Amount + state.stage3Amount,
     totalEquipmentCapex,
     totalHouses: sum(months, 'houses'),
     endCash: months[11].cashEnd,
+    endPPE: months[11].ppe,
+    endAccruedInterest: months[11].accruedInterest,
+    endTotalAssets: months[11].totalAssets,
+    endTotalLiabilities: months[11].totalLiabilities,
+    endRetainedEarnings: months[11].retainedEarnings,
+    endEquity: months[11].equity,
     minCash: Math.min(state.equityRaise, ...months.map(m => m.cashEnd))
   };
   totals.totalGP = totals.totalRevenue - totals.totalCOGS;
@@ -591,7 +645,8 @@ function applyFixedCostTotals() {
   const totals = computeFixedCostTotals(state.fixedCostItems);
   applyFixedAll('fixedProd', totals.fixedProd);
   applyFixedAll('sga', totals.sga);
-  applyFixedAll('otherCost', totals.other);
+  applyFixedAll('depreciation', totals.depreciation);
+  applyFixedAll('interest', totals.interest);
 }
 
 /* items with a `calc` block derive their monthly amount from 수량 × 단가
@@ -968,7 +1023,7 @@ function renderMonthlyRampTable() {
   if (totalQtyEl) totalQtyEl.textContent = totalQty + '채';
 }
 
-/* ---------- table (big categories, months as columns) ---------- */
+/* ---------- table (big categories, months as columns; split into IS/CF/BS) ---------- */
 
 function signClass(val, rowDef) {
   if (rowDef.posNeg) return val < 0 ? ' neg' : ' pos';
@@ -976,26 +1031,49 @@ function signClass(val, rowDef) {
   return '';
 }
 
-const TABLE_ROWS = [
+const IS_TABLE_ROWS = [
   { key: 'houses', label: '주택수', editable: true, money: false },
   { key: 'revenue', label: '매출', editable: false, money: true },
   { key: 'cogs', label: '매출원가', editable: false, money: true },
   { key: 'grossProfit', label: '매출총이익', editable: false, money: true, negOnly: true },
+  { key: 'sga', label: 'SG&A', editable: false, money: true },
   { key: 'ebitda', label: 'EBITDA', editable: false, money: true, posNeg: true },
+  { key: 'depreciation', label: '감가상각비', editable: false, money: true },
+  { key: 'interest', label: '이자비용', editable: false, money: true },
+  { key: 'netIncome', label: '당기순이익', editable: false, money: true, posNeg: true }
+];
+
+const CF_TABLE_ROWS = [
+  { key: 'cashBegin', label: '기초현금', editable: false, money: true },
+  { key: 'operatingCF', label: '영업활동 현금흐름', editable: false, money: true, posNeg: true },
+  { key: 'investingCF', label: '투자활동 현금흐름', editable: false, money: true, negOnly: true },
+  { key: 'financingCF', label: '재무활동 현금흐름', editable: false, money: true },
+  { key: 'netCF', label: '순현금흐름', editable: false, money: true, posNeg: true },
   { key: 'cashEnd', label: '기말현금', editable: false, money: true, negOnly: true }
 ];
 
-function buildTableSkeleton() {
-  const headRow = q('tableHeadRow');
+const BS_TABLE_ROWS = [
+  { key: 'cashEnd', label: '현금', editable: false, money: true, negOnly: true },
+  { key: 'ppe', label: '순유형자산', editable: false, money: true },
+  { key: 'totalAssets', label: '자산총계', editable: false, money: true },
+  { key: 'accruedInterest', label: '미지급이자', editable: false, money: true },
+  { key: 'totalLiabilities', label: '부채총계', editable: false, money: true },
+  { key: 'equityRaise', label: '자본금', editable: false, money: true },
+  { key: 'retainedEarnings', label: '이익잉여금', editable: false, money: true, negOnly: true },
+  { key: 'equity', label: '자본총계', editable: false, money: true }
+];
+
+function buildStatementTableSkeleton(headRowId, bodyId, rowsDef, totalLabel) {
+  const headRow = q(headRowId);
   headRow.innerHTML = '<th>항목</th>' +
     MONTH_PHASE.map((phase, i) => `<th>M${i + 1}<span class="tphase">${phase}</span></th>`).join('') +
-    '<th class="tcol-total">Y1 합계</th>';
+    `<th class="tcol-total">${totalLabel}</th>`;
 
-  const tbody = q('tableBody');
+  const tbody = q(bodyId);
   tbody.innerHTML = '';
-  tableRowRefs = {};
+  const refs = {};
 
-  TABLE_ROWS.forEach(rowDef => {
+  rowsDef.forEach(rowDef => {
     const tr = document.createElement('tr');
     const labelTd = document.createElement('td');
     labelTd.className = 'tcell tcell-month';
@@ -1030,8 +1108,16 @@ function buildTableSkeleton() {
     tr.appendChild(totalTd);
 
     tbody.appendChild(tr);
-    tableRowRefs[rowDef.key] = { cells, totalTd };
+    refs[rowDef.key] = { cells, totalTd };
   });
+
+  return refs;
+}
+
+function buildTableSkeleton() {
+  isRowRefs = buildStatementTableSkeleton('isHeadRow', 'isTableBody', IS_TABLE_ROWS, 'Y1 합계');
+  cfRowRefs = buildStatementTableSkeleton('cfHeadRow', 'cfTableBody', CF_TABLE_ROWS, 'Y1 합계');
+  bsRowRefs = buildStatementTableSkeleton('bsHeadRow', 'bsTableBody', BS_TABLE_ROWS, 'Y1 말');
 }
 
 function onCellInput(e) {
@@ -1047,7 +1133,7 @@ function onCellInput(e) {
 }
 
 function syncInputsFromState() {
-  const row = tableRowRefs.houses;
+  const row = isRowRefs.houses;
   if (row) row.cells.forEach((input, i) => { input.value = state.months[i].houses; });
   monthlyRampRowRefs.forEach((row, i) => { row.qtyInput.value = state.months[i].houses; });
 }
@@ -1083,34 +1169,61 @@ function renderComputed() {
   const coilUsagePerHouseEl = q('coilUsagePerHouse');
   if (coilUsagePerHouseEl) coilUsagePerHouseEl.textContent = Math.round(coilUsage.avgLmPerHouse).toLocaleString('en-US') + ' L/채';
 
-  TABLE_ROWS.forEach(rowDef => {
-    if (rowDef.editable) return;
-    const row = tableRowRefs[rowDef.key];
-    months.forEach((m, i) => {
-      const val = m[rowDef.key];
-      const cell = row.cells[i];
-      cell.textContent = fmt(val);
-      cell.className = 'tcell tcell-computed' + signClass(val, rowDef);
-    });
-  });
-
-  const rowTotals = {
+  const isRowTotals = {
     houses: totals.totalHouses,
     revenue: totals.totalRevenue,
     cogs: totals.totalCOGS,
     grossProfit: totals.totalGP,
+    sga: totals.totalSGA,
     ebitda: totals.totalEBITDA,
+    depreciation: totals.totalDepreciation,
+    interest: totals.totalInterest,
+    netIncome: totals.totalNI
+  };
+  renderStatementTable(IS_TABLE_ROWS, isRowRefs, months, isRowTotals);
+
+  const cfRowTotals = {
+    cashBegin: state.equityRaise,
+    operatingCF: totals.totalOperatingCF,
+    investingCF: totals.totalInvestingCF,
+    financingCF: totals.totalFinancingCF,
+    netCF: totals.totalNetCF,
     cashEnd: totals.endCash
   };
-  TABLE_ROWS.forEach(rowDef => {
-    const val = rowTotals[rowDef.key];
-    const totalTd = tableRowRefs[rowDef.key].totalTd;
-    totalTd.textContent = rowDef.money ? fmt(val) : val;
-    totalTd.className = 'tcell tcol-total' + signClass(val, rowDef);
-  });
+  renderStatementTable(CF_TABLE_ROWS, cfRowRefs, months, cfRowTotals);
+
+  const bsRowTotals = {
+    cashEnd: totals.endCash,
+    ppe: totals.endPPE,
+    totalAssets: totals.endTotalAssets,
+    accruedInterest: totals.endAccruedInterest,
+    totalLiabilities: totals.endTotalLiabilities,
+    equityRaise: state.equityRaise,
+    retainedEarnings: totals.endRetainedEarnings,
+    equity: totals.endEquity
+  };
+  renderStatementTable(BS_TABLE_ROWS, bsRowRefs, months, bsRowTotals);
 
   buildMainChart(months);
   buildCashChart(months);
+}
+
+function renderStatementTable(rowsDef, refs, months, rowTotals) {
+  rowsDef.forEach(rowDef => {
+    if (!rowDef.editable) {
+      const row = refs[rowDef.key];
+      months.forEach((m, i) => {
+        const val = m[rowDef.key];
+        const cell = row.cells[i];
+        cell.textContent = fmt(val);
+        cell.className = 'tcell tcell-computed' + signClass(val, rowDef);
+      });
+    }
+    const val = rowTotals[rowDef.key];
+    const totalTd = refs[rowDef.key].totalTd;
+    totalTd.textContent = rowDef.money ? fmt(val) : val;
+    totalTd.className = 'tcell tcol-total' + signClass(val, rowDef);
+  });
 }
 
 /* ---------- bulk-apply sliders ---------- */
@@ -1334,6 +1447,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   goSubTab('assumptions', 0);
   renderSubTabNav('capex');
   goSubTab('capex', 0);
+  renderSubTabNav('table');
+  goSubTab('table', 0);
   const resetBtn = q('resetBtn');
   if (resetBtn) resetBtn.addEventListener('click', resetAll);
   q('houseTypeAddBtn').addEventListener('click', onHouseTypeAdd);
