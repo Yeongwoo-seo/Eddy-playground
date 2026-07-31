@@ -404,7 +404,12 @@ function buildEquipSkeleton() {
 
     const labelTd = document.createElement('td');
     labelTd.className = 'equip-label-cell';
-    labelTd.innerHTML = `<span class="equip-label">${item.label}</span><span class="equip-note">${item.note}</span>`;
+    const labelBtn = document.createElement('button');
+    labelBtn.type = 'button';
+    labelBtn.className = 'equip-label-btn';
+    labelBtn.innerHTML = `<span class="equip-label">${item.label}</span><span class="info-ic">ⓘ</span>`;
+    labelBtn.addEventListener('click', () => openItemModal('equip', i));
+    labelTd.appendChild(labelBtn);
     tr.appendChild(labelTd);
 
     const priceInput = document.createElement('input');
@@ -491,7 +496,12 @@ function buildFixedCostSkeleton() {
 
       const labelTd = document.createElement('td');
       labelTd.className = 'equip-label-cell';
-      labelTd.innerHTML = `<span class="equip-label">${item.label}</span><span class="equip-note">${item.note}</span>`;
+      const labelBtn = document.createElement('button');
+      labelBtn.type = 'button';
+      labelBtn.className = 'equip-label-btn';
+      labelBtn.innerHTML = `<span class="equip-label">${item.label}</span><span class="info-ic">ⓘ</span>`;
+      labelBtn.addEventListener('click', () => openItemModal('fixed', i));
+      labelTd.appendChild(labelBtn);
       tr.appendChild(labelTd);
 
       const monthlyInput = document.createElement('input');
@@ -542,6 +552,67 @@ function renderFixedCostTable() {
   q('sgaSubtotal').textContent = fmt(totals.sga);
   q('otherCostSubtotal').textContent = fmt(totals.other);
   q('fixedCostGrandTotal').textContent = fmt(totals.grandTotal);
+}
+
+/* ---------- item detail/settings modal (equipment & fixed cost items) ---------- */
+
+function buildModalNumberField(labelText, value, step, onChange) {
+  const wrap = document.createElement('div');
+  const label = document.createElement('label');
+  label.textContent = labelText;
+  wrap.appendChild(label);
+  const input = document.createElement('input');
+  input.type = 'number';
+  input.className = 'num-input';
+  input.min = '0';
+  input.step = step;
+  input.value = value;
+  input.addEventListener('input', () => {
+    let val = parseFloat(input.value);
+    if (isNaN(val) || val < 0) val = 0;
+    onChange(val);
+  });
+  wrap.appendChild(input);
+  return wrap;
+}
+
+function openItemModal(type, i) {
+  const title = q('itemModalTitle');
+  const settings = q('itemModalSettings');
+  const detail = q('itemModalDetail');
+  settings.innerHTML = '';
+
+  if (type === 'equip') {
+    const item = state.equipmentItems[i];
+    const row = equipRowRefs[i];
+    title.textContent = item.label;
+    settings.appendChild(buildModalNumberField('단가', item.unitPrice, '0.01', val => {
+      row.priceInput.value = val;
+      row.priceInput.dispatchEvent(new Event('input', { bubbles: true }));
+    }));
+    settings.appendChild(buildModalNumberField('수량', item.qty, '1', val => {
+      row.qtyInput.value = val;
+      row.qtyInput.dispatchEvent(new Event('input', { bubbles: true }));
+    }));
+    detail.innerHTML = item.note ? `<span class="modal-detail-label">상세 정보</span>${item.note}` : '';
+    detail.style.display = item.note ? '' : 'none';
+  } else if (type === 'fixed') {
+    const item = state.fixedCostItems[i];
+    const row = fixedCostRowRefs.find(r => r.i === i);
+    title.textContent = item.label;
+    settings.appendChild(buildModalNumberField('월 금액', item.monthly, '1', val => {
+      row.input.value = val;
+      row.input.dispatchEvent(new Event('input', { bubbles: true }));
+    }));
+    detail.innerHTML = item.note ? `<span class="modal-detail-label">상세 정보</span>${item.note}` : '';
+    detail.style.display = item.note ? '' : 'none';
+  }
+
+  q('itemModalOverlay').classList.add('on');
+}
+
+function closeItemModal() {
+  q('itemModalOverlay').classList.remove('on');
 }
 
 /* ---------- house type pricing & targets (editable) ---------- */
@@ -1059,4 +1130,12 @@ window.addEventListener('DOMContentLoaded', async () => {
   const resetBtn = q('resetBtn');
   if (resetBtn) resetBtn.addEventListener('click', resetAll);
   q('houseTypeAddBtn').addEventListener('click', onHouseTypeAdd);
+
+  q('itemModalClose').addEventListener('click', closeItemModal);
+  q('itemModalOverlay').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeItemModal();
+  });
+  window.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeItemModal();
+  });
 });
