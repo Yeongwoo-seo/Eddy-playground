@@ -10,10 +10,13 @@ minute, checks each app's rules synced from the client, and sends a Web
 Push message (VAPID + aes128gcm) to every subscribed device — so
 notifications fire even when the app/PWA is fully closed.
 
-The same Worker + KV namespace also backs a generic `/state` endpoint used
-by `lgs-model.html` to auto-save its form inputs (`GET /state?app=<name>`,
-`POST /state` with `{ app, data }`), keyed `state:<app>` in KV. Any app name
-works here — it isn't limited to the push-notification `APPS` registry.
+The same Worker + KV namespace also backs a generic `/state` endpoint
+(`GET /state?app=<name>`, `POST /state` with `{ app, data }`), keyed
+`state:<app>` in KV. Any app name works here — it isn't limited to the
+push-notification `APPS` registry. Nothing currently points `API_URL` at it
+— `lgs-model.html` syncs through Supabase instead (same shared project as
+`planner.html`/`deposit.js`; see the `SUPABASE_*` constants and
+`syncFromRemote`/`pushToRemote` near the top of `lgs-model.js`).
 
 ## One-time setup
 
@@ -43,9 +46,9 @@ works here — it isn't limited to the push-notification `APPS` registry.
    This prints the Worker's URL, e.g.
    `https://gangnangkong-tour-push.<your-subdomain>.workers.dev`.
 6. Paste that URL into `PUSH_API_URL` near the top of the notification
-   script in **both** `schedule.html` and `hangeoreum.html`, and into
-   `API_URL` near the top of `lgs-model.js`, then commit/push that change.
-   (All three point at the same Worker — no separate deploy needed per app.)
+   script in **both** `schedule.html` and `hangeoreum.html`, then
+   commit/push that change. (Both point at the same Worker — no separate
+   deploy needed per app.)
 
 ## After that
 
