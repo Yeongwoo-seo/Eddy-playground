@@ -878,6 +878,18 @@ const CaseEvidencePopup = (() => {
     const base = speeds[setting] != null ? speeds[setting] : speeds.normal;
     return base === 0 ? 0 : Math.round(base / TEXT_SPEED_MULTIPLIER);
   }
+  // 타이핑 도중 글자가 늘어나며 줄바꿈이 생겨 .cm-evp-desc가(→ 시트 전체가)
+  // 점점 커지는 걸 막기 위해, 시트가 화면에 뜨기 전에 완성된 텍스트로
+  // 최종 높이를 한 번 재서 min-height로 미리 확보해둔다. 이후
+  // typeDescription은 이 고정된 공간 안에서만 글자를 채운다.
+  function reserveDescriptionSpace(text) {
+    const descEl = sheet.querySelector('.cm-evp-desc');
+    if (!descEl) return;
+    descEl.style.minHeight = '';
+    descEl.textContent = text || '';
+    descEl.style.minHeight = descEl.offsetHeight + 'px';
+    descEl.textContent = '';
+  }
   // 설명을 한 글자씩 채워 넣고, 다 채워진 뒤에만 확인 버튼을 페이드인 +
   // 클릭 가능하게 만든다 — 버튼은 html()에서 이미 opacity:0 · pointer-
   // events:none 상태로 그려지므로 타이핑 도중에는 눌러도 반응하지 않는다.
@@ -910,9 +922,12 @@ const CaseEvidencePopup = (() => {
     busy = true;
     const photoDataUrl = await preloadEvidencePhoto(next.imageAssetId);
     sheet.innerHTML = html(next, photoDataUrl);
+    // cm-hidden(display:none)이 걸린 상태에서 재면 offsetHeight가 항상 0이라
+    // 예약이 무의미해진다 — 반드시 display:none을 먼저 풀고 나서 재야 한다.
+    root.classList.remove('cm-hidden');
+    reserveDescriptionSpace(next.summary || '');
     clearTimeout(typeStartTimer);
     typeStartTimer = setTimeout(() => typeDescription(next.summary || ''), SHEET_ENTER_MS + TEXT_START_PAUSE_MS);
-    root.classList.remove('cm-hidden');
     // 이중 rAF — 한 번만 걸면 display:none 해제와 cm-show 부여가 같은
     // 프레임으로 묶여 브라우저가 "이전 상태"를 페인트하지 못하고 그냥
     // 최종 위치로 점프해버린다(느린 트랜지션을 걸어도 애니메이션 없이
@@ -1237,7 +1252,7 @@ function injectCaseMenuStyles() {
     .cm-evp-photo-framed::before{top:-7px;left:14px;transform:rotate(-8deg)}
     .cm-evp-photo-framed::after{top:-7px;right:14px;transform:rotate(7deg)}
     .cm-evp-photo-framed .ces-icon-img{border-radius:2px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
-    .cm-evp-name{width:100%;text-align:left;font-size:18px;font-weight:800;color:#F1F3F5;margin-bottom:8px;word-break:keep-all}
+    .cm-evp-name{width:100%;text-align:center;font-size:18px;font-weight:800;color:#F1F3F5;margin-bottom:8px;word-break:keep-all}
     .cm-evp-desc{width:100%;text-align:left;font-size:13.5px;line-height:1.6;color:#C9D1D9;margin-bottom:20px;word-break:keep-all}
     /* 설명 타이핑이 끝나기 전까지는 안 보이고 눌리지도 않는다(cm-evp-confirm-ready가
        붙어야 페이드인 + 클릭 가능) — typeDescription 참고. */
