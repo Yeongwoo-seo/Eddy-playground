@@ -59,26 +59,25 @@ it auto-saves to Supabase instead, see below.)
 
 ## lgs-model.html cross-device sync (Supabase)
 
-`lgs-model.html`'s inputs auto-save to a Supabase table so the same numbers
-show up on any device, instead of using this Worker. Set up once, from the
-Supabase dashboard (works fine on mobile, no CLI needed):
+`lgs-model.html`'s inputs auto-save to Supabase so the same numbers show up
+on any device, instead of using this Worker. It reuses the same Supabase
+project (URL + anon key) already embedded in `planner.html` / `deposit.js` /
+the game — no new project needed, just its own table, created once from the
+Supabase dashboard's SQL Editor (works fine on mobile, no CLI needed):
 
-1. Create a project at supabase.com.
-2. SQL Editor → run:
-   ```sql
-   create table app_state (
-     id text primary key,
-     data jsonb not null,
-     updated_at timestamptz not null default now()
-   );
-   alter table app_state enable row level security;
-   create policy "public read" on app_state for select using (true);
-   create policy "public insert" on app_state for insert with check (true);
-   create policy "public update" on app_state for update using (true) with check (true);
-   ```
-   These policies make the row publicly readable/writable by anyone with the
-   anon key below — fine for this single-row, low-sensitivity use case, but
-   don't reuse this table/policy for anything private.
-3. Project Settings → API → copy the **Project URL** and **anon public**
-   key into `SUPABASE_URL` / `SUPABASE_ANON_KEY` near the top of
-   `lgs-model.js`, then commit/push.
+```sql
+create table lgs_model_data (
+  id text primary key,
+  data jsonb not null,
+  updated_at timestamptz not null default now()
+);
+alter table lgs_model_data enable row level security;
+create policy "public read" on lgs_model_data for select using (true);
+create policy "public insert" on lgs_model_data for insert with check (true);
+create policy "public update" on lgs_model_data for update using (true) with check (true);
+```
+
+Same shape as `planner.html`'s `schedule_data` table. These policies make
+the row publicly readable/writable by anyone with the anon key — fine for
+this single-row, low-sensitivity use case, but don't reuse this table/policy
+for anything private.

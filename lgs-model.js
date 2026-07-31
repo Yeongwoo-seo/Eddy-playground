@@ -182,37 +182,46 @@ let houseTypeRowRefs = [];
 let fixedCostRowRefs = [];
 
 /* ---------- auto-save to Supabase (share across devices) ---------- */
-// Fill in your Supabase project URL + anon public key (Project Settings >
-// API) after creating the `app_state` table — see worker/README.md for the
-// SQL. Blank means auto-save/load is a no-op and the page behaves as before.
-const SUPABASE_URL = '';
-const SUPABASE_ANON_KEY = '';
-const STATE_ROW_ID = 'lgs-model';
+// Same project + anon key already used by planner.html / deposit.js / the
+// game (Supabase anon key is meant to be public client-side — that's the
+// point of the "anon" role). Own table here (`lgs_model_data`), same
+// id/data/updated_at shape as planner.html's `schedule_data` — see
+// worker/README.md for the create-table SQL.
+const SUPABASE_URL = 'https://dhtstqnksjoyyshnhksv.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRodHN0cW5rc2pveXlzaG5oa3N2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5NjIyNzQsImV4cCI6MjA5ODUzODI3NH0.FMZdCXntYJKxQeYNwfrsy1liJcHIkD2inJ4NzbwLzd4';
+const SUPABASE_TABLE = 'lgs_model_data';
+const SUPABASE_ROW_ID = 'model';
 
 function supabaseHeaders(extra) {
-  return { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`, ...extra };
+  return { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json', ...extra };
 }
 
 let saveTimer = null;
 function scheduleSave() {
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return;
+  state.lastModified = Date.now();
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
-    fetch(`${SUPABASE_URL}/rest/v1/app_state`, {
+    fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?on_conflict=id`, {
       method: 'POST',
-      headers: supabaseHeaders({ 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' }),
-      body: JSON.stringify({ id: STATE_ROW_ID, data: state, updated_at: new Date().toISOString() })
+      headers: supabaseHeaders({ Prefer: 'resolution=merge-duplicates,return=minimal' }),
+      body: JSON.stringify({ id: SUPABASE_ROW_ID, data: state, updated_at: new Date().toISOString() })
     }).catch(() => {});
   }, 800);
 }
 
+async function fetchRemoteState() {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?id=eq.${SUPABASE_ROW_ID}&select=data`, {
+    headers: supabaseHeaders(),
+    cache: 'no-store'
+  });
+  if (!res.ok) return null;
+  const rows = await res.json();
+  return (rows[0] && rows[0].data) || null;
+}
+
 async function loadStateFromServer() {
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return;
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/app_state?id=eq.${STATE_ROW_ID}&select=data`, { headers: supabaseHeaders() });
-    if (!res.ok) return;
-    const rows = await res.json();
-    const data = rows[0] && rows[0].data;
+    const data = await fetchRemoteState();
     if (data && Object.keys(data).length) {
       state = Object.assign(buildDefaultState(), data);
     }
@@ -222,22 +231,24 @@ async function loadStateFromServer() {
 }
 
 // Other devices only push their edits on save, so pick up remote changes
-// whenever this tab regains focus (reload is simplest — every dynamic list
-// on the page would otherwise need its own merge/re-skeleton logic).
+// whenever this tab regains focus. Only applies a remote copy that's
+// actually newer than what's loaded here — otherwise a save can get raced
+// and reverted by a periodic pull that started just before it landed.
+// Reload (rather than an in-place merge) is simplest since every dynamic
+// list on this page would otherwise need its own rebuild-from-state logic.
 async function refreshFromServerIfChanged() {
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY || document.visibilityState !== 'visible') return;
+  if (document.visibilityState !== 'visible') return;
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/app_state?id=eq.${STATE_ROW_ID}&select=data`, { headers: supabaseHeaders() });
-    if (!res.ok) return;
-    const rows = await res.json();
-    const data = rows[0] && rows[0].data;
-    if (data && Object.keys(data).length && JSON.stringify(data) !== JSON.stringify(state)) {
-      location.reload();
-    }
+    const data = await fetchRemoteState();
+    if (!data) return;
+    if ((data.lastModified || 0) <= (state.lastModified || 0)) return;
+    if (JSON.stringify(data) === JSON.stringify(state)) return;
+    location.reload();
   } catch (e) {
-    // offline or Supabase unreachable — ignore, next focus will retry
+    // offline or Supabase unreachable — next poll/focus will retry
   }
 }
+setInterval(refreshFromServerIfChanged, 20000);
 document.addEventListener('visibilitychange', refreshFromServerIfChanged);
 
 function fmt(n) {
