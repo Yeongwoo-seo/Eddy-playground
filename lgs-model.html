@@ -322,25 +322,26 @@ label.calc-toggle-row{display:flex;align-items:center;gap:8px}
 
   <div class="sub-panel" id="subtab-variable">
   <div class="card" data-collapsible data-total-id="varPctTotal">
-    <div class="section-label"><div class="section-dot"></div><span>변동비 구성 (매출 대비 %)</span></div>
-    <div class="section-note">코일(철강) · 스크류/파스너 · 외주 디테일링 · 기타(설치 등)로 구성돼요. 슬라이더는 전체 월에 일괄 적용돼요.</div>
+    <div class="section-label"><div class="section-dot"></div><span>변동비 구성 (생산량 기준)</span></div>
+    <div class="section-note">코일 · 스크류는 매출 %가 아니라 그 달 판매량(주택수)에 필요한 생산면적(sqm)을 기준으로 계산돼요. 사용량 자체(L/sqm, 개/sqm)는 가정 &gt; 조건 탭에서 조정하세요. 외주 디테일링 · 기타는 매출 대비 %로 계산돼요.</div>
     <div class="slider-row">
-      <div class="slider-label-row"><span class="slider-label">코일(철강)</span><span class="slider-value" id="coilPctVal" data-fmt="pct">-</span></div>
-      <input type="range" class="slider" id="coilPct" min="0" max="50" step="1">
+      <div class="slider-label-row"><span class="slider-label">코일 단가 (Truecore G550, $/L)</span><span class="slider-value" id="coilPricePerLmVal">-</span></div>
+      <input type="range" class="slider" id="coilPricePerLm" min="0.5" max="6" step="0.1">
     </div>
     <div class="slider-row">
-      <div class="slider-label-row"><span class="slider-label">스크류/파스너</span><span class="slider-value" id="screwPctVal" data-fmt="pct">-</span></div>
-      <input type="range" class="slider" id="screwPct" min="0" max="20" step="1">
+      <div class="slider-label-row"><span class="slider-label">스크류 단가 ($/1000개)</span><span class="slider-value" id="screwPricePer1000Val">-</span></div>
+      <input type="range" class="slider" id="screwPricePer1000" min="10" max="150" step="5">
     </div>
     <div class="slider-row">
-      <div class="slider-label-row"><span class="slider-label">외주 디테일링</span><span class="slider-value" id="detailPctVal" data-fmt="pct">-</span></div>
+      <div class="slider-label-row"><span class="slider-label">외주 디테일링 (매출 %)</span><span class="slider-value" id="detailPctVal" data-fmt="pct">-</span></div>
       <input type="range" class="slider" id="detailPct" min="0" max="30" step="1">
     </div>
     <div class="slider-row">
-      <div class="slider-label-row"><span class="slider-label">기타(설치 등)</span><span class="slider-value" id="otherVarPctVal" data-fmt="pct">-</span></div>
+      <div class="slider-label-row"><span class="slider-label">기타(설치 등, 매출 %)</span><span class="slider-value" id="otherVarPctVal" data-fmt="pct">-</span></div>
       <input type="range" class="slider" id="otherVarPct" min="0" max="20" step="1">
     </div>
     <span id="varPctTotal" hidden></span>
+    <div class="table-hint">코일 단가 기본값 $2.60/L 산출 근거: Truecore G550 철강 코일 시세 추정치(~AUD $2,400/tonne)를 조건 탭의 프로파일 평균 중량(~1.1kg/L)으로 환산한 값이에요 — 실제 매입 견적을 받으면 직접 입력하세요.</div>
   </div>
   </div>
 
@@ -602,6 +603,22 @@ label.calc-toggle-row{display:flex;align-items:center;gap:8px}
           <tr id="isHeadRow"><th>항목</th></tr>
         </thead>
         <tbody id="isTableBody"></tbody>
+      </table>
+    </div>
+    <div class="table-hint">가로로 스크롤해서 전체 월을 확인하세요. 항목 열은 고정돼 있어요.</div>
+  </div>
+  </div>
+
+  <div class="sub-panel" id="subtab-var">
+  <div class="card">
+    <div class="section-label"><div class="section-dot"></div><span>변동비 브레이크다운 (월별)</span></div>
+    <div class="section-note">코일 · 스크류는 그 달 생산면적(sqm) 기준, 외주 디테일링 · 기타는 매출 대비 %로 계산돼요.</div>
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead>
+          <tr id="varHeadRow"><th>항목</th></tr>
+        </thead>
+        <tbody id="varTableBody"></tbody>
       </table>
     </div>
     <div class="table-hint">가로로 스크롤해서 전체 월을 확인하세요. 항목 열은 고정돼 있어요.</div>
