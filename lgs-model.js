@@ -1344,12 +1344,14 @@ function initCollapsibleCards() {
     card.classList.add('collapsed');
     const label = card.querySelector('.section-label');
     if (!label) return;
-    const toggle = document.createElement('button');
-    toggle.type = 'button';
+    const toggle = document.createElement('span');
     toggle.className = 'section-collapse-toggle';
     toggle.innerHTML = '<span class="section-collapse-amount"></span><span class="section-collapse-chevron"></span>';
-    toggle.addEventListener('click', () => card.classList.toggle('collapsed'));
     label.appendChild(toggle);
+    label.addEventListener('click', e => {
+      if (e.target.closest('.unit-toggle')) return;
+      card.classList.toggle('collapsed');
+    });
   });
   syncAllCollapsibleAmounts();
 }

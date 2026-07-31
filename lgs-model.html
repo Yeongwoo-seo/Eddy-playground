@@ -74,7 +74,8 @@ body{background:var(--bg);color:var(--black);font-family:'Pretendard',-apple-sys
 .section-note{font-size:12px;color:var(--grey-500);font-weight:500;margin:-10px 0 16px;line-height:1.5}
 
 /* Collapsible cards */
-.section-collapse-toggle{margin-left:auto;display:flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;padding:4px 0 4px 8px;font-family:inherit}
+.card[data-collapsible] .section-label{cursor:pointer}
+.section-collapse-toggle{margin-left:auto;display:flex;align-items:center;gap:8px;padding:4px 0 4px 8px}
 .section-collapse-amount{display:none;font-size:14px;font-weight:800;color:var(--primary)}
 .card.collapsed .section-collapse-amount{display:inline}
 .section-collapse-chevron{width:8px;height:8px;flex:none;border-right:2px solid var(--grey-500);border-bottom:2px solid var(--grey-500);transform:rotate(-135deg);margin-top:2px;transition:transform .3s cubic-bezier(.2,.8,.2,1)}
