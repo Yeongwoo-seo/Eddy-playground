@@ -331,9 +331,8 @@ label.calc-toggle-row{display:flex;align-items:center;gap:8px}
   <div class="sub-panel" id="subtab-variable">
   <div class="card" data-collapsible data-total-id="varPctTotal">
     <div class="section-label"><div class="section-dot"></div><span>변동비 구성 (생산량 기준)</span></div>
-    <div class="section-note">코일 · 스크류 · 생산 인건비는 매출 %가 아니라 그 달 판매량(주택수)에 필요한 생산면적(sqm)을 기준으로 계산돼요. 사용량(L/sqm, 개/sqm)과 스크랩률은 가정 &gt; 조건 탭에서 조정하세요 — 스크랩률만큼 더 구매하는 물량이 이 변동비에도 그대로 반영돼요. 생산 인건비는 그 sqm을 조건 탭의 노무 생산성으로 나눠 필요 인시를 구하고, 여기서 정한 시급을 곱해 계산해요 — 판매량이 늘면 인건비도 같이 늘어요. 외주 디테일링 · 기타는 매출 대비 %로 계산돼요.</div>
     <div class="slider-row">
-      <div class="slider-label-row"><span class="slider-label">코일 단가 (Truecore G550, $/L)</span><span class="slider-value" id="coilPricePerLmVal">-</span></div>
+      <div class="slider-label-row"><span class="slider-label">코일 단가 (Truecore G550, $/lm)</span><span class="slider-value" id="coilPricePerLmVal">-</span></div>
       <input type="range" class="slider" id="coilPricePerLm" min="0.5" max="6" step="0.1">
     </div>
     <div class="slider-row">
@@ -353,7 +352,7 @@ label.calc-toggle-row{display:flex;align-items:center;gap:8px}
       <input type="range" class="slider" id="otherVarPct" min="0" max="20" step="1">
     </div>
     <span id="varPctTotal" hidden></span>
-    <div class="table-hint">코일 단가 기본값 $2.60/L 산출 근거: Truecore G550 철강 코일 시세 추정치(~AUD $2,400/tonne)를 조건 탭의 프로파일 평균 중량(~1.1kg/L)으로 환산한 값이에요 — 실제 매입 견적을 받으면 직접 입력하세요. 생산 인건비 시급 기본값 $28.125는 Fair Work 금속제조업 award 기준 추정치예요.</div>
+    <div class="table-hint">코일 단가 기본값 $2.60/lm 산출 근거: Truecore G550 철강 코일 시세 추정치(~AUD $2,400/tonne)를 조건 탭의 프로파일 평균 중량(~1.1kg/L)으로 환산한 값이에요 — 실제 매입 견적을 받으면 직접 입력하세요. 생산 인건비 시급 기본값 $28.125는 Fair Work 금속제조업 award 기준 추정치예요.</div>
   </div>
   </div>
 
