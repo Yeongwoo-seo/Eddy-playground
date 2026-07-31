@@ -43,6 +43,7 @@ const DEFAULTS = {
   screwPct: 5,
   detailPct: 10,
   otherVarPct: 5,
+  coilLmPerSqm: 16,
   fixedCostItems: [
     { category: 'fixedProd', label: '공장·창고 임대료', note: 'Western Sydney 산업단지 창고 (~450㎡, 순임대료 ~A$160/㎡/yr 기준)', monthly: 6000 },
     { category: 'fixedProd', label: '공장 전기·수도', note: 'SP120 롤포밍기 가동 전력 + 용수/폐수', monthly: 1500 },
@@ -91,16 +92,29 @@ const DEFAULTS = {
 };
 
 function computeHouseTypeTotals(houseTypes, pricePerSqm) {
-  let totalQty = 0, totalRevenue = 0;
+  let totalQty = 0, totalRevenue = 0, totalSqm = 0;
   const rows = houseTypes.map(t => {
     const unitPrice = t.sqm * pricePerSqm;
     const subtotal = unitPrice * t.targetQty;
     totalQty += t.targetQty;
     totalRevenue += subtotal;
+    totalSqm += t.sqm * t.targetQty;
     return { label: t.label, sqm: t.sqm, targetQty: t.targetQty, unitPrice, subtotal };
   });
   const blendedPrice = totalQty > 0 ? totalRevenue / totalQty : 0;
-  return { rows, totalQty, totalRevenue, blendedPrice };
+  const avgSqm = totalQty > 0 ? totalSqm / totalQty : 0;
+  return { rows, totalQty, totalRevenue, totalSqm, blendedPrice, avgSqm };
+}
+
+/* coil usage: physical coil consumed per sqm of frame produced (linear metres, "L")
+   default sourced from FRAMECAD's published steel-weight estimate for single-storey
+   residential (~18kg/sqm) divided by a blended profile weight (~1.1kg/lm across the
+   stud/track/nogging mix a FrameCAD roll-former typically runs) — see table-hint below.
+   this is the production-volume metric the future per-L incentive scheme will pay against. */
+function computeCoilUsage(houseTypeTotals, coilLmPerSqm) {
+  const totalCoilLm = houseTypeTotals.totalSqm * coilLmPerSqm;
+  const avgLmPerHouse = houseTypeTotals.totalQty > 0 ? totalCoilLm / houseTypeTotals.totalQty : 0;
+  return { totalSqm: houseTypeTotals.totalSqm, totalCoilLm, avgLmPerHouse };
 }
 
 function computeFixedCostTotals(items) {
@@ -145,6 +159,7 @@ function buildDefaultState() {
     screwPct: DEFAULTS.screwPct,
     detailPct: DEFAULTS.detailPct,
     otherVarPct: DEFAULTS.otherVarPct,
+    coilLmPerSqm: DEFAULTS.coilLmPerSqm,
     fixedCostItems: buildDefaultFixedCostItems(),
     equityRaise: DEFAULTS.equityRaise,
     stage1Amount: DEFAULTS.stage1Amount,
@@ -907,6 +922,15 @@ function renderComputed() {
   const varPctEl = q('varPctTotal');
   if (varPctEl) varPctEl.textContent = totalVarPct.toFixed(1) + '%';
 
+  const htTotals = computeHouseTypeTotals(state.houseTypes, state.pricePerSqm);
+  const coilUsage = computeCoilUsage(htTotals, state.coilLmPerSqm);
+  const coilUsageSqmEl = q('coilUsageTotalSqm');
+  if (coilUsageSqmEl) coilUsageSqmEl.textContent = coilUsage.totalSqm.toLocaleString('en-US') + ' sqm';
+  const coilUsageLmEl = q('coilUsageTotalLm');
+  if (coilUsageLmEl) coilUsageLmEl.textContent = Math.round(coilUsage.totalCoilLm).toLocaleString('en-US') + ' L';
+  const coilUsagePerHouseEl = q('coilUsagePerHouse');
+  if (coilUsagePerHouseEl) coilUsagePerHouseEl.textContent = Math.round(coilUsage.avgLmPerHouse).toLocaleString('en-US') + ' L/채';
+
   months.forEach((m, i) => {
     const row = rowRefs[i];
     row.inputs._revenue.textContent = fmt(m.revenue);
@@ -990,6 +1014,22 @@ function bindPricePerSqmSlider() {
   });
 }
 
+function bindCoilLmPerSqmSlider() {
+  const elx = q('coilLmPerSqm');
+  const label = q('coilLmPerSqmVal');
+  elx.value = state.coilLmPerSqm;
+  setSliderFill(elx);
+  label.textContent = state.coilLmPerSqm.toFixed(1) + ' L/sqm';
+  elx.addEventListener('input', () => {
+    const val = parseFloat(elx.value);
+    state.coilLmPerSqm = val;
+    setSliderFill(elx);
+    label.textContent = val.toFixed(1) + ' L/sqm';
+    renderComputed();
+    scheduleSave();
+  });
+}
+
 function bindScalarInput(id, key) {
   const elx = q(id);
   elx.value = state[key];
@@ -1028,6 +1068,10 @@ function resetAll() {
   ['equityRaise', 'stage1Amount', 'stage2Amount', 'stage3Amount'].forEach(id => {
     q(id).value = DEFAULTS[id];
   });
+  const coilLmElx = q('coilLmPerSqm');
+  coilLmElx.value = DEFAULTS.coilLmPerSqm;
+  setSliderFill(coilLmElx);
+  q('coilLmPerSqmVal').textContent = DEFAULTS.coilLmPerSqm.toFixed(1) + ' L/sqm';
   const ppsElx = q('pricePerSqm');
   ppsElx.value = DEFAULTS.pricePerSqm;
   setSliderFill(ppsElx);
@@ -1054,6 +1098,7 @@ function initControls() {
   bindBulkSlider('screwPct', true, v => applyPctAll('screw', v));
   bindBulkSlider('detailPct', true, v => applyPctAll('detail', v));
   bindBulkSlider('otherVarPct', true, v => applyPctAll('otherVar', v));
+  bindCoilLmPerSqmSlider();
   bindScalarInput('equityRaise', 'equityRaise');
   bindScalarInput('stage1Amount', 'stage1Amount');
   bindScalarInput('stage2Amount', 'stage2Amount');
