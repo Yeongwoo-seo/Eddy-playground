@@ -196,9 +196,9 @@ function buildDefaultState() {
 
 let state = buildDefaultState();
 
-let rowRefs = [];
-let cfRowRefs = [];
-let bsRowRefs = [];
+let isRowRefs = {};
+let cfRowRefs = {};
+let bsRowRefs = {};
 let equipRowRefs = [];
 let houseTypeRowRefs = [];
 let fixedCostRowRefs = [];
@@ -302,8 +302,9 @@ function computeAll() {
       coil: m.coil, screw: m.screw, detail: m.detail, otherVar: m.otherVar,
       fixedProd: m.fixedProd, sga: m.sga, depreciation: m.depreciation, interest: m.interest,
       revenue, varCost, cogs, grossProfit, ebitda, netIncome, capex,
-      operatingCF, investingCF, financingCF, netCF, cashBegin, cashEnd,
-      ppe, accruedInterest, totalAssets, totalLiabilities, retainedEarnings, equity
+      cashBegin, operatingCF, investingCF, financingCF, netCF, cashEnd,
+      ppe, accruedInterest, totalAssets, totalLiabilities, equityRaise: state.equityRaise,
+      retainedEarnings, equity
     });
   });
 
@@ -325,16 +326,16 @@ function computeAll() {
     totalInvestingCF: sum(months, 'investingCF'),
     totalFinancingCF: sum(months, 'financingCF'),
     totalNetCF: sum(months, 'netCF'),
+    totalMachineCapex: state.stage1Amount + state.stage2Amount + state.stage3Amount,
+    totalEquipmentCapex,
+    totalHouses: sum(months, 'houses'),
+    endCash: months[11].cashEnd,
     endPPE: months[11].ppe,
     endAccruedInterest: months[11].accruedInterest,
     endTotalAssets: months[11].totalAssets,
     endTotalLiabilities: months[11].totalLiabilities,
     endRetainedEarnings: months[11].retainedEarnings,
     endEquity: months[11].equity,
-    totalMachineCapex: state.stage1Amount + state.stage2Amount + state.stage3Amount,
-    totalEquipmentCapex,
-    totalHouses: sum(months, 'houses'),
-    endCash: months[11].cashEnd,
     minCash: Math.min(state.equityRaise, ...months.map(m => m.cashEnd))
   };
   totals.totalGP = totals.totalRevenue - totals.totalCOGS;
@@ -1022,147 +1023,118 @@ function renderMonthlyRampTable() {
   if (totalQtyEl) totalQtyEl.textContent = totalQty + '채';
 }
 
-/* ---------- table (editable) ---------- */
+/* ---------- table (big categories, months as columns; split into IS/CF/BS) ---------- */
 
-const EDIT_KEYS = ['houses', 'salePrice', 'coil', 'screw', 'detail', 'otherVar', 'fixedProd', 'sga', 'depreciation', 'interest'];
+function signClass(val, rowDef) {
+  if (rowDef.posNeg) return val < 0 ? ' neg' : ' pos';
+  if (rowDef.negOnly) return val < 0 ? ' neg' : '';
+  return '';
+}
 
-function buildTableSkeleton() {
-  const tbody = q('tableBody');
+const IS_TABLE_ROWS = [
+  { key: 'houses', label: '주택수', editable: true, money: false },
+  { key: 'revenue', label: '매출', editable: false, money: true },
+  { key: 'cogs', label: '매출원가', editable: false, money: true },
+  { key: 'grossProfit', label: '매출총이익', editable: false, money: true, negOnly: true },
+  { key: 'sga', label: 'SG&A', editable: false, money: true },
+  { key: 'ebitda', label: 'EBITDA', editable: false, money: true, posNeg: true },
+  { key: 'depreciation', label: '감가상각비', editable: false, money: true },
+  { key: 'interest', label: '이자비용', editable: false, money: true },
+  { key: 'netIncome', label: '당기순이익', editable: false, money: true, posNeg: true }
+];
+
+const CF_TABLE_ROWS = [
+  { key: 'cashBegin', label: '기초현금', editable: false, money: true },
+  { key: 'operatingCF', label: '영업활동 현금흐름', editable: false, money: true, posNeg: true },
+  { key: 'investingCF', label: '투자활동 현금흐름', editable: false, money: true, negOnly: true },
+  { key: 'financingCF', label: '재무활동 현금흐름', editable: false, money: true },
+  { key: 'netCF', label: '순현금흐름', editable: false, money: true, posNeg: true },
+  { key: 'cashEnd', label: '기말현금', editable: false, money: true, negOnly: true }
+];
+
+const BS_TABLE_ROWS = [
+  { key: 'cashEnd', label: '현금', editable: false, money: true, negOnly: true },
+  { key: 'ppe', label: '순유형자산', editable: false, money: true },
+  { key: 'totalAssets', label: '자산총계', editable: false, money: true },
+  { key: 'accruedInterest', label: '미지급이자', editable: false, money: true },
+  { key: 'totalLiabilities', label: '부채총계', editable: false, money: true },
+  { key: 'equityRaise', label: '자본금', editable: false, money: true },
+  { key: 'retainedEarnings', label: '이익잉여금', editable: false, money: true, negOnly: true },
+  { key: 'equity', label: '자본총계', editable: false, money: true }
+];
+
+function buildStatementTableSkeleton(headRowId, bodyId, rowsDef, totalLabel) {
+  const headRow = q(headRowId);
+  headRow.innerHTML = '<th>항목</th>' +
+    MONTH_PHASE.map((phase, i) => `<th>M${i + 1}<span class="tphase">${phase}</span></th>`).join('') +
+    `<th class="tcol-total">${totalLabel}</th>`;
+
+  const tbody = q(bodyId);
   tbody.innerHTML = '';
-  rowRefs = [];
+  const refs = {};
 
-  for (let i = 0; i < 12; i++) {
+  rowsDef.forEach(rowDef => {
     const tr = document.createElement('tr');
-    const m = state.months[i];
+    const labelTd = document.createElement('td');
+    labelTd.className = 'tcell tcell-month';
+    labelTd.textContent = rowDef.label;
+    tr.appendChild(labelTd);
 
-    const monthTd = document.createElement('td');
-    monthTd.className = 'tcell tcell-month';
-    monthTd.innerHTML = `M${i + 1}<span class="tphase">${MONTH_PHASE[i]}</span>`;
-    tr.appendChild(monthTd);
-
-    const inputs = {};
-    EDIT_KEYS.forEach(key => {
+    const cells = [];
+    for (let i = 0; i < 12; i++) {
       const td = document.createElement('td');
       td.className = 'tcell';
-      const input = document.createElement('input');
-      input.type = 'number';
-      input.className = 'tinput';
-      input.min = '0';
-      input.step = key === 'houses' ? '1' : '1';
-      input.value = m[key];
-      input.dataset.i = i;
-      input.dataset.key = key;
-      input.addEventListener('input', onCellInput);
-      td.appendChild(key === 'houses' ? input : wrapMoneyInput(input, 'money-t'));
-      tr.appendChild(td);
-      inputs[key] = input;
-
-      // insert revenue as a computed cell right after salePrice
-      if (key === 'salePrice') {
-        const revTd = document.createElement('td');
-        revTd.className = 'tcell tcell-computed';
-        tr.appendChild(revTd);
-        inputs._revenue = revTd;
+      if (rowDef.editable) {
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.className = 'tinput';
+        input.min = '0';
+        input.step = '1';
+        input.value = state.months[i][rowDef.key];
+        input.dataset.i = i;
+        input.dataset.key = rowDef.key;
+        input.addEventListener('input', onCellInput);
+        td.appendChild(input);
+        cells.push(input);
+      } else {
+        td.classList.add('tcell-computed');
+        cells.push(td);
       }
-    });
+      tr.appendChild(td);
+    }
 
-    const gpTd = document.createElement('td');
-    gpTd.className = 'tcell tcell-computed';
-    tr.appendChild(gpTd);
-    const ebitdaTd = document.createElement('td');
-    ebitdaTd.className = 'tcell tcell-computed';
-    tr.appendChild(ebitdaTd);
-    const niTd = document.createElement('td');
-    niTd.className = 'tcell tcell-computed';
-    tr.appendChild(niTd);
+    const totalTd = document.createElement('td');
+    totalTd.className = 'tcell tcol-total';
+    tr.appendChild(totalTd);
 
     tbody.appendChild(tr);
-    rowRefs.push({ inputs, gpTd, ebitdaTd, niTd });
-  }
+    refs[rowDef.key] = { cells, totalTd };
+  });
 
-  const totalTr = document.createElement('tr');
-  totalTr.className = 'trow-total';
-  totalTr.id = 'totalRow';
-  tbody.appendChild(totalTr);
+  return refs;
 }
 
-function buildCFTableSkeleton() {
-  const tbody = q('cfTableBody');
-  if (!tbody) return;
-  tbody.innerHTML = '';
-  cfRowRefs = [];
-
-  for (let i = 0; i < 12; i++) {
-    const tr = document.createElement('tr');
-    const monthTd = document.createElement('td');
-    monthTd.className = 'tcell tcell-month';
-    monthTd.innerHTML = `M${i + 1}<span class="tphase">${MONTH_PHASE[i]}</span>`;
-    tr.appendChild(monthTd);
-
-    const cells = {};
-    ['cashBegin', 'operatingCF', 'investingCF', 'financingCF', 'netCF', 'cashEnd'].forEach(key => {
-      const td = document.createElement('td');
-      td.className = 'tcell tcell-computed';
-      tr.appendChild(td);
-      cells[key] = td;
-    });
-
-    tbody.appendChild(tr);
-    cfRowRefs.push(cells);
-  }
-
-  const totalTr = document.createElement('tr');
-  totalTr.className = 'trow-total';
-  totalTr.id = 'cfTotalRow';
-  tbody.appendChild(totalTr);
-}
-
-function buildBSTableSkeleton() {
-  const tbody = q('bsTableBody');
-  if (!tbody) return;
-  tbody.innerHTML = '';
-  bsRowRefs = [];
-
-  for (let i = 0; i < 12; i++) {
-    const tr = document.createElement('tr');
-    const monthTd = document.createElement('td');
-    monthTd.className = 'tcell tcell-month';
-    monthTd.innerHTML = `M${i + 1}<span class="tphase">${MONTH_PHASE[i]}</span>`;
-    tr.appendChild(monthTd);
-
-    const cells = {};
-    ['cashEnd', 'ppe', 'totalAssets', 'accruedInterest', 'totalLiabilities', 'equityRaise', 'retainedEarnings', 'equity'].forEach(key => {
-      const td = document.createElement('td');
-      td.className = 'tcell tcell-computed';
-      tr.appendChild(td);
-      cells[key] = td;
-    });
-
-    tbody.appendChild(tr);
-    bsRowRefs.push(cells);
-  }
+function buildTableSkeleton() {
+  isRowRefs = buildStatementTableSkeleton('isHeadRow', 'isTableBody', IS_TABLE_ROWS, 'Y1 합계');
+  cfRowRefs = buildStatementTableSkeleton('cfHeadRow', 'cfTableBody', CF_TABLE_ROWS, 'Y1 합계');
+  bsRowRefs = buildStatementTableSkeleton('bsHeadRow', 'bsTableBody', BS_TABLE_ROWS, 'Y1 말');
 }
 
 function onCellInput(e) {
   const inp = e.target;
   const i = Number(inp.dataset.i);
-  const key = inp.dataset.key;
   let val = parseFloat(inp.value);
   if (isNaN(val) || val < 0) val = 0;
-  state.months[i][key] = val;
-  if (key === 'houses' || key === 'salePrice') {
-    reapplyVariableCostPcts([i]);
-    syncInputsFromState();
-  }
+  state.months[i].houses = val;
+  reapplyVariableCostPcts([i]);
+  syncInputsFromState();
   renderComputed();
   scheduleSave();
 }
 
 function syncInputsFromState() {
-  rowRefs.forEach((row, i) => {
-    const m = state.months[i];
-    EDIT_KEYS.forEach(key => { row.inputs[key].value = m[key]; });
-  });
+  const row = isRowRefs.houses;
+  if (row) row.cells.forEach((input, i) => { input.value = state.months[i].houses; });
   monthlyRampRowRefs.forEach((row, i) => { row.qtyInput.value = state.months[i].houses; });
 }
 
@@ -1197,86 +1169,60 @@ function renderComputed() {
   const coilUsagePerHouseEl = q('coilUsagePerHouse');
   if (coilUsagePerHouseEl) coilUsagePerHouseEl.textContent = Math.round(coilUsage.avgLmPerHouse).toLocaleString('en-US') + ' L/채';
 
-  months.forEach((m, i) => {
-    const row = rowRefs[i];
-    row.inputs._revenue.textContent = fmt(m.revenue);
-    row.gpTd.textContent = fmt(m.grossProfit);
-    row.gpTd.className = 'tcell tcell-computed' + (m.grossProfit < 0 ? ' neg' : '');
-    row.ebitdaTd.textContent = fmt(m.ebitda);
-    row.ebitdaTd.className = 'tcell tcell-computed' + (m.ebitda < 0 ? ' neg' : ' pos');
-    row.niTd.textContent = fmt(m.netIncome);
-    row.niTd.className = 'tcell tcell-computed' + (m.netIncome < 0 ? ' neg' : ' pos');
-  });
+  const isRowTotals = {
+    houses: totals.totalHouses,
+    revenue: totals.totalRevenue,
+    cogs: totals.totalCOGS,
+    grossProfit: totals.totalGP,
+    sga: totals.totalSGA,
+    ebitda: totals.totalEBITDA,
+    depreciation: totals.totalDepreciation,
+    interest: totals.totalInterest,
+    netIncome: totals.totalNI
+  };
+  renderStatementTable(IS_TABLE_ROWS, isRowRefs, months, isRowTotals);
 
-  const totalTr = q('totalRow');
-  totalTr.innerHTML = `
-    <td class="tcell tcell-month">Y1 합계</td>
-    <td class="tcell">${totals.totalHouses}</td>
-    <td class="tcell">-</td>
-    <td class="tcell">${fmt(totals.totalRevenue)}</td>
-    <td class="tcell">${fmt(totals.totalCoil)}</td>
-    <td class="tcell">${fmt(totals.totalScrew)}</td>
-    <td class="tcell">${fmt(totals.totalDetail)}</td>
-    <td class="tcell">${fmt(totals.totalOtherVar)}</td>
-    <td class="tcell">${fmt(totals.totalFixedProd)}</td>
-    <td class="tcell">${fmt(totals.totalSGA)}</td>
-    <td class="tcell">${fmt(totals.totalDepreciation)}</td>
-    <td class="tcell">${fmt(totals.totalInterest)}</td>
-    <td class="tcell ${totals.totalGP < 0 ? 'neg' : ''}">${fmt(totals.totalGP)}</td>
-    <td class="tcell ${totals.totalEBITDA < 0 ? 'neg' : 'pos'}">${fmt(totals.totalEBITDA)}</td>
-    <td class="tcell ${totals.totalNI < 0 ? 'neg' : 'pos'}">${fmt(totals.totalNI)}</td>
-  `;
+  const cfRowTotals = {
+    cashBegin: state.equityRaise,
+    operatingCF: totals.totalOperatingCF,
+    investingCF: totals.totalInvestingCF,
+    financingCF: totals.totalFinancingCF,
+    netCF: totals.totalNetCF,
+    cashEnd: totals.endCash
+  };
+  renderStatementTable(CF_TABLE_ROWS, cfRowRefs, months, cfRowTotals);
 
-  renderCFTable(months, totals);
-  renderBSTable(months);
+  const bsRowTotals = {
+    cashEnd: totals.endCash,
+    ppe: totals.endPPE,
+    totalAssets: totals.endTotalAssets,
+    accruedInterest: totals.endAccruedInterest,
+    totalLiabilities: totals.endTotalLiabilities,
+    equityRaise: state.equityRaise,
+    retainedEarnings: totals.endRetainedEarnings,
+    equity: totals.endEquity
+  };
+  renderStatementTable(BS_TABLE_ROWS, bsRowRefs, months, bsRowTotals);
 
   buildMainChart(months);
   buildCashChart(months);
 }
 
-function renderCFTable(months, totals) {
-  if (!cfRowRefs.length) return;
-  months.forEach((m, i) => {
-    const row = cfRowRefs[i];
-    row.cashBegin.textContent = fmt(m.cashBegin);
-    row.operatingCF.textContent = fmt(m.operatingCF);
-    row.operatingCF.className = 'tcell tcell-computed' + (m.operatingCF < 0 ? ' neg' : ' pos');
-    row.investingCF.textContent = fmt(m.investingCF);
-    row.investingCF.className = 'tcell tcell-computed' + (m.investingCF < 0 ? ' neg' : '');
-    row.financingCF.textContent = fmt(m.financingCF);
-    row.netCF.textContent = fmt(m.netCF);
-    row.netCF.className = 'tcell tcell-computed' + (m.netCF < 0 ? ' neg' : ' pos');
-    row.cashEnd.textContent = fmt(m.cashEnd);
-    row.cashEnd.className = 'tcell tcell-computed' + (m.cashEnd < 0 ? ' neg' : '');
-  });
-
-  const totalTr = q('cfTotalRow');
-  if (totalTr) {
-    totalTr.innerHTML = `
-      <td class="tcell tcell-month">Y1 합계</td>
-      <td class="tcell">${fmt(state.equityRaise)}</td>
-      <td class="tcell ${totals.totalOperatingCF < 0 ? 'neg' : 'pos'}">${fmt(totals.totalOperatingCF)}</td>
-      <td class="tcell ${totals.totalInvestingCF < 0 ? 'neg' : ''}">${fmt(totals.totalInvestingCF)}</td>
-      <td class="tcell">${fmt(totals.totalFinancingCF)}</td>
-      <td class="tcell ${totals.totalNetCF < 0 ? 'neg' : 'pos'}">${fmt(totals.totalNetCF)}</td>
-      <td class="tcell ${totals.endCash < 0 ? 'neg' : ''}">${fmt(totals.endCash)}</td>
-    `;
-  }
-}
-
-function renderBSTable(months) {
-  if (!bsRowRefs.length) return;
-  months.forEach((m, i) => {
-    const row = bsRowRefs[i];
-    row.cashEnd.textContent = fmt(m.cashEnd);
-    row.ppe.textContent = fmt(m.ppe);
-    row.totalAssets.textContent = fmt(m.totalAssets);
-    row.accruedInterest.textContent = fmt(m.accruedInterest);
-    row.totalLiabilities.textContent = fmt(m.totalLiabilities);
-    row.equityRaise.textContent = fmt(state.equityRaise);
-    row.retainedEarnings.textContent = fmt(m.retainedEarnings);
-    row.retainedEarnings.className = 'tcell tcell-computed' + (m.retainedEarnings < 0 ? ' neg' : '');
-    row.equity.textContent = fmt(m.equity);
+function renderStatementTable(rowsDef, refs, months, rowTotals) {
+  rowsDef.forEach(rowDef => {
+    if (!rowDef.editable) {
+      const row = refs[rowDef.key];
+      months.forEach((m, i) => {
+        const val = m[rowDef.key];
+        const cell = row.cells[i];
+        cell.textContent = fmt(val);
+        cell.className = 'tcell tcell-computed' + signClass(val, rowDef);
+      });
+    }
+    const val = rowTotals[rowDef.key];
+    const totalTd = refs[rowDef.key].totalTd;
+    totalTd.textContent = rowDef.money ? fmt(val) : val;
+    totalTd.className = 'tcell tcol-total' + signClass(val, rowDef);
   });
 }
 
@@ -1488,8 +1434,6 @@ window.addEventListener('DOMContentLoaded', async () => {
   await loadStateFromServer();
   initControls();
   buildTableSkeleton();
-  buildCFTableSkeleton();
-  buildBSTableSkeleton();
   buildEquipSkeleton();
   buildHouseTypeSkeleton();
   buildFixedCostSkeleton();
