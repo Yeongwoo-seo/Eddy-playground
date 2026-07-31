@@ -22,10 +22,9 @@ let curSubTab = 0;
 const DEFAULTS = {
   pricePerSqm: 200,
   houseTypes: [
-    { label: '스튜디오 그래니플랫', sqm: 40, targetQty: 1 },
-    { label: '1룸형 그래니플랫', sqm: 50, targetQty: 2 },
-    { label: '2룸형 그래니플랫', sqm: 60, targetQty: 6 },
-    { label: '3룸형 그래니플랫', sqm: 85, targetQty: 3 }
+    { label: '그래니플랫', sqm: 55, targetQty: 8 },
+    { label: '듀플렉스', sqm: 150, targetQty: 2 },
+    { label: '타운하우스', sqm: 130, targetQty: 2 }
   ],
   coilPct: 30,
   screwPct: 5,
