@@ -41,9 +41,12 @@
    location's own exception to the hub-wide standing position. Every hub
    character otherwise stands at DEFAULT_HUB_CHAR_POS (play/explore/index.html,
    currently { x: 0, y: -150 }) — a location only needs this field for the
-   rare spot where that shared default doesn't fit. Purely a static code
-   value now (no runtime editor/override store backs it) — see
-   resolveCharPos() in play/explore/index.html.
+   rare spot where that shared default doesn't fit. This is the code-level
+   fallback; play/explore/index.html's own DEV · 인물 위치 조정 모드 (drag the
+   standing character image, "🧍 지금 인물 위치 조정" in the DEV sheet) saves a
+   runtime override via AssetDB.getCharPositions()/setCharPos() that
+   resolveCharPos() reads first, ahead of this static value — same
+   override-beats-code-default pattern as the map pin editor's mapPosition.
 
    `mapPosition` (optional) — { x, y } in % over that phase's overview map
    image (phaseMaps below), for locations landmark-level enough to get their

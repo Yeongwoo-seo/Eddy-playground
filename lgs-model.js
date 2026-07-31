@@ -4,6 +4,14 @@ const MONTH_PHASE = ['Closing', 'Closing', 'Build', 'Build', 'Pilot', 'Pilot', '
 const PHASE_ORDER = ['Closing', 'Build', 'Pilot', 'Scale', 'Expand'];
 const PHASE_RANGE = { Closing: 'M1-M2', Build: 'M3-M4', Pilot: 'M5-M6', Scale: 'M7-M9', Expand: 'M10-M12' };
 
+const TABS = [
+  { id: 'summary', icon: '📊', label: '요약' },
+  { id: 'assumptions', icon: '⚙️', label: '가정' },
+  { id: 'capex', icon: '🏗️', label: '설비투자' },
+  { id: 'table', icon: '🧮', label: '월별표' }
+];
+let curTab = 0;
+
 const DEFAULTS = {
   pricePerSqm: 700,
   houseTypes: [
@@ -56,7 +64,7 @@ function computeHouseTypeTotals(houseTypes, pricePerSqm) {
 }
 
 function buildDefaultMonths() {
-  const blendedPrice = computeHouseTypeTotals(DEFAULTS.houseTypes, DEFAULTS.pricePerSqm).blendedPrice;
+  const blendedPrice = Math.round(computeHouseTypeTotals(DEFAULTS.houseTypes, DEFAULTS.pricePerSqm).blendedPrice);
   return DEFAULTS.houses.map(houses => {
     const revenue = houses * blendedPrice;
     return {
@@ -466,7 +474,7 @@ function renderEquipTable() {
 /* ---------- house type pricing & targets (editable) ---------- */
 
 function applyBlendedPriceToMonths() {
-  const { blendedPrice } = computeHouseTypeTotals(state.houseTypes, state.pricePerSqm);
+  const blendedPrice = Math.round(computeHouseTypeTotals(state.houseTypes, state.pricePerSqm).blendedPrice);
   state.months.forEach(m => { m.salePrice = blendedPrice; });
   return blendedPrice;
 }
@@ -701,10 +709,6 @@ function renderComputed() {
     warnBanner.style.display = 'none';
   }
 
-  const totalVarPct = totals.totalRevenue > 0 ? (varTotal / totals.totalRevenue * 100) : 0;
-  const varPctEl = q('varPctTotal');
-  if (varPctEl) varPctEl.textContent = totalVarPct.toFixed(1) + '%';
-
   months.forEach((m, i) => {
     const row = rowRefs[i];
     row.inputs._revenue.textContent = fmt(m.revenue);
@@ -741,12 +745,6 @@ function renderComputed() {
 
 /* ---------- bulk-apply sliders ---------- */
 
-function applyPctAll(field, pct) {
-  state.months.forEach(m => {
-    const revenue = m.houses * m.salePrice;
-    m[field] = revenue * pct / 100;
-  });
-}
 function applyFixedAll(field, v) { state.months.forEach(m => { m[field] = v; }); }
 
 function bindBulkSlider(id, isPct, applyFn) {
@@ -825,7 +823,7 @@ function resetAll() {
   document.querySelectorAll('[data-metric]').forEach(o => o.classList.remove('active'));
   q('breakdownCard').style.display = 'none';
 
-  ['coilPct', 'screwPct', 'detailPct', 'otherVarPct', 'fixedProdCost', 'sgaMonthly', 'otherCostMonthly', 'equityRaise', 'stage1Amount', 'stage2Amount'].forEach(id => {
+  ['fixedProdCost', 'sgaMonthly', 'otherCostMonthly', 'equityRaise', 'stage1Amount', 'stage2Amount'].forEach(id => {
     const elx = q(id);
     elx.value = DEFAULTS[id];
     setSliderFill(elx);
@@ -850,10 +848,6 @@ function resetAll() {
 
 function initControls() {
   bindPricePerSqmSlider();
-  bindBulkSlider('coilPct', true, v => applyPctAll('coil', v));
-  bindBulkSlider('screwPct', true, v => applyPctAll('screw', v));
-  bindBulkSlider('detailPct', true, v => applyPctAll('detail', v));
-  bindBulkSlider('otherVarPct', true, v => applyPctAll('otherVar', v));
   bindBulkSlider('fixedProdCost', false, v => applyFixedAll('fixedProd', v));
   bindBulkSlider('sgaMonthly', false, v => applyFixedAll('sga', v));
   bindBulkSlider('otherCostMonthly', false, v => applyFixedAll('otherCost', v));
@@ -865,6 +859,38 @@ function initControls() {
   bindSelect('equipmentMonth', 'equipmentMonth');
 }
 
+/* ---------- tabs (floating bottom nav) ---------- */
+
+function renderBottomNav() {
+  const el = q('bottomNav');
+  el.innerHTML = `<div class="bn-thumb" id="bnThumb" style="width:calc((100% - 16px) / ${TABS.length})"></div>` +
+    TABS.map((t, i) => `
+      <button class="nav-item" data-tab-index="${i}">
+        <div class="n-ic">${t.icon}</div>
+        <div class="n-lb-row"><span class="n-num">${i + 1}</span><span class="n-lb">${t.label}</span></div>
+      </button>
+    `).join('');
+  el.querySelectorAll('.nav-item').forEach(btn => {
+    btn.addEventListener('click', () => goTab(Number(btn.dataset.tabIndex)));
+  });
+  updateBottomNavActive();
+}
+
+function updateBottomNavActive() {
+  document.querySelectorAll('#bottomNav .nav-item').forEach((el, i) => el.classList.toggle('on', i === curTab));
+  const thumb = q('bnThumb');
+  if (thumb) thumb.style.transform = `translateX(${curTab * 100}%)`;
+}
+
+function goTab(i) {
+  curTab = i;
+  TABS.forEach((t, idx) => {
+    q('tab-' + t.id).classList.toggle('on', idx === i);
+  });
+  updateBottomNavActive();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 window.addEventListener('DOMContentLoaded', () => {
   initControls();
   buildTableSkeleton();
@@ -873,6 +899,8 @@ window.addEventListener('DOMContentLoaded', () => {
   bindMetricClicks();
   renderHouseTypeTable();
   renderComputed();
+  renderBottomNav();
+  goTab(0);
   q('resetBtn').addEventListener('click', resetAll);
   q('houseTypeAddBtn').addEventListener('click', onHouseTypeAdd);
 });
