@@ -29,6 +29,15 @@ const SUB_TAB_GROUPS = {
       { id: 'capex-funding', label: '자금조달' },
       { id: 'capex-equipment', label: '장비·공구' }
     ]
+  },
+  table: {
+    barId: 'subTabBarTable',
+    cur: 0,
+    tabs: [
+      { id: 'is', label: '손익계산서' },
+      { id: 'cf', label: '현금흐름표' },
+      { id: 'bs', label: '대차대조표' }
+    ]
   }
 };
 
@@ -63,9 +72,9 @@ const DEFAULTS = {
     { category: 'sga', label: '통신·IT', note: '인터넷, 휴대폰, 클라우드 SaaS 구독', monthly: 600 },
     { category: 'sga', label: '인증·컴플라이언스', note: '구조 엔지니어 서명, WHS 컴플라이언스, CDC 인증 관련', monthly: 1800 },
     { category: 'sga', label: '기타 관리비', note: '사무용품, 소모품, 예비비', monthly: 1000 },
-    { category: 'other', label: '설비 감가상각비', note: 'SP120 Stage1+2 총 $80,000, 내용연수 7년 정액법', monthly: 950 },
-    { category: 'other', label: '장비·공구 감가상각비', note: '소모성 공구·장비 (포크리프트 제외, 렌탈 전환), 내용연수 5년', monthly: 19 },
-    { category: 'other', label: '설비 리스·대출 이자', note: 'SP120 자산금융 가정 이자비용', monthly: 560 }
+    { category: 'other', type: 'depreciation', label: '설비 감가상각비', note: 'SP120 Stage1+2 총 $80,000, 내용연수 7년 정액법', monthly: 950 },
+    { category: 'other', type: 'depreciation', label: '장비·공구 감가상각비', note: '소모성 공구·장비 (포크리프트 제외, 렌탈 전환), 내용연수 5년', monthly: 19 },
+    { category: 'other', type: 'interest', label: '설비 리스·대출 이자', note: 'SP120 자산금융 가정 이자비용', monthly: 560 }
   ],
   equityRaise: 350000,
   stage1Amount: 40000,
@@ -118,8 +127,14 @@ function computeCoilUsage(houseTypeTotals, coilLmPerSqm) {
 }
 
 function computeFixedCostTotals(items) {
-  const totals = { fixedProd: 0, sga: 0, other: 0 };
-  items.forEach(it => { totals[it.category] += it.monthly; });
+  const totals = { fixedProd: 0, sga: 0, other: 0, depreciation: 0, interest: 0 };
+  items.forEach(it => {
+    totals[it.category] += it.monthly;
+    if (it.category === 'other') {
+      if (it.type === 'interest') totals.interest += it.monthly;
+      else totals.depreciation += it.monthly;
+    }
+  });
   totals.grandTotal = totals.fixedProd + totals.sga + totals.other;
   return totals;
 }
@@ -138,7 +153,8 @@ function buildDefaultMonths() {
       otherVar: revenue * DEFAULTS.otherVarPct / 100,
       fixedProd: fc.fixedProd,
       sga: fc.sga,
-      otherCost: fc.other
+      depreciation: fc.depreciation,
+      interest: fc.interest
     };
   });
 }
@@ -181,6 +197,8 @@ function buildDefaultState() {
 let state = buildDefaultState();
 
 let rowRefs = [];
+let cfRowRefs = [];
+let bsRowRefs = [];
 let equipRowRefs = [];
 let houseTypeRowRefs = [];
 let fixedCostRowRefs = [];
@@ -240,6 +258,7 @@ function q(id) { return document.getElementById(id); }
 function computeAll() {
   const months = [];
   let cash = state.equityRaise;
+  let cumCapex = 0, cumDep = 0, cumInterest = 0, cumNetIncome = 0;
   const totalEquipmentCapex = state.equipmentItems.reduce((s, it) => s + it.unitPrice * it.qty, 0);
 
   state.months.forEach((m, i) => {
@@ -248,20 +267,43 @@ function computeAll() {
     const cogs = varCost + m.fixedProd;
     const grossProfit = revenue - cogs;
     const ebitda = grossProfit - m.sga;
-    const netIncome = ebitda - m.otherCost;
+    const netIncome = ebitda - m.depreciation - m.interest;
 
     let capex = 0;
     if (i + 1 === Number(state.stage1Month)) capex += state.stage1Amount;
     if (i + 1 === Number(state.stage2Month)) capex += state.stage2Amount;
     if (i + 1 === Number(state.stage3Month)) capex += state.stage3Amount;
     if (i + 1 === Number(state.equipmentMonth)) capex += totalEquipmentCapex;
-    cash += ebitda - capex;
+
+    // CF: 감가상각비는 비현금이라 EBITDA에 이미 반영 안 됨. 이자비용은 이 모델에서
+    // 발생주의로 비용 인식만 하고 현금 지급 없이 미지급이자(BS 부채)로 누적된다고 가정.
+    const cashBegin = cash;
+    const operatingCF = ebitda;
+    const investingCF = -capex;
+    const financingCF = 0;
+    const netCF = operatingCF + investingCF + financingCF;
+    cash += netCF;
+    const cashEnd = cash;
+
+    cumCapex += capex;
+    cumDep += m.depreciation;
+    cumInterest += m.interest;
+    cumNetIncome += netIncome;
+
+    const ppe = cumCapex - cumDep;
+    const accruedInterest = cumInterest;
+    const totalAssets = cashEnd + ppe;
+    const totalLiabilities = accruedInterest;
+    const retainedEarnings = cumNetIncome;
+    const equity = state.equityRaise + retainedEarnings;
 
     months.push({
       idx: i, phase: MONTH_PHASE[i], houses: m.houses, salePrice: m.salePrice,
       coil: m.coil, screw: m.screw, detail: m.detail, otherVar: m.otherVar,
-      fixedProd: m.fixedProd, sga: m.sga, otherCost: m.otherCost,
-      revenue, varCost, cogs, grossProfit, ebitda, netIncome, capex, cashEnd: cash
+      fixedProd: m.fixedProd, sga: m.sga, depreciation: m.depreciation, interest: m.interest,
+      revenue, varCost, cogs, grossProfit, ebitda, netIncome, capex,
+      operatingCF, investingCF, financingCF, netCF, cashBegin, cashEnd,
+      ppe, accruedInterest, totalAssets, totalLiabilities, retainedEarnings, equity
     });
   });
 
@@ -274,10 +316,21 @@ function computeAll() {
     totalOtherVar: sum(months, 'otherVar'),
     totalFixedProd: sum(months, 'fixedProd'),
     totalSGA: sum(months, 'sga'),
-    totalOtherCost: sum(months, 'otherCost'),
+    totalDepreciation: sum(months, 'depreciation'),
+    totalInterest: sum(months, 'interest'),
     totalEBITDA: sum(months, 'ebitda'),
     totalNI: sum(months, 'netIncome'),
     totalCapex: sum(months, 'capex'),
+    totalOperatingCF: sum(months, 'operatingCF'),
+    totalInvestingCF: sum(months, 'investingCF'),
+    totalFinancingCF: sum(months, 'financingCF'),
+    totalNetCF: sum(months, 'netCF'),
+    endPPE: months[11].ppe,
+    endAccruedInterest: months[11].accruedInterest,
+    endTotalAssets: months[11].totalAssets,
+    endTotalLiabilities: months[11].totalLiabilities,
+    endRetainedEarnings: months[11].retainedEarnings,
+    endEquity: months[11].equity,
     totalMachineCapex: state.stage1Amount + state.stage2Amount + state.stage3Amount,
     totalEquipmentCapex,
     totalHouses: sum(months, 'houses'),
@@ -591,7 +644,8 @@ function applyFixedCostTotals() {
   const totals = computeFixedCostTotals(state.fixedCostItems);
   applyFixedAll('fixedProd', totals.fixedProd);
   applyFixedAll('sga', totals.sga);
-  applyFixedAll('otherCost', totals.other);
+  applyFixedAll('depreciation', totals.depreciation);
+  applyFixedAll('interest', totals.interest);
 }
 
 /* items with a `calc` block derive their monthly amount from 수량 × 단가
@@ -970,7 +1024,7 @@ function renderMonthlyRampTable() {
 
 /* ---------- table (editable) ---------- */
 
-const EDIT_KEYS = ['houses', 'salePrice', 'coil', 'screw', 'detail', 'otherVar', 'fixedProd', 'sga', 'otherCost'];
+const EDIT_KEYS = ['houses', 'salePrice', 'coil', 'screw', 'detail', 'otherVar', 'fixedProd', 'sga', 'depreciation', 'interest'];
 
 function buildTableSkeleton() {
   const tbody = q('tableBody');
@@ -1018,18 +1072,75 @@ function buildTableSkeleton() {
     const ebitdaTd = document.createElement('td');
     ebitdaTd.className = 'tcell tcell-computed';
     tr.appendChild(ebitdaTd);
-    const cashTd = document.createElement('td');
-    cashTd.className = 'tcell tcell-computed';
-    tr.appendChild(cashTd);
+    const niTd = document.createElement('td');
+    niTd.className = 'tcell tcell-computed';
+    tr.appendChild(niTd);
 
     tbody.appendChild(tr);
-    rowRefs.push({ inputs, gpTd, ebitdaTd, cashTd });
+    rowRefs.push({ inputs, gpTd, ebitdaTd, niTd });
   }
 
   const totalTr = document.createElement('tr');
   totalTr.className = 'trow-total';
   totalTr.id = 'totalRow';
   tbody.appendChild(totalTr);
+}
+
+function buildCFTableSkeleton() {
+  const tbody = q('cfTableBody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  cfRowRefs = [];
+
+  for (let i = 0; i < 12; i++) {
+    const tr = document.createElement('tr');
+    const monthTd = document.createElement('td');
+    monthTd.className = 'tcell tcell-month';
+    monthTd.innerHTML = `M${i + 1}<span class="tphase">${MONTH_PHASE[i]}</span>`;
+    tr.appendChild(monthTd);
+
+    const cells = {};
+    ['cashBegin', 'operatingCF', 'investingCF', 'financingCF', 'netCF', 'cashEnd'].forEach(key => {
+      const td = document.createElement('td');
+      td.className = 'tcell tcell-computed';
+      tr.appendChild(td);
+      cells[key] = td;
+    });
+
+    tbody.appendChild(tr);
+    cfRowRefs.push(cells);
+  }
+
+  const totalTr = document.createElement('tr');
+  totalTr.className = 'trow-total';
+  totalTr.id = 'cfTotalRow';
+  tbody.appendChild(totalTr);
+}
+
+function buildBSTableSkeleton() {
+  const tbody = q('bsTableBody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  bsRowRefs = [];
+
+  for (let i = 0; i < 12; i++) {
+    const tr = document.createElement('tr');
+    const monthTd = document.createElement('td');
+    monthTd.className = 'tcell tcell-month';
+    monthTd.innerHTML = `M${i + 1}<span class="tphase">${MONTH_PHASE[i]}</span>`;
+    tr.appendChild(monthTd);
+
+    const cells = {};
+    ['cashEnd', 'ppe', 'totalAssets', 'accruedInterest', 'totalLiabilities', 'equityRaise', 'retainedEarnings', 'equity'].forEach(key => {
+      const td = document.createElement('td');
+      td.className = 'tcell tcell-computed';
+      tr.appendChild(td);
+      cells[key] = td;
+    });
+
+    tbody.appendChild(tr);
+    bsRowRefs.push(cells);
+  }
 }
 
 function onCellInput(e) {
@@ -1093,8 +1204,8 @@ function renderComputed() {
     row.gpTd.className = 'tcell tcell-computed' + (m.grossProfit < 0 ? ' neg' : '');
     row.ebitdaTd.textContent = fmt(m.ebitda);
     row.ebitdaTd.className = 'tcell tcell-computed' + (m.ebitda < 0 ? ' neg' : ' pos');
-    row.cashTd.textContent = fmt(m.cashEnd);
-    row.cashTd.className = 'tcell tcell-computed' + (m.cashEnd < 0 ? ' neg' : '');
+    row.niTd.textContent = fmt(m.netIncome);
+    row.niTd.className = 'tcell tcell-computed' + (m.netIncome < 0 ? ' neg' : ' pos');
   });
 
   const totalTr = q('totalRow');
@@ -1109,14 +1220,64 @@ function renderComputed() {
     <td class="tcell">${fmt(totals.totalOtherVar)}</td>
     <td class="tcell">${fmt(totals.totalFixedProd)}</td>
     <td class="tcell">${fmt(totals.totalSGA)}</td>
-    <td class="tcell">${fmt(totals.totalOtherCost)}</td>
+    <td class="tcell">${fmt(totals.totalDepreciation)}</td>
+    <td class="tcell">${fmt(totals.totalInterest)}</td>
     <td class="tcell ${totals.totalGP < 0 ? 'neg' : ''}">${fmt(totals.totalGP)}</td>
     <td class="tcell ${totals.totalEBITDA < 0 ? 'neg' : 'pos'}">${fmt(totals.totalEBITDA)}</td>
-    <td class="tcell ${totals.endCash < 0 ? 'neg' : ''}">${fmt(totals.endCash)}</td>
+    <td class="tcell ${totals.totalNI < 0 ? 'neg' : 'pos'}">${fmt(totals.totalNI)}</td>
   `;
+
+  renderCFTable(months, totals);
+  renderBSTable(months);
 
   buildMainChart(months);
   buildCashChart(months);
+}
+
+function renderCFTable(months, totals) {
+  if (!cfRowRefs.length) return;
+  months.forEach((m, i) => {
+    const row = cfRowRefs[i];
+    row.cashBegin.textContent = fmt(m.cashBegin);
+    row.operatingCF.textContent = fmt(m.operatingCF);
+    row.operatingCF.className = 'tcell tcell-computed' + (m.operatingCF < 0 ? ' neg' : ' pos');
+    row.investingCF.textContent = fmt(m.investingCF);
+    row.investingCF.className = 'tcell tcell-computed' + (m.investingCF < 0 ? ' neg' : '');
+    row.financingCF.textContent = fmt(m.financingCF);
+    row.netCF.textContent = fmt(m.netCF);
+    row.netCF.className = 'tcell tcell-computed' + (m.netCF < 0 ? ' neg' : ' pos');
+    row.cashEnd.textContent = fmt(m.cashEnd);
+    row.cashEnd.className = 'tcell tcell-computed' + (m.cashEnd < 0 ? ' neg' : '');
+  });
+
+  const totalTr = q('cfTotalRow');
+  if (totalTr) {
+    totalTr.innerHTML = `
+      <td class="tcell tcell-month">Y1 합계</td>
+      <td class="tcell">${fmt(state.equityRaise)}</td>
+      <td class="tcell ${totals.totalOperatingCF < 0 ? 'neg' : 'pos'}">${fmt(totals.totalOperatingCF)}</td>
+      <td class="tcell ${totals.totalInvestingCF < 0 ? 'neg' : ''}">${fmt(totals.totalInvestingCF)}</td>
+      <td class="tcell">${fmt(totals.totalFinancingCF)}</td>
+      <td class="tcell ${totals.totalNetCF < 0 ? 'neg' : 'pos'}">${fmt(totals.totalNetCF)}</td>
+      <td class="tcell ${totals.endCash < 0 ? 'neg' : ''}">${fmt(totals.endCash)}</td>
+    `;
+  }
+}
+
+function renderBSTable(months) {
+  if (!bsRowRefs.length) return;
+  months.forEach((m, i) => {
+    const row = bsRowRefs[i];
+    row.cashEnd.textContent = fmt(m.cashEnd);
+    row.ppe.textContent = fmt(m.ppe);
+    row.totalAssets.textContent = fmt(m.totalAssets);
+    row.accruedInterest.textContent = fmt(m.accruedInterest);
+    row.totalLiabilities.textContent = fmt(m.totalLiabilities);
+    row.equityRaise.textContent = fmt(state.equityRaise);
+    row.retainedEarnings.textContent = fmt(m.retainedEarnings);
+    row.retainedEarnings.className = 'tcell tcell-computed' + (m.retainedEarnings < 0 ? ' neg' : '');
+    row.equity.textContent = fmt(m.equity);
+  });
 }
 
 /* ---------- bulk-apply sliders ---------- */
@@ -1327,6 +1488,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   await loadStateFromServer();
   initControls();
   buildTableSkeleton();
+  buildCFTableSkeleton();
+  buildBSTableSkeleton();
   buildEquipSkeleton();
   buildHouseTypeSkeleton();
   buildFixedCostSkeleton();
@@ -1340,6 +1503,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   goSubTab('assumptions', 0);
   renderSubTabNav('capex');
   goSubTab('capex', 0);
+  renderSubTabNav('table');
+  goSubTab('table', 0);
   const resetBtn = q('resetBtn');
   if (resetBtn) resetBtn.addEventListener('click', resetAll);
   q('houseTypeAddBtn').addEventListener('click', onHouseTypeAdd);

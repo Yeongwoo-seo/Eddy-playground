@@ -103,6 +103,7 @@ input.num-input::-webkit-outer-spin-button,input.num-input::-webkit-inner-spin-b
 /* Table — editable spreadsheet */
 .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -20px;padding:0 20px}
 table.data-table{width:100%;min-width:1220px;border-collapse:collapse}
+table.data-table.data-table-narrow{min-width:600px}
 .data-table th{font-size:10.5px;font-weight:700;color:var(--grey-500);text-align:right;padding:0 6px 10px;white-space:nowrap}
 .data-table th:first-child{text-align:left}
 .tcell{font-size:12px;font-weight:600;color:var(--black);text-align:right;padding:7px 6px;border-bottom:1px solid var(--grey-100);white-space:nowrap}
@@ -435,20 +436,60 @@ input.equip-input::-webkit-outer-spin-button,input.equip-input::-webkit-inner-sp
 
   <div class="tab-panel" id="tab-table">
 
+  <div class="sub-tab-bar" id="subTabBarTable"></div>
+
+  <div class="sub-panel" id="subtab-is">
   <div class="card">
-    <div class="section-label"><div class="section-dot"></div><span>월별 상세 테이블 (직접 입력)</span></div>
+    <div class="section-label"><div class="section-dot"></div><span>월별 손익계산서 (직접 입력)</span></div>
     <div class="section-note">엑셀처럼 각 셀을 눌러 월별 값을 직접 수정할 수 있어요. 회색 칸은 계산된 값이에요.</div>
     <div class="table-scroll">
       <table class="data-table">
         <thead>
           <tr>
-            <th>Month</th><th>주택수</th><th>판매단가</th><th>매출</th><th>코일</th><th>스크류</th><th>디테일링</th><th>기타변동</th><th>고정생산비</th><th>SG&amp;A</th><th>기타비용</th><th>매출총이익</th><th>EBITDA</th><th>기말현금</th>
+            <th>Month</th><th>주택수</th><th>판매단가</th><th>매출</th><th>코일</th><th>스크류</th><th>디테일링</th><th>기타변동</th><th>고정생산비</th><th>SG&amp;A</th><th>감가상각비</th><th>이자비용</th><th>매출총이익</th><th>EBITDA</th><th>당기순이익</th>
           </tr>
         </thead>
         <tbody id="tableBody"></tbody>
       </table>
     </div>
     <div class="table-hint">가로로 스크롤해서 전체 항목을 확인하세요. Month 열은 고정돼 있어요.</div>
+  </div>
+  </div>
+
+  <div class="sub-panel" id="subtab-cf">
+  <div class="card">
+    <div class="section-label"><div class="section-dot"></div><span>월별 현금흐름표</span></div>
+    <div class="section-note">손익계산서·설비투자 값에서 자동 계산돼요. 이자비용은 발생주의로 비용 인식만 하고 현금 지급 없이 대차대조표의 미지급이자로 누적된다고 가정해요.</div>
+    <div class="table-scroll">
+      <table class="data-table data-table-narrow">
+        <thead>
+          <tr>
+            <th>Month</th><th>기초현금</th><th>영업활동</th><th>투자활동</th><th>재무활동</th><th>순현금흐름</th><th>기말현금</th>
+          </tr>
+        </thead>
+        <tbody id="cfTableBody"></tbody>
+      </table>
+    </div>
+    <div class="table-hint">가로로 스크롤해서 전체 항목을 확인하세요. Month 열은 고정돼 있어요. 초기 자본금은 M1 기초현금에 이미 반영돼 있어요.</div>
+  </div>
+  </div>
+
+  <div class="sub-panel" id="subtab-bs">
+  <div class="card">
+    <div class="section-label"><div class="section-dot"></div><span>월말 대차대조표</span></div>
+    <div class="section-note">각 월말 기준 스냅샷이에요. 자산총계 = 부채총계 + 자본총계로 항상 일치해요.</div>
+    <div class="table-scroll">
+      <table class="data-table data-table-narrow">
+        <thead>
+          <tr>
+            <th>Month</th><th>현금</th><th>순유형자산</th><th>자산총계</th><th>미지급이자</th><th>부채총계</th><th>자본금</th><th>이익잉여금</th><th>자본총계</th>
+          </tr>
+        </thead>
+        <tbody id="bsTableBody"></tbody>
+      </table>
+    </div>
+    <div class="table-hint">가로로 스크롤해서 전체 항목을 확인하세요. Month 열은 고정돼 있어요.</div>
+  </div>
   </div>
 
   </div>
