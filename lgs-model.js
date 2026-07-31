@@ -520,9 +520,9 @@ function buildMainChart(months) {
 
   const revs = months.map(m => m.revenue);
   const cogsArr = months.map(m => m.cogs);
-  const ebitdaArr = months.map(m => m.ebitda);
+  const netIncomeArr = months.map(m => m.netIncome);
   let maxVal = Math.max(...revs, ...cogsArr, 0, 1000);
-  let minVal = Math.min(...ebitdaArr, 0);
+  let minVal = Math.min(...netIncomeArr, 0);
   const range = (maxVal - minVal) || 1;
   const y = v => padT + (maxVal - v) / range * plotH;
   const zeroY = y(0);
@@ -541,11 +541,11 @@ function buildMainChart(months) {
     svg.appendChild(el('rect', { x: xCogs, y: cogsY, width: barW, height: Math.max(Math.abs(y(m.cogs) - zeroY), 0.5), rx: 2, fill: 'var(--grey-300)' }));
   });
 
-  const pts = months.map((m, i) => `${padL + slotW * i + slotW / 2},${y(m.ebitda)}`).join(' ');
+  const pts = months.map((m, i) => `${padL + slotW * i + slotW / 2},${y(m.netIncome)}`).join(' ');
   svg.appendChild(el('polyline', { points: pts, fill: 'none', stroke: 'var(--info-blue)', 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }));
   months.forEach((m, i) => {
     const xCenter = padL + slotW * i + slotW / 2;
-    svg.appendChild(el('circle', { cx: xCenter, cy: y(m.ebitda), r: 2.6, fill: 'var(--info-blue)' }));
+    svg.appendChild(el('circle', { cx: xCenter, cy: y(m.netIncome), r: 2.6, fill: 'var(--info-blue)' }));
   });
 
   months.forEach((m, i) => {
@@ -1385,7 +1385,7 @@ function renderComputed() {
   q('mainQuickStats').innerHTML = `
     <div><div class="quick-stat-label">Y1 매출</div><div class="quick-stat-value">${fmt(totals.totalRevenue)}</div></div>
     <div><div class="quick-stat-label">Y1 매출원가</div><div class="quick-stat-value">${fmt(totals.totalCOGS)}</div></div>
-    <div><div class="quick-stat-label">Y1 EBITDA</div><div class="quick-stat-value ${totals.totalEBITDA >= 0 ? 'pos' : 'neg'}">${fmt(totals.totalEBITDA)}</div></div>
+    <div><div class="quick-stat-label">Y1 세전순이익</div><div class="quick-stat-value ${totals.totalNI >= 0 ? 'pos' : 'neg'}">${fmt(totals.totalNI)}</div></div>
   `;
   q('cashQuickStats').innerHTML = `
     <div><div class="quick-stat-label">Y1 말 현금</div><div class="quick-stat-value ${totals.endCash >= 0 ? 'pos' : 'neg'}">${fmt(totals.endCash)}</div></div>
