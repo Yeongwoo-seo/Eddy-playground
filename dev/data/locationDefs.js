@@ -201,10 +201,9 @@ const locationDefs = {
     enterSceneLabel: '이제 단체사진 찍으러 가자',
   },
   // [첫 허브 카페 분리] w2-exhibit-floor에서 소피(카페 코너)만 떼어낸 신규
-  // 장소 — w2ef-topic-sophie(interactionDefs.js)가 여기로 옮겨온다.
-  // mapPosition은 일부러 생략한다 — w2-exhibition-entrance/w2-adrian-spot과
-  // 같은 이유(§파일 상단 mapPosition 주석: 같은 건물 안쪽이라 지도에 따로
-  // 찍기 애매한 곳)로, 관광 지도엔 핀 대신 이동하기 리스트 줄로 뜬다.
+  // 장소 — w2ef-topic-sophie(interactionDefs.js)가 여기로 옮겨온다. 더 록스
+  // 골목(w2-the-rocks-lane, x:24/y:55)에서 전시장 입구 쪽으로 살짝 붙은
+  // 자리에 따로 핀을 찍는다.
   'w2-exhibit-cafe-spot': {
     id: 'w2-exhibit-cafe-spot',
     week: 2,
@@ -213,6 +212,7 @@ const locationDefs = {
     visualBrief: '팝업 전시장 한쪽에 자리한 아담한 카페 코너. 커피 머신과 원두 봉투가 놓인 카운터, 소피가 커피를 내리는 아늑한 공간.',
     characters: ['sophie'],
     exits: ['w2-exhibit-floor'],
+    mapPosition: { x: 30, y: 50 },
   },
 
   /* ===== Phase 4 — 용의자 탐문 (The Missing Key v1 §12.6) =====
