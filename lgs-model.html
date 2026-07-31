@@ -173,6 +173,33 @@ input.equip-input::-webkit-outer-spin-button,input.equip-input::-webkit-inner-sp
 .ht-add-btn{width:100%;margin-top:10px;padding:11px;background:var(--primary-light);color:var(--primary);border:none;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;transition:opacity .2s,transform .1s}
 .ht-add-btn:active{opacity:.85;transform:scale(.98)}
 
+/* Salary (hours × hourly rate) items */
+.salary-toggle{display:flex;align-items:center;gap:5px;margin-top:6px;font-size:10.5px;font-weight:600;color:var(--grey-500);cursor:pointer;user-select:none}
+.salary-toggle input{width:13px;height:13px;accent-color:var(--primary);cursor:pointer;margin:0}
+.salary-cell{display:flex;flex-direction:column;gap:4px;align-items:stretch}
+.salary-row{display:flex;align-items:center;gap:6px}
+.salary-mini-label{font-size:9.5px;font-weight:600;color:var(--grey-500);white-space:nowrap;flex:0 0 auto}
+.salary-mini-input{flex:1;min-width:0}
+.salary-computed{font-size:11px;font-weight:700;color:var(--primary);text-align:right;margin-top:1px}
+
+/* Rent card (rent split from other fixed costs — deposit has its own cash-out schedule) */
+.rent-table{table-layout:fixed}
+.rent-table th:nth-child(1),.rent-table td:nth-child(1){width:30%}
+.rent-table th:nth-child(2),.rent-table td:nth-child(2){width:22%}
+.rent-table th:nth-child(3),.rent-table td:nth-child(3){width:22%}
+.rent-table th:nth-child(4),.rent-table td:nth-child(4){width:20%}
+.rent-table th:nth-child(5),.rent-table td:nth-child(5){width:22px}
+select.rent-month-select{width:100%;min-width:40px;border:none;background:var(--grey-50);text-align:right;font-size:11px;font-weight:700;color:var(--black);padding:6px 3px;border-radius:8px;outline:none;font-family:inherit;-webkit-appearance:none;appearance:none}
+select.rent-month-select:focus{background:var(--primary-light);box-shadow:0 0 0 2px var(--primary) inset}
+.rent-deposit-row{background:var(--grey-100);color:var(--grey-700);margin-top:8px}
+.rent-deposit-row .var-total-label,.rent-deposit-row span:first-child{color:var(--grey-700)}
+.rent-deposit-row span:last-child{color:var(--grey-700)}
+
+/* Variable cost remove (hide) button */
+.slider-label-right{display:flex;align-items:center;gap:8px}
+.var-remove-btn{width:22px;height:22px;border:none;border-radius:8px;background:var(--grey-100);color:var(--grey-500);font-size:11px;font-weight:700;cursor:pointer;transition:opacity .2s}
+.var-remove-btn:active{opacity:.8}
+
 .footer{text-align:center;padding:18px 8px 4px;font-size:11px;color:var(--grey-500);line-height:1.6}
 </style>
 </head>
@@ -282,10 +309,21 @@ input.equip-input::-webkit-outer-spin-button,input.equip-input::-webkit-inner-sp
 
   <div class="sub-panel" id="subtab-fixed">
   <div class="card">
+    <div class="section-label"><div class="section-dot"></div><span>임대료 (월세 · 보증금)</span></div>
+    <div class="section-note">임대료는 다른 고정비와 캐시가 나가는 스케줄이 달라 별도로 관리해요. 월세는 매달 반복 지출로 손익에 반영되고, 보증금(디파짓)은 계약 시점에 1회성으로 현금이 나가요.</div>
+    <table class="equip-table rent-table">
+      <thead><tr><th>항목</th><th>월세</th><th>보증금</th><th>납부월</th><th></th></tr></thead>
+      <tbody id="rentBody"></tbody>
+    </table>
+    <div class="equip-total-row"><span>월세 합계</span><span id="rentMonthlyTotal">-</span></div>
+    <div class="equip-total-row rent-deposit-row"><span>보증금(디파짓) 합계 · 1회성</span><span id="rentDepositTotal">-</span></div>
+  </div>
+
+  <div class="card">
     <div class="section-label"><div class="section-dot"></div><span>고정 생산비 (공장 운영, 램프업)</span></div>
-    <div class="section-note">생산량과 무관하게 매월 발생하는 공장 운영비예요. 항목별 월 금액을 직접 입력할 수 있어요.</div>
+    <div class="section-note">생산량과 무관하게 매월 발생하는 공장 운영비예요. 급여 항목은 '시급제'를 켜면 시간×시급으로 자동 계산돼요. 안 쓰는 항목은 ✕로 삭제할 수 있어요.</div>
     <table class="equip-table">
-      <thead><tr><th>항목</th><th>월 금액</th></tr></thead>
+      <thead><tr><th>항목</th><th>월 금액</th><th></th></tr></thead>
       <tbody id="fixedProdBody"></tbody>
     </table>
     <div class="equip-total-row"><span>고정 생산비 소계</span><span id="fixedProdSubtotal">-</span></div>
@@ -293,9 +331,9 @@ input.equip-input::-webkit-outer-spin-button,input.equip-input::-webkit-inner-sp
 
   <div class="card">
     <div class="section-label"><div class="section-dot"></div><span>판매관리비 (SG&amp;A)</span></div>
-    <div class="section-note">인건비(경영·영업·관리), 보험, 소프트웨어, 마케팅 등 회사 운영에 필요한 관리비예요.</div>
+    <div class="section-note">인건비(경영·영업·관리), 보험, 소프트웨어, 마케팅 등 회사 운영에 필요한 관리비예요. 급여 항목은 '시급제'를 켜면 시간×시급으로 자동 계산돼요. 안 쓰는 항목은 ✕로 삭제할 수 있어요.</div>
     <table class="equip-table">
-      <thead><tr><th>항목</th><th>월 금액</th></tr></thead>
+      <thead><tr><th>항목</th><th>월 금액</th><th></th></tr></thead>
       <tbody id="sgaBody"></tbody>
     </table>
     <div class="equip-total-row"><span>SG&amp;A 소계</span><span id="sgaSubtotal">-</span></div>
@@ -303,9 +341,9 @@ input.equip-input::-webkit-outer-spin-button,input.equip-input::-webkit-inner-sp
 
   <div class="card">
     <div class="section-label"><div class="section-dot"></div><span>기타비용 (감가상각·이자)</span></div>
-    <div class="section-note">현금 지출은 아니지만 손익에 반영되는 비현금성 비용 및 금융비용이에요.</div>
+    <div class="section-note">현금 지출은 아니지만 손익에 반영되는 비현금성 비용 및 금융비용이에요. 안 쓰는 항목은 ✕로 삭제할 수 있어요.</div>
     <table class="equip-table">
-      <thead><tr><th>항목</th><th>월 금액</th></tr></thead>
+      <thead><tr><th>항목</th><th>월 금액</th><th></th></tr></thead>
       <tbody id="otherCostBody"></tbody>
     </table>
     <div class="equip-total-row"><span>기타비용 소계</span><span id="otherCostSubtotal">-</span></div>
@@ -313,7 +351,7 @@ input.equip-input::-webkit-outer-spin-button,input.equip-input::-webkit-inner-sp
 
   <div class="card">
     <div class="var-total-row">
-      <span class="var-total-label">월 고정비 합계</span>
+      <span class="var-total-label">월 고정비 합계 (임대료 포함)</span>
       <span class="var-total-value" id="fixedCostGrandTotal">-</span>
     </div>
     <div class="table-hint">출처: Sydney 산업용 임대료(JLL/commercialrealestate.com.au, 2026), NSW icare 산재보험 요율(제조업 평균), Fair Work 금속제조업 award, FrameCAD Steelwise 소프트웨어 시세 조사 기반 추정치예요. 실제 계약 조건에 따라 조정하세요.</div>
@@ -323,21 +361,21 @@ input.equip-input::-webkit-outer-spin-button,input.equip-input::-webkit-inner-sp
   <div class="sub-panel" id="subtab-variable">
   <div class="card">
     <div class="section-label"><div class="section-dot"></div><span>변동비 구성 (매출 대비 %)</span></div>
-    <div class="section-note">코일(철강) · 스크류/파스너 · 외주 디테일링 · 기타(설치 등)로 구성돼요. 슬라이더는 전체 월에 일괄 적용돼요.</div>
-    <div class="slider-row">
-      <div class="slider-label-row"><span class="slider-label">코일(철강)</span><span class="slider-value" id="coilPctVal" data-fmt="pct">-</span></div>
+    <div class="section-note">코일(철강) · 스크류/파스너 · 외주 디테일링 · 기타(설치 등)로 구성돼요. 슬라이더는 전체 월에 일괄 적용돼요. 안 쓰는 항목은 ✕로 삭제(0%로 비활성화)할 수 있어요.</div>
+    <div class="slider-row" id="varRow-coil">
+      <div class="slider-label-row"><span class="slider-label">코일(철강)</span><div class="slider-label-right"><span class="slider-value" id="coilPctVal" data-fmt="pct">-</span><button type="button" class="var-remove-btn" data-field="coil">✕</button></div></div>
       <input type="range" class="slider" id="coilPct" min="0" max="50" step="1">
     </div>
-    <div class="slider-row">
-      <div class="slider-label-row"><span class="slider-label">스크류/파스너</span><span class="slider-value" id="screwPctVal" data-fmt="pct">-</span></div>
+    <div class="slider-row" id="varRow-screw">
+      <div class="slider-label-row"><span class="slider-label">스크류/파스너</span><div class="slider-label-right"><span class="slider-value" id="screwPctVal" data-fmt="pct">-</span><button type="button" class="var-remove-btn" data-field="screw">✕</button></div></div>
       <input type="range" class="slider" id="screwPct" min="0" max="20" step="1">
     </div>
-    <div class="slider-row">
-      <div class="slider-label-row"><span class="slider-label">외주 디테일링</span><span class="slider-value" id="detailPctVal" data-fmt="pct">-</span></div>
+    <div class="slider-row" id="varRow-detail">
+      <div class="slider-label-row"><span class="slider-label">외주 디테일링</span><div class="slider-label-right"><span class="slider-value" id="detailPctVal" data-fmt="pct">-</span><button type="button" class="var-remove-btn" data-field="detail">✕</button></div></div>
       <input type="range" class="slider" id="detailPct" min="0" max="30" step="1">
     </div>
-    <div class="slider-row">
-      <div class="slider-label-row"><span class="slider-label">기타(설치 등)</span><span class="slider-value" id="otherVarPctVal" data-fmt="pct">-</span></div>
+    <div class="slider-row" id="varRow-otherVar">
+      <div class="slider-label-row"><span class="slider-label">기타(설치 등)</span><div class="slider-label-right"><span class="slider-value" id="otherVarPctVal" data-fmt="pct">-</span><button type="button" class="var-remove-btn" data-field="otherVar">✕</button></div></div>
       <input type="range" class="slider" id="otherVarPct" min="0" max="20" step="1">
     </div>
     <div class="var-total-row">

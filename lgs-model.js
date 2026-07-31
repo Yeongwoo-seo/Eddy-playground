@@ -31,26 +31,28 @@ const DEFAULTS = {
   detailPct: 10,
   otherVarPct: 5,
   fixedCostItems: [
-    { category: 'fixedProd', label: '공장·창고 임대료', note: 'Western Sydney 산업단지 창고 (~450㎡, 순임대료 ~A$160/㎡/yr 기준)', monthly: 6000 },
-    { category: 'fixedProd', label: '공장 전기·수도', note: 'SP120 롤포밍기 가동 전력 + 용수/폐수', monthly: 1500 },
-    { category: 'fixedProd', label: '생산직 기본급 (오퍼레이터 2명)', note: '램프업 단계 최소 유지 인력, Fair Work 금속제조업 award 기준', monthly: 9000 },
-    { category: 'fixedProd', label: '소모품·공구 유지보수', note: '드릴비트·블레이드·윤활유 등 소모품 교체', monthly: 1000 },
-    { category: 'fixedProd', label: '산업폐기물 처리', note: '철스크랩·자재 폐기물 수거', monthly: 400 },
-    { category: 'sga', label: '대표이사 급여', note: '경영·전략·영업 총괄', monthly: 10000 },
-    { category: 'sga', label: '견적·영업 담당 급여', note: '고객 상담, 견적, 계약 관리', monthly: 7500 },
-    { category: 'sga', label: '관리·회계 담당 급여 (파트타임)', note: '경리, 총무, 발주 관리', monthly: 3500 },
-    { category: 'sga', label: '사업 보험료', note: '배상책임(Public Liability) + icare 산재보험 (제조업 평균 요율 ~1.8~4.8%)', monthly: 2900 },
-    { category: 'sga', label: 'FrameCAD Steelwise 라이선스', note: '설계·디테일링·엔지니어링 소프트웨어 구독', monthly: 1500 },
-    { category: 'sga', label: '회계·법무 자문료', note: '외부 회계사 기장, 세무신고, 계약 검토', monthly: 1800 },
-    { category: 'sga', label: '마케팅·영업비', note: '웹사이트, 온라인 광고, 전시 참가', monthly: 2000 },
-    { category: 'sga', label: '차량 유지비', note: '배송·현장방문용 유트(Ute) 리스+연료+보험', monthly: 1600 },
-    { category: 'sga', label: '사무실 임대료·유틸리티', note: '공장 내 사무 공간 또는 소규모 별도 사무실', monthly: 1200 },
-    { category: 'sga', label: '통신·IT', note: '인터넷, 휴대폰, 클라우드 SaaS 구독', monthly: 600 },
-    { category: 'sga', label: '인증·컴플라이언스', note: '구조 엔지니어 서명, WHS 컴플라이언스, CDC 인증 관련', monthly: 1800 },
-    { category: 'sga', label: '기타 관리비', note: '사무용품, 소모품, 예비비', monthly: 1000 },
-    { category: 'other', label: '설비 감가상각비', note: 'SP120 Stage1+2 총 A$80,000, 내용연수 7년 정액법', monthly: 950 },
-    { category: 'other', label: '장비·공구 감가상각비', note: '포크리프트 등 초기 장비, 내용연수 5년', monthly: 90 },
-    { category: 'other', label: '설비 리스·대출 이자', note: 'SP120 자산금융 가정 이자비용', monthly: 560 }
+    { category: 'fixedProd', label: '공장 전기·수도', note: 'SP120 롤포밍기 가동 전력 + 용수/폐수', type: 'flat', monthly: 1500 },
+    { category: 'fixedProd', label: '생산직 기본급 (오퍼레이터 2명)', note: '램프업 단계 최소 유지 인력, Fair Work 금속제조업 award 기준', type: 'salary', hours: 346, rate: 26 },
+    { category: 'fixedProd', label: '소모품·공구 유지보수', note: '드릴비트·블레이드·윤활유 등 소모품 교체', type: 'flat', monthly: 1000 },
+    { category: 'fixedProd', label: '산업폐기물 처리', note: '철스크랩·자재 폐기물 수거', type: 'flat', monthly: 400 },
+    { category: 'sga', label: '대표이사 급여', note: '경영·전략·영업 총괄', type: 'salary', hours: 173, rate: 57.8 },
+    { category: 'sga', label: '견적·영업 담당 급여', note: '고객 상담, 견적, 계약 관리', type: 'salary', hours: 173, rate: 43.35 },
+    { category: 'sga', label: '관리·회계 담당 급여 (파트타임)', note: '경리, 총무, 발주 관리', type: 'salary', hours: 86.5, rate: 40.46 },
+    { category: 'sga', label: '사업 보험료', note: '배상책임(Public Liability) + icare 산재보험 (제조업 평균 요율 ~1.8~4.8%)', type: 'flat', monthly: 2900 },
+    { category: 'sga', label: 'FrameCAD Steelwise 라이선스', note: '설계·디테일링·엔지니어링 소프트웨어 구독', type: 'flat', monthly: 1500 },
+    { category: 'sga', label: '회계·법무 자문료', note: '외부 회계사 기장, 세무신고, 계약 검토', type: 'flat', monthly: 1800 },
+    { category: 'sga', label: '마케팅·영업비', note: '웹사이트, 온라인 광고, 전시 참가', type: 'flat', monthly: 2000 },
+    { category: 'sga', label: '차량 유지비', note: '배송·현장방문용 유트(Ute) 리스+연료+보험', type: 'flat', monthly: 1600 },
+    { category: 'sga', label: '통신·IT', note: '인터넷, 휴대폰, 클라우드 SaaS 구독', type: 'flat', monthly: 600 },
+    { category: 'sga', label: '인증·컴플라이언스', note: '구조 엔지니어 서명, WHS 컴플라이언스, CDC 인증 관련', type: 'flat', monthly: 1800 },
+    { category: 'sga', label: '기타 관리비', note: '사무용품, 소모품, 예비비', type: 'flat', monthly: 1000 },
+    { category: 'other', label: '설비 감가상각비', note: 'SP120 Stage1+2 총 A$80,000, 내용연수 7년 정액법', type: 'flat', monthly: 950 },
+    { category: 'other', label: '장비·공구 감가상각비', note: '포크리프트 등 초기 장비, 내용연수 5년', type: 'flat', monthly: 90 },
+    { category: 'other', label: '설비 리스·대출 이자', note: 'SP120 자산금융 가정 이자비용', type: 'flat', monthly: 560 }
+  ],
+  rentItems: [
+    { category: 'fixedProd', label: '공장·창고 임대료', note: 'Western Sydney 산업단지 창고 (~450㎡, 순임대료 ~A$160/㎡/yr 기준)', monthly: 6000, deposit: 12000, depositMonth: 1 },
+    { category: 'sga', label: '사무실 임대료·유틸리티', note: '공장 내 사무 공간 또는 소규모 별도 사무실', monthly: 1200, deposit: 2400, depositMonth: 1 }
   ],
   equityRaise: 350000,
   stage1Amount: 40000,
@@ -90,16 +92,29 @@ function computeHouseTypeTotals(houseTypes, pricePerSqm) {
   return { rows, totalQty, totalRevenue, blendedPrice };
 }
 
+function itemMonthly(item) {
+  return item.type === 'salary' ? item.hours * item.rate : item.monthly;
+}
+
 function computeFixedCostTotals(items) {
   const totals = { fixedProd: 0, sga: 0, other: 0 };
-  items.forEach(it => { totals[it.category] += it.monthly; });
+  items.forEach(it => { totals[it.category] += itemMonthly(it); });
   totals.grandTotal = totals.fixedProd + totals.sga + totals.other;
+  return totals;
+}
+
+function computeRentTotals(items) {
+  const totals = { fixedProd: 0, sga: 0 };
+  items.forEach(it => { totals[it.category] += it.monthly; });
+  totals.monthlyTotal = totals.fixedProd + totals.sga;
+  totals.depositTotal = items.reduce((s, it) => s + it.deposit, 0);
   return totals;
 }
 
 function buildDefaultMonths() {
   const blendedPrice = Math.round(computeHouseTypeTotals(DEFAULTS.houseTypes, DEFAULTS.pricePerSqm).blendedPrice);
   const fc = computeFixedCostTotals(DEFAULTS.fixedCostItems);
+  const rent = computeRentTotals(DEFAULTS.rentItems);
   return DEFAULTS.houses.map(houses => {
     const revenue = houses * blendedPrice;
     return {
@@ -109,8 +124,8 @@ function buildDefaultMonths() {
       screw: revenue * DEFAULTS.screwPct / 100,
       detail: revenue * DEFAULTS.detailPct / 100,
       otherVar: revenue * DEFAULTS.otherVarPct / 100,
-      fixedProd: fc.fixedProd,
-      sga: fc.sga,
+      fixedProd: fc.fixedProd + rent.fixedProd,
+      sga: fc.sga + rent.sga,
       otherCost: fc.other
     };
   });
@@ -124,6 +139,10 @@ function buildDefaultFixedCostItems() {
   return DEFAULTS.fixedCostItems.map(item => ({ ...item }));
 }
 
+function buildDefaultRentItems() {
+  return DEFAULTS.rentItems.map(item => ({ ...item }));
+}
+
 let state = {
   pricePerSqm: DEFAULTS.pricePerSqm,
   houseTypes: DEFAULTS.houseTypes.map(t => ({ ...t })),
@@ -132,6 +151,7 @@ let state = {
   detailPct: DEFAULTS.detailPct,
   otherVarPct: DEFAULTS.otherVarPct,
   fixedCostItems: buildDefaultFixedCostItems(),
+  rentItems: buildDefaultRentItems(),
   equityRaise: DEFAULTS.equityRaise,
   stage1Amount: DEFAULTS.stage1Amount,
   stage1Month: DEFAULTS.stage1Month,
@@ -149,6 +169,7 @@ let rowRefs = [];
 let equipRowRefs = [];
 let houseTypeRowRefs = [];
 let fixedCostRowRefs = [];
+let rentRowRefs = [];
 
 function fmt(n) {
   const r = Math.round(n);
@@ -166,6 +187,7 @@ function computeAll() {
   const months = [];
   let cash = state.equityRaise;
   const totalEquipmentCapex = state.equipmentItems.reduce((s, it) => s + it.unitPrice * it.qty, 0);
+  const totalRentDeposit = state.rentItems.reduce((s, it) => s + it.deposit, 0);
 
   state.months.forEach((m, i) => {
     const revenue = m.houses * m.salePrice;
@@ -180,6 +202,9 @@ function computeAll() {
     if (i + 1 === Number(state.stage2Month)) capex += state.stage2Amount;
     if (i + 1 === Number(state.stage3Month)) capex += state.stage3Amount;
     if (i + 1 === Number(state.equipmentMonth)) capex += totalEquipmentCapex;
+    state.rentItems.forEach(item => {
+      if (i + 1 === Number(item.depositMonth)) capex += item.deposit;
+    });
     cash += ebitda - capex;
 
     months.push({
@@ -205,6 +230,7 @@ function computeAll() {
     totalCapex: sum(months, 'capex'),
     totalMachineCapex: state.stage1Amount + state.stage2Amount + state.stage3Amount,
     totalEquipmentCapex,
+    totalRentDeposit,
     totalHouses: sum(months, 'houses'),
     endCash: months[11].cashEnd,
     minCash: Math.min(state.equityRaise, ...months.map(m => m.cashEnd))
@@ -388,7 +414,8 @@ function getBreakdown(metric, months, totals) {
         { label: '초기 투자금', value: state.equityRaise, sign: '+' },
         { label: '누적 EBITDA', value: totals.totalEBITDA, sign: totals.totalEBITDA >= 0 ? '+' : '-' },
         { label: 'SP120 설비투자 (Stage 1+2+3)', value: -totals.totalMachineCapex, sign: '-' },
-        { label: '장비·공구 구입', value: -totals.totalEquipmentCapex, sign: '-' }
+        { label: '장비·공구 구입', value: -totals.totalEquipmentCapex, sign: '-' },
+        { label: '임대 보증금(디파짓)', value: -totals.totalRentDeposit, sign: '-' }
       ];
       return { title: '기말 현금 계산', rows, totalLabel: 'Y1 말 현금', totalValue: totals.endCash, showBar: false };
     }
@@ -539,24 +566,109 @@ function buildFixedCostSkeleton() {
       const labelTd = document.createElement('td');
       labelTd.className = 'equip-label-cell';
       labelTd.innerHTML = `<span class="equip-label">${item.label}</span><span class="equip-note">${item.note}</span>`;
+      const toggleLabel = document.createElement('label');
+      toggleLabel.className = 'salary-toggle';
+      const toggleInput = document.createElement('input');
+      toggleInput.type = 'checkbox';
+      toggleInput.checked = item.type === 'salary';
+      toggleInput.dataset.i = i;
+      toggleInput.addEventListener('change', onFixedCostTypeToggle);
+      toggleLabel.appendChild(toggleInput);
+      toggleLabel.appendChild(document.createTextNode('시급제 (시간×시급)'));
+      labelTd.appendChild(toggleLabel);
       tr.appendChild(labelTd);
 
-      const monthlyInput = document.createElement('input');
-      monthlyInput.type = 'number';
-      monthlyInput.className = 'equip-input';
-      monthlyInput.min = '0';
-      monthlyInput.step = '1';
-      monthlyInput.value = item.monthly;
-      monthlyInput.dataset.i = i;
-      monthlyInput.addEventListener('input', onFixedCostInput);
-      const monthlyTd = document.createElement('td');
-      monthlyTd.appendChild(monthlyInput);
-      tr.appendChild(monthlyTd);
+      const amountTd = document.createElement('td');
+      tr.appendChild(amountTd);
+
+      const removeTd = document.createElement('td');
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'ht-remove-btn';
+      removeBtn.textContent = '✕';
+      removeBtn.dataset.i = i;
+      removeBtn.addEventListener('click', onFixedCostRemove);
+      removeTd.appendChild(removeBtn);
+      tr.appendChild(removeTd);
 
       tbody.appendChild(tr);
-      fixedCostRowRefs.push({ i, input: monthlyInput });
+      const rowRef = { i, amountTd };
+      buildFixedCostAmountCell(rowRef);
+      fixedCostRowRefs.push(rowRef);
     });
   });
+}
+
+function buildFixedCostAmountCell(rowRef) {
+  const { i, amountTd } = rowRef;
+  const item = state.fixedCostItems[i];
+  amountTd.innerHTML = '';
+
+  if (item.type === 'salary') {
+    const wrap = document.createElement('div');
+    wrap.className = 'salary-cell';
+
+    const hoursRow = document.createElement('div');
+    hoursRow.className = 'salary-row';
+    const hoursLabel = document.createElement('span');
+    hoursLabel.className = 'salary-mini-label';
+    hoursLabel.textContent = '시간/월';
+    const hoursInput = document.createElement('input');
+    hoursInput.type = 'number';
+    hoursInput.className = 'equip-input salary-mini-input';
+    hoursInput.min = '0';
+    hoursInput.step = '0.5';
+    hoursInput.value = item.hours;
+    hoursInput.dataset.i = i;
+    hoursInput.dataset.key = 'hours';
+    hoursInput.addEventListener('input', onFixedCostSalaryInput);
+    hoursRow.appendChild(hoursLabel);
+    hoursRow.appendChild(hoursInput);
+    wrap.appendChild(hoursRow);
+
+    const rateRow = document.createElement('div');
+    rateRow.className = 'salary-row';
+    const rateLabel = document.createElement('span');
+    rateLabel.className = 'salary-mini-label';
+    rateLabel.textContent = '시급';
+    const rateInput = document.createElement('input');
+    rateInput.type = 'number';
+    rateInput.className = 'equip-input salary-mini-input';
+    rateInput.min = '0';
+    rateInput.step = '0.01';
+    rateInput.value = item.rate;
+    rateInput.dataset.i = i;
+    rateInput.dataset.key = 'rate';
+    rateInput.addEventListener('input', onFixedCostSalaryInput);
+    rateRow.appendChild(rateLabel);
+    rateRow.appendChild(rateInput);
+    wrap.appendChild(rateRow);
+
+    const resultEl = document.createElement('div');
+    resultEl.className = 'salary-computed';
+    resultEl.textContent = '= ' + fmt(itemMonthly(item)) + '/월';
+    wrap.appendChild(resultEl);
+
+    amountTd.appendChild(wrap);
+    rowRef.hoursInput = hoursInput;
+    rowRef.rateInput = rateInput;
+    rowRef.resultEl = resultEl;
+    rowRef.monthlyInput = null;
+  } else {
+    const monthlyInput = document.createElement('input');
+    monthlyInput.type = 'number';
+    monthlyInput.className = 'equip-input';
+    monthlyInput.min = '0';
+    monthlyInput.step = '1';
+    monthlyInput.value = item.monthly;
+    monthlyInput.dataset.i = i;
+    monthlyInput.addEventListener('input', onFixedCostInput);
+    amountTd.appendChild(monthlyInput);
+    rowRef.monthlyInput = monthlyInput;
+    rowRef.hoursInput = null;
+    rowRef.rateInput = null;
+    rowRef.resultEl = null;
+  }
 }
 
 function onFixedCostInput(e) {
@@ -565,29 +677,174 @@ function onFixedCostInput(e) {
   let val = parseFloat(inp.value);
   if (isNaN(val) || val < 0) val = 0;
   state.fixedCostItems[i].monthly = val;
-  applyFixedCostTotals();
-  syncInputsFromState();
+  applyAllFixedTotals();
   renderFixedCostTable();
   renderComputed();
 }
 
-function applyFixedCostTotals() {
-  const totals = computeFixedCostTotals(state.fixedCostItems);
-  applyFixedAll('fixedProd', totals.fixedProd);
-  applyFixedAll('sga', totals.sga);
-  applyFixedAll('otherCost', totals.other);
+function onFixedCostSalaryInput(e) {
+  const inp = e.target;
+  const i = Number(inp.dataset.i);
+  const key = inp.dataset.key;
+  let val = parseFloat(inp.value);
+  if (isNaN(val) || val < 0) val = 0;
+  state.fixedCostItems[i][key] = val;
+  const rowRef = fixedCostRowRefs.find(r => r.i === i);
+  if (rowRef && rowRef.resultEl) rowRef.resultEl.textContent = '= ' + fmt(itemMonthly(state.fixedCostItems[i])) + '/월';
+  applyAllFixedTotals();
+  renderFixedCostTable();
+  renderComputed();
 }
 
-function syncFixedCostInputsFromState() {
-  fixedCostRowRefs.forEach(row => { row.input.value = state.fixedCostItems[row.i].monthly; });
+function onFixedCostTypeToggle(e) {
+  const i = Number(e.target.dataset.i);
+  const item = state.fixedCostItems[i];
+  if (e.target.checked) {
+    const prevMonthly = itemMonthly(item);
+    item.type = 'salary';
+    if (item.hours == null) item.hours = 173;
+    if (item.rate == null) item.rate = prevMonthly ? Math.round((prevMonthly / item.hours) * 100) / 100 : 30;
+  } else {
+    item.monthly = Math.round(itemMonthly(item));
+    item.type = 'flat';
+  }
+  buildFixedCostSkeleton();
+  applyAllFixedTotals();
+  renderFixedCostTable();
+  renderComputed();
+}
+
+function onFixedCostRemove(e) {
+  const i = Number(e.currentTarget.dataset.i);
+  state.fixedCostItems.splice(i, 1);
+  buildFixedCostSkeleton();
+  applyAllFixedTotals();
+  renderFixedCostTable();
+  renderComputed();
+}
+
+function applyAllFixedTotals() {
+  const fc = computeFixedCostTotals(state.fixedCostItems);
+  const rent = computeRentTotals(state.rentItems);
+  applyFixedAll('fixedProd', fc.fixedProd + rent.fixedProd);
+  applyFixedAll('sga', fc.sga + rent.sga);
+  applyFixedAll('otherCost', fc.other);
+  syncInputsFromState();
 }
 
 function renderFixedCostTable() {
-  const totals = computeFixedCostTotals(state.fixedCostItems);
-  q('fixedProdSubtotal').textContent = fmt(totals.fixedProd);
-  q('sgaSubtotal').textContent = fmt(totals.sga);
-  q('otherCostSubtotal').textContent = fmt(totals.other);
-  q('fixedCostGrandTotal').textContent = fmt(totals.grandTotal);
+  const fc = computeFixedCostTotals(state.fixedCostItems);
+  const rent = computeRentTotals(state.rentItems);
+  q('fixedProdSubtotal').textContent = fmt(fc.fixedProd);
+  q('sgaSubtotal').textContent = fmt(fc.sga);
+  q('otherCostSubtotal').textContent = fmt(fc.other);
+  q('fixedCostGrandTotal').textContent = fmt(fc.grandTotal + rent.monthlyTotal);
+}
+
+/* ---------- rent items (separate: monthly rent vs one-off deposit cash timing) ---------- */
+
+function buildRentSkeleton() {
+  const tbody = q('rentBody');
+  tbody.innerHTML = '';
+  rentRowRefs = [];
+
+  state.rentItems.forEach((item, i) => {
+    const tr = document.createElement('tr');
+
+    const labelTd = document.createElement('td');
+    labelTd.className = 'equip-label-cell';
+    labelTd.innerHTML = `<span class="equip-label">${item.label}</span><span class="equip-note">${item.note}</span>`;
+    tr.appendChild(labelTd);
+
+    const monthlyInput = document.createElement('input');
+    monthlyInput.type = 'number';
+    monthlyInput.className = 'equip-input';
+    monthlyInput.min = '0';
+    monthlyInput.step = '1';
+    monthlyInput.value = item.monthly;
+    monthlyInput.dataset.i = i;
+    monthlyInput.dataset.key = 'monthly';
+    monthlyInput.addEventListener('input', onRentInput);
+    const monthlyTd = document.createElement('td');
+    monthlyTd.appendChild(monthlyInput);
+    tr.appendChild(monthlyTd);
+
+    const depositInput = document.createElement('input');
+    depositInput.type = 'number';
+    depositInput.className = 'equip-input';
+    depositInput.min = '0';
+    depositInput.step = '1';
+    depositInput.value = item.deposit;
+    depositInput.dataset.i = i;
+    depositInput.dataset.key = 'deposit';
+    depositInput.addEventListener('input', onRentInput);
+    const depositTd = document.createElement('td');
+    depositTd.appendChild(depositInput);
+    tr.appendChild(depositTd);
+
+    const monthSelect = document.createElement('select');
+    monthSelect.className = 'rent-month-select';
+    for (let m = 1; m <= 12; m++) {
+      const opt = document.createElement('option');
+      opt.value = m;
+      opt.textContent = 'M' + m;
+      monthSelect.appendChild(opt);
+    }
+    monthSelect.value = item.depositMonth;
+    monthSelect.dataset.i = i;
+    monthSelect.addEventListener('change', onRentDepositMonthChange);
+    const monthTd = document.createElement('td');
+    monthTd.appendChild(monthSelect);
+    tr.appendChild(monthTd);
+
+    const removeTd = document.createElement('td');
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'ht-remove-btn';
+    removeBtn.textContent = '✕';
+    removeBtn.dataset.i = i;
+    removeBtn.addEventListener('click', onRentRemove);
+    removeTd.appendChild(removeBtn);
+    tr.appendChild(removeTd);
+
+    tbody.appendChild(tr);
+    rentRowRefs.push({ i, monthlyInput, depositInput, monthSelect });
+  });
+}
+
+function onRentInput(e) {
+  const inp = e.target;
+  const i = Number(inp.dataset.i);
+  const key = inp.dataset.key;
+  let val = parseFloat(inp.value);
+  if (isNaN(val) || val < 0) val = 0;
+  state.rentItems[i][key] = val;
+  applyAllFixedTotals();
+  renderRentTable();
+  renderFixedCostTable();
+  renderComputed();
+}
+
+function onRentDepositMonthChange(e) {
+  const i = Number(e.target.dataset.i);
+  state.rentItems[i].depositMonth = parseInt(e.target.value, 10);
+  renderComputed();
+}
+
+function onRentRemove(e) {
+  const i = Number(e.currentTarget.dataset.i);
+  state.rentItems.splice(i, 1);
+  buildRentSkeleton();
+  applyAllFixedTotals();
+  renderRentTable();
+  renderFixedCostTable();
+  renderComputed();
+}
+
+function renderRentTable() {
+  const totals = computeRentTotals(state.rentItems);
+  q('rentMonthlyTotal').textContent = fmt(totals.monthlyTotal);
+  q('rentDepositTotal').textContent = fmt(totals.depositTotal);
 }
 
 /* ---------- house type pricing & targets (editable) ---------- */
@@ -961,6 +1218,7 @@ function resetAll() {
     detailPct: DEFAULTS.detailPct,
     otherVarPct: DEFAULTS.otherVarPct,
     fixedCostItems: buildDefaultFixedCostItems(),
+    rentItems: buildDefaultRentItems(),
     equityRaise: DEFAULTS.equityRaise,
     stage1Amount: DEFAULTS.stage1Amount,
     stage1Month: DEFAULTS.stage1Month,
@@ -976,6 +1234,10 @@ function resetAll() {
   document.querySelectorAll('[data-metric]').forEach(o => o.classList.remove('active'));
   q('breakdownCard').style.display = 'none';
 
+  ['coil', 'screw', 'detail', 'otherVar'].forEach(field => {
+    const row = q('varRow-' + field);
+    if (row) row.style.display = '';
+  });
   ['coilPct', 'screwPct', 'detailPct', 'otherVarPct'].forEach(id => {
     const elx = q(id);
     elx.value = DEFAULTS[id];
@@ -998,11 +1260,28 @@ function resetAll() {
 
   buildHouseTypeSkeleton();
   buildFixedCostSkeleton();
+  buildRentSkeleton();
   syncInputsFromState();
   syncEquipInputsFromState();
   renderHouseTypeTable();
   renderFixedCostTable();
+  renderRentTable();
   renderComputed();
+}
+
+function onVarCostRemove(e) {
+  const field = e.currentTarget.dataset.field;
+  const pctId = field + 'Pct';
+  const elx = q(pctId);
+  elx.value = 0;
+  setSliderFill(elx);
+  const label = q(pctId + 'Val');
+  if (label) label.textContent = '0%';
+  applyPctAll(field, 0);
+  syncInputsFromState();
+  renderComputed();
+  const row = q('varRow-' + field);
+  if (row) row.style.display = 'none';
 }
 
 function initControls() {
@@ -1011,6 +1290,7 @@ function initControls() {
   bindBulkSlider('screwPct', true, v => applyPctAll('screw', v));
   bindBulkSlider('detailPct', true, v => applyPctAll('detail', v));
   bindBulkSlider('otherVarPct', true, v => applyPctAll('otherVar', v));
+  document.querySelectorAll('.var-remove-btn').forEach(btn => btn.addEventListener('click', onVarCostRemove));
   bindScalarInput('equityRaise', 'equityRaise');
   bindScalarInput('stage1Amount', 'stage1Amount');
   bindScalarInput('stage2Amount', 'stage2Amount');
@@ -1085,9 +1365,11 @@ window.addEventListener('DOMContentLoaded', () => {
   buildEquipSkeleton();
   buildHouseTypeSkeleton();
   buildFixedCostSkeleton();
+  buildRentSkeleton();
   bindMetricClicks();
   renderHouseTypeTable();
   renderFixedCostTable();
+  renderRentTable();
   renderComputed();
   renderBottomNav();
   goTab(0);
