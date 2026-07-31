@@ -127,6 +127,10 @@ function buildDefaultFixedCostItems() {
 let state = {
   pricePerSqm: DEFAULTS.pricePerSqm,
   houseTypes: DEFAULTS.houseTypes.map(t => ({ ...t })),
+  coilPct: DEFAULTS.coilPct,
+  screwPct: DEFAULTS.screwPct,
+  detailPct: DEFAULTS.detailPct,
+  otherVarPct: DEFAULTS.otherVarPct,
   fixedCostItems: buildDefaultFixedCostItems(),
   equityRaise: DEFAULTS.equityRaise,
   stage1Amount: DEFAULTS.stage1Amount,
@@ -591,7 +595,23 @@ function renderFixedCostTable() {
 function applyBlendedPriceToMonths() {
   const blendedPrice = Math.round(computeHouseTypeTotals(state.houseTypes, state.pricePerSqm).blendedPrice);
   state.months.forEach(m => { m.salePrice = blendedPrice; });
+  reapplyVariableCostPcts();
   return blendedPrice;
+}
+
+/* production-related variable costs (coil/screw/detail/otherVar) are set as
+   a % of revenue — whenever a sales assumption changes the revenue for a
+   month, recompute those costs so they stay in sync instead of going stale */
+function reapplyVariableCostPcts(indices) {
+  const idxs = indices || state.months.map((_, i) => i);
+  idxs.forEach(i => {
+    const m = state.months[i];
+    const revenue = m.houses * m.salePrice;
+    m.coil = revenue * state.coilPct / 100;
+    m.screw = revenue * state.screwPct / 100;
+    m.detail = revenue * state.detailPct / 100;
+    m.otherVar = revenue * state.otherVarPct / 100;
+  });
 }
 
 function buildHouseTypeSkeleton() {
@@ -782,6 +802,10 @@ function onCellInput(e) {
   let val = parseFloat(inp.value);
   if (isNaN(val) || val < 0) val = 0;
   state.months[i][key] = val;
+  if (key === 'houses' || key === 'salePrice') {
+    reapplyVariableCostPcts([i]);
+    syncInputsFromState();
+  }
   renderComputed();
 }
 
@@ -865,6 +889,7 @@ function renderComputed() {
 /* ---------- bulk-apply sliders ---------- */
 
 function applyPctAll(field, pct) {
+  state[field + 'Pct'] = pct;
   state.months.forEach(m => {
     const revenue = m.houses * m.salePrice;
     m[field] = revenue * pct / 100;
@@ -931,6 +956,10 @@ function resetAll() {
   state = {
     pricePerSqm: DEFAULTS.pricePerSqm,
     houseTypes: DEFAULTS.houseTypes.map(t => ({ ...t })),
+    coilPct: DEFAULTS.coilPct,
+    screwPct: DEFAULTS.screwPct,
+    detailPct: DEFAULTS.detailPct,
+    otherVarPct: DEFAULTS.otherVarPct,
     fixedCostItems: buildDefaultFixedCostItems(),
     equityRaise: DEFAULTS.equityRaise,
     stage1Amount: DEFAULTS.stage1Amount,
