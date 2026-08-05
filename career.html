@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<title>이직 준비 · LPG 스터디</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="LPG 스터디">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#E8741E">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --primary:#E8741E;--primary-hover:#D4681A;--primary-light:#FFF3EB;
+  --primary-gradient:linear-gradient(135deg,#E8741E 0%,#F5943A 100%);
+  --bg:#F5F5F5;--white:#FFFFFF;
+  --grey50:#FAFAFA;--grey100:#F2F4F6;--grey200:#E5E8EB;--grey300:#D1D6DB;
+  --grey500:#8B95A1;--grey700:#4E5968;--black:#191F28;
+  --success:#1DB847;--info:#3182F6;
+}
+html,body{height:100%}
+html{scrollbar-width:none;-ms-overflow-style:none}
+html::-webkit-scrollbar{display:none;width:0;height:0}
+body{background:var(--bg);color:var(--black);font-family:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;overflow-x:hidden;display:flex;justify-content:center}
+body.sheet-open{overflow:hidden}
+.app{width:100%;max-width:500px;min-height:100vh;padding:0 16px 40px}
+.hl{color:var(--primary)}
+
+/* ── header / progress ── */
+.header{background:var(--primary-gradient);color:var(--white);padding:20px 24px 26px;border-radius:0 0 28px 28px;margin:0 -16px 20px}
+.header-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.back-btn{color:var(--white);text-decoration:none;font-size:20px;opacity:.9;line-height:1}
+.header-logo{font-size:13px;font-weight:600;opacity:.85}
+.header-title{font-size:22px;font-weight:800;line-height:1.3;letter-spacing:-.3px}
+.header-sub{font-size:13px;opacity:.9;font-weight:500;margin-top:5px}
+.hbar{width:100%;height:9px;background:rgba(255,255,255,.28);border-radius:20px;overflow:hidden;margin-top:16px}
+.hbar-fill{height:100%;background:#fff;border-radius:20px;transition:width .3s cubic-bezier(.2,.8,.2,1)}
+.hbar-row{display:flex;justify-content:space-between;align-items:baseline;margin-top:8px}
+.hbar-pct{font-size:13px;font-weight:700}
+.hbar-cnt{font-size:12px;opacity:.85;font-weight:500}
+
+/* ── week chip (future weeks append here) ── */
+.week-row{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;margin-bottom:14px;scrollbar-width:none}
+.week-row::-webkit-scrollbar{display:none;height:0}
+.week-chip{flex-shrink:0;border:none;background:var(--white);color:var(--grey500);padding:10px 16px;border-radius:16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 2px 8px rgba(0,0,0,.06);white-space:nowrap}
+.week-chip.on{background:var(--primary);color:#fff;box-shadow:0 3px 10px rgba(232,116,30,.35)}
+
+/* ── day tabs ── */
+.day-row{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;margin-bottom:16px;scrollbar-width:none}
+.day-row::-webkit-scrollbar{display:none;height:0}
+.day-chip{flex-shrink:0;border:none;background:var(--white);color:var(--grey500);padding:9px 14px;border-radius:14px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 2px 8px rgba(0,0,0,.06);transition:.2s;display:flex;align-items:center;gap:6px}
+.day-chip.on{background:var(--primary);color:#fff;box-shadow:0 3px 10px rgba(232,116,30,.35)}
+.day-chip .dn{width:15px;height:15px;border-radius:50%;background:var(--grey100);color:var(--grey500);font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.day-chip.on .dn{background:rgba(255,255,255,.3);color:#fff}
+.day-chip .dn.done{background:var(--success);color:#fff}
+
+.day-theme-card{background:var(--white);border-radius:20px;padding:16px 20px;box-shadow:0 2px 12px rgba(0,0,0,.06);margin-bottom:16px;display:flex;align-items:center;gap:14px}
+.day-theme-emoji{font-size:30px;width:52px;height:52px;border-radius:16px;background:var(--primary-light);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.day-theme-lb{font-size:11px;color:var(--grey500);font-weight:600}
+.day-theme-tt{font-size:16px;font-weight:800;margin-top:2px}
+.day-theme-sub{font-size:12px;color:var(--grey500);font-weight:500;margin-top:3px}
+
+/* ── lesson timeline list ── */
+.lesson-list{display:flex;flex-direction:column}
+.lesson-row{display:flex;gap:12px;align-items:stretch;cursor:pointer}
+.l-num-col{width:28px;flex-shrink:0;position:relative;padding-top:6px}
+.l-num{width:26px;height:26px;border-radius:50%;background:var(--grey200);color:var(--grey700);font-size:11.5px;font-weight:800;display:flex;align-items:center;justify-content:center;z-index:1;position:relative}
+.l-num.done{background:var(--success);color:#fff}
+.lesson-row:not(:last-child) .l-num-col::after{content:'';position:absolute;left:12.5px;top:32px;bottom:-14px;width:2px;background:var(--grey200)}
+.l-card{flex:1;background:var(--white);border-radius:18px;box-shadow:0 2px 12px rgba(0,0,0,.06);padding:14px 16px;margin-bottom:14px;min-width:0}
+.l-card:active{transform:scale(.98)}
+.l-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.l-tag{display:inline-block;background:var(--primary-light);color:var(--primary);font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;flex-shrink:0}
+.l-check{font-size:16px;color:var(--grey300);flex-shrink:0}
+.l-check.done{color:var(--success)}
+.l-title{font-size:14.5px;font-weight:700;line-height:1.45;margin-top:8px}
+.l-hook{font-size:12.5px;color:var(--grey500);font-weight:500;margin-top:5px;line-height:1.5}
+
+/* ── detail sheet ── */
+@keyframes sheetIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+@keyframes sheetOut{from{opacity:1;transform:scale(1)}to{opacity:0;transform:scale(.96)}}
+.sheet-backdrop{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;justify-content:center;animation:sheetIn .3s cubic-bezier(.2,.8,.2,1)}
+.sheet-backdrop.closing{animation:sheetOut .18s cubic-bezier(.4,0,1,1) forwards}
+.sheet{width:100%;max-width:500px;height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--bg);scrollbar-width:none;-ms-overflow-style:none;padding-bottom:110px}
+.sheet::-webkit-scrollbar{display:none;width:0;height:0}
+
+.sheet-hero{background:var(--primary-gradient);padding:calc(16px + env(safe-area-inset-top)) 20px 28px;color:#fff;border-radius:0 0 28px 28px}
+.sheet-hero-top{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.sheet-back{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.22);color:#fff;border:none;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sheet-hero-emoji{font-size:38px;margin-bottom:10px}
+.sheet-hero-lb{font-size:12px;opacity:.85;font-weight:700}
+.sheet-hero-tt{font-size:20px;font-weight:800;line-height:1.4;margin-top:6px}
+.sheet-hero-tag{display:inline-block;background:rgba(255,255,255,.22);font-size:11.5px;font-weight:700;padding:4px 11px;border-radius:20px;margin-top:12px}
+
+.sheet-body{padding:20px}
+.s-card{background:var(--white);border-radius:20px;padding:20px;box-shadow:0 2px 12px rgba(0,0,0,.06);margin-bottom:14px}
+.s-card-lb{font-size:12px;font-weight:700;color:var(--primary);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.s-body p{font-size:14px;line-height:1.75;color:var(--black);font-weight:500;margin-bottom:10px}
+.s-body p:last-child{margin-bottom:0}
+.s-body ul{padding-left:18px;margin:10px 0}
+.s-body li{font-size:13.5px;line-height:1.7;color:var(--grey700);font-weight:500;margin-bottom:6px}
+.s-body li:last-child{margin-bottom:0}
+
+.doit-card{background:var(--primary-light)}
+.doit-card .s-card-lb{color:var(--primary)}
+.doit-text{font-size:13.5px;line-height:1.7;color:#7a4415;font-weight:500}
+.doit-toggle{margin-top:14px;width:100%;border:none;border-radius:14px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;background:#fff;color:var(--primary)}
+.doit-toggle.done{background:var(--success);color:#fff}
+
+.ref-card{display:flex;gap:10px;align-items:flex-start}
+.ref-ic{font-size:16px;flex-shrink:0;margin-top:1px}
+.ref-tx{font-size:13px;color:var(--grey700);font-weight:500;line-height:1.6}
+
+.note-area{width:100%;min-height:80px;border:1.5px solid var(--grey200);background:var(--white);border-radius:14px;padding:12px 14px;font-size:13.5px;font-family:inherit;color:var(--black);resize:vertical}
+.note-area:focus{outline:none;border-color:var(--primary)}
+.note-saved{font-size:11px;color:var(--grey500);margin-top:6px;text-align:right;min-height:14px}
+
+.sheet-fab{position:sticky;bottom:0;padding:14px 20px calc(14px + env(safe-area-inset-bottom));background:linear-gradient(transparent,var(--bg) 40%)}
+.complete-btn{width:100%;border:none;border-radius:16px;padding:16px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;background:var(--primary);color:#fff;box-shadow:0 4px 16px rgba(232,116,30,.3)}
+.complete-btn.done{background:var(--grey200);color:var(--grey700);box-shadow:none}
+.complete-btn:active{opacity:.85}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="header-top">
+      <a class="back-btn" href="index.html">‹</a>
+      <span class="header-logo">Eddy Playground</span>
+    </div>
+    <div class="header-title">이직 준비 <span style="opacity:.9">📈</span></div>
+    <div class="header-sub" id="headerSub">1주차 · LPG 산업 구조 & 회사 이해</div>
+    <div class="hbar"><div class="hbar-fill" id="hbarFill" style="width:0%"></div></div>
+    <div class="hbar-row">
+      <span class="hbar-pct" id="hbarPct">0%</span>
+      <span class="hbar-cnt" id="hbarCnt">0 / 30강 완료</span>
+    </div>
+  </div>
+
+  <div class="week-row" id="weekRow"></div>
+  <div class="day-row" id="dayRow"></div>
+  <div class="day-theme-card" id="dayThemeCard"></div>
+  <div class="lesson-list" id="lessonList"></div>
+</div>
+
+<div id="sheetRoot"></div>
+
+<script>
+const STORE_KEY='lpgCareerStudyV1';
+
+// ─── curriculum data ───
+const WEEKS=[
+  {id:'w1', label:'1주차', theme:'LPG 산업 구조 & 회사 이해'}
+];
+
+const DAYS=[
+  {day:1, emoji:'⛽', title:'LPG 밸류체인 ①', sub:'물성 · 생산 · 해상운송', lessons:[1,2,3,4,5]},
+  {day:2, emoji:'🚢', title:'LPG 밸류체인 ②', sub:'수입기지 · 국내유통 · CP', lessons:[6,7,8,9,10]},
+  {day:3, emoji:'💰', title:'가격결정 메커니즘', sub:'CP · 환율 · 유가 · 정책', lessons:[11,12,13,14,15]},
+  {day:4, emoji:'🔥', title:'프로판 vs 부탄 & 수요처', sub:'가정 · 산업 · 수송용 수요', lessons:[16,17,18,19,20]},
+  {day:5, emoji:'🏭', title:'석유화학 수요 & 기업분석 준비', sub:'PDH · DART 읽는 법', lessons:[21,22,23,24,25]},
+  {day:6, emoji:'📊', title:'경쟁사 비교 & 종합', sub:'4사 비교 · 1주차 리뷰', lessons:[26,27,28,29,30]}
+];
+
+const REF_19='한국석유공사·KEEI LPG 수급 보고서';
+const REF_1016='투데이에너지·에너지신문 LPG 섹션 (CP 발표 기사 위주)';
+const REF_1722='KEEI 수요처별 통계, 산업통상자원부 자료';
+const REF_2329='DART 전자공시(사업보고서), SK가스·E1 IR 자료';
+const REF_30='1~29강 자료 전체 복습 + 다이어그램 최종 점검';
+
+const LESSONS={
+1:{title:'LPG란 무엇인가: 프로판/부탄 기초 물성', tag:'기초물성', hook:'비점 · 증기압 · 발열량 — 이후 모든 강의의 출발점',
+  body:`<p>LPG(Liquefied Petroleum Gas)는 상온에서는 기체이지만 낮은 압력만 가해도 액체로 바뀌는 탄화수소로, <b>프로판(C3H8)</b>과 <b>부탄(C4H10)</b>이 주성분입니다. 액체 상태로 부피를 약 1/250 수준으로 줄일 수 있어 저장·운송이 쉬운 것이 LPG가 널리 쓰이는 이유입니다.</p>
+  <ul>
+    <li><b>비점(끓는점)</b>: 프로판 -42℃, 부탄 -0.5℃ — 부탄이 상대적으로 액화되기 쉬움</li>
+    <li><b>증기압</b>: 프로판이 부탄보다 훨씬 높음 → 프로판은 고압 용기가 필요, 부탄은 저압에서도 취급 쉬움(휴대용 부탄캔)</li>
+    <li><b>발열량</b>: 부탄이 단위 부피당 발열량이 다소 높아 가정용 연료는 부탄 비중이 크고, 산업·수송용은 프로판 비중이 큼</li>
+  </ul>
+  <p>겨울철에는 기화가 잘 안 되는 부탄 대신 프로판 비중을 높여 공급하는 '계절 블렌딩'이 실제 운영 이슈로 이어집니다. 이 물성 차이는 17강(프로판 vs 부탄 수요처)의 기초가 됩니다.</p>`,
+  doit:'프로판·부탄의 비점·증기압·발열량을 표로 직접 정리해보고, "겨울에는 프로판 비중을 높인다"는 말이 왜 물성상 맞는지 스스로 설명해보세요.',
+  ref:REF_19},
+2:{title:'LPG 생산 경로 ①: 원유정제 부산물', tag:'생산', hook:'정유사 CDU/FCC 공정에서 LPG가 나오는 과정',
+  body:`<p>정유사(원유정제) 공정에서 LPG가 나오는 경로를 이해합니다. <b>CDU(상압증류, Crude Distillation Unit)</b>에서 원유를 끓는점별로 분리할 때 가장 가벼운 유분(Off-gas/LPG)이 소량 생성되고, <b>FCC(유동접촉분해, Fluid Catalytic Cracking)</b>에서 중질유를 가벼운 분자로 쪼갤 때 프로필렌 등과 함께 LPG(주로 프로판·부탄)가 상당량 발생합니다.</p>
+  <p>정유사 입장에서 LPG는 원유정제의 '부산물(byproduct)'이라 원유 처리량에 연동되며, 정유사가 직접 판매하기도 하고 SK가스·E1 같은 LPG 전문 수입·유통사에 공급하기도 합니다. 국내는 GS칼텍스·SK에너지·에쓰오일·현대오일뱅크 등 4대 정유사가 국내 LPG 생산의 상당 부분을 담당합니다.</p>`,
+  doit:'정유사(GS칼텍스, SK에너지, 에쓰오일, 현대오일뱅크 중 하나) 사업보고서를 DART에서 열어 "LPG" 또는 "프로판/부탄" 관련 언급이 어느 사업부문에 속하는지 찾아보세요.',
+  ref:REF_19},
+3:{title:'LPG 생산 경로 ②: 셰일가스 NGL 부산물', tag:'생산', hook:'Mont Belvieu 기준가 — CP와 함께 알아야 할 또 다른 벤치마크',
+  body:`<p>미국 셰일가스 붐 이후 LPG 공급원으로 급부상한 경로입니다. 셰일가스전에서 천연가스를 채굴할 때 메탄과 함께 나오는 <b>NGL(Natural Gas Liquids, 천연가스액)</b>에서 에탄·프로판·부탄 등을 분리(Fractionation)합니다.</p>
+  <p><b>Mont Belvieu(텍사스)</b>는 미국 NGL/LPG 거래의 기준 가격이 형성되는 허브로, "Mont Belvieu 가격"은 국제 LPG 트레이딩에서 CP와 함께 자주 언급되는 벤치마크입니다.</p>
+  <p>미국은 셰일가스 생산 급증으로 LPG(특히 프로판) 수출국으로 전환되었고, 저렴한 미국산 프로판이 아시아 시장에 대량 유입되며 중동 아람코 CP 중심 구조에 변화 압력을 주고 있습니다.</p>`,
+  doit:'"Mont Belvieu propane price"를 검색해 최근 가격 동향 기사를 하나 찾아, CP와 어떻게 비교되는지 메모해보세요.',
+  ref:REF_19},
+4:{title:'글로벌 생산·수출 지도: 중동 vs 미국', tag:'글로벌시장', hook:'아람코(장기계약) vs 미국(스팟) — 두 공급축의 성격 차이',
+  body:`<p>중동(사우디 아람코 중심)과 미국(NGL 수출)이 세계 LPG 수출의 양대 축입니다. 아람코는 원유 생산과 연계된 대량 LPG를 <b>CP</b>라는 월별 고시가 방식으로 아시아에 장기계약 판매합니다.</p>
+  <p>미국은 상대적으로 스팟(spot) 거래·단기계약 비중이 높아 가격 변동성이 더 즉각적으로 반영되는 편입니다. 아시아(한국·일본·중국·인도)가 최대 LPG 수입 지역이며, 한국은 SK가스·E1이 중동+미국 물량을 혼합 소싱합니다.</p>`,
+  doit:'세계지도에 "중동 → 아시아", "미국 → 아시아" 두 개의 주요 물동 화살표를 그려, 밸류체인 다이어그램 초안(산출물1)의 첫 스케치로 남겨보세요.',
+  ref:REF_19},
+5:{title:'해상운송: VLGC 정의, 주요 선사, 운임', tag:'해상운송', hook:'중동·미국에서 아시아까지 — LPG를 실어나르는 배',
+  body:`<p><b>VLGC(Very Large Gas Carrier)</b>는 LPG 전용 대형 운반선(통상 적재량 82,000~84,000㎥ 내외)으로, 중동·미국에서 아시아까지 장거리 운송을 담당합니다.</p>
+  <ul>
+    <li>국내 선사: SK해운, 대한해운, 흥아해운 등</li>
+    <li>글로벌 선사: Dorian LPG, BW LPG, Avance Gas 등 대형 VLGC 선단 보유</li>
+  </ul>
+  <p>프레이트(운임)는 유가·선박 수급·항로 거리에 따라 변동하며, 국내 공급가 산정 시 "CP + 운임 + 환율" 구조의 한 축입니다(12강에서 자세히 다룹니다).</p>`,
+  doit:'BW LPG 또는 Dorian LPG 홈페이지에서 VLGC 선박 제원(적재량, 보유 척수)을 하나 찾아 메모해보세요.',
+  ref:REF_19},
+6:{title:'수입기지 구조: 저장탱크 방식과 국내 주요 기지', tag:'인프라', hook:'냉동식 vs 가압식 — 평택·인천·울산 기지',
+  body:`<p><b>냉동식 저장탱크</b>는 -42℃ 초저온으로 LPG를 액체 상태 그대로 저장합니다. 대형 수입기지에 사용되며, 저압이라 탱크 건설비는 크지만 대용량 저장에 유리합니다.</p>
+  <p><b>가압식 저장탱크</b>는 상온에서 압력을 가해 액화 상태를 유지합니다. 중소규모 저장, 충전소 등에 주로 사용됩니다.</p>
+  <p>국내 주요 수입기지는 평택(SK가스), 인천, 울산(SK가스·극동유화 등)으로, 모두 항만에 인접해 VLGC가 접안 가능한 대형 터미널입니다.</p>`,
+  doit:'SK가스·E1 홈페이지에서 자사 저장기지(평택/인천/울산 등)의 저장용량(㎥ 또는 톤)을 하나씩 찾아 비교해보세요.',
+  ref:REF_19},
+7:{title:'국내 유통망: 충전소 → 벌크로리 → 용기충전소', tag:'유통', hook:'다단계 유통 구조가 소비자가격에 미치는 영향',
+  body:`<p>충전소(1차 대형기지) → 벌크로리(탱크로리 운송) → 용기충전소(가정용 소형 용기에 재충전) → 최종소비자(가정·식당·산업체) 순의 다단계 유통 구조입니다.</p>
+  <p>산업용·수송용(LPG충전소)은 배관 또는 벌크로리로 직접 공급되기도 합니다. 다단계 구조라 유통마진이 여러 단계에 걸쳐 붙는다는 점이 국내 소비자가격 구조(12강)를 이해하는 데 중요합니다.</p>`,
+  doit:'집 근처 LPG 충전소나 용기충전소를 지도앱에서 하나 찾아보고, 가정용/차량용 중 어떤 최종수요를 대상으로 하는지 관찰해보세요.',
+  ref:REF_19},
+8:{title:'밸류체인 종합 정리 + 다이어그램 초안 (산출물1 착수)', tag:'정리·산출물', hook:'생산→운송→기지→유통→소비자, 하나의 그림으로',
+  body:`<p>지금까지 배운 생산(정유부산물/NGL) → 해상운송(VLGC) → 수입기지(냉동/가압) → 국내유통(벌크로리/용기충전소) → 최종소비자 흐름을 하나의 다이어그램으로 정리하는 강의입니다.</p>
+  <p><b>산출물1</b>: 밸류체인 다이어그램 초안 — 박스와 화살표로 각 단계, 관련 플레이어(아람코, 미국 생산자, VLGC 선사, SK가스/E1, 충전소)를 표시합니다.</p>
+  <p class="s-body"><b>예상 면접질문</b>: "LPG가 소비자에게 오기까지 과정을 설명해보세요" — 이 다이어그램이 바로 답안이 됩니다.</p>`,
+  doit:'노트나 그림앱에 다이어그램 초안을 실제로 그려 사진으로 남겨보세요. (30강에서 최종본으로 완성합니다)',
+  ref:REF_19},
+9:{title:'한국 LPG 수입 복점구조: SK가스·E1 형성 배경', tag:'국내시장', hook:'왜 오랫동안 두 회사가 시장을 양분해왔을까',
+  body:`<p><b>SK가스</b>(옛 유공가스, 1985년 설립)와 <b>E1</b>(옛 LG칼텍스가스, 1985년 설립)이 오랫동안 국내 LPG 수입시장을 양분해온 배경을 이해합니다.</p>
+  <p>정부의 에너지 안보·가격 안정 목적의 수급 정책 하에 소수 대형 수입사 체제가 유지되어온 역사적 맥락이 있으며, 이후 정유사·현대코퍼레이션 등도 트레이딩에 참여하며 경쟁 구도가 다변화되었습니다. 복점(duopoly) 구조가 유지되는 근본 이유는 대규모 저장기지·선박 투자가 필요한 자본집약적 산업 특성 때문입니다.</p>`,
+  doit:'SK가스, E1 각각의 설립연도와 모기업 연혁(SK 계열, GS에너지 계열 이관 등)을 회사 홈페이지에서 찾아 타임라인으로 정리해보세요.',
+  ref:REF_19},
+10:{title:'CP(Contract Price)란 무엇인가', tag:'가격', hook:'아람코가 매월 고시하는 아시아 LPG의 기준가',
+  body:`<p><b>CP(Contract Price)</b>는 사우디 아람코가 매월 말 발표하는 익월 프로판/부탄 공식판매가격으로, 아시아 LPG 장기계약 가격의 사실상 기준가(벤치마크) 역할을 합니다.</p>
+  <p>아람코 외에도 쿠웨이트 KPC 등 다른 중동 생산자도 유사한 월별 고시가를 발표하지만, 아람코 CP가 시장 벤치마크로 가장 널리 쓰입니다. 프로판 CP와 부탄 CP는 별도로 고시되며, 통상 프로판 값이 근소하게 더 높거나 비슷한 수준에서 형성됩니다.</p>`,
+  doit:'"사우디 아람코 CP 프로판 부탄" 키워드로 최신 CP 발표 기사를 찾아, 이번 달 프로판/부탄 CP 가격을 메모해보세요.',
+  ref:REF_1016},
+11:{title:'CP 결정 메커니즘: 국제 수급과의 연동 원리', tag:'가격', hook:'CP는 임의 고시가 아니라 시장에 후행하는 가격',
+  body:`<p>아람코는 국제 프로판/부탄 현물시장 가격(중동 및 아시아 스팟가), 수급 밸런스, 경쟁 생산자(미국 NGL) 가격 등을 종합해 월별 CP를 결정합니다 — 완전히 임의가 아니라 시장 연동성이 있습니다.</p>
+  <p>통상 전월 말 국제 스팟가 동향을 반영해 발표되므로, CP는 국제 시장가격에 후행하는 성격을 가집니다. 계절 수요(겨울 난방 성수기), 정제마진, 원유가 변동도 간접적으로 CP에 영향을 줍니다.</p>`,
+  doit:'최근 3개월 CP 추이 기사를 찾아 월별 등락 방향과 그 이유(수급/계절 등)를 한 줄씩 메모해보세요.',
+  ref:REF_1016},
+12:{title:'국내 공급가 산정 구조: CP + 환율 + 운임 + 마진', tag:'가격', hook:'국내 LPG 가격 뉴스를 스스로 해석하는 공식',
+  body:`<p>국내 LPG 공급가 ≈ <b>CP(달러/톤) × 환율(원/달러) + 해상운임(프레이트) + 통관·보험 등 부대비용 + 수입사 마진 + 유통(벌크로리·충전소) 마진</b>으로 구성됩니다.</p>
+  <p>CP는 달러 기준이므로 환율 변동이 국내 가격에 직접 영향을 줍니다 — 원화 약세면 동일 CP라도 국내 공급가는 상승합니다. 이 구조를 이해하면 "국내 LPG 가격이 왜 오르내리는지" 뉴스 기사를 스스로 해석할 수 있습니다.</p>`,
+  doit:'최근 CP와 원/달러 환율을 각각 찾아, 이번 달 국내 공급가의 대략적인 방향(상승/하락)을 스스로 추정해보세요.',
+  ref:REF_1016},
+13:{title:'환율·유가와 국내 LPG 가격의 상관관계', tag:'가격', hook:'유가는 CP와 운임, 두 경로로 이중 영향을 준다',
+  body:`<p>원/달러 환율 상승(원화 약세) → 달러 표시 CP를 원화로 환산한 수입원가 상승 → 국내 공급가 상승 압력으로 이어집니다.</p>
+  <p>국제유가 상승은 CP 자체의 상승 압력(원유·정제마진 연동)과 해상운임 상승(선박 연료비) 두 경로로 이중으로 LPG 가격에 영향을 줍니다. 반대로 유가 하락기에는 CP 하락과 운임 하락이 동시에 발생해 국내 가격 하락 폭이 커지는 경향이 있습니다.</p>`,
+  doit:'최근 1년 국제유가(WTI/두바이유) 그래프와 국내 LPG 소비자가격 추이를 나란히 놓고 상관관계가 보이는지 비교해보세요.',
+  ref:REF_1016},
+14:{title:'정부 가격정책 이력: 규제에서 자유화까지', tag:'정책', hook:'서민연료 지원 → 단계적 가격 자유화',
+  body:`<p>과거 LPG는 서민연료로 분류되어 세금 우대(개별소비세 감면 등) 및 가격 규제 대상이었던 시기가 있었습니다. 이후 단계적 가격 자유화가 진행되며 시장가격 연동 구조(CP+환율+운임 반영)로 전환되었습니다.</p>
+  <p>LPG 자동차 사용제한 완화(일반인 구매 허용 등)도 정책 변화의 대표 사례입니다 — 이는 수요구조(20강)에도 영향을 줍니다.</p>`,
+  doit:'"LPG 가격 자유화" 또는 "LPG 자동차 규제 완화" 키워드로 정책 변화 기사를 찾아 시행 시점을 메모해보세요.',
+  ref:REF_1016},
+15:{title:'SK가스·E1 실제 트레이딩 사례로 CP 연동 구조 검증', tag:'실전검증', hook:'이론을 실제 회사 자료에서 확인하는 실습',
+  body:`<p>지금까지 배운 CP 연동 구조가 실제 SK가스·E1의 트레이딩·실적 발표 자료에서 어떻게 드러나는지 확인하는 실습 위주 강의입니다.</p>
+  <p>두 회사 IR자료나 실적발표 자료에서 "CP", "환율", "트레이딩 마진" 관련 언급을 찾아 이론과 실무를 연결해봅니다.</p>`,
+  doit:'SK가스 또는 E1의 최근 분기 실적발표(IR) 자료를 찾아 "CP" 또는 "환율" 관련 문구가 있는지 검색하고, 있다면 캡처해서 메모해보세요.',
+  ref:REF_1016},
+16:{title:'가격결정 메커니즘 종합 정리 + 예상 면접질문 대비', tag:'정리·면접', hook:'8강 다이어그램 + 가격구조를 한 번에 설명해보기',
+  body:`<p>CP → 환율/운임 반영 → 국내 공급가 → 유통마진 → 최종소비자가로 이어지는 전체 흐름을 한 문장씩 요약해 스스로 설명할 수 있도록 정리합니다.</p>
+  <p><b>예상 면접질문 예시</b></p>
+  <ul>
+    <li>"국내 LPG 가격은 어떻게 결정되나요?"</li>
+    <li>"CP가 오르면 SK가스 수익성에 어떤 영향이 있을까요?" (재고평가·판매시차에 따라 답이 달라질 수 있는 질문 — 직접 생각해보기)</li>
+    <li>"환율 변동이 LPG 트레이딩사에 미치는 영향은?"</li>
+  </ul>`,
+  doit:'위 3개 예상 질문에 대한 답을 각각 3~5문장으로 직접 써보고, 8강에서 그린 다이어그램과 연결해 설명해보세요.',
+  ref:REF_1016},
+17:{title:'프로판 vs 부탄 물성 차이가 용도를 어떻게 가르는가', tag:'물성·용도', hook:'1강의 물성 지식을 실제 용도와 연결하기',
+  body:`<p>1강에서 배운 물성 차이(비점, 증기압, 발열량)가 실제 용도를 어떻게 가르는지 연결합니다. 부탄은 상온 근처에서도 액화되어 휴대용 캔·가정용 취사에 적합하고, 프로판은 저온에서도 기화가 잘 되어 난방·산업용·수송용(LPG차량)에 더 적합합니다.</p>
+  <p>겨울철에는 기화가 잘 되는 프로판 비중을 높여 가정용 LPG를 공급하는 계절 블렌딩이 이루어집니다.</p>`,
+  doit:'우리집이나 주변에서 쓰는 LPG가 프로판인지 부탄인지(캠핑 부탄가스, 배달용 LPG 용기 등) 확인하고, 그 이유를 물성으로 설명해보세요.',
+  ref:REF_1722},
+18:{title:'가정·상업용 수요: 취사·난방용 LPG 시장 동향', tag:'수요', hook:'도시가스 미보급 지역의 핵심 연료',
+  body:`<p>도시가스(LNG) 미보급 지역(농어촌·산간)의 취사·난방 연료로 LPG가 여전히 중요한 역할을 합니다. 다만 도시가스 보급 확대로 가정용 LPG 수요는 장기적으로 완만한 감소 추세를 보입니다.</p>
+  <p>음식점 등 상업용 수요(휴대용 부탄캔 포함)도 상당한 비중을 차지합니다.</p>`,
+  doit:'KEEI 또는 산업통상자원부 자료에서 최근 5년 가정·상업용 LPG 소비량 추이를 찾아 증가/감소 방향을 메모해보세요.',
+  ref:REF_1722},
+19:{title:'산업용 수요: 산업체 열원, 특수가스 용도', tag:'수요', hook:'보일러 연료부터 금속가공까지',
+  body:`<p>산업체 열원(보일러 연료), 금속가공(절단·용접용 프로판), 특수가스 용도(반도체 공정 일부 등) 등 다양한 산업 현장에서 LPG가 사용됩니다.</p>
+  <p>상대적으로 안정적인 수요처지만, 규모는 가정·수송·석유화학용 대비 작은 편입니다.</p>`,
+  doit:'"산업용 LPG 용도"를 검색해 대표적인 산업 현장 사용 사례를 2가지 찾아 메모해보세요.',
+  ref:REF_1722},
+20:{title:'수송용 수요: LPG 택시 시장의 구조적 축소 추세', tag:'수요', hook:'전기차 시대, LPG 차량 수요는 왜 줄어드나',
+  body:`<p>LPG 택시가 대표적인 수송용 수요처였으나, 최근 전기차·하이브리드 보급 확대로 LPG 차량 시장이 구조적으로 축소되는 추세입니다.</p>
+  <p>일반인 LPG차 구매 제한 완화(14강) 등 정책 변화는 일부 수요를 방어하는 요인으로 작용하고 있습니다. 이 구조적 축소 추세는 SK가스·E1이 왜 석유화학(PDH) 등 신수요처 확대에 주력하는지 이해하는 배경이 됩니다(21강으로 연결).</p>`,
+  doit:'최근 5년간 국내 LPG 차량 등록대수 추이를 찾아 감소 폭을 확인해보세요.',
+  ref:REF_1722},
+21:{title:'석유화학 원료용(PDH) 수요: 프로필렌 생산 구조', tag:'석유화학', hook:'LPG 회사가 "연료 유통사"에서 "원료 공급사"로',
+  body:`<p><b>PDH(Propane DeHydrogenation, 프로판 탈수소화)</b>는 프로판을 원료로 프로필렌(폴리프로필렌 등의 기초 원료)을 생산하는 공정으로, 최근 국내외 석유화학사들이 PDH 설비를 증설하며 LPG(프로판) 수요의 새로운 성장축이 되고 있습니다.</p>
+  <p>기존 나프타분해(NCC) 대비 PDH는 프로필렌 수율이 높고 원가 경쟁력을 가질 수 있어, SK가스 등이 관련 자회사·합작사를 통해 PDH 사업에 참여하고 있습니다. 이는 SK가스·E1이 단순 '연료 유통사'에서 '석유화학 원료 공급사'로 사업 영역을 넓히는 흐름과 연결됩니다.</p>`,
+  doit:'"SK가스 PDH" 또는 "프로필렌 증설" 키워드로 관련 기사를 찾아, 어떤 회사가 PDH 설비를 운영·증설하는지 메모해보세요.',
+  ref:REF_1722},
+22:{title:'수요처별 비중 변화 트렌드 (최근 5년 데이터)', tag:'트렌드', hook:'가정·산업·수송·석유화학 — 비중이 어떻게 바뀌었나',
+  body:`<p>가정·상업용(완만한 감소) vs 수송용(구조적 감소) vs 산업용(안정) vs 석유화학용(PDH 중심 성장)의 최근 5년 비중 변화를 데이터로 직접 확인하는 실습 강의입니다.</p>
+  <p>이 트렌드를 알면 "왜 LPG 회사들이 트레이딩·석유화학 쪽에 힘을 주는가"를 수치로 설명할 수 있게 됩니다.</p>`,
+  doit:'KEEI 에너지통계연보 등에서 최근 5년 LPG 수요처별(가정상업/산업/수송/석유화학) 비중 표를 직접 만들어보세요.',
+  ref:REF_1722},
+23:{title:'DART 사업보고서 읽는 법', tag:'리서치방법', hook:'매출구성·주석 — 어디를 봐야 하는가',
+  body:`<p>DART(전자공시시스템, dart.fss.or.kr)에서 사업보고서 찾는 법: 회사명 검색 → "사업보고서" 선택 → "II. 사업의 내용"에서 사업부문 구성과 시장 현황을 확인합니다.</p>
+  <p>매출구성은 보통 "II. 사업의 내용" 중 매출 및 수주상황, 또는 재무제표 주석의 "부문별 정보"에서 확인할 수 있습니다. 주석(재무제표 뒤의 상세 설명)에서는 특수관계자 거래, 해외법인 현황 등 트레이딩 물량 관련 힌트를 얻을 수 있습니다.</p>`,
+  doit:'DART에서 아무 회사나 최근 사업보고서를 열어 "II. 사업의 내용" 챕터를 5분간 읽으며 목차 구조에 익숙해져보세요.',
+  ref:REF_2329},
+24:{title:'SK가스 사업보고서 분석', tag:'기업분석', hook:'사업부문 구성 · 매출·트레이딩 물량',
+  body:`<p>SK가스 최근 사업보고서에서 사업부문(LPG 트레이딩/수입유통, 석유화학/PDH, 발전 등) 구성을 확인합니다.</p>
+  <p>매출·트레이딩 물량 데이터를 찾아 정리해보세요. 정확한 수치는 최신 보고서를 직접 확인해야 하며, 여기서는 '어디를 봐야 하는지' 방법을 익히는 것이 핵심입니다.</p>`,
+  doit:'DART에서 SK가스 최근 사업보고서를 열어 사업부문별 매출 비중 표를 캡처하고 정리해보세요.',
+  ref:REF_2329},
+25:{title:'E1 사업보고서 분석', tag:'기업분석', hook:'사업부문 구성 · 매출·트레이딩 물량',
+  body:`<p>E1 최근 사업보고서에서 사업부문(LPG 수입·유통, 트레이딩, 발전 등) 구성을 SK가스와 같은 방식으로 확인합니다.</p>`,
+  doit:'DART에서 E1 최근 사업보고서를 열어 사업부문별 매출 비중 표를 캡처하고, SK가스와 나란히 비교할 수 있도록 표 형식을 맞춰보세요(26강 준비).',
+  ref:REF_2329},
+26:{title:'SK가스 vs E1 비교: 매출·영업이익·해외 트레이딩 물량', tag:'비교분석', hook:'두 회사의 포지셔닝 차이를 수치로 확인',
+  body:`<p>24~25강에서 정리한 두 회사의 매출·영업이익·해외 트레이딩 물량 데이터를 나란히 비교합니다.</p>
+  <ul>
+    <li>매출 규모, 수익성(영업이익률)</li>
+    <li>해외 소싱 다변화 정도(중동 vs 미국 비중)</li>
+    <li>석유화학(PDH) 진출 여부·규모</li>
+  </ul>`,
+  doit:'두 회사의 최근 사업보고서 수치를 하나의 표(매출/영업이익/트레이딩 물량)로 나란히 정리해보세요.',
+  ref:REF_2329},
+27:{title:'현대코퍼레이션 에너지/LPG 트레이딩 부문 분석', tag:'기업분석', hook:'전문 수입·유통사와 다른 "종합상사형" 트레이딩',
+  body:`<p>현대코퍼레이션(옛 현대종합상사)은 종합상사로서 에너지 트레이딩(원유, LPG 등) 부문을 보유하고 있습니다 — SK가스·E1과 달리 '수입·유통 전문사'가 아니라 '트레이딩 중개' 성격이 강합니다.</p>
+  <p>사업보고서에서 에너지 부문 매출 비중과 취급 품목을 확인해봅니다.</p>`,
+  doit:'DART에서 현대코퍼레이션 사업보고서를 열어 에너지 부문(원유/석유제품/LPG 등) 매출 비중을 확인해보세요.',
+  ref:REF_2329},
+28:{title:'포스코인터내셔널 에너지 트레이딩 부문 분석', tag:'기업분석', hook:'LNG·원유 포트폴리오 안에서 LPG 비중 찾기',
+  body:`<p>포스코인터내셔널도 종합상사로서 에너지(가스전 개발·트레이딩 포함) 부문을 보유하고 있습니다 — LPG 자체보다는 LNG·원유 등 폭넓은 에너지 포트폴리오 안에서 LPG 트레이딩 비중을 파악하는 것이 핵심입니다.</p>`,
+  doit:'DART에서 포스코인터내셔널 사업보고서를 열어 에너지 부문 내 LPG 관련 언급을 찾아보세요.',
+  ref:REF_2329},
+29:{title:'4사 비교표 작성 완성 (산출물2 완료)', tag:'정리·산출물', hook:'매출·물량·해외거점 — 4사를 한 표로',
+  body:`<p>SK가스·E1·현대코퍼레이션·포스코인터내셔널 4사를 매출, 영업이익, 취급 물량, 해외거점(중동/미국/동남아 등) 기준으로 하나의 표로 종합합니다.</p>
+  <p><b>산출물2</b>: 이 비교표가 완성본입니다. 각 회사의 포지셔닝 차이(전문 수입유통사 vs 종합상사 트레이딩)를 한눈에 볼 수 있어야 합니다.</p>
+  <p><b>예상 면접질문</b>: "SK가스와 종합상사(포스코인터내셔널 등)의 LPG 트레이딩 방식 차이는?" — 이 비교표로 답변할 수 있습니다.</p>`,
+  doit:'4사 비교표를 스프레드시트나 노트앱으로 실제로 완성해 저장해보세요.',
+  ref:REF_2329},
+30:{title:'1주차 종합 리뷰: 밸류체인 다이어그램 최종본 확정', tag:'종합리뷰', hook:'30강을 스스로 다시 강의해보기 + 2주차 예고',
+  body:`<p>1주차 전체(밸류체인 → CP 가격결정 → 수요처 → 4사 비교) 흐름을 스스로 강의하듯 요약 설명해봅니다.</p>
+  <p>8강에서 그린 밸류체인 다이어그램 초안을 최종본으로 다듬어 완성합니다(예: 각 단계에 실제 회사명·수치 주석 추가).</p>
+  <p><b>2주차 예고</b>: 다음 주차 커리큘럼이 확정되면 이어서 추가될 예정입니다.</p>`,
+  doit:'다이어그램 최종본을 사진으로 찍어 기록으로 남기고, 1주차 30강 중 스스로 다시 설명하기 어려운 강의 3개를 골라 표시해보세요.',
+  ref:REF_30}
+};
+
+// ─── state ───
+let store={done:{}, exerciseDone:{}, notes:{}};
+let activeDay=1;
+let noteTimer=null;
+
+function load(){
+  try{
+    const raw=localStorage.getItem(STORE_KEY);
+    if(raw) store=Object.assign(store, JSON.parse(raw));
+  }catch(e){}
+}
+function persist(){
+  localStorage.setItem(STORE_KEY, JSON.stringify(store));
+}
+
+function totalLessons(){ return Object.keys(LESSONS).length; }
+function doneCount(){ return Object.values(store.done).filter(Boolean).length; }
+
+function renderHeader(){
+  const done=doneCount(), total=totalLessons();
+  const pct=Math.round(done/total*100);
+  document.getElementById('hbarFill').style.width=pct+'%';
+  document.getElementById('hbarPct').textContent=pct+'%';
+  document.getElementById('hbarCnt').textContent=done+' / '+total+'강 완료';
+}
+
+function renderWeeks(){
+  const el=document.getElementById('weekRow');
+  el.innerHTML=WEEKS.map((w,i)=>
+    `<button class="week-chip ${i===0?'on':''}">${w.label} · ${w.theme}</button>`
+  ).join('');
+}
+
+function renderDayTabs(){
+  const el=document.getElementById('dayRow');
+  el.innerHTML=DAYS.map(d=>{
+    const doneN=d.lessons.filter(n=>store.done[n]).length;
+    const allDone=doneN===d.lessons.length;
+    return `<button class="day-chip ${d.day===activeDay?'on':''}" onclick="selectDay(${d.day})">
+      <span class="dn ${allDone?'done':''}">${allDone?'✓':d.day}</span>Day ${d.day}
+    </button>`;
+  }).join('');
+}
+
+function renderDayTheme(){
+  const d=DAYS.find(x=>x.day===activeDay);
+  document.getElementById('dayThemeCard').innerHTML=`
+    <div class="day-theme-emoji">${d.emoji}</div>
+    <div>
+      <div class="day-theme-lb">DAY ${d.day}</div>
+      <div class="day-theme-tt">${d.title}</div>
+      <div class="day-theme-sub">${d.sub}</div>
+    </div>`;
+}
+
+function renderLessonList(){
+  const d=DAYS.find(x=>x.day===activeDay);
+  const el=document.getElementById('lessonList');
+  el.innerHTML=d.lessons.map(n=>{
+    const l=LESSONS[n];
+    const isDone=!!store.done[n];
+    return `<div class="lesson-row" onclick="openDetail(${n})">
+      <div class="l-num-col"><div class="l-num ${isDone?'done':''}">${isDone?'✓':n}</div></div>
+      <div class="l-card">
+        <div class="l-top">
+          <span class="l-tag">${l.tag}</span>
+          <span class="l-check ${isDone?'done':''}">${isDone?'✓ 완료':'○'}</span>
+        </div>
+        <div class="l-title">${n}강. ${l.title}</div>
+        <div class="l-hook">${l.hook}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function selectDay(n){
+  activeDay=n;
+  renderDayTabs();
+  renderDayTheme();
+  renderLessonList();
+}
+
+function renderAll(){
+  renderHeader();
+  renderWeeks();
+  renderDayTabs();
+  renderDayTheme();
+  renderLessonList();
+}
+
+// ─── detail sheet ───
+function openDetail(n){
+  const l=LESSONS[n];
+  const d=DAYS.find(x=>x.lessons.includes(n));
+  const isDone=!!store.done[n];
+  const exDone=!!store.exerciseDone[n];
+  const note=store.notes[n]||'';
+  const root=document.getElementById('sheetRoot');
+  root.innerHTML=`
+  <div class="sheet-backdrop" id="sheetBackdrop">
+    <div class="sheet">
+      <div class="sheet-hero">
+        <div class="sheet-hero-top">
+          <button class="sheet-back" onclick="closeDetail()">‹</button>
+        </div>
+        <div class="sheet-hero-emoji">${d.emoji}</div>
+        <div class="sheet-hero-lb">DAY ${d.day} · ${n}강</div>
+        <div class="sheet-hero-tt">${l.title}</div>
+        <span class="sheet-hero-tag">${l.tag}</span>
+      </div>
+      <div class="sheet-body">
+        <div class="s-card">
+          <div class="s-card-lb">📖 핵심 내용</div>
+          <div class="s-body">${l.body}</div>
+        </div>
+        <div class="s-card doit-card">
+          <div class="s-card-lb">🔍 직접 해보기</div>
+          <div class="doit-text">${l.doit}</div>
+          <button class="doit-toggle ${exDone?'done':''}" id="doitBtn" onclick="toggleExercise(${n})">${exDone?'✓ 해봤어요':'아직 안 해봤어요'}</button>
+        </div>
+        <div class="s-card">
+          <div class="s-card-lb">📚 참고 자료</div>
+          <div class="ref-card"><span class="ref-ic">📎</span><span class="ref-tx">${l.ref}</span></div>
+        </div>
+        <div class="s-card">
+          <div class="s-card-lb">✏️ 내 메모</div>
+          <textarea class="note-area" id="noteArea" placeholder="정리한 내용, 헷갈리는 부분을 적어두세요">${note}</textarea>
+          <div class="note-saved" id="noteSaved"></div>
+        </div>
+      </div>
+      <div class="sheet-fab">
+        <button class="complete-btn ${isDone?'done':''}" id="completeBtn" onclick="toggleDone(${n})">${isDone?'✓ 완료됨 · 다시 취소':'이 강의 완료로 표시'}</button>
+      </div>
+    </div>
+  </div>`;
+  document.body.classList.add('sheet-open');
+  document.getElementById('noteArea').addEventListener('input', function(e){
+    const val=e.target.value;
+    clearTimeout(noteTimer);
+    noteTimer=setTimeout(()=>{
+      store.notes[n]=val;
+      persist();
+      const sv=document.getElementById('noteSaved');
+      if(sv){ sv.textContent='저장됨'; setTimeout(()=>{ if(sv) sv.textContent=''; },1200); }
+    },500);
+  });
+}
+
+function closeDetail(){
+  const bd=document.getElementById('sheetBackdrop');
+  if(!bd) return;
+  bd.classList.add('closing');
+  document.body.classList.remove('sheet-open');
+  setTimeout(()=>{ document.getElementById('sheetRoot').innerHTML=''; },180);
+  renderAll();
+}
+
+function toggleDone(n){
+  store.done[n]=!store.done[n];
+  persist();
+  const btn=document.getElementById('completeBtn');
+  const isDone=!!store.done[n];
+  btn.classList.toggle('done', isDone);
+  btn.textContent=isDone?'✓ 완료됨 · 다시 취소':'이 강의 완료로 표시';
+  renderHeader();
+}
+
+function toggleExercise(n){
+  store.exerciseDone[n]=!store.exerciseDone[n];
+  persist();
+  const btn=document.getElementById('doitBtn');
+  const exDone=!!store.exerciseDone[n];
+  btn.classList.toggle('done', exDone);
+  btn.textContent=exDone?'✓ 해봤어요':'아직 안 해봤어요';
+}
+
+load();
+renderAll();
+</script>
+</body>
+</html>
